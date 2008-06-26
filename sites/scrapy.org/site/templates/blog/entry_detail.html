@@ -1,0 +1,34 @@
+{% extends "base_weblog.html" %}
+
+{% block title %}Weblog | {{ object.headline|escape }}{% endblock %}
+
+{% block main-content %}
+
+<h2>{{ object.headline }}</h2>
+{{ object.body }}
+<p class="date small">Posted by <strong>{{ object.author }}</strong> on {{ object.pub_date|date:"F j, Y" }}</p>
+
+{% comment %}
+{% load comments comment_utils %}
+{% get_public_free_comment_list for blog.entry object.id as comment_list %}
+
+<div id="content-secondary">
+<h2 id="comments">Comments</h2>
+
+{% for comment in comment_list %}
+<div class="comment" id="c{{ comment.id }}">
+    <h3>{{ comment.person_name|escape }} <span class="small quiet">{{ comment.submit_date|date:"F j, Y" }} at {{ comment.submit_date|date:"P" }}</span></h3>
+    {{ comment.comment|escape|urlizetrunc:"40"|linebreaks }}
+</div>
+{% endfor %}
+
+{% if object.comments_enabled %}
+<h2>Post a comment</h2>
+{% free_comment_form for blog.entry object.id %}
+{% else %}
+<h2>Comments are closed</h2>
+<p>To prevent spam, comments are no longer allowed after sixty days.</p>
+{% endif %}
+</div>
+{% endcomment %}
+{% endblock %}

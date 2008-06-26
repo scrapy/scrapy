@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Scrapy - an opensource screen scraping framework for python</h1>
+
+{% load link_tags %}
+{% load_links "nav-links" as "nav_links" %}
+
+{% if nav_links %}
+<ul id="navigation">
+    {% for link in nav_links %}
+    <li{% if forloop.last %} class="last"{% endif %}><a href="{{ link.address }}">{{ link.text }}</a></li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<div class="clear"></div>
+
+<div id="content">
+    <div id="left-column">
+        {% block main-content %}{% endblock %}
+    </div>
+
+    <div id="right-column">
+        {% load download_tags %}
+        {% load_download_links as "download_links" %}
+
+        {% if download_links %}
+        <div class="box download">
+            <h3>Download Scrapy</h3>
+
+            {% for link in download_links %}
+            <p>{{ link.description }} <a href="{{ link.address }}" class="download">{{ link.text }}</a></p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="box">
+            <h3>Scrapy Weblog</h3>
+
+            <div class="post">
+                <h4><a href="#">post title</a></h4>
+                <p class="author">by <a href="#">Molvo</a> on May 14, 2008</p>
+                <p class="abstract">
+                Nullam ullamcorper, sem quis interdum imperdiet, velit leo convallis ante, eget fringilla lacus
+                interdum imperdiet, velit leo convallis ante, eget fringilla...
+                </p>
+                <a href="#" class="more">&raquo; Read More</a>
+            </div>
+
+            <div class="post last">
+                <h4><a href="#">post title</a></h4>
+                <p class="author">by <a href="#">Molvo</a> on May 14, 2008</p>
+                <p class="abstract">
+                Nullam ullamcorper, sem quis interdum imperdiet, velit leo convallis ante, eget fringilla lacus
+                interdum imperdiet, velit leo convallis ante, eget fringilla...
+                </p>
+                <a href="#" class="more">&raquo; Read More</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}
+    {% load_links "footer-links" as "footer_links" %}
+    {% if footer_links %}
+    <ul>
+        <li style="border-right:none;">Scrapy : </li>
+        {% for link in footer_links %}
+        <li{% if forloop.last %} class="last"{% endif %}><a href="{{ link.address }}">{{ link.text }}</a></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+{% endblock %}

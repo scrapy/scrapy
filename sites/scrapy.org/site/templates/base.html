@@ -1,0 +1,33 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <title>{% block title %}Scrapy.org. Scraping framework{% endblock %}</title>
+
+        <link href="{{ MEDIA_URL }}/style/style.css" rel="stylesheet" type="text/css" media="screen" />
+        {% block extrastyles %}{% endblock %}
+        <!--[if IE 6]>
+        <link href="/style/ie60.css" rel="stylesheet" type="text/css" media="screen" />
+        <![endif]-->
+        <!--[if IE 7]>
+        <link href="/style/ie70.css" rel="stylesheet" type="text/css" media="screen" />
+        <![endif]-->
+
+        {% block extrascripts %}{% endblock %}
+    </head>
+    <body>
+        <div id="container">
+            {% block content %}{% endblock %}
+        </div>
+
+        <div class="clear"></div>
+
+        <div id="footer">
+            {% block footer %}{% endblock %}
+
+            <div class="clear"></div>
+
+            <p>Got any feedback or suggestions? We're interested in hearing them! <a href="#">Contact us</a>!</p>
+            <p>&copy; 2008 Insophia</p>
+        </div>
+    </body>
+</html>

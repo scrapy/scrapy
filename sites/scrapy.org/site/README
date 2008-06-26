@@ -1,0 +1,4 @@
+Dependencies:
+
+    * python docutils (python-docutils in debian)
+      Needed for ReST markup
