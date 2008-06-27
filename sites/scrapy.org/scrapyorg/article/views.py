@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseRedirect
 
-from article.models import Article
+from scrapyorg.article.models import Article
 
 
 def position_up(request, article_id):

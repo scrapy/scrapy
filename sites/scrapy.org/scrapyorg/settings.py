@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 # Django settings for scrapy project.
 
-from os.path import abspath, dirname, basename, join
-import sys
+#from os.path import abspath, dirname, basename, join
+import os
 
-PROJECT_ABSOLUTE_DIR = dirname(abspath(__file__))
-PROJECT_NAME = basename(PROJECT_ABSOLUTE_DIR)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
 )
 
 MANAGERS = ADMINS
+
+DEBUG=False
 
 DEFAULT_CHARSET = "utf-8"
 
@@ -34,7 +35,7 @@ SITE_ID = 1
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = join(PROJECT_ABSOLUTE_DIR, "static")
+MEDIA_ROOT = os.path.join(PROJECT_ROOT, "static")
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash if there is a path component (optional in other cases).
@@ -61,14 +62,13 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
-    #'%s.middleware.threadlocals.ThreadLocals' % PROJECT_NAME,
     'django.contrib.flatpages.middleware.FlatpageFallbackMiddleware',
 )
 
-ROOT_URLCONF = '%s.urls' % PROJECT_NAME
+ROOT_URLCONF = 'scrapyorg.urls'
 
 TEMPLATE_DIRS = (
-    join(PROJECT_ABSOLUTE_DIR, "templates"),
+    os.path.join(PROJECT_ROOT, "templates"),
 )
 
 INSTALLED_APPS = (
@@ -79,14 +79,11 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.markup',
     'django.contrib.flatpages',
-    'link',
-    'article',
-    'download',
-    'blog',
+    'scrapyorg.link',
+    'scrapyorg.article',
+    'scrapyorg.download',
+    'scrapyorg.blog',
 )
-
-# Add apps/ dir to python path.
-sys.path.append(join(PROJECT_ABSOLUTE_DIR, "apps"))
 
 # Override previous settings with values in local_settings.py settings file.
 try:

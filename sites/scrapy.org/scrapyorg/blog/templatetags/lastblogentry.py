@@ -2,7 +2,7 @@ import datetime
 
 from django import template
 
-from blog.models import Entry
+from scrapyorg.blog.models import Entry
 
 
 class LatestBlogEntriesNode(template.Node):

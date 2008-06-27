@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseRedirect
 
-from download.models import DownloadLink
+from scrapyorg.download.models import DownloadLink
 
 
 def toggle_public(request, link_id):

@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseRedirect
 
-from link.models import GroupLink
+from scrapyorg.link.models import GroupLink
 
 
 def position_up(request, grouplink_id):

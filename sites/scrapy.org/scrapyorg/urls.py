@@ -5,10 +5,10 @@ from django.conf import settings
 
 urlpatterns = patterns('',
     (r"^$", direct_to_template, { "template": "home.html" }),
-    (r"^article/", include("article.urls")),
-    (r"^download/", include("download.urls")),
-    (r"^link/", include("link.urls")),
-    (r"^weblog/", include("blog.urls")),
+    (r"^article/", include("scrapyorg.article.urls")),
+    (r"^download/", include("scrapyorg.download.urls")),
+    (r"^link/", include("scrapyorg.link.urls")),
+    (r"^weblog/", include("scrapyorg.blog.urls")),
 
     (r"^admin/", include("django.contrib.admin.urls")),
 )
@@ -16,5 +16,5 @@ urlpatterns = patterns('',
 
 if settings.DEBUG: # devel
     urlpatterns += patterns('',         
-        (r"^site-media/(?P<path>.*)$", "django.views.static.serve", { "document_root": settings.MEDIA_ROOT }),
+        (r'^%s/(?P<path>.*)$' % settings.MEDIA_URL[1:], 'django.views.static.serve', {'document_root': settings.MEDIA_ROOT}),
     )

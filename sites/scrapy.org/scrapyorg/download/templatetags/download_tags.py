@@ -1,8 +1,8 @@
 from django import template
 
-from lib.templatetags import *
+from scrapyorg.lib.templatetags import *
 
-from download.models import DownloadLink
+from scrapyorg.download.models import DownloadLink
 
 
 register = template.Library()

@@ -1,5 +1,4 @@
-import os
-
+DEBUG = True
 
 DATABASE_ENGINE = ''           # 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
 DATABASE_NAME = ''             # Or path to database file if using sqlite3.
@@ -10,12 +9,6 @@ DATABASE_PORT = ''             # Set to empty string for default. Not used with 
 
 SITE_URL = ''
 
-SITE_MEDIA = os.path.join(os.path.dirname(__file__), 'static')
-
 EMAIL_HOST = ''
 EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
-
-MOBILE = False
-
-PRODUCTION = False

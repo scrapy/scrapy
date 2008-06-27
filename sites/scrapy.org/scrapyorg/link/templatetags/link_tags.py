@@ -1,8 +1,8 @@
 from django import template
 
-from lib.templatetags import *
+from scrapyorg.lib.templatetags import *
 
-from link.models import GroupLink
+from scrapyorg.link.models import GroupLink
 
 
 register = template.Library()

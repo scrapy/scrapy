@@ -1,6 +1,6 @@
 from django.conf.urls.defaults import *
 
-from link.views import *
+from scrapyorg.link.views import *
 
 
 urlpatterns = patterns('',

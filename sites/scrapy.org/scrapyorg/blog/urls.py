@@ -1,5 +1,5 @@
 from django.conf.urls.defaults import *
-from models import Entry # relative import
+from scrapyorg.blog.models import Entry # relative import
 
 info_dict = {
     'queryset': Entry.objects.all(),

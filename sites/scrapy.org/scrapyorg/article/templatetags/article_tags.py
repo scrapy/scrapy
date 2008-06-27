@@ -1,8 +1,8 @@
 from django import template
 
-from lib.templatetags import *
+from scrapyorg.lib.templatetags import *
 
-from article.models import Article
+from scrapyorg.article.models import Article
 
 
 register = template.Library()
