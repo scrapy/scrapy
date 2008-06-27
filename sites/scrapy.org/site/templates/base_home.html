@@ -37,26 +37,17 @@
 
         <div class="box">
             <h3>Scrapy Weblog</h3>
+            {% load lastblogentry %}
+            {% get_latest_blog_entries 2 as entries %}
 
-            <div class="post">
-                <h4><a href="#">post title</a></h4>
-                <p class="author">by <a href="#">Molvo</a> on May 14, 2008</p>
-                <p class="abstract">
-                Nullam ullamcorper, sem quis interdum imperdiet, velit leo convallis ante, eget fringilla lacus
-                interdum imperdiet, velit leo convallis ante, eget fringilla...
-                </p>
-                <a href="#" class="more">&raquo; Read More</a>
+            {% for entry in entries %}
+            <div class="post{% if forloop.last %} last{% endif %}">
+                <h4><a href="{{ entry.get_absolute_url }}">{{ entry.headline }}</a></h4>
+                <p class="author">by {{ entry.author }} on {{ entry.pub_date|date:"M d, Y"}}</p>
+                <p class="abstract">{{ entry.summary }}</p>
+                <a href="{{ entry.get_absolute_url }}" class="more">&raquo; Read More</a>
             </div>
-
-            <div class="post last">
-                <h4><a href="#">post title</a></h4>
-                <p class="author">by <a href="#">Molvo</a> on May 14, 2008</p>
-                <p class="abstract">
-                Nullam ullamcorper, sem quis interdum imperdiet, velit leo convallis ante, eget fringilla lacus
-                interdum imperdiet, velit leo convallis ante, eget fringilla...
-                </p>
-                <a href="#" class="more">&raquo; Read More</a>
-            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
