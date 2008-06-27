@@ -1,0 +1,84 @@
+/* General styles for the progress bars */
+table.progress {
+ border: 1px solid #d7d7d7;
+ border-collapse: collapse;
+ border-spacing: 0;
+ float: left;
+ margin: 0;
+ padding: 0;
+ empty-cells: show;
+}
+table.progress a, table.progress :link, table.progress :visited,
+table.progress :link:hover, table.progress :visited:hover {
+ border: none;
+ display: block;
+ width: 100%;
+ height: 1.2em;
+ padding: 0;
+ margin: 0;
+ text-decoration: none
+}
+table.progress td { background: #fff; padding: 0 }
+table.progress td.new { background: #f5f5b5 }
+table.progress td.closed { background: #bae0ba }
+table.progress td :hover { background: none }
+p.percent { font-size: 10px; line-height: 2.4em; margin: 0.9em 0 0 }
+
+/* Styles for the roadmap view */
+ul.milestones { margin: 2em 0 0; padding: 0 }
+li.milestone { list-style: none; margin-bottom: 4em }
+.milestone .info { white-space: nowrap }
+.milestone .info h2 {
+ background: #f7f7f7;
+ border-bottom: 1px solid #d7d7d7;
+ margin: 0;
+}
+.milestone .info h2 :link, .milestone .info h2 :visited {
+ color: #000;
+ display: block;
+ border-bottom: none;
+}
+.milestone .info h2 :link:hover, .milestone .info h2 :visited:hover {
+ color: #000;
+}
+.milestone .info h2 em { color: #b00; font-style: normal }
+.milestone .info .date {
+ color: #888;
+ font-size: 11px;
+ font-style: italic;
+ margin: 0;
+}
+.milestone .info .progress { margin: 1em 1em 0; width: 40em; max-width: 70% }
+.milestone .info dl {
+ font-size: 10px;
+ font-style: italic;
+ margin: 0 1em 2em;
+ white-space: nowrap;
+}
+.milestone .info dt { display: inline; margin-left: .5em }
+.milestone .info dd { display: inline; margin: 0 1em 0 .5em }
+.milestone .description { margin-left: 1em }
+
+/* Styles for the milestone view */
+.milestone .date { color: #888; font-style: italic; margin: 0 }
+.milestone .description { margin: 1em 0 2em }
+
+/* Styles for the milestone statistics table */
+#stats { float: right; margin: 0 0 2em 2em; width: 400px; max-width: 40% }
+#stats legend { white-space: nowrap }
+#stats table { border-collapse: collapse; width: 100% }
+#stats th, #stats td { font-size: 10px; padding: 0; white-space: nowrap }
+#stats th { text-align: right; }
+#stats th :link, #stats th :visited { border: none }
+#stats td { padding-left: 0.5em; width: 100% }
+#stats td table.progress { margin: 3px 4px 3px 0 }
+#stats td table.progress td { padding: 0 }
+#stats td p.percent { line-height: 1.2em; margin-top: 3px }
+
+/* Styles for the milestone edit form */
+#edit fieldset { margin: 1em 0 }
+#edit em { color: #888; font-size: smaller }
+#edit .disabled em { color: #d7d7d7 }
+#edit .field { margin-top: 1.3em }
+#edit label { padding-left: .2em }
+#edit textarea#description { width: 97% }
