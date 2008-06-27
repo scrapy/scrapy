@@ -1,6 +1,9 @@
-from django import template
-from django_website.apps.blog.models import Entry
 import datetime
+
+from django import template
+
+from blog.models import Entry
+
 
 class LatestBlogEntriesNode(template.Node):
     def __init__(self, num, varname):
