@@ -7,6 +7,7 @@ urlpatterns = patterns('',
     (r"^$", direct_to_template, { "template": "home.html" }),
     (r"^article/", include("article.urls")),
     (r"^download/", include("download.urls")),
+    (r"^link/", include("link.urls")),
     (r"^weblog/", include("blog.urls")),
 
     (r"^admin/", include("django.contrib.admin.urls")),
