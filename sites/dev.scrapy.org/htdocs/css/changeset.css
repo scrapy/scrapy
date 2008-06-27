@@ -6,7 +6,7 @@
 #overview .files li div {
  border: 1px solid #999;
  float: left;
- margin: .2em .5em 0 0;
+ margin: .3em .5em 0 0;
  overflow: hidden;
  width: .8em; height: .8em;
 }

@@ -5,17 +5,18 @@ body {
  padding: 0;
 }
 body, th, td {
- font: normal 13px Verdana,Arial,'Bitstream Vera Sans',Helvetica,sans-serif;
+ color:#333333;
+ font-family:"Lucida Sans",Verdana,Helvetica,sans-serif; font-size:small;
 }
 h1, h2, h3, h4 {
- font-family: Arial,Verdana,'Bitstream Vera Sans',Helvetica,sans-serif;
+ font-family:"Lucida Sans",Verdana,Helvetica,sans-serif;
  font-weight: bold;
- letter-spacing: -0.018em;
+ color:#331F0A;
  page-break-after: avoid;
 }
-h1 { font-size: 19px; margin: .15em 1em 0.5em 0 }
-h2 { font-size: 16px }
-h3 { font-size: 14px }
+h1 { font-size: 22px; margin: .15em 1em 0.5em 0 }
+h2 { font-size: 18px }
+h3 { font-size: 16px }
 hr { border: none;  border-top: 1px solid #ccb; margin: 2em 0 }
 address { font-style: normal }
 img { border: none }
@@ -30,10 +31,11 @@ ol.arabic     { list-style-type: decimal }
 /* Link styles */
 :link, :visited {
  text-decoration: none;
- color: #b00;
- border-bottom: 1px dotted #bbb;
+
+border-bottom:1px solid #D78888;
+color:#6E0909;
 }
-:link:hover, :visited:hover { background-color: #eee; color: #555 }
+:link:hover, :visited:hover { color:#c35012; border-bottom:1px solid #ef994c }
 h1 :link, h1 :visited ,h2 :link, h2 :visited, h3 :link, h3 :visited,
 h4 :link, h4 :visited, h5 :link, h5 :visited, h6 :link, h6 :visited {
  color: inherit;
@@ -143,7 +145,7 @@ label.disabled { color: #d7d7d7 }
 
 /* Navigation */
 .nav h2, .nav hr { display: none }
-.nav ul { font-size: 10px; list-style: none; margin: 0; text-align: right }
+.nav ul { font-size: 17px; list-style: none; margin:0; text-align: right }
 .nav li {
  border-right: 1px solid #d7d7d7;
  display: inline;
@@ -151,33 +153,35 @@ label.disabled { color: #d7d7d7 }
  white-space: nowrap;
 }
 .nav li.last { border-right: none }
-
+.nav ul a { color:#E57919;;
+ border-bottom: 1px solid #FFCA9B; }
 /* Main navigation bar */
 #mainnav {
- background: #f7f7f7 url(../topbar_gradient.png) 0 0;
- border: 1px solid #000;
- font: normal 10px verdana,'Bitstream Vera Sans',helvetica,arial,sans-serif;
- margin: .66em 0 .33em;
- padding: .2em 0;
+ /* background: #f7f7f7 url(../topbar_gradient.png) 0 0; */
+ border: 1px solid #ccc; 
+ font: normal 10px 'Lucida Sans','Bitstream Vera Sans',helvetica,arial,sans-serif;
+ margin: 1em 0 .66em;
+ padding: .5em;
 }
-#mainnav li { border-right: none; padding: .25em 0 }
+#mainnav li { border-right: none; padding: .25em 0; font-size:12px; }
 #mainnav :link, #mainnav :visited {
  background: url(../dots.gif) 0 0 no-repeat;
- border-right: 1px solid #fff;
+ /* border-right: 1px solid #fff;
+ 
+ border-left: 1px solid #555; */
  border-bottom: none;
- border-left: 1px solid #555;
- color: #000;
+ color: #ae3413;
  padding: .2em 20px;
 }
 * html #mainnav :link, * html #mainnav :visited { background-position: 1px 0 }
 #mainnav :link:hover, #mainnav :visited:hover {
- background-color: #ccc;
- border-right: 1px solid #ddd;
+ background-color: #fff3ca;
+ 
 }
 #mainnav .active :link, #mainnav .active :visited {
- background: #333 url(../topbar_gradient2.png) 0 0 repeat-x;
+ background: #5B1111 url(../topbar_gradient2.png) 0 0 repeat-x;
  border-top: none;
- border-right: 1px solid #000;
+ /* border-right: 1px solid #000; */
  color: #eee;
  font-weight: bold;
 }
