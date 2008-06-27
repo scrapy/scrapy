@@ -20,7 +20,8 @@ class Article(models.Model):
     text = models.TextField(_("text"), core=True, help_text=REST_HELP_TEXT)
     main = models.BooleanField(_("main"), core=True, blank=False,
                                default=False, help_text=MAIN_HELP_TEXT)
-    order = models.IntegerField(_("order"), core=True, blank=False, default=0)
+    position = models.IntegerField(_("position"), core=True, blank=False,
+                                   default=0)
 
 
     # automatic dates
@@ -28,12 +29,12 @@ class Article(models.Model):
     updated = models.DateTimeField(core=True, editable=False)
 
 
-    def order_up(self):
-        self.order += 1
+    def position_up(self):
+        self.position += 1
         self.save()
 
-    def order_down(self):
-        self.order -= 1
+    def position_down(self):
+        self.position -= 1
         self.save()
 
     def save(self):
@@ -47,18 +48,18 @@ class Article(models.Model):
         return self.title
     
     # ugly, but django-admin isn't very versatile right now
-    def order_link(self):
-        return _("%(order)s (<a href='/article/%(id)s/order/up/'>Up</a>" \
-               " | <a href='/article/%(id)s/order/down/'>Down</a>)") % \
-               { "order": self.order, "id": self.id }
-    order_link.short_description = u"order"
-    order_link.allow_tags = True
+    def position_link(self):
+        return _("%(position)s (<a href='/article/%(id)s/position/up/'>Up</a>" \
+               " | <a href='/article/%(id)s/position/down/'>Down</a>)") % \
+               { "position": self.position, "id": self.id }
+    position_link.short_description = u"position"
+    position_link.allow_tags = True
     
     class Admin:
-        list_display = ("title", "main", "order_link", "updated")
+        list_display = ("title", "main", "position_link", "updated")
         list_filter = ("main", "created")
 
     class Meta:
         verbose_name = _("article")
         verbose_name_plural = _("articles")
-        ordering = [ "-order", ]
+        ordering = [ "-position", ]

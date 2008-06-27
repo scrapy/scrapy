@@ -4,13 +4,13 @@ from django.http import HttpResponseRedirect
 from article.models import Article
 
 
-def order_up(request, article_id):
+def position_up(request, article_id):
     article = get_object_or_404(Article, pk=article_id)
-    article.order_up()
+    article.position_up()
     return HttpResponseRedirect("/admin/article/article/")
 
 
-def order_down(request, article_id):
+def position_down(request, article_id):
     article = get_object_or_404(Article, pk=article_id)
-    article.order_down()
+    article.position_down()
     return HttpResponseRedirect("/admin/article/article/")
