@@ -67,6 +67,14 @@ class GroupLink(models.Model):
     created = models.DateTimeField(core=True, editable=False)
     updated = models.DateTimeField(core=True, editable=False)
 
+    @property
+    def address(self):
+        return self.link.address
+
+    @property
+    def text(self):
+        return self.link.text
+
     def position_up(self):
         self.position += 1
         self.save()
