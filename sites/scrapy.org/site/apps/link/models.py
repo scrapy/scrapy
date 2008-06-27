@@ -36,8 +36,6 @@ class Link(models.Model):
     text = models.CharField(_("text"), max_length=1024, core=True, blank=False)
     address = models.CharField(_("address"), max_length=1024, core=True,
                                blank=False)
-    group = models.ManyToManyField(Group, verbose_name=_("group"), blank=True,
-                                   null=False)
 
     # automatic dates
     created = models.DateTimeField(core=True, editable=False)
@@ -58,4 +56,44 @@ class Link(models.Model):
 
     class Admin:
         list_display = ("text", "address",)
-        list_filter = ("group", )
+
+
+class GroupLink(models.Model):
+    group = models.ForeignKey(Group, core=True, null=False, blank=False)
+    link = models.ForeignKey(Link, core=True, null=False, blank=False)
+    position = models.IntegerField(_("position"), core=True, default=0)
+
+    # automatic dates
+    created = models.DateTimeField(core=True, editable=False)
+    updated = models.DateTimeField(core=True, editable=False)
+
+    def position_up(self):
+        self.position += 1
+        self.save()
+
+    def position_down(self):
+        self.position -= 1
+        self.save()
+
+    def save(self):
+        if not self.id:
+            self.created = datetime.now()
+        self.updated = datetime.now()
+        super(GroupLink, self).save()
+
+    # ugly, but django-admin isn't very versatile right now
+    def position_link(self):
+        return _("%(position)s (<a href='/link/%(id)s/position/up/'>Up</a>" \
+               " | <a href='/link/%(id)s/position/down/'>Down</a>)") % \
+               { "position": self.position, "id": self.id }
+    position_link.short_description = u"order"
+    position_link.allow_tags = True
+
+    class Admin:
+        list_display = ("group", "link", "position_link")
+        list_filter = ("group",)
+
+    class Meta:
+        verbose_name = _("group link")
+        verbose_name_plural = _("group links")
+        ordering = [ "position", ]

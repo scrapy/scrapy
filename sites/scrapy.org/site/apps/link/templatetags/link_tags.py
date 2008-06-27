@@ -2,7 +2,7 @@ from django import template
 
 from lib.templatetags import *
 
-from link.models import Group
+from link.models import GroupLink
 
 
 register = template.Library()
@@ -27,6 +27,5 @@ class LoadLinksNode(template.Node):
         self.var_name = var_name
 
     def render(self, context):
-        group = Group.objects.get(slug=self.slug)
-        context[self.var_name] = group and group.link_set.all() or []
+        context[self.var_name] = GroupLink.objects.filter(group__slug=self.slug)
         return ''
