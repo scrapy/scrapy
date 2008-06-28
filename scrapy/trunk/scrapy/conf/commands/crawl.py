@@ -1,0 +1,1 @@
+LOG_STDOUT = True

@@ -1,0 +1,2 @@
+LOG_ENABLED = False
+
