@@ -114,3 +114,19 @@ class expat_XMLNodeIterator():
                 start, end = self._byte_offset_buffer.pop(0)
                 yield response_body[start:end]
         self._parser.Parse('', 1)
+
+
+# TESTING (pablo) #
+# Yet another node iterator: this one is based entirely on regular expressions,
+# which means it should be faster but needs some profiling to confirm.
+
+class re_XMLNodeIterator():
+
+    def __init__(self, response, node):
+        self.response = response
+        self.node = node
+        self.re = re.compile(r"<%s[\s>].*?</%s>" % (node, node), re.DOTALL)
+
+    def __iter__(self):
+        for match in self.re.finditer(self.response.body.to_string()):
+            yield XmlXPathSelector(text=match.group()).x('/' + self.node)[0]
