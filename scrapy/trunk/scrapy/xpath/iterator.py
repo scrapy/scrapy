@@ -4,8 +4,8 @@ from cStringIO import StringIO
 
 import libxml2
 
-from scrapy.xpath.constructors import xml_parser_options, xmlDoc_from_xml
-from scrapy.xpath.selector import XPathSelector
+from scrapy.xpath.constructors import xml_parser_options
+from scrapy.xpath.selector import XmlXPathSelector
 
 class XMLNodeIterator(object):
     """XMLNodeIterator provides a way to iterate over all nodes of the same
@@ -63,7 +63,7 @@ class XMLNodeSAXParser():
         if name == self.requested_nodename:
             self.inside_requested_node = False
             string = ''.join([self.xml_declaration, self.buffer.getvalue()])
-            selector = XPathSelector(text=string, constructor=xmlDoc_from_xml).x('/' + self.requested_nodename)[0]
+            selector = XmlXPathSelector(text=string).x('/' + self.requested_nodename)[0]
             self.selectors.append(selector)
 
     def characters(self, data):
