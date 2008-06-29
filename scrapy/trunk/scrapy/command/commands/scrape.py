@@ -2,7 +2,7 @@ import scrapy
 from scrapy.command import ScrapyCommand
 from scrapy.fetcher import fetch
 from scrapy.spider import spiders
-from scrapy.xpath import XPathSelector
+from scrapy.xpath import XmlXPathSelector, HtmlXPathSelector
 from scrapy.utils.misc import load_class
 from scrapy.extension import extensions
 from scrapy.conf import settings
@@ -14,7 +14,8 @@ def load_url(url, response):
     vars['item'] = item
     vars['url'] = url
     vars['response'] = response
-    vars['xs'] = XPathSelector(response)
+    vars['xxs'] = XmlXPathSelector(response)
+    vars['hxs'] = HtmlXPathSelector(response)
     vars['spider'] = spiders.fromurl(url)
     return vars
 

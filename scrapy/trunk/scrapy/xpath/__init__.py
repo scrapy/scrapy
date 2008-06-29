@@ -11,5 +11,5 @@ spiders, for convenience.
 """
 
 from scrapy.xpath.types import XPath
-from scrapy.xpath.selector import XPathSelector
+from scrapy.xpath.selector import XPathSelector, XmlXPathSelector, HtmlXPathSelector
 from scrapy.xpath.iterator import XMLNodeIterator
