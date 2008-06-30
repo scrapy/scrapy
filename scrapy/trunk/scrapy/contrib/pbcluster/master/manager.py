@@ -34,7 +34,6 @@ class Node:
         if not status:
             self.available = False
         else:
-            print ">----------<"
             self.available = True
             self.running = status['running']
             self.closing = status['closing']
@@ -43,10 +42,8 @@ class Node:
             self.timestamp = status['timestamp']
             self.loadavg = status['loadavg']
             self.logdir = status['logdir']
-            print "Running: %s" % self.running
             free_slots = self.maxproc - len(self.running)
             while free_slots > 0 and self.master.pending:
-                print "Free slots %s" % free_slots
                 pending = self.master.pending.pop(0)
                 self.run(pending)
                 free_slots -= 1
