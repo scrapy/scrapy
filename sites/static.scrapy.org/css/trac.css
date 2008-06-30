@@ -158,15 +158,15 @@ label.disabled { color: #d7d7d7 }
 /* Main navigation bar */
 #mainnav {
  /* background: #f7f7f7 url(../topbar_gradient.png) 0 0; */
- border: 1px solid #ccc; 
+ border:1px solid #FFDDCC;; 
  font: normal 10px 'Lucida Sans','Bitstream Vera Sans',helvetica,arial,sans-serif;
  margin: 1em 0 .66em;
  padding: .5em;
 }
 #mainnav li { border-right: none; padding: .25em 0; font-size:12px; }
 #mainnav :link, #mainnav :visited {
- background: url(../dots.gif) 0 0 no-repeat;
- /* border-right: 1px solid #fff;
+ /* background: url(../dots.gif) 0 0 no-repeat;
+  border-right: 1px solid #fff;
  
  border-left: 1px solid #555; */
  border-bottom: none;
@@ -179,14 +179,14 @@ label.disabled { color: #d7d7d7 }
  
 }
 #mainnav .active :link, #mainnav .active :visited {
- background: #5B1111 url(../topbar_gradient2.png) 0 0 repeat-x;
+ background-color: #ae3413 ;
  border-top: none;
  /* border-right: 1px solid #000; */
- color: #eee;
+ color: #FFF;
  font-weight: bold;
 }
 #mainnav .active :link:hover, #mainnav .active :visited:hover {
- border-right: 1px solid #000;
+ /* border-right: 1px solid #000; */
 }
 
 /* Context-dependent navigation links */
