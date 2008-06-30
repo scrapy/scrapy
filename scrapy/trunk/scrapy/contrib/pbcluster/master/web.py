@@ -29,14 +29,14 @@ class ClusterMasterWeb(ClusterMaster):
         s += "<h2>Home</h2>\n"
 
         s += "<table border='1'>\n"
-        s += "<tr><th>&nbsp;</th><th>Name</th><th>Available</th><th>Running</th><th>Pending</th><th>Load.avg</th></tr>\n"
+        s += "<tr><th>&nbsp;</th><th>Name</th><th>Available</th><th>Running</th><th>Load.avg</th></tr>\n"
         for node in self.nodes.itervalues():
             #chkbox = "<input type='checkbox' name='shutdown' value='%s' />" % domain if node.status in ["up", "idle"] else "&nbsp;"
             nodelink = "<a href='nodes/#%s'>%s</a>" % (node.name, node.name)
             chkbox = "&nbsp;"
             loadavg = "%.2f %.2f %.2f" % node.loadavg
-            s += "<tr><td>%s</td><td>%s</td><td>%s</td><td>%d/%d</td><td>%d</td><td>%s</td></tr>\n" % \
-                 (chkbox, nodelink, node.available, len(node.running), node.maxproc, len(node.pending), loadavg)
+            s += "<tr><td>%s</td><td>%s</td><td>%s</td><td>%d/%d</td><td>%s</td></tr>\n" % \
+                 (chkbox, nodelink, node.available, len(node.running), node.maxproc, loadavg)
         s += "</table>\n"
 
         s += "</body>\n"
@@ -51,8 +51,7 @@ class ClusterMasterWeb(ClusterMaster):
             self.update_nodes()
 
         if "schedule" in args:
-            node = args["node"][0] if "node" in args else None
-            self.schedule(args["schedule"], nodename=node, priority=eval(args["priority"][0]))
+            self.schedule(args["schedule"], priority=eval(args["priority"][0]))
 
         if "stop" in args:
             self.stop(args["stop"])
@@ -90,20 +89,6 @@ class ClusterMasterWeb(ClusterMaster):
                     s += "</form>\n"
                 else:
                     s += "<p>No running domains on %s</p>\n" % node.name
-        
-                # pending domains
-                s += "<h3>Pending domains</h3>\n"
-                if node.pending:
-                    s += "<form method='post' action='.'>\n"
-                    s += "<select name='remove' multiple='multiple' size='10'>\n"
-                    for p in node.pending:
-                        s += "<option value='%s'>%s (P:%s)</option>\n" % (p['domain'], p['domain'],p['priority'])
-                    s += "</select>\n"
-                    s += "<input type='hidden' name='node' value='%s'>\n" % node.name
-                    s += "<p><input type='submit' value='Remove selected pending domains on %s'></p>\n" % node.name
-                    s += "</form>\n"
-                else:
-                    s += "<p>No pending domains on %s</p>\n" % node.name
 
         return str(s)
 
@@ -113,7 +98,7 @@ class ClusterMasterWeb(ClusterMaster):
 
         enabled_domains = set(spiders.asdict(include_disabled=False).keys())
         print "Enabled domains: %s" % len(enabled_domains)
-        inactive_domains = enabled_domains - set(self.running.keys() + self.pending.keys())
+        inactive_domains = enabled_domains - set(self.running.keys() + [p['domain'] for p in self.pending])
 
         s = self.render_header()
 
@@ -126,14 +111,6 @@ class ClusterMasterWeb(ClusterMaster):
             s += "<option>%s</option>\n" % domain
         s += "</select>\n"
         s += "</br>\n"
-        s += "Node (only available nodes shown):<br />\n"
-        s += "<select name='node'>\n"
-        s += "<option value='' selected='selected'>any</option>"
-        for node in self.available_nodes:
-            domcount = "%d/%d/%d" % (len(node.running), node.maxproc, len(node.pending))
-            loadavg = "%.2f %.2f %.2f" % node.loadavg
-            s += "<option value='%s'>%s [D: %s | LA: %s]</option>" % (node.name, node.name, domcount, loadavg)
-        s += "</select><br />\n"
         s += "Priority:<br />\n"
         s += "<select name='priority'>\n"
         for p, pname in priorities.items():
@@ -150,8 +127,20 @@ class ClusterMasterWeb(ClusterMaster):
         s += "<table border='1'>\n"
         s += "<tr><th>Domain</th><th>Status</th><th>Node</th></tr>\n"
         s += self._domains_table(self.running, '<b>running</b>')
-        s += self._domains_table(self.pending, 'pending')
         s += "</table>\n"
+
+        # pending domains
+        s += "<h3>Pending domains</h3>\n"
+        if self.pending:
+            s += "<form method='post' action='.'>\n"
+            s += "<select name='remove' multiple='multiple' size='10'>\n"
+            for p in self.pending:
+                s += "<option value='%s'>%s (P:%s)</option>\n" % (p['domain'], p['domain'],p['priority'])
+            s += "</select>\n"
+            s += "<p><input type='submit' value='Remove selected pending domains'></p>\n"
+            s += "</form>\n"
+        else:
+            s += "<p>No pending domains</p>\n"
 
         return str(s)
 

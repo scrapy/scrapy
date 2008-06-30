@@ -24,45 +24,67 @@ for val, attr in priorities.items():
     setattr(sys.modules[__name__], "PRIORITY_%s" % attr, val )
 
 class Node:
-    def __init__(self, remote, status, name):
+    def __init__(self, remote, status, name, master):
         self.__remote = remote
         self._set_status(status)
         self.name = name
+        self.master = master
 
     def _set_status(self, status):
         if not status:
             self.available = False
         else:
+            print ">----------<"
             self.available = True
             self.running = status['running']
-            self.pending = status['pending']
+            self.closing = status['closing']
             self.maxproc = status['maxproc']
             self.starttime = status['starttime']
             self.timestamp = status['timestamp']
             self.loadavg = status['loadavg']
             self.logdir = status['logdir']
-            self.lastcallresponse = status['callresponse']
+            print "Running: %s" % self.running
+            free_slots = self.maxproc - len(self.running)
+            while free_slots > 0 and self.master.pending:
+                print "Free slots %s" % free_slots
+                pending = self.master.pending.pop(0)
+                self.run(pending)
+                free_slots -= 1
 
-    def _remote_call(self, function, *args):
+    def get_status(self):
         try:
-            deferred = self.__remote.callRemote(function, *args)
+            deferred = self.__remote.callRemote("status")
         except pb.DeadReferenceError:
             self._set_status(None)
             log.msg("Lost connection to node %s." % (self.name), log.ERROR)
         else:
             deferred.addCallbacks(callback=self._set_status, errback=lambda reason: log.msg(reason, log.ERROR))
 
-    def get_status(self):
-        self._remote_call("status")
+    def stop(self, domain):
+        try:
+            deferred = self.__remote.callRemote("stop", domain)
+        except pb.DeadReferenceError:
+            self._set_status(None)
+            log.msg("Lost connection to node %s." % (self.name), log.ERROR)
+        else:
+            deferred.addCallbacks(callback=self._set_status, errback=lambda reason: log.msg(reason, log.ERROR))
 
-    def schedule(self, domains, spider_settings=None, priority=PRIORITY_NORMAL):
-        self._remote_call("schedule", domains, spider_settings, priority)
+    def run(self, pending):
 
-    def stop(self, domains):
-        self._remote_call("stop", domains)
+        def _run_callback(status):
+            if status['callresponse'][0] == 1:
+                #slots are complete. Reschedule in master. This is a security issue because could happen that the slots were completed since last status update by another cluster (thinking at future with full-distributed worker-master clusters)
+                self.master.schedule(pending['domain'], pending['settings'], pending['priority'])
+                log.msg("Domain %s rescheduled: no proc space in node." % pending['domain'], log.WARNING)
+            self._set_status(status)
 
-    def remove(self, domains):
-        self._remote_call("remove", domains)
+        try:
+            deferred = self.__remote.callRemote("run", pending["domain"], pending["settings"])
+        except pb.DeadReferenceError:
+            self._set_status(None)
+            log.msg("Lost connection to node %s." % (self.name), log.ERROR)
+        else:
+            deferred.addCallbacks(callback=_run_callback, errback=lambda reason:log.msg(reason, log.ERROR))
 
 class ClusterMaster(object):
 
@@ -70,7 +92,7 @@ class ClusterMaster(object):
         if not settings.getbool('CLUSTER_MASTER_ENABLED'):
             raise NotConfigured
         self.nodes = {}
-        self.queue = []
+        self.pending = []
         dispatcher.connect(self._engine_started, signal=signals.engine_started)
 
     def load_nodes(self):
@@ -84,7 +106,7 @@ class ClusterMaster(object):
             d.addCallbacks(callback=lambda obj: self.add_node(obj, _name), errback=_errback)
 
         """Loads nodes from the CLUSTER_MASTER_NODES setting"""
-        
+
         for name, url in settings.get('CLUSTER_MASTER_NODES', {}).iteritems():
             if name not in self.nodes:
                 server, port = url.split(":")
@@ -98,14 +120,14 @@ class ClusterMaster(object):
                     log.msg("Could not connect to node %s in %s: %s." % (name, url, reason), log.ERROR)
                 else:
                     _make_callback(factory, name, url)
-                    
+
     def update_nodes(self):
         for node in self.nodes.itervalues():
             node.get_status()
 
     def add_node(self, cworker, name):
         """Add node given its node"""
-        node = Node(cworker, None, name)
+        node = Node(cworker, None, name, self)
         node.get_status()
         self.nodes[name] = node
         log.msg("Added cluster worker %s" % name)
@@ -113,11 +135,16 @@ class ClusterMaster(object):
     def remove_node(self, nodename):
         raise NotImplemented
 
-    def schedule(self, domains, spider_settings=None, nodename=None, priority=PRIORITY_NORMAL):
-        if nodename:
-            self.nodes[nodename].schedule(domains, spider_settings, priority)
-        else:
-            self._dispatch_domains(domains, spider_settings, priority)
+    def schedule(self, domains, spider_settings=None, priority=PRIORITY_NORMAL):
+        i = 0
+        for p in self.pending:
+            if p['priority'] <= priority:
+                i += 1
+            else:
+                break
+        for domain in domains:
+            self.pending.insert(i, {'domain': domain, 'settings': spider_settings, 'priority': priority})
+        self.update_nodes()
 
     def stop(self, domains):
         to_stop = {}
@@ -129,19 +156,21 @@ class ClusterMaster(object):
                 to_stop[node.name].append(domain)
 
         for nodename, domains in to_stop.iteritems():
-            self.nodes[nodename].stop(domains)
+            for domain in domains:
+                self.nodes[nodename].stop(domain)
 
     def remove(self, domains):
-        to_remove = {}
-        for domain in domains:
-            node = self.pending.get(domain, None)
-            if node:
-                if node.name not in to_remove:
-                    to_remove[node.name] = []
-                to_remove[node.name].append(domain)
+        """Remove all scheduled instances of the given domains (if it hasn't
+        started yet). Otherwise use stop()"""
 
-        for nodename, domains in to_remove.iteritems():
-            self.nodes[nodename].remove(domains)
+        for domain in domains:
+            to_remove = []
+            for p in self.pending:
+                if p['domain'] == domain:
+                    to_remove.append(p)
+    
+            for p in to_remove:
+                self.pending.remove(p)
 
     def discard(self, domains):
         """Stop and remove all running and pending instances of the given
@@ -159,61 +188,8 @@ class ClusterMaster(object):
         return d
 
     @property
-    def pending(self):
-        """Return dict of pending domains as domain -> node"""
-        d = {}
-        for node in self.nodes.itervalues():
-            for p in node.pending:
-                d[p['domain']] = node
-        return d
-
-    @property
     def available_nodes(self):
         return (node for node in self.nodes.itervalues() if node.available)
-
-    def _dispatch_domains(self, domains, spider_settings, priority):
-        """Schedule the given domains in the availables nodes as good as
-        possible. The algorithm follows the next rules (in order):
-        
-        1. search for nodes with available capacity(running < maxproc) and (if
-        any) schedules the domains there
-
-        2. if there isn't any node with available capacity it schedules the
-        domain in the node with the smallest number of pending spiders
-        """
-
-        to_schedule = {}  # domains to schedule per node
-        pending_node = [] # list of #pending, node
-
-        for node in self.available_nodes:
-            capacity = node.maxproc - len(node.running)
-            #order nodes in pending_node according to insertion position, calculated from priority comparison, for stage 2.
-            i = 0
-            for p in node.pending:
-                if p['priority'] <= priority:
-                    i += 1
-                else:
-                    break
-            bisect.insort(pending_node, (i, node))
-
-            #stage 1: use available capacity
-            to_schedule[node.name] = []
-            while domains and capacity > 0:
-                to_schedule[node.name].append(domains.pop(0))
-                capacity -= 1
-            if not domains:
-                break
-
-        #stage 2: queue in pendings the remaining domains.
-        # a) pops out minor insertion-point node b) schedules the domain c) reinserts the node in list with insertion-point incremented by one.
-        for domain in domains:
-            insert_point, node = pending_node.pop(0)
-            to_schedule[node.name].append(domain)
-            bisect.insort(pending_node, (insert_point+1, node))
-            
-        for nodename, domains in to_schedule.iteritems():
-            if domains:
-                self.nodes[nodename].schedule(domains, spider_settings, priority)
 
     def _engine_started(self):
         self.load_nodes()
