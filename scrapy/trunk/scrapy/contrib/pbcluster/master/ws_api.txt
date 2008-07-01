@@ -1,0 +1,35 @@
+The webservice API is available at
+
+http://server:port/cluster_master/ws/
+
+Query parameters:
+
+'format': the answer format. By default, format=json. Other formats: pprint, pickle.
+
+'schedule': schedules a comma separated list of domains. Schedule function takes optional parameters:
+
+    'priority': sets the queue priority for the specified domains. You can use a positive integer or the following predefined values:
+
+                    PRIORITY_NORMAL (=20)
+                    PRIORITY_QUICK  (=10)
+                    PRIORITY_NOW    (=0)
+
+                by default, PRIORITY_NORMAL is used.
+
+    'settings': run settings for the specified domains. This is a comma separated list of <setting_name>=<value> pairs.
+
+'remove': removes from pending list a comma separated list of domains.
+
+'stop': stops comma separated list of domains (they have to be running in some node)
+
+Examples:
+
+1) Schedule argos.co.uk, diy.com, littlewoodsdirect.com spiders, with priority=PRIORITY_NOW, and settings UNAVAILABLES_NOTIFY=2 and UNAVAILABLES_DAYS_BACK=3
+
+    http://localhost:8080/cluster_master/ws/?format=pprint&schedule=argos.co.uk,diy.com,littlewoodsdirect.com&priority=PRIORITY_NOW&settings=UNAVAILABLES_NOTIFY=2,UNAVAILABLES_DAYS_BACK=3
+
+2) Get status:
+
+    http://localhost:8080/cluster_master/ws/?format=pprint
+
+3) Remove from pending lists 

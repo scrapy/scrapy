@@ -31,12 +31,12 @@ class Node:
         self.master = master
 
     def _set_status(self, status):
+        self.status_as_dict = status
         if not status:
             self.available = False
         else:
             self.available = True
             self.running = status['running']
-            self.closing = status['closing']
             self.maxproc = status['maxproc']
             self.starttime = status['starttime']
             self.timestamp = status['timestamp']

@@ -4,7 +4,8 @@ from pydispatch import dispatcher
 
 from scrapy.spider import spiders 
 from scrapy.management.web import banner, webconsole_discover_module
-from scrapy.contrib.pbcluster.master.manager import ClusterMaster, priorities
+from scrapy.contrib.pbcluster.master.manager import *
+from scrapy.utils.serialization import serialize
 
 class ClusterMasterWeb(ClusterMaster):
     webconsole_id = 'cluster_master'
@@ -21,6 +22,8 @@ class ClusterMasterWeb(ClusterMaster):
             return self.render_nodes(wc_request)
         elif wc_request.path == '/cluster_master/domains/':
             return self.render_domains(wc_request)
+        elif wc_request.path == '/cluster_master/ws/':
+            return self.webconsole_control(wc_request, ws=True)
         elif wc_request.args:
             changes = self.webconsole_control(wc_request)
 
@@ -44,22 +47,56 @@ class ClusterMasterWeb(ClusterMaster):
 
         return str(s)
 
-    def webconsole_control(self, wc_request):
+    def webconsole_control(self, wc_request, ws=False):
         args = wc_request.args
-
         if "updatenodes" in args:
             self.update_nodes()
+            if ws:
+                return self.ws_status(wc_request)
 
         if "schedule" in args:
-            self.schedule(args["schedule"], priority=eval(args["priority"][0]))
+            if ws:
+                sep = ","
+                domains = args["schedule"][0].split(sep)
+            else:
+                sep = "\r"
+                domains = args["schedule"]
+            priority = eval(args.get("priority", ["PRIORITY_NORMAL"])[0])
+            slist = args.get("settings", [""])[0].split(sep)
+            spider_settings = {}
+            for s in slist:
+                try:
+                    k, v = s.strip().split("=")
+                except ValueError:
+                    pass
+                else:
+                    spider_settings[k] = v
+            self.schedule(domains, spider_settings, priority)
+            if ws:
+                return self.ws_status(wc_request)
 
         if "stop" in args:
-            self.stop(args["stop"])
+            if ws:
+                domains = args["stop"][0].split(",")
+            else:
+                domains=args["stop"]
+            self.stop(domains)
+            if ws:
+                return self.ws_status(wc_request)
 
         if "remove" in args:
-            self.remove(args["remove"])
+            if ws:
+                domains = args["remove"][0].split(",")
+            else:
+                domains=args["remove"]
+            self.remove(domains)
+            if ws:
+                return self.ws_status(wc_request)
 
-        return ""
+        if ws:
+            return self.ws_status(wc_request)
+        else:
+            return ""
 
     def render_nodes(self, wc_request):
         if wc_request.args:
@@ -110,7 +147,7 @@ class ClusterMasterWeb(ClusterMaster):
         for domain in sorted(inactive_domains):
             s += "<option>%s</option>\n" % domain
         s += "</select>\n"
-        s += "</br>\n"
+        s += "<br />\n"
         s += "Priority:<br />\n"
         s += "<select name='priority'>\n"
         for p, pname in priorities.items():
@@ -119,6 +156,12 @@ class ClusterMasterWeb(ClusterMaster):
             else:
                 s += "<option value='%s'>%s</option>" % (p, pname)
         s += "</select>\n"
+        s += "<br />\n"
+        s += "Spider settings:<br />\n"
+        s += "<textarea name='settings' rows='6'>\n"
+        s += "UNAVAILABLES_NOTIFY=2\n"
+        s += "UNAVAILABLES_DAYS_BACK=3\n"
+        s += "</textarea>\n"
         s += "<p><input type='submit' value='Schedule selected domains'></p>\n"
         s += "</form>\n"
 
@@ -161,3 +204,18 @@ class ClusterMasterWeb(ClusterMaster):
 
     def webconsole_discover_module(self):
         return self
+
+    def ws_status(self, wc_request):
+        format = wc_request.args['format'][0] if 'format' in wc_request.args else 'json'
+        wc_request.setHeader('content-type', 'text/plain')
+        status = {}
+        nodes_status = {}
+        running = []
+        for d, n in self.nodes.iteritems():
+            nodes_status[d] = n.status_as_dict
+            running.extend(n.running)
+        status["nodes"] = nodes_status
+        status["pending"] = self.pending
+        status["running"] = running
+        content = serialize(status, format)
+        return content

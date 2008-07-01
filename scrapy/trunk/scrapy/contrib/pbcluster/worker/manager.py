@@ -88,7 +88,6 @@ class ClusterWorker(pb.Root):
             if not os.path.exists(os.path.dirname(logfile)):
                 os.makedirs(os.path.dirname(logfile))
             scrapy_proc = ScrapyProcessProtocol(self, domain, logfile, spider_settings)
-    
             args = [sys.executable, sys.argv[0], 'crawl', domain]
             proc = reactor.spawnProcess(scrapy_proc, sys.executable, args=args, env=scrapy_proc.env)
             self.running[domain] = scrapy_proc
