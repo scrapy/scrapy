@@ -62,6 +62,8 @@ class ClusterMasterWeb(ClusterMaster):
                 sep = "\r"
                 domains = args["schedule"]
             priority = eval(args.get("priority", ["PRIORITY_NORMAL"])[0])
+            
+            #spider settings
             slist = args.get("settings", [""])[0].split(sep)
             spider_settings = {}
             for s in slist:
@@ -71,7 +73,19 @@ class ClusterMasterWeb(ClusterMaster):
                     pass
                 else:
                     spider_settings[k] = v
-            self.schedule(domains, spider_settings, priority)
+            
+            #other environment settings
+            envlist = args.get("env", [""])[0].split(sep)
+            env = {}
+            for e in envlist:
+                try:
+                    k, v = e.strip().split("=")
+                except ValueError:
+                    pass
+                else:
+                    env[k] = v
+                    
+            self.schedule(domains, spider_settings, env, priority)
             if ws:
                 return self.ws_status(wc_request)
 
@@ -157,11 +171,20 @@ class ClusterMasterWeb(ClusterMaster):
                 s += "<option value='%s'>%s</option>" % (p, pname)
         s += "</select>\n"
         s += "<br />\n"
+        
+        #spider settings
         s += "Spider settings:<br />\n"
         s += "<textarea name='settings' rows='6'>\n"
         s += "UNAVAILABLES_NOTIFY=2\n"
         s += "UNAVAILABLES_DAYS_BACK=3\n"
         s += "</textarea>\n"
+        s += "<br />\n"
+        
+        #other environment settings
+        s += "Other environment settings:<br />\n"
+        s += "<textarea name='env' rows='3'>\n"
+        s += "</textarea>\n"
+        
         s += "<p><input type='submit' value='Schedule selected domains'></p>\n"
         s += "</form>\n"
 
@@ -210,12 +233,7 @@ class ClusterMasterWeb(ClusterMaster):
         wc_request.setHeader('content-type', 'text/plain')
         status = {}
         nodes_status = {}
-        running = []
-        for d, n in self.nodes.iteritems():
-            nodes_status[d] = n.status_as_dict
-            running.extend(n.running)
         status["nodes"] = nodes_status
         status["pending"] = self.pending
-        status["running"] = running
         content = serialize(status, format)
         return content

@@ -71,12 +71,12 @@ class Node:
         def _run_callback(status):
             if status['callresponse'][0] == 1:
                 #slots are complete. Reschedule in master. This is a security issue because could happen that the slots were completed since last status update by another cluster (thinking at future with full-distributed worker-master clusters)
-                self.master.schedule(pending['domain'], pending['settings'], pending['priority'])
+                self.master.schedule(pending['domain'], pending['settings'], pending['priority'], pending["env"])
                 log.msg("Domain %s rescheduled: no proc space in node." % pending['domain'], log.WARNING)
             self._set_status(status)
 
         try:
-            deferred = self.__remote.callRemote("run", pending["domain"], pending["settings"])
+            deferred = self.__remote.callRemote("run", pending["domain"], pending["settings"], pending["env"])
         except pb.DeadReferenceError:
             self._set_status(None)
             log.msg("Lost connection to node %s." % (self.name), log.ERROR)
@@ -132,7 +132,7 @@ class ClusterMaster(object):
     def remove_node(self, nodename):
         raise NotImplemented
 
-    def schedule(self, domains, spider_settings=None, priority=PRIORITY_NORMAL):
+    def schedule(self, domains, spider_settings=None, env=None, priority=PRIORITY_NORMAL):
         i = 0
         for p in self.pending:
             if p['priority'] <= priority:
@@ -140,7 +140,7 @@ class ClusterMaster(object):
             else:
                 break
         for domain in domains:
-            self.pending.insert(i, {'domain': domain, 'settings': spider_settings, 'priority': priority})
+            self.pending.insert(i, {'domain': domain, 'settings': spider_settings, 'env': env, 'priority': priority})
         self.update_nodes()
 
     def stop(self, domains):
