@@ -233,6 +233,8 @@ class ClusterMasterWeb(ClusterMaster):
         wc_request.setHeader('content-type', 'text/plain')
         status = {}
         nodes_status = {}
+        for d, n in self.nodes.iteritems():
+            nodes_status[d] = n.status_as_dict
         status["nodes"] = nodes_status
         status["pending"] = self.pending
         content = serialize(status, format)

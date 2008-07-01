@@ -16,7 +16,9 @@ Query parameters:
 
                 by default, PRIORITY_NORMAL is used.
 
-    'settings': run settings for the specified domains. This is a comma separated list of <setting_name>=<value> pairs.
+    'settings': run settings for the specified domains. This is a comma separated list of <setting_name>=<value> pairs. By default it is empty.
+
+    'env': additional environment settings passed to the crawl process. This is a comma separated list of <setting_name>=<value> pairs. By default it is empty.
 
 'remove': removes from pending list a comma separated list of domains.
 
@@ -24,12 +26,18 @@ Query parameters:
 
 Examples:
 
-1) Schedule argos.co.uk, diy.com, littlewoodsdirect.com spiders, with priority=PRIORITY_NOW, and settings UNAVAILABLES_NOTIFY=2 and UNAVAILABLES_DAYS_BACK=3
+1) Schedule argos.co.uk, diy.com, littlewoodsdirect.com spiders, with priority=PRIORITY_NOW, and settings UNAVAILABLES_NOTIFY=2 and UNAVAILABLES_DAYS_BACK=3. Answer with pprint format
 
-    http://localhost:8080/cluster_master/ws/?format=pprint&schedule=argos.co.uk,diy.com,littlewoodsdirect.com&priority=PRIORITY_NOW&settings=UNAVAILABLES_NOTIFY=2,UNAVAILABLES_DAYS_BACK=3
+    http://localhost:8080/cluster_master/ws/?format=pprint&schedule=argos.co.uk,diy.com,littlewoodsdirect.com&priority=PRIORITY_NOW&settings=UNAVAILABLES_NOTIFY=2,UNAVAILABLES_DAYS_BACK=3&env=PYTHONPATH=/opt/scraping/conf/feed
 
-2) Get status:
+2) Get status with pprint format:
 
     http://localhost:8080/cluster_master/ws/?format=pprint
 
-3) Remove from pending lists 
+3) Remove from pending lists domains argos.co.uk and diy.com. Answer with pprint format:
+
+    http://localhost:8080/cluster_master/ws/?remove=argos.co.uk,diy.com
+
+4) Stop running domain littlewoodsdirect.com:
+
+    http://localhost:8080/cluster_master/ws/?stop=littlewoodsdirect.com
