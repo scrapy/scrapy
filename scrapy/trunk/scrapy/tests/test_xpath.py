@@ -26,7 +26,7 @@ class XPathTestCase(unittest.TestCase):
         xl = xpath.x('//input')
         self.assertEqual(2, len(xl))
         for x in xl:
-            assert isinstance(x, XPathSelector)
+            assert isinstance(x, HtmlXPathSelector)
 
         self.assertEqual(xpath.x('//input').extract(),
                          [x.extract() for x in xpath.x('//input')])
@@ -40,6 +40,26 @@ class XPathTestCase(unittest.TestCase):
                          [u'xpathrules'])
         self.assertEqual([x.extract() for x in xpath.x("concat(//input[@name='a']/@value, //input[@name='b']/@value)")],
                          [u'12'])
+
+    def test_selector_same_type(self):
+        """Test XPathSelector returning the same type in x() method"""
+        text = '<p>test<p>'
+        assert isinstance(XmlXPathSelector(text=text).x("//p")[0],
+                          XmlXPathSelector)
+        assert isinstance(HtmlXPathSelector(text=text).x("//p")[0], 
+                          HtmlXPathSelector)
+
+    def test_selector_xml_html(self):
+        """Test that XML and HTML XPathSelector's behave differently"""
+
+        # some text which is parsed differently by XML and HTML flavors
+        text = '<div><img src="a.jpg"><p>Hello</div>'
+
+        self.assertEqual(XmlXPathSelector(text=text).x("//div").extract(),
+                         [u'<div><img src="a.jpg"><p>Hello</p></img></div>'])
+
+        self.assertEqual(HtmlXPathSelector(text=text).x("//div").extract(),
+                         [u'<div><img src="a.jpg"><p>Hello</p></div>'])
 
     def test_selector_nested(self):
         """Nested selector tests"""

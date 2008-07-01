@@ -39,10 +39,11 @@ class XPathSelector(object):
         if hasattr(self.xmlNode, 'xpathEval'):
             self.doc.xpathContext.setContextNode(self.xmlNode)
             xpath_result = self.doc.xpathContext.xpathEval(xpath)
+            cls = type(self)
             if hasattr(xpath_result, '__iter__'):
-                return XPathSelectorList([XPathSelector(node=node, parent=self, expr=xpath) for node in xpath_result])
+                return XPathSelectorList([cls(node=node, parent=self, expr=xpath) for node in xpath_result])
             else:
-                return XPathSelectorList([XPathSelector(node=xpath_result, parent=self, expr=xpath)])
+                return XPathSelectorList([cls(node=xpath_result, parent=self, expr=xpath)])
         else:
             return XPathSelectorList([])
 
@@ -77,7 +78,7 @@ class XPathSelector(object):
         self.doc.xpathContext.xpathRegisterNs(prefix, uri)
 
     def __str__(self):
-        return "<XPathSelector (%s) xpath=%s>" % (getattr(self.xmlNode, 'name'), self.expr)
+        return "<%s (%s) xpath=%s>" % (type(self).__name__, getattr(self.xmlNode, 'name'), self.expr)
 
     __repr__ = __str__
 
@@ -100,12 +101,15 @@ class XPathSelectorList(list):
         XPathSelector of the list"""
         return [x.extract() if isinstance(x, XPathSelector) else x for x in self]
 
+
 class XmlXPathSelector(XPathSelector):
     """XPathSelector for XML content"""
-    def __init__(self, response=None, text=None):
-        XPathSelector.__init__(self, response=response, text=text, constructor=xmlDoc_from_xml)
+    def __init__(self, *args, **kwargs):
+        kwargs['constructor'] = xmlDoc_from_xml
+        XPathSelector.__init__(self, *args, **kwargs)
 
 class HtmlXPathSelector(XPathSelector):
     """XPathSelector for HTML content"""
-    def __init__(self, response=None, text=None):
-        XPathSelector.__init__(self, response=response, text=text, constructor=xmlDoc_from_html)
+    def __init__(self, *args, **kwargs):
+        kwargs['constructor'] = xmlDoc_from_html
+        XPathSelector.__init__(self, *args, **kwargs)
