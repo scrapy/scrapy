@@ -2,6 +2,7 @@ import urlparse
 import urllib
 import bisect
 import sys
+import pickle, socket
 
 from pydispatch import dispatcher
 
@@ -86,12 +87,17 @@ class Node:
 class ClusterMaster(object):
 
     def __init__(self):
+                    
         if not settings.getbool('CLUSTER_MASTER_ENABLED'):
             raise NotConfigured
+        try:
+            self.pending = pickle.load( open("pending_cache_%s" % socket.gethostname(), "r") )
+        except IOError:
+            self.pending = []
         self.nodes = {}
-        self.pending = []
         dispatcher.connect(self._engine_started, signal=signals.engine_started)
-
+        dispatcher.connect(self._engine_stopped, signal=signals.engine_stopped)
+        
     def load_nodes(self):
 
         def _make_callback(_factory, _name, _url):
@@ -191,3 +197,5 @@ class ClusterMaster(object):
     def _engine_started(self):
         self.load_nodes()
         scrapyengine.addtask(self.update_nodes, settings.getint('CLUSTER_MASTER_POLL_INTERVAL'))
+    def _engine_stopped(self):
+        pickle.dump( self.pending, open("pending_cache_%s" % socket.gethostname(), "w") )
