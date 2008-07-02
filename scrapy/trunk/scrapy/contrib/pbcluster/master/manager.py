@@ -24,6 +24,13 @@ priorities = { 20:'NORMAL',
 for val, attr in priorities.items():
     setattr(sys.modules[__name__], "PRIORITY_%s" % attr, val )
 
+def my_import(name):
+    mod = __import__(name)
+    components = name.split('.')
+    for comp in components[1:]:
+        mod = getattr(mod, comp)
+    return mod
+
 class Node:
     def __init__(self, remote, status, name, master):
         self.__remote = remote
@@ -72,12 +79,12 @@ class Node:
         def _run_callback(status):
             if status['callresponse'][0] == 1:
                 #slots are complete. Reschedule in master. This is a security issue because could happen that the slots were completed since last status update by another cluster (thinking at future with full-distributed worker-master clusters)
-                self.master.schedule(pending['domain'], pending['settings'], pending['priority'], pending["env"])
+                self.master.schedule(pending['domain'], pending['settings'], pending['priority'])
                 log.msg("Domain %s rescheduled: no proc space in node." % pending['domain'], log.WARNING)
             self._set_status(status)
 
         try:
-            deferred = self.__remote.callRemote("run", pending["domain"], pending["settings"], pending["env"])
+            deferred = self.__remote.callRemote("run", pending["domain"], pending["settings"])
         except pb.DeadReferenceError:
             self._set_status(None)
             log.msg("Lost connection to node %s." % (self.name), log.ERROR)
@@ -87,13 +94,22 @@ class Node:
 class ClusterMaster(object):
 
     def __init__(self):
-                    
-        if not settings.getbool('CLUSTER_MASTER_ENABLED'):
+
+        if not (settings.getbool('CLUSTER_MASTER_ENABLED')):
             raise NotConfigured
+
+        #import groups settings
+        if settings.getbool('GROUPSETTINGS_ENABLED'):
+            self.get_spider_groupsettings = my_import(settings["GROUPSETTINGS_MODULE"]).get_spider_groupsettings
+        else:
+            self.get_spider_groupsettings = lambda x: {}
+
+        #load pending domains
         try:
             self.pending = pickle.load( open("pending_cache_%s" % socket.gethostname(), "r") )
         except IOError:
             self.pending = []
+
         self.nodes = {}
         dispatcher.connect(self._engine_started, signal=signals.engine_started)
         dispatcher.connect(self._engine_stopped, signal=signals.engine_stopped)
@@ -138,7 +154,7 @@ class ClusterMaster(object):
     def remove_node(self, nodename):
         raise NotImplemented
 
-    def schedule(self, domains, spider_settings=None, env=None, priority=PRIORITY_NORMAL):
+    def schedule(self, domains, spider_settings=None, priority=PRIORITY_NORMAL):
         i = 0
         for p in self.pending:
             if p['priority'] <= priority:
@@ -146,7 +162,9 @@ class ClusterMaster(object):
             else:
                 break
         for domain in domains:
-            self.pending.insert(i, {'domain': domain, 'settings': spider_settings, 'env': env, 'priority': priority})
+            final_spider_settings = self.get_spider_groupsettings(domain)
+            final_spider_settings.update(spider_settings or {})
+            self.pending.insert(i, {'domain': domain, 'settings': final_spider_settings, 'priority': priority})
         self.update_nodes()
 
     def stop(self, domains):

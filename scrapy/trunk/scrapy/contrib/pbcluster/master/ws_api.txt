@@ -18,8 +18,6 @@ Query parameters:
 
     'settings': run settings for the specified domains. This is a comma separated list of <setting_name>=<value> pairs. By default it is empty.
 
-    'env': additional environment settings passed to the crawl process. This is a comma separated list of <setting_name>=<value> pairs. By default it is empty.
-
 'remove': removes from pending list a comma separated list of domains.
 
 'stop': stops comma separated list of domains (they have to be running in some node)
@@ -28,7 +26,7 @@ Examples:
 
 1) Schedule argos.co.uk, diy.com, littlewoodsdirect.com spiders, with priority=PRIORITY_NOW, and settings UNAVAILABLES_NOTIFY=2 and UNAVAILABLES_DAYS_BACK=3. Answer with pprint format
 
-    http://localhost:8080/cluster_master/ws/?format=pprint&schedule=argos.co.uk,diy.com,littlewoodsdirect.com&priority=PRIORITY_NOW&settings=UNAVAILABLES_NOTIFY=2,UNAVAILABLES_DAYS_BACK=3&env=PYTHONPATH=/opt/scraping/conf/feed
+    http://localhost:8080/cluster_master/ws/?format=pprint&schedule=argos.co.uk,diy.com,littlewoodsdirect.com&priority=PRIORITY_NOW&settings=UNAVAILABLES_NOTIFY=2,UNAVAILABLES_DAYS_BACK=3
 
 2) Get status with pprint format:
 

@@ -73,19 +73,8 @@ class ClusterMasterWeb(ClusterMaster):
                     pass
                 else:
                     spider_settings[k] = v
-            
-            #other environment settings
-            envlist = args.get("env", [""])[0].split(sep)
-            env = {}
-            for e in envlist:
-                try:
-                    k, v = e.strip().split("=")
-                except ValueError:
-                    pass
-                else:
-                    env[k] = v
-                    
-            self.schedule(domains, spider_settings, env, priority)
+
+            self.schedule(domains, spider_settings, priority)
             if ws:
                 return self.ws_status(wc_request)
 
@@ -173,17 +162,11 @@ class ClusterMasterWeb(ClusterMaster):
         s += "<br />\n"
         
         #spider settings
-        s += "Spider settings:<br />\n"
-        s += "<textarea name='settings' rows='6'>\n"
+        s += "Overrided spider settings:<br />\n"
+        s += "<textarea name='settings' rows='4'>\n"
         s += "UNAVAILABLES_NOTIFY=2\n"
-        s += "UNAVAILABLES_DAYS_BACK=3\n"
         s += "</textarea>\n"
         s += "<br />\n"
-        
-        #other environment settings
-        s += "Other environment settings:<br />\n"
-        s += "<textarea name='env' rows='3'>\n"
-        s += "</textarea>\n"
         
         s += "<p><input type='submit' value='Schedule selected domains'></p>\n"
         s += "</form>\n"
