@@ -25,7 +25,7 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.scrapy_settings.update({'LOGFILE': self.logfile, 'CLUSTER_WORKER_ENABLED': '0', 'WEBCONSOLE_ENABLED': '0'})
         for k in self.scrapy_settings:
             self.env["SCRAPY_%s" % k] = str(self.scrapy_settings[k])
-        self.env["PYTHONPATH"]=":".join(sys.path)
+        self.env["PYTHONPATH"] = ":".join(sys.path)
 
     def __str__(self):
         return "<ScrapyProcess domain=%s, pid=%s, status=%s>" % (self.domain, self.pid, self.status)
