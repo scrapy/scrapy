@@ -1,6 +1,7 @@
 """
 Base class for Scrapy commands
 """
+import os
 from scrapy.conf import settings
 
 class ScrapyCommand(object):
@@ -41,7 +42,8 @@ class ScrapyCommand(object):
         parser.add_option("--spider", dest="spider", default=None, help="default spider (domain) to use if no spider is found")
         parser.add_option("--nolog", dest="nolog", action="store_true", help="disable all log messages")
         parser.add_option("--profile", dest="profile", default=None, help="write profiling stats in FILE, to analyze later with: python -m pstats FILE", metavar="FILE")
-
+        parser.add_option("--pidfile", dest="pidfile", help="Write process pid to file FILE", metavar="FILE")
+        
     def process_options(self, args, opts):
         if opts.logfile:
             settings.overrides['LOG_ENABLED'] = True
@@ -57,6 +59,10 @@ class ScrapyCommand(object):
         if opts.spider:
             from scrapy.spider import spiders
             spiders.default_domain = opts.spider
+
+        if opts.pidfile:
+            pid = os.getpid()
+            open(opts.pidfile, "w").write(str(pid))
 
     def run(self, args, opts):
         """
