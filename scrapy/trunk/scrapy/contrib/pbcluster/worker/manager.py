@@ -25,6 +25,7 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.scrapy_settings.update({'LOGFILE': self.logfile, 'CLUSTER_WORKER_ENABLED': '0', 'WEBCONSOLE_ENABLED': '0'})
         for k in self.scrapy_settings:
             self.env["SCRAPY_%s" % k] = str(self.scrapy_settings[k])
+        self.env["PYTHONPATH"]=":".join(sys.path)
 
     def __str__(self):
         return "<ScrapyProcess domain=%s, pid=%s, status=%s>" % (self.domain, self.pid, self.status)
@@ -83,6 +84,12 @@ class ClusterWorker(pb.Root):
     def remote_run(self, domain, spider_settings=None):
         """Spawn process to run the given domain."""
         if len(self.running) < self.maxproc:
+            logfile = os.path.join(self.logdir, domain, time.strftime("%FT%T.log"))
+            if not os.path.exists(os.path.dirname(logfile)):
+                os.makedirs(os.path.dirname(logfile))
+            scrapy_proc = ScrapyProcessProtocol(self, domain, logfile, spider_settings)
+            args = [sys.executable, sys.argv[0], 'crawl', domain]
+            self.running[domain] = scrapy_proc
             try:
                 import pysvn
                 c=pysvn.Client()
@@ -90,12 +97,6 @@ class ClusterWorker(pb.Root):
                 log.msg("Updated to revision %s." %r[0].number )
             except:
                 pass
-            logfile = os.path.join(self.logdir, domain, time.strftime("%FT%T.log"))
-            if not os.path.exists(os.path.dirname(logfile)):
-                os.makedirs(os.path.dirname(logfile))
-            scrapy_proc = ScrapyProcessProtocol(self, domain, logfile, spider_settings)
-            args = [sys.executable, sys.argv[0], 'crawl', domain]
             proc = reactor.spawnProcess(scrapy_proc, sys.executable, args=args, env=scrapy_proc.env)
-            self.running[domain] = scrapy_proc
             return self.status(0, "Started process %s." % scrapy_proc)
         return self.status(1, "No free slot to run another process.")
