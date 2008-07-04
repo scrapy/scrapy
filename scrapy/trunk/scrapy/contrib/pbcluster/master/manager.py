@@ -39,6 +39,7 @@ class Node:
         self.master = master
 
     def _set_status(self, status):
+        log.msg("Response from worker: %s" % status)
         self.status_as_dict = status
         if not status:
             self.available = False
@@ -103,7 +104,6 @@ class ClusterMaster(object):
             self.get_spider_groupsettings = my_import(settings["GROUPSETTINGS_MODULE"]).get_spider_groupsettings
         else:
             self.get_spider_groupsettings = lambda x: {}
-
         #load pending domains
         try:
             self.pending = pickle.load( open("pending_cache_%s" % socket.gethostname(), "r") )
