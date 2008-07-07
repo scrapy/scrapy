@@ -57,7 +57,8 @@ class ExecutionManager(object):
         """Start the scrapy server, without scheduling any domains"""
         self.configure(**opts)
         scrapyengine.keep_alive = True
-        scrapyengine.start()
+        scrapyengine.start()# blocking call
+        self.stop()
 
     def stop(self):
         """Stop the scrapy server, shutting down the execution engine"""

@@ -121,7 +121,6 @@ class ExecutionEngine(object):
                 reactor.listenTCP(*args, **kwargs)
             self.running = True
             reactor.run() # blocking call
-            self.stop()
 
     def stop(self):
         """Stop the execution engine"""
