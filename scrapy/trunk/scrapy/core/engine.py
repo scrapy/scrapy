@@ -121,6 +121,7 @@ class ExecutionEngine(object):
                 reactor.listenTCP(*args, **kwargs)
             self.running = True
             reactor.run() # blocking call
+            self.stop()
 
     def stop(self):
         """Stop the execution engine"""
@@ -134,7 +135,8 @@ class ExecutionEngine(object):
             self.tasks = []
             for p in [p for p in self.ports if not isinstance(p, tuple)]:
                 p.stopListening()
-            reactor.stop()
+            if reactor.running:
+                reactor.stop()
             signals.send_catch_log(signal=signals.engine_stopped, sender=self.__class__)
 
     def pause(self):
