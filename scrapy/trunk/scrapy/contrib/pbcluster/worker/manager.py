@@ -25,7 +25,7 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.scrapy_settings.update({'LOGFILE': self.logfile, 'CLUSTER_WORKER_ENABLED': '0', 'WEBCONSOLE_ENABLED': '0'})
         for k in self.scrapy_settings:
             self.env["SCRAPY_%s" % k] = str(self.scrapy_settings[k])
-        self.env["PYTHONPATH"] = ":".join(sys.path)
+        self.env["PYTHONPATH"] = ":".join(sys.path)#this is need so this crawl process knows where to locate local_scrapy_settings.
 
     def __str__(self):
         return "<ScrapyProcess domain=%s, pid=%s, status=%s>" % (self.domain, self.pid, self.status)
@@ -93,7 +93,7 @@ class ClusterWorker(pb.Root):
             try:
                 import pysvn
                 c=pysvn.Client()
-                r = c.update(settings["SVN_WORKDIR"] or ".")
+                r = c.update(settings["CLUSTER_WORKER_SVNWORKDIR"] or ".")
                 log.msg("Updated to revision %s." %r[0].number )
             except:
                 pass

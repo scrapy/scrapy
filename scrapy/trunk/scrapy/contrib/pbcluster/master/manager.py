@@ -106,7 +106,7 @@ class ClusterMaster(object):
             self.get_spider_groupsettings = lambda x: {}
         #load pending domains
         try:
-            self.pending = pickle.load( open("pending_cache_%s" % socket.gethostname(), "r") )
+            self.pending = pickle.load( open(settings["CLUSTER_MASTER_CACHEFILE"], "r") )
         except IOError:
             self.pending = []
 
@@ -216,4 +216,4 @@ class ClusterMaster(object):
         self.load_nodes()
         scrapyengine.addtask(self.update_nodes, settings.getint('CLUSTER_MASTER_POLL_INTERVAL'))
     def _engine_stopped(self):
-        pickle.dump( self.pending, open("pending_cache_%s" % socket.gethostname(), "w") )
+        pickle.dump( self.pending, open(settings["CLUSTER_MASTER_CACHEFILE"], "w") )
