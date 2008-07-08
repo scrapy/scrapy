@@ -39,7 +39,6 @@ class Node:
         self.master = master
 
     def _set_status(self, status):
-        log.msg("Response from worker: %s" % status)
         self.status_as_dict = status
         if not status:
             self.available = False
