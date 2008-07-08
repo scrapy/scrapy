@@ -80,7 +80,7 @@ class Node:
         def _run_callback(status):
             if status['callresponse'][0] == 1:
                 #slots are complete. Reschedule in master. This is a security issue because could happen that the slots were completed since last status update by another cluster (thinking at future with full-distributed worker-master clusters)
-                self.master.schedule(pending['domain'], pending['settings'], pending['priority'])
+                self.master.schedule([pending['domain']], pending['settings'], PRIORITY_NOW)
                 log.msg("Domain %s rescheduled: no proc space in node." % pending['domain'], log.WARNING)
             self._set_status(status)
 
