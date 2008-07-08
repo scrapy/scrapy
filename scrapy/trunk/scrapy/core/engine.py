@@ -344,7 +344,8 @@ class ExecutionEngine(object):
             log.msg("Requested %s" % request.traceinfo(), level=log.TRACE, domain=domain)
             if isinstance(response, Response):
                 response.request = request # tie request to obtained response
-                log.msg("Crawled <%s> from <%s>" % (response.url, response.parent), level=log.DEBUG, domain=domain)
+                cached = 'cached' if response.cached else 'live'
+                log.msg("Crawled %s <%s> from <%s>" % (cached, response.url, response.parent), level=log.DEBUG, domain=domain)
                 return response
             elif isinstance(response, Request):
                 redirected = response # proper alias
