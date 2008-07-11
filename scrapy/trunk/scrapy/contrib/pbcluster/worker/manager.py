@@ -47,7 +47,7 @@ class ClusterWorker(pb.Root):
             raise NotConfigured
 
         self.maxproc = settings.getint('CLUSTER_WORKER_MAXPROC')
-        self.logdir = settings['CLUSTER_WORKER_LOGDIR']
+        self.logdir = settings['CLUSTER_LOGDIR']
         self.running = {}
         self.starttime = time.time()
         port = settings.getint('CLUSTER_WORKER_PORT')
