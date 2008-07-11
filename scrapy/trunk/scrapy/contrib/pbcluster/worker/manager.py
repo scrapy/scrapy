@@ -52,6 +52,7 @@ class ClusterWorker(pb.Root):
         self.starttime = time.time()
         port = settings.getint('CLUSTER_WORKER_PORT')
         scrapyengine.listenTCP(port, pb.PBServerFactory(self))
+        log.msg("PYTHON_PATH: %s" % repr(sys.path))
 
     def remote_stop(self, domain):
         """Stop running domain."""
