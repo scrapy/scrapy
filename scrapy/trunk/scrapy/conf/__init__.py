@@ -1,4 +1,4 @@
-import os
+import os, pickle
 
 SETTINGS_MODULE = os.environ.get('SCRAPYSETTINGS_MODULE', 'scrapy_settings')
 
@@ -15,7 +15,8 @@ class Settings(object):
     def __init__(self):
         self.overrides = {}
         self.settings = self._import(SETTINGS_MODULE)
-        self.defaults = {}
+        pickled_defaults = os.environ.get("SCRAPY_PICKLED_DEFAULT_SETTINGS")
+        self.defaults = pickle.loads(pickled_defaults) if pickled_defaults else {}
         self.core = self._import('scrapy.conf.core_settings')
 
     def _import(self, modulepath):
