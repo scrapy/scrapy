@@ -1,7 +1,4 @@
-import sys
-import os
-import time
-import datetime
+import sys, os, time, datetime, pickle
 
 from twisted.internet import protocol, reactor
 from twisted.spread import pb
@@ -23,8 +20,8 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         #We conserve original setting format for info purposes (avoid lots of unnecesary "SCRAPY_")
         self.scrapy_settings = spider_settings or {}
         self.scrapy_settings.update({'LOGFILE': self.logfile, 'CLUSTER_WORKER_ENABLED': '0', 'WEBCONSOLE_ENABLED': '0'})
-        for k in self.scrapy_settings:
-            self.env["SCRAPY_%s" % k] = str(self.scrapy_settings[k])
+        pickled_settings = pickle.dumps(self.scrapy_settings)
+        self.env["SCRAPY_PICKLED_SETTINGS"] = pickled_settings
         self.env["PYTHONPATH"] = ":".join(sys.path)#this is need so this crawl process knows where to locate local_scrapy_settings.
 
     def __str__(self):
