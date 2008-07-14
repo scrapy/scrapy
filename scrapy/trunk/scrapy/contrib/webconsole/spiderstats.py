@@ -28,7 +28,7 @@ class SpiderStats(object):
     
     def __init__(self):
         if not settings['SCRAPING_DB']:
-            raise NotConfigured("Requires SCRAPING_DB setting")
+            raise NotConfigured("SpiderStats: Requires SCRAPING_DB setting")
 
         from scrapy.store.db import DomainDataHistory
         self.ddh = DomainDataHistory(settings['SCRAPING_DB'], 'domain_data_history')
