@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from scrapy.utils.xml import xpathselector_iternodes
@@ -25,6 +26,14 @@ class UtilsXmlTestCase(unittest.TestCase):
 
         self.assertEqual(attrs, 
                          [(['001'], ['Name 1'], ['Type 1']), (['002'], ['Name 2'], ['Type 2'])])
+
+    def test_iterator_utf16(self):
+        samplefile = os.path.join(os.path.abspath(os.path.dirname(__file__)), "sample_data", "feeds", "feed-sample3.xml")
+        body = open(samplefile).read()
+        response = Response(domain="example.com", url="http://example.com", headers={"Content-type": "text/xml; encoding=UTF-16"}, body=body)
+        self.assertEqual([x.x("@id").extract() for x in xpathselector_iternodes(response, 'product')],
+                         [['34017532'], ['34017557'], ['34017563'], ['34018057'], ['34018313'], ['34018599']])
+
 
 if __name__ == "__main__":
     unittest.main()   

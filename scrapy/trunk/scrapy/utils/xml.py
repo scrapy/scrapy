@@ -16,15 +16,11 @@ def xpathselector_iternodes(obj, nodename):
     assert isinstance(obj, (Response, basestring)), "obj must be Response or basestring, not %s" % type(obj).__name__
 
     if isinstance(obj, Response):
-        text = obj.body.to_string()
-        enc = obj.body.get_real_encoding()
-    else:
-        text = obj
-        enc = 'utf-8'
-
+        text = obj.body.to_unicode()
+    elif isinstance(obj, str):
+        text = obj.decode('utf-8')
 
     r = re.compile(r"<%s[\s>].*?</%s>" % (nodename, nodename), re.DOTALL)
-
     for match in r.finditer(text):
-        nodetext = match.group().decode(enc)
+        nodetext = match.group()
         yield XmlXPathSelector(text=nodetext).x('/' + nodename)[0]
