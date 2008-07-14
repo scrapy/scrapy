@@ -26,9 +26,11 @@ class ExtensionManager(object):
             try:
                 cls = load_class(extension_path)
                 self.enabled[cls.__name__] = cls()
-            except NotConfigured:
+            except NotConfigured, e:
                 self.disabled[cls.__name__] = extension_path
-                pass
+                if e.args:
+                    from scrapy.core import log
+                    log.msg(e)
         self.loaded = True
 
     def reload(self):
