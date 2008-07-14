@@ -13,7 +13,7 @@ class Settings(object):
     core = None
 
     def __init__(self):
-        pickled_settings = os.environ.get("SCRAPY_PICKLED_SETTINGS")
+        pickled_settings = os.environ.get("SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE")
         self.overrides = pickle.loads(pickled_settings) if pickled_settings else {}
         self.settings = self._import(SETTINGS_MODULE)
         self.defaults = {}

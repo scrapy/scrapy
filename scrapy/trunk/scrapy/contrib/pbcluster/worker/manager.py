@@ -21,7 +21,7 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.scrapy_settings = spider_settings or {}
         self.scrapy_settings.update({'LOGFILE': self.logfile, 'CLUSTER_WORKER_ENABLED': '0', 'WEBCONSOLE_ENABLED': '0'})
         pickled_settings = pickle.dumps(self.scrapy_settings)
-        self.env["SCRAPY_PICKLED_SETTINGS"] = pickled_settings
+        self.env["SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE"] = pickled_settings
         self.env["PYTHONPATH"] = ":".join(sys.path)#this is need so this crawl process knows where to locate local_scrapy_settings.
 
     def __str__(self):
