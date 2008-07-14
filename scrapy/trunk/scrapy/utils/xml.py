@@ -19,6 +19,8 @@ def xpathselector_iternodes(obj, nodename):
         text = obj.body.to_unicode()
     elif isinstance(obj, str):
         text = obj.decode('utf-8')
+    else:
+        text = obj
 
     r = re.compile(r"<%s[\s>].*?</%s>" % (nodename, nodename), re.DOTALL)
     for match in r.finditer(text):

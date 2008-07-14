@@ -34,6 +34,11 @@ class UtilsXmlTestCase(unittest.TestCase):
         self.assertEqual([x.x("@id").extract() for x in xpathselector_iternodes(response, 'product')],
                          [['34017532'], ['34017557'], ['34017563'], ['34018057'], ['34018313'], ['34018599']])
 
+    def test_iterator_text(self):
+        body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""
+        
+        self.assertEqual([x.x("text()").extract() for x in xpathselector_iternodes(body, 'product')],
+                         [[u'one'], [u'two']])
 
 if __name__ == "__main__":
     unittest.main()   
