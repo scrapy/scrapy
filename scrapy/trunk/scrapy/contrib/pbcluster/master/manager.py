@@ -51,10 +51,19 @@ class Node:
             self.loadavg = status['loadavg']
             self.logdir = status['logdir']
             free_slots = self.maxproc - len(self.running)
+
+            to_reschedule = []
             while free_slots > 0 and self.master.pending:
                 pending = self.master.pending.pop(0)
-                self.run(pending)
-                free_slots -= 1
+                #if domain already running in some node, reschedule with same priority (so will be moved to run later)
+                if pending['domain'] in self.master.running or pending['domain'] in self.master.loading:
+                    to_reschedule.append(pending)
+                else:
+                    self.run(pending)
+                    self.master.loading.append(pending['domain'])
+                    free_slots -= 1
+            for pending in to_reschedule:
+                self.master.schedule([pending['domain']], pending['settings'], pending['priority'])
 
     def get_status(self):
         try:
@@ -77,11 +86,18 @@ class Node:
     def run(self, pending):
 
         def _run_callback(status):
+            self.master.loading.remove(pending['domain'])
             if status['callresponse'][0] == 1:
                 #slots are complete. Reschedule in master with priority reduced by one. This is a security issue because offen happens that the slots were completed and not yet notified because of the asynchronous response from worker.
                 self.master.schedule([pending['domain']], pending['settings'], pending['priority'] - 1)
                 log.msg("Domain %s rescheduled: no proc space in node." % pending['domain'], log.WARNING)
-            self._set_status(status)
+            elif status['callresponse'][0] == 2:
+                #domain already running in node. Reschedule with same priority. Dont know if this could really happen,
+                #because the first check in self.master.loading should avoid to reach this point.
+                self.master.schedule([pending['domain']], pending['settings'], pending['priority'])
+                log.msg("Domain %s rescheduled: already running in node." % pending['domain'], log.WARNING)
+            if not self.master.loading:
+                self._set_status(status)
 
         try:
             deferred = self.__remote.callRemote("run", pending["domain"], pending["settings"])
@@ -108,7 +124,7 @@ class ClusterMaster(pb.Root):
             self.pending = pickle.load( open(settings["CLUSTER_MASTER_CACHEFILE"], "r") )
         except IOError:
             self.pending = []
-
+        self.loading = []
         self.nodes = {}
         
         self.global_settings = {}
@@ -151,9 +167,6 @@ class ClusterMaster(pb.Root):
             else:
                 _make_callback(factory, name, url)
 
-    def remote_connect(self, name, url):
-        self.load_node(name, url)
-
     def update_nodes(self):
         for node in self.nodes.itervalues():
             node.get_status()
@@ -176,10 +189,15 @@ class ClusterMaster(pb.Root):
             else:
                 break
         for domain in domains:
-            final_spider_settings = self.get_spider_groupsettings(domain)
-            final_spider_settings.update(self.global_settings)
-            final_spider_settings.update(spider_settings or {})
-            self.pending.insert(i, {'domain': domain, 'settings': final_spider_settings, 'priority': priority})
+            pd = self.find_ifpending(domain)
+            if pd: #domain already pending, so just change priority if new is higher
+                if priority < pd['priority']:
+                    pd['priority'] = priority
+            else:
+                final_spider_settings = self.get_spider_groupsettings(domain)
+                final_spider_settings.update(self.global_settings)
+                final_spider_settings.update(spider_settings or {})
+                self.pending.insert(i, {'domain': domain, 'settings': final_spider_settings, 'priority': priority})
         self.update_nodes()
 
     def stop(self, domains):
@@ -227,8 +245,14 @@ class ClusterMaster(pb.Root):
     def available_nodes(self):
         return (node for node in self.nodes.itervalues() if node.available)
 
+    def find_ifpending(self, domain):
+        for p in self.pending:
+            if domain == p['domain']:
+                return p
+
     def _engine_started(self):
         self.load_nodes()
         scrapyengine.addtask(self.update_nodes, settings.getint('CLUSTER_MASTER_POLL_INTERVAL'))
     def _engine_stopped(self):
         pickle.dump( self.pending, open(settings["CLUSTER_MASTER_CACHEFILE"], "w") )
+        log.msg("Pending saved in %s" % settings["CLUSTER_MASTER_CACHEFILE"])

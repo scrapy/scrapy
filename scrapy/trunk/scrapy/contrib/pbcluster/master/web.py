@@ -220,5 +220,6 @@ class ClusterMasterWeb(ClusterMaster):
             nodes_status[d] = n.status_as_dict
         status["nodes"] = nodes_status
         status["pending"] = self.pending
+        status["loading"] = self.loading
         content = serialize(status, format)
         return content
