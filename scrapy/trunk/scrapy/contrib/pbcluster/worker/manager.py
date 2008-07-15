@@ -83,15 +83,15 @@ class ClusterWorker(pb.Root):
         """Spawn process to run the given domain."""
         if len(self.running) < self.maxproc:
             if not domain in self.running:
-                self.running[domain] = scrapy_proc
                 logfile = os.path.join(self.logdir, domain, time.strftime("%FT%T.log"))
                 if not os.path.exists(os.path.dirname(logfile)):
                     os.makedirs(os.path.dirname(logfile))
                 scrapy_proc = ScrapyProcessProtocol(self, domain, logfile, spider_settings)
                 args = [sys.executable, sys.argv[0], 'crawl', domain]
+                self.running[domain] = scrapy_proc
                 try:
                     import pysvn
-                    c=pysvn.Client()
+                    c = pysvn.Client()
                     r = c.update(settings["CLUSTER_WORKER_SVNWORKDIR"] or ".")
                     log.msg("Updated to revision %s." %r[0].number )
                 except:
