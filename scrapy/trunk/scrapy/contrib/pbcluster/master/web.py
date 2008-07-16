@@ -95,7 +95,15 @@ class ClusterMasterWeb(ClusterMaster):
             self.remove(domains)
             if ws:
                 return self.ws_status(wc_request)
-
+        if "disable_node" in args:
+            self.disable_node(args["disable_node"][0])
+            if ws:
+                return self.ws_status(wc_request)
+        if "enable_node" in args:
+            self.enable_node(args["enable_node"][0])
+            if ws:
+                return self.ws_status(wc_request)
+            
         if ws:
             return self.ws_status(wc_request)
         else:

@@ -22,6 +22,10 @@ Query parameters:
 
 'stop': stops comma separated list of domains (they have to be running in some node)
 
+'disable_node': disables a node so no more domains will be loaded in it until enabled again (but it will finish to run the running domains)
+
+'enable_node': revert the state setted by 'disable_node'
+
 Examples:
 
 1) Schedule argos.co.uk, diy.com, littlewoodsdirect.com spiders, with priority=PRIORITY_NOW, and settings UNAVAILABLES_NOTIFY=2 and UNAVAILABLES_DAYS_BACK=3. Answer with pprint format

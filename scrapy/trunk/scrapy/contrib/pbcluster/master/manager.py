@@ -1,14 +1,10 @@
-import urlparse
-import urllib
-import bisect
 import sys
-import pickle, socket
+import pickle
 
 from pydispatch import dispatcher
 
 from twisted.spread import pb
 from twisted.internet import reactor
-from twisted.python import util
 
 from scrapy.core import log, signals
 from scrapy.core.engine import scrapyengine
@@ -37,13 +33,25 @@ class Node:
         self._set_status(status)
         self.name = name
         self.master = master
+        self.available = True
 
+    @property
+    def status_as_dict(self):
+        status = {"alive": self.alive}
+        if self.alive:
+            status["running"] = self.running
+            status["maxproc"] = self.maxproc
+            status["available"] = self.available
+            status["starttime"] = self.starttime
+            status["timestamp"] = self.timestamp
+            status["loadavg"] = self.loadavg
+        return status
+        
     def _set_status(self, status):
-        self.status_as_dict = status
         if not status:
-            self.available = False
+            self.alive = False
         else:
-            self.available = True
+            self.alive = True
             self.running = status['running']
             self.maxproc = status['maxproc']
             self.starttime = status['starttime']
@@ -52,16 +60,16 @@ class Node:
             self.logdir = status['logdir']
             free_slots = self.maxproc - len(self.running)
 
-            #load domains by one, so to mix up better the domain loading between nodes. The next one in the same node will be loaded
-            #when there is no loading domain or in the next status update. Th
-            if free_slots > 0 and self.master.pending:
-                pending = self.master.pending.pop(0)
-                #if domain already running in some node, reschedule with same priority (so will be moved to run later)
-                if pending['domain'] in self.master.running or pending['domain'] in self.master.loading:
-                    self.master.schedule([pending['domain']], pending['settings'], pending['priority'])
-                else:
-                    self.run(pending)
-                    self.master.loading.append(pending['domain'])
+        #load domains by one, so to mix up better the domain loading between nodes. The next one in the same node will be loaded
+        #when there is no loading domain or in the next status update. This way also we load the nodes softly
+        if self.alive and self.available and free_slots > 0 and self.master.pending:
+            pending = self.master.pending.pop(0)
+            #if domain already running in some node, reschedule with same priority (so will be moved to run later)
+            if pending['domain'] in self.master.running or pending['domain'] in self.master.loading:
+                self.master.schedule([pending['domain']], pending['settings'], pending['priority'])
+            else:
+                self.run(pending)
+                self.master.loading.append(pending['domain'])
 
     def get_status(self):
         try:
@@ -83,6 +91,12 @@ class Node:
 
     def run(self, pending):
 
+        def _run_errback(reason):
+            log.msg(reason, log.ERROR)
+            self.master.loading.remove(pending['domain'])
+            self.master.schedule([pending['domain']], pending['settings'], pending['priority'] - 1)
+            log.msg("Domain %s rescheduled: lost connection to node." % pending['domain'], log.WARNING)
+            
         def _run_callback(status):
             self.master.loading.remove(pending['domain'])
             if status['callresponse'][0] == 1:
@@ -102,7 +116,7 @@ class Node:
             self._set_status(None)
             log.msg("Lost connection to node %s." % (self.name), log.ERROR)
         else:
-            deferred.addCallbacks(callback=_run_callback, errback=lambda reason:log.msg(reason, log.ERROR))
+            deferred.addCallbacks(callback=_run_callback, errback=_run_errback)
 
 class ClusterMaster(pb.Root):
 
@@ -151,22 +165,26 @@ class ClusterMaster(pb.Root):
             d = _factory.getRootObject()
             d.addCallbacks(callback=lambda obj: self.add_node(obj, _name), errback=_errback)
 
-        if name not in self.nodes:
-            server, port = url.split(":")
-            port = eval(port)
-            log.msg("Connecting to cluster worker %s..." % name)
-            log.msg("Server: %s, Port: %s" % (server, port))
-            factory = pb.PBClientFactory()
-            try:
-                reactor.connectTCP(server, port, factory)
-            except Exception, err:
-                log.msg("Could not connect to node %s in %s: %s." % (name, url, reason), log.ERROR)
-            else:
-                _make_callback(factory, name, url)
+        server, port = url.split(":")
+        port = eval(port)
+        log.msg("Connecting to cluster worker %s..." % name)
+        log.msg("Server: %s, Port: %s" % (server, port))
+        factory = pb.PBClientFactory()
+        try:
+            reactor.connectTCP(server, port, factory)
+        except Exception, err:
+            log.msg("Could not connect to node %s in %s: %s." % (name, url, reason), log.ERROR)
+        else:
+            _make_callback(factory, name, url)
 
     def update_nodes(self):
-        for node in self.nodes.itervalues():
-            node.get_status()
+        for name, url in settings.get('CLUSTER_MASTER_NODES', {}).iteritems():
+            if name in self.nodes and self.nodes[name].alive:
+                log.msg("Updating node. name: %s, url: %s" % (name, url) )
+                self.nodes[name].get_status()
+            else:
+                log.msg("Reloading node. name: %s, url: %s" % (name, url) )
+                self.load_node(name, url)
 
     def add_node(self, cworker, name):
         """Add node given its node"""
@@ -174,6 +192,12 @@ class ClusterMaster(pb.Root):
         node.get_status()
         self.nodes[name] = node
         log.msg("Added cluster worker %s" % name)
+
+    def disable_node(self, name):
+        self.nodes[name].available = False
+        
+    def enable_node(self, name):
+        self.nodes[name].available = True
 
     def remove_node(self, nodename):
         raise NotImplemented
