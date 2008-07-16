@@ -145,7 +145,7 @@ label.disabled { color: #d7d7d7 }
 
 /* Navigation */
 .nav h2, .nav hr { display: none }
-.nav ul { font-size: 17px; list-style: none; margin:0; text-align: right }
+.nav ul { font-size: 12px; list-style: none; margin:0; text-align: right }
 .nav li {
  border-right: 1px solid #d7d7d7;
  display: inline;
@@ -167,7 +167,6 @@ label.disabled { color: #d7d7d7 }
 #mainnav :link, #mainnav :visited {
  /* background: url(../dots.gif) 0 0 no-repeat;
   border-right: 1px solid #fff;
- 
  border-left: 1px solid #555; */
  border-bottom: none;
  color: #ae3413;
