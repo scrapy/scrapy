@@ -53,17 +53,14 @@ class Node:
             free_slots = self.maxproc - len(self.running)
 
             to_reschedule = []
-            while free_slots > 0 and self.master.pending:
+            if free_slots > 0 and self.master.pending:
                 pending = self.master.pending.pop(0)
                 #if domain already running in some node, reschedule with same priority (so will be moved to run later)
                 if pending['domain'] in self.master.running or pending['domain'] in self.master.loading:
-                    to_reschedule.append(pending)
+                    self.master.schedule([pending['domain']], pending['settings'], pending['priority'])
                 else:
                     self.run(pending)
                     self.master.loading.append(pending['domain'])
-                    free_slots -= 1
-            for pending in to_reschedule:
-                self.master.schedule([pending['domain']], pending['settings'], pending['priority'])
 
     def get_status(self):
         try:
@@ -88,16 +85,16 @@ class Node:
         def _run_callback(status):
             self.master.loading.remove(pending['domain'])
             if status['callresponse'][0] == 1:
-                #slots are complete. Reschedule in master with priority reduced by one. This is a security issue because offen happens that the slots were completed and not yet notified because of the asynchronous response from worker.
+                #slots are complete. Reschedule in master with priority reduced by one.
+                #self.master.loading check should avoid this to happen
                 self.master.schedule([pending['domain']], pending['settings'], pending['priority'] - 1)
                 log.msg("Domain %s rescheduled: no proc space in node." % pending['domain'], log.WARNING)
             elif status['callresponse'][0] == 2:
-                #domain already running in node. Reschedule with same priority. Dont know if this could really happen,
-                #because the first check in self.master.loading should avoid to reach this point.
+                #domain already running in node. Reschedule with same priority.
+                #self.master.loading check should avoid this to happen
                 self.master.schedule([pending['domain']], pending['settings'], pending['priority'])
                 log.msg("Domain %s rescheduled: already running in node." % pending['domain'], log.WARNING)
-            if not self.master.loading:
-                self._set_status(status)
+            self._set_status(status)
 
         try:
             deferred = self.__remote.callRemote("run", pending["domain"], pending["settings"])
