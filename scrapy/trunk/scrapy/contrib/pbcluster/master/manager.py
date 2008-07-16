@@ -52,7 +52,8 @@ class Node:
             self.logdir = status['logdir']
             free_slots = self.maxproc - len(self.running)
 
-            to_reschedule = []
+            #load domains by one, so to mix up better the domain loading between nodes. The next one in the same node will be loaded
+            #when there is no loading domain or in the next status update. Th
             if free_slots > 0 and self.master.pending:
                 pending = self.master.pending.pop(0)
                 #if domain already running in some node, reschedule with same priority (so will be moved to run later)
@@ -94,7 +95,6 @@ class Node:
                 #self.master.loading check should avoid this to happen
                 self.master.schedule([pending['domain']], pending['settings'], pending['priority'])
                 log.msg("Domain %s rescheduled: already running in node." % pending['domain'], log.WARNING)
-            self._set_status(status)
 
         try:
             deferred = self.__remote.callRemote("run", pending["domain"], pending["settings"])
