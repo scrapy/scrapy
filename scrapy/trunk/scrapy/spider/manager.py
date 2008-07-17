@@ -20,6 +20,7 @@ class SpiderManager(object):
         self.loaded = False
         self.default_domain = None
         self.spider_modules = settings.getlist('SPIDER_MODULES')
+        self.force_domain = None
 
     @property
     def all(self):
@@ -36,6 +37,8 @@ class SpiderManager(object):
 
     def fromurl(self, url, include_disabled=True):
         self._load_on_demand()
+        if self.force_domain:
+            return self._alldict.get(self.force_domain)
         domain = urlparse.urlparse(url).hostname
         domain = str(domain).replace('www.', '')
         if domain:

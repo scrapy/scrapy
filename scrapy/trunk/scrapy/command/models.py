@@ -39,7 +39,8 @@ class ScrapyCommand(object):
         """
         parser.add_option("-f", "--logfile", dest="logfile", help="logfile to use. if omitted stderr will be used", metavar="FILE")
         parser.add_option("-o", "--loglevel", dest="loglevel", default=None, help="log level")
-        parser.add_option("--spider", dest="spider", default=None, help="default spider (domain) to use if no spider is found")
+        parser.add_option("--default-spider", dest="default_spider", default=None, help="default spider (domain) to use if no spider is found")
+        parser.add_option("--spider", dest="spider", default=None, help="Force to use the given spider")
         parser.add_option("--nolog", dest="nolog", action="store_true", help="disable all log messages")
         parser.add_option("--profile", dest="profile", default=None, help="write profiling stats in FILE, to analyze later with: python -m pstats FILE", metavar="FILE")
         parser.add_option("--pidfile", dest="pidfile", help="Write process pid to file FILE", metavar="FILE")
@@ -56,9 +57,13 @@ class ScrapyCommand(object):
         if opts.nolog:
             settings.overrides['LOG_ENABLED'] = False
 
-        if opts.spider:
+        if opts.default_spider:
             from scrapy.spider import spiders
             spiders.default_domain = opts.spider
+            
+        if opts.spider:
+            from scrapy.spider import spiders
+            spiders.force_domain = opts.spider
 
         if opts.pidfile:
             pid = os.getpid()
