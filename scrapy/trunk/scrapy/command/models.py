@@ -40,7 +40,7 @@ class ScrapyCommand(object):
         parser.add_option("-f", "--logfile", dest="logfile", help="logfile to use. if omitted stderr will be used", metavar="FILE")
         parser.add_option("-o", "--loglevel", dest="loglevel", default=None, help="log level")
         parser.add_option("--default-spider", dest="default_spider", default=None, help="default spider (domain) to use if no spider is found")
-        parser.add_option("--spider", dest="spider", default=None, help="Force to use the given spider")
+        parser.add_option("--spider", dest="spider", default=None, help="Force using the given spider when the arguments are urls")
         parser.add_option("--nolog", dest="nolog", action="store_true", help="disable all log messages")
         parser.add_option("--profile", dest="profile", default=None, help="write profiling stats in FILE, to analyze later with: python -m pstats FILE", metavar="FILE")
         parser.add_option("--pidfile", dest="pidfile", help="Write process pid to file FILE", metavar="FILE")
