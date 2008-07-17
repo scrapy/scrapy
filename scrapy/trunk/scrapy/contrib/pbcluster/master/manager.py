@@ -35,11 +35,18 @@ class Node:
         self.master = master
         self.available = True
 
-    @property
-    def status_as_dict(self):
+    def status_as_dict(self, verbosity=0):
         status = {"alive": self.alive}
         if self.alive:
-            status["running"] = self.running
+            if verbosity == 0:
+                #dont show spider settings
+                status["running"] = []
+                for proc in self.running:
+                    proccopy = proc.copy()
+                    del proccopy["settings"]
+                    status["running"].append(proccopy)
+            else:
+                status["running"] = self.running
             status["maxproc"] = self.maxproc
             status["available"] = self.available
             status["starttime"] = self.starttime
@@ -271,6 +278,18 @@ class ClusterMaster(pb.Root):
             if domain == p['domain']:
                 return p
 
+    def print_pending(self, verbosity=0):
+        if verbosity == 0:
+            pending = []
+            for p in self.pending:
+                pp = p.copy()
+                del pp["settings"]
+                pending.append(pp)
+            return pending
+        else:
+            return self.pending
+            
+        
     def _engine_started(self):
         self.load_nodes()
         scrapyengine.addtask(self.update_nodes, settings.getint('CLUSTER_MASTER_POLL_INTERVAL'))

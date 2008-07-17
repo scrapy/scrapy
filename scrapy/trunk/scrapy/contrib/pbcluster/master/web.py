@@ -221,13 +221,14 @@ class ClusterMasterWeb(ClusterMaster):
 
     def ws_status(self, wc_request):
         format = wc_request.args['format'][0] if 'format' in wc_request.args else 'json'
+        verbosity = wc_request.args['verbosity'][0] if 'verbosity' in wc_request.args else '0'
         wc_request.setHeader('content-type', 'text/plain')
         status = {}
         nodes_status = {}
         for d, n in self.nodes.iteritems():
-            nodes_status[d] = n.status_as_dict
+            nodes_status[d] = n.status_as_dict(int(verbosity))
         status["nodes"] = nodes_status
-        status["pending"] = self.pending
+        status["pending"] = self.print_pending(int(verbosity))
         status["loading"] = self.loading
         content = serialize(status, format)
         return content
