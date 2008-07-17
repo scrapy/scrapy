@@ -59,7 +59,7 @@ class ScrapyCommand(object):
 
         if opts.default_spider:
             from scrapy.spider import spiders
-            spiders.default_domain = opts.spider
+            spiders.default_domain = opts.default_spider
             
         if opts.spider:
             from scrapy.spider import spiders
