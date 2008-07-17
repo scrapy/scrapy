@@ -1,14 +1,18 @@
+Cluster Webservice API
+======================
+
 The webservice API is available at
 
 http://server:port/cluster_master/ws/
 
-Query parameters:
+Query parameters
+================
 
-'format': the answer format. By default, format=json. Other formats: pprint, pickle.
+ - `format`: the answer format. By default, format=json. Other formats: pprint, pickle.
 
-'schedule': schedules a comma separated list of domains. Schedule function takes optional parameters:
+ - `schedule`: schedules a comma separated list of domains. Schedule function takes optional parameters:
 
-    'priority': sets the queue priority for the specified domains. You can use a positive integer or the following predefined values:
+    "priority": sets the queue priority for the specified domains. You can use a positive integer or the following predefined values:
 
                     PRIORITY_NORMAL (=20)
                     PRIORITY_QUICK  (=10)
@@ -16,15 +20,15 @@ Query parameters:
 
                 by default, PRIORITY_NORMAL is used.
 
-    'settings': run settings for the specified domains. This is a comma separated list of <setting_name>=<value> pairs. By default it is empty.
+    "settings": run settings for the specified domains. This is a comma separated list of <setting_name>=<value> pairs. By default it is empty.
 
-'remove': removes from pending list a comma separated list of domains.
+ - `remove`: removes from pending list a comma separated list of domains.
 
-'stop': stops comma separated list of domains (they have to be running in some node)
+ - `stop`: stops comma separated list of domains (they have to be running in some node)
 
-'disable_node': disables a node so no more domains will be loaded in it until enabled again (but it will finish to run the running domains)
+ - `disable_node`: disables a node so no more domains will be loaded in it until enabled again (but it will finish to run the running domains)
 
-'enable_node': revert the state setted by 'disable_node'
+ - `enable_node`: revert the state setted by 'disable_node'
 
 'verbosity': sets the verbosity level (0 is the default minimal, 1 includes domain settings)
 
