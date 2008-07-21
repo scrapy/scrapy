@@ -114,7 +114,11 @@ class Cache(object):
         if os.path.exists(requestpath):
             with open(os.path.join(requestpath, 'meta_data')) as f:
                 metadata = eval(f.read())
-            return datetime.datetime.now() <= metadata['timestamp'] + datetime.timedelta(seconds=settings.getint('CACHE2_EXPIRATION_SECS'))
+            if datetime.datetime.now() <= metadata['timestamp'] + datetime.timedelta(seconds=settings.getint('CACHE2_EXPIRATION_SECS')):
+                return True
+            else:
+                log.msg('dropping old cached response from %s' % metadata['timestamp'], log.INFO)
+                return False
         else:
             return False
 
