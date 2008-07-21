@@ -1,6 +1,6 @@
 import urllib
 import warnings
-from sha import sha
+from hashlib import sha1
 from copy import copy
 from base64 import urlsafe_b64encode
 
@@ -149,7 +149,8 @@ class Request(object):
                     headers = dict([(k, v) for k, v in self.headers.items() if k.lower() not in keys])
 
         # fingerprint generation
-        fp = sha(canonicalize(self.url))
+        fp = sha1()
+        fp.update(canonicalize(self.url))
         fp.update(self.method)
 
         if self.body and self.method in ['POST', 'PUT']:

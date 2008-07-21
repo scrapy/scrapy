@@ -111,7 +111,12 @@ class Cache(object):
 
     def is_cached(self, domain, key):
         requestpath = self.requestpath(domain, key)
-        return os.path.exists(requestpath)
+        if os.path.exists(requestpath):
+            with open(os.path.join(requestpath, 'meta_data')) as f:
+                metadata = eval(f.read())
+            return datetime.datetime.now() <= metadata['timestamp'] + datetime.timedelta(seconds=settings.getint('CACHE2_EXPIRATION_SECS'))
+        else:
+            return False
 
     def retrieve_response(self, domain, key):
         """
