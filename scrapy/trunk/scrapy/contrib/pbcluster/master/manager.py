@@ -48,6 +48,7 @@ class Node:
             else:
                 status["running"] = self.running
             status["maxproc"] = self.maxproc
+            status["freeslots"] = self.maxproc - len(self.running)
             status["available"] = self.available
             status["starttime"] = self.starttime
             status["timestamp"] = self.timestamp
@@ -60,6 +61,9 @@ class Node:
         else:
             self.alive = True
             self.running = status['running']
+            for proc in self.running:
+                if proc["domain"] in self.master.loading:
+                    self.master.loading.remove(proc["domain"])
             self.maxproc = status['maxproc']
             self.starttime = status['starttime']
             self.timestamp = status['timestamp']
@@ -67,16 +71,16 @@ class Node:
             self.logdir = status['logdir']
             free_slots = self.maxproc - len(self.running)
 
-        #load domains by one, so to mix up better the domain loading between nodes. The next one in the same node will be loaded
-        #when there is no loading domain or in the next status update. This way also we load the nodes softly
-        if self.alive and self.available and free_slots > 0 and self.master.pending:
-            pending = self.master.pending.pop(0)
-            #if domain already running in some node, reschedule with same priority (so will be moved to run later)
-            if pending['domain'] in self.master.running or pending['domain'] in self.master.loading:
-                self.master.schedule([pending['domain']], pending['settings'], pending['priority'])
-            else:
-                self.run(pending)
-                self.master.loading.append(pending['domain'])
+            #load domains by one, so to mix up better the domain loading between nodes. The next one in the same node will be loaded
+            #when there is no loading domain or in the next status update. This way also we load the nodes softly
+            if self.available and free_slots > 0 and self.master.pending:
+                pending = self.master.pending.pop(0)
+                #if domain already running in some node, reschedule with same priority (so will be moved to run later)
+                if pending['domain'] in self.master.running or pending['domain'] in self.master.loading:
+                    self.master.schedule([pending['domain']], pending['settings'], pending['priority'])
+                else:
+                    self.run(pending)
+                    self.master.loading.append(pending['domain'])
 
     def get_status(self):
         try:
@@ -105,7 +109,6 @@ class Node:
             log.msg("Domain %s rescheduled: lost connection to node." % pending['domain'], log.WARNING)
             
         def _run_callback(status):
-            self.master.loading.remove(pending['domain'])
             if status['callresponse'][0] == 1:
                 #slots are complete. Reschedule in master with priority reduced by one.
                 #self.master.loading check should avoid this to happen
@@ -220,7 +223,9 @@ class ClusterMaster(pb.Root):
             pd = self.find_ifpending(domain)
             if pd: #domain already pending, so just change priority if new is higher
                 if priority < pd['priority']:
+                    self.pending.remove(pd)
                     pd['priority'] = priority
+                    self.pending.insert(i, pd)
             else:
                 final_spider_settings = self.get_spider_groupsettings(domain)
                 final_spider_settings.update(self.global_settings)
