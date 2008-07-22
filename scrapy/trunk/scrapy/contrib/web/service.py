@@ -1,7 +1,7 @@
 import re
 import urllib
 import simplejson
-from sha import sha
+import hashlib
 from twisted.internet import defer
 
 from scrapy.core.engine import scrapyengine
@@ -22,7 +22,7 @@ CACHESIZE = settings.get('WS_CACHESIZE', 20)
 
 
 def _urlhash(request):
-    h = sha()
+    h = hashlib.sha1()
     for a in sorted(request.ARGS):
         h.update(request.ARGS[a])
     return h.hexdigest()

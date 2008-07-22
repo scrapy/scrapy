@@ -1,4 +1,4 @@
-import sha
+import hashlib
 from datetime import datetime
 
 from pydispatch import dispatcher
@@ -84,4 +84,4 @@ def urlkey(url):
 
 
 def hash(value):
-    return sha.new(value).hexdigest() if value else None
+    return hashlib.sha1(value).hexdigest() if value else None

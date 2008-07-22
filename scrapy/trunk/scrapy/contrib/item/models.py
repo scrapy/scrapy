@@ -3,7 +3,7 @@ This module contains some extra base models for scraped items which could be
 useful in some Scrapy implementations
 """
 
-import sha
+import hashlib
 
 from scrapy.item import ScrapedItem
 from scrapy.core.exceptions import UsageError, DropItem
@@ -135,6 +135,6 @@ class RobustScrapedItem(ScrapedItem):
         """
         if self._version:
             return self._version
-        hash_ = sha.new()
+        hash_ = hashlib.sha1()
         hash_.update("".join(["".join([n, str(v)]) for n,v in sorted(self.__dict__.iteritems())]))
         return hash_.hexdigest()

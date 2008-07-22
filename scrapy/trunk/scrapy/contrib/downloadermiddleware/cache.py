@@ -1,7 +1,7 @@
 from __future__ import with_statement
 
 import os
-import sha
+import hashlib
 import datetime
 import urlparse
 from pydispatch import dispatcher
@@ -83,7 +83,7 @@ class Cache(object):
             os.makedirs(self.basesectorpath)
 
     def domainsectorpath(self, domain):
-        sector = sha.sha(domain).hexdigest()[0]
+        sector = hashlib.sha1(domain).hexdigest()[0]
         return os.path.join(self.basesectorpath, sector, domain)
 
     def domainlinkpath(self, domain):

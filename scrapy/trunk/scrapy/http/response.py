@@ -1,5 +1,5 @@
 import re
-import sha
+import hashlib
 import copy
 
 from BeautifulSoup import UnicodeDammit
@@ -41,7 +41,7 @@ class Response(object) :
     def version(self):
         """A hash of the contents of this response"""
         if not hasattr(self, '_version'):
-            self._version = sha.new(self.body.to_string()).hexdigest()
+            self._version = hashlib.sha1(self.body.to_string()).hexdigest()
         return self._version
 
     def headers_encoding(self):
