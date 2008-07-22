@@ -1,4 +1,4 @@
-import sys
+import sys, datetime
 import pickle
 
 from pydispatch import dispatcher
@@ -34,6 +34,7 @@ class Node:
         self.name = name
         self.master = master
         self.available = True
+        self.statistics = {"domains": {}, "scraped_total": 0 }
 
     def status_as_dict(self, verbosity=0):
         status = {"alive": self.alive}
@@ -82,7 +83,7 @@ class Node:
                     self.run(pending)
                     self.master.loading.append(pending['domain'])
 
-    def get_status(self):
+    def update_status(self):
         try:
             deferred = self.__remote.callRemote("status")
         except pb.DeadReferenceError:
@@ -91,6 +92,19 @@ class Node:
         else:
             deferred.addCallbacks(callback=self._set_status, errback=lambda reason: log.msg(reason, log.ERROR))
 
+    def update_statistics(self):
+        
+        def _set_statistics(statistics):
+            self.statistics = statistics
+
+        try:
+            deferred = self.__remote.callRemote("statistics")
+        except pb.DeadReferenceError:
+            self._set_status(None)
+            log.msg("Lost connection to node %s." % (self.name), log.ERROR)
+        else:
+            deferred.addCallbacks(callback=_set_statistics, errback=lambda reason: log.msg(reason, log.ERROR))
+        
     def stop(self, domain):
         try:
             deferred = self.__remote.callRemote("stop", domain)
@@ -127,6 +141,7 @@ class Node:
             log.msg("Lost connection to node %s." % (self.name), log.ERROR)
         else:
             deferred.addCallbacks(callback=_run_callback, errback=_run_errback)
+        
 
 class ClusterMaster(pb.Root):
 
@@ -147,7 +162,7 @@ class ClusterMaster(pb.Root):
             self.pending = []
         self.loading = []
         self.nodes = {}
-        
+        self.statistics = {"domains": {}, "scraped_total": 0, "start_time": datetime.datetime.utcnow(), "pending": self.print_pending() }
         self.global_settings = {}
         #load cluster global settings
         for sname in settings.getlist('GLOBAL_CLUSTER_SETTINGS'):
@@ -188,10 +203,16 @@ class ClusterMaster(pb.Root):
             _make_callback(factory, name, url)
 
     def update_nodes(self):
+        self.statistics["scraped_total"] = 0
         for name, url in settings.get('CLUSTER_MASTER_NODES', {}).iteritems():
             if name in self.nodes and self.nodes[name].alive:
                 log.msg("Updating node. name: %s, url: %s" % (name, url) )
-                self.nodes[name].get_status()
+                self.nodes[name].update_status()
+                self.nodes[name].update_statistics()
+                self.statistics["scraped_total"] += self.nodes[name].statistics["scraped_total"]
+                for domain in self.nodes[name].statistics["domains"]:
+                    if not domain in self.statistics["domains"] or self.nodes[name].statistics["domains"][domain]["last_start_time"] >= self.statistics["domains"][domain]["last_start_time"]:
+                        self.statistics["domains"][domain] = self.nodes[name].statistics["domains"][domain]
             else:
                 log.msg("Reloading node. name: %s, url: %s" % (name, url) )
                 self.load_node(name, url)
@@ -199,7 +220,7 @@ class ClusterMaster(pb.Root):
     def add_node(self, cworker, name):
         """Add node given its node"""
         node = Node(cworker, None, name, self)
-        node.get_status()
+        node.update_status()
         self.nodes[name] = node
         log.msg("Added cluster worker %s" % name)
 
@@ -293,7 +314,6 @@ class ClusterMaster(pb.Root):
             return pending
         else:
             return self.pending
-            
         
     def _engine_started(self):
         self.load_nodes()

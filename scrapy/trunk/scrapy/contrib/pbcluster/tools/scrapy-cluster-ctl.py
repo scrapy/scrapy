@@ -19,6 +19,7 @@ def main():
     parser.add_option("--schedule", dest="schedule", action="store_true", help="Schedule domains given as args.")
     parser.add_option("--server", dest="server", help="Cluster master server name. Default: localhost.", default="localhost")
     parser.add_option("--status", dest="status", action="store_true", help="Print cluster master status and quit.")
+    parser.add_option("--statistics", dest="statistics", action="store_true", help="Print cluster statistics")
     parser.add_option("--stop", dest="stop", action="store_true", help="Stops a running domain.")
     parser.add_option("--verbosity", dest="verbosity", type="int", help="Sets the report status verbosity.", default=0)
     (opts, args) = parser.parse_args()
@@ -41,6 +42,8 @@ def main():
     
     if opts.status:
         pass
+    elif opts.statistics:
+        post["statistics"] = True
     elif opts.schedule and domains:
         post["schedule"] = domains
         if opts.now:

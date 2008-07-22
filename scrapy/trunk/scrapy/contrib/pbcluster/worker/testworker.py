@@ -17,6 +17,8 @@ elif sys.argv[0] == "-s":
     d.addCallback(lambda object: object.callRemote("stop", sys.argv[1]))
 elif sys.argv[0] == "-r":
     d.addCallback(lambda object: object.callRemote("run", sys.argv[1]))
+elif sys.argv[0] == "-t":
+    d.addCallback(lambda object: object.callRemote("statistics"))
 
 d.addCallbacks(callback = util.println, errback = lambda reason: 'error: '+str(reason.value))
 d.addCallback(lambda _: reactor.stop())

@@ -5,6 +5,8 @@ The webservice API is available at
 
 http://server:port/cluster_master/ws/
 
+With no parameters, webservice returns the cluster status.
+
 Query parameters
 ================
 
@@ -30,9 +32,12 @@ Query parameters
 
  - `enable_node`: revert the state setted by 'disable_node'
 
-'verbosity': sets the verbosity level (0 is the default minimal, 1 includes domain settings)
+ - `verbosity`: sets the verbosity level (0 is the default minimal, 1 includes domain settings)
+
+ - `statistics`: shows the pending/running/scraped/lost statistics
 
 Examples:
+---------
 
 1) Schedule argos.co.uk, diy.com, littlewoodsdirect.com spiders, with priority=PRIORITY_NOW, and settings UNAVAILABLES_NOTIFY=2 and UNAVAILABLES_DAYS_BACK=3. Answer with pprint format
 

@@ -103,6 +103,9 @@ class ClusterMasterWeb(ClusterMaster):
             self.enable_node(args["enable_node"][0])
             if ws:
                 return self.ws_status(wc_request)
+        if "statistics" in args:
+            if ws:
+                return self.ws_statistics(wc_request)
             
         if ws:
             return self.ws_status(wc_request)
@@ -231,4 +234,9 @@ class ClusterMasterWeb(ClusterMaster):
         status["pending"] = self.print_pending(int(verbosity))
         status["loading"] = self.loading
         content = serialize(status, format)
+        return content
+        
+    def ws_statistics(self, wc_request):
+        format = wc_request.args['format'][0] if 'format' in wc_request.args else 'json'
+        content = serialize(self.statistics, format)
         return content
