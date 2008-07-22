@@ -113,7 +113,7 @@ class Cache(object):
     def is_cached(self, domain, key):
         pickled_meta = os.path.join(self.requestpath(domain, key), 'pickled_meta')
         if os.path.exists(pickled_meta):
-            with open(pickled_meta) as f:
+            with open(pickled_meta, 'rb') as f:
                 metadata = cPickle.load(f)
             if datetime.datetime.utcnow() <= metadata['timestamp'] + datetime.timedelta(seconds=settings.getint('CACHE2_EXPIRATION_SECS')):
                 return True
@@ -133,7 +133,7 @@ class Cache(object):
 
         requestpath = self.requestpath(domain, key)
         metadata = responsebody = responseheaders = None
-        with open(os.path.join(requestpath, 'pickled_meta')) as f:
+        with open(os.path.join(requestpath, 'pickled_meta'), 'rb') as f:
             metadata = cPickle.load(f)
         with open(os.path.join(requestpath, 'response_body')) as f:
             responsebody = f.read()
