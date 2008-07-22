@@ -4,7 +4,7 @@ import os
 import hashlib
 import datetime
 import urlparse
-import cPickle
+import cPickle as pickle
 from pydispatch import dispatcher
 from twisted.internet import defer
 
@@ -114,7 +114,7 @@ class Cache(object):
         pickled_meta = os.path.join(self.requestpath(domain, key), 'pickled_meta')
         if os.path.exists(pickled_meta):
             with open(pickled_meta, 'rb') as f:
-                metadata = cPickle.load(f)
+                metadata = pickle.load(f)
             if datetime.datetime.utcnow() <= metadata['timestamp'] + datetime.timedelta(seconds=settings.getint('CACHE2_EXPIRATION_SECS')):
                 return True
             else:
@@ -134,7 +134,7 @@ class Cache(object):
         requestpath = self.requestpath(domain, key)
         metadata = responsebody = responseheaders = None
         with open(os.path.join(requestpath, 'pickled_meta'), 'rb') as f:
-            metadata = cPickle.load(f)
+            metadata = pickle.load(f)
         with open(os.path.join(requestpath, 'response_body')) as f:
             responsebody = f.read()
         with open(os.path.join(requestpath, 'response_headers')) as f:
@@ -170,7 +170,7 @@ class Cache(object):
             f.write(repr(metadata))
         # pickled metadata (to recover without using eval)
         with open(os.path.join(requestpath, 'pickled_meta'), 'wb') as f:
-            cPickle.dump(metadata, f, -1)
+            pickle.dump(metadata, f, -1)
         # response
         with open(os.path.join(requestpath, 'response_headers'), 'w') as f:
             f.write(headers_dict_to_raw(response.headers))
