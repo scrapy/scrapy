@@ -111,9 +111,9 @@ class Cache(object):
                     os.makedirs(linkpath)
 
     def is_cached(self, domain, key):
-        pickled_meta = os.path.join(self.requestpath(domain, key), 'pickled_meta')
-        if os.path.exists(pickled_meta):
-            with open(pickled_meta, 'rb') as f:
+        requestpath = self.requestpath(domain, key)
+        if os.path.exists(requestpath):
+            with open(os.path.join(requestpath, 'pickled_meta'), 'r') as f:
                 metadata = pickle.load(f)
             if datetime.datetime.utcnow() <= metadata['timestamp'] + datetime.timedelta(seconds=settings.getint('CACHE2_EXPIRATION_SECS')):
                 return True
@@ -133,7 +133,7 @@ class Cache(object):
 
         requestpath = self.requestpath(domain, key)
         metadata = responsebody = responseheaders = None
-        with open(os.path.join(requestpath, 'pickled_meta'), 'rb') as f:
+        with open(os.path.join(requestpath, 'pickled_meta'), 'r') as f:
             metadata = pickle.load(f)
         with open(os.path.join(requestpath, 'response_body')) as f:
             responsebody = f.read()
@@ -169,8 +169,8 @@ class Cache(object):
         with open(os.path.join(requestpath, 'meta_data'), 'w') as f:
             f.write(repr(metadata))
         # pickled metadata (to recover without using eval)
-        with open(os.path.join(requestpath, 'pickled_meta'), 'wb') as f:
-            pickle.dump(metadata, f, -1)
+        with open(os.path.join(requestpath, 'pickled_meta'), 'w') as f:
+            pickle.dump(metadata, f)
         # response
         with open(os.path.join(requestpath, 'response_headers'), 'w') as f:
             f.write(headers_dict_to_raw(response.headers))
