@@ -36,7 +36,7 @@ def start(logfile=None, loglevel=None, log_stdout=None):
     loglevel = loglevel or settings['LOGLEVEL']
     log_stdout = log_stdout or settings.getbool('LOG_STDOUT')
 
-    file = open(logfile, 'w') if logfile else sys.stderr
+    file = open(logfile, 'a') if logfile else sys.stderr
     level = int(getattr(sys.modules[__name__], loglevel)) if loglevel else DEBUG
     log.startLogging(file, setStdout=log_stdout)
     setattr(sys.modules[__name__], 'log_level', level)
