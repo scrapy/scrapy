@@ -78,7 +78,7 @@ class XPathSelector(object):
         self.doc.xpathContext.xpathRegisterNs(prefix, uri)
 
     def __str__(self):
-        return "<%s (%s) xpath=%s>" % (type(self).__name__, getattr(self.xmlNode, 'name'), self.expr)
+        return "<%s (%s) xpath=%s>" % (type(self).__name__, getattr(self.xmlNode, 'name', type(self.xmlNode).__name__), self.expr)
 
     __repr__ = __str__
 
