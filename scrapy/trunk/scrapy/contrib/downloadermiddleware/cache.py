@@ -4,6 +4,7 @@ import os
 import hashlib
 import datetime
 import urlparse
+import cPickle
 from pydispatch import dispatcher
 from twisted.internet import defer
 
@@ -110,14 +111,14 @@ class Cache(object):
                     os.makedirs(linkpath)
 
     def is_cached(self, domain, key):
-        requestpath = self.requestpath(domain, key)
+        pickled_meta = os.path.join(self.requestpath(domain, key), 'pickled_meta')
         if os.path.exists(requestpath):
-            with open(os.path.join(requestpath, 'meta_data')) as f:
-                metadata = eval(f.read())
-            if datetime.datetime.now() <= metadata['timestamp'] + datetime.timedelta(seconds=settings.getint('CACHE2_EXPIRATION_SECS')):
+            with open(pickled_meta) as f:
+                metadata = cPickle.load(f)
+            if datetime.datetime.utcnow() <= metadata['timestamp'] + datetime.timedelta(seconds=settings.getint('CACHE2_EXPIRATION_SECS')):
                 return True
             else:
-                log.msg('dropping old cached response from %s' % metadata['timestamp'], log.INFO)
+                log.msg('dropping old cached response from %s' % metadata['timestamp'])
                 return False
         else:
             return False
@@ -132,14 +133,13 @@ class Cache(object):
             return None # not cached
 
         metadata = responsebody = responseheaders = None
-        with open(os.path.join(requestpath, 'meta_data')) as f:
-            metadata = f.read()
+        with open(os.path.join(requestpath, 'pickled_meta')) as f:
+            metadata = cPickle.load(f)
         with open(os.path.join(requestpath, 'response_body')) as f:
             responsebody = f.read()
         with open(os.path.join(requestpath, 'response_headers')) as f:
             responseheaders = f.read()
 
-        metadata = eval(metadata)
         url = metadata['url']
         original_url = metadata.get('original_url', url)
         headers = Headers(responseheaders)
@@ -162,12 +162,15 @@ class Cache(object):
                 'status': response.status,
                 'domain': response.domain,
                 'original_url': response.original_url,
-                'timestamp': datetime.datetime.now(),
+                'timestamp': datetime.datetime.utcnow(),
             }
 
         # metadata
         with open(os.path.join(requestpath, 'meta_data'), 'w') as f:
             f.write(repr(metadata))
+        # pickled metadata (to recover without using eval)
+        with open(os.path.join(requestpath, 'pickled_meta'), 'wb') as f:
+            cPickle.dump(metadata, f, -1)
         # response
         with open(os.path.join(requestpath, 'response_headers'), 'w') as f:
             f.write(headers_dict_to_raw(response.headers))
