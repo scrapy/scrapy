@@ -162,7 +162,7 @@ class ClusterMaster(pb.Root):
             self.pending = []
         self.loading = []
         self.nodes = {}
-        self.statistics = {"domains": {}, "scraped_total": 0, "start_time": datetime.datetime.utcnow(), "pending": self.print_pending() }
+        self.statistics = {"domains": {}, "scraped_total": 0, "start_time": datetime.datetime.utcnow()}
         self.global_settings = {}
         #load cluster global settings
         for sname in settings.getlist('GLOBAL_CLUSTER_SETTINGS'):
@@ -210,6 +210,7 @@ class ClusterMaster(pb.Root):
                 self.nodes[name].update_status()
                 self.nodes[name].update_statistics()
                 self.statistics["scraped_total"] += self.nodes[name].statistics["scraped_total"]
+                self.statistics["timestamp"] = datetime.datetime.utcnow()
                 for domain in self.nodes[name].statistics["domains"]:
                     if not domain in self.statistics["domains"] or self.nodes[name].statistics["domains"][domain]["last_start_time"] >= self.statistics["domains"][domain]["last_start_time"]:
                         self.statistics["domains"][domain] = self.nodes[name].statistics["domains"][domain]
