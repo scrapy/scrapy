@@ -86,6 +86,10 @@ class XPathSelector(object):
 class XPathSelectorList(list):
     """List of XPathSelector objects"""
 
+    def __getitem__(self, i):
+        return '__getitem__'
+        #return XPathSelectorList(list.__getslice__(self, i, j))
+
     def x(self, xpath):
         """Perform the given XPath query on each XPathSelector of the list and
         return a new (flattened) XPathSelectorList of the results"""
