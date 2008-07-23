@@ -14,7 +14,7 @@ def main():
     parser.add_option("--list", metavar="FILE", dest="list", help="Specify a file from where to read domains, one per line.")
     parser.add_option("--now", action="store_true", dest="now", help="Schedule domains to run with priority now.")
     parser.add_option("--output", metavar="FILE", dest="output", help="Output file. If not given, output to stdout.")
-    parser.add_option("--port", dest="port", type="int", help="Cluster master port. Default: 8080.", default=8080)
+    parser.add_option("--port", dest="port", type="int", help="Cluster master port. Default: 8060.", default=8060)
     parser.add_option("--remove", dest="remove", action="store_true", help="Remove from schedule domains given as args.")
     parser.add_option("--schedule", dest="schedule", action="store_true", help="Schedule domains given as args.")
     parser.add_option("--server", dest="server", help="Cluster master server name. Default: localhost.", default="localhost")
