@@ -119,11 +119,13 @@ class Node(pb.Referenceable):
             if status['callresponse'][0] == 1:
                 #slots are complete. Reschedule in master with priority reduced by one.
                 #self.master.loading check should avoid this to happen
+                self.master.loading.remove(pending['domain'])
                 self.master.schedule([pending['domain']], pending['settings'], pending['priority'] - 1)
                 log.msg("Domain %s rescheduled: no proc space in node." % pending['domain'], log.WARNING)
             elif status['callresponse'][0] == 2:
                 #domain already running in node. Reschedule with same priority.
                 #self.master.loading check should avoid this to happen
+                self.master.loading.remove(pending['domain'])
                 self.master.schedule([pending['domain']], pending['settings'], pending['priority'])
                 log.msg("Domain %s rescheduled: already running in node." % pending['domain'], log.WARNING)
 
