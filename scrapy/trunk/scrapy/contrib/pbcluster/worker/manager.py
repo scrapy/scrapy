@@ -35,13 +35,12 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         log.msg("ClusterWorker: started domain=%s, pid=%d, log=%s" % (self.domain, self.pid, self.logfile))
         self.transport.closeStdin()
         self.status = "running"
-        self.procman.statistics["domains"][self.domain] = {"status": "running", "last_start_time": self.start_time}
+        self.procman.update_master()
 
     def processEnded(self, status_object):
         log.msg("ClusterWorker: finished domain=%s, pid=%d, log=%s" % (self.domain, self.pid, self.logfile))
         del self.procman.running[self.domain]
-        self.procman.statistics["domains"][self.domain].update({"status": "scraped", "last_end_time": datetime.datetime.utcnow()})
-        self.procman.statistics["scraped_total"] += 1
+        self.procman.update_master()
 
 class ClusterWorker(pb.Root):
 
@@ -53,10 +52,33 @@ class ClusterWorker(pb.Root):
         self.logdir = settings['CLUSTER_LOGDIR']
         self.running = {}
         self.starttime = datetime.datetime.utcnow()
-        self.statistics = {"domains": {}, "scraped_total": 0}
         port = settings.getint('CLUSTER_WORKER_PORT')
         scrapyengine.listenTCP(port, pb.PBServerFactory(self))
         log.msg("PYTHONPATH: %s" % repr(sys.path))
+
+    def status(self, rcode=0, rstring=None):
+        status = {}
+        status["running"] = [ self.running[k].as_dict() for k in self.running.keys() ]
+        status["starttime"] = self.starttime
+        status["timestamp"] = datetime.datetime.utcnow()
+        status["maxproc"] = self.maxproc
+        status["loadavg"] = os.getloadavg()
+        status["logdir"] = self.logdir
+        status["callresponse"] = (rcode, rstring) if rstring else (0, "Status Response.")
+        return status
+
+    def update_master(self):
+        try:
+            deferred = self.__master.callRemote("update", self.status())
+        except pb.DeadReferenceError:
+            self.__master = None
+            log.msg("Lost connection to node %s." % (self.name), log.ERROR)
+        else:
+            deferred.addCallbacks(callback=lambda x: x, errback=lambda reason: log.msg(reason, log.ERROR))
+        
+    def remote_set_master(self, master):
+        self.__master = master
+        return self.status()
 
     def remote_stop(self, domain):
         """Stop running domain."""
@@ -71,26 +93,6 @@ class ClusterWorker(pb.Root):
 
     def remote_status(self):
         return self.status()
-    
-    def remote_statistics(self):
-        #This can detect processes that were abnormally killed (for example, by the kernel
-        #because of a memory ran out.)
-        for domain in self.statistics["domains"]:
-            if self.statistics["domains"][domain]["status"] == "running" and not domain in self.running:
-                self.statistics["domains"][domain]["status"] = "lost"
-
-        return self.statistics
-    
-    def status(self, rcode=0, rstring=None):
-        status = {}
-        status["running"] = [ self.running[k].as_dict() for k in self.running.keys() ]
-        status["starttime"] = self.starttime
-        status["timestamp"] = datetime.datetime.utcnow()
-        status["maxproc"] = self.maxproc
-        status["loadavg"] = os.getloadavg()
-        status["logdir"] = self.logdir
-        status["callresponse"] = (rcode, rstring) if rstring else (0, "Status Response.")
-        return status
 
     def remote_run(self, domain, spider_settings=None):
         """Spawn process to run the given domain."""
@@ -108,7 +110,9 @@ class ClusterWorker(pb.Root):
                     r = c.update(settings.get("CLUSTER_WORKER_SVNWORKDIR", "."))
                     log.msg("Updated to revision %s." %r[0].number, level=log.DEBUG)
                 except pysvn.ClientError, e:
-                    log.msg("Unable to svn update: %s" % e) 
+                    log.msg("Unable to svn update: %s" % e, level=log.WARNING)
+                except ImportError:
+                    log.msg("pysvn module not available.", level=log.WARNING)
                 proc = reactor.spawnProcess(scrapy_proc, sys.executable, args=args, env=scrapy_proc.env)
                 return self.status(0, "Started process %s." % scrapy_proc)
             return self.status(2, "Domain %s already running." % domain )
