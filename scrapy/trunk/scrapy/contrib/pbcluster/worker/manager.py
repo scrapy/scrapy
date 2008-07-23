@@ -96,7 +96,7 @@ class ClusterWorker(pb.Root):
         """Spawn process to run the given domain."""
         if len(self.running) < self.maxproc:
             if not domain in self.running:
-                logfile = os.path.join(self.logdir, time.strftime("%F"), domain, time.strftime("%FT%T.log"))
+                logfile = os.path.join(self.logdir, domain, time.strftime("%FT%T.log"))
                 if not os.path.exists(os.path.dirname(logfile)):
                     os.makedirs(os.path.dirname(logfile))
                 scrapy_proc = ScrapyProcessProtocol(self, domain, logfile, spider_settings)
