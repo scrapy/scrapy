@@ -236,7 +236,6 @@ class ClusterMaster:
                 final_spider_settings.update(self.global_settings)
                 final_spider_settings.update(spider_settings or {})
                 self.pending.insert(i, {'domain': domain, 'settings': final_spider_settings, 'priority': priority})
-        self.update_nodes()
 
     def stop(self, domains):
         to_stop = {}
