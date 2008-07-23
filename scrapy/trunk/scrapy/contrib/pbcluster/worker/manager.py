@@ -105,10 +105,10 @@ class ClusterWorker(pb.Root):
                 try:
                     import pysvn
                     c = pysvn.Client()
-                    r = c.update(settings["CLUSTER_WORKER_SVNWORKDIR"] or ".")
-                    log.msg("Updated to revision %s." %r[0].number )
-                except:
-                    pass
+                    r = c.update(settings.get("CLUSTER_WORKER_SVNWORKDIR", "."))
+                    log.msg("Updated to revision %s." %r[0].number, level=log.DEBUG)
+                except pysvn.ClientError, e:
+                    log.msg("Unable to svn update: %s" % e) 
                 proc = reactor.spawnProcess(scrapy_proc, sys.executable, args=args, env=scrapy_proc.env)
                 return self.status(0, "Started process %s." % scrapy_proc)
             return self.status(2, "Domain %s already running." % domain )
