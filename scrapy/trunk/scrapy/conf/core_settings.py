@@ -11,7 +11,7 @@ USER_AGENT = '%s/%s' % (BOT_NAME, BOT_VERSION)
 DOWNLOAD_TIMEOUT = 180      # 3mins
 CONCURRENT_DOMAINS = 8    # number of domains to scrape in parallel
 REQUESTS_PER_DOMAIN = 8     # max simultaneous requests per domain
-CACHE2_EXPIRATION_SECS = 48 * 60 * 60 # seconds while cached response is still valid
+CACHE2_EXPIRATION_SECS = 48 * 60 * 60 # seconds while cached response is still valid (a negative value means "never expires")
 
 LOG_ENABLED = True  #
 LOGLEVEL = 'DEBUG'   # default loglevel

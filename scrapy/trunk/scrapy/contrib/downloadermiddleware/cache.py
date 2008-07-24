@@ -1,6 +1,7 @@
 from __future__ import with_statement
 
 import os
+import sys
 import hashlib
 import datetime
 import urlparse
@@ -33,7 +34,11 @@ class CacheMiddleware(object):
 
         key = request.fingerprint()
         domain = spider.domain_name
-        response = self.cache.retrieve_response(domain, key)
+        try:
+            response = self.cache.retrieve_response(domain, key)
+        except:
+            log.msg("Corrupt cache for %s" % request.url, log.WARNING)
+            response = False
         if response:
             response.cached = True
             if not 200 <= int(response.status) < 300:
@@ -115,11 +120,16 @@ class Cache(object):
         if os.path.exists(requestpath):
             with open(os.path.join(requestpath, 'pickled_meta'), 'r') as f:
                 metadata = pickle.load(f)
-            if datetime.datetime.utcnow() <= metadata['timestamp'] + datetime.timedelta(seconds=settings.getint('CACHE2_EXPIRATION_SECS')):
-                return True
+            expiration_secs = settings.getint('CACHE2_EXPIRATION_SECS')
+            if expiration_secs >= 0:
+                if datetime.datetime.utcnow() <= metadata['timestamp'] + datetime.timedelta(seconds=expiration_secs):
+                    return True
+                else:
+                    log.msg('dropping old cached response from %s' % metadata['timestamp'])
+                    return False
             else:
-                log.msg('dropping old cached response from %s' % metadata['timestamp'])
-                return False
+                # disabled cache expiration
+                return True
         else:
             return False
 
