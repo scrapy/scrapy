@@ -35,12 +35,13 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         log.msg("ClusterWorker: started domain=%s, pid=%d, log=%s" % (self.domain, self.pid, self.logfile))
         self.transport.closeStdin()
         self.status = "running"
-        self.procman.update_master()
+        self.procman.update_master(self.domain, "running")
 
-    def processEnded(self, status_object):
+    def processEnded(self, reason):
         log.msg("ClusterWorker: finished domain=%s, pid=%d, log=%s" % (self.domain, self.pid, self.logfile))
+        log.msg("Reason type: %s. value: %s" % (reason.type, reason.value) )
         del self.procman.running[self.domain]
-        self.procman.update_master()
+        self.procman.update_master(self.domain, "scraped")
 
 class ClusterWorker(pb.Root):
 
@@ -67,9 +68,9 @@ class ClusterWorker(pb.Root):
         status["callresponse"] = (rcode, rstring) if rstring else (0, "Status Response.")
         return status
 
-    def update_master(self):
+    def update_master(self, domain, domain_status):
         try:
-            deferred = self.__master.callRemote("update", self.status())
+            deferred = self.__master.callRemote("update", self.status(), domain, domain_status)
         except pb.DeadReferenceError:
             self.__master = None
             log.msg("Lost connection to node %s." % (self.name), log.ERROR)
