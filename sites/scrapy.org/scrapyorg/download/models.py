@@ -32,8 +32,12 @@ class DownloadLink(models.Model):
 
     # ugly, but django-admin isn't very versatile right now
     def public_link(self):
-        return _("%s (<a href='%s/toggle/'>toggle</a>)") % \
-               (self.public and _("Yes") or _("No"), self.id )
+        img_url = "/media/img/admin/icon-%s.gif" % \
+                  (self.public and "yes" or "no")
+        html = _('<img alt="%s" src="' + img_url + '"/> ' \
+                 '(<a href="%s/toggle/">Toggle</a>)')
+        return html % (_(str(self.public)), self.id)
+
     public_link.short_description = u"public"
     public_link.allow_tags = True
 
