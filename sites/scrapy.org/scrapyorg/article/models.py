@@ -71,6 +71,7 @@ class Article(models.Model):
         list_display = ("title", "main", "position_link", "publish_link",
                         "updated")
         list_filter = ("main", "created", "publish")
+        save_on_top = True
 
     class Meta:
         verbose_name = _("article")

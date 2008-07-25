@@ -44,6 +44,7 @@ class DownloadLink(models.Model):
     class Admin:
         list_display = ("text", "address", "public_link", "created")
         list_filter = ("public", "created")
+        save_on_top = True
 
     class Meta:
         verbose_name = _("download link")
