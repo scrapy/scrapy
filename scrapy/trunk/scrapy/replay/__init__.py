@@ -1,5 +1,7 @@
+from __future__ import with_statement
+
 import os
-import shelve
+import cPickle as pickle
 import shutil
 import tempfile
 import tarfile
@@ -25,6 +27,9 @@ class Replay(object):
         usedir=False)
         """
 
+	log.msg("beta state! please don't use now", log.ERROR)
+	sys.exit(1)
+
         # XXX: this is ugly, and should be removed. but how?
         cachemw = 'scrapy.contrib.downloadermiddleware.cache.CacheMiddleware'
         if not cachemw in settings['DOWNLOADER_MIDDLEWARES']:
@@ -42,7 +47,8 @@ class Replay(object):
         self.responses_old = {}
         self.responses_new = {}
 
-        self._opendb(repfile, usedir)
+        #self._opendb(repfile, usedir)
+        self._load(repfile, usedir)
 
         settings.overrides['CACHE2_DIR'] = self.cache2dir
         settings.overrides['CACHE2_IGNORE_MISSING'] = self.playing or self.updating
@@ -84,7 +90,7 @@ class Replay(object):
         if self.recording or self.updating:
             log.msg("Replay: recorded in %s: %d/%d scraped/passed items, %d downloaded responses" % \
                 (self.repfile, len(self.scraped_old), len(self.passed_old), len(self.responses_old)))
-        self._closedb()
+        self._save()
         self.cleanup()
 
     def item_scraped(self, item, spider):
@@ -106,8 +112,8 @@ class Replay(object):
             self.responses_old[key] = response.copy()
         elif key:
             self.responses_new[key] = response.copy()
-        
-    def _opendb(self, repfile, usedir):
+
+    def _load(self, repfile, usedir):
         if usedir:
             if os.path.isdir(repfile):
                 replay_dir = repfile
@@ -140,30 +146,28 @@ class Replay(object):
         self.responses_path = os.path.join(replay_dir, "responses.db")
 
         if self.updating:
-            self.options.update(shelve.open(self.options_path))
-            #self.responses_old.update(shelve.open(self.responses_path))
+            with open(self.options_path, 'r') as f:
+                self.options = pickle.load(f)
         if self.playing:
-            self.options.update(shelve.open(self.options_path))
-            self.responses_old.update(shelve.open(self.responses_path))
-            self.scraped_old.update(shelve.open(self.scraped_path))
-            self.passed_old.update(shelve.open(self.passed_path))
+            with open(self.options_path, 'r') as f:
+                self.options = pickle.load(f)
+            with open(self.responses_path, 'r') as f:
+                self.responses_old = pickle.load(f)
+            with open(self.scraped_path, 'r') as f:
+                self.scraped_old = pickle.load(f)
+            with open(self.passed_path, 'r') as f:
+                self.passed_old = pickle.load(f)
 
-    def _persistdb(self, dict_, filename):
-        d = shelve.open(filename)
-        d.clear()
-        d.update(dict_)
-        d.close()
-        
-    def _closedb(self):
+    def _save(self):
         if self.recording or self.updating:
-            d = shelve.open(self.options_path)
-            for k, v in self.options.iteritems():
-                d[k] = v
-            d.close()
-            self._persistdb(self.options, self.options_path)
-            self._persistdb(self.scraped_old, self.scraped_path)
-            self._persistdb(self.passed_old, self.passed_path)
-            self._persistdb(self.responses_old, self.responses_path)
+            with open(self.options_path, 'w') as f:
+                pickle.dump(self.options, f)
+            with open(self.responses_path, 'w') as f:
+                pickle.dump(self.responses_old, f)
+            with open(self.scraped_path, 'w') as f:
+                pickle.dump(self.scraped_old, f)
+            with open(self.passed_path, 'w') as f:
+                pickle.dump(self.passed_old, f)
 
             if not self.usedir:
                 if self.recording or self.updating:
