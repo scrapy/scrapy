@@ -153,10 +153,9 @@ class Cache(object):
         url = metadata['url']
         original_url = metadata.get('original_url', url)
         headers = Headers(responseheaders)
-        parent = metadata.get('parent')
         status = metadata['status']
 
-        response = Response(domain=domain, url=url, original_url=original_url, headers=headers, status=status, body=responsebody, parent=parent)
+        response = Response(domain=domain, url=url, original_url=original_url, headers=headers, status=status, body=responsebody)
         response.cached = True
         return response
 
@@ -168,7 +167,6 @@ class Cache(object):
         metadata = {
                 'url':request.url,
                 'method': request.method,
-                'parent': response.parent,
                 'status': response.status,
                 'domain': response.domain,
                 'original_url': response.original_url,

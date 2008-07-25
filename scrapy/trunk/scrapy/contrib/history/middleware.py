@@ -64,7 +64,7 @@ class HistoryMiddleware(object):
         key = urlkey(url)
         if response:
             redirect_url = response.url
-            parentkey = urlkey(response.parent) if response.parent else None
+            parentkey = urlkey(response.request.headers.get('referer')) if response.request else None
             version = response.version()
         else:
             redirect_url, parentkey, version = url, None, None

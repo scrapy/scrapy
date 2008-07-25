@@ -43,9 +43,8 @@ def download_http(request, spider):
     def _response(body):
         body = body or ''
         status = factory.status
-        parent = request.headers.get('Referer')
         headers = Headers(factory.response_headers)
-        r = Response(domain=spider.domain_name, url=request.url, headers=headers, status=status, body=body, parent=parent)
+        r = Response(domain=spider.domain_name, url=request.url, headers=headers, status=status, body=body)
         signals.send_catch_log(signal=signals.request_uploaded, sender='download_http', request=request, spider=spider)
         signals.send_catch_log(signal=signals.response_downloaded, sender='download_http', response=r, spider=spider)
         return r

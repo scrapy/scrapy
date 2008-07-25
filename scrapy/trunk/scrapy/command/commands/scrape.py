@@ -7,6 +7,14 @@ from scrapy.utils.misc import load_class
 from scrapy.extension import extensions
 from scrapy.conf import settings
 
+def get_url(url):
+    from scrapy.http import Request
+    from scrapy.core.downloader.handlers import download_any
+    request = Request(url)
+    spider = spiders.fromurl(url)
+
+    return download_any(request, spider)
+
 def load_url(url, response):
     vars = {}
     itemcls = load_class(settings['DEFAULT_ITEM_CLASS'])
@@ -17,6 +25,7 @@ def load_url(url, response):
     vars['xxs'] = XmlXPathSelector(response)
     vars['hxs'] = HtmlXPathSelector(response)
     vars['spider'] = spiders.fromurl(url)
+    vars['get'] = get_url
     return vars
 
 def print_vars(vars):
