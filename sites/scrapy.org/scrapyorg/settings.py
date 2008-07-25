@@ -78,7 +78,6 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.admin',
     'django.contrib.markup',
-    'django.contrib.flatpages',
     'scrapyorg.article',
     'scrapyorg.download',
     'scrapyorg.blog',
