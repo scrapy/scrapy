@@ -1,0 +1,39 @@
+{% extends "admin/base.html" %}
+
+{% block footer %}
+<script type="text/javascript">
+/* <![CDATA[ */
+function textarea_resize() {
+    //
+    // Resize all textareas
+    //
+    textareas = document.getElementsByTagName("textarea");
+    for (var i = 0; i <= textareas.length-1; i++) {
+        try {
+            textarea = textareas[i];
+            try {
+                rows = textarea.firstChild.data.split("\n").length;
+                if (rows > 30) {
+                    rows = 30;
+                }
+            } catch(e) {
+                rows = 30;
+            }
+            textarea.rows = rows;
+        } catch (e) {
+            alert("textarea_resize() error:" + e);
+        }
+    }
+}
+textarea_resize()
+/* ]]> */
+</script>
+<style type="text/css">
+textarea {
+    font-family: monospace;
+}
+.colM .aligned .vLargeTextField, .colM .aligned .vXMLLargeTextField {
+    width:80%;
+}
+</style>
+{% endblock %}
