@@ -32,10 +32,12 @@
         </div>
         {% endif %}
 
+        {% load lastblogentry %}
+        {% get_latest_blog_entries 2 as entries %}
+
+        {% if entries %}
         <div class="box">
             <h3>Scrapy Weblog</h3>
-            {% load lastblogentry %}
-            {% get_latest_blog_entries 2 as entries %}
 
             {% for entry in entries %}
             <div class="post{% if forloop.last %} last{% endif %}">
@@ -46,6 +48,7 @@
             </div>
             {% endfor %}
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
