@@ -20,7 +20,13 @@ class Settings(object):
         self.core = self._import('scrapy.conf.core_settings')
 
     def _import(self, modulepath):
-        return __import__(modulepath, {}, {}, [''])
+        try:
+            return __import__(modulepath, {}, {}, [''])
+        except ImportError:
+            import sys
+            err = "Error: Can't find %s module in your python path\n"
+            sys.stderr.write(err % modulepath)
+            sys.exit(1)
 
     def __getitem__(self, opt_name):
         if opt_name in self.overrides:
