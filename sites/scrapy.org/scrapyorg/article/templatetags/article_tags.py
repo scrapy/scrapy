@@ -39,7 +39,7 @@ class LoadArticlesNode(template.Node):
         self.var_name = var_name
 
     def render(self, context):
-        articles = Article.objects.all()
+        articles = Article.objects.filter(publish=True)
         if self.only_main:
             articles = articles.filter(main=True)
 

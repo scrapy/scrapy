@@ -22,12 +22,15 @@ class Article(models.Model):
                                default=False, help_text=MAIN_HELP_TEXT)
     position = models.IntegerField(_("position"), core=True, blank=False,
                                    default=0)
-
+    publish = models.BooleanField(_("publish"), core=True, default=False)
 
     # automatic dates
     created = models.DateTimeField(core=True, editable=False)
     updated = models.DateTimeField(core=True, editable=False)
 
+    def toggle_publish(self):
+        self.publish = not self.publish
+        self.save()
 
     def position_up(self):
         self.position += 1
@@ -46,7 +49,7 @@ class Article(models.Model):
 
     def __unicode__(self):
         return self.title
-    
+
     # ugly, but django-admin isn't very versatile right now
     def position_link(self):
         return _("%(position)s (<a href='/admin/article/article/%(id)s/position/up/'>Up</a>" \
@@ -54,10 +57,20 @@ class Article(models.Model):
                { "position": self.position, "id": self.id }
     position_link.short_description = u"position"
     position_link.allow_tags = True
-    
+
+    def publish_link(self):
+        img_url = "/media/img/admin/icon-%s.gif" % \
+                  (self.publish and "yes" or "no")
+        html = _('<img alt="%s" src="' + img_url + '"/> ' \
+                 '(<a href="%s/publish/toggle/">Toggle</a>)')
+        return html % (_(str(self.publish)), self.id)
+    publish_link.short_description = u"publish"
+    publish_link.allow_tags = True
+
     class Admin:
-        list_display = ("title", "main", "position_link", "updated")
-        list_filter = ("main", "created")
+        list_display = ("title", "main", "position_link", "publish_link",
+                        "updated")
+        list_filter = ("main", "created", "publish")
 
     class Meta:
         verbose_name = _("article")

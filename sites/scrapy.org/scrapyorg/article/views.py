@@ -16,3 +16,9 @@ def position_down(request, article_id):
     article = get_object_or_404(Article, pk=article_id)
     article.position_down()
     return HttpResponseRedirect("/admin/article/article/")
+
+@staff_member_required
+def publish_toggle(request, article_id):
+    article = get_object_or_404(Article, pk=article_id)
+    article.toggle_publish()
+    return HttpResponseRedirect("/admin/article/article/")

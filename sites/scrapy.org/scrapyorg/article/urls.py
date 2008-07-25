@@ -6,4 +6,5 @@ from scrapyorg.article.views import *
 urlpatterns = patterns('',
     (r"^(?P<article_id>\d+)/position/up/$", position_up),
     (r"^(?P<article_id>\d+)/position/down/$", position_down),
+    (r"^(?P<article_id>\d+)/publish/toggle/$", publish_toggle),
 )
