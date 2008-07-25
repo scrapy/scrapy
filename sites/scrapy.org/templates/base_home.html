@@ -3,16 +3,13 @@
 {% block content %}
 <h1>Scrapy - an opensource screen scraping framework for python</h1>
 
-{% load link_tags %}
-{% load_links "nav-links" as "nav_links" %}
-
-{% if nav_links %}
 <ul id="navigation">
-    {% for link in nav_links %}
-    <li{% if forloop.last %} class="last"{% endif %}><a href="{{ link.address }}">{{ link.text }}</a></li>
-    {% endfor %}
+    <li><a href="/code/">Code</a>
+    <li><a href="/blog/">Weblog</a>
+    <li><a href="/doc/">Documentation</a>
+    <li><a href="/download/">Download</a>
+    <li class="last"><a href="/">Home</a>
 </ul>
-{% endif %}
 
 <div class="clear"></div>
 
@@ -54,13 +51,12 @@
 {% endblock %}
 
 {% block footer %}
-    {% load_links "footer-links" as "footer_links" %}
-    {% if footer_links %}
-    <ul>
-        <li style="border-right:none;">Scrapy : </li>
-        {% for link in footer_links %}
-        <li{% if forloop.last %} class="last"{% endif %}><a href="{{ link.address }}">{{ link.text }}</a></li>
-        {% endfor %}
-    </ul>
-    {% endif %}
+<ul>
+    <li style="border-right:none;">Scrapy : </li>
+    <li><a href="/code/">Code</a>
+    <li><a href="/blog/">Weblog</a>
+    <li><a href="/doc/">Documentation</a>
+    <li><a href="/download/">Download</a>
+    <li class="last"><a href="/">Home</a>
+</ul>
 {% endblock %}
