@@ -49,8 +49,8 @@ class Article(models.Model):
     
     # ugly, but django-admin isn't very versatile right now
     def position_link(self):
-        return _("%(position)s (<a href='/article/%(id)s/position/up/'>Up</a>" \
-               " | <a href='/article/%(id)s/position/down/'>Down</a>)") % \
+        return _("%(position)s (<a href='/admin/article/article/%(id)s/position/up/'>Up</a>" \
+                 " | <a href='/admin/article/article/%(id)s/position/down/'>Down</a>)") % \
                { "position": self.position, "id": self.id }
     position_link.short_description = u"position"
     position_link.allow_tags = True

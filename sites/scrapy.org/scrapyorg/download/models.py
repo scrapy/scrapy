@@ -32,9 +32,8 @@ class DownloadLink(models.Model):
 
     # ugly, but django-admin isn't very versatile right now
     def public_link(self):
-        return _("%(status)s (<a href='/download/%(id)s/public/toggle/'>toggle</a>)") % \
-               { 'status': self.public and _("Yes") or _("No"),
-                 'id': self.id }
+        return _("%s (<a href='%s/toggle/'>toggle</a>)") % \
+               (self.public and _("Yes") or _("No"), self.id )
     public_link.short_description = u"public"
     public_link.allow_tags = True
 

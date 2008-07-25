@@ -6,9 +6,11 @@ from django.conf import settings
 urlpatterns = patterns('',
     (r"^$", direct_to_template, { "template": "home.html" }),
     (r"^article/", include("scrapyorg.article.urls")),
-    (r"^download/", include("scrapyorg.download.urls")),
     (r"^weblog/", include("scrapyorg.blog.urls")),
 
+    # admin
+    (r"^admin/article/article/", include("scrapyorg.article.urls")),
+    (r"^admin/download/downloadlink/", include("scrapyorg.download.urls")),
     (r"^admin/", include("django.contrib.admin.urls")),
 )
 

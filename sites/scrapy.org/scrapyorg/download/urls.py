@@ -4,5 +4,5 @@ from scrapyorg.download.views import *
 
 
 urlpatterns = patterns('',
-    (r"^(?P<link_id>\d+)/public/toggle/$", toggle_public),
+    (r"^(?P<link_id>\d+)/toggle/$", toggle_public),
 )
