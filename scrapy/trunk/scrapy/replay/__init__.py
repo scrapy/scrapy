@@ -1,6 +1,7 @@
 from __future__ import with_statement
 
 import os
+import sys
 import cPickle as pickle
 import shutil
 import tempfile
