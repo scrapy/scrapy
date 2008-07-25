@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+
+import os, sys
+
+# hack to avoid using chardet which hits performance very badly
+sys.modules['chardet'] = None
+
+# to avoid (write) permission problems with images, cache, etc
+#os.umask(0002)
+
+SCRAPING_TRUNK = os.environ.get('SCRAPING_TRUNK', os.environ.get('PWD/..')).split(":")
+
+try:
+    import __project_name__
+except:
+    sys.path.extend(SCRAPING_TRUNK)
+
+try:
+    import scrapy_settings
+except:
+    sys.path.extend(['%s/__project_name__/conf' % spath for spath in SCRAPING_TRUNK])
+
+from scrapy.command.cmdline import execute
+execute()

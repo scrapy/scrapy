@@ -1,0 +1,84 @@
+import __project_name__
+
+# ---------------------------------------------------------------------------
+# - Scrapy settings for __project_name__                                             -
+# ---------------------------------------------------------------------------
+
+BOT_NAME = 'scrapy-bot'
+BOT_VERSION = '1.0'
+
+COMMANDS_MODULE = '__project_name__.commands'
+COMMANDS_SETTINGS_MODULE = '__project_name__.conf.commands'
+SPIDER_MODULES = ['__project_name__.spiders']
+NEWSPIDER_MODULE = '__project_name__.spiders'
+TEMPLATES_DIR = '%s/templates' % __project_name__.__path__[0]
+ENABLED_SPIDERS_FILE = '%s/conf/sites/production.list' % __project_name__.__path__[0]
+DEFAULT_ITEM_CLASS = '__project_name__.product.Product'
+USER_AGENT = '%s/%s' % (BOT_NAME, BOT_VERSION)
+DOWNLOAD_TIMEOUT = 600
+
+SCHEDULER = 'scrapy.core.scheduler.Scheduler'
+SCHEDULER_ORDER = 'BFO'   # available orders: BFO (default), DFO
+
+#CACHE2_DIR = '/tmp/cache2'  # if set, enables HTTP cache
+#CACHE2_IGNORE_MISSING = 0   # ignore requests not in cache
+#CACHE2_SECTORIZE = 1         # sectorize domains to distribute storage among servers
+
+#STATS_ENABLED = 1   # enable stats
+#STATS_CLEANUP = 0   # cleanup domain stats when a domain is closed (saves memory)
+#STATS_DEBUG = 0     # log stats on domain closed
+
+EXTENSIONS = (
+    'scrapy.management.web.WebConsole',
+    'scrapy.management.telnet.TelnetConsole',
+)
+
+DOWNLOADER_MIDDLEWARES = (
+    # Engine side
+    #'scrapy.contrib.downloadermiddleware.errorpages.ErrorPagesMiddleware',
+    #'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware',
+    #'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware',
+    #'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware',
+    #'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware',
+    #'scrapy.contrib.downloadermiddleware.common.CommonMiddleware',
+    #'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware',
+    #'scrapy.contrib.downloadermiddleware.compression.CompressionMiddleware',
+    #'scrapy.contrib.downloadermiddleware.debug.CrawlDebug',
+    #'scrapy.contrib.downloadermiddleware.cache.CacheMiddleware',
+    # Downloader side
+)
+
+SPIDER_MIDDLEWARES = (
+    # Engine side
+    #'scrapy.contrib.spidermiddleware.restrict.RestrictMiddleware',
+    #'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware',
+    #'scrapy.contrib.spidermiddleware.referer.CrawlMiddleware',
+    #'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware',
+    #'scrapy.contrib.spidermiddleware.depth.DepthMiddleware',
+    # Spider side
+)
+
+# Item pipelines are usually configured by commands (see conf/commands)
+#ITEM_PIPELINES = (
+#)
+
+#DEPTH_LIMIT = 10  # limit the maximum link depth to follow
+#DEPTH_STATS = 1    # enable depth stats
+
+# Limit URL length. See: http://www.boutell.com/newfaq/misc/urllength.html
+URLLENGTH_LIMIT = 2083
+
+WEBCONSOLE_ENABLED = 1
+WEBCONSOLE_PORT = 8060  # if not set uses a dynamic port
+
+#TELNETCONSOLE_ENABLED = 1
+#TELNETCONSOLE_PORT = 2020  # if not set uses a dynamic port
+
+# global mail sending settings
+#MAIL_HOST = 'localhost'
+#MAIL_FROM = 'scrapybot@localhost'
+
+# scrapy webservice
+WS_ENABLED = 0
+
+SPIDERPROFILER_ENABLED = 0
