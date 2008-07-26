@@ -1,7 +1,6 @@
 from __future__ import with_statement
 
 import os
-import sys
 import cPickle as pickle
 import shutil
 import tempfile
@@ -27,9 +26,6 @@ class Replay(object):
         repfile can be either a dir (is usedir=True) or a tar.gz file (if
         usedir=False)
         """
-
-	log.msg("beta state! please don't use now", log.ERROR)
-	sys.exit(1)
 
         # XXX: this is ugly, and should be removed. but how?
         cachemw = 'scrapy.contrib.downloadermiddleware.cache.CacheMiddleware'
