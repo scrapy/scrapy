@@ -31,7 +31,7 @@ def main():
                 os.mkdir(project_name)
                 os.mknod(os.path.join(project_name, "__init__.py"))
                 
-                for subdir in ["spiders", "conf", "commands"]:
+                for subdir in ["spiders", "conf", "commands", "templates"]:
                     os.mkdir(os.path.join(project_name, subdir))
                     os.mknod(os.path.join(project_name, subdir, "__init__.py"))
                 
