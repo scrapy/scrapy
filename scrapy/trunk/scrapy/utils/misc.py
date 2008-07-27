@@ -8,7 +8,6 @@ from twisted.python import failure
 
 from scrapy.core.exceptions import UsageError
 from scrapy.utils.python import flatten
-from decobot.utils.text_extraction import unquote_html
 
 def dict_updatedefault(D, E, **F):
     """
@@ -154,6 +153,13 @@ def load_class(class_path):
         raise UsageError, 'module "%s" does not define a "%s" class' % (module, classname)
 
     return cls
+
+def unquote_html(s, keep_reserved=False):
+    """Convert a HTML quoted string into normal string (ISO-8859-1).
+   
+    Works with &#XX; and with &nbsp; &gt; etc.
+    """
+    return re.sub(re.compile(r'&(#?)(.+?);', re.U), lambda m: convert_entity(m, keep_reserved), s)
 
 def extract_regex(regex, text, encoding):
     """Extract a list of unicode strings from the given text/encoding using the following policies:
