@@ -13,6 +13,8 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
+        parser.add_option("--nocache", dest="nocache", action="store_true", help="disable HTTP cache")
+        parser.add_option("--nopipeline", dest="nopipeline", action="store_true", help="disable scraped item pipeline")
         parser.add_option("--restrict", dest="restrict", action="store_true", help="restrict crawling only to the given urls")
         parser.add_option("--record", dest="record", help="use FILE for recording session (see replay command)", metavar="FILE")
         parser.add_option("--record-dir", dest="recorddir", help="use DIR for recording (instead of file)", metavar="DIR")
