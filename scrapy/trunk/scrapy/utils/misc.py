@@ -2,6 +2,7 @@
 Auxiliary functions which doesn't fit anywhere else
 """
 import re
+import htmlentitydefs
 
 from twisted.internet import defer, reactor
 from twisted.python import failure
@@ -153,6 +154,24 @@ def load_class(class_path):
         raise UsageError, 'module "%s" does not define a "%s" class' % (module, classname)
 
     return cls
+
+def convert_entity(m, keep_reserved=False):
+    """
+    Convert a HTML entity into unicode string
+    """
+    if m.group(1)=='#':
+        try:
+            return unichr(int(m.group(2)))
+        except ValueError:
+            return '&#%s;' % m.group(2)
+    try:
+        if not (keep_reserved and m.group(2) in ['lt', 'amp']):
+            return unichr(htmlentitydefs.name2codepoint[m.group(2)])
+        else:
+            return '&%s;' % m.group(2)
+    except KeyError:
+        return '&%s;' % m.group(2)
+
 
 def unquote_html(s, keep_reserved=False):
     """Convert a HTML quoted string into normal string (ISO-8859-1).
