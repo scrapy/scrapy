@@ -1,7 +1,7 @@
 import __project_name__
 
 # ---------------------------------------------------------------------------
-# - Scrapy settings for __project_name__                                             -
+# - Scrapy settings for __project_name__                                    -
 # ---------------------------------------------------------------------------
 
 BOT_NAME = 'scrapy-bot'
@@ -13,7 +13,7 @@ SPIDER_MODULES = ['__project_name__.spiders']
 NEWSPIDER_MODULE = '__project_name__.spiders'
 TEMPLATES_DIR = '%s/templates' % __project_name__.__path__[0]
 ENABLED_SPIDERS_FILE = '%s/conf/enabled_spiders.list' % __project_name__.__path__[0]
-DEFAULT_ITEM_CLASS = '__project_name__.product.Product'
+DEFAULT_ITEM_CLASS = 'scrapy.item.ScrapedItem'
 USER_AGENT = '%s/%s' % (BOT_NAME, BOT_VERSION)
 DOWNLOAD_TIMEOUT = 600
 
