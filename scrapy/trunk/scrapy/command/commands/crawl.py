@@ -1,6 +1,7 @@
 from scrapy.command import ScrapyCommand
 from scrapy.core.manager import scrapymanager
 from scrapy.replay import Replay
+from scrapy.report import Report
 from scrapy.conf import settings
 
 
@@ -18,6 +19,8 @@ class Command(ScrapyCommand):
         parser.add_option("--restrict", dest="restrict", action="store_true", help="restrict crawling only to the given urls")
         parser.add_option("--record", dest="record", help="use FILE for recording session (see replay command)", metavar="FILE")
         parser.add_option("--record-dir", dest="recorddir", help="use DIR for recording (instead of file)", metavar="DIR")
+        parser.add_option("--report", dest="doreport", action='store_true', help="generate a report of the scraped products in a text file")
+        parser.add_option("--report-dropped", dest="doreport_dropped", action="store_true", help="choose whether to report dropped products or not")
 
     def process_options(self, args, opts):
         ScrapyCommand.process_options(self, args, opts)
@@ -35,6 +38,8 @@ class Command(ScrapyCommand):
             # disconnecting since pydispatcher uses weak references 
             self.replay = Replay(opts.record or opts.recorddir, mode='record', usedir=bool(opts.recorddir))
             self.replay.record(args=args, opts=opts.__dict__)
+        if opts.doreport:
+            self.report = Report(dropped=opts.doreport_dropped)
 
     def run(self, args, opts):
         scrapymanager.runonce(*args, **opts.__dict__)
