@@ -17,10 +17,16 @@ class Report(object):
         if self.dropped:
             dispatcher.connect(self.item_dropped, signal=signals.item_dropped)
 
-    def get_product_text(self, product, dropped=False):
-        product_text = ''
+    def get_product_attribs(self, product):
+        product_attribs = ''
         for attrib, value in product.iteritems():
-            product_text = '%s%s: %s\n' % (product_text, attrib, value)
+            product_attribs = '%s%s: %s\n' % (product_attribs, attrib, value)
+        return product_attribs
+
+    def get_product_text(self, product, dropped=False):
+        product_text = '###Product\n%s' % self.get_product_attribs(product)
+        if product.variants:
+            product_text = '%s\n##Variants\n%s' % (product_text, ''.join([self.get_product_attribs(variant) for variant in product.variants]))
         if dropped:
             product_text = '%sdropping reason: %s\n' % (product_text, dropped)
         product_text = product_text + '\n\n'
