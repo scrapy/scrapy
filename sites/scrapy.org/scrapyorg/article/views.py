@@ -1,24 +1,21 @@
-from django.shortcuts import get_object_or_404
-from django.http import HttpResponseRedirect
-from django.contrib.admin.views.decorators import staff_member_required
+from os.path import join
 
-from scrapyorg.article.models import Article
+from django.template import TemplateDoesNotExist
+from django.template.context import RequestContext
+from django.shortcuts import render_to_response
+from django.http import Http404
 
 
-@staff_member_required
-def position_up(request, article_id):
-    article = get_object_or_404(Article, pk=article_id)
-    article.position_up()
-    return HttpResponseRedirect("/admin/article/article/")
+ARTICLES_TEMPLATES_DIR = "articles"
 
-@staff_member_required
-def position_down(request, article_id):
-    article = get_object_or_404(Article, pk=article_id)
-    article.position_down()
-    return HttpResponseRedirect("/admin/article/article/")
 
-@staff_member_required
-def publish_toggle(request, article_id):
-    article = get_object_or_404(Article, pk=article_id)
-    article.toggle_publish()
-    return HttpResponseRedirect("/admin/article/article/")
+def render_template(request, path):
+    if not path.endswith(".html"):
+        path = path + ".html"
+    path = join(ARTICLES_TEMPLATES_DIR, path)
+
+    try:
+        c = RequestContext(request)
+        return render_to_response(path, context_instance=c)
+    except TemplateDoesNotExist, e:
+        raise Http404("Article does not exists")
