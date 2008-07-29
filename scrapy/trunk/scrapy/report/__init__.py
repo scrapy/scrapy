@@ -4,16 +4,18 @@ from pydispatch import dispatcher
 from scrapy.core import signals
 
 class Report(object):
-    def __init__(self, dropped):
+    def __init__(self, passed, dropped):
         self.domain = ''
         self.passed_file = None
         self.dropped_file = None
+        self.passed = passed
         self.dropped = dropped
         self.total = { 'passed': 0, 'dropped': 0 }
 
         dispatcher.connect(self.domain_open, signal=signals.domain_open)
-        dispatcher.connect(self.item_passed, signal=signals.item_passed)
         dispatcher.connect(self.engine_stopped, signal=signals.engine_stopped)
+        if self.passed:
+            dispatcher.connect(self.item_passed, signal=signals.item_passed)
         if self.dropped:
             dispatcher.connect(self.item_dropped, signal=signals.item_dropped)
 
@@ -28,7 +30,7 @@ class Report(object):
         if product.variants:
             product_text = '%s\n##Variants\n%s' % (product_text, ''.join([self.get_product_attribs(variant) for variant in product.variants]))
         if dropped:
-            product_text = '%sdropping reason: %s\n' % (product_text, dropped)
+            product_text = '%s--- Dropping reason: %s ---\n' % (product_text, dropped)
         product_text = product_text + '\n\n'
         return product_text
 
@@ -36,9 +38,10 @@ class Report(object):
         self.domain = domain
         now = datetime.now()
         filename = '%s_%s_%s.report' % (self.domain, now.strftime('%Y%m%d'), now.strftime('%H%M'))
-        self.passed_file = open(filename, 'w')
-        self.passed_file.write('Scraping results for domain "%s"\n\n%s%s%s' % (self.domain, '##################################\n',
-          '### Products scraped correctly ###\n', '##################################\n'))
+        if self.passed:
+            self.passed_file = open(filename, 'w')
+            self.passed_file.write('Scraping results for domain "%s"\n\n%s%s%s' % (self.domain, '##################################\n',
+              '### Products scraped correctly ###\n', '##################################\n'))
         if self.dropped:
             self.dropped_file = open(filename + '.dropped', 'w')
             self.dropped_file.write('Scraping results for domain "%s"\n\n%s%s%s' % (self.domain,
@@ -53,8 +56,9 @@ class Report(object):
         self.dropped_file.write(self.get_product_text(item, exception))
 
     def engine_stopped(self):
-        self.passed_file.write('\n--- Total scraped products: %d\n' % self.total['passed'])
-        self.passed_file.close()
+        if self.passed:
+            self.passed_file.write('\n--- Total scraped products: %d\n' % self.total['passed'])
+            self.passed_file.close()
         if self.dropped:
             self.dropped_file.write('\n--- Total dropped products: %d\n' % self.total['dropped'])
             self.dropped_file.close()

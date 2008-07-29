@@ -20,7 +20,7 @@ class Command(ScrapyCommand):
         parser.add_option("--record", dest="record", help="use FILE for recording session (see replay command)", metavar="FILE")
         parser.add_option("--record-dir", dest="recorddir", help="use DIR for recording (instead of file)", metavar="DIR")
         parser.add_option("--report", dest="doreport", action='store_true', help="generate a report of the scraped products in a text file")
-        parser.add_option("--report-dropped", dest="doreport_dropped", action="store_true", help="choose whether to report dropped products or not")
+        parser.add_option("--report-dropped", dest="doreport_dropped", action="store_true", help="generate a report of the dropped products in a text file")
 
     def process_options(self, args, opts):
         ScrapyCommand.process_options(self, args, opts)
@@ -38,8 +38,8 @@ class Command(ScrapyCommand):
             # disconnecting since pydispatcher uses weak references 
             self.replay = Replay(opts.record or opts.recorddir, mode='record', usedir=bool(opts.recorddir))
             self.replay.record(args=args, opts=opts.__dict__)
-        if opts.doreport:
-            self.report = Report(dropped=opts.doreport_dropped)
+        if opts.doreport or opts.doreport_dropped:
+            self.report = Report(passed=opts.doreport, dropped=opts.doreport_dropped)
 
     def run(self, args, opts):
         scrapymanager.runonce(*args, **opts.__dict__)
