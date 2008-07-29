@@ -33,4 +33,4 @@ class DepthMiddleware(object):
         if self.stats and response.request.depth == 0: # otherwise we loose stats for depth=0 
             stats.incpath('%s/request_depth_count/0' % spider.domain_name)
 
-        return [r for r in result or () if _filter(r)]
+        return (r for r in result or () if _filter(r))

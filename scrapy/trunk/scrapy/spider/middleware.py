@@ -2,14 +2,19 @@
 Spider middleware manager
 """
 
-import types
 
 from twisted.python.failure import Failure
 
 from scrapy.core import log
 from scrapy.core.exceptions import NotConfigured
-from scrapy.utils.misc import load_class, mustbe_deferred, deferred_degenerate
+from scrapy.utils.misc import load_class, mustbe_deferred
 from scrapy.conf import settings
+
+def _isiterable(possible_iterator):
+    try:
+        return iter(possible_iterator)
+    except TypeError:
+        return None
 
 class SpiderMiddlewareManager(object):
     def __init__(self, callback=None, errback=None):
@@ -55,8 +60,8 @@ class SpiderMiddlewareManager(object):
         def process_scrape(response):
             for method in self.spider_middleware:
                 result = method(response=response, spider=spider)
-                assert result is None or isinstance(result, (list, tuple)), \
-                    'Middleware %s must returns None, list or tuple, got %s ' % \
+                assert result is None or _isiterable(result), \
+                    'Middleware %s must returns None or an iterable object, got %s ' % \
                     (fname(method), type(result))
                 if result is not None:
                     return result
@@ -66,8 +71,8 @@ class SpiderMiddlewareManager(object):
         def process_result(result):
             for method in self.result_middleware:
                 result = method(response=response, result=result, spider=spider)
-                assert isinstance(result, (list, tuple)), \
-                    'Middleware %s must returns list or tuple, got %s ' % \
+                assert _isiterable(result), \
+                    'Middleware %s must returns an iterable object, got %s ' % \
                     (fname(method), type(result))
             return result
 
@@ -75,20 +80,14 @@ class SpiderMiddlewareManager(object):
             exception = _failure.value
             for method in self.exception_middleware:
                 result = method(response=response, exception=exception, spider=spider)
-                assert result is None or isinstance(result, (list, tuple)), \
-                    'Middleware %s must returns None, list or tuple, got %s ' % \
+                assert result is None or _isiterable(result), \
+                    'Middleware %s must returns None, or an iterable object, got %s ' % \
                     (fname(method), type(result))
                 if result is not None:
                     return result
             return _failure
 
-        def _degenerate(gen):
-            if isinstance(gen, types.GeneratorType):
-                return deferred_degenerate(gen)
-            return gen
-
         dfd = mustbe_deferred(process_scrape, response)
-        dfd.addCallback(_degenerate)
         dfd.addErrback(process_exception)
         dfd.addCallback(process_result)
         return dfd

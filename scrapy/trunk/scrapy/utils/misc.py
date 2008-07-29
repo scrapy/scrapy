@@ -111,19 +111,19 @@ def memoize(cache, hash):
     return decorator
 
 
-def deferred_degenerate(generator):
+def deferred_degenerate(generator, container=None, next_delay=0):
     generator = iter(generator)
     deferred = defer.Deferred()
-    result = []
+    container = container or []
     def _next():
         try:
-            result.append(generator.next())
+            container.append(generator.next())
         except StopIteration:
-            reactor.callLater(0, deferred.callback, result)
+            reactor.callLater(0, deferred.callback, container)
         except:
             reactor.callLater(0, deferred.errback, failure.Failure())
         else:
-            reactor.callLater(0, _next)
+            reactor.callLater(next_delay, _next)
     _next()
     return deferred
 

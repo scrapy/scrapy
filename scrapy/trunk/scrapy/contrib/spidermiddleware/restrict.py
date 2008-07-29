@@ -17,5 +17,5 @@ class RestrictMiddleware(object):
             if isinstance(r, Request) and r.url not in self.allowed_urls:
                 return False
             return True
-        return [r for r in result or () if _filter(r)]
+        return (r for r in result or () if _filter(r))
 

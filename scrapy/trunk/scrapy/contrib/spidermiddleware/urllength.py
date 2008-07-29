@@ -19,4 +19,4 @@ class UrlLengthMiddleware(object):
             else:
                 return True
 
-        return [r for r in result or () if _filter(r)]
+        return (r for r in result or () if _filter(r))

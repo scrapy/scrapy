@@ -17,7 +17,7 @@ from scrapy.item import ScrapedItem
 from scrapy.item.pipeline import ItemPipeline
 from scrapy.spider import spiders
 from scrapy.spider.middleware import SpiderMiddlewareManager
-from scrapy.utils.misc import chain_deferred, defer_succeed, mustbe_deferred
+from scrapy.utils.misc import chain_deferred, defer_succeed, mustbe_deferred, deferred_degenerate
 from scrapy.conf import settings
 
 
@@ -238,18 +238,24 @@ class ExecutionEngine(object):
                     signals.send_catch_log(signal=signals.item_passed, sender=self.__class__, item=item, spider=spider, response=response, pipe_output=pipe_result)
                 self.next_request(spider)
 
+            def _onsuccess_per_item(item):
+                if isinstance(item, ScrapedItem):
+                    log.msg("Scraped %s in <%s>" % (item, request.url), log.DEBUG, domain=domain)
+                    signals.send_catch_log(signal=signals.item_scraped, sender=self.__class__, item=item, spider=spider, response=response)
+                    piped = self.pipeline.pipe(item, spider, response) # TODO: remove response
+                    piped.addBoth(_onpipelinefinish, item)
+                elif isinstance(item, Request):
+                    signals.send_catch_log(signal=signals.request_received, sender=self.__class__, request=item, spider=spider, response=response)
+                    self.crawl(request=item, spider=spider, priority=priority)
+                else:
+                    log.msg('Garbage found in spider output while processing %s, got type %s' % (request, type(item)), log.TRACE, domain=domain)
+
+            class _ResultContainer(object):
+                def append(self, item):
+                    _onsuccess_per_item(item)
+
             def _onsuccess(result):
-                for item in result or ():
-                    if isinstance(item, ScrapedItem):
-                        log.msg("Scraped %s in <%s>" % (item, request.url), log.DEBUG, domain=domain)
-                        signals.send_catch_log(signal=signals.item_scraped, sender=self.__class__, item=item, spider=spider, response=response)
-                        piped = self.pipeline.pipe(item, spider, response) # TODO: remove response
-                        piped.addBoth(_onpipelinefinish, item)
-                    elif isinstance(item, Request):
-                        signals.send_catch_log(signal=signals.request_received, sender=self.__class__, request=item, spider=spider, response=response)
-                        self.crawl(request=item, spider=spider, priority=priority)
-                    else:
-                        log.msg('Garbage found in spider output while processing %s, got type %s' % (request, type(item)), log.TRACE, domain=domain)
+                return deferred_degenerate(result, _ResultContainer())
 
             def _onerror(_failure):
                 if not isinstance(_failure.value, IgnoreRequest):
@@ -259,10 +265,13 @@ class ExecutionEngine(object):
             def _bugtrap(_failure):
                 log.msg('FRAMEWORK BUG processing %s: %s' % (request, _failure), log.ERROR, domain=domain)
 
+
             scd = self.scrape(request, response, spider)
             scd.addCallbacks(_onsuccess, _onerror)
             scd.addErrback(_bugtrap)
-            scd.addBoth(lambda _:response)
+
+            self._scraping[domain].add(response)
+            scd.addBoth(lambda _: self._scraping[domain].remove(response))
             return scd
 
         def _cleanfailure(_failure):
@@ -277,13 +286,7 @@ class ExecutionEngine(object):
         return schd
 
     def scrape(self, request, response, spider):
-        domain = spider.domain_name
-        scd = self.spidermiddleware.scrape(request, response, spider)
-        self._scraping[domain].add(response)
-        def _remove(_):
-            self._scraping[domain].remove(response)
-            return _
-        return scd.addBoth(_remove)
+        return self.spidermiddleware.scrape(request, response, spider)
 
     def schedule(self, request, spider, priority=1, domain_priority=1):
         domain = spider.domain_name

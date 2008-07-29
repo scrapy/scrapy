@@ -8,5 +8,5 @@ class CrawlMiddleware(object):
             if isinstance(r, Request):
                 r.headers.setdefault('Referer', response.url)
             return r
-        return [_set_referer(r) for r in result or ()]
+        return (_set_referer(r) for r in result or ())
 

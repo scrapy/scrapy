@@ -9,5 +9,5 @@ class OffsiteMiddleware(object):
                 log.msg("Ignoring link (offsite): %s " % r.url, level=log.DEBUG, domain=spider.domain_name)
                 return False
             return True
-        return [r for r in result or () if _filter(r)]
+        return (r for r in result or () if _filter(r))
 
