@@ -28,7 +28,7 @@ class Report(object):
     def get_product_text(self, product, dropped=False):
         product_text = '###Product\n%s' % self.get_product_attribs(product)
         if product.variants:
-            product_text = '%s\n##Variants\n%s' % (product_text, ''.join([self.get_product_attribs(variant) for variant in product.variants]))
+            product_text = '%s\n##Variants\n%s' % (product_text, '\n'.join([self.get_product_attribs(variant) for variant in product.variants]))
         if dropped:
             product_text = '%s--- Dropping reason: %s ---\n' % (product_text, dropped)
         product_text = product_text + '\n\n'
