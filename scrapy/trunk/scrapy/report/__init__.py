@@ -57,8 +57,10 @@ class Report(object):
 
     def engine_stopped(self):
         if self.passed:
-            self.passed_file.write('\n--- Total scraped products: %d\n' % self.total['passed'])
-            self.passed_file.close()
+            if self.passed_file:
+                self.passed_file.write('\n--- Total scraped products: %d\n' % self.total['passed'])
+                self.passed_file.close()
         if self.dropped:
-            self.dropped_file.write('\n--- Total dropped products: %d\n' % self.total['dropped'])
-            self.dropped_file.close()
+            if self.dropped_file:
+                self.dropped_file.write('\n--- Total dropped products: %d\n' % self.total['dropped'])
+                self.dropped_file.close()
