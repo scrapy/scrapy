@@ -48,6 +48,7 @@ class Replay(object):
         self._load(repfile, usedir)
 
         settings.overrides['CACHE2_DIR'] = self.cache2dir
+        settings.overrides['CACHE2_EXPIRATION_SECS'] = -1
         settings.overrides['CACHE2_IGNORE_MISSING'] = self.playing or self.updating
         settings.overrides['CACHE2_SECTORIZE'] = False
 
