@@ -10,7 +10,7 @@ class Report(object):
         self.dropped_file = None
         self.passed = passed
         self.dropped = dropped
-        self.total = { 'passed': 0, 'dropped': 0 }
+        self.total = { 'passed': 0, 'dropped': 0, 'variants': 0 }
 
         dispatcher.connect(self.domain_open, signal=signals.domain_open)
         dispatcher.connect(self.engine_stopped, signal=signals.engine_stopped)
@@ -49,6 +49,7 @@ class Report(object):
 
     def item_passed(self, item, spider):
         self.total['passed'] += 1
+        self.total['variants'] += len(item.variants)
         self.passed_file.write(self.get_product_text(item))
 
     def item_dropped(self, item, spider, response, exception):
@@ -58,7 +59,7 @@ class Report(object):
     def engine_stopped(self):
         if self.passed:
             if self.passed_file:
-                self.passed_file.write('\n--- Total scraped products: %d\n' % self.total['passed'])
+                self.passed_file.write('\n--- Total scraped: %d products + %d variants\n' % (self.total['passed'], self.total['variants']))
                 self.passed_file.close()
         if self.dropped:
             if self.dropped_file:
