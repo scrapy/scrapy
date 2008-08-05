@@ -18,6 +18,6 @@ def mysql_connect(db_uri, **kwargs):
             del(d['passwd'])
 
         d['charset'] = "utf8"
-        d['reconnect'] = 1
+        #d['reconnect'] = 1
         d.update(kwargs)
         return MySQLdb.connect(**d)
