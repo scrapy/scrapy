@@ -2,6 +2,7 @@
 Function for dealing with databases
 """
 import re
+from scrapy.conf import settings
 
 def mysql_connect(db_uri, **kwargs):
     """
@@ -17,7 +18,6 @@ def mysql_connect(db_uri, **kwargs):
         if d['passwd'] is None:
             del(d['passwd'])
 
-        d['charset'] = "utf8"
-        #d['reconnect'] = 1
+        d.update(settings.get("MYSQL_CONNECTION_SETTINGS"))
         d.update(kwargs)
         return MySQLdb.connect(**d)
