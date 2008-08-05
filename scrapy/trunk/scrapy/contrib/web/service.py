@@ -81,7 +81,7 @@ urlmapping = (
 
 class UrlToGuidService(WebSite):
     def __init__(self):
-        if not settings['WS_ENABLED']:
+        if not settings.getbool('WS_ENABLED'):
             raise NotConfigured
 
         port = settings.getint('WS_PORT') or 8088
