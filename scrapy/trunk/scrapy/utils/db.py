@@ -4,6 +4,7 @@ Function for dealing with databases
 import re
 from scrapy.conf import settings
 from scrapy.core import log
+from scrapy.core.engine import scrapyengine
 
 def mysql_connect(db_uri, **kwargs):
     """
@@ -27,4 +28,12 @@ def mysql_connect(db_uri, **kwargs):
             dcopy["passwd"] = "********"
         log.msg("Connecting db with settings %s" % dcopy )
         
-        return MySQLdb.connect(**d)
+        conn = MySQLdb.connect(**d)
+        
+        #this is to maintain active the connection
+        def _ping():
+            log.msg("Pinging connection to %s/%s" % (d.get('host'), d.get('db')) )
+            conn.ping()
+        scrapyengine.addtask(_ping, settings.getint("MYSQL_CONNECTION_PING_PERIOD", 600))
+        
+        return conn

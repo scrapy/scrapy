@@ -17,6 +17,7 @@ DEFAULT_ITEM_CLASS = 'scrapy.item.ScrapedItem'
 USER_AGENT = '%s/%s' % (BOT_NAME, BOT_VERSION)
 DOWNLOAD_TIMEOUT = 600
 MYSQL_CONNECTION_SETTINGS = {"charset": "utf8" }
+MYSQL_CONNECTION_PING_PERIOD = 600
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_ORDER = 'BFO'   # available orders: BFO (default), DFO
