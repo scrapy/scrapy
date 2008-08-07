@@ -3,6 +3,7 @@ Function for dealing with databases
 """
 import re
 from scrapy.conf import settings
+from scrapy.core import log
 
 def mysql_connect(db_uri, **kwargs):
     """
@@ -20,4 +21,5 @@ def mysql_connect(db_uri, **kwargs):
 
         d.update(settings.get("MYSQL_CONNECTION_SETTINGS"))
         d.update(kwargs)
+        log.msg("Connecting db with settings %s" % d )
         return MySQLdb.connect(**d)
