@@ -23,7 +23,6 @@ def mysql_connect(db_uri, **kwargs):
         d.update(kwargs)
         
         dcopy = d.copy()
-        print dcopy
         if dcopy.get("passwd"):
             dcopy["passwd"] = "********"
         log.msg("Connecting db with settings %s" % dcopy )
