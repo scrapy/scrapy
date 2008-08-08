@@ -27,7 +27,7 @@ def my_import(name):
         mod = getattr(mod, comp)
     return mod
 
-class Node(pb.Referenceable):
+class Broker(pb.Referenceable):
     def __init__(self, remote, name, master):
         self.__remote = remote
         self.alive = False
@@ -177,7 +177,7 @@ class ClusterMaster:
         self.loading = []
         self.nodes = {}
         self.start_time = datetime.datetime.utcnow()
-        #on how statistics works, see self.update_nodes() and Nodes.remote_update()
+        #on how statistics works, see self.update_nodes() and Broker.remote_update()
         self.statistics = {"domains": {"running": set(), "scraped": {}, "lost_count": {}, "lost": set()}, "scraped_count": 0 }
         self.global_settings = {}
         #load cluster global settings
@@ -231,7 +231,7 @@ class ClusterMaster:
             
     def add_node(self, cworker, name):
         """Add node given its node"""
-        node = Node(cworker, name, self)
+        node = Broker(cworker, name, self)
         self.nodes[name] = node
         log.msg("Added cluster worker %s" % name)
 

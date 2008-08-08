@@ -19,7 +19,7 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.env = {}
         #We conserve original setting format for info purposes (avoid lots of unnecesary "SCRAPY_")
         self.scrapy_settings = spider_settings or {}
-        self.scrapy_settings.update({'LOGFILE': self.logfile, 'CLUSTER_WORKER_ENABLED': '0', 'WEBCONSOLE_ENABLED': '0'})
+        self.scrapy_settings.update({'LOGFILE': self.logfile, 'CLUSTER_WORKER_ENABLED': 0, 'CLUSTER_CRAWLER_ENABLED': 1, 'WEBCONSOLE_ENABLED': 0})
         pickled_settings = pickle.dumps(self.scrapy_settings)
         self.env["SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE"] = pickled_settings
         self.env["PYTHONPATH"] = ":".join(sys.path)#this is need so this crawl process knows where to locate local_scrapy_settings.
@@ -41,6 +41,7 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         log.msg("ClusterWorker: finished domain=%s, pid=%d, log=%s" % (self.domain, self.pid, self.logfile))
         log.msg("Reason type: %s. value: %s" % (reason.type, reason.value) )
         del self.procman.running[self.domain]
+        del self.procman.crawlers[self.domain]
         self.procman.update_master(self.domain, "scraped")
 
 class ClusterWorker(pb.Root):
@@ -51,7 +52,8 @@ class ClusterWorker(pb.Root):
 
         self.maxproc = settings.getint('CLUSTER_WORKER_MAXPROC')
         self.logdir = settings['CLUSTER_LOGDIR']
-        self.running = {}
+        self.running = {}#a dict domain->ScrapyProcessControl 
+        self.crawlers = {}#a dict domain->scrapy process remote pb connection
         self.starttime = datetime.datetime.utcnow()
         port = settings.getint('CLUSTER_WORKER_PORT')
         scrapyengine.listenTCP(port, pb.PBServerFactory(self))
@@ -86,8 +88,8 @@ class ClusterWorker(pb.Root):
         if domain in self.running:
             proc = self.running[domain]
             log.msg("ClusterWorker: Sending shutdown signal to domain=%s, pid=%d" % (domain, proc.pid))
-            proc.transport.signalProcess('INT')
-            proc.status = "closing"
+            d = self.crawler["domain"].callRemote("stop")
+            d.addCallbacks(callback=lambda x: proc.status="closing", errback=lambda reason: log.msg(reason, log.ERROR))
             return self.status(0, "Stopped process %s" % proc)
         else:
             return self.status(1, "%s: domain not running." % domain)
@@ -118,3 +120,6 @@ class ClusterWorker(pb.Root):
                 return self.status(0, "Started process %s." % scrapy_proc)
             return self.status(2, "Domain %s already running." % domain )
         return self.status(1, "No free slot to run another process.")
+
+    def remote_register_crawler(self, domain, crawler):
+        self.crawlers['domain'] = crawler
