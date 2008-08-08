@@ -89,7 +89,9 @@ class ClusterWorker(pb.Root):
             proc = self.running[domain]
             log.msg("ClusterWorker: Sending shutdown signal to domain=%s, pid=%d" % (domain, proc.pid))
             d = self.crawler["domain"].callRemote("stop")
-            d.addCallbacks(callback=lambda x: proc.status="closing", errback=lambda reason: log.msg(reason, log.ERROR))
+            def _close():
+                proc.status = "closing"
+            d.addCallbacks(callback=_close, errback=lambda reason: log.msg(reason, log.ERROR))
             return self.status(0, "Stopped process %s" % proc)
         else:
             return self.status(1, "%s: domain not running." % domain)
