@@ -41,7 +41,7 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         log.msg("ClusterWorker: finished domain=%s, pid=%d, log=%s" % (self.domain, self.pid, self.logfile))
         log.msg("Reason type: %s. value: %s" % (reason.type, reason.value) )
         del self.procman.running[self.domain]
-        del self.procman.crawlers[self.domain]
+        del self.procman.crawlers[self.pid]
         self.procman.update_master(self.domain, "scraped")
 
 class ClusterWorker(pb.Root):
@@ -53,7 +53,7 @@ class ClusterWorker(pb.Root):
         self.maxproc = settings.getint('CLUSTER_WORKER_MAXPROC')
         self.logdir = settings['CLUSTER_LOGDIR']
         self.running = {}#a dict domain->ScrapyProcessControl 
-        self.crawlers = {}#a dict domain->scrapy process remote pb connection
+        self.crawlers = {}#a dict pid->scrapy process remote pb connection
         self.starttime = datetime.datetime.utcnow()
         port = settings.getint('CLUSTER_WORKER_PORT')
         scrapyengine.listenTCP(port, pb.PBServerFactory(self))
@@ -88,7 +88,7 @@ class ClusterWorker(pb.Root):
         if domain in self.running:
             proc = self.running[domain]
             log.msg("ClusterWorker: Sending shutdown signal to domain=%s, pid=%d" % (domain, proc.pid))
-            d = self.crawler["domain"].callRemote("stop")
+            d = self.crawlers[proc.pid].callRemote("stop")
             def _close():
                 proc.status = "closing"
             d.addCallbacks(callback=_close, errback=lambda reason: log.msg(reason, log.ERROR))
@@ -123,5 +123,5 @@ class ClusterWorker(pb.Root):
             return self.status(2, "Domain %s already running." % domain )
         return self.status(1, "No free slot to run another process.")
 
-    def remote_register_crawler(self, domain, crawler):
-        self.crawlers['domain'] = crawler
+    def remote_register_crawler(self, pid, crawler):
+        self.crawlers[pid] = crawler
