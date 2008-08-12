@@ -86,7 +86,8 @@ class ExecutionEngine(object):
     def removetask(self, tsk):
         """Remove a looping task previously added with addtask() method"""
         self.tasks = [(t, i, n) for (t, i, n) in self.tasks if t is not tsk]
-        tsk.stop()
+        if tsk.running:
+            tsk.stop()
 
     def listenTCP(self, *args, **kwargs):
         if self.running:
@@ -130,7 +131,8 @@ class ExecutionEngine(object):
                 spider = spiders.fromdomain(domain)
                 signals.send_catch_log(signal=signals.domain_closed, sender=self.__class__, domain=domain, spider=spider, status='cancelled')
             for tsk, _, _ in self.tasks: # stop looping calls
-                tsk.stop()
+                if tsk.running:
+                    tsk.stop()
             self.tasks = []
             for p in [p for p in self.ports if not isinstance(p, tuple)]:
                 p.stopListening()
@@ -143,7 +145,7 @@ class ExecutionEngine(object):
         self.paused = True
 
     def resume(self):
-        """Resume the execution enine"""
+        """Resume the execution engine"""
         self.paused = False
 
     def is_idle(self):
