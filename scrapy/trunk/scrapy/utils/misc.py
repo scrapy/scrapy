@@ -202,4 +202,12 @@ def extract_regex(regex, text, encoding):
     else:
         return [unquote_html(unicode(s, encoding), keep_reserved=True) for s in strings]
 
+_regex_type = type(re.compile("", 0))
 
+def location_str(location):
+    """Return a human friendly representation of a parser location"""
+
+    if isinstance(location, _regex_type):
+        return "(regex) " + location.pattern
+    else:
+        return location
