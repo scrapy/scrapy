@@ -56,7 +56,8 @@ class Replay(object):
         dispatcher.connect(self.engine_stopped, signal=signals.engine_stopped)
         dispatcher.connect(self.item_scraped, signal=signals.item_scraped)
         dispatcher.connect(self.item_passed, signal=signals.item_passed)
-        dispatcher.connect(self.response_downloaded, signal=signals.response_downloaded)
+        dispatcher.connect(self.response_received, signal=signals.response_received)
+
 
     def play(self, args=None, opts=None):
         if self.recording:
@@ -86,7 +87,7 @@ class Replay(object):
 
     def engine_stopped(self):
         if self.recording or self.updating:
-            log.msg("Replay: recorded in %s: %d/%d scraped/passed items, %d downloaded responses" % \
+            log.msg("Replay: recorded in %s: %d/%d scraped/passed items, %d received responses" % \
                 (self.repfile, len(self.scraped_old), len(self.passed_old), len(self.responses_old)))
         self._save()
         self.cleanup()
@@ -103,10 +104,10 @@ class Replay(object):
         else:
             self.passed_new[str(item.guid)] = item.copy()
 
-    def response_downloaded(self, response, spider):
+    def response_received(self, response, spider):
         #key = response.request.fingerprint()
         key = response.version()
-        if self.recording and key:
+        if (self.recording or self.updating) and key:
             self.responses_old[key] = response.copy()
         elif key:
             self.responses_new[key] = response.copy()
