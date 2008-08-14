@@ -1,7 +1,7 @@
 """
 request-response middleware extension
 """
-from scrapy.core import log
+from scrapy.core import signals, log
 from scrapy.http import Request, Response
 from scrapy.core.exceptions import NotConfigured
 from scrapy.utils.misc import load_class, mustbe_deferred
@@ -51,7 +51,7 @@ class DownloaderMiddlewareManager(object):
         function.
 
         If returns a Response object, Scrapy won't bother calling ANY other
-        request or exception middleware, or the appropriate download function;
+        request or exception middleware, or the appropiate download function;
         it'll return that Response. Response middleware is always called on
         every response.
 
@@ -132,7 +132,7 @@ class DownloaderMiddlewareManager(object):
             for method in self.request_middleware:
                 response = method(request=request, spider=spider)
                 assert response is None or isinstance(response, (Response, Request)), \
-                        'Middleware %s.process_request must returns None, Response or Request, got %s ' % \
+                        'Middleware %s.process_request must return None, Response or Request, got %s' % \
                         (method.im_self.__class__.__name__, response.__class__.__name__)
                 if response:
                     return response
@@ -146,10 +146,12 @@ class DownloaderMiddlewareManager(object):
             for method in self.response_middleware:
                 response = method(request=request, response=response, spider=spider)
                 assert isinstance(response, (Response, Request)), \
-                    'Middleware %s.process_response must returns Response or Request, got %s ' % \
+                    'Middleware %s.process_response must return Response or Request, got %s' % \
                     (method.im_self.__class__.__name__, type(response))
                 if isinstance(response, Request):
+                    signals.send_catch_log(signal=signals.response_received, sender=self.__class__, response=response, spider=spider)
                     return response
+            signals.send_catch_log(signal=signals.response_received, sender=self.__class__, response=response, spider=spider)
             return response
 
         def process_exception(_failure):
@@ -157,7 +159,7 @@ class DownloaderMiddlewareManager(object):
             for method in self.exception_middleware:
                 response = method(request=request, exception=exception, spider=spider)
                 assert response is None or isinstance(response, (Response, Request)), \
-                    'Middleware %s.process_exception must returns None, Response or Request, got %s ' % \
+                    'Middleware %s.process_exception must return None, Response or Request, got %s' % \
                     (method.im_self.__class__.__name__, type(response))
                 if response:
                     return response

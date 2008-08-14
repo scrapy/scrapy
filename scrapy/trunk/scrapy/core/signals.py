@@ -43,6 +43,10 @@ request_received = object()
 # args: request, spider
 request_uploaded = object()
 
+# When new response is received (by the engine) from the downloader (middleware)
+# args: response, spider
+response_received = object()
+
 # When response arrives from the downloader
 # args: response, spider
 response_downloaded = object()
