@@ -6,6 +6,7 @@ from scrapy.item.models import BaseAdaptor
 from scrapy.utils.python import flatten, unique
 from scrapy.xpath import XPathSelector
 from scrapy.utils.misc import unquote_html, location_str
+from scrapy.conf import settings
 
 class ExtendedAdaptor(BaseAdaptor):
 
