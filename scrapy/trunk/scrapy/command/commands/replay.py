@@ -91,7 +91,7 @@ class Command(ScrapyCommand):
                 s += display.pformat(r)
         else:
             s += "\n".join([str(r) for r in self.replay.responses_old.values()]) + "\n"
-        s += ">>> Total: %d responses downloaded\n" % len(self.replay.responses_old)
+        s += ">>> Total: %d responses received\n" % len(self.replay.responses_old)
         return s
 
     def action_diff(self, opts):
