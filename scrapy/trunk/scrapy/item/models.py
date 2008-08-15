@@ -1,4 +1,4 @@
-class BaseAdaptor:
+class BaseAdaptor(object):
     def function(self, item, attrname, value, **pipeargs):
         raise NotImplemented
 

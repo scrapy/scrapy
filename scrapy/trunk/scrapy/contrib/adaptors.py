@@ -1,5 +1,6 @@
 """
-Adaptors for item adaptation pipe.
+Generic Adaptors for item adaptation pipe. Performs tasks
+usually needed by most cases
 """
 
 from scrapy.item.models import BaseAdaptor
