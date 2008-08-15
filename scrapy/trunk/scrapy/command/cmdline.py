@@ -42,14 +42,14 @@ def custom_commands_dict():
                 print 'WARNING: Custom command module %s exists but Command class not found' % modname
     return d
 
-def getcmdname():
-    for arg in sys.argv[1:]:
+def getcmdname(argv):
+    for arg in argv[1:]:
         if not arg.startswith('-'):
             return arg
 
-def usage():
-    s  = "usage: %s <subcommand> [options] [args]\n" % sys.argv[0]
-    s += "       %s <subcommand> -h\n\n" % sys.argv[0]
+def usage(argv):
+    s  = "usage: %s <subcommand> [options] [args]\n" % argv[0]
+    s += "       %s <subcommand> -h\n\n" % argv[0]
     s += "Built-in subcommands:\n"
 
     builtin_cmds = builtin_commands_dict()
@@ -96,16 +96,19 @@ def command_settings(cmdname):
 command_executed = {}
 
 def execute():
+    execute_with_args(sys.argv)
+
+def execute_with_args(argv):
     spiders.load()
     cmds = builtin_commands_dict()
     cmds.update(custom_commands_dict())
 
-    cmdname = getcmdname()
+    cmdname = getcmdname(argv)
     command_settings(cmdname)
 
     if not cmdname:
         print "Scrapy %s\n" % scrapy.__version__
-        print usage()
+        print usage(argv)
         sys.exit()
 
     parser = optparse.OptionParser()
@@ -118,10 +121,10 @@ def execute():
     else:
         print "Scrapy %s\n" % scrapy.__version__
         print "Unknown command: %s\n" % cmdname
-        print 'Type "%s -h" for help' % sys.argv[0]
+        print 'Type "%s -h" for help' % argv[0]
         sys.exit()
 
-    (opts, args) = parser.parse_args()
+    (opts, args) = parser.parse_args(args=argv[1:])
     del args[0]  # args[0] is cmdname
 
     # storing command executed info for later reference

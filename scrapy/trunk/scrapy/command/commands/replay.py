@@ -4,6 +4,7 @@ from scrapy.command import ScrapyCommand
 from scrapy.replay import Replay
 from scrapy.utils import display
 from scrapy.conf import settings
+from scrapy.command import cmdline
 
 class Command(ScrapyCommand):
     def syntax(self):
@@ -31,6 +32,8 @@ class Command(ScrapyCommand):
         parser.add_option("--nocolour", dest="nocolour", action="store_true", help="disable colorized output (for console only)")
         parser.add_option("-i", "--ignore", dest="ignores", action="append", help="item attribute to ignore. can be passed multiple times", metavar="ATTR")
         parser.add_option("--target", dest="targets", action="append", help="crawl TARGET instead of recorded urls/domains. can be passed multiple times")
+        # adding option to update 
+        parser.add_option("--pages", dest="pages", action="store_true", help="update all the pages in the replay file, recording it again.")
 
     def process_options(self, args, opts):
         ScrapyCommand.process_options(self, args, opts)
@@ -75,7 +78,16 @@ class Command(ScrapyCommand):
         self.replay.play(args=opts.targets)
 
     def action_update(self, opts):
-        self.action_crawl(opts)
+        self.replay.update(args=opts.targets, opts=opts.__dict__)
+        if (opts.pages):
+            args = ['decobot-ctl.py', 'crawl']
+            args.extend(self.replay.options['args'])
+            for k in self.replay.options['opts']:                
+                if self.replay.options['opts'][k]:                   
+                    args.append("--%s" % k)
+                    if self.replay.options['opts'][k] != True:
+                        args.append(self.replay.options['opts'][k])
+            cmdline.execute_with_args(args)
 
     def action_showitems(self, opts):
         s = ""

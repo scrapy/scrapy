@@ -68,6 +68,7 @@ class Replay(object):
         scrapymanager.runonce(*args, **opts)
 
     def record(self, args=None, opts=None):
+        self.recording = True
         self.options.clear()
         self.options['args'] = args or []
         self.options['opts'] = opts or {}
@@ -79,8 +80,13 @@ class Replay(object):
 
     def update(self, args=None, opts=None):
         self.updating = True
-
-        self.play(args, opts)
+        if (opts['pages']):
+            args = self.options['args']
+            opts = self.options['opts']
+            settings.overrides['CACHE2_EXPIRATION_SECS'] = 0            
+            settings.overrides['CACHE2_IGNORE_MISSING'] = False
+        else:            
+            self.play(args, opts)
 
     def engine_started(self):
         log.msg("Replay: recording session in %s" % self.repfile)
