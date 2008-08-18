@@ -33,6 +33,9 @@ class ExtractAdaptor(ExtendedAdaptor):
     def function(self, item, location, **pipeargs):
         return self.do(self.extract, location, **pipeargs)
 
+    def _extract(self, location, **kwargs):
+        return self.extract(location, **kwargs)
+    
     def extract(self, location, **kwargs):
         """Extract a list of strings from the location passed.
         Receives a list of XPathSelectors or an XPathSelector,
