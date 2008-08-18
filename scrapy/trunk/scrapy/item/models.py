@@ -1,18 +1,13 @@
 class BaseAdaptor(object):
-    def function(self, item, attrname, value, **pipeargs):
+    def function(self, item, value, **pipeargs):
         raise NotImplemented
 
 #default adaptors
 class ExtractAdaptor(BaseAdaptor):
-    def function(self, item, attrname, value, **pipeargs):
+    def function(self, item, value, **pipeargs):
         if hasattr(value, 'extract'):
             value = value.extract()
         return value
-
-class AssignAdaptor(BaseAdaptor):
-    def function(self, item, attrname, value, **pipeargs):
-        if not hasattr(item, attrname):
-            setattr(item, attrname, value)
 
 class ScrapedItem(object):
     """
@@ -22,7 +17,7 @@ class ScrapedItem(object):
     * guid (unique global indentifier)
     * url (URL where that item was scraped from)
     """
-    adaptors_pipe = [ExtractAdaptor(), AssignAdaptor()]
+    adaptors_pipe = [ExtractAdaptor()]
     
     def set_adaptors_pipe(adaptors_pipes):
         ScrapedItem.adaptors_pipes = adaptors_pipes
@@ -30,4 +25,6 @@ class ScrapedItem(object):
     def attribute(self, name, value, **pipeargs):
 
         for adaptor in ScrapedItem.adaptors_pipe:
-            value = adaptor.function(self, name, value, **pipeargs)
+            value = adaptor.function(self, value, **pipeargs)
+        if not hasattr(item, name):
+            setattr(item, name, value)
