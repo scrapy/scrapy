@@ -1,4 +1,5 @@
 import os
+import string
 
 from scrapy.spider import spiders
 from scrapy.command import ScrapyCommand
@@ -33,6 +34,9 @@ class Command(ScrapyCommand):
 
         spiders_module = __import__(settings['NEWSPIDER_MODULE'], {}, {}, [''])
         spidersdir = os.path.abspath(os.path.dirname(spiders_module.__file__))
+        if name[0] not in string.letters: # must start with a letter, for valid python modules
+            name = "a" + name
+        name = name.replace('-', '_') # - are replaced by _, for valid python modules
         self._genfiles('spider.tmpl', '%s/%s.py' % (spidersdir, name), tvars)
 
     def _genfiles(self, template_name, source_name, tvars):
