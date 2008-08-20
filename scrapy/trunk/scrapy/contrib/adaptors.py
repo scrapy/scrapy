@@ -30,7 +30,7 @@ class ExtendedAdaptor(BaseAdaptor):
         
 class ExtractAdaptor(ExtendedAdaptor):
 
-    def function(self, item, location, **pipeargs):
+    def function(self, attrname, location, **pipeargs):
         return self.do(self.extract, location, **pipeargs)
     
     def extract(self, location, **kwargs):
@@ -75,7 +75,7 @@ _xml_cdata_split_re = re.compile('(<!\[CDATA\[.*?\]\]>)', re.S)
 
 class HtmlCleanAdaptor(ExtendedAdaptor):
 
-    def function(self, item, location, **pipeargs):
+    def function(self, attrname, string, **pipeargs):
         return self.do(self.clean, string, **pipeargs)
     
     def clean(self, string, **kwargs):
@@ -121,4 +121,6 @@ class XmlCleanAdaptor(HtmlCleanAdaptor):
                     pieces.append(HtmlCleanAdaptor._remove_tags(self, piece, **kwargs))
 
             xml = "".join(pieces)
+        else:
+            xml = HtmlCleanAdaptor._remove_tags(self, xml, **kwargs)
         return xml
