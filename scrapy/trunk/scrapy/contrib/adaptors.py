@@ -10,7 +10,6 @@ from scrapy.utils.python import flatten, unique
 from scrapy.xpath import XPathSelector
 from scrapy.utils.misc import unquote_html, location_str
 from scrapy.conf import settings
-from scrapy.utils.markup import clean_markup
 
 class ExtendedAdaptor(BaseAdaptor):
 
@@ -66,17 +65,3 @@ class ExtractAdaptor(ExtendedAdaptor):
             raise TypeError, "unsupported location type: %s" % type(location)
 
         return strings
-
-class HtmlCleanAdaptor(ExtendedAdaptor):
-
-    def function(self, string, **pipeargs):
-        return self.do(self.clean, string, **pipeargs)
-    
-    def clean(self, string, **pipeargs):
-        return clean_markup(string, **pipeargs)
-        
-class XmlCleanAdaptor(HtmlCleanAdaptor):
-    
-    def clean(self, string, **pipeargs):
-        pipeargs["xml_doc"] = True
-        return clean_markup(string, **pipeargs)
