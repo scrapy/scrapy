@@ -57,3 +57,58 @@ def replace_tags(text, token=''):
     Always returns a unicode string.
     """
     return _tag_re.sub(token, text.decode('utf-8'))
+
+_clean_spaces_re = re.compile("\s+", re.U)
+_remove_root_re = re.compile(r'^\s*<.*?>(.*)</.*>\s*$', re.DOTALL)
+_xml_remove_tags_re = re.compile(r'<[a-zA-Z\/!][^>]*?>')
+_xml_remove_cdata_re = re.compile('<!\[CDATA\[(.*)\]\]', re.S)
+_xml_cdata_split_re = re.compile('(<!\[CDATA\[.*?\]\]>)', re.S)
+
+def remove_tags(xml, **kwargs):
+    if kwargs.get('remove_tags', True):
+        xml = _xml_remove_tags_re.sub(' ', xml)
+    return xml
+
+def xml_remove_tags(xml, **kwargs):
+    #process in pieces the text that contains CDATA. The first check is to avoid unnecesary regex check
+    if _xml_remove_cdata_re.search(xml):
+        pieces = []
+        
+        for piece in _xml_cdata_split_re.split(xml):
+            
+            m = _xml_remove_cdata_re.search(piece)
+            if m:
+                if kwargs.get('remove_cdata', True):#remove cdata special tag
+                    pieces.append(remove_tags(m.groups()[0], **kwargs))
+                else:
+                    pieces.append(piece)#conserve intact the cdata
+            else:
+                pieces.append(remove_tags(piece, **kwargs))
+
+        xml = "".join(pieces)
+    else:
+        xml = remove_tags(xml, **kwargs)
+    return xml
+
+
+def clean_markup(string, **kwargs):
+    """Clean (list of) strings removing newlines, spaces, etc"""
+    
+    _remove_tags = xml_remove_tags if kwargs.get("xml_doc") else remove_tags
+
+    if isinstance(string, list):
+        return [clean_markup(s, **kwargs) for s in string]
+    
+    string = _remove_tags(string, **kwargs)
+
+    if kwargs.get('remove_root', True) and not kwargs.get('remove_tags', True):
+        m = _remove_root_re.search(string)
+        if m:
+            string = m.group(1)
+
+    if kwargs.get('remove_spaces', True):
+        string = _clean_spaces_re.sub(' ', string)
+    if kwargs.get('strip', True):
+        string = string.strip()
+
+    return string

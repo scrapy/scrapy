@@ -10,6 +10,7 @@ from scrapy.utils.python import flatten, unique
 from scrapy.xpath import XPathSelector
 from scrapy.utils.misc import unquote_html, location_str
 from scrapy.conf import settings
+from scrapy.utils.markup import clean_markup
 
 class ExtendedAdaptor(BaseAdaptor):
 
@@ -30,7 +31,7 @@ class ExtendedAdaptor(BaseAdaptor):
         
 class ExtractAdaptor(ExtendedAdaptor):
 
-    def function(self, attrname, location, **pipeargs):
+    def function(self, location, **pipeargs):
         return self.do(self.extract, location, **pipeargs)
     
     def extract(self, location, **kwargs):
@@ -65,62 +66,17 @@ class ExtractAdaptor(ExtendedAdaptor):
             raise TypeError, "unsupported location type: %s" % type(location)
 
         return strings
-        
-   
-_clean_spaces_re = re.compile("\s+", re.U)
-_remove_root_re = re.compile(r'^\s*<.*?>(.*)</.*>\s*$', re.DOTALL)
-_xml_remove_tags_re = re.compile(r'<[a-zA-Z\/!][^>]*?>')
-_xml_remove_cdata_re = re.compile('<!\[CDATA\[(.*)\]\]', re.S)
-_xml_cdata_split_re = re.compile('(<!\[CDATA\[.*?\]\]>)', re.S)
 
 class HtmlCleanAdaptor(ExtendedAdaptor):
 
-    def function(self, attrname, string, **pipeargs):
+    def function(self, string, **pipeargs):
         return self.do(self.clean, string, **pipeargs)
     
-    def clean(self, string, **kwargs):
-        """Clean (list of) strings removing newlines, spaces, etc"""
-        if isinstance(string, list):
-            return [self.clean(s, **kwargs) for s in string]
-        
-        xml = self._remove_tags(string, **kwargs)
-
-        if kwargs.get('remove_root', True) and not kwargs.get('remove_tags', True):
-            m = _remove_root_re.search(xml)
-            if m:
-                xml = m.group(1)
-
-        if kwargs.get('remove_spaces', True):
-            xml = _clean_spaces_re.sub(' ', xml)
-        if kwargs.get('strip', True):
-            xml = xml.strip()
-    
-        return xml
-    
-    def _remove_tags(self, xml, **kwargs):
-        if kwargs.get('remove_tags', True):
-            xml = _xml_remove_tags_re.sub(' ', xml)
-        return xml
+    def clean(self, string, **pipeargs):
+        return clean_markup(string, **pipeargs)
         
 class XmlCleanAdaptor(HtmlCleanAdaptor):
     
-    def _remove_tags(self, xml, **kwargs):
-        #process in pieces the text that contains CDATA. The first check is to avoid unnecesary regex check
-        if _xml_remove_cdata_re.search(xml):
-            pieces = []
-            
-            for piece in _xml_cdata_split_re.split(xml):
-                
-                m = _xml_remove_cdata_re.search(piece)
-                if m:
-                    if kwargs.get('remove_cdata', True):#remove cdata special tag
-                        pieces.append(HtmlCleanAdaptor._remove_tags(self, m.groups()[0], **kwargs))
-                    else:
-                        pieces.append(piece)#conserve intact the cdata
-                else:
-                    pieces.append(HtmlCleanAdaptor._remove_tags(self, piece, **kwargs))
-
-            xml = "".join(pieces)
-        else:
-            xml = HtmlCleanAdaptor._remove_tags(self, xml, **kwargs)
-        return xml
+    def clean(self, string, **pipeargs):
+        pipeargs["xml_doc"] = True
+        return clean_markup(string, **pipeargs)
