@@ -39,9 +39,9 @@ class SimpagesMiddleware(object):
         return response
 
     def get_similarity_group(self, response):
-        fp = self.metric.simhash(response)
+        sh = self.metric.simhash(response)
         for group, data in self.sim_groups.iteritems():
-            simrate = self.metric.compare(fp, data['simhash'])
+            simrate = self.metric.compare(sh, data['simhash'])
             if simrate > self.threshold:
                 return (group, simrate)
         return (None, 0)
