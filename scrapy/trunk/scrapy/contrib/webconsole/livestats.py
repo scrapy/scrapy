@@ -41,8 +41,11 @@ class LiveStats(object):
         self.domains[spider.domain_name].scraped += 1
 
     def response_downloaded(self, response, spider):
-        self.domains[spider.domain_name].crawled += 1
-
+        #sometimes we download responses without opening/closing domains,
+        #for example from scrapy shell
+        if self.domains.get(spider.domain_name):
+            self.domains[spider.domain_name].crawled += 1
+            
     def webconsole_render(self, wc_request):
         sch = scrapyengine.scheduler
         dwl = scrapyengine.downloader

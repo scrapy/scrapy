@@ -78,6 +78,7 @@ class Command(ScrapyCommand):
             if isinstance(result, Response):
                 print "OK"
                 self.generate_vars(url, result)
+                return True
         except Exception, e:
             print "Error: %s" % e
             
@@ -91,8 +92,6 @@ class Command(ScrapyCommand):
             self.vars['url'] = url
             self.vars['response'] = response
             self.vars['spider'] = spiders.fromurl(url)
-        self.vars['get'] = self.get_url
-        self.vars['scrape_help'] = self.print_vars
         self.update_vars()
         self.user_ns.update(self.vars)
         self.print_vars()
@@ -105,6 +104,9 @@ class Command(ScrapyCommand):
                 print "   %s: %s" % (key, val)
             else:
                 print "   %s: %s" % (key, val.__class__)
+        print "Available commands:"
+        print "   get <url>: Fetches an url and updates all variables."
+        print "   scrapehelp: Prints this help."
         print '-' * 78
     
     def run(self, args, opts):
@@ -121,16 +123,24 @@ class Command(ScrapyCommand):
         print "done"
 
         def _console_thread():
-
-            if url:
+            
+            def _get_magic(shell, url):
                 self.get_url(url)
+            def _help_magic(shell, _):
+                self.print_vars()
+                
+            if url:
+                result = self.get_url(url)
+                if not result:
+                    self.generate_vars(None, None)
             else:
-                self.generate_vars(url, None)
-            
-            
+                self.generate_vars(None, None)
             try: # use IPython if available
                 import IPython
                 shell = IPython.Shell.IPShell(argv=[], user_ns=self.user_ns)
+                ip = shell.IP.getapi()
+                ip.expose_magic("get", _get_magic)
+                ip.expose_magic("scrapehelp", _help_magic)
                 shell.mainloop()
                 reactor.callFromThread(scrapymanager.stop)
             except ImportError:
