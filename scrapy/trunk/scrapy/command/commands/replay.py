@@ -36,14 +36,15 @@ class Command(ScrapyCommand):
         parser.add_option("--pages", dest="pages", action="store_true", help="update all the pages in the replay file, recording it again.")
 
     def process_options(self, args, opts):
-        ScrapyCommand.process_options(self, args, opts)
-        self.opts = opts
-        self.action = args[1] if len(args) > 1 else 'crawl'
-        mode = 'update' if self.action == 'update' else 'play'
-        usedir = args and os.path.isdir(args[0])
-        self.replay = Replay(args[0], mode=mode, usedir=usedir)
-        if self.action not in ['crawl', 'diff', 'update']:
-            settings.overrides['LOG_ENABLED'] = False
+        if args:
+            ScrapyCommand.process_options(self, args, opts)
+            self.opts = opts
+            self.action = args[1] if len(args) > 1 else 'crawl'
+            mode = 'update' if self.action == 'update' else 'play'
+            usedir = args and os.path.isdir(args[0])
+            self.replay = Replay(args[0], mode=mode, usedir=usedir)
+            if self.action not in ['crawl', 'diff', 'update']:
+                settings.overrides['LOG_ENABLED'] = False
 
     def run(self, args, opts):
         if not args:
