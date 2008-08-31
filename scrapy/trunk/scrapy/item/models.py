@@ -1,13 +1,12 @@
-class BaseAdaptor(object):
-    def function(self, item, value, **pipeargs):
-        raise NotImplemented
+from scrapy.item.adaptors import AdaptorPipe
 
-#default adaptors
-class ExtractAdaptor(BaseAdaptor):
-    def function(self, item, value, **pipeargs):
-        if hasattr(value, 'extract'):
-            value = value.extract()
-        return value
+def extract(value):
+    if hasattr(value, 'extract'):
+        value = value.extract()
+    return value
+    
+standardpipe = AdaptorPipe()
+standardpipe.insertadaptor(extract, "extract")
 
 class ScrapedItem(object):
     """
@@ -17,14 +16,12 @@ class ScrapedItem(object):
     * guid (unique global indentifier)
     * url (URL where that item was scraped from)
     """
-    adaptors_pipe = [ExtractAdaptor()]
+    adaptors_pipe = standardpipe
     
     def set_adaptors_pipe(adaptors_pipes):
         ScrapedItem.adaptors_pipes = adaptors_pipes
 
-    def attribute(self, name, value, **pipeargs):
-
-        for adaptor in ScrapedItem.adaptors_pipe:
-            value = adaptor.function(self, value, **pipeargs)
-        if not hasattr(item, name):
-            setattr(item, name, value)
+    def attribute(self, attrname, value, **pipeargs):
+        value =ScrapedItem.adaptors_pipe.execute(attrname, value, **pipeargs)
+        if not hasattr(self, attrname):
+            setattr(self, attrname, value)
