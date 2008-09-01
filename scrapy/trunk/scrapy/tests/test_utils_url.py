@@ -1,5 +1,5 @@
 import unittest
-from scrapy.utils.url import url_is_from_any_domain, safe_url_string, safe_download_url
+from scrapy.utils.url import url_is_from_any_domain, safe_url_string, safe_download_url, url_query_parameter, add_or_replace_parameter, url_query_cleaner
 
 class UrlUtilsTest(unittest.TestCase):
 
@@ -42,6 +42,37 @@ class UrlUtilsTest(unittest.TestCase):
                          'http://www.scrapy.org/image')
         self.assertEqual(safe_download_url('http://www.scrapy.org/dir/'),
                          'http://www.scrapy.org/dir/')
+
+    def test_url_query_parameter(self):
+        self.assertEqual(url_query_parameter("product.html?id=200&foo=bar", "id"),
+                         '200')
+        self.assertEqual(url_query_parameter("product.html?id=200&foo=bar", "notthere", "mydefault"),
+                         'mydefault')
+        self.assertEqual(url_query_parameter("product.html?id=", "id"),
+                         None)
+        self.assertEqual(url_query_parameter("product.html?id=", "id", keep_blank_values=1),
+                         '')
+
+    def test_add_or_replace_parameter(self):
+        url = 'http://domain/test'
+        self.assertEqual(add_or_replace_parameter(url, 'arg', 'v'),
+                         'http://domain/test?arg=v')
+        url = 'http://domain/test?arg1=v1&arg2=v2&arg3=v3'
+        self.assertEqual(add_or_replace_parameter(url, 'arg4', 'v4'),
+                         'http://domain/test?arg1=v1&arg2=v2&arg3=v3&arg4=v4')
+        self.assertEqual(add_or_replace_parameter(url, 'arg3', 'nv3'),
+                         'http://domain/test?arg1=v1&arg2=v2&arg3=nv3')
+        url = 'http://domain/test?arg1=v1'
+        self.assertEqual(add_or_replace_parameter(url, 'arg2', 'v2', sep=';'),
+                         'http://domain/test?arg1=v1;arg2=v2')
+        self.assertEqual(add_or_replace_parameter("http://domain/moreInfo.asp?prodID=", 'prodID', '20'),
+                         'http://domain/moreInfo.asp?prodID=20')
+
+    def test_url_query_cleaner(self):
+        self.assertEqual(url_query_cleaner("product.html?id=200&foo=bar&name=wired", 'id'),
+                         'product.html?id=200')
+        self.assertEqual(url_query_cleaner("product.html?id=200&foo=bar&name=wired", ['id', 'name']),
+                         'product.html?id=200&name=wired')
 
 if __name__ == "__main__":
     unittest.main()
