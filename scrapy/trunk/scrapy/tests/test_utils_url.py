@@ -138,7 +138,7 @@ class UrlUtilsTest(unittest.TestCase):
         # remove fragments
         self.assertEqual(canonicalize_url(u"http://user:pass@www.example.com/do?a=1#frag"),
                                           u"http://user:pass@www.example.com/do?a=1")
-        self.assertEqual(canonicalize_url(u"http://user:pass@www.example.com/do?a=1#frag", remove_fragments=False),
+        self.assertEqual(canonicalize_url(u"http://user:pass@www.example.com/do?a=1#frag", keep_fragments=True),
                                           u"http://user:pass@www.example.com/do?a=1#frag")
 
 if __name__ == "__main__":

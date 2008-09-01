@@ -125,7 +125,7 @@ def add_or_replace_parameter(url, name, new_value, sep='&'):
                                name+'='+new_value)
     return next_url
 
-def canonicalize_url(url, keep_blank_values=False, remove_fragments=True):
+def canonicalize_url(url, keep_blank_values=False, keep_fragments=False):
     """Canonicalize url by applying the following procedures:
 
     - sort query arguments, first by key, then by value
@@ -134,7 +134,7 @@ def canonicalize_url(url, keep_blank_values=False, remove_fragments=True):
     - normalize all spaces (in query arguments) '+' (plus symbol)
     - normalize percent encodings case (%2f -> %2F)
     - remove query arguments with blank values (unless keep_blank_values is True)
-    - remove fragments (if remove_fragments is True)
+    - remove fragments (unless keep_fragments is True)
 
     For examples see the tests in scrapy.tests.test_utils_url
     """
@@ -144,6 +144,6 @@ def canonicalize_url(url, keep_blank_values=False, remove_fragments=True):
     keyvals.sort()
     parts[2] = urllib.quote(urllib.unquote(parts[2]))
     parts[4] = urllib.urlencode(keyvals)
-    if remove_fragments:
+    if not keep_fragments:
         parts[5] = ''
     return urlparse.urlunparse(parts)
