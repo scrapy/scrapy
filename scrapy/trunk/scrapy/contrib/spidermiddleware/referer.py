@@ -1,6 +1,10 @@
+"""
+RefererMiddleware: populates Request referer field, based on the Response which
+originated it.
+"""
+
 from scrapy.core import log
 from scrapy.http import Request
-
 
 class CrawlMiddleware(object):
     def process_result(self, response, result, spider):

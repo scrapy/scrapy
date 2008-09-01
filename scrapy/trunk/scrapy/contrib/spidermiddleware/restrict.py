@@ -1,5 +1,5 @@
 """
-Scrapemiddlware to restrict crawling to only some particular URLs
+RestrictMiddleware: restricts crawling to fixed set of particular URLs
 """
 
 from scrapy.http import Request

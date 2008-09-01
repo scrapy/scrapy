@@ -1,11 +1,13 @@
+"""
+UrlLengthMiddleware: Filters out requests with URLs longer than URLLENGTH_LIMIT
+"""
+
 from scrapy.core import log
 from scrapy.http import Request
 from scrapy.core.exceptions import NotConfigured
 from scrapy.conf import settings
 
 class UrlLengthMiddleware(object):
-    """This middleware discard requests with URLs longer than URLLENGTH_LIMIT"""
-
     def __init__(self):
         self.maxlength = settings.getint('URLLENGTH_LIMIT')
         if not self.maxlength:
