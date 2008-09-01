@@ -42,7 +42,7 @@ _safe_chars = urllib.always_safe + '%' + _reserved
 def safe_url_string(url, use_encoding='utf8'):
     """Convert a unicode (or utf8 string) object into a legal URL.
 
-    Illegal characters are escaped.  See rfc3968.
+    Illegal characters are escaped (RFC-3986)
 
     It is safe to call this function multiple times. Do not pass this
     function strings in encodings other than utf8.
@@ -50,9 +50,6 @@ def safe_url_string(url, use_encoding='utf8'):
     The use_encoding argument is the encoding to use to determine the numerical
     values in the escaping. For urls on html pages, you should use the original
     encoding of that page.
-
-    html pages you should escape urls in the original encoding
-    of the page and not using utf8.
     """
     s = url.encode(use_encoding)
     return urllib.quote(s,  _safe_chars)
