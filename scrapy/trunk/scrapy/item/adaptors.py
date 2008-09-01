@@ -1,10 +1,6 @@
 import re
 
-class DuplicatedAdaptorName(Exception):
-    def __init__(self, name):
-        self.__name = name
-    def __str__(self):
-        return name
+class DuplicatedAdaptorName(Exception): pass
 
 class Adaptor(object):
     """
@@ -21,6 +17,7 @@ class Adaptor(object):
         return self.basefunction(value, **pipeargs)
         
 class AdaptorPipe:
+
     def __init__(self, define_from=None, adaptorclass=None):
         """
         If "define_from" is given, constructs pipeline from this.
@@ -35,6 +32,7 @@ class AdaptorPipe:
         """
         self.__adaptorspipe = []
         self.__adaptorclass = adaptorclass or Adaptor
+
     @property
     def adaptors_names(self):
         _adaptors = []
