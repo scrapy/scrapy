@@ -6,7 +6,7 @@ originated it.
 from scrapy.core import log
 from scrapy.http import Request
 
-class CrawlMiddleware(object):
+class RefererMiddleware(object):
     def process_result(self, response, result, spider):
         def _set_referer(r):
             if isinstance(r, Request):
