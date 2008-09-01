@@ -7,12 +7,12 @@ class Adaptor(object):
     Adaptors instances should be instantiated and used only
     inside the AdaptorPipe.
     """
-    def __init__(self, function, name, attribute_re=None):
+    def __init__(self, function, name, attribute_re=None, attribute_list=None):
         self.name = name
         self.basefunction = function
-        if not attribute_re:
-            attribute_re = ".*"
+        attribute_re = attribute_re or ".*"
         self.attribute_re = re.compile(attribute_re)
+        self.attribute_list = attribute_list or []
     def function(self, value, **pipeargs):
         return self.basefunction(value, **pipeargs)
         
@@ -40,17 +40,24 @@ class AdaptorPipe:
             _adaptors.append(a.name)
         return _adaptors
     
-    def insertadaptor(self, function, name, attrs_re=None, after=None, before=None):
+    def insertadaptor(self, function, name, attrs_re=None, attrs_list=None, after=None, before=None):
         """
         Inserts a "function" as an adaptor that will apply for attribute names
-        which matches "attrs_re" regex, after adaptor of name "after", or before
-        adaptor of name "before". The "function" must always have a **keyword
+        which matches regex given in "attrs_re" (None matches all), or are included in "attrs_list" list.
+        The match logic is as follows:
+        The attribute name will match if:
+        1. The attrs_re matches and attrs_list is empty
+        2. The attrs_re matches and attribute name is in attrs_list
+
+        If "after" is given, inserts the adaptor after the already inserted adaptor
+        of the name given in this parameter, If "before" is given, inserts it before
+        the adaptor of the given name. The "function" must always have a **keyword
         argument to ignore unused keywords. "name" is the name of the adaptor.
         """
         if name in self.adaptors_names:
             raise DuplicatedAdaptorName(name)
         else:
-            adaptor = self.__adaptorclass(function, name, attrs_re)
+            adaptor = self.__adaptorclass(function, name, attrs_re, attrs_list)
             #by default append adaptor at end of pipe
             pos = len(self.adaptors_names)
             if after:
@@ -66,6 +73,12 @@ class AdaptorPipe:
         Pass the given pipeargs to each adaptor function in the pipe.
         """
         for adaptor in self.__adaptorspipe:
-            if adaptor.attribute_re.search(attrname):
+            adapt = False
+            if adaptor.attribute_re.search(attrname) and not adaptor.attribute_list:
+                adapt = True
+            elif adaptor.attribute_re.search(attrname) and attrname in adaptor.attribute_list:
+                adapt = True
+            if adapt:
                 value = adaptor.function(value, **pipeargs)
+
         return value
