@@ -69,9 +69,10 @@ class Request(object):
         return self.deferred
 
     def set_url(self, url):
-        assert isinstance(url, basestring), 'Request url argument must be str or unicode, got %s:' % (type(url), url)
+        assert isinstance(url, basestring), 'Request url argument must be str or unicode, got %s:' % type(url).__name__
         decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)
         self._url = Url(safe_url_string(decoded_url, self.encoding))
+        self._fingerprint = None # invalidate cached fingerprint
     url = property(lambda x: x._url, set_url)
 
     def httpauth(self, http_user, http_pass):
@@ -123,9 +124,14 @@ class Request(object):
         return new
 
     def fingerprint(self):
-        """Returns unique resource fingerprint"""
-        if self._fingerprint and not self.fingerprint_params:
-            return self._fingerprint
+        """Returns unique resource fingerprint with caching support"""
+        if not self._fingerprint or self.fingerprint_params:
+            self.update_fingerprint()
+        return self._fingerprint
+
+    def update_fingerprint(self):
+        """Update request fingerprint, based on its current data. A request
+        fingerprint is a hash which uniquely identifies the HTTP resource"""
 
         headers = {}
         if self.fingerprint_params:
@@ -162,7 +168,6 @@ class Request(object):
                 fp.update(v)
 
         self._fingerprint = fp.hexdigest()
-        return self._fingerprint
 
     def to_string(self):
         """ Return raw HTTP request representation (as string). This is
