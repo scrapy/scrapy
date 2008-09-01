@@ -124,3 +124,26 @@ def add_or_replace_parameter(url, name, new_value, sep='&'):
         next_url = url.replace(name+'='+parameter,
                                name+'='+new_value)
     return next_url
+
+def canonicalize_url(url, keep_blank_values=False, remove_fragments=True):
+    """Canonicalize url by applying the following procedures:
+
+    - sort query arguments, first by key, then by value
+    - percent encode paths and query arguments. non-ASCII characters are
+      percent-encoded using UTF-8 (RFC-3986)
+    - normalize all spaces (in query arguments) '+' (plus symbol)
+    - normalize percent encodings case (%2f -> %2F)
+    - remove query arguments with blank values (unless keep_blank_values is True)
+    - remove fragments (if remove_fragments is True)
+
+    For examples see the tests in scrapy.tests.test_utils_url
+    """
+
+    parts = list(urlparse.urlparse(url))
+    keyvals = cgi.parse_qsl(parts[4], keep_blank_values)
+    keyvals.sort()
+    parts[2] = urllib.quote(urllib.unquote(parts[2]))
+    parts[4] = urllib.urlencode(keyvals)
+    if remove_fragments:
+        parts[5] = ''
+    return urlparse.urlunparse(parts)

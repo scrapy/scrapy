@@ -1,5 +1,5 @@
 import unittest
-from scrapy.utils.url import url_is_from_any_domain, safe_url_string, safe_download_url, url_query_parameter, add_or_replace_parameter, url_query_cleaner
+from scrapy.utils.url import url_is_from_any_domain, safe_url_string, safe_download_url, url_query_parameter, add_or_replace_parameter, url_query_cleaner, canonicalize_url
 
 class UrlUtilsTest(unittest.TestCase):
 
@@ -73,6 +73,73 @@ class UrlUtilsTest(unittest.TestCase):
                          'product.html?id=200')
         self.assertEqual(url_query_cleaner("product.html?id=200&foo=bar&name=wired", ['id', 'name']),
                          'product.html?id=200&name=wired')
+
+    def test_canonicalize_url(self):
+        # no query arguments
+        self.assertEqual(canonicalize_url("http://www.example.com"),
+                         "http://www.example.com")
+
+        # typical usage
+        self.assertEqual(canonicalize_url("http://www.example.com/do?a=1&b=2&c=3"),
+                                          "http://www.example.com/do?a=1&b=2&c=3")
+        self.assertEqual(canonicalize_url("http://www.example.com/do?c=1&b=2&a=3"),
+                                          "http://www.example.com/do?a=3&b=2&c=1")
+        self.assertEqual(canonicalize_url("http://www.example.com/do?&a=1"),
+                                          "http://www.example.com/do?a=1")
+        
+        # sorting by argument values
+        self.assertEqual(canonicalize_url("http://www.example.com/do?c=3&b=5&b=2&a=50"),
+                         "http://www.example.com/do?a=50&b=2&b=5&c=3")
+
+        # using keep_blank_values
+        self.assertEqual(canonicalize_url("http://www.example.com/do?b=&a=2"),
+                                          "http://www.example.com/do?a=2")
+        self.assertEqual(canonicalize_url("http://www.example.com/do?b=&a=2", keep_blank_values=True),
+                                          "http://www.example.com/do?a=2&b=")
+        self.assertEqual(canonicalize_url("http://www.example.com/do?b=&c&a=2"),
+                                          "http://www.example.com/do?a=2")
+        self.assertEqual(canonicalize_url("http://www.example.com/do?b=&c&a=2", keep_blank_values=True),
+                                          "http://www.example.com/do?a=2&b=&c=")
+                        
+        # spaces
+        self.assertEqual(canonicalize_url("http://www.example.com/do?q=a space&a=1"),
+                                          "http://www.example.com/do?a=1&q=a+space")
+        self.assertEqual(canonicalize_url("http://www.example.com/do?q=a+space&a=1"),
+                                          "http://www.example.com/do?a=1&q=a+space")
+        self.assertEqual(canonicalize_url("http://www.example.com/do?q=a%20space&a=1"),
+                                          "http://www.example.com/do?a=1&q=a+space")
+
+        # normalize percent-encoding case (in paths)
+        self.assertEqual(canonicalize_url("http://www.example.com/a%a3do"),
+                                          "http://www.example.com/a%A3do"),
+        # normalize percent-encoding case (in query arguments)
+        self.assertEqual(canonicalize_url("http://www.example.com/do?k=b%a3"),
+                                          "http://www.example.com/do?k=b%A3")
+
+        # non-ASCII percent-encoding in paths
+        self.assertEqual(canonicalize_url("http://www.example.com/a do?a=1"),
+                                          "http://www.example.com/a%20do?a=1"),
+        self.assertEqual(canonicalize_url("http://www.example.com/a %20do?a=1"),
+                                          "http://www.example.com/a%20%20do?a=1"),
+        self.assertEqual(canonicalize_url("http://www.example.com/a do\xc2\xa3.html?a=1"),
+                                          "http://www.example.com/a%20do%C2%A3.html?a=1")
+        # non-ASCII percent-encoding in query arguments
+        self.assertEqual(canonicalize_url(u"http://www.example.com/do?price=\xa3500&a=5&z=3"),
+                                          u"http://www.example.com/do?a=5&price=%C2%A3500&z=3")
+        self.assertEqual(canonicalize_url("http://www.example.com/do?price=\xc2\xa3500&a=5&z=3"),
+                                          "http://www.example.com/do?a=5&price=%C2%A3500&z=3")
+        self.assertEqual(canonicalize_url("http://www.example.com/do?price(\xc2\xa3)=500&a=1"),
+                                          "http://www.example.com/do?a=1&price%28%C2%A3%29=500")
+
+        # urls containing auth and ports
+        self.assertEqual(canonicalize_url(u"http://user:pass@www.example.com:81/do?now=1"),
+                                          u"http://user:pass@www.example.com:81/do?now=1")
+
+        # remove fragments
+        self.assertEqual(canonicalize_url(u"http://user:pass@www.example.com/do?a=1#frag"),
+                                          u"http://user:pass@www.example.com/do?a=1")
+        self.assertEqual(canonicalize_url(u"http://user:pass@www.example.com/do?a=1#frag", remove_fragments=False),
+                                          u"http://user:pass@www.example.com/do?a=1#frag")
 
 if __name__ == "__main__":
     unittest.main()
