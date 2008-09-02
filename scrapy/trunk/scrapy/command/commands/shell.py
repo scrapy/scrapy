@@ -72,7 +72,7 @@ class Command(ScrapyCommand):
             #print _failure
 
         print "Downloading URL...           ",
-        url = canonicalize_url(url.strip())
+        url = url.strip()
         r = Request(url)
         spider = get_or_create_spider(url)
         try:
