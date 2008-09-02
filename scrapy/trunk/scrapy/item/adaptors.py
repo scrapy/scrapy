@@ -10,8 +10,7 @@ class Adaptor(object):
     def __init__(self, function, name, attribute_re=None, attribute_list=None):
         self.name = name
         self.basefunction = function
-        attribute_re = attribute_re or ".*"
-        self.attribute_re = re.compile(attribute_re)
+        self.attribute_re = re.compile(attribute_re) if attribute_re else None
         self.attribute_list = attribute_list or []
     def function(self, value, **pipeargs):
         return self.basefunction(value, **pipeargs)
@@ -44,11 +43,9 @@ class AdaptorPipe:
         """
         Inserts a "function" as an adaptor that will apply for attribute names
         which matches regex given in "attrs_re" (None matches all), or are included in "attrs_list" list.
-        The match logic is as follows:
-        The attribute name will match if:
-        1. The attrs_re matches and attrs_list is empty
-        2. The attrs_re matches and attribute name is in attrs_list
-
+        If both, attrs_re and attrs_list are given, apply both. Else if only one is given, apply those.
+        Else, all attributes will match.
+        
         If "after" is given, inserts the adaptor after the already inserted adaptor
         of the name given in this parameter, If "before" is given, inserts it before
         the adaptor of the given name. The "function" must always have a **keyword
@@ -74,9 +71,15 @@ class AdaptorPipe:
         """
         for adaptor in self.__adaptorspipe:
             adapt = False
-            if adaptor.attribute_re.search(attrname) and not adaptor.attribute_list:
-                adapt = True
-            elif adaptor.attribute_re.search(attrname) and attrname in adaptor.attribute_list:
+            if adaptor.attribute_re:
+                if adaptor.attribute_re.search(attrname):
+                    if adaptor.attribute_list:
+                        adapt = attrname in adaptor.attribute_list
+                    else:
+                        adapt = True
+            elif adaptor.attribute_list:
+                adapt = attrname in adaptor.attribute_list
+            else:
                 adapt = True
             if adapt:
                 value = adaptor.function(value, **pipeargs)
