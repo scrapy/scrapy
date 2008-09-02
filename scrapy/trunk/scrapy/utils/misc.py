@@ -112,7 +112,7 @@ def memoize(cache, hash):
 
 
 def deferred_degenerate(generator, container=None, next_delay=0):
-    generator = iter(generator)
+    generator = iter(generator or [])
     deferred = defer.Deferred()
     container = container or []
     def _next():
