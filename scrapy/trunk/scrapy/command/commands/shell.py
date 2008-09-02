@@ -11,7 +11,6 @@ from scrapy.core.manager import scrapymanager
 from scrapy.http import Request, Response
 from scrapy.core.downloader.handlers import download_any
 from scrapy.fetcher import get_or_create_spider
-from scrapy.utils.url import canonicalize_url
 
 #This code comes from twisted 8. We define here while
 #using old twisted version.
