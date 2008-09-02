@@ -8,6 +8,10 @@ from scrapy.utils.misc import load_class
 from scrapy.extension import extensions
 from scrapy.conf import settings
 from scrapy.core.manager import scrapymanager
+from scrapy.http import Request, Response
+from scrapy.core.downloader.handlers import download_any
+from scrapy.fetcher import get_or_create_spider
+from scrapy.utils.url import canonicalize_url
 
 #This code comes from twisted 8. We define here while
 #using old twisted version.
@@ -68,15 +72,13 @@ class Command(ScrapyCommand):
             #print _failure
 
         print "Downloading URL...           ",
-        from scrapy.http import Request, Response
-        from scrapy.core.downloader.handlers import download_any
-        from scrapy.fetcher import get_or_create_spider
+        url = canonicalize_url(url.strip())
         r = Request(url)
         spider = get_or_create_spider(url)
         try:
             result = blockingCallFromThread(reactor, download_any, r, spider)
             if isinstance(result, Response):
-                print "OK"
+                print "Done."
                 self.generate_vars(url, result)
                 return True
         except Exception, e:
