@@ -43,11 +43,9 @@ class RulesPipeline(object):
             rules_loaded = RulesPipeline.rulesLoaded
             info_dict = {}
             info_dict['rules_executed'] = {}
-            total = 0.0
             for rule in rules_loaded:
                 rule.responsewrapper = self._responsewrapper
                 rule_result = rule.check()
-                total += rule_result
                 info_dict['rules_executed'][rule.__class__.__name__] = rule_result
             return info_dict
         else:
