@@ -17,20 +17,23 @@ class Adaptor(object):
         
 class AdaptorPipe:
 
-    def __init__(self, define_from=None, adaptorclass=None):
+    def __init__(self, adaptors=None, adaptorclass=None):
         """
-        If "define_from" is given, constructs pipeline from this.
-        "define_from" is an ordered tuple of triplets, each of which
-        has the attribute name regex, the adaptor name, and the module
-        path to the adaptor function. Example:
+        If "adaptors" is given, constructs pipeline from this.
+        "define_from" is an ordered tuple of 4-elements tuples, each of which
+        has the same parameters you give to the insertadaptor method, except 
+        'after' and 'before', because you define the adaptors order in the tuple.
+        . Example:
         (
-          ("url", "remove_entities", "scrapy.utils.markup.remove_entities")
-          (".*", "replace_tags", "scrapy.utils.markup.replace_tags")
+          ("my_function", "my_function", None, "name")
           ...
         )
         """
         self.__adaptorspipe = []
         self.__adaptorclass = adaptorclass or Adaptor
+        if adaptors:
+            for entry in adaptors:
+                self.insertadaptor(*entry)
 
     @property
     def adaptors_names(self):
