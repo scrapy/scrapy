@@ -61,7 +61,7 @@ class ClusterMasterWeb(ClusterMaster):
             else:
                 sep = "\r"
                 domains = args["schedule"]
-            priority = eval(args.get("priority", ["PRIORITY_NORMAL"])[0])
+            priority = int(args.get("priority", ["PRIORITY_NORMAL"])[0])
             
             #spider settings
             slist = args.get("settings", [""])[0].split(sep)
