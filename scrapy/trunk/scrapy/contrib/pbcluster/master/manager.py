@@ -203,7 +203,7 @@ class ClusterMaster:
             d.addCallbacks(callback=lambda obj: self.add_node(obj, _name), errback=_errback)
 
         server, port = url.split(":")
-        port = eval(port)
+        port = int(port)
         log.msg("Connecting to cluster worker %s..." % name)
         log.msg("Server: %s, Port: %s" % (server, port))
         factory = ScrapyPBClientFactory(self, name)
