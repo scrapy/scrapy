@@ -1,4 +1,6 @@
 import re
+from traceback import format_exc
+from scrapy.core import log
 
 class DuplicatedAdaptorName(Exception): pass
 
@@ -67,7 +69,7 @@ class AdaptorPipe:
             self.__adaptorspipe.insert(pos, adaptor)
             return pos
 
-    def execute(self, attrname, value, **pipeargs):
+    def execute(self, attrname, value, debug=False, **pipeargs):
         """
         Execute pipeline for attribute name "attrname" and value "value".
         Pass the given pipeargs to each adaptor function in the pipe.
@@ -85,6 +87,17 @@ class AdaptorPipe:
             else:
                 adapt = True
             if adapt:
-                value = adaptor.function(value, **pipeargs)
+                try:
+                    if debug:
+                        print "pipeargs: %s" % repr(pipeargs)
+                        print "  %07s | input >" % adaptor.name, repr(value)
+                    value = adaptor.function(value, **pipeargs)
+                    if debug:
+                        print "  %07s | output>" % adaptor.name, repr(value)
 
+                except Exception, e:
+                    print "Error in '%s' adaptor. Traceback text:" % adaptor.name
+                    print format_exc()
+                    return
+                    
         return value
