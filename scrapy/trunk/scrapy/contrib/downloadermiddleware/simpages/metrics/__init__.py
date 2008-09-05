@@ -4,7 +4,7 @@ SimpagesMiddleware.
 
 A metric must implement two functions:
 
-1. simhash(response)
+1. simhash(response, *args)
 
 Receives a response and returns a simhash of that response. A simhash can be
 an object of any type and its only purpose is to provide a fast way for
