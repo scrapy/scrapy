@@ -10,7 +10,7 @@ class ScrapedItem(object):
     """
     adaptors_pipe = AdaptorPipe()
 
-    def attribute(self, attrname, value, **pipeargs):
-        value = self.adaptors_pipe.execute(attrname, value, **pipeargs)
+    def attribute(self, attrname, value, match_condition=None):
+        value = self.adaptors_pipe.execute(match_condition or attrname, value)
         if not hasattr(self, attrname):
             setattr(self, attrname, value)
