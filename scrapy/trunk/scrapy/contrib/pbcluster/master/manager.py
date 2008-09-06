@@ -11,14 +11,7 @@ from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import NotConfigured
 from scrapy.conf import settings
 
-priorities = { 20:'NORMAL',
-               10:'QUICK',
-                0:'NOW',
-}
-
-# Set priorities module attributes
-for val, attr in priorities.items():
-    setattr(sys.modules[__name__], "PRIORITY_%s" % attr, val )
+DEFAULT_PRIORITY = settings.getint("DEFAULT_PRIORITY") or 20
 
 def my_import(name):
     mod = __import__(name)
@@ -244,7 +237,7 @@ class ClusterMaster:
     def remove_node(self, nodename):
         raise NotImplemented
 
-    def schedule(self, domains, spider_settings=None, priority=PRIORITY_NORMAL):
+    def schedule(self, domains, spider_settings=None, priority=DEFAULT_PRIORITY):
         i = 0
         for p in self.pending:
             if p['priority'] <= priority:

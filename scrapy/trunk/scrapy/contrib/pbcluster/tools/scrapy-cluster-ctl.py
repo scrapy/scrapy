@@ -47,7 +47,7 @@ def main():
     elif opts.schedule and domains:
         post["schedule"] = domains
         if opts.now:
-            post["priority"] = "PRIORITY_NOW"
+            post["priority"] = "0"
             post["settings"] = "UNAVAILABLES_NOTIFY=2"
     elif opts.remove and domains:
         post["remove"] = domains

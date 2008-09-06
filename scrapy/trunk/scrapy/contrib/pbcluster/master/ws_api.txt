@@ -14,13 +14,8 @@ Query parameters
 
  - `schedule`: schedules a comma separated list of domains. Schedule function takes optional parameters:
 
-    "priority": sets the queue priority for the specified domains. You can use a positive integer or the following predefined values:
-
-                    PRIORITY_NORMAL (=20)
-                    PRIORITY_QUICK  (=10)
-                    PRIORITY_NOW    (=0)
-
-                by default, PRIORITY_NORMAL is used.
+    "priority": sets the queue priority for the specified domains (an integer). The default is setted by "DEFAULT_PRIORITY"
+                setting (20 if not given). A lower priority number implies more priority.
 
     "settings": run settings for the specified domains. This is a comma separated list of <setting_name>=<value> pairs. By default it is empty.
 
@@ -39,9 +34,9 @@ Query parameters
 Examples:
 ---------
 
-1) Schedule argos.co.uk, diy.com, littlewoodsdirect.com spiders, with priority=PRIORITY_NOW, and settings UNAVAILABLES_NOTIFY=2 and UNAVAILABLES_DAYS_BACK=3. Answer with pprint format
+1) Schedule argos.co.uk, diy.com, littlewoodsdirect.com spiders, with priority=0, and settings UNAVAILABLES_NOTIFY=2 and UNAVAILABLES_DAYS_BACK=3. Answer with pprint format
 
-    http://localhost:8080/cluster_master/ws/?format=pprint&schedule=argos.co.uk,diy.com,littlewoodsdirect.com&priority=PRIORITY_NOW&settings=UNAVAILABLES_NOTIFY=2,UNAVAILABLES_DAYS_BACK=3
+    http://localhost:8080/cluster_master/ws/?format=pprint&schedule=argos.co.uk,diy.com,littlewoodsdirect.com&priority=0&settings=UNAVAILABLES_NOTIFY=2,UNAVAILABLES_DAYS_BACK=3
 
 2) Get status with pprint format:
 
