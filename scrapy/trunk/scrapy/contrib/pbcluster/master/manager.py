@@ -11,7 +11,7 @@ from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import NotConfigured
 from scrapy.conf import settings
 
-DEFAULT_PRIORITY = settings.getint("DEFAULT_PRIORITY") or 20
+DEFAULT_PRIORITY = settings.getint("DEFAULT_PRIORITY", 20)
 
 def my_import(name):
     mod = __import__(name)
