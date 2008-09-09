@@ -11,6 +11,7 @@ from scrapy.core.manager import scrapymanager
 from scrapy.http import Request, Response
 from scrapy.core.downloader.handlers import download_any
 from scrapy.fetcher import get_or_create_spider
+from scrapy.utils.decompressor import Decompressor
 
 #This code comes from twisted 8. We define here while
 #using old twisted version.
@@ -57,7 +58,7 @@ class Command(ScrapyCommand):
         """ You can use this function to update the local variables that will be available in the scrape console """
         pass
 
-    def get_url(self, url):
+    def get_url(self, url, decompress=False):
         #def _get_callback(_response):
             #print "done"
             #if not _response:
@@ -71,18 +72,22 @@ class Command(ScrapyCommand):
             #print _failure
 
         print "Downloading URL...           ",
-        url = url.strip()
         r = Request(url)
         spider = get_or_create_spider(url)
         try:
             result = blockingCallFromThread(reactor, download_any, r, spider)
             if isinstance(result, Response):
                 print "Done."
+                if decompress:
+                    print "Decompressing response...",
+                    d = Decompressor()
+                    result = d.extract(result)
+                    print "Done."
                 self.generate_vars(url, result)
                 return True
         except Exception, e:
             print "Error: %s" % e
-            
+
     def generate_vars(self, url, response):
         itemcls = load_class(settings['DEFAULT_ITEM_CLASS'])
         item = itemcls()
@@ -107,6 +112,7 @@ class Command(ScrapyCommand):
                 print "   %s: %s" % (key, val.__class__)
         print "Available commands:"
         print "   get <url>: Fetches an url and updates all variables."
+        print "   getd <url>: Similar to get, but filter with decompress."
         print "   scrapehelp: Prints this help."
         print '-' * 78
     
@@ -125,10 +131,12 @@ class Command(ScrapyCommand):
 
         def _console_thread():
             
-            def _get_magic(shell, url):
-                self.get_url(url)
+            def _get_magic(shell, arg):
+                self.get_url(arg.strip())
             def _help_magic(shell, _):
                 self.print_vars()
+            def _getd_magic(shell, arg):
+                self.get_url(arg.strip(), decompress=True)
                 
             if url:
                 result = self.get_url(url)
@@ -141,6 +149,7 @@ class Command(ScrapyCommand):
                 shell = IPython.Shell.IPShell(argv=[], user_ns=self.user_ns)
                 ip = shell.IP.getapi()
                 ip.expose_magic("get", _get_magic)
+                ip.expose_magic("getd", _getd_magic)
                 ip.expose_magic("scrapehelp", _help_magic)
                 shell.mainloop()
                 reactor.callFromThread(scrapymanager.stop)
