@@ -6,6 +6,13 @@ from scrapy.command import ScrapyCommand
 from scrapy.conf import settings
 
 class Command(ScrapyCommand):
+
+    """ Default template file name """
+    template_name = 'spider.tmpl'
+
+    """ Childs can define custom tvars """
+    custom_tvars = {}
+
     def syntax(self):
         return "<spider_name> <spider_domain_name>"
 
@@ -31,13 +38,14 @@ class Command(ScrapyCommand):
             'site': site,
             'classname': '%sSpider' % ''.join([s.capitalize() for s in name.split('-')])
         }
+        tvars.update(self.custom_tvars)
 
         spiders_module = __import__(settings['NEWSPIDER_MODULE'], {}, {}, [''])
         spidersdir = os.path.abspath(os.path.dirname(spiders_module.__file__))
         if name[0] not in string.letters: # must start with a letter, for valid python modules
             name = "a" + name
         name = name.replace('-', '_') # - are replaced by _, for valid python modules
-        self._genfiles('spider.tmpl', '%s/%s.py' % (spidersdir, name), tvars)
+        self._genfiles(self.template_name, '%s/%s.py' % (spidersdir, name), tvars)
 
     def _genfiles(self, template_name, source_name, tvars):
         """ Generate source from template, substitute variables """
