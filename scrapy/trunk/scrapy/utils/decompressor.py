@@ -7,7 +7,6 @@ import tarfile
 import gzip
 import bz2
 from cStringIO import StringIO
-from tempfile import NamedTemporaryFile
 from scrapy.http import ResponseBody
 
 class Decompressor(object):
@@ -57,7 +56,6 @@ class Decompressor(object):
         self.body = response.body.to_string()
         self.archive = StringIO()
         self.archive.write(self.body)
-        self.archive.seek(0)
 
         for decompressor in self.decompressors:
             self.archive.seek(0)
