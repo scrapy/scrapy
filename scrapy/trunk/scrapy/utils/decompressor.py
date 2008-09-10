@@ -6,8 +6,11 @@ import zipfile
 import tarfile
 import gzip
 import bz2
-from cStringIO import StringIO
 from scrapy.http import ResponseBody
+try:
+    from cStringIO import StringIO
+except:
+    from StringIO import StringIO
 
 class Decompressor(object):
     class ArchiveIsEmpty(Exception):
@@ -16,9 +19,10 @@ class Decompressor(object):
     def __init__(self):
         self.decompressors = [self.is_tar, self.is_zip,
                               self.is_gzip, self.is_bzip2]        
+    
     def is_tar(self, response):
         try:
-            tar_file = tarfile.open(fileobj=self.archive)
+            tar_file = tarfile.open(name='tar.tmp', fileobj=self.archive)
         except tarfile.ReadError:
             return False
         if tar_file.members:
