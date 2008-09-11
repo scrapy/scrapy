@@ -118,29 +118,34 @@ class Command(ScrapyCommand):
         guids_missing = guids_before - guids_now
         guids_both = guids_now & guids_before
 
-        chcount, chreport = self._report_differences(self.before_db, self.now_db, guids_both)
+        changed_items, chreport = self._report_differences(self.before_db, self.now_db, guids_both)
 
-        if chcount == 0 and opts.quiet:
+        ok_items = len(guids_both) - changed_items
+        new_items = len(guids_new)
+        missing_items = len(guids_missing)
+
+        if (new_items - missing_items - changed_items) == 0 and opts.quiet:
             s = ""
         else:
             s = "CRAWLING DIFFERENCES REPORT\n\n"
 
-            s += "Total items     : %d\n" % (len(guids_both) + len(guids_new) + len(guids_missing))
-            s += "  Items OK      : %d\n" % (len(guids_both) - chcount)
-            s += "  New items     : %d\n" % len(guids_new)
-            s += "  Missing items : %d\n" % len(guids_missing)
-            s += "  Changed items : %d\n" % chcount
+            s += "Total items     : %d\n" % (len(guids_both) + new_items + missing_items)
+            s += "  Items OK      : %d\n" % ok_items
+            s += "  New items     : %d\n" % new_items
+            s += "  Missing items : %d\n" % missing_items
+            s += "  Changed items : %d\n" % changed_items
 
             s += "\n"
-            s += "- NEW ITEMS (%d) -----------------------------------------\n" % len(guids_new)
+            s += "- NEW ITEMS (%d) -----------------------------------------\n" % new_items
             s += self._format_items([self.now_db[g] for g in guids_new])
 
             s += "\n"
-            s += "- MISSING ITEMS (%d) -------------------------------------\n" % len(guids_missing)
+            s += "- MISSING ITEMS (%d) -------------------------------------\n" % missing_items
             s += self._format_items([self.before_db[g] for g in guids_missing])
 
             s += "\n"
-            s += "- CHANGED ITEMS (%d) -------------------------------------\n" % chcount
+            s += "- CHANGED ITEMS (%d) -------------------------------------\n" % changed_items
+
             s += chreport
 
         return s
