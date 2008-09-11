@@ -34,6 +34,7 @@ class Command(ScrapyCommand):
         parser.add_option("--target", dest="targets", action="append", help="crawl TARGET instead of recorded urls/domains. can be passed multiple times")
         # adding option to update 
         parser.add_option("--pages", dest="pages", action="store_true", help="update all the pages in the replay file, recording it again.")
+        parser.add_option("-q", "--quiet", dest="quiet", action="store_true", help="no verbose mode in option diff.")
 
     def process_options(self, args, opts):
         if args:
@@ -81,7 +82,7 @@ class Command(ScrapyCommand):
     def action_update(self, opts):
         self.replay.update(args=opts.targets, opts=opts.__dict__)
         if (opts.pages):
-            args = ['decobot-ctl.py', 'crawl']
+            args = ['scrapy-crawl', 'crawl']
             args.extend(self.replay.options['args'])
             for k in self.replay.options['opts']:                
                 if self.replay.options['opts'][k]:                   
@@ -119,25 +120,28 @@ class Command(ScrapyCommand):
 
         chcount, chreport = self._report_differences(self.before_db, self.now_db, guids_both)
 
-        s = "CRAWLING DIFFERENCES REPORT\n\n"
+        if chcount == 0 and opts.quiet:
+            s = ""
+        else:
+            s = "CRAWLING DIFFERENCES REPORT\n\n"
 
-        s += "Total items     : %d\n" % (len(guids_both) - chcount)
-        s += "  Items OK      : %d\n" % (len(guids_both) - chcount)
-        s += "  New items     : %d\n" % len(guids_new)
-        s += "  Missing items : %d\n" % len(guids_missing)
-        s += "  Changed items : %d\n" % chcount
+            s += "Total items     : %d\n" % (len(guids_both) + len(guids_new) + len(guids_missing))
+            s += "  Items OK      : %d\n" % (len(guids_both) - chcount)
+            s += "  New items     : %d\n" % len(guids_new)
+            s += "  Missing items : %d\n" % len(guids_missing)
+            s += "  Changed items : %d\n" % chcount
 
-        s += "\n"
-        s += "- NEW ITEMS (%d) -----------------------------------------\n" % len(guids_new)
-        s += self._format_items([self.now_db[g] for g in guids_new])
+            s += "\n"
+            s += "- NEW ITEMS (%d) -----------------------------------------\n" % len(guids_new)
+            s += self._format_items([self.now_db[g] for g in guids_new])
 
-        s += "\n"
-        s += "- MISSING ITEMS (%d) -------------------------------------\n" % len(guids_missing)
-        s += self._format_items([self.before_db[g] for g in guids_missing])
+            s += "\n"
+            s += "- MISSING ITEMS (%d) -------------------------------------\n" % len(guids_missing)
+            s += self._format_items([self.before_db[g] for g in guids_missing])
 
-        s += "\n"
-        s += "- CHANGED ITEMS (%d) -------------------------------------\n" % chcount
-        s += chreport
+            s += "\n"
+            s += "- CHANGED ITEMS (%d) -------------------------------------\n" % chcount
+            s += chreport
 
         return s
 
