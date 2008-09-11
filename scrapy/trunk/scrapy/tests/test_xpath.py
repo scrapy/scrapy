@@ -1,11 +1,13 @@
-import os
 import re
 import unittest
 
 import libxml2
 
 from scrapy.http import Response
-from scrapy.xpath.selector import XPathSelector, XmlXPathSelector, HtmlXPathSelector
+from scrapy.xpath.selector import XmlXPathSelector, HtmlXPathSelector
+
+if __name__ == "__main__":
+    unittest.main()
 
 class XPathTestCase(unittest.TestCase):
 
@@ -192,7 +194,7 @@ class XPathTestCase(unittest.TestCase):
                          u'<root>lala</root>')
 
     def test_unquote(self):
-        xmldoc='\n'.join((
+        xmldoc = '\n'.join((
             '<root>',
             '  lala',
             '  <node>',
@@ -221,5 +223,3 @@ class XPathTestCase(unittest.TestCase):
             u'\n  ',
             u'\n  pff\n'])
 
-    if __name__ == "__main__":
-        unittest.main()   
