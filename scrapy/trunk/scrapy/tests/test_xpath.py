@@ -191,5 +191,35 @@ class XPathTestCase(unittest.TestCase):
         self.assertEqual(xxs.extract(),
                          u'<root>lala</root>')
 
-if __name__ == "__main__":
-    unittest.main()   
+    def test_unquote(self):
+        xmldoc='\n'.join((
+            '<root>',
+            '  lala',
+            '  <node>',
+            '    blabla&amp;more<!--comment-->a<b>test</b>oh',
+            '    <![CDATA[lalalal&ppppp<b>PPPP</b>ppp&amp;la]]>',
+            '  </node>',
+            '  pff',
+            '</root>'))
+        xxs = XmlXPathSelector(text=xmldoc)
+
+        self.assertEqual(xxs.extract_unquoted(), u'')
+
+        self.assertEqual(xxs.x('/root').extract_unquoted(), [u''])
+        self.assertEqual(xxs.x('/root/text()').extract_unquoted(), [
+            u'\n  lala\n  ',
+            u'\n  pff\n'])
+
+        self.assertEqual(xxs.x('//*').extract_unquoted(), [u'', u'', u''])
+        self.assertEqual(xxs.x('//text()').extract_unquoted(), [
+            u'\n  lala\n  ',
+            u'\n    blabla&more',
+            u'a',
+            u'test',
+            u'oh\n    ',
+            u'lalalal&ppppp<b>PPPP</b>ppp&amp;la',
+            u'\n  ',
+            u'\n  pff\n'])
+
+    if __name__ == "__main__":
+        unittest.main()   

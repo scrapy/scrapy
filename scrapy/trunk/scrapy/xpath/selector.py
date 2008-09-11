@@ -73,6 +73,13 @@ class XPathSelector(object):
                 text = unicode(self.xmlNode)
         return text
 
+    def extract_unquoted(self):
+        """Get unescaped contents from the text node (no entities, no CDATA)"""
+        if self.x('self::text()'):
+            return unicode(self.xmlNode.getContent(), errors='ignore')
+        else:
+            return u''
+
     def register_namespace(self, prefix, uri):
         """Register namespace so that it can be used in XPath queries"""
         self.doc.xpathContext.xpathRegisterNs(prefix, uri)
@@ -98,11 +105,14 @@ class XPathSelectorList(list):
         """Perform the re() method on each XPathSelector of the list, and
         return the result as a flattened list of unicode strings"""
         return flatten([x.re(regex) for x in self])
-    
+
     def extract(self):
         """Return a list of unicode strings with the content referenced by each
         XPathSelector of the list"""
         return [x.extract() if isinstance(x, XPathSelector) else x for x in self]
+
+    def extract_unquoted(self):
+        return [x.extract_unquoted() if isinstance(x, XPathSelector) else x for x in self]
 
 
 class XmlXPathSelector(XPathSelector):
