@@ -6,9 +6,6 @@ import libxml2
 from scrapy.http import Response
 from scrapy.xpath.selector import XmlXPathSelector, HtmlXPathSelector
 
-if __name__ == "__main__":
-    unittest.main()
-
 class XPathTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -223,3 +220,6 @@ class XPathTestCase(unittest.TestCase):
             u'\n  ',
             u'\n  pff\n'])
 
+
+if __name__ == "__main__":
+    unittest.main()
