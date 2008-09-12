@@ -76,7 +76,7 @@ class ClusterMasterWeb(ClusterMaster):
 
             self.schedule(domains, spider_settings, priority)
             if ws:
-                return self.ws_status(wc_request)
+                return self.ws_status(wc_request, verbosity=0)
 
         if "stop" in args:
             if ws:
@@ -217,20 +217,22 @@ class ClusterMasterWeb(ClusterMaster):
     def webconsole_discover_module(self):
         return self
 
-    def ws_status(self, wc_request):
+    def ws_status(self, wc_request, verbosity=1):
         format = wc_request.args['format'][0] if 'format' in wc_request.args else 'json'
-        verbosity = wc_request.args['verbosity'][0] if 'verbosity' in wc_request.args else '0'
+        verbosity = int(wc_request.args['verbosity'][0]) if 'verbosity' in wc_request.args else verbosity
         wc_request.setHeader('content-type', 'text/plain')
         status = {}
         nodes_status = {}
-        for d, n in self.nodes.iteritems():
-            nodes_status[d] = n.status_as_dict(int(verbosity))
-        status["nodes"] = nodes_status
-        status["pending"] = self.print_pending(int(verbosity))
-        status["loading"] = self.loading
-        content = serialize(status, format)
-        return content
-        
+        if verbosity > 0:
+            for d, n in self.nodes.iteritems():
+                nodes_status[d] = n.status_as_dict(verbosity)
+            status["nodes"] = nodes_status
+            status["pending"] = self.print_pending(verbosity)
+            status["loading"] = self.loading
+            content = serialize(status, format)
+            return content
+        return ""
+
     def ws_statistics(self, wc_request):
         format = wc_request.args['format'][0] if 'format' in wc_request.args else 'json'
         content = serialize(self.statistics, format)

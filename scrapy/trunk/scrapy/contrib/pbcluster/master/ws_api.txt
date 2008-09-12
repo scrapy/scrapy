@@ -27,7 +27,7 @@ Query parameters
 
  - `enable_node`: revert the state setted by 'disable_node'
 
- - `verbosity`: sets the verbosity level (0 is the default minimal, 1 includes domain settings)
+ - `verbosity`: sets the output verbosity level (1 is the default minimal, 2 includes domain settings, 0 disables output)
 
  - `statistics`: shows the pending/running/scraped/lost statistics
 

@@ -35,17 +35,19 @@ class Broker(pb.Referenceable):
         else:
             deferred.addCallbacks(callback=self._set_status, errback=lambda reason: log.msg(reason, log.ERROR))
             
-    def status_as_dict(self, verbosity=0):
+    def status_as_dict(self, verbosity=1):
+        if verbosity == 0:
+            return
         status = {"alive": self.alive}
         if self.alive:
-            if verbosity == 0:
+            if verbosity == 1:
                 #dont show spider settings
                 status["running"] = []
                 for proc in self.running:
                     proccopy = proc.copy()
                     del proccopy["settings"]
                     status["running"].append(proccopy)
-            else:
+            elif verbosity == 2:
                 status["running"] = self.running
             status["maxproc"] = self.maxproc
             status["freeslots"] = self.maxproc - len(self.running)
@@ -307,17 +309,18 @@ class ClusterMaster:
             if domain == p['domain']:
                 return p
 
-    def print_pending(self, verbosity=0):
-        if verbosity == 0:
+    def print_pending(self, verbosity=1):
+        if verbosity == 1:
             pending = []
             for p in self.pending:
                 pp = p.copy()
                 del pp["settings"]
                 pending.append(pp)
             return pending
-        else:
+        elif verbosity == 2:
             return self.pending
-        
+        return
+
     def _engine_started(self):
         self.load_nodes()
         scrapyengine.addtask(self.update_nodes, settings.getint('CLUSTER_MASTER_POLL_INTERVAL'))

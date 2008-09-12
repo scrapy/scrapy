@@ -21,13 +21,15 @@ def main():
     parser.add_option("--status", dest="status", action="store_true", help="Print cluster master status and quit.")
     parser.add_option("--statistics", dest="statistics", action="store_true", help="Print cluster statistics")
     parser.add_option("--stop", dest="stop", action="store_true", help="Stops a running domain.")
-    parser.add_option("--verbosity", dest="verbosity", type="int", help="Sets the report status verbosity.", default=0)
+    parser.add_option("--verbosity", dest="verbosity", type="int", help="Sets the report status verbosity.")
     (opts, args) = parser.parse_args()
     
     output = ""
     domains = []
     urlstring = "http://%s:%s/cluster_master/ws/" % (opts.server, opts.port)
-    post = {"format":opts.format, "verbosity":opts.verbosity}
+    post = {"format":opts.format}
+    if isinstance(opts.verbosity, int):
+        post["verbosity"] = opts.verbosity
     
     if args:
         domains = ",".join(args)
@@ -60,10 +62,11 @@ def main():
     else:
         parser.print_help()
         return
-    
+
     f = urllib.urlopen(urlstring, urllib.urlencode(post))
     output=f.read()
-
+    if not output:
+        return
     if not opts.output:
         print output
     else:
