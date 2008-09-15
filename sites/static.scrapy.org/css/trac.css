@@ -125,6 +125,7 @@ label.disabled { color: #d7d7d7 }
 #header h1 { margin: 1.5em 0 -1.5em; }
 #header img { border: none; margin: 0 0 -3em }
 * html #header img  { margin-top:-10px }
+* +html #header img  { margin-top:-10px }
 #header :link, #header :visited, #header :link:hover, #header :visited:hover {
  background: transparent;
  color: #555;
