@@ -126,7 +126,6 @@ class MediaPipeline(object):
         Defaults return None (no media to download)
 
         """
-        return item.image_urls
 
     def media_downloaded(self, response, request, info):
         """ Method called on success download of media request
