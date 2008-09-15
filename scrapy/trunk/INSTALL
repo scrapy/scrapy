@@ -5,6 +5,7 @@ You need:
  * pyopenssl for HTTPS support
    * for win32: http://webcleaner.sourceforge.net/pyOpenSSL-0.6.win32-py2.5.exe
  * spidermonkey (optional) - required for JSParser
+ * simplejson (optional) - required for url2guid web service
 
 The python interpreter should have sys.getdefaultencoding() == 'utf-8'
 If this is not the case, you can add the following lines to a file
