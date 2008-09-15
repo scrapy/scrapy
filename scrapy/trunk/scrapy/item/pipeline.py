@@ -71,7 +71,7 @@ class ItemPipeline(object):
                 return item
 
             current_stage = pipeline.pop(0)
-            log.msg("_%s_ Pipeline stage: %s" % (item.guid, type(current_stage).__name__), log.TRACE, domain=domain)
+            log.msg("_%s_ Pipeline stage: %s" % (item, type(current_stage).__name__), log.TRACE, domain=domain)
 
             d = mustbe_deferred(current_stage.process_item, domain, response, item)
             d.addCallback(_next_stage)
@@ -90,7 +90,7 @@ class ItemPipeline(object):
                 log.msg('Error processing %s - %s' % (item, _failure), log.ERROR, domain=domain)
 
         def _pipeline_finished(_):
-            log.msg("_%s_ Pipeline finished" % item.guid, log.TRACE, domain=domain)
+            log.msg("_%s_ Pipeline finished" % item, log.TRACE, domain=domain)
             info.remove(item)
             return _
 
