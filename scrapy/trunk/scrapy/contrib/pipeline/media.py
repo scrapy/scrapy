@@ -31,21 +31,20 @@ class MediaPipeline(object):
 
     def process_item(self, domain, response, item):
         info = self.cache[domain]
-        urls = self.get_urls_from_item(item, info)
-        assert urls is None or hasattr(urls, '__iter__'), \
-                'get_urls_from_item should return None or iterable'
+        requests = self.get_media_requests(item, info)
+        assert requests is None or hasattr(requests, '__iter__'), \
+                'get_media_requests should return None or iterable'
 
         def _bugtrap(_failure, request):
-            log.msg('Unhandled ERROR in MediaPipeline.{new,failed}_item_media for %s: %s' % (request, _failure), log.ERROR, domain=domain)
+            log.msg('Unhandled ERROR in MediaPipeline.item_media_{downloaded,failed} for %s: %s' % (request, _failure), log.ERROR, domain=domain)
 
         lst = []
-        for url in urls or ():
-            request = url if isinstance(url, Request) else Request(url=url)
+        for request in requests or ():
             dfd = self._enqueue(request, info)
             dfd.addCallbacks(
-                    callback=self.new_item_media,
+                    callback=self.item_media_downloaded,
                     callbackArgs=(item, request, info),
-                    errback=self.failed_item_media,
+                    errback=self.item_media_failed,
                     errbackArgs=(item, request, info),
                     )
             dfd.addErrback(_bugtrap, request)
@@ -76,7 +75,7 @@ class MediaPipeline(object):
         dwld.addCallbacks(
                 callback=self.media_downloaded,
                 callbackArgs=(request, info),
-                errback=self.media_failure,
+                errback=self.media_failed,
                 errbackArgs=(request, info),
                 )
         dwld.addBoth(self._downloaded, info, fp)
@@ -85,7 +84,6 @@ class MediaPipeline(object):
         def _bugtrap(_failure):
             log.msg('Unhandled ERROR in MediaPipeline._downloaded: %s' % (_failure), log.ERROR, domain=info.domain)
         dwld.errback(_bugtrap)
-
 
     def _downloaded(self, result, info, fp):
         info.downloaded[fp] = result # cache result
@@ -115,8 +113,8 @@ class MediaPipeline(object):
         This method is called every time an item media is enqueue for download.
 
         returning a non-None value implies:
-            - call `new_item_media` with this value as input unless value is Failure instance
-            - call `failed_item_media` if value is Failure instance
+            - call `item_media_downloaded` with this value as input unless value is Failure instance
+            - call `item_media_failed` if value is Failure instance
             - prevent downloading, this means calling `download` method.
             - prevent taking the value from the cached result for this request.
 
@@ -127,8 +125,8 @@ class MediaPipeline(object):
 
         """
 
-    def get_urls_from_item(self, item, info):
-        """ Return the urls or Request objects to download for this item
+    def get_media_requests(self, item, info):
+        """ Return a list of Request objects to download for this item
 
         Should return None or an iterable
 
@@ -139,34 +137,34 @@ class MediaPipeline(object):
     def media_downloaded(self, response, request, info):
         """ Method called on success download of media request
 
-        Return value is cached and used as input for `new_item_media` method.
+        Return value is cached and used as input for `item_media_downloaded` method.
         Default implementation returns None.
 
         WARNING: returning the response object can eat your memory.
 
         """
 
-    def media_failure(self, failure, request, info):
+    def media_failed(self, failure, request, info):
         """ Method called when media request failed due to any kind of download error.
 
-        Return value is cached and used as input for `failed_item_media` method.
+        Return value is cached and used as input for `item_media_failed` method.
         Default implementation returns same Failure object.
         """
         return failure
 
-    def new_item_media(self, result, item, request, info):
+    def item_media_downloaded(self, result, item, request, info):
         """ Method to handle result of requested media for item.
 
         result is the return value of `media_downloaded` hook, or the non-Failure instance
-        returned by `media_failure` hook.
+        returned by `media_failed` hook.
 
         return value of this method isn't important and is recommended to return None.
         """
 
-    def failed_item_media(self, failure, item, request, info):
+    def item_media_failed(self, failure, item, request, info):
         """ Method to handle failed result of requested media for item.
 
-        result is the returned Failure instance of `media_failure` hook, or Failure instance
+        result is the returned Failure instance of `media_failed` hook, or Failure instance
         of an exception raised by `media_downloaded` hook.
 
         return value of this method isn't important and is recommended to return None.
