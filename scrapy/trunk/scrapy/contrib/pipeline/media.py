@@ -36,7 +36,7 @@ class MediaPipeline(object):
                 'get_urls_from_item should return None or iterable'
 
         def _bugtrap(_failure, request):
-            log.msg('MediaPipeline Unhandled ERROR in %s: %s' % (request, _failure), log.ERROR, domain=domain)
+            log.msg('Unhandled ERROR in MediaPipeline.{new,failed}_item_media for %s: %s' % (request, _failure), log.ERROR, domain=domain)
 
         lst = []
         for url in urls or ():
@@ -72,9 +72,6 @@ class MediaPipeline(object):
         return wad
 
     def _download(self, request, info, fp):
-        def _bugtrap(_failure, request):
-            log.msg('MediaPipeline Unhandled ERROR in %s: %s' % (request, _failure), log.ERROR, domain=info.domain)
-
         dwld = mustbe_deferred(self.download, request, info)
         dwld.addCallbacks(
                 callback=self.media_downloaded,
@@ -82,9 +79,12 @@ class MediaPipeline(object):
                 errback=self.media_failure,
                 errbackArgs=(request, info),
                 )
-        dwld.addErrback(_bugtrap, request)
         dwld.addBoth(self._downloaded, info, fp)
         info.downloading[fp] = (request, dwld)
+
+        def _bugtrap(_failure):
+            log.msg('Unhandled ERROR in MediaPipeline._downloaded: %s' % (_failure), log.ERROR, domain=info.domain)
+        dwld.errback(_bugtrap)
 
 
     def _downloaded(self, result, info, fp):
