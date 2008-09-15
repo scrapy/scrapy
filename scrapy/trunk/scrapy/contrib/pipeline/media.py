@@ -31,7 +31,7 @@ class MediaPipeline(object):
 
     def process_item(self, domain, response, item):
         info = self.cache[domain]
-        urls = self.get_urls_from_item(item)
+        urls = self.get_urls_from_item(item, info)
         assert urls is None or hasattr(urls, '__iter__'), \
                 'get_urls_from_item should return None or iterable'
 
@@ -41,14 +41,14 @@ class MediaPipeline(object):
             dfd = self._enqueue(request, info)
             dfd.addCallbacks(
                     callback=self.new_item_media,
-                    callbackArgs=(item, request),
+                    callbackArgs=(item, request, info),
                     errback=self.failed_item_media,
-                    errbackArgs=(item, request),
+                    errbackArgs=(item, request, info),
                     )
             lst.append(dfd)
 
         dlst = defer.DeferredList(lst, consumeErrors=False)
-        dlst.addBoth(lambda _: self.item_completed(item))
+        dlst.addBoth(lambda _: self.item_completed(item, info))
         return dlst
 
     def _enqueue(self, request, info):
@@ -69,7 +69,12 @@ class MediaPipeline(object):
 
     def _download(self, request, info, fp):
         dwld = mustbe_deferred(self.download(request, info))
-        dwld.addCallbacks(self.media_downloaded, self.media_failure)
+        dwld.addCallbacks(
+                callback=self.media_downloaded,
+                callbackArgs=(request, info),
+                errback=self.media_failure,
+                errbackArgs=(request, info),
+                )
         dwld.addBoth(self._downloaded, info, fp)
         info.downloading[fp] = (request, dwld)
 
@@ -113,7 +118,7 @@ class MediaPipeline(object):
 
         """
 
-    def get_urls_from_item(self, item):
+    def get_urls_from_item(self, item, info):
         """ Return the urls or Request objects to download for this item
 
         Should return None or an iterable
@@ -123,7 +128,7 @@ class MediaPipeline(object):
         """
         return item.image_urls
 
-    def media_downloaded(self, response):
+    def media_downloaded(self, response, request, info):
         """ Method called on success download of media request
 
         Return value is cached and used as input for `new_item_media` method.
@@ -133,7 +138,7 @@ class MediaPipeline(object):
 
         """
 
-    def media_failure(self, failure):
+    def media_failure(self, failure, request, info):
         """ Method called when media request failed due to any kind of download error.
 
         Return value is cached and used as input for `failed_item_media` method.
@@ -141,7 +146,7 @@ class MediaPipeline(object):
         """
         return failure
 
-    def new_item_media(self, result, item, request):
+    def new_item_media(self, result, item, request, info):
         """ Method to handle result of requested media for item.
 
         result is the return value of `media_downloaded` hook, or the non-Failure instance
@@ -150,7 +155,7 @@ class MediaPipeline(object):
         return value of this method isn't important and is recommended to return None.
         """
 
-    def failed_item_media(self, failure, item, request):
+    def failed_item_media(self, failure, item, request, info):
         """ Method to handle failed result of requested media for item.
 
         result is the returned Failure instance of `media_failure` hook, or Failure instance
@@ -159,7 +164,7 @@ class MediaPipeline(object):
         return value of this method isn't important and is recommended to return None.
         """
 
-    def item_completed(self, item):
+    def item_completed(self, item, info):
         """ Method called when all media requests for a single item has returned a result or failure.
 
         The return value of this method is used as output of pipeline stage.
