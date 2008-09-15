@@ -35,6 +35,9 @@ class MediaPipeline(object):
         assert urls is None or hasattr(urls, '__iter__'), \
                 'get_urls_from_item should return None or iterable'
 
+        def _bugtrap(_failure, request):
+            log.msg('MediaPipeline Unhandled ERROR in %s: %s' % (request, _failure), log.ERROR, domain=domain)
+
         lst = []
         for url in urls or ():
             request = url if isinstance(url, Request) else Request(url=url)
@@ -45,6 +48,7 @@ class MediaPipeline(object):
                     errback=self.failed_item_media,
                     errbackArgs=(item, request, info),
                     )
+            dfd.addErrback(_bugtrap, request)
             lst.append(dfd)
 
         dlst = defer.DeferredList(lst, consumeErrors=False)
@@ -68,15 +72,20 @@ class MediaPipeline(object):
         return wad
 
     def _download(self, request, info, fp):
-        dwld = mustbe_deferred(self.download(request, info))
+        def _bugtrap(_failure, request):
+            log.msg('MediaPipeline Unhandled ERROR in %s: %s' % (request, _failure), log.ERROR, domain=info.domain)
+
+        dwld = mustbe_deferred(self.download, request, info)
         dwld.addCallbacks(
                 callback=self.media_downloaded,
                 callbackArgs=(request, info),
                 errback=self.media_failure,
                 errbackArgs=(request, info),
                 )
+        dwld.addErrback(_bugtrap, request)
         dwld.addBoth(self._downloaded, info, fp)
         info.downloading[fp] = (request, dwld)
+
 
     def _downloaded(self, result, info, fp):
         info.downloaded[fp] = result # cache result
