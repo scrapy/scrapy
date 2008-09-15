@@ -42,22 +42,22 @@ def defer_succeed(result):
     reactor.callLater(0, d.callback, result)
     return d
 
+def defer_result(result):
+    if isinstance(result, defer.Deferred):
+        return result
+    elif isinstance(result, failure.Failure):
+        return defer_fail(result)
+    else:
+        return defer_succeed(result)
 
 def mustbe_deferred(f, *args, **kw):
     """same as twisted.internet.defer.maybeDeferred, but delay calling callback/errback"""
-    deferred = None
     try:
         result = f(*args, **kw)
     except:
         return defer_fail(failure.Failure())
     else:
-        if isinstance(result, defer.Deferred):
-            return result
-        elif isinstance(result, failure.Failure):
-            return defer_fail(result)
-        else:
-            return defer_succeed(result)
-    return deferred
+        return defer_result(result)
 
 
 def chain_deferred(d1, d2):
