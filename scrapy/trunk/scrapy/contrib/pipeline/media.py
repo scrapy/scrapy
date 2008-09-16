@@ -71,6 +71,9 @@ class MediaPipeline(object):
         return wad
 
     def _download(self, request, info, fp):
+        def _bugtrap(_failure):
+            log.msg('Unhandled ERROR in MediaPipeline._downloaded: %s' % (_failure), log.ERROR, domain=info.domain)
+
         dwld = mustbe_deferred(self.download, request, info)
         dwld.addCallbacks(
                 callback=self.media_downloaded,
@@ -79,11 +82,8 @@ class MediaPipeline(object):
                 errbackArgs=(request, info),
                 )
         dwld.addBoth(self._downloaded, info, fp)
+        dwld.addErrback(_bugtrap)
         info.downloading[fp] = (request, dwld)
-
-        def _bugtrap(_failure):
-            log.msg('Unhandled ERROR in MediaPipeline._downloaded: %s' % (_failure), log.ERROR, domain=info.domain)
-        dwld.errback(_bugtrap)
 
     def _downloaded(self, result, info, fp):
         info.downloaded[fp] = result # cache result
