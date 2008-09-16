@@ -55,10 +55,6 @@ class MediaPipeline(object):
         return dlst
 
     def _enqueue(self, request, info):
-        result = self.media_to_download(request, info)
-        if result is not None:
-            return defer_result(result)
-
         fp = request.fingerprint()
         if fp in info.downloaded:
             return defer_result(info.downloaded[fp])
@@ -74,13 +70,18 @@ class MediaPipeline(object):
         def _bugtrap(_failure):
             log.msg('Unhandled ERROR in MediaPipeline._downloaded: %s' % (_failure), log.ERROR, domain=info.domain)
 
-        dwld = mustbe_deferred(self.download, request, info)
-        dwld.addCallbacks(
-                callback=self.media_downloaded,
-                callbackArgs=(request, info),
-                errback=self.media_failed,
-                errbackArgs=(request, info),
-                )
+        result = self.media_to_download(request, info)
+        if result is not None:
+            dwld = defer_result(result)
+        else:
+            dwld = mustbe_deferred(self.download, request, info)
+            dwld.addCallbacks(
+                    callback=self.media_downloaded,
+                    callbackArgs=(request, info),
+                    errback=self.media_failed,
+                    errbackArgs=(request, info),
+                    )
+
         dwld.addBoth(self._downloaded, info, fp)
         dwld.addErrback(_bugtrap)
         info.downloading[fp] = (request, dwld)
@@ -110,18 +111,14 @@ class MediaPipeline(object):
     def media_to_download(self, request, info):
         """ Ongoing request hook pre-cache
 
-        This method is called every time an item media is enqueue for download.
+        This method is called every time a media is requested for download, and
+        only once for the same request because return value is cached as media
+        result.
 
         returning a non-None value implies:
-            - call `item_media_downloaded` with this value as input unless value is Failure instance
-            - call `item_media_failed` if value is Failure instance
-            - prevent downloading, this means calling `download` method.
-            - prevent taking the value from the cached result for this request.
-
-        Take in count that this method doesn't cache returned value as request result.
-
-        Override `download` method if you want to hook after checking for cached
-        result, and if you want to store returned valued as result for request.
+            - the return value is cached and piped into `item_media_downloaded` or `item_media_failed`
+            - prevents downloading, this means calling `download` method.
+            - `media_downloaded` or `media_failed` isn't called.
 
         """
 
