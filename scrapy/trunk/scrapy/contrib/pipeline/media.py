@@ -62,7 +62,7 @@ class MediaPipeline(object):
         if fp not in info.downloading:
             self._download(request, info, fp)
 
-        wad = defer.Deferred()
+        wad = request.deferred or defer.Deferred()
         waiting = info.waiting.setdefault(fp, []).append(wad)
         return wad
 
