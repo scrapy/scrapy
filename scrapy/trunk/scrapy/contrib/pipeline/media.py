@@ -21,16 +21,16 @@ class DomainInfo(object):
 
 class MediaPipeline(object):
     def __init__(self):
-        self.cache = {}
+        self.domaininfo = {}
 
     def open_domain(self, domain):
-        self.cache[domain] = DomainInfo(domain)
+        self.domaininfo[domain] = DomainInfo(domain)
 
     def close_domain(self, domain):
-        del self.cache[domain]
+        del self.domaininfo[domain]
 
     def process_item(self, domain, response, item):
-        info = self.cache[domain]
+        info = self.domaininfo[domain]
         requests = self.get_media_requests(item, info)
         assert requests is None or hasattr(requests, '__iter__'), \
                 'get_media_requests should return None or iterable'
