@@ -55,15 +55,17 @@ class MediaPipeline(object):
         return dlst
 
     def _enqueue(self, request, info):
-        fp = request.fingerprint()
-        if fp in info.downloaded:
-            return defer_result(info.downloaded[fp])
-
-        if fp not in info.downloading:
-            self._download(request, info, fp)
-
         wad = request.deferred or defer.Deferred()
-        waiting = info.waiting.setdefault(fp, []).append(wad)
+
+        fp = request.fingerprint()
+        if fp not in info.downloaded:
+            cached = info.downloaded[fp]
+            defer_result(cached).chainDeferred(wad)
+        else:
+            info.waiting.setdefault(fp, []).append(wad)
+            if fp not in info.downloading:
+                self._download(request, info, fp)
+
         return wad
 
     def _download(self, request, info, fp):
