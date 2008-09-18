@@ -10,7 +10,7 @@ def findfiles(pattern, base='.'):
 
 name = 'scrapy'
 
-setup (
+setup(
     name = name,
     version = '0.1',
     description = '',
@@ -20,10 +20,9 @@ setup (
     license = '',
     url = 'http://scrapy.org',
 
-    packages = [name] + ['%s.%s' % (name,p) for p in find_packages('scrapy')],
-    package_data = {name:
-        findfiles('*.tmpl', 'scrapy/templates')
+    packages = find_packages(),
+    package_data = {
+        '': ['*.tmpl'],
     },
-    data_files = [],
     scripts = ['scrapy/bin/scrapy-admin.py'],
 )
