@@ -6,11 +6,12 @@ from __future__ import with_statement
 import os
 import urlparse
 
+from twisted.web.client import HTTPClientFactory
 from twisted.internet import defer, reactor
 from twisted.web import error as web_error
 
 from scrapy.core import signals
-from scrapy.http import Request, Response, Headers, HTTPClientFactory
+from scrapy.http import Request, Response, Headers
 from scrapy.core.exceptions import UsageError, HttpException
 from scrapy.utils.misc import defer_succeed
 from scrapy.conf import settings
