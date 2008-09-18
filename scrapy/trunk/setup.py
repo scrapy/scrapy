@@ -22,7 +22,7 @@ setup(
 
     packages = find_packages(),
     package_data = {
-        '': ['*.tmpl'],
+        'scrapy': ['templates/*.tmpl'],
     },
     scripts = ['scrapy/bin/scrapy-admin.py'],
 )
