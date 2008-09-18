@@ -8,11 +8,9 @@ def findfiles(pattern, base='.'):
     return matches
 
 
-name = 'scrapy'
-
 setup(
-    name = name,
-    version = '0.1',
+    name = 'scrapy',
+    version = '0.8',
     description = '',
     long_description = '',
     author = '',
