@@ -1,23 +1,28 @@
-from django.conf.urls.defaults import *
-from django.views.generic.simple import direct_to_template
 from django.conf import settings
+from django.conf.urls.defaults import *
+from django.contrib import admin
+
+
+admin.autodiscover()
 
 
 urlpatterns = patterns('',
-    (r"^weblog/", include("scrapyorg.blog.urls")),
+    url(r"^weblog/", include("scrapyorg.blog.urls")),
 
     # admin
-    (r"^admin/download/downloadlink/", include("scrapyorg.download.urls")),
-    (r"^admin/", include("django.contrib.admin.urls")),
+    url(r"^admin/download/downloadlink/", include("scrapyorg.download.urls")),
+    url(r'^admin/(.*)', admin.site.root),
 )
 
 
 if settings.DEBUG: # devel
     urlpatterns += patterns('',         
-        (r'^%s/(?P<path>.*)$' % settings.MEDIA_URL[1:], 'django.views.static.serve', {'document_root': settings.MEDIA_ROOT}),
+        (r'^%s/(?P<path>.*)$' % settings.MEDIA_URL[1:],
+          'django.views.static.serve',
+          {'document_root': settings.MEDIA_ROOT}),
     )
     
 # last resort, it's an article
 urlpatterns += patterns('',         
-    (r"", include("scrapyorg.article.urls")),
+    url(r"", include("scrapyorg.article.urls")),
 )

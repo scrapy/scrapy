@@ -10,12 +10,11 @@ class DownloadLink(models.Model):
     address = models.CharField(_("address"), max_length=1024, blank=False)
     text = models.CharField(_("link text"), max_length=512, blank=False,
                             default=_("download"))
-    public = models.BooleanField(_("public"), core=True, blank=False,
-                                 default=True)
+    public = models.BooleanField(_("public"), blank=False, default=True)
 
     # automatic dates
-    created = models.DateTimeField(_("created"), core=True, editable=False)
-    updated = models.DateTimeField(_("updated"), core=True, editable=False)
+    created = models.DateTimeField(_("created"), editable=False)
+    updated = models.DateTimeField(_("updated"), editable=False)
 
     def toggle_public(self):
         self.public = not self.public
@@ -41,10 +40,10 @@ class DownloadLink(models.Model):
     public_link.short_description = u"public"
     public_link.allow_tags = True
 
-    class Admin:
-        list_display = ("text", "address", "public_link", "created")
-        list_filter = ("public", "created")
-        save_on_top = True
+#     class Admin:
+#         list_display = ("text", "address", "public_link", "created")
+#         list_filter = ("public", "created")
+#         save_on_top = True
 
     class Meta:
         verbose_name = _("download link")
