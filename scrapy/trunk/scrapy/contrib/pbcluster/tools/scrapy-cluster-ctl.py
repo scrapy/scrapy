@@ -73,8 +73,8 @@ def main():
         try:
             open(opts.output, "w").write(output)
         except IOError:
-            open("/tmp/decobot-schedule.tmp", "w").write(output)
-            print "Could not open file %s for writing. Output dumped to /tmp/decobot-schedule.tmp instead." % opts.output
+            open("/tmp/scrapy-cluster-schedule.tmp", "w").write(output)
+            print "Could not open file %s for writing. Output dumped to /tmp/scrapy-cluster-schedule.tmp instead." % opts.output
 
 if __name__ == '__main__':
     main()
