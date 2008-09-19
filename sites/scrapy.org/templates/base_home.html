@@ -32,6 +32,7 @@
         </div>
         {% endif %}
 
+        {% comment %}
         {% load lastblogentry %}
         {% get_latest_blog_entries 2 as entries %}
 
@@ -49,6 +50,7 @@
             {% endfor %}
         </div>
         {% endif %}
+        {% endcomment %}
     </div>
 </div>
 {% endblock %}
