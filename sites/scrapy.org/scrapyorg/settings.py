@@ -79,7 +79,6 @@ INSTALLED_APPS = (
     'django.contrib.markup',
     'scrapyorg.article',
     'scrapyorg.download',
-    'scrapyorg.blog',
 )
 
 # Override previous settings with values in local_settings.py settings file.

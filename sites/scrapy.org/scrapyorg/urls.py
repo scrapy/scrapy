@@ -7,8 +7,6 @@ admin.autodiscover()
 
 
 urlpatterns = patterns('',
-    url(r"^weblog/", include("scrapyorg.blog.urls")),
-
     # admin
     url(r"^admin/download/downloadlink/", include("scrapyorg.download.urls")),
     url(r'^admin/(.*)', admin.site.root),
