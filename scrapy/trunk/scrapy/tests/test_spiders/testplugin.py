@@ -7,7 +7,8 @@ import re
 
 from scrapy.spider import BaseSpider
 from scrapy.item import ScrapedItem
-from decobot.utils.link_extraction import follow_link_pattern
+from scrapy.link import LinkExtractor
+from scrapy.http import Request
 
 class TestSpider(BaseSpider):
     domain_name = "scrapytest.org"
@@ -19,7 +20,11 @@ class TestSpider(BaseSpider):
     price_re = re.compile(">Price: \$(.*?)<", re.M)
 
     def parse(self, response):
-        return follow_link_pattern(response.body.to_string(), self.parse_item, response.url, self.itemurl_re)
+        xlink = LinkExtractor()
+        itemre = re.compile(self.itemurl_re)
+        for url in xlink.extract_urls(response):
+            if itemre.search(url):
+                yield Request(url=url, callback=self.parse_item)
 
     def parse_item(self, response):
         item = ScrapedItem()
