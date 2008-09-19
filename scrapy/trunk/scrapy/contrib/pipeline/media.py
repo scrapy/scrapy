@@ -58,7 +58,7 @@ class MediaPipeline(object):
         wad = request.deferred or defer.Deferred()
 
         fp = request.fingerprint()
-        if fp not in info.downloaded:
+        if fp in info.downloaded:
             cached = info.downloaded[fp]
             defer_result(cached).chainDeferred(wad)
         else:
