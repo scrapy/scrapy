@@ -9,6 +9,7 @@ from twisted.python import failure
 
 from scrapy.core.exceptions import UsageError
 from scrapy.utils.python import flatten
+from scrapy.utils.markup import remove_entities
 
 def dict_updatedefault(D, E, **F):
     """
@@ -172,14 +173,6 @@ def convert_entity(m, keep_reserved=False):
     except KeyError:
         return '&%s;' % m.group(2)
 
-
-def unquote_html(s, keep_reserved=False):
-    """Convert a HTML quoted string into normal string (ISO-8859-1).
-   
-    Works with &#XX; and with &nbsp; &gt; etc.
-    """
-    return re.sub(re.compile(r'&(#?)(.+?);', re.U), lambda m: convert_entity(m, keep_reserved), s)
-
 def extract_regex(regex, text, encoding):
     """Extract a list of unicode strings from the given text/encoding using the following policies:
     
@@ -198,9 +191,9 @@ def extract_regex(regex, text, encoding):
     strings = flatten(strings)
 
     if isinstance(text, unicode):
-        return [unquote_html(s, keep_reserved=True) for s in strings]
+        return [remove_entities(s, keep=['lt', 'amp']) for s in strings]
     else:
-        return [unquote_html(unicode(s, encoding), keep_reserved=True) for s in strings]
+        return [remove_entities(unicode(s, encoding), keep=['lt', 'amp']) for s in strings]
 
 _regex_type = type(re.compile("", 0))
 
