@@ -176,13 +176,3 @@ def extract_regex(regex, text, encoding):
         return [remove_entities(s, keep=['lt', 'amp']) for s in strings]
     else:
         return [remove_entities(unicode(s, encoding), keep=['lt', 'amp']) for s in strings]
-
-_regex_type = type(re.compile("", 0))
-
-def location_str(location):
-    """Return a human friendly representation of a parser location"""
-
-    if isinstance(location, _regex_type):
-        return "(regex) " + location.pattern
-    else:
-        return location
