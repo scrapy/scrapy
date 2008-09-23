@@ -4,7 +4,8 @@ from datetime import datetime
 from pydispatch import dispatcher
 
 from scrapy.utils.misc import load_class
-from scrapy.core import log, signals
+from scrapy.core import signals
+from scrapy import log
 from scrapy.core.exceptions import NotConfigured, IgnoreRequest
 from scrapy.conf import settings
 

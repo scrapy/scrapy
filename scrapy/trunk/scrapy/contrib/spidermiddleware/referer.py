@@ -3,7 +3,6 @@ RefererMiddleware: populates Request referer field, based on the Response which
 originated it.
 """
 
-from scrapy.core import log
 from scrapy.http import Request
 
 class RefererMiddleware(object):

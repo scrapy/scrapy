@@ -6,7 +6,8 @@ from pydispatch import dispatcher
 from twisted.spread import pb
 from twisted.internet import reactor
 
-from scrapy.core import log, signals
+from scrapy.core import signals
+from scrapy import log
 from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import NotConfigured
 from scrapy.conf import settings

@@ -5,7 +5,7 @@ import os
 import optparse
 
 import scrapy
-from scrapy.core import log
+from scrapy import log
 from scrapy.spider import spiders
 from scrapy.conf import settings
 

@@ -5,7 +5,8 @@ import socket
 
 from pydispatch import dispatcher
 
-from scrapy.core import log, signals
+from scrapy.core import signals
+from scrapy import log
 from scrapy.core.manager import scrapymanager
 from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import NotConfigured

@@ -5,7 +5,8 @@ import pprint
 
 from pydispatch import dispatcher
 
-from scrapy.core import signals, log
+from scrapy.core import signals
+from scrapy import log
 from scrapy.utils.misc import stats_getpath
 from scrapy.conf import settings
 

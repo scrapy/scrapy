@@ -4,7 +4,7 @@ SQLHistoryStore
 Persistent history storage using relational database
 """
 from scrapy.contrib.history.history import URLHistory
-from scrapy.core import log
+from scrapy import log
 from scrapy.conf import settings
 
 class SQLHistoryStore(object) :

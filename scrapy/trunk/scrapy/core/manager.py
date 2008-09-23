@@ -1,11 +1,11 @@
 import signal
 
 from scrapy.extension import extensions
-from scrapy.core import log
+from scrapy import log
 from scrapy.http import Request
 from scrapy.core.engine import scrapyengine
 from scrapy.spider import spiders
-from scrapy.utils.defer import load_class
+from scrapy.utils.misc import load_class
 from scrapy.utils.url import is_url
 from scrapy.conf import settings
 

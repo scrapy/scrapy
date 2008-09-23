@@ -1,7 +1,7 @@
 """
 Represent the pipepline of execution to the rules engine.
 """
-from scrapy.core import log
+from scrapy import log
 from scrapy.contrib.rulengine.exceptions import RulesNotLoaded
 
 from scrapy.contrib.rulengine import rules

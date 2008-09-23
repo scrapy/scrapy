@@ -27,7 +27,7 @@ from twisted.internet.error import TimeoutError as ServerTimeoutError, DNSLookup
                                    ConnectionRefusedError, ConnectionDone, ConnectError
 from twisted.internet.defer import TimeoutError as UserTimeoutError 
 
-from scrapy.core import log
+from scrapy import log
 from scrapy.core.exceptions import HttpException
 from scrapy.conf import settings
 

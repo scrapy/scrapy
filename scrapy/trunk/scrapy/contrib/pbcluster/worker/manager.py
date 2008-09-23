@@ -3,7 +3,7 @@ import sys, os, time, datetime, pickle
 from twisted.internet import protocol, reactor
 from twisted.spread import pb
 
-from scrapy.core import log
+from scrapy import log
 from scrapy.core.exceptions import NotConfigured
 from scrapy.conf import settings
 from scrapy.core.engine import scrapyengine

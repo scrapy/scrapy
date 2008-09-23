@@ -8,7 +8,8 @@ from twisted.internet import defer, reactor, task
 from twisted.python.failure import Failure
 from pydispatch import dispatcher
 
-from scrapy.core import signals, log
+from scrapy.core import signals
+from scrapy import log
 from scrapy.core.scheduler import Scheduler
 from scrapy.core.downloader import Downloader
 from scrapy.http import Response, Request

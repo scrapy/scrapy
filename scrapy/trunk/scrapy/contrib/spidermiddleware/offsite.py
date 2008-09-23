@@ -3,7 +3,7 @@ OffsiteMiddleware: Filters out Requests for URLs outside the domains covered by
 the spider.
 """
 
-from scrapy.core import log
+from scrapy import log
 from scrapy.http import Request
 from scrapy.utils.url import url_is_from_spider
 

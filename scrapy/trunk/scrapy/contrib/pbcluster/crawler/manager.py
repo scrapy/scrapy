@@ -4,7 +4,7 @@ from twisted.spread import pb
 from twisted.internet import reactor
 
 from scrapy.conf import settings
-from scrapy.core import log
+from scrapy import log
 from scrapy.core.manager import scrapymanager
 from scrapy.core.exceptions import NotConfigured
 

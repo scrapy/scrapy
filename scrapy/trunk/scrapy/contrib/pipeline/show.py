@@ -1,7 +1,7 @@
 """
 Pipeline to print Items
 """
-from scrapy.core import log
+from scrapy import log
 from scrapy.core.exceptions import NotConfigured
 from scrapy.conf import settings
 

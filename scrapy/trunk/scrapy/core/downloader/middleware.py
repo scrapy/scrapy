@@ -1,7 +1,8 @@
 """
 request-response middleware extension
 """
-from scrapy.core import signals, log
+from scrapy.core import signals
+from scrapy import log
 from scrapy.http import Request, Response
 from scrapy.core.exceptions import NotConfigured
 from scrapy.utils.misc import load_class

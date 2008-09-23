@@ -9,7 +9,8 @@ import cPickle as pickle
 from pydispatch import dispatcher
 from twisted.internet import defer
 
-from scrapy.core import signals, log
+from scrapy.core import signals
+from scrapy import log
 from scrapy.core.engine import scrapyengine
 from scrapy.http import Response, Headers
 from scrapy.http.headers import headers_dict_to_raw

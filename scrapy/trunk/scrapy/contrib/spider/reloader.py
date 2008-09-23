@@ -5,7 +5,8 @@ This is to release any resources held on to by scraping spiders.
 """
 import sys
 from pydispatch import dispatcher
-from scrapy.core import log, signals
+from scrapy.core import signals
+from scrapy import log
 
 class SpiderReloader(object):
 

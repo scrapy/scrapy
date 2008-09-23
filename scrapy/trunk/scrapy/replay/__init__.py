@@ -8,7 +8,8 @@ import tarfile
 
 from pydispatch import dispatcher
 
-from scrapy.core import signals, log
+from scrapy.core import signals
+from scrapy import log
 from scrapy.core.manager import scrapymanager
 from scrapy.core.exceptions import NotConfigured
 from scrapy.conf import settings

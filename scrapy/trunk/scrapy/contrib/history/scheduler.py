@@ -2,7 +2,7 @@ from datetime import datetime
 
 from twisted.internet import defer
 
-from scrapy.core import log
+from scrapy import log
 from scrapy.core.scheduler import Scheduler
 from scrapy.core.exceptions import IgnoreRequest
 

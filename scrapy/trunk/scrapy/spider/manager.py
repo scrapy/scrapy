@@ -9,7 +9,7 @@ import urlparse
 from twisted.plugin import getCache
 
 from scrapy.spider.models import ISpider
-from scrapy.core import log
+from scrapy import log
 from scrapy.conf import settings
 from scrapy.utils.url import url_is_from_spider
 

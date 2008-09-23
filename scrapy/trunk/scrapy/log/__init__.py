@@ -1,8 +1,10 @@
 """ 
 Crawler logging functionality
 """
-from twisted.python import log
 import sys
+
+from twisted.python import log
+
 from scrapy.conf import settings
  
 # Logging levels

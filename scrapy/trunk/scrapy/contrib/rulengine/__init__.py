@@ -3,7 +3,7 @@ Here put the rules that the rules engine / pipline will take to process it.
 """
 from scrapy.core.exceptions import NotConfigured
 from scrapy.utils.misc import load_class
-from scrapy.core import log 
+from scrapy import log 
 from scrapy.conf import settings
 
 class Rule(object):

@@ -4,7 +4,7 @@ Request inside the site being scraped. It can be used to limit the maximum
 depth to scrape or things like that
 """
 
-from scrapy.core import log
+from scrapy import log
 from scrapy.http import Request
 from scrapy.stats import stats
 from scrapy.conf import settings

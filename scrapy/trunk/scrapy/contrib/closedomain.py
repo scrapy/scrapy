@@ -8,7 +8,8 @@ import pprint
 
 from pydispatch import dispatcher
 
-from scrapy.core import signals, log
+from scrapy.core import signals
+from scrapy import log
 from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import NotConfigured
 from scrapy.mail import MailSender

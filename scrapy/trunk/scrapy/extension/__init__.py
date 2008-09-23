@@ -5,7 +5,7 @@ ExtensionManager (extensions) to be used as singleton.
 """
 from scrapy.core.exceptions import NotConfigured
 from scrapy.utils.misc import load_class
-from scrapy.core import log
+from scrapy import log
 from scrapy.conf import settings
 
 class ExtensionManager(object):

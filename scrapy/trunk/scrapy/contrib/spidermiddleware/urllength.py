@@ -2,7 +2,7 @@
 UrlLengthMiddleware: Filters out requests with URLs longer than URLLENGTH_LIMIT
 """
 
-from scrapy.core import log
+from scrapy import log
 from scrapy.http import Request
 from scrapy.core.exceptions import NotConfigured
 from scrapy.conf import settings

@@ -3,7 +3,7 @@ Scrapy core signals
 """
 from pydispatch import dispatcher
 
-from scrapy.core import log
+from scrapy import log
 
 # After the execution engine has started
 # args: None

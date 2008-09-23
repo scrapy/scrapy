@@ -10,7 +10,7 @@ from scrapy.core.exceptions import IgnoreRequest
 from scrapy.spider import spiders
 from scrapy.core.downloader.handlers import download_any
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
-from scrapy.core import log
+from scrapy import log
 from scrapy.conf import settings
 from scrapy.utils.defer import chain_deferred, mustbe_deferred
 

@@ -1,4 +1,4 @@
-from scrapy.core import log
+from scrapy import log
 from scrapy.core.exceptions import DropItem, NotConfigured
 from scrapy.item import ScrapedItem
 from scrapy.utils.misc import load_class

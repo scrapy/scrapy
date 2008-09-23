@@ -12,7 +12,7 @@ will be applied. If given a value of 0, no limit will be applied.
 from scrapy.core.engine import scrapyengine
 from scrapy.conf import settings
 from scrapy.http import Request
-from scrapy.core import log
+from scrapy import log
 
 class RequestLimitMiddleware(object):
     #_last_queue_size = 0

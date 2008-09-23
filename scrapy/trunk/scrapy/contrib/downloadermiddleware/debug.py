@@ -1,4 +1,4 @@
-from scrapy.core import log
+from scrapy import log
 from scrapy.conf import settings
 
 class CrawlDebug(object):

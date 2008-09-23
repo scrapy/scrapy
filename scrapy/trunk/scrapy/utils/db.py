@@ -3,7 +3,7 @@ Function for dealing with databases
 """
 import re
 from scrapy.conf import settings
-from scrapy.core import log
+from scrapy import log
 from scrapy.core.engine import scrapyengine
 
 def mysql_connect(db_uri, **kwargs):

@@ -6,7 +6,7 @@ from email.MIMEText import MIMEText
 from email.Utils import COMMASPACE, formatdate
 from email import Encoders
 
-from scrapy.core import log
+from scrapy import log
 from scrapy.core.exceptions import NotConfigured
 from scrapy.conf import settings
 

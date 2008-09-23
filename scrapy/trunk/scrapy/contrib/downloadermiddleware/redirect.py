@@ -1,6 +1,6 @@
 import re
 
-from scrapy.core import log
+from scrapy import log
 from scrapy.http import Request, Response
 from scrapy.core.exceptions import HttpException
 from scrapy.utils.url import urljoin_rfc as urljoin

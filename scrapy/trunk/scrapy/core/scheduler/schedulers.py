@@ -5,7 +5,7 @@ The Scrapy Scheduler
 from twisted.internet import defer
 
 from scrapy.core.scheduler.filter import GroupFilter
-from scrapy.core import log
+from scrapy import log
 from scrapy.core.exceptions import IgnoreRequest
 from scrapy.utils.datatypes import PriorityQueue, PriorityStack
 from scrapy.utils.defer import defer_fail
