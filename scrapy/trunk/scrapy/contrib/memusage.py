@@ -9,7 +9,7 @@ from scrapy.core import log, signals
 from scrapy.core.manager import scrapymanager
 from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import NotConfigured
-from scrapy.core.mail import MailSender
+from scrapy.mail import MailSender
 from scrapy.stats import stats
 from scrapy.conf import settings
 

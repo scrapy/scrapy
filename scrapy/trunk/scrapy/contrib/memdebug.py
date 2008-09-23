@@ -7,7 +7,7 @@ from pydispatch import dispatcher
 
 from scrapy.core import signals
 from scrapy.core.exceptions import NotConfigured
-from scrapy.core.mail import MailSender
+from scrapy.mail import MailSender
 from scrapy.stats import stats
 from scrapy.extension import extensions
 from scrapy.conf import settings
