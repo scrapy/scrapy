@@ -61,7 +61,7 @@ import re
 
 from twisted.web import server, resource
 from twisted.internet import reactor
-from scrapy.utils.misc import mustbe_deferred
+from scrapy.utils.defer import mustbe_deferred
 
 from .http import HttpResponse, build_httprequest
 

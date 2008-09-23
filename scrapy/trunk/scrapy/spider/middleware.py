@@ -7,7 +7,8 @@ from twisted.python.failure import Failure
 
 from scrapy.core import log
 from scrapy.core.exceptions import NotConfigured
-from scrapy.utils.misc import load_class, mustbe_deferred
+from scrapy.utils.misc import load_class
+from scrapy.utils.defer import mustbe_deferred
 from scrapy.conf import settings
 
 def _isiterable(possible_iterator):

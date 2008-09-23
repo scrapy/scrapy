@@ -1,6 +1,6 @@
 from twisted.internet import defer
 
-from scrapy.utils.misc import mustbe_deferred, defer_result
+from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy.core import log
 from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import DropItem, NotConfigured

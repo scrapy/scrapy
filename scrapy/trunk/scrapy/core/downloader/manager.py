@@ -12,7 +12,7 @@ from scrapy.core.downloader.handlers import download_any
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.core import log
 from scrapy.conf import settings
-from scrapy.utils.misc import chain_deferred
+from scrapy.utils.defer import chain_deferred, mustbe_deferred
 
 
 class SiteDetails(object):
@@ -126,7 +126,6 @@ class Downloader(object):
         def _finish(result):
             self.process_queue(spider)
 
-        from scrapy.utils.misc import mustbe_deferred
         dwld = mustbe_deferred(self.download_function, request, spider)
         dwld.addBoth(_remove)
         chain_deferred(dwld, deferred)

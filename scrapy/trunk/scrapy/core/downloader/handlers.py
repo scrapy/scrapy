@@ -13,7 +13,7 @@ from twisted.web import error as web_error
 from scrapy.core import signals
 from scrapy.http import Request, Response, Headers
 from scrapy.core.exceptions import UsageError, HttpException
-from scrapy.utils.misc import defer_succeed
+from scrapy.utils.defer import defer_succeed
 from scrapy.conf import settings
 
 def download_any(request, spider):

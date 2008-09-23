@@ -4,7 +4,8 @@ request-response middleware extension
 from scrapy.core import signals, log
 from scrapy.http import Request, Response
 from scrapy.core.exceptions import NotConfigured
-from scrapy.utils.misc import load_class, mustbe_deferred
+from scrapy.utils.misc import load_class
+from scrapy.utils.defer import mustbe_deferred
 from scrapy.core.downloader.handlers import download_any
 from scrapy.conf import settings
 

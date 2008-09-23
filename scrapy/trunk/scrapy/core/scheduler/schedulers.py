@@ -8,7 +8,7 @@ from scrapy.core.scheduler.filter import GroupFilter
 from scrapy.core import log
 from scrapy.core.exceptions import IgnoreRequest
 from scrapy.utils.datatypes import PriorityQueue, PriorityStack
-from scrapy.utils.misc import defer_fail
+from scrapy.utils.defer import defer_fail
 from scrapy.conf import settings
 
 

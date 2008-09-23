@@ -17,7 +17,7 @@ from scrapy.item import ScrapedItem
 from scrapy.item.pipeline import ItemPipeline
 from scrapy.spider import spiders
 from scrapy.spider.middleware import SpiderMiddlewareManager
-from scrapy.utils.misc import chain_deferred, defer_succeed, mustbe_deferred, deferred_degenerate
+from scrapy.utils.defer import chain_deferred, defer_succeed, mustbe_deferred, deferred_degenerate
 from scrapy.conf import settings
 
 

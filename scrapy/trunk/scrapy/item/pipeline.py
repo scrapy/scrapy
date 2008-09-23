@@ -1,7 +1,8 @@
 from scrapy.core import log
 from scrapy.core.exceptions import DropItem, NotConfigured
 from scrapy.item import ScrapedItem
-from scrapy.utils.misc import load_class, defer_succeed, mustbe_deferred
+from scrapy.utils.misc import load_class
+from scrapy.utils.defer import defer_succeed, mustbe_deferred
 from scrapy.conf import settings
 
 class ItemPipeline(object):

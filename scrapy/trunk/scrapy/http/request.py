@@ -10,7 +10,7 @@ from scrapy.http.url import Url
 from scrapy.http.headers import Headers
 from scrapy.utils.url import safe_url_string
 from scrapy.utils.c14n import canonicalize
-from scrapy.utils.misc import chain_deferred
+from scrapy.utils.defer import chain_deferred
 
 class Request(object):
     def __init__(self, url, callback=None, context=None, method=None, body=None, headers=None, cookies=None,

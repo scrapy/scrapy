@@ -1,6 +1,6 @@
 from functools import wraps
 from twisted.internet import defer
-from scrapy.utils.misc import mustbe_deferred
+from scrapy.utils.defer import mustbe_deferred
 
 from .http import HttpResponse
 
