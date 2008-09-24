@@ -79,7 +79,7 @@ def extract_regex(regex, text, encoding):
     
     * if the regex contains a named group called "extract" that will be returned
     * if the regex contains multiple numbered groups, all those will be returned (flattened)
-    * if the refex doesn't contain any group the entire regex matching is returned
+    * if the regex doesn't contain any group the entire regex matching is returned
     """
 
     if isinstance(regex, basestring):

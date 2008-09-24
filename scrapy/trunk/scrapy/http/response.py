@@ -106,7 +106,16 @@ class ResponseBody(object):
     This handles conversion to unicode and various character encodings.
     """
 
-    CHARSET_RE = re.compile(r'<meta\s+http-equiv\s*=\s*[\"\']?\s*Content-Type\s*[\"\']?\s+content\s*=(?P<mime>[^;]+);\s*charset=(?P<charset>[\w-]+)', re.I)
+    _template = r'%s\s*=\s*[\"\']?\s*%s\s*[\"\']?'
+
+    _httpequiv_re = _template % ('http-equiv', 'Content-Type')
+    _content_re   = _template % ('content', r'(?P<mime>[^;]+);\s*charset=(?P<charset>[\w-]+)')
+    _encoding_re  = _template % ('encoding', r'(?P<charset>[\w-]+)')
+
+    XMLDECL_RE  = re.compile(r'<\?xml\s.*?%s' % _encoding_re, re.I)
+
+    METATAG_RE  = re.compile(r'<meta\s+%s\s+%s' % (_httpequiv_re, _content_re), re.I)
+    METATAG_RE2 = re.compile(r'<meta\s+%s\s+%s' % (_content_re, _httpequiv_re), re.I)
 
     def __init__(self, content, declared_encoding=None):
         self._content = content
@@ -163,7 +172,8 @@ class ResponseBody(object):
             return self._expected_encoding
         proposed = self.declared_encoding
         if not proposed:
-            match = self.CHARSET_RE.search(self._content[:5000])
+            chunk = self._content[:5000]
+            match = self.XMLDECL_RE.search(chunk) or self.METATAG_RE.search(chunk) or self.METATAG_RE2.search(chunk)
             if match:
                 proposed = match.group("charset")
         self._expected_encoding = proposed
