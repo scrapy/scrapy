@@ -14,7 +14,8 @@ class UtilsMarkupTest(unittest.TestCase):
                          u'As low as \xa3100!')
         self.assertEqual(remove_entities('As low as &pound;100!'),
                          u'As low as \xa3100!')
-
+        self.assertEqual(remove_entities('redirectTo=search&searchtext=MR0221Y&aff=buyat&affsrc=d_data&cm_mmc=buyat-_-ELECTRICAL & SEASONAL-_-MR0221Y-_-9-carat gold &frac12;oz solid crucifix pendant'),
+                         u'redirectTo=search&searchtext=MR0221Y&aff=buyat&affsrc=d_data&cm_mmc=buyat-_-ELECTRICAL & SEASONAL-_-MR0221Y-_-9-carat gold \xbdoz solid crucifix pendant')
         # keep some entities
         self.assertEqual(remove_entities('<b>Low &lt; High &amp; Medium &pound; six</b>', keep=['lt', 'amp']),
                          u'<b>Low &lt; High &amp; Medium \xa3 six</b>')
@@ -24,6 +25,8 @@ class UtilsMarkupTest(unittest.TestCase):
                          u'a < b &illegal; c &#12345678; six')
         self.assertEqual(remove_entities('a &lt; b &illegal; c &#12345678; six', remove_illegal=True),
                          u'a < b  c  six')
+
+
 
     def test_remove_tags(self):
         # make sure it always return uncode
