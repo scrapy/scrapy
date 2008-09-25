@@ -79,7 +79,7 @@ class ImagesPipeline(MediaPipeline):
 
     def media_failed(self, failure, request, info):
         referer = request.headers.get('Referer')
-        errmsg = str(failure.value) if isinstance(failure.value, HttpException) else failure.getTraceback()
+        errmsg = str(failure.value) if isinstance(failure.value, HttpException) else str(failure)
         msg = 'Image (http-error): Error downloading %s from %s referred in <%s>: %s' % (self.MEDIA_TYPE, request, referer, errmsg)
         log.msg(msg, level=log.WARNING, domain=info.domain)
         raise ImageException(msg)
