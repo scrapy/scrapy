@@ -140,8 +140,9 @@ class ResponseBody(object):
         proposed = self.get_expected_encoding()
         dammit = UnicodeDammit(self._content, [proposed])
         self._actual_encoding = dammit.originalEncoding
+        # FIXME sometimes dammit.unicode fails, even when it recognizes the encoding correctly
         self._unicode_content = dammit.unicode
-        return dammit.unicode
+        return self._unicode_content
 
     def get_content(self):
         """Return original content bytes"""
