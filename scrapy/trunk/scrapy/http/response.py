@@ -106,7 +106,7 @@ class ResponseBody(object):
     This handles conversion to unicode and various character encodings.
     """
 
-    _template = r'%s\s*=\s*[\"\']?\s*%s\s*[\"\']?'
+    _template = r'''%s\s*=\s*["']?\s*%s\s*["']?'''
 
     _httpequiv_re = _template % ('http-equiv', 'Content-Type')
     _content_re   = _template % ('content', r'(?P<mime>[^;]+);\s*charset=(?P<charset>[\w-]+)')
