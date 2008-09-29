@@ -17,8 +17,8 @@ class Decompressor(object):
         pass
     
     def __init__(self):
-        self.decompressors = [self.is_tar, self.is_zip,
-                              self.is_gzip, self.is_bzip2]        
+        self.decompressors = {'tar': self.is_tar, 'zip': self.is_zip,
+                              'gz': self.is_gzip, 'bz2': self.is_bzip2}        
     
     def is_tar(self, response):
         try:
@@ -55,15 +55,18 @@ class Decompressor(object):
         except IOError:
             return False
         return response.replace(body=ResponseBody(decompressed_body))
-            
-    def extract(self, response):
+    
+    def extract_winfo(self, response):
         self.body = response.body.to_string()
         self.archive = StringIO()
         self.archive.write(self.body)
-
-        for decompressor in self.decompressors:
+        
+        for decompressor in self.decompressors.keys():
             self.archive.seek(0)
-            ret = decompressor(response)
-            if ret:
-                return ret
-        return response
+            new_response = self.decompressors[decompressor](response)
+            if new_response:
+                return new_response, decompressor
+        return response, ''
+        
+    def extract(self, response):
+        return self.extract_winfo(response)[0]
