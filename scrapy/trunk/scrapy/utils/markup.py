@@ -5,7 +5,7 @@ Functions for dealing with markup text
 import re
 import htmlentitydefs
 
-ent_re = re.compile(r'&(#?)([^&;]+);')
+_ent_re = re.compile(r'&(#?)([^&;]+);')
 _tag_re = re.compile(r'<[a-zA-Z\/!].*?>', re.DOTALL)
 
 def remove_entities(text, keep=(), remove_illegal=True):
@@ -45,8 +45,10 @@ def remove_entities(text, keep=(), remove_illegal=True):
             else:
                 return u'&%s;' % m.group(2)
 
-    return ent_re.sub(convert_entity, text.decode('utf-8'))
+    return _ent_re.sub(convert_entity, text.decode('utf-8'))
 
+def has_entities(text):
+    return bool(_ent_re.search(text))
 
 def replace_tags(text, token=''):
     """Replace all markup tags found in the given text by the given token. By
