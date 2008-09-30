@@ -37,7 +37,8 @@ def urljoin_rfc(base, ref):
 
 
 _reserved = ';/?:@&=+$|,#' # RFC 2396 (Generic Syntax)
-_safe_chars = urllib.always_safe + '%' + _reserved
+_unreserved_marks = "-_.!~*'()" #RFC 2396 sec 2.3
+_safe_chars = urllib.always_safe + '%' + _reserved + _unreserved_marks
 
 def safe_url_string(url, use_encoding='utf8'):
     """Convert a unicode (or utf8 string) object into a legal URL.
