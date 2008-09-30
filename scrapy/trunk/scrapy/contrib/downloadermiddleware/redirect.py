@@ -25,7 +25,7 @@ class RedirectMiddleware(object):
                     redirected.body = None
                     # This is needed to avoid redirection loops with requests that contain dont_filter = True
                     # Example (9 May 2008): http://www.55max.com/product/001_photography.asp?3233,0,0,0,Michael+Banks
-                    if isinstance(redirected.dont_filter, int):
+                    if isinstance(redirected.dont_filter, int) and redirected.dont_filter > 0:
                         redirected.dont_filter -= 1
                     else:
                         redirected.dont_filter = False
