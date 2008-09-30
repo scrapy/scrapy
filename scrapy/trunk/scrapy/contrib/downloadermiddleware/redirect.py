@@ -5,10 +5,14 @@ from scrapy.http import Request, Response
 from scrapy.core.exceptions import HttpException
 from scrapy.utils.url import urljoin_rfc as urljoin
 
+class RedirectLoop(Exception):
+    pass
+
 META_REFRESH_RE = re.compile(r'<meta[^>]*http-equiv[^>]*refresh[^>].*?(\d+);url=([^"\']+)', re.IGNORECASE)
 # some sites use meta-refresh for redirecting to a session expired page, so we
 # restrict automatic redirection to a maximum delay (in number of seconds)
 META_REFRESH_MAXSEC = 100
+MAX_REDIRECT_LOOP = 10
 
 class RedirectMiddleware(object):
     def process_exception(self, request, exception, spider):
@@ -25,7 +29,11 @@ class RedirectMiddleware(object):
                     redirected.body = None
                     # This is needed to avoid redirection loops with requests that contain dont_filter = True
                     # Example (9 May 2008): http://www.55max.com/product/001_photography.asp?3233,0,0,0,Michael+Banks
-                    if isinstance(redirected.dont_filter, int) and redirected.dont_filter > 0:
+                    if isinstance(redirected.dont_filter, int):
+                        if not hasattr(redirected, "original_dont_filter"):
+                            redirected.original_dont_filter = redirected.dont_filter
+                        if redirected.dont_filter <= -MAX_REDIRECT_LOOP:
+                            raise RedirectLoop("Exited redirect loop with %s consecutive visits to the same url." % (redirected.original_dont_filter + MAX_REDIRECT_LOOP) )
                         redirected.dont_filter -= 1
                     else:
                         redirected.dont_filter = False
