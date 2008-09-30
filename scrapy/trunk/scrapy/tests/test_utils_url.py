@@ -35,6 +35,8 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertEqual(safe_url_string(alessi),
                          '/ecommerce/oggetto/Te%20%C3%B2/tea-strainer/1273')
 
+        self.assertEqual(safe_url_string("http://clkuk.tradedoubler.com/click?p(28639)a(1424750)g(16962058)epi(59fc2ea58da61c7bce606df72a4a10fb3a0bd2ad)url(http://www.bedworld.net/beds_mattresses/112AURHB--/Aurora_Headboard.html.html)"), 'http://clkuk.tradedoubler.com/click?p(28639)a(1424750)g(16962058)epi(59fc2ea58da61c7bce606df72a4a10fb3a0bd2ad)url(http://www.bedworld.net/beds_mattresses/112AURHB--/Aurora_Headboard.html.html)')
+
     def test_safe_download_url(self):
         self.assertEqual(safe_download_url('http://www.scrapy.org/../'),
                          'http://www.scrapy.org/')
