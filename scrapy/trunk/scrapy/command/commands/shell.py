@@ -59,17 +59,6 @@ class Command(ScrapyCommand):
         pass
 
     def get_url(self, url, decompress=False):
-        #def _get_callback(_response):
-            #print "done"
-            #if not _response:
-                #if not opts.loglevel:
-                    #print 'Nothing downloaded, run with -o DEBUG to see why it failed'
-                #scrapymanager.stop()
-                #return
-            #self.generate_vars(url, response)
-
-        #def _errback(_failure):
-            #print _failure
 
         print "Downloading URL...           ",
         r = Request(url)
@@ -83,6 +72,7 @@ class Command(ScrapyCommand):
                     d = Decompressor()
                     result = d.extract(result)
                     print "Done."
+                result.request = r
                 self.generate_vars(url, result)
                 return True
         except Exception, e:
