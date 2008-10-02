@@ -35,39 +35,16 @@ class ExecutionManager(object):
 
         requests = self._parse_args(args)
         self.priorities = self.prioritizer_class(requests.keys())
-
-        #applies a time (in seconds) between succesive requests crawl
-        #useful for applications that runs softly distributed in time
-        self.crawl_delay = opts.get("crawl_delay", 0)
-        
         
     def crawl(self, *args):
         """Schedule the given args for crawling. args is a list of urls or domains"""
 
         requests = self._parse_args(args)
         # schedule initial requets to be scraped at engine start
-        
-        def _issue():
-            for domain in requests or ():
-                spider = spiders.fromdomain(domain)
-                priority = self.priorities.get_priority(domain)
-                for request in requests[domain]:
-                    yield request, spider, priority
-
-        if self.crawl_delay:
-            gen = _issue()
-            def _soft_crawl():
-                try:
-                    request, spider, priority = gen.next()
-                    scrapyengine.crawl(request, spider, domain_priority=priority)
-                    log.msg("Delaying %ss the next request." % self.crawl_delay)
-                except StopIteration:
-                    self.stop()
-
-            scrapyengine.addtask(_soft_crawl, self.crawl_delay)
-
-        else:
-            for request, spider, priority in _issue():
+        for domain in requests or ():
+            spider = spiders.fromdomain(domain) 
+            priority = self.priorities.get_priority(domain) 
+            for request in requests[domain]:
                 scrapyengine.crawl(request, spider, domain_priority=priority)
 
     def runonce(self, *args, **opts):
