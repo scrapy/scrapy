@@ -139,7 +139,7 @@ class Downloader(object):
             return
 
         # Instanciate site specific handling based on info provided by spider
-        delay = getattr(spider, 'download_delay', None)
+        delay = getattr(spider, 'download_delay', None) or settings.getint("DOWNLOAD_DELAY", 0)
         maxcr = getattr(spider, 'max_concurrent_requests', settings.getint('REQUESTS_PER_DOMAIN'))
         site = SiteDetails(download_delay=delay, max_concurrent_requests=maxcr)
         self.sites[domain] = site
