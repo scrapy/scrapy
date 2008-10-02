@@ -15,7 +15,7 @@ from scrapy.utils.defer import chain_deferred
 class Request(object):
     def __init__(self, url, callback=None, context=None, method=None, body=None, headers=None, cookies=None,
             referer=None, url_encoding='utf-8', link_text='', http_user='', http_pass='', dont_filter=None, 
-            fingerprint_params=None):
+            fingerprint_params=None, domain=None):
 
         self.encoding = url_encoding  # this one has to be set first
         self.set_url(url)
@@ -55,7 +55,9 @@ class Request(object):
             self.httpauth(http_user, http_pass)
         self.depth = 0
         self.link_text = link_text
-
+        #allows to directly specify the spider for the request
+        self.domain = domain
+        
     def append_callback(self, callback, *args, **kwargs):
         if isinstance(callback, defer.Deferred):
             return chain_deferred(self.deferred, callback)
