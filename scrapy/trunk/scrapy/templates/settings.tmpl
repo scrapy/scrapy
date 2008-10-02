@@ -18,6 +18,11 @@ ENABLED_SPIDERS_FILE = '%s/conf/enabled_spiders.list' % __project_name__.__path_
 DEFAULT_ITEM_CLASS = 'scrapy.item.ScrapedItem'
 USER_AGENT = '%s/%s' % (BOT_NAME, BOT_VERSION)
 DOWNLOAD_TIMEOUT = 600
+
+#Global timeout between sucessive downloads (can be overrided by spider
+#attribute download_timeout
+#DOWNLOAD_TIMEOUT = 0
+
 MYSQL_CONNECTION_SETTINGS = {"charset": "utf8" }
 MYSQL_CONNECTION_PING_PERIOD = 600
 
