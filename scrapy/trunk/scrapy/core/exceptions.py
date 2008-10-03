@@ -21,7 +21,7 @@ class IgnoreRequest(Exception):
 class DontCloseDomain(Exception):
     """Request the domain not to be closed yet"""
     pass
-    
+
 class HttpException(Exception):
     def __init__(self, status, message, response):
         if not message:
@@ -42,3 +42,6 @@ class DropItem(Exception):
     """Drop item from the item pipeline"""
     pass
 
+class NotSupported(Exception):
+    """Indicates a feature or method is not supported"""
+    pass
