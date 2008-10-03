@@ -37,7 +37,9 @@ class UrlUtilsTest(unittest.TestCase):
 
         self.assertEqual(safe_url_string("http://www.example.com/test?p(29)url(http://www.another.net/page)"),
                                          "http://www.example.com/test?p(29)url(http://www.another.net/page)")
-
+        self.assertEqual(safe_url_string("http://www.example.com/Brochures_&_Paint_Cards&PageSize=200"),
+                                         "http://www.example.com/Brochures_&_Paint_Cards&PageSize=200")
+                  
     def test_safe_download_url(self):
         self.assertEqual(safe_download_url('http://www.scrapy.org/../'),
                          'http://www.scrapy.org/')
