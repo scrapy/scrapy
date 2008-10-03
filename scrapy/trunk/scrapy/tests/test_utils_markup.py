@@ -1,6 +1,7 @@
 import unittest
 
-from scrapy.utils.markup import remove_entities, replace_tags
+from scrapy.utils.markup import remove_entities, replace_tags, remove_comments
+from scrapy.utils.markup import remove_tags_with_content, remove_escape_chars, remove_tags
 
 class UtilsMarkupTest(unittest.TestCase):
 
@@ -28,7 +29,7 @@ class UtilsMarkupTest(unittest.TestCase):
 
 
 
-    def test_remove_tags(self):
+    def test_replace_tags(self):
         # make sure it always return uncode
         assert isinstance(replace_tags('no entities'), unicode)
 
@@ -41,3 +42,72 @@ class UtilsMarkupTest(unittest.TestCase):
         # multiline tags
         self.assertEqual(replace_tags('Click <a class="one"\r\n href="url">here</a>'),
                          u'Click here')
+
+    def test_remove_comments(self):
+        # make sure it always return unicode
+        assert isinstance(remove_comments('without comments'), unicode)
+        assert isinstance(remove_comments('<!-- with comments -->'), unicode)
+
+        # text without comments 
+        self.assertEqual(remove_comments(u'text without comments'), u'text without comments')
+
+        # text with comments
+        self.assertEqual(remove_comments(u'<!--text with comments-->'), u'')
+        self.assertEqual(remove_comments(u'Hello<!--World-->'),u'Hello')
+
+    def test_remove_tags(self):
+        # make sure it always return unicode
+        assert isinstance(remove_tags('no tags'), unicode)
+        assert isinstance(remove_tags('no tags', which_ones=('p',)), unicode)
+        assert isinstance(remove_tags('<p>one tag</p>'), unicode)
+        assert isinstance(remove_tags('<p>one tag</p>', which_ones=('p')), unicode)
+        assert isinstance(remove_tags('<a>link</a>', which_ones=('b',)), unicode)
+
+        # text without tags
+        self.assertEqual(remove_tags(u'no tags'), u'no tags')
+        self.assertEqual(remove_tags(u'no tags', which_ones=('p','b',)), u'no tags')
+
+        # text with tags
+        self.assertEqual(remove_tags(u'<p>one p tag</p>'), u'one p tag')
+        self.assertEqual(remove_tags(u'<p>one p tag</p>', which_ones=('b',)), u'<p>one p tag</p>')
+
+        self.assertEqual(remove_tags(u'<b>not will removed</b><i>i will removed</i>', which_ones=('i',)),
+                         u'<b>not will removed</b>i will removed')
+
+        # text with tags and attributes
+        self.assertEqual(remove_tags(u'<p align="center" class="one">texty</p>'), u'texty')
+        self.assertEqual(remove_tags(u'<p align="center" class="one">texty</p>', which_ones=('b',)),
+                         u'<p align="center" class="one">texty</p>')
+
+    def test_remove_tags_with_content(self):
+        # make sure it always return unicode
+        assert isinstance(remove_tags_with_content('no tags'), unicode)
+        assert isinstance(remove_tags_with_content('no tags', which_ones=('p',)), unicode)
+        assert isinstance(remove_tags_with_content('<p>one tag</p>', which_ones=('p',)), unicode)
+        assert isinstance(remove_tags_with_content('<a>link</a>', which_ones=('b',)), unicode)
+
+        # text without tags
+        self.assertEqual(remove_tags_with_content(u'no tags'), u'no tags')
+        self.assertEqual(remove_tags_with_content(u'no tags', which_ones=('p','b',)), u'no tags')
+
+        # text with tags
+        self.assertEqual(remove_tags_with_content(u'<p>one p tag</p>'), u'<p>one p tag</p>')
+        self.assertEqual(remove_tags_with_content(u'<p>one p tag</p>', which_ones=('p',)), u'')
+
+        self.assertEqual(remove_tags_with_content(u'<b>not will removed</b><i>i will removed</i>', which_ones=('i',)),
+                         u'<b>not will removed</b>')
+
+    def test_remove_escape_chars(self):
+        # make sure it always return unicode
+        assert isinstance(remove_escape_chars('no ec'), unicode)
+        assert isinstance(remove_escape_chars('no ec', which_ones=('\n','\t',)), unicode)
+
+        # text without escape chars
+        self.assertEqual(remove_escape_chars(u'no ec'), u'no ec')
+        self.assertEqual(remove_escape_chars(u'no ec', which_ones=('\n',)), u'no ec')
+
+        # text with escape chars
+        self.assertEqual(remove_escape_chars(u'escape\n\n'), u'escape')
+        self.assertEqual(remove_escape_chars(u'escape\n', which_ones=('\t',)), u'escape\n')
+        self.assertEqual(remove_escape_chars(u'escape\tchars\n', which_ones=('\t')), 'escapechars\n')
+

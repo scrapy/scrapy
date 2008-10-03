@@ -63,7 +63,7 @@ def replace_tags(text, token=''):
 
 def remove_comments(text):
     """ Remove HTML Comments. """
-    return re.sub('<!--.*?-->', '', text, re.DOTALL)
+    return re.sub('<!--.*?-->', '', text.decode('utf-8'), re.DOTALL)
       
 def remove_tags(text, which_ones=()):
     """ Remove HTML Tags only. 
@@ -77,7 +77,7 @@ def remove_tags(text, which_ones=()):
     else:
         reg_exp_remove_tags = '<.*?>'
     re_tags = re.compile(reg_exp_remove_tags, re.DOTALL)
-    return re_tags.sub('', text)
+    return re_tags.sub('', text.decode('utf-8'))
 
 def remove_tags_with_content(text, which_ones=()):
     """ Remove tags and its content.
@@ -87,14 +87,14 @@ def remove_tags_with_content(text, which_ones=()):
     """
     tags = [ '<%s.*?</%s>' % (tag,tag) for tag in which_ones ]
     re_tags_remove = re.compile('|'.join(tags), re.DOTALL)
-    return re_tags_remove.sub('', text)
+    return re_tags_remove.sub('', text.decode('utf-8'))
 
 def remove_escape_chars(text, which_ones=('\n','\t','\r')):
     """ Remove escape chars. Default : \\n, \\t, \\r
 
         which_ones -- is a tuple of which escape chars we want to remove.
-                      if is empty do nothing.
+                      By default removes \n, \t, \r.
     """
     re_escape_chars = re.compile('[%s]' % ''.join(which_ones))
-    return re_escape_chars.sub('', text)
+    return re_escape_chars.sub('', text.decode('utf-8'))
 
