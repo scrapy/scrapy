@@ -84,6 +84,9 @@ class XPathSelector(object):
         """Register namespace so that it can be used in XPath queries"""
         self.doc.xpathContext.xpathRegisterNs(prefix, uri)
 
+    def __nonzero__(self):
+        return bool(self.extract())
+
     def __str__(self):
         return "<%s (%s) xpath=%s>" % (type(self).__name__, getattr(self.xmlNode, 'name', type(self.xmlNode).__name__), self.expr)
 
