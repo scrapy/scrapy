@@ -1,20 +1,20 @@
-import __project_name__
+import $project_name
 
 # ---------------------------------------------------------------------------
-# - Scrapy settings for __project_name__                                    -
+# - Scrapy settings for $project_name                                    -
 # ---------------------------------------------------------------------------
 
-BOT_NAME = 'scrapy-bot'
+BOT_NAME = 'scrapybot'
 BOT_VERSION = '1.0'
 
 DEFAULT_DATA_ENCODING = 'utf-8'
 
-COMMANDS_MODULE = '__project_name__.commands'
-COMMANDS_SETTINGS_MODULE = '__project_name__.conf.commands'
-SPIDER_MODULES = ['__project_name__.spiders']
-NEWSPIDER_MODULE = '__project_name__.spiders'
-TEMPLATES_DIR = '%s/templates' % __project_name__.__path__[0]
-ENABLED_SPIDERS_FILE = '%s/conf/enabled_spiders.list' % __project_name__.__path__[0]
+COMMANDS_MODULE = '$project_name.commands'
+COMMANDS_SETTINGS_MODULE = '$project_name.conf.commands'
+SPIDER_MODULES = ['$project_name.spiders']
+NEWSPIDER_MODULE = '$project_name.spiders'
+TEMPLATES_DIR = '%s/templates' % $project_name.__path__[0]
+ENABLED_SPIDERS_FILE = '%s/conf/enabled_spiders.list' % $project_name.__path__[0]
 DEFAULT_ITEM_CLASS = 'scrapy.item.ScrapedItem'
 USER_AGENT = '%s/%s' % (BOT_NAME, BOT_VERSION)
 DOWNLOAD_TIMEOUT = 600
@@ -44,28 +44,28 @@ EXTENSIONS = (
 
 DOWNLOADER_MIDDLEWARES = (
     # Engine side
-    #'scrapy.contrib.downloadermiddleware.errorpages.ErrorPagesMiddleware',
-    #'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware',
-    #'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware',
-    #'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware',
-    #'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware',
-    #'scrapy.contrib.downloadermiddleware.common.CommonMiddleware',
-    #'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware',
-    #'scrapy.contrib.downloadermiddleware.compression.CompressionMiddleware',
-    #'scrapy.contrib.downloadermiddleware.debug.CrawlDebug',
-    #'scrapy.contrib.downloadermiddleware.cache.CacheMiddleware',
+    'scrapy.contrib.downloadermiddleware.errorpages.ErrorPagesMiddleware',
+    'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware',
+    'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware',
+    'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware',
+    'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware',
+    'scrapy.contrib.downloadermiddleware.common.CommonMiddleware',
+    'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware',
+    'scrapy.contrib.downloadermiddleware.compression.CompressionMiddleware',
+    'scrapy.contrib.downloadermiddleware.debug.CrawlDebug',
+    'scrapy.contrib.downloadermiddleware.cache.CacheMiddleware',
     # Downloader side
 )
 
 SPIDER_MIDDLEWARES = (
     # Engine side
-    #'scrapy.contrib.spidermiddleware.limit.RequestLimitMiddleware',
-    #'scrapy.contrib.spidermiddleware.restrict.RestrictMiddleware',
-    #'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware',
-    #'scrapy.contrib.spidermiddleware.referer.RefererMiddleware',
-    #'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware',
-    #'scrapy.contrib.spidermiddleware.depth.DepthMiddleware',
-    #'scrapy.contrib.spidermiddleware.urlfilter.UrlFilterMiddleware',
+    'scrapy.contrib.spidermiddleware.limit.RequestLimitMiddleware',
+    'scrapy.contrib.spidermiddleware.restrict.RestrictMiddleware',
+    'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware',
+    'scrapy.contrib.spidermiddleware.referer.RefererMiddleware',
+    'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware',
+    'scrapy.contrib.spidermiddleware.depth.DepthMiddleware',
+    'scrapy.contrib.spidermiddleware.urlfilter.UrlFilterMiddleware',
     # Spider side
 )
 
