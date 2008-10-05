@@ -8,12 +8,6 @@ from scrapy.core.exceptions import UsageError
 
 def _valid_start_urls(obj):
     """Check the start urls specified are valid"""
-    # TODO: we should add proper validation here
-    
-    ## This commented if is a test i was doing, it also takes in account the spider's base class (if any)
-    ## it works, but the attribute is checked somewhere else (zope?) and causes to fail
-    ##if not (obj.start_urls or any([hasattr(base, 'start_urls') for base in list(obj.__class__.__bases__)])):
-
     if not obj.start_urls:
         raise UsageError("A start url is required")
 
