@@ -1,9 +1,7 @@
-from __future__ import with_statement
-
 import re
 import os
 import time
-import sha
+import hashlib
 import urllib
 import urlparse
 from cStringIO import StringIO
@@ -12,7 +10,6 @@ import Image
 
 from scrapy import log
 from scrapy.stats import stats
-from scrapy.http import Request
 from scrapy.core.exceptions import DropItem, NotConfigured
 from scrapy.core.exceptions import HttpException
 from scrapy.conf import settings
@@ -96,6 +93,7 @@ class ImagesPipeline(MediaPipeline):
             log.msg(str(ex), level=log.WARNING, domain=info.domain)
             raise ex
         except Exception, ex:
+            referer = request.headers.get('Referer')
             msg = 'Image (processing-error): Error thumbnailing %s from %s referred in <%s>: %s' % (mtype, request, referer, ex)
             log.msg(msg, level=log.WARNING, domain=info.domain)
             raise ImageException(msg)
@@ -143,7 +141,7 @@ def image_path(url):
     if os.sep != '/':
         urlpath.replace('/', os.sep)
     if query:
-        img_path = os.path.join(netloc, sha.sha(url).hexdigest())
+        img_path = os.path.join(netloc, hashlib.sha1(url).hexdigest())
     else:
         img_path = os.path.join(netloc, urlpath[1:])
     return urllib.unquote(img_path)

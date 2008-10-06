@@ -3,10 +3,7 @@ from twisted.internet import defer
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy import log
 from scrapy.core.engine import scrapyengine
-from scrapy.core.exceptions import DropItem, NotConfigured
-from scrapy.http import Request
 from scrapy.spider import spiders
-from scrapy.conf import settings
 
 
 class DomainInfo(object):
