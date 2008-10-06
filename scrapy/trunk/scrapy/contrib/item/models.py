@@ -5,6 +5,7 @@ useful in some Scrapy implementations
 
 import hashlib
 
+from pprint import PrettyPrinter
 from scrapy.item import ScrapedItem
 from scrapy.core.exceptions import UsageError, DropItem
 
@@ -96,12 +97,15 @@ class RobustScrapedItem(ScrapedItem):
             raise AttributeError("Attribute '%s' doesn't exist" % attr)
     
     def __eq__(self, other):
-        if other:
+        if isinstance(other, type(self)):
             return self.version == other.version
         
     def __ne__(self, other):
         return self.version != other.version
-        
+    
+    def __sub__(self, other):
+        return RobustItemDelta(other, self)
+
     def __repr__(self):
         # Generate this format so that it can be deserialized easily:
         # ClassName({...})
@@ -139,3 +143,66 @@ class RobustScrapedItem(ScrapedItem):
         hash_ = hashlib.sha1()
         hash_.update("".join(["".join([n, str(v)]) for n,v in sorted(self.__dict__.iteritems())]))
         return hash_.hexdigest()
+
+
+class RobustItemDelta(object):
+    """
+    This class represents the difference between
+    a pair of RobustScrapedItems.
+    """
+
+    def __init__(self, old_item, new_item):
+        if not isinstance(old_item, RobustScrapedItem) or \
+           not isinstance(new_item, RobustScrapedItem):
+            raise TypeError("Both arguments must be RobustScrapedItem instances")
+
+        if old_item.guid != new_item.guid:
+            raise AttributeError("Item GUIDs must be equal in order to create a RobustItemDelta object")
+
+        self.old_item = old_item
+        self.new_item = new_item
+        self.diff = self.do_diff()
+
+    def do_diff(self):
+        """
+        This method should retreive a dictionary
+        containing the changes between both items
+        as in this example:
+
+        >>> delta.do_diff()
+        >>> {'attrib': {'new': 'New value', 'old': 'Old value'}, # Common attributes
+             'attrib2': {'new': 'New value 2', 'old': 'Old value 2'},
+             'attrib3': [{'new': 'New list value', 'old': 'Old list value'}, # List attributes
+                         {'new': 'New list value 2', 'old': 'Old list value 2'}]}
+        """
+        
+        if self.old_item == self.new_item:
+            return {}
+
+        diff = {}
+        for key, value in self.old_item.__dict__.items():
+            if key in self.old_item.ATTRIBUTES.keys():
+                new_value = getattr(self.new_item, key)
+                if value != new_value:
+                    diff[key] = {'new': new_value, 'old': value}
+        for key, value in self.new_item.__dict__.items():
+            if value and key in self.new_item.ATTRIBUTES.keys():
+                if not getattr(self.old_item, key):
+                    diff[key] = {'new': value, 'old': None}
+        return diff
+    
+    def __eq__(self, other):
+        if isinstance(other, RobustItemDelta):
+            if other.old_item == self.old_item and \
+               other.new_item == self.new_item and \
+               other.diff == self.diff:
+                return True
+        return False
+
+    def __repr__(self):
+        if self.diff:
+            pp = PrettyPrinter(indent=3)
+            return pp.pformat(self.diff)
+        else:
+            return 'No differences found between the provided items.'
+
