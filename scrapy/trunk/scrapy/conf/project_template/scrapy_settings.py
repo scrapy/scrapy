@@ -7,10 +7,6 @@ import $project_name
 BOT_NAME = 'scrapybot'
 BOT_VERSION = '1.0'
 
-DEFAULT_DATA_ENCODING = 'utf-8'
-
-COMMANDS_MODULE = '$project_name.commands'
-COMMANDS_SETTINGS_MODULE = '$project_name.conf.commands'
 SPIDER_MODULES = ['$project_name.spiders']
 NEWSPIDER_MODULE = '$project_name.spiders'
 TEMPLATES_DIR = '%s/templates' % $project_name.__path__[0]
@@ -18,6 +14,10 @@ ENABLED_SPIDERS_FILE = '%s/conf/enabled_spiders.list' % $project_name.__path__[0
 DEFAULT_ITEM_CLASS = 'scrapy.item.ScrapedItem'
 USER_AGENT = '%s/%s' % (BOT_NAME, BOT_VERSION)
 DOWNLOAD_TIMEOUT = 600
+
+# uncomment if you want to add your own custom scrapy commands
+#COMMANDS_MODULE = '$project_name.commands'
+#COMMANDS_SETTINGS_MODULE = '$project_name.conf.commands'
 
 #Global timeout between sucessive downloads (can be overrided by spider
 #attribute download_timeout
