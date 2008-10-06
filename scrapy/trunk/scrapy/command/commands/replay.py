@@ -164,24 +164,12 @@ class Command(ScrapyCommand):
         return c, s
 
     def _item_diff(self, old, new):
-        olddic = old.__dict__
-        newdic = new.__dict__
-        ignored_attrs = set(self.opts.ignores or [])
-        allattrs = [a for a in olddic.keys() + newdic.keys() if not a.startswith('_') and a not in ignored_attrs]
-
-        diff = {}
-        for attr in sorted(allattrs):
-            oldval = olddic.get(attr, None)
-            newval = newdic.get(attr, None)
-            if oldval != newval:
-                diff[attr] = {}
-                diff[attr]['old'] = oldval
-                diff[attr]['new'] = newval
+        delta = new - old
 
         s = ""
-        if diff:
+        if delta.diff:
             s += ">>> Item guid=%s name=%s\n" % (old.guid, old.name)
-            s += display.pformat(diff) + "\n"
+            s += display.pformat(delta.diff) + "\n"
         return s
 
     def _format_items(self, items):

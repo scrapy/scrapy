@@ -96,7 +96,8 @@ class RobustScrapedItem(ScrapedItem):
             raise AttributeError("Attribute '%s' doesn't exist" % attr)
     
     def __eq__(self, other):
-        return self.version == other.version
+        if other:
+            return self.version == other.version
         
     def __ne__(self, other):
         return self.version != other.version
