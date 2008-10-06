@@ -6,12 +6,12 @@ class ScrapedItem(object):
     'guid' attribute is required, and is an attribute
     that identifies uniquely the given scraped item.
     """
-    adaptors_pipe = AdaptorPipe()
 
-    def __init__(self, adaptors_pipe=None):
-        """If an adaptors_pipe is given, overrides class adaptors_pipe"""
-        if adaptors_pipe:
-            self.adaptors_pipe = adaptors_pipe
+    def setadaptors(self, adaptors_dict):
+        """Set adaptors to use for this item. Receives a dict of adaptors and
+        returns the item itself"""
+        self.adaptors_dict = AdaptorPipe(adaptors_dict)
+        return self
 
     def attribute(self, attrname, value):
         value = self.adaptors_pipe.execute(attrname, value)
