@@ -9,24 +9,24 @@ class ProductComparisonTestCase(unittest.TestCase):
     """ Test product comparison functions """
     
     def setUp(self):
-        TEST_DB = settings.get('TEST_DB')
-        if not TEST_DB:
-            raise unittest.SkipTest("TEST_DB not configured")
+        self.test_db = settings.get('TEST_SCRAPING_DB')
+        if not self.test_db:
+            raise unittest.SkipTest("Missing TEST_SCRAPING_DB setting")
 
         try:
             import MySQLdb
             from scrapy.utils.db import mysql_connect
-            mysql_connect(TEST_DB)
+            mysql_connect(self.test_db)
         except ImportError:
             raise unittest.SkipTest("MySQLdb module not available")
         except MySQLdb.OperationalError:
-            raise unittest.SkipTest("Test database not available at: %s" % TEST_DB)
+            raise unittest.SkipTest("Test database not available at: %s" % self.test_db)
 
     def test_domaindatahistory(self):
         from scrapy.store.db import DomainDataHistory
         from time import sleep
 
-        ddh = DomainDataHistory(TEST_DB, 'domain_data_history')
+        ddh = DomainDataHistory(self.test_db, 'domain_data_history')
         c = ddh.mysql_conn.cursor()
         c.execute("DELETE FROM domain_data_history")
         ddh.mysql_conn.commit()
