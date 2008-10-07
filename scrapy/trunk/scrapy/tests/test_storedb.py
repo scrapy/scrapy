@@ -4,13 +4,14 @@ from time import sleep
 from twisted.trial import unittest
 
 
-# This is the DB used for testing
-TEST_DB = "mysql://root:r00tpass@localhost/scrapingtest"
-
 class ProductComparisonTestCase(unittest.TestCase):
     """ Test product comparison functions """
     
     def setUp(self):
+        TEST_DB = settings.get('TEST_DB')
+        if not TEST_DB:
+            raise unittest.SkipTest("TEST_DB not configured")
+
         try:
             import MySQLdb
             from scrapy.utils.db import mysql_connect
