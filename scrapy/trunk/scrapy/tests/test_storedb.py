@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from time import sleep
 
 from twisted.trial import unittest
+from scrapy.conf import settings
 
 
 class ProductComparisonTestCase(unittest.TestCase):
