@@ -32,6 +32,7 @@ class XPathSelector(object):
             self.doc = Libxml2Document(response, constructor=constructor)
             self.xmlNode = self.doc.xmlDoc
         self.expr = expr
+        self.response = response
 
     def x(self, xpath):
         """Perform the given XPath query on the current XPathSelector and
@@ -41,9 +42,10 @@ class XPathSelector(object):
             xpath_result = self.doc.xpathContext.xpathEval(xpath)
             cls = type(self)
             if hasattr(xpath_result, '__iter__'):
-                return XPathSelectorList([cls(node=node, parent=self, expr=xpath) for node in xpath_result])
+                return XPathSelectorList([cls(node=node, parent=self, expr=xpath, response=self.response)
+                                          for node in xpath_result])
             else:
-                return XPathSelectorList([cls(node=xpath_result, parent=self, expr=xpath)])
+                return XPathSelectorList([cls(node=xpath_result, parent=self, expr=xpath, response=self.response)])
         else:
             return XPathSelectorList([])
 

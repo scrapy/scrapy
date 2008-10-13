@@ -7,15 +7,18 @@ class ScrapedItem(object):
     that identifies uniquely the given scraped item.
     """
 
-    def setadaptors(self, adaptors_dict):
-        """Set adaptors to use for this item. Receives a dict of adaptors and
-        returns the item itself"""
-        self.adaptors_dict = AdaptorPipe(adaptors_dict)
+    def setadaptors(self, adaptors_pipe):
+        """
+        Set adaptors to use for this item. Receives a dict of adaptors and
+        returns the item itself.
+        """
+        object.__setattr__(self, '_adaptors_pipe', AdaptorPipe(adaptors_pipe))
         return self
-
+    
+    def append_adaptor(self, attrname, adaptor):
+        self._adaptors_pipe.append_adaptor(attrname, adaptor)
+            
     def attribute(self, attrname, value):
-        value = self.adaptors_pipe.execute(attrname, value)
-        if not hasattr(self, attrname):
+        value = self._adaptors_pipe.execute(attrname, value)
+        if not hasattr(self, attrname) or not getattr(self, attrname):
             setattr(self, attrname, value)
-
-                
