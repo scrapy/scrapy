@@ -57,11 +57,13 @@ def extract(location):
     """
     if not location:
         return []
-    elif isinstance(location, (list, tuple)):
+    elif isinstance(location, XPathSelectorList):
         return flatten([extract(o) for o in location])
     elif isinstance(location, XPathSelector):
         return location.extract()
-    elif isinstance(location, str):
+    elif isinstance(location, (list, tuple)):
+        return flatten(location)
+    elif isinstance(location, basestring):
         return [location]
 
 def _absolutize_links(rel_links, current_url, base_url):
@@ -103,6 +105,8 @@ def extract_links(locations):
                             if len(children) > 1:
                                 ret.extend(selector.x('.//@href'))
                                 ret.extend(selector.x('.//@src'))
+                            elif len(children) == 1 and children[0].xmlNode.name == 'img':
+                                ret.extend(children.x('@src'))
                             else:
                                 ret.extend(selector.x('@href'))
                         elif selector.xmlNode.name == 'img':
@@ -113,7 +117,7 @@ def extract_links(locations):
                     elif selector.xmlNode.type == 'attribute' and selector.xmlNode.name in ['href', 'src']:
                         ret.append(selector)
                 ret = [selector.extract() for selector in ret]
-            current_url, base_url = re.search(r'((http://(?:www\.)?[\w\d\.-]+?)(?:/|$).*)/', locations[0].response.url).groups()
+            current_url, base_url = re.search(r'((http://(?:www\.)?[\w\d\.-]+?)(?:/|$).*)', locations[0].response.url).groups()
             ret = _absolutize_links(ret, current_url, base_url)
     return ret
 
@@ -141,7 +145,7 @@ def regex(expr):
         if isinstance(value, (XPathSelector, XPathSelectorList)):
             return value.re(expr)
         elif isinstance(value, list) and value:
-            return extract_regex(expr, value, 'utf-8')
+            return flatten([extract_regex(expr, string, 'utf-8') for string in value])
         return value
     return _regex
 
@@ -217,16 +221,18 @@ def url_pipeline():
              drop_empty_elements,
            ]
                
-def list_pipeline():
-    return [ extract,
-             unique,
-             to_unicode,
-             drop_empty_elements,
-             unquote,
-             remove_tags,
-             remove_root,
-             strip,
-           ]
+def list_pipeline(extract=True):
+    pipe = []
+    if extract:
+        pipe.append(extract) 
+    return pipe.extend([ unique,
+                         to_unicode,
+                         drop_empty_elements,
+                         unquote,
+                         remove_tags,
+                         remove_root,
+                         strip,
+                       ])
                 
 def list_join_pipeline(delimiter='\t'):
     return list_pipeline() + [delimiter.join]
