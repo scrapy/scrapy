@@ -200,16 +200,18 @@ def delist(value):
 The following methods automatically generate adaptor pipelines
 for some basic datatypes, according to the parameters you pass them.
 """
-def single_pipeline(do_unquote=True):
+def single_pipeline(remove_root=True, remove_tags=True, do_unquote=True):
     pipe = [ extract,
              unique,
              to_unicode,
              drop_empty_elements,
-             remove_tags,
-             remove_root,
              remove_multispaces,
              strip,
            ]
+    if remove_root:
+        pipe.insert(4, remove_root)
+    if remove_tags:
+        pipe.insert(5, remove_tags)
     if do_unquote:
         pipe.append(unquote)
     return pipe + [delist]
@@ -221,19 +223,19 @@ def url_pipeline():
              drop_empty_elements,
            ]
                
-def list_pipeline(extract=True):
+def list_pipeline(do_extract=True):
     pipe = []
-    if extract:
-        pipe.append(extract) 
-    return pipe.extend([ unique,
-                         to_unicode,
-                         drop_empty_elements,
-                         unquote,
-                         remove_tags,
-                         remove_root,
-                         strip,
-                       ])
+    if do_extract:
+        pipe.append(extract)
+    return pipe + [ unique,
+                    to_unicode,
+                    drop_empty_elements,
+                    unquote,
+                    remove_tags,
+                    remove_root,
+                    strip,
+                  ]
                 
 def list_join_pipeline(delimiter='\t'):
     return list_pipeline() + [delimiter.join]
-    
+
