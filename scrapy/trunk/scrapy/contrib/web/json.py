@@ -1,26 +1,14 @@
 from functools import wraps
-from twisted.internet import defer
+
 from scrapy.utils.defer import mustbe_deferred
+from scrapy.utils.serialization import serialize as _serialize, unserialize as _unserialize
 
 from .http import HttpResponse
 
-
-JSONCALLBACK_RE = '^[a-zA-Z][a-zA-Z_.-]*$'
 JSON_CONTENT_TYPES = ('application/json',)
 
-
-def serialize(obj):
-    global _serialize
-    if not _serialize:
-        _loadserializers()
-    return _serialize(obj)
-
-def unserialize(obj):
-    global _unserialize
-    if not _unserialize:
-        _loadserializers()
-    return _unserialize(obj)
-
+serialize = lambda x: _serialize(x, 'json')
+unserialize = lambda x: _unserialize(x, 'json')
 
 class JsonException(Exception):
     pass
@@ -108,22 +96,4 @@ def _x_http_method_override(request):
     has a chance to set an extra header to indicate intended method.
     """
     return request.HEADERS.get('x-http-method-override', request.method).upper()
-
-
-## json serializers
-
-_serialize = _unserialize = None
-def _loadserializers():
-    global _serialize, _unserialize
-    try:
-        import cjson
-        _serialize = cjson.encode
-        _unserialize = cjson.decode
-    except ImportError:
-        try:
-            import simplejson
-            _serialize = simplejson.dumps
-            _unserialize = simplejson.loads
-        except ImportError:
-            assert 0, 'json serialization needs cjson or simplejson modules'
 

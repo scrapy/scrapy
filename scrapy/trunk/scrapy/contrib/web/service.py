@@ -1,6 +1,5 @@
 import re
 import urllib
-import simplejson
 import hashlib
 from twisted.internet import defer
 
