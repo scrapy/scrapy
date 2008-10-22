@@ -1,8 +1,9 @@
-import sys, datetime
-import pickle
+from __future__ import with_statement
+
+import datetime
+import cPickle as pickle
 
 from pydispatch import dispatcher
-
 from twisted.spread import pb
 from twisted.internet import reactor
 
@@ -21,7 +22,8 @@ def my_import(name):
         mod = getattr(mod, comp)
     return mod
 
-class Broker(pb.Referenceable):
+class ClusterMasterBroker(pb.Referenceable):
+
     def __init__(self, remote, name, master):
         self.__remote = remote
         self.alive = False
@@ -42,7 +44,7 @@ class Broker(pb.Referenceable):
         status = {"alive": self.alive}
         if self.alive:
             if verbosity == 1:
-                #dont show spider settings
+                # dont show spider settings
                 status["running"] = []
                 for proc in self.running:
                     proccopy = proc.copy()
@@ -143,6 +145,9 @@ class Broker(pb.Referenceable):
                 self.master.statistics["domains"]["lost"].remove(domain)
 
 class ScrapyPBClientFactory(pb.PBClientFactory):
+
+    noisy = False
+
     def __init__(self, master, nodename):
         pb.PBClientFactory.__init__(self)
         self.master = master
@@ -151,32 +156,35 @@ class ScrapyPBClientFactory(pb.PBClientFactory):
     def clientConnectionLost(self, *args, **kargs):
         pb.PBClientFactory.clientConnectionLost(self, *args, **kargs)
         del self.master.nodes[self.nodename]
-        log.msg("Removed node %s." % self.nodename )
+        log.msg("Lost connection to %s. Node removed" % self.nodename )
 
-class ClusterMaster:
+class ClusterMaster(object):
 
     def __init__(self):
 
-        if not (settings.getbool('CLUSTER_MASTER_ENABLED')):
+        if not settings.getbool('CLUSTER_MASTER_ENABLED'):
             raise NotConfigured
+        if not settings['CLUSTER_MASTER_STATEFILE']:
+            raise NotConfigured("ClusterMaster: Missing CLUSTER_MASTER_STATEFILE setting")
 
-        #import groups settings
+        # import groups settings
         if settings.getbool('GROUPSETTINGS_ENABLED'):
             self.get_spider_groupsettings = my_import(settings["GROUPSETTINGS_MODULE"]).get_spider_groupsettings
         else:
             self.get_spider_groupsettings = lambda x: {}
-        #load pending domains
+        # load pending domains
         try:
-            self.pending = pickle.load( open(settings["CLUSTER_MASTER_CACHEFILE"], "r") )
+            statefile = open(settings["CLUSTER_MASTER_STATEFILE"], "r")
+            self.pending = pickle.load(statefile)
         except IOError:
             self.pending = []
         self.loading = []
         self.nodes = {}
         self.start_time = datetime.datetime.utcnow()
-        #on how statistics works, see self.update_nodes() and Broker.remote_update()
+        # for more info about statistics see self.update_nodes() and ClusterMasterBroker.remote_update()
         self.statistics = {"domains": {"running": set(), "scraped": {}, "lost_count": {}, "lost": set()}, "scraped_count": 0 }
         self.global_settings = {}
-        #load cluster global settings
+        # load cluster global settings
         for sname in settings.getlist('GLOBAL_CLUSTER_SETTINGS'):
             self.global_settings[sname] = settings[sname]
         
@@ -185,20 +193,12 @@ class ClusterMaster:
         
     def load_nodes(self):
         """Loads nodes listed in CLUSTER_MASTER_NODES setting"""
-        for name, url in settings.get('CLUSTER_MASTER_NODES', {}).iteritems():
-            self.load_node(name, url)
+        for name, hostport in settings.get('CLUSTER_MASTER_NODES', {}).iteritems():
+            self.load_node(name, hostport)
             
-    def load_node(self, name, url):
-        """Creates the remote reference for each worker node"""
-        def _make_callback(_factory, _name, _url):
-
-            def _errback(_reason):
-                log.msg("Could not get remote node %s in %s: %s." % (_name, _url, _reason), log.ERROR)
-
-            d = _factory.getRootObject()
-            d.addCallbacks(callback=lambda obj: self.add_node(obj, _name), errback=_errback)
-
-        server, port = url.split(":")
+    def load_node(self, name, hostport):
+        """Creates the remote reference for a worker node"""
+        server, port = hostport.split(":")
         port = int(port)
         log.msg("Connecting to cluster worker %s..." % name)
         log.msg("Server: %s, Port: %s" % (server, port))
@@ -206,18 +206,23 @@ class ClusterMaster:
         try:
             reactor.connectTCP(server, port, factory)
         except Exception, err:
-            log.msg("Could not connect to node %s in %s: %s." % (name, url, reason), log.ERROR)
+            log.msg("Could not connect to node %s in %s: %s." % (name, hostport, err), log.ERROR)
         else:
-            _make_callback(factory, name, url)
+            def _errback(_reason):
+                log.msg("Could not connect to remote node %s (%s): %s." % (name, hostport, _reason), log.ERROR)
+
+            d = factory.getRootObject()
+            d.addCallbacks(callback=lambda obj: self.add_node(obj, name), errback=_errback)
 
     def update_nodes(self):
-        for name, url in settings.get('CLUSTER_MASTER_NODES', {}).iteritems():
+        """Update worker nodes statistics"""
+        for name, hostport in settings.get('CLUSTER_MASTER_NODES', {}).iteritems():
             if name in self.nodes and self.nodes[name].alive:
-                log.msg("Updating node. name: %s, url: %s" % (name, url) )
+                log.msg("Updating node. name: %s, host: %s" % (name, hostport) )
                 self.nodes[name].update_status()
             else:
-                log.msg("Reloading node. name: %s, url: %s" % (name, url) )
-                self.load_node(name, url)
+                log.msg("Reloading node. name: %s, host: %s" % (name, hostport) )
+                self.load_node(name, hostport)
         
         real_running = set(self.running.keys())
         lost = self.statistics["domains"]["running"].difference(real_running)
@@ -227,7 +232,7 @@ class ClusterMaster:
             
     def add_node(self, cworker, name):
         """Add node given its node"""
-        node = Broker(cworker, name, self)
+        node = ClusterMasterBroker(cworker, name, self)
         self.nodes[name] = node
         log.msg("Added cluster worker %s" % name)
 
@@ -241,6 +246,7 @@ class ClusterMaster:
         raise NotImplemented
 
     def schedule(self, domains, spider_settings=None, priority=DEFAULT_PRIORITY):
+        """Schedule the domains passed"""
         i = 0
         for p in self.pending:
             if p['priority'] <= priority:
@@ -261,6 +267,7 @@ class ClusterMaster:
                 self.pending.insert(i, {'domain': domain, 'settings': final_spider_settings, 'priority': priority})
 
     def stop(self, domains):
+        """Stop the given domains"""
         to_stop = {}
         for domain in domains:
             node = self.running.get(domain, None)
@@ -325,6 +332,8 @@ class ClusterMaster:
     def _engine_started(self):
         self.load_nodes()
         scrapyengine.addtask(self.update_nodes, settings.getint('CLUSTER_MASTER_POLL_INTERVAL'))
+
     def _engine_stopped(self):
-        pickle.dump( self.pending, open(settings["CLUSTER_MASTER_CACHEFILE"], "w") )
-        log.msg("Pending saved in %s" % settings["CLUSTER_MASTER_CACHEFILE"])
+        with open(settings["CLUSTER_MASTER_STATEFILE"], "w") as f:
+            pickle.dump(self.pending, f)
+            log.msg("Cluster master state saved in %s" % settings["CLUSTER_MASTER_STATEFILE"])

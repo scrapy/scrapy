@@ -63,7 +63,7 @@ class ClusterMasterWeb(ClusterMaster):
                 domains = args["schedule"]
             priority = int(args.get("priority", [DEFAULT_PRIORITY])[0])
             
-            #spider settings
+            # spider settings
             slist = args.get("settings", [""])[0].split(sep)
             spider_settings = {}
             for s in slist:
@@ -167,7 +167,7 @@ class ClusterMasterWeb(ClusterMaster):
         s += "<input type='text' name='priority'>%s</input>" % DEFAULT_PRIORITY
         s += "<br />\n"
         
-        #spider settings
+        # spider settings
         s += "Overrided spider settings:<br />\n"
         s += "<textarea name='settings' rows='4'>\n"
         s += "UNAVAILABLES_NOTIFY=2\n"
