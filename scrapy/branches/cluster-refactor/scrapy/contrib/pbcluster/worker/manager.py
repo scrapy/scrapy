@@ -135,6 +135,7 @@ class ClusterWorker(pb.Root):
         
     def remote_set_master(self, master):
         """Set the master for this worker"""
+        log.msg("ClusterWorker: ClusterMaster connected from %s:%s" % master.broker.transport.client)
         self.__master = master
         return self.status()
 
