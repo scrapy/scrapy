@@ -38,8 +38,8 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
     def __str__(self):
         return "<ScrapyProcess domain=%s, pid=%s, status=%s>" % (self.domain, self.pid, self.status)
 
-    def status(self):
-        """Return this scrapy process status as a dict.
+    def info(self):
+        """Return this scrapy process info as a dict.
         
         The keys are: 
 
@@ -115,7 +115,7 @@ class ClusterWorker(pb.Root):
         """
 
         status = {}
-        status["running"] = [self.running[k].status() for k in self.running.keys()]
+        status["running"] = [self.running[k].info() for k in self.running.keys()]
         status["starttime"] = self.starttime
         status["timestamp"] = datetime.datetime.utcnow()
         status["maxproc"] = self.maxproc
