@@ -1,0 +1,51 @@
+Cluster Webservice API
+======================
+
+The webservice API is available at
+
+http://server:port/cluster_master/ws/
+
+With no parameters, webservice returns the cluster status.
+
+Query parameters
+================
+
+ - `format`: the answer format. By default, format=json. Other formats: pprint, pickle.
+
+ - `schedule`: schedules a comma separated list of domains. Schedule function takes optional parameters:
+
+    "priority": sets the queue priority for the specified domains (an integer). The default is setted by "DEFAULT_PRIORITY"
+                setting (20 if not given). A lower priority number implies more priority.
+
+    "settings": run settings for the specified domains. This is a comma separated list of <setting_name>=<value> pairs. By default it is empty.
+
+ - `remove`: removes from pending list a comma separated list of domains.
+
+ - `stop`: stops comma separated list of domains (they have to be running in some node)
+
+ - `disable_node`: disables a node so no more domains will be loaded in it until enabled again (but it will finish to run the running domains)
+
+ - `enable_node`: revert the state setted by 'disable_node'
+
+ - `verbosity`: sets the output verbosity level (1 is the default minimal, 2 includes domain settings, 0 disables output)
+
+ - `statistics`: shows the pending/running/scraped/lost statistics
+
+Examples:
+---------
+
+1) Schedule argos.co.uk, diy.com, littlewoodsdirect.com spiders, with priority=0, and settings UNAVAILABLES_NOTIFY=2 and UNAVAILABLES_DAYS_BACK=3. Answer with pprint format
+
+    http://localhost:8080/cluster_master/ws/?format=pprint&schedule=argos.co.uk,diy.com,littlewoodsdirect.com&priority=0&settings=UNAVAILABLES_NOTIFY=2,UNAVAILABLES_DAYS_BACK=3
+
+2) Get status with pprint format:
+
+    http://localhost:8080/cluster_master/ws/?format=pprint
+
+3) Remove from pending lists domains argos.co.uk and diy.com. Answer with pprint format:
+
+    http://localhost:8080/cluster_master/ws/?remove=argos.co.uk,diy.com
+
+4) Stop running domain littlewoodsdirect.com:
+
+    http://localhost:8080/cluster_master/ws/?stop=littlewoodsdirect.com
