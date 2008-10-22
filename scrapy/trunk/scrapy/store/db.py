@@ -1,7 +1,7 @@
 """
 Store implementations using a MySQL DB
 """
-import pickle
+import cPickle as pickle
 from datetime import datetime
 
 from scrapy.utils.misc import stats_getpath

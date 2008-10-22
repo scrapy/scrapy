@@ -1,4 +1,5 @@
-import os, pickle
+import os
+import cPickle as pickle
 
 SETTINGS_MODULE = os.environ.get('SCRAPYSETTINGS_MODULE', 'scrapy_settings')
 
