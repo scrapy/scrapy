@@ -20,7 +20,8 @@ def mysql_connect(db_uri, **kwargs):
         if d['passwd'] is None:
             del(d['passwd'])
 
-        d.update(settings.get("MYSQL_CONNECTION_SETTINGS"))
+        d['charset'] = 'utf8'
+        d.update(settings.get("MYSQL_CONNECTION_SETTINGS", {}))
         d.update(kwargs)
         
         dcopy = d.copy()
