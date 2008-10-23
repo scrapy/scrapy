@@ -97,7 +97,8 @@ class ClusterWorker(pb.Root):
         self.starttime = datetime.datetime.utcnow()
         self.prerun_hooks = [load_class(f) for f in settings.getlist('CLUSTER_WORKER_PRERUN_HOOKS', [])]
         port = settings.getint('CLUSTER_WORKER_PORT')
-        scrapyengine.listenTCP(port, pb.PBServerFactory(self))
+        factory = pb.PBServerFactory(self, unsafeTracebacks=True)
+        scrapyengine.listenTCP(port, factory)
         log.msg("Using sys.path: %s" % repr(sys.path), level=log.DEBUG)
 
     def status(self, rcode=0, rstring=None):
