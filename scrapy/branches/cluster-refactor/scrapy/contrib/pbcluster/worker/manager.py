@@ -140,7 +140,9 @@ class ClusterWorker(pb.Root):
             self._master = None
             log.msg("Lost connection to master", log.ERROR)
         else:
-            deferred.addCallbacks(callback=lambda x: x, errback=lambda reason: log.msg(reason, log.ERROR))
+            def _eb(failure):
+                log.msg("Error received from ClusterMaster\n%s" % failure, level=log.ERROR)
+            deferred.addErrback(_eb)
         
     def remote_set_master(self, master):
         """Set the master for this worker"""
