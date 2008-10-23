@@ -67,7 +67,7 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
 
     def connectionMade(self):
         self.pid = self.transport.pid
-        log.msg("ClusterWorker: started domain=%s, pid=%d, log=%s" % (self.domain, self.pid, self.logfile))
+        log.msg("ClusterWorker: started domain=%s pid=%d log=%s" % (self.domain, self.pid, self.logfile))
         self.transport.closeStdin()
         self.status = "running"
         self.procman.update_master(self.domain, "running")
@@ -79,7 +79,7 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         else:
             st = "terminated"
             er = ", error=%s" % str(status.value)
-        log.msg("ClusterWorker: finished domain=%s, status=%s, pid=%d, log=%s%s" % (self.domain, st, self.pid, self.logfile, er))
+        log.msg("ClusterWorker: finished domain=%s status=%s pid=%d log=%s%s" % (self.domain, st, self.pid, self.logfile, er))
         del self.procman.running[self.domain]
         del self.procman.crawlers[self.pid]
         self.procman.update_master(self.domain, "scraped")
@@ -152,7 +152,7 @@ class ClusterWorker(pb.Root):
         """Stop a running domain"""
         if domain in self.running:
             proc = self.running[domain]
-            log.msg("ClusterWorker: Sending shutdown signal to domain=%s, pid=%d" % (domain, proc.pid))
+            log.msg("ClusterWorker: Sending shutdown signal to domain=%s pid=%d" % (domain, proc.pid))
             d = self.crawlers[proc.pid].callRemote("stop")
             def _close():
                 proc.status = "closing"
