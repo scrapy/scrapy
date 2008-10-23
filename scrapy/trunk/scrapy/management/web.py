@@ -63,7 +63,8 @@ class WebConsole(server.Site):
         if not settings.getbool('WEBCONSOLE_ENABLED'):
             return
 
-        server.Site.__init__(self, WebConsoleResource())
+        logfile = settings['WEBCONSOLE_LOGFILE']
+        server.Site.__init__(self, WebConsoleResource(), logPath=logfile)
         self.noisy = False
         port = settings.getint('WEBCONSOLE_PORT')
         scrapyengine.listenTCP(port, self)
