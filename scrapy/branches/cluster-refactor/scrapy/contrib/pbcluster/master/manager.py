@@ -127,7 +127,6 @@ class ClusterNodeBroker(pb.Referenceable):
     def remote_update(self, worker_status, domain, domain_status):
         """Called remotely form worker when domains finish to update status"""
         self._set_status(worker_status)
-        raise Exception
         if domain in self.master.loading and domain_status == "running":
             self.master.loading.remove(domain)
             self.master.statistics["domains"]["running"].add(domain)
