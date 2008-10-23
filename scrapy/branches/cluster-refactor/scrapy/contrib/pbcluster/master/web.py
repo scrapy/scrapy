@@ -4,7 +4,7 @@ from pydispatch import dispatcher
 
 from scrapy.spider import spiders 
 from scrapy.management.web import banner, webconsole_discover_module
-from scrapy.contrib.pbcluster.master.manager import ClusterMaster, DEFAULT_PRIORITY
+from scrapy.contrib.pbcluster.master.manager import ClusterMaster
 from scrapy.utils.serialization import serialize
 
 class ClusterMasterWeb(ClusterMaster):
@@ -61,7 +61,7 @@ class ClusterMasterWeb(ClusterMaster):
             else:
                 sep = "\r"
                 domains = args["schedule"]
-            priority = int(args.get("priority", [DEFAULT_PRIORITY])[0])
+            priority = int(args.get("priority", [20])[0])
             
             # spider settings
             slist = args.get("settings", [""])[0].split(sep)
@@ -164,7 +164,7 @@ class ClusterMasterWeb(ClusterMaster):
         s += "<br />\n"
         
         s += "Priority:<br />\n"
-        s += "<input type='text' name='priority'>%s</input>" % DEFAULT_PRIORITY
+        s += "<input type='text' name='priority'>%s</input>" % 20
         s += "<br />\n"
         
         # spider settings
