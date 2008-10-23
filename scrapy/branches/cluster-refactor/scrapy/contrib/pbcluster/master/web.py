@@ -227,7 +227,7 @@ class ClusterMasterWeb(ClusterMaster):
             for d, n in self.nodes.iteritems():
                 nodes_status[d] = n.status_as_dict(verbosity)
             status["nodes"] = nodes_status
-            status["pending"] = self.print_pending(verbosity)
+            status["pending"] = self.get_pending(verbosity)
             status["loading"] = self.loading
             content = serialize(status, format)
             return content

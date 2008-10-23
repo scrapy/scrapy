@@ -157,9 +157,9 @@ class ClusterWorker(pb.Root):
             def _close():
                 proc.status = "closing"
             d.addCallbacks(callback=_close, errback=lambda reason: log.msg(reason, log.ERROR))
-            return self.status(0, "Stopped process %s" % proc)
+            return self.status(ResponseCode.DOMAIN_STOPPED, "Stopped process %s" % proc)
         else:
-            return self.status(1, "%s: domain not running" % domain)
+            return self.status(ResponseCode.DOMAIN_NOT_RUNNING, "%s: domain not running" % domain)
 
     def remote_status(self):
         """Return worker status as a dict. For infomation about the keys see
@@ -181,12 +181,19 @@ class ClusterWorker(pb.Root):
                     prerun_hook(domain, spider_settings)
 
                 reactor.spawnProcess(scrapy_proc, sys.executable, args=args, env=scrapy_proc.env)
-                return self.status(0, "Started process %s" % scrapy_proc)
+                return self.status(ResponseCode.DOMAIN_STARTED, "Started process %s" % scrapy_proc)
             else:
-                return self.status(2, "Domain %s already running" % domain )
+                return self.status(ResponseCode.DOMAIN_ALREADY_RUNNING, "Domain %s already running" % domain )
         else:
-            return self.status(1, "No free slot to run another process")
+            return self.status(ResponseCode.NO_FREE_SLOT, "No free slot to run another domain")
 
     def remote_register_crawler(self, pid, crawler):
         """Register the crawler to the list of crawlers managed by this worker"""
         self.crawlers[pid] = crawler
+
+class ResponseCode(object):
+    DOMAIN_STARTED = 1
+    DOMAIN_STOPPED = 2
+    DOMAIN_ALREADY_RUNNING = 3
+    DOMAIN_NOT_RUNNING = 4
+    NO_FREE_SLOT = 5
