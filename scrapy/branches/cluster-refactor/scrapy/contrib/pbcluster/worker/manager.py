@@ -5,12 +5,14 @@ import datetime
 import cPickle as pickle
 
 from twisted.internet import protocol, reactor
+from twisted.internet.error import ProcessDone
 from twisted.spread import pb
 
 from scrapy import log
-from scrapy.core.exceptions import NotConfigured
-from scrapy.conf import settings
 from scrapy.core.engine import scrapyengine
+from scrapy.core.exceptions import NotConfigured
+from scrapy.utils.misc import load_class
+from scrapy.conf import settings
 
 class ScrapyProcessProtocol(protocol.ProcessProtocol):
 
@@ -70,9 +72,14 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.status = "running"
         self.procman.update_master(self.domain, "running")
 
-    def processEnded(self, reason):
-        log.msg("ClusterWorker: finished domain=%s, pid=%d, log=%s" % (self.domain, self.pid, self.logfile))
-        log.msg("Reason type: %s. value: %s" % (reason.type, reason.value) )
+    def processEnded(self, status):
+        if isinstance(status.value, ProcessDone):
+            st = "done"
+            er = ""
+        else:
+            st = "terminated"
+            er = ", error=%s" % str(status.value)
+        log.msg("ClusterWorker: finished domain=%s, status=%s, pid=%d, log=%s%s" % (self.domain, st, self.pid, self.logfile, er))
         del self.procman.running[self.domain]
         del self.procman.crawlers[self.pid]
         self.procman.update_master(self.domain, "scraped")
@@ -88,6 +95,7 @@ class ClusterWorker(pb.Root):
         self.running = {} # dict of domain->ScrapyProcessControl 
         self.crawlers = {} # dict of pid->scrapy process remote pb connection
         self.starttime = datetime.datetime.utcnow()
+        self.prerun_hooks = [load_class(f) for f in settings.getlist('CLUSTER_WORKER_PRERUN_HOOKS', [])]
         port = settings.getint('CLUSTER_WORKER_PORT')
         scrapyengine.listenTCP(port, pb.PBServerFactory(self))
         log.msg("Using sys.path: %s" % repr(sys.path), level=log.DEBUG)
@@ -150,7 +158,7 @@ class ClusterWorker(pb.Root):
             d.addCallbacks(callback=_close, errback=lambda reason: log.msg(reason, log.ERROR))
             return self.status(0, "Stopped process %s" % proc)
         else:
-            return self.status(1, "%s: domain not running." % domain)
+            return self.status(1, "%s: domain not running" % domain)
 
     def remote_status(self):
         """Return worker status as a dict. For infomation about the keys see
@@ -167,21 +175,16 @@ class ClusterWorker(pb.Root):
                 scrapy_proc = ScrapyProcessProtocol(self, domain, logfile, spider_settings)
                 args = [sys.executable, sys.argv[0], 'crawl', domain]
                 self.running[domain] = scrapy_proc
-                try:
-                    import pysvn
-                    c = pysvn.Client()
-                    r = c.update(settings.get("CLUSTER_WORKER_SVNWORKDIR", "."))
-                    log.msg("Updated to revision %s." %r[0].number, level=log.DEBUG)
-                except pysvn.ClientError, e:
-                    log.msg("Unable to svn update: %s" % e, level=log.WARNING)
-                except ImportError:
-                    log.msg("pysvn module not available.", level=log.WARNING)
+
+                for prerun_hook in self.prerun_hooks:
+                    prerun_hook(domain, spider_settings)
+
                 reactor.spawnProcess(scrapy_proc, sys.executable, args=args, env=scrapy_proc.env)
-                return self.status(0, "Started process %s." % scrapy_proc)
+                return self.status(0, "Started process %s" % scrapy_proc)
             else:
-                return self.status(2, "Domain %s already running." % domain )
+                return self.status(2, "Domain %s already running" % domain )
         else:
-            return self.status(1, "No free slot to run another process.")
+            return self.status(1, "No free slot to run another process")
 
     def remote_register_crawler(self, pid, crawler):
         """Register the crawler to the list of crawlers managed by this worker"""
