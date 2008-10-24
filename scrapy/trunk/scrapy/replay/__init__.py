@@ -5,14 +5,16 @@ import cPickle as pickle
 import shutil
 import tempfile
 import tarfile
+import copy
 
 from pydispatch import dispatcher
 
-from scrapy.core import signals
 from scrapy import log
+from scrapy.core import signals
 from scrapy.core.manager import scrapymanager
 from scrapy.core.exceptions import NotConfigured
 from scrapy.conf import settings
+from scrapy.item import ScrapedItem
 
 class Replay(object):
     """
@@ -99,17 +101,35 @@ class Replay(object):
         self._save()
         self.cleanup()
 
-    def item_scraped(self, item, spider):
-        if self.recording or self.updating:
-            self.scraped_old[str(item.guid)] = item.copy()
+    def clean_private(self, src):
+        if isinstance(src, ScrapedItem):
+            target = src.__dict__
+        elif isinstance(src, (list, tuple)):
+            return type(src)(self.clean_private(elem) for elem in src)
+        elif isinstance(src, dict):
+            target = src
         else:
-            self.scraped_new[str(item.guid)] = item.copy()
+            return src
+        for key, val in target.items():
+            if key[0] == '_' and key[1] != '_':
+                del target[key]
+            else:
+                target[key] = self.clean_private(val)
+        return src
+
+    def item_scraped(self, item, spider):
+        item = self.clean_private(copy.deepcopy(item))
+        if self.recording or self.updating:
+            self.scraped_old[str(item.guid)] = item
+        else:
+            self.scraped_new[str(item.guid)] = item
 
     def item_passed(self, item, spider):
+        item = self.clean_private(copy.deepcopy(item))
         if self.recording or self.updating:
-            self.passed_old[str(item.guid)] = item.copy()
+            self.passed_old[str(item.guid)] = item
         else:
-            self.passed_new[str(item.guid)] = item.copy()
+            self.passed_new[str(item.guid)] = item
 
     def response_received(self, response, spider):
         #key = response.request.fingerprint()

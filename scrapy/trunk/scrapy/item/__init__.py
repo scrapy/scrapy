@@ -1,1 +1,1 @@
-from scrapy.item.models import ScrapedItem
+from scrapy.item.models import ScrapedItem, ItemDelta

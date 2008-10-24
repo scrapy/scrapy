@@ -6,7 +6,7 @@ useful in some Scrapy implementations
 import hashlib
 
 from pprint import PrettyPrinter
-from scrapy.item import ScrapedItem
+from scrapy.item import ScrapedItem, ItemDelta
 from scrapy.core.exceptions import UsageError, DropItem
 
 class ValidationError(DropItem):
@@ -37,11 +37,12 @@ class RobustScrapedItem(ScrapedItem):
         'url': basestring,  # the main URL where this item was scraped from
     }
     
-    def __init__(self, data=None):
+    def __init__(self, data=None, adaptors_pipe={}):
         """
         A scraped item can be initialised with a dictionary that will be
         squirted directly into the object.
         """
+        super(RobustScrapedItem, self).__init__(adaptors_pipe)
         if isinstance(data, dict):
             for attr, value in data.iteritems():
                 setattr(self, attr, value)
@@ -69,6 +70,9 @@ class RobustScrapedItem(ScrapedItem):
         if value is None:
             self.__dict__.pop(attr, None)
             return
+
+        if attr == '_adaptors_pipe':
+            return object.__setattr__(self, '_adaptors_pipe', value)
 
         type1 = self.ATTRIBUTES[attr]
         if hasattr(type1, '__iter__'):
@@ -138,14 +142,14 @@ class RobustScrapedItem(ScrapedItem):
 
         item.features.append('feature')
         """
-        if self._version:
+        if getattr(self, '_version', None):
             return self._version
         hash_ = hashlib.sha1()
         hash_.update("".join(["".join([n, str(v)]) for n,v in sorted(self.__dict__.iteritems())]))
         return hash_.hexdigest()
 
 
-class RobustItemDelta(object):
+class RobustItemDelta(ItemDelta):
     """
     This class represents the difference between
     a pair of RobustScrapedItems.
@@ -198,6 +202,9 @@ class RobustItemDelta(object):
                other.diff == self.diff:
                 return True
         return False
+
+    def __nonzero__(self):
+        return bool(self.diff)
 
     def __repr__(self):
         if self.diff:
