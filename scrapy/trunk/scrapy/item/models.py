@@ -9,7 +9,7 @@ class ScrapedItem(object):
     """
 
     def __init__(self, adaptors_pipe={}):
-        #self.set_adaptors(adaptors_pipe)
+        self.set_adaptors(adaptors_pipe)
         pass
 
     def set_adaptors(self, adaptors_pipe):
