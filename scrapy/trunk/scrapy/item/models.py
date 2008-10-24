@@ -8,10 +8,6 @@ class ScrapedItem(object):
     that identifies uniquely the given scraped item.
     """
 
-    def __init__(self, adaptors_pipe={}):
-        self.set_adaptors(adaptors_pipe)
-        pass
-
     def set_adaptors(self, adaptors_pipe):
         """
         Set the adaptors to use for this item. Receives a dict of the adaptors
