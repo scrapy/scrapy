@@ -13,6 +13,8 @@ If this is not the case, you can add the following lines to a file
 import sys
 sys.setdefaultencoding('utf-8')
 
+In Debian/Ubuntu the sitecustomize.py file may be found in /etc/python or
+/etc/python2.5.
 
 INSTALLING LIBRARIES
 --------------------
