@@ -15,6 +15,10 @@ Settings that affect this module:
 
 ITEMSAMPLER_FILE
   file where to store the pickled dict of scraped items
+ITEMSAMPLER_CLOSE_DOMAIN
+  wether to close the domain after enough products have been sampled
+ITEMSAMPLER_MAX_RESPONSE_SIZE
+  maximum response size to process
 """
 
 from __future__ import with_statement
@@ -24,14 +28,16 @@ import cPickle as pickle
 from pydispatch import dispatcher
 
 from scrapy.core.engine import scrapyengine
-from scrapy.core.exceptions import NotConfigured, DropItem
+from scrapy.core.exceptions import NotConfigured
 from scrapy.core import signals
 from scrapy.stats import stats
+from scrapy.http import Request
 from scrapy import log
 from scrapy.conf import settings
 
 items_per_domain = settings.getint('ITEMSAMPLER_COUNT', 1)
 close_domain = settings.getbool('ITEMSAMPLER_CLOSE_DOMAIN', False)
+max_response_size = settings.getbool('ITEMSAMPLER_MAX_RESPONSE_SIZE', )
 
 class ItemSamplerPipeline(object):
 
@@ -51,6 +57,7 @@ class ItemSamplerPipeline(object):
             self.items[item.guid] = item
             sampled += 1
             stats.setpath("%s/items_sampled" % domain, sampled)
+            log.msg("Sampled %s" % item, domain=domain, level=log.INFO)
             if close_domain and sampled == items_per_domain:
                 scrapyengine.close_domain(domain)
         return item
@@ -59,7 +66,7 @@ class ItemSamplerPipeline(object):
         with open(self.filename, 'w') as f:
             pickle.dump(self.items, f)
         if self.empty_domains:
-            log.msg("Empty domains (no items scraped) found: %s" % " ".join(self.empty_domains), level=log.WARNING)
+            log.msg("No products sampled for: %s" % " ".join(self.empty_domains), level=log.WARNING)
 
     def domain_closed(self, domain, spider, status):
         if status == 'finished' and not stats.getpath("%s/items_sampled" % domain):
@@ -79,9 +86,20 @@ class ItemSamplerMiddleware(object):
     def process_scrape(self, response, spider):
         if stats.getpath("%s/items_sampled" % spider.domain_name) >= items_per_domain:
             return []
+        elif max_response_size and max_response_size > len(response):  
+            return []
 
     def process_result(self, response, result, spider):
+        requests, items = [], []
+        for r in result:
+            if isinstance(r, Request):
+                requests.append(r)
+            else:
+                items.append(r)
+
         if stats.getpath("%s/items_sampled" % spider.domain_name) >= items_per_domain:
             return []
         else:
-            return result
+            # TODO: this needs some revision, as keeping only the first item
+            # may lead to differences when performing replays on sampled items
+            return requests + items[0:]
