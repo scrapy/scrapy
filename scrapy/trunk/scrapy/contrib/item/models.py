@@ -37,12 +37,11 @@ class RobustScrapedItem(ScrapedItem):
         'url': basestring,  # the main URL where this item was scraped from
     }
     
-    def __init__(self, data=None, adaptors_pipe={}):
+    def __init__(self, data=None):
         """
         A scraped item can be initialised with a dictionary that will be
         squirted directly into the object.
         """
-        super(RobustScrapedItem, self).__init__(adaptors_pipe)
         if isinstance(data, dict):
             for attr, value in data.iteritems():
                 setattr(self, attr, value)
@@ -71,8 +70,8 @@ class RobustScrapedItem(ScrapedItem):
             self.__dict__.pop(attr, None)
             return
 
-        if attr == '_adaptors_pipe':
-            return object.__setattr__(self, '_adaptors_pipe', value)
+        if attr == '_adaptors_dict':
+            return object.__setattr__(self, '_adaptors_dict', value)
 
         type1 = self.ATTRIBUTES[attr]
         if hasattr(type1, '__iter__'):
