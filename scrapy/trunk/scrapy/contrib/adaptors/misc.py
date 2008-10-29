@@ -1,5 +1,6 @@
 import re
 from scrapy.xpath.selector import XPathSelector, XPathSelectorList
+from scrapy.utils.url import canonicalize_url
 from scrapy.utils.misc import extract_regex
 from scrapy.utils.python import flatten
 
@@ -25,6 +26,13 @@ def strip_list(value):
 
 def drop_empty(value):
     return [ v for v in value if v ]
+
+def normalize_urls(value):
+    if hasattr(value, '__iter__'):
+        return [canonicalize_url(url) for url in value]
+    elif isinstance(value, basestring):
+        return canonicalize_url(value)
+    return ''
 
 class Delist(object):
     """
