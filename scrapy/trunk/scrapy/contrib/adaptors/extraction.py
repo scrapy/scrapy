@@ -75,8 +75,7 @@ class ExtractImages(object):
 
         return ret
 
-    def __call__(self, (locations, base_url)):
-        self.base_url = base_url.url if isinstance(base_url, Response) else base_url
+    def __call__(self, locations):
         if not self.base_url:
             raise AttributeError('You must specify either a response or a base_url to the ExtractImages adaptor.')
         
