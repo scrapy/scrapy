@@ -2,6 +2,7 @@
 Auxiliary functions which doesn't fit anywhere else
 """
 import re
+import sha
 
 from twisted.internet import defer
 
@@ -95,3 +96,20 @@ def extract_regex(regex, text, encoding):
         return [remove_entities(s, keep=['lt', 'amp']) for s in strings]
     else:
         return [remove_entities(unicode(s, encoding), keep=['lt', 'amp']) for s in strings]
+
+def hash_values(*values):
+    """Hash a series of values. 
+    
+    For example:
+    >>> hash_values('some', 'values', 'to', 'hash')
+    'f37f5dc65beaaea35af05e16e26d439fd150c576'
+    """
+    hash = sha.new()
+    for value in values:
+        if value is None:
+            message = "hash_values was passed None at argument index %d. This is a bug in the calling code" \
+                    % list(values).index(None)
+            raise UsageError(message)
+        hash.update(value)
+    return hash.hexdigest()
+

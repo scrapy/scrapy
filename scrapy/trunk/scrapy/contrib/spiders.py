@@ -6,13 +6,19 @@ basic crawling.
 from scrapy.http import Request
 from scrapy.spider import BaseSpider
 from scrapy.core.exceptions import UsageError
+from scrapy.utils.misc import hash_values
 
 class BasicSpider(BaseSpider):
-    """BasicSpider extends BaseSpider by providing support for simple crawling
+    """
+    BasicSpider extends BaseSpider by providing support for simple crawling
     by following links contained in web pages. 
     
     With BasicSpider you can write a basic spider very easily and quickly. For
-    more information refer to the Scrapy tutorial"""
+    more information refer to the Scrapy tutorial
+    """
+
+    gen_guid_attribs = ['supplier', 'site_id']
+    gen_variant_guid_attribs = ['site_id']
 
     def __init__(self):
         super(BaseSpider, self).__init__()
@@ -23,11 +29,7 @@ class BasicSpider(BaseSpider):
             if attr.startswith('links_'):
                 suffix = attr.split('_', 1)[1]
                 value = getattr(self, attr)
-                try:
-                    callback = getattr(self, 'parse_%s' % suffix)
-                except AttributeError:
-                    raise UsageError("%s defines links_%s but doesn't provide a parse_%s method" % \
-                                     (type(self).__name__, suffix, suffix))
+                callback = getattr(self, 'parse_%s' % suffix, None)
                 self._links_callback.append((value, callback))
 
     def parse(self, response):
@@ -47,7 +49,7 @@ class BasicSpider(BaseSpider):
             for url, link_text in lx.extract_urls(response).iteritems():
                 links_to_follow[url] = (callback, link_text)
 
-        for url, cb_link in links_to_follow.iteritems():
+        for url, (callback, link_text) in links_to_follow.iteritems():
             request = Request(url=url, link_text=link_text)
             request.append_callback(self._parse_wrapper, callback)
             res.append(request)
@@ -55,6 +57,9 @@ class BasicSpider(BaseSpider):
 
     def _parse_wrapper(self, response, callback):
         res = self._links_to_follow(response)
-        res += callback(response) or ()
+        res += callback(response) if callback else ()
         return res
+
+    def set_guid(self, item):
+        item.guid = hash_values(*[str(getattr(item, aname) or '') for aname in self.gen_guid_attribs])
 
