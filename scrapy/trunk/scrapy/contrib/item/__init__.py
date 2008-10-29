@@ -1,1 +1,1 @@
-from scrapy.contrib.item.models import RobustScrapedItem, RobustItemDelta, ValidationError, ValidationPipeline
+from scrapy.contrib.item.models import RobustScrapedItem, RobustItemDelta, ValidationError, ValidationPipeline, SetGUIDPipeline
