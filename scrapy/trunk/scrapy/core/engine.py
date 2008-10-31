@@ -8,19 +8,19 @@ from twisted.internet import defer, reactor, task
 from twisted.python.failure import Failure
 from pydispatch import dispatcher
 
-from scrapy.core import signals
 from scrapy import log
+from scrapy.conf import settings
+from scrapy.core import signals
 from scrapy.core.scheduler import Scheduler
 from scrapy.core.downloader import Downloader
-from scrapy.http import Response, Request
 from scrapy.core.exceptions import IgnoreRequest, HttpException, DontCloseDomain
+from scrapy.http import Response, Request
 from scrapy.item import ScrapedItem
 from scrapy.item.pipeline import ItemPipeline
 from scrapy.spider import spiders
 from scrapy.spider.middleware import SpiderMiddlewareManager
 from scrapy.utils.defer import chain_deferred, defer_succeed, mustbe_deferred, deferred_degenerate
-from scrapy.conf import settings
-
+from scrapy.contrib import codecs
 
 class ExecutionEngine(object):
     """
