@@ -6,7 +6,7 @@ and XML feeds (XMLFeedSpider).
 from scrapy.http import Request, Response, ResponseBody
 from scrapy.spider import BaseSpider
 from scrapy.item import ScrapedItem
-from scrapy.xml.selector import XmlXPathSelector
+from scrapy.xpath.selector import XmlXPathSelector
 from scrapy.core.exceptions import UsageError
 from scrapy.utils.misc import hash_values
 
