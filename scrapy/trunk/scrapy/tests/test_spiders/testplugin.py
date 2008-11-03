@@ -22,9 +22,9 @@ class TestSpider(BaseSpider):
     def parse(self, response):
         xlink = LinkExtractor()
         itemre = re.compile(self.itemurl_re)
-        for url in xlink.extract_urls(response):
-            if itemre.search(url):
-                yield Request(url=url, callback=self.parse_item)
+        for link in xlink.extract_urls(response):
+            if itemre.search(link.url):
+                yield Request(url=link.url, callback=self.parse_item)
 
     def parse_item(self, response):
         item = ScrapedItem()
