@@ -6,6 +6,7 @@ and XML feeds (XMLFeedSpider).
 from scrapy.http import Request, Response, ResponseBody
 from scrapy.spider import BaseSpider
 from scrapy.item import ScrapedItem
+from scrapy.xml.selector import XmlXPathSelector
 from scrapy.core.exceptions import UsageError
 from scrapy.utils.misc import hash_values
 
@@ -14,7 +15,6 @@ class BasicSpider(BaseSpider):
     This class is basically a BaseSpider with support for GUID generating
     """
     gen_guid_attribs = []
-    gen_variant_guid_attribs = []
 
     def set_guid(self, item):
         item.guid = hash_values(*[str(getattr(item, aname) or '') for aname in self.gen_guid_attribs])
@@ -100,7 +100,7 @@ class XMLFeedSpider(BasicSpider):
         if self.iternodes:
             nodes = xpathselector_iternodes(response, self.itertag)
         else:
-            nodes = HtmlXPathSelector(response).x('//%s' % self.itertag)
+            nodes = XmlXPathSelector(response).x('//%s' % self.itertag)
 
         return (self.parse_item(response, xSel) for xSel in nodes)
 
