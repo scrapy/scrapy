@@ -9,6 +9,7 @@ from pydispatch import dispatcher
 from pprint import PrettyPrinter
 
 from scrapy.item import ScrapedItem, ItemDelta
+from scrapy.spider import spiders
 from scrapy.core import signals
 from scrapy.core.exceptions import UsageError, DropItem
 
@@ -30,15 +31,8 @@ class ValidationPipeline(object):
         return item
 
 class SetGUIDPipeline(object):
-    def __init__(self):
-        self.spider = None
-        dispatcher.connect(self.domain_opened, signal=signals.domain_opened)
-
-    def domain_opened(self, domain, spider):
-        self.spider = spider
-
     def process_item(self, domain, response, item):
-        self.spider.set_guid(item)
+        spiders.fromdomain(domain).set_guid(item)
         return item
 
 class RobustScrapedItem(ScrapedItem):

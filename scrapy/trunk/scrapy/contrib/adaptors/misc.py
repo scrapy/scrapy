@@ -27,7 +27,7 @@ def strip_list(value):
 def drop_empty(value):
     return [ v for v in value if v ]
 
-def normalize_urls(value):
+def canonicalize_urls(value):
     if hasattr(value, '__iter__'):
         return [canonicalize_url(url) for url in value]
     elif isinstance(value, basestring):

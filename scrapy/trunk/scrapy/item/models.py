@@ -22,10 +22,19 @@ class ScrapedItem(object):
         """
         self._adaptors_dict[attrib] = adaptors
 
-    def attribute(self, attrname, value, debug=False, override=False):
+    def attribute(self, attrname, value, override=False, add=False, debug=False):
         val = self._adaptors_dict.execute(attrname, value, debug)
-        if not getattr(self, attrname, None) or override:
+        curr_val = getattr(self, attrname, None)
+        if not curr_val:
             setattr(self, attrname, val)
+        else:
+            if override:
+                setattr(self, attrname, val)
+            elif add and all(hasattr(var, '__iter__') for var in (curr_val, val)):
+                newval = []
+                newval.extend(curr_val)
+                newval.extend(val)
+                setattr(self, attrname, newval)
 
     def __sub__(self, other):
         raise NotImplementedError

@@ -31,3 +31,6 @@ class AdaptorDict(dict):
         
         return value
 
+
+    def __repr__(self):
+        return "<AdaptorDict [ %d attributes ] >" % len(self.keys())

@@ -48,6 +48,7 @@ class XPathSelector(object):
                 return XPathSelectorList([cls(node=xpath_result, parent=self, expr=xpath, response=self.response)])
         else:
             return XPathSelectorList([])
+    __call__ = x
 
     def re(self, regex):
         """Return a list of unicode strings by applying the regex over all
