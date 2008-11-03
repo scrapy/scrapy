@@ -50,27 +50,27 @@ class RegexLinkExtractor(LinkExtractor):
         attr_func = lambda x: x in attrs
         LinkExtractor.__init__(self, tag=tag_func, attr=attr_func)
 
-    def extract_urls(self, response):
+    def extract_urls(self, response, unique=True):
         if self.restrict_xpaths:
             response = new_response_from_xpaths(response, self.restrict_xpaths)
 
-        url_text = LinkExtractor.extract_urls(self, response)
-        urls = [u for u in url_text.iterkeys() if _is_valid_url(u)]
+        links = LinkExtractor.extract_urls(self, response, unique)
+        links = [link for link in links if _is_valid_url(link.url)]
 
         if self.allow_res:
-            urls = [u for u in urls if _matches(u, self.allow_res)]
+            links = [link for link in links if _matches(link.url, self.allow_res)]
         if self.deny_res:
-            urls = [u for u in urls if not _matches(u, self.deny_res)]
+            links = [link for link in links if not _matches(link.url, self.deny_res)]
         if self.allow_domains:
-            urls = [u for u in urls if url_is_from_any_domain(u, self.allow_domains)]
+            links = [link for link in links if url_is_from_any_domain(link.url, self.allow_domains)]
         if self.deny_domains:
-            urls = [u for u in urls if not url_is_from_any_domain(u, self.deny_domains)]
-
-        res = {}
+            links = [link for link in links if not url_is_from_any_domain(link.url, self.deny_domains)]
+        
         if self.canonicalize:
-            for u in urls:
-                res[canonicalize_url(u)] = url_text[u]
-        else:
-            for u in urls:
-                res[u] = url_text[u]
-        return res
+            for link in links:
+                link.url = canonicalize_url(link.url)
+
+        return links
+
+    def match(self, url):
+        return any(regex.search(url) for regex in self.allow_res) and not any(regex.search(url) for regex in self.deny_res)

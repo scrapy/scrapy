@@ -33,22 +33,24 @@ class LinkExtractor(FixedSGMLParser):
         FixedSGMLParser.__init__(self)
         self.scan_tag = tag if callable(tag) else lambda t: t == tag
         self.scan_attr = attr if callable(attr) else lambda a: a == attr
-        self.inside_link = False
+        self.current_link = None
 
-    def extract_urls(self, response):
+    def extract_urls(self, response, unique=False):
         self.reset()
+        self.unique = unique
         self.feed(response.body.to_string())
         self.close()
         
         base_url = self.base_url if self.base_url else response.url
-        urls = {}
-        for link, text in self.links.iteritems():
-            urls[urljoin(base_url, link)] = text
-        return urls
+        ret = []
+        for link in self.links:
+            link.url = urljoin(base_url, link.url)
+            ret.append(link)
+        return ret
 
     def reset(self):
         FixedSGMLParser.reset(self)
-        self.links = {}
+        self.links = []
         self.base_url = None
 
     def unknown_starttag(self, tag, attrs):
@@ -57,12 +59,27 @@ class LinkExtractor(FixedSGMLParser):
         if self.scan_tag(tag):
             for attr, value in attrs:
                 if self.scan_attr(attr):
-                    self.links[value] = ""
-                    self.inside_link = value
+                    if not self.unique or not value in [link.url for link in self.links]:
+                        link = Link(url=value)
+                        self.links.append(link)
+                        self.current_link = link
 
     def unknown_endtag(self, tag):
-        self.inside_link = False
+        self.current_link = None
 
     def handle_data(self, data):
-        if self.inside_link and not self.links.get(self.inside_link, None):
-            self.links[self.inside_link] = data
+        if self.current_link and not self.current_link.text:
+            self.current_link.text = data
+
+
+class Link(object):
+    """
+    Link objects represent an extracted link by the LinkExtractor.
+    At the moment, it contains just the url and link text.
+    """
+    def __init__(self, url, text=''):
+        self.url = url
+        self.text = text
+
+    def __eq__(self, other):
+        return self.url == other.url and self.text == other.text

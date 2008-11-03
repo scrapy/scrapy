@@ -1,7 +1,7 @@
 import unittest
 
 from scrapy.http import Response
-from scrapy.link import LinkExtractor
+from scrapy.link import LinkExtractor, Link
 
 class LinkExtractorTestCase(unittest.TestCase):
     def test_basic(self):
@@ -16,10 +16,10 @@ class LinkExtractorTestCase(unittest.TestCase):
 
         lx = LinkExtractor()  # default: tag=a, attr=href
         self.assertEqual(lx.extract_urls(response), 
-                         {'http://example.org/somepage/item/12.html': 'Item 12', 
-                          'http://example.org/about.html': 'About us', 
-                          'http://example.org/othercat.html': 'Other category', 
-                          'http://example.org/': ''})
+                         [Link(url='http://example.org/somepage/item/12.html', text='Item 12'), 
+                          Link(url='http://example.org/about.html', text='About us'),
+                          Link(url='http://example.org/othercat.html', text='Other category'), 
+                          Link(url='http://example.org/', text='')])
 
     def test_base_url(self):
         html = """<html><head><title>Page title<title><base href="http://otherdomain.com/base/" />
@@ -29,7 +29,7 @@ class LinkExtractorTestCase(unittest.TestCase):
 
         lx = LinkExtractor()  # default: tag=a, attr=href
         self.assertEqual(lx.extract_urls(response), 
-                         {'http://otherdomain.com/base/item/12.html': 'Item 12'})
+                         [Link(url='http://otherdomain.com/base/item/12.html', text='Item 12')])
 
 if __name__ == "__main__":
     unittest.main()
