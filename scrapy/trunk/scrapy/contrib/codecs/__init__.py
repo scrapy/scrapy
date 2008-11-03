@@ -1,1 +1,1 @@
-from scrapy.contrib.codecs import x_mac_roman
+from scrapy.contrib.codecs.x_mac_roman import XMacRomanCodec

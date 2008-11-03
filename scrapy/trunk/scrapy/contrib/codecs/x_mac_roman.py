@@ -311,4 +311,6 @@ def x_mac_roman_search_function(name):
     if name == 'x-mac-roman':
        return getregentry()
 
-codecs.register(x_mac_roman_search_function)
+class XMacRomanCodec(object):
+    def __init__(self):
+        codecs.register(x_mac_roman_search_function)

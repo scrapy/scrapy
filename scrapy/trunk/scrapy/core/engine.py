@@ -20,7 +20,6 @@ from scrapy.item.pipeline import ItemPipeline
 from scrapy.spider import spiders
 from scrapy.spider.middleware import SpiderMiddlewareManager
 from scrapy.utils.defer import chain_deferred, defer_succeed, mustbe_deferred, deferred_degenerate
-from scrapy.contrib import codecs
 
 class ExecutionEngine(object):
     """
