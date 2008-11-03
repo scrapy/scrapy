@@ -98,7 +98,7 @@ class XMLFeedSpider(BasicSpider):
             raise NotConfigured('You must define parse_item method in order to scrape this feed')
 
         if self.iternodes:
-            nodes = xpathselector_iternodes(response, self.itertag)
+            nodes = xmliter(response, self.itertag)
         else:
             nodes = XmlXPathSelector(response).x('//%s' % self.itertag)
 
