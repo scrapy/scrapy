@@ -1,30 +1,32 @@
 """
-This module contains BasicSpider, a spider class which provides support for
-basic crawling.
+This module contains some basic spiders for scraping websites (CrawlSpider)
+and XML feeds (XMLFeedSpider).
 """
 
-from scrapy.http import Request
+from scrapy.http import Request, Response, ResponseBody
 from scrapy.spider import BaseSpider
+from scrapy.item import ScrapedItem
 from scrapy.core.exceptions import UsageError
 from scrapy.utils.misc import hash_values
 
 class BasicSpider(BaseSpider):
     """
-    BasicSpider extends BaseSpider by providing support for simple crawling
-    by following links contained in web pages. 
-    
-    With BasicSpider you can write a basic spider very easily and quickly. For
-    more information refer to the Scrapy tutorial
+    This class is basically a BaseSpider with support for GUID generating
     """
+    gen_guid_attribs = []
+    gen_variant_guid_attribs = []
 
-    gen_guid_attribs = ['supplier', 'site_id']
-    gen_variant_guid_attribs = ['site_id']
-
+    def set_guid(self, item):
+        item.guid = hash_values(*[str(getattr(item, aname) or '') for aname in self.gen_guid_attribs])
+   
+class CrawlSpider(BasicSpider):
+    """
+    This class works as a base class for spiders that crawl over websites
+    """
     def __init__(self):
         super(BaseSpider, self).__init__()
         
         self._links_callback = []
-
         for attr in dir(self):
             if attr.startswith('links_'):
                 suffix = attr.split('_', 1)[1]
@@ -46,8 +48,10 @@ class BasicSpider(BaseSpider):
         res = []
         links_to_follow = {}
         for lx, callback in self._links_callback:
-            for url, link_text in lx.extract_urls(response).iteritems():
-                links_to_follow[url] = (callback, link_text)
+            links = lx.extract_urls(response)
+            links = self.post_extract_links(links) if hasattr(self, 'post_extract_links') else links
+            for link in links:
+                links_to_follow[link.url] = (callback, link.text)
 
         for url, (callback, link_text) in links_to_follow.iteritems():
             request = Request(url=url, link_text=link_text)
@@ -58,8 +62,45 @@ class BasicSpider(BaseSpider):
     def _parse_wrapper(self, response, callback):
         res = self._links_to_follow(response)
         res += callback(response) if callback else ()
+        for entry in res:
+            if isinstance(entry, ScrapedItem):
+               self.set_guid(entry)
         return res
 
-    def set_guid(self, item):
-        item.guid = hash_values(*[str(getattr(item, aname) or '') for aname in self.gen_guid_attribs])
+    def parse_url(self, response):
+        """
+        This method is called whenever you run scrapy with the 'parse' command
+        over an URL.
+        """
+        extractor_names = [attrname for attrname in dir(self) if attrname.startswith('links_')]
+        ret = []
+        for name in extractor_names:
+            extractor = getattr(self, name)
+            callback_name = 'parse_%s' % name[6:]
+            if hasattr(self, callback_name):
+                if extractor.match(response.url):
+                    ret.extend(getattr(self, callback_name)(response))
+        return ret
+
+class XMLFeedSpider(BasicSpider):
+    """
+    This class intends to be the base class for spiders that scrape
+    from XML feeds.
+
+    You can choose whether to parse the file using the iternodes tool,
+    or not using it (which just splits the tags using xpath)
+    """
+    iternodes = True
+    itertag = 'product'
+
+    def parse(self, response):
+        if not hasattr(self, 'parse_item'):
+            raise NotConfigured('You must define parse_item method in order to scrape this feed')
+
+        if self.iternodes:
+            nodes = xpathselector_iternodes(response, self.itertag)
+        else:
+            nodes = HtmlXPathSelector(response).x('//%s' % self.itertag)
+
+        return (self.parse_item(response, xSel) for xSel in nodes)
 

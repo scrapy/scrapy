@@ -31,7 +31,12 @@ class Command(ScrapyCommand):
         if responses:
             response = responses[0]
             spider = spiders.fromurl(response.url)
-            result = spider.parse(response) if not opts.identify else spider.identify(response)
+            if opts.identify:
+                result = spider.identify(response)
+            elif hasattr(spider, 'parse_url'):
+                result = spider.parse_url(response)
+            else:
+                result = spider.parse(response)
 
             items = [self.pipeline_process(i, opts) for i in result if isinstance(i, ScrapedItem)]
             links = [i for i in result if isinstance(i, Request)]
@@ -44,3 +49,4 @@ class Command(ScrapyCommand):
             if not opts.nolinks:
                 print "# Links", "-"*68
                 display.pprint(links)
+
