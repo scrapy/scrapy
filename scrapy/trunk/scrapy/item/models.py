@@ -24,7 +24,7 @@ class ScrapedItem(object):
 
     def attribute(self, attrname, value, override=False, add=False, debug=False):
         val = self._adaptors_dict.execute(attrname, value, debug)
-        if val:
+        if not val is None:
             curr_val = getattr(self, attrname, None)
             if not curr_val:
                 setattr(self, attrname, val)
