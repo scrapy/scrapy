@@ -8,6 +8,7 @@ from scrapy.spider import BaseSpider
 from scrapy.item import ScrapedItem
 from scrapy.xpath.selector import XmlXPathSelector
 from scrapy.core.exceptions import UsageError
+from scrapy.utils.iterators import xmliter, csviter
 from scrapy.utils.misc import hash_values
 
 class BasicSpider(BaseSpider):
@@ -17,7 +18,7 @@ class BasicSpider(BaseSpider):
     gen_guid_attribs = []
 
     def set_guid(self, item):
-        item.guid = hash_values(*[str(getattr(item, aname) or '') for aname in self.gen_guid_attribs])
+        item.guid = hash_values(self.domain_name, *[str(getattr(item, aname) or '') for aname in self.gen_guid_attribs])
    
 class CrawlSpider(BasicSpider):
     """
@@ -93,6 +94,12 @@ class XMLFeedSpider(BasicSpider):
     iternodes = True
     itertag = 'product'
 
+    def parse_item_wrapper(self, response, xSel):
+        ret = self.parse_item(response, xSel)
+        if isinstance(ret, ScrapedItem):
+            self.set_guid(ret)
+        return ret
+
     def parse(self, response):
         if not hasattr(self, 'parse_item'):
             raise NotConfigured('You must define parse_item method in order to scrape this feed')
@@ -102,5 +109,5 @@ class XMLFeedSpider(BasicSpider):
         else:
             nodes = XmlXPathSelector(response).x('//%s' % self.itertag)
 
-        return (self.parse_item(response, xSel) for xSel in nodes)
+        return (self.parse_item_wrapper(response, xSel) for xSel in nodes)
 
