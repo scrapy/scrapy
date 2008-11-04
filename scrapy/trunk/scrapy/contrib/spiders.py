@@ -92,7 +92,7 @@ class XMLFeedSpider(BasicSpider):
     or not using it (which just splits the tags using xpath)
     """
     iternodes = True
-    itertag = 'product'
+    itertag = 'item'
 
     def parse_item_wrapper(self, response, xSel):
         ret = self.parse_item(response, xSel)

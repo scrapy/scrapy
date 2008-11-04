@@ -32,7 +32,7 @@ class Command(ScrapyCommand):
             response = responses[0]
             spider = spiders.fromurl(response.url)
             if opts.identify:
-                result = spider.identify(response)
+                result = spider.identify_products(response)
             elif hasattr(spider, 'parse_url'):
                 result = spider.parse_url(response)
             else:
