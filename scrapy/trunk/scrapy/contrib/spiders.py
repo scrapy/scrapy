@@ -30,15 +30,14 @@ class CrawlSpider(BasicSpider):
         self._links_callback = []
         for attr in dir(self):
             if attr.startswith('links_'):
-                suffix = attr.split('_', 1)[1]
-                value = getattr(self, attr)
-                callback = getattr(self, 'parse_%s' % suffix, None)
-                self._links_callback.append((value, callback))
+                suffix = attr[6:]
+                extractor = getattr(self, attr)
+                self._links_callback.append((suffix, extractor))
 
     def parse(self, response):
         """This function is called by the core for all the start_urls. Do not
         override this function, override parse_start_url instead."""
-        return self._parse_wrapper(response, self.parse_start_url)
+        return self._parse_wrapper(response, callback=self.parse_start_url)
 
     def parse_start_url(self, response):
         """Callback function for processing start_urls. It must return a list
@@ -48,21 +47,28 @@ class CrawlSpider(BasicSpider):
     def _links_to_follow(self, response):
         res = []
         links_to_follow = {}
-        for lx, callback in self._links_callback:
+        for suffix, lx in self._links_callback:
             links = lx.extract_urls(response)
             links = self.post_extract_links(links) if hasattr(self, 'post_extract_links') else links
             for link in links:
-                links_to_follow[link.url] = (callback, link.text)
-
-        for url, (callback, link_text) in links_to_follow.iteritems():
-            request = Request(url=url, link_text=link_text)
-            request.append_callback(self._parse_wrapper, callback)
-            res.append(request)
+                request = Request(url=link.url, link_text=link.text)
+                request.append_callback(self._parse_wrapper, suffix=suffix)
+                res.append(request)
         return res
 
-    def _parse_wrapper(self, response, callback):
+    def _parse_wrapper(self, response, **kwargs):
+        suffix = kwargs.get('suffix')
+        callback = kwargs.get('callback')
         res = self._links_to_follow(response)
-        res += callback(response) if callback else ()
+
+        if suffix:
+            check_fcn = getattr(self, 'check_%s' % suffix, None)
+            if not check_fcn or check_fcn(response):
+                parse_fcn = getattr(self, 'parse_%s' % suffix, None)
+                res += parse_fcn(response) if parse_fcn else ()
+        elif callback:
+            res += callback(response)
+
         for entry in res:
             if isinstance(entry, ScrapedItem):
                self.set_guid(entry)
@@ -77,10 +83,12 @@ class CrawlSpider(BasicSpider):
         ret = []
         for name in extractor_names:
             extractor = getattr(self, name)
-            callback_name = 'parse_%s' % name[6:]
-            if hasattr(self, callback_name):
-                if extractor.match(response.url):
-                    ret.extend(getattr(self, callback_name)(response))
+            check_name = 'check_%s' % name[6:]
+            parse_name = 'parse_%s' % name[6:]
+            if extractor.match(response.url) and hasattr(self, parse_name):
+                if hasattr(self, check_name) and not getattr(self, check_name)(response):
+                    continue
+                ret.extend(getattr(self, parse_name)(response))
         for entry in ret:
             if isinstance(entry, ScrapedItem):
                 self.set_guid(entry)
