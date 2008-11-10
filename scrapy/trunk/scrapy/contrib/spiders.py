@@ -81,6 +81,9 @@ class CrawlSpider(BasicSpider):
             if hasattr(self, callback_name):
                 if extractor.match(response.url):
                     ret.extend(getattr(self, callback_name)(response))
+        for entry in ret:
+            if isinstance(entry, ScrapedItem):
+                self.set_guid(entry)
         return ret
 
 class XMLFeedSpider(BasicSpider):
