@@ -18,32 +18,57 @@ def to_unicode(value):
         raise TypeError('to_unicode must receive an iterable.')
 
 def clean_spaces(value):
+    """
+    Converts multispaces into single spaces.
+    E.g. "Hello   sir" would turn into "Hello sir".
+
+    Input: list of unicodes
+    Output: list of unicodes
+    """
     _clean_spaces_re = re.compile("\s+", re.U)
     return [ _clean_spaces_re.sub(' ', v) for v in value ]
 
 def strip_list(value):
+    """
+    Removes any spaces at both the start and the ending
+    of each string in the provided list.
+
+    Input: list of unicodes
+    Output: list of unicodes
+    """
     return [ v.strip() for v in value ]
 
 def drop_empty(value):
+    """
+    Removes any index that evaluates to None
+    from the provided iterable.
+
+    Input: iterable
+    Output: list
+    """
     return [ v for v in value if v ]
 
 def canonicalize_urls(value):
+    """
+    Tries to canonicalize each url in the list you provide.
+    To see what this implies, check out canonicalize_url's
+    docstring, at scrapy.utils.url.py
+
+    Input: list of unicodes(urls)
+    Output: list of unicodes(urls)
+    """
     if hasattr(value, '__iter__'):
         return [canonicalize_url(url) for url in value]
     elif isinstance(value, basestring):
         return canonicalize_url(value)
     return ''
 
-class Delist(object):
+def delist(value, join_delimiter=' '):
     """
     Input: iterable with strings
     Output: unicode
     """
-    def __init__(self, delimiter=' '):
-        self.delimiter = delimiter
-    
-    def __call__(self, value):
-        return self.delimiter.join(value)
+    return join_delimiter.join(value)
 
 class Regex(object):
     """
