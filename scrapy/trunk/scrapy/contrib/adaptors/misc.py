@@ -63,12 +63,16 @@ def canonicalize_urls(value):
         return canonicalize_url(value)
     return ''
 
-def delist(value, join_delimiter=' '):
+class Delist(object):
     """
     Input: iterable with strings
     Output: unicode
     """
-    return join_delimiter.join(value)
+    def __init__(self, delimiter=' '):
+        self.delimiter = delimiter
+    
+    def __call__(self, value):
+        return self.delimiter.join(value)
 
 class Regex(object):
     """
