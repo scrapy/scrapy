@@ -2,7 +2,7 @@
 Auxiliary functions which doesn't fit anywhere else
 """
 import re
-import sha
+import hashlib
 
 from twisted.internet import defer
 
@@ -104,7 +104,7 @@ def hash_values(*values):
     >>> hash_values('some', 'values', 'to', 'hash')
     'f37f5dc65beaaea35af05e16e26d439fd150c576'
     """
-    hash = sha.new()
+    hash = hashlib.sha1()
     for value in values:
         if value is None:
             message = "hash_values was passed None at argument index %d. This is a bug in the calling code" \
