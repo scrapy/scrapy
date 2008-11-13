@@ -59,7 +59,7 @@ class RobustScrapedItem(ScrapedItem):
         # Note that this method is called only when the attribute is not found in 
         # self.__dict__ or the class/instance methods.
         if attr in self.ATTRIBUTES:  
-            return () if hasattr(self.ATTRIBUTES[attr].attrib_type, '__iter__') else None
+            return None
         else:
             raise AttributeError(attr)
 
