@@ -8,7 +8,7 @@ import hashlib
 from pydispatch import dispatcher
 from pprint import PrettyPrinter
 
-from scrapy.item import ScrapedItem, ItemDelta, ItemAttribute
+from scrapy.item import ScrapedItem, ItemDelta
 from scrapy.spider import spiders
 from scrapy.core import signals
 from scrapy.core.exceptions import UsageError, DropItem
@@ -30,6 +30,11 @@ class ValidationPipeline(object):
         item.validate()
         return item
 
+class SetGUIDPipeline(object):
+    def process_item(self, domain, response, item):
+        spiders.fromdomain(domain).set_guid(item)
+        return item
+
 class RobustScrapedItem(ScrapedItem):
     """
     A more robust scraped item class with a built-in validation mechanism and 
@@ -37,8 +42,8 @@ class RobustScrapedItem(ScrapedItem):
     """
 
     ATTRIBUTES = {
-        'guid': ItemAttribute(attrib_name='guid', attrib_type=basestring), # a global unique identifier
-        'url': ItemAttribute(attrib_name='url', attrib_type=basestring),  # the main URL where this item was scraped from
+        'guid': basestring, # a global unique identifier
+        'url': basestring,  # the main URL where this item was scraped from
     }
     
     def __init__(self, data=None):
@@ -67,8 +72,30 @@ class RobustScrapedItem(ScrapedItem):
         """
         Set an attribute checking it matches the attribute type declared in self.ATTRIBUTES
         """
+        if not attr.startswith('_') and attr not in self.ATTRIBUTES:
+            raise AttributeError('Attribute "%s" is not a valid attribute name. You must add it to %s.ATTRIBUTES' % (attr, self.__class__.__name__))
+
+        if value is None:
+            self.__dict__.pop(attr, None)
+            return
+
+        if attr == '_adaptors_dict':
+            return object.__setattr__(self, '_adaptors_dict', value)
+
+        type1 = self.ATTRIBUTES[attr]
+        if hasattr(type1, '__iter__'):
+            if not hasattr(value, '__iter__'):
+                raise TypeError('Attribute "%s" must be a sequence' % attr)
+            type2 = type1[0]
+            for i in value:
+                if not isinstance(i, type2):
+                    raise TypeError('Attribute "%s" cannot contain %s, only %s' % (attr, i.__class__.__name__, type2.__name__))
+        else:
+            if not isinstance(value, type1):
+                raise TypeError('Attribute "%s" must be %s, not %s' % (attr, type1.__name__, value.__class__.__name__))
+
+        self.__dict__[attr] = value
         self.__dict__['_version'] = None
-        super(RobustScrapedItem, self).__setattr__(attr, value)
     
     def __delattr__(self, attr):
         """

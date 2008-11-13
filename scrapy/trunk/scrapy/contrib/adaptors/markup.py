@@ -21,7 +21,7 @@ def remove_root(value):
         return value
     return [ _remove_root(v) for v in value ]
 
-def unquote(value, keep_entities=None):
+class Unquote(object):
     """
     Receives a list of strings, removes all of the
     entities the strings may have, and returns
@@ -30,8 +30,10 @@ def unquote(value, keep_entities=None):
     Input: iterable with strings
     Output: list of strings
     """
-    if keep_entities is None:
-        keep_entities = ['lt', 'amp']
-    return [ remove_entities(v, keep=keep_entities) for v in value ]
+    def __init__(self, keep=['lt', 'amp']):
+        self.keep = keep
+
+    def __call__(self, value):
+        return [ remove_entities(v, keep=self.keep) for v in value ]
 
 
