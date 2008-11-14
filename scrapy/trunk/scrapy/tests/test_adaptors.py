@@ -74,7 +74,7 @@ class AdaptorsTestCase(unittest.TestCase):
                          ['hi there, sweety ;D', 'I CAN HAZ TEST??'])
         
     def test_drop_empty_elements(self):
-        self.assertEqual(adaptors.drop_empty([1, 2, None, 5, None, 6, None, 'hi']),
+        self.assertEqual(adaptors.drop_empty([1, 2, None, 5, 0, 6, False, 'hi']),
                          [1, 2, 5, 6, 'hi'])
         
     def test_delist(self):

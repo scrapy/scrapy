@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import re
 from scrapy.xpath.selector import XPathSelector, XPathSelectorList
 from scrapy.utils.url import canonicalize_url
@@ -8,8 +10,11 @@ def to_unicode(value):
     """
     Receives a list of strings, converts
     it to unicode, and returns a new list.
+    E.g:
+      >> to_unicode(['it costs 20€, or 30£'])
+        [u'it costs 20\u20ac, or 30\xa3']
 
-    Input: iterable with strings
+    Input: iterable of strings
     Output: list of unicodes
     """
     if hasattr(value, '__iter__'):
@@ -19,29 +24,38 @@ def to_unicode(value):
 
 def clean_spaces(value):
     """
-    Converts multispaces into single spaces.
-    E.g. "Hello   sir" would turn into "Hello sir".
+    Converts multispaces into single spaces for each string
+    in the provided iterable.
+    E.g:
+      >> clean_spaces(['Hello   sir'])
+      [u'Hello sir']
 
-    Input: list of unicodes
+    Input: iterable of unicodes
     Output: list of unicodes
     """
     _clean_spaces_re = re.compile("\s+", re.U)
-    return [ _clean_spaces_re.sub(' ', v) for v in value ]
+    return [ _clean_spaces_re.sub(' ', v.decode('utf-8')) for v in value ]
 
 def strip_list(value):
     """
     Removes any spaces at both the start and the ending
     of each string in the provided list.
+    E.g:
+      >> strip_list([' hi   ', 'buddies  '])
+      [u'hi', u'buddies']
 
-    Input: list of unicodes
+    Input: iterable of unicodes
     Output: list of unicodes
     """
-    return [ v.strip() for v in value ]
+    return [ unicode(v.strip()) for v in value ]
 
 def drop_empty(value):
     """
     Removes any index that evaluates to None
     from the provided iterable.
+    E.g:
+      >> drop_empty([0, 'this', None, 'is', False, 'an example'])
+      ['this', 'is', 'an example'] 
 
     Input: iterable
     Output: list
@@ -50,22 +64,25 @@ def drop_empty(value):
 
 def canonicalize_urls(value):
     """
-    Tries to canonicalize each url in the list you provide.
+    Canonicalizes each url in the list you provide.
     To see what this implies, check out canonicalize_url's
     docstring, at scrapy.utils.url.py
 
-    Input: list of unicodes(urls)
+    Input: iterable of unicodes(urls)
     Output: list of unicodes(urls)
     """
     if hasattr(value, '__iter__'):
         return [canonicalize_url(url) for url in value]
     elif isinstance(value, basestring):
         return canonicalize_url(value)
-    return ''
+    return u''
 
 class Delist(object):
     """
-    Input: iterable with strings
+    Joins a list with the specified delimiter
+    in the adaptor's constructor.
+
+    Input: iterable of strings
     Output: unicode
     """
     def __init__(self, delimiter=' '):

@@ -3,8 +3,12 @@ from scrapy.utils.markup import replace_tags, remove_entities
 
 def remove_tags(value):
     """
+    Removes any tags found in each of the provided list's string.
+    E.g:
+      >> remove_tags(['<head>my header</head>', '<body>my <b>body</b></body>'])
+      [u'my header', u'my body']
     Input: iterable with strings
-    Output: list of strings
+    Output: list of unicodes
     """
     return [ replace_tags(v) for v in value ]
 
@@ -18,7 +22,7 @@ def remove_root(value):
         m = _remove_root_re.search(value)
         if m:
             value = m.group(1)
-        return value
+        return unicode(value)
     return [ _remove_root(v) for v in value ]
 
 class Unquote(object):
