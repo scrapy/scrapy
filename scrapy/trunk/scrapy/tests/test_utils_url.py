@@ -78,6 +78,8 @@ class UrlUtilsTest(unittest.TestCase):
                          'product.html?id=200')
         self.assertEqual(url_query_cleaner("product.html?id=200&foo=bar&name=wired", ['id', 'name']),
                          'product.html?id=200&name=wired')
+        self.assertEqual(url_query_cleaner("product.html?id=200&foo=bar&name=wired#id20", ['id', 'foo']),
+                         'product.html?id=200&foo=bar')
 
     def test_canonicalize_url(self):
         # no query arguments

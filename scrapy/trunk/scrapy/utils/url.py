@@ -87,6 +87,7 @@ def url_query_parameter(url, parameter, default=None, keep_blank_values=0):
 def url_query_cleaner(url, parameterlist=(), sep='&', kvsep='='):
     """Clean url arguments leaving only those passed in the parameterlist"""
     try:
+        url = urlparse.urldefrag(url)[0]
         base, query = url.split('?', 1)
         parameters = [pair.split(kvsep, 1) for pair in query.split(sep)]
     except:
