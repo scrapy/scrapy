@@ -43,9 +43,9 @@ def extract_unquoted(locations):
 
 class ExtractImages(object):
     """
-    This adaptor receives either an XPathSelector containing
-    the desired locations for finding urls, or a list of relative
-    links to be resolved.
+    This adaptor may receive either an XPathSelector containing
+    the desired locations for finding urls, a list of relative
+    links to be resolved, or simply a link (relative or not).
 
     Input: XPathSelector, XPathSelectorList, iterable
     Output: list of unicodes
@@ -79,6 +79,9 @@ class ExtractImages(object):
         if not self.base_url:
             raise AttributeError('You must specify either a response or a base_url to the ExtractImages adaptor.')
         
+        if isinstance(locations, basestring):
+            locations = [locations]
+
         rel_links = []
         for location in flatten(locations):
             if isinstance(location, (XPathSelector, XPathSelectorList)):

@@ -11,16 +11,7 @@ from scrapy.core.exceptions import UsageError
 from scrapy.utils.iterators import xmliter, csviter
 from scrapy.utils.misc import hash_values
 
-class BasicSpider(BaseSpider):
-    """
-    This class is basically a BaseSpider with support for GUID generating
-    """
-    gen_guid_attribs = []
-
-    def set_guid(self, item):
-        item.guid = hash_values(self.domain_name, *[str(getattr(item, aname) or '') for aname in self.gen_guid_attribs])
-   
-class CrawlSpider(BasicSpider):
+class CrawlSpider(BaseSpider):
     """
     This class works as a base class for spiders that crawl over websites
     """
@@ -86,7 +77,15 @@ class CrawlSpider(BasicSpider):
                 self.set_guid(entry)
         return ret
 
-class XMLFeedSpider(BasicSpider):
+    def set_guid(self, item):
+        """
+        This method is called whenever the spider returns items, for each item.
+        It should set the 'guid' attribute to the given item with a string that
+        identifies the item uniquely.
+        """
+        raise NotConfigured('You must define set_guid method in order to scrape items.')
+
+class XMLFeedSpider(BaseSpider):
     """
     This class intends to be the base class for spiders that scrape
     from XML feeds.
