@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 """Scrapy admin script is used to create new scrapy projects and similar
 tasks"""
-from __future__ import with_statement
-
 import os
 import shutil
-import string
 from optparse import OptionParser
 
 import scrapy
+from scrapy.utils.misc import render_templatefile
 
 usage = """
 scrapy-admin.py [options] [command]
@@ -22,16 +20,6 @@ Available commands:
 TEMPLATES = (
         'scrapy_settings.py',
         )
-
-def render_templatefile(path, **kwargs):
-    with open(path, 'rb') as file:
-        raw = file.read()
-
-    content = string.Template(raw).substitute(**kwargs)
-
-    with open(path, 'wb') as file:
-        file.write(content)
-
 
 def main():
     parser = OptionParser(usage=usage)

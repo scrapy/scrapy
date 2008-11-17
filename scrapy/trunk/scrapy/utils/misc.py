@@ -1,7 +1,10 @@
 """
 Auxiliary functions which doesn't fit anywhere else
 """
+from __future__ import with_statement
+
 import re
+import string
 import hashlib
 
 from twisted.internet import defer
@@ -112,4 +115,15 @@ def hash_values(*values):
             raise UsageError(message)
         hash.update(value)
     return hash.hexdigest()
+
+
+def render_templatefile(path, **kwargs):
+    with open(path, 'rb') as file:
+        raw = file.read()
+
+    content = string.Template(raw).substitute(**kwargs)
+
+    with open(path, 'wb') as file:
+        file.write(content)
+
 
