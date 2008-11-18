@@ -1,0 +1,25 @@
+# -*- coding: utf8 -*-
+import re
+
+from scrapy.xpath import HtmlXPathSelector
+from scrapy.link.extractors import RegexLinkExtractor
+from scrapy.contrib.spiders import CrawlSpider
+from scrapy.utils.url import url_query_parameter
+
+class $classname(CrawlSpider):
+    domain_name = "$site"
+    start_urls = ['http://www.$site/']
+
+    links_category = RegexLinkExtractor(allow=(re.compile(r'ProductList'), ))
+    links_product = RegexLinkExtractor(allow=(re.compile(r'ProductDetail'), ))
+
+    def parse_product(self, response):
+        #xs = HtmlXPathSelector(response)
+        #p = self.create_product(response)
+        #p.attribute('site_id', url_query_parameter(response.url,'productid'))
+        #p.attribute('site_id', xs.x("//input[@name='productid']/@value"))
+        #p.attribute('site_id', xs.x(""))
+        #p.attribute('name', xs.x(""))
+        #p.attribute('description', xs.x(""))
+
+SPIDER = $classname()
