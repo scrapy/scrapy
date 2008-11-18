@@ -4,7 +4,6 @@ import time
 import hashlib
 import urllib
 import urlparse
-from datetime import datetime
 from cStringIO import StringIO
 
 import Image
@@ -18,7 +17,7 @@ from scrapy.conf import settings
 from scrapy.contrib.pipeline.media import MediaPipeline
 
 # the age at which we download images again
-IMAGE_EXPIRES = settings.getint('IMAGES_EXPIRES', 15)
+IMAGE_EXPIRES = settings.getint('IMAGES_EXPIRES', 90)
 
 class NoimagesDrop(DropItem):
     pass
@@ -51,10 +50,12 @@ class ImagesPipeline(MediaPipeline):
 
     def media_to_download(self, request, info):
         relative, absolute = self._get_paths(request)
-        expired, mtime = image_expired(absolute)
-        if not expired:
-            mod_date = datetime.utcfromtimestamp(mtime)
-            request.headers['If-Modified-Since'] = mod_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
+        if not should_download(absolute):
+            self.inc_stats(info.domain, 'uptodate')
+            referer = request.headers.get('Referer')
+            log.msg('Image (uptodate): Downloaded %s from %s referred in <%s>' % \
+                    (self.MEDIA_TYPE, request, referer), level=log.DEBUG, domain=info.domain)
+            return relative
 
     def media_downloaded(self, response, request, info):
         mtype = self.MEDIA_TYPE
@@ -74,15 +75,8 @@ class ImagesPipeline(MediaPipeline):
         return result
 
     def media_failed(self, failure, request, info):
-        mtype = self.MEDIA_TYPE
         referer = request.headers.get('Referer')
         errmsg = str(failure.value) if isinstance(failure.value, HttpException) else str(failure)
-
-        if '304 Not Modified' in errmsg:
-            msg = 'Image (notmodified): Downloaded %s from %s referred in <%s>' % (mtype, request, referer)
-            log.msg(msg, level=log.DEBUG, domain=info.domain)
-            return self._get_paths(request)[0]
-
         msg = 'Image (http-error): Error downloading %s from %s referred in <%s>: %s' % (self.MEDIA_TYPE, request, referer, errmsg)
         log.msg(msg, level=log.WARNING, domain=info.domain)
         raise ImageException(msg)
@@ -124,17 +118,16 @@ class ImagesPipeline(MediaPipeline):
 
 
 
-def image_expired(path):
-    """
-    Is the image older than the expiration time?
+def should_download(path):
+    """Should the image downloader download the image to the location specified
     """
     try:
         mtime = os.path.getmtime(path)
         age_seconds = time.time() - mtime
         age_days = age_seconds / 60 / 60 / 24
-        return (age_days > IMAGE_EXPIRES, mtime)
+        return age_days > IMAGE_EXPIRES
     except:
-        return (True, 0)
+        return True
 
 _MULTIPLE_SLASHES_REGEXP = re.compile(r"\/{2,}")
 _FINAL_SLASH_REGEXP = re.compile(r"\/$")
