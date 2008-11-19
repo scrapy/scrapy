@@ -68,6 +68,7 @@ class CrawlSpider(BaseSpider):
         ret = []
         for name in extractor_names:
             extractor = getattr(self, name)
+            ret.extend(self._links_to_follow(response))
             callback_name = 'parse_%s' % name[6:]
             if hasattr(self, callback_name):
                 if extractor.match(response.url):

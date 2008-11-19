@@ -14,7 +14,7 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("--nolinks", dest="nolinks", action="store_true", help="don't show extracted links")
+        parser.add_option("--links", dest="links", action="store_true", help="show extracted links")
         parser.add_option("--noitems", dest="noitems", action="store_true", help="don't show scraped items")
         parser.add_option("--identify", dest="identify", action="store_true", help="try to use identify instead of parse")
         parser.add_option("--nocolour", dest="nocolour", action="store_true", help="avoid using pygments to colorize the output")
@@ -46,7 +46,7 @@ class Command(ScrapyCommand):
                 print "# Scraped Items", "-"*60
                 display.pprint(items)
 
-            if not opts.nolinks:
+            if opts.links:
                 print "# Links", "-"*68
                 display.pprint(links)
 
