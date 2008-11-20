@@ -3,6 +3,7 @@ This module contains some basic spiders for scraping websites (CrawlSpider)
 and XML feeds (XMLFeedSpider).
 """
 
+from scrapy.conf import settings
 from scrapy.http import Request, Response, ResponseBody
 from scrapy.spider import BaseSpider
 from scrapy.item import ScrapedItem
@@ -15,6 +16,7 @@ class CrawlSpider(BaseSpider):
     """
     This class works as a base class for spiders that crawl over websites
     """
+
     def __init__(self):
         super(BaseSpider, self).__init__()
         
@@ -29,7 +31,10 @@ class CrawlSpider(BaseSpider):
     def parse(self, response):
         """This function is called by the core for all the start_urls. Do not
         override this function, override parse_start_url instead."""
-        return self._parse_wrapper(response, self.parse_start_url)
+        if response.url in self.start_urls:
+            return self._parse_wrapper(response, self.parse_start_url)
+        else:
+            return self.parse_url(response)
 
     def parse_start_url(self, response):
         """Callback function for processing start_urls. It must return a list
@@ -52,8 +57,10 @@ class CrawlSpider(BaseSpider):
         return res
 
     def _parse_wrapper(self, response, callback):
-        res = self._links_to_follow(response)
-        res += callback(response) if callback else ()
+        res = []
+        if settings.getbool('FOLLOW_LINKS', True):
+            res.extend(self._links_to_follow(response))
+        res.extend(callback(response) if callback else ())
         for entry in res:
             if isinstance(entry, ScrapedItem):
                self.set_guid(entry)
@@ -68,7 +75,8 @@ class CrawlSpider(BaseSpider):
         ret = []
         for name in extractor_names:
             extractor = getattr(self, name)
-            ret.extend(self._links_to_follow(response))
+            if settings.getbool('FOLLOW_LINKS', True):
+                ret.extend(self._links_to_follow(response))
             callback_name = 'parse_%s' % name[6:]
             if hasattr(self, callback_name):
                 if extractor.match(response.url):

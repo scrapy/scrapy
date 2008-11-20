@@ -18,6 +18,7 @@ class Command(ScrapyCommand):
         parser.add_option("--restrict", dest="restrict", action="store_true", help="restrict crawling only to the given urls")
         parser.add_option("--record", dest="record", help="use FILE for recording session (see replay command)", metavar="FILE")
         parser.add_option("--record-dir", dest="recorddir", help="use DIR for recording (instead of file)", metavar="DIR")
+        parser.add_option("-n", "--nofollow", dest="nofollow", action="store_true", help="don't follow links (for use with URLs only)")
 
     def process_options(self, args, opts):
         ScrapyCommand.process_options(self, args, opts)
@@ -29,6 +30,9 @@ class Command(ScrapyCommand):
 
         if opts.restrict:
             settings.overrides['RESTRICT_TO_URLS'] = args
+
+        if opts.nofollow:
+            settings.overrides['FOLLOW_LINKS'] = False
 
         if opts.record or opts.recorddir:
             # self.replay is used for preventing Replay signals handler from
