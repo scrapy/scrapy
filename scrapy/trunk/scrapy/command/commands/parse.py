@@ -4,6 +4,7 @@ from scrapy.http import Request
 from scrapy.item import ScrapedItem
 from scrapy.spider import spiders
 from scrapy.utils import display
+from scrapy import log
 
 class Command(ScrapyCommand):
     def syntax(self):
@@ -27,26 +28,25 @@ class Command(ScrapyCommand):
             print "A URL is required"
             return
 
-        responses = fetch([args[0]])
-        if responses:
-            response = responses[0]
+        responses = fetch(args)
+        for response in responses:
             spider = spiders.fromurl(response.url)
-            if opts.identify:
-                result = spider.identify_products(response)
-            elif hasattr(spider, 'parse_url'):
-                result = spider.parse_url(response)
+            if spider:
+                if opts.identify and hasattr(spider, 'identify_products'):
+                    result = spider.identify_products(response)
+                else:
+                    result = spider.parse(response)
+
+                items = [self.pipeline_process(i, opts) for i in result if isinstance(i, ScrapedItem)]
+                links = [i for i in result if isinstance(i, Request)]
+
+                display.nocolour = opts.nocolour
+                if not opts.noitems:
+                    print "# Scraped Items", "-"*60
+                    display.pprint(items)
+
+                if opts.links:
+                    print "# Links", "-"*68
+                    display.pprint(links)
             else:
-                result = spider.parse(response)
-
-            items = [self.pipeline_process(i, opts) for i in result if isinstance(i, ScrapedItem)]
-            links = [i for i in result if isinstance(i, Request)]
-
-            display.nocolour = opts.nocolour
-            if not opts.noitems:
-                print "# Scraped Items", "-"*60
-                display.pprint(items)
-
-            if opts.links:
-                print "# Links", "-"*68
-                display.pprint(links)
-
+                log.msg('cannot find spider for url: %s' % response.url, level=log.ERROR)
