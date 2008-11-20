@@ -58,7 +58,7 @@ class CrawlSpider(BaseSpider):
 
     def _parse_wrapper(self, response, callback):
         res = []
-        if settings.getbool('FOLLOW_LINKS', True):
+        if settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True):
             res.extend(self._links_to_follow(response))
         res.extend(callback(response) if callback else ())
         for entry in res:
@@ -75,7 +75,7 @@ class CrawlSpider(BaseSpider):
         ret = []
         for name in extractor_names:
             extractor = getattr(self, name)
-            if settings.getbool('FOLLOW_LINKS', True):
+            if settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True):
                 ret.extend(self._links_to_follow(response))
             callback_name = 'parse_%s' % name[6:]
             if hasattr(self, callback_name):

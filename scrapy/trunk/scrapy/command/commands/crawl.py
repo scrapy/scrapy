@@ -32,7 +32,7 @@ class Command(ScrapyCommand):
             settings.overrides['RESTRICT_TO_URLS'] = args
 
         if opts.nofollow:
-            settings.overrides['FOLLOW_LINKS'] = False
+            settings.overrides['CRAWLSPIDER_FOLLOW_LINKS'] = False
 
         if opts.record or opts.recorddir:
             # self.replay is used for preventing Replay signals handler from
