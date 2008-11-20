@@ -3,22 +3,36 @@ This module contains some basic spiders for scraping websites (CrawlSpider)
 and XML feeds (XMLFeedSpider).
 """
 
+from scrapy import log
 from scrapy.conf import settings
-from scrapy.http import Request, Response, ResponseBody
+from scrapy.http import Request
 from scrapy.spider import BaseSpider
 from scrapy.item import ScrapedItem
 from scrapy.xpath.selector import XmlXPathSelector
-from scrapy.core.exceptions import UsageError
+from scrapy.core.exceptions import NotConfigured
 from scrapy.utils.iterators import xmliter, csviter
-from scrapy.utils.misc import hash_values
+
+
+def _set_guid(spider, item):
+    """
+    This method is called whenever the spider returns items, for each item.
+    It should set the 'guid' attribute to the given item with a string that
+    identifies the item uniquely.
+    """
+    raise NotConfigured('You must define a set_guid method in order to scrape items.')
+
+def _log(spider, message, level=log.DEBUG):
+    log.msg(message, domain=spider.domain_name, level=level)
 
 class CrawlSpider(BaseSpider):
     """
     This class works as a base class for spiders that crawl over websites
     """
+    log = _log
+    set_guid = _set_guid
 
     def __init__(self):
-        super(BaseSpider, self).__init__()
+        super(CrawlSpider, self).__init__()
         
         self._links_callback = []
         for attr in dir(self):
@@ -63,7 +77,7 @@ class CrawlSpider(BaseSpider):
         res.extend(callback(response) if callback else ())
         for entry in res:
             if isinstance(entry, ScrapedItem):
-               self.set_guid(entry)
+                self.set_guid(entry)
         return res
 
     def parse_url(self, response):
@@ -86,14 +100,6 @@ class CrawlSpider(BaseSpider):
                 self.set_guid(entry)
         return ret
 
-    def set_guid(self, item):
-        """
-        This method is called whenever the spider returns items, for each item.
-        It should set the 'guid' attribute to the given item with a string that
-        identifies the item uniquely.
-        """
-        raise NotConfigured('You must define set_guid method in order to scrape items.')
-
 class XMLFeedSpider(BaseSpider):
     """
     This class intends to be the base class for spiders that scrape
@@ -102,6 +108,8 @@ class XMLFeedSpider(BaseSpider):
     You can choose whether to parse the file using the iternodes tool,
     or not using it (which just splits the tags using xpath)
     """
+    log = _log
+    set_guid = _set_guid
     iternodes = True
     itertag = 'item'
 
@@ -113,7 +121,7 @@ class XMLFeedSpider(BaseSpider):
 
     def parse(self, response):
         if not hasattr(self, 'parse_item'):
-            raise NotConfigured('You must define parse_item method in order to scrape this feed')
+            raise NotConfigured('You must define parse_item method in order to scrape this XML feed')
 
         if self.iternodes:
             nodes = xmliter(response, self.itertag)
@@ -121,4 +129,37 @@ class XMLFeedSpider(BaseSpider):
             nodes = XmlXPathSelector(response).x('//%s' % self.itertag)
 
         return (self.parse_item_wrapper(response, xSel) for xSel in nodes)
+
+class CSVFeedSpider(BaseSpider):
+    """
+    Spider for parsing CSV feeds.
+    It receives a CSV file in a response; iterates through each of its rows,
+    and calls parse_row with a dict containing each field's data.
+
+    You can set some options regarding the CSV file, such as the delimiter
+    and the file's headers.
+    """
+    log = _log
+    set_guid = _set_guid
+    delimiter = None # When this is None, python's csv module's default delimiter is used
+    headers = None
+
+    # You can override this function in order to make any changes you want to
+    # into the feed before parsing it.
+    # This function may return either a response or a string.
+    def adapt_feed(self, response):
+        return response
+
+    def parse_row_wrapper(self, response, row):
+        ret = self.parse_row(response, row)
+        if isinstance(ret, ScrapedItem):
+            self.set_guid(ret)
+        return ret
+
+    def parse(self, response):
+        if not hasattr(self, 'parse_row'):
+            raise NotConfigured('You must define parse_row method in order to scrape this CSV feed')
+
+        feed = self.adapt_feed(response)
+        return (self.parse_row_wrapper(feed, row) for row in csviter(response, self.delimiter, self.headers))
 
