@@ -33,7 +33,8 @@ class MediaPipeline(object):
                 'get_media_requests should return None or iterable'
 
         def _bugtrap(_failure, request):
-            log.msg('Unhandled ERROR in MediaPipeline.item_media_{downloaded,failed} for %s: %s' % (request, _failure), log.ERROR, domain=domain)
+            log.msg('Unhandled ERROR in MediaPipeline.item_media_{downloaded,failed} for %s: %s' \
+                    % (request, _failure), log.ERROR, domain=domain)
 
         lst = []
         for request in requests or ():
@@ -53,46 +54,62 @@ class MediaPipeline(object):
 
     def _enqueue(self, request, info):
         wad = request.deferred or defer.Deferred()
-
         fp = request.fingerprint()
+
+        # if already downloaded, return cached result.
         if fp in info.downloaded:
             cached = info.downloaded[fp]
             defer_result(cached).chainDeferred(wad)
-        else:
-            info.waiting.setdefault(fp, []).append(wad)
-            if fp not in info.downloading:
-                self._download(request, info, fp)
+            return wad # break
 
-        return wad
+        # add to pending list for this request, and wait for result like the others.
+        info.waiting.setdefault(fp, []).append(wad)
+
+        # if request is already downloading, just wait.
+        if fp in info.downloading:
+            return wad # break
+
+        # if not, this is the first time for request, try to download it.
+        dfd = self._download(request, info, fp)
+        dfd.addCallback(lambda _: wad)
+        return dfd
 
     def _download(self, request, info, fp):
         def _bugtrap(_failure):
-            log.msg('Unhandled ERROR in MediaPipeline._downloaded: %s' % (_failure), log.ERROR, domain=info.domain)
+            log.msg('Unhandled ERROR in MediaPipeline._downloaded: %s' \
+                    % (_failure), log.ERROR, domain=info.domain)
 
-        result = self.media_to_download(request, info)
-        if result is not None:
-            dwld = defer_result(result)
-        else:
-            dwld = mustbe_deferred(self.download, request, info)
-            dwld.addCallbacks(
-                    callback=self.media_downloaded,
-                    callbackArgs=(request, info),
-                    errback=self.media_failed,
-                    errbackArgs=(request, info),
-                    )
+        def _downloaded(result):
+            info.downloaded[fp] = result # cache result
+            waiting = info.waiting[fp] # client list
+            del info.waiting[fp]
+            del info.downloading[fp]
+            for wad in waiting: # call each waiting client with result
+                defer_result(result).chainDeferred(wad)
 
-        dwld.addBoth(self._downloaded, info, fp)
-        dwld.addErrback(_bugtrap)
-        info.downloading[fp] = (request, dwld)
+        def _evaluated(result):
+            if result is None: # continue with download
+                dwld = mustbe_deferred(self.download, request, info)
+                dwld.addCallbacks(
+                        callback=self.media_downloaded,
+                        callbackArgs=(request, info),
+                        errback=self.media_failed,
+                        errbackArgs=(request, info))
+            else: # or use media_to_download return value as result
+                dwld = defer_result(result)
 
-    def _downloaded(self, result, info, fp):
-        info.downloaded[fp] = result # cache result
-        waiting = info.waiting[fp] # client list
-        del info.waiting[fp]
-        del info.downloading[fp]
-        for wad in waiting:
-            defer_result(result).chainDeferred(wad)
+            info.downloading[fp] = (request, dwld) # fill downloading state data
+            dwld.addBoth(_downloaded) # append post-download hook
+            dwld.addErrback(_bugtrap) # catch media_downloaded and media_failed unhandled errors
+            # WARNING: dont be tempted to return 'dwld' here.
 
+        # declare request in downloading state (None is used as place holder)
+        info.downloading[fp] = None
+
+        # defer pre-download request processing
+        dfd = mustbe_deferred(self.media_to_download, request, info)
+        dfd.addCallback(_evaluated)
+        return dfd
 
     ### Overradiable Interface
     def download(self, request, info):
