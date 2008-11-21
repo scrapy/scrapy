@@ -22,6 +22,7 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--template", dest="template", help="Uses a custom template.", default="crawl")
+        parser.add_option("--force", dest="force", help="If the spider already exists, overwrite it with the template", action="store_true")
 
     def run(self, args, opts):
         if len(args) < 2:
@@ -32,14 +33,16 @@ class Command(ScrapyCommand):
             print "Template named %s.tmpl does not exist" % opts.template
             return
 
-        name = args[0]
+        name = self.normalize_name(args[0])
         site = args[1]
         spiders_dict = spiders.asdict()
-        if not site in spiders_dict.keys():
-            name = self.normalize_name(name)
-            self._genspider(name, site, template_file)
-        else:
-            print "Spider '%s' already exists" % name
+        if site in spiders_dict.keys():
+            if opts.force:
+                print "Spider '%s' already exists. Overwriting it..." % name
+            else:
+                print "Spider '%s' already exists" % name
+                return
+        self._genspider(name, site, template_file)
 
     def normalize_name(self, name):
         name = name.replace('-', '_') # - are replaced by _, for valid python modules
