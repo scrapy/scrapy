@@ -30,6 +30,18 @@ def xmliter(obj, nodename):
         yield XmlXPathSelector(text=nodetext).x('/' + nodename)[0]
 
 def csviter(obj, delimiter=None, headers=None):
+    """ Returns an iterator of dictionaries from the given csv object
+
+    obj can be:
+    - a Response object
+    - a unicode string
+    - a string encoded as utf-8
+
+    delimiter is the character used to separate field on the given obj.
+    
+    headers is an iterable that when provided offers the keys
+    for the returned dictionaries, if not the first row is used.
+    """
     def _getrow(csv_r):
         return [field.decode() for field in csv_r.next()]
 
