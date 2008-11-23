@@ -4,6 +4,7 @@ Base class for scrapy spiders
 from zope.interface import Interface, Attribute, invariant, implements
 from twisted.plugin import IPlugin
 
+from scrapy import log
 from scrapy.core.exceptions import UsageError
 
 def _valid_start_urls(obj):
@@ -87,3 +88,9 @@ class BaseSpider(object):
     implements(ISpider)
     domain_name = None
     extra_domain_names = []
+
+    def log(self, message, level=log.DEBUG):
+        """Log the given messages at the given log level. Always use this
+        method to send log messages from your spider
+        """
+        log.msg(message, domain=self.domain_name, level=level)

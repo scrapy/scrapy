@@ -3,7 +3,6 @@ This module contains some basic spiders for scraping websites (CrawlSpider)
 and XML feeds (XMLFeedSpider).
 """
 
-from scrapy import log
 from scrapy.conf import settings
 from scrapy.http import Request
 from scrapy.spider import BaseSpider
@@ -21,14 +20,10 @@ def _set_guid(spider, item):
     """
     raise NotConfigured('You must define a set_guid method in order to scrape items.')
 
-def _log(spider, message, level=log.DEBUG):
-    log.msg(message, domain=spider.domain_name, level=level)
-
 class CrawlSpider(BaseSpider):
     """
     This class works as a base class for spiders that crawl over websites
     """
-    log = _log
     set_guid = _set_guid
 
     def __init__(self):
@@ -108,7 +103,6 @@ class XMLFeedSpider(BaseSpider):
     You can choose whether to parse the file using the iternodes tool,
     or not using it (which just splits the tags using xpath)
     """
-    log = _log
     set_guid = _set_guid
     iternodes = True
     itertag = 'item'
@@ -139,15 +133,15 @@ class CSVFeedSpider(BaseSpider):
     You can set some options regarding the CSV file, such as the delimiter
     and the file's headers.
     """
-    log = _log
     set_guid = _set_guid
     delimiter = None # When this is None, python's csv module's default delimiter is used
     headers = None
 
-    # You can override this function in order to make any changes you want to
-    # into the feed before parsing it.
-    # This function may return either a response or a string.
     def adapt_feed(self, response):
+        """You can override this function in order to make any changes you want
+        to into the feed before parsing it. This function may return either a
+        response or a string.  """
+
         return response
 
     def parse_row_wrapper(self, response, row):
