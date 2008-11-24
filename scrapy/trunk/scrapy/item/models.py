@@ -18,10 +18,21 @@ class ScrapedItem(object):
         return self
     
     def set_attrib_adaptors(self, attrib, pipe):
-        """
-        Set the adaptors (from a list or tuple) to be used for a specific attribute.
-        """
+        """ Set the adaptors (from a list or tuple) to be used for a specific attribute. """
         self._adaptors_dict[attrib] = AdaptorPipe(pipe) if hasattr(pipe, '__iter__') else None
+
+    def add_adaptor(self, attrib, adaptor, position=None):
+        """
+        Add an adaptor for the specified attribute at the given position.
+        If position = None, then the adaptor is appended at the end of the pipeline.
+        """
+        if callable(adaptor):
+            pipe = self._adaptors_dict.get(attrib, [])
+            if position is None:
+                pipe = pipe + [adaptor]
+            else:
+                pipe.insert(position, adaptor)
+            self.set_attrib_adaptors(attrib, pipe)
 
     def attribute(self, attrname, value, **kwargs):
         pipe = self._adaptors_dict.get(attrname)
