@@ -1,5 +1,6 @@
 import re
 from scrapy.utils.markup import replace_tags, remove_entities
+from scrapy.item.adaptors import adaptize
 
 def remove_tags(value):
     """
@@ -34,10 +35,10 @@ class Unquote(object):
     Input: iterable with strings
     Output: list of strings
     """
-    def __init__(self, keep=['lt', 'amp']):
-        self.keep = keep
+    def __init__(self, keep=None):
+        self.keep = ['amp', 'lt'] if keep is None else keep
 
-    def __call__(self, value):
+    def __call__(self, value, keep=None):
+        if keep is not None:
+            self.keep = keep
         return [ remove_entities(v, keep=self.keep) for v in value ]
-
-

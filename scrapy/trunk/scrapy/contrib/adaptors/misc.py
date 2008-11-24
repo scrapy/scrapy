@@ -5,6 +5,7 @@ from scrapy.xpath.selector import XPathSelector, XPathSelectorList
 from scrapy.utils.url import canonicalize_url
 from scrapy.utils.misc import extract_regex
 from scrapy.utils.python import flatten
+from scrapy.item.adaptors import adaptize
 
 def to_unicode(value):
     """
@@ -72,10 +73,10 @@ def canonicalize_urls(value):
     Output: list of unicodes(urls)
     """
     if hasattr(value, '__iter__'):
-        return [canonicalize_url(url) for url in value]
+        return [canonicalize_url(str(url)) for url in value]
     elif isinstance(value, basestring):
-        return canonicalize_url(value)
-    return u''
+        return canonicalize_url(str(value))
+    return ''
 
 class Delist(object):
     """
@@ -88,7 +89,9 @@ class Delist(object):
     def __init__(self, delimiter=' '):
         self.delimiter = delimiter
     
-    def __call__(self, value):
+    def __call__(self, value, delimiter=None):
+        if delimiter is not None:
+            self.delimiter = delimiter
         return self.delimiter.join(value)
 
 class Regex(object):
