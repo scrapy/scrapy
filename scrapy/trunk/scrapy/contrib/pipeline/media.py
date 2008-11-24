@@ -49,7 +49,7 @@ class MediaPipeline(object):
             lst.append(dfd)
 
         dlst = defer.DeferredList(lst, consumeErrors=False)
-        dlst.addBoth(lambda _: self.item_completed(item, info))
+        dlst.addBoth(self.item_completed, item, info)
         return dlst
 
     def _enqueue(self, request, info):
@@ -183,7 +183,7 @@ class MediaPipeline(object):
         return value of this method isn't important and is recommended to return None.
         """
 
-    def item_completed(self, item, info):
+    def item_completed(self, results, item, info):
         """ Method called when all media requests for a single item has returned a result or failure.
 
         The return value of this method is used as output of pipeline stage.
