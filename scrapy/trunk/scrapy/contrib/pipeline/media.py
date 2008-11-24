@@ -65,14 +65,11 @@ class MediaPipeline(object):
         # add to pending list for this request, and wait for result like the others.
         info.waiting.setdefault(fp, []).append(wad)
 
-        # if request is already downloading, just wait.
-        if fp in info.downloading:
-            return wad # break
+        # if request is not downloading, download it.
+        if fp not in info.downloading:
+            self._download(request, info, fp)
 
-        # if not, this is the first time for request, try to download it.
-        dfd = self._download(request, info, fp)
-        dfd.addCallback(lambda _: wad)
-        return dfd
+        return wad
 
     def _download(self, request, info, fp):
         def _bugtrap(_failure):
@@ -109,7 +106,6 @@ class MediaPipeline(object):
         # defer pre-download request processing
         dfd = mustbe_deferred(self.media_to_download, request, info)
         dfd.addCallback(_evaluated)
-        return dfd
 
     ### Overradiable Interface
     def download(self, request, info):
