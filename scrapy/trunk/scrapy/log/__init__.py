@@ -55,3 +55,4 @@ def exc(message, level=ERROR, component=BOT_NAME, domain=None):
     message = message + '\n' + format_exc()
     msg(message, level, component, domain)
 
+err = log.err

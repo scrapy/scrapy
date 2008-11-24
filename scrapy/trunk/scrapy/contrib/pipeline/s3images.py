@@ -1,25 +1,24 @@
 import time
+import hmac
+import base64
 import hashlib
 import rfc822
 from cStringIO import StringIO
 
 import Image
-import boto
 
 from scrapy import log
+from scrapy.http import Request
 from scrapy.stats import stats
-from scrapy.core.exceptions import DropItem, NotConfigured
-from scrapy.core.exceptions import HttpException
+from scrapy.core.exceptions import DropItem, NotConfigured, HttpException
 from scrapy.contrib.pipeline.media import MediaPipeline
+from scrapy.contrib.aws import canonical_string
 from scrapy.conf import settings
 
-class NoimagesDrop(DropItem):
-    """Product with no images exception"""
+from .images import BaseImagesPipeline, NoimagesDrop, ImageException
 
-class ImageException(Exception):
-    """General image error exception"""
 
-class S3ImagesPipeline(MediaPipeline):
+class S3ImagesPipeline(BaseImagesPipeline):
     MEDIA_TYPE = 'image'
     THUMBS = (
         ("50", (50, 50)),
@@ -31,55 +30,32 @@ class S3ImagesPipeline(MediaPipeline):
         if not settings['S3_IMAGES']:
             raise NotConfigured
 
-        # days to wait before redownloading images
-        self.image_refresh_days = settings.getint('IMAGES_REFRESH_DAYS', 90)
-        
         self.bucket_name = settings['S3_BUCKET']
         self.prefix = settings['S3_PREFIX']
-        access_key = settings['AWS_ACCESS_KEY_ID']
-        secret_key = settings['AWS_SECRET_ACCESS_KEY']
-        conn = boto.connect_s3(access_key, secret_key)
-        self.bucket = conn.get_bucket(self.bucket_name)
-
+        self.access_key = settings['AWS_ACCESS_KEY_ID']
+        self.image_refresh_days = settings.getint('IMAGES_REFRESH_DAYS', 90)
+        self._hmac = hmac.new(settings['AWS_SECRET_ACCESS_KEY'], digestmod=hashlib.sha1)
         MediaPipeline.__init__(self)
 
-    def media_to_download(self, request, info):
-        key = self.s3_image_key(request.url)
-        if not self.s3_should_download(request.url):
-            self.inc_stats(info.domain, 'uptodate')
-            referer = request.headers.get('Referer')
-            log.msg('Image (uptodate) type=%s at <%s> referred from <%s>' % \
-                    (self.MEDIA_TYPE, request.url, referer), level=log.DEBUG, domain=info.domain)
-            return key
+    def s3request(self, key, method, body=None, headers=None):
+        url = 'http://%s.s3.amazonaws.com/%s' % (self.bucket_name, key)
+        req = Request(url, method=method, body=body, headers=headers)
 
-    def media_downloaded(self, response, request, info):
-        mtype = self.MEDIA_TYPE
-        referer = request.headers.get('Referer')
+        if not (headers and 'Date' in headers):
+            req.headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
 
-        if not response or not response.body.to_string():
-            msg = 'Image (empty): Empty %s (no content) in %s referred in <%s>: Empty image (no-content)' % (mtype, request, referer)
-            log.msg(msg, level=log.WARNING, domain=info.domain)
-            raise ImageException(msg)
+        fullkey = '/%s/%s' % (self.bucket_name, key)
+        c_string = canonical_string(method, fullkey, req.headers)
+        _hmac = self._hmac.copy()
+        _hmac.update(c_string)
+        b64_hmac = base64.encodestring(_hmac.digest()).strip()
+        req.headers['Authorization'] = "AWS %s:%s" % (self.access_key, b64_hmac)
+        return req
 
-        result = self.save_image(response, request, info) # save and thumbs response
-
-        status = 'cached' if getattr(response, 'cached', False) else 'downloaded'
-        msg = 'Image (%s): Downloaded %s from %s referred in <%s>' % (status, mtype, request, referer)
-        log.msg(msg, level=log.DEBUG, domain=info.domain)
-        self.inc_stats(info.domain, status)
-        return result
-
-    def media_failed(self, failure, request, info):
-        referer = request.headers.get('Referer')
-        errmsg = str(failure.value) if isinstance(failure.value, HttpException) else str(failure)
-        msg = 'Image (http-error): Error downloading %s from %s referred in <%s>: %s' % (self.MEDIA_TYPE, request, referer, errmsg)
-        log.msg(msg, level=log.WARNING, domain=info.domain)
-        raise ImageException(msg)
-
-    def save_image(self, response, request, info):
+    def image_downloaded(self, response, request, info):
         try:
             key = self.s3_image_key(request.url)
-            self.s3_store_image(response, request.url)
+            self.s3_store_image(response, request.url, info)
         except ImageException, ex:
             log.msg(str(ex), level=log.WARNING, domain=info.domain)
             raise ex
@@ -88,10 +64,6 @@ class S3ImagesPipeline(MediaPipeline):
             raise ex
 
         return key # success value sent as input result for item_media_downloaded
-
-    def inc_stats(self, domain, status):
-        stats.incpath('%s/image_count' % domain)
-        stats.incpath('%s/image_status_count/%s' % (domain, status))
 
     def s3_image_key(self, url):
         """Return the relative path on the target filesystem for an image to be
@@ -107,48 +79,70 @@ class S3ImagesPipeline(MediaPipeline):
         image_guid = hashlib.sha1(url).hexdigest()
         return '%s/thumbs/%s/%s.jpg' % (self.prefix, thumb_id, image_guid)
 
-    def s3_should_download(self, url):
+    def media_to_download(self, request, info):
         """Return if the image should be downloaded by checking if it's already in
         the S3 storage and not too old"""
-        key = self.s3_image_key(url)
-        k = self.bucket.get_key(key)
-        if k is None:
-            return True
-        modified_tuple = rfc822.parsedate_tz(k.last_modified)
-        modified_stamp = int(rfc822.mktime_tz(modified_tuple))
-        age_seconds = time.time() - modified_stamp
-        age_days = age_seconds / 60 / 60 / 24
-        return age_days > self.image_refresh_days
 
-    def s3_store_image(self, response, url):
+        def _on200(response):
+            if 'Last-Modified' not in response.headers:
+                return True
+
+            last_modified = response.headers['Last-Modified'][0]
+            modified_tuple = rfc822.parsedate_tz(last_modified)
+            modified_stamp = int(rfc822.mktime_tz(modified_tuple))
+            age_seconds = time.time() - modified_stamp
+            age_days = age_seconds / 60 / 60 / 24
+            return age_days > self.image_refresh_days
+
+        def _non200(_failure):
+            return True
+
+        def _evaluate(should):
+            if not should:
+                self.inc_stats(info.domain, 'uptodate')
+                referer = request.headers.get('Referer')
+                log.msg('Image (uptodate) type=%s at <%s> referred from <%s>' % \
+                        (self.MEDIA_TYPE, request.url, referer), level=log.DEBUG, domain=info.domain)
+                return key
+
+        key = self.s3_image_key(request.url)
+        req = self.s3request(key, method='HEAD')
+        dfd = self.download(req, info)
+        dfd.addCallbacks(_on200, _non200)
+        dfd.addCallback(_evaluate)
+        dfd.addErrback(log.err, 'S3ImagesPipeline.media_to_download')
+        return dfd
+
+    def s3_store_image(self, response, url, info):
         """Upload image to S3 storage"""
         buf = StringIO(response.body.to_string())
         image = Image.open(buf)
         key = self.s3_image_key(url)
-        self._s3_put_image(image, key)
-        self.s3_store_thumbnails(image, url)
+        self._s3_put_image(image, key, info)
+        self.s3_store_thumbnails(image, url, info)
 
-    def s3_store_thumbnails(self, image, url):
+    def s3_store_thumbnails(self, image, url, info):
         """Upload image thumbnails to S3 storage"""
         for thumb_id, size in self.THUMBS or []:
             thumb = image.copy() if image.mode == 'RGB' else image.convert('RGB')
             thumb.thumbnail(size, Image.ANTIALIAS)
             key = self.s3_thumb_key(url, thumb_id)
-            self._s3_put_image(thumb, key)
+            self._s3_put_image(thumb, key, info)
 
-    def s3_public_url(self, key):
-        return "http://%s.s3.amazonaws.com/%s" % (self.bucket_name, key)
-
-    def _s3_put_image(self, image, key):
+    def _s3_put_image(self, image, key, info):
         buf = StringIO()
         try:
             image.save(buf, 'JPEG')
         except Exception, ex:
             raise ImageException("Cannot process image. Error: %s" % ex)
-
         buf.seek(0)
-        k = self.bucket.new_key(key)
-        k.content_type = 'image/jpeg'
-        k.set_contents_from_file(buf, policy='public-read')
-        log.msg("Uploaded to S3: %s" % self.s3_public_url(key), level=log.DEBUG)
+
+        headers = {
+                'Content-Type': 'image/jpeg',
+                'X-Amz-Acl': 'public-read',
+                }
+
+        req = self.s3request(key, method='PUT', body=buf.read(), headers=headers)
+        return self.download(req, info)
+
 
