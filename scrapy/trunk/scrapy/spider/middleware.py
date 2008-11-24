@@ -23,8 +23,6 @@ class SpiderMiddlewareManager(object):
         self.spider_middleware = []
         self.result_middleware = []
         self.exception_middleware = []
-        self.filter_middleware = []
-        self.domaininfo = {}
         self.load()
 
     def _add_middleware(self, mw):
@@ -34,8 +32,6 @@ class SpiderMiddlewareManager(object):
             self.result_middleware.insert(0, mw.process_result)
         if hasattr(mw, 'process_exception'):
             self.exception_middleware.insert(0, mw.process_exception)
-        if hasattr(mw, 'filter'):
-            self.filter_middleware.insert(0, mw.filter)
 
     def load(self):
         """Load middleware defined in settings module"""
