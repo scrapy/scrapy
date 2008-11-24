@@ -37,8 +37,10 @@ class Command(ScrapyCommand):
                 else:
                     result = spider.parse(response)
 
-                items = [self.pipeline_process(i, opts) for i in result if isinstance(i, ScrapedItem)]
                 links = [i for i in result if isinstance(i, Request)]
+                items = [self.pipeline_process(i, opts) for i in result if isinstance(i, ScrapedItem)]
+                for item in items:
+                    del item._adaptors_dict
 
                 display.nocolour = opts.nocolour
                 if not opts.noitems:
