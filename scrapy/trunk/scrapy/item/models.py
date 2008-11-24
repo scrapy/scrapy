@@ -35,6 +35,8 @@ class ScrapedItem(object):
             self.set_attrib_adaptors(attrib, pipe)
 
     def attribute(self, attrname, value, **kwargs):
+        override = kwargs.pop('override', False)
+        add = kwargs.pop('add', False)
         pipe = self._adaptors_dict.get(attrname)
         if pipe:
             val = pipe(value, **kwargs)

@@ -69,7 +69,7 @@ def adaptize(adaptor, my_args=None):
         else:
             my_args = []
 
-    def _adaptor(value, **adaptor_args):
+    def _adaptor(value, adaptor_args):
         kwargs = dict((key, val) for key, val in adaptor_args.items() if key in my_args)
         return adaptor(value, **kwargs)
     return _adaptor
