@@ -8,7 +8,7 @@ from twisted.python.failure import Failure
 from scrapy import log
 from scrapy.core.exceptions import NotConfigured
 from scrapy.utils.misc import load_class
-from scrapy.utils.defer import mustbe_deferred
+from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy.conf import settings
 
 def _isiterable(possible_iterator):
@@ -18,16 +18,13 @@ def _isiterable(possible_iterator):
         return None
 
 class SpiderMiddlewareManager(object):
-    def __init__(self, callback=None, errback=None):
+    def __init__(self):
         self.loaded = False
         self.spider_middleware = []
         self.result_middleware = []
         self.exception_middleware = []
         self.filter_middleware = []
         self.domaininfo = {}
-
-        self.callback = callback or self._callback
-        self.errback = errback or self._errback
         self.load()
 
     def _add_middleware(self, mw):
@@ -94,29 +91,5 @@ class SpiderMiddlewareManager(object):
         return dfd
 
     def call(self, request, response, spider):
-        if isinstance(response, Exception):
-            return self.errback(request, Failure(response), spider)
-        return self.callback(request, response, spider)
-
-    def _callback(self, request, response, spider):
-        request.deferred.callback(response)
+        defer_result(response).chainDeferred(request.deferred)
         return request.deferred
-
-    def _errback(self, request, failure, spider):
-        request.deferred.errback(failure)
-        return request.deferred
-
-
-class DummyMiddleware(object):
-    def process_scrape(self, response, spider):
-        pass
-
-    def process_result(self, response, result, spider):
-        return result
-
-    def process_exception(self, response, exception, spider):
-        pass
-
-    def filter(self, item):
-        return True
-
