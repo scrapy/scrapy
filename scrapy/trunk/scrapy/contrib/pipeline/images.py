@@ -20,22 +20,60 @@ from scrapy.contrib.pipeline.media import MediaPipeline
 IMAGE_EXPIRES = settings.getint('IMAGES_EXPIRES', 90)
 
 class NoimagesDrop(DropItem):
-    pass
+    """Product with no images exception"""
 
 class ImageException(Exception):
     """General image error exception"""
 
 
-class ImagesPipeline(MediaPipeline):
+class BaseImagesPipeline(MediaPipeline):
     MEDIA_TYPE = 'image'
-    THUMBS = None
-#     THUMBS = (
-#             ("50", (50, 50)),
-#             ("110", (110, 110)),
-#             ("270", (270, 270))
-#     )
+
+    def media_downloaded(self, response, request, info):
+        mtype = self.MEDIA_TYPE
+        referer = request.headers.get('Referer')
+
+        if not response or not response.body.to_string():
+            msg = 'Image (empty): Empty %s (no content) in %s referred in <%s>: no-content' \
+                    % (mtype, request, referer)
+            log.msg(msg, level=log.WARNING, domain=info.domain)
+            raise ImageException(msg)
+
+        status = 'cached' if getattr(response, 'cached', False) else 'downloaded'
+        msg = 'Image (%s): Downloaded %s from %s referred in <%s>' % (status, mtype, request, referer)
+        log.msg(msg, level=log.DEBUG, domain=info.domain)
+        self.inc_stats(info.domain, status)
+        return self.image_downloaded(response, request, info)
+
+    def media_failed(self, failure, request, info):
+        referer = request.headers.get('Referer')
+        errmsg = str(failure.value) if isinstance(failure.value, HttpException) else str(failure)
+        msg = 'Image (http-error): Error downloading %s from %s referred in <%s>: %s' \
+                % (self.MEDIA_TYPE, request, referer, errmsg)
+        log.msg(msg, level=log.WARNING, domain=info.domain)
+        raise ImageException(msg)
+
+    def inc_stats(self, domain, status):
+        stats.incpath('%s/image_count' % domain)
+        stats.incpath('%s/image_status_count/%s' % (domain, status))
+
+    def image_downloaded(self, response, request, info):
+        raise NotImplementedError
+
+
+class ImagesPipeline(BaseImagesPipeline):
     MIN_WIDTH = 0
     MIN_HEIGHT = 0
+    THUMBS = (
+#             ('50', (50, 50)),
+#             ('110', (110, 110)),
+#             ('270', (270, 270))
+     )
+
+    class DomainInfo(BaseImagesPipeline.DomainInfo):
+        def __init__(self, domain):
+            super(ImagesPipeline.DomainInfo, self).__init__(domain)
+            self.created_directories = set()
 
     def __init__(self):
         if not settings['IMAGES_DIR']:
@@ -46,7 +84,7 @@ class ImagesPipeline(MediaPipeline):
 
         self.MIN_WIDTH = settings.getint('IMAGES_MIN_WIDTH', 0)
         self.MIN_HEIGHT = settings.getint('IMAGES_MIN_HEIGHT', 0)
-        MediaPipeline.__init__(self)
+        super(ImagesPipeline, self).__init__()
 
     def media_to_download(self, request, info):
         relative, absolute = self._get_paths(request)
@@ -57,31 +95,7 @@ class ImagesPipeline(MediaPipeline):
                     (self.MEDIA_TYPE, request, referer), level=log.DEBUG, domain=info.domain)
             return relative
 
-    def media_downloaded(self, response, request, info):
-        mtype = self.MEDIA_TYPE
-        referer = request.headers.get('Referer')
-
-        if not response or not response.body.to_string():
-            msg = 'Image (empty): Empty %s (no content) in %s referred in <%s>: Empty image (no-content)' % (mtype, request, referer)
-            log.msg(msg, level=log.WARNING, domain=info.domain)
-            raise ImageException(msg)
-
-        result = self.save_image(response, request, info) # save and thumbs response
-
-        status = 'cached' if getattr(response, 'cached', False) else 'downloaded'
-        msg = 'Image (%s): Downloaded %s from %s referred in <%s>' % (status, mtype, request, referer)
-        log.msg(msg, level=log.DEBUG, domain=info.domain)
-        self.inc_stats(info.domain, status)
-        return result
-
-    def media_failed(self, failure, request, info):
-        referer = request.headers.get('Referer')
-        errmsg = str(failure.value) if isinstance(failure.value, HttpException) else str(failure)
-        msg = 'Image (http-error): Error downloading %s from %s referred in <%s>: %s' % (self.MEDIA_TYPE, request, referer, errmsg)
-        log.msg(msg, level=log.WARNING, domain=info.domain)
-        raise ImageException(msg)
-
-    def save_image(self, response, request, info):
+    def image_downloaded(self, response, request, info):
         mtype = self.MEDIA_TYPE
         relpath, abspath = self._get_paths(request)
         dirname = os.path.dirname(abspath)
@@ -94,7 +108,8 @@ class ImagesPipeline(MediaPipeline):
             raise ex
         except Exception, ex:
             referer = request.headers.get('Referer')
-            msg = 'Image (processing-error): Error thumbnailing %s from %s referred in <%s>: %s' % (mtype, request, referer, ex)
+            msg = 'Image (processing-error): Error thumbnailing %s from %s referred in <%s>: %s' \
+                    % (mtype, request, referer, ex)
             log.msg(msg, level=log.WARNING, domain=info.domain)
             raise ImageException(msg)
 
@@ -106,16 +121,11 @@ class ImagesPipeline(MediaPipeline):
         return relative, absolute
 
     def mkdir(self, dirname, info=None):
-        already_created = info.extra.setdefault('created_directories', set()) if info else set()
+        already_created = info.created_directories if info else set()
         if dirname not in already_created:
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
             already_created.add(dirname)
-
-    def inc_stats(self, domain, status):
-        stats.incpath('%s/image_count' % domain)
-        stats.incpath('%s/image_status_count/%s' % (domain, status))
-
 
 
 def should_download(path):

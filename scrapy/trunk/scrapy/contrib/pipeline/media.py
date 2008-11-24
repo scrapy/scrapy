@@ -6,22 +6,21 @@ from scrapy.core.engine import scrapyengine
 from scrapy.spider import spiders
 
 
-class DomainInfo(object):
-    def __init__(self, domain):
-        self.domain = domain
-        self.spider = spiders.fromdomain(domain)
-        self.downloading = {}
-        self.downloaded = {}
-        self.waiting = {}
-        self.extra = {}
-
-
 class MediaPipeline(object):
+
+    class DomainInfo(object):
+        def __init__(self, domain):
+            self.domain = domain
+            self.spider = spiders.fromdomain(domain)
+            self.downloading = {}
+            self.downloaded = {}
+            self.waiting = {}
+
     def __init__(self):
         self.domaininfo = {}
 
     def open_domain(self, domain):
-        self.domaininfo[domain] = DomainInfo(domain)
+        self.domaininfo[domain] = self.DomainInfo(domain)
 
     def close_domain(self, domain):
         del self.domaininfo[domain]
@@ -98,7 +97,6 @@ class MediaPipeline(object):
             info.downloading[fp] = (request, dwld) # fill downloading state data
             dwld.addBoth(_downloaded) # append post-download hook
             dwld.addErrback(_bugtrap) # catch media_downloaded and media_failed unhandled errors
-            # WARNING: dont be tempted to return 'dwld' here.
 
         # declare request in downloading state (None is used as place holder)
         info.downloading[fp] = None
