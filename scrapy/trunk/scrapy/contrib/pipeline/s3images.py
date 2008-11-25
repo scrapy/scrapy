@@ -21,9 +21,9 @@ from .images import BaseImagesPipeline, NoimagesDrop, ImageException
 class S3ImagesPipeline(BaseImagesPipeline):
     MEDIA_TYPE = 'image'
     THUMBS = (
-        ("50", (50, 50)),
-        ("110", (110, 110)),
-        ("270", (270, 270))
+#             ('50', (50, 50)),
+#             ('110', (110, 110)),
+#             ('270', (270, 270))
     )
 
     def __init__(self):
