@@ -40,7 +40,7 @@ class S3ImagesPipeline(BaseImagesPipeline):
     def s3request(self, key, method, body=None, headers=None):
         url = 'http://%s.s3.amazonaws.com/%s' % (self.bucket_name, key)
         req = Request(url, method=method, body=body, headers=headers)
-        sign_request(req, self.access_key, self.secret_keself.secret_keyy)
+        sign_request(req, self.access_key, self.secret_key)
         return req
 
     def image_downloaded(self, response, request, info):

@@ -15,7 +15,7 @@ def canonical_string(method, path, headers, expires=None):
     interesting_headers = {}
     for key in headers:
         lk = key.lower()
-        if lk in set('content-md5', 'content-type', 'date') or lk.startswith(AMAZON_HEADER_PREFIX):
+        if lk in set(['content-md5', 'content-type', 'date']) or lk.startswith(AMAZON_HEADER_PREFIX):
             interesting_headers[lk] = headers[key].strip()
 
     # these keys get empty strings if they don't exist
