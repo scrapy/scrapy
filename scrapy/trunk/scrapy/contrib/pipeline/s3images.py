@@ -1,4 +1,3 @@
-import md5
 import time
 import hmac
 import base64
@@ -20,7 +19,7 @@ from .images import BaseImagesPipeline, NoimagesDrop, ImageException
 
 
 def md5sum(buffer):
-    m = md5.new()
+    m = hashlib.md5()
     buffer.seek(0)
     while 1:
         d = buffer.read(8096)
