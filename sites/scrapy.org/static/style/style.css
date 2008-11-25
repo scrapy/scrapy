@@ -6,7 +6,7 @@ body { margin:0; padding:0; background:url('../images/main-bg.jpg') repeat-x lef
 a { color:#6e0909; text-decoration:none; border-bottom:1px solid #d78888;}
 a:hover { color:#f99800; border-bottom:1px solid #f7b7b7; }
 .clear { clear:both; overflow:hidden; }
-h2 { font-size:200%; color:#331f0a; margin:0.6em 0pt; font-weight:normal;}
+h1, h2 { font-size:200%; color:#331f0a; margin:0.6em 0pt; font-weight:normal;}
 blockquote { padding:0px 15px; color:#5b1111; font-size:125%; margin:0;}
 p { line-height:1.5em; }
 
