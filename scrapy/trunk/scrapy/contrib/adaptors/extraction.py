@@ -3,6 +3,7 @@ Adaptors related with extraction of data
 """
 
 import urlparse
+import re
 from scrapy.http import Response
 from scrapy.utils.python import flatten
 from scrapy.xpath.selector import XPathSelector, XPathSelectorList
@@ -51,7 +52,19 @@ class ExtractImages(object):
     Output: list of unicodes
     """
     def __init__(self, response=None, base_url=None):
-        self.base_url = response.url if response else base_url
+        BASETAG_RE = re.compile(r'<base\s+href\s*=\s*[\"\']\s*([^\"\'\s]+)\s*[\"\']', re.I)
+
+        if response:
+            match = BASETAG_RE.search(response.body.to_string()[0:4096])
+            if match:
+                self.base_url = match.group(1)
+            else:
+                self.base_url = response.url
+        else:
+            self.base_url = base_url
+
+        if not self.base_url:
+            raise AttributeError('You must specify either a response or a base_url to the ExtractImages adaptor.')
 
     def extract_from_xpath(self, selector):
         ret = []
@@ -76,9 +89,6 @@ class ExtractImages(object):
         return ret
 
     def __call__(self, locations):
-        if not self.base_url:
-            raise AttributeError('You must specify either a response or a base_url to the ExtractImages adaptor.')
-        
         if isinstance(locations, basestring):
             locations = [locations]
 
