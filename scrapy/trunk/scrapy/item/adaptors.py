@@ -11,13 +11,16 @@ class AdaptorPipe(list):
     in order to filter the input.
     """
     def __init__(self, adaptors):
-        super(AdaptorPipe, self).__init__([adaptor for adaptor in adaptors if callable(adaptor)])
+        for adaptor in adaptors:
+            if not callable(adaptor):
+                raise TypeError("%s is not a callable" % adaptor)
+        super(AdaptorPipe, self).__init__(adaptors)
+        self.debug = settings.getbool('ADAPTORS_DEBUG')
 
     def __call__(self, value, **kwargs):
         """
         Execute the adaptor pipeline for this attribute.
         """
-        debug = kwargs.pop('debug', all([settings.getbool('LOG_ENABLED'), settings.get('LOGLEVEL') == 'TRACE']))
 
         for adaptor in self:
             if inspect.isfunction(adaptor):
@@ -30,7 +33,7 @@ class AdaptorPipe(list):
                 name = adaptor.__class__.__name__ if hasattr(adaptor, '__class__') else adaptor.__name__
 
             try:
-                if debug:
+                if self.debug:
                     print "  %07s | input >" % name, repr(value)
 
                 if 'adaptor_args' in func_args:
@@ -38,7 +41,7 @@ class AdaptorPipe(list):
                 else:
                     value = adaptor(value)
 
-                if debug:
+                if self.debug:
                     print "  %07s | output >" % name, repr(value)
             except Exception:
                 print "Error in '%s' adaptor. Traceback text:" % name
