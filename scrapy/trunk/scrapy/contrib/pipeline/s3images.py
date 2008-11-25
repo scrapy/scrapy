@@ -1,3 +1,4 @@
+import md5
 import time
 import hmac
 import base64
@@ -16,6 +17,16 @@ from scrapy.contrib.aws import canonical_string, sign_request
 from scrapy.conf import settings
 
 from .images import BaseImagesPipeline, NoimagesDrop, ImageException
+
+
+def md5sum(buffer):
+    m = md5.new()
+    buffer.seek(0)
+    while 1:
+        d = buffer.read(8096)
+        if not d: break
+        m.update(d)
+    return m.hexdigest()
 
 
 class S3ImagesPipeline(BaseImagesPipeline):
@@ -46,7 +57,7 @@ class S3ImagesPipeline(BaseImagesPipeline):
     def image_downloaded(self, response, request, info):
         try:
             key = self.s3_image_key(request.url)
-            self.s3_store_image(response, request.url, info)
+            etag = self.s3_store_image(response, request.url, info)
         except ImageException, ex:
             log.msg(str(ex), level=log.WARNING, domain=info.domain)
             raise ex
@@ -54,7 +65,7 @@ class S3ImagesPipeline(BaseImagesPipeline):
             log.msg(str(ex), level=log.WARNING, domain=info.domain)
             raise ex
 
-        return key # success value sent as input result for item_media_downloaded
+        return '%s#%s' % (key, etag) # success value sent as input result for item_media_downloaded
 
     def s3_image_key(self, url):
         """Return the relative path on the target filesystem for an image to be
@@ -74,33 +85,32 @@ class S3ImagesPipeline(BaseImagesPipeline):
         """Return if the image should be downloaded by checking if it's already in
         the S3 storage and not too old"""
 
-        def _on200(response):
+        def _onsuccess(response):
             if 'Last-Modified' not in response.headers:
-                return True
+                return # returning None force download
 
+            # check if last modified date did not expires
             last_modified = response.headers['Last-Modified'][0]
             modified_tuple = rfc822.parsedate_tz(last_modified)
             modified_stamp = int(rfc822.mktime_tz(modified_tuple))
             age_seconds = time.time() - modified_stamp
             age_days = age_seconds / 60 / 60 / 24
-            return age_days > self.image_refresh_days
 
-        def _non200(_failure):
-            return True
+            if age_days > self.image_refresh_days:
+                return # returning None force download
 
-        def _evaluate(should):
-            if not should:
-                self.inc_stats(info.domain, 'uptodate')
-                referer = request.headers.get('Referer')
-                log.msg('Image (uptodate) type=%s at <%s> referred from <%s>' % \
-                        (self.MEDIA_TYPE, request.url, referer), level=log.DEBUG, domain=info.domain)
-                return key
+            etag = response.headers['Etag'][0].strip('"')
+            referer = request.headers.get('Referer')
+            log.msg('Image (uptodate) type=%s at <%s> referred from <%s>' % \
+                    (self.MEDIA_TYPE, request.url, referer), level=log.DEBUG, domain=info.domain)
+
+            self.inc_stats(info.domain, 'uptodate')
+            return '%s#%s' % (key, etag)
 
         key = self.s3_image_key(request.url)
         req = self.s3request(key, method='HEAD')
         dfd = self.download(req, info)
-        dfd.addCallbacks(_on200, _non200)
-        dfd.addCallback(_evaluate)
+        dfd.addCallbacks(_onsuccess, lambda _:None)
         dfd.addErrback(log.err, 'S3ImagesPipeline.media_to_download')
         return dfd
 
@@ -109,8 +119,9 @@ class S3ImagesPipeline(BaseImagesPipeline):
         buf = StringIO(response.body.to_string())
         image = Image.open(buf)
         key = self.s3_image_key(url)
-        self._s3_put_image(image, key, info)
+        _, jpegbuf = self._s3_put_image(image, key, info)
         self.s3_store_thumbnails(image, url, info)
+        return md5sum(jpegbuf) # Etag
 
     def s3_store_thumbnails(self, image, url, info):
         """Upload image thumbnails to S3 storage"""
@@ -134,6 +145,6 @@ class S3ImagesPipeline(BaseImagesPipeline):
                 }
 
         req = self.s3request(key, method='PUT', body=buf.read(), headers=headers)
-        return self.download(req, info)
+        return self.download(req, info), buf
 
 
