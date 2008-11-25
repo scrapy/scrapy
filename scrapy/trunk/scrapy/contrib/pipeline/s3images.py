@@ -95,7 +95,7 @@ class S3ImagesPipeline(BaseImagesPipeline):
             age_seconds = time.time() - modified_stamp
             age_days = age_seconds / 60 / 60 / 24
 
-            if age_days > self.image_refresh_days:
+            if age_days < self.image_refresh_days:
                 return # returning None force download
 
             etag = response.headers['Etag'][0].strip('"')
@@ -136,13 +136,16 @@ class S3ImagesPipeline(BaseImagesPipeline):
             image.save(buf, 'JPEG')
         except Exception, ex:
             raise ImageException("Cannot process image. Error: %s" % ex)
-        buf.seek(0)
 
+        width, height = image.size
         headers = {
                 'Content-Type': 'image/jpeg',
                 'X-Amz-Acl': 'public-read',
+                'X-Amz-Meta-Width': str(width),
+                'X-Amz-Meta-Height': str(height),
                 }
 
+        buf.seek(0)
         req = self.s3request(key, method='PUT', body=buf.read(), headers=headers)
         return self.download(req, info), buf
 
