@@ -12,7 +12,7 @@ from scrapy.http import Request
 from scrapy.stats import stats
 from scrapy.core.exceptions import DropItem, NotConfigured, HttpException
 from scrapy.contrib.pipeline.media import MediaPipeline
-from scrapy.contrib.aws import canonical_string
+from scrapy.contrib.aws import canonical_string, sign_request
 from scrapy.conf import settings
 
 from .images import BaseImagesPipeline, NoimagesDrop, ImageException
@@ -33,23 +33,14 @@ class S3ImagesPipeline(BaseImagesPipeline):
         self.bucket_name = settings['S3_BUCKET']
         self.prefix = settings['S3_PREFIX']
         self.access_key = settings['AWS_ACCESS_KEY_ID']
+        self.secret_key = settings['AWS_SECRET_ACCESS_KEY']
         self.image_refresh_days = settings.getint('IMAGES_REFRESH_DAYS', 90)
-        self._hmac = hmac.new(settings['AWS_SECRET_ACCESS_KEY'], digestmod=hashlib.sha1)
         MediaPipeline.__init__(self)
 
     def s3request(self, key, method, body=None, headers=None):
         url = 'http://%s.s3.amazonaws.com/%s' % (self.bucket_name, key)
         req = Request(url, method=method, body=body, headers=headers)
-
-        if not (headers and 'Date' in headers):
-            req.headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
-
-        fullkey = '/%s/%s' % (self.bucket_name, key)
-        c_string = canonical_string(method, fullkey, req.headers)
-        _hmac = self._hmac.copy()
-        _hmac.update(c_string)
-        b64_hmac = base64.encodestring(_hmac.digest()).strip()
-        req.headers['Authorization'] = "AWS %s:%s" % (self.access_key, b64_hmac)
+        sign_request(req, self.access_key, self.secret_keself.secret_keyy)
         return req
 
     def image_downloaded(self, response, request, info):

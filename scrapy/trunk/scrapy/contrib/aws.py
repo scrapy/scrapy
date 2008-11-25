@@ -3,6 +3,7 @@ import time
 import hmac
 import base64
 import hashlib
+from urlparse import urlsplit
 
 
 METADATA_PREFIX = 'x-amz-meta-'
@@ -14,17 +15,15 @@ def canonical_string(method, path, headers, expires=None):
     interesting_headers = {}
     for key in headers:
         lk = key.lower()
-        if lk in ['content-md5', 'content-type', 'date'] or lk.startswith(AMAZON_HEADER_PREFIX):
+        if lk in set('content-md5', 'content-type', 'date') or lk.startswith(AMAZON_HEADER_PREFIX):
             interesting_headers[lk] = headers[key].strip()
 
     # these keys get empty strings if they don't exist
-    if not interesting_headers.has_key('content-type'):
-        interesting_headers['content-type'] = ''
-    if not interesting_headers.has_key('content-md5'):
-        interesting_headers['content-md5'] = ''
+    interesting_headers.setdefault('content-type', '')
+    interesting_headers.setdefault('content-md5', '')
 
     # just in case someone used this.  it's not necessary in this lib.
-    if interesting_headers.has_key('x-amz-date'):
+    if 'x-amz-date' in interesting_headers:
         interesting_headers['date'] = ''
 
     # if you're using expires for query string auth, then it trumps date
@@ -58,32 +57,20 @@ def canonical_string(method, path, headers, expires=None):
     return buf
 
 
-def merge_meta(headers, metadata):
-    final_headers = headers.copy()
-    for k in metadata.keys():
-        if k.lower() in ['content-md5', 'content-type', 'date']:
-            final_headers[k] = metadata[k]
-        else:
-            final_headers[METADATA_PREFIX + k] = metadata[k]
 
-    return final_headers
+def sign_request(req, accesskey, secretkey):
+    if 'Date' not in req.headers:
+        req.headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
 
-def get_aws_metadata(headers):
-    metadata = {}
-    for hkey in headers.keys():
-        if hkey.lower().startswith(METADATA_PREFIX):
-            metadata[hkey[len(METADATA_PREFIX):]] = headers[hkey]
-            del headers[hkey]
-    return metadata
+    parsed = urlsplit(req.url)
+    bucket = parsed.hostname.replace('.s3.amazonaws.com','')
+    key = '%s?%s' % (parsed.path, parsed.query) if parsed.query else parsed.path
+    fqkey = '/%s%s' % (bucket, key)
 
-
-def add_aws_auth_header(headers, method, path):
-    if not headers.has_key('Date'):
-        headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
-
-    c_string = canonical_string(method, path, headers)
-    _hmac = hmac.new(settings.AWS_SECRET_ACCESS_KEY, digestmod=hashlib.sha1)
+    c_string = canonical_string(req.method, fqkey, req.headers)
+    _hmac = hmac.new(secretkey, digestmod=hashlib.sha1)
     _hmac.update(c_string)
     b64_hmac = base64.encodestring(_hmac.digest()).strip()
-    headers['Authorization'] = "AWS %s:%s" % (settings.AWS_ACCESS_KEY_ID, b64_hmac)
+    req.headers['Authorization'] = "AWS %s:%s" % (accesskey, b64_hmac)
+
 
