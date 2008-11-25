@@ -37,18 +37,23 @@ def clean_spaces(value):
     _clean_spaces_re = re.compile("\s+", re.U)
     return [ _clean_spaces_re.sub(' ', v.decode('utf-8')) for v in value ]
 
-def strip_list(value):
+def strip(value):
     """
     Removes any spaces at both the start and the ending
-    of each string in the provided list.
+    of the provided string or list.
     E.g:
-      >> strip_list([' hi   ', 'buddies  '])
+      >> strip([' hi   ', 'buddies  '])
       [u'hi', u'buddies']
+      >> strip(' hi buddies    ')
+      u'hi buddies'
 
-    Input: iterable of unicodes
-    Output: list of unicodes
+    Input: unicode or iterable of unicodes
+    Output: unicode or list of unicodes
     """
-    return [ unicode(v.strip()) for v in value ]
+    if isinstance(value, basestring):
+        return unicode(value.strip())
+    elif hasattr(value, '__iter__'):
+        return [ unicode(v.strip()) for v in value ]
 
 def drop_empty(value):
     """

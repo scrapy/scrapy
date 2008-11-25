@@ -69,9 +69,11 @@ class AdaptorsTestCase(unittest.TestCase):
         self.assertEqual(adaptors.clean_spaces(['  hello,  whats     up?', 'testing testingtesting      testing']),
                          [' hello, whats up?', 'testing testingtesting testing'])
         
-    def test_strip_list(self):
-        self.assertEqual(adaptors.strip_list([' hi there, sweety ;D ', ' I CAN HAZ TEST??    ']),
+    def test_strip(self):
+        self.assertEqual(adaptors.strip([' hi there, sweety ;D ', ' I CAN HAZ TEST??    ']),
                          ['hi there, sweety ;D', 'I CAN HAZ TEST??'])
+        self.assertEqual(adaptors.strip('      hello there, this is my test     '),
+                         'hello there, this is my test')
         
     def test_drop_empty_elements(self):
         self.assertEqual(adaptors.drop_empty([1, 2, None, 5, 0, 6, False, 'hi']),
