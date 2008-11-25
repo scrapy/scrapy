@@ -79,7 +79,10 @@ INSTALLED_APPS = (
     'django.contrib.markup',
     'scrapyorg.article',
     'scrapyorg.download',
+    'scrapyorg.docs',
 )
+
+DOC_PICKLE_ROOT = os.path.join(PROJECT_ROOT, 'docs', 'pickle')
 
 # Override previous settings with values in local_settings.py settings file.
 try:

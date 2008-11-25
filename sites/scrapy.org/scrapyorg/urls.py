@@ -10,6 +10,9 @@ urlpatterns = patterns('',
     # admin
     url(r"^admin/download/downloadlink/", include("scrapyorg.download.urls")),
     url(r'^admin/(.*)', admin.site.root),
+
+    # docs
+    url(r"^docs/", include("scrapyorg.docs.urls")),
 )
 
 
