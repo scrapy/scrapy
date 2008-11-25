@@ -146,3 +146,9 @@ def canonicalize_url(url, keep_blank_values=False, keep_fragments=False):
     if not keep_fragments:
         parts[5] = ''
     return urlparse.urlunparse(parts)
+
+def check_valid_urlencode(url):
+    """ check that the url-path is properly quoted
+    TODO should also check the parameters """
+    split_result = urlparse.urlsplit(url)
+    return split_result[2] == urllib.quote(urllib.unquote(split_result[2]))

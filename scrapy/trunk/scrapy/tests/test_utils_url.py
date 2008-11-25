@@ -1,5 +1,5 @@
 import unittest
-from scrapy.utils.url import url_is_from_any_domain, safe_url_string, safe_download_url, url_query_parameter, add_or_replace_parameter, url_query_cleaner, canonicalize_url
+from scrapy.utils.url import url_is_from_any_domain, safe_url_string, safe_download_url, url_query_parameter, add_or_replace_parameter, url_query_cleaner, canonicalize_url, check_valid_urlencode
 
 class UrlUtilsTest(unittest.TestCase):
 
@@ -147,6 +147,13 @@ class UrlUtilsTest(unittest.TestCase):
                                           u"http://user:pass@www.example.com/do?a=1")
         self.assertEqual(canonicalize_url(u"http://user:pass@www.example.com/do?a=1#frag", keep_fragments=True),
                                           u"http://user:pass@www.example.com/do?a=1#frag")
+
+    def test_check_valid_urlencode(self):
+        self.assertFalse(check_valid_urlencode(r'http://www.example.com/pictures detail CAN43664.jpg'))
+        self.assertTrue(check_valid_urlencode('http://www.example.com/pictures%20detail%20CAN43664.jpg'))
+
+        self.assertFalse(check_valid_urlencode(r'http://www.example.com/pictures\detail\CAN43664.jpg'))
+        self.assertTrue(check_valid_urlencode('http://www.example.com/pictures%5Cdetail%5CCAN43664.jpg'))
 
 if __name__ == "__main__":
     unittest.main()
