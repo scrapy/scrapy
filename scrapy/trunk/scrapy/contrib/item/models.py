@@ -30,11 +30,6 @@ class ValidationPipeline(object):
         item.validate()
         return item
 
-class SetGUIDPipeline(object):
-    def process_item(self, domain, response, item):
-        spiders.fromdomain(domain).set_guid(item)
-        return item
-
 class RobustScrapedItem(ScrapedItem):
     """
     A more robust scraped item class with a built-in validation mechanism and 

@@ -1,5 +1,5 @@
-from scrapy.item.adaptors import AdaptorPipe
 from scrapy.conf import settings
+from scrapy.item.adaptors import AdaptorPipe
 
 class ScrapedItem(object):
     """
@@ -7,6 +7,7 @@ class ScrapedItem(object):
     'guid' attribute is required, and is an attribute
     that identifies uniquely the given scraped item.
     """
+    _adaptors_dict = {}
 
     def set_adaptors(self, adaptors_dict):
         """
