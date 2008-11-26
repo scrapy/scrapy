@@ -95,7 +95,7 @@ class S3ImagesPipeline(BaseImagesPipeline):
             age_seconds = time.time() - modified_stamp
             age_days = age_seconds / 60 / 60 / 24
 
-            if age_days < self.image_refresh_days:
+            if age_days > self.image_refresh_days:
                 return # returning None force download
 
             etag = response.headers['Etag'][0].strip('"')
