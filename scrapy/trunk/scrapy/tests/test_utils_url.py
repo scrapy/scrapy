@@ -149,11 +149,17 @@ class UrlUtilsTest(unittest.TestCase):
                                           u"http://user:pass@www.example.com/do?a=1#frag")
 
     def test_check_valid_urlencode(self):
-        self.assertFalse(check_valid_urlencode(r'http://www.example.com/pictures detail CAN43664.jpg'))
-        self.assertTrue(check_valid_urlencode('http://www.example.com/pictures%20detail%20CAN43664.jpg'))
-
         self.assertFalse(check_valid_urlencode(r'http://www.example.com/pictures\detail\CAN43664.jpg'))
         self.assertTrue(check_valid_urlencode('http://www.example.com/pictures%5Cdetail%5CCAN43664.jpg'))
+
+        self.assertFalse(check_valid_urlencode('http://www.example.com/pictures detail CAN43664.jpg'))
+        self.assertTrue(check_valid_urlencode('http://www.example.com/pictures+detail%20CAN43664.jpg'))
+
+        self.assertFalse(check_valid_urlencode('http://www.example.com/?q=foo bar&q2=foo2 bar2'))
+        self.assertTrue(check_valid_urlencode('http://www.example.com/?q=foo+bar&q2=foo2%20bar2'))
+
+        self.assertFalse(check_valid_urlencode('http://www.example.com/product,little:london$set%'))
+        self.assertTrue(check_valid_urlencode('http://www.example.com/product%2Clittle%3Alondon%24set%25'))
 
 if __name__ == "__main__":
     unittest.main()

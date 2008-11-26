@@ -148,7 +148,11 @@ def canonicalize_url(url, keep_blank_values=False, keep_fragments=False):
     return urlparse.urlunparse(parts)
 
 def check_valid_urlencode(url):
-    """ check that the url-path is properly quoted
-    TODO should also check the parameters """
+    """ check that the url-path and arguments are properly quoted """
+    def check_str(s):
+        return all((s_plus == urllib.quote(urllib.unquote(s_plus)) for s_plus in s.split('+')))
+    def check_param(p):
+        return all((check_str(s) for s in p.split('=', 1)))
+
     split_result = urlparse.urlsplit(url)
-    return split_result[2] == urllib.quote(urllib.unquote(split_result[2]))
+    return check_str(split_result[2]) and all((check_param(p) for p in split_result[3].split('&')))
