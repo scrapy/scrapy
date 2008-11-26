@@ -82,9 +82,12 @@ class UrlUtilsTest(unittest.TestCase):
                          'product.html?id=200&foo=bar')
 
     def test_canonicalize_url(self):
-        # no query arguments
+        # simplest case
         self.assertEqual(canonicalize_url("http://www.example.com"),
-                         "http://www.example.com")
+                                          "http://www.example.com")
+
+        # always return a str
+        assert isinstance(canonicalize_url(u"http://www.example.com"), str)
 
         # typical usage
         self.assertEqual(canonicalize_url("http://www.example.com/do?a=1&b=2&c=3"),
@@ -96,7 +99,7 @@ class UrlUtilsTest(unittest.TestCase):
         
         # sorting by argument values
         self.assertEqual(canonicalize_url("http://www.example.com/do?c=3&b=5&b=2&a=50"),
-                         "http://www.example.com/do?a=50&b=2&b=5&c=3")
+                                          "http://www.example.com/do?a=50&b=2&b=5&c=3")
 
         # using keep_blank_values
         self.assertEqual(canonicalize_url("http://www.example.com/do?b=&a=2"),
@@ -147,6 +150,14 @@ class UrlUtilsTest(unittest.TestCase):
                                           u"http://user:pass@www.example.com/do?a=1")
         self.assertEqual(canonicalize_url(u"http://user:pass@www.example.com/do?a=1#frag", keep_fragments=True),
                                           u"http://user:pass@www.example.com/do?a=1#frag")
+
+        # urllib.quote uses a mapping cache of encoded characters. when parsing
+        # an already percent-encoded url, it will fail if that url was not
+        # percent-encoded as utf-8, that's why canonicalize_url must always
+        # convert the urls to string. the following test asserts that
+        # functionality.
+        self.assertEqual(canonicalize_url(u'http://www.example.com/caf%E9-con-leche.htm'),
+                                           'http://www.example.com/caf%E9-con-leche.htm')
 
     def test_check_valid_urlencode(self):
         self.assertFalse(check_valid_urlencode(r'http://www.example.com/pictures\detail\CAN43664.jpg'))

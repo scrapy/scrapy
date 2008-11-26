@@ -125,7 +125,7 @@ def add_or_replace_parameter(url, name, new_value, sep='&'):
     return next_url
 
 def canonicalize_url(url, keep_blank_values=False, keep_fragments=False):
-    """Canonicalize url by applying the following procedures:
+    """Canonicalize the given url by applying the following procedures:
 
     - sort query arguments, first by key, then by value
     - percent encode paths and query arguments. non-ASCII characters are
@@ -135,9 +135,13 @@ def canonicalize_url(url, keep_blank_values=False, keep_fragments=False):
     - remove query arguments with blank values (unless keep_blank_values is True)
     - remove fragments (unless keep_fragments is True)
 
+    The url passed can be a str or unicode, while the url returned is always a
+    str.
+
     For examples see the tests in scrapy.tests.test_utils_url
     """
 
+    url = url.encode('utf-8')
     parts = list(urlparse.urlparse(url))
     keyvals = cgi.parse_qsl(parts[4], keep_blank_values)
     keyvals.sort()
