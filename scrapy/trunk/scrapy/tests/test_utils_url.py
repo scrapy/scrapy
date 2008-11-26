@@ -158,8 +158,9 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertFalse(check_valid_urlencode('http://www.example.com/?q=foo bar&q2=foo2 bar2'))
         self.assertTrue(check_valid_urlencode('http://www.example.com/?q=foo+bar&q2=foo2%20bar2'))
 
-        self.assertFalse(check_valid_urlencode('http://www.example.com/product,little:london$set%'))
-        self.assertTrue(check_valid_urlencode('http://www.example.com/product%2Clittle%3Alondon%24set%25'))
+        self.assertFalse(check_valid_urlencode('http://www.example.com/.,:;!@$%^*()_-[]{}|'))
+        self.assertTrue(check_valid_urlencode('http://www.example.com/.,:;!@%24%25%5E*()_-%5B%5D%7B%7D%7C'))
+        self.assertTrue(check_valid_urlencode('http://www.example.com/.%2C%3A%3B%21%40%24%25%5E%2A%28%29_-%5B%5D%7B%7D%7C'))
 
 if __name__ == "__main__":
     unittest.main()

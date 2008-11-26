@@ -150,9 +150,11 @@ def canonicalize_url(url, keep_blank_values=False, keep_fragments=False):
 def check_valid_urlencode(url):
     """ check that the url-path and arguments are properly quoted """
     def check_str(s):
-        return all((s_plus == urllib.quote(urllib.unquote(s_plus)) for s_plus in s.split('+')))
+        for ignore_char in ',:;!@*()':
+            s = s.replace(ignore_char, '')
+        return all(s_plus == urllib.quote(urllib.unquote(s_plus)) for s_plus in s.split('+'))
     def check_param(p):
-        return all((check_str(s) for s in p.split('=', 1)))
+        return all(check_str(s) for s in p.split('=', 1))
 
     split_result = urlparse.urlsplit(url)
-    return check_str(split_result[2]) and all((check_param(p) for p in split_result[3].split('&')))
+    return check_str(split_result.path) and all(check_param(p) for p in split_result.query.split('&'))
