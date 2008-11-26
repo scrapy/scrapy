@@ -57,8 +57,6 @@ class CrawlSpider(BaseSpider):
                 return method
 
         super(CrawlSpider, self).__init__()
-        if not hasattr(self, 'rules'):
-            return
         for rule in self.rules:
             rule.callback = _get_method(rule.callback)
             rule.link_filter = _get_method(rule.link_filter)
@@ -106,9 +104,8 @@ class CrawlSpider(BaseSpider):
 
     def _parse_wrapper(self, response, callback, cb_kwargs, follow):
         """
-        This is were any response (except the ones from the start urls) arrives, and
-        were it's decided whether to extract links or not from it, and if it will
-        be parsed or not.
+        This is were any response arrives, and were it's decided whether
+        to extract links or not from it, and if it will be parsed or not.
         It returns a list of requests/items.
         """
         res = []
