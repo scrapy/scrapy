@@ -44,16 +44,15 @@ class ScrapedItem(object):
             if val or val is False:
                 curr_val = getattr(self, attrname, None)
                 if not curr_val:
-                    newval = val
+                    setattr(self, attrname, val)
                 else:
                     if override:
-                        newval = val
+                        setattr(self, attrname, val)
                     elif add:
                         if all(isinstance(var, basestring) for var in (curr_val, val)):
-                            newval = '%s %s' % (curr_val, val)
+                            setattr(self, attrname, '%s\t%s' % (curr_val, val))
                         elif all(hasattr(var, '__iter__') for var in (curr_val, val)):
-                            newval = curr_val + val
-                setattr(self, attrname, newval)
+                            setattr(self, attrname, curr_val + val)
         elif value:
             setattr(self, attrname, value)
 
