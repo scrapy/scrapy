@@ -138,7 +138,6 @@ def canonicalize_url(url, keep_blank_values=False, keep_fragments=False):
     For examples see the tests in scrapy.tests.test_utils_url
     """
 
-    url = str(url) # URLs *must* be a string; otherwise urllib may fail.
     parts = list(urlparse.urlparse(url))
     keyvals = cgi.parse_qsl(parts[4], keep_blank_values)
     keyvals.sort()
