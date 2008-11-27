@@ -1,12 +1,12 @@
 from django.conf import settings
 from django.conf.urls.defaults import *
 
-from scrapyorg.docs.views import index, document
+from scrapyorg.docs.views import document
 
 
 urlpatterns = patterns('',
-    (r'^$', index),
-    (r'^(?P<url>[\w./-]*)/$', document),
+    url(r'^$', document, {'url': ''}),
+    url(r'^(?P<url>[\w./-]*)/$', document),
 )
 
 if settings.DEBUG: # devel

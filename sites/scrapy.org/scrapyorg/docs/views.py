@@ -7,10 +7,6 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 
 
-def index(request):
-    return document(request, '')
-
-
 def document(request, url):
     docroot = settings.DOC_PICKLE_ROOT
 
