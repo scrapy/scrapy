@@ -160,5 +160,6 @@ def check_valid_urlencode(url):
     def check_param(p):
         return all(check_str(s) for s in p.split('=', 1))
 
+    url = url.encode('utf-8')
     split_result = urlparse.urlsplit(url)
     return check_str(split_result.path) and all(check_param(p) for p in split_result.query.split('&'))
