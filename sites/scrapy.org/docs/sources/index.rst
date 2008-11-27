@@ -10,4 +10,5 @@ Contents:
 .. toctree::
 
    basics
+   scrapy_intro
    tutorial/index
