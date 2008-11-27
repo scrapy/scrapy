@@ -1,5 +1,5 @@
 import unittest
-from scrapy.utils.url import url_is_from_any_domain, safe_url_string, safe_download_url, url_query_parameter, add_or_replace_parameter, url_query_cleaner, canonicalize_url, check_valid_urlencode
+from scrapy.utils.url import url_is_from_any_domain, safe_url_string, safe_download_url, url_query_parameter, add_or_replace_parameter, url_query_cleaner, canonicalize_url
 
 class UrlUtilsTest(unittest.TestCase):
 
@@ -158,20 +158,6 @@ class UrlUtilsTest(unittest.TestCase):
         # functionality.
         self.assertEqual(canonicalize_url(u'http://www.example.com/caf%E9-con-leche.htm'),
                                            'http://www.example.com/caf%E9-con-leche.htm')
-
-    def test_check_valid_urlencode(self):
-        self.assertFalse(check_valid_urlencode(r'http://www.example.com/pictures\detail\CAN43664.jpg'))
-        self.assertTrue(check_valid_urlencode('http://www.example.com/pictures%5Cdetail%5CCAN43664.jpg'))
-
-        self.assertFalse(check_valid_urlencode('http://www.example.com/pictures detail CAN43664.jpg'))
-        self.assertTrue(check_valid_urlencode('http://www.example.com/pictures+detail%20CAN43664.jpg'))
-
-        self.assertFalse(check_valid_urlencode('http://www.example.com/?q=foo bar&q2=foo2 bar2'))
-        self.assertTrue(check_valid_urlencode('http://www.example.com/?q=foo+bar&q2=foo2%20bar2'))
-
-        self.assertFalse(check_valid_urlencode('http://www.example.com/.,:;!@$%^*()_-[]{}|'))
-        self.assertTrue(check_valid_urlencode('http://www.example.com/.,:;!@%24%25%5E*()_-%5B%5D%7B%7D%7C'))
-        self.assertTrue(check_valid_urlencode('http://www.example.com/.%2C%3A%3B%21%40%24%25%5E%2A%28%29_-%5B%5D%7B%7D%7C'))
 
 if __name__ == "__main__":
     unittest.main()
