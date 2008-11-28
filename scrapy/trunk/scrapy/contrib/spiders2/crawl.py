@@ -1,3 +1,5 @@
+import copy
+
 from scrapy.http import Request
 from scrapy.spider import BaseSpider
 from scrapy.item import ScrapedItem
@@ -19,18 +21,18 @@ class Rule(object):
        If True, links will be followed from the pages crawled by this rule.
        It defaults to True when no callback is specified or False when a
        callback is specified
-    link_filter (optional)
+    process_links (optional)
        Can be either a callable, or a string with the name of a method defined
        in the spider's class.
        This method will be called with the list of extracted links matching
        this rule (if any) and must return another list of links.
     """
 
-    def __init__(self, link_extractor, callback=None, cb_kwargs=None, follow=None, link_filter=None):
+    def __init__(self, link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None):
         self.link_extractor = link_extractor
         self.callback = callback
         self.cb_kwargs = cb_kwargs or {}
-        self.link_filter = link_filter
+        self.process_links = process_links
         if follow is None:
             self.follow = False if callback else True
         else:
@@ -50,38 +52,29 @@ class CrawlSpider(BaseSpider):
     rules = ()
 
     def __init__(self):
-        def _get_method(method):
-            if isinstance(method, basestring):
-                return getattr(self, method, None)
-            elif method and callable(method):
-                return method
-
+        """Constructor takes care of compiling rules"""
         super(CrawlSpider, self).__init__()
-        for rule in self.rules:
-            rule.callback = _get_method(rule.callback)
-            rule.link_filter = _get_method(rule.link_filter)
+        self._compile_rules()
 
     def parse(self, response):
-        """This function is called by the core for all the start_urls. Do not
-        override this function, override parse_start_url instead."""
-        if response.url in self.start_urls:
-            return self._parse_wrapper(response, self.parse_start_url, cb_kwargs={}, follow=True)
-        else:
-            return self.parse_url(response)
+        """This function is called by the framework core for all the
+        start_urls. Do not override this function, override parse_start_url
+        instead."""
+        return self._response_downloaded(response, self.parse_start_url, cb_kwargs={}, follow=True)
 
     def parse_start_url(self, response):
-        """Callback function for processing start_urls. It must return a list
-        of ScrapedItems and/or Requests."""
+        """Overrideable callback function for processing start_urls. It must
+        return a list of ScrapedItems and/or Requests"""
         return []
 
-    def scraped_item(self, response, item):
-        """
-        This method is called for each item returned by the spider, and it's intended
-        to do anything that it's needed before returning the item to the core, specially
-        setting its GUID.
-        It receives and returns an item
-        """
-        return item
+    def process_results(self, results, response):
+        """This overridable method is called for each result (item or request)
+        returned by the spider, and it's intended to perform any last time
+        processing required before returning the results to the framework core,
+        for example setting the item GUIDs. It receives a list of results and
+        the response which originated that results. It must return a list
+        of results (Items or Requests)."""
+        return results
 
     def _requests_to_follow(self, response):
         """
@@ -91,18 +84,18 @@ class CrawlSpider(BaseSpider):
         """
         requests = []
         seen = set()
-        for rule in self.rules:
-            links = [link for link in rule.link_extractor.extract_urls(response) if link not in seen]
-            if rule.link_filter:
-                links = rule.link_filter(links)
+        for rule in self._rules:
+            links = [l for l in rule.link_extractor.extract_urls(response) if l not in seen]
+            if rule.process_links:
+                links = rule.process_links(links)
             seen = seen.union(links)
             for link in links:
                 r = Request(url=link.url, link_text=link.text)
-                r.append_callback(self._parse_wrapper, rule.callback, cb_kwargs=rule.cb_kwargs, follow=rule.follow)
+                r.append_callback(self._response_downloaded, rule.callback, cb_kwargs=rule.cb_kwargs, follow=rule.follow)
                 requests.append(r)
         return requests
 
-    def _parse_wrapper(self, response, callback, cb_kwargs, follow):
+    def _response_downloaded(self, response, callback, cb_kwargs, follow):
         """
         This is were any response arrives, and were it's decided whether
         to extract links or not from it, and if it will be parsed or not.
@@ -113,25 +106,20 @@ class CrawlSpider(BaseSpider):
             res.extend(self._requests_to_follow(response))
         if callback:
             cb_res = callback(response, **cb_kwargs) or ()
-            for entry in cb_res:
-                if isinstance(entry, ScrapedItem):
-                    entry = self.scraped_item(response, entry)
+            cb_res = self.process_results(cb_res, response)
             res.extend(cb_res)
         return res
 
-    def parse_url(self, response):
-        """
-        This method is called whenever you run scrapy with the 'parse' command
-        over an URL.
-        """
-        ret = set()
-        for rule in self.rules:
-            links = [link for link in rule.link_extractor.extract_urls(response) if link not in ret]
-            if rule.link_filter:
-                links = rule.link_filter(links)
-            ret = ret.union(links)
-            
-            if rule.callback and rule.link_extractor.match(response.url):
-                ret = ret.union(rule.callback(response))
-        return list(ret)
+    def _compile_rules(self):
+        """Compile the crawling rules"""
 
+        def get_method(method):
+            if callable(method):
+                return method
+            elif isinstance(method, basestring):
+                return getattr(self, method, None)
+
+        self._rules = [copy.copy(r) for r in self.rules]
+        for rule in self._rules:
+            rule.callback = get_method(rule.callback)
+            rule.process_links = get_method(rule.process_links)
