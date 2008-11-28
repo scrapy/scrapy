@@ -48,7 +48,7 @@ class S3ImagesPipeline(BaseImagesPipeline):
         MediaPipeline.__init__(self)
 
     def s3request(self, key, method, body=None, headers=None):
-        url = 'http://%s.s3.amazonaws.com/%s' % (self.bucket_name, key)
+        url = 'http://%s.s3.amazonaws.com/%s%s' % (self.bucket_name, self.prefix, key)
         req = Request(url, method=method, body=body, headers=headers)
         sign_request(req, self.access_key, self.secret_key)
         return req
@@ -71,14 +71,14 @@ class S3ImagesPipeline(BaseImagesPipeline):
         downloaded to.
         """
         image_guid = hashlib.sha1(url).hexdigest()
-        return '%s/full/%s.jpg' % (self.prefix, image_guid)
+        return 'full/%s.jpg' % (image_guid)
 
     def s3_thumb_key(self, url, thumb_id):
         """Return the relative path on the target filesystem for an image to be
         downloaded to.
         """
         image_guid = hashlib.sha1(url).hexdigest()
-        return '%s/thumbs/%s/%s.jpg' % (self.prefix, thumb_id, image_guid)
+        return 'thumbs/%s/%s.jpg' % (thumb_id, image_guid)
 
     def media_to_download(self, request, info):
         """Return if the image should be downloaded by checking if it's already in
