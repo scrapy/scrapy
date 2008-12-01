@@ -4,7 +4,9 @@ Adaptors related with extraction of data
 
 import urlparse
 import re
+from scrapy import log
 from scrapy.http import Response
+from scrapy.utils.url import is_url
 from scrapy.utils.python import flatten
 from scrapy.xpath.selector import XPathSelector, XPathSelectorList
 
@@ -64,26 +66,29 @@ class ExtractImages(object):
             self.base_url = base_url
 
         if not self.base_url:
-            raise AttributeError('You must specify either a response or a base_url to the ExtractImages adaptor.')
+            log.msg('No base URL was found for ExtractImages adaptor, will only extract absolute URLs', log.WARNING)
 
     def extract_from_xpath(self, selector):
         ret = []
         if selector.xmlNode.type == 'element':
-          if selector.xmlNode.name == 'a':
-              children = selector.x('child::*')
-              if len(children) > 1:
+            if selector.xmlNode.name == 'a':
+                children = selector.x('child::*')
+                if len(children) > 1:
+                    ret.extend(selector.x('.//@href'))
+                    ret.extend(selector.x('.//@src'))
+                elif len(children) == 1 and children[0].xmlNode.name == 'img':
+                    ret.extend(children.x('@src'))
+                else:
+                    ret.extend(selector.x('@href'))
+            elif selector.xmlNode.name == 'img':
+                ret.extend(selector.x('@src'))
+            elif selector.xmlNode.name == 'text':
+                ret.extend(selector)
+            else:
                 ret.extend(selector.x('.//@href'))
                 ret.extend(selector.x('.//@src'))
-              elif len(children) == 1 and children[0].xmlNode.name == 'img':
-                ret.extend(children.x('@src'))
-              else:
-                ret.extend(selector.x('@href'))
-          elif selector.xmlNode.name == 'img':
-            ret.extend(selector.x('@src'))
-          else:
-            ret.extend(selector.x('.//@href'))
-            ret.extend(selector.x('.//@src'))
-        elif selector.xmlNode.type == 'attribute' and selector.xmlNode.name in ['href', 'src']:
+                ret.extend(selector.x('.//text()'))
+        else:
             ret.append(selector)
 
         return ret
@@ -92,11 +97,15 @@ class ExtractImages(object):
         if isinstance(locations, basestring):
             locations = [locations]
 
-        rel_links = []
+        rel_urls = []
         for location in flatten(locations):
             if isinstance(location, (XPathSelector, XPathSelectorList)):
-                rel_links.extend(self.extract_from_xpath(location))
+                rel_urls.extend(self.extract_from_xpath(location))
             else:
-                rel_links.append(location)
-        rel_links = extract(rel_links)
-        return [urlparse.urljoin(self.base_url, link) for link in rel_links]
+                rel_urls.append(location)
+        rel_urls = extract(rel_urls)
+
+        if self.base_url:
+            return [urlparse.urljoin(self.base_url, url) for url in rel_urls]
+        else:
+            return filter(rel_urls, is_url)
