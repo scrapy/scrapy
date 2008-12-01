@@ -3,8 +3,8 @@ Monkey patches
 
 These are generally a bad idea.
 """
-from twisted.web.client import HTTPClientFactory, HTTPPageGetter
 import twisted
+from twisted.web.client import HTTPClientFactory
 
 
 # Extend limit for BeautifulSoup parsing loops
@@ -49,6 +49,10 @@ def patch_HTTPClientFactory_gotHeaders():
     setattr(HTTPClientFactory, 'gotHeaders', _new_gotHeaders)
 
 def patch_HTTPPageGetter_handleResponse():
+    from twisted.web.client import PartialDownloadError, HTTPPageGetter
+    from twisted.python import failure
+    from twisted.web import error
+
     def _handleResponse(self, response):
         if self.quietLoss:
             return
