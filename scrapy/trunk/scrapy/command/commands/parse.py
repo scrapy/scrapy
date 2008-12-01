@@ -38,8 +38,9 @@ class Command(ScrapyCommand):
                     items = items.union(ret_items)
                     links = links.union(ret_links)
             else:
-                log.msg('Couldnt find method %s in spider %s' % (method, spider.__name__))
+                log.msg('Couldnt find spider for "%s"' % response.url)
                 continue
 
-        self.print_results(items, links, opts)
+        if items or links:
+            self.print_results(items, links, opts)
 
