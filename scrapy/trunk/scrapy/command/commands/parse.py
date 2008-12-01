@@ -1,9 +1,6 @@
-from scrapy.command import ScrapyCommand
+from scrapy.command.commands.parse_method import Command as ScrapyCommand
 from scrapy.fetcher import fetch
-from scrapy.http import Request
-from scrapy.item import ScrapedItem
 from scrapy.spider import spiders
-from scrapy.utils import display
 from scrapy import log
 
 class Command(ScrapyCommand):
@@ -11,44 +8,38 @@ class Command(ScrapyCommand):
         return "[options] <url>"
 
     def short_desc(self):
-        return "Parse the URL and print their results"
+        return "Parse the URL and print its results"
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("--links", dest="links", action="store_true", help="show extracted links")
-        parser.add_option("--noitems", dest="noitems", action="store_true", help="don't show scraped items")
         parser.add_option("--identify", dest="identify", action="store_true", help="try to use identify instead of parse")
-        parser.add_option("--nocolour", dest="nocolour", action="store_true", help="avoid using pygments to colorize the output")
-
-    def pipeline_process(self, item, opts):
-        return item
 
     def run(self, args, opts):
         if not args:
             print "A URL is required"
             return
 
+        items = set()
+        links = set()
         responses = fetch(args)
         for response in responses:
             spider = spiders.fromurl(response.url)
             if spider:
                 if opts.identify and hasattr(spider, 'identify_products'):
-                    result = spider.identify_products(response)
+                    ret_items, ret_links = ScrapyCommand.run_method(self, response, 'identify_products', args, opts)
                 else:
-                    result = spider.parse(response)
-
-                links = [i for i in result if isinstance(i, Request)]
-                items = [self.pipeline_process(i, opts) for i in result if isinstance(i, ScrapedItem)]
-                for item in items:
-                    item.__dict__.pop('_adaptors_dict', None)
-
-                display.nocolour = opts.nocolour
-                if not opts.noitems:
-                    print "# Scraped Items", "-"*60
-                    display.pprint(items)
-
-                if opts.links:
-                    print "# Links", "-"*68
-                    display.pprint(links)
+                    if hasattr(spider, 'rules'):
+                        for rule in spider.rules:
+                            if rule.link_extractor.match(response.url):
+                                ret_items, ret_links = ScrapyCommand.run_method(self, response, rule.callback, args, opts)
+                                break
+                    else:
+                        ret_items, ret_links = ScrapyCommand.run_method(self, response, 'parse', args, opts)
+                    items = items.union(ret_items)
+                    links = links.union(ret_links)
             else:
-                log.msg('cannot find spider for url: %s' % response.url, level=log.ERROR)
+                log.msg('Couldnt find method %s in spider %s' % (method, spider.__name__))
+                continue
+
+        self.print_results(items, links, opts)
+
