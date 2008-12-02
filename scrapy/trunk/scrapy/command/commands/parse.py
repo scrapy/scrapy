@@ -18,7 +18,7 @@ class Command(ScrapyCommand):
         parser.add_option("--nolinks", dest="nolinks", action="store_true", help="don't show extracted links")
         parser.add_option("--noitems", dest="noitems", action="store_true", help="don't show scraped items")
         parser.add_option("--nocolour", dest="nocolour", action="store_true", help="avoid using pygments to colorize the output")
-        parser.add_option("--matches", dest="matches", action="store_true", help="avoid using pygments to colorize the output")
+        parser.add_option("--matches", dest="matches", action="store_true", help="try to match and parse the url with the defined rules (if any)")
 
     def pipeline_process(self, item, spider, opts):
         return item
