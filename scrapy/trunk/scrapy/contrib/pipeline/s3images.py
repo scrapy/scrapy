@@ -131,6 +131,9 @@ class S3ImagesPipeline(BaseImagesPipeline):
             self._s3_put_image(thumb, key, info)
 
     def _s3_put_image(self, image, key, info):
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+
         buf = StringIO()
         try:
             image.save(buf, 'JPEG')
