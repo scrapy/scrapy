@@ -20,6 +20,10 @@ class Command(ScrapyCommand):
         parser.add_option("--nocolour", dest="nocolour", action="store_true", help="avoid using pygments to colorize the output")
 
     def pipeline_process(self, item, opts):
+        item.set_guid(spider)
+        for key in item.__dict__.keys():
+           if key.startswith('_'):
+               item.__dict__.pop(key, None)
         return item
 
     def run_method(self, response, method, args, opts):
@@ -39,10 +43,6 @@ class Command(ScrapyCommand):
             result = method_fcn(response)
             links = [i for i in result if isinstance(i, Request)]
             items = [self.pipeline_process(i, opts) for i in result if isinstance(i, ScrapedItem)]
-            for item in items:
-                for key in item.__dict__.keys():
-                    if key.startswith('_'):
-                        item.__dict__.pop(key, None)
 
         return items, links
 
