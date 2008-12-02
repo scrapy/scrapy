@@ -72,5 +72,12 @@ class RegexLinkExtractor(LinkExtractor):
 
         return links
 
-    def match(self, url):
-        return any(regex.search(url) for regex in self.allow_res) and not any(regex.search(url) for regex in self.deny_res)
+    def matches(self, url):
+        if self.allow_domains and not url_is_from_any_domain(url, self.allow_domains):
+            return False
+        if self.deny_domains and url_is_from_any_domain(url, self.deny_domains):
+            return False
+            
+        allowed = [regex.search(url) for regex in self.allow_res]
+        denied = [regex.search(url) for regex in self.deny_res]
+        return any(allowed) and not any(denied)

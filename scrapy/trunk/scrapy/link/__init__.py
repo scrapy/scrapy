@@ -71,6 +71,11 @@ class LinkExtractor(FixedSGMLParser):
         if self.current_link and not self.current_link.text:
             self.current_link.text = data
 
+    def matches(self, url):
+        """This extractor matches with any url, since
+        it doesn't contain any patterns"""
+        return True
+
 
 class Link(object):
     """
