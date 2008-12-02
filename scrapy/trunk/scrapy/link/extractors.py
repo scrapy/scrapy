@@ -78,6 +78,6 @@ class RegexLinkExtractor(LinkExtractor):
         if self.deny_domains and url_is_from_any_domain(url, self.deny_domains):
             return False
             
-        allowed = [regex.search(url) for regex in self.allow_res]
-        denied = [regex.search(url) for regex in self.deny_res]
-        return any(allowed) and not any(denied)
+        allowed = [regex.search(url) for regex in self.allow_res] if self.allow_res else [True]
+        denied = [regex.search(url) for regex in self.deny_res] if self.deny_res else []
+        return True if any(allowed) and not any(denied) else False
