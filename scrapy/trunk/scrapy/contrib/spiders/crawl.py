@@ -3,6 +3,7 @@ import copy
 from scrapy.http import Request
 from scrapy.spider import BaseSpider
 from scrapy.item import ScrapedItem
+from scrapy.conf import settings
 
 class Rule(object):
     """
@@ -60,12 +61,10 @@ class CrawlSpider(BaseSpider):
         """This function is called by the framework core for all the
         start_urls. Do not override this function, override parse_start_url
         instead."""
-        return self._response_downloaded(response, self.parse_start_url, cb_kwargs={}, follow=True)
-
-    def parse_start_url(self, response):
-        """Overrideable callback function for processing start_urls. It must
-        return a list of ScrapedItems and/or Requests"""
-        return []
+        for rule in self._rules:
+            if rule.callback and rule.link_extractor.matches(response.url):
+                return self._response_downloaded(response, rule.callback, rule.cb_kwargs, follow=True)
+        return self._response_downloaded(response, None, cb_kwargs={}, follow=True)
 
     def process_results(self, results, response):
         """This overridable method is called for each result (item or request)
@@ -86,7 +85,7 @@ class CrawlSpider(BaseSpider):
         seen = set()
         for rule in self._rules:
             links = [l for l in rule.link_extractor.extract_urls(response) if l not in seen]
-            if rule.process_links:
+            if links and rule.process_links:
                 links = rule.process_links(links)
             seen = seen.union(links)
             for link in links:
@@ -102,7 +101,8 @@ class CrawlSpider(BaseSpider):
         It returns a list of requests/items.
         """
         res = []
-        if follow:
+
+        if follow and settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True):
             res.extend(self._requests_to_follow(response))
         if callback:
             cb_res = callback(response, **cb_kwargs) or ()
