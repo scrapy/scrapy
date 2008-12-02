@@ -28,6 +28,3 @@ EXTENSIONS = []
 # contrib.middleware.retry.RetryMiddleware default settings
 RETRY_TIMES = 3
 RETRY_HTTP_CODES = ['500', '503', '504', '400', '408', '200']
-
-# amazon s3 images backend sometimes fails to authenticate or validate http protocol
-RETRY_HTTP_CODES = RETRY_HTTP_CODES + ['505', '403']
