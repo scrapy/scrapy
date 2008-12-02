@@ -55,7 +55,7 @@ class RegexLinkExtractor(LinkExtractor):
             response = new_response_from_xpaths(response, self.restrict_xpaths)
 
         links = LinkExtractor.extract_urls(self, response, unique)
-        links = [link.strip() for link in links if _is_valid_url(link.url)]
+        links = [link for link in links if _is_valid_url(link.url)]
 
         if self.allow_res:
             links = [link for link in links if _matches(link.url, self.allow_res)]

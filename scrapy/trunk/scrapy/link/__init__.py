@@ -44,7 +44,7 @@ class LinkExtractor(FixedSGMLParser):
         base_url = self.base_url if self.base_url else response.url
         ret = []
         for link in self.links:
-            link.url = urljoin(base_url, link.url)
+            link.url = urljoin(base_url, link.url).strip()
             ret.append(link)
         return ret
 
