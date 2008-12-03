@@ -85,6 +85,10 @@ class Command(ScrapyCommand):
                     for rule in spider.rules:
                         if rule.link_extractor.matches(response.url):
                             ret_items, ret_links = self.run_method(spider, response, rule.callback, args, opts)
+                            extracted_links = rule.link_extractor.extract_urls(response)
+                            for link in extracted_links:
+                                links.add(Request(url=link.url, link_text=link.text))
+
                             items = items.union(ret_items)
                             links = links.union(ret_links)
                 else:
