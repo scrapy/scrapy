@@ -8,17 +8,18 @@ from scrapy import log
 
 class Command(ScrapyCommand):
     def syntax(self):
-        return "[options] <url> <method>"
+        return "[options] <url>"
 
     def short_desc(self):
-        return "Parse the URL with the given spider method and print the results"
+        return "Parse the given URL and print the results"
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--nolinks", dest="nolinks", action="store_true", help="don't show extracted links")
         parser.add_option("--noitems", dest="noitems", action="store_true", help="don't show scraped items")
         parser.add_option("--nocolour", dest="nocolour", action="store_true", help="avoid using pygments to colorize the output")
-        parser.add_option("--matches", dest="matches", action="store_true", help="try to match and parse the url with the defined rules (if any)")
+        parser.add_option("-r", "--rules", dest="rules", action="store_true", help="try to match and parse the url with the defined rules (if any)")
+        parser.add_option("-c", "--callback", dest="callback", action="store", help="use the provided callback for parsing the url")
 
     def pipeline_process(self, item, spider, opts):
         return item
@@ -48,8 +49,8 @@ class Command(ScrapyCommand):
         if not opts.noitems:
             for item in items:
                 for key in item.__dict__.keys():
-                   if key.startswith('_'):
-                       item.__dict__.pop(key, None)
+                    if key.startswith('_'):
+                        item.__dict__.pop(key, None)
             print "# Scraped Items", "-"*60
             display.pprint(list(items))
 
@@ -58,42 +59,32 @@ class Command(ScrapyCommand):
             display.pprint(list(links))
 
     def run(self, args, opts):
-        if opts.matches:
-            url = args[0]
-            method = None
-        else:
-            if len(args) < 2:
-                print "A URL and method is required"
-                return
-            else:
-                url, method = args[:2]
+        if not args:
+            print "An URL is required"
+            return
 
-        items = []
-        links = []
-        for response in fetch([url]):
+        ret_items, ret_links = [], []
+        for response in fetch(args):
             spider = spiders.fromurl(response.url)
             if not spider:
                 log.msg('Couldnt find spider for "%s"' % response.url)
                 continue
 
-            if method:
-                ret_items, ret_links = self.run_method(spider, response, method, args, opts)
-                items.extend(ret_items)
-                links.extend(ret_links)
-            else:
-                if hasattr(spider, 'rules'):
-                    already_parsed = False
-
-                    for rule in spider.rules:
-                        links.extend(Request(url=link.url, link_text=link.text) for link in rule.link_extractor.extract_urls(response))
-                        if not already_parsed and rule.link_extractor.matches(response.url):
-                            already_parsed = True
-                            ret_items, ret_links = self.run_method(spider, response, rule.callback, args, opts)
-                            items.extend(ret_items)
-                            links.extend(ret_links)
+            if opts.callback:
+                items, links = self.run_method(spider, response, opts.callback, args, opts)
+            elif opts.rules:
+                for rule in getattr(spider, 'rules', ()):
+                    if rule.link_extractor.matches(response.url):
+                        items, links = self.run_method(spider, response, rule.callback, args, opts)
+                        break
                 else:
                     log.msg('No rules found for spider "%s", please specify a parsing method' % spider.domain_name)
                     continue
+            else:
+                items, links = self.run_method(spider, response, 'parse', args, opts)
 
-        self.print_results(items, links, opts)
+            ret_items.extend(items)
+            ret_links.extend(links)
+
+        self.print_results(ret_items, ret_links, opts)
 
