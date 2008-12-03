@@ -60,7 +60,7 @@ class Command(ScrapyCommand):
     def run(self, args, opts):
         if opts.matches:
             url = args[0]
-            method = None            
+            method = None
         else:
             if len(args) < 2:
                 print "A URL and method is required"
@@ -68,8 +68,8 @@ class Command(ScrapyCommand):
             else:
                 url, method = args[:2]
 
-        items = set()
-        links = set()
+        items = []
+        links = []
         for response in fetch([url]):
             spider = spiders.fromurl(response.url)
             if not spider:
@@ -78,19 +78,19 @@ class Command(ScrapyCommand):
 
             if method:
                 ret_items, ret_links = self.run_method(spider, response, method, args, opts)
-                items = items.union(ret_items)
-                links = links.union(ret_links)
+                items.extend(ret_items)
+                links.extend(ret_links)
             else:
                 if hasattr(spider, 'rules'):
-                    for rule in spider.rules:
-                        extracted_links = rule.link_extractor.extract_urls(response)
-                        for link in extracted_links:
-                           links.add(Request(url=link.url, link_text=link.text))
+                    already_parsed = False
 
-                        if rule.link_extractor.matches(response.url):
+                    for rule in spider.rules:
+                        links.extend(Request(url=link.url, link_text=link.text) for link in rule.link_extractor.extract_urls(response))
+                        if not already_parsed and rule.link_extractor.matches(response.url):
+                            already_parsed = True
                             ret_items, ret_links = self.run_method(spider, response, rule.callback, args, opts)
-                            items = items.union(ret_items)
-                            links = links.union(ret_links)
+                            items.extend(ret_items)
+                            links.extend(ret_links)
                 else:
                     log.msg('No rules found for spider "%s", please specify a parsing method' % spider.domain_name)
                     continue
