@@ -117,7 +117,7 @@ class ExecutionManager(object):
         for domain in sites:
             spider = spiders.fromdomain(domain)
             if not spider:
-                log.msg('Could not found spider for %s' % domain, log.ERROR)
+                log.msg('Could not find spider for %s' % domain, log.ERROR)
                 continue
             for url in self._start_urls(spider):
                 request = Request(url, callback=spider.parse, dont_filter=True)
@@ -129,7 +129,7 @@ class ExecutionManager(object):
                 request = Request(url=url, callback=spider.parse, dont_filter=True)
                 _add(spider.domain_name, request)
             else:
-                log.msg('Could not found spider for <%s>' % url, log.ERROR)
+                log.msg('Could not find spider for <%s>' % url, log.ERROR)
 
         # requests
         for request in requests:
@@ -138,7 +138,7 @@ class ExecutionManager(object):
             else:
                 spider = spiders.fromurl(request.url)
             if not spider:
-                log.msg('Could not found spider for %s' % request, log.ERROR)
+                log.msg('Could not find spider for %s' % request, log.ERROR)
                 continue
             _add(spider.domain_name, request)
         return perdomain

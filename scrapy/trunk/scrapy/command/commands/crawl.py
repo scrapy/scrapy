@@ -62,12 +62,12 @@ class Command(ScrapyCommand):
                     else:
                         log.msg('Callback %s doesnt exist in spider %s' % (opts.callback, spider.domain_name), log.ERROR)
                 else:
-                    log.msg('Could not found spider for %s' % a, log.ERROR)
+                    log.msg('Cannot find spider for %s' % a, log.ERROR)
 
             if requests:
                 args = requests
             else:
-                log.msg('Couldnt create any requests from the provided arguments', log.ERROR)
+                log.msg('Cannot create any requests with the provided arguments', log.ERROR)
                 return
 
         scrapymanager.runonce(*args, **opts.__dict__)

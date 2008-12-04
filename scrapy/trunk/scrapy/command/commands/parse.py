@@ -27,7 +27,7 @@ class Command(ScrapyCommand):
     def run_method(self, spider, response, method, args, opts):
         spider = spiders.fromurl(response.url)
         if not spider:
-            log.msg('Couldnt find spider for url: %s' % response.url, level=log.ERROR)
+            log.msg('Cannot find spider for url: %s' % response.url, level=log.ERROR)
             return (), ()
 
         items = []
@@ -35,7 +35,7 @@ class Command(ScrapyCommand):
         if method:
             method_fcn = method if callable(method) else getattr(spider, method, None)
             if not method_fcn:
-                log.msg('Couldnt find method %s in %s spider' % (method, spider.domain_name))
+                log.msg('Cannot find method %s in %s spider' % (method, spider.domain_name))
                 return (), ()
 
             result = method_fcn(response)
@@ -67,7 +67,7 @@ class Command(ScrapyCommand):
         for response in fetch(args):
             spider = spiders.fromurl(response.url)
             if not spider:
-                log.msg('Couldnt find spider for "%s"' % response.url)
+                log.msg('Cannot find spider for "%s"' % response.url)
                 continue
 
             if opts.callback:
