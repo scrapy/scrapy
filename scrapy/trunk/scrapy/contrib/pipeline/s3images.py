@@ -10,6 +10,7 @@ import Image
 from scrapy import log
 from scrapy.http import Request
 from scrapy.stats import stats
+from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import DropItem, NotConfigured, HttpException
 from scrapy.contrib.pipeline.media import MediaPipeline
 from scrapy.contrib.aws import sign_request
@@ -40,6 +41,8 @@ class S3ImagesPipeline(BaseImagesPipeline):
     # alternative we can do this using scrapy.contrib.aws.AWSMiddleware
     sign_requests = True
 
+    s3_custom_spider = None
+
     def __init__(self):
         if not settings['S3_IMAGES']:
             raise NotConfigured
@@ -51,7 +54,7 @@ class S3ImagesPipeline(BaseImagesPipeline):
         self.image_refresh_days = settings.getint('IMAGES_REFRESH_DAYS', 90)
         MediaPipeline.__init__(self)
 
-    def s3request(self, key, method, body=None, headers=None):
+    def s3_request(self, key, method, body=None, headers=None):
         url = 'http://%s.s3.amazonaws.com/%s%s' % (self.bucket_name, self.prefix, key)
         req = Request(url, method=method, body=body, headers=headers)
         if self.sign_requests:
@@ -112,8 +115,8 @@ class S3ImagesPipeline(BaseImagesPipeline):
             return '%s#%s' % (key, etag)
 
         key = self.s3_image_key(request.url)
-        req = self.s3request(key, method='HEAD')
-        dfd = self.download(req, info)
+        req = self.s3_request(key, method='HEAD')
+        dfd = self.s3_download(req, info)
         dfd.addCallbacks(_onsuccess, lambda _:None)
         dfd.addErrback(log.err, 'S3ImagesPipeline.media_to_download')
         return dfd
@@ -154,7 +157,18 @@ class S3ImagesPipeline(BaseImagesPipeline):
                 }
 
         buf.seek(0)
-        req = self.s3request(key, method='PUT', body=buf.read(), headers=headers)
-        return self.download(req, info), buf
+        req = self.s3_request(key, method='PUT', body=buf.read(), headers=headers)
+        return self.s3_download(req, info), buf
+
+    def s3_download(self, request, info):
+        """This method is used for HEAD and PUT requests sent to amazon S3
+
+        It tries to use a specific spider domain for uploads, or defaults
+        to current domain spider.
+
+        """
+        if self.s3_custom_spider:
+            return scrapyengine.schedule(request, self.s3_custom_spider)
+        return self.download(request, info.spider)
 
 
