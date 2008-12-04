@@ -35,6 +35,12 @@ class SiteDetails(object):
     def capacity(self):
         return self.max_concurrent_requests - len(self.downloading)
 
+    def outstanding(self):
+        return len(self.active) + len(self.queue)
+
+    def needs_backout(self):
+        return self.outstanding() > (2 * self.max_concurrent_requests)
+
 
 class Downloader(object):
     """Maintain many concurrent downloads and provide an HTTP abstraction
@@ -155,6 +161,10 @@ class Downloader(object):
         else:
             log.msg('Domain %s already closed' % domain, log.TRACE, domain=domain)
 
+    def needs_backout(self, domain):
+        site = self.sites.get(domain)
+        return (site.needs_backout() if site else True)
+
     # Most of the following functions must be reviewed to decide if are really needed
     def domain_is_open(self, domain):
         return domain in self.sites
@@ -169,7 +179,7 @@ class Downloader(object):
         """
         site = self.sites.get(domain)
         if site:
-            return len(site.active) + len(site.queue)
+            return site.outstanding()
 
     def domain_is_idle(self, domain):
         return not self.outstanding(domain)

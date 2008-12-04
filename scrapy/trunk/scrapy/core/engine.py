@@ -38,9 +38,6 @@ class ExecutionEngine(object):
     process for that domain.
     """
 
-    # back off downloading more pages if we exceed this backlog size
-    DOWNLOADER_BACKLOG = 10
-
     def __init__(self):
         self.configured = False
         self.keep_alive = False
@@ -179,9 +176,8 @@ class ExecutionEngine(object):
         if not self.running:
             return
 
-        # outstanding requests in downloader queue
-        outstanding = self.downloader.outstanding(domain)
-        if outstanding > self.DOWNLOADER_BACKLOG:
+        # backout enqueing downloads if domain needs it
+        if self.downloader.needs_backout(domain):
             return
 
         # Next pending request from scheduler
