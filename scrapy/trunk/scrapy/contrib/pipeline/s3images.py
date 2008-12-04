@@ -12,7 +12,7 @@ from scrapy.http import Request
 from scrapy.stats import stats
 from scrapy.core.exceptions import DropItem, NotConfigured, HttpException
 from scrapy.contrib.pipeline.media import MediaPipeline
-from scrapy.contrib.aws import canonical_string, sign_request
+from scrapy.contrib.aws import sign_request
 from scrapy.conf import settings
 
 from .images import BaseImagesPipeline, NoimagesDrop, ImageException
@@ -36,6 +36,10 @@ class S3ImagesPipeline(BaseImagesPipeline):
 #             ('270', (270, 270))
     )
 
+    # Automatically sign requests with AWS authorization header,
+    # alternative we can do this using scrapy.contrib.aws.AWSMiddleware
+    sign_requests = True
+
     def __init__(self):
         if not settings['S3_IMAGES']:
             raise NotConfigured
@@ -50,7 +54,8 @@ class S3ImagesPipeline(BaseImagesPipeline):
     def s3request(self, key, method, body=None, headers=None):
         url = 'http://%s.s3.amazonaws.com/%s%s' % (self.bucket_name, self.prefix, key)
         req = Request(url, method=method, body=body, headers=headers)
-        sign_request(req, self.access_key, self.secret_key)
+        if self.sign_requests:
+            sign_request(req, self.access_key, self.secret_key)
         return req
 
     def image_downloaded(self, response, request, info):

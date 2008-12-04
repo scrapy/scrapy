@@ -4,6 +4,7 @@ import hmac
 import base64
 import hashlib
 from urlparse import urlsplit
+from scrapy.conf import settings
 
 
 METADATA_PREFIX = 'x-amz-meta-'
@@ -74,3 +75,12 @@ def sign_request(req, accesskey, secretkey):
     req.headers['Authorization'] = "AWS %s:%s" % (accesskey, b64_hmac)
 
 
+class AWSMiddleware(object):
+    def __init__(self):
+        self.access_key = settings['AWS_ACCESS_KEY_ID']
+        self.secret_key = settings['AWS_SECRET_ACCESS_KEY']
+
+    def process_request(self, request, spider):
+        if spider.domain_name in 's3.amazonaws.com':
+            request.headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
+            sign_request(request, self.access_key, self.secret_key)
