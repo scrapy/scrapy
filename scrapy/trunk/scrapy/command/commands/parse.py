@@ -73,20 +73,24 @@ class Command(ScrapyCommand):
                 continue
 
             if self.callbacks:
-                items, links = [], []
                 for callback in self.callbacks:
-                    r_items, r_links = self.run_callback(spider, response, callback, args, opts)
-                    items.extend(r_items)
-                    links.extend(r_links)
+                    items, links = self.run_callback(spider, response, callback, args, opts)
+                    ret_items.extend(items)
+                    ret_links.extend(links)
+                continue
 
             elif opts.rules:
-                for rule in getattr(spider, 'rules', ()):
-                    if rule.link_extractor.matches(response.url):
-                        items, links = self.run_callback(spider, response, rule.callback, args, opts)
-                        break
+                rules = getattr(spider, 'rules')
+                if rules:
+                    items, links = [], []
+                    for rule in rules:
+                        if rule.callback and rule.link_extractor.matches(response.url):
+                            items, links = self.run_callback(spider, response, rule.callback, args, opts)
+                            break
                 else:
-                    log.msg('No rules found for spider "%s", please specify a parsing callback' % spider.domain_name)
-                    continue
+                    log.msg('No rules found for spider "%s", calling default method "parse"' % spider.domain_name)
+                    items, links = self.run_callback(spider, response, 'parse', args, opts)
+
             else:
                 items, links = self.run_callback(spider, response, 'parse', args, opts)
 
