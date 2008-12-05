@@ -19,30 +19,32 @@ class Command(ScrapyCommand):
         parser.add_option("--noitems", dest="noitems", action="store_true", help="don't show scraped items")
         parser.add_option("--nocolour", dest="nocolour", action="store_true", help="avoid using pygments to colorize the output")
         parser.add_option("-r", "--rules", dest="rules", action="store_true", help="try to match and parse the url with the defined rules (if any)")
-        parser.add_option("-c", "--callback", dest="callback", action="store", help="use the provided callback for parsing the url")
+        parser.add_option("-c", "--callbacks", dest="callbacks", action="store", help="use the provided callback(s) for parsing the url (separated with commas)")
+
+    def process_options(self, args, opts):
+        self.callbacks = opts.callbacks.split(',') if opts.callbacks else []
 
     def pipeline_process(self, item, spider, opts):
         return item
 
-    def run_method(self, spider, response, method, args, opts):
+    def run_callback(self, spider, response, callback, args, opts):
         spider = spiders.fromurl(response.url)
         if not spider:
             log.msg('Cannot find spider for url: %s' % response.url, level=log.ERROR)
             return (), ()
 
-        items = []
-        links = []
-        if method:
-            method_fcn = method if callable(method) else getattr(spider, method, None)
-            if not method_fcn:
-                log.msg('Cannot find method %s in %s spider' % (method, spider.domain_name))
+        if callback:
+            callback_fcn = callback if callable(callback) else getattr(spider, callback, None)
+            if not callback_fcn:
+                log.msg('Cannot find callback %s in %s spider' % (callback, spider.domain_name))
                 return (), ()
 
-            result = method_fcn(response)
+            result = callback_fcn(response)
             links = [i for i in result if isinstance(i, Request)]
             items = [self.pipeline_process(i, spider, opts) for i in result if isinstance(i, ScrapedItem)]
+            return items, links
 
-        return items, links
+        return (), ()
 
     def print_results(self, items, links, opts):
         display.nocolour = opts.nocolour
@@ -70,18 +72,23 @@ class Command(ScrapyCommand):
                 log.msg('Cannot find spider for "%s"' % response.url)
                 continue
 
-            if opts.callback:
-                items, links = self.run_method(spider, response, opts.callback, args, opts)
+            if self.callbacks:
+                items, links = [], []
+                for callback in self.callbacks:
+                    r_items, r_links = self.run_callback(spider, response, callback, args, opts)
+                    items.extend(r_items)
+                    links.extend(r_links)
+
             elif opts.rules:
                 for rule in getattr(spider, 'rules', ()):
                     if rule.link_extractor.matches(response.url):
-                        items, links = self.run_method(spider, response, rule.callback, args, opts)
+                        items, links = self.run_callback(spider, response, rule.callback, args, opts)
                         break
                 else:
-                    log.msg('No rules found for spider "%s", please specify a parsing method' % spider.domain_name)
+                    log.msg('No rules found for spider "%s", please specify a parsing callback' % spider.domain_name)
                     continue
             else:
-                items, links = self.run_method(spider, response, 'parse', args, opts)
+                items, links = self.run_callback(spider, response, 'parse', args, opts)
 
             ret_items.extend(items)
             ret_links.extend(links)
