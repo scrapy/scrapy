@@ -94,7 +94,9 @@ class ExtractImages(object):
         return ret
 
     def __call__(self, locations):
-        if isinstance(locations, basestring):
+        if not locations:
+            return []
+        elif isinstance(locations, basestring):
             locations = [locations]
 
         rel_urls = []
