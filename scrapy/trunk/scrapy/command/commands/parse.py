@@ -46,18 +46,18 @@ class Command(ScrapyCommand):
 
         return (), ()
 
-    def print_results(self, items, links, opts):
+    def print_results(self, items, links, cb_name, opts):
         display.nocolour = opts.nocolour
         if not opts.noitems:
             for item in items:
                 for key in item.__dict__.keys():
                     if key.startswith('_'):
                         item.__dict__.pop(key, None)
-            print "# Scraped Items", "-"*60
+            print "# Scraped Items - callback: %s" % cb_name, "-"*60
             display.pprint(list(items))
 
         if not opts.nolinks:
-            print "# Links", "-"*68
+            print "# Links - callback: %s" % cb_name, "-"*68
             display.pprint(list(links))
 
     def run(self, args, opts):
@@ -65,7 +65,6 @@ class Command(ScrapyCommand):
             print "An URL is required"
             return
 
-        ret_items, ret_links = [], []
         for response in fetch(args):
             spider = spiders.fromurl(response.url)
             if not spider:
@@ -75,27 +74,22 @@ class Command(ScrapyCommand):
             if self.callbacks:
                 for callback in self.callbacks:
                     items, links = self.run_callback(spider, response, callback, args, opts)
-                    ret_items.extend(items)
-                    ret_links.extend(links)
-                continue
+                    self.print_results(items, links, callback, opts)
 
             elif opts.rules:
-                rules = getattr(spider, 'rules')
+                rules = getattr(spider, 'rules', None)
                 if rules:
                     items, links = [], []
                     for rule in rules:
                         if rule.callback and rule.link_extractor.matches(response.url):
                             items, links = self.run_callback(spider, response, rule.callback, args, opts)
+                            self.print_results(items, links, rule.callback, opts)
                             break
                 else:
-                    log.msg('No rules found for spider "%s", calling default method "parse"' % spider.domain_name)
-                    items, links = self.run_callback(spider, response, 'parse', args, opts)
+                    log.msg('No rules found for spider "%s", please specify a callback for parsing' % spider.domain_name)
+                    continue
 
             else:
                 items, links = self.run_callback(spider, response, 'parse', args, opts)
-
-            ret_items.extend(items)
-            ret_links.extend(links)
-
-        self.print_results(ret_items, ret_links, opts)
+                self.print_results(items, links, 'parse', opts)
 
