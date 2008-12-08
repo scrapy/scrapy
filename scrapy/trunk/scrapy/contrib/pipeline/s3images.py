@@ -170,6 +170,6 @@ class S3ImagesPipeline(BaseImagesPipeline):
         """
         if self.s3_custom_spider:
             return scrapyengine.schedule(request, self.s3_custom_spider)
-        return self.download(request, info.spider)
+        return self.download(request, info)
 
 
