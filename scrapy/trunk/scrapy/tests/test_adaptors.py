@@ -32,9 +32,12 @@ class AdaptorsTestCase(unittest.TestCase):
         sample_xsel = XmlXPathSelector(sample_response)
         sample_adaptor = adaptors.ExtractImages(response=sample_response)
 
-        self.assertEqual(sample_adaptor(sample_xsel.x('//@href')),
+        self.assertEqual(sample_adaptor(None), [])
+        self.assertEqual(sample_adaptor([]), [])
+        self.assertEqual(sample_adaptor('http://foobar.com/my_image.jpg'), ['http://foobar.com/my_image.jpg'])
+        self.assertEqual(sample_adaptor([sample_xsel.x('//@href'), 'my_image.gif']),
                          [u'http://foobar.com/lala1/lala1.html', u'http://foobar.com/lala2.html',
-                          u'http://foobar.com/pepepe/papapa/lala3.html', u'http://foobar.com/lala4.html'])
+                          u'http://foobar.com/pepepe/papapa/lala3.html', u'http://foobar.com/lala4.html', u'http://foobar.com/my_image.gif'])
         self.assertEqual(sample_adaptor(sample_xsel.x('//a')),
                          [u'http://foobar.com/lala1/lala1.html', u'http://foobar.com/lala2.html',
                           u'http://foobar.com/pepepe/papapa/lala3.html', u'http://foobar.com/imgs/lala4.jpg'])
