@@ -154,6 +154,7 @@ class S3ImagesPipeline(BaseImagesPipeline):
                 'X-Amz-Acl': 'public-read',
                 'X-Amz-Meta-Width': str(width),
                 'X-Amz-Meta-Height': str(height),
+                'Cache-Control': 'max-age=172800',
                 }
 
         buf.seek(0)
