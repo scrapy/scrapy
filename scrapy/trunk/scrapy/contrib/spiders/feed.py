@@ -3,6 +3,7 @@ from scrapy.spider import BaseSpider
 from scrapy.item import ScrapedItem
 from scrapy.http import Request
 from scrapy.utils.iterators import xmliter, csviter
+from scrapy.utils.decompressor import Decompressor
 from scrapy.xpath.selector import XmlXPathSelector
 from scrapy.core.exceptions import UsageError, NotConfigured
 
@@ -39,6 +40,9 @@ class XMLFeedSpider(BaseSpider):
     def parse(self, response):
         if not hasattr(self, 'parse_item'):
             raise NotConfigured('You must define parse_item method in order to scrape this XML feed')
+
+        decompressor = Decompressor()
+        response = decompressor.extract(response)
 
         if self.iternodes:
             nodes = xmliter(response, self.itertag)
@@ -81,6 +85,9 @@ class CSVFeedSpider(BaseSpider):
     def parse(self, response):
         if not hasattr(self, 'parse_row'):
             raise NotConfigured('You must define parse_row method in order to scrape this CSV feed')
+
+        decompressor = Decompressor()
+        response = decompressor.extract(response)
 
         response = self.adapt_response(response)
         return self.parse_rows(response)
