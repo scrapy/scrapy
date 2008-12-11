@@ -13,6 +13,7 @@ from pydispatch import dispatcher
 from scrapy import log
 from scrapy.core import signals
 from scrapy.conf import settings
+from scrapy.core.exceptions import NotConfigured
 
 class ShoveItemPipeline(object):
 
@@ -37,7 +38,8 @@ class ShoveItemPipeline(object):
         else:
             status = 'new'
 
-        self.stores[domain][guid] = item
+        if not status == 'old':
+            self.stores[domain][guid] = item
         self.log(domain, item, status)
         return item
 
