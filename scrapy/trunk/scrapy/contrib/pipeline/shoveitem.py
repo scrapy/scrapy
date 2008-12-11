@@ -1,7 +1,7 @@
 """
 A pipeline to persist objects using shove. 
 
-New is a "new generation" shelve. For more information see: 
+Shove is a "new generation" shelve. For more information see: 
 http://pypi.python.org/pypi/shove
 """
 
@@ -10,6 +10,7 @@ from string import Template
 from shove import Shove
 from pydispatch import dispatcher
 
+from scrapy import log
 from scrapy.core import signals
 from scrapy.conf import settings
 
@@ -26,7 +27,18 @@ class ShoveItemPipeline(object):
         dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
 
     def process_item(self, domain, response, item):
-        self.stores[domain][str(item.guid)] = item
+        guid = str(item.guid)
+
+        if guid in self.stores[domain]:
+            if self.stores[domain][guid] == item:
+                status = 'old'
+            else:
+                status = 'upd'
+        else:
+            status = 'new'
+
+        self.stores[domain][guid] = item
+        self.log(domain, item, status)
         return item
 
     def domain_open(self, domain):
@@ -35,3 +47,6 @@ class ShoveItemPipeline(object):
 
     def domain_closed(self, domain):
         self.stores[domain].sync()
+
+    def log(self, domain, item, status):
+        log.msg("Shove (%s): Item guid=%s" % (status, item.guid), level=log.DEBUG, domain=domain)
