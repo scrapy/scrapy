@@ -3,6 +3,7 @@ Scrapy Intro
 
 Scrapy is a framework designed for retrieving information from websites.
 The basic idea of scrapy is to be a bot that goes through websites, getting pages, extracting links and items (which can be any kind of information).
+
 The framework is formed by components that take care of different activities.
 
 These components are *basically*:
@@ -17,33 +18,39 @@ These components are *basically*:
 Core
 ----
 Scrapy's core is the most important component (obviously) and the one in charge of getting/receiving information, and delivering it to your spiders (among many other things).
+
 However, we won't talk about the core here, because it doesn't really concern anyone who wants to write spiders, so we'll move on.
 
 Spiders
 -------
 We'll start off by the spiders because they're the ones that actually use the other components, and they are used themselves by scrapy's core, so they must be the first for you to know about.
-Spiders are little programs, let's say, whose purpose is to scrape information from html pages or other data sources. Having said that, it's obvious that their process is something like:
-1) Request for information and receive it.
-2) Find what you were looking for in the response you got.
-3) Adapt it (or not).
-4) Store it.
 
-Of course, you won't have to deal with sending requests and receiving responses yourself. Scrapy will do that job for you, so that you can concentrate in the one thing
-that probably brought you here: the information.
+Spiders are little programs, let's say, whose purpose is to scrape information from html pages or other data sources. Having said that, it's obvious that their process is something like:
+
+1. Request for information and receive it.
+2. Find what you were looking for in the response you got.
+3. Adapt it (or not).
+4. Store it.
+
+Of course, you won't have to deal with sending requests and receiving responses yourself. Scrapy will do that job for you, so that you can concentrate in the one thing that probably brought you here: the information.
+
 In order to tell Scrapy how do you want to handle your information, you must define a Spider. This is done by making a class that heredates from BaseSpider.
-BaseSpider is a really basic class (as its name suggests), so it doesn't bring you much functionality for scraping HTML pages (since they require you to follow links, and
-differentiate many layouts), but it may be useful in case you're doing something totally different, or in case you want to write your own way of crawling.
+BaseSpider is a really basic class (as its name suggests), so it doesn't bring you much functionality for scraping HTML pages (since they require you to follow links, and differentiate many layouts), but it may be useful in case you're doing something totally different, or in case you want to write your own way of crawling. 
+
 In other words, BaseSpider is the most simple spider.
+
 It has only these attributes:
+
 * domain_name: which indicates the domain of the website you'd like to scrape in a string.
 * start_urls: a list containing the urls you'd like to set as your enter point to the website.
 * download_delay: an (optional) delay in seconds to wait before sending each request.
 
 And these two methods:
+
 * init_domain: it's called as soon as the spider is loaded, and it could be useful for initializing stuff.
 * parse: this is the most important part of the spider, and it's where any response arrives.
 
-So now you should figure out how spiders work, but just to make it sure, I'll show you an example:::
+So now you should figure out how spiders work, but just to make it sure, I'll show you an example::
 
     from scrapy import log # This module is very useful for printing debug information
     from scrapy.spider import BaseSpider
@@ -69,23 +76,23 @@ And that's when the selectors appear...
 Selectors
 ---------
 Selectors are *the* way you have to extract information from documents. They retrieve information from the response's body, given an XPath, or a Regular Expression that you provide.
-Currently there are two kinds of selectors, HtmlXPathSelectors, and XmlXPathSelectors. Both work in the same way; they are first instanciated with a response, for example:::
+
+Currently there are two kinds of selectors, HtmlXPathSelectors, and XmlXPathSelectors. Both work in the same way; they are first instanciated with a response, for example::
 
     hxs = HtmlXPathSelector(response)
 
-
 Now, before going on with selectors, I must tell you about a pretty cool feature that Scrapy has, and which you'll surely find very useful whenever you're writing spiders.
-This feature is the Scrapy shell, and you can use it by calling your project manager with the 'shell' argument; something like:::
+
+This feature is the Scrapy shell, and you can use it by calling your project manager with the 'shell' argument; something like::
 
     [user@host ~/myproject]$ ./scrapy-manager.py shell
 
 Notice that you'll have to install IPython in order to use this feature, but believe me that it worths it; the shell is **very** useful.
-With the shell you can simulate parsing a webpage, either by calling "scrapy-manager shell" with an url as an additional parameter, or by using the shell's 'get' command,
-which tries to retreive the given url, and fills in the 'response' variable with the result.
 
+With the shell you can simulate parsing a webpage, either by calling "scrapy-manager shell" with an url as an additional parameter, or by using the shell's 'get' command, which tries to retreive the given url, and fills in the 'response' variable with the result.
 
 Ok, so now let's use the shell to show you a bit how do selectors work.
-We'll use an example page located in Scrapy's site (http://docs.scrapy.org/examples/sample1.htm), whose markup is:::
+We'll use an example page located in Scrapy's site (http://docs.scrapy.org/examples/sample1.htm), whose markup is::
 
     <html>
      <head>
@@ -103,14 +110,13 @@ We'll use an example page located in Scrapy's site (http://docs.scrapy.org/examp
      </body>
     </html>
 
-First, we open the shell:::
+First, we open the shell::
 
     [user@host ~/myproject]$ ./scrapy-manager.py shell 'http://docs.scrapy.org/examples/sample1.html'
 
-Then, after the shell loads, you'll have some already-made objects for you to play with.
-Two of them, hxs and xxs, are selectors.
+Then, after the shell loads, you'll have some already-made objects for you to play with. Two of them, hxs and xxs, are selectors.
 
-You could instanciate your own by doing:::
+You could instanciate your own by doing::
 
     from scrapy.xpath.selector import HtmlXPathSelector, XmlXPathSelector
     my_html_selector = HtmlXPathSelector(r)
@@ -118,8 +124,9 @@ You could instanciate your own by doing:::
 
 Where 'r' is the object that scrapy already created for you containing the given url's response.
 
-But anyway, we'll stick to the selectors scrapy already created for us, and more specifically, the HtmlXPathSelector (since we're working with an html document right now)
-So let's try some expressions:::
+But anyway, we'll stick to the selectors scrapy already created for us, and more specifically, the HtmlXPathSelector (since we're working with an html document right now).
+
+So let's try some expressions::
 
     # The title
     In [1]: hxs.x('//title/text()')
@@ -192,8 +199,9 @@ There are some things to keep in mind here:
 3. The extract() method *always* returns a list, even if it contains only one element. Don't forget that.
 
 You may also have noticed that I've used another method up there; the re() method.
-This one is very useful when the data extracted by XPath is not enough and you *have to* (remember to not abuse of regexp) make an extra parsing of the information you've got.
-In this cases, you just apply the re() method over any XPathSelector/XPathSelectorList you have with a regexp compile pattern as the only argument, or a string with the pattern to be
-compiled.
-Remember that the re() method *always* returns a list, which means that you can't go back to a node from the result of a re() call (which is actually pretty obvious).
 
+This one is very useful when the data extracted by XPath is not enough and you *have to* (remember to not abuse of regexp) make an extra parsing of the information you've got.
+
+In this cases, you just apply the re() method over any XPathSelector/XPathSelectorList you have with a regexp compile pattern as the only argument, or a string with the pattern to be compiled.
+
+Remember that the re() method *always* returns a list, which means that you can't go back to a node from the result of a re() call (which is actually pretty obvious).
