@@ -26,5 +26,5 @@ PRIORITIZER = 'scrapy.core.prioritizers.RandomPrioritizer'
 EXTENSIONS = []
 
 # contrib.middleware.retry.RetryMiddleware default settings
-RETRY_TIMES = 3
+RETRY_TIMES = 2 # initial response + 2 retries = 3 requests
 RETRY_HTTP_CODES = ['500', '503', '504', '400', '408', '200']

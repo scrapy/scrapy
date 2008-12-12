@@ -70,6 +70,7 @@ class DownloaderMiddlewareManager(object):
 
         process_response MUST return a Response object. It could alter the given
         response, or it could create a brand-new Response.
+        To drop the response entirely an IgnoreRequest exception must be raised.
 
 
     process_exception(self, request, exception, spider)

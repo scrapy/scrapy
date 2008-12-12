@@ -38,26 +38,19 @@ class RetryMiddleware(object):
 
     def __init__(self):
         self.failed_count = {}
-        self.max_retries = settings.getint('RETRY_TIMES')
+        self.retry_times = settings.getint('RETRY_TIMES')
+        self.retry_http_codes = map(int, settings.getlist('RETRY_HTTP_CODES'))
 
     def process_exception(self, request, exception, spider):
-        retry = False
-
-        if isinstance(exception, self.EXCEPTIONS_TO_RETRY):
-            retry = True
-        elif isinstance(exception, HttpException):
-            if exception.status in settings.getlist('RETRY_HTTP_CODES'):
-                retry = True
-
-        if retry:
+        if isinstance(exception, self.EXCEPTIONS_TO_RETRY) or (isinstance(exception, HttpException) and (int(exception.status) in self.retry_http_codes)):
             fp = request.fingerprint()
-            count = self.failed_count[fp] = self.failed_count.get(fp, 0) + 1
+            self.failed_count[fp] = self.failed_count.get(fp, 0) + 1
 
-            if self.failed_count[fp] < self.max_retries:
-                log.msg("Retrying %s (failed %d times): %s" % (request, count, exception), level=log.DEBUG, domain=spider.domain_name)
+            if self.failed_count[fp] <= self.retry_times:
+                log.msg("Retrying %s (failed %d times): %s" % (request, self.failed_count[fp], exception), domain=spider.domain_name, level=log.DEBUG)
                 retryreq = request.copy()
                 retryreq.dont_filter = True
                 return retryreq
             else:
-                log.msg("Discarding %s (failed %d times): %s" % (request, count, exception), domain=spider.domain_name, level=log.DEBUG)
+                log.msg("Discarding %s (failed %d times): %s" % (request, self.failed_count[fp], exception), domain=spider.domain_name, level=log.DEBUG)
 
