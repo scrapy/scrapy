@@ -29,7 +29,6 @@ from twisted.internet.defer import TimeoutError as UserTimeoutError
 
 from scrapy import log
 from scrapy.core.exceptions import HttpException
-from scrapy.stats import stats
 from scrapy.conf import settings
 
 class RetryMiddleware(object):
@@ -46,16 +45,6 @@ class RetryMiddleware(object):
         if isinstance(exception, self.EXCEPTIONS_TO_RETRY) or (isinstance(exception, HttpException) and (int(exception.status) in self.retry_http_codes)):
             fp = request.fingerprint()
             self.failed_count[fp] = self.failed_count.get(fp, 0) + 1
-            if isinstance(exception, self.EXCEPTIONS_TO_RETRY):
-                exception_name = exception.__name__
-                if exception_name == 'TimeoutError':
-                    if 'defer' in str(exception):
-                        exception_name = 'UserTimeoutError'
-                    else:
-                        exception_name = 'ServerTimeoutError'
-                stats.incpath('%s/conn_error_count/%s' % (spider.domain_name, exception_name))
-            else:
-                stats.incpath('%s/http_error_count/%d' % (spider.domain_name, int(exception.status)))
 
             if self.failed_count[fp] <= self.retry_times:
                 log.msg("Retrying %s (failed %d times): %s" % (request, self.failed_count[fp], exception), domain=spider.domain_name, level=log.DEBUG)
