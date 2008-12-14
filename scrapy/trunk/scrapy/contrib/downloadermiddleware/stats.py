@@ -38,7 +38,6 @@ class DownloaderStats(object):
         stats.incpath('%s/downloader/exception_type_count/%s' % (spider.domain_name, ex_class))
         if isinstance(exception, HttpException):
             self._inc_response_count(exception.response, spider.domain_name)
-        raise exception
 
     def _inc_response_count(self, response, domain):
         stats.incpath('_global/downloader/response_count')
