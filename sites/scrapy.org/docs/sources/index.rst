@@ -12,3 +12,4 @@ Contents:
    basics
    scrapy_intro
    tutorial/index
+   tutorial2/index
