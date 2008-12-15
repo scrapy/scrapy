@@ -7,18 +7,18 @@ from scrapy.link.extractors import RegexLinkExtractor
 from scrapy.contrib.spiders import CrawlSpider, Rule
 
 class $classname(CrawlSpider):
-    domain_name = "$site"
+    domain_name = '$site'
     start_urls = ['http://www.$site/']
 
     rules = (
-        Rule(RegexLinkExtractor(allow=(r'Items/', ), 'parse_item', follow=True)
+        Rule(RegexLinkExtractor(allow=(r'Items/', )), 'parse_item', follow=True),
     )
 
     def parse_item(self, response):
         #xs = HtmlXPathSelector(response)
         #i = ScrapedItem()
-        #i.attribute('site_id', xs.x("//input[@id="sid"]/@value"))
-        #i.attribute('name', xs.x("//div[@id='name']"))
-        #i.attribute('description', xs.x("//div[@id='description']"))
+        #i.attribute('site_id', xs.x('//input[@id="sid"]/@value'))
+        #i.attribute('name', xs.x('//div[@id="name"]'))
+        #i.attribute('description', xs.x('//div[@id="description"]'))
 
 SPIDER = $classname()
