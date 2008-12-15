@@ -43,15 +43,10 @@ padding:0pt 0px 5px; border-bottom:4px solid #462217;}
 .box .post a:hover.more { color:#FFF;}
 
 #footer { margin:45px auto 0; text-align:center; color:#FFF; padding:15px 10px ; background:url('../images/footer-bg.jpg') repeat-x left top #5b2a16; border-top:1px solid #b5331a;}
-#footer ul { list-style-type:none; width:41%; margin:0 auto; padding-left:75px; }
-#footer ul li { float:left; padding:0 10px; font-size:110%; border-right:1px solid #b2c0c9; }
-ul li.last { border-right:none !important;}
+#footer ul { list-style-type:none; margin:0 auto; padding-left:75px; }
+#footer ul li { display: inline; padding:0 10px; border-right:1px solid #b2c0c9; }
+#footer ul li.last { border-right:none;}
 #footer li a { text-decoration:none; border-bottom:1px solid #884a2b;  color:#FFF;}
 #footer li a:hover, #footer p a:hover { color:#ffe114; }
-#footer p {line-height:1.1em; font-size:90%;}
+#footer p {line-height:1.1em; font-size: .8em;}
 #footer p a { color:#fff; }
-
-
-
-
-
