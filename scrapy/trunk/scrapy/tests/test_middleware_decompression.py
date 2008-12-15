@@ -1,12 +1,12 @@
 import os
 from unittest import TestCase, main
 from scrapy.http import Response, ResponseBody
-from scrapy.utils.decompressor import Decompressor
+from scrapy.contrib.downloadermiddleware.decompression import DecompressionMiddleware
 
-class ScrapyDecompressTest(TestCase):
+class ScrapyDecompressionTest(TestCase):
     uncompressed_body = ''
     test_responses = {}
-    decompressor = Decompressor()
+    middleware = DecompressionMiddleware()
     
     def setUp(self):
         self.datadir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data', 'compressed')
@@ -22,24 +22,20 @@ class ScrapyDecompressTest(TestCase):
             self.test_responses[format] = Response('foo.com', 'http://foo.com/bar', body=body)
     
     def test_tar(self):
-        ret = self.decompressor.extract(self.test_responses['tar'])
-        if ret:
-            self.assertEqual(ret.body.to_string(), self.uncompressed_body)
+        response, format = self.middleware.extract(self.test_responses['tar'])
+        self.assertEqual(response.body.to_string(), self.uncompressed_body)
         
     def test_zip(self):
-        ret = self.decompressor.extract(self.test_responses['zip'])
-        if ret:
-            self.assertEqual(ret.body.to_string(), self.uncompressed_body)
+        response, format = self.middleware.extract(self.test_responses['zip'])
+        self.assertEqual(response.body.to_string(), self.uncompressed_body)
     
     def test_gz(self):
-        ret = self.decompressor.extract(self.test_responses['xml.gz'])
-        if ret:
-            self.assertEqual(ret.body.to_string(), self.uncompressed_body)
+        response, format = self.middleware.extract(self.test_responses['xml.gz'])
+        self.assertEqual(response.body.to_string(), self.uncompressed_body)
 
     def test_bz2(self):
-        ret = self.decompressor.extract(self.test_responses['xml.bz2'])
-        if ret:
-            self.assertEqual(ret.body.to_string(), self.uncompressed_body)
+        response, format = self.middleware.extract(self.test_responses['xml.bz2'])
+        self.assertEqual(response.body.to_string(), self.uncompressed_body)
         
 if __name__ == '__main__':
     main()
