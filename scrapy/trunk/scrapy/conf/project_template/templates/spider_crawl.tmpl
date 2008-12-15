@@ -11,7 +11,7 @@ class $classname(CrawlSpider):
     start_urls = ['http://www.$site/']
 
     rules = (
-        Rule(RegexLinkExtractor(allow=(r'Items/', ), 'parse_items', follow=True)
+        Rule(RegexLinkExtractor(allow=(r'Items/', ), 'parse_item', follow=True)
     )
 
     def parse_item(self, response):
