@@ -11,5 +11,5 @@ Contents:
    :maxdepth: 2
 
    intro/index
-   tutorial2/index
+   tutorial/index
    reference/index
