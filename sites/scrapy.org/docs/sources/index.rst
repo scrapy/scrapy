@@ -13,3 +13,4 @@ Contents:
    scrapy_intro
    tutorial/index
    tutorial2/index
+   reference/index

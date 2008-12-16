@@ -1,0 +1,6 @@
+Reference
+=========
+
+.. toctree::
+
+   settings
