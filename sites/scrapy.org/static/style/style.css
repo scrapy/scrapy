@@ -2,7 +2,15 @@
 
 /* main elements */
 
-body { margin:0; padding:0; background:url('../images/main-bg.jpg') repeat-x left top ; font-family:"Lucida Sans", Verdana, Helvetica, sans-serif; font-size:small; color:#333; background-color:#FFF; }
+body { 
+  margin:0;
+  padding:0;
+  background: url('../images/main-bg.jpg') repeat-x left top;
+  font-family: "Lucida Sans", Verdana, Helvetica, sans-serif;
+  font-size:small; 
+  color:#333;
+  background-color:#FFF;
+}
 a { color:#6e0909; text-decoration:none; border-bottom:1px solid #d78888;}
 a:hover { color:#f99800; border-bottom:1px solid #f7b7b7; }
 .clear { clear:both; overflow:hidden; }
@@ -20,17 +28,23 @@ p { line-height:1.5em; }
 
 /* structure */
 #header h1 { background:url('../images/logo.jpg') no-repeat left top ; text-indent: -5000px; width:545px; height:65px }
-#container { width:820px; margin:42px auto 0;  }
+
+#container { 
+  float: left;
+  width: 100%;
+  max-width: 1074px;
+  margin: 42px 10px 0;
+}
+
 #content { clear:left; margin-top:10px; }
 #left-column { 
-  width:525px; 
   float:left; 
-  margin: 25px 20px 0 0;
+  margin: 25px 274px 0 0;
 }
 #right-column { 
   width:274px;
-  float:left;
-  margin: 25px 0 0;
+  float:right;
+  margin: 25px 0 0 -274px;
 }
 
 ul#navigation { list-style-type:none; margin:0 0 18px -12px; padding:0;}
@@ -63,8 +77,8 @@ padding:0pt 0px 5px; border-bottom:4px solid #462217;}
 .box .post a.more { font-size:0.8em; color:#ffe114; border-bottom:none;}
 .box .post a:hover.more { color:#FFF;}
 
-#footer { margin:45px auto 0; text-align:center; color:#FFF; padding:15px 10px ; background:url('../images/footer-bg.jpg') repeat-x left top #5b2a16; border-top:1px solid #b5331a;}
-#footer ul { list-style-type:none; margin:0 auto; padding-left:75px; }
+#footer { margin:45px 0; color:#FFF; padding: 15px 20px; background:url('../images/footer-bg.jpg') repeat-x left top #5b2a16; border-top:1px solid #b5331a;}
+#footer ul { list-style-type:none; margin:0 0 0 -10px; padding: 0;}
 #footer ul li { display: inline; padding:0 10px; border-right:1px solid #b2c0c9; }
 #footer ul li.last { border-right:none;}
 #footer li a { text-decoration:none; border-bottom:1px solid #884a2b;  color:#FFF;}
