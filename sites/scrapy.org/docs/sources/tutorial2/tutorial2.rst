@@ -61,20 +61,19 @@ Now it's the moment to surf that page, and see how we can do to extract data fro
 For this task is almost mandatory that you have Firefox FireBug extension, which allows you to browse through HTML markup in an easy and comfortable way. Otherwise you'd have
 to search for tags manually through the body, which can be *very* tedious.
 
-[IMG]
+.. image:: scrot1.png
 
 What we see at first sight, is that the directory is divided in categories, which are also divided in subcategories.
 However, it seems as if there are more subcategories than the ones being shown in this page, so we'll keep looking...
 
-[IMG]
+.. image:: scrot2.png
 
 Hmmkay... The only new thing here is that there are lots of subcategories, let's see what's inside them...
 
-[IMG]
+.. image:: scrot3.png
 
-Right, this looks more interesting. Not only subcategories themselves have more subcategories, but they have links to websites (which is in fact the purpose of the directory).
-Now, there's basically one thing to take into account about the previous, and it's the fact that apparently, categories urls are always of the kind
-*http://www.google.com/Category/Subcategory/Another_Subcategory* (which is not very distinctive actually, but possible to use).
+| Right, this looks more interesting. Not only subcategories themselves have more subcategories, but they have links to websites (which is in fact the purpose of the directory).
+| Now, there's basically one thing to take into account about the previous, and it's the fact that apparently, categories urls are always of the kind *http://www.google.com/Category/Subcategory/Another_Subcategory* (which is not very distinctive actually, but possible to use).
 
 So, having said that, a possible rule set for the categories could be::
 
@@ -121,11 +120,16 @@ and it will actually work, altough it won't do any parsing, since parse_category
 
 As you can see in any page containing links to websites in the directory (e.g. http://www.google.com/Top/Arts/Awards/), those links are preceded by a
 ranking bar. That could be a nice reference at the moment of selecting an area with an XPath expression.
+Let's use FireBug and see how we can identify those bars.
+
+[IMG]
+
+As you can see, we loaded the page in the Scrapy shell, and tried an XPath expression for finding the ranking bars, which actually worked!
 So, a possible *parse_category* could be::
 
     def parse_category(self, response):
-        items = []
-        hxs = HtmlXPathSelector(response)
+        items = [] # The item (links to websites) list we're going to return
+        hxs = HtmlXPathSelector(response) # The selector we're going to use in order to extract data from the page
         links = hxs.x('//td[descendant::a[contains(@href, "#pagerank")]]/following-sibling::td//a')
 
         for link in links:
