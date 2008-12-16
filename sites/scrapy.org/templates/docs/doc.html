@@ -13,17 +13,6 @@
 {{ doc.toc|safe }}
 {% endif %}
 
-<h3>Browse</h3>
-<ul>
-  {% if doc.prev %}
-  <li>Prev: <a href="{{ doc.prev.link }}">{{ doc.prev.title|safe }}</a></li>
-  {% endif %}
-  {% if doc.next %}
-  <li>Next: <a href="{{ doc.next.link }}">{{ doc.next.title|safe }}</a></li>
-  {% endif %}
-</ul>
-
-
 {% if doc.parents %}
 {% for p in doc.parents %}
 <ul><li><a href="{{ p.link }}">{{ p.title|safe }}</a>
@@ -33,5 +22,15 @@
 </li>
 </ul>
 {% endif %}
+
+<h3>Browse</h3>
+<ul>
+  {% if doc.prev %}
+  <li>Prev: <a href="{{ doc.prev.link }}">{{ doc.prev.title|safe }}</a></li>
+  {% endif %}
+  {% if doc.next %}
+  <li>Next: <a href="{{ doc.next.link }}">{{ doc.next.title|safe }}</a></li>
+  {% endif %}
+</ul>
 
 {% endblock %}
