@@ -77,7 +77,7 @@ padding:0pt 0px 5px; border-bottom:4px solid #462217;}
 .box .post a.more { font-size:0.8em; color:#ffe114; border-bottom:none;}
 .box .post a:hover.more { color:#FFF;}
 
-#footer { margin:45px 0; color:#FFF; padding: 15px 20px; background:url('../images/footer-bg.jpg') repeat-x left top #5b2a16; border-top:1px solid #b5331a;}
+#footer { margin: 45px 0 0; color:#FFF; padding: 15px 20px; background:url('../images/footer-bg.jpg') repeat-x left top #5b2a16; border-top:1px solid #b5331a;}
 #footer ul { list-style-type:none; margin:0 0 0 -10px; padding: 0;}
 #footer ul li { display: inline; padding:0 10px; border-right:1px solid #b2c0c9; }
 #footer ul li.last { border-right:none;}
