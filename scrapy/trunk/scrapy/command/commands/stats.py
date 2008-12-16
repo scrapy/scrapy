@@ -12,11 +12,13 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-p", "--path", dest="path", help="restrict stats to PATH", metavar="PATH")
+        parser.add_option("--limit", dest="limit", default='10', help="limit the number of stats")
 
     def run(self, args, opts):
         if not args:
             print "A domain is required"
             return
+
         if not settings['SCRAPING_DB']:
             print "SCRAPING_DB setting is required for this command"
             return
@@ -26,5 +28,5 @@ class Command(ScrapyCommand):
 
         for domain in args:
             print "# %s" % domain
-            pprint.pprint(list(ddh.getall(domain, opts.path)))
+            pprint.pprint(list(ddh.get(domain, path=opts.path, count=int(opts.limit))))
 
