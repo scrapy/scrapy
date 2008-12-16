@@ -3,6 +3,13 @@
 {% block title %}{{ doc.title|safe }}{% endblock %}
 
 {% block main-content %}
+{% if doc.parents %}
+<div class="breadcrumb">
+{% for p in doc.parents %}
+<a href="{{ p.link }}">{{ p.title|safe }}</a> &raquo;
+{% endfor %}
+</div>
+{% endif %}
 {{ doc.body|safe }}
 {% endblock %}
 
@@ -11,16 +18,6 @@
 {% if doc.display_toc %}
 <h3>Contents:</h3>
 {{ doc.toc|safe }}
-{% endif %}
-
-{% if doc.parents %}
-{% for p in doc.parents %}
-<ul><li><a href="{{ p.link }}">{{ p.title|safe }}</a>
-{% endfor %}
-<ul><li>{{ doc.title|safe }}</li></ul>
-{% for p in doc.parents %}</li></ul>{% endfor %}
-</li>
-</ul>
 {% endif %}
 
 <h3>Browse</h3>
