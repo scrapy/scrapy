@@ -2,17 +2,17 @@
 Setting everything up
 =====================
 
-| In this tutorial, we'll teach you how to scrape http://www.dmoz.org, a websites directory.
+| In this tutorial, we'll teach you how to scrape http://www.google.com/dirhp; Google's web directory.
 | We'll assume that you've checked and fulfilled the requirements specified in the Download page, and that Scrapy is already installed in your system.
 
 For starting a new project, enter the directory where you'd like your project to be located, and run::
 
-    scrapy-admin.py startproject dmoz
+    scrapy-admin.py startproject google
 
-As long as Scrapy is well installed and the path is set, this should create a directory called "dmoz"
+As long as Scrapy is well installed and the path is set, this should create a directory called "google"
 containing the following files:
 
-* *scrapy-ctl.py* - the project's control script. It's used for running the different tasks (like "crawl" and "parse"). We'll talk more about this later.
+* *scrapy-ctl.py* - the project's control script. It's used for running the different tasks (like "genspider", "crawl" and "parse"). We'll talk more about this later.
 * *scrapy_settings.py* - the project's settings file.
 * *items.py* - were you define the different kinds of items you're going to scrape.
 * *spiders* - directory where you'll later place your spiders.
