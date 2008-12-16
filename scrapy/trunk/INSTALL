@@ -32,3 +32,6 @@ Visit the project homepages for more information about it:
 
 In Debian/Ubuntu Linux it's as easy as:
 apt-get install python-twisted python-libxml2 python-pyopenssl
+
+In Arch Linux do:
+pacman -S twisted python-lxml pyopenssl
