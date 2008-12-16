@@ -8,9 +8,8 @@ Scrapy's documentation
 Contents:
 
 .. toctree::
+   :maxdepth: 2
 
-   basics
-   scrapy_intro
-   tutorial/index
+   intro/index
    tutorial2/index
    reference/index
