@@ -1,6 +1,7 @@
 import cPickle as pickle
 import os
 
+import django.views.static
 from django.conf import settings
 from django.http import Http404
 from django.shortcuts import render_to_response
@@ -22,3 +23,11 @@ def document(request, url):
 
     return render_to_response('docs/doc.html', {'doc': doc},
                               context_instance=RequestContext(request))
+
+
+def images(request, path):
+    return django.views.static.serve(
+	    request,
+        document_root = os.path.join(settings.DOC_PICKLE_ROOT, '_images'),
+        path = path,
+    )
