@@ -1,5 +1,5 @@
-Scrapy Intro
-============
+Overview
+========
 
 Scrapy is a framework designed for retrieving information from websites.
 The basic idea of scrapy is to be a bot that goes through websites, getting pages, extracting links and items (which can be any kind of information).
