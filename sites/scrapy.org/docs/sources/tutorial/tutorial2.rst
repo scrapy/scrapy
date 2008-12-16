@@ -1,11 +1,10 @@
+.. _tutorial2:
+
 ================
 Our first spider
 ================
 
-| Ok, the time to write our first spider has come.
-| Make sure that you're standing on your project's directory and run:
-
-::
+Ok, the time to write our first spider has come. Make sure that you're standing on your project's directory and run::
 
     ./scrapy-ctl genspider google_directory google.com
 
