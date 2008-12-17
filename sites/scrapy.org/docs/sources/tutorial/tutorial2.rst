@@ -37,7 +37,7 @@ This should create a file called google_directory.py under the *spiders* directo
     SPIDER = GoogleDirectorySpider()
 
 | Now, let's explain a bit what this is all about.
-| As you may have noticed, the class that represents the spider is GoogleDirectorySpider, and it heredates from CrawlSpider.
+| As you may have noticed, the class that represents the spider is GoogleDirectorySpider, and it inherits from CrawlSpider.
 | This means that this spider will crawl over a website given some crawling rules, and parse the response you need according to your patterns, which are defined through the "rules" class attribute.
 | This attribute is nothing else but a tuple containing Rule objects. Each Rule defines a specific behaviour the spider will have while crawling the site.
 | Rule objects accept the following parameters (the ones between [ ] are optional):
@@ -56,23 +56,28 @@ So we replace that line with::
 
     start_urls = ['http://www.google.com/dirhp']
 
-Now it's the moment to surf that page, and see how we can do to extract data from it.
+Now it's the moment to surf that page, and see how can we do to extract data from it.
 For this task is almost mandatory that you have Firefox FireBug extension, which allows you to browse through HTML markup in an easy and comfortable way. Otherwise you'd have
 to search for tags manually through the body, which can be *very* tedious.
+
+|
+|
+|
 
 .. image:: scrot1.png
 
 What we see at first sight, is that the directory is divided in categories, which are also divided in subcategories.
 However, it seems as if there are more subcategories than the ones being shown in this page, so we'll keep looking...
 
+|
+|
+|
+
 .. image:: scrot2.png
 
-Hmmkay... The only new thing here is that there are lots of subcategories, let's see what's inside them...
-
-.. image:: scrot3.png
-
-| Right, this looks more interesting. Not only subcategories themselves have more subcategories, but they have links to websites (which is in fact the purpose of the directory).
-| Now, there's basically one thing to take into account about the previous, and it's the fact that apparently, categories urls are always of the kind *http://www.google.com/Category/Subcategory/Another_Subcategory* (which is not very distinctive actually, but possible to use).
+| Right, this looks much more interesting. Not only subcategories themselves have more subcategories, but they have links to websites (which is in fact the purpose of the directory).
+| Now, there's basically one thing to take into account about the previous, and it's the fact that apparently, categories urls are always of the
+  kind *http://www.google.com/Category/Subcategory/Another_Subcategory* (which is not very distinctive actually, but possible to use).
 
 So, having said that, a possible rule set for the categories could be::
 
@@ -121,10 +126,21 @@ As you can see in any page containing links to websites in the directory (e.g. h
 ranking bar. That could be a nice reference at the moment of selecting an area with an XPath expression.
 Let's use FireBug and see how we can identify those bars.
 
-[IMG]
+|
+|
+|
 
-As you can see, we loaded the page in the Scrapy shell, and tried an XPath expression for finding the ranking bars, which actually worked!
-So, a possible *parse_category* could be::
+.. image:: scrot3.png
+
+| As you can see, we loaded the page in the Scrapy shell, and tried an XPath expression in order to find the links, which actually worked!
+| Basically, that expression would mean, "find any *td* tag who has a descendant tag *a* whose *href* attribute contains the string *#pagerank*"
+  (the ranking bar's *td* tag), and then "return the *font* tag of each following *td* sibling that it has" (the link's *td* tag).
+| Of course, this may not be the only way to get there (usually there are several expressions that get you to the same place), but it's quite good
+  for this case.
+| Another approach could be to find any *font* tags that have that grey colour of the links, but I prefer to use the first one because it wouldn't be
+  so strange if there were other tags with the same colour.
+
+So, having said that, a possible *parse_category* could be::
 
     def parse_category(self, response):
         items = [] # The item (links to websites) list we're going to return
@@ -133,11 +149,31 @@ So, a possible *parse_category* could be::
 
         for link in links:
             item = ScrapedItem()
-            item.set_attrib_adaptors('name', [adaptors.extract, adaptors.Delist('')])
-            item.set_attrib_adaptors('url', [adaptors.extract, adaptors.Delist('')])
-            item.attribute('name', link.x('text()'))
-            item.attribute('url', link.x('@href'))
+            adaptor_pipe = [adaptors.extract, adaptors.Delist('')]
+            item.set_adaptors({
+                'name': adaptor_pipe,
+                'url': adaptor_pipe,
+                'description': adaptor_pipe,
+            })
+
+            item.attribute('name', link.x('a/text()'))
+            item.attribute('url', link.x('a/@href'))
+            item.attribute('description', link.x('font[2]/text()'))
             items.append(item)
 
         return items
+
+
+| Okay, more new stuff :) This time, items!
+| Items are the objects we use to represent what you scrape (in this case, links).
+| Basically, there are two important things about items: attributes, and adaptors.
+| Attributes are nothing else but the places where you store the data you are extracting, which in this case are, the name of the linked website, its url, and a description.
+|
+| Now, in most cases, you'll have to do certain modifications to this data in order to store it (or do whatever you want to do), and this is done through the adaptors.
+| Adaptors are basically a list of functions that receive a value, modify it (or not), and return it.
+| In this case we used only two functions for adapting:
+
+* An extractor (*extract*), which, as you may imagine, extracts the data from the XPath nodes you provide, and returns it in a list.
+* *Delist*, which joins the list that the previous adaptor returned into a string.
+  This adaptor itself is a class, and this is due to the fact that you must specify which delimiter will join the list. That's why we put an instance to this adaptor in the list.
 
