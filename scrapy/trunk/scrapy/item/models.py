@@ -14,7 +14,7 @@ class ScrapedItem(object):
         Set the adaptors to use for this item. Receives a dict of the adaptors
         desired for each attribute and returns the item itself.
         """
-        _adaptors_dict = dict(item for item in adaptors_dict.items() if isinstance(item[1], AdaptorPipe))
+        _adaptors_dict = dict((attrib, AdaptorPipe(pipe)) for attrib, pipe in adaptors_dict.items() if hasattr(pipe, '__iter__'))
         self.__dict__['_adaptors_dict'] = _adaptors_dict
         return self
     

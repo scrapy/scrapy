@@ -56,6 +56,9 @@ class AdaptorPipe(list):
         elif callable(other):
             return AdaptorPipe(self + [other])
 
+    def __repr__(self):
+        return '<AdaptorPipe %s >' % super(AdaptorPipe, self).__repr__()
+
 def adaptize(adaptor, my_args=None):
     """
     This decorator helps you add to your pipelines adaptors that are able
