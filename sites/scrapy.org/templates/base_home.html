@@ -1,14 +1,6 @@
 {% extends "base.html" %}
 
-{% block content %}
-{% include "header.html" %}
-
-<div id="content">
-    <div id="left-column">
-        {% block main-content %}{% endblock %}
-    </div>
-
-    <div id="right-column">
+{% block extra-content %}
         {% load download_tags %}
         {% load_download_links as "download_links" %}
 
@@ -41,6 +33,4 @@
         </div>
         {% endif %}
         {% endcomment %}
-    </div>
-</div>
 {% endblock %}

@@ -27,16 +27,3 @@ a.headerlink:hover {
 </style>
 <link href="{{ MEDIA_URL }}/style/pygments.css" rel="stylesheet" type="text/css" media="screen" />
 {% endblock %}
-
-{% block content %}
-{% include "header.html" %}
-<div id="content">
-    <div id="left-column">
-    {% block main-content %}{% endblock %}
-    </div>
-
-    <div id="right-column">
-    {% block extra-content %}{% endblock %}
-    </div>
-</div>
-{% endblock %}
