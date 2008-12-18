@@ -18,6 +18,9 @@ body {
 a { color:#6e0909; text-decoration:none; border-bottom:1px solid #d78888;}
 a:hover { color:#f99800; border-bottom:1px solid #f7b7b7; }
 .clear { clear:both; overflow:hidden; }
+a img {
+  border: none;
+}
 h1, h2 { color:#331f0a; font-weight:normal;}
 h1 {
   font-size: 200%;
@@ -31,7 +34,6 @@ blockquote { padding:0px 15px; color:#5b1111; font-size:125%; margin:0;}
 p { line-height:1.5em; }
 
 /* structure */
-#header h1 { background:url('../images/logo.jpg') no-repeat left top ; text-indent: -5000px; width:545px; height:65px }
 #mainwrap {  
   position: relative;   
   min-height: 100%; }
@@ -52,6 +54,10 @@ p { line-height:1.5em; }
   width:274px;
   float:right;
   margin: 25px 0 0 -274px;
+}
+
+#header h1 a {
+  border: none;
 }
 
 ul#navigation { list-style-type:none; margin:0 0 18px -12px; padding:0;}
