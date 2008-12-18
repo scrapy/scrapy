@@ -16,11 +16,13 @@
         {% block extrascripts %}{% endblock %}
     </head>
     <body>
-        <div id="container">
-            {% block content %}{% endblock %}
-        </div>
+    	<div id="mainwrap">
+	        <div id="container">
+	            {% block content %}{% endblock %}
+	        </div>
 
-        <div class="clear"></div>
-        {% include "footer.html" %}
+	        <div class="clear"></div>
+	        {% include "footer.html" %}
+	    </div>
     </body>
 </html>
