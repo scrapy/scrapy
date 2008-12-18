@@ -98,3 +98,32 @@ def remove_escape_chars(text, which_ones=('\n','\t','\r')):
     re_escape_chars = re.compile('[%s]' % ''.join(which_ones))
     return re_escape_chars.sub(u'', text.decode('utf-8'))
 
+def unquote_markup(text):
+    """
+    This function receives markup as a text and does the following:
+     - removes entities from any part of it that it's not inside a CDATA
+     - searches for CDATAs and extracts their text (if any) without modifying it.
+     - removes the found CDATAs
+    """
+    _cdata_re = re.compile(r'((?P<cdata_s><!\[CDATA\[)(?P<cdata_d>.*?)(?P<cdata_e>\]\]>))', re.DOTALL)
+
+    def _get_fragments(txt, pattern):
+        fragments = []
+        offset = 0
+        for match in pattern.finditer(txt):
+            match_s, match_e = match.span(1)
+            fragments.append(txt[offset:match_s])
+            fragments.append(match)
+            offset = match_e
+        fragments.append(txt[offset:])
+        return fragments
+
+    ret_text = ''
+    for fragment in _get_fragments(text.decode('utf-8'), _cdata_re):
+        if isinstance(fragment, basestring):
+            # it's not a CDATA (so we try to remove its entities)
+            ret_text += remove_entities(fragment)
+        else:
+            # it's a CDATA (so we just extract its content)
+            ret_text += fragment.group('cdata_d')
+    return unicode(ret_text)

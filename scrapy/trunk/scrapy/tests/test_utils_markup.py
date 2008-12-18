@@ -2,6 +2,7 @@ import unittest
 
 from scrapy.utils.markup import remove_entities, replace_tags, remove_comments
 from scrapy.utils.markup import remove_tags_with_content, remove_escape_chars, remove_tags
+from scrapy.utils.markup import unquote_markup
 
 class UtilsMarkupTest(unittest.TestCase):
 
@@ -111,3 +112,22 @@ class UtilsMarkupTest(unittest.TestCase):
         self.assertEqual(remove_escape_chars(u'escape\n', which_ones=('\t',)), u'escape\n')
         self.assertEqual(remove_escape_chars(u'escape\tchars\n', which_ones=('\t')), 'escapechars\n')
 
+    def test_unquote_markup(self):
+        sample_txt1 = u"""<node1>hi, this is sample text with entities: &amp; &copy;
+<![CDATA[although this is inside a cdata! &amp; &quot;]]></node1>"""
+        sample_txt2 = u'<node2>blah&amp;blah<![CDATA[blahblahblah!&pound;]]>moreblah&lt;&gt;</node2>'
+        sample_txt3 = u'something&pound;&amp;more<node3><![CDATA[things, stuff, and such]]>what&quot;ever</node3><node4'
+
+        # make sure it always return unicode
+        assert isinstance(unquote_markup(sample_txt1.encode('latin-1')), unicode)
+        assert isinstance(unquote_markup(sample_txt2), unicode)
+
+        self.assertEqual(unquote_markup(sample_txt1), u"""<node1>hi, this is sample text with entities: & \xa9
+although this is inside a cdata! &amp; &quot;</node1>""")
+
+        self.assertEqual(unquote_markup(sample_txt2), u'<node2>blah&blahblahblahblah!&pound;moreblah<></node2>')
+
+        self.assertEqual(unquote_markup(sample_txt1 + sample_txt2), u"""<node1>hi, this is sample text with entities: & \xa9
+although this is inside a cdata! &amp; &quot;</node1><node2>blah&blahblahblahblah!&pound;moreblah<></node2>""")
+
+        self.assertEqual(unquote_markup(sample_txt3), u'something\xa3&more<node3>things, stuff, and suchwhat"ever</node3><node4')
