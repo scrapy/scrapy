@@ -79,7 +79,7 @@ p { line-height:1.5em; }
 #navigation li { float:left; padding:0 10px; font-size:120%; border-right:1px solid #e57919; }
 #navigation li.last { border-right:none; }
 #navigation li a { text-decoration:none; border-bottom:1px solid #ffca9b;  color:#e57919;}
-l#navigation li a:hover { color:#c35012; border-bottom:1px solid #ef994c} 
+#navigation li a:hover { color:#c35012; border-bottom:1px solid #ef994c} 
 
 .breadcrumb a {
   border-bottom: none;
