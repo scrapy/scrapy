@@ -22,6 +22,7 @@ class Command(ScrapyCommand):
         parser.add_option("-c", "--callbacks", dest="callbacks", action="store", help="use the provided callback(s) for parsing the url (separated with commas)")
 
     def process_options(self, args, opts):
+        super(Command, self).process_options(args, opts)
         self.callbacks = opts.callbacks.split(',') if opts.callbacks else []
 
     def pipeline_process(self, item, spider, opts):
