@@ -120,60 +120,6 @@ You can try crawling with this little code, by running::
 
     ./scrapy-ctl crawl google.com
 
-and it will actually work, altough it won't do any parsing, since parse_category is not defined, and that's exactly what we're going to do now.
-
-As you can see in any page containing links to websites in the directory (e.g. http://www.google.com/Top/Arts/Awards/), those links are preceded by a
-ranking bar. That could be a nice reference at the moment of selecting an area with an XPath expression.
-Let's use FireBug and see how we can identify those bars.
-
-|
-|
-|
-
-.. image:: scrot3.png
-
-| As you can see, we loaded the page in the Scrapy shell, and tried an XPath expression in order to find the links, which actually worked!
-| Basically, that expression would mean, "find any *td* tag who has a descendant tag *a* whose *href* attribute contains the string *#pagerank*"
-  (the ranking bar's *td* tag), and then "return the *font* tag of each following *td* sibling that it has" (the link's *td* tag).
-| Of course, this may not be the only way to get there (usually there are several expressions that get you to the same place), but it's quite good
-  for this case.
-| Another approach could be to find any *font* tags that have that grey colour of the links, but I prefer to use the first one because it wouldn't be
-  so strange if there were other tags with the same colour.
-
-So, having said that, a possible *parse_category* could be::
-
-    def parse_category(self, response):
-        items = [] # The item (links to websites) list we're going to return
-        hxs = HtmlXPathSelector(response) # The selector we're going to use in order to extract data from the page
-        links = hxs.x('//td[descendant::a[contains(@href, "#pagerank")]]/following-sibling::td//a')
-
-        for link in links:
-            item = ScrapedItem()
-            adaptor_pipe = [adaptors.extract, adaptors.Delist('')]
-            item.set_adaptors({
-                'name': adaptor_pipe,
-                'url': adaptor_pipe,
-                'description': adaptor_pipe,
-            })
-
-            item.attribute('name', link.x('a/text()'))
-            item.attribute('url', link.x('a/@href'))
-            item.attribute('description', link.x('font[2]/text()'))
-            items.append(item)
-
-        return items
-
-
-| Okay, more new stuff :) This time, items!
-| Items are the objects we use to represent what you scrape (in this case, links).
-| Basically, there are two important things about items: attributes, and adaptors.
-| Attributes are nothing else but the places where you store the data you are extracting, which in this case are, the name of the linked website, its url, and a description.
-|
-| Now, in most cases, you'll have to do certain modifications to this data in order to store it (or do whatever you want to do), and this is done through the adaptors.
-| Adaptors are basically a list of functions that receive a value, modify it (or not), and return it.
-| In this case we used only two functions for adapting:
-
-* An extractor (*extract*), which, as you may imagine, extracts the data from the XPath nodes you provide, and returns it in a list.
-* *Delist*, which joins the list that the previous adaptor returned into a string.
-  This adaptor itself is a class, and this is due to the fact that you must specify which delimiter will join the list. That's why we put an instance to this adaptor in the list.
+and it will actually work, altough it won't do any parsing, since parse_category is not defined, and that's exactly what we're going to do in the next part of
+the tutorial: :ref:`tutorial3`.
 
