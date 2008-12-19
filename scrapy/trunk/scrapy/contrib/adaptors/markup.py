@@ -1,5 +1,5 @@
 import re
-from scrapy.utils.markup import replace_tags, remove_entities
+from scrapy.utils.markup import replace_tags, unquote_markup
 from scrapy.item.adaptors import adaptize
 
 def remove_tags(value):
@@ -29,8 +29,8 @@ def remove_root(value):
 class Unquote(object):
     """
     Receives a list of strings, removes all of the
-    entities the strings may have, and returns
-    a new list
+    CDATAs and entities (except the ones in CDATAs) the strings
+    may have, and returns a new list.
 
     Input: iterable with strings
     Output: list of strings
@@ -41,4 +41,4 @@ class Unquote(object):
     def __call__(self, value, keep=None):
         if keep is not None:
             self.keep = keep
-        return [ remove_entities(v, keep=self.keep) for v in value ]
+        return [ unquote_markup(v, keep=self.keep) for v in value ]
