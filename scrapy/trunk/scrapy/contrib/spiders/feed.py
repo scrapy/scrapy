@@ -26,6 +26,11 @@ class XMLFeedSpider(BaseSpider):
         of results (Items or Requests)."""
         return results
 
+    def adapt_response(self, response):
+        """You can override this function in order to make any changes you want
+        to into the feed before parsing it. This function must return a response."""
+        return response
+
     def parse_nodes(self, response, nodes):
         for xSel in nodes:
             ret = self.parse_item(response, xSel)
@@ -40,6 +45,7 @@ class XMLFeedSpider(BaseSpider):
         if not hasattr(self, 'parse_item'):
             raise NotConfigured('You must define parse_item method in order to scrape this XML feed')
 
+        response = self.adapt_response(response)
         if self.iternodes:
             nodes = xmliter(response, self.itertag)
         else:
@@ -64,8 +70,7 @@ class CSVFeedSpider(BaseSpider):
         return results
 
     def adapt_response(self, response):
-        """You can override this function in order to make any changes you want
-        to into the feed before parsing it. This function must return a response."""
+        """This method has the same purpose as the one in XMLFeedSpider"""
         return response
 
     def parse_rows(self, response):
