@@ -8,18 +8,18 @@ from scrapy.http import Response
 class UtilsXmlTestCase(unittest.TestCase):
     ### NOTE: Encoding issues have been found with BeautifulSoup for utf-16 files, utf-16 test removed ###
     def test_iterator(self):
-        body = """<?xml version="1.0" encoding="UTF-8"?>
-<products xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="someschmea.xsd">
-  <product id="001">
-    <type>Type 1</type>
-    <name>Name 1</name>
-  </product>
-  <product id="002">
-    <type>Type 2</type>
-    <name>Name 2</name>
-  </product>
-</products>
-        """
+        body = """<?xml version="1.0" encoding="UTF-8"?>\
+            <products xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="someschmea.xsd">\
+              <product id="001">\
+                <type>Type 1</type>\
+                <name>Name 1</name>\
+              </product>\
+              <product id="002">\
+                <type>Type 2</type>\
+                <name>Name 2</name>\
+              </product>\
+            </products>"""
+
         response = Response(domain="example.com", url="http://example.com", body=body)
         attrs = []
         for x in xmliter(response, 'product'):
@@ -35,7 +35,7 @@ class UtilsXmlTestCase(unittest.TestCase):
                          [[u'one'], [u'two']])
 
     def test_iterator_namespaces(self):
-        body = """
+        body = """\
             <?xml version="1.0" encoding="UTF-8"?>
             <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
                 <channel>
@@ -49,14 +49,6 @@ class UtilsXmlTestCase(unittest.TestCase):
                     <g:image_link>http://www.mydummycompany.com/images/item1.jpg</g:image_link>
                     <g:id>ITEM_1</g:id>
                     <g:price>400</g:price>
-                </item>
-                <item>
-                    <title>Item 2</title>
-                    <description>This is item 2</description>
-                    <link>http://www.mydummycompany.com/items/2</link>
-                    <g:image_link>http://www.mydummycompany.com/images/item2.jpg</g:image_link>
-                    <g:id>ITEM_2</g:id>
-                    <g:price>100</g:price>
                 </item>
                 </channel>
             </rss>
@@ -72,14 +64,9 @@ class UtilsXmlTestCase(unittest.TestCase):
         self.assertEqual(node.x('g:image_link/text()').extract(), ['http://www.mydummycompany.com/images/item1.jpg'])
         self.assertEqual(node.x('g:id/text()').extract(), ['ITEM_1'])
         self.assertEqual(node.x('g:price/text()').extract(), ['400'])
-
-        node = my_iter.next()
-        self.assertEqual(node.x('title/text()').extract(), ['Item 2'])
-        self.assertEqual(node.x('description/text()').extract(), ['This is item 2'])
-        self.assertEqual(node.x('link/text()').extract(), ['http://www.mydummycompany.com/items/2'])
-        self.assertRaises(libxml2.xpathError, node.x, 'g:image_link/text()')
-        self.assertRaises(libxml2.xpathError, node.x, 'g:id/text()')
-        self.assertRaises(libxml2.xpathError, node.x, 'g:price/text()')
+        self.assertEqual(node.x('image_link/text()').extract(), [])
+        self.assertEqual(node.x('id/text()').extract(), [])
+        self.assertEqual(node.x('price/text()').extract(), [])
 
     def test_iterator_exception(self):
         body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""
