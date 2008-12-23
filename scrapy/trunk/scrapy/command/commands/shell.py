@@ -1,5 +1,6 @@
 from twisted.internet import reactor
 
+import urlparse
 import scrapy
 from scrapy.command import ScrapyCommand
 from scrapy.spider import spiders
@@ -8,10 +9,9 @@ from scrapy.utils.misc import load_class
 from scrapy.extension import extensions
 from scrapy.conf import settings
 from scrapy.core.manager import scrapymanager
-from scrapy.http import Request, Response
-from scrapy.core.downloader.handlers import download_any
+from scrapy.core.engine import scrapyengine
+from scrapy.http import Request
 from scrapy.fetcher import get_or_create_spider
-from scrapy.utils.decompressor import Decompressor
 
 #This code comes from twisted 8. We define here while
 #using old twisted version.
@@ -58,25 +58,26 @@ class Command(ScrapyCommand):
         """ You can use this function to update the local variables that will be available in the scrape console """
         pass
 
-    def get_url(self, url, decompress=False):
+    def get_url(self, url):
+        u = urlparse.urlparse(url)
+        if u.scheme not in ('http', 'https', 'file'):
+            print "Unsupported scheme '%s' in URL: <%s>" % (u.scheme, url)
+            return
+
+        self.result = None
+        def _get_response(response):
+            self.result = response
+            return []
 
         print "Downloading URL...           ",
-        r = Request(url)
+        r = Request(url, callback=_get_response)
         spider = get_or_create_spider(url)
-        try:
-            result = blockingCallFromThread(reactor, download_any, r, spider)
-            if isinstance(result, Response):
-                print "Done."
-                if decompress:
-                    print "Decompressing response...",
-                    d = Decompressor()
-                    result = d.extract(result)
-                    print "Done."
-                result.request = r
-                self.generate_vars(url, result)
-                return True
-        except Exception, e:
-            print "Error: %s" % e
+        blockingCallFromThread(reactor, scrapyengine.crawl, r, spider)
+        if self.result:
+            print "Done."
+            self.result.request = r
+            self.generate_vars(url, self.result)
+            return True
 
     def generate_vars(self, url, response):
         itemcls = load_class(settings['DEFAULT_ITEM_CLASS'])
@@ -102,7 +103,6 @@ class Command(ScrapyCommand):
                 print "   %s: %s" % (key, val.__class__)
         print "Available commands:"
         print "   get <url>: Fetches an url and updates all variables."
-        print "   getd <url>: Similar to get, but filter with decompress."
         print "   scrapehelp: Prints this help."
         print '-' * 78
     
@@ -125,8 +125,6 @@ class Command(ScrapyCommand):
                 self.get_url(arg.strip())
             def _help_magic(shell, _):
                 self.print_vars()
-            def _getd_magic(shell, arg):
-                self.get_url(arg.strip(), decompress=True)
                 
             if url:
                 result = self.get_url(url)
@@ -139,7 +137,6 @@ class Command(ScrapyCommand):
                 shell = IPython.Shell.IPShell(argv=[], user_ns=self.user_ns)
                 ip = shell.IP.getapi()
                 ip.expose_magic("get", _get_magic)
-                ip.expose_magic("getd", _getd_magic)
                 ip.expose_magic("scrapehelp", _help_magic)
                 shell.mainloop()
                 reactor.callFromThread(scrapymanager.stop)
