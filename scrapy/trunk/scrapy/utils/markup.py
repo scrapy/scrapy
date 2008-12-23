@@ -11,7 +11,7 @@ _tag_re = re.compile(r'<[a-zA-Z\/!].*?>', re.DOTALL)
 def remove_entities(text, keep=(), remove_illegal=True):
     """Remove entities from the given text.
 
-    'text' can be a unicode string or a regular string encoded as 'utf-8'
+    'text' must be a unicode string.
 
     If 'keep' is passed (with a list of entity names) those entities will
     be kept (they won't be removed).
@@ -45,7 +45,7 @@ def remove_entities(text, keep=(), remove_illegal=True):
             else:
                 return u'&%s;' % m.group(2)
 
-    return _ent_re.sub(convert_entity, text.decode('utf-8'))
+    return _ent_re.sub(convert_entity, text)
 
 def has_entities(text):
     return bool(_ent_re.search(text))
@@ -54,16 +54,16 @@ def replace_tags(text, token=''):
     """Replace all markup tags found in the given text by the given token. By
     default token is a null string so it just remove all tags.
 
-    'text' can be a unicode string or a regular string encoded as 'utf-8'
+    'text' must be a unicode string.
 
     Always returns a unicode string.
     """
-    return _tag_re.sub(token, text.decode('utf-8'))
+    return _tag_re.sub(token, text)
 
 
 def remove_comments(text):
     """ Remove HTML Comments. """
-    return re.sub('<!--.*?-->', u'', text.decode('utf-8'), re.DOTALL)
+    return re.sub('<!--.*?-->', u'', text, re.DOTALL)
       
 def remove_tags(text, which_ones=()):
     """ Remove HTML Tags only. 
@@ -77,7 +77,7 @@ def remove_tags(text, which_ones=()):
     else:
         reg_exp_remove_tags = '<.*?>'
     re_tags = re.compile(reg_exp_remove_tags, re.DOTALL)
-    return re_tags.sub(u'', text.decode('utf-8'))
+    return re_tags.sub(u'', text)
 
 def remove_tags_with_content(text, which_ones=()):
     """ Remove tags and its content.
@@ -87,7 +87,7 @@ def remove_tags_with_content(text, which_ones=()):
     """
     tags = [ '<%s.*?</%s>' % (tag,tag) for tag in which_ones ]
     re_tags_remove = re.compile('|'.join(tags), re.DOTALL)
-    return re_tags_remove.sub(u'', text.decode('utf-8'))
+    return re_tags_remove.sub(u'', text)
 
 def remove_escape_chars(text, which_ones=('\n','\t','\r')):
     """ Remove escape chars. Default : \\n, \\t, \\r
@@ -96,11 +96,11 @@ def remove_escape_chars(text, which_ones=('\n','\t','\r')):
                       By default removes \n, \t, \r.
     """
     re_escape_chars = re.compile('[%s]' % ''.join(which_ones))
-    return re_escape_chars.sub(u'', text.decode('utf-8'))
+    return re_escape_chars.sub(u'', text)
 
 def unquote_markup(text, keep=(), remove_illegal=True):
     """
-    This function receives markup as a text and does the following:
+    This function receives markup as a text (always a unicode string) and does the following:
      - removes entities (except the ones in 'keep') from any part of it that it's not inside a CDATA
      - searches for CDATAs and extracts their text (if any) without modifying it.
      - removes the found CDATAs
@@ -118,12 +118,12 @@ def unquote_markup(text, keep=(), remove_illegal=True):
         fragments.append(txt[offset:])
         return fragments
 
-    ret_text = ''
-    for fragment in _get_fragments(text.decode('utf-8'), _cdata_re):
+    ret_text = u''
+    for fragment in _get_fragments(text, _cdata_re):
         if isinstance(fragment, basestring):
             # it's not a CDATA (so we try to remove its entities)
             ret_text += remove_entities(fragment, keep=keep, remove_illegal=remove_illegal)
         else:
             # it's a CDATA (so we just extract its content)
             ret_text += fragment.group('cdata_d')
-    return unicode(ret_text)
+    return ret_text
