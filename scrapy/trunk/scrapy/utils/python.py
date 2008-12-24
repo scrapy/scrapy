@@ -53,6 +53,22 @@ def unique(list_):
     return result
 
 
+def str_to_unicode(text):
+    if isinstance(text, str):
+        return text.decode('utf-8')
+    elif isinstance(text, unicode):
+        return text
+    else:
+        raise TypeError('str_to_unicode can only receive a string object')
+
+def unicode_to_str(text):
+    if isinstance(text, unicode):
+        return text.encode('utf-8')
+    elif isinstance(text, str):
+        return text
+    else:
+        raise TypeError('unicode_to_str can only receive a unicode object')
+
 def re_rsearch(pattern, text, chunk_size=1024):
     """
     This function does a reverse search in a text using a regular expression
