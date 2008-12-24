@@ -7,6 +7,10 @@ from scrapy.utils.markup import unquote_markup
 class UtilsMarkupTest(unittest.TestCase):
 
     def test_remove_entities(self):
+        # make sure it always return uncode
+        assert isinstance(remove_entities('no entities'), unicode)
+        assert isinstance(remove_entities('Price: &pound;100!'),  unicode)
+
         # regular conversions
         self.assertEqual(remove_entities(u'As low as &#163;100!'),
                          u'As low as \xa3100!')
@@ -27,6 +31,9 @@ class UtilsMarkupTest(unittest.TestCase):
 
 
     def test_replace_tags(self):
+        # make sure it always return uncode
+        assert isinstance(replace_tags('no entities'), unicode)
+
         self.assertEqual(replace_tags(u'This text contains <a>some tag</a>'),
                          u'This text contains some tag')
 
@@ -38,6 +45,10 @@ class UtilsMarkupTest(unittest.TestCase):
                          u'Click here')
 
     def test_remove_comments(self):
+        # make sure it always return unicode
+        assert isinstance(remove_comments('without comments'), unicode)
+        assert isinstance(remove_comments('<!-- with comments -->'), unicode)
+
         # text without comments 
         self.assertEqual(remove_comments(u'text without comments'), u'text without comments')
 
@@ -46,6 +57,13 @@ class UtilsMarkupTest(unittest.TestCase):
         self.assertEqual(remove_comments(u'Hello<!--World-->'),u'Hello')
 
     def test_remove_tags(self):
+        # make sure it always return unicode
+        assert isinstance(remove_tags('no tags'), unicode)
+        assert isinstance(remove_tags('no tags', which_ones=('p',)), unicode)
+        assert isinstance(remove_tags('<p>one tag</p>'), unicode)
+        assert isinstance(remove_tags('<p>one tag</p>', which_ones=('p')), unicode)
+        assert isinstance(remove_tags('<a>link</a>', which_ones=('b',)), unicode)
+
         # text without tags
         self.assertEqual(remove_tags(u'no tags'), u'no tags')
         self.assertEqual(remove_tags(u'no tags', which_ones=('p','b',)), u'no tags')
@@ -63,6 +81,12 @@ class UtilsMarkupTest(unittest.TestCase):
                          u'<p align="center" class="one">texty</p>')
 
     def test_remove_tags_with_content(self):
+        # make sure it always return unicode
+        assert isinstance(remove_tags_with_content('no tags'), unicode)
+        assert isinstance(remove_tags_with_content('no tags', which_ones=('p',)), unicode)
+        assert isinstance(remove_tags_with_content('<p>one tag</p>', which_ones=('p',)), unicode)
+        assert isinstance(remove_tags_with_content('<a>link</a>', which_ones=('b',)), unicode)
+
         # text without tags
         self.assertEqual(remove_tags_with_content(u'no tags'), u'no tags')
         self.assertEqual(remove_tags_with_content(u'no tags', which_ones=('p','b',)), u'no tags')
@@ -75,6 +99,10 @@ class UtilsMarkupTest(unittest.TestCase):
                          u'<b>not will removed</b>')
 
     def test_remove_escape_chars(self):
+        # make sure it always return unicode
+        assert isinstance(remove_escape_chars('no ec'), unicode)
+        assert isinstance(remove_escape_chars('no ec', which_ones=('\n','\t',)), unicode)
+
         # text without escape chars
         self.assertEqual(remove_escape_chars(u'no ec'), u'no ec')
         self.assertEqual(remove_escape_chars(u'no ec', which_ones=('\n',)), u'no ec')
@@ -89,6 +117,10 @@ class UtilsMarkupTest(unittest.TestCase):
 <![CDATA[although this is inside a cdata! &amp; &quot;]]></node1>"""
         sample_txt2 = u'<node2>blah&amp;blah<![CDATA[blahblahblah!&pound;]]>moreblah&lt;&gt;</node2>'
         sample_txt3 = u'something&pound;&amp;more<node3><![CDATA[things, stuff, and such]]>what&quot;ever</node3><node4'
+
+        # make sure it always return unicode
+        assert isinstance(unquote_markup(sample_txt1.encode('latin-1')), unicode)
+        assert isinstance(unquote_markup(sample_txt2), unicode)
 
         self.assertEqual(unquote_markup(sample_txt1), u"""<node1>hi, this is sample text with entities: & \xa9
 although this is inside a cdata! &amp; &quot;</node1>""")
