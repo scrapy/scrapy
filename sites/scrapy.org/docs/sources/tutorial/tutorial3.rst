@@ -32,11 +32,11 @@ Anyway, having said that, a possible *parse_category* could be::
     def parse_category(self, response):
         items = [] # The item (links to websites) list we're going to return
         hxs = HtmlXPathSelector(response) # The selector we're going to use in order to extract data from the page
-        links = hxs.x('//td[descendant::a[contains(@href, "#pagerank")]]/following-sibling::td//a')
+        links = hxs.x('//td[descendant::a[contains(@href, "#pagerank")]]/following-sibling::td/font')
 
         for link in links:
             item = ScrapedItem()
-            adaptor_pipe = [adaptors.extract, adaptors.Delist('')]
+            adaptor_pipe = [adaptors.extract, adaptors.Delist(''), adaptors.strip]
             item.set_adaptors({
                 'name': adaptor_pipe,
                 'url': adaptor_pipe,
@@ -62,6 +62,7 @@ Anyway, having said that, a possible *parse_category* could be::
 * An extractor (*extract*), which, as you may imagine, extracts the data from the XPath nodes you provide, and returns it in a list.
 * *Delist*, which joins the list that the previous adaptor returned into a string.
   This adaptor itself is a class, and this is due to the fact that you must specify which delimiter will join the list. That's why we put an instance to this adaptor in the list.
+* *strip*, which (as you may imagine), does the same as the python strings strip method. Cleans up extra spaces before and after the provided string.
 
 In this case, we used the same adaptors for every attribute, because we're practically doing nothing to the data, just extracting it. But there might be situations were certain attributes
 are handled different than others (in fact, it *will* happen once you scrape more complicated sites with more complicated data).
@@ -70,3 +71,4 @@ are handled different than others (in fact, it *will* happen once you scrape mor
 The rest of the code is quite self-explanatory. The *attribute* method sets the item's attributes, and the items themselves are put into a list that we'll return to Scrapy's engine.
 One simple (although important) thing to remember here is that you must always return a list that contains either items, requests, or both, but always inside a list.
 
+So, we're almost done! Let's now check the last part of the tutorial: :ref:`tutorial4`
