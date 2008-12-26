@@ -128,12 +128,12 @@ def render_templatefile(path, **kwargs):
         file.write(content)
 
 
-def items_to_csv(file, items, delimiter=';'):
+def items_to_csv(file, items, delimiter=';', headers=None):
     """
     This function takes a list of items and stores their attributes
     in a csv file given in 'file' (which can be either a descriptor, or a filename).
-    The attributes are the ones found in the first item of the list, so
-    if it lacks any attribute that other item has, that attribute will be missing.
+    The saved attributes are either the ones found in the 'headers' parameter
+    (if specified) or the first item's list of public attributes.
     The written file will be encoded as utf-8.
     """
     if not items or not hasattr(items, '__iter__'):
@@ -142,7 +142,7 @@ def items_to_csv(file, items, delimiter=';'):
     if isinstance(file, basestring):
         file = open(file, 'a+')
     csv_file = csv.writer(file, delimiter=delimiter, quoting=csv.QUOTE_ALL)
-    header = sorted([key for key in items[0].__dict__.keys() if not key.startswith('_')])
+    header = headers or sorted([key for key in items[0].__dict__.keys() if not key.startswith('_')])
     if not file.tell():
         csv_file.writerow(header)
 

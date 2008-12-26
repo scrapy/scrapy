@@ -110,15 +110,13 @@ def unquote_markup(text, keep=(), remove_illegal=True):
     _cdata_re = re.compile(r'((?P<cdata_s><!\[CDATA\[)(?P<cdata_d>.*?)(?P<cdata_e>\]\]>))', re.DOTALL)
 
     def _get_fragments(txt, pattern):
-        fragments = []
         offset = 0
         for match in pattern.finditer(txt):
             match_s, match_e = match.span(1)
-            fragments.append(txt[offset:match_s])
-            fragments.append(match)
+            yield txt[offset:match_s]
+            yield match
             offset = match_e
-        fragments.append(txt[offset:])
-        return fragments
+        yield txt[offset:]
 
     text = str_to_unicode(text)
     ret_text = u''

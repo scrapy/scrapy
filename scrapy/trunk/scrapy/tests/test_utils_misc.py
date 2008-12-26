@@ -45,6 +45,14 @@ class UtilsMiscTestCase(unittest.TestCase):
             '"Really cute item";"3213";"Item 1";"";"http://dummyurl.com"\r\n')
 
         file = StringIO()
+        items_to_csv(file, [item_1, item_2], headers=['id', 'name'], delimiter=',')
+        file.reset()
+        self.assertEqual(file.read(),
+            '"id","name"\r\n' +
+            '"3213","Item 1"\r\n' +
+            '"1234","Item 2"\r\n')
+
+        file = StringIO()
         items_to_csv(file, [])
         self.assertEqual(file.tell(), 0)
 
