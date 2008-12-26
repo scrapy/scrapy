@@ -3,18 +3,20 @@ from scrapy.spider import BaseSpider
 from scrapy.item import ScrapedItem
 from scrapy.http import Request
 from scrapy.utils.iterators import xmliter, csviter
-from scrapy.xpath.selector import XmlXPathSelector
-from scrapy.core.exceptions import UsageError, NotConfigured
+from scrapy.xpath.selector import XmlXPathSelector, HtmlXPathSelector
+from scrapy.core.exceptions import UsageError, NotConfigured, NotSupported
 
 class XMLFeedSpider(BaseSpider):
     """
     This class intends to be the base class for spiders that scrape
     from XML feeds.
 
-    You can choose whether to parse the file using the iternodes tool,
-    or not using it (which just splits the tags using xpath)
+    You can choose whether to parse the file using the 'iternodes' iterator,
+    an 'xml' selector, or an 'html' selector.
+    In most cases, it's convenient to use iternodes, since it's a faster and
+    cleaner.
     """
-    iternodes = True
+    iterator = 'iternodes'
     itertag = 'item'
 
     def process_results(self, results, response):
@@ -46,10 +48,14 @@ class XMLFeedSpider(BaseSpider):
             raise NotConfigured('You must define parse_item method in order to scrape this XML feed')
 
         response = self.adapt_response(response)
-        if self.iternodes:
+        if self.iterator == 'iternodes':
             nodes = xmliter(response, self.itertag)
-        else:
+        elif self.iterator == 'xml':
             nodes = XmlXPathSelector(response).x('//%s' % self.itertag)
+        elif self.iterator == 'html':
+            nodes = HtmlXPathSelector(response).x('//%s' % self.itertag)
+        else:
+            raise NotSupported('Unsupported node iterator')
 
         return self.parse_nodes(response, nodes)
 
