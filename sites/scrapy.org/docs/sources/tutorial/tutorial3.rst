@@ -6,7 +6,7 @@ Scraping our data
 
 We will now browse a page containing links to websites stored in the directory (e.g. http://www.google.com/Top/Arts/Awards/) and see how can we extract
 the information we need with XPath.
-As I said before, you'll need FireBug for this.
+As I said before, you'll need FireBug for this task.
 
 |
 |
@@ -16,7 +16,7 @@ As I said before, you'll need FireBug for this.
 
 | As you can see, this page's markup is not very descriptive (there are no id or name attributes, or anything that identifies the links uniquely),
   so the ranking bars could be a nice reference at the moment of selecting the desired area with an XPath expression.
-| After using FireBug, we can see that each link is inside a *td* tag, which is itself inside a *tr* tag that also contains the link's ranking bar.
+| After using FireBug, we can see that each link is inside a *td* tag, which is itself inside a *tr* tag that also contains the link's ranking bar (in another *td*).
 | So we could find the ranking bar; then from it, find its parent (the *tr*), and then finally, the link's *td* (which contains the data we want to scrape).
 |
 | We loaded the page in the Scrapy shell (very useful for doing this), and tried an XPath expression in order to find the links, which actually worked.
@@ -24,7 +24,7 @@ As I said before, you'll need FireBug for this.
   (the ranking bar's *td* tag), and then "return the *font* tag of each following *td* sibling that it has" (the link's *td* tag).
 | Of course, this may not be the only way to get there (usually there are several expressions that get you to the same place), but it's quite good
   for this case.
-| Another approach could be to find any *font* tags that have that grey colour of the links, but I prefer to use the first one because it wouldn't be
+| Another approach could be, for example, to find any *font* tags that have that grey colour of the links, but I prefer to use the first one because it wouldn't be
   so strange if there were other tags with the same colour.
 
 Anyway, having said that, a possible *parse_category* could be::
@@ -68,5 +68,5 @@ are handled different than others (in fact, it *will* happen once you scrape mor
 
 
 The rest of the code is quite self-explanatory. The *attribute* method sets the item's attributes, and the items themselves are put into a list that we'll return to Scrapy's engine.
-One simple (although important) thing to remember here is that you must always return a list that contains either items, requests, or both, but always as a list.
+One simple (although important) thing to remember here is that you must always return a list that contains either items, requests, or both, but always inside a list.
 
