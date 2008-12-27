@@ -35,6 +35,9 @@ h2 {
   margin: .6em 0;
 } 
 
+dt { margin-left: 12px; font-style: italic; }
+dd { margin-left: 30px; }
+
 blockquote { padding:0px 15px; color:#5b1111; font-size:125%; margin:0;}
 
 p { line-height:1.5em; }
