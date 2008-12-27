@@ -5,12 +5,8 @@ from zope.interface import Interface, Attribute, invariant, implements
 from twisted.plugin import IPlugin
 
 from scrapy import log
+from scrapy.http import Request
 from scrapy.core.exceptions import UsageError
-
-def _valid_start_urls(obj):
-    """Check the start urls specified are valid"""
-    if not obj.start_urls:
-        raise UsageError("A start url is required")
 
 def _valid_domain_name(obj):
     """Check the domain name specified is valid"""
@@ -28,10 +24,6 @@ def _valid_download_delay(obj):
 class ISpider(Interface, IPlugin) :
     """Interface to be implemented by site-specific web spiders"""
     
-    start_urls = Attribute(
-        """A sequence of URLs to retrieve to initiate the spider for this 
-        site. A single URL may also be provided here.""")
-    
     domain_name = Attribute(
          """The domain name of the site to be scraped.""")
 
@@ -43,36 +35,8 @@ class ISpider(Interface, IPlugin) :
     user_agent = Attribute(
          """Optional User-Agent to use for this domain""")
 
-    invariant(_valid_start_urls)
     invariant(_valid_domain_name)
     invariant(_valid_download_delay)
-
-    def parse(self, pagedata) :
-        """This is first called with the data corresponding to start_url. It
-        must return a (possibly empty) sequence where each element is either:
-         * A Request object for further processing.
-         * An object that extends ScrapedItem (defined in scrapeditem module)
-         * or None (this will be ignored)
-
-        When a Request object is returned, the Request is scheduled, then
-        downloaded and finally its results is handled to the Request callback.
-        That callback must behave the same way as this function.
-
-        When a ScrapedItem is returned, it is passed to the transformation pipeline
-        and finally the destination systems are updated.
-
-        The simplest way to use this is to have a method in your class for each
-        page type. So each function knows the layout and how to extract data
-        for a single page (or set of similar pages). A typical class might work
-        like:
-        * parse() parses the landing page and returns Requests
-          for a category() function to parse category pages.
-        * category() parses the category pages and returns links and callbacks
-          for a item() function to parse item pages.
-        * item() parses the item details page and returns objects that
-          extend ScrapedItem
-        """
-        pass
 
     def init_domain(self):
         """This is first called to initialize domain specific quirks, like 
@@ -83,9 +47,13 @@ class ISpider(Interface, IPlugin) :
 
 class BaseSpider(object):
     """Base class for scrapy spiders. All spiders must inherit from this
-    class."""
-
+    class.
+    
+    """
+    
     implements(ISpider)
+
+    start_urls = []
     domain_name = None
     extra_domain_names = []
 
@@ -94,3 +62,37 @@ class BaseSpider(object):
         method to send log messages from your spider
         """
         log.msg(message, domain=self.domain_name, level=level)
+
+    def start_requests(self, urls=None):
+        """Return the requests to crawl when this spider is opened for
+        scraping. urls contain the urls passed from command line (if any),
+        otherwise None if the enrie domain was requested for scraping.
+
+        This function must return a list of Requests to be crawled, based on
+        the given urls. The Requests must include a callback function which
+        must return a list of:
+         * Request's for further crawling
+         * ScrapedItem's for processing
+         * Both
+        Or None (which will be treated the same way as an empty list)
+
+        When a Request object is returned, the Request is scheduled, then
+        downloaded and finally its results is handled to the Request callback.
+
+        When a ScrapedItem is returned, it is passed to the item pipeline.
+
+        Unless this method is overrided, the start_urls attribute will be used
+        to create the initial requests (when urls is None).
+        """
+        if urls is None:
+            urls = self.start_urls
+        requests = [Request(url, callback=self.parse, dont_filter=True) for url in urls]
+        return requests
+        
+        return []
+
+    def parse(self, response):
+        """This is the default callback function used to parse the start
+        requests, although it can be overrided in descendant spiders.
+        """
+        pass

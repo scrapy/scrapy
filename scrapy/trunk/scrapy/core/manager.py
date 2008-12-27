@@ -108,10 +108,6 @@ class ExecutionManager(object):
                 sites.add(a)
 
         perdomain = {}
-        def _add(domain, request):
-            if domain not in perdomain:
-                perdomain[domain] = []
-            perdomain[domain] += [request]
 
         # sites
         for domain in sites:
@@ -119,15 +115,15 @@ class ExecutionManager(object):
             if not spider:
                 log.msg('Could not find spider for %s' % domain, log.ERROR)
                 continue
-            for url in self._start_urls(spider):
-                request = Request(url, callback=spider.parse, dont_filter=True)
-                _add(domain, request)
+            reqs = spider.start_requests()
+            perdomain.setdefault(domain, []).extend(reqs)
+
         # urls
         for url in urls:
             spider = spiders.fromurl(url)
             if spider:
-                request = Request(url=url, callback=spider.parse, dont_filter=True)
-                _add(spider.domain_name, request)
+                reqs = spider.start_requests([url])
+                perdomain.setdefault(domain, []).extend(reqs)
             else:
                 log.msg('Could not find spider for <%s>' % url, log.ERROR)
 
@@ -140,10 +136,7 @@ class ExecutionManager(object):
             if not spider:
                 log.msg('Could not find spider for %s' % request, log.ERROR)
                 continue
-            _add(spider.domain_name, request)
+            perdomain.setdefault(domain, []).append(request)
         return perdomain
 
-    def _start_urls(self, spider):
-        return spider.start_urls if hasattr(spider.start_urls, '__iter__') else [spider.start_urls]
-        
 scrapymanager = ExecutionManager()
