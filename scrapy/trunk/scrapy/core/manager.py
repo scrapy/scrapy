@@ -136,7 +136,7 @@ class ExecutionManager(object):
             if not spider:
                 log.msg('Could not find spider for %s' % request, log.ERROR)
                 continue
-            perdomain.setdefault(domain, []).append(request)
+            perdomain.setdefault(spider.domain_name, []).append(request)
         return perdomain
 
 scrapymanager = ExecutionManager()
