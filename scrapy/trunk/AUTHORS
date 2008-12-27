@@ -1,0 +1,27 @@
+Scrapy was brought to life by Shane Evans while hacking a scraping framework
+prototype for Mydeco (mydeco.com). It soon became maintained, extended and
+improved by Insophia (insophia.com), with the sponsorship of By Design (the
+company behind Mydeco).
+
+Here is the list of the primary authors & contributors, along with their user
+name (in Scrapy trac/subversion). Emails are intentionally left out to avoid
+spam.
+
+ * Pablo Hoffman (pablo)
+ * Daniel Graña (daniel)
+ * Martin Olveyra (olveyra)
+ * Gabriel García (elpolilla)
+ * Michael Cetrulo (samus_)
+ * Artem Bogomyagkov (artem)
+ * Damian Canabal (calarval)
+ * Matías Aguirre (omab)
+ * German Hoffman (german)
+ * Anibal Pacheco (anibal)
+ * Bruno Deferrari
+ * Shane Evans
+
+And here is the list of people who have helped to put the Scrapy homepage live:
+
+ * Ismael Carnales (ismael)
+ * Ezequiel Rivero (ezequiel)
+
