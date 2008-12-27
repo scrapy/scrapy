@@ -123,7 +123,7 @@ class ExecutionManager(object):
             spider = spiders.fromurl(url)
             if spider:
                 reqs = spider.start_requests([url])
-                perdomain.setdefault(domain, []).extend(reqs)
+                perdomain.setdefault(spider.domain_name, []).extend(reqs)
             else:
                 log.msg('Could not find spider for <%s>' % url, log.ERROR)
 
