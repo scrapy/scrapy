@@ -9,6 +9,7 @@ from twisted.python.failure import Failure
 from pydispatch import dispatcher
 
 from scrapy import log
+from scrapy.stats import stats
 from scrapy.conf import settings
 from scrapy.core import signals
 from scrapy.core.scheduler import Scheduler
@@ -259,6 +260,7 @@ class ExecutionEngine(object):
                 if not isinstance(_failure.value, IgnoreRequest):
                     referer = None if not isinstance(response, Response) else response.request.headers.get('Referer', None)
                     log.msg("Error while spider was processing <%s> from <%s>: %s" % (request.url, referer, _failure), log.ERROR, domain=domain)
+                    stats.incpath("%s/spider_exceptions/%s" % (domain, _failure.value.__class__.__name__))
 
             def _bugtrap(_failure):
                 log.msg('FRAMEWORK BUG processing %s: %s' % (request, _failure), log.ERROR, domain=domain)
