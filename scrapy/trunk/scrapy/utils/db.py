@@ -4,7 +4,6 @@ Function for dealing with databases
 import re
 from scrapy.conf import settings
 from scrapy import log
-from scrapy.core.engine import scrapyengine
 
 class URIValidationError(Exception):
     pass
@@ -28,6 +27,7 @@ def mysql_connect(db_uri_or_dict, **kwargs):
     Connects to a MySQL DB given a mysql URI
     """
     import MySQLdb
+    from scrapy.core.engine import scrapyengine
 
     if isinstance(db_uri_or_dict, dict):
         d = db_uri_or_dict
