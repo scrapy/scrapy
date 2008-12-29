@@ -1,0 +1,5 @@
+<?xml version="1.0" ?>
+<test_parent>
+<tag1>test text &amp; &amp;<![CDATA[more test text &amp; &gt;]]>blah&amp;blah</tag1>
+<tag2>blaheawfds&lt;</tag2>
+</test_parent>

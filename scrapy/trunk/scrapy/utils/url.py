@@ -9,6 +9,8 @@ import urllib
 import posixpath
 import cgi
 
+from scrapy.utils.python import unicode_to_str
+
 def url_is_from_any_domain(url, domains):
     """Return True if the url belongs to the given domain"""
     host = urlparse.urlparse(url).hostname
@@ -141,7 +143,7 @@ def canonicalize_url(url, keep_blank_values=False, keep_fragments=False):
     For examples see the tests in scrapy.tests.test_utils_url
     """
 
-    url = url.encode('utf-8')
+    url = unicode_to_str(url)
     parts = list(urlparse.urlparse(url))
     keyvals = cgi.parse_qsl(parts[4], keep_blank_values)
     keyvals.sort()

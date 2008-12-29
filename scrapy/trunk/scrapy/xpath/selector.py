@@ -65,13 +65,13 @@ class XPathSelector(object):
                 text = unicode(data, 'utf-8', errors='ignore') if data else u''
             elif isinstance(self.xmlNode, libxml2.xmlAttr): 
                 # serialization doesn't work sometimes for xmlAttr types
-                text = unicode(self.xmlNode.content, errors='ignore')
+                text = unicode(self.xmlNode.content, 'utf-8', errors='ignore')
             else:
                 data = self.xmlNode.serialize('utf-8')
                 text = unicode(data, 'utf-8', errors='ignore') if data else u''
         else:
             try:
-                text = unicode(self.xmlNode, errors='ignore')
+                text = unicode(self.xmlNode, 'utf-8', errors='ignore')
             except TypeError:  # catched when self.xmlNode is a float - see tests
                 text = unicode(self.xmlNode)
         return text
@@ -79,7 +79,7 @@ class XPathSelector(object):
     def extract_unquoted(self):
         """Get unescaped contents from the text node (no entities, no CDATA)"""
         if self.x('self::text()'):
-            return unicode(self.xmlNode.getContent(), errors='ignore')
+            return unicode(self.xmlNode.getContent(), 'utf-8', errors='ignore')
         else:
             return u''
 

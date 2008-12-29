@@ -4,7 +4,7 @@ import re
 from scrapy.xpath.selector import XPathSelector, XPathSelectorList
 from scrapy.utils.url import canonicalize_url
 from scrapy.utils.misc import extract_regex
-from scrapy.utils.python import flatten
+from scrapy.utils.python import flatten, str_to_unicode
 from scrapy.item.adaptors import adaptize
 
 def to_unicode(value):
@@ -19,7 +19,7 @@ def to_unicode(value):
     Output: list of unicodes
     """
     if hasattr(value, '__iter__'):
-        return [ unicode(v) for v in value ]
+        return [ str_to_unicode(v) if isinstance(v, basestring) else str_to_unicode(str(v)) for v in value ]
     else:
         raise TypeError('to_unicode must receive an iterable.')
 

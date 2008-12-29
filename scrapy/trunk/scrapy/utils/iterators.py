@@ -3,16 +3,16 @@ import re, csv
 from scrapy.xpath import XmlXPathSelector
 from scrapy.http import Response
 from scrapy import log
-from scrapy.utils.python import re_rsearch
+from scrapy.utils.python import re_rsearch, str_to_unicode, unicode_to_str
 
-def _normalize_input(obj):
+def _normalize_input(obj, unicode=True):
     assert isinstance(obj, (Response, basestring)), "obj must be Response or basestring, not %s" % type(obj).__name__
     if isinstance(obj, Response):
-        return obj.body.to_unicode()
+        return obj.body.to_unicode() if unicode else obj.body.to_string()
     elif isinstance(obj, str):
-        return obj.decode('utf-8')
+        return obj.decode('utf-8') if unicode else obj
     else:
-        return obj
+        return obj if unicode else obj.encode('utf-8')
 
 def xmliter(obj, nodename):
     """Return a iterator of XPathSelector's over all nodes of a XML document,
@@ -51,9 +51,9 @@ def csviter(obj, delimiter=None, headers=None):
     for the returned dictionaries, if not the first row is used.
     """
     def _getrow(csv_r):
-        return [field.decode() for field in csv_r.next()]
+        return [str_to_unicode(field) for field in csv_r.next()]
 
-    lines = _normalize_input(obj).splitlines(True)
+    lines = _normalize_input(obj, unicode=False).splitlines(True)
     if delimiter:
         csv_r = csv.reader(lines, delimiter=delimiter)
     else:
