@@ -62,7 +62,7 @@ class AdaptorsTestCase(unittest.TestCase):
                          'http://www.example.com/test/ascii',
                          'enc-ascii.html',
                          {'Content-Type': ['text/html; charset=utf-8']})
-        check_encoding(x, pound=False, euro=False)
+        check_extractor(x, pound=False, euro=False)
 
         # Test for inconsistencies between HTTP header encoding and 
         # META header encoding. It must prefer HTTP header like browsers do
