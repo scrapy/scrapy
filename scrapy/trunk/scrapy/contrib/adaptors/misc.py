@@ -4,7 +4,7 @@ import re
 from scrapy.xpath.selector import XPathSelector, XPathSelectorList
 from scrapy.utils.url import canonicalize_url
 from scrapy.utils.misc import extract_regex
-from scrapy.utils.python import flatten, str_to_unicode
+from scrapy.utils.python import flatten, str_to_unicode, unicode_to_str
 from scrapy.item.adaptors import adaptize
 
 def to_unicode(value):
@@ -35,7 +35,7 @@ def clean_spaces(value):
     Output: list of unicodes
     """
     _clean_spaces_re = re.compile("\s+", re.U)
-    return [ _clean_spaces_re.sub(' ', v.decode('utf-8')) for v in value ]
+    return [ _clean_spaces_re.sub(' ', str_to_unicode(v)) for v in value ]
 
 def strip(value):
     """
@@ -78,9 +78,9 @@ def canonicalize_urls(value):
     Output: list of unicodes(urls)
     """
     if hasattr(value, '__iter__'):
-        return [canonicalize_url(str(url)) for url in value]
+        return [canonicalize_url(unicode_to_str(url)) for url in value]
     elif isinstance(value, basestring):
-        return canonicalize_url(str(value))
+        return canonicalize_url(unicode_to_str(value))
     return ''
 
 class Delist(object):
