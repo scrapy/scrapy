@@ -5,6 +5,7 @@
 {% block main-content %}
 {% if doc.parents %}
 <div class="breadcrumb">
+<a href="/docs/">Documentation</a> &raquo;
 {% for p in doc.parents %}
 <a href="{{ p.link }}">{{ p.title|safe }}</a> &raquo;
 {% endfor %}
