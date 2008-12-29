@@ -6,7 +6,12 @@
 {% block body_id %}post_{{ object.id }}{% endblock %}
 
 
-{% block main-content_title %}
+{% block content_title %}
+{% endblock %}
+
+
+{% block main-content %}
+  {% load blog markup %}
   <h2>{{ object.title }}</h2>
   <p class="other_posts">
     {% if object.get_previous_by_publish %}
@@ -16,13 +21,9 @@
     | <a class="next" href="{{ object.get_next_post.get_absolute_url }}">{{ object.get_next_post }} &raquo;</a> 
     {% endif %}
   </p>
-{% endblock %}
 
-
-{% block main-content %}
-  {% load blog markup comments %}
   {% comment %}
-  {% load tagging_tags %}
+  {% load comments tagging_tags %}
   {% endcomment %}
   
   <p class="date">{{ object.publish|date:"j F Y" }}</p>
@@ -42,6 +43,8 @@
   {% endif %}
   {% endcomment %}
   
+  
+  {% comment %}
   {% get_comment_list for object as comment_list %}
   {% if comment_list %}
   <div id="comments">
@@ -69,4 +72,5 @@
       <p>Comments have been close for this post.</p>
     </div>
   {% endif %}
+  {% endcomment %}
 {% endblock %}

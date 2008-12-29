@@ -42,7 +42,6 @@ class Post(models.Model):
     body            = models.TextField(_('body'))
     tease           = models.TextField(_('tease'), blank=True)
     status          = models.IntegerField(_('status'), choices=STATUS_CHOICES, default=2)
-    allow_comments  = models.BooleanField(_('allow comments'), default=True)
     publish         = models.DateTimeField(_('publish'))
     created         = models.DateTimeField(_('created'), auto_now_add=True)
     modified        = models.DateTimeField(_('modified'), auto_now=True)
