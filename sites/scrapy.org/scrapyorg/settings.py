@@ -77,9 +77,11 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.admin',
     'django.contrib.markup',
+    'django.contrib.comments',
     'scrapyorg.article',
     'scrapyorg.download',
     'scrapyorg.docs',
+    'scrapyorg.blog',
 )
 
 DOC_PICKLE_ROOT = os.path.join(PROJECT_ROOT, 'docs', 'pickle')

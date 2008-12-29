@@ -1,0 +1,25 @@
+{% extends "blog/base_blog.html" %}
+
+
+{% block title %}Posts for {{ category.title }}{% endblock %}
+{% block body_class %}{{ block.super }} category_detail{% endblock %}
+{% block body_id %}category_{{ category.id }}{% endblock %}
+
+
+{% block content_title %}
+  <h2>Posts for {{ category.title }}</h2>
+{% endblock %}
+
+
+{% block content %}
+  {% load markup %}
+  <div class="post_list">
+    {% for post in object_list %}
+    <div>
+      <h3 class="title"><a href="{{ post.get_absolute_url }}">{{ post.title }}</a></h3>
+      <p class="date">{{ post.publish|date:"Y F d" }}</p>
+      <p class="tease">{{ post.tease }}</p>
+    </div>
+    {% endfor %}
+  </div>
+{% endblock %}

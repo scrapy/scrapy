@@ -1,0 +1,21 @@
+{% extends "blog/base_blog.html" %}
+
+
+{% block title %}Post archive for {{ year }}{% endblock %}
+{% block body_class %}{{ block.super }} post_archive_year{% endblock %}
+
+
+{% block main-content_title %}
+  <h2>Post archive for {{ year }}</h2>
+{% endblock %}
+
+
+{% block main-content %}
+  {% load markup %}
+  
+  <ul class="link_list">
+    {% for month in date_list %}
+    <li><a href="{% url blog_index %}{{ year }}/{{ month|date:"b" }}/">{{ month|date:"F" }}</a></li>
+    {% endfor %}
+  </ul>
+{% endblock %}

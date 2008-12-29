@@ -13,6 +13,8 @@ urlpatterns = patterns('',
 
     # docs
     url(r"^docs/", include("scrapyorg.docs.urls")),
+    # blog
+    url(r"^blog/", include("scrapyorg.blog.urls")),
 )
 
 
