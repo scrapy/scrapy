@@ -64,15 +64,15 @@ p { line-height:1.5em; }
 #content-wrapper {
   width: 100%;
   float: left;
-  margin-right: -250px;
+  margin-right: -300px;
 }
 
 #content {
-  margin: 0 270px 0 20px;
+  margin: 0 320px 0 20px;
 }
 
 #sidebar {
-  width: 250px;
+  width: 300px;
   float: right;
 }
 
