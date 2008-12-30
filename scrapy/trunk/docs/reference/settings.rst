@@ -1,3 +1,5 @@
+.. _settings:
+
 Available settings
 ==================
 
@@ -64,6 +66,7 @@ A module to use for looking for custom Scrapy commands. This is used to add
 custom command for your Scrapy project.
 
 Example::
+
     COMMANDS_MODULE = 'mybot.commands'
 
 .. setting:: COMMANDS_SETTINGS_MODULE
@@ -76,6 +79,7 @@ Default: ``None``
 A module to use for looking for custom Scrapy command settings.
 
 Example::
+
     COMMANDS_SETTINGS_MODULE = 'mybot.conf.commands'
 
 .. setting:: DEFAULT_ITEM_CLASS
@@ -125,6 +129,7 @@ Default: ``[]``
 The item pipelines to use (a list of classes).
 
 Example::
+
    ITEM_PIPELINES = [
        'mybot.pipeline.validate.ValidateMyItem',
        'mybot.pipeline.validate.StoreMyItem'
@@ -175,6 +180,7 @@ MAIL_FROM
 ---------
 
 Default: ``'scrapy@localhost'``
+
 Scope: ``scrapy.mail``
 
 Host to use for sending emails from Scrapy.
@@ -196,6 +202,7 @@ If memory debugging is enabled a memory report will be sent to the specified
 addresses.
 
 Example::
+
     MEMDEBUG_NOTIFY = ['user@example.com']
 
 .. setting:: MEMUSAGE_ENABLED
@@ -204,6 +211,7 @@ MEMUSAGE_ENABLED
 ----------------
 
 Default: ``False``
+
 Scope: ``scrapy.contrib.memusage``
 
 Wether to enable the memory usage extension that will shutdown the Scrapy
@@ -216,6 +224,7 @@ MEMUSAGE_LIMIT_MB
 -----------------
 
 Default: ``0``
+
 Scope: ``scrapy.contrib.memusage``
 
 The maximum amount of memory to allow (in megabytes) before shutting down
@@ -227,11 +236,13 @@ MEMUSAGE_NOTIFY_MAIL
 --------------------
 
 Default: ``False``
+
 Scope: ``scrapy.contrib.memusage``
 
 A list of emails to notify if the memory limit has been reached.
 
 Example::
+
     MEMUSAGE_NOTIFY_MAIL = ['user@example.com']
 
 .. setting:: MEMUSAGE_REPORT
@@ -240,6 +251,7 @@ MEMUSAGE_REPORT
 ---------------
 
 Default: ``False``
+
 Scope: ``scrapy.contrib.memusage``
 
 Wether to send a memory usage report after each domain has been closed.
@@ -250,6 +262,7 @@ MEMUSAGE_LIMIT_MB
 -----------------
 
 Default: ``0``
+
 Scope: ``scrapy.contrib.memusage``
 
 The maximum amount of memory to allow (in megabytes) before sending a warning
@@ -266,6 +279,7 @@ Default: ``''``
 Module where to create new spiders using the genspider command.
 
 Example::
+
     NEWSPIDER_MODULE = 'mybot.spiders_dev'
 
 .. setting:: REQUESTS_QUEUE_SIZE
@@ -274,6 +288,7 @@ REQUESTS_QUEUE_SIZE
 -------------------
 
 Default: ``0``
+
 Scope: ``scrapy.contrib.spidermiddleware.limit``
 
 If non zero, it will be used as an upper limit for the amount of requests that
@@ -291,6 +306,7 @@ The scheduler to use for crawling.
 .. setting:: SCHEDULER_ORDER 
 
 Default: ``'BFO'``
+
 Scope: ``scrapy.core.scheduler``
 
 The order to use for the crawling scheduler.
@@ -311,6 +327,7 @@ Default: ``[]``
 A list of modules where Scrapy will look for spiders.
 
 Example::
+
     SPIDER_MODULES = ['mybot.spiders_prod', 'mybot.spiders_dev']
 
 .. setting:: STATS_CLEANUP
@@ -348,6 +365,7 @@ TELNETCONSOLE_ENABLED
 ---------------------
 
 Default: ``True``
+
 Scope: ``scrapy.management.telnet``
 
 A boolean which specifies if the telnet management console will be enabled
@@ -359,6 +377,7 @@ TELNETCONSOLE_PORT
 ------------------
 
 Default: ``None``
+
 Scope: ``scrapy.management.telnet``
 
 The port to use for the telnet console. If unset, a dynamically assigned port
@@ -373,6 +392,7 @@ URLLENGTH_LIMIT
 ---------------
 
 Default: ``2083``
+
 Scope: ``contrib.spidermiddleware.urllength``
 
 The maximum URL length to allow for crawled URLs. For more information about
