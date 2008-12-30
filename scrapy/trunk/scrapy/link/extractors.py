@@ -26,6 +26,7 @@ class RegexLinkExtractor(LinkExtractor):
     deny - ignore urls that match any of these regexes
     allow_domains - only extract urls from these domains
     deny_domains - ignore urls from these dmoains
+    restrict_xpaths - restrict url extraction to given xpaths contents
     tags - look for urls in this tags
     attrs - look for urls in this attrs
     canonicalize - canonicalize all extracted urls using scrapy.utils.url.canonicalize_url
