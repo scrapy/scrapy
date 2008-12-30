@@ -15,6 +15,9 @@ DEFAULT_ITEM_CLASS = 'scrapy.item.ScrapedItem'
 USER_AGENT = '%s/%s' % (BOT_NAME, BOT_VERSION)
 DOWNLOAD_TIMEOUT = 600
 
+# use this spider class as default when no spider was found for a given url
+#DEFAULT_SPIDER = 'scrapy.contrib.spiders.generic.GenericSpider'
+
 # uncomment if you want to add your own custom scrapy commands
 #COMMANDS_MODULE = '$project_name.commands'
 #COMMANDS_SETTINGS_MODULE = '$project_name.conf.commands'

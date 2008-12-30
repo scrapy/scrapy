@@ -12,6 +12,7 @@ from scrapy.spider.models import ISpider
 from scrapy import log
 from scrapy.conf import settings
 from scrapy.utils.url import url_is_from_spider
+from scrapy.utils.misc import load_class
 
 class SpiderManager(object):
     """Spider locator and manager"""
@@ -49,7 +50,14 @@ class SpiderManager(object):
                 for p in plist:
                     if url_is_from_spider(url, p):
                         return p
-        return self._alldict.get(self.default_domain)
+        spider = self._alldict.get(self.default_domain)
+        if not spider:                          # create a custom spider
+            spiderclassname = settings.get('DEFAULT_SPIDER')
+            if spiderclassname:
+                spider = load_class(spiderclassname)(domain)
+                self.add_spider(spider)
+            
+        return spider
 
     def asdict(self, include_disabled=True):
         self._load_on_demand()
@@ -75,21 +83,24 @@ class SpiderManager(object):
         self._invaliddict = {}
         self._alldict = {}
         self._enableddict = {}
-        enabled_spiders = self._enabled_spiders()
+        self._enabled_spiders = self._enabled_spiders()
 
         modules = [__import__(m, {}, {}, ['']) for m in self.spider_modules]
         for module in modules:
             for spider in self._getspiders(ISpider, module):
-                try:
-                    ISpider.validateInvariants(spider) 
-                    self._alldict[spider.domain_name] = spider
-                    if spider.domain_name in enabled_spiders:
-                        self._enableddict[spider.domain_name] = spider
-                except Exception, e:
-                    self._invaliddict[spider.domain_name] = spider
-                    # we can't use the log module here because it may not be available yet
-                    print "WARNING: Could not load spider %s: %s" % (spider, e)
+                self.add_spider(spider)
         self.loaded = True
+
+    def add_spider(self, spider):
+        try:
+            ISpider.validateInvariants(spider)
+            self._alldict[spider.domain_name] = spider
+            if spider.domain_name in self._enabled_spiders:
+                self._enableddict[spider.domain_name] = spider
+        except Exception, e:
+            self._invaliddict[spider.domain_name] = spider
+            # we can't use the log module here because it may not be available yet
+            print "WARNING: Could not load spider %s: %s" % (spider, e)
 
     def reload(self, skip_domains=None):
         """
