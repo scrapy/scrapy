@@ -58,7 +58,7 @@ p { line-height:1.5em; }
 }
 
 #body {
-  padding-bottom: 45px;
+  padding-bottom: 35px;
 }
 
 #content-wrapper {
@@ -80,7 +80,7 @@ p { line-height:1.5em; }
   position: absolute;
   bottom: 0;
   width: 100%;
-  height: 45px;
+  height: 35px;
   border-top: 1px solid #b5331a;
   background: url('../images/footer-bg.jpg') repeat-x left top #5b2a16;
 }
@@ -116,7 +116,7 @@ p { line-height:1.5em; }
 
 #footer p { 
   margin: 10px 20px; 
-  line-height: 25px;
+  line-height: 15px;
   font-size: .85em;
   color: #fff;
 }
