@@ -83,7 +83,7 @@ class SpiderManager(object):
         self._invaliddict = {}
         self._alldict = {}
         self._enableddict = {}
-        self._enabled_spiders = self._enabled_spiders()
+        self._enabled_spiders_set = self._enabled_spiders()
 
         modules = [__import__(m, {}, {}, ['']) for m in self.spider_modules]
         for module in modules:
@@ -95,7 +95,7 @@ class SpiderManager(object):
         try:
             ISpider.validateInvariants(spider)
             self._alldict[spider.domain_name] = spider
-            if spider.domain_name in self._enabled_spiders:
+            if spider.domain_name in self._enabled_spiders_set:
                 self._enableddict[spider.domain_name] = spider
         except Exception, e:
             self._invaliddict[spider.domain_name] = spider
