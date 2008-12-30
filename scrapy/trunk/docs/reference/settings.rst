@@ -41,26 +41,163 @@ The version of the bot implemented by this Scrapy project. This will be used to
 construct the User-Agent by default.
 
 .. setting:: CACHE2_DIR
+
+CACHE2_DIR
+----------
+
+Default: ``''`` (empty string)
+
+The directory to use for storin the low-level HTTP cache. If empty the HTTP
+cache will be disabled.  it.
+
+.. setting:: CACHE2_EXPIRATION_SECS
+
+CACHE2_EXPIRATION_SECS
+----------------------
+
+Default: ``0``
+
+Number of seconds to use for cache expiration. Requests that were cached before
+this time will be re-downloaded. If zero, cached requests will always expire.
+Negative numbers means requests will never expire.
+
 .. setting:: CACHE2_IGNORE_MISSING
+
+CACHE2_IGNORE_MISSING
+---------------------
+
+Default: ``False``
+
+If enabled, requests not found in the cache will be ignored instead of downloaded. 
+
 .. setting:: CACHE2_SECTORIZE
+
+CACHE2_SECTORIZE
+----------------
+
+Default: ``True``
+
+Wether to split HTTP cache storage in several dirs for performance improvements.
+
 .. setting:: CLOSEDOMAIN_NOTIFY
+
+CLOSEDOMAIN_NOTIFY
+------------------
+
+Default: ``[]``
+Scope: ``scrapy.contrib.closedomain``
+
+A list of emails to notify if the domain has been automatically closed by timeout.
+
 .. setting:: CLOSEDOMAIN_TIMEOUT
+
+CLOSEDOMAIN_TIMEOUT
+-------------------
+
+Default: ``0``
+Scope: ``scrapy.contrib.closedomain``
+
+A timeout (in secs) for automatically closing a spider. Spiders that remain
+open for more than this time will be automatically closed. If zero, the
+automatically closing is disabled.
+
 .. setting:: CLUSTER_LOGDIR
+
+CLUSTER_LOGDIR
+--------------
+
+Default: ``''`` (empty string)
+
+The directory to use for cluster logging.
+
 .. setting:: CLUSTER_MASTER_CACHEFILE
+
+CLUSTER_MASTER_CACHEFILE
+------------------------
+
+Default: ``''``
+
+The file to use for storing the state of the cluster master, before shotting
+down. And also used for restoring the state on start up. If not set, state
+won't be persisted.
+
 .. setting:: CLUSTER_MASTER_ENABLED
+
+CLUSTER_MASTER_ENABLED
+------------------------
+
+Default: ``False``
+
+A boolen which specifies whether to enabled the cluster master.
+
 .. setting:: CLUSTER_MASTER_NODES
+
+CLUSTER_MASTER_NODES
+--------------------
+
+Default: ``{}``
+
+A dict which defines the nodes of the cluster.  The keys are the node/worker
+names and the values are the worker urls.
+
+Example::
+    CLUSTER_MASTER_NODES = {
+        'local': 'localhost:8789',
+        'remote': 'someworker.example.com:8789',
+    }
+
 .. setting:: CLUSTER_MASTER_POLL_INTERVAL
+
+CLUSTER_MASTER_POLL_INTERVAL
+----------------------------
+
+Default: ``60``
+
+The amount of time (in secs) that the master should wait before polling the
+workers.
+
 .. setting:: CLUSTER_MASTER_PORT
+
+CLUSTER_MASTER_PORT
+-------------------
+
+Default: ``8790``
+
+The port where the cluster master will listen.
+
 .. setting:: CLUSTER_WORKER_ENABLED
+
+CLUSTER_WORKER_ENABLED
+------------------------
+
+Default: ``False``
+
+A boolen which specifies whether to enabled the cluster master.
+
 .. setting:: CLUSTER_WORKER_MAXPROC
+
+CLUSTER_WORKER_MAXPROC
+------------------------
+
+Default: ``4``
+
+The maximum number of process that the cluster worker will be allowed to spawn.
+
 .. setting:: CLUSTER_WORKER_PORT
-.. setting:: CLUSTER_WORKER_SVNWORKDIR
+
+CLUSTER_WORKER_PORT
+-------------------
+
+Default: ``8789``
+
+The port where the cluster worker will listen.
+
 .. setting:: COMMANDS_MODULE
 
 COMMANDS_MODULE
 ---------------
 
-Default: ``None``
+Default: ``''`` (empty string)
 
 A module to use for looking for custom Scrapy commands. This is used to add
 custom command for your Scrapy project.
@@ -74,7 +211,7 @@ Example::
 COMMANDS_SETTINGS_MODULE
 ------------------------
 
-Default: ``None``
+Default: ``''`` (empty string)
 
 A module to use for looking for custom Scrapy command settings.
 
@@ -91,6 +228,17 @@ Default: ``'scrapy.item.ScrapedItem'``
 
 The default class that will be used for items, for example, in the shell
 console. 
+
+.. setting:: CONCURRENT_DOMAINS
+
+CONCURRENT_DOMAINS
+------------------
+
+Default: ``8``
+
+Number of domains to scrape concurrently in one process. This doesn't affect
+the number of domains scraped concurrently by the Scrapy cluster which spawns a
+new process per domain.
 
 .. setting:: DEPTH_LIMIT
 
@@ -112,17 +260,109 @@ Default: ``True``
 Wether to collect depth stats.
 
 .. setting:: DOWNLOADER_MIDDLEWARES
+
+DOWNLOADER_MIDDLEWARES
+----------------------
+
+Default: ``[
+    'scrapy.contrib.downloadermiddleware.errorpages.ErrorPagesMiddleware',
+    'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware',
+    'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware',
+    'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware',
+    'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware',
+    'scrapy.contrib.downloadermiddleware.common.CommonMiddleware',
+    'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware',
+    'scrapy.contrib.downloadermiddleware.compression.CompressionMiddleware',
+    'scrapy.contrib.downloadermiddleware.debug.CrawlDebug',
+    'scrapy.contrib.downloadermiddleware.stats.DownloaderStats',
+    'scrapy.contrib.downloadermiddleware.cache.CacheMiddleware',
+]``
+
+The list of enabled downloader middlewares. Keep in mind that some may need te
+be enabled through some settings. The top (first) middlware is closer to the
+engine, while the bottom (last) middleware is closer to the downloader.
+
 .. setting:: DOWNLOADER_STATS
+
+DOWNLOADER_STATS
+----------------
+
+Default: ``True``
+
+Wether to enable downloader stats collection.
+
 .. setting:: DOWNLOAD_TIMEOUT
+
+DOWNLOADER_TIMEOUT
+------------------
+
+Default: ``180``
+
+The amount of time (in secs) that the downloader will wait before timing out.
+
 .. setting:: ENABLED_SPIDERS_FILE
+
+ENABLED_SPIDERS_FILE
+--------------------
+
+Default: ``''`` (empty string)
+
+A file name with the list of enabled spiders. Scrapy will this file to
+configure what spiders are enabled and which ones aren't. The file must contain
+one spider name (domain_name) per line.
+
 .. setting:: EXTENSIONS 
-.. setting:: GLOBAL_CLUSTER_SETTINGS
+
+EXTENSIONS
+----------
+
+Default: ``[
+    'scrapy.stats.corestats.CoreStats',
+    'scrapy.xpath.extension.ResponseLibxml2',
+    'scrapy.management.web.WebConsole',
+    'scrapy.management.telnet.TelnetConsole',
+    'scrapy.contrib.webconsole.schedstats.SchedulerStats',
+    'scrapy.contrib.webconsole.livestats.LiveStats',
+    'scrapy.contrib.webconsole.spiderctl.Spiderctl',
+    'scrapy.contrib.webconsole.enginestatus.EngineStatus',
+    'scrapy.contrib.webconsole.stats.StatsDump',
+    'scrapy.contrib.webconsole.spiderstats.SpiderStats',
+    'scrapy.contrib.spider.reloader.SpiderReloader',
+    'scrapy.contrib.memusage.MemoryUsage',
+    'scrapy.contrib.memdebug.MemoryDebugger',
+    'scrapy.contrib.pbcluster.ClusterWorker',
+    'scrapy.contrib.pbcluster.ClusterMasterWeb',
+    'scrapy.contrib.pbcluster.ClusterCrawler',
+    'scrapy.contrib.closedomain.CloseDomain',
+    'scrapy.contrib.debug.StackTraceDebug',
+    'scrapy.contrib.response.soup.ResponseSoup',
+]``
+
+The list of enabled extensions. Keep in mind that some of them may also need to
+be activated through a setting.
+
 .. setting:: GROUPSETTINGS_ENABLED
+
+GROUPSETTINGS_ENABLED
+---------------------
+
+Default: ``False``
+
+Wether to enable group settings where spiders pull their settings from.
+
 .. setting:: GROUPSETTINGS_MODULE
+
+GROUPSETTINGS_MODULE
+--------------------
+
+Default: ``''`` (empty string)
+
+The module to use for pulling settings from, if the group settings is enabled. 
+
 .. setting:: ITEM_PIPELINES
 
-LOG_ENABLED
------------
+ITEM_PIPELINES
+--------------
 
 Default: ``[]``
 
@@ -183,7 +423,7 @@ Default: ``'scrapy@localhost'``
 
 Scope: ``scrapy.mail``
 
-Host to use for sending emails from Scrapy.
+Host to use for sending notification emails from Scrapy.
 
 .. setting:: MEMDEBUG_ENABLED
 
@@ -269,6 +509,16 @@ The maximum amount of memory to allow (in megabytes) before sending a warning
 email notifying about it. If zero, no warning will be produced.
 
 .. setting:: MYSQL_CONNECTION_SETTINGS
+
+MYSQL_CONNECTION_SETTINGS
+-------------------------
+
+Default: ``{}``
+Scope: ``scrapy.utils.db.mysql_connect``
+
+Settings to use for MySQL connections performed through
+``scrapy.utils.db.mysql_connect``
+
 .. setting:: NEWSPIDER_MODULE
 
 NEWSPIDER_MODULE
@@ -311,12 +561,35 @@ Scope: ``scrapy.core.scheduler``
 
 The order to use for the crawling scheduler.
 
-.. setting:: SHOVEITEM_CACHE_OPT
-.. setting:: SHOVEITEM_CACHE_URI
-.. setting:: SHOVEITEM_STORE_OPT
-.. setting:: SHOVEITEM_STORE_URI
 .. setting:: SPIDERPROFILER_ENABLED
+
+SPIDERPROFILER_ENABLED
+----------------------
+
+Default: ``False``
+
+Enable the spider profiler. Warning: this could have a big impact in
+performance.
+
 .. setting:: SPIDER_MIDDLEWARES
+
+SPIDER_MIDDLEWARES
+------------------
+
+Default: ``[
+    'scrapy.contrib.itemsampler.ItemSamplerMiddleware',
+    'scrapy.contrib.spidermiddleware.limit.RequestLimitMiddleware',
+    'scrapy.contrib.spidermiddleware.restrict.RestrictMiddleware',
+    'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware',
+    'scrapy.contrib.spidermiddleware.referer.RefererMiddleware',
+    'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware',
+    'scrapy.contrib.spidermiddleware.depth.DepthMiddleware',
+]``
+
+The list of enabled spider middlewares. Keep in mind that some may need te be
+enabled through some settings. The top (first) middleware is closer to the
+engine, while the bottom (last) middleware is closer to the spider.
+
 .. setting:: SPIDER_MODULES
 
 SPIDER_MODULES
@@ -386,6 +659,14 @@ is used.
 
 .. setting:: TEMPLATES_DIR
 
+TEMPLATES_DIR
+-------------
+
+Default: ``templates`` dir inside scrapy module
+
+The directory where to look for template when creating new projects with
+scrapy-admin.py newproject.
+
 .. setting:: URLLENGTH_LIMIT
 
 URLLENGTH_LIMIT
@@ -436,8 +717,3 @@ Default: ``None``
 
 The port to use for the web console. If unset, a dynamically assigned port is
 used.
-
-.. setting:: WS_CACHESIZE
-.. setting:: WS_ENABLED
-.. setting:: WS_PORT
-.. setting:: WS_REDIRECTURL
