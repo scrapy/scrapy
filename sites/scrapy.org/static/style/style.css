@@ -58,7 +58,7 @@ p { line-height:1.5em; }
 }
 
 #body {
-  padding-bottom: 80px;
+  padding-bottom: 45px;
 }
 
 #content-wrapper {
@@ -80,7 +80,7 @@ p { line-height:1.5em; }
   position: absolute;
   bottom: 0;
   width: 100%;
-  height: 80px;
+  height: 45px;
   border-top: 1px solid #b5331a;
   background: url('../images/footer-bg.jpg') repeat-x left top #5b2a16;
 }
@@ -110,41 +110,27 @@ p { line-height:1.5em; }
   border-bottom: none;
 }
 
-#footer ul {
-  list-style-type: none;
-  margin: 15px 10px;
-  padding: 0;
-}
-
-#footer ul li { 
-  display: inline; 
-  padding: 0 10px; 
-  border-right: 1px solid #b2c0c9;
-}
-
-#footer ul li.last { 
-  border-right:none;
-}
-
-#footer li a { 
-  text-decoration: none;
-  border-bottom: 1px solid #884a2b;
-  color: #fff;
-}
-
-#footer li a:hover, #footer p a:hover { i
-  color:#ffe114;
+#footer a:hover {
+  color: #ffe114;
 }
 
 #footer p { 
-  margin: 0 20px; 
-  line-height: 1.1em;
-  font-size: .8em;
+  margin: 10px 20px; 
+  line-height: 25px;
+  font-size: .85em;
   color: #fff;
 }
 
 #footer p a {
-  color:#fff;
+  color: #fff;
+}
+
+#badge {
+  float: right;
+}
+
+#badge a {
+  border-bottom: none;
 }
 
 .box { margin-bottom:15px;  background:url('../images/box-borders-bottom.gif') no-repeat left bottom #4d271c; padding-bottom:5px; }
