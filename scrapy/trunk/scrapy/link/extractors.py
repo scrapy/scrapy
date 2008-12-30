@@ -36,6 +36,7 @@ class RegexLinkExtractor(LinkExtractor):
     Url matching is always performed against the absolute urls, never the
     relative urls found in pages.
 
+    If no allow/deny arguments are given, match all links.
     """
     
     def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(), 
