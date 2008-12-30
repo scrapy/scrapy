@@ -11,14 +11,14 @@ class Settings(object):
     overrides = None
     settings = None
     defaults = None
-    core = None
+    global_defaults = None
 
     def __init__(self):
         pickled_settings = os.environ.get("SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE")
         self.overrides = pickle.loads(pickled_settings) if pickled_settings else {}
         self.settings = self._import(SETTINGS_MODULE)
         self.defaults = {}
-        self.core = self._import('scrapy.conf.core_settings')
+        self.global_defaults = self._import('scrapy.conf.default_settings')
 
     def _import(self, modulepath):
         return __import__(modulepath, {}, {}, [''])
@@ -36,8 +36,8 @@ class Settings(object):
         if opt_name in self.defaults:
             return self.defaults[opt_name]
 
-        if hasattr(self.core, opt_name):
-            return getattr(self.core, opt_name)
+        if hasattr(self.global_defaults, opt_name):
+            return getattr(self.global_defaults, opt_name)
 
     def get(self, name, default=None):
         return self[name] if self[name] is not None else default
