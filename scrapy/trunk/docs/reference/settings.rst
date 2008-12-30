@@ -141,6 +141,7 @@ A dict which defines the nodes of the cluster.  The keys are the node/worker
 names and the values are the worker urls.
 
 Example::
+
     CLUSTER_MASTER_NODES = {
         'local': 'localhost:8789',
         'remote': 'someworker.example.com:8789',
@@ -264,19 +265,21 @@ Wether to collect depth stats.
 DOWNLOADER_MIDDLEWARES
 ----------------------
 
-Default: ``[
-    'scrapy.contrib.downloadermiddleware.errorpages.ErrorPagesMiddleware',
-    'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware',
-    'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware',
-    'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware',
-    'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware',
-    'scrapy.contrib.downloadermiddleware.common.CommonMiddleware',
-    'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware',
-    'scrapy.contrib.downloadermiddleware.compression.CompressionMiddleware',
-    'scrapy.contrib.downloadermiddleware.debug.CrawlDebug',
-    'scrapy.contrib.downloadermiddleware.stats.DownloaderStats',
-    'scrapy.contrib.downloadermiddleware.cache.CacheMiddleware',
-]``
+Default:: 
+
+    [
+        'scrapy.contrib.downloadermiddleware.errorpages.ErrorPagesMiddleware',
+        'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware',
+        'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware',
+        'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware',
+        'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware',
+        'scrapy.contrib.downloadermiddleware.common.CommonMiddleware',
+        'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware',
+        'scrapy.contrib.downloadermiddleware.compression.CompressionMiddleware',
+        'scrapy.contrib.downloadermiddleware.debug.CrawlDebug',
+        'scrapy.contrib.downloadermiddleware.stats.DownloaderStats',
+        'scrapy.contrib.downloadermiddleware.cache.CacheMiddleware',
+    ]
 
 The list of enabled downloader middlewares. Keep in mind that some may need te
 be enabled through some settings. The top (first) middlware is closer to the
@@ -316,27 +319,29 @@ one spider name (domain_name) per line.
 EXTENSIONS
 ----------
 
-Default: ``[
-    'scrapy.stats.corestats.CoreStats',
-    'scrapy.xpath.extension.ResponseLibxml2',
-    'scrapy.management.web.WebConsole',
-    'scrapy.management.telnet.TelnetConsole',
-    'scrapy.contrib.webconsole.schedstats.SchedulerStats',
-    'scrapy.contrib.webconsole.livestats.LiveStats',
-    'scrapy.contrib.webconsole.spiderctl.Spiderctl',
-    'scrapy.contrib.webconsole.enginestatus.EngineStatus',
-    'scrapy.contrib.webconsole.stats.StatsDump',
-    'scrapy.contrib.webconsole.spiderstats.SpiderStats',
-    'scrapy.contrib.spider.reloader.SpiderReloader',
-    'scrapy.contrib.memusage.MemoryUsage',
-    'scrapy.contrib.memdebug.MemoryDebugger',
-    'scrapy.contrib.pbcluster.ClusterWorker',
-    'scrapy.contrib.pbcluster.ClusterMasterWeb',
-    'scrapy.contrib.pbcluster.ClusterCrawler',
-    'scrapy.contrib.closedomain.CloseDomain',
-    'scrapy.contrib.debug.StackTraceDebug',
-    'scrapy.contrib.response.soup.ResponseSoup',
-]``
+Default:: 
+
+    [
+        'scrapy.stats.corestats.CoreStats',
+        'scrapy.xpath.extension.ResponseLibxml2',
+        'scrapy.management.web.WebConsole',
+        'scrapy.management.telnet.TelnetConsole',
+        'scrapy.contrib.webconsole.schedstats.SchedulerStats',
+        'scrapy.contrib.webconsole.livestats.LiveStats',
+        'scrapy.contrib.webconsole.spiderctl.Spiderctl',
+        'scrapy.contrib.webconsole.enginestatus.EngineStatus',
+        'scrapy.contrib.webconsole.stats.StatsDump',
+        'scrapy.contrib.webconsole.spiderstats.SpiderStats',
+        'scrapy.contrib.spider.reloader.SpiderReloader',
+        'scrapy.contrib.memusage.MemoryUsage',
+        'scrapy.contrib.memdebug.MemoryDebugger',
+        'scrapy.contrib.pbcluster.ClusterWorker',
+        'scrapy.contrib.pbcluster.ClusterMasterWeb',
+        'scrapy.contrib.pbcluster.ClusterCrawler',
+        'scrapy.contrib.closedomain.CloseDomain',
+        'scrapy.contrib.debug.StackTraceDebug',
+        'scrapy.contrib.response.soup.ResponseSoup',
+    ]
 
 The list of enabled extensions. Keep in mind that some of them may also need to
 be activated through a setting.
@@ -576,15 +581,17 @@ performance.
 SPIDER_MIDDLEWARES
 ------------------
 
-Default: ``[
-    'scrapy.contrib.itemsampler.ItemSamplerMiddleware',
-    'scrapy.contrib.spidermiddleware.limit.RequestLimitMiddleware',
-    'scrapy.contrib.spidermiddleware.restrict.RestrictMiddleware',
-    'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware',
-    'scrapy.contrib.spidermiddleware.referer.RefererMiddleware',
-    'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware',
-    'scrapy.contrib.spidermiddleware.depth.DepthMiddleware',
-]``
+Default::
+
+    [
+        'scrapy.contrib.itemsampler.ItemSamplerMiddleware',
+        'scrapy.contrib.spidermiddleware.limit.RequestLimitMiddleware',
+        'scrapy.contrib.spidermiddleware.restrict.RestrictMiddleware',
+        'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware',
+        'scrapy.contrib.spidermiddleware.referer.RefererMiddleware',
+        'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware',
+        'scrapy.contrib.spidermiddleware.depth.DepthMiddleware',
+    ]
 
 The list of enabled spider middlewares. Keep in mind that some may need te be
 enabled through some settings. The top (first) middleware is closer to the
