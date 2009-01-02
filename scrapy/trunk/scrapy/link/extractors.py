@@ -87,6 +87,15 @@ class RegexLinkExtractor(LinkExtractor):
         return any(allowed) and not any(denied)
 
 class ImageLinkExtractor(object):
+    '''ImageLinkExtractor objects are intended to extract image links from HTML pages
+    given certain xpath locations.
+
+    These locations can be passed in a list/tuple either when instanciating the LinkExtractor,
+    or whenever you call extract_links.
+    If no locations are specified in any of these places, a default pattern '//img' will be used.
+    If locations are specified when instanciating the LinkExtractor, and also when calling extract_links,
+    both locations will be used for that call of extract_links'''
+
     def __init__(self, locations=None):
         self.locations = tuple(locations) if hasattr(locations, '__iter__') else tuple()
 
