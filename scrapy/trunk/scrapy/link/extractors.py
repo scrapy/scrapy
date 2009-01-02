@@ -60,19 +60,20 @@ class RegexLinkExtractor(LinkExtractor):
         else:
             links = LinkExtractor.extract_links(self, response)
 
-        links = (link for link in links if _is_valid_url(link.url))
+        links = [link for link in links if _is_valid_url(link.url)]
 
         if self.allow_res:
-            links = (link for link in links if _matches(link.url, self.allow_res))
+            links = [link for link in links if _matches(link.url, self.allow_res)]
         if self.deny_res:
-            links = (link for link in links if not _matches(link.url, self.deny_res))
+            links = [link for link in links if not _matches(link.url, self.deny_res)]
         if self.allow_domains:
-            links = (link for link in links if url_is_from_any_domain(link.url, self.allow_domains))
+            links = [link for link in links if url_is_from_any_domain(link.url, self.allow_domains)]
         if self.deny_domains:
-            links = (link for link in links if not url_is_from_any_domain(link.url, self.deny_domains))
+            links = [link for link in links if not url_is_from_any_domain(link.url, self.deny_domains)]
 
         if self.canonicalize:
-            links = (canonicalize_url(link.url) for link in links)
+            for link in links:
+                link.url = canonicalize_url(link.url)
 
         return links
 

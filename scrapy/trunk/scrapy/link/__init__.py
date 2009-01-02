@@ -42,9 +42,12 @@ class LinkExtractor(FixedSGMLParser):
         self.close()
 
         base_url = self.base_url if self.base_url else response_url
+
+        links = []
         for link in self.links:
             link.url = urljoin(base_url, link.url).strip()
-            yield link
+            links.append(link)
+        return links
 
     def extract_links(self, response):
         # wrapper needed to allow to work directly with text
