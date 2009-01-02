@@ -84,7 +84,7 @@ def re_rsearch(pattern, text, chunk_size=1024):
     the start position of the match, and the ending (regarding the entire text).
     """
     def _chunk_iter():
-        offset = text_len = len(text)
+        offset = len(text)
         while True:
             offset -= (chunk_size * 1024)
             if offset <= 0:
