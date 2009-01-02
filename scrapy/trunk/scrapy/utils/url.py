@@ -43,18 +43,18 @@ _unreserved_marks = "-_.!~*'()" #RFC 2396 sec 2.3
 _safe_chars = urllib.always_safe + '%' + _reserved + _unreserved_marks
 
 def safe_url_string(url, use_encoding='utf8'):
-    """Convert a unicode (or utf8 string) object into a legal URL.
+    """Convert a unicode object (using 'use_encoding' as the encoding), or an already
+    encoded string into a legal URL.
 
     Illegal characters are escaped (RFC-3986)
 
-    It is safe to call this function multiple times. Do not pass this
-    function strings in encodings other than utf8.
+    It is safe to call this function multiple times.
 
     The use_encoding argument is the encoding to use to determine the numerical
     values in the escaping. For urls on html pages, you should use the original
     encoding of that page.
     """
-    s = url.encode(use_encoding)
+    s = url.encode(use_encoding) if isinstance(url, unicode) else url
     return urllib.quote(s,  _safe_chars)
 
 
