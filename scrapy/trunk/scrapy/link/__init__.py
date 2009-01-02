@@ -2,7 +2,7 @@
 LinkExtractor provides en efficient way to extract links from pages
 """
 
-from scrapy.utils.python import FixedSGMLParser
+from scrapy.utils.python import FixedSGMLParser, unique as unique_list
 from scrapy.utils.url import safe_url_string, urljoin_rfc as urljoin
 
 class LinkExtractor(FixedSGMLParser):
@@ -28,6 +28,8 @@ class LinkExtractor(FixedSGMLParser):
     * attr (string or function)
       * an attribute name which is used to search for links (defaults to "href")
       * a function which receives an attribute name and returns whether to scan it
+    * unique - if True the same urls won't be extracted twice, otherwise the
+      same urls will be extracted multiple times (with potentially different link texts)
     """
 
     def __init__(self, tag="a", attr="href", unique=False):
@@ -42,17 +44,7 @@ class LinkExtractor(FixedSGMLParser):
         self.feed(response_text)
         self.close()
 
-        links = self.links
-        if self.unique:
-            seen = set()
-            def _seen(url):
-                if url in seen:
-                    return True
-                else:
-                    seen.add(url)
-                    return False
-
-            links = [link for link in links if not _seen(link.url)]
+        links = unique_list(self.links, key=lambda link: link.url) if self.unique else self.links
 
         ret = []
         base_url = self.base_url if self.base_url else response_url
