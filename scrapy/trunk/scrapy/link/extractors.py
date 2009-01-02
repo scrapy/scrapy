@@ -9,9 +9,8 @@ import urlparse
 
 from scrapy.link import LinkExtractor, Link
 from scrapy.utils.url import canonicalize_url, url_is_from_any_domain
-from scrapy.utils.response import new_response_from_xpaths
 from scrapy.utils.python import unicode_to_str
-from scrapy.xpath.selector import HtmlXPathSelector
+from scrapy.xpath import HtmlXPathSelector
 
 _re_type = type(re.compile("", 0))
 
@@ -41,7 +40,7 @@ class RegexLinkExtractor(LinkExtractor):
 
     If no allow/deny arguments are given, match all links.
     """
-    
+
     def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(), 
                  tags=('a', 'area'), attrs=('href'), canonicalize=True):
         self.allow_res = [x if isinstance(x, _re_type) else re.compile(x) for x in allow]
@@ -56,23 +55,25 @@ class RegexLinkExtractor(LinkExtractor):
 
     def extract_links(self, response, unique=True):
         if self.restrict_xpaths:
-            response = new_response_from_xpaths(response, self.restrict_xpaths)
+            hxs = HtmlXPathSelector(response)
+            html_slice = ''.join(''.join(html_fragm for html_fragm in hxs.x(xpath_expr).extract()) for xpath_expr in self.restrict_xpaths)
+            links = self._extract_links(html_slice, response.url, unique)
+        else:
+            links = LinkExtractor.extract_links(self, response, unique)
 
-        links = LinkExtractor.extract_links(self, response, unique)
-        links = [link for link in links if _is_valid_url(link.url)]
+        links = (link for link in links if _is_valid_url(link.url))
 
         if self.allow_res:
-            links = [link for link in links if _matches(link.url, self.allow_res)]
+            links = (link for link in links if _matches(link.url, self.allow_res))
         if self.deny_res:
-            links = [link for link in links if not _matches(link.url, self.deny_res)]
+            links = (link for link in links if not _matches(link.url, self.deny_res))
         if self.allow_domains:
-            links = [link for link in links if url_is_from_any_domain(link.url, self.allow_domains)]
+            links = (link for link in links if url_is_from_any_domain(link.url, self.allow_domains))
         if self.deny_domains:
-            links = [link for link in links if not url_is_from_any_domain(link.url, self.deny_domains)]
-        
+            links = (link for link in links if not url_is_from_any_domain(link.url, self.deny_domains))
+
         if self.canonicalize:
-            for link in links:
-                link.url = canonicalize_url(link.url)
+            links = (canonicalize_url(link.url) for link in links)
 
         return links
 
@@ -81,7 +82,7 @@ class RegexLinkExtractor(LinkExtractor):
             return False
         if self.deny_domains and url_is_from_any_domain(url, self.deny_domains):
             return False
-            
+
         allowed = [regex.search(url) for regex in self.allow_res] if self.allow_res else [True]
         denied = [regex.search(url) for regex in self.deny_res] if self.deny_res else []
         return any(allowed) and not any(denied)

@@ -35,18 +35,20 @@ class LinkExtractor(FixedSGMLParser):
         self.scan_attr = attr if callable(attr) else lambda a: a == attr
         self.current_link = None
 
-    def extract_links(self, response, unique=False):
+    def _extract_links(self, response_text, response_url, unique):
         self.reset()
         self.unique = unique
-        self.feed(response.body.to_string())
+        self.feed(response_text)
         self.close()
-        
-        base_url = self.base_url if self.base_url else response.url
-        ret = []
+
+        base_url = self.base_url if self.base_url else response_url
         for link in self.links:
             link.url = urljoin(base_url, link.url).strip()
-            ret.append(link)
-        return ret
+            yield link
+
+    def extract_links(self, response, unique=False):
+        # wrapper needed to allow to work directly with text
+        return self._extract_links(response.body.to_string(), response.url, unique)
 
     def reset(self):
         FixedSGMLParser.reset(self)
