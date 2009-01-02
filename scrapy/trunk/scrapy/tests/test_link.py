@@ -64,44 +64,44 @@ class LinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.matches('http://blah2.com/blah1'), False)
         self.assertEqual(lx.matches('http://blah2.com/blah2'), False)
 
-class ImageLinkExtractorTestCase(unittest.TestCase):
-    def setUp(self):
-        body = open(os.path.join(os.path.dirname(__file__), 'sample_data/image_linkextractor.html'), 'r').read()
-        self.response = Response(url='http://examplesite.com/index', domain='examplesite.com', body=ResponseBody(body))
+#class ImageLinkExtractorTestCase(unittest.TestCase):
+#    def setUp(self):
+#        body = open(os.path.join(os.path.dirname(__file__), 'sample_data/image_linkextractor.html'), 'r').read()
+#        self.response = Response(url='http://examplesite.com/index', domain='examplesite.com', body=ResponseBody(body))
 
-    def test_urls_type(self):
-        '''Test that the resulting urls are regular strings and not a unicode objects'''
-        lx = ImageLinkExtractor()
-        links = lx.extract_links(self.response)
-        self.assertTrue(all(isinstance(link.url, str) for link in links))
+#    def test_urls_type(self):
+#        '''Test that the resulting urls are regular strings and not a unicode objects'''
+#        lx = ImageLinkExtractor()
+#        links = lx.extract_links(self.response)
+#        self.assertTrue(all(isinstance(link.url, str) for link in links))
 
-    def test_extraction(self):
-        '''Test the extractor's behaviour among different situations'''
-        lx = ImageLinkExtractor()
+#    def test_extraction(self):
+#        '''Test the extractor's behaviour among different situations'''
+#        lx = ImageLinkExtractor()
 
-        links_1 = lx.extract_links(self.response) # using default locations (//img)
-        self.assertEqual(links_1,
-            [ Link(url='http://examplesite.com/sample1.jpg', text=u'sample 1'),
-              Link(url='http://examplesite.com/sample2.jpg', text=u'sample 2'),
-              Link(url='http://examplesite.com/sample4.jpg', text=u'sample 4') ])
+#        links_1 = lx.extract_links(self.response) # using default locations (//img)
+#        self.assertEqual(links_1,
+#            [ Link(url='http://examplesite.com/sample1.jpg', text=u'sample 1'),
+#              Link(url='http://examplesite.com/sample2.jpg', text=u'sample 2'),
+#              Link(url='http://examplesite.com/sample4.jpg', text=u'sample 4') ])
 
-        links_2 = lx.extract_links(self.response, unique=False) # using default locations and unique=False
-        self.assertEqual(links_2,
-            [ Link(url='http://examplesite.com/sample1.jpg', text=u'sample 1'),
-              Link(url='http://examplesite.com/sample2.jpg', text=u'sample 2'),
-              Link(url='http://examplesite.com/sample4.jpg', text=u'sample 4'),
-              Link(url='http://examplesite.com/sample4.jpg', text=u'sample 4 repetition') ])
+#        links_2 = lx.extract_links(self.response, unique=False) # using default locations and unique=False
+#        self.assertEqual(links_2,
+#            [ Link(url='http://examplesite.com/sample1.jpg', text=u'sample 1'),
+#              Link(url='http://examplesite.com/sample2.jpg', text=u'sample 2'),
+#              Link(url='http://examplesite.com/sample4.jpg', text=u'sample 4'),
+#              Link(url='http://examplesite.com/sample4.jpg', text=u'sample 4 repetition') ])
 
-        links_3 = lx.extract_links(self.response, locations=('//div[@id="wrapper"]', ))
-        self.assertEqual(links_3,
-            [ Link(url='http://examplesite.com/sample1.jpg', text=u'sample 1'),
-              Link(url='http://examplesite.com/sample2.jpg', text=u'sample 2'),
-              Link(url='http://examplesite.com/sample4.jpg', text=u'sample 4') ])
+#        links_3 = lx.extract_links(self.response, locations=('//div[@id="wrapper"]', ))
+#        self.assertEqual(links_3,
+#            [ Link(url='http://examplesite.com/sample1.jpg', text=u'sample 1'),
+#              Link(url='http://examplesite.com/sample2.jpg', text=u'sample 2'),
+#              Link(url='http://examplesite.com/sample4.jpg', text=u'sample 4') ])
 
-        links_4 = lx.extract_links(self.response, locations=('//a', ))
-        self.assertEqual(links_4,
-            [ Link(url='http://examplesite.com/sample2.jpg', text=u'sample 2'),
-              Link(url='http://examplesite.com/sample3.html', text=u'sample 3') ])
+#        links_4 = lx.extract_links(self.response, locations=('//a', ))
+#        self.assertEqual(links_4,
+#            [ Link(url='http://examplesite.com/sample2.jpg', text=u'sample 2'),
+#              Link(url='http://examplesite.com/sample3.html', text=u'sample 3') ])
 
 if __name__ == "__main__":
     unittest.main()
