@@ -22,7 +22,7 @@ class TestSpider(BaseSpider):
     def parse(self, response):
         xlink = LinkExtractor()
         itemre = re.compile(self.itemurl_re)
-        for link in xlink.extract_urls(response):
+        for link in xlink.extract_links(response):
             if itemre.search(link.url):
                 yield Request(url=link.url, callback=self.parse_item)
 

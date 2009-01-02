@@ -85,7 +85,7 @@ class CrawlSpider(BaseSpider):
         requests = []
         seen = set()
         for rule in self._rules:
-            links = [l for l in rule.link_extractor.extract_urls(response) if l not in seen]
+            links = [l for l in rule.link_extractor.extract_links(response) if l not in seen]
             if links and rule.process_links:
                 links = rule.process_links(links)
             seen = seen.union(links)

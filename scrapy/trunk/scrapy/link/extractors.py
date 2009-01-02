@@ -54,11 +54,11 @@ class RegexLinkExtractor(LinkExtractor):
         attr_func = lambda x: x in attrs
         LinkExtractor.__init__(self, tag=tag_func, attr=attr_func)
 
-    def extract_urls(self, response, unique=True):
+    def extract_links(self, response, unique=True):
         if self.restrict_xpaths:
             response = new_response_from_xpaths(response, self.restrict_xpaths)
 
-        links = LinkExtractor.extract_urls(self, response, unique)
+        links = LinkExtractor.extract_links(self, response, unique)
         links = [link for link in links if _is_valid_url(link.url)]
 
         if self.allow_res:

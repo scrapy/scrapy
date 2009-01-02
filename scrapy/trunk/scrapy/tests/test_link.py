@@ -17,7 +17,7 @@ class LinkExtractorTestCase(unittest.TestCase):
         response = Response("example.org", "http://example.org/somepage/index.html", body=html)
 
         lx = LinkExtractor()  # default: tag=a, attr=href
-        self.assertEqual(lx.extract_urls(response), 
+        self.assertEqual(lx.extract_links(response),
                          [Link(url='http://example.org/somepage/item/12.html', text='Item 12'), 
                           Link(url='http://example.org/about.html', text='About us'),
                           Link(url='http://example.org/othercat.html', text='Other category'), 
@@ -30,7 +30,7 @@ class LinkExtractorTestCase(unittest.TestCase):
         response = Response("example.org", "http://example.org/somepage/index.html", body=html)
 
         lx = LinkExtractor()  # default: tag=a, attr=href
-        self.assertEqual(lx.extract_urls(response), 
+        self.assertEqual(lx.extract_links(response),
                          [Link(url='http://otherdomain.com/base/item/12.html', text='Item 12')])
 
     def test_matches(self):

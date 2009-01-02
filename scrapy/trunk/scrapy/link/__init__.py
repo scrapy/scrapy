@@ -7,7 +7,7 @@ from scrapy.utils.url import urljoin_rfc as urljoin
 
 class LinkExtractor(FixedSGMLParser):
     """LinkExtractor are used to extract links from web pages. They are
-    instantiated and later "applied" to a Response using the extract_urls
+    instantiated and later "applied" to a Response using the extract_links
     method which must receive a Response object and return a dict whoose keys
     are the (absolute) urls to follow, and its values any arbitrary data. In
     this case the values are the text of the hyperlink.
@@ -16,7 +16,7 @@ class LinkExtractor(FixedSGMLParser):
     functionality for extracting links to follow, but you could override this
     class or create a new one if you need some additional functionality. The
     only requisite is that the new (or overrided) class must provide a
-    extract_urls method that receives a Response and returns a dict with the
+    extract_links method that receives a Response and returns a dict with the
     links to follow as its keys.
 
     The constructor arguments are:
@@ -35,7 +35,7 @@ class LinkExtractor(FixedSGMLParser):
         self.scan_attr = attr if callable(attr) else lambda a: a == attr
         self.current_link = None
 
-    def extract_urls(self, response, unique=False):
+    def extract_links(self, response, unique=False):
         self.reset()
         self.unique = unique
         self.feed(response.body.to_string())
