@@ -30,10 +30,6 @@ domain_idle = object()
 # status is a string and its possible values are: "finished" or "cancelled"
 domain_closed = object()
 
-# domain has been initialized (successful or not)
-# args: domain, spider, status
-domain_initialized = object()
-
 # New request received from spiders
 # args: request, spider, response
 # response is the response (fed to the spider) which generated the request
