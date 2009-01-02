@@ -53,17 +53,17 @@ def unique(list_):
     return result
 
 
-def str_to_unicode(text):
+def str_to_unicode(text, encoding='utf-8'):
     if isinstance(text, str):
-        return text.decode('utf-8')
+        return text.decode(encoding)
     elif isinstance(text, unicode):
         return text
     else:
         raise TypeError('str_to_unicode can only receive a string object')
 
-def unicode_to_str(text):
+def unicode_to_str(text, encoding='utf-8'):
     if isinstance(text, unicode):
-        return text.encode('utf-8')
+        return text.encode(encoding)
     elif isinstance(text, str):
         return text
     else:

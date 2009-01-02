@@ -54,7 +54,7 @@ def safe_url_string(url, use_encoding='utf8'):
     values in the escaping. For urls on html pages, you should use the original
     encoding of that page.
     """
-    s = url.encode(use_encoding) if isinstance(url, unicode) else url
+    s = unicode_to_str(url, use_encoding)
     return urllib.quote(s,  _safe_chars)
 
 
