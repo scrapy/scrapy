@@ -41,14 +41,15 @@ def flatten(x):
     return result
 
 
-def unique(list_):
+def unique(list_, key=lambda x: x):
     """efficient function to uniquify a list preserving item order"""
     seen = {}
     result = []
     for item in list_:
-        if item in seen: 
+        seenkey = key(item)
+        if seenkey in seen: 
             continue
-        seen[item] = 1
+        seen[seenkey] = 1
         result.append(item)
     return result
 
