@@ -17,7 +17,7 @@ from scrapy.core.downloader import Downloader
 from scrapy.core.exceptions import IgnoreRequest, HttpException, DontCloseDomain
 from scrapy.http import Response, Request
 from scrapy.item import ScrapedItem
-from scrapy.item.pipeline import ItemPipeline
+from scrapy.item.pipeline import ItemPipelineManager
 from scrapy.spider import spiders
 from scrapy.spider.middleware import SpiderMiddlewareManager
 from scrapy.utils.defer import chain_deferred, defer_succeed, mustbe_deferred, deferred_degenerate
@@ -59,7 +59,7 @@ class ExecutionEngine(object):
         self.downloader = downloader or Downloader()
         self.spidermiddleware = SpiderMiddlewareManager()
         self._scraping = {}
-        self.pipeline = ItemPipeline()
+        self.pipeline = ItemPipelineManager()
         # key dictionary of per domain lists of initial requests to scrape
         self.starters = {}
 

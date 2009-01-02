@@ -5,7 +5,7 @@ from scrapy.utils.misc import load_class
 from scrapy.utils.defer import defer_succeed, mustbe_deferred
 from scrapy.conf import settings
 
-class ItemPipeline(object):
+class ItemPipelineManager(object):
 
     def __init__(self):
         self.loaded = False
