@@ -1,10 +1,10 @@
 .. _settings:
 
-Available settings
+Available Settings
 ==================
 
-Here's a full list of all available Scrapy settings, in alphabetical order,
-along with their default values and the scope where they apply. 
+Here's a list of all available Scrapy settings, in alphabetical order, along
+with their default values and the scope where they apply. 
 
 The scope, where available, shows where the setting is being used, if it's tied
 to any particular component. In that case the module of that component will be
