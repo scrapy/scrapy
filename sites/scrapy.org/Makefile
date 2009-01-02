@@ -9,7 +9,7 @@ all : build tests
 build : docs
 
 docs :
-	sphinx-build -a -b pickle docs/scrapy-docs docs/pickle
+	sphinx-build -E -a -b pickle docs/scrapy-docs docs/pickle
 
 tests :
 	$(SETTINGS); \
