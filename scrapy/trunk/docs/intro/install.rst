@@ -1,8 +1,8 @@
 .. _install:
 
-=====================
-How to install Scrapy
-=====================
+============
+Installation
+============
 
 Requirements
 ============

@@ -1,6 +1,6 @@
-===============
-Scrapy settings
-===============
+========
+Settings
+========
 
 The Scrapy settings allows you to customize the behaviour of all Scrapy
 components, including the core, extensions, pipelines and spiders themselves.
