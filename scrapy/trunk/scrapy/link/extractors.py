@@ -47,10 +47,9 @@ class RegexLinkExtractor(LinkExtractor):
         self.deny_domains = set(deny_domains)
         self.restrict_xpaths = restrict_xpaths
         self.canonicalize = canonicalize
-        self.unique = unique
         tag_func = lambda x: x in tags
         attr_func = lambda x: x in attrs
-        LinkExtractor.__init__(self, tag=tag_func, attr=attr_func)
+        LinkExtractor.__init__(self, tag=tag_func, attr=attr_func, unique=unique)
 
     def extract_links(self, response):
         if self.restrict_xpaths:

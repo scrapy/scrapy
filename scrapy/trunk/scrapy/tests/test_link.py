@@ -34,6 +34,27 @@ class LinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.extract_links(response),
                          [Link(url='http://otherdomain.com/base/item/12.html', text='Item 12')])
 
+    def test_extraction_encoding(self):
+        base_path = os.path.join(os.path.dirname(__file__), 'sample_data', 'link_extractor')
+        body = open(os.path.join(base_path, 'linkextractor_noenc.html'), 'r').read()
+        response_utf8 = Response(url='http://example.com/utf8', domain='example.com', body=ResponseBody(body), headers={'Content-Type': ['text/html; charset=utf-8']})
+        response_noenc = Response(url='http://example.com/noenc', domain='example.com', body=ResponseBody(body))
+        body = open(os.path.join(base_path, 'linkextractor_latin1.html'), 'r').read()
+        response_latin1 = Response(url='http://example.com/latin1', domain='example.com', body=ResponseBody(body))
+
+        lx = LinkExtractor()
+        self.assertEqual(lx.extract_links(response_utf8),
+            [ Link(url='http://example.com/sample_%C3%B1.html', text=''),
+              Link(url='http://example.com/sample_%E2%82%AC.html', text='sample \xe2\x82\xac text'.decode('utf-8')) ])
+
+        self.assertEqual(lx.extract_links(response_noenc),
+            [ Link(url='http://example.com/sample_%C3%B1.html', text=''),
+              Link(url='http://example.com/sample_%E2%82%AC.html', text='sample \xe2\x82\xac text'.decode('utf-8')) ])
+
+        self.assertEqual(lx.extract_links(response_latin1),
+            [ Link(url='http://example.com/sample_%F1.html', text=''),
+              Link(url='http://example.com/sample_%E1.html', text='sample \xe1 text'.decode('latin1')) ])
+
     def test_matches(self):
         url1 = 'http://lotsofstuff.com/stuff1/index'
         url2 = 'http://evenmorestuff.com/uglystuff/index'
@@ -41,6 +62,57 @@ class LinkExtractorTestCase(unittest.TestCase):
         lx = LinkExtractor()
         self.assertEqual(lx.matches(url1), True)
         self.assertEqual(lx.matches(url2), True)
+
+class RegexLinkExtractorTestCase(unittest.TestCase):
+    def setUp(self):
+        base_path = os.path.join(os.path.dirname(__file__), 'sample_data', 'link_extractor')
+        body = open(os.path.join(base_path, 'regex_linkextractor.html'), 'r').read()
+        self.response = Response(url='http://example.com/index', domain='example.com', body=ResponseBody(body))
+
+    def test_urls_type(self):
+        '''Test that the resulting urls are regular strings and not a unicode objects'''
+        lx = RegexLinkExtractor()
+        self.assertTrue(all(isinstance(link.url, str) for link in lx.extract_links(self.response)))
+
+    def test_extraction(self):
+        '''Test the extractor's behaviour among different situations'''
+
+        lx = RegexLinkExtractor()
+        self.assertEqual([link for link in lx.extract_links(self.response)],
+            [ Link(url='http://example.com/sample1.html', text='sample 1'),
+              Link(url='http://example.com/sample2.html', text=''),
+              Link(url='http://example.com/sample3.html', text='sample 3 text'),
+              Link(url='http://www.google.com/something', text='') ])
+
+        lx = RegexLinkExtractor(allow=('sample', ))
+        self.assertEqual([link for link in lx.extract_links(self.response)],
+            [ Link(url='http://example.com/sample1.html', text='sample 1'),
+              Link(url='http://example.com/sample2.html', text=''),
+              Link(url='http://example.com/sample3.html', text='sample 3 text') ])
+
+        lx = RegexLinkExtractor(allow=('sample', ), unique=False)
+        self.assertEqual([link for link in lx.extract_links(self.response)],
+            [ Link(url='http://example.com/sample1.html', text='sample 1'),
+              Link(url='http://example.com/sample2.html', text=''),
+              Link(url='http://example.com/sample3.html', text='sample 3 text'),
+              Link(url='http://example.com/sample3.html', text='sample 3 repetition') ])
+
+        lx = RegexLinkExtractor(allow=('sample', ), deny=('3', ))
+        self.assertEqual([link for link in lx.extract_links(self.response)],
+            [ Link(url='http://example.com/sample1.html', text='sample 1'),
+              Link(url='http://example.com/sample2.html', text='') ])
+
+        lx = RegexLinkExtractor(allow_domains=('google.com', ))
+        self.assertEqual([link for link in lx.extract_links(self.response)],
+            [ Link(url='http://www.google.com/something', text='') ])
+
+        lx = RegexLinkExtractor(tags=('img', ), attrs=('src', ))
+        self.assertEqual([link for link in lx.extract_links(self.response)],
+            [ Link(url='http://example.com/sample2.jpg', text='') ])
+
+    def test_matches(self):
+        url1 = 'http://lotsofstuff.com/stuff1/index'
+        url2 = 'http://evenmorestuff.com/uglystuff/index'
 
         lx = RegexLinkExtractor(allow=(r'stuff1', ))
         self.assertEqual(lx.matches(url1), True)
@@ -67,8 +139,9 @@ class LinkExtractorTestCase(unittest.TestCase):
 
 #class HTMLImageLinkExtractorTestCase(unittest.TestCase):
 #    def setUp(self):
-#        body = open(os.path.join(os.path.dirname(__file__), 'sample_data/image_linkextractor.html'), 'r').read()
-#        self.response = Response(url='http://examplesite.com/index', domain='examplesite.com', body=ResponseBody(body))
+#        base_path = os.path.join(os.path.dirname(__file__), 'sample_data', 'link_extractor')
+#        body = open(os.path.join(base_path 'image_linkextractor.html'), 'r').read()
+#        self.response = Response(url='http://example.com/index', domain='example.com', body=ResponseBody(body))
 
 #    def test_urls_type(self):
 #        '''Test that the resulting urls are regular strings and not a unicode objects'''
@@ -82,30 +155,30 @@ class LinkExtractorTestCase(unittest.TestCase):
 #        lx = HTMLImageLinkExtractor(locations=('//img', ))
 #        links_1 = lx.extract_links(self.response)
 #        self.assertEqual(links_1,
-#            [ Link(url='http://examplesite.com/sample1.jpg', text=u'sample 1'),
-#              Link(url='http://examplesite.com/sample2.jpg', text=u'sample 2'),
-#              Link(url='http://examplesite.com/sample4.jpg', text=u'sample 4') ])
+#            [ Link(url='http://example.com/sample1.jpg', text=u'sample 1'),
+#              Link(url='http://example.com/sample2.jpg', text=u'sample 2'),
+#              Link(url='http://example.com/sample4.jpg', text=u'sample 4') ])
 
 #        lx = HTMLImageLinkExtractor(locations=('//img', ), unique=False)
 #        links_2 = lx.extract_links(self.response, unique=False)
 #        self.assertEqual(links_2,
-#            [ Link(url='http://examplesite.com/sample1.jpg', text=u'sample 1'),
-#              Link(url='http://examplesite.com/sample2.jpg', text=u'sample 2'),
-#              Link(url='http://examplesite.com/sample4.jpg', text=u'sample 4'),
-#              Link(url='http://examplesite.com/sample4.jpg', text=u'sample 4 repetition') ])
+#            [ Link(url='http://example.com/sample1.jpg', text=u'sample 1'),
+#              Link(url='http://example.com/sample2.jpg', text=u'sample 2'),
+#              Link(url='http://example.com/sample4.jpg', text=u'sample 4'),
+#              Link(url='http://example.com/sample4.jpg', text=u'sample 4 repetition') ])
 
 #        lx = HTMLImageLinkExtractor(locations=('//div[@id="wrapper"]', )
 #        links_3 = lx.extract_links(self.response)
 #        self.assertEqual(links_3,
-#            [ Link(url='http://examplesite.com/sample1.jpg', text=u'sample 1'),
-#              Link(url='http://examplesite.com/sample2.jpg', text=u'sample 2'),
-#              Link(url='http://examplesite.com/sample4.jpg', text=u'sample 4') ])
+#            [ Link(url='http://example.com/sample1.jpg', text=u'sample 1'),
+#              Link(url='http://example.com/sample2.jpg', text=u'sample 2'),
+#              Link(url='http://example.com/sample4.jpg', text=u'sample 4') ])
 
 #        lx = HTMLImageLinkExtractor(locations=('//a', )
 #        links_4 = lx.extract_links(self.response)
 #        self.assertEqual(links_4,
-#            [ Link(url='http://examplesite.com/sample2.jpg', text=u'sample 2'),
-#              Link(url='http://examplesite.com/sample3.html', text=u'sample 3') ])
+#            [ Link(url='http://example.com/sample2.jpg', text=u'sample 2'),
+#              Link(url='http://example.com/sample3.html', text=u'sample 3') ])
 
 if __name__ == "__main__":
     unittest.main()

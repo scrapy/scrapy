@@ -3,21 +3,22 @@ LinkExtractor provides en efficient way to extract links from pages
 """
 
 from scrapy.utils.python import FixedSGMLParser
-from scrapy.utils.url import urljoin_rfc as urljoin
+from scrapy.utils.url import safe_url_string, urljoin_rfc as urljoin
 
 class LinkExtractor(FixedSGMLParser):
     """LinkExtractor are used to extract links from web pages. They are
     instantiated and later "applied" to a Response using the extract_links
-    method which must receive a Response object and return a dict whoose keys
-    are the (absolute) urls to follow, and its values any arbitrary data. In
-    this case the values are the text of the hyperlink.
+    method which must receive a Response object and return a list of Link objects
+    containing the (absolute) urls to follow, and the links texts.
 
     This is the base LinkExtractor class that provides enough basic
     functionality for extracting links to follow, but you could override this
     class or create a new one if you need some additional functionality. The
     only requisite is that the new (or overrided) class must provide a
-    extract_links method that receives a Response and returns a dict with the
-    links to follow as its keys.
+    extract_links method that receives a Response and returns a list of Link objects.
+
+    This LinkExtractor always returns percent-encoded URLs, using the detected encoding
+    from the response.
 
     The constructor arguments are:
 
@@ -36,22 +37,38 @@ class LinkExtractor(FixedSGMLParser):
         self.current_link = None
         self.unique = unique
 
-    def _extract_links(self, response_text, response_url):
+    def _extract_links(self, response_text, response_url, response_encoding):
         self.reset()
         self.feed(response_text)
         self.close()
 
-        base_url = self.base_url if self.base_url else response_url
+        links = self.links
+        if self.unique:
+            seen = set()
+            def _seen(url):
+                if url in seen:
+                    return True
+                else:
+                    seen.add(url)
+                    return False
 
-        links = []
-        for link in self.links:
+            links = [link for link in links if not _seen(link.url)]
+
+        ret = []
+        base_url = self.base_url if self.base_url else response_url
+        for link in links:
             link.url = urljoin(base_url, link.url).strip()
-            links.append(link)
-        return links
+            link.url = safe_url_string(link.url, response_encoding)
+            link.text = link.text.decode(response_encoding)
+            ret.append(link)
+
+        return ret
 
     def extract_links(self, response):
         # wrapper needed to allow to work directly with text
-        return self._extract_links(response.body.to_string(), response.url)
+        return self._extract_links(response.body.to_string(),
+            response.url,
+            response.body.get_real_encoding())
 
     def reset(self):
         FixedSGMLParser.reset(self)
@@ -64,10 +81,9 @@ class LinkExtractor(FixedSGMLParser):
         if self.scan_tag(tag):
             for attr, value in attrs:
                 if self.scan_attr(attr):
-                    if not self.unique or not value in [link.url for link in self.links]:
-                        link = Link(url=value)
-                        self.links.append(link)
-                        self.current_link = link
+                    link = Link(url=value)
+                    self.links.append(link)
+                    self.current_link = link
 
     def unknown_endtag(self, tag):
         self.current_link = None
