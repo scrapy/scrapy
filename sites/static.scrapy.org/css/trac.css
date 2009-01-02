@@ -35,7 +35,7 @@ ol.arabic     { list-style-type: decimal }
 border-bottom:1px solid #D78888;
 color:#6E0909;
 }
-:link:hover, :visited:hover { color:#c35012; border-bottom:1px solid #ef994c }
+:link:hover, :visited:hover { color:#c35012; }
 h1 :link, h1 :visited ,h2 :link, h2 :visited, h3 :link, h3 :visited,
 h4 :link, h4 :visited, h5 :link, h5 :visited, h6 :link, h6 :visited {
  color: inherit;
