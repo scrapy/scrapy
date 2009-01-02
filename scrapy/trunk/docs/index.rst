@@ -12,4 +12,5 @@ Contents:
 
    intro/index
    tutorial/index
-   reference/index
+   topics/index
+   ref/index

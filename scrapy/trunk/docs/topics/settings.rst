@@ -61,7 +61,7 @@ It's where most of your custom settings will be populated.
 ------------------
 
 The global defaults are located in scrapy.conf.default_settings and documented
-in the :reference:`settings` page.
+in the :ref:`settings` page.
 
 
 How to access settings
@@ -76,7 +76,7 @@ To access settings from Python code::
 Available settings
 ==================
 
-See :reference:`settings`.
+See :ref:`settings`.
 
 Rationale for setting names
 ===========================

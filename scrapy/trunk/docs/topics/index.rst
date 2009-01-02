@@ -1,0 +1,6 @@
+Topics
+======
+
+.. toctree::
+
+   settings
