@@ -4,7 +4,7 @@ import unittest
 import libxml2
 
 from scrapy.http import Response
-from scrapy.xpath.selector import XmlXPathSelector, HtmlXPathSelector, XPathSelectorList
+from scrapy.xpath.selector import XmlXPathSelector, HtmlXPathSelector
 
 class XPathTestCase(unittest.TestCase):
 
@@ -219,16 +219,6 @@ class XPathTestCase(unittest.TestCase):
             u'lalalal&ppppp<b>PPPP</b>ppp&amp;la',
             u'\n  ',
             u'\n  pff\n'])
-
-    def test_selectorlist_add(self):
-        '''Adding XPathSelectorLists should return another XPathSelectorList'''
-        hxs = HtmlXPathSelector(text='<html><body><tag1></tag1><tag2></body></html>')
-        xlist1 = XPathSelectorList([hxs.x('/'), hxs.x('//tag1')])
-        xlist2 = XPathSelectorList([hxs.x('/html')])
-        xlist3 = [1, 2, 3]
-        self.assertTrue(isinstance(xlist1 + xlist2, XPathSelectorList))
-        self.assertTrue(isinstance(xlist2 + xlist3, list))
-
 
 if __name__ == "__main__":
     unittest.main()

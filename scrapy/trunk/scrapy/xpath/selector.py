@@ -102,12 +102,6 @@ class XPathSelectorList(list):
     def __getslice__(self, i, j):
         return XPathSelectorList(list.__getslice__(self, i, j))
 
-    def __add__(self, other):
-        if isinstance(other, XPathSelectorList):
-            return XPathSelectorList(super(XPathSelectorList, self).__add__(other))
-        else:
-            return super(XPathSelectorList, self).__add__(other)
-
     def x(self, xpath):
         """Perform the given XPath query on each XPathSelector of the list and
         return a new (flattened) XPathSelectorList of the results"""
