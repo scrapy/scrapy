@@ -3,7 +3,8 @@ import unittest
 
 from scrapy.http.response import Response, ResponseBody
 from scrapy.link import LinkExtractor, Link
-from scrapy.link.extractors import RegexLinkExtractor, ImageLinkExtractor
+from scrapy.link.extractors import RegexLinkExtractor
+from scrapy.contrib.link_extractors import HTMLImageLinkExtractor
 
 class LinkExtractorTestCase(unittest.TestCase):
     def test_basic(self):
@@ -66,7 +67,7 @@ class LinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.matches('http://blah2.com/blah1'), False)
         self.assertEqual(lx.matches('http://blah2.com/blah2'), False)
 
-#class ImageLinkExtractorTestCase(unittest.TestCase):
+#class HTMLImageLinkExtractorTestCase(unittest.TestCase):
 #    def setUp(self):
 #        body = open(os.path.join(os.path.dirname(__file__), 'sample_data/image_linkextractor.html'), 'r').read()
 #        self.response = Response(url='http://examplesite.com/index', domain='examplesite.com', body=ResponseBody(body))
@@ -79,28 +80,31 @@ class LinkExtractorTestCase(unittest.TestCase):
 
 #    def test_extraction(self):
 #        '''Test the extractor's behaviour among different situations'''
-#        lx = ImageLinkExtractor()
 
-#        links_1 = lx.extract_links(self.response) # using default locations (//img)
+#        lx = HTMLImageLinkExtractor(locations=('//img', ))
+#        links_1 = lx.extract_links(self.response)
 #        self.assertEqual(links_1,
 #            [ Link(url='http://examplesite.com/sample1.jpg', text=u'sample 1'),
 #              Link(url='http://examplesite.com/sample2.jpg', text=u'sample 2'),
 #              Link(url='http://examplesite.com/sample4.jpg', text=u'sample 4') ])
 
-#        links_2 = lx.extract_links(self.response, unique=False) # using default locations and unique=False
+#        lx = HTMLImageLinkExtractor(locations=('//img', ), unique=False)
+#        links_2 = lx.extract_links(self.response, unique=False)
 #        self.assertEqual(links_2,
 #            [ Link(url='http://examplesite.com/sample1.jpg', text=u'sample 1'),
 #              Link(url='http://examplesite.com/sample2.jpg', text=u'sample 2'),
 #              Link(url='http://examplesite.com/sample4.jpg', text=u'sample 4'),
 #              Link(url='http://examplesite.com/sample4.jpg', text=u'sample 4 repetition') ])
 
-#        links_3 = lx.extract_links(self.response, locations=('//div[@id="wrapper"]', ))
+#        lx = HTMLImageLinkExtractor(locations=('//div[@id="wrapper"]', )
+#        links_3 = lx.extract_links(self.response)
 #        self.assertEqual(links_3,
 #            [ Link(url='http://examplesite.com/sample1.jpg', text=u'sample 1'),
 #              Link(url='http://examplesite.com/sample2.jpg', text=u'sample 2'),
 #              Link(url='http://examplesite.com/sample4.jpg', text=u'sample 4') ])
 
-#        links_4 = lx.extract_links(self.response, locations=('//a', ))
+#        lx = HTMLImageLinkExtractor(locations=('//a', )
+#        links_4 = lx.extract_links(self.response)
 #        self.assertEqual(links_4,
 #            [ Link(url='http://examplesite.com/sample2.jpg', text=u'sample 2'),
 #              Link(url='http://examplesite.com/sample3.html', text=u'sample 3') ])

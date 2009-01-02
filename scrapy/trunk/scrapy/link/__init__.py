@@ -29,15 +29,15 @@ class LinkExtractor(FixedSGMLParser):
       * a function which receives an attribute name and returns whether to scan it
     """
 
-    def __init__(self, tag="a", attr="href"):
+    def __init__(self, tag="a", attr="href", unique=False):
         FixedSGMLParser.__init__(self)
         self.scan_tag = tag if callable(tag) else lambda t: t == tag
         self.scan_attr = attr if callable(attr) else lambda a: a == attr
         self.current_link = None
-
-    def _extract_links(self, response_text, response_url, unique):
-        self.reset()
         self.unique = unique
+
+    def _extract_links(self, response_text, response_url):
+        self.reset()
         self.feed(response_text)
         self.close()
 
@@ -46,9 +46,9 @@ class LinkExtractor(FixedSGMLParser):
             link.url = urljoin(base_url, link.url).strip()
             yield link
 
-    def extract_links(self, response, unique=False):
+    def extract_links(self, response):
         # wrapper needed to allow to work directly with text
-        return self._extract_links(response.body.to_string(), response.url, unique)
+        return self._extract_links(response.body.to_string(), response.url)
 
     def reset(self):
         FixedSGMLParser.reset(self)
