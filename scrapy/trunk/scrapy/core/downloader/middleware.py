@@ -1,6 +1,11 @@
 """
-request-response middleware extension
+This module implements the Downloader Middleware manager. For more information
+see the Downloader Middleware doc in:
+
+docs/topics/downloader-middleware.rst
+
 """
+
 from scrapy.core import signals
 from scrapy import log
 from scrapy.http import Request, Response
@@ -11,93 +16,7 @@ from scrapy.core.downloader.handlers import download_any
 from scrapy.conf import settings
 
 class DownloaderMiddlewareManager(object):
-    """Request-Response Middleware Manager
 
-    Middleware is a framework of hooks into Scrapy's request/response
-    processing.  It's a light, low-level "spider" system for globally altering
-    Scrapy's input and/or output.
-
-    Middleware is heavily based on Django middleware system, at the point that
-    it tries to mimic Django middleware behaviour. For Scrapy, the Django's
-    view function has the same meaning of the final download handler function
-    to use for the request's url.
-
-    To activate a middleware component, add it to the DOWNLOADER_MIDDLEWARES list
-    in your Scrapy settings.  In DOWNLOADER_MIDDLEWARES, each middleware component
-    is represented by a string: the full Python path to the middleware's class
-    name. For example:
-
-    DOWNLOADER_MIDDLEWARES = (
-            'scrapy.contrib.middleware.common.SpiderMiddleware',
-            'scrapy.contrib.middleware.common.CommonMiddleware',
-            'scrapy.contrib.middleware.redirect.RedirectMiddleware',
-            'scrapy.contrib.middleware.cache.CacheMiddleware',
-    )
-
-    Writing your own middleware is easy. Each middleware component is a single
-    Python class that defines one or more of the following methods:
-
-
-    process_request(self, request, spider)
-
-        `request` is a Request object.
-        `spider` is a BaseSpider object
-
-        This method is called in each request until scrapy decides which
-        download function to use.
-
-        process_request() should return either None, Response or Request.
-
-        If returns None, Scrapy will continue processing this request,
-        executing any other middleware and, then, the appropiate download
-        function.
-
-        If returns a Response object, Scrapy won't bother calling ANY other
-        request or exception middleware, or the appropiate download function;
-        it'll return that Response. Response middleware is always called on
-        every response.
-
-        If returns a Request object, returned request is used to instruct a
-        redirection. Redirection is handled inside middleware scope, and
-        original request don't finish until redirected request is completed.
-
-
-    process_response(self, request, response, spider):
-
-        `request` is a Request object
-        `response` is a Response object
-        `spider` is a BaseSpider object
-
-        process_response MUST return a Response object. It could alter the given
-        response, or it could create a brand-new Response.
-        To drop the response entirely an IgnoreRequest exception must be raised.
-
-
-    process_exception(self, request, exception, spider)
-
-        `request` is a Request object.
-        `exception` is an Exception object
-        `spider` is a BaseSpider object
-
-        Scrapy calls process_exception() when a download handler or
-        process_request middleware raises an exception.
-
-        process_exception() should return either None, Response or Request object.
-
-        if it returns None, Scrapy will continue processing this exception,
-        executing any other exception middleware, until no middleware left and
-        default exception handling kicks in.
-
-        If it returns a Response object, the response middleware kicks in, and
-        won't bother calling ANY other exception middleware.
-
-        If it returns a Request object, returned request is used to instruct a
-        immediate redirection. Redirection is handled inside middleware scope,
-        and original request don't finish until redirected request is
-        completed. This stop process_exception middleware as returning
-        Response does.
-
-    """
     def __init__(self):
         self.loaded = False
         self.request_middleware = []

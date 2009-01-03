@@ -5,6 +5,7 @@ Topics
    :maxdepth: 1
 
    itempipeline
+   downloader-middleware
    selectors
    settings
    spiders
