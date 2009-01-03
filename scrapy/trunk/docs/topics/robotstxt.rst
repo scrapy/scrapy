@@ -1,8 +1,10 @@
+.. _topics-robotstxt:
+
 ==================
 Obeying robots.txt
 ==================
 
-Scrapy deals with robots.txt files using a :topic:`downloader-middleware`
+Scrapy deals with robots.txt files using a :ref:`topics-downloader-middleware`.
 called `RobotsTxtMiddleware`.
 
 To make sure Scrapy respects robots.txt files make sure the following

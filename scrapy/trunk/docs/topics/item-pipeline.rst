@@ -1,3 +1,5 @@
+.. _topics-item-pipeline:
+
 =============
 Item Pipeline
 =============

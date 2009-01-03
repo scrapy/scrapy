@@ -4,7 +4,7 @@ Frequently Asked Questions
 ==========================
 
 How does Scrapy compare to BeautifulSoul or lxml?
-------------------------------------------------
+-------------------------------------------------
 
 `BeautifulSoup`_ and `lxml`_ are libraries for parsing HTML and XML. Scrapy is
 an application framework for writing web spiders that crawl web sites and

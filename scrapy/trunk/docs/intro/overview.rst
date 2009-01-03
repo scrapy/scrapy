@@ -9,8 +9,8 @@ The basic idea of scrapy is to be a robot that goes through websites, crawling p
 The framework is formed by components that take care of different activities.
 These components are basically:
 
-* :ref:`spiders`
-* :ref:`selectors`
+* :ref:`topics-spiders`
+* :ref:`topics-selectors`
 * Items
 * Adaptors
 

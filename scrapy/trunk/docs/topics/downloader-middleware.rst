@@ -1,3 +1,5 @@
+.. _topics-downloader-middleware:
+
 =====================
 Downloader Middleware
 =====================

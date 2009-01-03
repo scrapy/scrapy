@@ -1,5 +1,8 @@
 .. _exceptions:
 
+.. module:: scrapy.core.exceptions
+   :synopsis: Exceptions definitions
+
 Available Exceptions
 ====================
 
@@ -20,7 +23,7 @@ DropItem
 --------
 
 The exception that must be raised by item pipeline stages to stop processing an
-Item. For more information see :topic:`item-pipeline`.
+Item. For more information see :ref:`topics-item-pipeline`.
 
 .. exception:: NotConfigured
 

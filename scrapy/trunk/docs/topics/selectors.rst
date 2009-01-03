@@ -1,4 +1,4 @@
-.. _selectors:
+.. _topics-selectors:
 
 Selectors
 ---------

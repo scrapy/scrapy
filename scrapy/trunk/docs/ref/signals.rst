@@ -1,5 +1,8 @@
 .. _signals:
 
+.. module:: scrapy.core.signals
+   :synopsis: Signals definitions
+
 Available Signals
 =================
 
@@ -8,55 +11,52 @@ catch some of those signals in your Scrapy project or extension to perform
 additional tasks or extend Scrapy to add functionality not provided out of the
 box.
 
+Even though signals provide several arguments, the handlers which catch them
+don't have to receive all of them.
+
+For more information about working when see the documentation of
+`pydispatcher`_ (library used to implement signals).
+
+.. _pydispatcher: http://pydispatcher.sourceforge.net/
+
 Here's a list of signals used in Scrapy and their meaning, in alphabetical
 order.
 
 .. signal:: domain_closed
-
-domain_closed
--------------
-
-Arguments: 
- * ``domain`` - the domain (of the spider) which has been closed
- * ``spider`` - the spider which has been closed
+.. function:: domain_closed(domain, spider)
 
 Sent right after a spider/domain has been closed.
 
+``domain`` is a string which contains the domain of the spider which has been closed
+``spider`` is the spider which has been closed
+
 .. signal:: domain_open
-
-domain_open
------------
-
-Arguments: 
- * ``domain`` - the domain (of the spider) which is about to be opened
- * ``spider`` - the spider which is about to be opened
+.. function:: domain_open(domain, spider)
 
 Sent right before a spider has been opened for crawling.
 
+``domain`` is a string which contains the domain of the spider which is about
+to be opened
+``spider`` is the spider which is about to be opened
+
 .. signal:: domain_opened
-
-domain_opened
--------------
-
-Arguments: 
- * ``domain`` - the domain (of the spider) which has been opened
- * ``spider`` - the spider which has been opened
+.. function:: domain_opened(domain, spider)
 
 Sent right after a spider has been opened for crawling.
 
+``domain`` is a string with the domain of the spider which has been opened
+``spider`` is the spider which has been opened
+
 .. signal:: domain_idle
-
-domain_idle
------------
-
-Arguments: 
- * ``domain`` - the domain (of the spider) which has gone idle
- * ``spider`` - the spider which has gone idle
+.. function:: domain_idle(domain, spider)
 
 Sent when a domain has no further:
  * requests waiting to be downloaded
  * requests scheduled
  * items being processed in the item pipeline
+
+``domain`` is a string with the domain of the spider which has gone idle
+``spider`` is the spider which has gone idle
 
 If any handler of this signals raises a :exception:`DontCloseDomain` the domain
 won't be closed at this time and will wait until another idle signal is sent.
@@ -65,111 +65,85 @@ be closed immediately after all handlers of ``domain_idle`` have finished, and
 a :signal:`domain_closed` will thus be sent.
 
 .. signal:: engine_started
-
-engine_started
---------------
-
-Arguments: ``None``
+.. function:: engine_started()
 
 Sent when the Scrapy engine is started (for example, when a crawling
 process has started).
 
 .. signal:: engine_stopped
-
-engine_stopped
---------------
-
-Arguments: ``None``
+.. function:: engine_stopped()
 
 Sent when the Scrapy engine is stopped (for example, when a crawling
 process has started).
 
 .. signal:: request_received
+.. function:: request_received(request, spider, response)
 
-request_received
-----------------
+Sent when the engine receives a :class:`~scrapy.http.Request` from a spider.
 
-Arguments: 
- * ``request`` - the ``HTTPRequest`` received
- * ``spider`` - the spider which generated the request
- * ``response`` - the ``HTTPResponse`` fed to the spider which generated the
-    request
-
-Sent when the engine receives a ``HTTPRequest`` from a spider.
+``request`` is the :class:`~scrapy.http.Request` received
+``spider`` is the spider which generated the request
+``response`` is the :class:`~scrapy.http.Response` fed to the spider which
+generated the request
 
 .. signal:: request_uploaded
+.. function:: request_uploaded(request, spider)
 
-request_uploaded
-----------------
+Sent right after the download has sent a :class:`~scrapy.http.Request`.
 
-Arguments: 
- * ``request`` - the ``HTTPRequest`` uploaded/sent
- * ``spider`` - the spider which generated the request
-
-Sent right after the download has sent a ``HTTPRequest``.
+``request`` is the :class:`~scrapy.http.Request` uploaded/sent
+``spider`` is the spider which generated the request
 
 .. signal:: response_received
+.. function:: response_received(response, spider)
 
-response_received
------------------
+``response`` is the :class:`~scrapy.http.Response` received
+``spider`` is  the spider for which the response is intended
 
-Arguments: 
- * ``response`` - the ``HTTPResponse`` received
- * ``spider`` - the spider for which the response is intended
-
-Sent when the engine receives a new ``HTTPResponse`` from the downloader.
+Sent when the engine receives a new :class:`~scrapy.http.Response` from the
+downloader.
 
 .. signal:: response_downloaded
-
-response_downloaded
--------------------
-
-Arguments: 
- * ``response`` - the ``HTTPResponse`` downloaded
- * ``spider`` - the spider for which the response is intended
+.. function:: response_downloaded(response, spider)
 
 Sent by the downloader right after a ``HTTPResponse`` is downloaded.
 
+``response`` is the ``HTTPResponse`` downloaded
+``spider`` is the spider for which the response is intended
+
 .. signal:: item_scraped
-
-item_scraped
-------------
-
-Arguments:
- * ``item`` - the item scraped
- * ``spider`` - the spider which scraped the item 
- * ``response`` - the response from which the item was scraped
+.. function:: item_scraped(item, spider, response)
 
 Sent when the engine receives a new scraped item from the spider, and right
-before the item is sent to the :topic:`item-pipeline`.
+before the item is sent to the :ref:`topics-item-pipeline`.
+
+``item`` is the item scraped
+``spider`` is the spider which scraped the item 
+``response`` is the :class:`~scrapy.http.Response` from which the item was
+scraped
 
 .. signal:: item_passed
+.. function:: item_passed(item, spider, response, pipe_output)
 
-item_passed
------------
-
-Arguments:
- * ``item`` - the item passed
- * ``spider`` - the spider which scraped the item 
- * ``response`` - the response from which the item was scraped
- * ``pipe_output`` - the output of the item pipeline. Typically, this points to
-    the same ``item`` object, unless some pipeline stage created a new item.
-
-Sent after an item has passed al the :topic:`item-pipeline` stages without
+Sent after an item has passed al the :ref:`topics-item-pipeline` stages without
 being dropped.
 
+``item`` is the item which passed the pipeline
+``spider`` is the spider which scraped the item 
+``response`` is the :class:`~scrapy.http.Response` from which the item was scraped
+``pipe_output`` is  the output of the item pipeline. Typically, this points to
+the same ``item`` object, unless some pipeline stage created a new item.
+
 .. signal:: item_dropped
+.. function:: item_dropped(item, spider, response, exception)
 
-item_dropped
-------------
-
-Arguments:
- * ``item`` - the item dropped
- * ``spider`` - the spider which scraped the item 
- * ``response`` - the response from which the item was scraped
- * ``exception`` - the exception that caused the item to be dropped (which must inherit from :exception:`DropItem`) 
-
-Sent after an item has dropped from the :topic:`item-pipeline` when some stage
+Sent after an item has dropped from the :ref:`topics-item-pipeline` when some stage
 raised a :exception:`DropItem` exception.
+
+``item`` is the item dropped from the :ref:`topics-item-pipeline`
+``spider`` is the spider which scraped the item 
+``response`` is the :class:`~scrapy.http.Response` from which the item was scraped
+``exception`` is the (:exception:`DropItem` child) exception that caused the
+item to be dropped 
 
 

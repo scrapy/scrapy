@@ -1,7 +1,9 @@
-.. _spiders:
+.. _topics-spiders:
 
+=======
 Spiders
--------
+=======
+
 We'll start off by the spiders because they're the ones that actually use the other components, and they are used themselves by scrapy's core, so they must be the first for you to know about.
 
 Spiders are little programs, let's say, whose purpose is to scrape information from html pages or other data sources. Having said that, it's obvious that their process is something like:

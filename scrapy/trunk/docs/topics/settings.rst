@@ -1,3 +1,5 @@
+.. _topics-settings:
+
 ========
 Settings
 ========

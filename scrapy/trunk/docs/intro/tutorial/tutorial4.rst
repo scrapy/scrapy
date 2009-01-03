@@ -10,6 +10,8 @@ Finishing the job
 | To make it simple, we'll export the scraped items to a CSV file by making use of a useful function that Scrapy brings: *items_to_csv*.
   This simple function takes a file descriptor/filename, and a list of items, and writes their attributes to that file, in CSV format.
 
+.. highlight:: python
+
 Let's see how would our spider end up looking like after applying this change::
 
     # -*- coding: utf8 -*-
