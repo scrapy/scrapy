@@ -54,6 +54,7 @@ DOWNLOAD_TIMEOUT = 180      # 3mins
 
 DOWNLOADER_MIDDLEWARES = [
     # Engine side
+    'scrapy.contrib.downloadermiddleware.robotstxt.RobotsTxtMiddleware',
     'scrapy.contrib.downloadermiddleware.errorpages.ErrorPagesMiddleware',
     'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware',
     'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware',
@@ -133,6 +134,8 @@ REQUESTS_PER_DOMAIN = 8     # max simultaneous requests per domain
 # contrib.middleware.retry.RetryMiddleware default settings
 RETRY_TIMES = 2 # initial response + 2 retries = 3 requests
 RETRY_HTTP_CODES = ['500', '503', '504', '400', '408', '200']
+
+ROBOTSTXT_OBEY = True
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_ORDER = 'BFO'   # available orders: BFO (default), DFO
