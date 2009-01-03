@@ -1,11 +1,10 @@
 #
-# Makefile for Scrapy documentation
+# Makefile for Scrapy documentation [based on Python documentation Makefile]
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 
 # You can set these variables from the command line.
 PYTHON       = python
-SVNROOT      = http://svn.python.org/projects
 SPHINXOPTS   =
 PAPER        =
 SOURCES      =
