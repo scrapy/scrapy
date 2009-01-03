@@ -9,3 +9,4 @@ Topics
    selectors
    settings
    spiders
+   robotstxt

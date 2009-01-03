@@ -268,6 +268,7 @@ DOWNLOADER_MIDDLEWARES
 Default:: 
 
     [
+        'scrapy.contrib.downloadermiddleware.robotstxt.RobotsTxtMiddleware',
         'scrapy.contrib.downloadermiddleware.errorpages.ErrorPagesMiddleware',
         'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware',
         'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware',
@@ -519,6 +520,7 @@ MYSQL_CONNECTION_SETTINGS
 -------------------------
 
 Default: ``{}``
+
 Scope: ``scrapy.utils.db.mysql_connect``
 
 Settings to use for MySQL connections performed through
@@ -531,13 +533,21 @@ NEWSPIDER_MODULE
 
 Default: ``''``
 
-Module where to create new spiders using the genspider command.
+Module where to create new spiders using the ``genspider`` command.
 
 Example::
 
     NEWSPIDER_MODULE = 'mybot.spiders_dev'
 
 .. setting:: REQUESTS_QUEUE_SIZE
+
+REQUESTS_PER_DOMAIN
+-------------------
+
+Default: ``8``
+
+Specifies how many concurrent (ie. simultaneous) requests will be performed per
+open spider.
 
 REQUESTS_QUEUE_SIZE
 -------------------
@@ -548,6 +558,18 @@ Scope: ``scrapy.contrib.spidermiddleware.limit``
 
 If non zero, it will be used as an upper limit for the amount of requests that
 can be scheduled per domain.
+
+.. setting:: ROBOTSTXT_OBEY
+
+ROBOTSTXT_OBEY
+--------------
+
+Default: ``True``
+
+Scope: ``scrapy.contrib.downloadermiddleware.robotstxt``
+
+If enabled, Scrapy will respect robots.txt policies. For more information see
+:topic:`robotstxt`
 
 .. setting:: SCHEDULER
 
