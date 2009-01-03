@@ -1,5 +1,5 @@
 #
-# Makefile for Python documentation
+# Makefile for Scrapy documentation
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 
@@ -13,7 +13,7 @@ SOURCES      =
 ALLSPHINXOPTS = -b $(BUILDER) -d build/doctrees -D latex_paper_size=$(PAPER) \
                 $(SPHINXOPTS) . build/$(BUILDER) $(SOURCES)
 
-.PHONY: help checkout update build html htmlhelp clean
+.PHONY: help update build html htmlhelp clean
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -24,34 +24,12 @@ help:
 	@echo "  changes   to make an overview over all changed/added/deprecated items"
 	@echo "  linkcheck to check all external links for integrity"
 
-checkout:
-	@if [ ! -d tools/sphinx ]; then \
-	  echo "Checking out Sphinx..."; \
-	  svn checkout $(SVNROOT)/doctools/trunk/sphinx tools/sphinx; \
-	fi
-	@if [ ! -d tools/docutils ]; then \
-	  echo "Checking out Docutils..."; \
-	  svn checkout $(SVNROOT)/external/docutils-0.5/docutils tools/docutils; \
-	fi
-	@if [ ! -d tools/jinja ]; then \
-	  echo "Checking out Jinja..."; \
-	  svn checkout $(SVNROOT)/external/Jinja-1.2/jinja tools/jinja; \
-	fi
-	@if [ ! -d tools/pygments ]; then \
-	  echo "Checking out Pygments..."; \
-	  svn checkout $(SVNROOT)/external/Pygments-0.11.1/pygments tools/pygments; \
-	fi
 
-update: checkout
-	svn update tools/sphinx
-	svn update tools/docutils
-	svn update tools/jinja
-	svn update tools/pygments
-
-build: checkout
+build: 
 	mkdir -p build/$(BUILDER) build/doctrees
-	$(PYTHON) tools/sphinx-build.py $(ALLSPHINXOPTS)
+	sphinx-build $(ALLSPHINXOPTS)
 	@echo
+
 
 html: BUILDER = html
 html: build
@@ -96,5 +74,4 @@ htmlview: html
 
 clean:
 	-rm -rf build/*
-	-rm -rf tools/sphinx
 
