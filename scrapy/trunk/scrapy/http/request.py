@@ -1,5 +1,4 @@
 import urllib
-import warnings
 import hashlib
 from copy import copy
 from base64 import urlsafe_b64encode
@@ -83,10 +82,6 @@ class Request(object):
         if not http_pass:
             http_pass = ''
         self.headers['Authorization'] = 'Basic ' + urlsafe_b64encode("%s:%s" % (http_user, http_pass))
-
-    def __getitem__(self, key):
-        warnings.warn("Request tuples have been deprecated, Request objects are now used. Index mappings: 0 -> r.url, 1 -> r.body, 2 -> r.deferred, 3 -> r.options ", DeprecationWarning)
-        return (self.url, self.body, self.deferred, {})[key]
 
     def __str__(self):
         if self.method != 'GET':
