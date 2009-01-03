@@ -141,7 +141,7 @@ Arguments:
  * ``response`` - the response from which the item was scraped
 
 Sent when the engine receives a new scraped item from the spider, and right
-before the item is sent to the :topic:`itempipeline`.
+before the item is sent to the :topic:`item-pipeline`.
 
 .. signal:: item_passed
 
@@ -155,7 +155,7 @@ Arguments:
  * ``pipe_output`` - the output of the item pipeline. Typically, this points to
     the same ``item`` object, unless some pipeline stage created a new item.
 
-Sent after an item has passed al the :topic:`itempipeline` stages without
+Sent after an item has passed al the :topic:`item-pipeline` stages without
 being dropped.
 
 .. signal:: item_dropped
@@ -169,7 +169,7 @@ Arguments:
  * ``response`` - the response from which the item was scraped
  * ``exception`` - the exception that caused the item to be dropped (which must inherit from :exception:`DropItem`) 
 
-Sent after an item has dropped from the :topic:`itempipeline` when some stage
+Sent after an item has dropped from the :topic:`item-pipeline` when some stage
 raised a :exception:`DropItem` exception.
 
 

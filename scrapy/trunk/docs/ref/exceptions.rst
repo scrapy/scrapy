@@ -20,7 +20,7 @@ DropItem
 --------
 
 The exception that must be raised by item pipeline stages to stop processing an
-Item. For more information see :topic:`itempipeline`.
+Item. For more information see :topic:`item-pipeline`.
 
 .. exception:: NotConfigured
 

@@ -4,7 +4,7 @@ Topics
 .. toctree::
    :maxdepth: 1
 
-   itempipeline
+   item-pipeline
    downloader-middleware
    selectors
    settings
