@@ -28,59 +28,61 @@ Writing your own downloader middleware is easy. Each middleware component is a
 single Python class that defines one or more of the following methods:
 
 
-.. method:: process_request(self, request, spider)
+.. method:: process_request(request, spider)
 
-``request`` is a Request object.
-``spider`` is a BaseSpider object
+``request`` is a :class:`~scrapy.http.Request` object
+``spider`` is a :class:`~scrapy.spider.BaseSpider` object
 
-This method is called in each request until scrapy decides which
-download function to use.
+This method is called for each request that goes through the download
+middleware.
 
-process_request() should return either None, Response or Request.
+``process_request()`` should return either ``None``, a
+:class:`~scrapy.http.Response` object, or a :class:`~scrapy.http.Request`
+object.
 
-If returns None, Scrapy will continue processing this request,
-executing any other middleware and, then, the appropiate download
-function.
+If returns None, Scrapy will continue processing this request, executing all
+other middlewares until, finally, the appropiate downloader handler is called
+the request performed (and its response downloaded).
 
-If returns a Response object, Scrapy won't bother calling ANY other
-request or exception middleware, or the appropiate download function;
-it'll return that Response. Response middleware is always called on
-every response.
+If returns a Response object, Scrapy won't bother calling ANY other request or
+exception middleware, or the appropiate download function; it'll return that
+Response. Response middleware is always called on every response.
 
-If returns a Request object, returned request is used to instruct a
-redirection. Redirection is handled inside middleware scope, and
+If returns a :class:`~scrapy.http.Request` object, returned request is used to
+instruct a redirection. Redirection is handled inside middleware scope, and
 original request don't finish until redirected request is completed.
 
 
-.. method:: process_response(self, request, response, spider)
+.. method:: process_response(request, response, spider)
 
-``request`` is a Request object
-``response`` is a Response object
+``request`` is a :class:`~scrapy.http.Request` object
+``response`` is a :class:`~scrapy.http.Response` object
 ``spider`` is a BaseSpider object
 
 process_response MUST return a Response object. It could alter the given
 response, or it could create a brand-new Response.
 To drop the response entirely an IgnoreRequest exception must be raised.
 
-.. method:: process_exception(self, request, exception, spider)
+.. method:: process_exception(request, exception, spider)
 
-``request`` is a Request object.
+``request`` is a :class:`~scrapy.http.Request` object.
 ``exception`` is an Exception object
 ``spider`` is a BaseSpider object
 
 Scrapy calls process_exception() when a download handler or
 process_request middleware raises an exception.
 
-process_exception() should return either None, Response or Request object.
+process_exception() should return either None, :class:`~scrapy.http.Response`
+or :class:`~scrapy.http.Request` object.
 
 if it returns None, Scrapy will continue processing this exception,
 executing any other exception middleware, until no middleware left and
 default exception handling kicks in.
 
-If it returns a Response object, the response middleware kicks in, and
-won't bother calling ANY other exception middleware.
+If it returns a :class:`~scrapy.http.Response` object, the response middleware
+kicks in, and won't bother calling any other exception middleware.
 
-If it returns a Request object, returned request is used to instruct a
+If it returns a :class:`~scrapy.http.Request` object, returned request is used to instruct a
 immediate redirection. Redirection is handled inside middleware scope,
 and original request don't finish until redirected request is
 completed. This stop process_exception middleware as returning
