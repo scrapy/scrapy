@@ -13,3 +13,9 @@ Contents:
    intro/index
    topics/index
    ref/index
+
+.. toctree::
+   :maxdepth: 1
+
+   faq
+
