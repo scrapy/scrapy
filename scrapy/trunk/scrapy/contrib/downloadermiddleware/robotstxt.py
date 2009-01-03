@@ -1,30 +1,28 @@
 """
-jhis is an expertimental middleware to respect robots.txt policies. The biggest
-problem it has is that it uses urllib directly (in RobotFileParser.read()
-method) and that conflicts with twisted networking, so it should be ported to
-use twisted networking API, but that is not as trivial as it may seem.
-
-This code is left here for future reference, when we resume the work on this
-subject.
+This is a middleware to respect robots.txt policies. To active it you must
+enable this middleware and enable the ROBOTSTXT_OBEY setting.
 
 """
 
-import re
 import urlparse
 import robotparser
 
 from pydispatch import dispatcher
 
 from scrapy.core import signals
-from scrapy import log
+from scrapy.core.engine import scrapyengine
+from scrapy.core.exceptions import NotConfigured
+from scrapy.spider import spiders
+from scrapy.http import Request
 from scrapy.core.exceptions import IgnoreRequest
 from scrapy.conf import settings
 
-BASEURL_RE = re.compile("http://.*?/")
-
-class RobotsMiddleware(object):
+class RobotsTxtMiddleware(object):
 
     def __init__(self):
+        if not settings.getbool('ROBOTSTXT_OBEY'):
+            raise NotConfigured
+
         self._parsers = {}
         self._spiderdomains = {}
         self._pending = {}
@@ -38,18 +36,22 @@ class RobotsMiddleware(object):
             raise IgnoreRequest("URL forbidden by robots.txt: %s" % request.url)
 
     def robot_parser(self, url, spiderdomain):
-        urldomain = urlparse.urlparse(url).hostname
+        parsedurl = urlparse.urlparse(url)
+        urldomain = parsedurl.hostname
         if urldomain in self._parsers:
-            rp = self._parsers[urldomain]
+            return self._parsers[urldomain]
         else:
-            rp = robotparser.RobotFileParser()
-            m = BASEURL_RE.search(url)
-            if m:
-                rp.set_url("%srobots.txt" % m.group())
-                rp.read()
-            self._parsers[urldomain] = rp
+            self._parsers[urldomain] = None
+            robotsurl = "%s://%s/robots.txt" % parsedurl[0:2]
+            robotsreq = Request(robotsurl)
+            dfd = scrapyengine.schedule(robotsreq, spiders.fromdomain(spiderdomain), priority=0)
+            dfd.addCallbacks(callback=self._parse_robots, callbackArgs=[urldomain])
             self._spiderdomains[spiderdomain].add(urldomain)
-        return rp
+
+    def _parse_robots(self, response, urldomain):
+        rp = robotparser.RobotFileParser()
+        rp.parse(response.to_string().splitlines())
+        self._parsers[urldomain] = rp
 
     def domain_open(self, domain):
         self._spiderdomains[domain] = set()
