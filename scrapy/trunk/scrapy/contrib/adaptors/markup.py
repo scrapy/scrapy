@@ -36,9 +36,8 @@ class Unquote(object):
     Output: list of strings
     """
     def __init__(self, keep=None):
-        self.keep = ['amp', 'lt'] if keep is None else keep
+        self.keep = [] if keep is None else keep
 
     def __call__(self, value, keep=None):
-        if keep is not None:
-            self.keep = keep
-        return [ unquote_markup(v, keep=self.keep) for v in value ]
+        keep = keep if keep is not None else self.keep
+        return [ unquote_markup(v, keep=keep) for v in value ]
