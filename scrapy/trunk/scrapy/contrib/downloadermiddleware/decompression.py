@@ -8,7 +8,7 @@ except:
     from StringIO import StringIO
 
 from scrapy import log
-from scrapy.http import Response, ResponseBody
+from scrapy.http import Response
 
 class DecompressionMiddleware(object):
     """ This middleware tries to recognise and extract the possibly compressed
@@ -28,7 +28,7 @@ class DecompressionMiddleware(object):
         except tarfile.ReadError:
             return False
         if tar_file.members:
-            return response.replace(body=ResponseBody(tar_file.extractfile(tar_file.members[0]).read()))
+            return response.replace(body=tar_file.extractfile(tar_file.members[0]).read())
         else:
             raise self.ArchiveIsEmpty
 
@@ -39,7 +39,7 @@ class DecompressionMiddleware(object):
             return False
         namelist = zip_file.namelist()
         if namelist:
-            return response.replace(body=ResponseBody(zip_file.read(namelist[0])))
+            return response.replace(body=zip_file.read(namelist[0]))
         else:
             raise self.ArchiveIsEmpty
 
@@ -56,7 +56,7 @@ class DecompressionMiddleware(object):
             decompressed_body = bz2.decompress(self.body)
         except IOError:
             return False
-        return response.replace(body=ResponseBody(decompressed_body))
+        return response.replace(body=decompressed_body)
 
     def extract(self, response):
         """ This method tries to decompress the given response, if possible,

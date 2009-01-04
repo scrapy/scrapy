@@ -1,6 +1,6 @@
 from unittest import TestCase, main
 import libxml2
-from scrapy.http import ResponseBody,  Response
+from scrapy.http import Response
 
 class Libxml2Test(TestCase):
     def setUp(self):
@@ -35,8 +35,8 @@ class ResponseLibxml2DocTest(TestCase):
         scrapymanager.configure()
 
         self.body_content = 'test problematic \x00 body'
-        self.problematic_body = ResponseBody(self.body_content, 'utf-8')
-        response = Response('example.com', 'http://example.com/catalog/product/blabla-123', body=self.problematic_body)
+        response = Response('example.com', 'http://example.com/catalog/product/blabla-123',
+                            headers={'Content-Type': 'text/plain; charset=utf-8'}, body=self.body_content)
         response.getlibxml2doc()
 
 if __name__ == "__main__":

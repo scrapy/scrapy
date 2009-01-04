@@ -2,7 +2,7 @@ import zlib
 from gzip import GzipFile
 from cStringIO import StringIO
 
-from scrapy.http import Response, ResponseBody
+from scrapy.http import Response
 
 
 class CompressionMiddleware(object):
@@ -18,9 +18,8 @@ class CompressionMiddleware(object):
             if content_encoding:
                 encoding = content_encoding[0].lower()
                 raw_body = response.body.get_content()
-                declared_encoding = response.body.declared_encoding
                 decoded_body = self._decode(raw_body, encoding)
-                response.body = ResponseBody(decoded_body, declared_encoding)
+                response = response.replace(body=decoded_body)
                 response.headers['Content-Encoding'] = content_encoding[1:]
         return response
 

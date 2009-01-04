@@ -29,11 +29,9 @@ class Response(object) :
         self.original_url = Url(original_url) if original_url else url # different if redirected or escaped
         self.headers = Headers(headers or {})
         self.status = status
-        # FIXME this should be replaced with assert(isinstance(body, basestring)) since ResponseBody is not meant to be used directly
-        if isinstance(body, ResponseBody):
-            self.body = body
-        else:
-            self.body = ResponseBody(body, self.headers_encoding())
+        # ResponseBody is not meant to be used directly (use .replace instead)
+        assert(isinstance(body, basestring) or body is None)
+        self.body = ResponseBody(body, self.headers_encoding())
         self.cached = False
         self.request = None # request which originated this response
 
