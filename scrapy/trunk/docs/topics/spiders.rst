@@ -1,4 +1,4 @@
-.. _spiders:
+.. _topics-spiders:
 
 =======
 Spiders
