@@ -2,14 +2,14 @@
 This module contains the default values for all settings used by Scrapy. 
 
 For more information about these settings you can read the settings
-documentation in docs/reference/settings.rst
+documentation in docs/ref/settings.rst
 
 Scrapy developers, if you add a setting here remember to:
 
 * add it in alphabetical order
 * group similar settings without leaving blank lines
 * add its documentation to the available settings documentation
-  (docs/reference/settings.rst)
+  (docs/ref/settings.rst)
 
 """
 
