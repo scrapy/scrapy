@@ -119,11 +119,11 @@ class AdaptorsTestCase(unittest.TestCase):
 
         
     def test_unquote_all(self):
-        self.assertEqual(adaptors.Unquote(keep=[])([u'hello&copy;&amp;welcome', u'&lt;br /&gt;&amp;']), [u'hello\xa9&welcome', u'<br />&'])
+        self.assertEqual(adaptors.Unquote()([u'hello&copy;&amp;welcome', u'&lt;br /&gt;&amp;']), [u'hello\xa9&welcome', u'<br />&'])
 
         
     def test_unquote(self):
-        self.assertEqual(adaptors.Unquote()([u'hello&copy;&amp;welcome', u'&lt;br /&gt;&amp;']), [u'hello\xa9&amp;welcome', u'&lt;br />&amp;'])
+        self.assertEqual(adaptors.Unquote(keep=['amp', 'lt'])([u'hello&copy;&amp;welcome', u'&lt;br /&gt;&amp;']), [u'hello\xa9&amp;welcome', u'&lt;br />&amp;'])
 
         
     def test_remove_tags(self):
