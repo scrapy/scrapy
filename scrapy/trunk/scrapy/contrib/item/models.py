@@ -42,16 +42,7 @@ class RobustScrapedItem(ScrapedItem):
     }
     
     def __init__(self, data=None):
-        """
-        A scraped item can be initialised with a dictionary that will be
-        squirted directly into the object.
-        """
-        if isinstance(data, dict):
-            for attr, value in data.iteritems():
-                setattr(self, attr, value)
-        elif data is not None:
-            raise UsageError("Initialize with dict, not %s" % data.__class__.__name__)
-
+        super(RobustScrapedItem, self).__init__(data)
         self.__dict__['_version'] = None
 
     def __getattr__(self, attr):
@@ -112,15 +103,6 @@ class RobustScrapedItem(ScrapedItem):
     
     def __sub__(self, other):
         return RobustItemDelta(other, self)
-
-    def __repr__(self):
-        # Generate this format so that it can be deserialized easily:
-        # ClassName({...})
-        reprdict = {}
-        for k, v in self.__dict__.iteritems():
-            if not k.startswith('_'):
-                reprdict[k] = v
-        return "%s(%s)" % (self.__class__.__name__, repr(reprdict))
 
     def __str__(self) :
         return "%s: GUID=%s, url=%s" % ( self.__class__.__name__ , self.guid, self.url )

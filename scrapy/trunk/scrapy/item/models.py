@@ -7,7 +7,30 @@ class ScrapedItem(object):
     'guid' attribute is required, and is an attribute
     that identifies uniquely the given scraped item.
     """
-    _adaptors_dict = {}
+
+    def __init__(self, data=None):
+        """
+        A ScrapedItem can be initialised with a dictionary that will be
+        squirted directly into the object.
+        """
+        self._adaptors_dict = {}
+
+        if isinstance(data, dict):
+            for attr, value in data.iteritems():
+                setattr(self, attr, value)
+        elif data is not None:
+            raise UsageError("Initialize with dict, not %s" % data.__class__.__name__)
+
+    def __repr__(self):
+        """
+        Generate the following format so that items can be deserialized
+        easily: ClassName({'attrib': value, ...})
+        """
+        reprdict = dict(items for items in self.__dict__.iteritems() if not items[0].startswith('_'))
+        return "%s(%s)" % (self.__class__.__name__, repr(reprdict))
+
+    def __sub__(self, other):
+        raise NotImplementedError
 
     def set_adaptors(self, adaptors_dict):
         """
@@ -35,29 +58,43 @@ class ScrapedItem(object):
                 pipe.insert(position, adaptor)
             self.set_attrib_adaptors(attrib, pipe)
 
-    def attribute(self, attrname, value, **kwargs):
-        override = kwargs.pop('override', False)
-        add = kwargs.pop('add', False)
+    def attribute(self, attrname, value, override=False, add=False, **kwargs):
+        """
+        Set the given value to the provided attribute (`attrname`) by filtering it
+        through its adaptor pipeline first (if it has any).
+
+        If the attribute has been already set, it won't be overwritten unless
+        `override` is True.
+        If there was an old value and `add` is True (but `override` isn't), `value`
+        will be appended/extended (depending on its type), to the old value, as long as
+        the old value is a list.
+        If both of the values are strings they will be joined by using the `add` delimiter
+        (which may be a string, or True, in which case '' will be used as the delimiter).
+
+        The kwargs parameter is passed to the adaptors pipeline, which manages to transmit
+        it to the adaptors themselves.
+        """
         pipe = self._adaptors_dict.get(attrname)
+        old_value = getattr(self, attrname, None)
+
         if pipe:
-            val = pipe(value, **kwargs)
-            if val or val is False:
-                curr_val = getattr(self, attrname, None)
-                if not curr_val:
-                    setattr(self, attrname, val)
-                else:
-                    if override:
-                        setattr(self, attrname, val)
-                    elif add:
-                        if all(isinstance(var, basestring) for var in (curr_val, val)):
-                            setattr(self, attrname, '%s\t%s' % (curr_val, val))
-                        elif all(hasattr(var, '__iter__') for var in (curr_val, val)):
-                            setattr(self, attrname, curr_val + val)
-        elif value:
+            value = pipe(value, **kwargs)
+
+        if old_value:
+            if override:
+                setattr(self, attrname, value)
+            elif add:
+                if hasattr(old_value, '__iter__'):
+                    if hasattr(value, '__iter__'):
+                        self.__dict__[attrname].extend(list(value))
+                    else:
+                        self.__dict__[attrname].append(value)
+                elif isinstance(old_value, basestring) and isinstance(value, basestring):
+                    delimiter = add if isinstance(add, basestring) else ''
+                    setattr(self, attrname, '%s%s%s' % (old_value, delimiter, value))
+        else:
             setattr(self, attrname, value)
 
-    def __sub__(self, other):
-        raise NotImplementedError
 
 class ItemDelta(object):
     pass
