@@ -220,16 +220,6 @@ Example::
 
     COMMANDS_SETTINGS_MODULE = 'mybot.conf.commands'
 
-.. setting:: DEFAULT_ITEM_CLASS
-
-DEFAULT_ITEM_CLASS
-------------------
-
-Default: ``'scrapy.item.ScrapedItem'``
-
-The default class that will be used for items, for example, in the shell
-console. 
-
 .. setting:: CONCURRENT_DOMAINS
 
 CONCURRENT_DOMAINS
@@ -240,6 +230,28 @@ Default: ``8``
 Number of domains to scrape concurrently in one process. This doesn't affect
 the number of domains scraped concurrently by the Scrapy cluster which spawns a
 new process per domain.
+
+.. setting:: DEFAULT_ITEM_CLASS
+
+DEFAULT_ITEM_CLASS
+------------------
+
+Default: ``'scrapy.item.ScrapedItem'``
+
+The default class that will be used for items, for example, in the shell
+console. 
+
+.. setting:: DEFAULT_SPIDER
+
+DEFAULT_SPIDER
+--------------
+
+Default: None
+
+The default spider class that will be instantiated for urls for which no
+specific spider was found. This default class must have a constructor
+which receives as only parameter (apart of self) the domain name of the
+given url.
 
 .. setting:: DEPTH_LIMIT
 
