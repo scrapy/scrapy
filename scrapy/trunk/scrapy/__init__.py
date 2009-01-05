@@ -2,6 +2,7 @@
 Scrapy - a screen scraping framework written in Python
 """
 
+# IMPORTANT: remember to also update the version in docs/conf.py
 __version__ = "0.7.0"
 
 import sys, os
