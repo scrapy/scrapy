@@ -4,16 +4,20 @@
 Selectors
 =========
 
-Selectors are *the* way you have to extract information from documents. They retrieve information from the response's body, given an XPath, or a Regular Expression that you provide.
+Selectors are the recommended way to extract information from documents. They retrieve information from the response's body, given an XPath, or a Regular Expression that you provide.
+
+.. highlight:: python
 
 Currently there are two kinds of selectors, HtmlXPathSelectors, and XmlXPathSelectors. Both work in the same way; they are first instanciated with a response, for example::
 
     hxs = HtmlXPathSelector(response) # an HTML selector
     xxs = XmlXPathSelector(response) # an XML selector
 
+.. highlight:: sh
+
 Now, before going on with selectors, I'd suggest you to open a Scrapy shell, which you can use by calling your project manager with the 'shell' argument; something like::
 
-    [user@host ~/myproject]$ ./scrapy-ctl.py shell <url>
+    $ ./scrapy-ctl.py shell <url>
 
 Notice that you'll have to install IPython in order to use this feature, but believe me that it worths it; the shell is **very** useful.
 
@@ -21,29 +25,21 @@ With the shell you can simulate parsing a webpage, either by calling "scrapy-ctl
 to retreive the given url, and fills in the 'response' variable with the result.
 
 Ok, so now let's use the shell to show you a bit how do selectors work.
-We'll use an example page located in Scrapy's site (http://www.scrapy.org/docs/topics/sample1.htm), whose markup is::
 
-    <html>
-     <head>
-      <base href='http://example.com/' />
-      <title>Example website</title>
-     </head>
-     <body>
-      <div id='images'>
-        <a href='image1.html'>Name: My image 1 <br /><img src='image1_thumb.jpg' /></a>
-        <a href='image2.html'>Name: My image 2 <br /><img src='image2_thumb.jpg' /></a>
-        <a href='image3.html'>Name: My image 3 <br /><img src='image3_thumb.jpg' /></a>
-        <a href='image4.html'>Name: My image 4 <br /><img src='image4_thumb.jpg' /></a>
-        <a href='image5.html'>Name: My image 5 <br /><img src='image5_thumb.jpg' /></a>
-      </div>
-     </body>
-    </html>
+We'll use an example page located in Scrapy's (here's a `direct link <../_static/selectors-sample1.html>`_ if you want to download it), whose markup is:
+
+.. literalinclude:: ../_static/selectors-sample1.html
+   :language: html
+
+.. highlight:: sh
 
 First, we open the shell::
 
-    [user@host ~/myproject]$ ./scrapy-ctl.py shell 'http://www.scrapy.org/docs/topics/sample1.htm'
+    $ ./scrapy-ctl.py shell 'http://www.scrapy.org/docs/topics/sample1.htm'
 
 Then, after the shell loads, you'll have some already-made objects for you to play with. Two of them, hxs and xxs, are selectors.
+
+.. highlight:: python
 
 You could instanciate your own by doing::
 
@@ -55,41 +51,40 @@ Where 'response' is the object that Scrapy already created for you containing th
 
 But anyway, we'll stick to the selectors that Scrapy already made for us, and more specifically, the HtmlXPathSelector (since we're working with an HTML document right now).
 
-Let's try some expressions::
+Let's try extracting the title::
 
-    # The title
-    In [1]: hxs.x('//title/text()')
-    Out[1]: [<HtmlXPathSelector (text) xpath=//title/text()>]
-    # As you can see, the x method returns an XPathSelectorList, which is actually a list of selectors.
-    # To extract their data you must use the extract() method, as follows:
-    In [2]: hxs.x('//title/text()').extract()
-    Out[2]: [u'Example website']
+    >>> hxs.x('//title/text()')
+    [<HtmlXPathSelector (text) xpath=//title/text()>]
 
-    # The base url
-    In [3]: hxs.x('//base/@href').extract()
-    Out[3]: [u'http://example.com/']
+As you can see, the x method returns an XPathSelectorList, which is actually a list of selectors.
+To extract their data you must use the extract() method, as follows::
 
-    # Image links
-    In [4]: hxs.x('//a[contains(@href, "image")]/@href').extract()
-    Out[4]:
+    >>> hxs.x('//title/text()').extract()
+    [u'Example website']
+
+Let's know extract the base URL and some image links::
+
+    >>> hxs.x('//base/@href').extract()
+    [u'http://example.com/']
+
+    >>> hxs.x('//a[contains(@href, "image")]/@href').extract()
     [u'image1.html',
      u'image2.html',
      u'image3.html',
      u'image4.html',
      u'image5.html']
 
-    # Image thumbnails
-    In [5]: hxs.x('//a[contains(@href, "image")]/img/@src').extract()
-    Out[5]:
+    >>> hxs.x('//a[contains(@href, "image")]/img/@src').extract()
     [u'image1_thumb.jpg',
      u'image2_thumb.jpg',
      u'image3_thumb.jpg',
      u'image4_thumb.jpg',
      u'image5_thumb.jpg']
 
-    # Image names
-    In [6]: hxs.x('//a[contains(@href, "image")]/text()').re(r'Name:\s*(.*)')
-    Out[6]:
+And here's an example which shows the `re()` method of xpath selectors which
+allows you to use regular expressions to select parts.
+
+    >>> hxs.x('//a[contains(@href, "image")]/text()').re(r'Name:\s*(.*)')
     [u'My image 1',
      u'My image 2',
      u'My image 3',
@@ -97,22 +92,24 @@ Let's try some expressions::
      u'My image 5']
 
 
-Ok, let's explain a bit.
-Selector's x() method, is intended to select a node or an attribute from the document, given an XPath expression, as you could see upwards.
-You can apply an x() call to any node you have, which means that you can join different calls, for example:::
+Now let's explain a bit what we just did.
 
-    In [10]: links = hxs.x('//a[contains(@href, "image")]')
+Selector's x() method, is intended to select a node or an attribute from the
+document, given an XPath expression, as you could see upwards.
 
-    In [11]: links.extract()
-    Out[11]:
+You can apply an x() call to any node you have, which means that you can join
+different calls, for example:::
+
+    >>> links = hxs.x('//a[contains(@href, "image")]')
+    >>> links.extract()
     [u'<a href="image1.html">Name: My image 1 <br><img src="image1_thumb.jpg"></a>',
      u'<a href="image2.html">Name: My image 2 <br><img src="image2_thumb.jpg"></a>',
      u'<a href="image3.html">Name: My image 3 <br><img src="image3_thumb.jpg"></a>',
      u'<a href="image4.html">Name: My image 4 <br><img src="image4_thumb.jpg"></a>',
      u'<a href="image5.html">Name: My image 5 <br><img src="image5_thumb.jpg"></a>']
 
-    In [12]: for index, link in enumerate(links):
-                print 'Link number %d points to url %s and image %s' % (index, link.x('@href').extract(), link.x('img/@src').extract())
+    >>> for index, link in enumerate(links):
+            print 'Link number %d points to url %s and image %s' % (index, link.x('@href').extract(), link.x('img/@src').extract())
 
     Link number 0 points to url [u'image1.html'] and image [u'image1_thumb.jpg']
     Link number 1 points to url [u'image2.html'] and image [u'image2_thumb.jpg']
