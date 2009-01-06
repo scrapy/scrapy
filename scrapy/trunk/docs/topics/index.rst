@@ -4,6 +4,7 @@ Topics
 .. toctree::
    :maxdepth: 1
 
+   architecture
    selectors
    items
    spiders
