@@ -1,16 +1,18 @@
 .. _tutorial1:
 
+.. highlight:: sh
+
 ======================
 Creating a new project
 ======================
 
 In this tutorial, we'll teach you how to scrape http://www.google.com/dirhp Google's web directory.
 
-We'll assume that Scrapy is already installed in your system, if not see :ref:`install`.
+We'll assume that Scrapy is already installed in your system, if not see :ref:`intro-install`.
 
 For starting a new project, enter the directory where you'd like your project to be located, and run::
 
-    scrapy-admin.py startproject google
+    $ scrapy-admin.py startproject google
 
 As long as Scrapy is well installed and the path is set, this should create a directory called "google" containing the following files:
 
@@ -25,6 +27,6 @@ As long as Scrapy is well installed and the path is set, this should create a di
 
 ::
 
-    export PYTHONPATH=/path/to/your/project
+    $ export PYTHONPATH=/path/to/your/project
 
 Now you can continue with the next part of the tutorial: :ref:`tutorial2`.

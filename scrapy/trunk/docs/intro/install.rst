@@ -1,10 +1,10 @@
-.. _install:
-
-.. highlight:: sh
+.. _intro-install:
 
 ============
 Installation
 ============
+
+.. highlight:: sh
 
 Requirements
 ============
