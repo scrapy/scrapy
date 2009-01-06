@@ -9,5 +9,6 @@ Topics
    spiders
    item-pipeline
    downloader-middleware
+   spider-middleware
    settings
    robotstxt
