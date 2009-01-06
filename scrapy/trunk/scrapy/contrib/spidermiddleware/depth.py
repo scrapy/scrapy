@@ -17,7 +17,7 @@ class DepthMiddleware(object):
         if self.stats and self.maxdepth:
             stats.setpath('_envinfo/request_depth_limit', self.maxdepth)
 
-    def process_result(self, response, result, spider):
+    def process_spider_output(self, response, result, spider):
         def _filter(request):
             if isinstance(request, Request):
                 request.depth = response.request.depth + 1

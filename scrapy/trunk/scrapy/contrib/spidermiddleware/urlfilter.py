@@ -6,7 +6,7 @@ from scrapy.http import Request
 from scrapy.utils.url import canonicalize_url
 
 class UrlFilterMiddleware(object):
-    def process_result(self, response, result, spider):
+    def process_spider_output(self, response, result, spider):
         disabled = getattr(spider, 'urlfilter_disabled', False)
         for r in result:
             if isinstance(r, Request) and not disabled:

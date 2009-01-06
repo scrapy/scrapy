@@ -83,13 +83,13 @@ class ItemSamplerMiddleware(object):
         if not settings['ITEMSAMPLER_FILE']:
             raise NotConfigured
 
-    def process_scrape(self, response, spider):
+    def process_spider_input(self, response, spider):
         if stats.getpath("%s/items_sampled" % spider.domain_name) >= items_per_domain:
             return []
         elif max_response_size and max_response_size > len(response):  
             return []
 
-    def process_result(self, response, result, spider):
+    def process_spider_output(self, response, result, spider):
         requests, items = [], []
         for r in result:
             if isinstance(r, Request):

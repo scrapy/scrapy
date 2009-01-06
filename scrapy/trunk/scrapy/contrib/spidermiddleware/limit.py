@@ -21,7 +21,7 @@ class RequestLimitMiddleware(object):
         if not self.max_queue_size:
             raise NotConfigured
 
-    def process_result(self, response, result, spider):
+    def process_spider_output(self, response, result, spider):
         requests = []
         items = []
         for r in result:

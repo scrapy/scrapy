@@ -1,5 +1,9 @@
 """
-Spider middleware manager
+This module implements the Spider Middleware manager. For more information see
+the Spider Middleware doc in:
+
+docs/topics/spider-middleware.rst
+
 """
 
 from scrapy import log
@@ -23,12 +27,12 @@ class SpiderMiddlewareManager(object):
         self.load()
 
     def _add_middleware(self, mw):
-        if hasattr(mw, 'process_scrape'):
-            self.spider_middleware.append(mw.process_scrape)
-        if hasattr(mw, 'process_result'):
-            self.result_middleware.insert(0, mw.process_result)
-        if hasattr(mw, 'process_exception'):
-            self.exception_middleware.insert(0, mw.process_exception)
+        if hasattr(mw, 'process_spider_input'):
+            self.spider_middleware.append(mw.process_spider_input)
+        if hasattr(mw, 'process_spider_output'):
+            self.result_middleware.insert(0, mw.process_spider_output)
+        if hasattr(mw, 'process_spider_exception'):
+            self.exception_middleware.insert(0, mw.process_spider_exception)
 
     def load(self):
         """Load middleware defined in settings module"""
@@ -48,7 +52,7 @@ class SpiderMiddlewareManager(object):
     def scrape(self, request, response, spider):
         fname = lambda f:'%s.%s' % (f.im_self.__class__.__name__, f.im_func.__name__)
 
-        def process_scrape(response):
+        def process_spider_input(response):
             for method in self.spider_middleware:
                 result = method(response=response, spider=spider)
                 assert result is None or _isiterable(result), \
@@ -59,7 +63,7 @@ class SpiderMiddlewareManager(object):
             return self.call(request=request, response=response, spider=spider)
 
 
-        def process_result(result):
+        def process_spider_output(result):
             for method in self.result_middleware:
                 result = method(response=response, result=result, spider=spider)
                 assert _isiterable(result), \
@@ -67,7 +71,7 @@ class SpiderMiddlewareManager(object):
                     (fname(method), type(result))
             return result
 
-        def process_exception(_failure):
+        def process_spider_exception(_failure):
             exception = _failure.value
             for method in self.exception_middleware:
                 result = method(response=response, exception=exception, spider=spider)
@@ -78,9 +82,9 @@ class SpiderMiddlewareManager(object):
                     return result
             return _failure
 
-        dfd = mustbe_deferred(process_scrape, response)
-        dfd.addErrback(process_exception)
-        dfd.addCallback(process_result)
+        dfd = mustbe_deferred(process_spider_input, response)
+        dfd.addErrback(process_spider_exception)
+        dfd.addCallback(process_spider_output)
         return dfd
 
     def call(self, request, response, spider):

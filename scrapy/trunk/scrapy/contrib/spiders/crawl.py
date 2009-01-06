@@ -67,7 +67,7 @@ class CrawlSpider(BaseSpider):
         return a list of ScrapedItems and/or Requests"""
         return []
 
-    def process_results(self, results, response):
+    def process_spider_output(self, results, response):
         """This overridable method is called for each result (item or request)
         returned by the spider, and it's intended to perform any last time
         processing required before returning the results to the framework core,
