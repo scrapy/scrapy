@@ -107,7 +107,7 @@ class CrawlSpider(BaseSpider):
             res.extend(self._requests_to_follow(response))
         if callback:
             cb_res = callback(response, **cb_kwargs) or ()
-            cb_res = self.process_results(cb_res, response)
+            cb_res = self.process_spider_output(cb_res, response)
             res.extend(cb_res)
         return res
 
