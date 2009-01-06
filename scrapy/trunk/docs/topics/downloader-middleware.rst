@@ -8,10 +8,10 @@ The downloader middleware is a framework of hooks into Scrapy's
 request/response processing.  It's a light, low-level system for globally
 altering Scrapy's input and/or output.
 
-Activating a middleware
-=======================
+Activating a downloader middleware
+==================================
 
-To activate a middleware component, add it to the
+To activate a downloader middleware component, add it to the
 :setting:`DOWNLOADER_MIDDLEWARES` list in your Scrapy settings.  In
 :setting:`DOWNLOADER_MIDDLEWARES`, each middleware component is represented by
 a string: the full Python path to the middleware's class name. For example::
@@ -42,12 +42,12 @@ middleware.
 :class:`~scrapy.http.Response` object, or a :class:`~scrapy.http.Request`
 object.
 
-If returns None, Scrapy will continue processing this request, executing all
-other middlewares until, finally, the appropiate downloader handler is called
+If returns ``None``, Scrapy will continue processing this request, executing all
+other middlewares until, finally, the appropriate downloader handler is called
 the request performed (and its response downloaded).
 
 If returns a Response object, Scrapy won't bother calling ANY other request or
-exception middleware, or the appropiate download function; it'll return that
+exception middleware, or the appropriate download function; it'll return that
 Response. Response middleware is always called on every response.
 
 If returns a :class:`~scrapy.http.Request` object, returned request is used to
@@ -61,32 +61,38 @@ original request don't finish until redirected request is completed.
 ``response`` is a :class:`~scrapy.http.Response` object
 ``spider`` is a BaseSpider object
 
-process_response MUST return a Response object. It could alter the given
-response, or it could create a brand-new Response.
-To drop the response entirely an IgnoreRequest exception must be raised.
+``process_response()`` should return a Response object or raise a
+:exception:`IgnoreRequest` exception. 
 
-.. method:: process_exception(request, exception, spider)
+If returns a Response (it could be the same given response, or a brand-new one)
+that response will continue to be processed with the ``process_response()`` of
+the next middleware in the pipeline.
+
+If returns an :exception:`IgnoreRequest` exception, the response will be
+dropped completely and its callback never called.
+
+.. method:: process_download_exception(request, exception, spider)
 
 ``request`` is a :class:`~scrapy.http.Request` object.
 ``exception`` is an Exception object
 ``spider`` is a BaseSpider object
 
-Scrapy calls process_exception() when a download handler or
-process_request middleware raises an exception.
+Scrapy calls ``process_download_exception()`` when a download handler or a
+``process_request()`` (from a downloader middleware) raises an exception.
 
-process_exception() should return either None, :class:`~scrapy.http.Response`
-or :class:`~scrapy.http.Request` object.
+``process_download_exception()`` should return either ``None``,
+:class:`~scrapy.http.Response` or :class:`~scrapy.http.Request` object.
 
-if it returns None, Scrapy will continue processing this exception,
-executing any other exception middleware, until no middleware left and
-default exception handling kicks in.
+If it returns ``None``, Scrapy will continue processing this exception,
+executing any other exception middleware, until no middleware is left and
+the default exception handling kicks in.
 
 If it returns a :class:`~scrapy.http.Response` object, the response middleware
 kicks in, and won't bother calling any other exception middleware.
 
-If it returns a :class:`~scrapy.http.Request` object, returned request is used to instruct a
-immediate redirection. Redirection is handled inside middleware scope,
-and original request don't finish until redirected request is
-completed. This stop process_exception middleware as returning
-Response does.
+If it returns a :class:`~scrapy.http.Request` object, returned request is used
+to instruct a immediate redirection. Redirection is handled inside middleware
+scope, and the original request won't finish until redirected request is
+completed. This stop ``process_download_exception()`` middleware as returning Response
+would do.
 
