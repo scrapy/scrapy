@@ -246,12 +246,11 @@ console.
 DEFAULT_SPIDER
 --------------
 
-Default: None
+Default: ``None``
 
 The default spider class that will be instantiated for urls for which no
-specific spider was found. This default class must have a constructor
-which receives as only parameter (apart of self) the domain name of the
-given url.
+specific spider is found. This class must have a constructor which receives as
+only parameter the domain name of the given url.
 
 .. setting:: DEPTH_LIMIT
 

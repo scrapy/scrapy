@@ -47,6 +47,8 @@ CONCURRENT_DOMAINS = 8    # number of domains to scrape in parallel
 
 DEFAULT_ITEM_CLASS = 'scrapy.item.ScrapedItem'
 
+DEFAULT_SPIDER = None
+
 DEPTH_LIMIT = 0
 DEPTH_STATS = True
 
