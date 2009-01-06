@@ -2,10 +2,14 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Scrapy documentation
-====================
+Scrapy |version| documentation
+================================
 
-Contents:
+Welcome! This is the documentation for Scrapy |version|. 
+
+For more information visit the `Scrapy homepage <http://scrapy.org>`_.
+
+Documentation Contents:
 
 .. toctree::
    :maxdepth: 2
