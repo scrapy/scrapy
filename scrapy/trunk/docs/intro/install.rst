@@ -1,5 +1,7 @@
 .. _install:
 
+.. highlight:: sh
+
 ============
 Installation
 ============
@@ -7,76 +9,91 @@ Installation
 Requirements
 ============
 
-* `Python <http://www.python.org>`_ 2.5 or above
-* `Twisted <http://twistedmatrix.com>`_
-* `libxml2 <http://xmlsoft.org>`_
-* `pyopenssl <http://pyopenssl.sourceforge.net>`_
+* `Python <http://www.python.org>`_ 2.5 or 2.6
+* `Twisted <http://twistedmatrix.com>`_ 8.0 or above
+* `libxml2 <http://xmlsoft.org>`_ (2.6.28 or above recommended)
 
 Optional:
 
-* `spidermonkey <http://www.mozilla.org/js/spidermonkey/>`_
-* `simplejson <http://code.google.com/p/simplejson/>`_
+* `pyopenssl <http://pyopenssl.sourceforge.net>`_ (for HTTPS support)
+* `spidermonkey <http://www.mozilla.org/js/spidermonkey/>`_ (for Javascript support)
 
 Install Python
 ==============
 
-Scrapy works with Python 2.5 or above, you can get it at http://www.python.org.
+Scrapy works with Python 2.5 or 2.6, you can get it at http://www.python.org/download/
 
 Install required libraries
 ==========================
 
-The procedure for installing the required third party libraries (twisted, libxml2 and pyopenssl) depends on the platform and OS you use.
+The procedure for installing the required third party libraries depends on the
+platform and operating system you use.
 
-If you're running Ubuntu/Debian Linux do:
+Ubuntu/Debian
+-------------
 
-.. code-block:: bash
+If you're running Ubuntu/Debian Linux run the following command as root::
 
-   apt-get install python-twisted python-libxml2 python-pyopenssl
+   $ apt-get install python-twisted python-libxml2 python-pyopenssl
 
-Or in Arch Linux do:
+Arch
+----
 
-.. code-block:: bash
+If you are running Arch Linux use the following command to install required dependencies::
 
-   pacman -S twisted python-lxml pyopenssl
+   $ pacman -S twisted python-lxml pyopenssl
 
+Windows
+-------
+
+1. Get Twisted for Windows here::
+   http://twistedmatrix.com/trac/wiki/Downloads
+2. Get PyOpenSSL for Windows here::
+   http://sourceforge.net/project/showfiles.php?group_id=31249
+3. Get libxml2 for Windows here::
+   http://users.skynet.be/sbi/libxml-python/
 
 Install Scrapy code
 ===================
 
-We're working hard to get the first release of Scrapy out. In the meantime, please download the latest development version from the Subversion_ repository.
+We're working hard to get the first release of Scrapy out. In the meantime,
+please download the latest development version from the Subversion_ repository.
+
+.. _Subversion: http://subversion.tigris.org/
 
 To do this, follow this steps:
 
-1. Check out Scrapy code (you will need to have Subversion_ installed):
+1. Check out Scrapy code
+------------------------
+
+Check out Scrapy code (you will need to have Subversion_ installed)::
    
-   .. code-block:: bash
+   $ svn co http://svn.scrapy.org/scrapy/trunk/ scrapy-trunk
 
-      svn co http://svn.scrapy.org/scrapy/trunk/ scrapy-trunk
+2. Add Scrapy to your Python path
+---------------------------------
 
-2. Add Scrapy to your Python path. You can do this by making a symbolic link to your system ``site-packages`` directory like this:  
+You can do this by making a symbolic link to your system ``site-packages``
+directory like this::
 
-   .. code-block:: bash
+   $ ln -s `pwd`/scrapy-trunk/scrapy SITE-PACKAGES/scrapy
 
-      ln -s `pwd`/scrapy-trunk/scrapy SITE-PACKAGES/scrapy
+Where ``SITE-PACKAGES`` is the location of your system ``site-packages``
+directory, to find this out execute the following::
 
-   Where ``SITE-PACKAGES`` is the location of your system ``site-packages`` directory, to find this out execute the following:
+   $ python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"
 
-   .. code-block:: bash
+Or by adding the ``scrapy-trunk`` directory to your ``PYTHONPATH`` environment
+variable, like this::
 
-      python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"
+   $ export PYTHONPATH=`pwd`/scrapy-trunk:$PYTHONPATH
 
+3. Make the scrapy-admin.py script executable
+---------------------------------------------
 
-   Or by adding the ``scrapy-trunk`` directory to your ``PYTHONPATH`` environment variable, like this:
-
-   .. code-block:: bash
-
-      export PYTHONPATH=`pwd`/scrapy-trunk:PYTHONPATH
-
-
-3. Make the ``scrapy-trunk/scrapy/bin/scrapy-admin.py`` script executable system-wide. To do this create a symbolic link to the file in a directory on your sistem path, like:
+Make the ``scrapy-trunk/scrapy/bin/scrapy-admin.py`` script executable
+system-wide. To do this create a symbolic link to the file in a directory on
+your sistem path, like::
    
-   .. code-block:: bash
+   $ ln -s `pwd`/scrapy-trunk/scrapy/bin/scrapy-admin.py /usr/local/bin
 
-       ln -s `pwd`/scrapy-trunk/scrapy/bin/scrapy-admin.py /usr/local/bin
-
-.. _Subversion: http://subversion.tigris.org/
