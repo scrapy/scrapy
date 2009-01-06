@@ -2,9 +2,6 @@
 Spider middleware manager
 """
 
-
-from twisted.python.failure import Failure
-
 from scrapy import log
 from scrapy.core.exceptions import NotConfigured
 from scrapy.utils.misc import load_class
