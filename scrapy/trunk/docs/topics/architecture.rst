@@ -4,8 +4,8 @@
 Architecture
 ============
 
-This document describes the architecture of Scrapy and how they components
-interact between each other.
+This document describes the architecture of Scrapy and how their components
+interact.
 
 Overview
 ========
