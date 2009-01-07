@@ -3,7 +3,7 @@ import libxml2
 from scrapy.http import Response
 from scrapy.xpath.extension import Libxml2Document
 from scrapy.xpath.constructors import xmlDoc_from_html, xmlDoc_from_xml
-from scrapy.utils.python import flatten
+from scrapy.utils.python import flatten, unicode_to_str
 from scrapy.utils.misc import extract_regex
 
 class XPathSelector(object):
@@ -28,7 +28,7 @@ class XPathSelector(object):
                 self.doc = Libxml2Document(response, constructor=constructor)
             self.xmlNode = self.doc.xmlDoc
         elif text:
-            response = Response(domain=None, url=None, body=str(text))
+            response = Response(domain=None, url=None, body=unicode_to_str(text))
             self.doc = Libxml2Document(response, constructor=constructor)
             self.xmlNode = self.doc.xmlDoc
         self.expr = expr
