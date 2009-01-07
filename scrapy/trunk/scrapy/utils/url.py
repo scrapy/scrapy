@@ -22,7 +22,8 @@ def url_is_from_any_domain(url, domains):
 
 def url_is_from_spider(url, spider):
     """Return True if the url belongs to the given spider"""
-    domains = [spider.domain_name] + spider.extra_domain_names
+    domains = [spider.domain_name]
+    domains.extend(spider.extra_domain_names)
     return url_is_from_any_domain(url, domains)
 
 def urljoin_rfc(base, ref):
