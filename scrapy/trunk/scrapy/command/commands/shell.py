@@ -115,10 +115,6 @@ class Command(ScrapyCommand):
 
         print "Scrapy %s - Interactive scraping console\n" % scrapy.__version__
 
-        print "Enabling Scrapy extensions...",
-        extensions.load()
-        print "done"
-
         def _console_thread():
             
             def _get_magic(shell, arg):
