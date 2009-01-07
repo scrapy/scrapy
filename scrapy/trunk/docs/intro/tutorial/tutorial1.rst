@@ -1,10 +1,10 @@
-.. _tutorial1:
-
-.. highlight:: sh
+.. _intro-tutorial1:
 
 ======================
 Creating a new project
 ======================
+
+.. highlight:: sh
 
 In this tutorial, we'll teach you how to scrape http://www.google.com/dirhp Google's web directory.
 
@@ -29,4 +29,4 @@ As long as Scrapy is well installed and the path is set, this should create a di
 
     $ export PYTHONPATH=/path/to/your/project
 
-Now you can continue with the next part of the tutorial: :ref:`tutorial2`.
+Now you can continue with the next part of the tutorial: :ref:`intro-tutorial2`.

@@ -21,10 +21,13 @@ Writing your own item pipeline
 Writing your own item pipeline is easy. Each item pipeline component is a
 single Python class that must define the following method:
 
-.. method:: process_item(request, spider)
+.. method:: process_item(domain, response, item)
 
-``request`` is a Request object
-``spider`` is a BaseSpider object
+``domain`` is a string with the domain of the spider which scraped the item
+
+``response`` is a :class:`scrapy.http.Response` with the response where the item was scraped
+
+``item`` is a :class:`scrapy.item.ScrapedItem` with the item scraped
 
 This method is called for every item pipeline component and must either return
 a ScrapedItem (or any descendant class) object or raise a :exception:`DropItem`

@@ -1,4 +1,4 @@
-.. _tutorial3:
+.. _intro-tutorial3:
 
 =================
 Scraping our data
@@ -71,4 +71,4 @@ are handled different than others (in fact, it *will* happen once you scrape mor
 The rest of the code is quite self-explanatory. The *attribute* method sets the item's attributes, and the items themselves are put into a list that we'll return to Scrapy's engine.
 One simple (although important) thing to remember here is that you must always return a list that contains either items, requests, or both, but always inside a list.
 
-So, we're almost done! Let's now check the last part of the tutorial: :ref:`tutorial4`
+So, we're almost done! Let's now check the last part of the tutorial: :ref:`intro-tutorial4`

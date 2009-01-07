@@ -26,6 +26,6 @@ framework).
 Does Scrapy work with Python 3.0?
 ---------------------------------
 
-No, and there is no plan to port Scrapy to Python 3.0 yet. At the moment Scrapy
-requires Python 2.5 or 2.6.
+No, and there are no plans to port Scrapy to Python 3.0 yet. At the moment
+Scrapy requires Python 2.5 or 2.6.
 

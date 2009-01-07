@@ -1,11 +1,9 @@
-.. Scrapy documentation master file, created by sphinx-quickstart on Mon Nov 24 12:02:52 2008.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. _index:
 
 Scrapy |version| documentation
 ================================
 
-Welcome! This is the documentation for Scrapy |version|. 
+Welcome! This is the documentation for Scrapy |version|, last updated on |today|.
 
 For more information visit the `Scrapy homepage <http://scrapy.org>`_.
 

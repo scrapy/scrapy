@@ -1,4 +1,4 @@
-.. _tutorial2:
+.. _intro-tutorial2:
 
 ================
 Our first spider
@@ -121,5 +121,5 @@ You can try crawling with this little code, by running::
     ./scrapy-ctl crawl google.com
 
 and it will actually work, altough it won't do any parsing, since parse_category is not defined, and that's exactly what we're going to do in the next part of
-the tutorial: :ref:`tutorial3`.
+the tutorial: :ref:`intro-tutorial3`.
 

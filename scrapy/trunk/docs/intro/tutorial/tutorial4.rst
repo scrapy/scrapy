@@ -1,4 +1,4 @@
-.. _tutorial4:
+.. _intro-tutorial4:
 
 =================
 Finishing the job
