@@ -52,12 +52,12 @@ Write a Spider to extract the Items
 ===================================
 
 Now we'll write a Spider which defines the start URL
-(http://www.mininova.org/today), the rules for following links and extracting
-data from pages.
+(http://www.mininova.org/today), the rules for following links and the rules
+for extracting the data from pages.
 
 If we take a look at that page content we'll see that all torrent URLs are like
-http://www.mininova.org/tor/NUMBER where NUMBER is a integer. We'll use that to
-construct the regular expression for links to follow: `/tor/\d+`.
+http://www.mininova.org/tor/NUMBER where ``NUMBER`` is an integer. We'll use
+that to construct the regular expression for the links to follow: ``/tor/\d+``.
 
 For extracting data we'll use `XPath`_ to select the part of the document where
 the data is to be extracted. Let's take one of those torrent pages:
