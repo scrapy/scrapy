@@ -88,7 +88,7 @@ def command_settings(cmdname):
     if basepath:
         try:
             module = __import__('%s.%s' % (basepath, cmdname), {}, {}, [''])
-            update_defaults(settings.overrides, module)
+            update_defaults(settings.defaults, module)
         except ImportError:
             pass
 
