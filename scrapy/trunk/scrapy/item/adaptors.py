@@ -51,10 +51,11 @@ class AdaptorPipe(list):
         return value
 
     def __add__(self, other):
-        if isinstance(other, list):
-            return AdaptorPipe(super(AdaptorPipe, self).__add__(other))
-        elif callable(other):
-            return AdaptorPipe(self + [other])
+        if callable(other):
+            other = [other]
+        elif hasattr(other, '__iter__'):
+            other = list(other)
+        return AdaptorPipe(super(AdaptorPipe, self).__add__(other))
 
     def __repr__(self):
         return '<AdaptorPipe %s >' % super(AdaptorPipe, self).__repr__()

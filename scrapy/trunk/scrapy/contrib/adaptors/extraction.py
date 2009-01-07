@@ -10,7 +10,7 @@ from scrapy.utils.url import is_url
 from scrapy.utils.python import flatten
 from scrapy.xpath.selector import XPathSelector, XPathSelectorList
 
-def extract(locations, use_unquote=True):
+def extract(locations, adaptor_args=None):
     """
     This adaptor tries to extract data from the given locations.
     Any XPathSelector in it will be extracted, and any other data
@@ -23,8 +23,8 @@ def extract(locations, use_unquote=True):
     Input: anything
     Output: list of extracted selectors plus anything else in the input
     """
-
     locations = flatten([locations])
+    use_unquote = adaptor_args.get('use_unquote', True) if adaptor_args else True
 
     result = []
     for location in locations:

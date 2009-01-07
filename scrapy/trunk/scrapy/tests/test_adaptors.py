@@ -3,9 +3,37 @@ import os
 import unittest
 import re
 
+from scrapy.item.adaptors import AdaptorPipe
 from scrapy.contrib import adaptors
 from scrapy.http import Response, Headers
 from scrapy.xpath.selector import HtmlXPathSelector, XmlXPathSelector
+
+class AdaptorPipeTestCase(unittest.TestCase):
+    def test_pipe_init(self):
+        self.assertRaises(TypeError, AdaptorPipe, [adaptors.extract, 'a string'])
+
+    def test_adaptor_args(self):
+        def sample_adaptor(value, adaptor_args):
+            '''Dummy adaptor that joins the received value with the given string'''
+            sample_text = adaptor_args.get('sample_arg', 'sample text 1')
+            return '%s "%s"' % (value, sample_text)
+
+        sample_value = 'hi, this is my text:'
+        sample_pipe = AdaptorPipe([sample_adaptor])
+        self.assertEqual(sample_pipe(sample_value), 'hi, this is my text: "sample text 1"')
+        self.assertEqual(sample_pipe(sample_value, sample_arg='foobarfoobar'),
+            'hi, this is my text: "foobarfoobar"')
+
+    def test_add(self):
+        pipe1 = AdaptorPipe([adaptors.extract])
+        pipe2 = [adaptors.remove_tags]
+        pipe3 = (adaptors.remove_root, )
+        sample_callable = dir
+
+        self.assertTrue(isinstance(pipe1 + pipe1, AdaptorPipe))
+        self.assertTrue(isinstance(pipe1 + pipe2, AdaptorPipe))
+        self.assertTrue(isinstance(pipe1 + pipe3, AdaptorPipe))
+        self.assertTrue(isinstance(pipe1 + sample_callable, AdaptorPipe))
 
 class AdaptorsTestCase(unittest.TestCase):
     def setUp(self):
@@ -75,8 +103,15 @@ class AdaptorsTestCase(unittest.TestCase):
 
     def test_extract_unquoted(self):
         x = self.get_selector('example.com', 'http://www.example.com/test_unquoted', 'extr_unquoted.xml', selector=XmlXPathSelector)
+
+        # test unquoting
         self.assertEqual(adaptors.extract(x.x('//tag1/text()')), [u'test text & &', u'more test text &amp; &gt;', u'blah&blah'])
         self.assertEqual(adaptors.extract(x.x('//tag2/text()')), [u'blaheawfds<'])
+
+        # test without unquoting
+        self.assertEqual(adaptors.extract(x.x('//tag1/text()'), {'use_unquote': False}),
+            [u'test text &amp; &amp;', u'<![CDATA[more test text &amp; &gt;]]>', u'blah&amp;blah'])
+        self.assertEqual(adaptors.extract(x.x('//tag2/text()'), {'use_unquote': False}), [u'blaheawfds&lt;'])
 
     def test_extract_links(self):
         test_data = """<html><body>
