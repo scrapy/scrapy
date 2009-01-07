@@ -7,6 +7,7 @@ Topics
    architecture
    selectors
    items
+   adaptors
    spiders
    item-pipeline
    downloader-middleware
