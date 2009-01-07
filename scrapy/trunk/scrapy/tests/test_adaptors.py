@@ -75,8 +75,8 @@ class AdaptorsTestCase(unittest.TestCase):
 
     def test_extract_unquoted(self):
         x = self.get_selector('example.com', 'http://www.example.com/test_unquoted', 'extr_unquoted.xml', selector=XmlXPathSelector)
-        self.assertEqual(adaptors.extract_unquoted(x.x('//tag1/text()')), [u'test text & &', u'more test text &amp; &gt;', u'blah&blah'])
-        self.assertEqual(adaptors.extract_unquoted(x.x('//tag2/text()')), [u'blaheawfds<'])
+        self.assertEqual(adaptors.extract(x.x('//tag1/text()')), [u'test text & &', u'more test text &amp; &gt;', u'blah&blah'])
+        self.assertEqual(adaptors.extract(x.x('//tag2/text()')), [u'blaheawfds<'])
 
     def test_extract_links(self):
         test_data = """<html><body>

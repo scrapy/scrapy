@@ -10,39 +10,32 @@ from scrapy.utils.url import is_url
 from scrapy.utils.python import flatten
 from scrapy.xpath.selector import XPathSelector, XPathSelectorList
 
-def _extract(locations, extractor='extract'):
-    if isinstance(locations, (XPathSelector, XPathSelectorList)):
-        return flatten(getattr(locations, extractor)())
-    elif hasattr(locations, '__iter__'):
-        return flatten([getattr(x, extractor)() if isinstance(x, (XPathSelector, XPathSelectorList)) else x for x in flatten(locations)])
-    elif isinstance(locations, basestring):
-        return [locations]
-    else:
-        return []
-
-def extract(locations):
+def extract(locations, use_unquote=True):
     """
-    This adaptor extracts a list of strings
-    from 'locations', which can be either an iterable,
-    or an XPathSelector/XPathSelectorList.
+    This adaptor tries to extract data from the given locations.
+    Any XPathSelector in it will be extracted, and any other data
+    will be added as-is to the result.
 
-    Input: XPathSelector, XPathSelectorList, iterable, basestring
-    Output: list of unicodes
-    """
-    return _extract(locations)
+    If an XPathSelector is a text/cdata node, and `use_unquote`
+    is True, that selector will be extracted using the `extract_unquoted`
+    method; otherwise, the `extract` method will be used.
 
-def extract_unquoted(locations):
+    Input: anything
+    Output: list of extracted selectors plus anything else in the input
     """
-    This adaptor extracts a list of unquoted strings
-    from 'locations', which can be either an iterable,
-    or an XPathSelector/XPathSelectorList.
-    The difference between this and the extract adaptor is
-    that this adaptor will only extract text nodes and unquote them.
 
-    Input: XPathSelector, XPathSelectorList, iterable, basestring
-    Output: list of unicodes
-    """
-    return _extract(locations, 'extract_unquoted')
+    locations = flatten([locations])
+
+    result = []
+    for location in locations:
+        if isinstance(location, XPathSelector):
+            if location.xmlNode.type in ('text', 'cdata') and use_unquote:
+                result.append(location.extract_unquoted())
+            else:
+                result.append(location.extract())
+        else:
+            result.append(location)
+    return result
 
 class ExtractImages(object):
     """
