@@ -169,12 +169,33 @@ extracted item into a file using `pickle`_::
 
 .. _pickle: http://docs.python.org/library/pickle.html
 
-What next?
+What else?
 ==========
 
 You've seen how to extract and store items from a website using Scrapy, but
 this is just the surface. Scrapy provides a lot of powerful features for making
-scraping easy and efficient.
+scraping easy and efficient, such as:
+
+* Built-in support for parsing HTML, XML, CSV, and Javascript 
+
+* A media pipeline for scraping items with images (or any other media) and
+  download the image files as well
+
+* Support for extending Scrapy by plugging your own functionality using
+  middlewares, extensions, and pipelines
+
+* Wide range of built-in middlewares and extensions for handling of
+  compression, cache, cookies, authentication, user-agent spoofing, robots.txt
+  handling, statistics, crawl depth restriction, etc
+
+* Interactive scraping shell console, very useful for developing and debugging
+
+* Web management console for monitoring and controlling your bot
+
+* Telnet console for low-level access to the Scrapy process
+
+What next?
+==========
 
 The next obvious steps are for you to `download Scrapy`_, read :ref:`the
 tutorial <intro-tutorial1>` and join `the community`_. Thanks for your
