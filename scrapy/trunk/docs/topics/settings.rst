@@ -20,9 +20,9 @@ precedence:
 
  1. Global overrides (most precedence)
  2. Environment variables
- 3. Per-command defaults
- 4. scrapy_settings
- 5. Global defaults (less precedence)
+ 3. scrapy_settings
+ 4. Default settings per-command
+ 5. Default global settings (less precedence)
 
 This mechanisms are described with more detail below.
 
@@ -30,7 +30,7 @@ This mechanisms are described with more detail below.
 -------------------
 
 Global overrides are the ones that takes most precedence, and are usually
-populated as a results of command line modifiers.
+populated by command line options.
 
 Example::
    >>> from scrapy.conf import settings
@@ -39,28 +39,31 @@ Example::
 2. Environment variables
 ------------------------
 
+.. highlight:: sh
+
 You can populate settings using environment variables prefixed with
 ``SCRAPY_``. For example, to change the log file location::
 
     $ export SCRAPY_LOG_FILE=/tmp/scrapy.log
     $ scrapy-ctl.py crawl example.com
 
-3. Per-command defaults
------------------------
-
-Each scrapy-ctl command can have its own default settings, which override the
-default Scrapy settings. Those custom command settings are usually located in
-inside scrapy.conf.commands, or inside the module specified in the
-:setting:`COMMANDS_SETTINGS_MODULE` setting.
-
-4. scrapy_settings
+3. scrapy_settings
 ------------------
 
 scrapy_settings is the standard configuration file for your Scrapy project.
 It's where most of your custom settings will be populated.
 
-5. Global defaults
-------------------
+4. Default settings per-command
+-------------------------------
+
+Each scrapy-ctl command can have its own default settings, which override the
+global default settings. Those custom command settings are located inside the
+``scrapy.conf.commands`` module, or you can specify custom settings to override
+per-comand inside your project, by writing them in the module referenced by the
+:setting:`COMMANDS_SETTINGS_MODULE` setting. Those settings will take more
+
+5. Default global settings
+--------------------------
 
 The global defaults are located in scrapy.conf.default_settings and documented
 in the :ref:`settings` page.
@@ -68,6 +71,8 @@ in the :ref:`settings` page.
 
 How to access settings
 ======================
+
+.. highlight:: python
 
 To access settings from Python code::
 
@@ -84,5 +89,5 @@ Rationale for setting names
 ===========================
 
 Setting names are usually prefixed with the component that they configure. For
-example, proper setting names for a fictitional robots.txt extension would be
+example, proper setting names for a fictional robots.txt extension would be
 ``ROBOTSTXT_ENABLED``, ``ROBOTSTXT_OBEY``, ``ROBOTSTXT_CACHEDIR``, etc.
