@@ -3,23 +3,25 @@ from unittest import TestCase, main
 from scrapy.http import Response
 from scrapy.contrib.downloadermiddleware.decompression import DecompressionMiddleware
 
-class ScrapyDecompressionTest(TestCase):
-    uncompressed_body = ''
+def setUp():
+    datadir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data', 'compressed')
+    formats = ['tar', 'xml.bz2', 'xml.gz', 'zip']
+
+    uncompressed_fd = open(os.path.join(datadir, 'feed-sample1.xml'), 'r')
+    uncompressed_body = uncompressed_fd.read()
+    uncompressed_fd.close()
+
     test_responses = {}
+    for format in formats:
+        fd = open(os.path.join(datadir, 'feed-sample1.' + format), 'r')
+        body = fd.read()
+        fd.close()
+        test_responses[format] = Response('foo.com', 'http://foo.com/bar', body=body)
+    return uncompressed_body, test_responses
+
+class ScrapyDecompressionTest(TestCase):
+    uncompressed_body, test_responses = setUp()
     middleware = DecompressionMiddleware()
-
-    def setUp(self):
-        self.datadir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data', 'compressed')
-        formats = ['tar', 'xml.bz2', 'xml.gz', 'zip']
-        uncompressed_fd = open(os.path.join(self.datadir, 'feed-sample1.xml'), 'r')
-        self.uncompressed_body = uncompressed_fd.read()
-        uncompressed_fd.close()
-
-        for format in formats:
-            fd = open(os.path.join(self.datadir, 'feed-sample1.' + format), 'r')
-            body = fd.read()
-            fd.close()
-            self.test_responses[format] = Response('foo.com', 'http://foo.com/bar', body=body)
 
     def test_tar(self):
         response, format = self.middleware.extract(self.test_responses['tar'])
