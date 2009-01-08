@@ -80,8 +80,11 @@ class Response(object) :
                            kw.get('url', self.url),
                            original_url=kw.get('original_url', self.original_url),
                            headers=kw.get('headers', sameheaders()),
-                           status=kw.get('status', self.status))
-        newresp.body = kw.get('body', samebody())
+                           status=kw.get('status', self.status),
+                           body=kw.get('body'))
+        # Response.__init__ forbids the use of ResponseBody instances
+        if 'body' not in kw:
+            newresp.body = samebody()
         return newresp
 
     def to_string(self):
