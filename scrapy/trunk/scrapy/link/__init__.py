@@ -49,7 +49,7 @@ class LinkExtractor(FixedSGMLParser):
         ret = []
         base_url = self.base_url if self.base_url else response_url
         for link in links:
-            link.url = urljoin(base_url, link.url).strip()
+            link.url = urljoin(base_url, link.url)
             link.url = safe_url_string(link.url, response_encoding)
             link.text = link.text.decode(response_encoding)
             ret.append(link)
