@@ -19,7 +19,7 @@ class XMLFeedSpider(BaseSpider):
     iterator = 'iternodes'
     itertag = 'item'
 
-    def process_results(self, results, response):
+    def process_spider_output(self, response, results):
         """This overridable method is called for each result (item or request)
         returned by the spider, and it's intended to perform any last time
         processing required before returning the results to the framework core,
@@ -40,7 +40,7 @@ class XMLFeedSpider(BaseSpider):
                 ret = [ret]
             if not isinstance(ret, (list, tuple)):
                 raise UsageError('You cannot return an "%s" object from a spider' % type(ret).__name__)
-            for result_item in self.process_results(ret, response):
+            for result_item in self.process_spider_output(response, ret):
                 yield result_item
 
     def parse(self, response):
@@ -71,7 +71,7 @@ class CSVFeedSpider(BaseSpider):
     delimiter = None # When this is None, python's csv module's default delimiter is used
     headers = None
 
-    def process_results(self, results, response):
+    def process_spider_output(self, response, results):
         """This method has the same purpose as the one in XMLFeedSpider"""
         return results
 
@@ -86,7 +86,7 @@ class CSVFeedSpider(BaseSpider):
                 ret = [ret]
             if not isinstance(ret, (list, tuple)):
                 raise UsageError('You cannot return an "%s" object from a spider' % type(ret).__name__)
-            for result_item in self.process_results(ret, response):
+            for result_item in self.process_spider_output(response, ret):
                 yield result_item
 
     def parse(self, response):
