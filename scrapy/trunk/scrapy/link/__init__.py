@@ -82,7 +82,7 @@ class LinkExtractor(FixedSGMLParser):
 
     def handle_data(self, data):
         if self.current_link and not self.current_link.text:
-            self.current_link.text = data
+            self.current_link.text = data.strip()
 
     def matches(self, url):
         """This extractor matches with any url, since

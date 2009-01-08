@@ -79,36 +79,41 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
 
         lx = RegexLinkExtractor()
         self.assertEqual([link for link in lx.extract_links(self.response)],
-            [ Link(url='http://example.com/sample1.html', text='sample 1'),
-              Link(url='http://example.com/sample2.html', text=''),
-              Link(url='http://example.com/sample3.html', text='sample 3 text'),
-              Link(url='http://www.google.com/something', text='') ])
+            [ Link(url='http://example.com/sample1.html', text=u''),
+              Link(url='http://example.com/sample2.html', text=u'sample 2'),
+              Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
+              Link(url='http://www.google.com/something', text=u'') ])
 
         lx = RegexLinkExtractor(allow=('sample', ))
         self.assertEqual([link for link in lx.extract_links(self.response)],
-            [ Link(url='http://example.com/sample1.html', text='sample 1'),
-              Link(url='http://example.com/sample2.html', text=''),
-              Link(url='http://example.com/sample3.html', text='sample 3 text') ])
+            [ Link(url='http://example.com/sample1.html', text=u''),
+              Link(url='http://example.com/sample2.html', text=u'sample 2'),
+              Link(url='http://example.com/sample3.html', text=u'sample 3 text') ])
 
         lx = RegexLinkExtractor(allow=('sample', ), unique=False)
         self.assertEqual([link for link in lx.extract_links(self.response)],
-            [ Link(url='http://example.com/sample1.html', text='sample 1'),
-              Link(url='http://example.com/sample2.html', text=''),
-              Link(url='http://example.com/sample3.html', text='sample 3 text'),
-              Link(url='http://example.com/sample3.html', text='sample 3 repetition') ])
+            [ Link(url='http://example.com/sample1.html', text=u''),
+              Link(url='http://example.com/sample2.html', text=u'sample 2'),
+              Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
+              Link(url='http://example.com/sample3.html', text=u'sample 3 repetition') ])
 
         lx = RegexLinkExtractor(allow=('sample', ), deny=('3', ))
         self.assertEqual([link for link in lx.extract_links(self.response)],
-            [ Link(url='http://example.com/sample1.html', text='sample 1'),
-              Link(url='http://example.com/sample2.html', text='') ])
+            [ Link(url='http://example.com/sample1.html', text=u''),
+              Link(url='http://example.com/sample2.html', text=u'sample 2') ])
 
         lx = RegexLinkExtractor(allow_domains=('google.com', ))
         self.assertEqual([link for link in lx.extract_links(self.response)],
-            [ Link(url='http://www.google.com/something', text='') ])
+            [ Link(url='http://www.google.com/something', text=u'') ])
 
         lx = RegexLinkExtractor(tags=('img', ), attrs=('src', ))
         self.assertEqual([link for link in lx.extract_links(self.response)],
-            [ Link(url='http://example.com/sample2.jpg', text='') ])
+            [ Link(url='http://example.com/sample2.jpg', text=u'') ])
+
+        lx = RegexLinkExtractor(restrict_xpaths=('//div[@id="subwrapper"]', ))
+        self.assertEqual([link for link in lx.extract_links(self.response)],
+            [ Link(url='http://example.com/sample1.html', text=u''),
+              Link(url='http://example.com/sample2.html', text=u'sample 2') ])
 
     def test_matches(self):
         url1 = 'http://lotsofstuff.com/stuff1/index'
