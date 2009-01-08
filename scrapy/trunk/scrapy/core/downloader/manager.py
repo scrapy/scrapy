@@ -43,15 +43,18 @@ class SiteDetails(object):
 
 
 class Downloader(object):
-    """Maintain many concurrent downloads and provide an HTTP abstraction
-    We will have a limited number of connections per domain and scrape many domains in
+    """Maintain many concurrent downloads and provide an HTTP abstraction.
+    It supports a limited number of connections per domain and many domains in
     parallel.
-
-    request(..) should be called to request resources using http, https or file
-    protocols.
     """
 
-    def __init__(self) :
+    def __init__(self, engine):
+        """Create the downlaoder. 
+        
+        ``engine`` is the scrapy engine controlling this downloader
+        """
+
+        self.engine = engine
         self.sites = {}
         self.middleware = DownloaderMiddlewareManager()
         self.middleware.download_function = self.enqueue
@@ -113,10 +116,8 @@ class Downloader(object):
             self._download(request, spider, deferred)
 
         if site.closed and site.is_idle():
-            # XXX: Remove scrapyengine reference
             del self.sites[domain]
-            from scrapy.core.engine import scrapyengine
-            scrapyengine.closed_domain(domain=domain)
+            self.engine.closed_domain(domain)
 
     def _download(self, request, spider, deferred):
         log.msg('Activating %s' % request.traceinfo(), log.TRACE)

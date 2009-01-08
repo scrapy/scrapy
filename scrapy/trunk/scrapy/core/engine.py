@@ -56,7 +56,7 @@ class ExecutionEngine(object):
         Configure execution engine with the given scheduling policy and downloader.
         """
         self.scheduler = scheduler or Scheduler()
-        self.downloader = downloader or Downloader()
+        self.downloader = downloader or Downloader(self)
         self.spidermiddleware = SpiderMiddlewareManager()
         self._scraping = {}
         self.pipeline = ItemPipelineManager()
