@@ -1,6 +1,17 @@
 from unittest import TestCase, main
 from scrapy.http import Response, ResponseBody
 
+class ResponseTest(TestCase):
+    def test_init(self):
+        # Response requires domain and url
+        self.assertRaises(Exception, Response)
+        self.assertRaises(Exception, Response, 'example.com')
+        self.assertTrue(isinstance(Response('example.com', 'http://example.com/'), Response))
+        # body can be str or None but not ResponseBody
+        self.assertTrue(isinstance(Response('example.com', 'http://example.com/', body=None), Response))
+        self.assertTrue(isinstance(Response('example.com', 'http://example.com/', body='body'), Response))
+        self.assertRaises(AssertionError, Response, 'example.com', 'http://example.com/', body=ResponseBody('body', 'utf-8'))
+
 class ResponseBodyTest(TestCase):
     unicode_string = u'\u043a\u0438\u0440\u0438\u043b\u043b\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0442\u0435\u043a\u0441\u0442'
 
