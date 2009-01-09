@@ -32,7 +32,7 @@ Scrapy requires Python 2.5 or 2.6.
 Does Scrapy "stole" X from Django?
 ----------------------------------
 
-Probably, but we don't like that word. We think Django is a great open source
+Probably, but we don't like that word. We think Django_ is a great open source
 project and an example to follow, so we've used it as an inspiration for
 Scrapy. 
 
@@ -46,3 +46,4 @@ focus on the real problems we need to solve.
 We'd be proud if Scrapy serves as an inspiration for other projects. Feel free
 to stole from us!
 
+.. _Django: http://www.djangoproject.com

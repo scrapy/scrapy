@@ -194,8 +194,8 @@ scraping easy and efficient, such as:
 
 * Telnet console for low-level access to the Scrapy process
 
-What next?
-==========
+What's next?
+============
 
 The next obvious steps are for you to `download Scrapy`_, read :ref:`the
 tutorial <intro-tutorial1>` and join `the community`_. Thanks for your

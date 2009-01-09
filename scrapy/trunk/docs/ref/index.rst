@@ -1,5 +1,9 @@
-Reference
-=========
+.. _ref-index:
+
+API Reference
+=============
+
+This section documents the API of Scrapy |version|. For more information see :ref:`misc-api-stability`.
 
 .. toctree::
    :maxdepth: 1
