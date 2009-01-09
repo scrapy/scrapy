@@ -6,6 +6,7 @@ import sys
 from twisted.python import log
 
 from scrapy.conf import settings
+from scrapy.utils.python import unicode_to_str
  
 # Logging levels
 levels = {
@@ -48,7 +49,8 @@ def msg(message, level=INFO, component=BOT_NAME, domain=None):
     """ Log message according to the level """
     component = "%s/%s" % (BOT_NAME, domain) if domain else component
     if level <= log_level:
-        log.msg("%s: %s" % (levels[level], message), system=component)
+        msg_txt = unicode_to_str("%s: %s" % (levels[level], message))
+        log.msg(msg_txt, system=component)
 
 def exc(message, level=ERROR, component=BOT_NAME, domain=None):
     from traceback import format_exc
