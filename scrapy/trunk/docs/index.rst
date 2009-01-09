@@ -16,6 +16,8 @@ Documentation Contents:
    topics/index
    ref/index
 
+   misc/index
+
 .. toctree::
    :maxdepth: 1
 
