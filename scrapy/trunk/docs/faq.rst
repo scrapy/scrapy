@@ -29,3 +29,20 @@ Does Scrapy work with Python 3.0?
 No, and there are no plans to port Scrapy to Python 3.0 yet. At the moment
 Scrapy requires Python 2.5 or 2.6.
 
+Does Scrapy "stole" X from Django?
+----------------------------------
+
+Probably, but we don't like that word. We think Django is a great open source
+project and an example to follow, so we've used it as an inspiration for
+Scrapy. 
+
+We believe that, if something is already done well, there's no need to reinvent
+it. This concept, besides being one of the foundations for open source and free
+software, not only applies to software but also to documentation, procedures,
+policies, etc. So, instead of going through each problem ourselves, we choose
+to copy ideas from those projects that have already solved them properly, and
+focus on the real problems we need to solve.
+
+We'd be proud if Scrapy serves as an inspiration for other projects. Feel free
+to stole from us!
+
