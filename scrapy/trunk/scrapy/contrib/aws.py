@@ -82,6 +82,6 @@ class AWSMiddleware(object):
 
     def process_request(self, request, spider):
         if spider.domain_name == 's3.amazonaws.com' \
-                or request.url.hostname.endswith('s3.amazonaws.com'):
+                or (request.url.hostname and request.url.hostname.endswith('s3.amazonaws.com')):
             request.headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
             sign_request(request, self.access_key, self.secret_key)
