@@ -55,20 +55,32 @@ def unique(list_, key=lambda x: x):
 
 
 def str_to_unicode(text, encoding='utf-8'):
+    """Return the unicode representation of text in the given encoding. Unlike
+    .encode(encoding) this function can be applied directly to a unicode
+    object without the risk of double-decoding problems (which can happen if
+    you don't use the default 'ascii' encoding)
+    """
+    
     if isinstance(text, str):
         return text.decode(encoding)
     elif isinstance(text, unicode):
         return text
     else:
-        raise TypeError('str_to_unicode can only receive a string object')
+        raise TypeError('str_to_unicode must receive a str or unicode object, got %s' % type(text).__name__)
 
 def unicode_to_str(text, encoding='utf-8'):
+    """Return the str representation of text in the given encoding. Unlike
+    .encode(encoding) this function can be applied directly to a str
+    object without the risk of double-decoding problems (which can happen if
+    you don't use the default 'ascii' encoding)
+    """
+
     if isinstance(text, unicode):
         return text.encode(encoding)
     elif isinstance(text, str):
         return text
     else:
-        raise TypeError('unicode_to_str can only receive a unicode object')
+        raise TypeError('unicode_to_str must receive a unicode or str object, got %s' % type(text).__name__)
 
 def re_rsearch(pattern, text, chunk_size=1024):
     """
