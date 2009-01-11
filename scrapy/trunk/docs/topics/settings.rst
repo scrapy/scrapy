@@ -4,6 +4,9 @@
 Settings
 ========
 
+.. module:: scrapy.conf
+   :synopsis: Settings manager
+
 The Scrapy settings allows you to customize the behaviour of all Scrapy
 components, including the core, extensions, pipelines and spiders themselves.
 
@@ -74,14 +77,69 @@ How to access settings
 
 .. highlight:: python
 
-To access settings from Python code::
+Here's an example of the simplest way to access settings from Python code::
 
    >>> from scrapy.conf import settings
    >>> print settings['LOG_ENABLED']
    True
 
-Available settings
-==================
+In other words, settings can be accesed like a dict, but it's usually preferred
+to extract the setting in the format you need it to avoid type errors. In order
+to do that you'll have to use one of the following methods:
+
+.. class:: scrapy.conf.Settings
+
+.. method:: get(name, default=None)
+
+   Get a setting value without affecting its original type.
+
+   ``name`` is a string with the setting name
+
+   ``default`` is the value to return if no setting is found
+
+.. method:: getbool(name, deafult=Flse)
+
+   Get a setting value as a boolean. For example, both ``1`` and ``'1'``, and
+   ``True`` return ``True``, while ``0``, ``'0'``, ``False`` and ``None``
+   return ``False````
+
+   For example, settings populated through environment variables set to ``'0'``
+   will return ``False`` when using this method.
+
+   ``name`` is a string with the setting name
+
+   ``default`` is the value to return if no setting is found
+
+.. method:: getint(name, default=0)
+
+   Get a setting value as an int
+
+   ``name`` is a string with the setting name
+
+   ``default`` is the value to return if no setting is found
+
+.. method:: getfloat(name, default=0.0)
+
+   Get a setting value as a float
+
+   ``name`` is a string with the setting name
+
+   ``default`` is the value to return if no setting is found
+
+.. method:: getlist(name, default=None)
+
+   Get a setting value as a list. If the setting original type is a list it
+   will be returned verbatim. If it's a string it will be splitted by ",".
+
+   For example, settings populated through environment variables set to
+   ``'one,two'`` will return a list ['one', 'two'] when using this method.
+
+   ``name`` is a string with the setting name
+
+   ``default`` is the value to return if no setting is found
+
+Available built-in settings
+===========================
 
 See :ref:`settings`.
 
