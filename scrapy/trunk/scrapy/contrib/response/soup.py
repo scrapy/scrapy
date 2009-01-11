@@ -1,12 +1,7 @@
 """
-The ResponseSoup extension causes the Response objects to grow a new method
-("getsoup") which returns a (cached) BeautifulSoup object of its body, and a
-"soup" attribute with the same effect. The soup argument is provided for
-convenience, but you cannot pass any BeautifulSoup constructor arguments (which
-you can do with the getsoup() method).
+ResponseSoup extension 
 
-For more information about BeautifulSoup see:
-http://www.crummy.com/software/BeautifulSoup/documentation.html
+See documentation in docs/ref/extensions.rst
 """ 
 
 from BeautifulSoup import BeautifulSoup
@@ -20,6 +15,7 @@ class ResponseSoup(object):
         setattr(Response, 'soup', property(getsoup))
 
 def getsoup(response, **kwargs):
+    # TODO: use different cache buckets depending on constructor parameters
     if not hasattr(response, '_soup'):
         body = response.body.to_string() if response.body is not None else ""
         setattr(response, '_soup', BeautifulSoup(body, **kwargs))

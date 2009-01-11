@@ -1,19 +1,24 @@
 """
 Scheduler information module for Scrapy webconsole
+
+FIXME: this webconsole extension needs to be fixed after we removed
+PriorityStack/Queue from the scheduler and replace them by bisect or something
+like that.
 """
+
 from pydispatch import dispatcher
-from scrapy.core import signals
 from scrapy.core.engine import scrapyengine
-from scrapy.spider import spiders
-from scrapy.management.web import banner
+from scrapy.management.web import banner, webconsole_discover_module
 
 class SchedulerStats(object):
     webconsole_id = 'scheduler'
     webconsole_name = 'Scheduler queue'
 
     def __init__(self):
-        from scrapy.management.web import webconsole_discover_module
         dispatcher.connect(self.webconsole_discover_module, signal=webconsole_discover_module)
+
+    def webconsole_discover_module(self):
+        return self
 
     def webconsole_render(self, wc_request):
         s = banner(self)
@@ -36,6 +41,3 @@ class SchedulerStats(object):
         s += "</html>\n"
 
         return s
-
-    def webconsole_discover_module(self):
-        return self

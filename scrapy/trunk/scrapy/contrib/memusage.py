@@ -1,3 +1,9 @@
+"""
+MemoryUsage extension
+
+See documentation in docs/ref/extensions.rst
+"""
+
 import sys
 import os
 import pprint

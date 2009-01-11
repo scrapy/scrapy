@@ -82,7 +82,6 @@ EXTENSIONS = [
     'scrapy.xpath.extension.ResponseLibxml2',
     'scrapy.management.web.WebConsole',
     'scrapy.management.telnet.TelnetConsole',
-    'scrapy.contrib.webconsole.schedstats.SchedulerStats',
     'scrapy.contrib.webconsole.livestats.LiveStats',
     'scrapy.contrib.webconsole.spiderctl.Spiderctl',
     'scrapy.contrib.webconsole.enginestatus.EngineStatus',

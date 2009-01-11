@@ -5,7 +5,7 @@ from datetime import datetime
 from pydispatch import dispatcher
 from scrapy.core import signals
 from scrapy.core.engine import scrapyengine
-from scrapy.management.web import banner
+from scrapy.management.web import banner, webconsole_discover_module
 
 class SpiderStats(object):
     def __init__(self):
@@ -25,24 +25,23 @@ class LiveStats(object):
         dispatcher.connect(self.item_scraped, signal=signals.item_scraped)
         dispatcher.connect(self.response_downloaded, signal=signals.response_downloaded)
 
-        from scrapy.management.web import webconsole_discover_module
         dispatcher.connect(self.webconsole_discover_module, signal=webconsole_discover_module)
 
     def domain_open(self, domain, spider):
         pstats = SpiderStats()
         self.domains[spider.domain_name] = pstats
-        pstats.started = datetime.now()
+        pstats.started = datetime.now().replace(microsecond=0)
         pstats.finished = None
 
     def domain_closed(self, domain, spider):
-        self.domains[spider.domain_name].finished = datetime.now()
+        self.domains[spider.domain_name].finished = datetime.now().replace(microsecond=0)
 
     def item_scraped(self, item, spider):
         self.domains[spider.domain_name].scraped += 1
 
     def response_downloaded(self, response, spider):
-        #sometimes we download responses without opening/closing domains,
-        #for example from scrapy shell
+        # sometimes we download responses without opening/closing domains,
+        # for example from scrapy shell
         if self.domains.get(spider.domain_name):
             self.domains[spider.domain_name].crawled += 1
             

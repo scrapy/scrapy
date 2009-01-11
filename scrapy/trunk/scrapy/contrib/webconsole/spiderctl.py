@@ -139,6 +139,7 @@ class Spiderctl(object):
 
     def webconsole_control(self, wc_request):
         args = wc_request.args
+        enabled_domains = spiders.asdict(include_disabled=False).keys()
         s = "<hr />\n"
         if "reloadspiders" in args:
             scrapymanager.reload_spiders()
@@ -164,7 +165,7 @@ class Spiderctl(object):
             scheduled = []
             to_remove = set([d.strip() for d in args["bulk_remove_domains"][0].split("\n")])
             removed = set([d for d in scrapyengine.scheduler.pending_domains if d in to_remove])
-            scrapyengine.scheduler.pending_domains = [d for d in execengine.scheduler.pending_domains if d not in removed]
+            scrapyengine.scheduler.pending_domains = [d for d in scrapyengine.scheduler.pending_domains if d not in removed]
             if removed:
                 s += "<p>"
                 s += "Removed: <ul><li>%s</li></ul>" % "</li><li>".join(removed)

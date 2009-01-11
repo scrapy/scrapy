@@ -1,3 +1,9 @@
+"""
+MemoryDebugger extension
+
+See documentation in docs/ref/extensions.rst
+"""
+
 import pprint
 import gc
 import socket
