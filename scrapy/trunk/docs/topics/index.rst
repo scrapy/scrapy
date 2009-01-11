@@ -17,4 +17,7 @@ This section introduces all key concepts of Scrapy.
    downloader-middleware
    spider-middleware
    settings
+   extensions
+   stats
+   webconsole
    robotstxt

@@ -10,5 +10,7 @@ This section documents the API of Scrapy |version|. For more information see :re
 
    exceptions
    request-response
+   extension-manager
+   extensions
    settings
    signals

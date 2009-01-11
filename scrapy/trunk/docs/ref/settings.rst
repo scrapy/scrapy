@@ -77,7 +77,7 @@ CACHE2_SECTORIZE
 
 Default: ``True``
 
-Wether to split HTTP cache storage in several dirs for performance improvements.
+Whether to split HTTP cache storage in several dirs for performance improvements.
 
 .. setting:: CLOSEDOMAIN_NOTIFY
 
@@ -269,7 +269,7 @@ DEPTH_STATS
 
 Default: ``True``
 
-Wether to collect depth stats.
+Whether to collect depth stats.
 
 .. setting:: DOWNLOADER_MIDDLEWARES
 
@@ -304,7 +304,7 @@ DOWNLOADER_STATS
 
 Default: ``True``
 
-Wether to enable downloader stats collection.
+Whether to enable downloader stats collection.
 
 .. setting:: DOWNLOAD_TIMEOUT
 
@@ -338,7 +338,6 @@ Default::
         'scrapy.xpath.extension.ResponseLibxml2',
         'scrapy.management.web.WebConsole',
         'scrapy.management.telnet.TelnetConsole',
-        'scrapy.contrib.webconsole.schedstats.SchedulerStats',
         'scrapy.contrib.webconsole.livestats.LiveStats',
         'scrapy.contrib.webconsole.spiderctl.Spiderctl',
         'scrapy.contrib.webconsole.enginestatus.EngineStatus',
@@ -355,8 +354,12 @@ Default::
         'scrapy.contrib.response.soup.ResponseSoup',
     ]
 
-The list of enabled extensions. Keep in mind that some of them may also need to
-be activated through a setting.
+The list of available extensions. Keep in mind that some of them need need to
+be enabled through a setting. By default, this setting contains all stable
+built-in extensions. 
+
+For more information See the :ref:`extensions user guide  <topics-extensions>`
+and the :ref:`list of available extensions <ref-extensions>`.
 
 .. setting:: GROUPSETTINGS_ENABLED
 
@@ -365,7 +368,7 @@ GROUPSETTINGS_ENABLED
 
 Default: ``False``
 
-Wether to enable group settings where spiders pull their settings from.
+Whether to enable group settings where spiders pull their settings from.
 
 .. setting:: GROUPSETTINGS_MODULE
 
@@ -449,14 +452,18 @@ MEMDEBUG_ENABLED
 
 Default: ``False``
 
-Wether to enable memory debugging.
+Whether to enable memory debugging.
 
 .. setting:: MEMDEBUG_NOTIFY
 
+MEMDEBUG_NOTIFY
+---------------
+
 Default: ``[]``
 
-If memory debugging is enabled a memory report will be sent to the specified
-addresses.
+When memory debugging is enabled a memory report will be sent to the specified
+addresses if this setting is not empty, otherwise the report will be written to
+the log.
 
 Example::
 
@@ -471,9 +478,11 @@ Default: ``False``
 
 Scope: ``scrapy.contrib.memusage``
 
-Wether to enable the memory usage extension that will shutdown the Scrapy
+Whether to enable the memory usage extension that will shutdown the Scrapy
 process when it exceeds a memory limit, and also notify by email when that
 happened.
+
+See :ref:`ref-extensions-memusage`.
 
 .. setting:: MEMUSAGE_LIMIT_MB
 
@@ -486,6 +495,8 @@ Scope: ``scrapy.contrib.memusage``
 
 The maximum amount of memory to allow (in megabytes) before shutting down
 Scrapy  (if MEMUSAGE_ENABLED is True). If zero, no check will be performed.
+
+See :ref:`ref-extensions-memusage`.
 
 .. setting:: MEMUSAGE_NOTIFY_MAIL
 
@@ -502,6 +513,8 @@ Example::
 
     MEMUSAGE_NOTIFY_MAIL = ['user@example.com']
 
+See :ref:`ref-extensions-memusage`.
+
 .. setting:: MEMUSAGE_REPORT
 
 MEMUSAGE_REPORT
@@ -511,12 +524,14 @@ Default: ``False``
 
 Scope: ``scrapy.contrib.memusage``
 
-Wether to send a memory usage report after each domain has been closed.
+Whether to send a memory usage report after each domain has been closed.
+
+See :ref:`ref-extensions-memusage`.
 
 .. setting:: MEMUSAGE_WARNING_MB
 
-MEMUSAGE_LIMIT_MB
------------------
+MEMUSAGE_WARNING_MB
+-------------------
 
 Default: ``0``
 
