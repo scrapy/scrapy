@@ -20,5 +20,4 @@ This section introduces all key concepts of Scrapy.
    extensions
    stats
    webconsole
-   email
    robotstxt

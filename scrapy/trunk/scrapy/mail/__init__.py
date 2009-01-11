@@ -1,7 +1,7 @@
 """
 Mail sending helpers
 
-See documentation in docs/topics/email.rst
+See documentation in docs/ref/email.rst
 """
 import smtplib
 
