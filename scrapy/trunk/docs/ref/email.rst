@@ -7,13 +7,14 @@ Sending email
 .. module:: scrapy.mail
    :synopsis: Helpers to easily send e-mail.
 
-Although Python makes sending e-mail relatively easy via the `smtplib library`_,
-Scrapy provides a couple of light wrappers over it, to make sending e-mail
-extra quick.
+Although Python makes sending e-mail relatively easy via the `smtplib`_
+library, Scrapy provides its own class for sending emails which is very easy to
+use and it's implemented using `Twisted non-blocking IO`_, to avoid affecting
+the crawling performance.
 
-The code lives in a single module: ``scrapy.mail``.
+.. _smtplib: http://docs.python.org/library/smtplib.html
 
-.. _smtplib library: http://docs.python.org/library/smtplib.html
+It also has built-in support for sending attachments.
 
 Quick example
 =============
@@ -25,14 +26,11 @@ Here's a quick example of how to send an email (without attachments)::
     mailer = MailSender()
     mailer.send(to=["someone@example.com"], "Some subject", "Some body", cc=["another@example.com"])
 
-MailSender class
-================
+MailSender class reference
+==========================
 
-MailSender is the class used to send emails from Scrapy. It's
-currently only a wrapper over the (IO blocking) `smtplib`_
-library but it's gonna be ported to Twisted soon.
-
-.. _smtplib: http://docs.python.org/library/smtplib.html
+MailSender is the preferred class to use for sending emails from Scrapy, as it
+uses `Twisted non-blocking IO`_, like the rest of the framework. 
 
 .. class:: scrapy.mail.MailSender(smtphost, mailfrom)
 
@@ -42,7 +40,7 @@ library but it's gonna be ported to Twisted soon.
     ``mailfrom`` is a string with the email address to use for sending messages
     (in the ``From:`` header). If omitted, :setting:`MAIL_FROM` will be used.
 
-.. method:: send(to, subject, body, cc=None, attachs=None)
+.. method:: send(to, subject, body, cc=None, attachs=())
 
     Send mail to the given recipients
         
@@ -59,3 +57,5 @@ library but it's gonna be ported to Twisted soon.
         ``mimetype`` is the mimetype of the attachment
         ``file_object`` is a readable file object
 
+
+.. _Twisted non-blocking IO: http://twistedmatrix.com/projects/core/documentation/howto/async.html
