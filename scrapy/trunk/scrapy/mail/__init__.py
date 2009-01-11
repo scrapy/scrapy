@@ -1,3 +1,8 @@
+"""
+Mail sending helpers
+
+See documentation in docs/topics/email.rst
+"""
 import smtplib
 
 from email.MIMEMultipart import MIMEMultipart
@@ -20,14 +25,6 @@ class MailSender(object):
             raise NotConfigured("MAIL_HOST and MAIL_FROM settings are required")
 
     def send(self, to, subject, body, cc=None, attachs=None):
-        """
-        Send mail to the given recipients
-        
-        - to: must be a list of email recipients
-        - attachs must be a list of tuples: (attach_name, mimetype, file_object)
-        - body and subjet must be a string
-        """
-
         msg = MIMEMultipart()
         msg['From'] = self.mailfrom
         msg['To'] = COMMASPACE.join(to)
