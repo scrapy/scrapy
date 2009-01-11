@@ -1,4 +1,4 @@
-.. _topics-email:
+.. _ref-email:
 
 =============
 Sending email
@@ -29,15 +29,18 @@ MailSender class
 ================
 
 MailSender is the class used to send emails from Scrapy. It's
-currently only a warpper over the (IO blocking) smtplib
+currently only a wrapper over the (IO blocking) `smtplib`_
 library but it's gonna be ported to Twisted soon.
+
+.. _smtplib: http://docs.python.org/library/smtplib.html
 
 .. class:: scrapy.mail.MailSender(smtphost, mailfrom)
 
-    ``smtphost`` is a string with the SMTP host to use for sending the emails
+    ``smtphost`` is a string with the SMTP host to use for sending the emails.
+    If omitted, :setting:`MAIL_HOST` will be used.
 
     ``mailfrom`` is a string with the email address to use for sending messages
-    (in the ``From:`` header)
+    (in the ``From:`` header). If omitted, :setting:`MAIL_FROM` will be used.
 
 .. method:: send(to, subject, body, cc=None, attachs=None)
 

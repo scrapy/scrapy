@@ -441,9 +441,18 @@ MAIL_FROM
 
 Default: ``'scrapy@localhost'``
 
-Scope: ``scrapy.mail``
+Email to use as sender address for sending emails using the :ref:`Scrapy e-mail
+sending facility <ref-email>`.
 
-Host to use for sending notification emails from Scrapy.
+.. setting:: MAIL_HOST
+
+MAIL_HOST
+---------
+
+Default: ``'localhost'``
+
+Host to use for sending emails using the :ref:`Scrapy e-mail sending facility
+<ref-email>`.
 
 .. setting:: MEMDEBUG_ENABLED
 
