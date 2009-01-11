@@ -1,10 +1,12 @@
 """
 Extensions for debugging Scrapy 
+
+See documentation in docs/ref/extensions.rst
 """
 import signal
 import traceback
 
-class StackTraceDebug(object):
+class StackTraceDump(object):
     def __init__(self):
         try:
             signal.signal(signal.SIGUSR1, self.dump_stacktrace)

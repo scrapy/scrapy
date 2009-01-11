@@ -350,7 +350,7 @@ Default::
         'scrapy.contrib.pbcluster.ClusterMasterWeb',
         'scrapy.contrib.pbcluster.ClusterCrawler',
         'scrapy.contrib.closedomain.CloseDomain',
-        'scrapy.contrib.debug.StackTraceDebug',
+        'scrapy.contrib.debug.StackTraceDump',
         'scrapy.contrib.response.soup.ResponseSoup',
     ]
 

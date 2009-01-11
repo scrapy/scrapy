@@ -147,13 +147,13 @@ settings:
 
 Other conditions will be supported in the future.
 
-Stack trace debug extension
+Stack trace dump extension
 ---------------------------
 
 .. module:: scrapy.contrib.debug
    :synopsis: Extensions for debugging Scrapy
 
-.. class:: scrapy.contrib.debug.StackTraceDebug
+.. class:: scrapy.contrib.debug.StackTraceDump
 
 Adds a `SIGUSR1`_ signal handler which dumps the stack trace of a runnning
 Scrapy process when a ``SIGUSR1`` signal is catched. After the stack trace is

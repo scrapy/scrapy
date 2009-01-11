@@ -1,5 +1,7 @@
 """ 
-Crawler logging functionality
+Scrapy logging facility
+
+See documentation in docs/ref/logging.rst
 """
 import sys
 

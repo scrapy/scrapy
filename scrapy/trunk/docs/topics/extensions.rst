@@ -40,7 +40,7 @@ by a string: the full Python path to the extension's class name. For example::
         'scrapy.management.telnet.TelnetConsole',
         'scrapy.contrib.webconsole.enginestatus.EngineStatus',
         'scrapy.contrib.webconsole.stats.StatsDump',
-        'scrapy.contrib.debug.StackTraceDebug',
+        'scrapy.contrib.debug.StackTraceDump',
     ]
 
 
