@@ -14,4 +14,5 @@ This section documents the API of Scrapy |version|. For more information see :re
    extensions
    settings
    signals
+   logging
    email
