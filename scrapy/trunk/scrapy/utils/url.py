@@ -143,13 +143,12 @@ def canonicalize_url(url, keep_blank_values=False, keep_fragments=False):
 
     For examples see the tests in scrapy.tests.test_utils_url
     """
-
     url = unicode_to_str(url)
-    parts = list(urlparse.urlparse(url))
-    keyvals = cgi.parse_qsl(parts[4], keep_blank_values)
+    scheme, netloc, path, params, query, fragment = urlparse.urlparse(url)
+    keyvals = cgi.parse_qsl(query, keep_blank_values)
     keyvals.sort()
-    parts[2] = urllib.quote(urllib.unquote(parts[2]))
-    parts[4] = urllib.urlencode(keyvals)
-    if not keep_fragments:
-        parts[5] = ''
-    return urlparse.urlunparse(parts)
+    query = urllib.urlencode(keyvals)
+    path = urllib.quote(urllib.unquote(path))
+    fragment = '' if not keep_fragments else fragment
+    return urlparse.urlunparse((scheme, netloc, path, params, query, fragment))
+
