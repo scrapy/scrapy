@@ -23,7 +23,7 @@ def _valid_download_delay(obj):
 
 class ISpider(Interface, IPlugin) :
     """Interface to be implemented by site-specific web spiders"""
-    
+
     domain_name = Attribute(
          """The domain name of the site to be scraped.""")
 
@@ -48,9 +48,9 @@ class ISpider(Interface, IPlugin) :
 class BaseSpider(object):
     """Base class for scrapy spiders. All spiders must inherit from this
     class.
-    
+
     """
-    
+
     implements(ISpider)
 
     start_urls = []
@@ -86,10 +86,7 @@ class BaseSpider(object):
         """
         if urls is None:
             urls = self.start_urls
-        requests = [Request(url, callback=self.parse, dont_filter=True) for url in urls]
-        return requests
-        
-        return []
+        return [Request(url, callback=self.parse, dont_filter=True) for url in urls]
 
     def parse(self, response):
         """This is the default callback function used to parse the start
