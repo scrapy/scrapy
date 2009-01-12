@@ -1,10 +1,20 @@
+"""
+Common downloader middleare
+
+See documentation in docs/ref/downloader-middleware.rst
+"""
+
+from scrapy.conf import settings
+
 class CommonMiddleware(object):
-    """This middleware provides common/basic functionality, and should always
-    be enabled"""
+
+    def __init__(self):
+        self.header_accept = settings.get('REQUEST_HEADER_ACCEPT')
+        self.header_accept_language = settings.get('REQUEST_HEADER_ACCEPT_LANGUAGE')
 
     def process_request(self, request, spider):
-        request.headers.setdefault('Accept-Language', 'en')
-        request.headers.setdefault('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8')
+        request.headers.setdefault('Accept', self.header_accept)
+        request.headers.setdefault('Accept-Language', self.header_accept_language)
         if request.method == 'POST':
             request.headers.setdefault('Content-Type', 'application/x-www-form-urlencoded')
 

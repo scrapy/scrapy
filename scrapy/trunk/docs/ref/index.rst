@@ -12,6 +12,7 @@ This section documents the API of Scrapy |version|. For more information see :re
    request-response
    extension-manager
    extensions
+   downloader-middleware
    settings
    signals
    logging

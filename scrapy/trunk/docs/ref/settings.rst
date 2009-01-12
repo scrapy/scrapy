@@ -574,6 +574,30 @@ Example::
 
     NEWSPIDER_MODULE = 'mybot.spiders_dev'
 
+.. setting:: REQUEST_HEADER_ACCEPT
+
+REQUEST_HEADER_ACCEPT
+---------------------
+
+Default: ``'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'``
+
+Default value to use for the ``Accept`` request header (if not already set
+before). 
+
+See :ref:`ref-downloader-middleware-common`.
+
+.. setting:: REQUEST_HEADER_ACCEPT_LANGUAGE
+
+REQUEST_HEADER_ACCEPT_LANGUAGE
+------------------------------
+
+Default: ``'en'``
+
+Default value to use for the ``Accept-Language`` request header, if not already
+set before. 
+
+See :ref:`ref-downloader-middleware-common`.
+
 .. setting:: REQUESTS_QUEUE_SIZE
 
 REQUESTS_PER_DOMAIN

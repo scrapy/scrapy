@@ -129,6 +129,9 @@ NEWSPIDER_MODULE = ''
 
 PRIORITIZER = 'scrapy.core.prioritizers.RandomPrioritizer'
 
+REQUEST_HEADER_ACCEPT = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+REQUEST_HEADER_ACCEPT_LANGUAGE = 'en'
+
 REQUESTS_QUEUE_SIZE = 0
 REQUESTS_PER_DOMAIN = 8     # max simultaneous requests per domain
 
