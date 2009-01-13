@@ -1,26 +1,34 @@
 import unittest
-from scrapy.utils.datatypes import PriorityQueue
+
+from scrapy.utils.datatypes import PriorityQueue, PriorityStack
 
 class DatatypesTestCase(unittest.TestCase):
 
     def test_priority_queue(self):
+
+        input = [('five', 5), ('three-1', 3), ('three-2', 3), ('six', 6), ('one', 1)]
+        output = [('one', 1), ('three-1', 3), ('three-2', 3), ('five', 5), ('six', 6)]
+
         pq = PriorityQueue()
+        for item, prio in input:
+            pq.push(item, prio)
+        out = []
+        while pq:
+            out.append(pq.pop())
+        self.assertEqual(out, output)
 
-        pq.put('b', priority=1)
-        pq.put('a', priority=1)
-        pq.put('c', priority=1)
-        pq.put('z', priority=0)
-        pq.put('d', priority=2)
+    def test_priority_stack(self):
 
-        v = []
-        p = []
-        while not pq.empty():
-            priority, value = pq.get()
-            v.append(value)
-            p.append(priority)
+        input = [('five', 5), ('three-1', 3), ('three-2', 3), ('six', 6), ('one', 1)]
+        output = [('one', 1), ('three-2', 3), ('three-1', 3), ('five', 5), ('six', 6)]
 
-        self.assertEqual(v, ['z', 'b', 'a', 'c', 'd'])
-        self.assertEqual(p, [0, 1, 1, 1, 2])
+        pq = PriorityStack()
+        for item, prio in input:
+            pq.push(item, prio)
+        out = []
+        while pq:
+            out.append(pq.pop())
+        self.assertEqual(out, output)
 
 if __name__ == "__main__":
     unittest.main()

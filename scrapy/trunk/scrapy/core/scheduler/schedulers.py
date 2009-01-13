@@ -14,17 +14,16 @@ from scrapy.conf import settings
 
 class Scheduler(object) :
     """
-    The scheduler decides what to scrape, how fast, and in what order.
-    The scheduler schedules websites and pages to be scraped. Individual
-    web pages that are to be scraped are batched up into a "run" for a website.
-    As the domain is being scraped, pages that are discovered are added to the
-    scheduler. The scheduler must not allow the same page to be requested
-    multiple times within the same batch.
+    The scheduler decides what to scrape next. In other words, it defines the
+    crawling order.  The scheduler schedules websites and requests to be
+    scraped.  Individual web pages that are to be scraped are batched up into a
+    "run" for a website.  As the domain is being scraped, pages that are
+    discovered are added to the scheduler. 
 
     Typical usage:
 
-    * next_availble_domain() called to find out when there is something to do
-    * begin_domain() called to commence scraping a website
+    * next_available_domain() called to find out when there is something to do
+    * open_domain() called to commence scraping a website
     * enqueue_request() called multiple times when new links found
     * next_request() called multiple times when there is capacity to process urls
     * close_domain() called when there are no more pages or upon error
@@ -66,14 +65,14 @@ class Scheduler(object) :
 
     def domain_has_pending(self, domain):
         if domain in self.pending_requests:
-            return not self.pending_requests[domain].empty()
+            return bool(self.pending_requests[domain])
 
     def next_domain(self) :
         """
         Return next domain available to scrape and remove it from available domains queue
         """
         if self.pending_domains_count:
-            priority, domain = self.domains_queue.get_nowait()
+            domain, priority = self.domains_queue.pop()
             if self.pending_domains_count[domain] == 1:
                 del self.pending_domains_count[domain]
             else:
@@ -88,7 +87,7 @@ class Scheduler(object) :
         domain can be scheduled twice, either with the same or with different
         priority.
         """
-        self.domains_queue.put(domain, priority=priority)
+        self.domains_queue.push(domain, priority)
         if domain not in self.pending_domains_count:
             self.pending_domains_count[domain] = 1
         else:
@@ -114,7 +113,7 @@ class Scheduler(object) :
 
         if request.dont_filter or added:
             deferred = defer.Deferred()
-            self.pending_requests[domain].put((request, deferred), priority)
+            self.pending_requests[domain].push((request, deferred), priority)
             return deferred
         else:
             return defer_fail(IgnoreRequest('Skipped (already visited): %s' % request))
@@ -133,8 +132,8 @@ class Scheduler(object) :
         None should be returned if there are no more request pending for the domain passed.
         """
         pending_list = self.pending_requests.get(domain)
-        if pending_list and not pending_list.empty():
-            return pending_list.get_nowait()[1]
+        if pending_list:
+            return pending_list.pop()[0]
         else:
             return (None, None)
 

@@ -5,11 +5,11 @@ Python Standard Library.
 This module must not depend on any module outside the Standard Library.
 """
 
+import time
 import copy
 import gzip
-import Queue
-import bisect
 from cStringIO import StringIO
+from heapq import heappush, heappop
 
 class MergeDict(object):
     """
@@ -407,43 +407,31 @@ class CaselessDict(dict):
     def pop(self, key, def_val=None):
         return dict.pop(self, self.normkey(key), def_val)
 
+class PriorityQueue(object):
+    """A simple priority queue"""
 
-class PriorityQueue(Queue.Queue):
+    def __init__(self):
+        self.items = []
 
-    def __len__(self):
-        return self.qsize()
+    def push(self, item, priority=0):
+        heappush(self.items, (priority, time.time(), item))
 
-    def _init(self, maxsize):
-        self.maxsize = maxsize
-        # Python 2.5 uses collections.deque, but we can't because
-        # we need insert(pos, item) for our priority stuff
-        self.queue = []
+    def pop(self):
+        priority, _, item = heappop(self.items)
+        return item, priority
 
-    def put(self, item, priority=0, block=True, timeout=None):
-        """Puts an item onto the queue with a numeric priority (default is zero).
-        
-        Note that we are "shadowing" the original Queue.Queue put() method here.
-        """
-        Queue.Queue.put(self, (priority, item), block, timeout)
+    def __iter__(self):
+        return ((priority, item) for priority, _, item in self.items)
 
-    def _put(self, item):
-        """Override of the Queue._put to support prioritisation."""
-        # Priorities must be integers!
-        priority = int(item[0])
-
-        # Using a tuple (priority+1,) finds us the correct insertion
-        # position to maintain the existing ordering.
-        self.queue.insert(bisect.bisect_left(self.queue, (priority+1,)), item)
-
-    def _get(self):
-        """Override of Queue._get().  Strips the priority."""
-        return self.queue.pop(0)
-
+    def __nonzero__(self):
+        return bool(self.items)
 
 class PriorityStack(PriorityQueue):
-    def _put(self, item):
-        priority = int(item[0])
-        self.queue.insert(bisect.bisect_left(self.queue, (priority,)), item)
+    """A simple priority stack which is similar to PriorityQueue but pops its
+    items in reverse order (for the same priority)"""
+
+    def push(self, item, priority=0):
+        heappush(self.items, (priority, -time.time(), item))
 
 class gzStringIO:
     """a file like object, similar to StringIO, but gzip-compressed."""
