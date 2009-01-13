@@ -7,8 +7,6 @@ This module must not depend on any module outside the Standard Library.
 
 import time
 import copy
-import gzip
-from cStringIO import StringIO
 from heapq import heappush, heappop
 
 class MultiValueDictKeyError(KeyError):
