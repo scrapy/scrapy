@@ -1,16 +1,14 @@
 """
-Scheduler information module for Scrapy webconsole
+Scheduler queue web console module 
 
-FIXME: this webconsole extension needs to be fixed after we removed
-PriorityStack/Queue from the scheduler and replace them by bisect or something
-like that.
+See documentation in docs/ref/extensions.rst
 """
 
 from pydispatch import dispatcher
 from scrapy.core.engine import scrapyengine
 from scrapy.management.web import banner, webconsole_discover_module
 
-class SchedulerStats(object):
+class SchedulerQueue(object):
     webconsole_id = 'scheduler'
     webconsole_name = 'Scheduler queue'
 
@@ -23,16 +21,12 @@ class SchedulerStats(object):
     def webconsole_render(self, wc_request):
         s = banner(self)
         s += "<ul>\n"
-        for domain, requests in scrapyengine.scheduler.pending_requests.iteritems():
+        for domain, request_queue in scrapyengine.scheduler.pending_requests.iteritems():
             s += "<li>\n"
-            s += "%s (<b>%s</b> pages)\n" % (domain, len(requests))
+            s += "%s (<b>%s</b> requests)\n" % (domain, len(request_queue))
             s += "<ul>\n"
-            # requests is a tuple of request and deffered now, as I understand
-            for r, d in requests:
-                if hasattr(r, 'url'):
-                    s += "<li><a href='%s'>%s</a></li>\n" % (r.url, r.url)
-                #else:
-                #    s += "<li>%s</li>\n" % (repr(r))
+            for ((req, _), prio) in request_queue:
+                s += "<li><a href='%s'>%s</a> (priority: %d)</li>\n" % (req.url, req.url, prio)
             s += "</ul>\n"
             s += "</li>\n" 
         s += "</ul>\n"

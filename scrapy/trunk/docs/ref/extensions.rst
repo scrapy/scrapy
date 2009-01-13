@@ -205,6 +205,17 @@ extension" is abbreviated as "WC extension".
 For more information see the see the :ref:`web console documentation
 <topics-webconsole>`.
 
+Scheduler queue WC extension
+----------------------------
+
+.. module:: scrapy.contrib.webconsole.scheduler
+   :synopsis: Scheduler queue web console extension
+
+.. class:: scrapy.contrib.webconsole.scheduler.SchedulerQueue
+
+Display a list of all pending Requests in the Scheduler queue, grouped by
+domain/spider.
+
 Spider live stats WC extension
 ------------------------------
 
