@@ -420,8 +420,11 @@ class PriorityQueue(object):
         priority, _, item = heappop(self.items)
         return item, priority
 
+    def __len__(self):
+        return len(self.items)
+
     def __iter__(self):
-        return ((priority, item) for priority, _, item in self.items)
+        return ((item, priority) for priority, _, item in self.items)
 
     def __nonzero__(self):
         return bool(self.items)
