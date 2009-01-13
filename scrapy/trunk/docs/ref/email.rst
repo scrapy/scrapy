@@ -52,7 +52,9 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
 
     ``body`` is a string with the body of the message
 
-    ``attachs`` is a list of tuples containing (attach_name, mimetype, file_object) where:
+    ``attachs`` is an iterable of tuples (attach_name, mimetype, file_object)
+    where:
+
         ``attach_name`` is a string with the name will appear on the emails attachment
         ``mimetype`` is the mimetype of the attachment
         ``file_object`` is a readable file object

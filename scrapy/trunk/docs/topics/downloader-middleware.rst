@@ -50,9 +50,16 @@ If returns a Response object, Scrapy won't bother calling ANY other request or
 exception middleware, or the appropriate download function; it'll return that
 Response. Response middleware is always called on every response.
 
-If returns a :class:`~scrapy.http.Request` object, returned request is used to
-instruct a redirection. Redirection is handled inside middleware scope, and
-original request don't finish until redirected request is completed.
+If returns a :class:`~scrapy.http.Request` object, the returned request will be
+re-scheduled (in the Scheduler) to be downloaded in the future. The callback of
+the original request will always be called. If the new request has a callback
+it will be called with the response downloaded, and the output of that callback
+will then be passed to the original callback. If the new request doesn't have a
+callback, the response downloaded will be just passed to the original request
+callback.
+
+If returns an :exception:`IgnoreRequest` exception, the entire request will be
+dropped completely and its callback never called.
 
 
 .. method:: process_response(request, response, spider)
