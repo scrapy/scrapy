@@ -47,8 +47,8 @@ CACHE2_DIR
 
 Default: ``''`` (empty string)
 
-The directory to use for storin the low-level HTTP cache. If empty the HTTP
-cache will be disabled.  it.
+The directory to use for storing the low-level HTTP cache. If empty the HTTP
+cache will be disabled.
 
 .. setting:: CACHE2_EXPIRATION_SECS
 
@@ -138,7 +138,7 @@ CLUSTER_MASTER_NODES
 Default: ``{}``
 
 A dict which defines the nodes of the cluster.  The keys are the node/worker
-names and the values are the worker urls.
+names and the values are the worker URLs.
 
 Example::
 
@@ -248,9 +248,9 @@ DEFAULT_SPIDER
 
 Default: ``None``
 
-The default spider class that will be instantiated for urls for which no
+The default spider class that will be instantiated for URLs for which no
 specific spider is found. This class must have a constructor which receives as
-only parameter the domain name of the given url.
+only parameter the domain name of the given URL.
 
 .. setting:: DEPTH_LIMIT
 
@@ -293,9 +293,9 @@ Default::
         'scrapy.contrib.downloadermiddleware.cache.CacheMiddleware',
     ]
 
-The list of enabled downloader middlewares. Keep in mind that some may need te
-be enabled through some settings. The top (first) middlware is closer to the
-engine, while the bottom (last) middleware is closer to the downloader.
+The list of enabled downloader middlewares. Keep in mind that some may need to
+be enabled through a particular setting. The top (first) middleware is closer
+to the engine, while the bottom (last) middleware is closer to the downloader.
 
 .. setting:: DOWNLOADER_STATS
 
@@ -306,10 +306,24 @@ Default: ``True``
 
 Whether to enable downloader stats collection.
 
+.. setting:: DOWNLOAD_DELAY
+
+DOWNLOAD_DELAY
+--------------
+
+Default: ``0``
+
+The amount of time (in secs) that the downloader should wait before downloading
+consecutive pages from the same spider. This can be used to throttle the
+crawling speed to avoid hitting servers too hard. Decimal numbers are
+supported.  Example::
+
+    DOWNLOAD_DELAY = 0.25    # 250 ms of delay 
+
 .. setting:: DOWNLOAD_TIMEOUT
 
-DOWNLOADER_TIMEOUT
-------------------
+DOWNLOAD_TIMEOUT
+----------------
 
 Default: ``180``
 
@@ -675,9 +689,9 @@ Default::
         'scrapy.contrib.spidermiddleware.depth.DepthMiddleware',
     ]
 
-The list of enabled spider middlewares. Keep in mind that some may need te be
-enabled through some settings. The top (first) middleware is closer to the
-engine, while the bottom (last) middleware is closer to the spider.
+The list of enabled spider middlewares. Keep in mind that some may need to be
+enabled through a particular setting. The top (first) middleware is closer to
+the engine, while the bottom (last) middleware is closer to the spider.
 
 .. setting:: SPIDER_MODULES
 
