@@ -38,5 +38,5 @@ class RequestLimitMiddleware(object):
             if dropped_count > 0:
                 requests = requests[:free_slots]
                 log.msg("Dropping %d request(s) because the maximum schedule size (%d) has been exceeded" % \
-                        (dropped_count, max_pending), level=log.WARNING, domain=spider.domain_name)
+                        (dropped_count, max_pending), level=log.DEBUG, domain=spider.domain_name)
         return requests + items
