@@ -1,19 +1,18 @@
 import urllib
 from copy import copy
-from base64 import urlsafe_b64encode
 
 from twisted.internet import defer
 
 from scrapy.http.url import Url
 from scrapy.http.headers import Headers
 from scrapy.utils.url import safe_url_string
-from scrapy.utils.c14n import canonicalize
 from scrapy.utils.defer import chain_deferred
 
 class Request(object):
-    def __init__(self, url, callback=None, context=None, method=None, body=None, headers=None, cookies=None,
-            referer=None, url_encoding='utf-8', link_text='', http_user='', http_pass='', dont_filter=None, 
-            domain=None):
+
+    def __init__(self, url, callback=None, context=None, method=None,
+        body=None, headers=None, cookies=None, referer=None,
+        url_encoding='utf-8', link_text='', dont_filter=None, domain=None):
 
         self.encoding = url_encoding  # this one has to be set first
         self.set_url(url)
@@ -22,7 +21,8 @@ class Request(object):
         if method is None and body is not None:
             method = 'POST' # backwards compatibility
         self.method = method.upper() if method else 'GET'
-        assert isinstance(self.method, basestring), 'Request method argument must be str or unicode, got %s: %s' % (type(method), method)
+        assert isinstance(self.method, basestring), \
+             'Request method argument must be str or unicode, got %s: %s' % (type(method), method)
 
         # body
         if isinstance(body, dict):
@@ -45,9 +45,6 @@ class Request(object):
         # shortcut for setting referer
         if referer is not None:
             self.headers['referer'] = referer
-        # http auth
-        if http_user or http_pass:
-            self.httpauth(http_user, http_pass)
         self.depth = 0
         self.link_text = link_text
         #allows to directly specify the spider for the request
@@ -73,13 +70,6 @@ class Request(object):
         decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)
         self._url = Url(safe_url_string(decoded_url, self.encoding))
     url = property(lambda x: x._url, set_url)
-
-    def httpauth(self, http_user, http_pass):
-        if not http_user:
-            http_user = ''
-        if not http_pass:
-            http_pass = ''
-        self.headers['Authorization'] = 'Basic ' + urlsafe_b64encode("%s:%s" % (http_user, http_pass))
 
     def __str__(self):
         if self.method != 'GET':

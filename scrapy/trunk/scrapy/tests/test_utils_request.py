@@ -1,6 +1,6 @@
 import unittest
 from scrapy.http import Request
-from scrapy.utils.request import request_fingerprint
+from scrapy.utils.request import request_fingerprint, request_authenticate
 
 class UtilsRequestTest(unittest.TestCase):
 
@@ -55,7 +55,10 @@ class UtilsRequestTest(unittest.TestCase):
         fp2 = request_fingerprint(r2)
         self.assertNotEqual(fp1, fp2)
 
+    def test_request_authenticate(self):
+        r = Request("http://www.example.com")
+        request_authenticate(r, 'someuser', 'somepass')
+        self.assertEqual(r.headers['Authorization'], 'Basic c29tZXVzZXI6c29tZXBhc3M=')
+
 if __name__ == "__main__":
     unittest.main()
-
-

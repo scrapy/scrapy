@@ -4,6 +4,7 @@ scrapy.http.Request objects
 """
 
 import hashlib
+from base64 import urlsafe_b64encode
 
 from scrapy.utils.url import canonicalize_url
 
@@ -55,6 +56,13 @@ def request_fingerprint(request, include_headers=()):
         fphash = fp.hexdigest()
         request._cache[cachekey] = fphash
         return fphash
+
+def request_authenticate(request, username, password):
+    """Autenticate the given request (in place) using the HTTP basic access
+    authentication mechanism (RFC 2617) and the given username and password
+    """
+    b64userpass = urlsafe_b64encode("%s:%s" % (username, password))
+    request.headers['Authorization'] = 'Basic ' + b64userpass
 
 def request_info(request):
     """Return a short string with request info including method, url and
