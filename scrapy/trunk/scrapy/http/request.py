@@ -61,12 +61,14 @@ class Request(object):
     def prepend_callback(self, func, *args, **kwargs):
         if callable(func):
             func = defer.Deferred().addCallback(func, *args, **kwargs)
-        assert isinstance(func, defer.Deferred), 'prepend_callback expects a callable or defer.Deferred instance, got %s' % type(func)
+        assert isinstance(func, defer.Deferred), \
+            'prepend_callback expects a callable or defer.Deferred instance, got %s' % type(func)
         self.deferred = chain_deferred(func, self.deferred)
         return self.deferred
 
     def set_url(self, url):
-        assert isinstance(url, basestring), 'Request url argument must be str or unicode, got %s:' % type(url).__name__
+        assert isinstance(url, basestring), \
+            'Request url argument must be str or unicode, got %s:' % type(url).__name__
         decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)
         self._url = Url(safe_url_string(decoded_url, self.encoding))
     url = property(lambda x: x._url, set_url)
