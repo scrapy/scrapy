@@ -51,7 +51,7 @@ class S3ImagesPipeline(BaseImagesPipeline):
         self.prefix = settings['S3_PREFIX']
         self.access_key = settings['AWS_ACCESS_KEY_ID']
         self.secret_key = settings['AWS_SECRET_ACCESS_KEY']
-        self.image_refresh_days = settings.getint('IMAGE_EXPIRES', 90)
+        self.image_refresh_days = settings.getint('IMAGES_EXPIRES', 90)
         MediaPipeline.__init__(self)
 
     def s3_request(self, key, method, body=None, headers=None):
