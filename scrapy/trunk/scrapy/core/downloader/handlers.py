@@ -16,6 +16,11 @@ from scrapy.core.exceptions import UsageError, HttpException
 from scrapy.utils.defer import defer_succeed
 from scrapy.conf import settings
 
+from scrapy.core.downloader.dnscache import DNSCache
+
+# Cache for dns lookups.
+dnscache = DNSCache()
+
 def download_any(request, spider):
     u = urlparse.urlparse(request.url)
     if u.scheme == 'file':
@@ -62,12 +67,14 @@ def download_http(request, spider):
     factory.deferred.addCallbacks(_on_success, _on_error)
 
     u = urlparse.urlparse(request.url)
+    ip = dnscache.get(u.hostname)
+    port = u.port
     if u.scheme == 'https' :
         from twisted.internet import ssl
         contextFactory = ssl.ClientContextFactory()
-        reactor.connectSSL(u.hostname, u.port or 443, factory, contextFactory)
+        reactor.connectSSL(ip, port or 443, factory, contextFactory)
     else:
-        reactor.connectTCP(u.hostname, u.port or 80, factory)
+        reactor.connectTCP(ip, port or 80, factory)
     return factory.deferred
 
 def download_file(request, spider) :
