@@ -46,7 +46,7 @@ class ItemPipelineManager(object):
     def domain_is_idle(self, domain):
         return not self.domaininfo.get(domain)
 
-    def pipe(self, item, spider, response):
+    def pipe(self, item, spider):
         """
         item pipelines are instanceable classes that defines a `pipeline` method
         that takes ScrapedItem as input and returns ScrapedItem.
@@ -74,7 +74,7 @@ class ItemPipelineManager(object):
             current_stage = pipeline.pop(0)
             log.msg("_%s_ Pipeline stage: %s" % (item, type(current_stage).__name__), log.TRACE, domain=domain)
 
-            d = mustbe_deferred(current_stage.process_item, domain, response, item)
+            d = mustbe_deferred(current_stage.process_item, domain, item)
             d.addCallback(_next_stage)
             return d
 

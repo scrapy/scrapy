@@ -26,7 +26,7 @@ class MediaPipeline(object):
     def close_domain(self, domain):
         del self.domaininfo[domain]
 
-    def process_item(self, domain, response, item):
+    def process_item(self, domain, item):
         info = self.domaininfo[domain]
         requests = self.get_media_requests(item, info)
         assert requests is None or hasattr(requests, '__iter__'), \

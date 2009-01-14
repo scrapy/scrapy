@@ -27,7 +27,7 @@ class ShoveItemPipeline(object):
         dispatcher.connect(self.domain_open, signal=signals.domain_open)
         dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
 
-    def process_item(self, domain, response, item):
+    def process_item(self, domain, item):
         guid = str(item.guid)
 
         if guid in self.stores[domain]:

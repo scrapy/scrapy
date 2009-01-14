@@ -10,6 +10,6 @@ class ShowItemPipeline(object):
         if not settings['DEBUG_SHOWITEM']:
             raise NotConfigured
 
-    def process_item(self, domain, response, item):
+    def process_item(self, domain, item):
         log.msg("Scraped: \n%s" % repr(item), log.DEBUG, domain=domain)
         return item

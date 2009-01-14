@@ -26,7 +26,7 @@ class ValidationError(DropItem):
             return '%s' % (self.problem)
 
 class ValidationPipeline(object):
-    def process_item(self, domain, response, item):
+    def process_item(self, domain, item):
         item.validate()
         return item
 

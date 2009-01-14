@@ -21,11 +21,9 @@ Writing your own item pipeline
 Writing your own item pipeline is easy. Each item pipeline component is a
 single Python class that must define the following method:
 
-.. method:: process_item(domain, response, item)
+.. method:: process_item(domain, item)
 
 ``domain`` is a string with the domain of the spider which scraped the item
-
-``response`` is a :class:`scrapy.http.Response` with the response where the item was scraped
 
 ``item`` is a :class:`scrapy.item.ScrapedItem` with the item scraped
 
@@ -63,7 +61,7 @@ attribute), and drops those items which don't contain a price::
 
         vat_factor = 1.15
 
-        def process_item(self, domain, response, item):
+        def process_item(self, domain, item):
             if item.price:
                 if item.price_excludes_vat:
                     item.price = item.price * self.vat_factor

@@ -244,7 +244,7 @@ class ExecutionEngine(object):
                 if isinstance(item, ScrapedItem):
                     log.msg("Scraped %s in <%s>" % (item, request.url), log.DEBUG, domain=domain)
                     signals.send_catch_log(signal=signals.item_scraped, sender=self.__class__, item=item, spider=spider, response=response)
-                    piped = self.pipeline.pipe(item, spider, response) # TODO: remove response
+                    piped = self.pipeline.pipe(item, spider)
                     piped.addBoth(_onpipelinefinish, item)
                 elif isinstance(item, Request):
                     signals.send_catch_log(signal=signals.request_received, sender=self.__class__, request=item, spider=spider, response=response)

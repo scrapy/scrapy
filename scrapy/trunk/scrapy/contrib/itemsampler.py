@@ -51,7 +51,7 @@ class ItemSamplerPipeline(object):
         dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
         dispatcher.connect(self.engine_stopped, signal=signals.engine_stopped)
 
-    def process_item(self, domain, response, item):
+    def process_item(self, domain, item):
         sampled = stats.getpath("%s/items_sampled" % domain, 0)
         if sampled < items_per_domain:
             self.items[item.guid] = item
