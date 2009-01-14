@@ -1,3 +1,7 @@
+"""
+WARNING: This Scheduler code is obsolete and needs to be rewritten 
+"""
+
 from datetime import datetime
 
 from twisted.internet import defer
@@ -90,6 +94,7 @@ class RulesScheduler(Scheduler):
 
         d = defer.Deferred()
         d.addCallbacks(callback, errback)
-        request.prepend_callback(d)
+        # prepend_callback Request method was removed (it never worked properly anyways) 
+        #request.prepend_callback(d)
 
         return request
