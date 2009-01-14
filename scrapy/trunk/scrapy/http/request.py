@@ -10,19 +10,14 @@ from scrapy.utils.defer import chain_deferred
 
 class Request(object):
 
-    def __init__(self, url, callback=None, context=None, method=None,
+    def __init__(self, url, callback=None, context=None, method='GET',
         body=None, headers=None, cookies=None, referer=None,
         url_encoding='utf-8', link_text='', dont_filter=None, domain=None):
 
         self.encoding = url_encoding  # this one has to be set first
         self.set_url(url)
 
-        # method
-        if method is None and body is not None:
-            method = 'POST' # backwards compatibility
-        self.method = method.upper() if method else 'GET'
-        assert isinstance(self.method, basestring), \
-             'Request method argument must be str or unicode, got %s: %s' % (type(method), method)
+        self.method = method.upper()
 
         # body
         if isinstance(body, dict):

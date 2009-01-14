@@ -41,7 +41,7 @@ Attributes
 Methods
 -------
 
-.. method:: Request.__init__(url, callback=None, context=None, method=None, body=None, headers=None, cookies=None, referer=None, url_encoding='utf-8', link_text='', http_user='', http_pass='', dont_filter=None)
+.. method:: Request.__init__(url, callback=None, context=None, method=None, body=None, headers=None, cookies=None, referer=None, url_encoding='utf-8', link_text='', dont_filter=None)
 
     Instantiates a ``Request`` object with the given arguments:
 
@@ -53,7 +53,10 @@ Methods
     ``context`` can be a dict which will be accesible in the callback function
     in ``response.request.context`` in the callback function
 
-    ``body`` is a string containing the request body or None if the request doesn't contain a body (ex. GET requests)
+    ``method`` is a string with the HTTP method of this request
+
+    ``body`` is a string containing the request body or None if the request
+    doesn't contain a body (ex. GET requests)
 
     ``headers`` is a multi-valued dict containing the headers of this request
 
@@ -62,17 +65,12 @@ Methods
     ``referer`` is a string with the referer of this request
 
     ``url_encoding`` is a string with the encoding of the url of this request.
-     Requests URLs will be percent encoded using this encoding before downloading 
+    The request URL will be percent encoded using this encoding before
+    downloading 
 
-    ``link_text`` is a string describing the URL of this requests. For example, in ``<a href="http://www.example.com/">Example site</a>`` the ``link_text`` would be ``"Example site"``
-
-    ``http_user`` is a string containing the user name that will be used for
-    HTTP authentication when performing this request. If None, HTTP auth will
-    not be used
-
-    ``http_user`` is a string containing the password that will be used for
-    HTTP authentication when performing this request. If None, HTTP auth will
-    not be used
+    ``link_text`` is a string describing the URL of this requests. For example,
+    in ``<a href="http://www.example.com/">Example site</a>`` the ``link_text``
+    would be ``"Example site"``
 
     ``dont_filter`` is a boolean which indicates that this request should not
     be filtered by the scheduler. This is used when you want to perform an
