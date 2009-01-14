@@ -271,6 +271,15 @@ Default: ``True``
 
 Whether to collect depth stats.
 
+.. setting:: DOWNLOADER_DEBUG
+
+DOWNLOADER_DEBUG
+----------------
+
+Default: ``False``
+
+Whether to enable the Downloader debugging mode.
+
 .. setting:: DOWNLOADER_MIDDLEWARES
 
 DOWNLOADER_MIDDLEWARES
@@ -328,6 +337,15 @@ DOWNLOAD_TIMEOUT
 Default: ``180``
 
 The amount of time (in secs) that the downloader will wait before timing out.
+
+.. setting:: ENGINE_DEBUG
+
+ENGINE_DEBUG
+------------
+
+Default: ``False``
+
+Whether to enable the Scrapy Engine debugging mode.
 
 .. setting:: ENABLED_SPIDERS_FILE
 
