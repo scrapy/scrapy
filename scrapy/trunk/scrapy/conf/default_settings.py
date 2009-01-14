@@ -55,6 +55,8 @@ DEPTH_STATS = True
 DOWNLOAD_DELAY = 0
 DOWNLOAD_TIMEOUT = 180      # 3mins
 
+DOWNLOADER_DEBUG = False
+
 DOWNLOADER_MIDDLEWARES = [
     # Engine side
     'scrapy.contrib.downloadermiddleware.robotstxt.RobotsTxtMiddleware',

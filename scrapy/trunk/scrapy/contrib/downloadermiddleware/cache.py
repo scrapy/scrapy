@@ -1,20 +1,18 @@
 from __future__ import with_statement
 
 import os
-import sys
 import hashlib
 import datetime
 import urlparse
 import cPickle as pickle
 from pydispatch import dispatcher
-from twisted.internet import defer
 
 from scrapy.core import signals
 from scrapy import log
-from scrapy.core.engine import scrapyengine
 from scrapy.http import Response, Headers
 from scrapy.http.headers import headers_dict_to_raw
-from scrapy.core.exceptions import UsageError, NotConfigured, HttpException, IgnoreRequest
+from scrapy.core.exceptions import NotConfigured, HttpException, IgnoreRequest
+from scrapy.utils.request import request_fingerprint
 from scrapy.conf import settings
 
 
@@ -33,7 +31,7 @@ class CacheMiddleware(object):
         if not is_cacheable(request):
             return
 
-        key = request.fingerprint()
+        key = request_fingerprint(request)
         domain = spider.domain_name
         try:
             response = self.cache.retrieve_response(domain, key)
@@ -53,7 +51,7 @@ class CacheMiddleware(object):
             return response
 
         if isinstance(response, Response) and not response.cached:
-            key = request.fingerprint()
+            key = request_fingerprint(request)
             domain = spider.domain_name
             self.cache.store(domain, key, request, response)
 
@@ -64,9 +62,9 @@ class CacheMiddleware(object):
             return
 
         if isinstance(exception, HttpException) and isinstance(exception.response, Response):
-            key = request.fingerprint()
+            key = request_fingerprint(request)
             domain = spider.domain_name
-            self.cache.store(domain,key, request, exception.response)
+            self.cache.store(domain, key, request, exception.response)
 
 def is_cacheable(request):
     scheme, _, _, _, _ = urlparse.urlsplit(request.url)

@@ -8,6 +8,7 @@ from scrapy.core.scheduler.filter import GroupFilter
 from scrapy import log
 from scrapy.core.exceptions import IgnoreRequest
 from scrapy.utils.datatypes import PriorityQueue, PriorityStack
+from scrapy.utils.request import request_fingerprint
 from scrapy.utils.defer import defer_fail
 from scrapy.conf import settings
 
@@ -108,7 +109,7 @@ class Scheduler(object) :
         """
         Add a page to be scraped for a domain that is currently being scraped.
         """
-        requestid = request.fingerprint()
+        requestid = request_fingerprint(request)
         added = self.groupfilter.add(domain, requestid)
 
         if request.dont_filter or added:
@@ -123,7 +124,7 @@ class Scheduler(object) :
         Returns True if the given Request was scheduled before for the given
         domain
         """
-        return self.groupfilter.has(domain, request.fingerprint())
+        return self.groupfilter.has(domain, request_fingerprint(request))
 
     def next_request(self, domain):
         """

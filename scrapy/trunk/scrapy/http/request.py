@@ -1,5 +1,4 @@
 import urllib
-import hashlib
 from copy import copy
 from base64 import urlsafe_b64encode
 
@@ -14,7 +13,7 @@ from scrapy.utils.defer import chain_deferred
 class Request(object):
     def __init__(self, url, callback=None, context=None, method=None, body=None, headers=None, cookies=None,
             referer=None, url_encoding='utf-8', link_text='', http_user='', http_pass='', dont_filter=None, 
-            fingerprint_params=None, domain=None):
+            domain=None):
 
         self.encoding = url_encoding  # this one has to be set first
         self.set_url(url)
@@ -43,9 +42,6 @@ class Request(object):
         self.context = context or {}
         # dont_filter be filtered by scheduler
         self.dont_filter = dont_filter
-        # fingerprint parameters
-        self.fingerprint_params = fingerprint_params or {}
-        self._fingerprint = None
         # shortcut for setting referer
         if referer is not None:
             self.headers['referer'] = referer
@@ -56,6 +52,9 @@ class Request(object):
         self.link_text = link_text
         #allows to directly specify the spider for the request
         self.domain = domain
+
+        # bucket to store cached data such as fingerprint and others
+        self._cache = {}
         
     def append_callback(self, callback, *args, **kwargs):
         if isinstance(callback, defer.Deferred):
@@ -73,7 +72,6 @@ class Request(object):
         assert isinstance(url, basestring), 'Request url argument must be str or unicode, got %s:' % type(url).__name__
         decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)
         self._url = Url(safe_url_string(decoded_url, self.encoding))
-        self._fingerprint = None # invalidate cached fingerprint
     url = property(lambda x: x._url, set_url)
 
     def httpauth(self, http_user, http_pass):
@@ -92,11 +90,6 @@ class Request(object):
         """Return raw HTTP request size"""
         return len(self.to_string())
 
-    def traceinfo(self):
-        fp = self.fingerprint()
-        version = '%s..%s' % (fp[:4], fp[-4:])
-        return "<Request: %s %s (%s)>" % (self.method, self.url, version)
-
     def __repr__(self):
         d = {
             'method': self.method,
@@ -111,60 +104,14 @@ class Request(object):
     def copy(self):
         """Clone request except `context` attribute"""
         new = copy(self)
+        new._cache = {}
         for att in self.__dict__:
-            if att not in ['context', 'url', 'deferred', '_fingerprint']:
+            if att not in ['_cache', 'context', 'url', 'deferred']:
                 value = getattr(self, att)
                 setattr(new, att, copy(value))
         new.deferred = defer.Deferred()
         new.context = self.context # requests shares same context dictionary
-        new._fingerprint = None # reset fingerprint
         return new
-
-    def fingerprint(self):
-        """Returns unique resource fingerprint with caching support"""
-        if not self._fingerprint or self.fingerprint_params:
-            self.update_fingerprint()
-        return self._fingerprint
-
-    def update_fingerprint(self):
-        """Update request fingerprint, based on its current data. A request
-        fingerprint is a hash which uniquely identifies the HTTP resource"""
-
-        headers = {}
-        if self.fingerprint_params:
-            if 'tamperfunc' in self.fingerprint_params:
-                tamperfunc = self.fingerprint_params['tamperfunc']
-                assert callable(tamperfunc)
-                req = tamperfunc(self.copy())
-                assert isinstance(req, Request)
-                try:
-                    del req.fingerprint_params['tamperfunc']
-                except KeyError:
-                    pass
-                return req.fingerprint()
-
-            if self.headers:
-                if 'include_headers' in self.fingerprint_params:
-                    keys = [k.lower() for k in self.fingerprint_params['include_headers']]
-                    headers = dict([(k, v) for k, v in self.headers.items() if k.lower() in keys])
-                elif 'exclude_headers' in self.fingerprint_params:
-                    keys = [k.lower() for k in self.fingerprint_params['exclude_headers']]
-                    headers = dict([(k, v) for k, v in self.headers.items() if k.lower() not in keys])
-
-        # fingerprint generation
-        fp = hashlib.sha1()
-        fp.update(canonicalize(self.url))
-        fp.update(self.method)
-
-        if self.body and self.method in ['POST', 'PUT']:
-            fp.update(self.body)
-
-        if headers:
-            for k, v in sorted([(k.lower(), v) for k, v in headers.items()]):
-                fp.update(k)
-                fp.update(v)
-
-        self._fingerprint = fp.hexdigest()
 
     def to_string(self):
         """ Return raw HTTP request representation (as string). This is

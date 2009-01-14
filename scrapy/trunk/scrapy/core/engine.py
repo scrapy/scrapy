@@ -1,6 +1,8 @@
 """
-Core execution engine for the web crawling framework. This controls the 
-scheduler, downloader and spiders.
+This is the Scrapy engine which controls the Scheduler, Downloader and Spiders.
+
+For more information see docs/topics/architecture.rst
+
 """
 from datetime import datetime
 
@@ -21,6 +23,7 @@ from scrapy.item.pipeline import ItemPipelineManager
 from scrapy.spider import spiders
 from scrapy.spider.middleware import SpiderMiddlewareManager
 from scrapy.utils.defer import chain_deferred, defer_succeed, mustbe_deferred, deferred_degenerate
+from scrapy.utils.request import request_info
 
 class ExecutionEngine(object):
     """
@@ -247,7 +250,7 @@ class ExecutionEngine(object):
                     signals.send_catch_log(signal=signals.request_received, sender=self.__class__, request=item, spider=spider, response=response)
                     self.crawl(request=item, spider=spider, priority=priority)
                 else:
-                    log.msg('Garbage found in spider output while processing %s, got type %s' % (request, type(item)), log.TRACE, domain=domain)
+                    log.msg('Garbage found in spider output while processing %s, got type %s' % (request, type(item)), log.DEBUG, domain=domain)
 
             class _ResultContainer(object):
                 def append(self, item):
@@ -292,10 +295,10 @@ class ExecutionEngine(object):
         domain = spider.domain_name
         if not self.scheduler.domain_is_open(domain):
             if self.debug_mode: 
-                log.msg('Scheduling %s (delayed)' % request.traceinfo(), log.TRACE)
+                log.msg('Scheduling %s (delayed)' % request_info(request), log.DEBUG)
             return self._add_starter(request, spider, domain_priority)
         if self.debug_mode: 
-            log.msg('Scheduling %s (now)' % request.traceinfo(), log.TRACE)
+            log.msg('Scheduling %s (now)' % request_info(request), log.DEBUG)
         schd = self.scheduler.enqueue_request(domain, request, priority)
         self.next_request(spider)
         return schd
@@ -338,13 +341,15 @@ class ExecutionEngine(object):
         del self.starters[domain]
 
     def download(self, request, spider):
-        log.msg('Downloading %s' % request.traceinfo(), log.TRACE)
+        if self.debug_mode:
+            log.msg('Downloading %s' % request_info(request), log.DEBUG)
         domain = spider.domain_name
 
         def _on_success(response):
             """handle the result of a page download"""
             assert isinstance(response, (Response, Request))
-            log.msg("Requested %s" % request.traceinfo(), level=log.TRACE, domain=domain)
+            if self.debug_mode:
+                log.msg("Requested %s" % request_info(request), level=log.DEBUG, domain=domain)
             if isinstance(response, Response):
                 response.request = request # tie request to obtained response
                 cached = 'cached' if response.cached else 'live'

@@ -3,6 +3,7 @@ from twisted.internet import defer
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy import log
 from scrapy.core.engine import scrapyengine
+from scrapy.utils.request import request_fingerprint
 from scrapy.spider import spiders
 
 
@@ -53,7 +54,7 @@ class MediaPipeline(object):
 
     def _enqueue(self, request, info):
         wad = request.deferred or defer.Deferred()
-        fp = request.fingerprint()
+        fp = request_fingerprint(request)
 
         # if already downloaded, return cached result.
         if fp in info.downloaded:

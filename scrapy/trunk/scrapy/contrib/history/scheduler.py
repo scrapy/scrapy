@@ -5,6 +5,7 @@ from twisted.internet import defer
 from scrapy import log
 from scrapy.core.scheduler import Scheduler
 from scrapy.core.exceptions import IgnoreRequest
+from scrapy.utils.request import request_fingerprint
 
 class RulesScheduler(Scheduler):
     """Scheduler that uses rules to determine if we should follow links
@@ -33,7 +34,7 @@ class RulesScheduler(Scheduler):
         The url will only be added if we have not checked it already within
         a specified time period.
         """
-        requestid = request.fingerprint()
+        requestid = request_fingerprint(request)
         added = self.groupfilter.add(domain, requestid)
 
         if request.dont_filter or added:

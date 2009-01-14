@@ -132,7 +132,6 @@ class Replay(object):
             self.passed_new[str(item.guid)] = item
 
     def response_received(self, response, spider):
-        #key = response.request.fingerprint()
         key = response.version()
         if (self.recording or self.updating) and key:
             self.responses_old[key] = response.copy()

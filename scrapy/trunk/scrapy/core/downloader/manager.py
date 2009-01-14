@@ -13,6 +13,7 @@ from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy import log
 from scrapy.conf import settings
 from scrapy.utils.defer import chain_deferred, mustbe_deferred
+from scrapy.utils.request import request_info
 
 
 class SiteDetails(object):
@@ -43,7 +44,7 @@ class SiteDetails(object):
 
 
 class Downloader(object):
-    """Maintain many concurrent downloads and provide an HTTP abstraction.
+    """Mantain many concurrent downloads and provide an HTTP abstraction.
     It supports a limited number of connections per domain and many domains in
     parallel.
     """
@@ -59,6 +60,8 @@ class Downloader(object):
         self.middleware = DownloaderMiddlewareManager()
         self.middleware.download_function = self.enqueue
         self.download_function = download_any
+        self.concurrent_domains = settings.getint('CONCURRENT_DOMAINS')
+        self.debug_mode = settings.getbool('DOWNLOADER_DEBUG')
 
     def fetch(self, request, spider):
         """ Main method to use to request a download
@@ -120,13 +123,15 @@ class Downloader(object):
             self.engine.closed_domain(domain)
 
     def _download(self, request, spider, deferred):
-        log.msg('Activating %s' % request.traceinfo(), log.TRACE)
+        if self.debug_mode:
+            log.msg('Activating %s' % request_info(request), log.DEBUG)
         domain = spider.domain_name
         site = self.sites.get(domain)
         site.downloading.add(request)
 
         def _remove(result):
-            log.msg('Deactivating %s' % request.traceinfo(), log.TRACE)
+            if self.debug_mode:
+                log.msg('Deactivating %s' % request_info(request), log.DEBUG)
             site.downloading.remove(request)
             return result
 
@@ -153,14 +158,16 @@ class Downloader(object):
 
     def close_domain(self, domain):
         """Free any resources associated with the given domain"""
-        log.msg("Downloader closing domain %s" % domain, log.TRACE, domain=domain)
+        if self.debug_mode:
+            log.msg("Downloader closing domain %s" % domain, log.DEBUG, domain=domain)
         site = self.sites.get(domain)
         if site:
             site.closed = True
             spider = spiders.fromdomain(domain)
             self.process_queue(spider)
         else:
-            log.msg('Domain %s already closed' % domain, log.TRACE, domain=domain)
+            if self.debug_mode:
+                log.msg('Domain %s already closed' % domain, log.DEBUG, domain=domain)
 
     def needs_backout(self, domain):
         site = self.sites.get(domain)
@@ -195,13 +202,8 @@ class Downloader(object):
 
     def has_capacity(self):
         """Does the downloader have capacity to handle more domains"""
-        return len(self.sites) < settings.getint('CONCURRENT_DOMAINS')
+        return len(self.sites) < self.concurrent_domains
 
     def is_idle(self):
         return not self.sites
-
-    # deprecated
-    def clear_requests(self, domain):
-        log.msg("Downloader clearing request for domain %s" % domain, log.TRACE, domain=domain)
-        self.sites[domain].queue = []
 
