@@ -15,7 +15,7 @@ class UtilsRequestTest(unittest.TestCase):
         self.assertEqual(request_fingerprint(r1), request_fingerprint(r2))
 
         # make sure caching is working
-        self.assertEqual(request_fingerprint(r1), r1._cache['fingerprint'])
+        self.assertEqual(request_fingerprint(r1), r1.cache['fingerprint'])
 
         r1 = Request("http://www.example.com/members/offers.html")
         r2 = Request("http://www.example.com/members/offers.html")

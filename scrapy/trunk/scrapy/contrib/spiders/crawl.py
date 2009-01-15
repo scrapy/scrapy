@@ -90,7 +90,8 @@ class CrawlSpider(BaseSpider):
                 links = rule.process_links(links)
             seen = seen.union(links)
             for link in links:
-                r = Request(url=link.url, link_text=link.text)
+                r = Request(url=link.url)
+                r.meta['link_text'] = link.text
                 r.append_callback(self._response_downloaded, rule.callback, cb_kwargs=rule.cb_kwargs, follow=rule.follow)
                 requests.append(r)
         return requests

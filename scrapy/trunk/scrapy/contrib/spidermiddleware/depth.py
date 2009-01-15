@@ -20,17 +20,19 @@ class DepthMiddleware(object):
     def process_spider_output(self, response, result, spider):
         def _filter(request):
             if isinstance(request, Request):
-                request.depth = response.request.depth + 1
-                if self.maxdepth and request.depth > self.maxdepth:
+                depth = response.request.meta['depth'] + 1
+                request.meta['depth'] = depth
+                if self.maxdepth and depth > self.maxdepth:
                     log.msg("Ignoring link (depth > %d): %s " % (self.maxdepth, request.url), level=log.DEBUG, domain=spider.domain_name)
                     return False
                 elif self.stats:
-                    stats.incpath('%s/request_depth_count/%s' % (spider.domain_name, request.depth))
-                    if request.depth > stats.getpath('%s/request_depth_max' % spider.domain_name, 0):
-                        stats.setpath('%s/request_depth_max' % spider.domain_name, request.depth)
+                    stats.incpath('%s/request_depth_count/%s' % (spider.domain_name, depth))
+                    if depth > stats.getpath('%s/request_depth_max' % spider.domain_name, 0):
+                        stats.setpath('%s/request_depth_max' % spider.domain_name, depth)
             return True
 
-        if self.stats and response.request.depth == 0: # otherwise we loose stats for depth=0 
+        if self.stats and 'depth' not in response.request.meta: # otherwise we loose stats for depth=0 
+            response.request.meta['depth'] = 0
             stats.incpath('%s/request_depth_count/0' % spider.domain_name)
 
         return (r for r in result or () if _filter(r))

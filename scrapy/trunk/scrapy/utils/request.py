@@ -43,7 +43,7 @@ def request_fingerprint(request, include_headers=()):
         cachekey = 'fingerprint'
 
     try:
-        return request._cache[cachekey]
+        return request.cache[cachekey]
     except KeyError:
         fp = hashlib.sha1()
         fp.update(request.method)
@@ -54,7 +54,7 @@ def request_fingerprint(request, include_headers=()):
                 fp.update(hdr)
                 fp.update(request.headers.get(hdr, ''))
         fphash = fp.hexdigest()
-        request._cache[cachekey] = fphash
+        request.cache[cachekey] = fphash
         return fphash
 
 def request_authenticate(request, username, password):

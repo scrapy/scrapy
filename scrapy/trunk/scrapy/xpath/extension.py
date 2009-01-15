@@ -12,9 +12,9 @@ class ResponseLibxml2(object):
         setattr(Response, 'getlibxml2doc', getlibxml2doc)
 
 def getlibxml2doc(response, constructor=xmlDoc_from_html):
-    attr = '_lx2doc_%s' % constructor.__name__
-    if not hasattr(response, attr):
+    cachekey = 'lx2doc_%s' % constructor.__name__
+    if cachekey not in response.cache:
         lx2doc = Libxml2Document(response, constructor=constructor)
-        setattr(response, attr, lx2doc)
-    return getattr(response, attr)
+        response.cache[cachekey] = lx2doc
+    return response.cache[cachekey]
 

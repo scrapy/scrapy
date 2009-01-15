@@ -32,16 +32,39 @@ Attributes
 
 .. attribute:: Request.headers
 
-    A dict of the request headers.
+    A dictionary-like object which contains the request headers.
 
 .. attribute:: Request.body
 
-    The body of the request as a string
+    A string that contains the request body
+
+.. attribute:: Request.meta
+
+    A dict that contains arbitrary metadata for this request. This dict is
+    empty for new Requests, and is usually  populated by different Scrapy
+    components (extensions, middlewares, etc). So the data contained in this
+    dict depends on the extensions you have enabled.
+
+    This dict is `shallow copied`_ when the request is cloned using the
+    ``copy()`` or ``replace()`` methods.
+
+.. _shallow copied: http://docs.python.org/library/copy.html
+
+.. attribute:: Request.cache
+
+    A dict that contains arbitrary cached data for this request. This dict is
+    empty for new Requests, and is usually populated by different Scrapy
+    components (extensions, middlewares, etc) to avoid duplicate processing. So
+    the data contained in this dict depends on the extensions you have enabled.
+
+    Unlike the ``meta`` attribute, this dict is not copied at all when the
+    request is cloned using the ``copy()`` or ``replace()`` methods.
+
 
 Methods
 -------
 
-.. method:: Request.__init__(url, callback=None, context=None, method='GET', body=None, headers=None, cookies=None, url_encoding='utf-8', link_text='', dont_filter=None)
+.. method:: Request.__init__(url, callback=None, context=None, method='GET', body=None, headers=None, cookies=None, url_encoding='utf-8', dont_filter=None)
 
     Instantiates a ``Request`` object with the given arguments:
 
@@ -50,7 +73,7 @@ Methods
     ``callback`` is a function that will be called with the response of this
     request (once its downloaded) as its first parameter
 
-    ``context`` can be a dict which will be accesible in the callback function
+    ``context`` can be a dict which will be accessible in the callback function
     in ``response.request.context`` in the callback function
 
     ``method`` is a string with the HTTP method of this request
@@ -65,10 +88,6 @@ Methods
     ``url_encoding`` is a string with the encoding of the url of this request.
     The request URL will be percent encoded using this encoding before
     downloading 
-
-    ``link_text`` is a string describing the URL of this requests. For example,
-    in ``<a href="http://www.example.com/">Example site</a>`` the ``link_text``
-    would be ``"Example site"``
 
     ``dont_filter`` is a boolean which indicates that this request should not
     be filtered by the scheduler. This is used when you want to perform an
@@ -89,7 +108,19 @@ Attributes
 
 .. attribute:: Response.headers
 
-    A dict of the response headers.
+    A dictionary-like object which contains the response headers.
+
+.. attribute:: Response.meta
+
+    A dict that contains arbitrary metadata fro this response. It works like
+    :attr:`Request.meta` for Request objects. See that attribute help for more
+    info.
+
+.. attribute:: Response.cache
+
+    A dict that contains arbitrary cached data for this response. It works like
+    :attr:`Request.cache` for Request objects. See that attribute help for more
+    info.
 
 Methods
 -------

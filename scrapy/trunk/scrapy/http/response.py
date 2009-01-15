@@ -1,3 +1,10 @@
+"""
+This module implements the Response class which is used to represent HTTP
+responses in Scrapy.
+
+See documentation in docs/ref/request-response.rst
+"""
+
 import re
 import hashlib
 import copy
@@ -34,6 +41,8 @@ class Response(object) :
         self.body = ResponseBody(body, self.headers_encoding())
         self.cached = False
         self.request = None # request which originated this response
+        self.meta = {}
+        self.cache = {}
 
     def version(self):
         """A hash of the contents of this response"""
@@ -85,6 +94,7 @@ class Response(object) :
         # Response.__init__ forbids the use of ResponseBody instances
         if 'body' not in kw:
             newresp.body = samebody()
+        newresp.meta = self.meta.copy()
         return newresp
 
     def to_string(self):

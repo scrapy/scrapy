@@ -1,5 +1,12 @@
+"""
+This module implements the Request class which is used to represent HTTP
+requests in Scrapy.
+
+See documentation in docs/ref/request-response.rst
+"""
+
 import urllib
-from copy import copy
+import copy
 
 from twisted.internet import defer
 
@@ -12,7 +19,7 @@ class Request(object):
 
     def __init__(self, url, callback=None, context=None, method='GET',
         body=None, headers=None, cookies=None,
-        url_encoding='utf-8', link_text='', dont_filter=None, domain=None):
+        url_encoding='utf-8', dont_filter=None, domain=None):
 
         self.encoding = url_encoding  # this one has to be set first
         self.set_url(url)
@@ -37,13 +44,11 @@ class Request(object):
         self.context = context or {}
         # dont_filter be filtered by scheduler
         self.dont_filter = dont_filter
-        self.depth = 0
-        self.link_text = link_text
         #allows to directly specify the spider for the request
         self.domain = domain
 
-        # bucket to store cached data such as fingerprint and others
-        self._cache = {}
+        self.meta = {}
+        self.cache = {}
         
     def append_callback(self, callback, *args, **kwargs):
         if isinstance(callback, defer.Deferred):
@@ -79,12 +84,12 @@ class Request(object):
 
     def copy(self):
         """Clone request except `context` attribute"""
-        new = copy(self)
-        new._cache = {}
+        new = copy.copy(self)
+        new.cache = {}
         for att in self.__dict__:
-            if att not in ['_cache', 'context', 'url', 'deferred']:
+            if att not in ['cache', 'context', 'url', 'deferred']:
                 value = getattr(self, att)
-                setattr(new, att, copy(value))
+                setattr(new, att, copy.copy(value))
         new.deferred = defer.Deferred()
         new.context = self.context # requests shares same context dictionary
         return new

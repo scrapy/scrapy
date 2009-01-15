@@ -79,5 +79,20 @@ class RequestTest(unittest.TestCase):
         self.assert_(isinstance(r.url, str))
         self.assertEqual(r.url, "http://www.scrapy.org/price/%C2%A3")
 
+    def test_copy(self):
+        """Test Request copy"""
+        
+        r1 = Request("http://www.example.com")
+        r1.meta['foo'] = 'bar'
+        r1.cache['lala'] = 'lolo'
+        r2 = r1.copy()
+
+        assert r1.cache
+        assert not r2.cache
+
+        # make sure meta dict is shallow copied
+        assert r1.meta is not r2.meta, "meta must be a shallow copy, not identical"
+        self.assertEqual(r1.meta, r2.meta)
+
 if __name__ == "__main__":
     unittest.main()
