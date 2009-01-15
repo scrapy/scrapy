@@ -41,7 +41,7 @@ Attributes
 Methods
 -------
 
-.. method:: Request.__init__(url, callback=None, context=None, method=None, body=None, headers=None, cookies=None, referer=None, url_encoding='utf-8', link_text='', dont_filter=None)
+.. method:: Request.__init__(url, callback=None, context=None, method='GET', body=None, headers=None, cookies=None, url_encoding='utf-8', link_text='', dont_filter=None)
 
     Instantiates a ``Request`` object with the given arguments:
 
@@ -61,8 +61,6 @@ Methods
     ``headers`` is a multi-valued dict containing the headers of this request
 
     ``cookies`` is dict of the request cookies
-
-    ``referer`` is a string with the referer of this request
 
     ``url_encoding`` is a string with the encoding of the url of this request.
     The request URL will be percent encoded using this encoding before
