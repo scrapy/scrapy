@@ -11,7 +11,7 @@ from scrapy.utils.defer import chain_deferred
 class Request(object):
 
     def __init__(self, url, callback=None, context=None, method='GET',
-        body=None, headers=None, cookies=None, referer=None,
+        body=None, headers=None, cookies=None,
         url_encoding='utf-8', link_text='', dont_filter=None, domain=None):
 
         self.encoding = url_encoding  # this one has to be set first
@@ -37,9 +37,6 @@ class Request(object):
         self.context = context or {}
         # dont_filter be filtered by scheduler
         self.dont_filter = dont_filter
-        # shortcut for setting referer
-        if referer is not None:
-            self.headers['referer'] = referer
         self.depth = 0
         self.link_text = link_text
         #allows to directly specify the spider for the request

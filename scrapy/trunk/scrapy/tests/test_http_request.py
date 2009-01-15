@@ -42,9 +42,6 @@ class RequestTest(unittest.TestCase):
             self.assert_(isinstance(k, str))
             self.assert_(isinstance(v, str))
 
-        r = Request(url="http://www.example.org/1", referer=u"http://www.example.org")
-        self.assert_(isinstance(r.headers['referer'], str))
-
     def test_eq(self):
         url = 'http://www.scrapy.org'
         r1 = Request(url=url)
