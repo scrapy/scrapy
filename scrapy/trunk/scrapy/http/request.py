@@ -68,10 +68,6 @@ class Request(object):
         else:
             return "<%s %s>" % (self.method, self.url)
 
-    def __len__(self):
-        """Return raw HTTP request size"""
-        return len(self.to_string())
-
     def __repr__(self):
         d = {
             'method': self.method,
@@ -95,7 +91,7 @@ class Request(object):
         new.context = self.context # requests shares same context dictionary
         return new
 
-    def to_string(self):
+    def httprepr(self):
         """ Return raw HTTP request representation (as string). This is
         provided only for reference since it's not the actual stream of bytes
         that will be send when performing the request (that's controlled by

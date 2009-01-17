@@ -86,7 +86,7 @@ class ItemSamplerMiddleware(object):
     def process_spider_input(self, response, spider):
         if stats.getpath("%s/items_sampled" % spider.domain_name) >= items_per_domain:
             return []
-        elif max_response_size and max_response_size > len(response):  
+        elif max_response_size and max_response_size > len(response.httprepr()):  
             return []
 
     def process_spider_output(self, response, result, spider):

@@ -52,10 +52,6 @@ class Response(object):
         else:
             return "<%d %s>" % (self.status, self.url)
 
-    def __len__(self):
-        """Return raw HTTP response size"""
-        return len(self.to_string())
-
     def copy(self):
         """Create a new Response based on the current one"""
         return self.replace()
@@ -78,7 +74,7 @@ class Response(object):
         new.meta = self.meta.copy()
         return new
 
-    def to_string(self):
+    def httprepr(self):
         """
         Return raw HTTP response representation (as string). This is provided
         only for reference, since it's not the exact stream of bytes that was

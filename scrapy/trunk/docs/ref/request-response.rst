@@ -110,7 +110,7 @@ Methods
    given new values by whichever keyword arguments are specified. The attribute
    :attr:`Request.meta` is copied, while :attr:`Request.cache` is not.
 
-.. method:: Reponse.to_string()
+.. method:: Request.httprepr()
 
    Return a string with the raw HTTP representation of this response.
 
@@ -139,7 +139,7 @@ Attributes
 
 .. attribute:: Response.url
 
-    A string containing the URL of the reponse. 
+    A string containing the URL of the response. 
 
 .. attribute:: Response.status
 
@@ -198,6 +198,6 @@ Methods
    given new values by whichever keyword arguments are specified. The attribute
    :attr:`Response.meta` is copied, while :attr:`Response.cache` is not.
 
-.. method:: Reponse.to_string()
+.. method:: Response.httprepr()
 
    Return a string with the raw HTTP representation of this response.

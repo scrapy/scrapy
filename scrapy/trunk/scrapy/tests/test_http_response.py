@@ -41,12 +41,12 @@ class ResponseTest(unittest.TestCase):
 
         assert type(r2) is CustomResponse
 
-    def test_to_string(self):
+    def test_httprepr(self):
         r1 = Response('example.com', "http://www.example.com")
-        self.assertEqual(r1.to_string(), 'HTTP/1.1 200 OK\r\n\r\n')
+        self.assertEqual(r1.httprepr(), 'HTTP/1.1 200 OK\r\n\r\n')
 
         r1 = Response('example.com', "http://www.example.com", status=404, headers={"Content-type": "text/html"}, body="Some body")
-        self.assertEqual(r1.to_string(), 'HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\nSome body\r\n')
+        self.assertEqual(r1.httprepr(), 'HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\nSome body\r\n')
         
 class ResponseBodyTest(unittest.TestCase):
     unicode_string = u'\u043a\u0438\u0440\u0438\u043b\u043b\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0442\u0435\u043a\u0441\u0442'

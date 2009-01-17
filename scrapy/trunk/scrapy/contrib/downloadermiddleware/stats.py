@@ -23,7 +23,7 @@ class DownloaderStats(object):
         stats.incpath('_global/downloader/request_count')
         stats.incpath('%s/downloader/request_count' % spider.domain_name)
         stats.incpath('%s/downloader/request_method_count/%s' % (spider.domain_name, request.method))
-        reqlen = len(request)
+        reqlen = len(request.httprepr())
         stats.incpath('%s/downloader/request_bytes' % spider.domain_name, reqlen)
         stats.incpath('_global/downloader/request_bytes', reqlen)
 
@@ -43,6 +43,6 @@ class DownloaderStats(object):
         stats.incpath('_global/downloader/response_count')
         stats.incpath('%s/downloader/response_count' % domain)
         stats.incpath('%s/downloader/response_status_count/%s' % (domain, response.status))
-        reslen = len(response)
+        reslen = len(response.httprepr())
         stats.incpath('%s/downloader/response_bytes' % domain, reslen)
         stats.incpath('_global/downloader/response_bytes', reslen)
