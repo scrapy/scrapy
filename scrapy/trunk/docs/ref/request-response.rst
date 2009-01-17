@@ -21,7 +21,7 @@ generated the request.
 Request objects
 ===============
 
-.. class:: Request(url, callback=None, context=None, method='GET', body=None, headers=None, cookies=None, url_encoding='utf-8', dont_filter=None)
+.. class:: Request(url, callback=None, method='GET', body=None, headers=None, cookies=None, url_encoding='utf-8', dont_filter=None)
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
@@ -31,9 +31,6 @@ Request objects
 
     ``callback`` is a function that will be called with the response of this
     request (once its downloaded) as its first parameter
-
-    ``context`` can be a dict which will be accessible in the callback function
-    in ``response.request.context`` in the callback function
 
     ``method`` is a string with the HTTP method of this request
 

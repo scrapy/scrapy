@@ -17,7 +17,7 @@ from scrapy.utils.defer import chain_deferred
 
 class Request(object):
 
-    def __init__(self, url, callback=None, context=None, method='GET',
+    def __init__(self, url, callback=None, method='GET',
         body=None, headers=None, cookies=None,
         url_encoding='utf-8', dont_filter=None, domain=None):
 
@@ -40,8 +40,6 @@ class Request(object):
         self.cookies = cookies or {}
         # request headers
         self.headers = Headers(headers or {}, encoding=url_encoding)
-        # persistent context across requests
-        self.context = context or {}
         # dont_filter be filtered by scheduler
         self.dont_filter = dont_filter
         #allows to directly specify the spider for the request
@@ -75,20 +73,18 @@ class Request(object):
             'headers': self.headers,
             'cookies': self.cookies,
             'body': self.body,
-            'context': self.context
             }
         return "%s(%s)" % (self.__class__.__name__, repr(d))
 
     def copy(self):
-        """Clone request except `context` attribute"""
+        """Return a new request cloned from this one"""
         new = copy.copy(self)
         new.cache = {}
         for att in self.__dict__:
-            if att not in ['cache', 'context', 'url', 'deferred']:
+            if att not in ['cache', 'url', 'deferred']:
                 value = getattr(self, att)
                 setattr(new, att, copy.copy(value))
         new.deferred = defer.Deferred()
-        new.context = self.context # requests shares same context dictionary
         return new
 
     def httprepr(self):

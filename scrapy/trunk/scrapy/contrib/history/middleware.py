@@ -31,10 +31,10 @@ class HistoryMiddleware(object):
             d = datetime.now() - last_checked
             if d.days < self.MIN_CHECK_DAYS:
                 raise IgnoreRequest("Not scraping %s (scraped %s ago)" % (request.url, d))
-            request.context['history_response_version'] = version
+            request.meta['history_response_version'] = version
 
     def process_response(self, request, response, spider):
-        version = request.context.get('history_response_version')
+        version = request.meta.get('history_response_version')
         if version == self.get_version(response):
             del request.content['history_response_version']
             hist = self.historydata.version_info(domain, version)
