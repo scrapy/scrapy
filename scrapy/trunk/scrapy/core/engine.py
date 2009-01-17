@@ -250,7 +250,7 @@ class ExecutionEngine(object):
                     signals.send_catch_log(signal=signals.request_received, sender=self.__class__, request=item, spider=spider, response=response)
                     self.crawl(request=item, spider=spider, priority=priority)
                 else:
-                    log.msg('Garbage found in spider output while processing %s, got type %s' % (request, type(item)), log.DEBUG, domain=domain)
+                    log.msg("Spider must return Request or ScrapedItem objects, got '%s' while processing %s" % (type(item).__name__, request), log.WARNING, domain=domain)
 
             class _ResultContainer(object):
                 def append(self, item):
