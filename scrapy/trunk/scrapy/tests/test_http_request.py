@@ -1,8 +1,28 @@
 import unittest
-from scrapy.http import Request, Headers
+from scrapy.http import Request, Headers, Url
 from scrapy.core.scheduler import GroupFilter
 
 class RequestTest(unittest.TestCase):
+
+    def test_init(self):
+        r = Request("http://www.example.com")
+        assert isinstance(r.url, Url)
+        self.assertEqual(r.url, "http://www.example.com")
+        self.assertEqual(r.method, "GET")
+
+        assert isinstance(r.headers, Headers)
+        self.assertEqual(r.headers, {})
+        self.assertEqual(r.meta, {})
+
+        meta = {"lala": "lolo"}
+        headers = {"caca": "coco"}
+        body = "a body"
+        r = Request("http://www.example.com", meta=meta, headers=headers, body="a body")
+
+        assert r.meta is not meta
+        self.assertEqual(r.meta, meta)
+        assert r.headers is not headers
+        self.assertEqual(r.headers["caca"], "coco")
 
     def test_groupfilter(self):
         k1 = "id1"

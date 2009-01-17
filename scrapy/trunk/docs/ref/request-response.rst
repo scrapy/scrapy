@@ -21,7 +21,7 @@ generated the request.
 Request objects
 ===============
 
-.. class:: Request(url, callback=None, method='GET', body=None, headers=None, cookies=None, url_encoding='utf-8', dont_filter=None)
+.. class:: Request(url, callback=None, method='GET', body=None, headers=None, cookies=None, meta=None, url_encoding='utf-8', dont_filter=None)
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
@@ -33,6 +33,9 @@ Request objects
     request (once its downloaded) as its first parameter
 
     ``method`` is a string with the HTTP method of this request
+
+    ``meta`` is a dict containing the initial values for the
+    :attr:`Request.meta` attribute. If passed, the dict will be shallow copied.
 
     ``body`` is a string containing the request body or None if the request
     doesn't contain a body (ex. GET requests)
@@ -129,6 +132,9 @@ Response objects
     ``status`` is an integer with the HTTP status of the response
 
     ``body`` is a string (or unicode) containing the response body
+
+    ``meta`` is a dict containing the initial values for the
+    :attr:`Response.meta` attribute. If passed, the dict will be shallow copied.
 
 
 Attributes

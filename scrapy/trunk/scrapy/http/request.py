@@ -18,7 +18,7 @@ from scrapy.utils.defer import chain_deferred
 class Request(object):
 
     def __init__(self, url, callback=None, method='GET',
-        body=None, headers=None, cookies=None,
+        body=None, headers=None, cookies=None, meta=None,
         url_encoding='utf-8', dont_filter=None, domain=None):
 
         self.encoding = url_encoding  # this one has to be set first
@@ -45,7 +45,7 @@ class Request(object):
         #allows to directly specify the spider for the request
         self.domain = domain
 
-        self.meta = {}
+        self.meta = {} if meta is None else dict(meta)
         self.cache = {}
         
     def append_callback(self, callback, *args, **kwargs):
@@ -73,6 +73,7 @@ class Request(object):
             'headers': self.headers,
             'cookies': self.cookies,
             'body': self.body,
+            'meta': self.meta,
             }
         return "%s(%s)" % (self.__class__.__name__, repr(d))
 

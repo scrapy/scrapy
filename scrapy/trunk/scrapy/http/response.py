@@ -19,7 +19,7 @@ class Response(object):
 
     _ENCODING_RE = re.compile(r'charset=([\w-]+)', re.I)
 
-    def __init__(self, domain, url, status=200, headers=None, body=None):
+    def __init__(self, domain, url, status=200, headers=None, body=None, meta=None):
         self.domain = domain
         self.url = Url(url)
         self.headers = Headers(headers or {})
@@ -32,7 +32,7 @@ class Response(object):
             self.body = None
         self.cached = False
         self.request = None
-        self.meta = {}
+        self.meta = {} if meta is None else dict(meta)
         self.cache = {}
 
     def headers_encoding(self):

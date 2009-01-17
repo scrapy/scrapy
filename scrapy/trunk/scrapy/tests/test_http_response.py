@@ -1,5 +1,5 @@
 import unittest
-from scrapy.http import Response
+from scrapy.http import Response, Headers, Url
 from scrapy.http.response import _ResponseBody
 
 class ResponseTest(unittest.TestCase):
@@ -14,6 +14,25 @@ class ResponseTest(unittest.TestCase):
         self.assertTrue(isinstance(Response('example.com', 'http://example.com/', body='body'), Response))
         # test presence of all optional parameters
         self.assertTrue(isinstance(Response('example.com', 'http://example.com/', headers={}, status=200, body=None), Response))
+
+        r = Response("domain.com", "http://www.example.com")
+        assert isinstance(r.url, Url)
+        self.assertEqual(r.url, "http://www.example.com")
+        self.assertEqual(r.status, 200)
+
+        assert isinstance(r.headers, Headers)
+        self.assertEqual(r.headers, {})
+        self.assertEqual(r.meta, {})
+
+        meta = {"lala": "lolo"}
+        headers = {"caca": "coco"}
+        body = "a body"
+        r = Response("example.com", "http://www.example.com", meta=meta, headers=headers, body="a body")
+
+        assert r.meta is not meta
+        self.assertEqual(r.meta, meta)
+        assert r.headers is not headers
+        self.assertEqual(r.headers["caca"], "coco")
 
     def test_copy(self):
         """Test Response copy"""
