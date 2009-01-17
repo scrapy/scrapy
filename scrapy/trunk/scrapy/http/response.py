@@ -6,16 +6,14 @@ See documentation in docs/ref/request-response.rst
 """
 
 import re
-import hashlib
 import copy
+from types import NoneType
 
+from twisted.web.http import RESPONSES
 from BeautifulSoup import UnicodeDammit
 
 from scrapy.http.url import Url
 from scrapy.http.headers import Headers
-
-from twisted.web import http
-reason_phrases = http.RESPONSES 
 
 class Response(object):
 
@@ -26,19 +24,16 @@ class Response(object):
         self.url = Url(url)
         self.headers = Headers(headers or {})
         self.status = status
-        # ResponseBody is not meant to be used directly (use .replace instead)
-        assert(isinstance(body, basestring) or body is None)
-        self.body = ResponseBody(body, self.headers_encoding())
+        if body is not None:
+            assert isinstance(body, basestring), \
+                "body must be basestring, got %s" % type(body).__name__
+            self.body = _ResponseBody(body, self.headers_encoding())
+        else:
+            self.body = None
         self.cached = False
-        self.request = None # request which originated this response
+        self.request = None
         self.meta = {}
         self.cache = {}
-
-    def version(self):
-        """A hash of the contents of this response"""
-        if not hasattr(self, '_version'):
-            self._version = hashlib.sha1(self.body.to_string()).hexdigest()
-        return self._version
 
     def headers_encoding(self):
         content_type = self.headers.get('Content-Type')
@@ -52,39 +47,36 @@ class Response(object):
                 (repr(self.domain), repr(self.url), repr(self.headers), repr(self.status), repr(self.body))
 
     def __str__(self):
-        version = '%s..%s' % (self.version()[:4], self.version()[-4:])
-        return "<Response: %s %s (%s)>" % (self.status, self.url, version)
+        if self.status == 200:
+            return "<%s>" % (self.url)
+        else:
+            return "<%d %s>" % (self.status, self.url)
 
     def __len__(self):
         """Return raw HTTP response size"""
         return len(self.to_string())
 
-    def info(self):
-        return "<Response status=%s domain=%s url=%s headers=%s" % (self.status, self.domain, self.url, self.headers)
-
     def copy(self):
         """Create a new Response based on the current one"""
         return self.replace()
 
-    def replace(self, **kw):
-        """Create a new Response with the same attributes except for those given new values.
+    def replace(self, domain=None, url=None, status=None, headers=None, body=None):
+        """Create a new Response with the same attributes except for those
+        given new values.
 
-        Example: newresp = oldresp.replace(body="New body")
+        Example:
+
+        >>> newresp = oldresp.replace(body="New body")
         """
-        def sameheaders():
-            return copy.deepcopy(self.headers)
-        def samebody():
-            return copy.deepcopy(self.body)
-        newresp = Response(kw.get('domain', self.domain),
-                           kw.get('url', self.url),
-                           headers=kw.get('headers', sameheaders()),
-                           status=kw.get('status', self.status),
-                           body=kw.get('body'))
-        # Response.__init__ forbids the use of ResponseBody instances
-        if 'body' not in kw:
-            newresp.body = samebody()
-        newresp.meta = self.meta.copy()
-        return newresp
+        new = self.__class__(domain=domain or self.domain,
+                             url=url or self.url,
+                             status=status or self.status,
+                             headers=headers or copy.deepcopy(self.headers),
+                             body=body)
+        if body is None:
+            new.body = copy.deepcopy(self.body)
+        new.meta = self.meta.copy()
+        return new
 
     def to_string(self):
         """
@@ -93,18 +85,24 @@ class Response(object):
         received (that's not exposed by Twisted).
         """
 
-        s  = "HTTP/1.1 %s %s\r\n" % (self.status, reason_phrases[int(self.status)])
-        s += self.headers.to_string() + "\r\n"
+        s  = "HTTP/1.1 %s %s\r\n" % (self.status, RESPONSES[self.status])
+        if self.headers:
+            s += self.headers.to_string() + "\r\n"
         s += "\r\n"
         if self.body:
             s += self.body.to_string()
             s += "\r\n"
         return s
 
-class ResponseBody(object):
-    """The body of an HTTP response
+class _ResponseBody(object):
+    """The body of an HTTP response. 
+    
+    WARNING: This is a private class and could be removed in the future without
+    previous notice. Do not use it this class from outside this module, use
+    the Response class instead.
 
-    This handles conversion to unicode and various character encodings.
+    Currently, the main purpose of this class is to handle conversion to
+    unicode and various character encodings.
     """
 
     _template = r'''%s\s*=\s*["']?\s*%s\s*["']?'''
@@ -182,7 +180,7 @@ class ResponseBody(object):
         return proposed
 
     def __repr__(self):
-        return "ResponseBody(content=%s, declared_encoding=%s)" % (repr(self._content), repr(self.declared_encoding))
+        return "_ResponseBody(content=%s, declared_encoding=%s)" % (repr(self._content), repr(self.declared_encoding))
 
     def __str__(self):
         return self.to_string()

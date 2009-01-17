@@ -35,7 +35,7 @@ class HistoryMiddleware(object):
 
     def process_response(self, request, response, spider):
         version = request.context.get('history_response_version')
-        if version == response.version():
+        if version == self.get_version(response):
             del request.content['history_response_version']
             hist = self.historydata.version_info(domain, version)
             if hist:
@@ -66,11 +66,13 @@ class HistoryMiddleware(object):
         if response:
             redirect_url = response.url
             parentkey = urlkey(response.request.headers.get('referer')) if response.request else None
-            version = response.version()
+            version = self.get_version(response)
         else:
             redirect_url, parentkey, version = url, None, None
         self.historydata.store(domain, key, url, parentkey, version, post_version)
 
+    def get_version(self, response):
+        key = hashlib.sha1(response.body.to_string()).hexdigest()
 
 def urlkey(url):
     """Generate a 'key' for a given url

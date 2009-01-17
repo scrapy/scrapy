@@ -2,6 +2,7 @@
 WARNING: This Scheduler code is obsolete and needs to be rewritten 
 """
 
+import hashlib
 from datetime import datetime
 
 from twisted.internet import defer
@@ -72,7 +73,8 @@ class RulesScheduler(Scheduler):
 
         def callback(pagedata):
             """process other callback if we pass the checks"""
-            if version == pagedata.version():
+            
+            if version == self.get_version(pagedata):
                 hist = self.historydata.version_info(domain, version)
                 if hist:
                     versionkey, created = hist
@@ -83,7 +85,7 @@ class RulesScheduler(Scheduler):
                         message = "skipping %s: unchanged for %s" % (pagedata.url, delta)
                         raise IgnoreRequest(message)
             self.record_visit(domain, request.url, pagedata.url,
-                              pagedata.parent,  pagedata.version(),
+                              pagedata.parent,  self.get(pagedata),
                               post_version)
             return pagedata
 
@@ -98,3 +100,6 @@ class RulesScheduler(Scheduler):
         #request.prepend_callback(d)
 
         return request
+
+    def get_version(self, response):
+        key = hashlib.sha1(response.body.to_string()).hexdigest()

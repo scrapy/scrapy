@@ -42,7 +42,7 @@ class AdaptorsTestCase(unittest.TestCase):
     def get_selector(self, domain, url, sample_filename, headers=None, selector=HtmlXPathSelector):
         sample_filename = os.path.join(self.samplesdir, sample_filename)
         body = file(sample_filename).read()
-        response = Response(domain=domain, url=url, headers=Headers(headers), status='200', body=body)
+        response = Response(domain=domain, url=url, headers=Headers(headers), status=200, body=body)
         return selector(response)
 
     def test_extract(self):

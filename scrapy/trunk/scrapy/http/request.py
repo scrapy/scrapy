@@ -63,9 +63,10 @@ class Request(object):
     url = property(lambda x: x._url, set_url)
 
     def __str__(self):
-        if self.method != 'GET':
-            return "<(%s) %s>" % (self.method, self.url)
-        return "<%s>" % self.url
+        if self.method == 'GET':
+            return "<%s>" % self.url
+        else:
+            return "<%s %s>" % (self.method, self.url)
 
     def __len__(self):
         """Return raw HTTP request size"""
@@ -103,7 +104,8 @@ class Request(object):
 
         s  = "%s %s HTTP/1.1\r\n" % (self.method, self.url)
         s += "Host: %s\r\n" % self.url.hostname
-        s += self.headers.to_string() + "\r\n"
+        if self.headers:
+            s += self.headers.to_string() + "\r\n"
         s += "\r\n"
         if self.body:
             s += self.body

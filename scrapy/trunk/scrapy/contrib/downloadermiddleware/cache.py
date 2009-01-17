@@ -15,6 +15,14 @@ from scrapy.core.exceptions import NotConfigured, HttpException, IgnoreRequest
 from scrapy.utils.request import request_fingerprint
 from scrapy.conf import settings
 
+class CachedResponse(Response):
+
+    def __init__(self, *args, **kwargs):
+        Response.__init__(self, *args, **kwargs)
+        self.meta['cached'] = True
+
+    def __str__(self):
+        return "(cached) " + Response.__str__(self)
 
 class CacheMiddleware(object):
     def __init__(self):
@@ -39,7 +47,6 @@ class CacheMiddleware(object):
             log.msg("Corrupt cache for %s" % request.url, log.WARNING)
             response = False
         if response:
-            response.cached = True
             if not 200 <= int(response.status) < 300:
                 raise HttpException(response.status, None, response)
             return response
@@ -50,7 +57,7 @@ class CacheMiddleware(object):
         if not is_cacheable(request):
             return response
 
-        if isinstance(response, Response) and not response.cached:
+        if isinstance(response, Response) and not response.meta.get('cached'):
             key = request_fingerprint(request)
             domain = spider.domain_name
             self.cache.store(domain, key, request, response)
@@ -153,8 +160,7 @@ class Cache(object):
         headers = Headers(responseheaders)
         status = metadata['status']
 
-        response = Response(domain=domain, url=url, headers=headers, status=status, body=responsebody)
-        response.cached = True
+        response = CachedResponse(domain=domain, url=url, headers=headers, status=status, body=responsebody)
         return response
 
     def store(self, domain, key, request, response):

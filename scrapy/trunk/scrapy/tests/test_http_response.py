@@ -1,7 +1,9 @@
 import unittest
-from scrapy.http import Response, ResponseBody
+from scrapy.http import Response
+from scrapy.http.response import _ResponseBody
 
 class ResponseTest(unittest.TestCase):
+
     def test_init(self):
         # Response requires domain and url
         self.assertRaises(Exception, Response)
@@ -10,7 +12,6 @@ class ResponseTest(unittest.TestCase):
         # body can be str or None but not ResponseBody
         self.assertTrue(isinstance(Response('example.com', 'http://example.com/', body=None), Response))
         self.assertTrue(isinstance(Response('example.com', 'http://example.com/', body='body'), Response))
-        self.assertRaises(AssertionError, Response, 'example.com', 'http://example.com/', body=ResponseBody('body', 'utf-8'))
         # test presence of all optional parameters
         self.assertTrue(isinstance(Response('example.com', 'http://example.com/', headers={}, status=200, body=None), Response))
 
@@ -29,12 +30,30 @@ class ResponseTest(unittest.TestCase):
         assert r1.meta is not r2.meta, "meta must be a shallow copy, not identical"
         self.assertEqual(r1.meta, r2.meta)
 
+    def test_copy_inherited_classes(self):
+        """Test Response children copies preserve their class"""
+
+        class CustomResponse(Response):
+            pass
+
+        r1 = CustomResponse('example.com', 'http://www.example.com')
+        r2 = r1.copy()
+
+        assert type(r2) is CustomResponse
+
+    def test_to_string(self):
+        r1 = Response('example.com', "http://www.example.com")
+        self.assertEqual(r1.to_string(), 'HTTP/1.1 200 OK\r\n\r\n')
+
+        r1 = Response('example.com', "http://www.example.com", status=404, headers={"Content-type": "text/html"}, body="Some body")
+        self.assertEqual(r1.to_string(), 'HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\nSome body\r\n')
+        
 class ResponseBodyTest(unittest.TestCase):
     unicode_string = u'\u043a\u0438\u0440\u0438\u043b\u043b\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0442\u0435\u043a\u0441\u0442'
 
     def test_encoding(self):
         original_string = self.unicode_string.encode('cp1251')
-        cp1251_body     = ResponseBody(original_string, 'cp1251')
+        cp1251_body     = _ResponseBody(original_string, 'cp1251')
 
         # check to_unicode
         self.assertTrue(isinstance(cp1251_body.to_unicode(), unicode))

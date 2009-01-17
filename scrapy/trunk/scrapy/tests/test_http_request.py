@@ -94,5 +94,23 @@ class RequestTest(unittest.TestCase):
         assert r1.meta is not r2.meta, "meta must be a shallow copy, not identical"
         self.assertEqual(r1.meta, r2.meta)
 
+    def test_copy_inherited_classes(self):
+        """Test Request children copies preserve their class"""
+
+        class CustomRequest(Request):
+            pass
+
+        r1 = CustomRequest('example.com', 'http://www.example.com')
+        r2 = r1.copy()
+
+        assert type(r2) is CustomRequest
+
+    def test_to_string(self):
+        r1 = Request("http://www.example.com")
+        self.assertEqual(r1.to_string(), 'GET http://www.example.com HTTP/1.1\r\nHost: www.example.com\r\n\r\n')
+
+        r1 = Request("http://www.example.com", method='POST', headers={"Content-type": "text/html"}, body="Some body")
+        self.assertEqual(r1.to_string(), 'POST http://www.example.com HTTP/1.1\r\nHost: www.example.com\r\nContent-Type: text/html\r\n\r\nSome body\r\n')
+
 if __name__ == "__main__":
     unittest.main()

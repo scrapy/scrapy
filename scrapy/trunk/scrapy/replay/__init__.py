@@ -6,6 +6,7 @@ import shutil
 import tempfile
 import tarfile
 import copy
+import hashlib
 
 from pydispatch import dispatcher
 
@@ -132,7 +133,7 @@ class Replay(object):
             self.passed_new[str(item.guid)] = item
 
     def response_received(self, response, spider):
-        key = response.version()
+        key = hashlib.sha1(response.body.to_string()).hexdigest()
         if (self.recording or self.updating) and key:
             self.responses_old[key] = response.copy()
         elif key:

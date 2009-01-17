@@ -149,9 +149,9 @@ class EngineTest(unittest.TestCase):
 
         for response, spider in session.respplug:
             if session.getpath(response.url) == '/item999.html':
-                self.assertEqual('404', response.status)
+                self.assertEqual(404, response.status)
             if session.getpath(response.url) == '/redirect':
-                self.assertEqual('302', response.status)
+                self.assertEqual(302, response.status)
             self.assertEqual(response.domain, spider.domain_name)
 
     def test_item_data(self):
