@@ -12,7 +12,7 @@ class ResponseTest(unittest.TestCase):
         self.assertTrue(isinstance(Response('example.com', 'http://example.com/', body='body'), Response))
         self.assertRaises(AssertionError, Response, 'example.com', 'http://example.com/', body=ResponseBody('body', 'utf-8'))
         # test presence of all optional parameters
-        self.assertTrue(isinstance(Response('example.com', 'http://example.com/', original_url='http://example.com/None', headers={}, status=200, body=None), Response))
+        self.assertTrue(isinstance(Response('example.com', 'http://example.com/', headers={}, status=200, body=None), Response))
 
     def test_copy(self):
         """Test Response copy"""

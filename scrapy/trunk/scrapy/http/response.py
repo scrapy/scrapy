@@ -1,6 +1,6 @@
 """
 This module implements the Response class which is used to represent HTTP
-responses in Scrapy.
+esponses in Scrapy.
 
 See documentation in docs/ref/request-response.rst
 """
@@ -17,23 +17,13 @@ from scrapy.http.headers import Headers
 from twisted.web import http
 reason_phrases = http.RESPONSES 
 
-class Response(object) :
-    """HTTP responses
+class Response(object):
 
-    Arguments:
-        * Domain - the spider domain for the page
-        * url - the final url for the resource
-        * original_url - the url requested
-        * headers - HTTP headers
-        * status - HTTP status code
-        * body - Body object containing the content of the response
-    """
     _ENCODING_RE = re.compile(r'charset=([\w-]+)', re.I)
 
-    def __init__(self, domain, url, original_url=None, headers=None, status=200, body=None):
+    def __init__(self, domain, url, status=200, headers=None, body=None):
         self.domain = domain
         self.url = Url(url)
-        self.original_url = Url(original_url) if original_url else url # different if redirected or escaped
         self.headers = Headers(headers or {})
         self.status = status
         # ResponseBody is not meant to be used directly (use .replace instead)
@@ -58,8 +48,8 @@ class Response(object) :
                 return encoding.group(1)
 
     def __repr__(self):
-        return "Response(domain=%s, url=%s, original_url=%s, headers=%s, status=%s, body=%s)" % \
-                (repr(self.domain), repr(self.url), repr(self.original_url), repr(self.headers), repr(self.status), repr(self.body))
+        return "Response(domain=%s, url=%s, headers=%s, status=%s, body=%s)" % \
+                (repr(self.domain), repr(self.url), repr(self.headers), repr(self.status), repr(self.body))
 
     def __str__(self):
         version = '%s..%s' % (self.version()[:4], self.version()[-4:])
@@ -87,7 +77,6 @@ class Response(object) :
             return copy.deepcopy(self.body)
         newresp = Response(kw.get('domain', self.domain),
                            kw.get('url', self.url),
-                           original_url=kw.get('original_url', self.original_url),
                            headers=kw.get('headers', sameheaders()),
                            status=kw.get('status', self.status),
                            body=kw.get('body'))
