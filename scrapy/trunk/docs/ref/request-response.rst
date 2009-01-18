@@ -117,14 +117,11 @@ Methods
 Response objects
 ================
 
-.. class:: Response(domain, url, status=200, headers=None, body=None)
+.. class:: Response(url, status=200, headers=None, body=None)
 
     A :class:`Response` object represents an HTTP response, which is usually
     downloaded (by the Downloader) and fed to the Spiders for processing.
     
-    ``domain`` is a string with the domain of the spider for which this
-    Response is for
-
     ``url`` is a string containing the URL for this response
 
     ``headers`` is a multivalued dict of the response headers
@@ -195,7 +192,7 @@ Methods
    Return a new Response which is a copy of this Response. The attribute
    :attr:`Response.meta` is copied, while :attr:`Response.cache` is not.
 
-.. method:: Response.replace(domain=None, url=None, status=None, headers=None, body=None)
+.. method:: Response.replace(url=None, status=None, headers=None, body=None)
 
    Return a Response object with the same members, except for those members
    given new values by whichever keyword arguments are specified. The attribute
