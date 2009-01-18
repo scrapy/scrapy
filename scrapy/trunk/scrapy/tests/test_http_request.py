@@ -105,7 +105,10 @@ class RequestTest(unittest.TestCase):
     def test_copy(self):
         """Test Request copy"""
         
-        r1 = Request("http://www.example.com")
+        def somecallback():
+            pass
+
+        r1 = Request("http://www.example.com", callback=somecallback)
         r1.meta['foo'] = 'bar'
         r1.cache['lala'] = 'lolo'
         r2 = r1.copy()
@@ -113,9 +116,17 @@ class RequestTest(unittest.TestCase):
         assert r1.cache
         assert not r2.cache
 
+        assert r1.deferred is not r2.deferred
+
         # make sure meta dict is shallow copied
         assert r1.meta is not r2.meta, "meta must be a shallow copy, not identical"
         self.assertEqual(r1.meta, r2.meta)
+
+        # make sure headers attribute is shallow copied
+        assert r1.headers is not r2.headers, "headers must be a shallow copy, not identical"
+        self.assertEqual(r1.headers, r2.headers)
+
+        # Request.body can be identical since it's an immutable object (str)
 
     def test_copy_inherited_classes(self):
         """Test Request children copies preserve their class"""
@@ -127,6 +138,16 @@ class RequestTest(unittest.TestCase):
         r2 = r1.copy()
 
         assert type(r2) is CustomRequest
+
+    def test_replace(self):
+        """Test Request.replace() method"""
+        hdrs = Headers({"key": "value"})
+        r1 = Request("http://www.example.com")
+        r2 = r1.replace(method="POST", body="New body", headers=hdrs)
+        self.assertEqual(r1.url, r2.url)
+        self.assertEqual((r1.method, r2.method), ("GET", "POST"))
+        self.assertEqual((r1.body, r2.body), (None, "New body"))
+        self.assertEqual((r1.headers, r2.headers), ({}, hdrs))
 
     def test_httprepr(self):
         r1 = Request("http://www.example.com")

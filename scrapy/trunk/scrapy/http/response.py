@@ -51,24 +51,21 @@ class Response(object):
             return "<%d %s>" % (self.status, self.url)
 
     def copy(self):
-        """Create a new Response based on the current one"""
+        """Return a copy of this Response"""
         return self.replace()
 
-    def replace(self, url=None, status=None, headers=None, body=None):
+    def replace(self, url=None, status=None, headers=None, body=None, meta=None):
         """Create a new Response with the same attributes except for those
         given new values.
-
-        Example:
-
-        >>> newresp = oldresp.replace(body="New body")
         """
         new = self.__class__(url=url or self.url,
                              status=status or self.status,
                              headers=headers or copy.deepcopy(self.headers),
-                             body=body)
+                             meta=meta or self.meta)
         if body is None:
             new.body = copy.deepcopy(self.body)
-        new.meta = self.meta.copy()
+        else:
+            new.body = _ResponseBody(body, self.headers_encoding())
         return new
 
     def httprepr(self):
@@ -183,4 +180,7 @@ class _ResponseBody(object):
 
     def __len__(self):
         return len(self._content)
+
+    def __eq__(self, other):
+        return self._content == other._content and self.declared_encoding == other.declared_encoding
 

@@ -17,9 +17,8 @@ from scrapy.utils.defer import chain_deferred
 
 class Request(object):
 
-    def __init__(self, url, callback=None, method='GET',
-        body=None, headers=None, cookies=None, meta=None,
-        url_encoding='utf-8', dont_filter=None):
+    def __init__(self, url, callback=None, method='GET', headers=None, body=None, 
+                 cookies=None, meta=None, url_encoding='utf-8', dont_filter=None):
 
         self.encoding = url_encoding  # this one has to be set first
         self.set_url(url)
@@ -69,14 +68,14 @@ class Request(object):
             'method': self.method,
             'url': self.url,
             'headers': self.headers,
-            'cookies': self.cookies,
             'body': self.body,
+            'cookies': self.cookies,
             'meta': self.meta,
             }
         return "%s(%s)" % (self.__class__.__name__, repr(d))
 
     def copy(self):
-        """Return a new request cloned from this one"""
+        """Return a copy a of this Request"""
         new = copy.copy(self)
         new.cache = {}
         for att in self.__dict__:
@@ -85,6 +84,17 @@ class Request(object):
                 setattr(new, att, copy.copy(value))
         new.deferred = defer.Deferred()
         return new
+
+    def replace(self, url=None, method=None, headers=None, body=None, cookies=None, meta=None):
+        """Create a new Request with the same attributes except for those
+        given new values.
+        """
+        return self.__class__(url=url or self.url,
+                              method=method or self.method,
+                              headers=headers or copy.deepcopy(self.headers),
+                              body=body or self.body,
+                              cookies=cookies or self.cookies,
+                              meta=meta or self.meta)
 
     def httprepr(self):
         """ Return raw HTTP request representation (as string). This is

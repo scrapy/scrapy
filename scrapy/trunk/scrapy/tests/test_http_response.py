@@ -36,7 +36,7 @@ class ResponseTest(unittest.TestCase):
     def test_copy(self):
         """Test Response copy"""
         
-        r1 = Response("http://www.example.com")
+        r1 = Response("http://www.example.com", body="Some body")
         r1.meta['foo'] = 'bar'
         r1.cache['lala'] = 'lolo'
         r2 = r1.copy()
@@ -48,6 +48,14 @@ class ResponseTest(unittest.TestCase):
         assert r1.meta is not r2.meta, "meta must be a shallow copy, not identical"
         self.assertEqual(r1.meta, r2.meta)
 
+        # make sure headers attribute is shallow copied
+        assert r1.headers is not r2.headers, "headers must be a shallow copy, not identical"
+        self.assertEqual(r1.headers, r2.headers)
+
+        # make sure body is shallow copied
+        assert r1.body is not r2.body, "body must be a shallow copy, not identical"
+        self.assertEqual(r1.body, r2.body)
+
     def test_copy_inherited_classes(self):
         """Test Response children copies preserve their class"""
 
@@ -58,6 +66,18 @@ class ResponseTest(unittest.TestCase):
         r2 = r1.copy()
 
         assert type(r2) is CustomResponse
+
+    def test_replace(self):
+        """Test Response.replace() method"""
+        hdrs = Headers({"key": "value"})
+        r1 = Response("http://www.example.com")
+        r2 = r1.replace(status=301, body="New body", headers=hdrs)
+        assert r1.body is None
+        assert isinstance(r2.body, _ResponseBody)
+        self.assertEqual(r1.url, r2.url)
+        self.assertEqual((r1.status, r2.status), (200, 301))
+        self.assertEqual((r1.body, r2.body.to_string()), (None, "New body"))
+        self.assertEqual((r1.headers, r2.headers), ({}, hdrs))
 
     def test_httprepr(self):
         r1 = Response("http://www.example.com")
