@@ -160,7 +160,7 @@ class Cache(object):
         headers = Headers(responseheaders)
         status = metadata['status']
 
-        response = CachedResponse(domain=domain, url=url, headers=headers, status=status, body=responsebody)
+        response = CachedResponse(url=url, headers=headers, status=status, body=responsebody)
         return response
 
     def store(self, domain, key, request, response):

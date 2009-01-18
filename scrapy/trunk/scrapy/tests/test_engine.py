@@ -152,7 +152,6 @@ class EngineTest(unittest.TestCase):
                 self.assertEqual(404, response.status)
             if session.getpath(response.url) == '/redirect':
                 self.assertEqual(302, response.status)
-            self.assertEqual(response.domain, spider.domain_name)
 
     def test_item_data(self):
         """

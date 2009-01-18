@@ -20,7 +20,7 @@ class UtilsXmlTestCase(unittest.TestCase):
               </product>\
             </products>"""
 
-        response = Response(domain="example.com", url="http://example.com", body=body)
+        response = Response(url="http://example.com", body=body)
         attrs = []
         for x in xmliter(response, 'product'):
             attrs.append((x.x("@id").extract(), x.x("name/text()").extract(), x.x("./type/text()").extract()))
@@ -53,7 +53,7 @@ class UtilsXmlTestCase(unittest.TestCase):
                 </channel>
             </rss>
         """
-        response = Response(domain='mydummycompany.com', url='http://mydummycompany.com', body=body)
+        response = Response(url='http://mydummycompany.com', body=body)
         my_iter = xmliter(response, 'item')
 
         node = my_iter.next()
@@ -83,7 +83,7 @@ class UtilsCsvTestCase(unittest.TestCase):
     def test_iterator_defaults(self):
         body = open(self.sample_feed_path).read()
 
-        response = Response(domain="example.com", url="http://example.com/", body=body)
+        response = Response(url="http://example.com/", body=body)
         csv = csviter(response)
 
         result = [row for row in csv]
@@ -101,7 +101,7 @@ class UtilsCsvTestCase(unittest.TestCase):
     def test_iterator_delimiter(self):
         body = open(self.sample_feed_path).read().replace(',', '\t')
 
-        response = Response(domain="example.com", url="http://example.com/", body=body)
+        response = Response(url="http://example.com/", body=body)
         csv = csviter(response, delimiter='\t')
 
         self.assertEqual([row for row in csv],
@@ -114,7 +114,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         sample = open(self.sample_feed_path).read().splitlines()
         headers, body = sample[0].split(','), '\n'.join(sample[1:])
 
-        response = Response(domain="example.com", url="http://example.com/", body=body)
+        response = Response(url="http://example.com/", body=body)
         csv = csviter(response, headers=headers)
 
         self.assertEqual([row for row in csv],
@@ -127,7 +127,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         body = open(self.sample_feed_path).read()
         body = '\n'.join((body, 'a,b', 'a,b,c,d'))
 
-        response = Response(domain="example.com", url="http://example.com/", body=body)
+        response = Response(url="http://example.com/", body=body)
         csv = csviter(response)
 
         self.assertEqual([row for row in csv],
@@ -139,7 +139,7 @@ class UtilsCsvTestCase(unittest.TestCase):
     def test_iterator_exception(self):
         body = open(self.sample_feed_path).read()
 
-        response = Response(domain="example.com", url="http://example.com/", body=body)
+        response = Response(url="http://example.com/", body=body)
         iter = csviter(response)
         iter.next()
         iter.next()

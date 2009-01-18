@@ -49,7 +49,7 @@ def download_http(request, spider):
         body = body or ''
         status = int(factory.status)
         headers = Headers(factory.response_headers)
-        r = Response(domain=spider.domain_name, url=request.url, status=status, headers=headers, body=body)
+        r = Response(url=request.url, status=status, headers=headers, body=body)
         signals.send_catch_log(signal=signals.request_uploaded, sender='download_http', request=request, spider=spider)
         signals.send_catch_log(signal=signals.response_downloaded, sender='download_http', response=r, spider=spider)
         return r
@@ -81,5 +81,5 @@ def download_file(request, spider) :
     """Return a deferred for a file download."""
     filepath = request.url.split("file://")[1]
     with open(filepath) as f:
-        response = Response(domain=spider.domain_name, url=request.url, body=f.read())
+        response = Response(url=request.url, body=f.read())
     return defer_succeed(response)

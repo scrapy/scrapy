@@ -42,7 +42,7 @@ class AdaptorsTestCase(unittest.TestCase):
     def get_selector(self, domain, url, sample_filename, headers=None, selector=HtmlXPathSelector):
         sample_filename = os.path.join(self.samplesdir, sample_filename)
         body = file(sample_filename).read()
-        response = Response(domain=domain, url=url, headers=Headers(headers), status=200, body=body)
+        response = Response(url=url, headers=Headers(headers), status=200, body=body)
         return selector(response)
 
     def test_extract(self):
@@ -124,7 +124,7 @@ class AdaptorsTestCase(unittest.TestCase):
                            <a onclick="javascript: opensomething('dummy/my_html2.html');">something2</a>
                          </div>
                        </body></html>"""
-        sample_response = Response('foobar.com', 'http://foobar.com/dummy', body=test_data)
+        sample_response = Response('http://foobar.com/dummy', body=test_data)
         sample_xsel = XmlXPathSelector(sample_response)
         sample_adaptor = adaptors.ExtractImages(response=sample_response)
 

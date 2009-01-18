@@ -12,8 +12,8 @@ class RetryTest(unittest.TestCase):
         self.spider = spiders.fromdomain('scrapytest.org')
 
     def test_process_exception(self):
-        exception_404 = (Request('http://www.scrapytest.org/404'), HttpException('404', None, Response('scrapytest.org', 'http://www.scrapytest.org/404', body='')), self.spider)
-        exception_503 = (Request('http://www.scrapytest.org/503'), HttpException('503', None, Response('scrapytest.org', 'http://www.scrapytest.org/503', body='')), self.spider)
+        exception_404 = (Request('http://www.scrapytest.org/404'), HttpException('404', None, Response('http://www.scrapytest.org/404', body='')), self.spider)
+        exception_503 = (Request('http://www.scrapytest.org/503'), HttpException('503', None, Response('http://www.scrapytest.org/503', body='')), self.spider)
 
         mw = RetryMiddleware()
         mw.retry_times = 1

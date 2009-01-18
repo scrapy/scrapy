@@ -11,7 +11,7 @@ class ResponseSoupTest(unittest.TestCase):
         ResponseSoup()
 
     def test_response_soup(self):
-        r1 = Response('example.com', 'http://www.example.com', body='')
+        r1 = Response('http://www.example.com', body='')
 
         soup1 = r1.getsoup()
         soup2 = r1.getsoup()
@@ -22,7 +22,7 @@ class ResponseSoupTest(unittest.TestCase):
         assert soup1 is soup2
 
     def test_response_soup_caching(self):
-        r1 = Response('example.com', 'http://www.example.com', body='')
+        r1 = Response('http://www.example.com', body='')
         soup1 = r1.getsoup()
         r2 = r1.copy()
         soup2 = r1.getsoup()

@@ -5,17 +5,16 @@ from scrapy.http.response import _ResponseBody
 class ResponseTest(unittest.TestCase):
 
     def test_init(self):
-        # Response requires domain and url
+        # Response requires url in the consturctor
         self.assertRaises(Exception, Response)
-        self.assertRaises(Exception, Response, 'example.com')
-        self.assertTrue(isinstance(Response('example.com', 'http://example.com/'), Response))
+        self.assertTrue(isinstance(Response('http://example.com/'), Response))
         # body can be str or None but not ResponseBody
-        self.assertTrue(isinstance(Response('example.com', 'http://example.com/', body=None), Response))
-        self.assertTrue(isinstance(Response('example.com', 'http://example.com/', body='body'), Response))
+        self.assertTrue(isinstance(Response('http://example.com/', body=None), Response))
+        self.assertTrue(isinstance(Response('http://example.com/', body='body'), Response))
         # test presence of all optional parameters
-        self.assertTrue(isinstance(Response('example.com', 'http://example.com/', headers={}, status=200, body=None), Response))
+        self.assertTrue(isinstance(Response('http://example.com/', headers={}, status=200, body=None), Response))
 
-        r = Response("domain.com", "http://www.example.com")
+        r = Response("http://www.example.com")
         assert isinstance(r.url, Url)
         self.assertEqual(r.url, "http://www.example.com")
         self.assertEqual(r.status, 200)
@@ -27,7 +26,7 @@ class ResponseTest(unittest.TestCase):
         meta = {"lala": "lolo"}
         headers = {"caca": "coco"}
         body = "a body"
-        r = Response("example.com", "http://www.example.com", meta=meta, headers=headers, body="a body")
+        r = Response("http://www.example.com", meta=meta, headers=headers, body="a body")
 
         assert r.meta is not meta
         self.assertEqual(r.meta, meta)
@@ -37,7 +36,7 @@ class ResponseTest(unittest.TestCase):
     def test_copy(self):
         """Test Response copy"""
         
-        r1 = Response('example.com', "http://www.example.com")
+        r1 = Response("http://www.example.com")
         r1.meta['foo'] = 'bar'
         r1.cache['lala'] = 'lolo'
         r2 = r1.copy()
@@ -55,16 +54,16 @@ class ResponseTest(unittest.TestCase):
         class CustomResponse(Response):
             pass
 
-        r1 = CustomResponse('example.com', 'http://www.example.com')
+        r1 = CustomResponse('http://www.example.com')
         r2 = r1.copy()
 
         assert type(r2) is CustomResponse
 
     def test_httprepr(self):
-        r1 = Response('example.com', "http://www.example.com")
+        r1 = Response("http://www.example.com")
         self.assertEqual(r1.httprepr(), 'HTTP/1.1 200 OK\r\n\r\n')
 
-        r1 = Response('example.com', "http://www.example.com", status=404, headers={"Content-type": "text/html"}, body="Some body")
+        r1 = Response("http://www.example.com", status=404, headers={"Content-type": "text/html"}, body="Some body")
         self.assertEqual(r1.httprepr(), 'HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\nSome body\r\n')
         
 class ResponseBodyTest(unittest.TestCase):

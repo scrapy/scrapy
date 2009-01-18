@@ -19,7 +19,7 @@ class XPathTestCase(unittest.TestCase):
     def test_selector_simple(self):
         """Simple selector tests"""
         body = "<p><input name='a'value='1'/><input name='b'value='2'/></p>"
-        response = Response(domain="example.com", url="http://example.com", body=body)
+        response = Response(url="http://example.com", body=body)
         xpath = HtmlXPathSelector(response)
 
         xl = xpath.x('//input')
@@ -75,7 +75,7 @@ class XPathTestCase(unittest.TestCase):
                     </div>
                   </body>"""
 
-        response = Response(domain="example.com", url="http://example.com", body=body)
+        response = Response(url="http://example.com", body=body)
         x = HtmlXPathSelector(response)
 
         divtwo = x.x('//div[@class="two"]')
@@ -100,7 +100,7 @@ class XPathTestCase(unittest.TestCase):
                   </div>
 
                """
-        response = Response(domain="example.com", url="http://example.com", body=body)
+        response = Response(url="http://example.com", body=body)
         x = HtmlXPathSelector(response)
 
         name_re = re.compile("Name: (\w+)")
@@ -131,7 +131,7 @@ class XPathTestCase(unittest.TestCase):
         </test>
         """
 
-        response = Response(domain="example.com", url="http://example.com", body=body)
+        response = Response(url="http://example.com", body=body)
         x = XmlXPathSelector(response)
         
         x.register_namespace("somens", "http://scrapy.org")
@@ -149,7 +149,7 @@ class XPathTestCase(unittest.TestCase):
     <p:SecondTestTag><material/><price>90</price><p:name>Dried Rose</p:name></p:SecondTestTag>
 </BrowseNode>
         """
-        response = Response(domain="example.com", url="http://example.com", body=body)
+        response = Response(url="http://example.com", body=body)
         x = XmlXPathSelector(response)
 
         x.register_namespace("xmlns", "http://webservices.amazon.com/AWSECommerceService/2005-10-05")
@@ -176,7 +176,7 @@ class XPathTestCase(unittest.TestCase):
         html_utf8 = html.encode(encoding)
 
         headers = {'Content-Type': ['text/html; charset=utf-8']}
-        response = Response(domain="example.com", url="http://example.com", headers=headers, body=html_utf8)
+        response = Response(url="http://example.com", headers=headers, body=html_utf8)
         x = HtmlXPathSelector(response)
         self.assertEquals(x.x("//span[@id='blank']/text()").extract(),
                           [u'\xa3'])

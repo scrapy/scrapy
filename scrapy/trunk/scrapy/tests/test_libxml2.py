@@ -35,7 +35,7 @@ class ResponseLibxml2DocTest(TestCase):
         scrapymanager.configure()
 
         self.body_content = 'test problematic \x00 body'
-        response = Response('example.com', 'http://example.com/catalog/product/blabla-123',
+        response = Response('http://example.com/catalog/product/blabla-123',
                             headers={'Content-Type': 'text/plain; charset=utf-8'}, body=self.body_content)
         response.getlibxml2doc()
 

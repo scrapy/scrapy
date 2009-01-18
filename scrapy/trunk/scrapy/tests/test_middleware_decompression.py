@@ -16,7 +16,7 @@ def setUp():
         fd = open(os.path.join(datadir, 'feed-sample1.' + format), 'r')
         body = fd.read()
         fd.close()
-        test_responses[format] = Response('foo.com', 'http://foo.com/bar', body=body)
+        test_responses[format] = Response('http://foo.com/bar', body=body)
     return uncompressed_body, test_responses
 
 class ScrapyDecompressionTest(TestCase):

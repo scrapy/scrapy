@@ -7,7 +7,6 @@ See documentation in docs/ref/request-response.rst
 
 import re
 import copy
-from types import NoneType
 
 from twisted.web.http import RESPONSES
 from BeautifulSoup import UnicodeDammit
@@ -19,8 +18,7 @@ class Response(object):
 
     _ENCODING_RE = re.compile(r'charset=([\w-]+)', re.I)
 
-    def __init__(self, domain, url, status=200, headers=None, body=None, meta=None):
-        self.domain = domain
+    def __init__(self, url, status=200, headers=None, body=None, meta=None):
         self.url = Url(url)
         self.headers = Headers(headers or {})
         self.status = status
@@ -43,8 +41,8 @@ class Response(object):
                 return encoding.group(1)
 
     def __repr__(self):
-        return "Response(domain=%s, url=%s, headers=%s, status=%s, body=%s)" % \
-                (repr(self.domain), repr(self.url), repr(self.headers), repr(self.status), repr(self.body))
+        return "Response(url=%s, headers=%s, status=%s, body=%s)" % \
+                (repr(self.url), repr(self.headers), repr(self.status), repr(self.body))
 
     def __str__(self):
         if self.status == 200:
@@ -56,7 +54,7 @@ class Response(object):
         """Create a new Response based on the current one"""
         return self.replace()
 
-    def replace(self, domain=None, url=None, status=None, headers=None, body=None):
+    def replace(self, url=None, status=None, headers=None, body=None):
         """Create a new Response with the same attributes except for those
         given new values.
 
@@ -64,8 +62,7 @@ class Response(object):
 
         >>> newresp = oldresp.replace(body="New body")
         """
-        new = self.__class__(domain=domain or self.domain,
-                             url=url or self.url,
+        new = self.__class__(url=url or self.url,
                              status=status or self.status,
                              headers=headers or copy.deepcopy(self.headers),
                              body=body)

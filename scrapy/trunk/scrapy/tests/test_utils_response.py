@@ -3,7 +3,7 @@ from scrapy.http.response import Response
 from scrapy.utils.response import body_or_str
 
 class ResponseUtilsTest(unittest.TestCase):
-    dummy_response = Response(domain='example.org', url='http://example.org/', body='dummy_response')
+    dummy_response = Response(url='http://example.org/', body='dummy_response')
 
     def test_input(self):
         self.assertTrue(isinstance(body_or_str(self.dummy_response), basestring))

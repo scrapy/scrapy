@@ -5,6 +5,9 @@ from scrapy.core.scheduler import GroupFilter
 class RequestTest(unittest.TestCase):
 
     def test_init(self):
+        # Request requires url in the constructor
+        self.assertRaises(Exception, Request)
+
         r = Request("http://www.example.com")
         assert isinstance(r.url, Url)
         self.assertEqual(r.url, "http://www.example.com")
