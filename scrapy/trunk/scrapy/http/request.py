@@ -19,7 +19,7 @@ class Request(object):
 
     def __init__(self, url, callback=None, method='GET',
         body=None, headers=None, cookies=None, meta=None,
-        url_encoding='utf-8', dont_filter=None, domain=None):
+        url_encoding='utf-8', dont_filter=None):
 
         self.encoding = url_encoding  # this one has to be set first
         self.set_url(url)
@@ -42,8 +42,6 @@ class Request(object):
         self.headers = Headers(headers or {}, encoding=url_encoding)
         # dont_filter be filtered by scheduler
         self.dont_filter = dont_filter
-        #allows to directly specify the spider for the request
-        self.domain = domain
 
         self.meta = {} if meta is None else dict(meta)
         self.cache = {}

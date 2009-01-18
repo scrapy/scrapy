@@ -129,10 +129,7 @@ class ExecutionManager(object):
 
         # requests
         for request in requests:
-            if request.domain:
-                spider = spiders.fromdomain(request.domain)
-            else:
-                spider = spiders.fromurl(request.url)
+            spider = spiders.fromurl(request.url)
             if not spider:
                 log.msg('Could not find spider for %s' % request, log.ERROR)
                 continue
