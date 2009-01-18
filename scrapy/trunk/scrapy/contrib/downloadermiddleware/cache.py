@@ -3,7 +3,6 @@ from __future__ import with_statement
 import os
 import hashlib
 import datetime
-import urlparse
 import cPickle as pickle
 from pydispatch import dispatcher
 
@@ -74,8 +73,7 @@ class CacheMiddleware(object):
             self.cache.store(domain, key, request, exception.response)
 
 def is_cacheable(request):
-    scheme, _, _, _, _ = urlparse.urlsplit(request.url)
-    return scheme in ['http', 'https']
+    return request.url.scheme in ['http', 'https']
 
 
 class Cache(object):
@@ -172,7 +170,7 @@ class Cache(object):
                 'url':request.url,
                 'method': request.method,
                 'status': response.status,
-                'domain': response.domain,
+                'domain': domain,
                 'timestamp': datetime.datetime.utcnow(),
             }
 

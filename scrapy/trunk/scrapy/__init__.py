@@ -17,3 +17,13 @@ sys.path.insert(0, os.path.join(os.path.abspath(os.path.dirname(__file__)), "xli
 # monkey patches to fix external library issues
 from scrapy.patches import monkeypatches
 monkeypatches.apply_patches()
+
+# optional_features is a set containing Scrapy optional features
+optional_features = set()
+
+try:
+    import OpenSSL
+except ImportError:
+    pass
+else:
+    optional_features.add('ssl')

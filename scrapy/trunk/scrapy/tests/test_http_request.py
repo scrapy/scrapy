@@ -13,6 +13,9 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r.url, "http://www.example.com")
         self.assertEqual(r.method, "GET")
 
+        r.url = "http://www.example.com/other"
+        assert isinstance(r.url, Url)
+
         assert isinstance(r.headers, Headers)
         self.assertEqual(r.headers, {})
         self.assertEqual(r.meta, {})

@@ -10,42 +10,56 @@ from twisted.web.client import HTTPClientFactory
 from twisted.internet import defer, reactor
 from twisted.web import error as web_error
 
+try:
+    from twisted.internet import ssl
+except ImportError:
+    pass
+
+from scrapy import optional_features
 from scrapy.core import signals
 from scrapy.http import Request, Response, Headers
-from scrapy.core.exceptions import UsageError, HttpException
+from scrapy.core.exceptions import UsageError, HttpException, NotSupported
 from scrapy.utils.defer import defer_succeed
 from scrapy.conf import settings
 
 from scrapy.core.downloader.dnscache import DNSCache
 
+default_timeout = settings.getint('DOWNLOAD_TIMEOUT')
+default_agent = settings.get('USER_AGENT')
+ssl_supported = 'ssl' in optional_features
+
 # Cache for dns lookups.
 dnscache = DNSCache()
 
 def download_any(request, spider):
-    u = urlparse.urlparse(request.url)
-    if u.scheme == 'file':
-        return download_file(request, spider)
-    elif u.scheme in ('http', 'https'):
+    scheme = request.url.scheme
+    if scheme == 'http':
         return download_http(request, spider)
+    elif scheme == 'https':
+        if ssl_supported:
+            return download_https(request, spider)
+        else:
+            raise NotSupported("HTTPS not supported: install pyopenssl library")
+    elif request.url.scheme == 'file':
+        return download_file(request, spider)
     else:
-        raise UsageError("Unsupported scheme '%s' in URL: <%s>" % (u.scheme, request.url))
+        raise NotSupported("Unsupported URL scheme '%s' in: <%s>" % (request.url.scheme, request.url))
 
-def download_http(request, spider):
-    """This functions handles http/https downloads"""
+def create_factory(request, spider):
+    """Return HTTPClientFactory for the given Request"""
     url = urlparse.urldefrag(request.url)[0]
-    
-    agent = request.headers.get('user-agent', settings.get('USER_AGENT'))
-    request.headers.pop('user-agent', None)  # remove user-agent if already present
-    factory = HTTPClientFactory(url=str(url), # never pass unicode urls to twisted
+
+    agent = request.headers.pop('user-agent', default_agent)
+    factory = HTTPClientFactory(url=url, # never pass unicode urls to twisted
                                 method=request.method,
                                 postdata=request.body,
                                 headers=request.headers,
                                 agent=agent,
                                 cookies=request.cookies,
-                                timeout=getattr(spider, "download_timeout", None) or settings.getint('DOWNLOAD_TIMEOUT'),
+                                timeout=getattr(spider, "download_timeout", default_timeout),
                                 followRedirect=False)
 
-    def _response(body):
+    def _create_response(body):
         body = body or ''
         status = int(factory.status)
         headers = Headers(factory.response_headers)
@@ -55,26 +69,33 @@ def download_http(request, spider):
         return r
 
     def _on_success(body):
-        return _response(body)
+        return _create_response(body)
 
     def _on_error(_failure):
         ex = _failure.value
         if isinstance(ex, web_error.Error): # HttpException
-            raise HttpException(ex.status, ex.message, _response(ex.response))
+            raise HttpException(ex.status, ex.message, _create_response(ex.response))
         return _failure
 
     factory.noisy = False
     factory.deferred.addCallbacks(_on_success, _on_error)
+    return factory
 
-    u = urlparse.urlparse(request.url)
-    ip = dnscache.get(u.hostname)
-    port = u.port
-    if u.scheme == 'https' :
-        from twisted.internet import ssl
-        contextFactory = ssl.ClientContextFactory()
-        reactor.connectSSL(ip, port or 443, factory, contextFactory)
-    else:
-        reactor.connectTCP(ip, port or 80, factory)
+def download_http(request, spider):
+    """Return a deferred for the HTTP download"""
+    factory = create_factory(request, spider)
+    ip = dnscache.get(request.url.hostname)
+    port = request.url.port
+    reactor.connectTCP(ip, port or 80, factory)
+    return factory.deferred
+
+def download_https(request, spider):
+    """Return a deferred for the HTTPS download"""
+    factory = create_factory(request, spider)
+    ip = dnscache.get(request.url.hostname)
+    port = request.url.port
+    contextFactory = ssl.ClientContextFactory()
+    reactor.connectSSL(ip, port or 443, factory, contextFactory)
     return factory.deferred
 
 def download_file(request, spider) :
