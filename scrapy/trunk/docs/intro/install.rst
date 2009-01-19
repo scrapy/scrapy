@@ -36,12 +36,12 @@ If you're running Ubuntu/Debian Linux run the following command as root::
 
    $ apt-get install python-twisted python-libxml2 python-pyopenssl
 
-Arch
-----
+Arch Linux
+----------
 
 If you are running Arch Linux use the following command to install required dependencies::
 
-   $ pacman -S twisted python-lxml pyopenssl
+   $ pacman -S twisted libxml2 pyopenssl
 
 Windows
 -------
