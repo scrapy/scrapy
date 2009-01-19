@@ -32,7 +32,7 @@ MailSender class reference
 MailSender is the preferred class to use for sending emails from Scrapy, as it
 uses `Twisted non-blocking IO`_, like the rest of the framework. 
 
-.. class:: scrapy.mail.MailSender(smtphost, mailfrom)
+.. class:: MailSender(smtphost, mailfrom)
 
     ``smtphost`` is a string with the SMTP host to use for sending the emails.
     If omitted, :setting:`MAIL_HOST` will be used.
@@ -40,10 +40,10 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
     ``mailfrom`` is a string with the email address to use for sending messages
     (in the ``From:`` header). If omitted, :setting:`MAIL_FROM` will be used.
 
-.. method:: send(to, subject, body, cc=None, attachs=())
+.. method:: MailSender.send(to, subject, body, cc=None, attachs=())
 
     Send mail to the given recipients
-        
+
     ``to`` is a list of email recipients
 
     ``subject`` is a string with the subject of the message

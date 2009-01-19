@@ -87,9 +87,9 @@ In other words, settings can be accesed like a dict, but it's usually preferred
 to extract the setting in the format you need it to avoid type errors. In order
 to do that you'll have to use one of the following methods:
 
-.. class:: scrapy.conf.Settings
+.. class:: Settings
 
-.. method:: get(name, default=None)
+.. method:: Settings.get(name, default=None)
 
    Get a setting value without affecting its original type.
 
@@ -97,7 +97,7 @@ to do that you'll have to use one of the following methods:
 
    ``default`` is the value to return if no setting is found
 
-.. method:: getbool(name, deafult=Flse)
+.. method:: Settings.getbool(name, deafult=Flse)
 
    Get a setting value as a boolean. For example, both ``1`` and ``'1'``, and
    ``True`` return ``True``, while ``0``, ``'0'``, ``False`` and ``None``
@@ -110,7 +110,7 @@ to do that you'll have to use one of the following methods:
 
    ``default`` is the value to return if no setting is found
 
-.. method:: getint(name, default=0)
+.. method:: Settings.getint(name, default=0)
 
    Get a setting value as an int
 
@@ -118,7 +118,7 @@ to do that you'll have to use one of the following methods:
 
    ``default`` is the value to return if no setting is found
 
-.. method:: getfloat(name, default=0.0)
+.. method:: Settings.getfloat(name, default=0.0)
 
    Get a setting value as a float
 
@@ -126,7 +126,7 @@ to do that you'll have to use one of the following methods:
 
    ``default`` is the value to return if no setting is found
 
-.. method:: getlist(name, default=None)
+.. method:: Settings.getlist(name, default=None)
 
    Get a setting value as a list. If the setting original type is a list it
    will be returned verbatim. If it's a string it will be splitted by ",".
