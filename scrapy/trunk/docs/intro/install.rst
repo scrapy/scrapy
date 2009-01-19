@@ -46,12 +46,11 @@ If you are running Arch Linux use the following command to install required depe
 Windows
 -------
 
-1. Get Twisted for Windows here::
-   http://twistedmatrix.com/trac/wiki/Downloads
-2. Get PyOpenSSL for Windows here::
-   http://sourceforge.net/project/showfiles.php?group_id=31249
-3. Get libxml2 for Windows here::
-   http://users.skynet.be/sbi/libxml-python/
+Download and install:
+
+1. `Twisted for Windows <http://twistedmatrix.com/trac/wiki/Downloads>`_
+2. `PyOpenSSL for Windows <http://sourceforge.net/project/showfiles.php?group_id=31249>`_
+3. `libxml2 for Windows <http://users.skynet.be/sbi/libxml-python/>`_
 
 Install Scrapy code
 ===================
