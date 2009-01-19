@@ -62,37 +62,30 @@ please download the latest development version from the Subversion_ repository.
 
 To do this, follow this steps:
 
-1. Check out Scrapy code
-------------------------
-
-Check out Scrapy code (you will need to have Subversion_ installed)::
+1. Check out Scrapy code (you will need to have Subversion_ installed)::
    
-   svn co http://svn.scrapy.org/scrapy/trunk/ scrapy-trunk
+      svn co http://svn.scrapy.org/scrapy/trunk/ scrapy-trunk
 
-2. Add Scrapy to your Python path
----------------------------------
+2. Add Scrapy to your Python path:
 
-You can do this by making a symbolic link to your system ``site-packages``
-directory like this::
+   You can do this by making a symbolic link to your system ``site-packages``
+   directory like this::
 
-   ln -s `pwd`/scrapy-trunk/scrapy SITE-PACKAGES/scrapy
+      ln -s `pwd`/scrapy-trunk/scrapy SITE-PACKAGES/scrapy
 
-Where ``SITE-PACKAGES`` is the location of your system ``site-packages``
-directory, to find this out execute the following::
+   Where ``SITE-PACKAGES`` is the location of your system ``site-packages``
+   directory, to find this out execute the following::
 
-   python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"
+      python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"
 
-Or by adding the ``scrapy-trunk`` directory to your ``PYTHONPATH`` environment
-variable, like this::
+   Or by adding the ``scrapy-trunk`` directory to your ``PYTHONPATH`` environment
+   variable, like this::
 
-   export PYTHONPATH=`pwd`/scrapy-trunk:$PYTHONPATH
+      export PYTHONPATH=`pwd`/scrapy-trunk:$PYTHONPATH
 
-3. Make the scrapy-admin.py script executable
----------------------------------------------
-
-Make the ``scrapy-trunk/scrapy/bin/scrapy-admin.py`` script executable
-system-wide. To do this create a symbolic link to the file in a directory on
-your sistem path, like::
+3. Make the ``scrapy-trunk/scrapy/bin/scrapy-admin.py`` script executable
+   system-wide. To do this create a symbolic link to the file in a directory on
+   your sistem path, like::
    
-   ln -s `pwd`/scrapy-trunk/scrapy/bin/scrapy-admin.py /usr/local/bin
+      ln -s `pwd`/scrapy-trunk/scrapy/bin/scrapy-admin.py /usr/local/bin
 
