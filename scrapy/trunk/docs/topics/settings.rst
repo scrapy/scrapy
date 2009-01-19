@@ -87,7 +87,12 @@ In other words, settings can be accesed like a dict, but it's usually preferred
 to extract the setting in the format you need it to avoid type errors. In order
 to do that you'll have to use one of the following methods:
 
-.. class:: Settings
+.. class:: Settings()
+
+   The Settings object is automatically instantiated when the
+   :mod:`scrapy.conf` module is loaded, and it's usually accessed like this::
+
+   >>> from scrapy.conf import settings
 
 .. method:: Settings.get(name, default=None)
 
