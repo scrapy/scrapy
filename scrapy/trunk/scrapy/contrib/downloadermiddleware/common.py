@@ -17,4 +17,6 @@ class CommonMiddleware(object):
         request.headers.setdefault('Accept-Language', self.header_accept_language)
         if request.method == 'POST':
             request.headers.setdefault('Content-Type', 'application/x-www-form-urlencoded')
+            if request.body:
+                request.headers.setdefault('Content-Length', '%d' % len(request.body))
 

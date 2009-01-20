@@ -34,6 +34,9 @@ thus it's recommended to leave it always enabled. Those tasks are:
     * If the request method is ``POST`` and the ``Content-Type`` header is not
       set, then set it to ``'application/x-www-form-urlencoded'``, the `default
       Form content type`_.
+
+    * If the request contains a body and the ``Content-Length`` headers it not
+      set, then set it to the ``len(body)``.
     
 .. _default Form content type: http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1
 
