@@ -36,11 +36,6 @@ class Request(object):
         self.meta = {} if meta is None else dict(meta)
         self.cache = {}
         
-    def append_callback(self, callback, *args, **kwargs):
-        if isinstance(callback, defer.Deferred):
-            return chain_deferred(self.deferred, callback)
-        return self.deferred.addCallback(callback, *args, **kwargs)
-
     def set_url(self, url):
         assert isinstance(url, basestring), \
             'Request url argument must be str or unicode, got %s:' % type(url).__name__
