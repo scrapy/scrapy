@@ -21,7 +21,7 @@ generated the request.
 Request objects
 ===============
 
-.. class:: Request(url, callback=None, method='GET', body=None, headers=None, cookies=None, meta=None, url_encoding='utf-8', dont_filter=None)
+.. class:: Request(url, callback=None, method='GET', body=None, headers=None, cookies=None, meta=None, encoding='utf-8', dont_filter=None)
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
@@ -44,9 +44,9 @@ Request objects
 
     ``cookies`` is a dict containing the request cookies
 
-    ``url_encoding`` is a string with the encoding of the url of this request.
-    The request URL will be percent encoded using this encoding before
-    downloading 
+    ``encoding`` is a string with the encoding of this request. This encoding
+    will be used to percent-encode the URL and to convert the body to str (when
+    given as unicode).
 
     ``dont_filter`` is a boolean which indicates that this request should not
     be filtered by the scheduler. This is used when you want to perform an

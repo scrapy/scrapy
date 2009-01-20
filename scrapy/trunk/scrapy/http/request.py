@@ -18,28 +18,19 @@ from scrapy.utils.defer import chain_deferred
 class Request(object):
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None, 
-                 cookies=None, meta=None, url_encoding='utf-8', dont_filter=None):
+                 cookies=None, meta=None, encoding='utf-8', dont_filter=None):
 
-        self.encoding = url_encoding  # this one has to be set first
-        self.set_url(url)
-
+        self.encoding = encoding  # this one has to be set first
         self.method = method.upper()
+        self.set_url(url)
+        self.set_body(body)
 
-        # body
-        if isinstance(body, dict):
-            body = urllib.urlencode(body)
-        self.body = body
-
-        # callback / deferred
         if callable(callback):
             callback = defer.Deferred().addCallback(callback)
         self.deferred = callback or defer.Deferred()
 
-        # request cookies
         self.cookies = cookies or {}
-        # request headers
-        self.headers = Headers(headers or {}, encoding=url_encoding)
-        # dont_filter be filtered by scheduler
+        self.headers = Headers(headers or {}, encoding=encoding)
         self.dont_filter = dont_filter
 
         self.meta = {} if meta is None else dict(meta)
@@ -56,6 +47,20 @@ class Request(object):
         decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)
         self._url = Url(safe_url_string(decoded_url, self.encoding))
     url = property(lambda x: x._url, set_url)
+
+    def set_body(self, body):
+        # TODO: move dict constructor to another Request class
+        if isinstance(body, dict):
+            self._body = urllib.urlencode(body)
+        elif body is None:
+            self._body = None
+        elif isinstance(body, str):
+            self._body = body
+        elif isinstance(body, unicode):
+            self._body = body.encode(self.encoding)
+        else:
+            raise TypeError("Request body must either str, unicode or None. Got: '%s'" % type(body).__name__)
+    body = property(lambda x: x._body, set_body)
 
     def __str__(self):
         if self.method == 'GET':

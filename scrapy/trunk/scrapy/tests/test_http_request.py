@@ -101,9 +101,26 @@ class RequestTest(unittest.TestCase):
         self.assert_(isinstance(r.url, str))
 
         # url encoding
-        r = Request(url=u"http://www.scrapy.org/price/\xa3", url_encoding="utf-8")
-        self.assert_(isinstance(r.url, str))
-        self.assertEqual(r.url, "http://www.scrapy.org/price/%C2%A3")
+        r1 = Request(url=u"http://www.scrapy.org/price/\xa3", encoding="utf-8")
+        r2 = Request(url=u"http://www.scrapy.org/price/\xa3", encoding="latin1")
+        self.assertEqual(r1.url, "http://www.scrapy.org/price/%C2%A3")
+        self.assertEqual(r2.url, "http://www.scrapy.org/price/%A3")
+
+    def test_body(self):
+        r1 = Request(url="http://www.example.com/")
+        assert r1.body is None
+
+        r2 = Request(url="http://www.example.com/", body="")
+        assert isinstance(r2.body, str)
+        self.assertEqual(r2.encoding, 'utf-8') # default encoding
+
+        r3 = Request(url="http://www.example.com/", body=u"Price: \xa3100", encoding='utf-8')
+        assert isinstance(r3.body, str)
+        self.assertEqual(r3.body, "Price: \xc2\xa3100")
+
+        r4 = Request(url="http://www.example.com/", body=u"Price: \xa3100", encoding='latin1')
+        assert isinstance(r4.body, str)
+        self.assertEqual(r4.body, "Price: \xa3100")
 
     def test_copy(self):
         """Test Request copy"""
