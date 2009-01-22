@@ -1,14 +1,13 @@
 """
 This module provides additional LinkExtractors, apart from the ones in scrapy.link
 and scrapy.link.extractors.
-
 """
 import urlparse
 
 from scrapy.link import Link
 from scrapy.utils.url import canonicalize_url
-from scrapy.utils.python import unicode_to_str
-from scrapy.xpath import HtmlXPathSelector
+from scrapy.utils.python import unicode_to_str, flatten
+from scrapy.xpath.selector import XPathSelectorList, HtmlXPathSelector
 
 class HTMLImageLinkExtractor(object):
     '''HTMLImageLinkExtractor objects are intended to extract image links from HTML pages
@@ -21,15 +20,15 @@ class HTMLImageLinkExtractor(object):
     both locations will be used for that call of extract_links'''
 
     def __init__(self, locations=None, unique=True, canonicalize=True):
-        self.locations = tuple(locations) if hasattr(locations, '__iter__') else tuple()
+        self.locations = flatten([locations])
         self.unique = unique
         self.canonicalize = canonicalize
 
     def extract_from_selector(self, selector, parent=None):
         ret = []
         def _add_link(url_sel, alt_sel=None):
-            url = url_sel.extract()
-            alt = alt_sel.extract() if alt_sel else ('', )
+            url = flatten([url_sel.extract()])
+            alt = flatten([alt_sel.extract()]) if alt_sel else (u'', )
             if url:
                 ret.append(Link(unicode_to_str(url[0]), alt[0]))
 
@@ -55,8 +54,14 @@ class HTMLImageLinkExtractor(object):
 
         links = []
         for location in self.locations:
-            selector_res = xs.x(location)
-            for selector in selector_res:
+            if isinstance(location, basestring):
+                selectors = xs.x(location)
+            elif isinstance(location, (XPathSelectorList, HtmlXPathSelector)):
+                selectors = [location] if isinstance(location, HtmlXPathSelector) else location
+            else:
+                continue
+
+            for selector in selectors:
                 links.extend(self.extract_from_selector(selector))
 
         seen, ret = set(), []

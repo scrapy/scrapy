@@ -142,48 +142,51 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.matches('http://blah2.com/blah1'), False)
         self.assertEqual(lx.matches('http://blah2.com/blah2'), False)
 
-#class HTMLImageLinkExtractorTestCase(unittest.TestCase):
-#    def setUp(self):
-#        base_path = os.path.join(os.path.dirname(__file__), 'sample_data', 'link_extractor')
-#        body = open(os.path.join(base_path 'image_linkextractor.html'), 'r').read()
-#        self.response = Response(url='http://example.com/index', body=body)
+class HTMLImageLinkExtractorTestCase(unittest.TestCase):
+    def setUp(self):
+        base_path = os.path.join(os.path.dirname(__file__), 'sample_data', 'link_extractor')
+        body = open(os.path.join(base_path, 'image_linkextractor.html'), 'r').read()
+        self.response = Response(url='http://example.com/index', body=body)
 
-#    def test_urls_type(self):
-#        '''Test that the resulting urls are regular strings and not a unicode objects'''
-#        lx = ImageLinkExtractor()
-#        links = lx.extract_links(self.response)
-#        self.assertTrue(all(isinstance(link.url, str) for link in links))
+    def tearDown(self):
+        del self.response
 
-#    def test_extraction(self):
-#        '''Test the extractor's behaviour among different situations'''
+    def test_urls_type(self):
+        '''Test that the resulting urls are regular strings and not a unicode objects'''
+        lx = HTMLImageLinkExtractor()
+        links = lx.extract_links(self.response)
+        self.assertTrue(all(isinstance(link.url, str) for link in links))
 
-#        lx = HTMLImageLinkExtractor(locations=('//img', ))
-#        links_1 = lx.extract_links(self.response)
-#        self.assertEqual(links_1,
-#            [ Link(url='http://example.com/sample1.jpg', text=u'sample 1'),
-#              Link(url='http://example.com/sample2.jpg', text=u'sample 2'),
-#              Link(url='http://example.com/sample4.jpg', text=u'sample 4') ])
+    def test_extraction(self):
+        '''Test the extractor's behaviour among different situations'''
 
-#        lx = HTMLImageLinkExtractor(locations=('//img', ), unique=False)
-#        links_2 = lx.extract_links(self.response, unique=False)
-#        self.assertEqual(links_2,
-#            [ Link(url='http://example.com/sample1.jpg', text=u'sample 1'),
-#              Link(url='http://example.com/sample2.jpg', text=u'sample 2'),
-#              Link(url='http://example.com/sample4.jpg', text=u'sample 4'),
-#              Link(url='http://example.com/sample4.jpg', text=u'sample 4 repetition') ])
+        lx = HTMLImageLinkExtractor(locations=('//img', ))
+        links_1 = lx.extract_links(self.response)
+        self.assertEqual(links_1,
+            [ Link(url='http://example.com/sample1.jpg', text=u'sample 1'),
+              Link(url='http://example.com/sample2.jpg', text=u'sample 2'),
+              Link(url='http://example.com/sample4.jpg', text=u'sample 4') ])
 
-#        lx = HTMLImageLinkExtractor(locations=('//div[@id="wrapper"]', )
-#        links_3 = lx.extract_links(self.response)
-#        self.assertEqual(links_3,
-#            [ Link(url='http://example.com/sample1.jpg', text=u'sample 1'),
-#              Link(url='http://example.com/sample2.jpg', text=u'sample 2'),
-#              Link(url='http://example.com/sample4.jpg', text=u'sample 4') ])
+        lx = HTMLImageLinkExtractor(locations=('//img', ), unique=False)
+        links_2 = lx.extract_links(self.response)
+        self.assertEqual(links_2,
+            [ Link(url='http://example.com/sample1.jpg', text=u'sample 1'),
+              Link(url='http://example.com/sample2.jpg', text=u'sample 2'),
+              Link(url='http://example.com/sample4.jpg', text=u'sample 4'),
+              Link(url='http://example.com/sample4.jpg', text=u'sample 4 repetition') ])
 
-#        lx = HTMLImageLinkExtractor(locations=('//a', )
-#        links_4 = lx.extract_links(self.response)
-#        self.assertEqual(links_4,
-#            [ Link(url='http://example.com/sample2.jpg', text=u'sample 2'),
-#              Link(url='http://example.com/sample3.html', text=u'sample 3') ])
+        lx = HTMLImageLinkExtractor(locations=('//div[@id="wrapper"]', ))
+        links_3 = lx.extract_links(self.response)
+        self.assertEqual(links_3,
+            [ Link(url='http://example.com/sample1.jpg', text=u'sample 1'),
+              Link(url='http://example.com/sample2.jpg', text=u'sample 2'),
+              Link(url='http://example.com/sample4.jpg', text=u'sample 4') ])
+
+        lx = HTMLImageLinkExtractor(locations=('//a', ))
+        links_4 = lx.extract_links(self.response)
+        self.assertEqual(links_4,
+            [ Link(url='http://example.com/sample2.jpg', text=u'sample 2'),
+              Link(url='http://example.com/sample3.html', text=u'sample 3') ])
 
 if __name__ == "__main__":
     unittest.main()
