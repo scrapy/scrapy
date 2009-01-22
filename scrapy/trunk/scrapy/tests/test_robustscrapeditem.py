@@ -55,7 +55,7 @@ class RobustScrapedItemTestCase(unittest.TestCase):
         self.item.attribute('children', 'Jimmy', add=True)
         self.assertEqual(self.item.children, ['Ken', 'Tom', 'Jimmy'])
 
-        self.item.attribute('children', *['Johnny', 'Rodrigo'], add=True)
+        self.item.attribute('children', 'Johnny', 'Rodrigo', add=True)
         self.assertEqual(self.item.children, ['Ken', 'Tom', 'Jimmy', 'Johnny', 'Rodrigo'])
 
     def test_set_adaptors(self):
