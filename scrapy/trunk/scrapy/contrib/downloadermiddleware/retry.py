@@ -2,7 +2,7 @@
 An extension to retry failed requests that are potentially caused by temporary
 problems such as a connection timeout or HTTP 500 error.
 
-You can change the behaviour of this moddileware by modifing the scraping settings: 
+You can change the behaviour of this moddileware by modifing the scraping settings:
 RETRY_TIMES - how many times to retry a failed page
 RETRY_HTTP_CODES - which HTTP response codes to retry
 
@@ -21,12 +21,13 @@ About HTTP errors to consider:
   indicate server overload, which would be something we want to retry
 - 200 is included by default (and shoudln't be removed) to check for partial
   downloads errors, which means the TCP connection has broken in the middle of
-  a HTTP download 
-""" 
+  a HTTP download
+"""
 
 from twisted.internet.error import TimeoutError as ServerTimeoutError, DNSLookupError, \
-                                   ConnectionRefusedError, ConnectionDone, ConnectError
-from twisted.internet.defer import TimeoutError as UserTimeoutError 
+                                   ConnectionRefusedError, ConnectionDone, ConnectError, \
+                                   ConnectionLost
+from twisted.internet.defer import TimeoutError as UserTimeoutError
 
 from scrapy import log
 from scrapy.core.exceptions import HttpException
@@ -35,8 +36,9 @@ from scrapy.conf import settings
 
 class RetryMiddleware(object):
 
-    EXCEPTIONS_TO_RETRY = (ServerTimeoutError, UserTimeoutError, DNSLookupError, 
-                           ConnectionRefusedError, ConnectionDone, ConnectError)
+    EXCEPTIONS_TO_RETRY = (ServerTimeoutError, UserTimeoutError, DNSLookupError,
+                           ConnectionRefusedError, ConnectionDone, ConnectError,
+                           ConnectionLost)
 
     def __init__(self):
         self.failed_count = {}
