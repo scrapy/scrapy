@@ -6,7 +6,7 @@ Our first spider
 
 Ok, the time to write our first spider has come. Make sure that you're standing on your project's directory and run::
 
-    ./scrapy-ctl genspider google_directory google.com
+    ./scrapy-ctl.py genspider google_directory google.com
 
 This should create a file called google_directory.py under the *spiders* directory looking like this::
 
@@ -118,7 +118,7 @@ Until now, our spider would look something like::
 
 You can try crawling with this little code, by running::
 
-    ./scrapy-ctl crawl google.com
+    ./scrapy-ctl.py crawl google.com
 
 and it will actually work, altough it won't do any parsing, since parse_category is not defined, and that's exactly what we're going to do in the next part of
 the tutorial: :ref:`intro-tutorial3`.
