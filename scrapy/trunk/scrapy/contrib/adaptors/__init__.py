@@ -1,4 +1,0 @@
-from scrapy.contrib.adaptors.extraction import extract, ExtractImages
-from scrapy.contrib.adaptors.markup import remove_tags, remove_root, Unquote
-from scrapy.contrib.adaptors.misc import to_unicode, clean_spaces, strip, drop_empty, canonicalize_urls, Delist, Regex
-from scrapy.utils.python import unique, flatten

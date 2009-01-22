@@ -3,6 +3,38 @@ import inspect
 from traceback import format_exc
 from scrapy.conf import settings
 
+class AdaptorFunc(object):
+    """
+    This is a private class that the AdaptorPipe uses to store
+    its adaptation functions and their attributes.
+    """
+    def __init__(self, adaptor):
+        self.adaptor = adaptor
+
+        if inspect.isfunction(adaptor):
+            self.func_args, _, _, _ = inspect.getargspec(adaptor)
+        elif hasattr(adaptor, '__call__'):
+            try:
+                self.func_args, _, _, _ = inspect.getargspec(adaptor.__call__)
+            except Exception:
+                self.func_args = []
+
+        self.name = getattr(adaptor, 'func_name', None)
+        if not self.name:
+            if hasattr(adaptor, '__class__') and adaptor.__class__ is not type:
+                self.name = adaptor.__class__.__name__
+            else:
+                self.name = adaptor.__name__
+
+    def __call__(self, value, kwargs):
+        if 'adaptor_args' in self.func_args:
+            return self.adaptor(value, kwargs)
+        else:
+            return self.adaptor(value)
+
+    def __repr__(self):
+        return '<Adaptor %s >' % self.name
+
 class AdaptorPipe(list):
     """
     Class that represents an item's attribute pipeline.
@@ -11,44 +43,46 @@ class AdaptorPipe(list):
     in order to filter the input.
     """
     def __init__(self, adaptors):
+        def _filter_adaptor(adaptor):
+            return AdaptorFunc(adaptor) if not isinstance(adaptor, AdaptorFunc) else adaptor
+
+        if not hasattr(adaptors, '__iter__'):
+            raise TypeError('You must provide AdaptorPipe a list of adaptors')
+
         for adaptor in adaptors:
             if not callable(adaptor):
                 raise TypeError("%s is not a callable" % adaptor)
-        super(AdaptorPipe, self).__init__(adaptors)
+        super(AdaptorPipe, self).__init__(map(_filter_adaptor, adaptors))
         self.debug = settings.getbool('ADAPTORS_DEBUG')
 
-    def __call__(self, value, **kwargs):
+    def __call__(self, value, kwargs=None):
         """
         Execute the adaptor pipeline for this attribute.
         """
 
+        values = [value]
         for adaptor in self:
-            if inspect.isfunction(adaptor):
-                func_args, _, _ ,_ = inspect.getargspec(adaptor)
-            else:
-                func_args = []
+            next_round = []
+            for val in values:
+                try:
+                    if self.debug:
+                        print "  %07s | input >" % adaptor.name, repr(val)
 
-            name = getattr(adaptor, 'func_name', None)
-            if not name:
-                name = adaptor.__class__.__name__ if hasattr(adaptor, '__class__') else adaptor.__name__
+                    val = adaptor(val, kwargs or {})
+                    if isinstance(val, tuple):
+                        next_round.extend(val)
+                    else:
+                        next_round.append(val)
 
-            try:
-                if self.debug:
-                    print "  %07s | input >" % name, repr(value)
+                    if self.debug:
+                        print "  %07s | output >" % adaptor.name, repr(val)
+                except Exception:
+                    print "Error in '%s' adaptor. Traceback text:" % adaptor.name
+                    print format_exc()
+                    return
+            values = next_round
 
-                if 'adaptor_args' in func_args:
-                    value = adaptor(value, kwargs)
-                else:
-                    value = adaptor(value)
-
-                if self.debug:
-                    print "  %07s | output >" % name, repr(value)
-            except Exception:
-                print "Error in '%s' adaptor. Traceback text:" % name
-                print format_exc()
-                return
-
-        return value
+        return tuple(values)
 
     def __add__(self, other):
         if callable(other):
@@ -59,6 +93,15 @@ class AdaptorPipe(list):
 
     def __repr__(self):
         return '<AdaptorPipe %s >' % super(AdaptorPipe, self).__repr__()
+
+    def add_adaptor(self, adaptor, position=None):
+        if callable(adaptor):
+            if not isinstance(adaptor, AdaptorFunc):
+                adaptor = AdaptorFunc(adaptor)
+            if position is None:
+                self.append(adaptor)
+            else:
+                self.insert(position, adaptor)
 
 def adaptize(adaptor, my_args=None):
     """

@@ -2,12 +2,11 @@
 
 import re
 from scrapy.xpath.selector import XPathSelector, XPathSelectorList
-from scrapy.utils.url import canonicalize_url
 from scrapy.utils.misc import extract_regex
 from scrapy.utils.python import flatten, str_to_unicode, unicode_to_str
 from scrapy.item.adaptors import adaptize
 
-def to_unicode(value):
+def to_unicode(value, adaptor_args):
     """
     Receives a list of strings, converts
     it to unicode, and returns a new list.
@@ -18,11 +17,11 @@ def to_unicode(value):
     Input: iterable of strings
     Output: list of unicodes
     """
-    if hasattr(value, '__iter__'):
-        return [ str_to_unicode(v) if isinstance(v, basestring) else str_to_unicode(str(v)) for v in value ]
-    else:
-        raise TypeError('to_unicode must receive an iterable.')
+    if not isinstance(value, basestring):
+        value = str(value)
+    return str_to_unicode(value, adaptor_args.get('encoding', 'utf-8'))
 
+_clean_spaces_re = re.compile("\s+", re.U)
 def clean_spaces(value):
     """
     Converts multispaces into single spaces for each string
@@ -34,26 +33,20 @@ def clean_spaces(value):
     Input: iterable of unicodes
     Output: list of unicodes
     """
-    _clean_spaces_re = re.compile("\s+", re.U)
-    return [ _clean_spaces_re.sub(' ', str_to_unicode(v)) for v in value ]
+    return _clean_spaces_re.sub(' ', str_to_unicode(value))
 
 def strip(value):
     """
     Removes any spaces at both the start and the ending
-    of the provided string or list.
+    of the provided string.
     E.g:
-      >> strip([' hi   ', 'buddies  '])
-      [u'hi', u'buddies']
       >> strip(' hi buddies    ')
       u'hi buddies'
 
-    Input: unicode or iterable of unicodes
-    Output: unicode or list of unicodes
+    Input: string/unicode
+    Output: string/unicode
     """
-    if isinstance(value, basestring):
-        return unicode(value.strip())
-    elif hasattr(value, '__iter__'):
-        return [ unicode(v.strip()) for v in value ]
+    return value.strip()
 
 def drop_empty(value):
     """
@@ -68,36 +61,20 @@ def drop_empty(value):
     """
     return [ v for v in value if v ]
 
-def canonicalize_urls(value):
-    """
-    Canonicalizes each url in the list you provide.
-    To see what this implies, check out canonicalize_url's
-    docstring, at scrapy.utils.url.py
-
-    Input: iterable of unicodes(urls)
-    Output: list of unicodes(urls)
-    """
-    if hasattr(value, '__iter__'):
-        return [canonicalize_url(unicode_to_str(url)) for url in value]
-    elif isinstance(value, basestring):
-        return canonicalize_url(unicode_to_str(value))
-    return ''
-
 class Delist(object):
     """
     Joins a list with the specified delimiter
     in the adaptor's constructor.
 
-    Input: iterable of strings
-    Output: unicode
+    Input: iterable of strings/unicodes
+    Output: string/unicode
     """
-    def __init__(self, delimiter=' '):
+    def __init__(self, delimiter=''):
         self.delimiter = delimiter
-    
-    def __call__(self, value, delimiter=None):
-        if delimiter is not None:
-            self.delimiter = delimiter
-        return self.delimiter.join(value)
+
+    def __call__(self, value, adaptor_args):
+        delimiter = adaptor_args.get('join_delimiter', self.delimiter)
+        return delimiter.join(value)
 
 class Regex(object):
     """

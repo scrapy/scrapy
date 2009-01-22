@@ -14,19 +14,19 @@ class UtilsMiscTestCase(unittest.TestCase):
 
     def test_items_to_csv(self):
         item_1 = ScrapedItem()
-        item_1.attribute('_hidden', '543565')
-        item_1.attribute('id', '3213')
-        item_1.attribute('name', 'Item 1')
-        item_1.attribute('description', 'Really cute item')
-        item_1.attribute('url', 'http://dummyurl.com')
+        item_1._hidden = '543565'
+        item_1.id = '3213'
+        item_1.name = 'Item 1'
+        item_1.description = 'Really cute item'
+        item_1.url = 'http://dummyurl.com'
 
         item_2 = ScrapedItem()
-        item_2.attribute('_hidden', 'lala')
-        item_2.attribute('id', '1234')
-        item_2.attribute('name', 'Item 2')
-        item_2.attribute('description', 'This item rocks!')
-        item_2.attribute('url', 'http://dummyurl.com/2')
-        item_2.attribute('supplier', 'A random supplier')
+        item_2._hidden = 'lala'
+        item_2.id = '1234'
+        item_2.name = 'Item 2'
+        item_2.description = 'This item rocks!'
+        item_2.url = 'http://dummyurl.com/2'
+        item_2.supplier = 'A random supplier'
 
         file = StringIO()
         items_to_csv(file, [item_1, item_2])
