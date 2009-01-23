@@ -69,6 +69,7 @@ SPIDER_MIDDLEWARES = (
     'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware',
     'scrapy.contrib.spidermiddleware.depth.DepthMiddleware',
     'scrapy.contrib.spidermiddleware.urlfilter.UrlFilterMiddleware',
+    'scrapy.contrib.spidermiddleware.duplicatesfilter.DuplicatesFilterMiddleware',
     # Spider side
 )
 
@@ -96,3 +97,5 @@ URLLENGTH_LIMIT = 2083
 WS_ENABLED = 0
 
 SPIDERPROFILER_ENABLED = 0
+
+#DUPLICATESFILTER_FILTERCLASS = 'scrapy.contrib.spidermiddleware.duplicatesfilter.SimplePerDomainFilter'
