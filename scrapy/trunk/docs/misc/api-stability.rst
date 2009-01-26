@@ -49,12 +49,11 @@ Almost stable APIs
 
 The APIs listed here may suffer minor changes between minor versions.
 
-* :ref:`topics-adaptors`
-
 Unstable APIs
 -------------
 
 These APIs may suffer major changes or be removed completely on the next minor
 version release.
 
+* :ref:`topics-adaptors`
 

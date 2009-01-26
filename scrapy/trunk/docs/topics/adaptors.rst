@@ -4,30 +4,45 @@
 Adaptors
 ========
 
+.. warning::
+   
+   Adaptors are an experimental feature of Scrapy, which mean its API is not
+   yet stable and could suffer minor changes before the next stable release.
+
 Quick overview
 ==============
 
-| Adaptors are basically functions that receive one value (advanced adaptors may receive more, but we'll see that later), modify it, and return
-  a new value.
-| In order to adapt our scraped data we can use an adaptor pipeline for each of the item's attributes.
-| Adaptor pipelines are nothing else but a list of adaptors which will be iterated at the moment of assigning an attribute, calling each adaptor
-  and passing the values from one to each other.
+Adaptors are basically functions that receive one value (advanced adaptors may
+receive more, but we'll see that later), modify it, and return a new value.
+
+In order to adapt our scraped data we can use an adaptor pipeline for each of the item's attributes.
+
+Adaptor pipelines are nothing else but a list of adaptors which will be
+iterated at the moment of assigning an attribute, calling each adaptor and
+passing the values from one to each other.
 
 Example use
 ===========
 
-| The most common example use of adaptors appears when parsing HTML pages. To do this, we normally use XPathSelectors to retrieve data, which need to be extracted some
-  way, and in most cases, filtered some way.
-| You could extract them yourself, as well as doing any kind of adaptation before assigning, but the idea of adaptor pipelines is to simplify this task, and the spider's code.
+The most common example use of adaptors appears when parsing HTML pages. To do
+this, we normally use XPathSelectors to retrieve data, which need to be
+extracted some way, and in most cases, filtered some way.
 
-Let's imagine, for example, that you want to scrape information from pages as the following:
+You could extract them yourself, as well as doing any kind of adaptation before
+assigning, but the idea of adaptor pipelines is to simplify this task, and the
+spider's code.
+
+Let's imagine, for example, that you want to scrape information from pages as
+the following:
 
 .. literalinclude:: ../_static/items_adaptors-sample1.html
    :language: html
 
-| In this case, you'd have to scrape some products information, like their manufacturer, name, and price.
-| We'll put this information inside ScrapedItems and attach them some adaptors to process our data better.
-| You can test yourself with this page, since it actually exists `here <../_static/items_adaptors-sample1.html>`_
+In this case, you'd have to scrape some products information, like their
+manufacturer, name, and price. We'll put this information inside ScrapedItems
+and attach them some adaptors to process our data better. You can test yourself
+with this page, since it actually exists `here
+<../_static/items_adaptors-sample1.html>`_
 
 .. highlight:: sh
 
@@ -51,20 +66,26 @@ And then let's try to find the products and scrape an item manually. Something l
     >>> item.manufacturer
     [<HtmlXPathSelector (text) xpath=td[@class="prod_attrib"][1]/text()>]
 
-| Okay, what we did here was creating an item, and setting its 'manufacturer' attribute by using the selectors we already had for each product row.
-| As you can see, we didn't apply the extract method to the selector, so the data stored in the product was exactly the same that our selector's call to the ``x`` method
-  returns; another selector.
+Okay, what we did here was creating an item, and setting its 'manufacturer'
+attribute by using the selectors we already had for each product row.
+
+As you can see, we didn't apply the extract method to the selector, so the data
+stored in the product was exactly the same that our selector's call to the
+``x`` method returns; another selector.
+
   We could extract the information before setting it, but we'll use adaptors instead:
 
-    >>> from scrapy.contrib import adaptors
+    >>> from scrapy.contrib_exp import adaptors
     >>> item = ScrapedItem()
     >>> item.add_adaptor('manufacturer', adaptors.extract)
     >>> item.attribute('manufacturer', product_rows[0].x('td[@class="prod_attrib"][1]/text()'))
     >>> item.manufacturer
     [u"Bill &amp; Ted's Farm"]
 
-| Better now, right? At least we have some readable data :)
-| Although we'd probably want to remove those entities, and to store the information as a string...
+Better now, right? At least we have some readable data :)
+
+Although we'd probably want to remove those entities, and to store the
+information as a string...
 
     >>> item = ScrapedItem()
     >>> item.set_attrib_adaptors('manufacturer', [
@@ -75,11 +96,13 @@ And then let's try to find the products and scrape an item manually. Something l
     >>> item.manufacturer
     u"Bill & Ted's Farm"
 
-| Cool, now that looks like something that can be stored correctly.
-| However, we must look at the rest of the attributes too.
-| At first sight, it looks like at least the name and the description could use the same adaptors as the manufacturer, since they're all a simple text.
+Cool, now that looks like something that can be stored correctly. However, we
+must look at the rest of the attributes too. At first sight, it looks like at
+least the name and the description could use the same adaptors as the
+manufacturer, since they're all a simple text.
 
-The weight and the price could get a better parsing though; at least to convert them to real decimals. Let's experiment a bit more::
+The weight and the price could get a better parsing though; at least to convert
+them to real decimals. Let's experiment a bit more::
 
     >>> from decimal import Decimal # We'll use Decimal objects for storing the price and weight
 
@@ -89,9 +112,13 @@ The weight and the price could get a better parsing though; at least to convert 
     >>> item.price
     Decimal('300')
 
-| In this case it wasn't necessary to use the extract adaptor, because applying the ``re`` method over a selector already extracts the resulting content.
-| Now, the price was quite easy, but the weight is a bit tricky, for the simple fact that it has more than one weighing unit. In this case, we'll have
-  to write our own little adaptor that takes care of parsing a string and returning a Decimal according to its unit.
+In this case it wasn't necessary to use the extract adaptor, because applying
+the ``re`` method over a selector already extracts the resulting content.
+
+Now, the price was quite easy, but the weight is a bit tricky, for the simple
+fact that it has more than one weighing unit. In this case, we'll have to write
+our own little adaptor that takes care of parsing a string and returning a
+Decimal according to its unit.
 
 Something like this could work, although it's very primitive::
 
@@ -137,7 +164,7 @@ Ok, done! Let's now sum this up into a spider::
 
     from decimal import Decimal
     from scrapy.item import ScrapedItem
-    from scrapy.contrib import adaptors
+    from scrapy.contrib_exp import adaptors
     from scrapy.contrib.spiders import CrawlSpider, Rule
     from scrapy.xpath.selector import HtmlXPathSelector
     from scrapy.link.extractors import RegexLinkExtractor
@@ -193,39 +220,53 @@ Ok, done! Let's now sum this up into a spider::
     SPIDER = MySpider()
 
 
-| Basically this spider looks for the product rows in the page, creates an item for each of them, attaches them some adaptors, and fills their attributes in.
+Basically this spider looks for the product rows in the page, creates an item
+for each of them, attaches them some adaptors, and fills their attributes in.
 
 Scraping the sample page with this code would give us these items::
 
     ScrapedItem({u"name": u"Bananas", u"manufacturer": u"Bill & Ted's farm", u"description": "Delicious fruit", u"weight": Decimal("2000"), u"price": Decimal("300")})
     ScrapedItem({u"name": u"Apple pie", u"manufacturer": u"Grandma's", u"description": "Grandma's best dish", u"weight": Decimal("250"), u"price": Decimal("200")})
 
-There could be more parsing done here through adaptors, like parsing different price currencies, or more advanced weight parsing (this one was very, very, simple and buggy).
-Nevertheless, I hope that this was useful as an example use of adaptors.
+There could be more parsing done here through adaptors, like parsing different
+price currencies, or more advanced weight parsing (this one was very, very,
+simple and buggy).  Nevertheless, I hope that this was useful as an example use
+of adaptors.
 
 
 More complex adaptors
 =====================
 
-| Okay, what happens when you have adaptors that receive extra parameters in order to modify their behaviour?
-| For example, going back to money, what if you have a function capable of converting from one currency to another one by receiving three parameters: the value, its currency,
-  and the currency to convert to?
-| Well, don't worry, Scrapy can handle this situation and use this adaptor too, and in fact, its something quite easy to do.
-|
-| Basically the difference between a regular adaptor and a "complex" one (I call them complex just for the fact that the others are *very* simple), is that the first one
-  always receives and returns a single value, while the others may receive more, passed by you to the item's ``attribute`` method.
-| Whenever this method (``attribute``) receives any extra parameters (apart from the value to set, ``override``, and ``add``), it automatically passes them to any adaptor
-  that receives a parameter called ``adaptor_args`` in a dictionary.
-| This adaptor should read the dictionary and check if it has received any parameters there.
-|
-| Notice that you should be careful with the naming of these parameters in order to not generate confusion between adaptors, because every adaptor (that has the ``adaptor_args``
-  parameter, of course) will receive the same dict of keywords, containing keywords that are destined for itself, and some that aren't.
-| For example, it's not very wise to use a parameter called 'encoding' unless you'd like all the adaptors to receive it; otherwise it'd be better to use the adaptor's name
-  as a prefix to the parameter, just to make it clearer.
-|
-| Let's now see the currency example, now written in code.
+Okay, what happens when you have adaptors that receive extra parameters in
+order to modify their behaviour? For example, going back to money, what if you
+have a function capable of converting from one currency to another one by
+receiving three parameters: the value, its currency, and the currency to
+convert to?. Well, don't worry, Scrapy can handle this situation and use this
+adaptor too, and in fact, its something quite easy to do.
 
-First, we'll define a class called Currency and a dictionary, in order to store some currencies and their exchange rate::
+Basically the difference between a regular adaptor and a "complex" one (I call
+them complex just for the fact that the others are *very* simple), is that the
+first one always receives and returns a single value, while the others may
+receive more, passed by you to the item's ``attribute`` method. Whenever this
+method (``attribute``) receives any extra parameters (apart from the value to
+set, ``override``, and ``add``), it automatically passes them to any adaptor
+that receives a parameter called ``adaptor_args`` in a dictionary.  This
+adaptor should read the dictionary and check if it has received any parameters
+there.
+
+Notice that you should be careful with the naming of these parameters in order
+to not generate confusion between adaptors, because every adaptor (that has the
+``adaptor_args`` parameter, of course) will receive the same dict of keywords,
+containing keywords that are destined for itself, and some that aren't.
+
+For example, it's not very wise to use a parameter called 'encoding' unless
+you'd like all the adaptors to receive it; otherwise it'd be better to use the
+adaptor's name as a prefix to the parameter, just to make it clearer.
+
+Let's now see the currency example, now written in code.
+
+First, we'll define a class called Currency and a dictionary, in order to store
+some currencies and their exchange rate::
 
     class Currency(object):
         def __init__(self, from_dollars, to_dollars):
@@ -252,7 +293,8 @@ First, we'll define a class called Currency and a dictionary, in order to store 
         'pound': Currency(from_dollars=Decimal('0.6547'), to_dollars=Decimal('1.5274')),
     }
 
-Ok, now that we've got some exchange information, the only thing missing is the adaptor that makes use of it::
+Ok, now that we've got some exchange information, the only thing missing is the
+adaptor that makes use of it::
 
     def exchange_adaptor(value, adaptor_args):
         currency_from = adaptor_args.get('currency_from', 'dollar')
@@ -264,7 +306,7 @@ Ok, now that we've got some exchange information, the only thing missing is the 
         else:
             raise Exception('Unsupported currencies were specified')
 
-And finally, testing it!::
+And finally, testing it! ::
 
     >>> item = ScrapedItem()
     >>> item.set_attrib_adaptors('price', [ Decimal, exchange_adaptor ])
