@@ -32,9 +32,15 @@ class ResponseTest(unittest.TestCase):
         assert r.headers is not headers
         self.assertEqual(r.headers["caca"], "coco")
 
+        r = Response("http://www.example.com", status=301)
+        self.assertEqual(r.status, 301)
+        r = Response("http://www.example.com", status='301')
+        self.assertEqual(r.status, 301)
+        self.assertRaises(ValueError, Response, "http://example.com", status='lala200')
+
     def test_copy(self):
         """Test Response copy"""
-        
+
         r1 = Response("http://www.example.com", body="Some body")
         r1.meta['foo'] = 'bar'
         r1.flags.append('cached')
