@@ -59,7 +59,12 @@ Let's see how would our spider end up looking like after applying this change::
     SPIDER = GoogleDirectorySpider()
 
 
-| With this code, our spider will crawl over Google's directory, and save each link's name, description, and url to a file called 'scraped_items.csv'.
+With this code, our spider will crawl over Google's directory, and save each
+link's name, description, and url to a file called 'scraped_items.csv'.
+
   Cool, huh?
+
+::
+    ./scrapy-ctl.py crawl google.com
 
 This is the end of the tutorial. If you'd like to know more about Scrapy and its use, please read the rest of the documentation.

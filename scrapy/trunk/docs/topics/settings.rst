@@ -14,6 +14,8 @@ The settings infrastructure provides a global namespace of key-value mappings
 where the code can pull configuration values from. The settings can be
 populated through different mechanisms, which are described below.
 
+Read :ref:`settings` for all supported entries.
+
 How to populate settings
 ========================
 
