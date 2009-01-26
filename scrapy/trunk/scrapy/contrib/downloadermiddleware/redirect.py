@@ -19,8 +19,8 @@ class RedirectMiddleware(object):
         if isinstance(exception, HttpException):
             status = exception.status
             response = exception.response
-            
-            if status in ['302', '303']:
+
+            if status in [302, 303]:
                 redirected_url = urljoin(request.url, response.headers['location'][0])
                 if not getattr(spider, "no_redirect", False):
                     redirected = request.replace(url=redirected_url, method='GET', body=None)
@@ -34,21 +34,21 @@ class RedirectMiddleware(object):
                         redirected.dont_filter -= 1
                     else:
                         redirected.dont_filter = False
-                    log.msg("Redirecting (%s) to %s from %s" % (status, redirected, request), level=log.DEBUG, domain=spider.domain_name)
+                    log.msg("Redirecting (%d) to %s from %s" % (status, redirected, request), level=log.DEBUG, domain=spider.domain_name)
                     return redirected
-                log.msg("Ignored redirecting (%s) to %s from %s (disabled by spider)" % (status, redirected_url, request), level=log.DEBUG, domain=spider.domain_name)
+                log.msg("Ignored redirecting (%d) to %s from %s (disabled by spider)" % (status, redirected_url, request), level=log.DEBUG, domain=spider.domain_name)
                 return response
 
-            if status in ['301', '307']:
+            if status in [301, 307]:
                 redirected_url = urljoin(request.url, response.headers['location'][0])
                 if not getattr(spider, "no_redirect", False):
                     redirected = request.replace(url=redirected_url)
                     # This is needed to avoid redirection loops with requests that contain dont_filter = True
                     # Example (9 May 2008): http://www.55max.com/product/001_photography.asp?3233,0,0,0,Michael+Banks
                     redirected.dont_filter = False
-                    log.msg("Redirecting (%s) to %s from %s" % (status, redirected, request), level=log.DEBUG, domain=spider.domain_name)
+                    log.msg("Redirecting (%d) to %s from %s" % (status, redirected, request), level=log.DEBUG, domain=spider.domain_name)
                     return redirected
-                log.msg("Ignored redirecting (%s) to %s from %s (disabled by spider)" % (status, redirected_url, request), level=log.DEBUG, domain=spider.domain_name)
+                log.msg("Ignored redirecting (%d) to %s from %s (disabled by spider)" % (status, redirected_url, request), level=log.DEBUG, domain=spider.domain_name)
                 return response
 
     def process_response(self, request, response, spider):

@@ -17,7 +17,7 @@ class Response(object):
     def __init__(self, url, status=200, headers=None, body='', meta=None, flags=None):
         self.url = Url(url)
         self.headers = Headers(headers or {})
-        self.status = status
+        self.status = int(status)
         self.set_body(body)
         self.cached = False
         self.request = None
@@ -71,7 +71,7 @@ class Response(object):
         received (that's not exposed by Twisted).
         """
 
-        s  = "HTTP/1.1 %s %s\r\n" % (self.status, RESPONSES[self.status])
+        s  = "HTTP/1.1 %d %s\r\n" % (self.status, RESPONSES[self.status])
         if self.headers:
             s += self.headers.to_string() + "\r\n"
         s += "\r\n"

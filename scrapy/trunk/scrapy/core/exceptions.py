@@ -31,7 +31,7 @@ class HttpException(Exception):
             from twisted.web import http
             message = http.responses.get(int(status))
 
-        self.status = status
+        self.status = int(status)
         self.message = message
         self.response = response
         Exception.__init__(self, status, message, response)
