@@ -61,11 +61,11 @@ class RobustScrapedItemTestCase(unittest.TestCase):
     def test_set_adaptors(self):
         self.assertEqual(self.item._adaptors_dict, {})
 
-        delist = adaptors.Delist()
+        delist = adaptors.delist()
         self.item.set_adaptors({'name': [adaptors.extract, delist]})
         self.assertTrue(isinstance(self.item._adaptors_dict['name'], AdaptorPipe))
         self.assertEqual(self.item._adaptors_dict['name'][0].name, "extract")
-        self.assertEqual(self.item._adaptors_dict['name'][1].name, "Delist")
+        self.assertEqual(self.item._adaptors_dict['name'][1].name, "delist")
 
         self.item.set_adaptors({'description': [adaptors.extract]})
         self.assertEqual(self.item._adaptors_dict['description'][0].name, "extract")
@@ -78,11 +78,11 @@ class RobustScrapedItemTestCase(unittest.TestCase):
         self.assertEqual(self.item._adaptors_dict['name'][0].name, "extract")
         self.assertEqual(self.item._adaptors_dict['name'][1].name, "strip")
 
-        unquote = adaptors.Unquote()
+        unquote = adaptors.unquote()
         self.item.set_attrib_adaptors('name', [adaptors.extract, unquote])
         self.assertTrue(isinstance(self.item._adaptors_dict['name'], AdaptorPipe))
         self.assertEqual(self.item._adaptors_dict['name'][0].name, "extract")
-        self.assertEqual(self.item._adaptors_dict['name'][1].name, "Unquote")
+        self.assertEqual(self.item._adaptors_dict['name'][1].name, "unquote")
 
     def test_add_adaptor(self):
         self.assertEqual(self.item._adaptors_dict, {})

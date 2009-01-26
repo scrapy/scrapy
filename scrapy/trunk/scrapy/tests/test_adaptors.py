@@ -162,18 +162,18 @@ class AdaptorsTestCase(unittest.TestCase):
                                   ['lala.com', 'pepe.co.uk', 'das.biz', 'lelelel.net'])
 
     def test_unquote_all(self):
-        unquote = adaptors.Unquote()
+        unquote = adaptors.unquote()
         self.assertEqual(unquote(u'hello&copy;&amp;welcome&lt;br /&gt;&amp;', {}),
             u'hello\xa9&welcome<br />&')
 
     def test_unquote(self):
-        unquote = adaptors.Unquote(keep=['amp', 'lt'])
+        unquote = adaptors.unquote(keep=['amp', 'lt'])
         self.assertEqual(unquote(u'hello&copy;&amp;welcome&lt;br /&gt;&amp;', {}),
             u'hello\xa9&amp;welcome&lt;br />&amp;')
 
     def test_remove_tags(self):
-        self.assertEqual(adaptors.remove_tags('<a href="lala">adsaas<br /></a>'), 'adsaas')
-        self.assertEqual(adaptors.remove_tags('<div id="1"><table>dsadasf</table></div>'), 'dsadasf')
+        self.assertEqual(adaptors.remove_tags()('<a href="lala">adsaas<br /></a>'), 'adsaas')
+        self.assertEqual(adaptors.remove_tags()('<div id="1"><table>dsadasf</table></div>'), 'dsadasf')
 
     def test_remove_root(self):
         self.assertEqual(adaptors.remove_root('<div>lallaa<a href="coso">dsfsdfds</a>pepepep<br /></div>'),
@@ -191,7 +191,7 @@ class AdaptorsTestCase(unittest.TestCase):
             [1, 2, 5, 6, 'hi'])
 
     def test_delist(self):
-        delist = adaptors.Delist(' ')
+        delist = adaptors.delist(' ')
         self.assertEqual(delist(['hi', 'there', 'fellas.', 'this', 'is', 'my', 'test.'], {}),
             'hi there fellas. this is my test.')
         self.assertEqual(delist(['hi', 'there', 'fellas,', 'this', 'is', 'my', 'test.'], {'join_delimiter': '.'}),

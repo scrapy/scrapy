@@ -8,14 +8,15 @@ from scrapy.item.adaptors import adaptize
 
 def to_unicode(value, adaptor_args):
     """
-    Receives a list of strings, converts
-    it to unicode, and returns a new list.
+    Receives a string and converts it to unicode
+    using the given encoding (if specified, else utf-8 is used)
+    and returns a new unicode object.
     E.g:
-      >> to_unicode(['it costs 20€, or 30£'])
+      >> to_unicode('it costs 20\xe2\x82\xac, or 30\xc2\xa3')
         [u'it costs 20\u20ac, or 30\xa3']
 
-    Input: iterable of strings
-    Output: list of unicodes
+    Input: string
+    Output: unicode
     """
     if not isinstance(value, basestring):
         value = str(value)
@@ -24,14 +25,13 @@ def to_unicode(value, adaptor_args):
 _clean_spaces_re = re.compile("\s+", re.U)
 def clean_spaces(value):
     """
-    Converts multispaces into single spaces for each string
-    in the provided iterable.
+    Converts multispaces into single spaces for the given string.
     E.g:
-      >> clean_spaces(['Hello   sir'])
-      [u'Hello sir']
+      >> clean_spaces(u'Hello   sir')
+      u'Hello sir'
 
-    Input: iterable of unicodes
-    Output: list of unicodes
+    Input: string/unicode
+    Output: unicode
     """
     return _clean_spaces_re.sub(' ', str_to_unicode(value))
 
@@ -61,20 +61,18 @@ def drop_empty(value):
     """
     return [ v for v in value if v ]
 
-class Delist(object):
+def delist(delimiter=''):
     """
-    Joins a list with the specified delimiter
-    in the adaptor's constructor.
+    This factory returns and adaptor that joins
+    an iterable with the specified delimiter.
 
     Input: iterable of strings/unicodes
     Output: string/unicode
     """
-    def __init__(self, delimiter=''):
-        self.delimiter = delimiter
-
-    def __call__(self, value, adaptor_args):
-        delimiter = adaptor_args.get('join_delimiter', self.delimiter)
-        return delimiter.join(value)
+    def delist(value, adaptor_args):
+        delim = adaptor_args.get('join_delimiter', delimiter)
+        return delim.join(value)
+    return delist
 
 class Regex(object):
     """

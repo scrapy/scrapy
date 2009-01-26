@@ -119,15 +119,6 @@ class RobustScrapedItem(ScrapedItem):
         else:
            raise NotImplementedError('You must override _add_single_attributes method in order to join %s values into a single value.' % attrtype.__name__)
 
-    def _clean_values(self, values):
-        ret = []
-        for val in values:
-            if isinstance(val, tuple):
-                ret.extend(val)
-            elif val:
-                ret.append(val)
-        return ret
-
     def attribute(self, attrname, *values, **kwargs):
         """
         Set the provided values to the provided attribute (`attrname`) by filtering them
@@ -146,6 +137,15 @@ class RobustScrapedItem(ScrapedItem):
         The kwargs parameter is passed to the adaptors pipeline, which manages to transmit
         it to the adaptors themselves.
         """
+        def _clean_values(values):
+            ret = []
+            for val in values:
+                if isinstance(val, tuple):
+                    ret.extend(val)
+                elif val:
+                    ret.append(val)
+            return ret
+
         if not values:
             raise UsageError("You must specify at least one value when setting an attribute")
         if attrname not in self.ATTRIBUTES:
@@ -162,7 +162,7 @@ class RobustScrapedItem(ScrapedItem):
         multivalued = isinstance(attrtype, list)
         adaptors_pipe = self._adaptors_dict.get(attrname)
         new_values = [adaptors_pipe(value, kwargs) for value in values] if adaptors_pipe else [values]
-        new_values = self._clean_values(new_values)
+        new_values = _clean_values(new_values)
 
         if old_value and not override:
             if multivalued:
