@@ -15,6 +15,7 @@ class ResponseTypes(object):
 
     CLASSES = {
         'text/html': 'scrapy.http.HtmlResponse',
+        'application/xml': 'scrapy.http.XmlResponse',
         'text/xml': 'scrapy.http.XmlResponse',
         'text': 'scrapy.http.TextResponse',
     }
