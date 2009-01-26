@@ -1,6 +1,6 @@
 from twisted.internet import reactor
 
-import urlparse
+import os, urllib, urlparse
 import scrapy
 from scrapy.command import ScrapyCommand
 from scrapy.spider import spiders
@@ -60,6 +60,11 @@ class Command(ScrapyCommand):
 
     def get_url(self, url):
         u = urlparse.urlparse(url)
+        if not u.scheme:
+            path = os.path.abspath(url).replace(os.sep, '/')
+            url = 'file://' + urllib.pathname2url(path)
+            u = urlparse.urlparse(url)
+
         if u.scheme not in ('http', 'https', 'file'):
             print "Unsupported scheme '%s' in URL: <%s>" % (u.scheme, url)
             return
