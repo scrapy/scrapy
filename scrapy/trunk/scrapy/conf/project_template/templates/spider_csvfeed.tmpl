@@ -1,5 +1,6 @@
 # -*- coding: utf8 -*-
 from scrapy.contrib.spiders import CSVFeedSpider
+from $project_name.items import MyItem
 
 class $classname(CSVFeedSpider):
     domain_name = '$site'
@@ -12,12 +13,10 @@ class $classname(CSVFeedSpider):
     #    return response
 
     def parse_row(self, response, row):
-        p = self.create_product(response)
-        #p.attribute('site_id', row['id'])
-        #p.attribute('supplier', self.domain_name)
-        #p.attribute('name', row['name'])
-        #p.attribute('description', row['description'])
-        #p.attribute('image_urls', row['image_link'])
-        return p
+        i = MyItem()
+        #i.attribute('url', row['url'])
+        #i.attribute('name', row['name'])
+        #i.attribute('description', row['description'])
+        return i
 
 SPIDER = $classname()

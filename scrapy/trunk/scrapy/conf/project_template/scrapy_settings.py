@@ -4,7 +4,7 @@ import $project_name
 # - Scrapy settings for $project_name                                    -
 # ---------------------------------------------------------------------------
 
-BOT_NAME = 'scrapybot'
+BOT_NAME = '$project_name'
 BOT_VERSION = '1.0'
 
 SPIDER_MODULES = ['$project_name.spiders']

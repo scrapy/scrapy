@@ -2,9 +2,9 @@
 import re
 
 from scrapy.xpath import HtmlXPathSelector
-from scrapy.item import ScrapedItem
 from scrapy.link.extractors import RegexLinkExtractor
 from scrapy.contrib.spiders import CrawlSpider, Rule
+from $project_name.items import MyItem
 
 class $classname(CrawlSpider):
     domain_name = '$site'
@@ -15,10 +15,11 @@ class $classname(CrawlSpider):
     )
 
     def parse_item(self, response):
+        i = MyItem()
         #xs = HtmlXPathSelector(response)
-        #i = ScrapedItem()
         #i.attribute('site_id', xs.x('//input[@id="sid"]/@value'))
         #i.attribute('name', xs.x('//div[@id="name"]'))
         #i.attribute('description', xs.x('//div[@id="description"]'))
+        return [i]
 
 SPIDER = $classname()

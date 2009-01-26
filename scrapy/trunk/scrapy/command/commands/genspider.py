@@ -54,6 +54,7 @@ class Command(ScrapyCommand):
     def _genspider(self, name, site, template_file):
         """ Generate spider """
         tvars = {
+            'project_name': settings.get('BOT_NAME'),
             'name': name,
             'site': site,
             'classname': '%sSpider' % ''.join([s.capitalize() for s in name.split('_')])
