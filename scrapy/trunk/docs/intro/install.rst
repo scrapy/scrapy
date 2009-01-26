@@ -43,6 +43,38 @@ If you are running Arch Linux use the following command to install required depe
 
    pacman -S twisted libxml2 pyopenssl
 
+MacOSX
+------
+
+MacOSX ships an libxml2 version too old to be used by Scrapy. Also, by
+looking on the web it seems that installing libxml2 on MacOSX is a bit
+of a challenge. Here is a way to achieve this, though not acceptable
+on the long run:
+
+1. Fetch the following libxml2 and libxslt packages:
+
+   ftp://xmlsoft.org/libxml2/libxml2-2.7.3.tar.gz
+
+   ftp://xmlsoft.org/libxml2/libxslt-1.1.24.tar.gz
+
+2. Extract them, and make every one of them like::
+
+       ./configure --with-python=/Library/Frameworks/Python.framework/Versions/2.5/
+       make
+       sudo make install
+   
+referencing your current python framework.
+
+3. In libxml2-2.7.3/python, run::
+
+       sudo make install
+
+   The libraries and modules should be installed in something like
+   /usr/local/lib/python2.5/site-packages. Add it to your PYTHONPATH
+   and you are done. Check the library is there with a simple::
+
+       python -c 'import libxml2'
+
 Windows
 -------
 
