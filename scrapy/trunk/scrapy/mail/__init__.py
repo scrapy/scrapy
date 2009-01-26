@@ -52,10 +52,22 @@ class MailSender(object):
         else:
             msg.set_payload(body)
 
-        dfd = self._sendmail(self.smtphost, self.mailfrom, rcpts, msg.as_string())
-        dfd.addCallbacks(self._sent_ok, self._sent_failed,
-            callbackArgs=[to, cc, subject, len(attachs)],
-            errbackArgs=[to, cc, subject, len(attachs)])
+        # FIXME ---------------------------------------------------------------------
+        # There seems to be a problem with sending emails using deferreds when
+        # the last thing left to do is sending the mail, cause the engine stops
+        # the reactor and the email don't get send. we need to fix this. until
+        # then, we'll revert to use Python standard (IO-blocking) smtplib.
+
+        #dfd = self._sendmail(self.smtphost, self.mailfrom, rcpts, msg.as_string())
+        #dfd.addCallbacks(self._sent_ok, self._sent_failed,
+        #    callbackArgs=[to, cc, subject, len(attachs)],
+        #    errbackArgs=[to, cc, subject, len(attachs)])
+        import smtplib
+        smtp = smtplib.SMTP(self.smtphost)
+        smtp.sendmail(self.mailfrom, rcpts, msg.as_string())
+        log.msg('Mail sent: To=%s Cc=%s Subject="%s"' % (to, cc, subject))
+        smtp.close()
+        # ---------------------------------------------------------------------------
 
     def _sent_ok(self, result, to, cc, subject, nattachs):
         log.msg('Mail sent OK: To=%s Cc=%s Subject="%s" Attachs=%d' % (to, cc, subject, nattachs))
