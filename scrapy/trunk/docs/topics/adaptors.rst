@@ -204,6 +204,7 @@ Ok, done! Let's now sum this up into a spider::
         }
 
         def parse_page(self, response):
+            items = []
             rows = hxs.x('//tr[child::td[@class="prod_attrib"]]')
             for product in rows:
                 item = ScrapedItem()
@@ -214,8 +215,9 @@ Ok, done! Let's now sum this up into a spider::
                 item.attribute('description', product.x('td[@class="prod_attrib"][3]/text()'))
                 item.attribute('weight', product.x('td[@class="prod_attrib"][4]/text()'))
                 item.attribute('price', product.x('td[@class="prod_attrib"][5]/text()').re('(\d+)'))
+                items.append(item)
 
-            return [item]
+            return items
 
     SPIDER = MySpider()
 

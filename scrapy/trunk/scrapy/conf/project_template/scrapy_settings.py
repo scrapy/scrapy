@@ -13,6 +13,12 @@ TEMPLATES_DIR = '%s/templates' % $project_name.__path__[0]
 ENABLED_SPIDERS_FILE = '%s/conf/enabled_spiders.list' % $project_name.__path__[0]
 DEFAULT_ITEM_CLASS = 'scrapy.item.ScrapedItem'
 USER_AGENT = '%s/%s' % (BOT_NAME, BOT_VERSION)
+
+# The amount of time (in secs) that the downloader should wait before
+# downloading consecutive pages from the same spider. This can be used
+# to throttle the crawling speed to avoid hitting servers too
+# hard. Decimal numbers are supported. Example:
+# DOWNLOAD_DELAY = 2.5
 DOWNLOAD_TIMEOUT = 600
 
 # use this spider class as default when no spider was found for a given url
