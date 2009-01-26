@@ -36,13 +36,22 @@ class ResponseTypes(object):
         mimetype = content_type.split(';')[0].strip().lower()
         return self.from_mimetype(mimetype)
 
+    def from_content_disposition(self, content_disposition):
+        try:
+            filename = content_disposition.split(';')[1].split('=')[1]
+            return self.from_filename(filename)
+        except IndexError:
+            return Response
+
     def from_headers(self, headers):
         """Return the most appropiate Response class by looking at the HTTP
         headers"""
+        cls = Response
         if 'Content-Type' in headers:
-            return self.from_content_type(headers['Content-type'][0])
-        else:
-            return Response
+            cls = self.from_content_type(headers['Content-type'][0])
+        if cls is Response and 'Content-Disposition' in headers:
+            cls = self.from_content_disposition(headers['Content-Disposition'][0])
+        return cls
 
     def from_filename(self, filename):
         """Return the most appropiate Response class from a file name"""
