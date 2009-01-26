@@ -1,14 +1,19 @@
+""" This module implements the DecompressionMiddleware which tries to recognise
+and extract the potentially compressed responses that may arrive. 
+
+NOTE: This middleware needs a better name to avoid confusiong it with the
+CompressinMiddleware (in contrib.downloadermiddleware.compression).
+"""
+
 import zipfile
 import tarfile
 import gzip
 import bz2
-try:
-    from cStringIO import StringIO
-except:
-    from StringIO import StringIO
+from cStringIO import StringIO
 
 from scrapy import log
 from scrapy.http import Response
+from scrapy.core.downloader.responsetypes import responsetypes
 
 class DecompressionMiddleware(object):
     """ This middleware tries to recognise and extract the possibly compressed
@@ -28,7 +33,9 @@ class DecompressionMiddleware(object):
         except tarfile.ReadError:
             return False
         if tar_file.members:
-            return response.replace(body=tar_file.extractfile(tar_file.members[0]).read())
+            body = body=tar_file.extractfile(tar_file.members[0]).read()
+            respcls = self._get_response_class(filename=tar_file.members[0].name, body=body)
+            return response.replace(body=body, cls=respcls)
         else:
             raise self.ArchiveIsEmpty
 
@@ -39,7 +46,9 @@ class DecompressionMiddleware(object):
             return False
         namelist = zip_file.namelist()
         if namelist:
-            return response.replace(body=zip_file.read(namelist[0]))
+            body = zip_file.read(namelist[0])
+            respcls = self._get_response_class(filename=namelist[0], body=body)
+            return response.replace(body=body, cls=respcls)
         else:
             raise self.ArchiveIsEmpty
 
@@ -49,21 +58,31 @@ class DecompressionMiddleware(object):
             decompressed_body = gzip_file.read()
         except IOError:
             return False
-        return response.replace(body=decompressed_body)
+        respcls = self._get_response_class(body=decompressed_body)
+        return response.replace(body=decompressed_body, cls=respcls)
 
     def is_bzip2(self, response):
         try:
             decompressed_body = bz2.decompress(self.body)
         except IOError:
             return False
-        return response.replace(body=decompressed_body)
+        respcls = self._get_response_class(body=decompressed_body)
+        return response.replace(body=decompressed_body, cls=respcls)
+
+    def _get_response_class(self, filename=None, body=None):
+        respcls = Response
+        if filename is not None:
+            respcls = responsetypes.from_filename(filename)
+        if respcls is Response and body is not None:
+            respcls = responsetypes.from_body(body)
+        return respcls
 
     def extract(self, response):
         """ This method tries to decompress the given response, if possible,
         and returns a tuple containing the resulting response, and the name
         of the used decompressor """
 
-        self.body = response.body.to_string()
+        self.body = response.body
         self.archive = StringIO()
         self.archive.write(self.body)
 

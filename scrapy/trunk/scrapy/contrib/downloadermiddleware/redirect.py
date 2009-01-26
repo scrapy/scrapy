@@ -23,10 +23,7 @@ class RedirectMiddleware(object):
             if status in ['302', '303']:
                 redirected_url = urljoin(request.url, response.headers['location'][0])
                 if not getattr(spider, "no_redirect", False):
-                    redirected = request.copy()
-                    redirected.url = redirected_url
-                    redirected.method = 'GET'
-                    redirected.body = None
+                    redirected = request.replace(url=redirected_url, method='GET', body=None)
                     # This is needed to avoid redirection loops with requests that contain dont_filter = True
                     # Example (9 May 2008): http://www.55max.com/product/001_photography.asp?3233,0,0,0,Michael+Banks
                     if isinstance(redirected.dont_filter, int):
@@ -45,8 +42,7 @@ class RedirectMiddleware(object):
             if status in ['301', '307']:
                 redirected_url = urljoin(request.url, response.headers['location'][0])
                 if not getattr(spider, "no_redirect", False):
-                    redirected = request.copy()
-                    redirected.url = redirected_url
+                    redirected = request.replace(url=redirected_url)
                     # This is needed to avoid redirection loops with requests that contain dont_filter = True
                     # Example (9 May 2008): http://www.55max.com/product/001_photography.asp?3233,0,0,0,Michael+Banks
                     redirected.dont_filter = False
@@ -57,7 +53,7 @@ class RedirectMiddleware(object):
 
     def process_response(self, request, response, spider):
         if isinstance(response, Response):
-            m = META_REFRESH_RE.search(response.body.to_string()[0:4096])
+            m = META_REFRESH_RE.search(response.body[0:4096])
             if m and int(m.group(1)) < META_REFRESH_MAXSEC:
                 redirected = request.copy()
                 redirected.url = urljoin(request.url, m.group(2))

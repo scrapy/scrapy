@@ -72,7 +72,7 @@ class HistoryMiddleware(object):
         self.historydata.store(domain, key, url, parentkey, version, post_version)
 
     def get_version(self, response):
-        key = hashlib.sha1(response.body.to_string()).hexdigest()
+        key = hashlib.sha1(response.body).hexdigest()
 
 def urlkey(url):
     """Generate a 'key' for a given url

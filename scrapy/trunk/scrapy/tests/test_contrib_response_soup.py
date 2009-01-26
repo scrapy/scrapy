@@ -23,7 +23,7 @@ class ResponseSoupTest(unittest.TestCase):
 
         # when body is None, an empty soup should be returned
         r1 = Response('http://www.example.com')
-        assert r1.body is None
+        assert r1.body == ""
         assert isinstance(r1.getsoup(), BeautifulSoup)
 
     def test_response_soup_caching(self):

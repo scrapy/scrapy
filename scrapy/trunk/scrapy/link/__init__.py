@@ -58,9 +58,7 @@ class LinkExtractor(FixedSGMLParser):
 
     def extract_links(self, response):
         # wrapper needed to allow to work directly with text
-        return self._extract_links(response.body.to_string(),
-            response.url,
-            response.body.get_real_encoding())
+        return self._extract_links(response.body, response.url, response.encoding)
 
     def reset(self):
         FixedSGMLParser.reset(self)

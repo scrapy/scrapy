@@ -123,7 +123,7 @@ class S3ImagesPipeline(BaseImagesPipeline):
 
     def s3_store_image(self, response, url, info):
         """Upload image to S3 storage"""
-        buf = StringIO(response.body.to_string())
+        buf = StringIO(response.body)
         image = Image.open(buf)
         key = self.s3_image_key(url)
         _, jpegbuf = self._s3_put_image(image, key, info)

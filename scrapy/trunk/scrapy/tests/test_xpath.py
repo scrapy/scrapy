@@ -3,23 +3,17 @@ import unittest
 
 import libxml2
 
-from scrapy.http import Response
+from scrapy.http import TextResponse, HtmlResponse, XmlResponse
 from scrapy.xpath.selector import XmlXPathSelector, HtmlXPathSelector
+from scrapy.utils.test import libxml2debug
 
 class XPathTestCase(unittest.TestCase):
 
-    def setUp(self):
-        libxml2.debugMemory(1)
-
-    def tearDown(self):
-        libxml2.cleanupParser()
-        leaked_bytes = libxml2.debugMemory(0) 
-        assert leaked_bytes == 0, "libxml2 memory leak detected: %d bytes" % leaked_bytes
-
+    @libxml2debug
     def test_selector_simple(self):
         """Simple selector tests"""
         body = "<p><input name='a'value='1'/><input name='b'value='2'/></p>"
-        response = Response(url="http://example.com", body=body)
+        response = TextResponse(url="http://example.com", body=body)
         xpath = HtmlXPathSelector(response)
 
         xl = xpath.x('//input')
@@ -40,6 +34,7 @@ class XPathTestCase(unittest.TestCase):
         self.assertEqual([x.extract() for x in xpath.x("concat(//input[@name='a']/@value, //input[@name='b']/@value)")],
                          [u'12'])
 
+    @libxml2debug
     def test_selector_same_type(self):
         """Test XPathSelector returning the same type in x() method"""
         text = '<p>test<p>'
@@ -48,6 +43,7 @@ class XPathTestCase(unittest.TestCase):
         assert isinstance(HtmlXPathSelector(text=text).x("//p")[0], 
                           HtmlXPathSelector)
 
+    @libxml2debug
     def test_selector_xml_html(self):
         """Test that XML and HTML XPathSelector's behave differently"""
 
@@ -60,6 +56,7 @@ class XPathTestCase(unittest.TestCase):
         self.assertEqual(HtmlXPathSelector(text=text).x("//div").extract(),
                          [u'<div><img src="a.jpg"><p>Hello</p></div>'])
 
+    @libxml2debug
     def test_selector_nested(self):
         """Nested selector tests"""
         body = """<body>
@@ -75,7 +72,7 @@ class XPathTestCase(unittest.TestCase):
                     </div>
                   </body>"""
 
-        response = Response(url="http://example.com", body=body)
+        response = HtmlResponse(url="http://example.com", body=body)
         x = HtmlXPathSelector(response)
 
         divtwo = x.x('//div[@class="two"]')
@@ -88,6 +85,7 @@ class XPathTestCase(unittest.TestCase):
         self.assertEqual(divtwo.x("./li").extract(),
                          [])
 
+    @libxml2debug
     def test_selector_re(self):
         body = """<div>Name: Mary
                     <ul>
@@ -100,7 +98,7 @@ class XPathTestCase(unittest.TestCase):
                   </div>
 
                """
-        response = Response(url="http://example.com", body=body)
+        response = HtmlResponse(url="http://example.com", body=body)
         x = HtmlXPathSelector(response)
 
         name_re = re.compile("Name: (\w+)")
@@ -109,6 +107,7 @@ class XPathTestCase(unittest.TestCase):
         self.assertEqual(x.x("//ul/li").re("Age: (\d+)"),
                          ["10", "20"])
 
+    @libxml2debug
     def test_selector_over_text(self):
         hxs = HtmlXPathSelector(text='<root>lala</root>')
         self.assertEqual(hxs.extract(),
@@ -123,6 +122,7 @@ class XPathTestCase(unittest.TestCase):
                          [u'<root>lala</root>'])
 
 
+    @libxml2debug
     def test_selector_namespaces_simple(self):
         body = """
         <test xmlns:somens="http://scrapy.org">
@@ -131,7 +131,7 @@ class XPathTestCase(unittest.TestCase):
         </test>
         """
 
-        response = Response(url="http://example.com", body=body)
+        response = XmlResponse(url="http://example.com", body=body)
         x = XmlXPathSelector(response)
         
         x.register_namespace("somens", "http://scrapy.org")
@@ -139,6 +139,7 @@ class XPathTestCase(unittest.TestCase):
                          ['<somens:a id="foo"/>'])
 
 
+    @libxml2debug
     def test_selector_namespaces_multiple(self):
         body = """<?xml version="1.0" encoding="UTF-8"?>
 <BrowseNode xmlns="http://webservices.amazon.com/AWSECommerceService/2005-10-05"
@@ -149,7 +150,7 @@ class XPathTestCase(unittest.TestCase):
     <p:SecondTestTag><material/><price>90</price><p:name>Dried Rose</p:name></p:SecondTestTag>
 </BrowseNode>
         """
-        response = Response(url="http://example.com", body=body)
+        response = XmlResponse(url="http://example.com", body=body)
         x = XmlXPathSelector(response)
 
         x.register_namespace("xmlns", "http://webservices.amazon.com/AWSECommerceService/2005-10-05")
@@ -162,6 +163,7 @@ class XPathTestCase(unittest.TestCase):
         self.assertEqual(x.x("//p:SecondTestTag").x("./xmlns:price/text()")[0].extract(), '90')
         self.assertEqual(x.x("//p:SecondTestTag/xmlns:material").extract()[0], '<material/>')
 
+    @libxml2debug
     def test_http_header_encoding_precedence(self):
         # u'\xa3'     = pound symbol in unicode
         # u'\xc2\xa3' = pound symbol in utf-8
@@ -176,11 +178,12 @@ class XPathTestCase(unittest.TestCase):
         html_utf8 = html.encode(encoding)
 
         headers = {'Content-Type': ['text/html; charset=utf-8']}
-        response = Response(url="http://example.com", headers=headers, body=html_utf8)
+        response = HtmlResponse(url="http://example.com", headers=headers, body=html_utf8)
         x = HtmlXPathSelector(response)
         self.assertEquals(x.x("//span[@id='blank']/text()").extract(),
                           [u'\xa3'])
 
+    @libxml2debug
     def test_null_bytes(self):
         hxs = HtmlXPathSelector(text='<root>la\x00la</root>')
         self.assertEqual(hxs.extract(),
@@ -190,6 +193,7 @@ class XPathTestCase(unittest.TestCase):
         self.assertEqual(xxs.extract(),
                          u'<root>lala</root>')
 
+    @libxml2debug
     def test_unquote(self):
         xmldoc = '\n'.join((
             '<root>',

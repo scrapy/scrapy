@@ -17,7 +17,7 @@ class CompressionMiddleware(object):
             content_encoding = response.headers.get('Content-Encoding')
             if content_encoding:
                 encoding = content_encoding[0].lower()
-                raw_body = response.body.get_content()
+                raw_body = response.body
                 decoded_body = self._decode(raw_body, encoding)
                 response = response.replace(body=decoded_body)
                 response.headers['Content-Encoding'] = content_encoding[1:]

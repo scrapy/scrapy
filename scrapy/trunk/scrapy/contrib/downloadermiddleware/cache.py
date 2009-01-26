@@ -11,17 +11,9 @@ from scrapy import log
 from scrapy.http import Response, Headers
 from scrapy.http.headers import headers_dict_to_raw
 from scrapy.core.exceptions import NotConfigured, HttpException, IgnoreRequest
+from scrapy.core.downloader.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
 from scrapy.conf import settings
-
-class CachedResponse(Response):
-
-    def __init__(self, *args, **kwargs):
-        Response.__init__(self, *args, **kwargs)
-        self.meta['cached'] = True
-
-    def __str__(self):
-        return "(cached) " + Response.__str__(self)
 
 class CacheMiddleware(object):
     def __init__(self):
@@ -129,7 +121,7 @@ class Cache(object):
                 if datetime.datetime.utcnow() <= metadata['timestamp'] + datetime.timedelta(seconds=expiration_secs):
                     return True
                 else:
-                    log.msg('dropping old cached response from %s' % metadata['timestamp'])
+                    log.msg('dropping old cached response from %s' % metadata['timestamp'], level=log.DEBUG)
                     return False
             else:
                 # disabled cache expiration
@@ -158,7 +150,10 @@ class Cache(object):
         headers = Headers(responseheaders)
         status = metadata['status']
 
-        response = CachedResponse(url=url, headers=headers, status=status, body=responsebody)
+        respcls = responsetypes.from_headers(headers)
+        response = respcls(url=url, headers=headers, status=status, body=responsebody)
+        response.meta['cached'] = True
+        response.flags.append('cached')
         return response
 
     def store(self, domain, key, request, response):
@@ -184,7 +179,7 @@ class Cache(object):
         with open(os.path.join(requestpath, 'response_headers'), 'w') as f:
             f.write(headers_dict_to_raw(response.headers))
         with open(os.path.join(requestpath, 'response_body'), 'w') as f:
-            f.write(response.body.get_content())
+            f.write(response.body)
         # request
         with open(os.path.join(requestpath, 'request_headers'), 'w') as f:
             f.write(headers_dict_to_raw(request.headers))

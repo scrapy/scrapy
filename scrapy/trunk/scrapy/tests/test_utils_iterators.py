@@ -3,10 +3,12 @@ import unittest
 import libxml2
 
 from scrapy.utils.iterators import csviter, xmliter
-from scrapy.http import Response
+from scrapy.http import XmlResponse, TextResponse
 
 class UtilsXmlTestCase(unittest.TestCase):
     ### NOTE: Encoding issues have been found with BeautifulSoup for utf-16 files, utf-16 test removed ###
+    # pablo: Tests shouldn't be removed, but commented with proper steps on how
+    # to reproduce the missing functionality
     def test_iterator(self):
         body = """<?xml version="1.0" encoding="UTF-8"?>\
             <products xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="someschmea.xsd">\
@@ -20,7 +22,7 @@ class UtilsXmlTestCase(unittest.TestCase):
               </product>\
             </products>"""
 
-        response = Response(url="http://example.com", body=body)
+        response = XmlResponse(url="http://example.com", body=body)
         attrs = []
         for x in xmliter(response, 'product'):
             attrs.append((x.x("@id").extract(), x.x("name/text()").extract(), x.x("./type/text()").extract()))
@@ -53,7 +55,7 @@ class UtilsXmlTestCase(unittest.TestCase):
                 </channel>
             </rss>
         """
-        response = Response(url='http://mydummycompany.com', body=body)
+        response = XmlResponse(url='http://mydummycompany.com', body=body)
         my_iter = xmliter(response, 'item')
 
         node = my_iter.next()
@@ -83,7 +85,7 @@ class UtilsCsvTestCase(unittest.TestCase):
     def test_iterator_defaults(self):
         body = open(self.sample_feed_path).read()
 
-        response = Response(url="http://example.com/", body=body)
+        response = TextResponse(url="http://example.com/", body=body)
         csv = csviter(response)
 
         result = [row for row in csv]
@@ -101,7 +103,7 @@ class UtilsCsvTestCase(unittest.TestCase):
     def test_iterator_delimiter(self):
         body = open(self.sample_feed_path).read().replace(',', '\t')
 
-        response = Response(url="http://example.com/", body=body)
+        response = TextResponse(url="http://example.com/", body=body)
         csv = csviter(response, delimiter='\t')
 
         self.assertEqual([row for row in csv],
@@ -114,7 +116,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         sample = open(self.sample_feed_path).read().splitlines()
         headers, body = sample[0].split(','), '\n'.join(sample[1:])
 
-        response = Response(url="http://example.com/", body=body)
+        response = TextResponse(url="http://example.com/", body=body)
         csv = csviter(response, headers=headers)
 
         self.assertEqual([row for row in csv],
@@ -127,7 +129,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         body = open(self.sample_feed_path).read()
         body = '\n'.join((body, 'a,b', 'a,b,c,d'))
 
-        response = Response(url="http://example.com/", body=body)
+        response = TextResponse(url="http://example.com/", body=body)
         csv = csviter(response)
 
         self.assertEqual([row for row in csv],
@@ -139,7 +141,7 @@ class UtilsCsvTestCase(unittest.TestCase):
     def test_iterator_exception(self):
         body = open(self.sample_feed_path).read()
 
-        response = Response(url="http://example.com/", body=body)
+        response = TextResponse(url="http://example.com/", body=body)
         iter = csviter(response)
         iter.next()
         iter.next()

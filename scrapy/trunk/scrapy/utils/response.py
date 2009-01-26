@@ -9,7 +9,7 @@ from scrapy.http.response import Response
 def body_or_str(obj, unicode=True):
     assert isinstance(obj, (Response, basestring)), "obj must be Response or basestring, not %s" % type(obj).__name__
     if isinstance(obj, Response):
-        return obj.body.to_unicode() if unicode else obj.body.to_string()
+        return obj.body_as_unicode() if unicode else obj.body
     elif isinstance(obj, str):
         return obj.decode('utf-8') if unicode else obj
     else:
@@ -22,6 +22,6 @@ def get_base_url(response):
     # benchmark using timeit we got (for 50 repetitions) 0.0017 seconds
     # using re and 0.7452 using xpath
     if 'base_url' not in response.cache:
-        match = BASEURL_RE.search(response.body.to_string()[0:4096])
+        match = BASEURL_RE.search(response.body[0:4096])
         response.cache['base_url'] = match.group(1) if match else response.url
     return response.cache['base_url']

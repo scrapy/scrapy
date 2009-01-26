@@ -20,7 +20,7 @@ class Request(object):
     def __init__(self, url, callback=None, method='GET', headers=None, body=None, 
                  cookies=None, meta=None, encoding='utf-8', dont_filter=None):
 
-        self.encoding = encoding  # this one has to be set first
+        self._encoding = encoding  # this one has to be set first
         self.method = method.upper()
         self.set_url(url)
         self.set_body(body)
@@ -44,18 +44,19 @@ class Request(object):
     url = property(lambda x: x._url, set_url)
 
     def set_body(self, body):
-        # TODO: move dict constructor to another Request class
-        if isinstance(body, dict):
-            self._body = urllib.urlencode(body)
-        elif body is None:
-            self._body = None
-        elif isinstance(body, str):
+        if isinstance(body, str):
             self._body = body
         elif isinstance(body, unicode):
             self._body = body.encode(self.encoding)
+        elif body is None:
+            self._body = ''
         else:
-            raise TypeError("Request body must either str, unicode or None. Got: '%s'" % type(body).__name__)
+            raise TypeError("Request body must either str or unicode. Got: '%s'" % type(body).__name__)
     body = property(lambda x: x._body, set_body)
+
+    @property
+    def encoding(self):
+        return self._encoding
 
     def __str__(self):
         if self.method == 'GET':
@@ -108,7 +109,5 @@ class Request(object):
         if self.headers:
             s += self.headers.to_string() + "\r\n"
         s += "\r\n"
-        if self.body:
-            s += self.body
-            s += "\r\n"
+        s += self.body
         return s

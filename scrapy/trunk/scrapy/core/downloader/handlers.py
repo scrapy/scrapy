@@ -23,6 +23,7 @@ from scrapy.utils.defer import defer_succeed
 from scrapy.conf import settings
 
 from scrapy.core.downloader.dnscache import DNSCache
+from scrapy.core.downloader.responsetypes import responsetypes
 
 default_timeout = settings.getint('DOWNLOAD_TIMEOUT')
 default_agent = settings.get('USER_AGENT')
@@ -63,7 +64,8 @@ def create_factory(request, spider):
         body = body or ''
         status = int(factory.status)
         headers = Headers(factory.response_headers)
-        r = Response(url=request.url, status=status, headers=headers, body=body)
+        respcls = responsetypes.from_headers(headers)
+        r = respcls(url=request.url, status=status, headers=headers, body=body)
         signals.send_catch_log(signal=signals.request_uploaded, sender='download_http', request=request, spider=spider)
         signals.send_catch_log(signal=signals.response_downloaded, sender='download_http', response=r, spider=spider)
         return r

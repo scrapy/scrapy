@@ -102,4 +102,4 @@ class RulesScheduler(Scheduler):
         return request
 
     def get_version(self, response):
-        key = hashlib.sha1(response.body.to_string()).hexdigest()
+        key = hashlib.sha1(response.body).hexdigest()

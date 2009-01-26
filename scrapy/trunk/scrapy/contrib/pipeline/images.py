@@ -33,7 +33,7 @@ class BaseImagesPipeline(MediaPipeline):
         mtype = self.MEDIA_TYPE
         referer = request.headers.get('Referer')
 
-        if not response or not response.body.to_string():
+        if not response or not response.body:
             msg = 'Image (empty): Empty %s (no content) in %s referred in <%s>: no-content' \
                     % (mtype, request, referer)
             log.msg(msg, level=log.WARNING, domain=info.domain)
@@ -172,7 +172,7 @@ def save_scaled_image(image, img_path, name, size):
     thumb.save(filename, 'JPEG')
 
 def save_image_with_thumbnails(response, path, thumbsizes, min_width=0, min_height=0):
-    memoryfile = StringIO(response.body.to_string())
+    memoryfile = StringIO(response.body)
     im = Image.open(memoryfile)
     if im.mode != 'RGB':
         log.msg("Found non-RGB image during scraping %s" % path, level=log.WARNING)
@@ -183,7 +183,7 @@ def save_image_with_thumbnails(response, path, thumbsizes, min_width=0, min_heig
     except Exception, ex:
         log.msg("Image (processing-error): cannot process %s, so writing direct file: Error: %s" % (path, ex))
         f = open(path, 'wb')
-        f.write(response.body.to_string())
+        f.write(response.body)
         f.close()
     width, height = im.size
     if width < min_width or height < min_height:

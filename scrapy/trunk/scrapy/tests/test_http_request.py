@@ -1,6 +1,5 @@
 import unittest
-from scrapy.http import Request, Headers, Url
-from scrapy.core.scheduler import GroupFilter
+from scrapy.http import Request, FormRequest, Headers, Url
 
 class RequestTest(unittest.TestCase):
 
@@ -29,26 +28,6 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r.meta, meta)
         assert r.headers is not headers
         self.assertEqual(r.headers["caca"], "coco")
-
-    def test_groupfilter(self):
-        k1 = "id1"
-        k2 = "id1"
-
-        f = GroupFilter()
-        f.open("mygroup")
-        self.assertTrue(f.add("mygroup", k1))
-        self.assertFalse(f.add("mygroup", k1))
-        self.assertFalse(f.add("mygroup", k2))
-
-        f.open('anothergroup')
-        self.assertTrue(f.add("anothergroup", k1))
-        self.assertFalse(f.add("anothergroup", k1))
-        self.assertFalse(f.add("anothergroup", k2))
-
-        f.close('mygroup')
-        f.open('mygroup')
-        self.assertTrue(f.add("mygroup", k2))
-        self.assertFalse(f.add("mygroup", k1))
 
     def test_headers(self):
         # Different ways of setting headers attribute
@@ -108,7 +87,7 @@ class RequestTest(unittest.TestCase):
 
     def test_body(self):
         r1 = Request(url="http://www.example.com/")
-        assert r1.body is None
+        assert r1.body == ''
 
         r2 = Request(url="http://www.example.com/", body="")
         assert isinstance(r2.body, str)
@@ -166,7 +145,7 @@ class RequestTest(unittest.TestCase):
         r2 = r1.replace(method="POST", body="New body", headers=hdrs)
         self.assertEqual(r1.url, r2.url)
         self.assertEqual((r1.method, r2.method), ("GET", "POST"))
-        self.assertEqual((r1.body, r2.body), (None, "New body"))
+        self.assertEqual((r1.body, r2.body), ('', "New body"))
         self.assertEqual((r1.headers, r2.headers), ({}, hdrs))
 
     def test_httprepr(self):
@@ -174,7 +153,26 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r1.httprepr(), 'GET http://www.example.com HTTP/1.1\r\nHost: www.example.com\r\n\r\n')
 
         r1 = Request("http://www.example.com", method='POST', headers={"Content-type": "text/html"}, body="Some body")
-        self.assertEqual(r1.httprepr(), 'POST http://www.example.com HTTP/1.1\r\nHost: www.example.com\r\nContent-Type: text/html\r\n\r\nSome body\r\n')
+        self.assertEqual(r1.httprepr(), 'POST http://www.example.com HTTP/1.1\r\nHost: www.example.com\r\nContent-Type: text/html\r\n\r\nSome body')
+
+    def test_form_request(self):
+
+        # empty formdata
+        r1 = FormRequest("http://www.example.com", formdata={})
+        self.assertEqual(r1.body, '')
+
+        # using default encoding (utf-8)
+        data = {'one': 'two', 'price': '\xc2\xa3 100'}
+        r2 = FormRequest("http://www.example.com", formdata=data)
+        self.assertEqual(r2.encoding, 'utf-8')
+        self.assertEqual(r2.body, 'price=%C2%A3+100&one=two')
+        self.assertEqual(r2.headers['Content-Type'], 'application/x-www-form-urlencoded')
+
+        # using custom encoding
+        data = {'price': u'\xa3 100'}
+        r3 = FormRequest("http://www.example.com", formdata=data, encoding='latin1')
+        self.assertEqual(r3.encoding, 'latin1')
+        self.assertEqual(r3.body, 'price=%A3+100')
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,6 +1,6 @@
 import unittest
 
-from scrapy.utils.python import str_to_unicode, unicode_to_str
+from scrapy.utils.python import str_to_unicode, unicode_to_str, memoizemethod, isbinarytext
 
 class UtilsPythonTestCase(unittest.TestCase):
     def test_str_to_unicode(self):
@@ -28,6 +28,38 @@ class UtilsPythonTestCase(unittest.TestCase):
 
         # converting a strange object should raise TypeError
         self.assertRaises(TypeError, unicode_to_str, unittest)
+
+    def test_memoizemethod(self):
+        class A(object):
+            def __init__(self):
+                self.cache = {}
+
+            @memoizemethod('cache')
+            def heavyfunc(self, arg1=None, arg2=None):
+                return [arg1, arg2]
+
+        a = A()
+        one = a.heavyfunc()
+        two = a.heavyfunc()
+        three = a.heavyfunc('two')
+        four = a.heavyfunc('two')
+        assert one is two
+        assert one is not three
+        assert three is four
+
+    def test_isbinarytext(self):
+
+        # basic tests
+        assert not isbinarytext("hello")
+
+        # utf-16 strings contain null bytes
+        assert not isbinarytext(u"hello".encode('utf-16')) 
+
+        # one with encoding
+        assert not isbinarytext("<div>Price \xa3</div>")
+
+        # finally some real binary bytes
+        assert isbinarytext("\x02\xa3")
 
 if __name__ == "__main__":
     unittest.main()

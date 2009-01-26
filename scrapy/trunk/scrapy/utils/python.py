@@ -111,3 +111,57 @@ def re_rsearch(pattern, text, chunk_size=1024):
             return (offset + matches[-1].span()[0], offset + matches[-1].span()[1])
     return None
 
+def memoizemethod(cacheattr):
+    """A memoize decorator for methods, which caches calls to instance methods
+    into an attribute of the same instance (which must be dict). Calls with
+    different arguments will be cached in different buckets.
+
+    This has the advantage that, when the instance is collected (by the garbage
+    collector) the cache is collected as well.
+
+    Descriptors are required to implement this functionality. See why at:
+    http://blog.ianbicking.org/2008/10/24/decorators-and-descriptors/
+
+    Example:
+
+    class A(object):
+            def __init__(self):
+            self.cache = {}
+            @memoizemethod('cache')
+        def calculate(self, arg1, arg2):
+            # expensive code here
+
+    All calls to calculate() method of A instances will be cached in their
+    cache (instance) attribute, which must be a dict.
+
+    """
+
+    class MemoizeMethod(object):
+
+        def __init__(self, function):
+            self.function = function
+
+        def __get__(self, obj, objtype=None):
+            if obj is None:
+                return self
+            new_func = self.function.__get__(obj, objtype)
+            return self.__class__(new_func)
+
+        def __call__(self, *args, **kwargs):
+            method = self.function
+            cache = getattr(method.im_self, cacheattr)
+            key = (method.im_func, tuple(args), frozenset(kwargs.items()))
+            if key not in cache:
+                cache[key] = method(*args, **kwargs)
+            return cache[key]
+
+    return MemoizeMethod
+
+_BINARYCHARS = set(map(chr, range(32))) - set(["\0", "\t", "\n", "\r"])
+
+def isbinarytext(text):
+    """Return True if the given text is considered binary, or false
+    otherwise, by looking for binary bytes at their chars
+    """
+    assert isinstance(text, str), "text must be str, got '%s'" % type(text).__name__
+    return any(c in _BINARYCHARS for c in text)

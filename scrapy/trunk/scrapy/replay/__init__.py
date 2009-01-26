@@ -133,7 +133,7 @@ class Replay(object):
             self.passed_new[str(item.guid)] = item
 
     def response_received(self, response, spider):
-        key = hashlib.sha1(response.body.to_string()).hexdigest()
+        key = hashlib.sha1(response.body).hexdigest()
         if (self.recording or self.updating) and key:
             self.responses_old[key] = response.copy()
         elif key:

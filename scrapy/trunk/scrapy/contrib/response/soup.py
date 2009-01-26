@@ -17,6 +17,6 @@ class ResponseSoup(object):
 def getsoup(response, **kwargs):
     # TODO: use different cache buckets depending on constructor parameters
     if 'soup' not in response.cache:
-        body = response.body.to_string() if response.body is not None else ""
+        body = response.body if response.body is not None else ""
         response.cache['soup'] = BeautifulSoup(body, **kwargs)
     return response.cache['soup']

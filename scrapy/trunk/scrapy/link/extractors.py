@@ -55,7 +55,7 @@ class RegexLinkExtractor(LinkExtractor):
         if self.restrict_xpaths:
             hxs = HtmlXPathSelector(response)
             html_slice = ''.join(''.join(html_fragm for html_fragm in hxs.x(xpath_expr).extract()) for xpath_expr in self.restrict_xpaths)
-            links = self._extract_links(html_slice, response.url, response.body.get_real_encoding())
+            links = self._extract_links(html_slice, response.url, response.encoding)
         else:
             links = LinkExtractor.extract_links(self, response)
 

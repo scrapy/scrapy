@@ -1,6 +1,6 @@
 import unittest
 
-from scrapy.http import Response
+from scrapy.http import HtmlResponse
 from scrapy.xpath.extension import ResponseLibxml2
 
 class ResponseLibxml2Test(unittest.TestCase):
@@ -9,7 +9,7 @@ class ResponseLibxml2Test(unittest.TestCase):
         ResponseLibxml2()
 
     def test_response_libxml2_caching(self):
-        r1 = Response('http://www.example.com', body='<html><head></head><body></body></html>')
+        r1 = HtmlResponse('http://www.example.com', body='<html><head></head><body></body></html>')
         r2 = r1.copy()
 
         doc1 = r1.getlibxml2doc()

@@ -1,6 +1,6 @@
 import libxml2
 
-from scrapy.http import Response
+from scrapy.http import TextResponse
 from scrapy.xpath.extension import Libxml2Document
 from scrapy.xpath.constructors import xmlDoc_from_html, xmlDoc_from_xml
 from scrapy.utils.python import flatten, unicode_to_str
@@ -28,7 +28,7 @@ class XPathSelector(object):
                 self.doc = Libxml2Document(response, constructor=constructor)
             self.xmlNode = self.doc.xmlDoc
         elif text:
-            response = Response(url=None, body=unicode_to_str(text))
+            response = TextResponse(url=None, body=unicode_to_str(text))
             self.doc = Libxml2Document(response, constructor=constructor)
             self.xmlNode = self.doc.xmlDoc
         self.expr = expr

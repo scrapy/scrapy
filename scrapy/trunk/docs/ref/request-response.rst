@@ -18,6 +18,10 @@ across the system until they reach the Downloader, which executes the request
 and returns a :class:`Response` object which goes back to the spider that
 generated the request.
 
+Both Request and Response classes contains subclasses which adds additional
+functionality not required in the base classes. See
+:ref:`ref-request-subclasses` and :ref:`ref-response-subclasses` below.
+
 Request objects
 ===============
 
@@ -37,8 +41,8 @@ Request objects
     ``meta`` is a dict containing the initial values for the
     :attr:`Request.meta` attribute. If passed, the dict will be shallow copied.
 
-    ``body`` is a string containing the request body or None if the request
-    doesn't contain a body (ex. GET requests)
+    ``body`` is a str or unicode containing the request body. If ``body`` is
+    a `unicode` it's encoded to str using the `encoding` passed.
 
     ``headers`` is a multi-valued dict containing the headers of this request
 
@@ -52,8 +56,8 @@ Request objects
     be filtered by the scheduler. This is used when you want to perform an
     identical request multiple times, for whatever reason
 
-Attributes
-----------
+Request Attributes
+------------------
 
 .. attribute:: Request.url
 
@@ -72,7 +76,7 @@ Attributes
 
 .. attribute:: Request.body
 
-    A string that contains the request body
+    A str that contains the request body
 
 .. attribute:: Request.meta
 
@@ -96,8 +100,8 @@ Attributes
     Unlike the ``meta`` attribute, this dict is not copied at all when the
     request is cloned using the ``copy()`` or ``replace()`` methods.
 
-Methods
--------
+Request Methods
+---------------
 
 .. method:: Request.copy()
 
@@ -114,10 +118,29 @@ Methods
 
    Return a string with the raw HTTP representation of this response.
 
+.. _ref-request-subclasses:
+
+Request subclasses
+==================
+
+Here is the list of built-in Request subclasses. You can also subclass the
+Request class to implement your own functionality.
+
+FormRequest objects
+-------------------
+
+.. class:: FormRequest
+
+The FormRequest class adds a new parameter to the constructor:
+
+  `formdata` - a dictionary or list of (key, value) tuples (typically
+      containing HTML Form data) which will be urlencoded and assigned to the body
+      of the request.
+
 Response objects
 ================
 
-.. class:: Response(url, status=200, headers=None, body=None)
+.. class:: Response(url, status=200, headers=None, body=None, meta=None, flags=None)
 
     A :class:`Response` object represents an HTTP response, which is usually
     downloaded (by the Downloader) and fed to the Spiders for processing.
@@ -128,14 +151,18 @@ Response objects
 
     ``status`` is an integer with the HTTP status of the response
 
-    ``body`` is a string (or unicode) containing the response body
+    ``body`` is a str with the response body. It must be str, not unicode,
+    unless you're using a Response sublcass such as :class:`TextResponse`.
 
     ``meta`` is a dict containing the initial values for the
     :attr:`Response.meta` attribute. If passed, the dict will be shallow copied.
 
+    ``flags`` is a list containing the initial values for the
+    :attr:`Response.flags` attribute. If passed, the list will be shallow copied.
 
-Attributes
-----------
+
+Response Attributes
+-------------------
 
 .. attribute:: Response.url
 
@@ -152,7 +179,10 @@ Attributes
 
 .. attribute:: Response.body
 
-    The body of this Response.
+    A str containing the body of this Response. Keep in mind that Reponse.body
+    is always a str. If you want the unicode version use
+    :meth:`TextResponse.body_as_unicode` (only available in
+    :class:`TextResponse` and subclasses).
 
 .. attribute:: Response.request
 
@@ -178,14 +208,21 @@ Attributes
     :attr:`Request.meta` attribute. See the :attr:`Request.meta` attribute for
     more info.
 
+.. attribute:: Response.flags
+
+    A list that contains flags for this response. Flags are labels used for
+    tagging Responses. For example: `'cached'`, `'redirected`', etc. And
+    they're shown on the string representation of the Response (`__str__`
+    method) which is used by the engine for logging.
+
 .. attribute:: Response.cache
 
     A dict that contains arbitrary cached data for this response, similar to
     the :attr:`Request.cache` attribute. See the :attr:`Request.cache`
     attribute for more info.
 
-Methods
--------
+Response Methods
+----------------
 
 .. method:: Response.copy()
 
@@ -201,3 +238,101 @@ Methods
 .. method:: Response.httprepr()
 
    Return a string with the raw HTTP representation of this response.
+
+.. _ref-response-subclasses:
+
+Response subclasses
+===================
+
+Here is the list of available built-in Response subclasses. You can also
+subclass the Response class to implement your own functionality.
+
+.. class:: TextResponse
+
+The TextResponse class adds encoding capabilities to the base Response class.
+The base Response class is intended for binary data such as images or media
+files.
+
+:class:`TextResponse` supports the following constructor arguments, attributes
+nd methods in addition to the base Request ones. The remaining functionality is
+the same as for the :class:`Response` class and is not documented here.
+
+TextResponse
+------------
+
+TextResponse constructor arguments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    - `encoding` - a string which contains the encoding to use for this
+       TextResponse. If you create a TextResponse with a unicode body it will be
+       encoded using this encoding (remember the body attribute is always a
+       string). 
+
+       If encoding is `None` the encoding will be looked up in the headers anb
+       body instead.
+
+       It defaults to `None`.
+
+TextResponse attributes
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. attribute:: TextResponse.encoding
+
+   A string with the encoding of this Response. The encoding is resolved in the
+   following order: 
+
+   1. the encoding passed in the constructor `encoding` argument
+   2. the encoding declared in the Content-Type HTTP header
+   3. the encoding declared in the response body. The TextResponse class
+      doesn't provide any special functionality for this. However, the
+      :class:`HtmlResponse` and :class:`XmlResponse` classes do.
+   4. the encoding inferred by looking at the response body. This is the more
+      fragile method but also the last one tried.
+
+TextResponse methods
+~~~~~~~~~~~~~~~~~~~~
+
+.. method:: TextResponse.headers_encoding()
+
+    Returns a string with the encoding declared in the headers (ie. the
+    Content-Type HTTP header).
+
+.. method:: TextResponse.body_encoding()
+
+    Returns a string with the encoding of the body, either declared or inferred
+    from its contents. The body encoding declaration is implemented in
+    :class:`TextResponse` subclasses such as: :class:`HtmlResponse` or
+    :class:`XmlResponse`.
+
+.. method:: TextResponse.body_as_unicode()
+
+    Returns the body of the response as unicode. This is equivalent to::
+
+        response.body.encode(response.encoding)
+
+    But keep in mind that this is not equivalent to::
+    
+        unicode(response.body)
+    
+    Since in the latter case you would be using you system default encoding
+    (typically `ascii`) to convert the body to uniode instead of the response
+    encoding.
+
+HtmlResponse objects
+--------------------
+
+.. class:: HtmlResponse
+
+The HtmlResponse class is a subclass of :class:`TextResponse` which adds
+encoding auto-discovering by looking into the HTML meta http-equiv attribute.
+See :attr:`TextResponse.encoding`.
+
+XmlResponse objects
+-------------------
+
+.. class:: HtmlResponse
+
+The XmlResponse class is a subclass of :class:`TextResponse` which adds
+encoding auto-discovering by looking into the XML declaration line.
+See :attr:`TextResponse.encoding`.
+

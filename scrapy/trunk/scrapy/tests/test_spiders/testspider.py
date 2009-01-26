@@ -28,11 +28,11 @@ class TestSpider(BaseSpider):
 
     def parse_item(self, response):
         item = ScrapedItem()
-        m = self.name_re.search(response.body.to_string())
+        m = self.name_re.search(response.body)
         if m:
             item.name = m.group(1)
         item.url = response.url
-        m = self.price_re.search(response.body.to_string())
+        m = self.price_re.search(response.body)
         if m:
             item.price = m.group(1)
         return [item]

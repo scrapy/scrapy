@@ -1,9 +1,9 @@
 import unittest
-from scrapy.http.response import Response
+from scrapy.http import Response, TextResponse
 from scrapy.utils.response import body_or_str, get_base_url
 
 class ResponseUtilsTest(unittest.TestCase):
-    dummy_response = Response(url='http://example.org/', body='dummy_response')
+    dummy_response = TextResponse(url='http://example.org/', body='dummy_response')
 
     def test_body_or_str_input(self):
         self.assertTrue(isinstance(body_or_str(self.dummy_response), basestring))

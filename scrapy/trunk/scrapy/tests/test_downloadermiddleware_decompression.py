@@ -1,7 +1,7 @@
 import os
 from unittest import TestCase, main
-from scrapy.http import Response
-from scrapy.contrib.downloadermiddleware.decompression import DecompressionMiddleware
+from scrapy.http import Response, XmlResponse
+from scrapy.contrib_exp.downloadermiddleware.decompression import DecompressionMiddleware
 
 def setUp():
     datadir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data', 'compressed')
@@ -25,19 +25,23 @@ class ScrapyDecompressionTest(TestCase):
 
     def test_tar(self):
         response, format = self.middleware.extract(self.test_responses['tar'])
-        self.assertEqual(response.body.to_string(), self.uncompressed_body)
+        assert isinstance(response, XmlResponse)
+        self.assertEqual(response.body, self.uncompressed_body)
 
     def test_zip(self):
         response, format = self.middleware.extract(self.test_responses['zip'])
-        self.assertEqual(response.body.to_string(), self.uncompressed_body)
+        assert isinstance(response, XmlResponse)
+        self.assertEqual(response.body, self.uncompressed_body)
 
     def test_gz(self):
         response, format = self.middleware.extract(self.test_responses['xml.gz'])
-        self.assertEqual(response.body.to_string(), self.uncompressed_body)
+        assert isinstance(response, XmlResponse)
+        self.assertEqual(response.body, self.uncompressed_body)
 
     def test_bz2(self):
         response, format = self.middleware.extract(self.test_responses['xml.bz2'])
-        self.assertEqual(response.body.to_string(), self.uncompressed_body)
+        assert isinstance(response, XmlResponse)
+        self.assertEqual(response.body, self.uncompressed_body)
 
 if __name__ == '__main__':
     main()

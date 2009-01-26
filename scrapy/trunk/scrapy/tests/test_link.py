@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from scrapy.http.response import Response
+from scrapy.http import HtmlResponse
 from scrapy.link import LinkExtractor, Link
 from scrapy.link.extractors import RegexLinkExtractor
 from scrapy.contrib.link_extractors import HTMLImageLinkExtractor
@@ -15,7 +15,7 @@ class LinkExtractorTestCase(unittest.TestCase):
         <p><a href="../othercat.html">Other category</a></p>
         <p><a href="/" /></p>
         </body></html>"""
-        response = Response("http://example.org/somepage/index.html", body=html)
+        response = HtmlResponse("http://example.org/somepage/index.html", body=html)
 
         lx = LinkExtractor()  # default: tag=a, attr=href
         self.assertEqual(lx.extract_links(response),
@@ -28,7 +28,7 @@ class LinkExtractorTestCase(unittest.TestCase):
         html = """<html><head><title>Page title<title><base href="http://otherdomain.com/base/" />
         <body><p><a href="item/12.html">Item 12</a></p>
         </body></html>"""
-        response = Response("http://example.org/somepage/index.html", body=html)
+        response = HtmlResponse("http://example.org/somepage/index.html", body=html)
 
         lx = LinkExtractor()  # default: tag=a, attr=href
         self.assertEqual(lx.extract_links(response),
@@ -37,10 +37,10 @@ class LinkExtractorTestCase(unittest.TestCase):
     def test_extraction_encoding(self):
         base_path = os.path.join(os.path.dirname(__file__), 'sample_data', 'link_extractor')
         body = open(os.path.join(base_path, 'linkextractor_noenc.html'), 'r').read()
-        response_utf8 = Response(url='http://example.com/utf8', body=body, headers={'Content-Type': ['text/html; charset=utf-8']})
-        response_noenc = Response(url='http://example.com/noenc', body=body)
+        response_utf8 = HtmlResponse(url='http://example.com/utf8', body=body, headers={'Content-Type': ['text/html; charset=utf-8']})
+        response_noenc = HtmlResponse(url='http://example.com/noenc', body=body)
         body = open(os.path.join(base_path, 'linkextractor_latin1.html'), 'r').read()
-        response_latin1 = Response(url='http://example.com/latin1', body=body)
+        response_latin1 = HtmlResponse(url='http://example.com/latin1', body=body)
 
         lx = LinkExtractor()
         self.assertEqual(lx.extract_links(response_utf8),
@@ -67,7 +67,7 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
     def setUp(self):
         base_path = os.path.join(os.path.dirname(__file__), 'sample_data', 'link_extractor')
         body = open(os.path.join(base_path, 'regex_linkextractor.html'), 'r').read()
-        self.response = Response(url='http://example.com/index', body=body)
+        self.response = HtmlResponse(url='http://example.com/index', body=body)
 
     def test_urls_type(self):
         '''Test that the resulting urls are regular strings and not a unicode objects'''
@@ -146,7 +146,7 @@ class HTMLImageLinkExtractorTestCase(unittest.TestCase):
     def setUp(self):
         base_path = os.path.join(os.path.dirname(__file__), 'sample_data', 'link_extractor')
         body = open(os.path.join(base_path, 'image_linkextractor.html'), 'r').read()
-        self.response = Response(url='http://example.com/index', body=body)
+        self.response = HtmlResponse(url='http://example.com/index', body=body)
 
     def tearDown(self):
         del self.response

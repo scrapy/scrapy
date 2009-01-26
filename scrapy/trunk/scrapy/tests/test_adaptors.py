@@ -5,7 +5,7 @@ import re
 
 from scrapy.item.adaptors import AdaptorPipe
 from scrapy.contrib_exp import adaptors
-from scrapy.http import Response, Headers
+from scrapy.http import HtmlResponse, Headers
 from scrapy.xpath.selector import HtmlXPathSelector, XmlXPathSelector
 from scrapy.link import Link
 
@@ -43,7 +43,7 @@ class AdaptorsTestCase(unittest.TestCase):
     def get_selector(self, domain, url, sample_filename, headers=None, selector=HtmlXPathSelector):
         sample_filename = os.path.join(self.samplesdir, sample_filename)
         body = file(sample_filename).read()
-        response = Response(url=url, headers=Headers(headers), status=200, body=body)
+        response = HtmlResponse(url=url, headers=Headers(headers), status=200, body=body)
         return selector(response)
 
     def test_extract(self):
@@ -125,7 +125,7 @@ class AdaptorsTestCase(unittest.TestCase):
                            <a onclick="javascript: opensomething('dummy/my_html2.html');">something2</a>
                          </div>
                        </body></html>"""
-        sample_response = Response('http://foobar.com/dummy', body=test_data)
+        sample_response = HtmlResponse('http://foobar.com/dummy', body=test_data)
         sample_selector = HtmlXPathSelector(sample_response)
         sample_adaptor = adaptors.ExtractImageLinks(response=sample_response)
 
