@@ -60,13 +60,15 @@ class AdaptorPipe(list):
         Execute the adaptor pipeline for this attribute.
         """
 
+        debug_padding = 0
         values = [value]
+
         for adaptor in self:
             next_round = []
             for val in values:
                 try:
                     if self.debug:
-                        print "  %07s | input >" % adaptor.name, repr(val)
+                        print "%sinput | %s <" % (' ' * debug_padding, adaptor.name), repr(val)
 
                     val = adaptor(val, kwargs or {})
                     if isinstance(val, tuple):
@@ -75,11 +77,13 @@ class AdaptorPipe(list):
                         next_round.append(val)
 
                     if self.debug:
-                        print "  %07s | output >" % adaptor.name, repr(val)
+                        print "%soutput | %s >" % (' ' * debug_padding, adaptor.name), repr(val)
                 except Exception:
                     print "Error in '%s' adaptor. Traceback text:" % adaptor.name
                     print format_exc()
                     return
+
+            debug_padding += 2
             values = next_round
 
         return tuple(values)
