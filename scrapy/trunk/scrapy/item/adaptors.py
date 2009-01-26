@@ -73,7 +73,7 @@ class AdaptorPipe(list):
                     val = adaptor(val, kwargs or {})
                     if isinstance(val, tuple):
                         next_round.extend(val)
-                    else:
+                    elif val is not None:
                         next_round.append(val)
 
                     if self.debug:
