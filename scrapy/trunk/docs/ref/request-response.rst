@@ -137,6 +137,13 @@ The FormRequest class adds a new parameter to the constructor:
       containing HTML Form data) which will be urlencoded and assigned to the body
       of the request.
 
+For example, if you want to simulate a HTTP Form POST in your spider which
+sends a coupe of of key-values you would return a :class:`FormRequest` object
+(from your spider) like this::
+
+   return [FormRequest(url="http://www.example.com/post/action", 
+                       formdata={'name': 'John Doe', age: '27'})]
+
 Response objects
 ================
 
