@@ -12,6 +12,7 @@ class ResponseTypesTest(unittest.TestCase):
             ('file.xml.gz', Response),
             ('file.xml', XmlResponse),
             ('file.html', HtmlResponse),
+            ('file.unknownext', Response),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_filename(source)
@@ -57,5 +58,6 @@ class ResponseTypesTest(unittest.TestCase):
             source = Headers(source)
             retcls = responsetypes.from_headers(source)
             assert retcls is cls, "%s ==> %s != %s" % (source, retcls, cls)
+
 if __name__ == "__main__":
     unittest.main()

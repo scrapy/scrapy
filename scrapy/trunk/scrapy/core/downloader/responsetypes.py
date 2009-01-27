@@ -57,7 +57,10 @@ class ResponseTypes(object):
     def from_filename(self, filename):
         """Return the most appropiate Response class from a file name"""
         mimetype, encoding = mimetypes.guess_type(filename)
-        return self.from_mimetype(mimetype) if encoding is None else Response
+        if mimetype and not encoding:
+            return self.from_mimetype(mimetype)
+        else:
+            return Response
 
     def from_url(self, url):
         """Return the most appropiate Response class from a URL"""
