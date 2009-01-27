@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import unittest
 
 from scrapy.utils.markup import remove_entities, replace_tags, remove_comments
@@ -27,7 +28,7 @@ class UtilsMarkupTest(unittest.TestCase):
                          u'a < b &illegal; c &#12345678; six')
         self.assertEqual(remove_entities('a &lt; b &illegal; c &#12345678; six', remove_illegal=True),
                          u'a < b  c  six')
-
+        self.assertEqual(remove_entities('x&#x2264;y'), u'x\u2264y')
 
 
     def test_replace_tags(self):

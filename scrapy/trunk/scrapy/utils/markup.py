@@ -3,11 +3,11 @@ Functions for dealing with markup text
 """
 
 import re
-import htmlentitydefs
+from htmlentitydefs import name2codepoint as entity_defs
 
 from scrapy.utils.python import str_to_unicode
 
-_ent_re = re.compile(r'&(#?)([^&;]+);')
+_ent_re = re.compile(r'&(#?(x?))([^&;\s]+);')
 _tag_re = re.compile(r'<[a-zA-Z\/!].*?>', re.DOTALL)
 
 def remove_entities(text, keep=(), remove_illegal=True):
@@ -18,7 +18,8 @@ def remove_entities(text, keep=(), remove_illegal=True):
     If 'keep' is passed (with a list of entity names) those entities will
     be kept (they won't be removed).
 
-    It supports both numeric (&#nnnn;) and named (&nbsp; &gt;) entities.
+    It supports both numeric (&#nnnn; and &#hhhh;) and named (&nbsp; &gt;)
+    entities.
 
     If remove_illegal is True, entities that can't be converted are removed.
     If remove_illegal is False, entities that can't be converted are kept "as
@@ -28,24 +29,32 @@ def remove_entities(text, keep=(), remove_illegal=True):
     """
 
     def convert_entity(m):
-        if m.group(1) == '#':
+        entity_body = m.group(3)
+
+        if m.group(1):
             try:
-                return unichr(int(m.group(2)))
-            except ValueError:
-                if remove_illegal:
-                    return u''
+                if m.group(2):
+                    number = int(entity_body, 16)
                 else:
-                    return u'&#%s;' % m.group(2)
-        try:
-            if m.group(2) in keep:
-                return '&%s;' % m.group(2)
+                    number = int(entity_body, 10)
+            except ValueError:
+                number = None
+        else:
+            if entity_body in keep:
+                return m.group(0)
             else:
-                return unichr(htmlentitydefs.name2codepoint[m.group(2)])
-        except KeyError:
-            if remove_illegal:
-                return u''
-            else:
-                return u'&%s;' % m.group(2)
+                number = entity_defs.get(entity_body)
+
+        if number is not None:
+            try:
+                return unichr(number)
+            except ValueError:
+                pass
+
+        if remove_illegal:
+            return u''
+        else:
+            return m.group(0)
 
     return _ent_re.sub(convert_entity, str_to_unicode(text))
 
