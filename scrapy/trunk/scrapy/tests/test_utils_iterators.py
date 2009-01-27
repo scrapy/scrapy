@@ -80,7 +80,10 @@ class UtilsXmlTestCase(unittest.TestCase):
         self.assertRaises(StopIteration, iter.next)
 
 class UtilsCsvTestCase(unittest.TestCase):
-    sample_feed_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data', 'feeds', 'feed-sample3.csv')
+    sample_feeds_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data', 'feeds')
+    sample_feed_path = os.path.join(sample_feeds_dir, 'feed-sample3.csv')
+    sample_feed2_path = os.path.join(sample_feeds_dir, 'feed-sample4.csv')
+    sample_feed3_path = os.path.join(sample_feeds_dir, 'feed-sample5.csv')
 
     def test_iterator_defaults(self):
         body = open(self.sample_feed_path).read()
@@ -149,6 +152,23 @@ class UtilsCsvTestCase(unittest.TestCase):
         iter.next()
 
         self.assertRaises(StopIteration, iter.next)
+
+    def test_iterator_encoding(self):
+        body1 = open(self.sample_feed2_path).read()
+        body2 = open(self.sample_feed3_path).read()
+
+        response = TextResponse(url="http://example.com/", body=body1, encoding='latin1')
+        csv = csviter(response)
+        self.assertEqual([row for row in csv],
+            [{u'id': u'1', u'name': u'latin1', u'value': u'test'},
+             {u'id': u'2', u'name': u'something', u'value': u'\xf1\xe1\xe9\xf3'}])
+
+        response = TextResponse(url="http://example.com/", body=body2, encoding='cp852')
+        csv = csviter(response)
+        self.assertEqual([row for row in csv],
+            [{u'id': u'1', u'name': u'cp852', u'value': u'test'},
+             {u'id': u'2', u'name': u'something', u'value': u'\u255a\u2569\u2569\u2569\u2550\u2550\u2557'}])
+
 
 if __name__ == "__main__":
     unittest.main()
