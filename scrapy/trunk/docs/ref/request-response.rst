@@ -50,7 +50,7 @@ Request objects
     for the rest of the domain crawl, like any browser would do. Example::
 
         request_with_cookies = Request(url="http://www.example.com",
-                                       cookies={currency='USD, country='UY'})
+                                       cookies={currency: 'USD', country: 'UY'})
 
     ``encoding`` is a string with the encoding of this request. This encoding
     will be used to percent-encode the URL and to convert the body to str (when
