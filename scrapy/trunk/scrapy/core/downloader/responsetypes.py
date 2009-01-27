@@ -39,6 +39,7 @@ class ResponseTypes(object):
     def from_content_disposition(self, content_disposition):
         try:
             filename = content_disposition.split(';')[1].split('=')[1]
+            filename = filename.strip('"\'')
             return self.from_filename(filename)
         except IndexError:
             return Response
@@ -55,7 +56,8 @@ class ResponseTypes(object):
 
     def from_filename(self, filename):
         """Return the most appropiate Response class from a file name"""
-        return self.from_mimetype(mimetypes.guess_type(filename)[0])
+        mimetype, encoding = mimetypes.guess_type(filename)
+        return self.from_mimetype(mimetype) if encoding is None else Response
 
     def from_url(self, url):
         """Return the most appropiate Response class from a URL"""
