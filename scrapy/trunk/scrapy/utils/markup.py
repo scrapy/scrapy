@@ -82,13 +82,14 @@ def remove_tags(text, which_ones=()):
         which_ones -- is a tuple of which tags we want to remove.
                       if is empty remove all tags.
     """
-    if len(which_ones) > 0:
-        tags = [ '<%s>|<%s .*?>|</%s>' % (tag,tag,tag) for tag in which_ones ]
-        reg_exp_remove_tags = '|'.join(tags)
+    if which_ones:
+        tags = ['<%s>|<%s .*?>|</%s>' % (tag,tag,tag) for tag in which_ones]
+        regex = '|'.join(tags)
     else:
-        reg_exp_remove_tags = '<.*?>'
-    re_tags = re.compile(reg_exp_remove_tags, re.DOTALL)
-    return re_tags.sub(u'', str_to_unicode(text))
+        regex = '<.*?>'
+    retags = re.compile(regex, re.DOTALL | re.IGNORECASE)
+
+    return retags.sub(u'', str_to_unicode(text))
 
 def remove_tags_with_content(text, which_ones=()):
     """ Remove tags and its content.
@@ -96,9 +97,13 @@ def remove_tags_with_content(text, which_ones=()):
         which_ones -- is a tuple of which tags with its content we want to remove.
                       if is empty do nothing.
     """
-    tags = [ '<%s.*?</%s>' % (tag,tag) for tag in which_ones ]
-    re_tags_remove = re.compile('|'.join(tags), re.DOTALL)
-    return re_tags_remove.sub(u'', str_to_unicode(text))
+    text = str_to_unicode(text)
+    if which_ones:
+        tags = '|'.join(['<%s.*?</%s>' % (tag,tag) for tag in which_ones])
+        retags = re.compile(tags, re.DOTALL | re.IGNORECASE)
+        text = retags.sub(u'', text)
+    return text
+    
 
 def remove_escape_chars(text, which_ones=('\n','\t','\r')):
     """ Remove escape chars. Default : \\n, \\t, \\r
@@ -106,8 +111,9 @@ def remove_escape_chars(text, which_ones=('\n','\t','\r')):
         which_ones -- is a tuple of which escape chars we want to remove.
                       By default removes \n, \t, \r.
     """
-    re_escape_chars = re.compile('[%s]' % ''.join(which_ones))
-    return re_escape_chars.sub(u'', str_to_unicode(text))
+    for ec in which_ones:
+        text = text.replace(ec, u'')
+    return str_to_unicode(text)
 
 def unquote_markup(text, keep=(), remove_illegal=True):
     """
