@@ -46,7 +46,11 @@ Request objects
 
     ``headers`` is a multi-valued dict containing the headers of this request
 
-    ``cookies`` is a dict containing the request cookies
+    ``cookies`` is a dict containing the request cookies, and will be preserved
+    for the rest of the domain crawl, like any browser would do. Example::
+
+        request_with_cookies = Request(url="http://www.example.com",
+                                       cookies={currency='USD, country='UY'})
 
     ``encoding`` is a string with the encoding of this request. This encoding
     will be used to percent-encode the URL and to convert the body to str (when
