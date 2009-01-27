@@ -52,7 +52,7 @@ class ResponseTypesTest(unittest.TestCase):
     def test_from_headers(self):
         mappings = [
             ({'Content-Type': ['text/html; charset=utf-8']}, HtmlResponse),
-            ({'Content-Type': ['application/octet-stream'], 'Content-Disposition': ['attachment; filename=data.csv']}, TextResponse),
+            ({'Content-Type': ['application/octet-stream'], 'Content-Disposition': ['attachment; filename=data.txt']}, TextResponse),
         ]
         for source, cls in mappings:
             source = Headers(source)
