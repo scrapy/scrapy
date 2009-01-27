@@ -1,5 +1,6 @@
 import re, csv
 
+from scrapy.http import Response
 from scrapy.xpath import XmlXPathSelector
 from scrapy import log
 from scrapy.utils.python import re_rsearch, str_to_unicode
@@ -28,7 +29,7 @@ def xmliter(obj, nodename):
         nodetext = header_start + match.group() + header_end
         yield XmlXPathSelector(text=nodetext).x('//' + nodename)[0]
 
-def csviter(obj, delimiter=None, headers=None):
+def csviter(obj, delimiter=None, headers=None, encoding=None):
     """ Returns an iterator of dictionaries from the given csv object
 
     obj can be:
@@ -41,8 +42,9 @@ def csviter(obj, delimiter=None, headers=None):
     headers is an iterable that when provided offers the keys
     for the returned dictionaries, if not the first row is used.
     """
+    encoding = obj.encoding if isinstance(obj, Response) else encoding or 'utf-8'
     def _getrow(csv_r):
-        return [str_to_unicode(field) for field in csv_r.next()]
+        return [str_to_unicode(field, encoding) for field in csv_r.next()]
 
     lines = body_or_str(obj, unicode=False).splitlines(True)
     if delimiter:
