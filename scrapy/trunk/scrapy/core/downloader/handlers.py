@@ -104,5 +104,9 @@ def download_file(request, spider) :
     """Return a deferred for a file download."""
     filepath = request.url.split("file://")[1]
     with open(filepath) as f:
-        response = Response(url=request.url, body=f.read())
+        body = f.read()
+        respcls = responsetypes.from_filename(filepath)
+        respcls = responsetypes.from_body(body) if respcls is Response else respcls
+        response = respcls(url=request.url, body=body)
+
     return defer_succeed(response)

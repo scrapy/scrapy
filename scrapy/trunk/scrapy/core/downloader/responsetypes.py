@@ -67,13 +67,10 @@ class ResponseTypes(object):
         return self.from_mimetype(mimetypes.guess_type(url)[0])
 
     def from_body(self, body):
-        """Try to guess the appropiate response based on the body content. 
-        
+        """Try to guess the appropiate response based on the body content.
         This method is a bit magic and could be improved in the future, but
         it's not meant to be used except for special cases where response types
-        cannot be guess using more straightforward methods.
-
-        """
+        cannot be guess using more straightforward methods."""
         chunk = body[:5000]
         if isbinarytext(chunk):
             return self.from_mimetype('application/octet-stream')
