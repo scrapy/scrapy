@@ -656,7 +656,7 @@ can be scheduled per domain.
 ROBOTSTXT_OBEY
 --------------
 
-Default: ``True``
+Default: ``False``
 
 Scope: ``scrapy.contrib.downloadermiddleware.robotstxt``
 

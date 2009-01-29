@@ -143,7 +143,7 @@ REQUESTS_PER_DOMAIN = 8     # max simultaneous requests per domain
 RETRY_TIMES = 2 # initial response + 2 retries = 3 requests
 RETRY_HTTP_CODES = ['500', '503', '504', '400', '408', '200']
 
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_ORDER = 'BFO'   # available orders: BFO (default), DFO
