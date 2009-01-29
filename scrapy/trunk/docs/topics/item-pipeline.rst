@@ -33,21 +33,6 @@ exception. Dropped items are no longer processed by further pipeline
 components.
 
 
-The class can also define the followin optional methods:
-
-.. method:: open_domain(domain)
-
-``domain`` is a string which identifies the spider opened
-
-This method is called when a spider is opened for crawling.
-
-.. method:: close_domain(domain)
-
-``domain`` is a string which identifies the spider closed
-
-This method is called when a spider is closed.
-
-
 Item pipeline example
 =====================
 
@@ -69,3 +54,37 @@ attribute), and drops those items which don't contain a price::
             else:
                 raise DropItem("Missing price in %s" % item)
 
+
+Item pipeline example with resources per domain
+===============================================
+
+Sometimes you need to keep resources about the items processed grouped per
+domain, and delete those resource when a domain finish.
+
+An example is a filter that looks for duplicate items, and drops those items
+that were already processed. Let say that our items has an unique id, but our
+spider returns multiples items with the same id::
+
+
+    from pydispatch import dispatcher
+    from scrapy.core import signals
+    from scrapy.core.exceptions import DropItem
+
+    class DuplicatesPipeline(object):
+        def __init__(self):
+            self.domaininfo = {}
+            dispatcher.connect(self.domain_open, signals.domain_open)
+            dispatcher.connect(self.domain_closed, signals.domain_closed)
+
+        def domain_open(self, domain):
+            self.duplicates[domain] = set()
+
+        def domain_closed(self, domain):
+            del self.duplicates[domain]
+
+        def process_item(self, domain, item):
+            if item.id in self.duplicates[domain]:
+                raise DropItem("Duplicate item found: %s" % item)
+            else:
+                self.duplicates[domain].add(item.id)
+                return item

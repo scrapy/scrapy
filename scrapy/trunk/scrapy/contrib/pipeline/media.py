@@ -1,7 +1,9 @@
+from pydispatch import dispatcher
 from twisted.internet import defer
 
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy import log
+from scrapy.core import signals
 from scrapy.core.engine import scrapyengine
 from scrapy.utils.request import request_fingerprint
 from scrapy.spider import spiders
@@ -19,11 +21,13 @@ class MediaPipeline(object):
 
     def __init__(self):
         self.domaininfo = {}
+        dispatcher.connect(self.domain_open, signals.domain_open)
+        dispatcher.connect(self.domain_closed, signals.domain_closed)
 
-    def open_domain(self, domain):
+    def domain_open(self, domain):
         self.domaininfo[domain] = self.DomainInfo(domain)
 
-    def close_domain(self, domain):
+    def domain_closed(self, domain):
         del self.domaininfo[domain]
 
     def process_item(self, domain, item):

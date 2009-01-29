@@ -30,14 +30,8 @@ class ItemPipelineManager(object):
 
     def open_domain(self, domain):
         self.domaininfo[domain] = set()
-        for pipe in self.pipeline:
-            if hasattr(pipe, 'open_domain'):
-                pipe.open_domain(domain)
 
     def close_domain(self, domain):
-        for pipe in self.pipeline:
-            if hasattr(pipe, 'close_domain'):
-                pipe.close_domain(domain)
         del self.domaininfo[domain]
 
     def is_idle(self):
