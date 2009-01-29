@@ -264,10 +264,10 @@ that property here, so::
 
    sites = hxs.x('//ul[2]/li')
    for site in sites:
-        title = site.x('a/text()').extract()
-        link = site.x('a/@href').extract()
-        desc = site.x('text()').extract()
-        print title, link, desc
+       title = site.x('a/text()').extract()
+       link = site.x('a/@href').extract()
+       desc = site.x('text()').extract()
+       print title, link, desc
 
 Let's add this code to our spider::
 
@@ -286,10 +286,10 @@ Let's add this code to our spider::
           hxs = HtmlXPathSelector(response)
           sites = hxs.x('//ul[2]/li')
           for site in sites:
-               title = site.x('a/text()').extract()
-               link = site.x('a/@href').extract()
-               desc = site.x('text()').extract()
-               print title, link, desc
+              title = site.x('a/text()').extract()
+              link = site.x('a/@href').extract()
+              desc = site.x('text()').extract()
+              print title, link, desc
           return []
            
    SPIDER = OpenDirectorySpider()
@@ -305,6 +305,42 @@ Items
 In Scrapy, items are the placeholder to use for the scraped data. They are
 represented by a ScrapedItem object, or any descendant class instance, and
 store the information in class attributes
+
+Spiders are supposed to return their scraped data in the form of ScrapedItems,
+so to actually return the data we've scraped so far, the code for our spider
+should be like this::
+
+   from scrapy.spider import BaseSpider
+   from scrapy.item import ScrapedItem
+   from scrapy.xpath.selector import HtmlXPathSelector
+
+
+   class OpenDirectorySpider(BaseSpider):
+      domain_name = "dmoz.org"
+      start_urls = [
+          "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
+          "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
+      ]
+       
+      def parse(self, response):
+          hxs = HtmlXPathSelector(response)
+          sites = hxs.x('//ul[2]/li')
+          items = []
+          for site in sites:
+              item = ScrapedItem()
+              item.title = site.x('a/text()').extract()
+              item.link = site.x('a/@href').extract()
+              item.desc = site.x('text()').extract()
+              items.append(item)
+          return items
+           
+   SPIDER = OpenDirectorySpider()
+
+Now doing a crawl on the dmoz.org domain yields ScrapedItems::
+
+   [dmoz/dmoz.org] DEBUG: Scraped ScrapedItem({'title': [u'Text Processing in Python'], 'link': [u'http://gnosis.cx/TPiP/'], 'desc': [u' - By David Mertz; Addison Wesley. Book in progress, full text, ASCII format. Asks for feedback. [author website, Gnosis Software, Inc.]\n']}) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
+   [dmoz/dmoz.org] DEBUG: Scraped ScrapedItem({'title': [u'XML Processing with Python'], 'link': [u'http://www.informit.com/store/product.aspx?isbn=0130211192'], 'desc': [u' - By Sean McGrath; Prentice Hall PTR, 2000, ISBN 0130211192, has CD-ROM. Methods to build XML applications fast, Python tutorial, DOM and SAX, new Pyxie open source XML processing library. [Prentice Hall PTR]\n']}) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
+
 
 Item Pipeline
 =============
