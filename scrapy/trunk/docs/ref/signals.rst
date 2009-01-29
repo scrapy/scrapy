@@ -23,12 +23,16 @@ Here's a list of signals used in Scrapy and their meaning, in alphabetical
 order.
 
 .. signal:: domain_closed
-.. function:: domain_closed(domain, spider)
+.. function:: domain_closed(domain, spider, status)
 
 Sent right after a spider/domain has been closed.
 
 ``domain`` is a string which contains the domain of the spider which has been closed
 ``spider`` is the spider which has been closed
+``status`` is a string which can have two values: ``'finished'`` if the domain
+has finished successfully, or ``'cancelled'`` if the domain was cancelled (for
+example, by hitting Ctrl-C, by calling the engine ``stop()`` method or by
+explicitly closing the domain).
 
 .. signal:: domain_open
 .. function:: domain_open(domain, spider)
