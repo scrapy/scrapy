@@ -34,7 +34,7 @@ class DecompressionMiddleware(object):
             return False
         if tar_file.members:
             body = body=tar_file.extractfile(tar_file.members[0]).read()
-            respcls = self._get_response_class(filename=tar_file.members[0].name, body=body)
+            respcls = responsetypes.from_args(filename=tar_file.members[0].name, body=body)
             return response.replace(body=body, cls=respcls)
         else:
             raise self.ArchiveIsEmpty
@@ -47,7 +47,7 @@ class DecompressionMiddleware(object):
         namelist = zip_file.namelist()
         if namelist:
             body = zip_file.read(namelist[0])
-            respcls = self._get_response_class(filename=namelist[0], body=body)
+            respcls = responsetypes.from_args(filename=namelist[0], body=body)
             return response.replace(body=body, cls=respcls)
         else:
             raise self.ArchiveIsEmpty
@@ -58,7 +58,7 @@ class DecompressionMiddleware(object):
             decompressed_body = gzip_file.read()
         except IOError:
             return False
-        respcls = self._get_response_class(body=decompressed_body)
+        respcls = responsetypes.from_args(body=decompressed_body)
         return response.replace(body=decompressed_body, cls=respcls)
 
     def is_bzip2(self, response):
@@ -66,16 +66,8 @@ class DecompressionMiddleware(object):
             decompressed_body = bz2.decompress(self.body)
         except IOError:
             return False
-        respcls = self._get_response_class(body=decompressed_body)
+        respcls = responsetypes.from_args(body=decompressed_body)
         return response.replace(body=decompressed_body, cls=respcls)
-
-    def _get_response_class(self, filename=None, body=None):
-        respcls = Response
-        if filename is not None:
-            respcls = responsetypes.from_filename(filename)
-        if respcls is Response and body is not None:
-            respcls = responsetypes.from_body(body)
-        return respcls
 
     def extract(self, response):
         """ This method tries to decompress the given response, if possible,

@@ -4,7 +4,8 @@ based on different criterias.
 
 """
 
-import mimetypes
+from os.path import abspath, dirname, join
+from mimetypes import MimeTypes
 
 from scrapy.http import Response
 from scrapy.utils.misc import load_class
@@ -23,6 +24,8 @@ class ResponseTypes(object):
     def __init__(self):
         self.CLASSES.update(settings.get('RESPONSE_CLASSES', {}))
         self.classes = {}
+        mimefile = join(abspath(dirname(__file__)), 'mime.types')
+        self.mimetypes = MimeTypes([mimefile])
         for mimetype, cls in self.CLASSES.iteritems():
             self.classes[mimetype] = load_class(cls)
 
@@ -56,7 +59,7 @@ class ResponseTypes(object):
 
     def from_filename(self, filename):
         """Return the most appropiate Response class from a file name"""
-        mimetype, encoding = mimetypes.guess_type(filename)
+        mimetype, encoding = self.mimetypes.guess_type(filename)
         if mimetype and not encoding:
             return self.from_mimetype(mimetype)
         else:
@@ -64,7 +67,7 @@ class ResponseTypes(object):
 
     def from_url(self, url):
         """Return the most appropiate Response class from a URL"""
-        return self.from_mimetype(mimetypes.guess_type(url)[0])
+        return self.from_mimetype(self.mimetypes.guess_type(url)[0])
 
     def from_body(self, body):
         """Try to guess the appropiate response based on the body content.
@@ -80,5 +83,18 @@ class ResponseTypes(object):
             return self.from_mimetype('text/xml')
         else:
             return self.from_mimetype('text')
+
+    def from_args(self, headers=None, url=None, filename=None, body=None):
+        """Guess the most appropiate Response class based on the given arguments"""
+        cls = Response
+        if headers is not None:
+            cls = self.from_headers(headers)
+        if cls is Response and url is not None:
+            cls = self.from_url(url)
+        if cls is Response and filename is not None:
+            cls = self.from_filename(filename)
+        if cls is Response and body is not None:
+            cls = self.from_body(body)
+        return cls
 
 responsetypes = ResponseTypes()

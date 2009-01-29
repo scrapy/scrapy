@@ -64,7 +64,7 @@ def create_factory(request, spider):
         body = body or ''
         status = int(factory.status)
         headers = Headers(factory.response_headers)
-        respcls = responsetypes.from_headers(headers)
+        respcls = responsetypes.from_args(headers=headers, url=url)
         r = respcls(url=request.url, status=status, headers=headers, body=body)
         signals.send_catch_log(signal=signals.request_uploaded, sender='download_http', request=request, spider=spider)
         signals.send_catch_log(signal=signals.response_downloaded, sender='download_http', response=r, spider=spider)
@@ -105,8 +105,7 @@ def download_file(request, spider) :
     filepath = request.url.split("file://")[1]
     with open(filepath) as f:
         body = f.read()
-        respcls = responsetypes.from_filename(filepath)
-        respcls = responsetypes.from_body(body) if respcls is Response else respcls
+        respcls = responsetypes.from_args(filename=filepath, body=body)
         response = respcls(url=request.url, body=body)
 
     return defer_succeed(response)

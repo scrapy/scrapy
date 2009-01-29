@@ -150,7 +150,7 @@ class Cache(object):
         headers = Headers(responseheaders)
         status = metadata['status']
 
-        respcls = responsetypes.from_headers(headers)
+        respcls = responsetypes.from_args(headers=headers, url=url)
         response = respcls(url=url, headers=headers, status=status, body=responsebody)
         response.meta['cached'] = True
         response.flags.append('cached')

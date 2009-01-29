@@ -59,5 +59,16 @@ class ResponseTypesTest(unittest.TestCase):
             retcls = responsetypes.from_headers(source)
             assert retcls is cls, "%s ==> %s != %s" % (source, retcls, cls)
 
+    def test_from_args(self):
+        # TODO: add more tests that check precedence between the different arguments
+        mappings = [
+            ({'url': 'http://www.example.com/data.csv'}, TextResponse),
+            # headers takes precedence over url
+            ({'headers': Headers({'Content-Type': ['text/html; charset=utf-8']}), 'url': 'http://www.example.com/item/'}, HtmlResponse),
+        ]
+        for source, cls in mappings:
+            retcls = responsetypes.from_args(**source)
+            assert retcls is cls, "%s ==> %s != %s" % (source, retcls, cls)
+
 if __name__ == "__main__":
     unittest.main()
