@@ -4,9 +4,6 @@
 Items
 =====
 
-.. module:: scrapy.item
-   :synopsis: Objects for storing scraped data
-
 Quick overview
 ==============
 
@@ -16,114 +13,130 @@ Quick overview
 ScrapedItems
 ============
 
+.. module:: scrapy.item
+   :synopsis: Objects for storing scraped data
+
 .. class:: ScrapedItem
 
 Methods
 -------
 
-.. method:: ScrapedItem.__init__(data={})
+.. method:: ScrapedItem.__init__(data=None)
 
-    Instanciates a ``ScrapedItem`` object and sets an attribute and its value for each key in the given ``data`` dict.
+    :param data: A dictionary containing attributes and values to be set after instancing the item.
 
-.. method:: ScrapedItem.attribute(self, attrname, value, override=False, add=False, **kwargs)
-
-    Sets the item's ``attrname`` attribute with the given ``value`` filtering it through the attribute's adaptor pipeline (if any).
-
-    ``attrname`` is a string containing the name of the attribute you're setting.
-
-    ``value`` is the value you want to assign, which will be adapted by the corresponding adaptors for the given attribute (if any).
-
-    ``override``, if True, makes this method avoid checking if there was a previous value and sets ``value`` no matter what.
-
-    ``add``, if True, tries to concatenate the given ``value`` with the one already set in the item. This will work as long as
-    the old value is a list (in which case the new value will be appended, or the list will be extended if both are lists),
-    or as long as both values are strings (in which case ``add`` will be used as the delimiter, or default to '' if ``add=True``).
-
-    ``kwargs`` - any extra parameters will be passed to any adaptor that receives an 'adaptor_args' parameter as a dictionary.
-    Check the Adaptors reference for more information.
-
-.. method:: ScrapedItem.set_adaptors(self, adaptors_dict)
-
-    Receives a dict containing a list of adaptors for each desired attribute (key) and sets each of them as their adaptor pipeline.
-
-.. method:: ScrapedItem.set_attrib_adaptors(self, attrib, pipe)
-
-    Sets the provided iterable (``pipe``) as the adaptor pipeline for the given attribute (``attrib``)
-
-.. method:: ScrapedItem.add_adaptor(self, attrib, adaptor, position=None)
-
-    Adds an adaptor to an already existing (or not) pipeline.
-
-    ``attr`` is the name of the attribute you're adding adaptors to.
-
-    ``adaptor`` is a callable to be added to the pipeline.
-
-    ``position`` is an integer representing the place where to add the adaptor.
-    If it's ``None``, the adaptor will be appended at the end of the pipeline.
+    Instanciates a ``ScrapedItem`` object and sets an attribute and its value for each key in the given ``data``
+    dict (if any).
+    These items are the most basic items available, and the common interface from which any items should inherit.
 
 Examples
 --------
 
-Setting some basic attributes to a newly created item::
+Creating an item and setting some attributes::
 
     >>> from scrapy.item import ScrapedItem
-    >>> person = ScrapedItem()
-    >>> person.attribute('name', 'John')
-    >>> person.attribute('age', 35)
+    >>> item = ScrapedItem()
+    >>> item.name = 'John'
+    >>> item.last_name = 'Smith'
+    >>> item.age = 23
+    >>> item
+    ScrapedItem({'age': 23, 'last_name': 'Smith', 'name': 'John'})
+
+Creating an item and setting its attributes inline::
+
+    >>> person = ScrapedItem({'name': 'John', 'age': 23, 'last_name': 'Smith'})
     >>> person
-    ScrapedItem({'age': 35, 'name': 'John'})
+    ScrapedItem({'age': 23, 'last_name': 'Smith', 'name': 'John'})
 
-We can also create an item and set its attributes by passing them inline using a dictionary, like::
+RobustScrapedItems
+==================
 
-    >>> person = ScrapedItem({'name': 'John', 'age': 35})
-    >>> person
-    ScrapedItem({'age': 35, 'name': 'John'})
+.. module:: scrapy.contrib.item
+   :synopsis: Objects for storing scraped data
 
-Also, notice that making consecutive calls to the attribute method does *not* change its value, unless you use the `override` parameter::
+.. class:: RobustScrapedItem
 
-    >>> person = ScrapedItem()
-    >>> person.attribute('name', 'John')
-    >>> person
-    ScrapedItem({'name': 'John'})
+    RobustScrapedItems are more complex items (compared to ScrapedItems) and have a few more features available, which
+    include:
 
-    >>> person.attribute('name', 'Charlie')
-    >>> person
-    ScrapedItem({'name': 'John'})
+    * Attributes dictionary: items that inherit from RobustScrapedItem are defined with a dictionary of attributes in the class.
+      This allows the item to have much more logic at the moment of handling and setting attributes. The next features are
+      built on top of this one.
 
-    >>> person.attribute('name', 'Charlie', override=True)
-    >>> person
-    ScrapedItem({'name': 'Charlie'})
+    * Adaptors: maybe the most important of the features that these items provide. The adaptors are a system designed for
+      filtering/modifying data before setting it to the item, that makes cleansing tasks *a lot* easier.
 
-There's also an `add` parameter useful for concatenating lists or strings given a delimiter (or not)::
+    * Type checking: RobustScrapedItems come with a built-in type checking which assures you that no data of the wrong type will
+      get into the items without raising a warning.
 
-    >>> person = ScrapedItem()
-    >>> person.attribute('name', 'John')
-    >>> person
-    ScrapedItem({'name': 'John'})
+    * Versioning: These items also provide versioning by making a unique hash for each item based on its attributes values.
 
-    # If add is True, '' is used as the default delimiter for joining strings
-    >>> person.attribute('name', 'Doe', add=True)
-    >>> person
-    ScrapedItem({'name': 'JohnDoe'})
+    * ItemDeltas: You can subtract two RobustScrapedItems, which allows you to know the difference between a pair of items.
+      This difference is represented by a RobustItemDelta object.
 
-    # Otherwise, you can specify your own delimiter
-    >>> person.attribute('name', 'Smith', add=' ')
-    >>> person
-    ScrapedItem({'name': 'JohnDoe Smith'})
+Methods
+-------
 
-    >>> person.attribute('children', ['Ken', 'Tom'])
-    >>> person
-    ScrapedItem({'name': 'JohnDoe Smith', 'children': ['Ken', 'Tom']})
+.. method:: RobustScrapedItem.__init__(data=None, adaptor_args=None)
 
-    # You can also append to lists...
-    >>> person.attribute('children', 'Billy', add=True)
-    >>> person
-    ScrapedItem({'name': 'JohnDoe Smith', 'children': ['Ken', 'Tom', 'Billy']})
+    :param data: Idem as in ScrapedItems
+    :param adaptor_args: A dictionary of the like "attribute -> list of adaptors" for defining adaptors automatically after
+        instancing the item.
 
-    # And even extend them
-    >>> person.attribute('children', ['Dan', 'George'], add=True)
-    >>> person
-    ScrapedItem({'name': 'JohnDoe Smith', 'children': ['Ken', 'Tom', 'Billy', 'Dan', 'George']})
+    Constructor of RobustScrapedItem objects.
 
-Now, normally when we're scraping an HTML file, or almost any kind of file, information doesn't come to us exactly as we need it. We usually
-have to make some adaptations here and there; and that's when the adaptors enter the game.
+.. method:: RobustScrapedItem.attribute(self, attrname, value, override=False, add=False, ***kwargs)
+
+    Sets the item's ``attrname`` attribute with the given ``value`` filtering it through the given attribute's adaptor
+    pipeline (if any).
+
+    :param attrname: a string containing the name of the attribute you want to set.
+
+    :param value: the value you want to assign, which will be adapted by the corresponding adaptors for the given attribute (if any).
+
+    :param override: if True, makes this method avoid checking if there was a previous value and sets ``value`` no matter what.
+
+    :param add: if True, tries to concatenate the given ``value`` with the one already set in the item.
+        For multivalued attributes, this will extend the list of already-set values, with the new ones.
+        For single valued attributes, the method _add_single_attributes (which is explained below) will be called.
+
+    :param kwargs: any extra parameters will be passed in a dictionary to any adaptor that receives a parameter called 'adaptor_args'.
+        Check the :ref:`topics-adaptors` topic for more information.
+
+.. method:: RobustScrapedItem.set_adaptors(self, adaptors_dict)
+
+    Receives a dict containing a list of adaptors for each desired attribute (key) and sets each of them as their adaptor pipeline.
+
+.. method:: RobustScrapedItem.set_attrib_adaptors(self, attrib, pipe)
+
+    Sets the provided iterable (``pipe``) as the adaptor pipeline for the given attribute (``attrib``)
+
+.. method:: RobustScrapedItem.add_adaptor(self, attrib, adaptor, position=None)
+
+    Adds an adaptor to an already existing (or not) pipeline.
+
+    :param attr: the name of the attribute you're adding adaptors to.
+
+    :param adaptor: a callable to be added to the pipeline.
+
+    :param position: an integer representing the place where to add the adaptor.
+        If it's `None`, the adaptor will be appended at the end of the pipeline.
+
+Examples
+--------
+
+Creating a pretty basic item with a few attributes::
+
+    from scrapy.contrib.item import RobustScrapedItem
+
+    class MyItem(RobustScrapedItem):
+        ATTRIBUTES = {
+            'name': basestring,
+            'size': basestring,
+            'colours': [basestring],
+        }
+
+.. note::
+
+    More RobustScrapedItem examples are about to come. In the meantime, check the :ref:`topics-adaptors` topic to see a few of them.
+
