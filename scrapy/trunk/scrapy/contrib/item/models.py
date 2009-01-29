@@ -111,13 +111,7 @@ class RobustScrapedItem(ScrapedItem):
         return "%s: GUID=%s, url=%s" % ( self.__class__.__name__ , self.guid, self.url )
 
     def _add_single_attributes(self, attrname, attrtype, attributes):
-        if len(attributes) == 1:
-            return attributes[0]
-
-        if attrtype is basestring:
-            return ''.join(attributes)
-        else:
-           raise NotImplementedError('You must override _add_single_attributes method in order to join %s values into a single value.' % attrtype.__name__)
+        raise NotImplementedError('You must override _add_single_attributes method in order to join %s values into a single value.' % attrtype.__name__)
 
     def attribute(self, attrname, *values, **kwargs):
         """
@@ -171,7 +165,7 @@ class RobustScrapedItem(ScrapedItem):
                 new_values.insert(0, old_value)
 
         if not multivalued:
-            if add and len(new_values) >= 1:
+            if add and len(new_values) > 1:
                 new_values = self._add_single_attributes(attrname, attrtype, new_values)
             else:
                 new_values = new_values[0] if new_values else None

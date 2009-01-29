@@ -46,9 +46,7 @@ class RobustScrapedItemTestCase(unittest.TestCase):
 
     def test_attribute_add(self):
         self.item.attribute('name', 'John')
-
-        self.item.attribute('name', 'Doe', add=True)
-        self.assertEqual(self.item.name, 'JohnDoe')
+        self.assertRaises(NotImplementedError, self.item.attribute, 'name', 'Doe', add=True)
 
         self.item.attribute('children', *['Ken', 'Tom'])
         self.item.attribute('children', 'Bobby')
