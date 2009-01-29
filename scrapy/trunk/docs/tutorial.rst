@@ -342,5 +342,31 @@ Now doing a crawl on the dmoz.org domain yields ScrapedItems::
    [dmoz/dmoz.org] DEBUG: Scraped ScrapedItem({'title': [u'XML Processing with Python'], 'link': [u'http://www.informit.com/store/product.aspx?isbn=0130211192'], 'desc': [u' - By Sean McGrath; Prentice Hall PTR, 2000, ISBN 0130211192, has CD-ROM. Methods to build XML applications fast, Python tutorial, DOM and SAX, new Pyxie open source XML processing library. [Prentice Hall PTR]\n']}) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
 
 
-Item Pipeline
-=============
+Item Pipelines
+==============
+
+After an item has been scraped by a spider it is sent to the Item Pipeline
+which allows us to hook our own components to perform some actions over the
+scraped Items, the most common of these actios are:
+
+* Clean the HTML in the Items' attributes
+* Validate the Items
+* Store the Items
+
+We can write our own item pipeline component, by creating a simple Python class
+that must define the following method: 
+
+.. method:: process_item(domain, item)
+
+``domain`` is a string with the domain of the spider which scraped the item
+
+``item`` is a :class:`scrapy.item.ScrapedItem` with the item scraped
+
+This method is called for every item pipeline component and must either return
+a ScrapedItem (or any descendant class) object on a succesfull action or raise
+a :exception:`DropItem` exception (i.e: failing a validation test). Dropped
+items are no longer processed by further pipeline components.
+
+You must then add a list of the pipelines components that you want to be added
+in the ITEM_PIPELINES setting in your project settings file.
+
