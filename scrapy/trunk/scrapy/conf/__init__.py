@@ -2,6 +2,7 @@ import os
 import cPickle as pickle
 
 SETTINGS_MODULE = os.environ.get('SCRAPYSETTINGS_MODULE', 'scrapy_settings')
+SETTINGS_DISABLED = os.environ.get('SCRAPY_SETTINGS_DISABLED', False)
 
 class Settings(object):
     """Class to obtain configuration values from settings module
@@ -16,7 +17,8 @@ class Settings(object):
     def __init__(self):
         pickled_settings = os.environ.get("SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE")
         self.overrides = pickle.loads(pickled_settings) if pickled_settings else {}
-        self.settings = self._import(SETTINGS_MODULE)
+        if not SETTINGS_DISABLED:
+            self.settings = self._import(SETTINGS_MODULE)
         self.defaults = {}
         self.global_defaults = self._import('scrapy.conf.default_settings')
 
@@ -24,17 +26,18 @@ class Settings(object):
         return __import__(modulepath, {}, {}, [''])
 
     def __getitem__(self, opt_name):
-        if opt_name in self.overrides:
-            return self.overrides[opt_name]
+        if not SETTINGS_DISABLED:
+            if opt_name in self.overrides:
+                return self.overrides[opt_name]
 
-        if 'SCRAPY_' + opt_name in os.environ:
-            return os.environ['SCRAPY_' + opt_name]
+            if 'SCRAPY_' + opt_name in os.environ:
+                return os.environ['SCRAPY_' + opt_name]
 
-        if hasattr(self.settings, opt_name):
-            return getattr(self.settings, opt_name)
+            if hasattr(self.settings, opt_name):
+                return getattr(self.settings, opt_name)
 
-        if opt_name in self.defaults:
-            return self.defaults[opt_name]
+            if opt_name in self.defaults:
+                return self.defaults[opt_name]
 
         if hasattr(self.global_defaults, opt_name):
             return getattr(self.global_defaults, opt_name)
