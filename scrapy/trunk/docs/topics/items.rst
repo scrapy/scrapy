@@ -9,7 +9,7 @@ Quick overview
 
 In Scrapy, items are the placeholder to use for the scraped data.  They are
 represented by a :class:`ScrapedItem` object, or any descendant class instance,
-and store the information in class attributes.
+and store the information in instance attributes.
 
 ScrapedItems
 ============
