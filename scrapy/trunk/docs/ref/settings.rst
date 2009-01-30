@@ -128,7 +128,7 @@ CLUSTER_MASTER_ENABLED
 
 Default: ``False``
 
-A boolen which specifies whether to enabled the cluster master.
+A boolean which specifies whether to enabled the cluster master.
 
 .. setting:: CLUSTER_MASTER_NODES
 
@@ -173,7 +173,7 @@ CLUSTER_WORKER_ENABLED
 
 Default: ``False``
 
-A boolen which specifies whether to enabled the cluster master.
+A boolean which specifies whether to enabled the cluster master.
 
 .. setting:: CLUSTER_WORKER_MAXPROC
 

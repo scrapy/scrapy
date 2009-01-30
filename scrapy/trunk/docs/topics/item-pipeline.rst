@@ -36,7 +36,7 @@ components.
 Item pipeline example
 =====================
 
-Let's take a look at following hypotetic pipeline that adjusts the ``price``
+Let's take a look at following hypothetic pipeline that adjusts the ``price``
 attribute for those items that do not include VAT (``price_excludes_vat``
 attribute), and drops those items which don't contain a price::
 

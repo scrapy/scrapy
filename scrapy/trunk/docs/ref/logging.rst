@@ -16,7 +16,7 @@ Quick example
 
 Here's a quick example of how to log a message using the ``WARNING`` level::
 
-    from scrapy.log
+    from scrapy import log
     log.msg("This is a warning", level=log.WARNING)
 
 scrapy.log module
