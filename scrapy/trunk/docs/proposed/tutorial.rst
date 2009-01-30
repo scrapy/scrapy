@@ -57,8 +57,9 @@ URLs to follow.
 They are the heart of a Scrapy project and where most part of the action takes
 place.
 
-To create our first spider, save this code in a file named dmoz.py inside
-*dmoz/spiders* folder::
+To create our first spider, save this code in a file named ``dmoz_spider.py``
+inside ``dmoz/spiders`` folder::
+
 
    from scrapy.spider import BaseSpider
 
@@ -75,6 +76,11 @@ To create our first spider, save this code in a file named dmoz.py inside
            return []
             
    SPIDER = OpenDirectorySpider()
+
+.. warning::
+
+   When creating spiders, be sure not to name them equal to the project's name
+   or you won't be able to import modules from your project in your spider!
 
 The first line imports the class BaseSpider. For the purpose of creating a
 working spider, you must subclass BaseSpider, and then define the three main,
@@ -316,8 +322,9 @@ so to actually return the data we've scraped so far, the code for our spider
 should be like this::
 
    from scrapy.spider import BaseSpider
-   from scrapy.item import ScrapedItem
    from scrapy.xpath.selector import HtmlXPathSelector
+
+   from dmoz.items import DmozItem
 
 
    class OpenDirectorySpider(BaseSpider):
@@ -332,7 +339,7 @@ should be like this::
           sites = hxs.x('//ul[2]/li')
           items = []
           for site in sites:
-              item = ScrapedItem()
+              item = DmozItem()
               item.title = site.x('a/text()').extract()
               item.link = site.x('a/@href').extract()
               item.desc = site.x('text()').extract()
