@@ -65,6 +65,9 @@ class ResponseTypesTest(unittest.TestCase):
             ({'url': 'http://www.example.com/data.csv'}, TextResponse),
             # headers takes precedence over url
             ({'headers': Headers({'Content-Type': ['text/html; charset=utf-8']}), 'url': 'http://www.example.com/item/'}, HtmlResponse),
+            ({'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}), 'url': 'http://www.example.com/page/'}, Response),
+
+
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_args(**source)
