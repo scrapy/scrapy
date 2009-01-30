@@ -4,6 +4,8 @@
 Spiders
 =======
 
+.. module:: scrapy.spider
+
 | Spiders are modules whose purpose is to scrape information from a certain domain.
 | It's there where you'll define the behaviour regarding the crawling and parsing processes, and where most of the action takes part, actually.
 
@@ -28,6 +30,8 @@ Now, although the previous applies for any kind of spider, there are different t
 BaseSpider
 ----------
 
+.. class:: BaseSpider
+
 | This is the simplest available spider, and from which inherit any other spiders (either the ones that come built-in with Scrapy, or the ones users could make).
 | It doesn't provide any special functionality. It just requests the given ``start_urls``/``start_requests``, and calls the spider's method ``parse`` for each of the resulting responses.
 
@@ -50,10 +54,12 @@ Let's see an example::
 
     SPIDER = MySpider()
 
-----
+.. module:: scrapy.contrib.spiders
 
 CrawlSpider
 -----------
+
+.. class:: CrawlSpider
 
 | This is the most commonly used spider, and it's the one who crawls over HTML pages, extracts links from there (given certain rules of extraction), and scrapes items from
   there.
@@ -82,13 +88,15 @@ LinkExtractors
   the extracted links.
 | These are the parameters that LinkExtractors may receive when instanciating them:
 
-* LinkExtractor (scrapy.link.LinkExtractor):
+.. class:: scrapy.link.LinkExtractor
+
     * tag: Can be either a tag name in a string, or a function that receives a tag name and returns True if links should be extracted from it, or False if they
       shouldn't. Defaults to 'a'.
     * attr: The same as in ``tag``, for attribute names.
     * unique: A boolean that decides whether links with the same url should be extracted only once or not.
 
-* RegexLinkExtractor (scrapy.link.extractors.RegexLinkExtractor):
+.. class:: scrapy.link.extractors.RegexLinkExtractor
+
     * tag: The same purpose as in LinkExtractor.
     * attr: The same purpose as in LinkExtractor.
     * unique: The same purpose as in LinkExtractor.
@@ -142,13 +150,13 @@ Let's now take a look at an example CrawlSpider with rules::
 This spider would start crawling example.com's home page, collecting category links, and item links, parsing the latter with the *parse_item* method.
 For each item response, some data will be extracted from the HTML using XPath, and a ScrapedItem will be filled with it.
 
-----
-
 Feed Spiders
 -------------
 
 XMLFeedSpider
 ^^^^^^^^^^^^^
+
+.. class:: XMLFeedSpider
 
 XMLFeedSpider is designed for parsing XML feeds by iterating through them by a certain node name.
 The iterator can be chosen from: ``iternodes``, ``xml``, and ``html``.
@@ -159,7 +167,6 @@ However, using ``html`` as the iterator may be useful when parsing XML with bad 
 For setting the iterator and the tag name, you must define the class attributes
 ``iterator`` and ``itertag``.
 The default values are ``iternodes`` for ``iterator``, and ``item`` for ``itertag``.
-
 
 Apart from these new attributes, this spider has some new overrideable methods too:
 
@@ -200,6 +207,8 @@ iterates through each of its 'item' tags, prints them out, and stores some rando
 
 CSVFeedSpider
 ^^^^^^^^^^^^^
+
+.. class:: CSVFeedSpider
 
 This spider is very similar to the XMLFeedSpider, although it iterates through rows, instead of nodes.
 It also has other two different attributes: ``delimiter``, and ``headers``.
