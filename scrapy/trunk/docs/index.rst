@@ -23,3 +23,7 @@ Documentation Contents:
 
    faq
 
+.. toctree::
+   :maxdepth: 1
+
+   proposed/index
