@@ -21,10 +21,11 @@ directory where you'd like to store your code and then run::
 This will create a ``dmoz`` directory with the following contents::
 
    dmoz/
-       manage.py
+       scrapy-ctl.py
        dmoz/
            __init__.py
            items.py
+           pipelines.py
            settings.py
            spiders/
                __init__.py 
@@ -33,13 +34,17 @@ This will create a ``dmoz`` directory with the following contents::
 
 These are basically: 
 
-* ``manage.py``: the project's control script.
+* ``scrapy-ctl.py``: the project's control script.
 * ``dmoz/``: the project's python module, you'll later import your code from
   here.
+* ``dmoz/items.py``: the project's items file.
+* ``dmoz/pipelines.py``: the project's pipelines file.
 * ``dmoz/settings.py``: the project's settings file.
 * ``dmoz/spiders/``: a directory where you'll later put your spiders.
+* ``dmoz/templates/``: directory containing the spider's templates.
 
-We'll talk more about the project files later, now let's go into spiders.
+The use of this files will be clarified throughout the tutorial, now let's go into
+spiders.
 
 Spiders
 =======
