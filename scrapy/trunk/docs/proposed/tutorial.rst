@@ -95,7 +95,8 @@ mandatory, attributes:
   will be generated successively from data contained in the start URLs.
 
 * ``parse`` is the callback method of the spider. This means that each time a
-  URL is retrieved, the downloaded data (response) will be passed to this method.
+  URL is retrieved, the downloaded data (response) will be passed to this
+  method.
  
   The ``parse`` method is in charge of processing the response and returning
   scraped data and or more URLs to follow, because of this, the method must
@@ -314,8 +315,19 @@ Items
 =====
 
 In Scrapy, items are the placeholder to use for the scraped data. They are
-represented by a ScrapedItem object, or any descendant class instance, and
-store the information in class attributes
+represented by a descendant class instance of ScrapedItem, and store the
+information in class attributes
+
+The ``scrapy-admin.py startproject`` command has created an ``items.py`` file
+containing a default item for this project, called DmozItem. Let's see
+``items.py`` file contents::
+
+    # Define here the models for your scraped items
+
+    from scrapy.item import ScrapedItem
+
+    class DmozItem(ScrapedItem):
+        pass
 
 Spiders are supposed to return their scraped data in the form of ScrapedItems,
 so to actually return the data we've scraped so far, the code for our spider
@@ -348,10 +360,10 @@ should be like this::
            
    SPIDER = OpenDirectorySpider()
 
-Now doing a crawl on the dmoz.org domain yields ScrapedItems::
+Now doing a crawl on the dmoz.org domain yields DmozItems::
 
-   [dmoz/dmoz.org] DEBUG: Scraped ScrapedItem({'title': [u'Text Processing in Python'], 'link': [u'http://gnosis.cx/TPiP/'], 'desc': [u' - By David Mertz; Addison Wesley. Book in progress, full text, ASCII format. Asks for feedback. [author website, Gnosis Software, Inc.]\n']}) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
-   [dmoz/dmoz.org] DEBUG: Scraped ScrapedItem({'title': [u'XML Processing with Python'], 'link': [u'http://www.informit.com/store/product.aspx?isbn=0130211192'], 'desc': [u' - By Sean McGrath; Prentice Hall PTR, 2000, ISBN 0130211192, has CD-ROM. Methods to build XML applications fast, Python tutorial, DOM and SAX, new Pyxie open source XML processing library. [Prentice Hall PTR]\n']}) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
+   [dmoz/dmoz.org] DEBUG: Scraped DmozItem({'title': [u'Text Processing in Python'], 'link': [u'http://gnosis.cx/TPiP/'], 'desc': [u' - By David Mertz; Addison Wesley. Book in progress, full text, ASCII format. Asks for feedback. [author website, Gnosis Software, Inc.]\n']}) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
+   [dmoz/dmoz.org] DEBUG: Scraped DmozItem({'title': [u'XML Processing with Python'], 'link': [u'http://www.informit.com/store/product.aspx?isbn=0130211192'], 'desc': [u' - By Sean McGrath; Prentice Hall PTR, 2000, ISBN 0130211192, has CD-ROM. Methods to build XML applications fast, Python tutorial, DOM and SAX, new Pyxie open source XML processing library. [Prentice Hall PTR]\n']}) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
 
 
 Item Pipelines
