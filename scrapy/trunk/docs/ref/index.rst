@@ -8,6 +8,7 @@ This section documents the API of Scrapy |version|. For more information see :re
 .. toctree::
    :maxdepth: 1
 
+   spiders
    exceptions
    request-response
    extension-manager
@@ -17,3 +18,4 @@ This section documents the API of Scrapy |version|. For more information see :re
    signals
    logging
    email
+   link-extractors

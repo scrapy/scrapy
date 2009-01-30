@@ -9,10 +9,11 @@ This section introduces all key concepts of Scrapy.
    :maxdepth: 1
 
    architecture
+   spiders
    selectors
+   link-extractors
    items
    adaptors
-   spiders
    item-pipeline
    downloader-middleware
    spider-middleware
