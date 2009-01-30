@@ -35,6 +35,28 @@ BaseSpider
 | This is the simplest available spider, and from which inherit any other spiders (either the ones that come built-in with Scrapy, or the ones users could make).
 | It doesn't provide any special functionality. It just requests the given ``start_urls``/``start_requests``, and calls the spider's method ``parse`` for each of the resulting responses.
 
+.. attribute:: BaseSpider.domain_name
+
+    Identifies the spider. It must be unique, that is, you can't set the same
+    domain name for different spiders.
+
+.. attribute:: BaseSpider.start_urls
+
+    Is a list of URLs where the spider will begin to crawl from.  So, the first
+    pages downloaded will be those listed here. The subsequent URLs will be
+    generated successively from data contained in the start URLs.
+
+.. attribute:: BaseSpider.start_requests
+
+.. method:: BaseSpider.parse (response)
+
+   Iis the callback method of the spider. This means that each time a URL is
+   retrieved, the downloaded data (response) will be passed to this method.
+ 
+   The ``parse`` method is in charge of processing the response and returning
+   scraped data and or more URLs to follow, because of this, the method must
+   always return a list or at least an empty one.
+
 Let's see an example::
 
     from scrapy import log # This module is useful for printing out debug information
