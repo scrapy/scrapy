@@ -1,7 +1,8 @@
 """
-This module provides some LinkExtractors, which extend that base LinkExtractor
-(scrapy.link.LinkExtractor) with some useful features.
+This module provides some LinkExtractors, which extend the base LinkExtractor
+(scrapy.link.LinkExtractor) with some addutional useful features.
 
+See documentation in docs/ref/link-extractors.rst
 """
 
 import re

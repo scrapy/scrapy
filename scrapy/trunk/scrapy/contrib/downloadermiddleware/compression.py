@@ -32,7 +32,7 @@ class CompressionMiddleware(object):
                 body = zlib.decompress(body)
             except zlib.error:
                 # ugly hack to work with raw deflate content that may
-                # be sent by microsof servers. For more information, see:
+                # be sent by microsoft servers. For more information, see:
                 # http://carsten.codimi.de/gzip.yaws/
                 # http://www.port80software.com/200ok/archive/2005/10/31/868.aspx
                 # http://www.gzip.org/zlib/zlib_faq.html#faq38

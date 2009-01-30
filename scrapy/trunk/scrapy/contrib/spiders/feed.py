@@ -1,4 +1,10 @@
-# -*- coding: utf8 -*-
+"""
+This module implements the XMLFeedSpider which is the recommended spider to use
+for scraping from an XML feed.
+
+See documentation in docs/ref/spiders.rst
+"""
+
 from scrapy.spider import BaseSpider
 from scrapy.item import ScrapedItem
 from scrapy.http import Request

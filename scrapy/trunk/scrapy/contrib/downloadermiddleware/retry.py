@@ -2,7 +2,7 @@
 An extension to retry failed requests that are potentially caused by temporary
 problems such as a connection timeout or HTTP 500 error.
 
-You can change the behaviour of this moddileware by modifing the scraping settings:
+You can change the behaviour of this middleware by modifing the scraping settings:
 RETRY_TIMES - how many times to retry a failed page
 RETRY_HTTP_CODES - which HTTP response codes to retry
 

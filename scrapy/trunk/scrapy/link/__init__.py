@@ -1,5 +1,7 @@
 """
 LinkExtractor provides en efficient way to extract links from pages
+
+See documentation in docs/ref/link-extractors.rst
 """
 
 from scrapy.utils.python import FixedSGMLParser, unique as unique_list

@@ -1,5 +1,5 @@
 """
-Common downloader middleare
+Common downloader middleware
 
 See documentation in docs/ref/downloader-middleware.rst
 """
