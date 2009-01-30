@@ -43,23 +43,22 @@ These are basically:
 * ``dmoz/spiders/``: a directory where you'll later put your spiders.
 * ``dmoz/templates/``: directory containing the spider's templates.
 
-The use of this files will be clarified throughout the tutorial, now let's go into
-spiders.
+The use of this files will be clarified throughout the tutorial, now let's go
+into spiders.
 
 Spiders
 =======
 
 Spiders are custom modules written by you, the user, to scrape information from
-a certain domain. Their duty is to feed the Scrapy engine with URLs to
-download, and then parse the downloaded contents in the search for data or more
-URLs to follow.
+a certain domain. Their duty is to feed the Scrapy engine with URLs to download,
+and then parse the downloaded contents in the search for data or more URLs to
+follow.
 
 They are the heart of a Scrapy project and where most part of the action takes
 place.
 
 To create our first spider, save this code in a file named ``dmoz_spider.py``
 inside ``dmoz/spiders`` folder::
-
 
    from scrapy.spider import BaseSpider
 
@@ -82,15 +81,15 @@ inside ``dmoz/spiders`` folder::
    When creating spiders, be sure not to name them equal to the project's name
    or you won't be able to import modules from your project in your spider!
 
-The first line imports the class BaseSpider. For the purpose of creating a
-working spider, you must subclass BaseSpider, and then define the three main,
-mandatory, attributes:
+The first line imports the class :class:`scrapy.spider.BaseSpider`. For the
+purpose of creating a working spider, you must subclass
+:class:`scrapy.spider.BaseSpider`, and then define the three main, mandatory,
+attributes:
 
 * ``domain_name``: identifies the spider. It must be unique, that is, you can't
   set the same domain name for different spiders.
 
-* ``start_urls``: is a list
-  of URLs where the spider will begin to crawl from.
+* ``start_urls``: is a list of URLs where the spider will begin to crawl from.
   So, the first pages downloaded will be those listed here. The subsequent URLs
   will be generated successively from data contained in the start URLs.
 
