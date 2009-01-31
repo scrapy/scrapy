@@ -16,10 +16,11 @@ For spiders, the scraping cycle goes through something like this:
    those requests.
 
    The first requests to perform are obtained by calling the
-   :meth:`scrapy.spiders.BaseSpider.start_requests` method which (by default) generates
-   :class:`~scrapy.http.Request` for the URLs specified in the
-   :attr:`scarpy.spiders.BaseSpider.start_urls` and the ``BaseSpider.parse`` method as
-   callback function for the Requests.
+   :meth:`~scrapy.spider.BaseSpider.start_requests` method which (by default)
+   generates :class:`~scrapy.http.Request` for the URLs specified in the
+   :attr:`~scrapy.spider.BaseSpider.start_urls` and the
+   :attr:`~scrapy.spider.BaseSpider.parse` method as callback function for the
+   Requests.
 
 2. In the callback function you parse the response (web page) and return an
    iterable containing either ScrapedItem or Requests, or both. Those Requests
