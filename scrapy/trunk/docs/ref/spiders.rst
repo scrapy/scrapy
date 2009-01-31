@@ -4,7 +4,7 @@
 Available Spiders
 =================
 
-.. module:: scrapy.item
+.. module:: scrapy.spider
 
 BaseSpider
 ==========
@@ -186,7 +186,6 @@ links, and item links, parsing the latter with the *parse_item* method. For
 each item response, some data will be extracted from the HTML using XPath, and
 a ScrapedItem will be filled with it.
 
-
 XMLFeedSpider
 =============
 
@@ -284,19 +283,19 @@ prints them out, and stores some random data in ScrapedItems.
 CSVFeedSpider
 =============
 
-.. class:: XMLFeedSpider.CSVFeedSpider
+.. class:: CSVFeedSpider
 
-.. warning:: The API of the XMLFeedSpider is not yet stable. Use with caution.
+.. warning:: The API of the CSVFeedSpider is not yet stable. Use with caution.
 
 This spider is very similar to the XMLFeedSpider, although it iterates through
 rows, instead of nodes.  It also has other two different attributes:
 
-.. attribute:: XMLFeedSpider.delimiter
+.. attribute:: CSVFeedSpider.delimiter
 
     A string with the separator character for each field in the CSV file
     Defaults to ``','`` (comma).
 
-.. attribute:: XMLFeedSpider.headers
+.. attribute:: CSVFeedSpider.headers
    
     A list of the rows contained in the file CSV feed which will be used for
     extracting fields from it.
@@ -304,7 +303,7 @@ rows, instead of nodes.  It also has other two different attributes:
 In this spider, the method that gets called in each row iteration ``parse_row``
 instead of ``parse_item`` (like in :class:`XMLFeedSpider`).
 
-.. method:: XMLFeedSpider.parse_row(response, row)
+.. method:: CSVFeedSpider.parse_row(response, row)
    
     Receives a response and a dict (representing each row) with a key for each
     provided (or detected) header of the CSV file.  This spider also gives the
