@@ -23,7 +23,7 @@ Enable debug mode for adaptors.
 .. setting:: PROJECT_NAME
 
 PROJECT_NAME
---------
+------------
 
 Default: ``Not Defined``
 
