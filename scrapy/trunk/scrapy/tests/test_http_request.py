@@ -174,5 +174,10 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r3.encoding, 'latin1')
         self.assertEqual(r3.body, 'price=%A3+100')
 
+        # using multiples values for a single key
+        data = {'price': u'\xa3 100', 'colours': ['red', 'blue', 'green']}
+        r3 = FormRequest("http://www.example.com", formdata=data)
+        self.assertEqual(r3.body, 'colours=red&colours=blue&colours=green&price=%C2%A3+100')
+
 if __name__ == "__main__":
     unittest.main()
