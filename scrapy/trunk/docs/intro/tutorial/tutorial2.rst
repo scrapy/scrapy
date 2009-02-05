@@ -8,13 +8,13 @@ Ok, the time to write our first spider has come. Make sure that you're standing 
 
     ./scrapy-ctl.py genspider google_directory google.com
 
-This should create a file called google_directory.py under the *spiders* directory looking like this::
+This should create a file called google_directory.py under the *google/spiders* directory looking like this::
 
     # -*- coding: utf8 -*-
     import re
 
     from scrapy.xpath import HtmlXPathSelector
-    from scrapy.item import ScrapedItem
+    from google.items import GoogleScrapedItem
     from scrapy.link.extractors import RegexLinkExtractor
     from scrapy.contrib.spiders import CrawlSpider, Rule
 
@@ -28,7 +28,7 @@ This should create a file called google_directory.py under the *spiders* directo
 
         def parse_item(self, response):
             xs = HtmlXPathSelector(response)
-            i = ScrapedItem()
+            i = GoogleScrapedItem()
             #i.attribute('site_id', xs.x('//input[@id="sid"]/@value'))
             #i.attribute('name', xs.x('//div[@id="name"]'))
             #i.attribute('description', xs.x('//div[@id="description"]'))
@@ -95,7 +95,7 @@ Until now, our spider would look something like::
 
     # -*- coding: utf8 -*-
     from scrapy.xpath import HtmlXPathSelector
-    from scrapy.item import ScrapedItem
+    from google.items import GoogleScrapedItem
     from scrapy.link.extractors import RegexLinkExtractor
     from scrapy.contrib.spiders import CrawlSpider, Rule
 

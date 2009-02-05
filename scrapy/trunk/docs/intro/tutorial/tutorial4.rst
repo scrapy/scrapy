@@ -16,7 +16,7 @@ Let's see how would our spider end up looking like after applying this change::
 
     # -*- coding: utf8 -*-
     from scrapy.xpath import HtmlXPathSelector
-    from scrapy.item import ScrapedItem
+    from google.items import GoogleScrapedItem
     from scrapy.contrib import adaptors
     from scrapy.contrib.spiders import CrawlSpider, Rule
     from scrapy.link.extractors import RegexLinkExtractor
@@ -40,7 +40,7 @@ Let's see how would our spider end up looking like after applying this change::
             links = hxs.x('//td[descendant::a[contains(@href, "#pagerank")]]/following-sibling::td/font')
 
             for link in links:
-                item = ScrapedItem()
+                item = GoogleScrapedItem()
                 adaptor_pipe = [adaptors.extract, adaptors.Delist(''), adaptors.strip]
                 item.set_adaptors({
                     'name': adaptor_pipe,
@@ -60,11 +60,8 @@ Let's see how would our spider end up looking like after applying this change::
 
 
 With this code, our spider will crawl over Google's directory, and save each
-link's name, description, and url to a file called 'scraped_items.csv'.
+link's name, description, and url to a file called 'scraped_items.csv'::
 
-  Cool, huh?
-
-::
     ./scrapy-ctl.py crawl google.com
 
 This is the end of the tutorial. If you'd like to know more about Scrapy and its use, please read the rest of the documentation.

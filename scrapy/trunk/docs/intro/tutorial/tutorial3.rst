@@ -35,7 +35,7 @@ Anyway, having said that, a possible *parse_category* could be::
         links = hxs.x('//td[descendant::a[contains(@href, "#pagerank")]]/following-sibling::td/font')
 
         for link in links:
-            item = ScrapedItem()
+            item = GoogleScrapedItem()
             adaptor_pipe = [adaptors.extract, adaptors.Delist(''), adaptors.strip]
             item.set_adaptors({
                 'name': adaptor_pipe,
