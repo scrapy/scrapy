@@ -20,6 +20,16 @@ Default: ``False``
 
 Enable debug mode for adaptors.
 
+.. setting:: PROJECT_NAME
+
+PROJECT_NAME
+--------
+
+Default: ``Not Defined``
+
+The name of the current project. It matches the project module name as created
+by startproject command, and is only defined by project settings file.
+
 .. setting:: BOT_NAME
 
 BOT_NAME
