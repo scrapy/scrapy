@@ -153,3 +153,8 @@ def items_to_csv(file, items, delimiter=';', headers=None):
             value = unicode_to_str(value) if isinstance(value, basestring) else value
             row.append(value)
         csv_file.writerow(row)
+
+
+CAMELCASE_INVALID_CHARS = re.compile('[^a-zA-Z]')
+def string_camelcase(string):
+    return CAMELCASE_INVALID_CHARS.sub('', string.title())

@@ -3,8 +3,9 @@ import $project_name
 # ---------------------------------------------------------------------------
 # - Scrapy settings for $project_name                                    -
 # ---------------------------------------------------------------------------
+PROJECT_NAME = '$project_name'
 
-BOT_NAME = '$project_name'
+BOT_NAME = PROJECT_NAME
 BOT_VERSION = '1.0'
 
 SPIDER_MODULES = ['$project_name.spiders']
@@ -79,9 +80,9 @@ SPIDER_MIDDLEWARES = (
     # Spider side
 )
 
-# Item pipelines are usually configured by commands (see conf/commands)
-#ITEM_PIPELINES = (
-#)
+ITEM_PIPELINES = (
+    '${project_name}.pipelines.${ProjectName}Pipeline',
+)
 
 #DEPTH_LIMIT = 10  # limit the maximum link depth to follow
 #DEPTH_STATS = 1    # enable depth stats

@@ -1,13 +1,13 @@
 # -*- coding: utf8 -*-
 from scrapy.contrib.spiders import XMLFeedSpider
-from $project_name.items import MyItem
+from $project_name.items import ${ProjectName}Item
 
 class $classname(XMLFeedSpider):
     domain_name = '$site'
     start_urls = ['http://www.$site/feed.xml']
 
     def parse_item(self, response, xSel):
-        i = MyItem()
+        i = ${ProjectName}Item()
         #i.attribute('url', xSel('url'))
         #i.attribute('name', xSel('name'))
         #i.attribute('description', xSel('description'))

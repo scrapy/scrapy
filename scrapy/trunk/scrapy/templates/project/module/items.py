@@ -2,5 +2,5 @@
 
 from scrapy.item import ScrapedItem
 
-class MyItem(ScrapedItem):
+class ${ProjectName}Item(ScrapedItem):
     pass

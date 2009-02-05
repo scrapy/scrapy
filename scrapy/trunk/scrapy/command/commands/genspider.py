@@ -7,7 +7,8 @@ import shutil
 from scrapy.spider import spiders
 from scrapy.command import ScrapyCommand
 from scrapy.conf import settings
-from scrapy.utils.misc import render_templatefile
+from scrapy.utils.misc import render_templatefile, string_camelcase
+
 
 class Command(ScrapyCommand):
     """ Childs can define custom tvars """
@@ -54,7 +55,8 @@ class Command(ScrapyCommand):
     def _genspider(self, name, site, template_file):
         """ Generate spider """
         tvars = {
-            'project_name': settings.get('BOT_NAME'),
+            'project_name': settings.get('PROJECT_NAME'),
+            'ProjectName': string_camelcase(settings.get('PROJECT_NAME')),
             'name': name,
             'site': site,
             'classname': '%sSpider' % ''.join([s.capitalize() for s in name.split('_')])
