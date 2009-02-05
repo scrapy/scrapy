@@ -157,4 +157,12 @@ def items_to_csv(file, items, delimiter=';', headers=None):
 
 CAMELCASE_INVALID_CHARS = re.compile('[^a-zA-Z]')
 def string_camelcase(string):
+    """ Convert a word  to it CamelCase version
+    >>> string_camelcase('lost-pound')
+    LostPound
+
+    >>> string_camelcase('missing_images')
+    MissingImages
+
+    """
     return CAMELCASE_INVALID_CHARS.sub('', string.title())
