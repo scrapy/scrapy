@@ -50,7 +50,6 @@ class ISpider(Interface, IPlugin) :
 class BaseSpider(object):
     """Base class for scrapy spiders. All spiders must inherit from this
     class.
-
     """
 
     implements(ISpider)
@@ -68,14 +67,16 @@ class BaseSpider(object):
     def start_requests(self, urls=None):
         """Return the requests to crawl when this spider is opened for
         scraping. urls contain the urls passed from command line (if any),
-        otherwise None if the enrie domain was requested for scraping.
+        otherwise None if the entire domain was requested for scraping.
 
         This function must return a list of Requests to be crawled, based on
         the given urls. The Requests must include a callback function which
         must return a list of:
-         * Request's for further crawling
-         * ScrapedItem's for processing
-         * Both
+
+        * Request's for further crawling
+        * ScrapedItem's for processing
+        * Both
+
         Or None (which will be treated the same way as an empty list)
 
         When a Request object is returned, the Request is scheduled, then
