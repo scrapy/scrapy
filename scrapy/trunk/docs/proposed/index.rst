@@ -9,6 +9,11 @@ Proposed documentation
    risk!
 
 .. toctree::
+   :maxdepth: 1
+
+   spiders
+
+.. toctree::
 
    introduction
 
@@ -16,7 +21,3 @@ Proposed documentation
    :maxdepth: 1
 
    tutorial
-
-.. toctree::
-
-   spiders
