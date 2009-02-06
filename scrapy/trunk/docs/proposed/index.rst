@@ -16,3 +16,7 @@ Proposed documentation
    :maxdepth: 1
 
    tutorial
+
+.. toctree::
+
+   spiders
