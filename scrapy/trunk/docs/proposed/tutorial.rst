@@ -46,16 +46,33 @@ These are basically:
 The use of this files will be clarified throughout the tutorial, now let's go
 into spiders.
 
+Requests and Responses
+======================
+
+Scrapy uses :class:`~scrapy.http.Request` and :class:`~scrapy.http.Response`
+objects for crawling web sites. 
+
+Generally, :class:`~scrapy.http.Request` objects are generated in the Spiders
+(although they can be generated in any component of the framework), then they
+pass across the system until they reach the Downloader, which actually executes
+the request and returns a :class:`~scrapy.http.Response` object to the
+:class:`Request's callback function <scrapy.http.Request>`. 
+
 Spiders
 =======
 
-Spiders are custom modules written by you, the user, to scrape information from
-a certain domain. Their duty is to feed the Scrapy engine with URLs to download,
+Spiders are custom modules written by the user, to scrape information from a
+certain domain (or group of domains). 
+
+They feed the Engine with requests 
+Their duty is to feed the Scrapy engine with URLs to download,
 and then parse the downloaded contents in the search for data or more URLs to
 follow.
 
 They are the heart of a Scrapy project and where most part of the action takes
 place.
+
+They generate Request objects for a set of initial URLs, and set the callback function to its parse method.
 
 To create our first spider, save this code in a file named ``dmoz_spider.py``
 inside ``dmoz/spiders`` folder::

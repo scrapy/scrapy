@@ -9,6 +9,10 @@ Proposed documentation
    risk!
 
 .. toctree::
+
+   introduction
+
+.. toctree::
    :maxdepth: 1
 
    tutorial
