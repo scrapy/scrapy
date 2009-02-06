@@ -17,11 +17,11 @@ class XMLFeedSpider(BaseSpider):
     This class intends to be the base class for spiders that scrape
     from XML feeds.
 
-    You can choose whether to parse the file using the 'iternodes' iterator,
-    an 'xml' selector, or an 'html' selector.
-    In most cases, it's convenient to use iternodes, since it's a faster and
-    cleaner.
+    You can choose whether to parse the file using the 'iternodes' iterator, an
+    'xml' selector, or an 'html' selector.  In most cases, it's convenient to
+    use iternodes, since it's a faster and cleaner.
     """
+
     iterator = 'iternodes'
     itertag = 'item'
 
@@ -30,16 +30,26 @@ class XMLFeedSpider(BaseSpider):
         returned by the spider, and it's intended to perform any last time
         processing required before returning the results to the framework core,
         for example setting the item GUIDs. It receives a list of results and
-        the response which originated that results. It must return a list
-        of results (Items or Requests)."""
+        the response which originated that results. It must return a list of
+        results (Items or Requests).
+        """
         return results
 
     def adapt_response(self, response):
         """You can override this function in order to make any changes you want
-        to into the feed before parsing it. This function must return a response."""
+        to into the feed before parsing it. This function must return a
+        response.
+        """
         return response
 
     def parse_nodes(self, response, nodes):
+        """This method is called for the nodes matching the provided tag name
+        (itertag). Receives the response and an XPathSelector for each node.
+        Overriding this method is mandatory. Otherwise, you spider won't work.
+        This method must return either a ScrapedItem, a Request, or a list
+        containing any of them.
+        """
+
         for xSel in nodes:
             ret = self.parse_item(response, xSel)
             if isinstance(ret, (ScrapedItem, Request)):
@@ -66,14 +76,14 @@ class XMLFeedSpider(BaseSpider):
         return self.parse_nodes(response, nodes)
 
 class CSVFeedSpider(BaseSpider):
-    """
-    Spider for parsing CSV feeds.
+    """Spider for parsing CSV feeds.
     It receives a CSV file in a response; iterates through each of its rows,
     and calls parse_row with a dict containing each field's data.
 
     You can set some options regarding the CSV file, such as the delimiter
     and the file's headers.
     """
+
     delimiter = None # When this is None, python's csv module's default delimiter is used
     headers = None
 
@@ -86,6 +96,12 @@ class CSVFeedSpider(BaseSpider):
         return response
 
     def parse_rows(self, response):
+        """Receives a response and a dict (representing each row) with a key for
+        each provided (or detected) header of the CSV file.  This spider also
+        gives the opportunity to override adapt_response and
+        process_results methods for pre and post-processing purposes.
+        """
+
         for row in csviter(response, self.delimiter, self.headers):
             ret = self.parse_row(response, row)
             if isinstance(ret, (ScrapedItem, Request)):
