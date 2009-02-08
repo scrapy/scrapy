@@ -20,16 +20,6 @@ Default: ``False``
 
 Enable debug mode for adaptors.
 
-.. setting:: PROJECT_NAME
-
-PROJECT_NAME
-------------
-
-Default: ``Not Defined``
-
-The name of the current project. It matches the project module name as created
-by startproject command, and is only defined by project settings file.
-
 .. setting:: BOT_NAME
 
 BOT_NAME
@@ -616,6 +606,16 @@ Module where to create new spiders using the ``genspider`` command.
 Example::
 
     NEWSPIDER_MODULE = 'mybot.spiders_dev'
+
+.. setting:: PROJECT_NAME
+
+PROJECT_NAME
+------------
+
+Default: ``Not Defined``
+
+The name of the current project. It matches the project module name as created
+by ``startproject`` command, and is only defined by project settings file.
 
 .. setting:: REQUEST_HEADER_ACCEPT
 
