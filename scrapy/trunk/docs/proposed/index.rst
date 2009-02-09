@@ -11,6 +11,7 @@ Proposed documentation
 .. toctree::
    :maxdepth: 1
 
+   items
    spiders
 
 .. toctree::
