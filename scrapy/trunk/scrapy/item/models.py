@@ -3,8 +3,6 @@ import copy
 class ScrapedItem(object):
     """
     This is the base class for all scraped items.
-    'guid' attribute is required, and is an attribute
-    that identifies uniquely the given scraped item.
     """
 
     def __init__(self, data=None):
