@@ -41,8 +41,10 @@ Request objects
     ``meta`` is a dict containing the initial values for the
     :attr:`Request.meta` attribute. If passed, the dict will be shallow copied.
 
-    ``body`` is a str or unicode containing the request body. If ``body`` is
-    a `unicode` it's encoded to str using the `encoding` passed.
+    ``body`` is a str or unicode containing the request body.
+    If ``body`` is a `unicode` it's encoded to str using the `encoding` passed.
+    If ``body`` is None, an empty string is stored.
+    In any case, the final stored value will be a string (never unicode, never None).
 
     ``headers`` is a multi-valued dict containing the headers of this request
 
