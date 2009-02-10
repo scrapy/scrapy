@@ -53,7 +53,7 @@ def create_factory(request, spider):
     agent = request.headers.pop('user-agent', default_agent)
     factory = HTTPClientFactory(url=url, # never pass unicode urls to twisted
                                 method=request.method,
-                                postdata=request.body or None,
+                                postdata=request.body or None, # see http://dev.scrapy.org/ticket/60
                                 headers=request.headers,
                                 agent=agent,
                                 cookies=request.cookies,
