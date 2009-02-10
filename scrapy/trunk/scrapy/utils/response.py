@@ -25,3 +25,14 @@ def get_base_url(response):
         match = BASEURL_RE.search(response.body[0:4096])
         response.cache['base_url'] = match.group(1) if match else response.url
     return response.cache['base_url']
+
+META_REFRESH_RE = re.compile(r'<meta[^>]*http-equiv[^>]*refresh[^>].*?(\d+);\s*url=([^"\']+)', re.IGNORECASE)
+def get_meta_refresh(response):
+    """ Return a tuple of two strings containing the interval and url included
+    in the http-equiv parameter of the HTML meta element. If no url is included
+    (None, None) is returned [instead of (interval, None)]
+    """
+    if 'meta_refresh_url' not in response.cache:
+        match = META_REFRESH_RE.search(response.body[0:4096])
+        response.cache['meta_refresh_url'] = match.groups() if match else (None, None)
+    return response.cache['meta_refresh_url']

@@ -4,11 +4,11 @@ from scrapy import log
 from scrapy.http import Request, Response
 from scrapy.core.exceptions import HttpException
 from scrapy.utils.url import urljoin_rfc as urljoin
+from scrapy.utils.response import get_meta_refresh
 
 class RedirectLoop(Exception):
     pass
 
-META_REFRESH_RE = re.compile(r'<meta[^>]*http-equiv[^>]*refresh[^>].*?(\d+);url=([^"\']+)', re.IGNORECASE)
 # some sites use meta-refresh for redirecting to a session expired page, so we
 # restrict automatic redirection to a maximum delay (in number of seconds)
 META_REFRESH_MAXSEC = 100
@@ -53,10 +53,9 @@ class RedirectMiddleware(object):
 
     def process_response(self, request, response, spider):
         if isinstance(response, Response):
-            m = META_REFRESH_RE.search(response.body[0:4096])
-            if m and int(m.group(1)) < META_REFRESH_MAXSEC:
-                redirected = request.copy()
-                redirected.url = urljoin(request.url, m.group(2))
+            interval, url = get_meta_refresh(response)
+            if url and int(interval) < META_REFRESH_MAXSEC:
+                redirected = request.replace(url=urljoin(request.url, url))
                 log.msg("Redirecting (meta refresh) to %s from %s" % (redirected, request), level=log.DEBUG, domain=spider.domain_name)
                 return redirected
         return response

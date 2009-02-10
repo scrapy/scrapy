@@ -1,6 +1,6 @@
 import unittest
 from scrapy.http import Response, TextResponse
-from scrapy.utils.response import body_or_str, get_base_url
+from scrapy.utils.response import body_or_str, get_base_url, get_meta_refresh
 
 class ResponseUtilsTest(unittest.TestCase):
     dummy_response = TextResponse(url='http://example.org/', body='dummy_response')
@@ -32,6 +32,24 @@ class ResponseUtilsTest(unittest.TestCase):
             </html>""")
         self.assertEqual(get_base_url(response), 'http://example.org/something')
 
+    def test_get_meta_refresh(self):
+        body="""
+            <html>
+            <head><title>Dummy</title><meta http-equiv="refresh" content="5;url=http://example.org/newpage" /></head>
+            <body>blahablsdfsal&amp;</body>
+            </html>"""
+        response = Response(url='http://example.org', body=body)
+        self.assertEqual(get_meta_refresh(response), ('5', 'http://example.org/newpage'))
+
+        # refresh without url should return (None, None)
+        body="""<meta http-equiv="refresh" content="5" />"""
+        response = Response(url='http://example.org', body=body)
+        self.assertEqual(get_meta_refresh(response), (None, None))
+
+        body="""<meta http-equiv="refresh" content="5;
+            url=http://example.org/newpage" /></head>"""
+        response = Response(url='http://example.org', body=body)
+        self.assertEqual(get_meta_refresh(response), ('5', 'http://example.org/newpage'))
 
 if __name__ == "__main__":
     unittest.main()
