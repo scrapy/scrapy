@@ -140,7 +140,7 @@ def items_to_csv(file, items, delimiter=';', headers=None):
         return
 
     if isinstance(file, basestring):
-        file = open(file, 'a+')
+        file = open(file, 'ab+')
     csv_file = csv.writer(file, delimiter=delimiter, quoting=csv.QUOTE_ALL)
     header = headers or sorted([key for key in items[0].__dict__.keys() if not key.startswith('_')])
     if not file.tell():
@@ -157,7 +157,8 @@ def items_to_csv(file, items, delimiter=';', headers=None):
 
 CAMELCASE_INVALID_CHARS = re.compile('[^a-zA-Z]')
 def string_camelcase(string):
-    """ Convert a word  to it CamelCase version
+    """ Convert a word  to its CamelCase version and remove invalid chars
+
     >>> string_camelcase('lost-pound')
     LostPound
 
