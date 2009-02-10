@@ -160,10 +160,10 @@ def string_camelcase(string):
     """ Convert a word  to its CamelCase version and remove invalid chars
 
     >>> string_camelcase('lost-pound')
-    LostPound
+    'LostPound'
 
     >>> string_camelcase('missing_images')
-    MissingImages
+    'MissingImages'
 
     """
     return CAMELCASE_INVALID_CHARS.sub('', string.title())
