@@ -14,7 +14,7 @@ This should create a file called google_directory.py under the *google/spiders* 
     import re
 
     from scrapy.xpath import HtmlXPathSelector
-    from google.items import GoogleScrapedItem
+    from google.items import GoogleItem
     from scrapy.link.extractors import RegexLinkExtractor
     from scrapy.contrib.spiders import CrawlSpider, Rule
 
@@ -28,7 +28,7 @@ This should create a file called google_directory.py under the *google/spiders* 
 
         def parse_item(self, response):
             xs = HtmlXPathSelector(response)
-            i = GoogleScrapedItem()
+            i = GoogleItem()
             #i.attribute('site_id', xs.x('//input[@id="sid"]/@value'))
             #i.attribute('name', xs.x('//div[@id="name"]'))
             #i.attribute('description', xs.x('//div[@id="description"]'))
@@ -95,7 +95,7 @@ Until now, our spider would look something like::
 
     # -*- coding: utf8 -*-
     from scrapy.xpath import HtmlXPathSelector
-    from google.items import GoogleScrapedItem
+    from google.items import GoogleItem
     from scrapy.link.extractors import RegexLinkExtractor
     from scrapy.contrib.spiders import CrawlSpider, Rule
 
