@@ -1,5 +1,6 @@
 from __future__ import with_statement
 
+import errno
 import os
 import hashlib
 import datetime
@@ -111,36 +112,37 @@ class Cache(object):
                 if not os.path.exists(linkpath):
                     os.makedirs(linkpath)
 
-    def is_cached(self, domain, key):
+    def read_meta(self, domain, key):
+        """Return the metadata dictionary (possibly empty) if the entry is
+        cached, None otherwise.
+        """
         requestpath = self.requestpath(domain, key)
-        if os.path.exists(requestpath):
+        try:
             with open(os.path.join(requestpath, 'pickled_meta'), 'r') as f:
                 metadata = pickle.load(f)
-            expiration_secs = settings.getint('CACHE2_EXPIRATION_SECS')
-            if expiration_secs >= 0:
-                if datetime.datetime.utcnow() <= metadata['timestamp'] + datetime.timedelta(seconds=expiration_secs):
-                    return True
-                else:
-                    log.msg('dropping old cached response from %s' % metadata['timestamp'], level=log.DEBUG)
-                    return False
-            else:
-                # disabled cache expiration
-                return True
-        else:
-            return False
+        except IOError, e:
+            if e.errno != errno.ENOENT:
+                raise
+            return None
+        expiration_secs = settings.getint('CACHE2_EXPIRATION_SECS')
+        if expiration_secs >= 0:
+            expiration_date = metadata['timestamp'] + datetime.timedelta(seconds=expiration_secs)
+            if datetime.datetime.utcnow() > expiration_date:
+                log.msg('dropping old cached response from %s' % metadata['timestamp'], level=log.DEBUG)
+                return None
+        return metadata
 
     def retrieve_response(self, domain, key):
         """
         Return response dictionary if request has correspondent cache record;
         return None if not.
         """
-        if not self.is_cached(domain, key):
+        metadata = self.read_meta(domain, key)
+        if metadata is None:
             return None # not cached
 
         requestpath = self.requestpath(domain, key)
-        metadata = responsebody = responseheaders = None
-        with open(os.path.join(requestpath, 'pickled_meta'), 'r') as f:
-            metadata = pickle.load(f)
+        responsebody = responseheaders = None
         with open(os.path.join(requestpath, 'response_body')) as f:
             responsebody = f.read()
         with open(os.path.join(requestpath, 'response_headers')) as f:
