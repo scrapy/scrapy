@@ -45,7 +45,7 @@ class DuplicatesFilterMiddleware(object):
             if isinstance(req, Request):
                 added = self.filter.add(domain, req)
                 if not (added or req.dont_filter):
-                    log.msg('Skipped (already visited): %s' % req, log.DEBUG, domain=domain)
+                    log.msg('Skipped (already visited): %s' % req, log.TRACE, domain=domain)
                     continue
             yield req
 
