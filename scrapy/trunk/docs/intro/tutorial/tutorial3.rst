@@ -10,7 +10,7 @@ data called ``GoogleItem`` and defined in ``google/items.py`` module::
     from scrapy.contrib.item import RobustScrapedItem
 
     class GoogleItem(RobustScrapedItem):
-    """Directory website link"""
+        """Directory website link"""
 
         ATTRIBUTES = {
                 'guid': basestring,
