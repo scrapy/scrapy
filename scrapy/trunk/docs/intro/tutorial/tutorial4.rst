@@ -12,7 +12,7 @@ case, we'll imagine that we want to save this data for storing it in a db
 later, or just to keep it there.
 
 To make it simple, we'll export the scraped items to a CSV file by making use
-of a useful function that Scrapy brings: *items_to_csv*.  This simple function
+of a useful function that Scrapy brings: ``items_to_csv``.  This simple function
 takes a file descriptor/filename, and a list of items, and writes their
 attributes to that file, in CSV format.
 
@@ -73,4 +73,5 @@ link's name, description, and url to a file called 'scraped_items.csv'::
 
     ./scrapy-ctl.py crawl google.com
 
-This is the end of the tutorial. If you'd like to know more about Scrapy and its use, please read the rest of the documentation.
+This is the end of the tutorial. If you'd like to know more about Scrapy and
+its use, please read the rest of the documentation.
