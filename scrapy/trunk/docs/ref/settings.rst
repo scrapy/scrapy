@@ -338,6 +338,18 @@ Default: ``180``
 
 The amount of time (in secs) that the downloader will wait before timing out.
 
+.. setting:: DUPLICATESFILTER_FILTERCLASS
+
+DUPLICATESFILTER_FILTERCLASS
+----------------------------
+
+Default: ``scrapy.contrib.spidermiddleware.SimplePerDomainFilter``
+
+The class used to detect and filter duplicated requests.
+
+Default ``SimplePerDomainFilter`` filter based on request fingerprint and
+grouping per domain.
+
 .. setting:: ENGINE_DEBUG
 
 ENGINE_DEBUG

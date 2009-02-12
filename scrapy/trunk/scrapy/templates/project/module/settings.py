@@ -104,5 +104,3 @@ URLLENGTH_LIMIT = 2083
 WS_ENABLED = 0
 
 SPIDERPROFILER_ENABLED = 0
-
-#DUPLICATESFILTER_FILTERCLASS = 'scrapy.contrib.spidermiddleware.duplicatesfilter.SimplePerDomainFilter'

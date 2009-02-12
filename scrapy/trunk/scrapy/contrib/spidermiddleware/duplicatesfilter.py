@@ -14,7 +14,20 @@ from scrapy import log
 
 
 class DuplicatesFilterMiddleware(object):
-    """Filter out duplicate requests to avoid visiting same page more than once"""
+    """Filter out duplicate requests to avoid visiting same page more than once.
+
+    filter class (defined by DUPLICATESFILTER_FILTERCLASS setting) must
+    inplement a simple API:
+
+      * open(domain) called when a new domain starts
+
+      * close(domain) called when a domain is going to be closed.
+
+      * add(domain, request) called each time a new request needs to be tested
+        looking if it is was already seen or is a new one.  This is the most
+        important method for a filtering class.
+
+    """
 
     def __init__(self):
         clspath = settings.get('DUPLICATESFILTER_FILTERCLASS')
@@ -57,9 +70,3 @@ class SimplePerDomainFilter(dict):
             self[domain].add(fp)
             return True
         return False
-
-    def has(self, domain, request):
-        """Check if a request was already seen for a domain"""
-        return request_fingerprint(request) in self[domain]
-
-
