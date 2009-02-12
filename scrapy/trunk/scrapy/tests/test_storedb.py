@@ -1,4 +1,8 @@
-import MySQLdb
+try:
+    import MySQLdb
+except ImportError:
+    pass
+
 from twisted.trial import unittest
 from datetime import datetime, timedelta
 from time import sleep
