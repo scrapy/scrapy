@@ -37,17 +37,6 @@ The list of all torrents added today can be found in this page:
 
     http://www.mininova.org/today
     
-Define the Item
-===============
-
-First of all we need to define a class for the items we're going to extract, so
-let's define a Torrent class, which must inherit from ScrapedItem::
-
-    from scrapy.item import ScrapedItem
-
-    class Torrent(ScrapedItem):
-        pass
-
 Write a Spider to extract the Items
 ===================================
 
@@ -140,8 +129,8 @@ Finally, here's the spider code::
         
         def parse_torrent(self, response):
             x = HtmlXPathSelector(response)
-            torrent = Torrent()
-        
+
+            torrent = ScrapedItem()
             torrent.url = response.url
             torrent.name = x.x("//h1/text()").extract()
             torrent.description = x.x("//div[@id='description']").extract()
