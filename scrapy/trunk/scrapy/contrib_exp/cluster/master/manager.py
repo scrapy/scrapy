@@ -11,7 +11,7 @@ from scrapy.core import signals
 from scrapy import log
 from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import NotConfigured
-from scrapy.contrib.pbcluster.worker.manager import ResponseCode
+from scrapy.contrib_exp.cluster.worker.manager import ResponseCode
 from scrapy.conf import settings
 
 def my_import(name):
