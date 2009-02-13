@@ -10,7 +10,7 @@ from scrapy.core import signals
 from scrapy import log
 from scrapy.http import Request, Response
 from scrapy.core.exceptions import NotConfigured
-from scrapy.utils.misc import load_class
+from scrapy.utils.misc import load_object
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.core.downloader.handlers import download_any
 from scrapy.conf import settings
@@ -38,7 +38,7 @@ class DownloaderMiddlewareManager(object):
         """
         mws = []
         for mwpath in settings.getlist('DOWNLOADER_MIDDLEWARES') or ():
-            cls = load_class(mwpath)
+            cls = load_object(mwpath)
             if cls:
                 try:
                     mw = cls()

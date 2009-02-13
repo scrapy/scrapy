@@ -8,7 +8,7 @@ from os.path import abspath, dirname, join
 from mimetypes import MimeTypes
 
 from scrapy.http import Response
-from scrapy.utils.misc import load_class
+from scrapy.utils.misc import load_object
 from scrapy.utils.python import isbinarytext
 from scrapy.conf import settings
 
@@ -27,7 +27,7 @@ class ResponseTypes(object):
         mimefile = join(abspath(dirname(__file__)), 'mime.types')
         self.mimetypes = MimeTypes([mimefile])
         for mimetype, cls in self.CLASSES.iteritems():
-            self.classes[mimetype] = load_class(cls)
+            self.classes[mimetype] = load_object(cls)
 
     def from_mimetype(self, mimetype):
         """Return the most appropiate Response class for the given mimetype"""

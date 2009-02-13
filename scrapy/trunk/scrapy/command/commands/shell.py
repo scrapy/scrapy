@@ -5,7 +5,7 @@ import scrapy
 from scrapy.command import ScrapyCommand
 from scrapy.spider import spiders
 from scrapy.xpath import XmlXPathSelector, HtmlXPathSelector
-from scrapy.utils.misc import load_class
+from scrapy.utils.misc import load_object
 from scrapy.extension import extensions
 from scrapy.conf import settings
 from scrapy.core.manager import scrapymanager
@@ -85,7 +85,7 @@ class Command(ScrapyCommand):
             return True
 
     def generate_vars(self, url, response):
-        itemcls = load_class(settings['DEFAULT_ITEM_CLASS'])
+        itemcls = load_object(settings['DEFAULT_ITEM_CLASS'])
         item = itemcls()
         self.vars['item'] = item
         if url:

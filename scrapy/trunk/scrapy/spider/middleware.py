@@ -8,7 +8,7 @@ docs/topics/spider-middleware.rst
 
 from scrapy import log
 from scrapy.core.exceptions import NotConfigured
-from scrapy.utils.misc import load_class
+from scrapy.utils.misc import load_object
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy.conf import settings
 
@@ -38,7 +38,7 @@ class SpiderMiddlewareManager(object):
         """Load middleware defined in settings module"""
         mws = []
         for mwpath in settings.getlist('SPIDER_MIDDLEWARES') or ():
-            cls = load_class(mwpath)
+            cls = load_object(mwpath)
             if cls:
                 try:
                     mw = cls()

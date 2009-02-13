@@ -11,7 +11,7 @@ from twisted.spread import pb
 from scrapy import log
 from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import NotConfigured
-from scrapy.utils.misc import load_class
+from scrapy.utils.misc import load_object
 from scrapy.conf import settings
 
 class ScrapyProcessProtocol(protocol.ProcessProtocol):
@@ -95,7 +95,7 @@ class ClusterWorker(pb.Root):
         self.running = {} # dict of domain->ScrapyProcessControl 
         self.crawlers = {} # dict of pid->scrapy process remote pb connection
         self.starttime = datetime.datetime.utcnow()
-        self.prerun_hooks = [load_class(f) for f in settings.getlist('CLUSTER_WORKER_PRERUN_HOOKS', [])]
+        self.prerun_hooks = [load_object(f) for f in settings.getlist('CLUSTER_WORKER_PRERUN_HOOKS', [])]
         port = settings.getint('CLUSTER_WORKER_PORT')
         factory = pb.PBServerFactory(self, unsafeTracebacks=True)
         scrapyengine.listenTCP(port, factory)

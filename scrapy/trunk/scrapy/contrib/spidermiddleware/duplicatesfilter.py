@@ -8,7 +8,7 @@ from scrapy.core import signals
 from scrapy.http import Request
 from scrapy.core.exceptions import NotConfigured
 from scrapy.utils.request import request_fingerprint
-from scrapy.utils.misc import load_class
+from scrapy.utils.misc import load_object
 from scrapy.conf import settings
 from scrapy import log
 
@@ -34,7 +34,7 @@ class DuplicatesFilterMiddleware(object):
         if not clspath:
             raise NotConfigured
 
-        self.filter = load_class(clspath)()
+        self.filter = load_object(clspath)()
         dispatcher.connect(self.filter.open, signals.domain_open)
         dispatcher.connect(self.filter.close, signals.domain_closed)
 

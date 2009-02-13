@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydispatch import dispatcher
 
-from scrapy.utils.misc import load_class
+from scrapy.utils.misc import load_object
 from scrapy.core import signals
 from scrapy import log
 from scrapy.core.exceptions import NotConfigured, IgnoreRequest
@@ -16,7 +16,7 @@ class HistoryMiddleware(object):
     MIN_PROCESS_UNCHANGED_DAYS = 12
 
     def __init__(self):
-        historycls = load_class(settings['MEMORYSTORE'])
+        historycls = load_object(settings['MEMORYSTORE'])
         if not historycls:
             raise NotConfigured
         self.historydata = historycls()

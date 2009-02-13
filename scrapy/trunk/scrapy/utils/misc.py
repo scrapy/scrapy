@@ -60,24 +60,31 @@ def stats_getpath(dict_, path, default=None):
             return default
     return dict_
 
-def load_class(class_path):
-    """Load a class given its absolute class path, and return it without
-    instantiating it"""
+def load_object(path):
+    """Load an object given its absolute object path, and return it.
+
+    object can be a class, function, variable o instance.
+    path ie: 'scrapy.contrib.downloadermiddelware.redirect.RedirectMiddleware'
+    """
+
     try:
-        dot = class_path.rindex('.')
+        dot = path.rindex('.')
     except ValueError:
-        raise UsageError, '%s isn\'t a module' % class_path
-    module, classname = class_path[:dot], class_path[dot+1:]
+        raise UsageError, '%s isn\'t a module' % path
+
+    module, name = path[:dot], path[dot+1:]
     try:
         mod = __import__(module, {}, {}, [''])
     except ImportError, e:
         raise UsageError, 'Error importing %s: "%s"' % (module, e)
-    try:
-        cls = getattr(mod, classname)
-    except AttributeError:
-        raise UsageError, 'module "%s" does not define a "%s" class' % (module, classname)
 
-    return cls
+    try:
+        obj = getattr(mod, name)
+    except AttributeError:
+        raise UsageError, 'module "%s" does not define any object named "%s"' % (module, name)
+
+    return obj
+load_class = load_object # backwards compatibility, but isnt going to be available for too long.
 
 def extract_regex(regex, text, encoding):
     """Extract a list of unicode strings from the given text/encoding using the following policies:

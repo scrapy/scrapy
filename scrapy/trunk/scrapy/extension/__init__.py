@@ -4,7 +4,7 @@ keeping track of all enabled extensions. It also contains an instantiated
 ExtensionManager (extensions) to be used as singleton.
 """
 from scrapy.core.exceptions import NotConfigured
-from scrapy.utils.misc import load_class
+from scrapy.utils.misc import load_object
 from scrapy import log
 from scrapy.conf import settings
 
@@ -25,7 +25,7 @@ class ExtensionManager(object):
         self.disabled.clear()
         for extension_path in settings.getlist('EXTENSIONS'):
             try:
-                cls = load_class(extension_path)
+                cls = load_object(extension_path)
                 self.enabled[cls.__name__] = cls()
             except NotConfigured, e:
                 self.disabled[cls.__name__] = extension_path

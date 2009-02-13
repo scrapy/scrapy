@@ -12,7 +12,7 @@ from scrapy.spider.models import ISpider
 from scrapy import log
 from scrapy.conf import settings
 from scrapy.utils.url import url_is_from_spider
-from scrapy.utils.misc import load_class
+from scrapy.utils.misc import load_object
 
 class SpiderManager(object):
     """Spider locator and manager"""
@@ -54,7 +54,7 @@ class SpiderManager(object):
         if not spider:                          # create a custom spider
             spiderclassname = settings.get('DEFAULT_SPIDER')
             if spiderclassname:
-                spider = load_class(spiderclassname)(domain)
+                spider = load_object(spiderclassname)(domain)
                 self.add_spider(spider)
             
         return spider

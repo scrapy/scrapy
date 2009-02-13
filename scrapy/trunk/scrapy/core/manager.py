@@ -5,7 +5,7 @@ from scrapy import log
 from scrapy.http import Request
 from scrapy.core.engine import scrapyengine
 from scrapy.spider import spiders
-from scrapy.utils.misc import load_class
+from scrapy.utils.misc import load_object
 from scrapy.utils.url import is_url
 from scrapy.conf import settings
 
@@ -27,11 +27,11 @@ class ExecutionManager(object):
         extensions.load()
         log.msg("Enabled extensions: %s" % ", ".join(extensions.enabled.iterkeys()))
 
-        scheduler = load_class(settings['SCHEDULER'])()
+        scheduler = load_object(settings['SCHEDULER'])()
 
         scrapyengine.configure(scheduler=scheduler)
 
-        self.prioritizer_class = load_class(settings['PRIORITIZER'])
+        self.prioritizer_class = load_object(settings['PRIORITIZER'])
 
         requests = self._parse_args(args)
         self.priorities = self.prioritizer_class(requests.keys())

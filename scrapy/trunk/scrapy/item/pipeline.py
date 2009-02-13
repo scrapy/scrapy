@@ -1,7 +1,7 @@
 from scrapy import log
 from scrapy.core.exceptions import DropItem, NotConfigured
 from scrapy.item import ScrapedItem
-from scrapy.utils.misc import load_class
+from scrapy.utils.misc import load_object
 from scrapy.utils.defer import defer_succeed, mustbe_deferred
 from scrapy.conf import settings
 
@@ -18,7 +18,7 @@ class ItemPipelineManager(object):
         Load pipelines stages defined in settings module
         """
         for stage in settings.getlist('ITEM_PIPELINES') or ():
-            cls = load_class(stage)
+            cls = load_object(stage)
             if cls:
                 try:
                     stageinstance = cls()
