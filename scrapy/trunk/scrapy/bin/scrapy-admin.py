@@ -2,12 +2,12 @@
 """Scrapy admin script is used to create new scrapy projects and similar
 tasks"""
 import os
-import shutil
 import string
 from optparse import OptionParser
 
 import scrapy
 from scrapy.utils.misc import render_templatefile, string_camelcase
+from scrapy.utils.misc import ignore_patterns, copytree
 
 usage = """
 scrapy-admin.py [options] [command]
@@ -29,6 +29,8 @@ TEMPLATES = (
         '${project_name}/pipelines.py',
         )
 
+IGNORE = ignore_patterns('*.pyc', '.svn')
+
 def main():
     parser = OptionParser(usage=usage)
     opts, args = parser.parse_args()
@@ -45,10 +47,11 @@ def main():
             project_module_path = '%s/%s' % (project_name, project_name)
 
             roottpl = os.path.join(PROJECT_TEMPLATES_PATH, 'root')
-            shutil.copytree(roottpl, project_name)
+            copytree(roottpl, project_name, ignore=IGNORE)
 
             moduletpl = os.path.join(PROJECT_TEMPLATES_PATH, 'module')
-            shutil.copytree(moduletpl, '%s/%s' % (project_name, project_name))
+            copytree(moduletpl, '%s/%s' % (project_name, project_name),
+                     ignore=IGNORE)
 
             for path in TEMPLATES:
                 tplfile = os.path.join(project_root_path,
