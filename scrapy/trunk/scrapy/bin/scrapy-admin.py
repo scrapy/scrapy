@@ -7,7 +7,7 @@ from optparse import OptionParser
 
 import scrapy
 from scrapy.utils.misc import render_templatefile, string_camelcase
-from scrapy.utils.misc import ignore_patterns, copytree
+from scrapy.utils.python import ignore_patterns, copytree
 
 usage = """
 scrapy-admin.py [options] [command]
@@ -44,7 +44,6 @@ def main():
         if len(args) >= 2:
             project_name = args[1]
             project_root_path = project_name
-            project_module_path = '%s/%s' % (project_name, project_name)
 
             roottpl = os.path.join(PROJECT_TEMPLATES_PATH, 'root')
             copytree(roottpl, project_name, ignore=IGNORE)
