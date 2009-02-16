@@ -15,14 +15,14 @@ We'll assume that Scrapy is already installed in your system, if not see
 For starting a new project, enter the directory where you'd like your project
 to be located, and run::
 
-   $ scrapy-admin.py startproject google
+   $ scrapy-admin.py startproject googledir
 
 As long as Scrapy is well installed and the path is set, this will create a
-``google`` directory with the following contents::
+``googledir`` directory with the following contents::
 
-   google/
+   googledir/
        scrapy-ctl.py
-       google/
+       googledir/
            __init__.py
            items.py
            pipelines.py
@@ -38,17 +38,17 @@ These are basically:
   different tasks (like "genspider", "crawl" and "parse"). We'll talk more
   about this later.
 
-* ``google/``: the project's actual python module, you'll import your code from here.
+* ``googledir/``: the project's actual python module, you'll import your code from here.
   
-* ``google/items.py``: were you define the different kinds of items you're going to scrape.
+* ``googledir/items.py``: were you define the different kinds of items you're going to scrape.
 
-* ``google/pipelines.py``: were you define your item pipelines.
+* ``googledir/pipelines.py``: were you define your item pipelines.
 
-* ``google/settings.py``: the project's settings file.
+* ``googledir/settings.py``: the project's settings file.
 
-* ``google/spiders/``: directory where you'll later place your spiders.
+* ``googledir/spiders/``: directory where you'll later place your spiders.
 
-* ``google/templates/``: directory containing some templates for newly created
+* ``googledir/templates/``: directory containing some templates for newly created
   spiders, and where you can put your own.
 
 

@@ -9,34 +9,34 @@ on your project's directory and run::
 
     ./scrapy-ctl.py genspider google_directory google.com
 
-This should create a file called google_directory.py under ``google/spiders``
+This should create a file called google_directory.py under ``googledir/spiders``
 directory looking like this::
 
-    # -*- coding: utf8 -*-
-    import re
+   # -*- coding: utf8 -*-
+   import re
 
-    from scrapy.xpath import HtmlXPathSelector
-    from google.items import GoogleItem
-    from scrapy.link.extractors import RegexLinkExtractor
-    from scrapy.contrib.spiders import CrawlSpider, Rule
+   from scrapy.xpath import HtmlXPathSelector
+   from scrapy.link.extractors import RegexLinkExtractor
+   from scrapy.contrib.spiders import CrawlSpider, Rule
+   from googledir.items import GoogledirItem
 
-    class GoogleDirectorySpider(CrawlSpider):
-        domain_name = 'google.com'
-        start_urls = ['http://www.google.com/']
+   class GoogleDirectorySpider(CrawlSpider):
+       domain_name = 'google.com'
+       start_urls = ['http://www.google.com/']
 
-        rules = (
-            Rule(RegexLinkExtractor(allow=(r'Items/', )), 'parse_item', follow=True),
-        )
+       rules = (
+           Rule(RegexLinkExtractor(allow=(r'Items/', )), 'parse_item', follow=True),
+       )
 
-        def parse_item(self, response):
-            xs = HtmlXPathSelector(response)
-            i = GoogleItem()
-            #i.attribute('site_id', xs.x('//input[@id="sid"]/@value'))
-            #i.attribute('name', xs.x('//div[@id="name"]'))
-            #i.attribute('description', xs.x('//div[@id="description"]'))
-            return [i]
+       def parse_item(self, response):
+           i = GoogledirItem()
+           #xs = HtmlXPathSelector(response)
+           #i.attribute('site_id', xs.x('//input[@id="sid"]/@value'))
+           #i.attribute('name', xs.x('//div[@id="name"]'))
+           #i.attribute('description', xs.x('//div[@id="description"]'))
+           return [i]
 
-    SPIDER = GoogleDirectorySpider()
+   SPIDER = GoogleDirectorySpider()
 
 Now, let's explain a bit what this is all about.
 
@@ -124,28 +124,29 @@ decided to extract more links from them with follow=True.
 
 Until now, our spider would look something like::
 
-    # -*- coding: utf8 -*-
-    from scrapy.xpath import HtmlXPathSelector
-    from google.items import GoogleItem
-    from scrapy.link.extractors import RegexLinkExtractor
-    from scrapy.contrib.spiders import CrawlSpider, Rule
+   # -*- coding: utf8 -*-
+   import re
 
-    class GoogleDirectorySpider(CrawlSpider):
-        domain_name = 'google.com'
-        start_urls = ['http://www.google.com/dirhp']
+   from scrapy.xpath import HtmlXPathSelector
+   from scrapy.link.extractors import RegexLinkExtractor
+   from scrapy.contrib.spiders import CrawlSpider, Rule
+   from googledir.items import GoogledirItem
 
-        rules = (
-            Rule(RegexLinkExtractor(allow=('google.com/[A-Z][a-zA-Z_/]+$', ), ),
-                'parse_category',
-                follow=True,
-            ),
-        )
+   class GoogleDirectorySpider(CrawlSpider):
+       domain_name = 'google.com'
+       start_urls = ['http://www.google.com/dirhp']
 
-        def parse_category(self, response):
-            pass
+       rules = (
+           Rule(RegexLinkExtractor(allow=('google.com/[A-Z][a-zA-Z_/]+$',),),
+               'parse_category',
+               follow=True,
+           ),
+       )
 
-    SPIDER = GoogleDirectorySpider()
+       def parse_category(self, response):
+           pass
 
+   SPIDER = GoogleDirectorySpider()
 
 You can try crawling with this little code, by running::
 

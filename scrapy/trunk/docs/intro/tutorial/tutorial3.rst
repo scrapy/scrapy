@@ -5,19 +5,19 @@ Scraping our data
 =================
 
 Before going to extraction we need to make a change to our container of scraped
-data called ``GoogleItem`` and defined in ``google/items.py`` module::
+data called ``GoogledirItem`` and defined in ``googledir/items.py`` module::
 
-    from scrapy.contrib.item import RobustScrapedItem
+   from scrapy.contrib.item import RobustScrapedItem
 
-    class GoogleItem(RobustScrapedItem):
-        """Directory website link"""
+   class GoogledirItem(RobustScrapedItem):
+       """Directory website link"""
 
-        ATTRIBUTES = {
-                'guid': basestring,
-                'name': basestring,
-                'url': basestring,
-                'description': basestring,
-                }
+       ATTRIBUTES = {
+           'guid': basestring,
+           'name': basestring,
+           'url': basestring,
+           'description': basestring,
+           }
 
 Be sure to inherit from RobustScrapedItem, not ScrapedItem.
 
@@ -59,7 +59,21 @@ Another approach could be, for example, to find any ``font`` tags that have that
 grey colour of the links, but I prefer to use the first one because it wouldn't
 be so strange if there were other tags with the same colour.
 
-Anyway, having said that, a possible ``parse_category`` could be::
+Anyway, having said that, let's make a possible ``parse_category``:
+
+First, modify the imports section in the spider code to look like this::
+
+   import re
+
+   from scrapy.xpath import HtmlXPathSelector
+   from scrapy.link.extractors import RegexLinkExtractor
+   from scrapy.contrib.spiders import CrawlSpider, Rule
+   from scrapy.contrib_exp import adaptors
+   from googledir.items import GoogledirItem
+
+Then, put this code in the ``parse_category`` method::
+
+    from scrapy.contrib_exp import adaptors
 
     def parse_category(self, response):
         # The selector we're going to use in order to extract data from the page
@@ -69,15 +83,15 @@ Anyway, having said that, a possible ``parse_category`` could be::
         links = hxs.x('//td[descendant::a[contains(@href, "#pagerank")]]/following-sibling::td/font')
 
         # The list of functions to apply to an attribute before assigning its value
-        adaptor_pipe = [adaptors.extract, adaptors.Delist(''), adaptors.strip]
+        adaptor_pipe = [adaptors.extract, adaptors.delist(''), adaptors.strip]
         adaptor_map = {
-                'name': adaptor_pipe,
-                'url': adaptor_pipe,
-                'description': adaptor_pipe,
-                }
+            'name': adaptor_pipe,
+            'url': adaptor_pipe,
+            'description': adaptor_pipe,
+            }
 
         for link in links:
-            item = GoogleItem()
+            item = GoogledirItem()
             item.set_adaptors(adaptor_map)
 
             item.attribute('name', link.x('a/text()'))
@@ -112,7 +126,7 @@ not), and then return it.  In this case we used only two adaptors:
 * ``extract``, which, as you may imagine, extracts data from the XPath nodes
   you provide, and returns it as a list.
 
-* ``Delist``, which joins the list that the previous adaptor returned into a
+* ``delist``, which joins the list that the previous adaptor returned into a
   string.  This adaptor itself is a class, and this is due to the fact that you
   must specify which delimiter will join the list. That's why we put an
   instance to this adaptor in the list.
