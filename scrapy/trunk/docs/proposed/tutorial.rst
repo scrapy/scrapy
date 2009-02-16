@@ -8,7 +8,14 @@ In this tutorial, we'll assume that Scrapy is already installed in your system,
 if not see :ref:`intro-install`.
 
 We are going to use `Open directory project (dmoz) <http://www.dmoz.org/>`_ as
-our example domain to scrape. 
+our example domain to scrape.
+
+This tutorial will introduce you to this tasks:
+
+* Creating a project
+* Defining the Items you will extract
+* Writing a spider to crawl a site and extract Items
+* Write an Item Pipeline to store the extracted Items
 
 Creating a project
 ==================
@@ -43,43 +50,56 @@ These are basically:
 * ``dmoz/spiders/``: a directory where you'll later put your spiders.
 * ``dmoz/templates/``: directory containing the spider's templates.
 
-The use of this files will be clarified throughout the tutorial, now let's go
-into spiders.
+Defining our Item
+=================
 
-Requests and Responses
-======================
+Items are placeholders for extracted data, they're represented by a simple
+Python class: :class:`scrapy.item.ScrapedItem`, or any subclass of it.
 
-Scrapy uses :class:`~scrapy.http.Request` and :class:`~scrapy.http.Response`
-objects for crawling web sites. 
+In simple projects you won't need to worry about defining Items, because the
+``startproject`` command has defined one for you in the ``items.py`` file, let's
+see its contents::
 
-Generally, :class:`~scrapy.http.Request` objects are generated in the Spiders
-(although they can be generated in any component of the framework), then they
-pass across the system until they reach the Downloader, which actually executes
-the request and returns a :class:`~scrapy.http.Response` object to the
-:class:`Request's callback function <scrapy.http.Request>`. 
+    # Define here the models for your scraped items
 
-Spiders
-=======
+    from scrapy.item import ScrapedItem
 
-Spiders are custom modules written by the user, to scrape information from a
-certain domain (or group of domains). 
+    class DmozItem(ScrapedItem):
+        pass
 
-They feed the Engine with requests 
-Their duty is to feed the Scrapy engine with URLs to download,
-and then parse the downloaded contents in the search for data or more URLs to
-follow.
+Our first Spider
+================
 
-They are the heart of a Scrapy project and where most part of the action takes
-place.
+Spiders are user written classes to scrape information from a domain (or group
+of domains). 
 
-They generate Request objects for a set of initial URLs, and set the callback function to its parse method.
+They define an initial set of URLs to download, and how to parse the downloaded contents in the search for data (Items) or more URLs to follow.
 
-To create our first spider, save this code in a file named ``dmoz_spider.py``
-inside ``dmoz/spiders`` folder::
+To create a Spider, you must subclass :class:`scrapy.spider.BaseSpider`, and
+then define the three main, mandatory, attributes:
+
+* :attr:`~scrapy.spider.BaseSpider.domain_name`: identifies the Spider. It must
+  be unique, that is, you can't set the same domain name for different Spiders.
+
+* :attr:`~scrapy.spider.BaseSpider.start_urls`: is a list of URLs where the
+  Spider will begin to crawl from.  So, the first pages downloaded will be those
+  listed here. The subsequent URLs will be generated successively from data
+  contained in the start URLs.
+
+* :meth:`~scrapy.spider.BaseSpider.parse` is the callback method of the spider.
+  This means that each time a URL is retrieved, the downloaded data (Response)
+  will be passed to this method.
+ 
+  The :meth:`~scrapy.spider.BaseSpider.parse` method is in charge of processing
+  the response and returning scraped data and or more URLs to follow, because of
+  this, the method must always return a list or at least an empty one.
+
+This is the code for our first Spider, save it in a file named
+``dmoz_spider.py`` inside ``dmoz/spiders`` directory::
 
    from scrapy.spider import BaseSpider
 
-   class OpenDirectorySpider(BaseSpider):
+   class DmozSpider(BaseSpider):
        domain_name = "dmoz.org"
        start_urls = [
            "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
@@ -91,37 +111,15 @@ inside ``dmoz/spiders`` folder::
            open(filename, 'w').write(response.body)
            return []
             
-   SPIDER = OpenDirectorySpider()
+   SPIDER = DmozSpider()
 
 .. warning::
 
    When creating spiders, be sure not to name them equal to the project's name
    or you won't be able to import modules from your project in your spider!
 
-The first line imports the class :class:`scrapy.spider.BaseSpider`. For the
-purpose of creating a working spider, you must subclass
-:class:`scrapy.spider.BaseSpider`, and then define the three main, mandatory,
-attributes:
-
-* ``domain_name``: identifies the spider. It must be unique, that is, you can't
-  set the same domain name for different spiders.
-
-* ``start_urls``: is a list of URLs where the spider will begin to crawl from.
-  So, the first pages downloaded will be those listed here. The subsequent URLs
-  will be generated successively from data contained in the start URLs.
-
-* ``parse`` is the callback method of the spider. This means that each time a
-  URL is retrieved, the downloaded data (response) will be passed to this
-  method.
- 
-  The ``parse`` method is in charge of processing the response and returning
-  scraped data and or more URLs to follow, because of this, the method must
-  always return a list or at least an empty one.
-
-In the last line, we instantiate our spider class.
-
 Crawling
-========
+--------
 
 To put our spider to work, go to the project's top level directory and run::
 
@@ -153,16 +151,62 @@ where it says ``from <None>``.
 But more interesting, as our ``parse`` method instructs, two files have been
 created: *Books* and *Resources*, with the content of both URLs.
 
-Shell
-=====
+What just happened under the hood?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Scrapy comes with an built-in shell that ... XXX ...
+Scrapy creates :class:`scrapy.http.Request` objects for each URL in the
+``start_urls`` attribute of the Spider, and assigns them the ``parse`` method of
+the spider as their callback function.
 
-To use this feature you must have IPython installed on your system.
+These Requests are scheduled, then executed, and :class:`scrapy.http.Response`
+objects are returned to the generator of the Requests.
 
-IPython is an extended python console, and the ``shell`` command sets the
-Python path, imports some important Scrapy libraries and sets some useful local
-variables for you to play with.
+Extracting Items
+----------------
+
+Introduction to Selectors
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In order to extract information from web pages Scrapy adopted `XPath
+<http://www.w3.org/TR/xpath>`_, a language for finding information in a XML
+document navigating trough its elements and attributes.
+
+Here are some examples of XPath queries and their corresponding results:
+
+* ``/html/head/title``: Will give you the ``title`` node of the document.
+* ``/html/head/title/text()``: Will give you the text inside the ``title`` node of the document.
+* ``//td``: Will select all the ``td`` elements. 
+* ``//div[@class="queryMe"]``: Will select all the ``div`` elements with ``class
+  = queryMe``.
+
+This are really simple examples of what you can do with XPath, we strongly
+suggest you to follow this `XPath tutorial
+<http://www.w3schools.com/XPath/default.asp>`_ before continuing.
+
+Scrapy defines a class :class:`~scrapy.xpath.XPathSelector`, that comes in two
+flavours, :class:`~scrapy.xpath.HtmlXPatSelector` (for HTML) and
+:class:`~scrapy.xpath.XmlXPathSelector` (for XML). In order to use them you
+must instantiate the desired class with a :ref:`Response <request-response>`
+object.
+
+You can see selectors as objects that represents nodes in the document
+structure. So, the first instantiated selectors are associated to the root
+node, or the entire document.
+
+Selectors have three methods: ``x``, ``extract`` and ``re``.
+
+* ``x``: returns a list of selectors, each of them representing the nodes
+  gotten in the xpath expression given as parameter.
+* ``extract``: actually extracts the data contained in the node. Does not
+  receive parameters.
+* ``re``: returns a list of results of a regular expression given as parameter.
+
+Trying Selectors in the Shell
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To illustrate the use of Selectors we're going to use the built-in shell of
+Scrapy, notice that in order to use this feature you must have IPython (an
+extended Python console) installed on your system.
 
 To start a shell you must go to the project's top level directory and run::
 
@@ -204,50 +248,7 @@ given URL in a ``response`` variable, so if you enter ``response.body`` the
 downloaded data will be printed on the screen.
 
 The shell has also instantiated for two selectors with this respose as an
-initialization parameter, let's see what selectors are for.
-
-Selectors
-=========
-
-In order to extract information from web pages Scrapy adopted `XPath
-<http://www.w3.org/TR/xpath>`_, a language for finding information in a XML
-document navigating trough its elements and attributes.
-
-Here are some examples of XPath queries and their corresponding results:
-
-* ``/html/head/title``: Will give you the ``title`` node of the document.
-* ``/html/head/title/text()``: Will give you the text inside the ``title`` node of the document.
-* ``//td``: Will select all the ``td`` elements. 
-* ``//div[@class="queryMe"]``: Will select all the ``div`` elements with ``class = queryMe``.
-
-This are really simple examples of what you can do with XPath, we strongly
-suggest you to follow this `XPath tutorial
-<http://www.w3schools.com/XPath/default.asp>`_ before continuing.
-
------
-
-Scrapy defines a XPathSelector class that comes in two flavours,
-HtmlXPatSelector (for HTML) and XmlXPathSelector (for XML), in order to use
-them you must instantiate the desired class with a Response object.
-
-When you've opened a shell (if not, go back and open one, we're going to use
-it), it has automatically arranged two selectors for you: ``xxs`` and ``hxs``,
-``xxs`` is an XML selector and ``hxs`` is an HTML one, we'll use the ``hxs``
-selector in this example. 
-
-You can see selectors as objects that represents nodes in the document
-structure. So, these instantiated selectors are associated to the root node, or
-the entire document.
-
-Selectors have three methods: ``x``, ``extract`` and ``re``.
-
-* ``x``: returns a list of selectors, each of them representing the nodes
-  gotten in the xpath expression given as parameter.
-* ``extract``: actually extracts the data contained in the node. Does not
-  receive parameters.
-* ``re``: returns a list of results of a regular expression given as parameter.
-
-So let's try them in our console::
+initialization parameter, so let's try them::
 
    In [1]: hxs.x('/html/head/title')
    Out[1]: [<HtmlXPathSelector (title) xpath=/html/head/title>]
@@ -263,6 +264,9 @@ So let's try them in our console::
 
    In [5]: hxs.x('/html/head/title/text()').re('(\w+):')
    Out[5]: [u'Computers', u'Programming', u'Languages', u'Python']
+
+Actually extracting Items
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Now, let's try to extract the sites information from the directory page.
 
@@ -287,7 +291,7 @@ And the sites links::
    hxs.x('//ul[2]/li/a/@href').extract()
 
 As we said before, each ``x()`` call returns a list of selectors, so we can
-concatenate further ``x()`` calls to dig deeper into a node. We are goin to use
+concatenate further ``x()`` calls to dig deeper into a node. We are going to use
 that property here, so::
 
    sites = hxs.x('//ul[2]/li')
@@ -303,7 +307,7 @@ Let's add this code to our spider::
    from scrapy.xpath.selector import HtmlXPathSelector
 
 
-   class OpenDirectorySpider(BaseSpider):
+   class DmozSpider(BaseSpider):
       domain_name = "dmoz.org"
       start_urls = [
           "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
@@ -320,33 +324,15 @@ Let's add this code to our spider::
               print title, link, desc
           return []
            
-   SPIDER = OpenDirectorySpider()
+   SPIDER = DmozSpider()
 
 Now try crawling the dmoz.org domain again and you'll see sites being printed
 in your output, run::
 
    ./scrapy-ctl.py crawl dmoz.org
 
-Items
-=====
-
-In Scrapy, items are the placeholder to use for the scraped data. They are
-represented by a descendant class instance of ScrapedItem, and store the
-information in class attributes
-
-The ``scrapy-admin.py startproject`` command has created an ``items.py`` file
-containing a default item for this project, called DmozItem. Let's see
-``items.py`` file contents::
-
-    # Define here the models for your scraped items
-
-    from scrapy.item import ScrapedItem
-
-    class DmozItem(ScrapedItem):
-        pass
-
 Spiders are supposed to return their scraped data in the form of ScrapedItems,
-so to actually return the data we've scraped so far, the code for our spider
+so to actually return the data we've scraped so far, the code for our Spider
 should be like this::
 
    from scrapy.spider import BaseSpider
@@ -355,7 +341,7 @@ should be like this::
    from dmoz.items import DmozItem
 
 
-   class OpenDirectorySpider(BaseSpider):
+   class DmozSpider(BaseSpider):
       domain_name = "dmoz.org"
       start_urls = [
           "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
@@ -374,7 +360,7 @@ should be like this::
               items.append(item)
           return items
            
-   SPIDER = OpenDirectorySpider()
+   SPIDER = DmozSpider()
 
 Now doing a crawl on the dmoz.org domain yields DmozItems::
 
@@ -382,31 +368,41 @@ Now doing a crawl on the dmoz.org domain yields DmozItems::
    [dmoz/dmoz.org] DEBUG: Scraped DmozItem({'title': [u'XML Processing with Python'], 'link': [u'http://www.informit.com/store/product.aspx?isbn=0130211192'], 'desc': [u' - By Sean McGrath; Prentice Hall PTR, 2000, ISBN 0130211192, has CD-ROM. Methods to build XML applications fast, Python tutorial, DOM and SAX, new Pyxie open source XML processing library. [Prentice Hall PTR]\n']}) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
 
 
-Item Pipelines
-==============
+Item Pipeline
+=============
 
-After an item has been scraped by a spider it is sent to the Item Pipeline
-which allows us to hook our own components to perform some actions over the
-scraped Items, the most common of these actios are:
+After an item has been scraped by a Spider, it is sent to the Item Pipeline.
 
-* Clean the HTML in the Items' attributes
-* Validate the Items
-* Store the Items
+The Item Pipeline is a set of user written Python classes that implement a
+simple method. They receive the Item, do an action upon it (like validating,
+checking for duplicates, store the item), and then decide if the Item continues
+trough the Pipeline or it's dropped.
 
-We can write our own item pipeline component, by creating a simple Python class
-that must define the following method: 
+In small projects like this we will use only one Item Pipeline that stores our
+Items.
 
-.. method:: process_item(domain, item)
+Like with the Item, a Pipeline placeholder has been set up for you in the
+project creation step, it's in ``dmoz/pipelines.py`` and looks like this::
 
-``domain`` is a string with the domain of the spider which scraped the item
+   # Define yours item pipelines here
 
-``item`` is a :class:`scrapy.item.ScrapedItem` with the item scraped
+   class DmozPipeline(object):
+       def process_item(self, domain, item):
+           return item
 
-This method is called for every item pipeline component and must either return
-a ScrapedItem (or any descendant class) object on a succesfull action or raise
-a :exception:`DropItem` exception (i.e: failing a validation test). Dropped
-items are no longer processed by further pipeline components.
+We have to override the ``process_item`` method in order to store our Items for
+example in a csv file::
 
-You must then add a list of the pipelines components that you want to be added
-in the ITEM_PIPELINES setting in your project settings file.
+   import csv
 
+   class DmozPipeline(object):
+       def process_item(self, domain, item):
+           item_writer = csv.writer(open('items.csv', 'a'))
+           item_writer.writerow([item.title[0], item.link[0], item.desc[0]])
+           return item
+
+Finale
+======
+           
+This covers the basics of Scrapy, but they're a lot of features that haven't
+been mentioned. They'll be in further tutorials.
