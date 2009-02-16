@@ -179,7 +179,13 @@ def string_camelcase(string):
 # shutil.copytree from Python 2.6 (for backwards compatibility)
 import fnmatch
 import os
-from shutil import copy2, copystat, WindowsError
+from shutil import copy2, copystat
+
+
+try:
+    WindowsError
+except NameError:
+    WindowsError = None
 
 
 def ignore_patterns(*patterns):
