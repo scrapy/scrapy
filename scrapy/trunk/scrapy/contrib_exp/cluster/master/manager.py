@@ -39,7 +39,7 @@ class ClusterNodeBroker(pb.Referenceable):
             def _eb(failure):
                 self._logfailure("Error while setting master to worker node", failure)
             deferred.addCallbacks(callback=self._set_status, errback=_eb)
-            
+
     def status_as_dict(self, verbosity=1):
         if verbosity == 0:
             return
@@ -61,7 +61,7 @@ class ClusterNodeBroker(pb.Referenceable):
             status["timestamp"] = self.timestamp
             status["loadavg"] = self.loadavg
         return status
-        
+
     def update_status(self):
         """Update status from this worker. This is called periodically."""
         try:
@@ -86,8 +86,8 @@ class ClusterNodeBroker(pb.Referenceable):
             deferred.addCallbacks(callback=self._set_status, errback=_eb)
 
     def run(self, domain_info):
-        """Run the given domain. 
-        
+        """Run the given domain.
+
         domain_info is a dict of keys:
         domain - the domain to run
         settings - the settings to use
@@ -95,25 +95,31 @@ class ClusterNodeBroker(pb.Referenceable):
         """
 
         domain = domain_info['domain']
-        dsettings  = domain_info['settings']
         priority = domain_info['priority']
+        spider_settings  = domain_info['settings']
+        dsettings = self.master.compute_final_spider_settings(domain, spider_settings)
 
         def _run_errback(failure):
             self._logfailure("Error while running domain=%s" % domain, failure)
             self.master.loading.remove(domain)
             newprio = priority - 1 # increase priority for reschedule
-            self.master.reschedule([domain], dsettings, newprio, reason="error while try to run it")
-            
+            self.master.reschedule([domain], spider_settings, newprio,
+                    reason="error while try to run it")
+
         def _run_callback(status):
             if status['callresponse'][0] == ResponseCode.NO_FREE_SLOT:
-                log.msg("ClusterMaster: No available slots at worker=%s when trying to run domain=%s" % (self.name, domain), log.WARNING)
+                log.msg("ClusterMaster: No available slots at worker=%s when trying to run domain=%s"
+                        % (self.name, domain), log.WARNING)
                 self.master.loading.remove(domain)
                 newprio = priority - 1 # increase priority for rerunning asap
-                self.master.reschedule([domain], dsettings, newprio, reason="no available slots at worker=%s" % self.name)
+                self.master.reschedule([domain], spider_settings, newprio,
+                        reason="no available slots at worker=%s" % self.name)
             elif status['callresponse'][0] == ResponseCode.DOMAIN_ALREADY_RUNNING:
-                log.msg("ClusterMaster: Already running domain=%s at worker=%s" % (domain, self.name), log.WARNING)
+                log.msg("ClusterMaster: Already running domain=%s at worker=%s" %
+                        (domain, self.name), log.WARNING)
                 self.master.loading.remove(domain)
-                self.master.reschedule([domain], dsettings, priority, reason="domain already running at worker=%s" % self.name)
+                self.master.reschedule([domain], spider_settings, priority,
+                        reason="domain already running at worker=%s" % self.name)
 
         try:
             log.msg("ClusterMaster: Running domain=%s at worker=%s" % (domain, self.name), log.DEBUG)
@@ -123,20 +129,25 @@ class ClusterNodeBroker(pb.Referenceable):
             log.msg("ClusterMaster: Lost connection to worker=%s." % self.name, log.ERROR)
         else:
             deferred.addCallbacks(callback=_run_callback, errback=_run_errback)
-        
+
     def remote_update(self, worker_status, domain, domain_status):
         """Called remotely form worker when domains finish to update status"""
         self._set_status(worker_status)
+        stats = self.master.statistics
+        dstats = stats["domains"]
+
         if domain in self.master.loading and domain_status == "running":
             self.master.loading.remove(domain)
-            self.master.statistics["domains"]["running"].add(domain)
+            dstats["running"].add(domain)
         elif domain_status in ("done", "terminated"):
-            self.master.statistics["domains"]["running"].remove(domain)
-            self.master.statistics["domains"]["scraped"][domain] = self.master.statistics["domains"]["scraped"].get(domain, 0) + 1
-            self.master.statistics["scraped_count"] = self.master.statistics.get("scraped_count", 0) + 1
-            if domain in self.master.statistics["domains"]["lost"]:
-                self.master.statistics["domains"]["lost"].remove(domain)
-        log.msg("ClusterMaster: Changed status to <%s> for domain=%s at worker=%s" % (domain_status, domain, self.name))
+            dstats["running"].remove(domain)
+            dstats["scraped"][domain] = dstats["scraped"].get(domain, 0) + 1
+            stats["scraped_count"] = stats.get("scraped_count", 0) + 1
+            if domain in dstats["lost"]:
+                dstats["lost"].remove(domain)
+
+        log.msg("ClusterMaster: Changed status to <%s> for domain=%s at worker=%s" %
+                (domain_status, domain, self.name))
 
     def _logfailure(self, msg, failure):
         log.msg("ClusterMaster: %s (worker=%s)\n%s" % (msg, self.name, failure), log.ERROR)
@@ -154,13 +165,17 @@ class ClusterNodeBroker(pb.Referenceable):
             self.logdir = status['logdir']
             free_slots = self.maxproc - len(self.running)
 
-            # load domains by one, so to mix up better the domain loading between nodes. The next one in the same node will be loaded
-            # when there is no loading domain or in the next status update. This way also we load the nodes softly
+            # load domains by one, so to mix up better the domain loading between nodes.
+            # The next one in the same node will be loaded
+            # when there is no loading domain or in the next status update.
+            # This way also we load the nodes softly
             if self.available and free_slots > 0 and self.master.pending:
                 pending = self.master.pending.pop(0)
-                # if domain already running in some node, reschedule with same priority (so it will be run later)
+                # If domain already running in some node, reschedule with same
+                # priority (so it will be run later)
                 if pending['domain'] in self.master.running or pending['domain'] in self.master.loading:
-                    self.master.reschedule([pending['domain']], pending['settings'], pending['priority'], reason="domain already running in other worker")
+                    self.master.reschedule([pending['domain']], pending['settings'],
+                            pending['priority'], reason="domain already running in other worker")
                 else:
                     self.run(pending)
                     self.master.loading.append(pending['domain'])
@@ -175,7 +190,7 @@ class ScrapyPBClientFactory(pb.PBClientFactory):
         self.unsafeTracebacks = True
         self.master = master
         self.nodename = nodename
-        
+
     def clientConnectionLost(self, *args, **kargs):
         pb.PBClientFactory.clientConnectionLost(self, *args, **kargs)
         self.master.remove_node(self.nodename)
@@ -215,15 +230,15 @@ class ClusterMaster(object):
         # load cluster global settings
         for sname in settings.getlist('GLOBAL_CLUSTER_SETTINGS'):
             self.global_settings[sname] = settings[sname]
-        
+
         dispatcher.connect(self._engine_started, signal=signals.engine_started)
         dispatcher.connect(self._engine_stopped, signal=signals.engine_stopped)
-        
+
     def load_nodes(self):
         """Loads nodes listed in CLUSTER_MASTER_NODES setting"""
         for name, hostport in self.nodesconf.iteritems():
             self.load_node(name, hostport)
-            
+
     def load_node(self, name, hostport):
         """Creates the remote reference for a worker node"""
         server, port = hostport.split(":")
@@ -233,10 +248,12 @@ class ClusterMaster(object):
         try:
             reactor.connectTCP(server, port, factory)
         except Exception, err:
-            log.msg("ClusterMaster: Could not connect to worker=%s (%s): %s" % (name, hostport, err), log.ERROR)
+            log.msg("ClusterMaster: Could not connect to worker=%s (%s): %s" %
+                    (name, hostport, err), log.ERROR)
         else:
             def _eb(failure):
-                log.msg("ClusterMaster: Could not connect to worker=%s (%s): %s" % (name, hostport, failure.value), log.ERROR)
+                log.msg("ClusterMaster: Could not connect to worker=%s (%s): %s" %
+                        (name, hostport, failure.value), log.ERROR)
 
             d = factory.getRootObject()
             d.addCallbacks(callback=lambda obj: self.add_node(obj, name), errback=_eb)
@@ -248,13 +265,14 @@ class ClusterMaster(object):
                 self.nodes[name].update_status()
             else:
                 self.load_node(name, hostport)
-        
+
+        dstats = self.statistics["domains"]
         real_running = set(self.running.keys())
-        lost = self.statistics["domains"]["running"].difference(real_running)
+        lost = dstats["running"].difference(real_running)
         for domain in lost:
-            self.statistics["domains"]["lost_count"][domain] = self.statistics["domains"]["lost_count"].get(domain, 0) + 1
-        self.statistics["domains"]["lost"] = self.statistics["domains"]["lost"].union(lost)
-            
+            dstats["lost_count"][domain] = dstats["lost_count"].get(domain, 0) + 1
+        dstats["lost"] = dstats["lost"].union(lost)
+
     def add_node(self, cworker, name):
         """Add node given its node"""
         node = ClusterNodeBroker(cworker, name, self)
@@ -266,7 +284,7 @@ class ClusterMaster(object):
 
     def disable_node(self, name):
         self.nodes[name].available = False
-        
+
     def enable_node(self, name):
         self.nodes[name].available = True
 
@@ -282,20 +300,27 @@ class ClusterMaster(object):
                     pd['priority'] = priority
                     self.pending.insert(insert_pos, pd)
             else:
-                final_spider_settings = self.get_spider_groupsettings(domain)
-                final_spider_settings.update(self.global_settings)
-                final_spider_settings.update(spider_settings or {})
-                self.pending.insert(insert_pos, {'domain': domain, 'settings': final_spider_settings, 'priority': priority})
+                self.pending.insert(insert_pos,
+                        {'domain': domain, 'settings': spider_settings, 'priority': priority})
+
+    def compute_final_spider_settings(self, domain, spider_settings=None):
+        """Return merged dictionary with final settings to run spider"""
+        final = dict(self.get_spider_groupsettings(domain) or {})
+        final.update(self.global_settings)
+        final.update(spider_settings or {})
+        return final
 
     def schedule(self, domains, spider_settings=None, priority=20):
         """Schedule the given domains, with the given priority"""
         self._schedule(domains, spider_settings, priority)
-        log.msg("clustermaster: Scheduled domains=%s with priority=%s" % (','.join(domains), priority), log.DEBUG)
+        log.msg("clustermaster: Scheduled domains=%s with priority=%s" %
+                (','.join(domains), priority), log.DEBUG)
 
     def reschedule(self, domains, spider_settings=None, priority=20, reason=None):
         """Reschedule the given domains, with the given priority"""
         self._schedule(domains, spider_settings, priority)
-        log.msg("clustermaster: Rescheduled domains=%s with priority=%s reason='%s'" % (','.join(domains), priority, reason), log.DEBUG)
+        log.msg("clustermaster: Rescheduled domains=%s with priority=%s reason='%s'" %
+                (','.join(domains), priority, reason), log.DEBUG)
 
 
     def stop(self, domains):
