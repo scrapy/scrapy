@@ -1,15 +1,31 @@
+import datetime
+import decimal
 import re
+
 
 class ItemFieldValueError(Exception):
     pass
 
 
 class ItemField(object):
-    def __init__(self, required=False):
+    def __init__(self, required=False, default=None):
         self.required = required
+        self.default = default
 
     def to_python(self, value):
-        pass
+        """
+        Converts the input value into the expected Python data type.
+        Subclasses should override this.
+        """
+        return value
+
+    def from_list(self, list):
+        "Converts the input list into the expected Python data type."
+        return self.to_python(list.join(''))
+
+    def default_value(self):
+        "Returns the default value for this field"
+        return self.default or self.to_python(None)
 
 
 class BooleanItemField(ItemField):
