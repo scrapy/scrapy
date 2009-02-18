@@ -10,6 +10,7 @@ import copy
 from scrapy.http import Request
 from scrapy.spider import BaseSpider
 from scrapy.conf import settings
+from scrapy.link.extractors import RegexLinkExtractor
 
 class Rule(object):
     """
@@ -44,6 +45,14 @@ class Rule(object):
             self.follow = False if callback else True
         else:
             self.follow = follow
+
+
+def rule(regex, callback=None, exclude=None, follow=None):
+    """Shorthand for creating CrawlSpider rules"""
+    deny = [exclude] if exclude else []
+    link_extractor = RegexLinkExtractor(allow=[regex], deny=deny) 
+    return Rule(link_extractor, callback=callback, follow=follow)
+
 
 class CrawlSpider(BaseSpider):
     """
