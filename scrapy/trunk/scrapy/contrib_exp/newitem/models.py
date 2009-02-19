@@ -1,4 +1,4 @@
-from scrapy.contrib.newitem.fields import ItemField
+from scrapy.contrib_exp.newitem.fields import ItemField
 
 
 class Item(object):
