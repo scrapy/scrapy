@@ -41,7 +41,7 @@ class RegexLinkExtractor(LinkExtractor):
     """
 
     def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(), 
-                 tags=('a', 'area'), attrs=('href',), canonicalize=True, unique=True):
+                 tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True):
         self.allow_res = [x if isinstance(x, _re_type) else re.compile(x) for x in allow]
         self.deny_res = [x if isinstance(x, _re_type) else re.compile(x) for x in deny]
         self.allow_domains = set(allow_domains)
