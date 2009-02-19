@@ -1,4 +1,4 @@
-from scrapy.contrib_exp.newitem.fields import ItemField
+from scrapy.contrib_exp.newitem.fields import Field
 
 
 class Item(object):
@@ -12,7 +12,7 @@ class Item(object):
 
     def _get_fields(self):
         return dict(i for i in self.__class__.__dict__.iteritems() \
-                    if isinstance(i[1], ItemField))
+                    if isinstance(i[1], Field))
 
     def __setattr__(self, name, value):
         if not name.startswith('_'):

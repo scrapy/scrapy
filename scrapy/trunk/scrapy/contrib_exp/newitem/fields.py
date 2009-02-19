@@ -3,15 +3,15 @@ import decimal
 import re
 
 
-__all__ = ['BooleanItemField', 'DateItemField', 'DecimalItemField',
-           'FloatItemField', 'IntegerItemField', 'StringItemField']
+__all__ = ['BooleanField', 'DateField', 'DecimalField',
+           'FloatField', 'IntegerField', 'StringField']
 
 
-class ItemFieldValueError(Exception):
+class FieldValueError(Exception):
     pass
 
 
-class ItemField(object):
+class Field(object):
     def __init__(self, required=False, default=None):
         self.required = required
         self.default = default or self.to_python(None)
@@ -34,18 +34,18 @@ class ItemField(object):
         return ' '.join(value)
 
 
-class BooleanItemField(ItemField):
+class BooleanField(Field):
     def to_python(self, value):
         if value in (True, False): return value
         if value in ('t', 'True', '1'): return True
         if value in ('f', 'False', '0'): return False
-        raise ItemFieldValueError("This value must be either True or False.")
+        raise FieldValueError("This value must be either True or False.")
 
 
 ansi_date_re = re.compile(r'^\d{4}-\d{1,2}-\d{1,2}$')
 
 
-class DateItemField(ItemField):
+class DateField(Field):
     def to_python(self, value):
         if value is None:
             return value
@@ -55,51 +55,51 @@ class DateItemField(ItemField):
             return value
 
         if not ansi_date_re.search(value):
-            raise ItemFieldValueError(
+            raise FieldValueError(
                 "Enter a valid date in YYYY-MM-DD format.")
 
         year, month, day = map(int, value.split('-'))
         try:
             return datetime.date(year, month, day)
         except ValueError, e:
-            raise ItemFieldValueError("Invalid date: %s" % str(e))
+            raise FieldValueError("Invalid date: %s" % str(e))
 
 
-class DecimalItemField(ItemField):
+class DecimalField(Field):
     def to_python(self, value):
         if value is None:
             return value
         try:
             return decimal.Decimal(value)
         except decimal.InvalidOperation:
-            raise ItemFieldValueError("This value must be a decimal number.")
+            raise FieldValueError("This value must be a decimal number.")
 
 
-class FloatItemField(ItemField):
+class FloatField(Field):
     def to_python(self, value):
         if value is None:
             return value
         try:
             return float(value)
         except (TypeError, ValueError):
-            raise ItemFieldValueError("This value must be a float.")
+            raise FieldValueError("This value must be a float.")
 
 
-class IntegerItemField(ItemField):
+class IntegerField(Field):
     def to_python(self, value):
         if value is None:
             return value
         try:
             return int(value)
         except (TypeError, ValueError):
-            raise ItemFieldValueError("This value must be an integer.")
+            raise FieldValueError("This value must be an integer.")
 
 
-class StringItemField(ItemField):
+class StringField(Field):
     def to_python(self, value):
         if isinstance(value, basestring):
             return value
         if value is None:
             return value
-        raise ItemFieldValueError("This field must be a string.")
+        raise FieldValueError("This field must be a string.")
 
