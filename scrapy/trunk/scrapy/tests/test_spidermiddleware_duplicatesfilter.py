@@ -32,10 +32,6 @@ class DuplicatesFilterMiddlewareTest(unittest.TestCase):
         assert r2 in filtered
         assert r3 not in filtered
 
-        response = Response('http://scrapytest.org/')
-        response.request = Request('http://scrapytest.org/')
-        self.assertRaises(IgnoreRequest, mw.process_spider_input, response, self.spider)
-
         mw.filter.close('scrapytest.org')
 
 

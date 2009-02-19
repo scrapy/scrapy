@@ -39,8 +39,7 @@ class DuplicatesFilterMiddleware(object):
         dispatcher.connect(self.filter.close, signals.domain_closed)
 
     def process_spider_input(self, response, spider):
-        if not self.filter.add(spider.domain_name, response.request):
-            raise IgnoreRequest("Skipped (already processed): %s" % response.request)
+        self.filter.add(spider.domain_name, response.request)
 
     def process_spider_output(self, response, result, spider):
         domain = spider.domain_name
