@@ -44,6 +44,6 @@ to copy ideas from those projects that have already solved them properly, and
 focus on the real problems we need to solve.
 
 We'd be proud if Scrapy serves as an inspiration for other projects. Feel free
-to stole from us!
+to steal from us!
 
 .. _Django: http://www.djangoproject.com
