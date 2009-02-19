@@ -17,7 +17,7 @@ class Item(object):
     def __setattr__(self, name, value):
         if not name.startswith('_'):
             if name in self._fields.keys():
-                self._values[name] = self._fields[name].to_python(value)
+                self._values[name] = self._fields[name].assign(value)
             else:
                 raise AttributeError(name)
         else:

@@ -12,6 +12,12 @@ class ItemField(object):
         self.required = required
         self.default = default
 
+    def assign(self, value):
+        if hasattr(value, '__iter__'):
+            return self.to_python(self.deiter(value))
+        else:
+            return self.to_python(value)
+
     def to_python(self, value):
         """
         Converts the input value into the expected Python data type.
@@ -19,9 +25,9 @@ class ItemField(object):
         """
         return value
 
-    def from_list(self, list):
-        "Converts the input list into the expected Python data type."
-        return self.to_python(list.join(''))
+    def deiter(self, value):
+        "Converts the input iterable into a single value."
+        return ' '.join(value)
 
     def default_value(self):
         "Returns the default value for this field"
