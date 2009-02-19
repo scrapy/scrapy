@@ -14,7 +14,7 @@ class ItemFieldValueError(Exception):
 class ItemField(object):
     def __init__(self, required=False, default=None):
         self.required = required
-        self._default = default
+        self.default = default or self.to_python(None)
 
     def assign(self, value):
         if hasattr(value, '__iter__'):
@@ -32,11 +32,6 @@ class ItemField(object):
     def deiter(self, value):
         "Converts the input iterable into a single value."
         return ' '.join(value)
-
-    @property
-    def default(self):
-        "Returns the default value for this field"
-        return self._default or self.to_python(None)
 
 
 class BooleanItemField(ItemField):
