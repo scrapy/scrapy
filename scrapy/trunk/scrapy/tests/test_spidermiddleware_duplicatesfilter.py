@@ -15,19 +15,20 @@ class DuplicatesFilterMiddlewareTest(unittest.TestCase):
         mw = DuplicatesFilterMiddleware()
         mw.filter.open('scrapytest.org')
 
-        rq = Request('http://scrapytest.org/')
         response = Response('http://scrapytest.org/')
-        response.request = rq
+        response.request = Request('http://scrapytest.org/')
+
+        r0 = Request('http://scrapytest.org/')
         r1 = Request('http://scrapytest.org/1')
         r2 = Request('http://scrapytest.org/2')
         r3 = Request('http://scrapytest.org/2')
 
-        filtered = list(mw.process_spider_output(response, [r1, r2, r3], self.spider))
+        filtered = list(mw.process_spider_output(response, [r0, r1, r2, r3], self.spider))
 
-        self.assertFalse(rq in filtered)
-        self.assertTrue(r1 in filtered)
-        self.assertTrue(r2 in filtered)
-        self.assertFalse(r3 in filtered)
+        assert r0 not in filtered
+        assert r1 in filtered
+        assert r2 in filtered
+        assert r3 not in filtered
 
         mw.filter.close('scrapytest.org')
 
@@ -38,16 +39,16 @@ class SimplePerDomainFilterTest(unittest.TestCase):
         domain = 'scrapytest.org'
         filter = SimplePerDomainFilter()
         filter.open(domain)
-        self.assertTrue(domain in filter)
+        assert domain in filter
 
         r1 = Request('http://scrapytest.org/1')
         r2 = Request('http://scrapytest.org/2')
         r3 = Request('http://scrapytest.org/2')
 
-        self.assertTrue(filter.add(domain, r1))
-        self.assertTrue(filter.add(domain, r2))
-        self.assertFalse(filter.add(domain, r3))
+        assert filter.add(domain, r1)
+        assert filter.add(domain, r2)
+        assert not filter.add(domain, r3)
 
         filter.close(domain)
-        self.assertFalse(domain in filter)
+        assert domain not in filter
 
