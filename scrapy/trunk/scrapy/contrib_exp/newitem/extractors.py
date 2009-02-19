@@ -37,6 +37,10 @@ class ItemExtractor(object):
 
 class ExtractorField(object):
     def __init__(self, funcs):
+        if not hasattr(funcs, '__iter__'):
+            raise TypeError(
+                'You must initialize ExtractorField with a list of callables')
+
         self._funcs = []
 
         for func in funcs:
