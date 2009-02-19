@@ -2,6 +2,7 @@ import unittest
 
 from scrapy.spider import spiders
 from scrapy.http import Request, Response
+from scrapy.core.exceptions import IgnoreRequest
 from scrapy.contrib.spidermiddleware.duplicatesfilter import DuplicatesFilterMiddleware, SimplePerDomainFilter
 
 class DuplicatesFilterMiddlewareTest(unittest.TestCase):
@@ -23,12 +24,17 @@ class DuplicatesFilterMiddlewareTest(unittest.TestCase):
         r2 = Request('http://scrapytest.org/2')
         r3 = Request('http://scrapytest.org/2')
 
+        mw.process_spider_input(response, self.spider)
         filtered = list(mw.process_spider_output(response, [r0, r1, r2, r3], self.spider))
 
         assert r0 not in filtered
         assert r1 in filtered
         assert r2 in filtered
         assert r3 not in filtered
+
+        response = Response('http://scrapytest.org/')
+        response.request = Request('http://scrapytest.org/')
+        self.assertRaises(IgnoreRequest, mw.process_spider_input, response, self.spider)
 
         mw.filter.close('scrapytest.org')
 

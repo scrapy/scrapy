@@ -6,7 +6,7 @@ from pydispatch import dispatcher
 
 from scrapy.core import signals
 from scrapy.http import Request
-from scrapy.core.exceptions import NotConfigured
+from scrapy.core.exceptions import NotConfigured, IgnoreRequest
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.misc import load_object
 from scrapy.conf import settings
@@ -38,15 +38,17 @@ class DuplicatesFilterMiddleware(object):
         dispatcher.connect(self.filter.open, signals.domain_open)
         dispatcher.connect(self.filter.close, signals.domain_closed)
 
+    def process_spider_input(self, response, spider):
+        if not self.filter.add(spider.domain_name, response.request):
+            raise IgnoreRequest("Skipped (already processed): %s" % response.request)
+
     def process_spider_output(self, response, result, spider):
         domain = spider.domain_name
-        self.filter.add(domain, response.request)
-
         for req in result:
             if isinstance(req, Request):
                 added = self.filter.add(domain, req)
                 if not (added or req.dont_filter):
-                    log.msg('Skipped (already visited): %s' % req, log.TRACE, domain=domain)
+                    log.msg('Skipped (already processed): %s' % req, log.TRACE, domain=domain)
                     continue
             yield req
 
