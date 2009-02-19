@@ -76,7 +76,7 @@ DOWNLOADER_MIDDLEWARES = [
 
 DOWNLOADER_STATS = True
 
-DUPLICATESFILTER_FILTERCLASS = 'scrapy.contrib.spidermiddleware.duplicatesfilter.SimplePerDomainFilter'
+DUPLICATESFILTER_FILTERCLASS = 'scrapy.core.filters.SimplePerDomainFilter'
 
 ENABLED_SPIDERS_FILE = ''
 

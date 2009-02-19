@@ -2,6 +2,7 @@ import unittest
 
 from scrapy.contrib.downloadermiddleware.redirect import RedirectMiddleware
 from scrapy.core.exceptions import HttpException
+from scrapy.core.filters import duplicatesfilter
 from scrapy.spider import spiders
 from scrapy.http import Request, Response, Headers
 
@@ -11,6 +12,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
         spiders.spider_modules = ['scrapy.tests.test_spiders']
         spiders.reload()
         self.spider = spiders.fromdomain('scrapytest.org')
+        duplicatesfilter.open('scrapytest.org')
 
     def test_process_exception(self):
 
@@ -28,7 +30,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
         self.assertEqual(req2.url, url2)
 
         url = 'http://www.example.com/302'
-        url2 = 'http://www.example.com/redirected'
+        url2 = 'http://www.example.com/redirected2'
         req = Request(url, method='POST')
         hdr = Headers({'Location': [url2]})
         rsp = Response(url, headers=hdr)
@@ -43,7 +45,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
     def test_process_response(self):
 
         mw = RedirectMiddleware()
-        
+
         body = """<html>
             <head><meta http-equiv="refresh" content="5;url=http://example.org/newpage" /></head>
             </html>"""
