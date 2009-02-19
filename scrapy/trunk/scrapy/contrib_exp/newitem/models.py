@@ -28,7 +28,7 @@ class Item(object):
             try:
                 return self._values[name]
             except KeyError:
-                return self._fields[name].default_value()
+                return self._fields[name].default
         else:
             return object.__getattribute__(self, name)
 
