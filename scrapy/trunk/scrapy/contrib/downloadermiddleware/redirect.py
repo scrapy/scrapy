@@ -28,7 +28,7 @@ class RedirectMiddleware(object):
         status = exception.status
         response = exception.response
 
-        if status in set([302, 303]):
+        if status in [302, 303]:
             redirected_url = urljoin(request.url, response.headers['location'][0])
             redirected = request.replace(url=redirected_url, method='GET', body=None)
             return self._redirect(redirected, request, spider, status)
