@@ -148,6 +148,11 @@ RETRY_HTTP_CODES = ['500', '503', '504', '400', '408', '200']
 ROBOTSTXT_OBEY = False
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
+
+SCHEDULER_MIDDLEWARES = [
+        'scrapy.contrib.schedulermiddleware.duplicatesfilter.DuplicatesFilterMiddleware',
+        ]
+
 SCHEDULER_ORDER = 'BFO'   # available orders: BFO (default), DFO
 
 SPIDER_MODULES = []

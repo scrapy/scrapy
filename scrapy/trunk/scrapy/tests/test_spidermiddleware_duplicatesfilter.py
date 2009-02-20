@@ -14,6 +14,9 @@ class DuplicatesFilterMiddlewareTest(unittest.TestCase):
         self.spider = spiders.fromdomain('scrapytest.org')
         duplicatesfilter.open('scrapytest.org')
 
+    def tearDown(self):
+        duplicatesfilter.close('scrapytest.org')
+
     def test_process_spider_output(self):
         mw = DuplicatesFilterMiddleware()
 
@@ -25,10 +28,12 @@ class DuplicatesFilterMiddlewareTest(unittest.TestCase):
         r2 = Request('http://scrapytest.org/2')
         r3 = Request('http://scrapytest.org/2')
 
-        mw.process_spider_input(response, self.spider)
+        duplicatesfilter.add('scrapytest.org', r0)
+        duplicatesfilter.add('scrapytest.org', r2)
+
         filtered = list(mw.process_spider_output(response, [r0, r1, r2, r3], self.spider))
 
         assert r0 not in filtered
         assert r1 in filtered
-        assert r2 in filtered
+        assert r2 not in filtered
         assert r3 not in filtered

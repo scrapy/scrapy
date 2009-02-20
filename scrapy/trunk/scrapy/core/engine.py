@@ -14,7 +14,7 @@ from scrapy import log
 from scrapy.stats import stats
 from scrapy.conf import settings
 from scrapy.core import signals
-from scrapy.core.scheduler import Scheduler
+from scrapy.core.scheduler import Scheduler, SchedulerMiddlewareManager
 from scrapy.core.downloader import Downloader
 from scrapy.core.exceptions import IgnoreRequest, HttpException, DontCloseDomain
 from scrapy.http import Response, Request
@@ -59,6 +59,7 @@ class ExecutionEngine(object):
         Configure execution engine with the given scheduling policy and downloader.
         """
         self.scheduler = scheduler or Scheduler()
+        self.schedulermiddleware = SchedulerMiddlewareManager(self.scheduler)
         self.downloader = downloader or Downloader(self)
         self.spidermiddleware = SpiderMiddlewareManager()
         self._scraping = {}
@@ -299,7 +300,7 @@ class ExecutionEngine(object):
             return self._add_starter(request, spider, domain_priority)
         if self.debug_mode: 
             log.msg('Scheduling %s (now)' % request_info(request), log.DEBUG)
-        schd = self.scheduler.enqueue_request(domain, request, priority)
+        schd = self.schedulermiddleware.enqueue_request(domain, request, priority)
         self.next_request(spider)
         return schd
 

@@ -42,13 +42,12 @@ class RedirectMiddleware(object):
         interval, url = get_meta_refresh(response)
         if url and int(interval) < META_REFRESH_MAXSEC:
             redirected = request.replace(url=urljoin(request.url, url))
-            return self._redirect(redirected, request, spider, 'meta refresh') or response
+            return self._redirect(redirected, request, spider, 'meta refresh')
 
         return response
 
     def _redirect(self, redirected, request, spider, reason):
         domain = spider.domain_name
-        if duplicatesfilter.add(domain, redirected) or redirected.dont_filter:
-            log.msg("Redirecting (%s) to %s from %s" % (reason, redirected, request), level=log.DEBUG, domain=domain)
-            return redirected
+        log.msg("Redirecting (%s) to %s from %s" % (reason, redirected, request), level=log.DEBUG, domain=domain)
+        return redirected
 
