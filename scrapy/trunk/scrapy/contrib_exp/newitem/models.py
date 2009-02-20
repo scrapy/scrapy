@@ -1,7 +1,8 @@
+from scrapy.item import ScrapedItem
 from scrapy.contrib_exp.newitem.fields import Field
 
 
-class Item(object):
+class Item(ScrapedItem):
     """
     This is the base class for all scraped items.
     """
