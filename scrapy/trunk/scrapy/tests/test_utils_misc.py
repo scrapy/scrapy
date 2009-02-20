@@ -1,7 +1,7 @@
 import unittest
 from cStringIO import StringIO
 
-from scrapy.utils.misc import hash_values, items_to_csv
+from scrapy.utils.misc import hash_values, items_to_csv, load_object
 from scrapy.core.exceptions import UsageError
 from scrapy.item import ScrapedItem
 
@@ -55,6 +55,10 @@ class UtilsMiscTestCase(unittest.TestCase):
         file = StringIO()
         items_to_csv(file, [])
         self.assertEqual(file.tell(), 0)
+
+    def test_load_object(self):
+        obj = load_object('scrapy.utils.misc.load_object')
+        assert obj is load_object
 
 if __name__ == "__main__":
     unittest.main()
