@@ -15,6 +15,14 @@ from scrapy.utils.python import flatten, unicode_to_str
 from scrapy.utils.markup import remove_entities
 from scrapy.utils.defer import defer_succeed
 
+def to_list(obj):
+    if obj is None:
+        return []
+    elif hasattr(obj, '__iter__'):
+        return list(obj)
+    else:
+        return [obj]
+
 def dict_updatedefault(D, E, **F):
     """
     updatedefault(D, E, **F) -> None.
