@@ -6,8 +6,9 @@ higher than 2.5 which is the lowest version supported by Scrapy.
 
 """
 import re
-import fnmatch
 import os
+import fnmatch
+import inspect
 from shutil import copy2, copystat
 from sgmllib import SGMLParser
 
@@ -234,3 +235,14 @@ def copytree(src, dst, symlinks=False, ignore=None):
 
 # ----- end of shutil.copytree function from Python 2.6 ---- #
 
+
+def get_func_args(func):
+    """Return the argument name list of a callable"""
+    if inspect.isfunction(func):
+        func_args, _, _, _ = inspect.getargspec(func)
+    elif hasattr(func, '__call__'):
+        try:
+            func_args, _, _, _ = inspect.getargspec(func.__call__)
+        except Exception:
+            func_args = []
+    return func_args

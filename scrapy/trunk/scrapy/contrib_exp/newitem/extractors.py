@@ -1,4 +1,4 @@
-import inspect
+from scrapy.utils.python import get_func_args
 
 
 class ItemExtractor(object):
@@ -19,14 +19,17 @@ class ItemExtractor(object):
         return fe
 
     def __setattr__(self, name, value):
-        if not (name.startswith('_') or name == 'item_instance'):
-            if name in self._field_extractors.keys():
-                setattr(self.item_instance, name, 
-                        self._field_extractors[name](value, self._response))
-            else:
-                raise AttributeError(name)
-        else:
-            object.__setattr__(self, name, value)
+        if (name.startswith('_') or name == 'item_instance'):
+            return object.__setattr__(self, name, value)
+
+        try:
+            fieldextractor = self._field_extractors[name]
+        except KeyError:
+            raise AttributeError(name)
+
+        adaptor_args = {'response': self._response}
+        final = fieldextractor(value, adaptor_args=adaptor_args)
+        setattr(self.item_instance, name, final)
 
     def __getattribute__(self, name):
         if not (name.startswith('_') or name.startswith('item_')):
@@ -44,25 +47,18 @@ class ExtractorField(object):
         self._funcs = []
 
         for func in funcs:
-            if inspect.isfunction(func):
-                func_args, _, _, _ = inspect.getargspec(func)
-            elif hasattr(func, '__call__'):
-                try:
-                    func_args, _, _, _ = inspect.getargspec(func.__call__)
-                except Exception:
-                    func_args = []
-
+            func_args = get_func_args(func)
             takes_args = True if 'adaptor_args' in func_args else False
             self._funcs.append((func, takes_args))
 
-    def __call__(self, value, kwargs=None):
+    def __call__(self, value, adaptor_args=None):
         values = [value]
 
         for func, takes_args in self._funcs:
             next_round = []
 
             for val in values:
-                val = func(val, kwargs) if takes_args else func(val)
+                val = func(val, adaptor_args) if takes_args else func(val)
 
                 if isinstance(val, tuple):
                     next_round.extend(val)
@@ -72,4 +68,35 @@ class ExtractorField(object):
             values = next_round
 
         return list(values)
+
+
+def treeadapt(*funcs, **adaptor_args):
+    pipe_adaptor_args = adaptor_args
+    _funcs = []
+    for func in funcs:
+        takes_args = 'adaptor_args' in get_func_args(func)
+        _funcs.append((func, takes_args))
+
+    def _adaptor(value, adaptor_args=None):
+        values = value if isinstance(value, (list, tuple)) else [value]
+        pipe_adaptor_args.update(adaptor_args or {})
+        pipe_kwargs = {'adaptor_args': pipe_adaptor_args}
+
+        for func, takes_args in _funcs:
+            next = []
+            kwargs = pipe_kwargs if takes_args else {}
+
+            for val in values:
+                val = func(val, **kwargs)
+
+                if isinstance(val, (list, tuple)):
+                    next.extend(val)
+                elif val is not None:
+                    next.append(val)
+
+            values = next
+        return list(values)
+
+    return _adaptor
+
 
