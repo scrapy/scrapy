@@ -47,3 +47,14 @@ We'd be proud if Scrapy serves as an inspiration for other projects. Feel free
 to steal from us!
 
 .. _Django: http://www.djangoproject.com
+
+Does Scrapy work with HTTP proxies?
+-----------------------------------
+
+No. support for HTTP proxies is not currently implemented in Scrapy, but it
+will be in the future. For more information about this, follow `this ticket
+<http://dev.scrapy.org/ticket/71>`_. Setting the ``http_proxy`` environment
+variable won't work because Twisted (the library used by Scrapy to download
+pages) doesn't support it. See `this Twisted ticket
+<http://twistedmatrix.com/trac/ticket/2714>`_ for more info.
+
