@@ -4,7 +4,7 @@ from scrapy.spider import spiders
 from scrapy.http import Request, Response
 from scrapy.core.exceptions import IgnoreRequest
 from scrapy.contrib.spidermiddleware.duplicatesfilter import DuplicatesFilterMiddleware
-from scrapy.core.filters import duplicatesfilter
+from scrapy.dupefilter import dupefilter
 
 class DuplicatesFilterMiddlewareTest(unittest.TestCase):
 
@@ -12,10 +12,10 @@ class DuplicatesFilterMiddlewareTest(unittest.TestCase):
         spiders.spider_modules = ['scrapy.tests.test_spiders']
         spiders.reload()
         self.spider = spiders.fromdomain('scrapytest.org')
-        duplicatesfilter.open('scrapytest.org')
+        dupefilter.open('scrapytest.org')
 
     def tearDown(self):
-        duplicatesfilter.close('scrapytest.org')
+        dupefilter.close('scrapytest.org')
 
     def test_process_spider_output(self):
         mw = DuplicatesFilterMiddleware()
@@ -28,8 +28,8 @@ class DuplicatesFilterMiddlewareTest(unittest.TestCase):
         r2 = Request('http://scrapytest.org/2')
         r3 = Request('http://scrapytest.org/2')
 
-        duplicatesfilter.add('scrapytest.org', r0)
-        duplicatesfilter.add('scrapytest.org', r2)
+        dupefilter.add('scrapytest.org', r0)
+        dupefilter.add('scrapytest.org', r2)
 
         filtered = list(mw.process_spider_output(response, [r0, r1, r2, r3], self.spider))
 

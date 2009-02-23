@@ -1,15 +1,7 @@
-import re
-from pydispatch import dispatcher
-
-from scrapy.core import signals
 from scrapy import log
-from scrapy.http import Request, Response
 from scrapy.core.exceptions import HttpException
-from scrapy.core.filters import duplicatesfilter
-from scrapy.utils.misc import load_object
 from scrapy.utils.url import urljoin_rfc as urljoin
 from scrapy.utils.response import get_meta_refresh
-from scrapy.conf import settings
 
 class RedirectLoop(Exception):
     pass

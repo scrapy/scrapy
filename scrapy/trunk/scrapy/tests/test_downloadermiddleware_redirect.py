@@ -2,7 +2,7 @@ import unittest
 
 from scrapy.contrib.downloadermiddleware.redirect import RedirectMiddleware
 from scrapy.core.exceptions import HttpException
-from scrapy.core.filters import duplicatesfilter
+from scrapy.dupefilter import dupefilter
 from scrapy.spider import spiders
 from scrapy.http import Request, Response, Headers
 
@@ -12,7 +12,10 @@ class RedirectMiddlewareTest(unittest.TestCase):
         spiders.spider_modules = ['scrapy.tests.test_spiders']
         spiders.reload()
         self.spider = spiders.fromdomain('scrapytest.org')
-        duplicatesfilter.open('scrapytest.org')
+        dupefilter.open('scrapytest.org')
+
+    def tearDown(self):
+        dupefilter.close('scrapytest.org')
 
     def test_process_exception(self):
 

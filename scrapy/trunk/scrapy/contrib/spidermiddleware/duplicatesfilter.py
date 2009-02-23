@@ -3,8 +3,7 @@ DuplicatesFilterMiddleware: Filter out already visited urls
 """
 
 from scrapy.http import Request
-from scrapy.conf import settings
-from scrapy.core.filters import duplicatesfilter
+from scrapy.dupefilter import dupefilter
 from scrapy import log
 
 
@@ -15,7 +14,7 @@ class DuplicatesFilterMiddleware(object):
         domain = spider.domain_name
         for req in result:
             if isinstance(req, Request):
-                has = duplicatesfilter.has(domain, req)
+                has = dupefilter.has(domain, req)
                 if has and not req.dont_filter:
                     log.msg('Skipped (already processed): %s' % req, log.TRACE, domain=domain)
                     continue

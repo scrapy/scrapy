@@ -4,16 +4,16 @@ from scrapy.spider import spiders
 from scrapy.http import Request, Response
 from scrapy.core.exceptions import IgnoreRequest
 from scrapy.contrib.schedulermiddleware.duplicatesfilter import DuplicatesFilterMiddleware
-from scrapy.core.filters import duplicatesfilter
+from scrapy.dupefilter import dupefilter
 
 
 class DuplicatesFilterMiddlewareTest(unittest.TestCase):
 
     def setUp(self):
-        duplicatesfilter.open('scrapytest.org')
+        dupefilter.open('scrapytest.org')
 
     def tearDown(self):
-        duplicatesfilter.close('scrapytest.org')
+        dupefilter.close('scrapytest.org')
 
     def test_process_spider_output(self):
         domain = 'scrapytest.org'

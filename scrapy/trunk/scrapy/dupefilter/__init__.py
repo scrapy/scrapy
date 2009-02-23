@@ -1,12 +1,9 @@
 from pydispatch import dispatcher
 
 from scrapy.core import signals
-from scrapy.http import Request
-from scrapy.core.exceptions import NotConfigured, IgnoreRequest
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.misc import load_object
 from scrapy.conf import settings
-from scrapy import log
 
 
 class BaseFilter(dict):
@@ -78,9 +75,9 @@ class NullFilter(dict):
 
 
 try:
-    duplicatesfilter
+    dupefilter
 except NameError:
-    clspath = settings.get('DUPLICATESFILTER_FILTERCLASS')
+    clspath = settings.get('DUPEFILTER_FILTERCLASS')
     cls = load_object(clspath) if clspath else NullFilter
-    duplicatesfilter = cls()
+    dupefilter = cls()
 

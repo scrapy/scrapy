@@ -1,7 +1,7 @@
 import unittest
 
 from scrapy.http import Request
-from scrapy.core.filters import SimplePerDomainFilter, NullFilter
+from scrapy.dupefilter import SimplePerDomainFilter, NullFilter
 
 
 class SimplePerDomainFilterTest(unittest.TestCase):
