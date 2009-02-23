@@ -6,7 +6,6 @@ from __future__ import with_statement
 import os
 import urlparse
 
-from twisted.web.client import HTTPClientFactory
 from twisted.internet import defer, reactor
 from twisted.web import error as web_error
 
@@ -24,6 +23,7 @@ from scrapy.conf import settings
 
 from scrapy.core.downloader.dnscache import DNSCache
 from scrapy.core.downloader.responsetypes import responsetypes
+from scrapy.core.downloader.webclient import ScrapyHTTPClientFactory as HTTPClientFactory
 
 default_timeout = settings.getint('DOWNLOAD_TIMEOUT')
 default_agent = settings.get('USER_AGENT')
