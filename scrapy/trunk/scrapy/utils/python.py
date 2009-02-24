@@ -245,4 +245,6 @@ def get_func_args(func):
             func_args, _, _, _ = inspect.getargspec(func.__call__)
         except Exception:
             func_args = []
+    else:
+        raise TypeError('%s is not callable' % type(func))
     return func_args

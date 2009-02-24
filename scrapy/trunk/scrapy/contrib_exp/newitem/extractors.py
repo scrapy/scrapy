@@ -70,7 +70,18 @@ class ExtractorField(object):
         return list(values)
 
 
-def treeadapt(*funcs, **adaptor_args):
+def adaptor(*funcs, **adaptor_args):
+    """A pipe adaptor implementing the tree adaption logic
+    
+    It takes multiples unnamed arguments used as functions of the pipe, and a
+    keywords used as adaptor_args to be passed to functions that supports it
+
+    If an adaptor function returns a list of values, each value is used as
+    input for next adaptor function
+
+    Always returns a list of values
+    """
+
     pipe_adaptor_args = adaptor_args
     _funcs = []
     for func in funcs:
@@ -79,8 +90,8 @@ def treeadapt(*funcs, **adaptor_args):
 
     def _adaptor(value, adaptor_args=None):
         values = value if isinstance(value, (list, tuple)) else [value]
-        pipe_adaptor_args.update(adaptor_args or {})
-        pipe_kwargs = {'adaptor_args': pipe_adaptor_args}
+        aargs = dict(t for d in [pipe_adaptor_args, adaptor_args or {}] for t in d.iteritems())
+        pipe_kwargs = { 'adaptor_args': aargs }
 
         for func, takes_args in _funcs:
             next = []
