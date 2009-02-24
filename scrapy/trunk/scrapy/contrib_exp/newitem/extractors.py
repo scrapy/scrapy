@@ -1,7 +1,7 @@
 from scrapy.utils.python import get_func_args
 
 
-class ItemExtractor(object):
+class ItemAdaptor(object):
     def __init__(self, response=None, item=None):
         if item:
             self.item_instance = item

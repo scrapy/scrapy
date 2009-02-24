@@ -5,7 +5,7 @@ from scrapy.xpath import HtmlXPathSelector
 from scrapy.contrib.spiders import CrawlSpider, rule
 from scrapy.utils.misc import items_to_csv
 
-from googledir.items import GoogledirItem, GoogledirItemExtractor
+from googledir.items import GoogledirItem, GoogledirItemAdaptor
 
 class GoogleDirectorySpider(CrawlSpider):
     domain_name = 'google.com'
@@ -24,7 +24,7 @@ class GoogleDirectorySpider(CrawlSpider):
         links = hxs.x('//td[descendant::a[contains(@href, "#pagerank")]]/following-sibling::td/font')
 
         for link in links:
-            extractor = GoogledirItemExtractor()
+            extractor = GoogledirItemAdaptor()
             extractor.name =  link.x('a/text()')
             extractor.url = link.x('a/@href')
             extractor.description = link.x('font[2]/text()')
