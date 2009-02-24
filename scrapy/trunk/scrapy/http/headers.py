@@ -54,6 +54,7 @@ def headers_dict_to_raw(headers_dict):
                 raw_lines.append("%s: %s" % (key, v))
     return '\r\n'.join(raw_lines)
 
+
 class Headers(CaselessDict):
     def __init__(self, dictorstr=None, fromdict=None, fromstr=None, encoding='utf-8'):
         self.encoding = encoding
@@ -84,14 +85,6 @@ class Headers(CaselessDict):
         if isinstance(value, unicode):
             value = value.encode(self.encoding)
         super(Headers, self).__setitem__(key, value)
-
-    def tostring(self):
-        return headers_dict_to_raw(self)
-
-    def rawsize(self):
-        """Estimated size of raw HTTP headers, in bytes"""
-        # For each header line you have 4 extra chars: ": " and CRLF
-        return sum([len(k)+len(v)+4 for k, v in self.iteritems()])
 
     def to_string(self):
         return headers_dict_to_raw(self)
