@@ -2,8 +2,8 @@
 
 from scrapy.contrib_exp import newitem 
 
-from scrapy.contrib_exp.newitem import extractors
-from scrapy.contrib_exp import adaptors
+from scrapy.contrib_exp.newitem.extractors import ItemExtractor, adaptor
+from scrapy.contrib_exp.adaptors import extract, strip
 
 
 class GoogledirItem(newitem.Item):
@@ -12,9 +12,9 @@ class GoogledirItem(newitem.Item):
     description = newitem.StringField()
 
 
-class GoogledirItemExtractor(extractors.ItemExtractor):
+class GoogledirItemExtractor(ItemExtractor):
     item_class = GoogledirItem
 
-    name = extractors.ExtractorField([adaptors.extract, adaptors.strip])
-    url = extractors.ExtractorField([adaptors.extract, adaptors.strip])
-    description = extractors.ExtractorField([adaptors.extract, adaptors.strip])
+    name = adaptor(extract, strip)
+    url = adaptor(extract, strip)
+    description = adaptor(extract, strip)

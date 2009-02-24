@@ -38,38 +38,6 @@ class ItemExtractor(object):
             return object.__getattribute__(self, name)
 
 
-class ExtractorField(object):
-    def __init__(self, funcs):
-        if not hasattr(funcs, '__iter__'):
-            raise TypeError(
-                'You must initialize ExtractorField with a list of callables')
-
-        self._funcs = []
-
-        for func in funcs:
-            func_args = get_func_args(func)
-            takes_args = True if 'adaptor_args' in func_args else False
-            self._funcs.append((func, takes_args))
-
-    def __call__(self, value, adaptor_args=None):
-        values = [value]
-
-        for func, takes_args in self._funcs:
-            next_round = []
-
-            for val in values:
-                val = func(val, adaptor_args) if takes_args else func(val)
-
-                if isinstance(val, tuple):
-                    next_round.extend(val)
-                elif val is not None:
-                    next_round.append(val)
-
-            values = next_round
-
-        return list(values)
-
-
 def adaptor(*funcs, **adaptor_args):
     """A pipe adaptor implementing the tree adaption logic
     
