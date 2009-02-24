@@ -13,7 +13,8 @@ class CookiesMiddleware(object):
         dispatcher.connect(self.domain_closed, signals.domain_closed)
 
     def process_request(self, request, spider):
-        dict_updatedefault(request.cookies, self.cookies[spider.domain_name])
+        if not request.meta.get('dont_merge_cookies', False):
+            dict_updatedefault(request.cookies, self.cookies[spider.domain_name])
 
     def process_response(self, request, response, spider):
         cookies = self.cookies[spider.domain_name]
