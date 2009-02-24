@@ -14,7 +14,7 @@ class ScrapedItem(object):
             for attr, value in data.iteritems():
                 setattr(self, attr, value)
         elif data is not None:
-            raise UsageError("Initialize with dict, not %s" % data.__class__.__name__)
+            raise TypeError("Initialize with dict, not %s" % data.__class__.__name__)
 
     def __repr__(self):
         """
