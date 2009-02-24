@@ -1,6 +1,6 @@
 
 import unittest
-from scrapy.contrib_exp.newitem.extractors import adaptor, ItemExtractor
+from scrapy.contrib_exp.newitem.adaptors import adaptor, ItemAdaptor
 
 
 class TreeadaptTest(unittest.TestCase):
