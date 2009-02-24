@@ -19,7 +19,7 @@ class ItemExtractor(object):
         return fe
 
     def __setattr__(self, name, value):
-        if (name.startswith('_') or name == 'item_instance'):
+        if name.startswith('_') or name == 'item_instance':
             return object.__setattr__(self, name, value)
 
         try:
@@ -32,16 +32,16 @@ class ItemExtractor(object):
         setattr(self.item_instance, name, final)
 
     def __getattribute__(self, name):
-        if not (name.startswith('_') or name.startswith('item_')):
-            return getattr(self.item_instance, name)
-        else:
+        if name.startswith('_') or name.startswith('item_'):
             return object.__getattribute__(self, name)
+
+        return getattr(self.item_instance, name)
 
 
 def adaptor(*funcs, **adaptor_args):
     """A pipe adaptor implementing the tree adaption logic
     
-    It takes multiples unnamed arguments used as functions of the pipe, and a
+    It takes multiples unnamed arguments used as functions of the pipe, and
     keywords used as adaptor_args to be passed to functions that supports it
 
     If an adaptor function returns a list of values, each value is used as
