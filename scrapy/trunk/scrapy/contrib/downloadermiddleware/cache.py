@@ -10,10 +10,10 @@ from pydispatch import dispatcher
 from scrapy.core import signals
 from scrapy import log
 from scrapy.http import Response, Headers
-from scrapy.http.headers import headers_dict_to_raw
 from scrapy.core.exceptions import NotConfigured, HttpException, IgnoreRequest
 from scrapy.core.downloader.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
+from scrapy.utils.http import headers_dict_to_raw, headers_raw_to_dict
 from scrapy.conf import settings
 
 class CacheMiddleware(object):
@@ -149,7 +149,7 @@ class Cache(object):
             responseheaders = f.read()
 
         url = metadata['url']
-        headers = Headers(responseheaders)
+        headers = Headers(headers_raw_to_dict(responseheaders))
         status = metadata['status']
 
         respcls = responsetypes.from_args(headers=headers, url=url)

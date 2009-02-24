@@ -183,6 +183,7 @@ class SiteNode(object):
             s += node.to_string(level+1)
         return s
 
+
 class CaselessDict(dict):
     def __init__(self, seq=None):
         dict.__init__(self)
@@ -193,7 +194,7 @@ class CaselessDict(dict):
         return dict.__getitem__(self, self.normkey(key))
 
     def __setitem__(self, key, value):
-        dict.__setitem__(self, self.normkey(key), value)
+        dict.__setitem__(self, self.normkey(key), self.normvalue(value))
 
     def __delitem__(self, key):
         dict.__delitem__(self, self.normkey(key))
@@ -203,17 +204,23 @@ class CaselessDict(dict):
     has_key = __contains__
 
     def normkey(self, key):
+        """Method to normalize dictionary key access"""
         return key.lower()
 
+    def normvalue(self, value):
+        """Method to normalize values prior to be setted"""
+        return value
+
     def get(self, key, def_val=None):
-        return dict.get(self, self.normkey(key), def_val)
+        return dict.get(self, self.normkey(key), self.normvalue(def_val))
 
     def setdefault(self, key, def_val=None):
-        return dict.setdefault(self, self.normkey(key), def_val)
+        return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))
 
     def update(self, seq):
-        items = seq.iteritems() if isinstance(seq, dict) else seq
-        dict.update(self, ((self.normkey(k), v) for k, v in items))
+        seq = seq.iteritems() if isinstance(seq, dict) else seq
+        iseq = ((self.normkey(k), self.normvalue(v)) for k, v in seq)
+        super(CaselessDict, self).update(iseq)
 
     @classmethod
     def fromkeys(cls, keys, value=None):
@@ -221,6 +228,7 @@ class CaselessDict(dict):
 
     def pop(self, key, *args):
         return dict.pop(self, self.normkey(key), *args)
+
 
 class PriorityQueue(object):
     """A simple priority queue"""

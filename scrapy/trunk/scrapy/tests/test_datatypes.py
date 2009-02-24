@@ -81,3 +81,41 @@ class CaselessDictTest(unittest.TestCase):
         self.assertEqual(d.pop('A'), 1)
         self.assertRaises(KeyError, d.pop, 'A')
 
+    def test_normkey(self):
+        class MyDict(CaselessDict):
+            def normkey(self, key):
+                return key.title()
+
+        d = MyDict()
+        d['key-one'] = 2
+        self.assertEqual(list(d.keys()), ['Key-One'])
+
+    def test_normvalue(self):
+        class MyDict(CaselessDict):
+            def normvalue(self, value):
+                if value is not None:
+                    return value + 1
+
+        d = MyDict({'key': 1})
+        self.assertEqual(d['key'], 2)
+        self.assertEqual(d.get('key'), 2)
+
+        d = MyDict()
+        d['key'] = 1
+        self.assertEqual(d['key'], 2)
+        self.assertEqual(d.get('key'), 2)
+
+        d = MyDict()
+        d.setdefault('key', 1)
+        self.assertEqual(d['key'], 2)
+        self.assertEqual(d.get('key'), 2)
+
+        d = MyDict()
+        d.update({'key': 1})
+        self.assertEqual(d['key'], 2)
+        self.assertEqual(d.get('key'), 2)
+
+        d = MyDict.fromkeys(('key',), 1)
+        self.assertEqual(d['key'], 2)
+        self.assertEqual(d.get('key'), 2)
+
