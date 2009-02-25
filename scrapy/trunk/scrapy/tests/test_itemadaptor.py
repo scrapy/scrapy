@@ -1,6 +1,27 @@
 
 import unittest
 from scrapy.contrib_exp.newitem.adaptors import adaptor, ItemAdaptor
+from scrapy.contrib_exp.newitem import Item, StringField
+
+
+class TestItem(Item):
+    name = StringField()
+    url = StringField()
+
+
+class ItemAdaptorTest(unittest.TestCase):
+
+    def test_inheritance(self):
+        class TestAdaptor(ItemAdaptor):
+            item_class = TestItem
+            name = lambda v, adaptor_args: v.title()
+
+        class ChildTestAdaptor(TestAdaptor):
+            url = lambda v, adaptor_args: v.lower()
+
+        ia = ChildTestAdaptor()
+        assert 'url' in ia._field_adaptors
+        assert 'name' in ia._field_adaptors
 
 
 class TreeadaptTest(unittest.TestCase):

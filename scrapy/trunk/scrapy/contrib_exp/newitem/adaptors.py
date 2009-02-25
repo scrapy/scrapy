@@ -7,13 +7,18 @@ class ItemAdaptor(object):
             self.item_instance = item
         else:
             self.item_instance = self.item_class()
-        
+
         self._response = response
         self._field_adaptors = self._get_field_adaptors()
 
     def _get_field_adaptors(self):
         fa = {}
         for field in self.item_instance._fields.keys():
+            try:
+                fa[field] = object.__getattribute__(self, field)
+            except AttributeError:
+                pass
+
             if self.__class__.__dict__.has_key(field):
                 fa[field] = self.__class__.__dict__[field]
         return fa
