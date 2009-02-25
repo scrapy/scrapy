@@ -10,6 +10,13 @@ class UrlClassTest(unittest.TestCase):
         self.assertEqual(None, u.username)
         self.assertEqual(None, u.password)
 
+        u = Url("http://scrapy.org:8080/wiki/info")
+        self.assertEqual("scrapy.org", u.hostname)
+        self.assertEqual("/wiki/info", u.path)
+        self.assertEqual(8080, u.port)
+        self.assertEqual(None, u.username)
+        self.assertEqual(None, u.password)
+
         u = Url("http://someuser:somepass@example.com/ticket/query?owner=pablo")
         self.assertEqual("someuser", u.username)
         self.assertEqual("somepass", u.password)
