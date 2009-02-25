@@ -8,20 +8,34 @@ class TestItem(Item):
     name = StringField()
     url = StringField()
 
+class TestAdaptor(ItemAdaptor):
+    item_class = TestItem
+    name = lambda v, adaptor_args: v.title()
+
 
 class ItemAdaptorTest(unittest.TestCase):
 
-    def test_inheritance(self):
-        class TestAdaptor(ItemAdaptor):
-            item_class = TestItem
-            name = lambda v, adaptor_args: v.title()
+    def test_basic(self):
+        ia = TestAdaptor()
+        ia.name = 'marta'
+        self.assertEqual(ia.item_instance.name, 'Marta')
+        self.assertEqual(ia.name, 'Marta')
 
+    def test_inheritance(self):
         class ChildTestAdaptor(TestAdaptor):
             url = lambda v, adaptor_args: v.lower()
 
         ia = ChildTestAdaptor()
         assert 'url' in ia._field_adaptors
         assert 'name' in ia._field_adaptors
+
+
+        ia.url = 'HTTP://scrapy.ORG'
+        self.assertEqual(ia.url, 'http://scrapy.org')
+
+        ia.name = 'marta'
+        self.assertEqual(ia.name, 'Marta')
+
 
 
 class TreeadaptTest(unittest.TestCase):

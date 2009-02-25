@@ -19,8 +19,6 @@ class ItemAdaptor(object):
             except AttributeError:
                 pass
 
-            if self.__class__.__dict__.has_key(field):
-                fa[field] = self.__class__.__dict__[field]
         return fa
 
     def __setattr__(self, name, value):
@@ -28,13 +26,17 @@ class ItemAdaptor(object):
             return object.__setattr__(self, name, value)
 
         try:
-            fieldadaptor = self._field_adaptors[name]
+            bounded_fa = self._field_adaptors[name]
+            # unbound bounded field adaptor here because use of
+            # @staticmethod decorator in class definition is not practical
+            # for ItemAdaptor's
+            fa = bounded_fa.__func__.__call__ 
         except KeyError:
             raise AttributeError(name)
 
         adaptor_args = {'response': self._response}
-        final = fieldadaptor(value, adaptor_args=adaptor_args)
-        setattr(self.item_instance, name, final)
+        ovalue = fa(value, adaptor_args=adaptor_args)
+        setattr(self.item_instance, name, ovalue)
 
     def __getattribute__(self, name):
         if name.startswith('_') or name.startswith('item_'):
