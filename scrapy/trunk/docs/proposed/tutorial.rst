@@ -129,7 +129,7 @@ The ``crawl dmoz.org`` subcommand runs the spider for the ``dmoz.org`` domain, y
 
    [-] Log opened.
    [dmoz] INFO: Enabled extensions: TelnetConsole, WebConsole
-   [dmoz] INFO: Enabled downloader middlewares: ErrorPagesMiddleware, CookiesMiddleware, HttpAuthMiddleware, UserAgentMiddleware, RetryMiddleware, CommonMiddleware, RedirectMiddleware, HTTPCompressionMiddleware
+   [dmoz] INFO: Enabled downloader middlewares: ErrorPagesMiddleware, CookiesMiddleware, HttpAuthMiddleware, UserAgentMiddleware, RetryMiddleware, CommonMiddleware, RedirectMiddleware, HttpCompressionMiddleware
    [dmoz] INFO: Enabled spider middlewares: OffsiteMiddleware, RefererMiddleware, UrlLengthMiddleware, DepthMiddleware, UrlFilterMiddleware
    [dmoz] INFO: Enabled item pipelines: 
    [-] scrapy.management.web.WebConsole starting on 60738

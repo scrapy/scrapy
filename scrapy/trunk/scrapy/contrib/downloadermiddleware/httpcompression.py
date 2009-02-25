@@ -5,7 +5,7 @@ from cStringIO import StringIO
 from scrapy.http import Response
 
 
-class HTTPCompressionMiddleware(object):
+class HttpCompressionMiddleware(object):
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
 
