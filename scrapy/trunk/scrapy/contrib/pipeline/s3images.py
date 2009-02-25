@@ -97,7 +97,7 @@ class S3ImagesPipeline(BaseImagesPipeline):
                 return # returning None force download
 
             # check if last modified date did not expires
-            last_modified = response.headers['Last-Modified'][0]
+            last_modified = response.headers['Last-Modified']
             modified_tuple = rfc822.parsedate_tz(last_modified)
             modified_stamp = int(rfc822.mktime_tz(modified_tuple))
             age_seconds = time.time() - modified_stamp
@@ -106,7 +106,7 @@ class S3ImagesPipeline(BaseImagesPipeline):
             if age_days > self.image_refresh_days:
                 return # returning None force download
 
-            etag = response.headers['Etag'][0].strip('"')
+            etag = response.headers['Etag'].strip('"')
             referer = request.headers.get('Referer')
             log.msg('Image (uptodate) type=%s at <%s> referred from <%s>' % \
                     (self.MEDIA_TYPE, request.url, referer), level=log.DEBUG, domain=info.domain)

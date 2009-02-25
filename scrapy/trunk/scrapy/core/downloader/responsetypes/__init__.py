@@ -55,9 +55,9 @@ class ResponseTypes(object):
         headers"""
         cls = Response
         if 'Content-Type' in headers:
-            cls = self.from_content_type(headers['Content-type'][0])
+            cls = self.from_content_type(headers['Content-type'])
         if cls is Response and 'Content-Disposition' in headers:
-            cls = self.from_content_disposition(headers['Content-Disposition'][0])
+            cls = self.from_content_disposition(headers['Content-Disposition'])
         return cls
 
     def from_filename(self, filename):

@@ -19,7 +19,52 @@ class Headers(CaselessDict):
         """Headers must not be unicode"""
         if isinstance(value, unicode):
             value = value.encode(self.encoding)
-        return value
+
+        if isinstance(value, (list, tuple)):
+            return list(value)
+        return [value]
+
+    def __getitem__(self, key):
+        try:
+            return super(Headers, self).__getitem__(key)[-1]
+        except IndexError:
+            return None
+
+    def get(self, key, def_val=None):
+        try:
+            return super(Headers, self).get(key, def_val)[-1]
+        except IndexError:
+            return None
+
+    def getlist(self, key, def_val=None):
+        try:
+            return super(Headers, self).__getitem__(key)
+        except KeyError:
+            if def_val is not None:
+                return self.normvalue(def_val)
+            return []
+
+    def setlist(self, key, list_):
+        self[key] = list_
+
+    def setlistdefault(self, key, default_list=()):
+        self.setdefault(key, default_list)
+
+    def appendlist(self, key, value):
+        self.getlist(key).append(self.normvalue(value))
+
+    def items(self):
+        return list(self.iteritems())
+
+    def iteritems(self):
+        return ((k, self[k]) for k in self.keys())
+
+    def values(self):
+        return [self[k] for k in self.keys()]
+
+    def lists(self):
+        return super(Headers, self).items()
 
     def to_string(self):
         return headers_dict_to_raw(self)
+

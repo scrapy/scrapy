@@ -50,7 +50,7 @@ class TextResponse(Response):
             headers = self.headers
         content_type = headers.get('Content-Type')
         if content_type:
-            encoding = self._ENCODING_RE.search(content_type[0])
+            encoding = self._ENCODING_RE.search(content_type)
             if encoding:
                 return encoding.group(1)
 
