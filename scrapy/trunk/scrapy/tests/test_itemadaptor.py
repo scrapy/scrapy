@@ -36,6 +36,19 @@ class ItemAdaptorTest(unittest.TestCase):
         ia.name = 'marta'
         self.assertEqual(ia.name, 'Marta')
 
+    # FIXME: This test is fine but fails
+#     def test_inheritance_2(self):
+#         class ParentAdaptor(TestAdaptor):
+#             name = adaptor(lambda v, adaptor_args: v)
+# 
+#         class ChildAdaptor(ParentAdaptor):
+#             name = adaptor(lambda v: v.swapcase, ParentAdaptor.name)
+# 
+#         ia = ChildAdaptor()
+#         ia.name = 'marta'
+#         self.assertEqual(ia.name, 'mARTA')
+
+
 
 
 class TreeadaptTest(unittest.TestCase):

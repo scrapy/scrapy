@@ -1,3 +1,4 @@
+from functools import wraps
 from scrapy.utils.python import get_func_args
 
 
@@ -12,12 +13,16 @@ class ItemAdaptor(object):
         self._field_adaptors = self._get_field_adaptors()
 
     def _get_field_adaptors(self):
+        def get_field_adaptor(field, cls):
+            if field in cls.__dict__:
+                fa[field] = cls.__dict__[field]
+
         fa = {}
         for field in self.item_instance._fields.keys():
-            try:
-                fa[field] = object.__getattribute__(self, field)
-            except AttributeError:
-                pass
+            for base in self.__class__.__bases__:
+                get_field_adaptor(field, base)
+
+            get_field_adaptor(field, self.__class__)
 
         return fa
 
@@ -26,11 +31,7 @@ class ItemAdaptor(object):
             return object.__setattr__(self, name, value)
 
         try:
-            bounded_fa = self._field_adaptors[name]
-            # unbound bounded field adaptor here because use of
-            # @staticmethod decorator in class definition is not practical
-            # for ItemAdaptor's
-            fa = bounded_fa.__func__.__call__ 
+            fa = self._field_adaptors[name]
         except KeyError:
             return setattr(self.item_instance, name, value)
 
@@ -47,7 +48,7 @@ class ItemAdaptor(object):
 
 def adaptor(*funcs, **adaptor_args):
     """A pipe adaptor implementing the tree adaption logic
-    
+
     It takes multiples unnamed arguments used as functions of the pipe, and
     keywords used as adaptor_args to be passed to functions that supports it
 
