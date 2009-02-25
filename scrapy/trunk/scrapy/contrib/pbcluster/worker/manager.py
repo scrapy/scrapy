@@ -1,4 +1,3 @@
-from __future__ import with_statement
 import sys, os, time, datetime, pickle, gzip
 
 from twisted.internet import protocol, reactor
@@ -41,9 +40,11 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
     def processEnded(self, reason):
         if settings.getbool('CLUSTER_WORKER_GZIP_LOGS'):
             try:
-                with open(self.logfile) as f_in:
-                    with gzip.open("%s.gz" % self.logfile, "wb") as f_out:
-                        f_out.writelines(f_in)
+                f_in = open(self.logfile)
+                f_out = gzip.open("%s.gz" % self.logfile, "wb")
+                f_out.writelines(f_in)
+                f_in.close()
+                f_out.close()
                 os.remove(self.logfile)
                 self.logfile = "%s.gz" % self.logfile
             except Exception, e:
