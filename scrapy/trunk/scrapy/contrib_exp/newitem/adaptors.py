@@ -9,26 +9,27 @@ class ItemAdaptor(object):
             self.item_instance = self.item_class()
         
         self._response = response
-        self._field_extractors = self._get_field_extractors()
+        self._field_adaptors = self._get_field_adaptors()
 
-    def _get_field_extractors(self):
-        fe = {}
+    def _get_field_adaptors(self):
+        fa = {}
         for field in self.item_instance._fields.keys():
             if self.__class__.__dict__.has_key(field):
-                fe[field] = self.__class__.__dict__[field]
-        return fe
+                fa[field] = self.__class__.__dict__[field]
+        return fa
 
     def __setattr__(self, name, value):
         if name.startswith('_') or name == 'item_instance':
             return object.__setattr__(self, name, value)
 
         try:
-            fieldextractor = self._field_extractors[name]
+            fieldadaptor = self._field_adaptors[name]
         except KeyError:
             raise AttributeError(name)
 
         adaptor_args = {'response': self._response}
-        final = fieldextractor(value, adaptor_args=adaptor_args)
+        final = fieldadaptor(value, adaptor_args=adaptor_args)
+        print "Intentando asignar: %s" % final
         setattr(self.item_instance, name, final)
 
     def __getattribute__(self, name):
