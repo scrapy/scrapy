@@ -32,7 +32,7 @@ class ItemAdaptor(object):
             # for ItemAdaptor's
             fa = bounded_fa.__func__.__call__ 
         except KeyError:
-            raise AttributeError(name)
+            return setattr(self.item_instance, name, value)
 
         adaptor_args = {'response': self._response}
         ovalue = fa(value, adaptor_args=adaptor_args)
