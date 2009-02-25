@@ -1,4 +1,5 @@
-import sys, os, time, datetime, pickle
+from __future__ import with_statement
+import sys, os, time, datetime, pickle, gzip
 
 from twisted.internet import protocol, reactor
 from twisted.spread import pb
@@ -38,6 +39,15 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.procman.update_master(self.domain, "running")
 
     def processEnded(self, reason):
+        if settings.getbool('CLUSTER_WORKER_GZIP_LOGS'):
+            try:
+                with open(self.logfile) as f_in:
+                    with gzip.open("%s.gz" % self.logfile, "wb") as f_out:
+                        f_out.writelines(f_in)
+                os.remove(self.logfile)
+                self.logfile = "%s.gz" % self.logfile
+            except e:
+                log.msg("failed to compress %s exception=%s (domain=%s, pid=%s)" % (self.logfile, self.domain, self.pid))
         log.msg("ClusterWorker: finished domain=%s, pid=%d, log=%s" % (self.domain, self.pid, self.logfile))
         log.msg("Reason type: %s. value: %s" % (reason.type, reason.value) )
         del self.procman.running[self.domain]
