@@ -3,6 +3,8 @@ from scrapy.utils.http import headers_dict_to_raw
 
 
 class Headers(CaselessDict):
+    """Case insensitive http headers dictionary"""
+
     def __init__(self, seq=None, encoding='utf-8'):
         self.encoding = encoding
         super(Headers, self).__init__(seq)
@@ -10,7 +12,7 @@ class Headers(CaselessDict):
     def normkey(self, key):
         """Headers must not be unicode"""
         if isinstance(key, unicode):
-            key = key.encode(self.encoding)
+            return key.title().encode(self.encoding)
         return key.title()
 
     def normvalue(self, value):
