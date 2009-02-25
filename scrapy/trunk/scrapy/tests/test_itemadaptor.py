@@ -7,6 +7,7 @@ from scrapy.contrib_exp.newitem import Item, StringField
 class TestItem(Item):
     name = StringField()
     url = StringField()
+    summary = StringField()
 
 class TestAdaptor(ItemAdaptor):
     item_class = TestItem
@@ -28,6 +29,15 @@ class ItemAdaptorTest(unittest.TestCase):
         ia = ChildTestAdaptor()
         assert 'url' in ia._field_adaptors
         assert 'name' in ia._field_adaptors
+
+
+        class ChildChildTestAdaptor(ChildTestAdaptor):
+            summary = lambda v, adaptor_args: v
+
+        ia = ChildChildTestAdaptor()
+        assert 'url' in ia._field_adaptors
+        assert 'name' in ia._field_adaptors
+        assert 'summary' in ia._field_adaptors
 
 
         ia.url = 'HTTP://scrapy.ORG'

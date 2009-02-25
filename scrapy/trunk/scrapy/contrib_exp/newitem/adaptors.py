@@ -15,14 +15,16 @@ class ItemAdaptor(object):
     def _get_field_adaptors(self):
         def get_field_adaptor(field, cls):
             if field in cls.__dict__:
-                fa[field] = cls.__dict__[field]
+                return cls.__dict__[field]
+            else:
+                for class_ in cls.__bases__:
+                    return get_field_adaptor(field, class_)
 
         fa = {}
         for field in self.item_instance._fields.keys():
-            for base in self.__class__.__bases__:
-                get_field_adaptor(field, base)
-
-            get_field_adaptor(field, self.__class__)
+            adaptor = get_field_adaptor(field, self.__class__)
+            if adaptor:
+                fa[field] = adaptor
 
         return fa
 
