@@ -61,7 +61,7 @@ DOWNLOADER_MIDDLEWARES = (
     'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware',
     'scrapy.contrib.downloadermiddleware.common.CommonMiddleware',
     'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware',
-    'scrapy.contrib.downloadermiddleware.compression.CompressionMiddleware',
+    'scrapy.contrib.downloadermiddleware.http_compression.HTTPCompressionMiddleware',
     'scrapy.contrib.downloadermiddleware.debug.CrawlDebug',
     'scrapy.contrib.downloadermiddleware.cache.CacheMiddleware',
     # Downloader side

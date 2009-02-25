@@ -1,8 +1,5 @@
 """ This module implements the DecompressionMiddleware which tries to recognise
 and extract the potentially compressed responses that may arrive. 
-
-NOTE: This middleware needs a better name to avoid confusiong it with the
-CompressinMiddleware (in contrib.downloadermiddleware.compression).
 """
 
 import zipfile
