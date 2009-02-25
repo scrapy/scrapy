@@ -47,7 +47,7 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
                 os.remove(self.logfile)
                 self.logfile = "%s.gz" % self.logfile
             except e:
-                log.msg("failed to compress %s exception=%s (domain=%s, pid=%s)" % (self.logfile, self.domain, self.pid))
+                log.msg("failed to compress %s exception=%s (domain=%s, pid=%s)" % (self.logfile, e, self.domain, self.pid))
         log.msg("ClusterWorker: finished domain=%s, pid=%d, log=%s" % (self.domain, self.pid, self.logfile))
         log.msg("Reason type: %s. value: %s" % (reason.type, reason.value) )
         del self.procman.running[self.domain]
