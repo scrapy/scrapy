@@ -29,7 +29,6 @@ class ItemAdaptor(object):
 
         adaptor_args = {'response': self._response}
         final = fieldadaptor(value, adaptor_args=adaptor_args)
-        print "Intentando asignar: %s" % final
         setattr(self.item_instance, name, final)
 
     def __getattribute__(self, name):
