@@ -1,24 +1,33 @@
-from functools import wraps
 from scrapy.utils.python import get_func_args
+
+def is_adaptor(func):
+    return callable(func) and 'adaptor_args' in get_func_args(func)
+
+class ItemAdaptorMetaClass(type):
+    def __new__(meta, name, bases, dct):
+        # defines adaptor fields as static methods
+        for key, func in dct.items():
+            if not key.startswith('_') and is_adaptor(func):
+                dct[key] = staticmethod(func)
+        return type.__new__(meta, name, bases, dct)
 
 
 class ItemAdaptor(object):
-    def __init__(self, response=None, item=None):
-        if item:
-            self.item_instance = item
-        else:
-            self.item_instance = self.item_class()
+    __metaclass__ = ItemAdaptorMetaClass
 
+    def __init__(self, response=None, item=None):
+        self.item_instance = item if item else self.item_class()
         self._response = response
         self._field_adaptors = self._get_field_adaptors()
 
     def _get_field_adaptors(self):
         def get_field_adaptor(field, cls):
-            if field in cls.__dict__:
-                return cls.__dict__[field]
-            else:
-                for class_ in cls.__bases__:
-                    return get_field_adaptor(field, class_)
+            func = getattr(cls, field, None)
+            if func:
+                return func
+
+            for class_ in cls.__bases__:
+                return get_field_adaptor(field, class_)
 
         fa = {}
         for field in self.item_instance._fields.keys():

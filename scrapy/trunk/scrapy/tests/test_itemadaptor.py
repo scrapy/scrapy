@@ -1,5 +1,6 @@
 
 import unittest
+import string
 from scrapy.contrib_exp.newitem.adaptors import adaptor, ItemAdaptor
 from scrapy.contrib_exp.newitem import Item, StringField
 
@@ -53,17 +54,16 @@ class ItemAdaptorTest(unittest.TestCase):
         ia.name = 'marta'
         self.assertEqual(ia.name, 'Marta')
 
-    # FIXME: This test is fine but fails
-#     def test_inheritance_2(self):
-#         class ParentAdaptor(TestAdaptor):
-#             name = adaptor(lambda v, adaptor_args: v)
-# 
-#         class ChildAdaptor(ParentAdaptor):
-#             name = adaptor(lambda v: v.swapcase, ParentAdaptor.name)
-# 
-#         ia = ChildAdaptor()
-#         ia.name = 'marta'
-#         self.assertEqual(ia.name, 'mARTA')
+    def test_staticmethods(self):
+        class ParentAdaptor(TestAdaptor):
+            name = adaptor(lambda v, adaptor_args: v)
+
+        class ChildAdaptor(ParentAdaptor):
+            name = adaptor(ParentAdaptor.name, string.swapcase)
+
+        ia = ChildAdaptor()
+        ia.name = 'Marta'
+        self.assertEqual(ia.name, 'mARTA')
 
 
 
