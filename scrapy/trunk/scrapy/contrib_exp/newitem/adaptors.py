@@ -3,6 +3,7 @@ from scrapy.utils.python import get_func_args
 def is_adaptor(func):
     return callable(func) and 'adaptor_args' in get_func_args(func)
 
+
 class ItemAdaptorMetaClass(type):
     def __new__(meta, name, bases, dct):
         # defines adaptor fields as static methods
@@ -22,12 +23,11 @@ class ItemAdaptor(object):
 
     def _get_field_adaptors(self):
         def get_field_adaptor(field, cls):
-            func = getattr(cls, field, None)
-            if func:
-                return func
-
-            for class_ in cls.__bases__:
-                return get_field_adaptor(field, class_)
+            try:
+                return getattr(cls, field)
+            except AttributeError:
+                for class_ in cls.__bases__:
+                    return get_field_adaptor(field, class_)
 
         fa = {}
         for field in self.item_instance._fields.keys():
