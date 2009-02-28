@@ -48,11 +48,23 @@ Request objects
 
     ``headers`` is a multi-valued dict containing the headers of this request
 
-    ``cookies`` is a dict containing the request cookies, and will be preserved
-    for the rest of the domain crawl, like any browser would do. Example::
+    ``cookies`` is a dict containing the request cookies. Example::
 
         request_with_cookies = Request(url="http://www.example.com",
                                        cookies={currency: 'USD', country: 'UY'})
+
+    When some site returns cookies (in a response) those are stored in the
+    cookies for that domain and will be sent again in future Requests. That's
+    the typical behaviour of any regular web browser. However, if, for some
+    reason, you want to avoid merging with existing cookies you can instruct
+    Scrapy to do so by setting the ``dont_merge_cookies`` item in the
+    Request.meta. 
+  
+    Example of request without merging cookies::
+
+        request_with_cookies = Request(url="http://www.example.com",
+                                       cookies={currency: 'USD', country: 'UY'},
+                                       meta={'dont_merge_cookies': True})
 
     ``encoding`` is a string with the encoding of this request. This encoding
     will be used to percent-encode the URL and to convert the body to str (when
