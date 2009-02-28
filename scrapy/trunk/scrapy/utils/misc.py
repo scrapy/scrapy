@@ -14,13 +14,19 @@ from scrapy.utils.python import flatten, unicode_to_str
 from scrapy.utils.markup import remove_entities
 from scrapy.utils.defer import defer_succeed
 
-def to_list(obj):
-    if obj is None:
+def arg_to_list(arg):
+    """Convert an argument to list, so that it can be iterated. The argument
+    can be a None, single value, or an iterable. 
+    
+    This is meant to be used in functions for arguments which can be either
+    None, single valued or multi-valued.
+    """
+    if arg is None:
         return []
-    elif hasattr(obj, '__iter__'):
-        return list(obj)
+    elif hasattr(arg, '__iter__'):
+        return list(arg)
     else:
-        return [obj]
+        return [arg]
 
 def dict_updatedefault(D, E, **F):
     """
