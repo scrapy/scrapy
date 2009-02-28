@@ -3,10 +3,9 @@ Download handlers for different schemes
 """
 from __future__ import with_statement
 
-import os
 import urlparse
 
-from twisted.internet import defer, reactor
+from twisted.internet import reactor
 from twisted.web import error as web_error
 
 try:
@@ -16,8 +15,8 @@ except ImportError:
 
 from scrapy import optional_features
 from scrapy.core import signals
-from scrapy.http import Request, Response, Headers
-from scrapy.core.exceptions import UsageError, HttpException, NotSupported
+from scrapy.http import Headers
+from scrapy.core.exceptions import HttpException, NotSupported
 from scrapy.utils.defer import defer_succeed
 from scrapy.conf import settings
 

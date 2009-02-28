@@ -7,10 +7,6 @@ new exceptions here without documenting them there.
 
 # Internal
 
-class UsageError(Exception):
-    """Incorrect usage of the core API"""
-    pass
-
 class NotConfigured(Exception):
     """Indicates a missing configuration situation"""
     pass

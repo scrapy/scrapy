@@ -10,7 +10,7 @@ from scrapy.item import ScrapedItem
 from scrapy.http import Request
 from scrapy.utils.iterators import xmliter, csviter
 from scrapy.xpath.selector import XmlXPathSelector, HtmlXPathSelector
-from scrapy.core.exceptions import UsageError, NotConfigured, NotSupported
+from scrapy.core.exceptions import NotConfigured, NotSupported
 
 class XMLFeedSpider(BaseSpider):
     """
@@ -55,7 +55,7 @@ class XMLFeedSpider(BaseSpider):
             if isinstance(ret, (ScrapedItem, Request)):
                 ret = [ret]
             if not isinstance(ret, (list, tuple)):
-                raise UsageError('You cannot return an "%s" object from a spider' % type(ret).__name__)
+                raise TypeError('You cannot return an "%s" object from a spider' % type(ret).__name__)
             for result_item in self.process_results(response, ret):
                 yield result_item
 
@@ -107,7 +107,7 @@ class CSVFeedSpider(BaseSpider):
             if isinstance(ret, (ScrapedItem, Request)):
                 ret = [ret]
             if not isinstance(ret, (list, tuple)):
-                raise UsageError('You cannot return an "%s" object from a spider' % type(ret).__name__)
+                raise TypeError('You cannot return an "%s" object from a spider' % type(ret).__name__)
             for result_item in self.process_results(response, ret):
                 yield result_item
 

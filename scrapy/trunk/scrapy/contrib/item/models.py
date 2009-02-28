@@ -5,19 +5,16 @@ useful in some Scrapy implementations
 
 import hashlib
 
-from pydispatch import dispatcher
 from pprint import PrettyPrinter
 
 from scrapy.item import ScrapedItem, ItemDelta
 from scrapy.item.adaptors import AdaptorPipe
-from scrapy.spider import spiders
-from scrapy.core import signals
-from scrapy.core.exceptions import UsageError, DropItem
+from scrapy.core.exceptions import DropItem
 from scrapy.utils.python import unique
 
 class ValidationError(DropItem):
     """Indicates a data validation error"""
-    def __init__(self,problem,value=None):
+    def __init__(self, problem, value=None):
         self.problem = problem
         self.value = value
 
@@ -141,7 +138,7 @@ class RobustScrapedItem(ScrapedItem):
             return ret
 
         if not values:
-            raise UsageError("You must specify at least one value when setting an attribute")
+            raise ValueError("You must specify at least one value when setting an attribute")
         if attrname not in self.ATTRIBUTES:
             raise AttributeError('Attribute "%s" is not a valid attribute name. You must add it to %s.ATTRIBUTES' % (attrname, self.__class__.__name__))
 
@@ -215,7 +212,7 @@ class RobustScrapedItem(ScrapedItem):
         if getattr(self, '_version', None):
             return self._version
         hash_ = hashlib.sha1()
-        hash_.update("".join(["".join([n, str(v)]) for n,v in sorted(self.__dict__.iteritems())]))
+        hash_.update("".join(["".join([n, str(v)]) for n, v in sorted(self.__dict__.iteritems())]))
         return hash_.hexdigest()
 
 

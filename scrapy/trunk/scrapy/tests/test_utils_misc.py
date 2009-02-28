@@ -2,7 +2,6 @@ import unittest
 from cStringIO import StringIO
 
 from scrapy.utils.misc import hash_values, items_to_csv, load_object, to_list
-from scrapy.core.exceptions import UsageError
 from scrapy.item import ScrapedItem
 
 class UtilsMiscTestCase(unittest.TestCase):
@@ -10,7 +9,7 @@ class UtilsMiscTestCase(unittest.TestCase):
         self.assertEqual(hash_values('some', 'values', 'to', 'hash'),
                          'f37f5dc65beaaea35af05e16e26d439fd150c576')
 
-        self.assertRaises(UsageError, hash_values, 'some', None, 'value')
+        self.assertRaises(ValueError, hash_values, 'some', None, 'value')
 
     def test_items_to_csv(self):
         item_1 = ScrapedItem()
@@ -59,6 +58,8 @@ class UtilsMiscTestCase(unittest.TestCase):
     def test_load_object(self):
         obj = load_object('scrapy.utils.misc.load_object')
         assert obj is load_object
+        self.assertRaises(ImportError, load_object, 'nomodule999.mod.function')
+        self.assertRaises(NameError, load_object, 'scrapy.utils.misc.load_object999')
 
     def test_to_list(self):
         self.assertEqual(to_list(None), [])

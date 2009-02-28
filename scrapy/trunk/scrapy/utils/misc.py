@@ -10,7 +10,6 @@ import csv
 
 from twisted.internet import defer
 
-from scrapy.core.exceptions import UsageError
 from scrapy.utils.python import flatten, unicode_to_str
 from scrapy.utils.markup import remove_entities
 from scrapy.utils.defer import defer_succeed
@@ -78,18 +77,18 @@ def load_object(path):
     try:
         dot = path.rindex('.')
     except ValueError:
-        raise UsageError, '%s isn\'t a module' % path
+        raise ValueError, "Error loading object '%s': not a full path" % path
 
     module, name = path[:dot], path[dot+1:]
     try:
         mod = __import__(module, {}, {}, [''])
     except ImportError, e:
-        raise UsageError, 'Error importing %s: "%s"' % (module, e)
+        raise ImportError, "Error loading object '%s': %s" % (path, e)
 
     try:
         obj = getattr(mod, name)
     except AttributeError:
-        raise UsageError, 'module "%s" does not define any object named "%s"' % (module, name)
+        raise NameError, "Module '%s' doesn't define any object named '%s'" % (module, name)
 
     return obj
 load_class = load_object # backwards compatibility, but isnt going to be available for too long.
@@ -117,7 +116,7 @@ def extract_regex(regex, text, encoding):
         return [remove_entities(unicode(s, encoding), keep=['lt', 'amp']) for s in strings]
 
 def hash_values(*values):
-    """Hash a series of values. 
+    """Hash a series of non-None values. 
     
     For example:
     >>> hash_values('some', 'values', 'to', 'hash')
@@ -126,9 +125,8 @@ def hash_values(*values):
     hash = hashlib.sha1()
     for value in values:
         if value is None:
-            message = "hash_values was passed None at argument index %d. This is a bug in the calling code" \
-                    % list(values).index(None)
-            raise UsageError(message)
+            message = "hash_values was passed None at argument index %d" % list(values).index(None)
+            raise ValueError(message)
         hash.update(value)
     return hash.hexdigest()
 

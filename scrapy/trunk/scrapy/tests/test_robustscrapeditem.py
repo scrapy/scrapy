@@ -2,9 +2,8 @@
 import unittest
 
 from scrapy.contrib.item import RobustScrapedItem
-from scrapy.item.adaptors import AdaptorPipe, AdaptorFunc
+from scrapy.item.adaptors import AdaptorPipe
 from scrapy.contrib_exp import adaptors
-from scrapy.core.exceptions import UsageError
 
 class MyItem(RobustScrapedItem):
     ATTRIBUTES = {
@@ -20,7 +19,7 @@ class RobustScrapedItemTestCase(unittest.TestCase):
         self.item = MyItem()
 
     def test_attribute_basic(self):
-        self.assertRaises(UsageError, self.item.attribute, 'foo')
+        self.assertRaises(ValueError, self.item.attribute, 'foo')
         self.assertRaises(AttributeError, self.item.attribute, 'foo', 'something')
 
         self.item.attribute('name', 'John')

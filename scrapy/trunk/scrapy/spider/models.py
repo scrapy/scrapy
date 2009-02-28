@@ -8,20 +8,19 @@ from twisted.plugin import IPlugin
 
 from scrapy import log
 from scrapy.http import Request
-from scrapy.core.exceptions import UsageError
 
 def _valid_domain_name(obj):
     """Check the domain name specified is valid"""
     if not obj.domain_name:
-        raise UsageError("A site domain name is required")
+        raise ValueError("A site domain name is required")
 
 def _valid_download_delay(obj):
     """Check the download delay is valid, if specified"""
     delay = getattr(obj, 'download_delay', 0)
     if not type(delay) in (int, long, float):
-        raise UsageError("download_delay must be numeric")
+        raise ValueError("download_delay must be numeric")
     if float(delay) < 0.0:
-        raise UsageError("download_delay must be positive")
+        raise ValueError("download_delay must be positive")
 
 class ISpider(Interface, IPlugin) :
     """Interface to be implemented by site-specific web spiders"""
