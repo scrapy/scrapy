@@ -63,11 +63,3 @@ NotSupported
 
 This exception is raised to indicate an unsupported feature.
 
-.. exception:: UsageError
-
-UsageError
-----------
-
-This exception indicates a incorrect usage of the Scrapy API.
-
-
