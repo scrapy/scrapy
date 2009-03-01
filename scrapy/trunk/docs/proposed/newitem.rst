@@ -146,4 +146,18 @@ Let's see it in action::
        i.published = xhs.x('//h1[@class="date"]').re( '\d{2}\.\d{2}\.\d{4}')
        return [i]
 
+ItemAdaptor default_adaptor
+===========================
 
+If you look closely at the code for our ItemAdaptors you can see that we're using the same set of adaptation functions in every field.
+
+It is common for ItemAdaptors to have a basic set of adaptor functions that will be applied to almost every Field in the Item. To help you avoid repeating the same code, ItemAdaptor implements the ``default_adaptor`` shortcut.
+
+``default_adaptor`` (if set) will be called when assigning a value for an Item
+Field that has no adaptor, so the process for determining what value gets assigned to an item when you assign a value to an ItemAdaptor field is as follows:
+
+* If there's an adaptor function for this field its called before assigning the
+  value to the item. 
+* If no adaptor function if set and default_adaptor is, the value passes for 
+  ``default_adaptor`` before being assigned.
+* If no adaptor and no default_adaptor is set, the value is assigned directly.
