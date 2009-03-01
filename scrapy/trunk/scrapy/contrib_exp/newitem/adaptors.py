@@ -22,18 +22,12 @@ class ItemAdaptor(object):
         self._field_adaptors = self._get_field_adaptors()
 
     def _get_field_adaptors(self):
-        def get_field_adaptor(field, cls):
-            try:
-                return getattr(cls, field)
-            except AttributeError:
-                for class_ in cls.__bases__:
-                    return get_field_adaptor(field, class_)
-
         fa = {}
         for field in self.item_instance._fields.keys():
-            adaptor = get_field_adaptor(field, self.__class__)
-            if adaptor:
-                fa[field] = adaptor
+            try:
+                fa[field] = object.__getattribute__(self, field)
+            except:
+                pass
 
         return fa
 
