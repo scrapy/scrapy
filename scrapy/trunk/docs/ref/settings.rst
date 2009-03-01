@@ -702,6 +702,21 @@ Scope: ``scrapy.core.scheduler``
 
 The order to use for the crawling scheduler.
 
+.. setting:: SCHEDULER_MIDDLEWARES
+
+SCHEDULER_MIDDLEWARES
+----------------------
+
+Default:: 
+
+    [
+        'scrapy.contrib.schedulermiddleware.duplicatesfilter.DuplicatesFilterMiddleware',
+    ]
+
+The list of enabled scheduler middlewares. Keep in mind that some may need to
+be enabled through a particular setting. The top (first) middleware is closer
+to the engine, while the bottom (last) middleware is closer to the scheduler.
+
 .. setting:: SPIDERPROFILER_ENABLED
 
 SPIDERPROFILER_ENABLED
