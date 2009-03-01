@@ -338,9 +338,9 @@ Default: ``180``
 
 The amount of time (in secs) that the downloader will wait before timing out.
 
-.. setting:: DUPLICATESFILTER_FILTERCLASS
+.. setting:: DUPEFILTER_FILTERCLASS
 
-DUPLICATESFILTER_FILTERCLASS
+DUPEFILTER_FILTERCLASS
 ----------------------------
 
 Default: ``scrapy.contrib.spidermiddleware.SimplePerDomainFilter``
