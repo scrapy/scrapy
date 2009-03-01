@@ -23,6 +23,16 @@ class ItemAdaptorTest(unittest.TestCase):
         self.assertEqual(ia.item_instance.name, 'Marta')
         self.assertEqual(ia.name, 'Marta')
 
+    def test_defaultadaptor(self):
+        class DefaultedTestAdaptor(ItemAdaptor):
+            item_class = TestItem
+            default_adaptor = lambda v, adaptor_args: v.title()
+
+        dta = DefaultedTestAdaptor()
+        assert dta._default_adaptor
+        dta.name = 'marta'
+        assert dta.name == 'Marta'
+
     def test_inheritance(self):
         class ChildTestAdaptor(TestAdaptor):
             url = lambda v, adaptor_args: v.lower()

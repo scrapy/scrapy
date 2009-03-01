@@ -20,6 +20,7 @@ class ItemAdaptor(object):
         self.item_instance = item if item else self.item_class()
         self._response = response
         self._field_adaptors = self._get_field_adaptors()
+        self._default_adaptor = self._get_default_adaptor()
 
     def _get_field_adaptors(self):
         fa = {}
@@ -31,14 +32,24 @@ class ItemAdaptor(object):
 
         return fa
 
+    def _get_default_adaptor(self):
+        try:
+            return object.__getattribute__(self, 'default_adaptor')
+        except:
+            return None
+
     def __setattr__(self, name, value):
-        if name.startswith('_') or name == 'item_instance':
+        if name.startswith('_') or name == 'item_instance' \
+                or name == 'default_adaptor':
             return object.__setattr__(self, name, value)
 
         try:
             fa = self._field_adaptors[name]
         except KeyError:
-            return setattr(self.item_instance, name, value)
+            if self._default_adaptor:
+                fa = self._default_adaptor
+            else:
+                return setattr(self.item_instance, name, value)
 
         adaptor_args = {'response': self._response}
         ovalue = fa(value, adaptor_args=adaptor_args)
