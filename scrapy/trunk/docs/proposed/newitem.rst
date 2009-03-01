@@ -5,8 +5,6 @@ Items
 The goal of the scraping process is to obtain Items (aka Scraped Items) from
 scraped pages.
 
-An Item is a XXX
-
 Scrapy represent this using a model with fields for Items, much like you'll do
 in an ORM.
 
@@ -59,7 +57,7 @@ How do we use it? Let's see it in action in a Spider::
 
    def parse_newspage(self, response):
        xhs = HtmlXPathSelector(response)
-       i = NewsAdaptor()
+       i = NewsAdaptor(response)
 
        i.url = response.url
        i.headline = xhs.x('//h1[@class="headline"]')
@@ -111,14 +109,41 @@ see an example of adapting HTML and XML::
        content = adaptor(extract, remove_root, strip)
        published = adaptor(extract, remove_root, strip)
 
-As the publication dates in news sites generally use different formats we would
-want one adaptor for a specific site or group of sites (that shares the same
-date format) this is easily accomplished::
+
+Site specific ItemAdaptors
+==========================
+
+For the moment we have covered adapting information from different sources, but
+other common case is adapting information for specific sites, think for example
+in our published field, it keeps the publication date of the news article.
+
+As sites offer this information in different formats, we will have to make
+custom adaptors for them, let's see an example using out Item published field::
 
    class SpecificSiteNewsAdaptor(HtmlNewsAdaptor):
-       published = adaptor(NewsAdaptor.published, to_date('%d.%m.%Y')) 
+       published = adaptor(HtmlNewsAdaptor.published, to_date('%d.%m.%Y')) 
 
-This adds the adaptor function ``to_date`` to the end of our chain of adaptors.
+
+The ``to_date`` adaptor function converts a string with the format specified in
+its parameter to one in 'YYYY-mm-dd' format (the one that DateField expects).
+
+And in this example we're appending it to the of the chain of adaptor functions
+of published.
 
 Note that ``SpecificSiteNewsAdaptor`` will inherit the field adaptations from
 ``HtmlNewsAdaptor``.
+
+Let's see it in action::
+
+   def parse_newspage(self, response):
+       xhs = HtmlXPathSelector(response)
+       i = NewsAdaptor(response)
+
+       i.url = response.url
+       i.headline = xhs.x('//h1[@class="headline"]')
+       i.summary = xhs.x('//div[@class="summary"]')
+       i.content = xhs.x('//div[@id="body"]')
+       i.published = xhs.x('//h1[@class="date"]').re( '\d{2}\.\d{2}\.\d{4}')
+       return [i]
+
+
