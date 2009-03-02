@@ -11,7 +11,7 @@ import Image
 from scrapy import log
 from scrapy.stats import stats
 from scrapy.core.exceptions import DropItem, NotConfigured
-from scrapy.core.exceptions import HttpException
+from scrapy.core.exceptions import HttpException, IgnoreRequest
 from scrapy.conf import settings
 
 from scrapy.contrib.pipeline.media import MediaPipeline
@@ -47,7 +47,11 @@ class BaseImagesPipeline(MediaPipeline):
 
     def media_failed(self, failure, request, info):
         referer = request.headers.get('Referer')
-        errmsg = str(failure.value) if isinstance(failure.value, HttpException) else str(failure)
+        if isinstance(failure.value, (HttpException, IgnoreRequest)):
+            errmsg = str(failure.value)
+        else:
+            errmsg = str(failure)
+
         msg = 'Image (http-error): Error downloading %s from %s referred in <%s>: %s' \
                 % (self.MEDIA_TYPE, request, referer, errmsg)
         log.msg(msg, level=log.WARNING, domain=info.domain)
