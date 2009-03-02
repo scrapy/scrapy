@@ -56,7 +56,7 @@ def create_factory(request, spider):
                                 headers=request.headers,
                                 agent=agent,
                                 cookies=request.cookies,
-                                timeout=getattr(spider, "download_timeout", default_timeout),
+                                timeout=getattr(spider, "download_timeout", None) or default_timeout,
                                 followRedirect=False)
 
     def _create_response(body):
