@@ -8,7 +8,7 @@ docs/topics/scheduler-middleware.rst
 from twisted.internet.defer import Deferred
 
 from scrapy import log
-from scrapy.http import Request, Response
+from scrapy.http import Response
 from scrapy.core.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.utils.defer import mustbe_deferred

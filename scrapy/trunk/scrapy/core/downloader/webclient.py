@@ -1,7 +1,6 @@
 from urlparse import urlunparse
 
 from twisted.web.client import HTTPClientFactory
-from twisted.internet import reactor
 
 from scrapy.http import Url
 

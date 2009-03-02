@@ -4,7 +4,6 @@ Monkey patches
 These are generally a bad idea.
 """
 import twisted
-from twisted.web.client import HTTPClientFactory
 
 
 # Extend limit for BeautifulSoup parsing loops

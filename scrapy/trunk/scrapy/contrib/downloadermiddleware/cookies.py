@@ -1,7 +1,6 @@
 from pydispatch import dispatcher
 
 from scrapy.core import signals
-from scrapy.core.engine import scrapyengine
 from scrapy.utils.misc import dict_updatedefault
 
 class CookiesMiddleware(object):

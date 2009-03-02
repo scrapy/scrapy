@@ -7,8 +7,6 @@ See documentation in docs/ref/request-response.rst
 
 import re
 
-from BeautifulSoup import UnicodeDammit
-
 from scrapy.http.response.text import TextResponse
 from scrapy.utils.python import memoizemethod
 

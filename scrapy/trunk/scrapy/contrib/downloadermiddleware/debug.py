@@ -1,6 +1,5 @@
 from scrapy import log
 from scrapy.core.exceptions import NotConfigured
-from scrapy.conf import settings
 
 class CrawlDebug(object):
 

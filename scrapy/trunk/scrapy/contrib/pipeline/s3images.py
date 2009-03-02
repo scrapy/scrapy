@@ -1,6 +1,4 @@
 import time
-import hmac
-import base64
 import hashlib
 import rfc822
 from cStringIO import StringIO
@@ -9,14 +7,13 @@ import Image
 
 from scrapy import log
 from scrapy.http import Request
-from scrapy.stats import stats
 from scrapy.core.engine import scrapyengine
-from scrapy.core.exceptions import DropItem, NotConfigured, HttpException
+from scrapy.core.exceptions import NotConfigured
 from scrapy.contrib.pipeline.media import MediaPipeline
 from scrapy.contrib.aws import sign_request
 from scrapy.conf import settings
 
-from .images import BaseImagesPipeline, NoimagesDrop, ImageException
+from .images import BaseImagesPipeline, ImageException
 
 
 def md5sum(buffer):
