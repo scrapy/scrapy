@@ -28,15 +28,18 @@ class LinkExtractor(HTMLParser):
     * attr (string or function)
       * an attribute name which is used to search for links (defaults to "href")
       * a function which receives an attribute name and returns whether to scan it
+    * process (funtion)
+      * a function wich receives the attribute value before assigning it
     * unique - if True the same urls won't be extracted twice, otherwise the
       same urls will be extracted multiple times (with potentially different link texts)
     """
 
-    def __init__(self, tag="a", attr="href", unique=False):
+    def __init__(self, tag="a", attr="href", process=None, unique=False):
         HTMLParser.__init__(self)
 
         self.scan_tag = tag if callable(tag) else lambda t: t == tag
         self.scan_attr = attr if callable(attr) else lambda a: a == attr
+        self.process_attr = process if callable(process) else lambda v: v
         self.unique = unique
 
     def _extract_links(self, response_text, response_url, response_encoding):
@@ -85,11 +88,6 @@ class LinkExtractor(HTMLParser):
     def handle_data(self, data):
         if self.current_link and not self.current_link.text:
             self.current_link.text = data.strip()
-
-    def process_attr(self, value):
-        """Hook to process the value of the attribute before asigning
-        it to the link"""
-        return value
 
     def matches(self, url):
         """This extractor matches with any url, since
