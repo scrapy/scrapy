@@ -51,7 +51,7 @@ class ItemAdaptor(object):
             else:
                 return setattr(self.item_instance, name, value)
 
-        adaptor_args = {'response': self._response}
+        adaptor_args = {'response': self._response, 'item': self.item_instance}
         ovalue = fa(value, adaptor_args=adaptor_args)
         setattr(self.item_instance, name, ovalue)
 
