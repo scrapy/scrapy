@@ -8,7 +8,7 @@ docs/topics/spider-middleware.rst
 
 from scrapy import log
 from scrapy.core.exceptions import NotConfigured
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import load_object, arg_to_iter
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy.conf import settings
 
@@ -89,4 +89,5 @@ class SpiderMiddlewareManager(object):
 
     def call(self, request, response, spider):
         defer_result(response).chainDeferred(request.deferred)
+        request.deferred.addCallback(arg_to_iter)
         return request.deferred
