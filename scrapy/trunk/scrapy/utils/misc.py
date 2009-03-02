@@ -16,8 +16,8 @@ from scrapy.utils.defer import defer_succeed
 
 def arg_to_list(arg):
     """Convert an argument to list, so that it can be iterated. The argument
-    can be a None, single value, or an iterable. 
-    
+    can be a None, single value, or an iterable.
+
     This is meant to be used in functions for arguments which can be either
     None, single valued or multi-valued.
     """
@@ -25,6 +25,17 @@ def arg_to_list(arg):
         return []
     elif hasattr(arg, '__iter__'):
         return list(arg)
+    else:
+        return [arg]
+
+def arg_to_iter(arg):
+    """Convert an argument to an iterable. The argument can be a None, single
+    value, or an iterable.
+    """
+    if arg is None:
+        return []
+    elif hasattr(arg, '__iter__'):
+        return arg
     else:
         return [arg]
 
@@ -101,7 +112,7 @@ load_class = load_object # backwards compatibility, but isnt going to be availab
 
 def extract_regex(regex, text, encoding):
     """Extract a list of unicode strings from the given text/encoding using the following policies:
-    
+
     * if the regex contains a named group called "extract" that will be returned
     * if the regex contains multiple numbered groups, all those will be returned (flattened)
     * if the regex doesn't contain any group the entire regex matching is returned
@@ -122,8 +133,8 @@ def extract_regex(regex, text, encoding):
         return [remove_entities(unicode(s, encoding), keep=['lt', 'amp']) for s in strings]
 
 def hash_values(*values):
-    """Hash a series of non-None values. 
-    
+    """Hash a series of non-None values.
+
     For example:
     >>> hash_values('some', 'values', 'to', 'hash')
     'f37f5dc65beaaea35af05e16e26d439fd150c576'
