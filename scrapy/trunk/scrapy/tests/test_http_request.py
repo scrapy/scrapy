@@ -1,5 +1,5 @@
 import unittest
-from scrapy.http import Request, FormRequest, Headers, Url
+from scrapy.http import Request, FormRequest, XmlRpcRequest, Headers, Url
 
 class RequestTest(unittest.TestCase):
 
@@ -155,12 +155,14 @@ class RequestTest(unittest.TestCase):
         r1 = Request("http://www.example.com", method='POST', headers={"Content-type": "text/html"}, body="Some body")
         self.assertEqual(r1.httprepr(), 'POST http://www.example.com HTTP/1.1\r\nHost: www.example.com\r\nContent-Type: text/html\r\n\r\nSome body')
 
-    def test_form_request(self):
 
-        # empty formdata
+class FormRequestTest(unittest.TestCase):
+
+    def test_empty_formdata(self):
         r1 = FormRequest("http://www.example.com", formdata={})
         self.assertEqual(r1.body, '')
 
+    def test_default_encoding(self):
         # using default encoding (utf-8)
         data = {'one': 'two', 'price': '\xc2\xa3 100'}
         r2 = FormRequest("http://www.example.com", formdata=data)
@@ -168,16 +170,26 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r2.body, 'price=%C2%A3+100&one=two')
         self.assertEqual(r2.headers['Content-Type'], 'application/x-www-form-urlencoded')
 
-        # using custom encoding
+    def test_custom_encoding(self):
         data = {'price': u'\xa3 100'}
         r3 = FormRequest("http://www.example.com", formdata=data, encoding='latin1')
         self.assertEqual(r3.encoding, 'latin1')
         self.assertEqual(r3.body, 'price=%A3+100')
 
+    def test_multi_key_values(self):
         # using multiples values for a single key
         data = {'price': u'\xa3 100', 'colours': ['red', 'blue', 'green']}
         r3 = FormRequest("http://www.example.com", formdata=data)
         self.assertEqual(r3.body, 'colours=red&colours=blue&colours=green&price=%C2%A3+100')
+
+
+class XmlRpcRequestTest(unittest.TestCase):
+
+    def test_basic(self):
+        r = XmlRpcRequest('http://scrapytest.org/rpc2', methodname='login', params=('username', 'password'))
+        self.assertEqual(r.headers['Content-Type'], 'text/xml')
+        self.assertEqual(r.body, "<?xml version='1.0'?>\n<methodCall>\n<methodName>login</methodName>\n<params>\n<param>\n<value><string>username</string></value>\n</param>\n<param>\n<value><string>password</string></value>\n</param>\n</params>\n</methodCall>\n")
+
 
 if __name__ == "__main__":
     unittest.main()
