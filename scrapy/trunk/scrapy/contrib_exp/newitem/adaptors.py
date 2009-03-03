@@ -21,7 +21,7 @@ class ItemAdaptor(Declarative):
 
     def _get_field_adaptors(self):
         fa = {}
-        for field in self.item_instance._fields.keys():
+        for field in self.item_instance.fields.keys():
             try:
                 fa[field] = object.__getattribute__(self, field)
             except:
