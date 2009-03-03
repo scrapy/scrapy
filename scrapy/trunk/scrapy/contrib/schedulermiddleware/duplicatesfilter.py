@@ -12,4 +12,4 @@ class DuplicatesFilterMiddleware(object):
     def enqueue_request(self, domain, request, priority):
         added = dupefilter.add(domain, request)
         if not (added or request.dont_filter):
-            raise IgnoreRequest('Skipped (already seen request')
+            raise IgnoreRequest('Skipped (already seen request)')
