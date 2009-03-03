@@ -102,14 +102,17 @@ class UrlUtilsTest(unittest.TestCase):
                                           "http://www.example.com/do?a=50&b=2&b=5&c=3")
 
         # using keep_blank_values
+        self.assertEqual(canonicalize_url("http://www.example.com/do?b=&a=2", keep_blank_values=False),
+                                          "http://www.example.com/do?a=2")
         self.assertEqual(canonicalize_url("http://www.example.com/do?b=&a=2"),
-                                          "http://www.example.com/do?a=2")
-        self.assertEqual(canonicalize_url("http://www.example.com/do?b=&a=2", keep_blank_values=True),
                                           "http://www.example.com/do?a=2&b=")
-        self.assertEqual(canonicalize_url("http://www.example.com/do?b=&c&a=2"),
+        self.assertEqual(canonicalize_url("http://www.example.com/do?b=&c&a=2", keep_blank_values=False),
                                           "http://www.example.com/do?a=2")
-        self.assertEqual(canonicalize_url("http://www.example.com/do?b=&c&a=2", keep_blank_values=True),
+        self.assertEqual(canonicalize_url("http://www.example.com/do?b=&c&a=2"),
                                           "http://www.example.com/do?a=2&b=&c=")
+
+        self.assertEqual(canonicalize_url(u'http://www.example.com/do?1750,4'),
+                                           'http://www.example.com/do?1750%2C4=')
                         
         # spaces
         self.assertEqual(canonicalize_url("http://www.example.com/do?q=a space&a=1"),

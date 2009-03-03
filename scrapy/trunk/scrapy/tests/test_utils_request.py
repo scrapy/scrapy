@@ -14,6 +14,10 @@ class UtilsRequestTest(unittest.TestCase):
         self.assertEqual(request_fingerprint(r1), request_fingerprint(r1))
         self.assertEqual(request_fingerprint(r1), request_fingerprint(r2))
 
+        r1 = Request('http://www.example.com/hnnoticiaj1.aspx?78132,199')
+        r2 = Request('http://www.example.com/hnnoticiaj1.aspx?78160,199')
+        self.assertNotEqual(request_fingerprint(r1), request_fingerprint(r2))
+
         # make sure caching is working
         self.assertEqual(request_fingerprint(r1), r1.cache['fingerprint'])
 
@@ -54,6 +58,7 @@ class UtilsRequestTest(unittest.TestCase):
         r2.url = "http://www.example.com/other"
         fp2 = request_fingerprint(r2)
         self.assertNotEqual(fp1, fp2)
+
 
     def test_request_authenticate(self):
         r = Request("http://www.example.com")
