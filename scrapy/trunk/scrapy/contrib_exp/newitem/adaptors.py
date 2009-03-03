@@ -7,53 +7,51 @@ def is_adaptor(func):
 
 class ItemAdaptor(Declarative):
 
+    item_class = None
+    default_adaptor = None
+    field_adaptors = {}
+
     def __classinit__(cls, attrs):
-        # defines adaptors as staticmethods
-        for n, v in attrs.items():
-            if is_adaptor(v):
-                setattr(cls, n, staticmethod(v))
+        cls.field_adaptors = cls.field_adaptors.copy()
+        if cls.item_class:
+            # set new adaptors
+            for n, v in attrs.items():
+                if n in cls.item_class.fields.keys() and is_adaptor(v):
+                    cls.set_adaptor(n, v)
+            
+            # if default_adaptor is set, use it for the unadapted fields
+            if cls.default_adaptor:
+                for field in cls.item_class.fields.keys():
+                    if field not in cls.field_adaptors.keys():
+                        cls.set_adaptor(field, cls.default_adaptor.im_func)
+
+    @classmethod
+    def set_adaptor(cls, name, func):
+        cls.field_adaptors[name] = func
+        # define adaptor as a staticmethod
+        setattr(cls, name, staticmethod(func))
 
     def __init__(self, response=None, item=None):
         self.item_instance = item if item else self.item_class()
         self._response = response
-        self._field_adaptors = self._get_field_adaptors()
-        self._default_adaptor = self._get_default_adaptor()
-
-    def _get_field_adaptors(self):
-        fa = {}
-        for field in self.item_instance.fields.keys():
-            try:
-                fa[field] = object.__getattribute__(self, field)
-            except:
-                pass
-
-        return fa
-
-    def _get_default_adaptor(self):
-        try:
-            return object.__getattribute__(self, 'default_adaptor')
-        except:
-            return None
 
     def __setattr__(self, name, value):
-        if name.startswith('_') or name == 'item_instance' \
-                or name == 'default_adaptor':
+        if (name.startswith('_') or name == 'item_instance' \
+            or name == 'default_adaptor' or name == 'field_adaptors'):
             return object.__setattr__(self, name, value)
 
         try:
-            fa = self._field_adaptors[name]
+            fa = self.field_adaptors[name]
         except KeyError:
-            if self._default_adaptor:
-                fa = self._default_adaptor
-            else:
-                return setattr(self.item_instance, name, value)
+            return setattr(self.item_instance, name, value)
 
         adaptor_args = {'response': self._response, 'item': self.item_instance}
         ovalue = fa(value, adaptor_args=adaptor_args)
         setattr(self.item_instance, name, ovalue)
 
     def __getattribute__(self, name):
-        if name.startswith('_') or name.startswith('item_'):
+        if (name.startswith('_') or name.startswith('item_') \
+            or name == 'default_adaptor' or name == 'field_adaptors'):
             return object.__getattribute__(self, name)
 
         return getattr(self.item_instance, name)

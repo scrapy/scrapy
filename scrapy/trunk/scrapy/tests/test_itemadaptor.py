@@ -1,4 +1,3 @@
-
 import unittest
 import string
 from scrapy.contrib_exp.newitem.adaptors import adaptor, ItemAdaptor
@@ -9,6 +8,7 @@ class TestItem(Item):
     name = StringField()
     url = StringField()
     summary = StringField()
+
 
 class TestAdaptor(ItemAdaptor):
     item_class = TestItem
@@ -29,7 +29,7 @@ class ItemAdaptorTest(unittest.TestCase):
             default_adaptor = lambda v, adaptor_args: v.title()
 
         dta = DefaultedTestAdaptor()
-        assert dta._default_adaptor
+        assert dta.default_adaptor
         dta.name = 'marta'
         assert dta.name == 'Marta'
 
@@ -38,8 +38,8 @@ class ItemAdaptorTest(unittest.TestCase):
             url = lambda v, adaptor_args: v.lower()
 
         ia = ChildTestAdaptor()
-        assert 'url' in ia._field_adaptors
-        assert 'name' in ia._field_adaptors
+        assert 'url' in ia.field_adaptors
+        assert 'name' in ia.field_adaptors
 
         ia.url = 'HTTP://scrapy.ORG'
         self.assertEqual(ia.url, 'http://scrapy.org')
@@ -47,16 +47,14 @@ class ItemAdaptorTest(unittest.TestCase):
         ia.name = 'marta'
         self.assertEqual(ia.name, 'Marta')
 
-
         class ChildChildTestAdaptor(ChildTestAdaptor):
             url = lambda v, adaptor_args: v.upper()
             summary = lambda v, adaptor_args: v
 
         ia = ChildChildTestAdaptor()
-        assert 'url' in ia._field_adaptors
-        assert 'name' in ia._field_adaptors
-        assert 'summary' in ia._field_adaptors
-
+        assert 'url' in ia.field_adaptors
+        assert 'name' in ia.field_adaptors
+        assert 'summary' in ia.field_adaptors
 
         ia.url = 'HTTP://scrapy.ORG'
         self.assertEqual(ia.url, 'HTTP://SCRAPY.ORG')
@@ -75,7 +73,17 @@ class ItemAdaptorTest(unittest.TestCase):
         ia.name = 'Marta'
         self.assertEqual(ia.name, 'mARTA')
 
+    def test_staticdefaults(self):
+        class ParentAdaptorDefaulted(ItemAdaptor):
+            item_class = TestItem
+            default_adaptor = lambda v, adaptor_args: v.title()
 
+        class ChildAdaptorDefaulted(ParentAdaptorDefaulted):
+            name = adaptor(ParentAdaptorDefaulted.name, string.swapcase)
+
+        dia = ChildAdaptorDefaulted()
+        dia.name = 'marta'
+        self.assertEqual(dia.name, 'mARTA')
 
 
 class TreeadaptTest(unittest.TestCase):
@@ -108,7 +116,6 @@ class TreeadaptTest(unittest.TestCase):
         self.assertEqual(ad(0), [5])
         self.assertEqual(ad(0, {'add_value': 3}), [3])
         self.assertEqual(ad(0), [5])
-
 
     def test_4_treelogic(self):
         split1 = lambda v: v.split('&')
