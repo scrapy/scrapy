@@ -15,6 +15,13 @@ class XmlRpcRequest(Request):
     def __init__(self, *args, **kwargs):
         params = kwargs.pop('params')
         methodname = kwargs.pop('methodname')
+
+        # spec defines that requests must use POST method
+        kwargs.setdefault('method', 'POST')
+
+        # xmlrpc query multiples times over the same url
+        kwargs.setdefault('dont_filter', True)
+
         Request.__init__(self, *args, **kwargs)
         self.body = xmlrpclib.dumps(params, methodname)
         self.headers.setdefault('Content-Type', 'text/xml')

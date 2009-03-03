@@ -189,6 +189,8 @@ class XmlRpcRequestTest(unittest.TestCase):
         r = XmlRpcRequest('http://scrapytest.org/rpc2', methodname='login', params=('username', 'password'))
         self.assertEqual(r.headers['Content-Type'], 'text/xml')
         self.assertEqual(r.body, "<?xml version='1.0'?>\n<methodCall>\n<methodName>login</methodName>\n<params>\n<param>\n<value><string>username</string></value>\n</param>\n<param>\n<value><string>password</string></value>\n</param>\n</params>\n</methodCall>\n")
+        self.assertEqual(r.method, 'POST')
+        self.assertTrue(r.dont_filter, True)
 
 
 if __name__ == "__main__":
