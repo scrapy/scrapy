@@ -1,20 +1,17 @@
+from scrapy.contrib_exp.newitem.declarative import Declarative
 from scrapy.utils.python import get_func_args
 
 def is_adaptor(func):
     return callable(func) and 'adaptor_args' in get_func_args(func)
 
 
-class ItemAdaptorMetaClass(type):
-    def __new__(meta, name, bases, dct):
-        # defines adaptor fields as static methods
-        for key, func in dct.items():
-            if not key.startswith('_') and is_adaptor(func):
-                dct[key] = staticmethod(func)
-        return type.__new__(meta, name, bases, dct)
+class ItemAdaptor(Declarative):
 
-
-class ItemAdaptor(object):
-    __metaclass__ = ItemAdaptorMetaClass
+    def __classinit__(cls, attrs):
+        # defines adaptors as staticmethods
+        for n, v in attrs.items():
+            if is_adaptor(v):
+                setattr(cls, n, staticmethod(v))
 
     def __init__(self, response=None, item=None):
         self.item_instance = item if item else self.item_class()
