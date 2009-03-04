@@ -2,7 +2,7 @@ from scrapy.contrib_exp.newitem.declarative import Declarative
 from scrapy.utils.python import get_func_args
 
 def is_adaptor(func):
-    return callable(func) and 'adaptor_args' in get_func_args(func)
+    return hasattr(func, '__call__') and 'adaptor_args' in get_func_args(func)
 
 
 class ItemAdaptor(Declarative):
@@ -77,8 +77,8 @@ def adaptor(*funcs, **adaptor_args):
 
     def _adaptor(value, adaptor_args=None):
         values = value if isinstance(value, (list, tuple)) else [value]
-        aargs = dict(t for d in [pipe_adaptor_args, adaptor_args or {}] for t in d.iteritems())
-        pipe_kwargs = { 'adaptor_args': aargs }
+        aargs = dict(t for d in [pipe_adaptor_args, adaptor_args or {}] for t in d.items())
+        pipe_kwargs = {'adaptor_args': aargs}
 
         for func, takes_args in _funcs:
             next = []
