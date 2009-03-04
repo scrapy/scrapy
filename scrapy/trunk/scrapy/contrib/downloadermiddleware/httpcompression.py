@@ -14,13 +14,14 @@ class HttpCompressionMiddleware(object):
 
     def process_response(self, request, response, spider):
         if isinstance(response, Response):
-            content_encoding = response.headers.get('Content-Encoding')
+            content_encoding = response.headers.getlist('Content-Encoding')
             if content_encoding:
-                encoding = content_encoding[0].lower()
-                raw_body = response.body
-                decoded_body = self._decode(raw_body, encoding)
+                encoding = content_encoding.pop()
+                decoded_body = self._decode(response.body, encoding.lower())
                 response = response.replace(body=decoded_body)
-                response.headers['Content-Encoding'] = content_encoding[1:]
+                if not content_encoding:
+                    del response.headers['Content-Encoding']
+
         return response
 
     def _decode(self, body, encoding):
