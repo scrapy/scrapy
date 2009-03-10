@@ -1,4 +1,3 @@
-from scrapy.contrib_exp.newitem.declarative import Declarative
 from scrapy.utils.python import get_func_args
 
 
