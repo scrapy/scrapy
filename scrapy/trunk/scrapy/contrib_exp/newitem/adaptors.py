@@ -12,14 +12,15 @@ def adaptize(func):
     return _adaptor
 
 
+_IDENTITY = lambda v: v
+
+
 class ItemAdaptorMeta(type):
-
     def __new__(meta, class_name, bases, attrs):
-        cls = type.__new__(meta, class_name, bases, attrs)
+        da = attrs.get('default_adaptor') or _IDENTITY
+        attrs['default_adaptor'] = staticmethod(adaptize(da))
 
-        if 'default_adaptor' in attrs:
-            default_adaptor = adaptize(attrs['default_adaptor'])
-            cls.default_adaptor = staticmethod(default_adaptor)
+        cls = type.__new__(meta, class_name, bases, attrs)
 
         cls.field_adaptors = cls.field_adaptors.copy()
     
@@ -42,10 +43,9 @@ class ItemAdaptorMeta(type):
 class ItemAdaptor(object):
     __metaclass__ = ItemAdaptorMeta
 
-    IDENTITY = lambda v: v
+    IDENTITY = _IDENTITY
 
     item_class = None
-    default_adaptor = IDENTITY
     field_adaptors = {}
 
     def __init__(self, response=None, item=None):
