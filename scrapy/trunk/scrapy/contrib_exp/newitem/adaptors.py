@@ -13,9 +13,23 @@ def adaptize(func):
 
 
 class ItemAdaptorMeta(type):
+
     def __new__(meta, class_name, bases, attrs):
         cls = type.__new__(meta, class_name, bases, attrs)
-        cls.__classinit__.im_func(cls, attrs)
+
+        if 'default_adaptor' in attrs:
+            default_adaptor = adaptize(attrs['default_adaptor'])
+            cls.default_adaptor = staticmethod(default_adaptor)
+
+        cls.field_adaptors = cls.field_adaptors.copy()
+    
+        if cls.item_class:
+            for item_field in cls.item_class.fields.keys():
+                if item_field in attrs:
+                    adaptor = adaptize(attrs[item_field])
+                    cls.field_adaptors[item_field] = adaptor
+                    setattr(cls, item_field, staticmethod(adaptor))
+
         return cls
 
     def __getattr__(cls, name):
@@ -33,20 +47,6 @@ class ItemAdaptor(object):
     item_class = None
     default_adaptor = IDENTITY
     field_adaptors = {}
-
-    def __classinit__(cls, attrs):
-        if 'default_adaptor' in attrs:
-            setattr(cls, 'default_adaptor',
-                    staticmethod(adaptize(attrs['default_adaptor'])))
-
-        cls.field_adaptors = cls.field_adaptors.copy()
-        
-        if cls.item_class:
-            for item_field in cls.item_class.fields.keys():
-                if item_field in attrs:
-                    adaptor = adaptize(attrs[item_field])
-                    cls.field_adaptors[item_field] = adaptor
-                    setattr(cls, item_field, staticmethod(adaptor))
 
     def __init__(self, response=None, item=None):
         self.item_instance = item if item else self.item_class()
