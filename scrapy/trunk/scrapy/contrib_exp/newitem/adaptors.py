@@ -12,31 +12,41 @@ def adaptize(func):
     return _adaptor
 
 
-class ItemAdaptor(Declarative):
+class ItemAdaptorMeta(type):
+    def __new__(meta, class_name, bases, attrs):
+        cls = type.__new__(meta, class_name, bases, attrs)
+        cls.__classinit__.im_func(cls, attrs)
+        return cls
+
+    def __getattr__(cls, name):
+        if name in cls.item_class.fields:
+            return cls.default_adaptor
+
+        raise AttributeError
+
+
+class ItemAdaptor(object):
+    __metaclass__ = ItemAdaptorMeta
+
+    IDENTITY = lambda v: v
 
     item_class = None
-    default_adaptor = None
+    default_adaptor = IDENTITY
     field_adaptors = {}
 
     def __classinit__(cls, attrs):
-        def set_adaptor(cls, name, func):
-            adaptor = adaptize(func)
-            cls.field_adaptors[name] = adaptor
-            # define adaptor as a staticmethod
-            setattr(cls, name, staticmethod(adaptor))
+        if 'default_adaptor' in attrs:
+            setattr(cls, 'default_adaptor',
+                    staticmethod(adaptize(attrs['default_adaptor'])))
 
         cls.field_adaptors = cls.field_adaptors.copy()
+        
         if cls.item_class:
-            # set new adaptors
-            for n, v in attrs.items():
-                if n in cls.item_class.fields.keys():
-                    set_adaptor(cls, n, v)
-            
-            # if default_adaptor is set, use it for the unadapted fields
-            if cls.default_adaptor:
-                for field in cls.item_class.fields.keys():
-                    if field not in cls.field_adaptors.keys():
-                        set_adaptor(cls, field, cls.default_adaptor.im_func)
+            for item_field in cls.item_class.fields.keys():
+                if item_field in attrs:
+                    adaptor = adaptize(attrs[item_field])
+                    cls.field_adaptors[item_field] = adaptor
+                    setattr(cls, item_field, staticmethod(adaptor))
 
     def __init__(self, response=None, item=None):
         self.item_instance = item if item else self.item_class()
@@ -50,7 +60,7 @@ class ItemAdaptor(Declarative):
         try:
             fa = self.field_adaptors[name]
         except KeyError:
-            return setattr(self.item_instance, name, value)
+            fa = self.default_adaptor
 
         adaptor_args = {'response': self._response, 'item': self.item_instance}
         ovalue = fa(value, adaptor_args=adaptor_args)
