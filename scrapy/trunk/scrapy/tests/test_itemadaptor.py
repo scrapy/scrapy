@@ -4,15 +4,25 @@ from scrapy.contrib_exp.newitem.adaptors import adaptor, ItemAdaptor
 from scrapy.contrib_exp.newitem import Item, StringField
 
 
-class TestItem(Item):
+class BaseItem(Item):
     name = StringField()
+
+
+class TestItem(BaseItem):
     url = StringField()
     summary = StringField()
 
 
-class TestAdaptor(ItemAdaptor):
+class BaseAdaptor(ItemAdaptor):
     item_class = TestItem
+
+
+class TestAdaptor(BaseAdaptor):
     name = lambda v: v.title()
+
+
+class DefaultedAdaptor(BaseAdaptor):
+    default_adaptor = lambda v: v.title()
 
 
 class ItemAdaptorTest(unittest.TestCase):
@@ -24,11 +34,7 @@ class ItemAdaptorTest(unittest.TestCase):
         self.assertEqual(ia.name, 'Marta')
 
     def test_defaultadaptor(self):
-        class DefaultedTestAdaptor(ItemAdaptor):
-            item_class = TestItem
-            default_adaptor = lambda v: v.title()
-
-        dta = DefaultedTestAdaptor()
+        dta = DefaultedAdaptor()
         assert dta.default_adaptor
         dta.name = 'marta'
         assert dta.name == 'Marta'
@@ -63,23 +69,16 @@ class ItemAdaptorTest(unittest.TestCase):
         self.assertEqual(ia.name, 'Marta')
 
     def test_staticmethods(self):
-        class ParentAdaptor(TestAdaptor):
-            name = adaptor(lambda v: v)
-
-        class ChildAdaptor(ParentAdaptor):
-            name = adaptor(ParentAdaptor.name, string.swapcase)
+        class ChildAdaptor(TestAdaptor):
+            name = adaptor(TestAdaptor.name, string.swapcase)
 
         ia = ChildAdaptor()
         ia.name = 'Marta'
         self.assertEqual(ia.name, 'mARTA')
 
     def test_staticdefaults(self):
-        class ParentAdaptorDefaulted(ItemAdaptor):
-            item_class = TestItem
-            default_adaptor = lambda v: v.title()
-
-        class ChildAdaptorDefaulted(ParentAdaptorDefaulted):
-            name = adaptor(ParentAdaptorDefaulted.name, string.swapcase)
+        class ChildAdaptorDefaulted(DefaultedAdaptor):
+            name = adaptor(DefaultedAdaptor.name, string.swapcase)
 
         dia = ChildAdaptorDefaulted()
         dia.name = 'marta'
