@@ -24,6 +24,9 @@ class TestAdaptor(BaseAdaptor):
 class DefaultedAdaptor(BaseAdaptor):
     default_adaptor = lambda v: v.title()
 
+class InheritDefaultAdaptor(DefaultedAdaptor):
+    pass
+
 
 class ItemAdaptorTest(unittest.TestCase):
 
@@ -38,6 +41,11 @@ class ItemAdaptorTest(unittest.TestCase):
         assert dta.default_adaptor
         dta.name = 'marta'
         assert dta.name == 'Marta'
+
+    def test_inheritdefaultadaptor(self):
+        ida = InheritDefaultAdaptor()
+        ida.name = 'marta'
+        assert ida.name == 'Marta'
 
     def test_inheritance(self):
         class ChildTestAdaptor(TestAdaptor):

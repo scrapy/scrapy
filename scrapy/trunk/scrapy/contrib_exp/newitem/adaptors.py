@@ -18,8 +18,9 @@ def IDENTITY(v):
 
 class ItemAdaptorMeta(type):
     def __new__(meta, class_name, bases, attrs):
-        da = attrs.get('default_adaptor') or IDENTITY
-        attrs['default_adaptor'] = staticmethod(adaptize(da))
+        da = attrs.get('default_adaptor')
+        if da:
+            attrs['default_adaptor'] = staticmethod(adaptize(da))
 
         cls = type.__new__(meta, class_name, bases, attrs)
 
@@ -46,6 +47,7 @@ class ItemAdaptor(object):
 
     item_class = None
     field_adaptors = {}
+    default_adaptor = IDENTITY
 
     def __init__(self, response=None, item=None):
         self.item_instance = item if item else self.item_class()
