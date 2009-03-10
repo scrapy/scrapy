@@ -24,7 +24,7 @@ Here's a quick example of how to send an email (without attachments)::
     from scrapy.mail import MailSender
 
     mailer = MailSender()
-    mailer.send(to=["someone@example.com"], "Some subject", "Some body", cc=["another@example.com"])
+    mailer.send(to=["someone@example.com"], subject="Some subject", body="Some body", cc=["another@example.com"])
 
 MailSender class reference
 ==========================
