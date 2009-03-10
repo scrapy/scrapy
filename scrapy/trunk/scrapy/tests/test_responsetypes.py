@@ -31,6 +31,7 @@ class ResponseTypesTest(unittest.TestCase):
         mappings = [
             ('text/html; charset=UTF-8', HtmlResponse),
             ('text/xml; charset=UTF-8', XmlResponse),
+            ('application/xhtml+xml; charset=UTF-8', HtmlResponse),
             ('application/xml; charset=UTF-8', XmlResponse),
             ('application/octet-stream', Response),
         ]
