@@ -1,18 +1,25 @@
 from scrapy.item import ScrapedItem
-from scrapy.contrib_exp.newitem.declarative import Declarative
 from scrapy.contrib_exp.newitem.fields import Field
 
 
-class Item(Declarative, ScrapedItem):
-    """ This is the base class for all scraped items. """
+class ItemMeta(type):
 
-    fields = {}
-
-    def __classinit__(cls, attrs):
+    def __new__(meta, class_name, bases, attrs):
+        cls = type.__new__(meta, class_name, bases, attrs)
         cls.fields = cls.fields.copy()
         for n, v in attrs.items():
             if isinstance(v, Field):
                 cls.fields[n] = v
+
+        return cls
+
+
+class Item(ScrapedItem):
+    """ This is the base class for all scraped items. """
+
+    __metaclass__ = ItemMeta
+
+    fields = {}
 
     def __init__(self):
         self._values = {}
