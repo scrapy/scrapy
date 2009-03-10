@@ -12,12 +12,13 @@ def adaptize(func):
     return _adaptor
 
 
-_IDENTITY = lambda v: v
+def IDENTITY(v):
+    return v
 
 
 class ItemAdaptorMeta(type):
     def __new__(meta, class_name, bases, attrs):
-        da = attrs.get('default_adaptor') or _IDENTITY
+        da = attrs.get('default_adaptor') or IDENTITY
         attrs['default_adaptor'] = staticmethod(adaptize(da))
 
         cls = type.__new__(meta, class_name, bases, attrs)
@@ -42,8 +43,6 @@ class ItemAdaptorMeta(type):
 
 class ItemAdaptor(object):
     __metaclass__ = ItemAdaptorMeta
-
-    IDENTITY = _IDENTITY
 
     item_class = None
     field_adaptors = {}
