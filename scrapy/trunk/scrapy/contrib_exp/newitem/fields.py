@@ -3,7 +3,7 @@ import decimal
 import re
 
 
-__all__ = ['BooleanField', 'DateField', 'DecimalField',
+__all__ = ['MultiValuedField', 'BooleanField', 'DateField', 'DecimalField',
            'FloatField', 'IntegerField', 'StringField']
 
 
@@ -32,6 +32,21 @@ class Field(object):
     def deiter(self, value):
         "Converts the input iterable into a single value."
         return ' '.join(value)
+
+
+class MultiValuedField(Field):
+    def __init__(self, field_type, required=False, default=None):
+        self._field = field_type()
+        super(MultiValuedField, self).__init__(required, default)
+
+    def to_python(self, value):
+        if value is None:
+            return []
+        else:
+            return [self._field.to_python(v) for v in value]
+
+    def deiter(self, value):
+        return value
 
 
 class BooleanField(Field):

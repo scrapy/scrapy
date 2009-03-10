@@ -13,3 +13,12 @@ class NewItemTest(unittest.TestCase):
         i.name = 'name'
         assert i.name == 'name'
 
+    def test_multi(self):
+        class TestMultiItem(Item):
+            name = StringField()
+            names = MultiValuedField(StringField)
+
+        i = TestMultiItem()
+        i.name = 'name'
+        i.names = ['name1', 'name2']
+        assert i.names == ['name1', 'name2']
