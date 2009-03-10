@@ -12,7 +12,7 @@ class TestItem(Item):
 
 class TestAdaptor(ItemAdaptor):
     item_class = TestItem
-    name = lambda v, adaptor_args: v.title()
+    name = lambda v: v.title()
 
 
 class ItemAdaptorTest(unittest.TestCase):
@@ -26,7 +26,7 @@ class ItemAdaptorTest(unittest.TestCase):
     def test_defaultadaptor(self):
         class DefaultedTestAdaptor(ItemAdaptor):
             item_class = TestItem
-            default_adaptor = lambda v, adaptor_args: v.title()
+            default_adaptor = lambda v: v.title()
 
         dta = DefaultedTestAdaptor()
         assert dta.default_adaptor
@@ -35,7 +35,7 @@ class ItemAdaptorTest(unittest.TestCase):
 
     def test_inheritance(self):
         class ChildTestAdaptor(TestAdaptor):
-            url = lambda v, adaptor_args: v.lower()
+            url = lambda v: v.lower()
 
         ia = ChildTestAdaptor()
         assert 'url' in ia.field_adaptors
@@ -48,8 +48,8 @@ class ItemAdaptorTest(unittest.TestCase):
         self.assertEqual(ia.name, 'Marta')
 
         class ChildChildTestAdaptor(ChildTestAdaptor):
-            url = lambda v, adaptor_args: v.upper()
-            summary = lambda v, adaptor_args: v
+            url = lambda v: v.upper()
+            summary = lambda v: v
 
         ia = ChildChildTestAdaptor()
         assert 'url' in ia.field_adaptors
@@ -64,7 +64,7 @@ class ItemAdaptorTest(unittest.TestCase):
 
     def test_staticmethods(self):
         class ParentAdaptor(TestAdaptor):
-            name = adaptor(lambda v, adaptor_args: v)
+            name = adaptor(lambda v: v)
 
         class ChildAdaptor(ParentAdaptor):
             name = adaptor(ParentAdaptor.name, string.swapcase)
@@ -76,7 +76,7 @@ class ItemAdaptorTest(unittest.TestCase):
     def test_staticdefaults(self):
         class ParentAdaptorDefaulted(ItemAdaptor):
             item_class = TestItem
-            default_adaptor = lambda v, adaptor_args: v.title()
+            default_adaptor = lambda v: v.title()
 
         class ChildAdaptorDefaulted(ParentAdaptorDefaulted):
             name = adaptor(ParentAdaptorDefaulted.name, string.swapcase)

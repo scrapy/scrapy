@@ -1,8 +1,15 @@
 from scrapy.contrib_exp.newitem.declarative import Declarative
 from scrapy.utils.python import get_func_args
 
-def is_adaptor(func):
-    return hasattr(func, '__call__') and 'adaptor_args' in get_func_args(func)
+
+def adaptize(func):
+    func_args = get_func_args(func)
+    if 'adaptor_args' in func_args:
+        return func
+
+    def _adaptor(value, adaptor_args):
+        return func(value)
+    return _adaptor
 
 
 class ItemAdaptor(Declarative):
@@ -12,24 +19,24 @@ class ItemAdaptor(Declarative):
     field_adaptors = {}
 
     def __classinit__(cls, attrs):
+        def set_adaptor(cls, name, func):
+            adaptor = adaptize(func)
+            cls.field_adaptors[name] = adaptor
+            # define adaptor as a staticmethod
+            setattr(cls, name, staticmethod(adaptor))
+
         cls.field_adaptors = cls.field_adaptors.copy()
         if cls.item_class:
             # set new adaptors
             for n, v in attrs.items():
-                if n in cls.item_class.fields.keys() and is_adaptor(v):
-                    cls.set_adaptor(n, v)
+                if n in cls.item_class.fields.keys():
+                    set_adaptor(cls, n, v)
             
             # if default_adaptor is set, use it for the unadapted fields
             if cls.default_adaptor:
                 for field in cls.item_class.fields.keys():
                     if field not in cls.field_adaptors.keys():
-                        cls.set_adaptor(field, cls.default_adaptor.im_func)
-
-    @classmethod
-    def set_adaptor(cls, name, func):
-        cls.field_adaptors[name] = func
-        # define adaptor as a staticmethod
-        setattr(cls, name, staticmethod(func))
+                        set_adaptor(cls, field, cls.default_adaptor.im_func)
 
     def __init__(self, response=None, item=None):
         self.item_instance = item if item else self.item_class()
