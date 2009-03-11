@@ -1,7 +1,7 @@
 import unittest
 import string
 from scrapy.contrib_exp.newitem.adaptors import adaptor, ItemAdaptor
-from scrapy.contrib_exp.newitem import Item, StringField
+from scrapy.contrib_exp.newitem import * 
 
 
 class BaseItem(Item):
@@ -24,8 +24,19 @@ class TestAdaptor(BaseAdaptor):
 class DefaultedAdaptor(BaseAdaptor):
     default_adaptor = lambda v: v.title()
 
+
 class InheritDefaultAdaptor(DefaultedAdaptor):
     pass
+
+
+class MultiValuedTestItem(Item):
+    names = MultiValuedField(StringField)
+
+
+class MultiValuedItemAdaptor(ItemAdaptor):
+    item_class = MultiValuedTestItem
+
+    names = adaptor(lambda v: v.title())
 
 
 class ItemAdaptorTest(unittest.TestCase):
@@ -91,6 +102,11 @@ class ItemAdaptorTest(unittest.TestCase):
         dia = ChildAdaptorDefaulted()
         dia.name = 'marta'
         self.assertEqual(dia.name, 'mARTA')
+
+    def test_multiplevaluedadaptor(self):
+        ma = MultiValuedItemAdaptor()
+        ma.names = ['name1', 'name2']
+        assert ma.names == ['Name1', 'Name2']
 
 
 class TreeadaptTest(unittest.TestCase):
