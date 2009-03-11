@@ -23,13 +23,13 @@ class ItemAdaptorMeta(type):
 
         cls = type.__new__(meta, class_name, bases, attrs)
 
-        cls.field_adaptors = cls.field_adaptors.copy()
+        cls._field_adaptors = cls._field_adaptors.copy()
     
         if cls.item_class:
             for item_field in cls.item_class.fields.keys():
                 if item_field in attrs:
                     adaptor = adaptize(attrs[item_field])
-                    cls.field_adaptors[item_field] = adaptor
+                    cls._field_adaptors[item_field] = adaptor
                     setattr(cls, item_field, staticmethod(adaptor))
 
         return cls
@@ -45,8 +45,9 @@ class ItemAdaptor(object):
     __metaclass__ = ItemAdaptorMeta
 
     item_class = None
-    field_adaptors = {}
     default_adaptor = IDENTITY
+
+    _field_adaptors = {}
 
     def __init__(self, response=None, item=None):
         self.item_instance = item if item else self.item_class()
@@ -54,11 +55,11 @@ class ItemAdaptor(object):
 
     def __setattr__(self, name, value):
         if (name.startswith('_') or name == 'item_instance' \
-            or name == 'default_adaptor' or name == 'field_adaptors'):
+            or name == 'default_adaptor'):
             return object.__setattr__(self, name, value)
 
         try:
-            fa = self.field_adaptors[name]
+            fa = self._field_adaptors[name]
         except KeyError:
             fa = self.default_adaptor
 
@@ -68,7 +69,7 @@ class ItemAdaptor(object):
 
     def __getattribute__(self, name):
         if (name.startswith('_') or name.startswith('item_') \
-            or name == 'default_adaptor' or name == 'field_adaptors'):
+            or name == 'default_adaptor'):
             return object.__getattribute__(self, name)
 
         return getattr(self.item_instance, name)

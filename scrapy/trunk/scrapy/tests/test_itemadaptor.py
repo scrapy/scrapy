@@ -63,8 +63,8 @@ class ItemAdaptorTest(unittest.TestCase):
             url = lambda v: v.lower()
 
         ia = ChildTestAdaptor()
-        assert 'url' in ia.field_adaptors
-        assert 'name' in ia.field_adaptors
+        assert 'url' in ia._field_adaptors
+        assert 'name' in ia._field_adaptors
 
         ia.url = 'HTTP://scrapy.ORG'
         self.assertEqual(ia.url, 'http://scrapy.org')
@@ -77,9 +77,9 @@ class ItemAdaptorTest(unittest.TestCase):
             summary = lambda v: v
 
         ia = ChildChildTestAdaptor()
-        assert 'url' in ia.field_adaptors
-        assert 'name' in ia.field_adaptors
-        assert 'summary' in ia.field_adaptors
+        assert 'url' in ia._field_adaptors
+        assert 'name' in ia._field_adaptors
+        assert 'summary' in ia._field_adaptors
 
         ia.url = 'HTTP://scrapy.ORG'
         self.assertEqual(ia.url, 'HTTP://SCRAPY.ORG')
