@@ -33,7 +33,7 @@ class DownloaderStats(object):
         
     def process_exception(self, request, exception, spider):
         ex_class = "%s.%s" % (exception.__class__.__module__, exception.__class__.__name__)
-        stats.incpath('_globl/downloader/exception_count')
+        stats.incpath('_global/downloader/exception_count')
         stats.incpath('%s/downloader/exception_count' % spider.domain_name)
         stats.incpath('%s/downloader/exception_type_count/%s' % (spider.domain_name, ex_class))
         if isinstance(exception, HttpException):
