@@ -5,9 +5,8 @@ Python Standard Library.
 This module must not depend on any module outside the Standard Library.
 """
 
-import time
 import copy
-from heapq import heappush, heappop
+from collections import deque, defaultdict
 
 class MultiValueDictKeyError(KeyError):
     pass
@@ -230,32 +229,52 @@ class CaselessDict(dict):
         return dict.pop(self, self.normkey(key), *args)
 
 
-class PriorityQueue(object):
-    """A simple priority queue"""
 
+class PriorityQueue(object):
+    """
+    Faster priority queue implementation, based on a dictionary of lists
+    @author: Federico Feroldi <federico@cloudify.me>
+    """
     def __init__(self):
-        self.items = []
+        self.items = defaultdict(deque)
 
     def push(self, item, priority=0):
-        heappush(self.items, (priority, time.time(), item))
+        self.items[priority].appendleft(item)
 
     def pop(self):
-        priority, _, item = heappop(self.items)
-        return item, priority
+        priorities = self.items.keys()
+        priorities.sort()
+        
+        for priority in priorities:
+            if len(self.items[priority]) > 0:
+                return (self.items[priority].pop(), priority)
+            
+        raise IndexError
 
     def __len__(self):
-        return len(self.items)
+        totlen = 0
+        for q in self.items.values():
+            totlen += len(q)
+        return totlen
 
     def __iter__(self):
-        return ((item, priority) for priority, _, item in self.items)
-
+        priorities = self.items.keys()
+        priorities.sort()
+        
+        for priority in priorities:
+            for i in self.items[priority]:
+                yield (i, priority)
+            
     def __nonzero__(self):
-        return bool(self.items)
+        for q in self.items.values():
+            if len(q) > 0:
+                return True
+        return False
 
 class PriorityStack(PriorityQueue):
     """A simple priority stack which is similar to PriorityQueue but pops its
     items in reverse order (for the same priority)"""
 
     def push(self, item, priority=0):
-        heappush(self.items, (priority, -time.time(), item))
+        self.items[priority].append(item)
 
