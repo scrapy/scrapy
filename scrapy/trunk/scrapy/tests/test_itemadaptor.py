@@ -22,7 +22,7 @@ class TestAdaptor(BaseAdaptor):
 
 
 class DefaultedAdaptor(BaseAdaptor):
-    default_adaptor = lambda v: v.title()
+    default_adaptor = lambda v: v[:-1]
 
 
 class InheritDefaultAdaptor(DefaultedAdaptor):
@@ -51,12 +51,12 @@ class ItemAdaptorTest(unittest.TestCase):
         dta = DefaultedAdaptor()
         assert dta.default_adaptor
         dta.name = 'marta'
-        assert dta.name == 'Marta'
+        self.assertEqual(dta.name, 'mart')
 
     def test_inheritdefaultadaptor(self):
         ida = InheritDefaultAdaptor()
         ida.name = 'marta'
-        assert ida.name == 'Marta'
+        assert ida.name == 'mart'
 
     def test_inheritance(self):
         class ChildTestAdaptor(TestAdaptor):
@@ -101,7 +101,7 @@ class ItemAdaptorTest(unittest.TestCase):
 
         dia = ChildAdaptorDefaulted()
         dia.name = 'marta'
-        self.assertEqual(dia.name, 'mARTA')
+        self.assertEqual(dia.name, 'MART')
 
     def test_multiplevaluedadaptor(self):
         ma = MultiValuedItemAdaptor()
