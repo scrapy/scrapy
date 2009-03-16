@@ -198,3 +198,11 @@ def string_camelcase(string):
     """
     return CAMELCASE_INVALID_CHARS.sub('', string.title())
 
+
+def item_to_dict(item):
+    """Returns a dict representation of an item"""
+    res = {}
+    for field in item.fields:
+        res[field] = getattr(item, field)
+        
+    return res
