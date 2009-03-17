@@ -250,8 +250,10 @@ class ExecutionEngine(object):
                 elif isinstance(item, Request):
                     signals.send_catch_log(signal=signals.request_received, sender=self.__class__, request=item, spider=spider, response=response)
                     self.crawl(request=item, spider=spider, priority=priority)
+                elif item is None:
+                    pass # may be next time.
                 else:
-                    log.msg("Spider must return Request or ScrapedItem objects, got '%s' while processing %s" % (type(item).__name__, request), log.WARNING, domain=domain)
+                    log.msg("Spider can return Request, ScrapedItem or None, got '%s' while processing %s" % (type(item).__name__, request), log.WARNING, domain=domain)
 
             class _ResultContainer(object):
                 def append(self, item):
