@@ -253,7 +253,7 @@ class ExecutionEngine(object):
                 elif item is None:
                     pass # may be next time.
                 else:
-                    log.msg("Spider can return Request, ScrapedItem or None, got '%s' while processing %s" % (type(item).__name__, request), log.WARNING, domain=domain)
+                    log.msg("Spider must return Request, ScrapedItem or None, got '%s' while processing %s" % (type(item).__name__, request), log.WARNING, domain=domain)
 
             class _ResultContainer(object):
                 def append(self, item):
