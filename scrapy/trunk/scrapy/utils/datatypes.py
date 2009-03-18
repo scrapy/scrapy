@@ -7,6 +7,7 @@ This module must not depend on any module outside the Standard Library.
 
 import copy
 from collections import deque, defaultdict
+from itertools import chain
 
 class MultiValueDictKeyError(KeyError):
     pass
@@ -229,52 +230,75 @@ class CaselessDict(dict):
         return dict.pop(self, self.normkey(key), *args)
 
 
-
 class PriorityQueue(object):
-    """
-    Faster priority queue implementation, based on a dictionary of lists
-    @author: Federico Feroldi <federico@cloudify.me>
-    """
+    """Priority queue using a deque for priority 0"""
+
     def __init__(self):
-        self.items = defaultdict(deque)
+        self.negitems = defaultdict(deque)
+        self.pzero = deque()
+        self.positems = defaultdict(deque)
 
     def push(self, item, priority=0):
-        self.items[priority].appendleft(item)
+        if priority == 0:
+            self.pzero.appendleft(item)
+        elif priority < 0:
+            self.negitems[priority].appendleft(item)
+        else:
+            self.positems[priority].appendleft(item)
 
     def pop(self):
-        priorities = self.items.keys()
-        priorities.sort()
-        
-        for priority in priorities:
-            if len(self.items[priority]) > 0:
-                return (self.items[priority].pop(), priority)
-            
-        raise IndexError
+        if self.negitems:
+            priorities = self.negitems.keys()
+            priorities.sort()
+            for priority in priorities:
+                deq = self.negitems[priority]
+                if deq:
+                    t = (deq.pop(), priority)
+                    if not deq:
+                        del self.negitems[priority]
+                    return t
+        elif self.pzero:
+            return (self.pzero.pop(), 0)
+        else:
+            priorities = self.positems.keys()
+            priorities.sort()
+            for priority in priorities:
+                deq = self.positems[priority]
+                if deq:
+                    t = (deq.pop(), priority)
+                    if not deq:
+                        del self.positems[priority]
+                    return t
+        raise IndexError("pop from an empty queue")
 
     def __len__(self):
-        totlen = 0
-        for q in self.items.values():
-            totlen += len(q)
-        return totlen
+        total = sum(len(v) for v in self.negitems.values()) + \
+                len(self.pzero) + \
+                sum(len(v) for v in self.positems.values())
+        return total
 
     def __iter__(self):
-        priorities = self.items.keys()
-        priorities.sort()
-        
-        for priority in priorities:
-            for i in self.items[priority]:
-                yield (i, priority)
-            
+        gen_negs = ((i, priority) 
+                    for priority in sorted(self.negitems.keys())
+                    for i in reversed(self.negitems[priority]))
+        gen_zeros = ((item,0) for item in self.pzero)
+        gen_pos = ((i, priority) 
+                    for priority in sorted(self.positems.keys())
+                    for i in reversed(self.positems[priority]))
+        return chain(gen_negs, gen_zeros, gen_pos)
+
     def __nonzero__(self):
-        for q in self.items.values():
-            if len(q) > 0:
-                return True
-        return False
+        return bool(self.negitems or self.pzero or self.positems)
 
 class PriorityStack(PriorityQueue):
     """A simple priority stack which is similar to PriorityQueue but pops its
     items in reverse order (for the same priority)"""
 
     def push(self, item, priority=0):
-        self.items[priority].append(item)
+        if priority == 0:
+            self.pzero.append(item)
+        elif priority < 0:
+            self.negitems[priority].append(item)
+        else:
+            self.positems[priority].append(item)
 
