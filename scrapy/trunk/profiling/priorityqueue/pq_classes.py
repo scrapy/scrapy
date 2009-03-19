@@ -3,9 +3,13 @@ from heapq import heappush, heappop
 import time
 from itertools import chain
 
+#------------------------------------------------------------------------------
 
 class PriorityQueue1(object):
-    """A simple priority queue"""
+    """heapq
+
+    A simple priority queue
+    """
 
     def __init__(self, size=1):
         self.items = []
@@ -26,9 +30,23 @@ class PriorityQueue1(object):
     def __nonzero__(self):
         return bool(self.items)
 
-class PriorityQueue2(object):
+
+class PriorityQueue1b(PriorityQueue1):
+    """heapq+int
+
+    A simple priority queue using incremental integer instead of time.time()
     """
-    Faster priority queue implementation, based on a dictionary of lists
+    time = 0
+
+    def push(self, item, priority=0):
+        self.time += 1
+        heappush(self.items, (priority, time, item))
+
+#------------------------------------------------------------------------------
+
+class PriorityQueue2(object):
+    """dict+deque
+
     @author: Federico Feroldi <federico@cloudify.me>
     """
     def __init__(self, size=1):
@@ -67,8 +85,10 @@ class PriorityQueue2(object):
                 return True
         return False
 
+#------------------------------------------------------------------------------
+
 class PriorityQueue3(object):
-    """Priority queue using a deque for priority 0"""
+    """deque+heapq"""
 
     def __init__(self, size=1):
         self.negitems = []
@@ -108,10 +128,27 @@ class PriorityQueue3(object):
         return bool(self.negitems and self.pzero and self.positems)
 
 
+class PriorityQueue3b(PriorityQueue3):
+    """deque+heapq+int"""
+
+    left_time = 0
+    righ_time = 0
+
+    def push(self, item, priority=0):
+        if priority == 0:
+            self.pzero.appendleft(item)
+        elif priority < 0:
+            self.left_time += 1
+            heappush(self.negitems, (priority, self.left_time, item))
+        else:
+            self.righ_time += 1
+            heappush(self.positems, (priority, self.righ_time, item))
+
+
 #------------------------------------------------------------------------------
 
 class PriorityQueue4(object):
-    """Priority queue using a deque for priority 0"""
+    """deque+defaultdict+deque"""
 
     def __init__(self, size=1):
         self.negitems = defaultdict(deque)
@@ -174,7 +211,7 @@ class PriorityQueue4(object):
 #------------------------------------------------------------------------------
 
 class PriorityQueue5(object):
-    """Priority queue using a deque for priority 0"""
+    """list+deque"""
 
     def __init__(self, size=1):
         # preallocate deques for a fixed number of priorities
@@ -205,15 +242,9 @@ class PriorityQueue5(object):
     def __nonzero__(self):
         return bool(len(self))
 
-class PriorityQueue6(object):
-    """Priority queue using a deque for priority 0"""
-
-    def __init__(self, size=1):
-        # preallocate deques for a fixed number of priorities
-        size = size if size % 2 else size + 1
-        self.zero = size // 2
-        self.index = 0
-        self.priolist = [deque() for _ in range(size)]
+class PriorityQueue5b(PriorityQueue5):
+    """list+deque+cache"""
+    index = 0
 
     def push(self, item, priority=0):
         i = priority + self.zero
@@ -232,22 +263,10 @@ class PriorityQueue6(object):
 
         raise IndexError("pop from an empty queue")
 
-    def __len__(self):
-        return sum(len(v) for v in self.priolist)
-
-    def __iter__(self):
-        for prio, queue in enumerate(self.priolist):
-            final = prio - self.zero
-            for i in reversed(queue):
-                yield (i, final)
-
-    def __nonzero__(self):
-        return bool(len(self))
-
 
 from itertools import islice
-class PriorityQueue6b(PriorityQueue6):
-    """Priority queue using a deque for priority 0"""
+class PriorityQueue5c(PriorityQueue5b):
+    """list+deque+cache+islice"""
 
     def pop(self):
         cached = self.priolist[self.index]
@@ -260,6 +279,8 @@ class PriorityQueue6b(PriorityQueue6):
                 return (queue.pop(), prio - self.zero)
 
         raise IndexError("pop from an empty queue")
+
+#------------------------------------------------------------------------------
 
 
 __all__ = [name for name in globals().keys() if name.startswith('PriorityQueue')]

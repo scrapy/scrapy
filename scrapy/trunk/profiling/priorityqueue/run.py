@@ -10,12 +10,14 @@ TESTID = os.getpid()
 
 TESTCASES = [
        ("heapq", PriorityQueue1),
+       #("heapq+int", PriorityQueue1b),
        ("dict+deque", PriorityQueue2),
        ("deque+heapq", PriorityQueue3),
+       #("deque+heapq+int", PriorityQueue3b),
        ("deque+defaultdict+deque", PriorityQueue4),
-       ('list+deque', PriorityQueue5),
-       ('list+deque+cache', PriorityQueue6),
-       ('list+deque+cache+islice', PriorityQueue6b),
+       #('list+deque', PriorityQueue5),
+       ('list+deque+cache', PriorityQueue5b),
+       #('list+deque+cache+islice', PriorityQueue5c),
        ]
 
 
