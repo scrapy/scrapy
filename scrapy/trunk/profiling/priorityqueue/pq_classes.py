@@ -208,6 +208,91 @@ class PriorityQueue4(object):
     def __nonzero__(self):
         return bool(self.negitems or self.pzero or self.positems)
 
+class PriorityQueue4b(object):
+    """deque+defaultdict+deque+cache"""
+
+    def __init__(self, size=1):
+        self.negitems = defaultdict(deque)
+        self.pzero = deque()
+        self.positems = defaultdict(deque)
+        self._sort_neg = False
+        self._sort_pos = False
+        self._cached_sorted_negitems = []
+        self._cached_sorted_positems = []
+
+    def push(self, item, priority=0):
+        if priority == 0:
+            self.pzero.appendleft(item)
+        elif priority < 0:
+            if priority not in self.negitems:
+                self._sort_neg = True
+            self.negitems[priority].appendleft(item)
+        else:
+            if priority not in self.positems:
+                self._sort_pos = True
+            self.positems[priority].appendleft(item)
+
+    def pop(self):
+        if self.negitems:
+            if self._sort_neg:
+                priorities = self.negitems.keys()
+                priorities.sort()
+                self._cached_sorted_negitems = priorities
+                self._sort_neg = False
+            else:
+                priorities = self._cached_sorted_negitems
+
+            for priority in priorities:
+                deq = self.negitems[priority]
+                if deq:
+                    t = (deq.pop(), priority)
+                    if not deq:
+                        self._sort_neg = True
+                        del self.negitems[priority]
+                    return t
+        elif self.pzero:
+            return (self.pzero.pop(), 0)
+        else:
+            if self._sort_pos:
+                priorities = self.positems.keys()
+                priorities.sort()
+                self._cached_sorted_positems = priorities
+                self._sort_pos = False
+            else:
+                priorities = self._cached_sorted_positems
+
+            priorities = self.positems.keys()
+            priorities.sort()
+            for priority in priorities:
+                deq = self.positems[priority]
+                if deq:
+                    t = (deq.pop(), priority)
+                    if not deq:
+                        self._sort_pos = True
+                        del self.positems[priority]
+                    return t
+        raise IndexError("pop from an empty queue")
+
+    def __len__(self):
+        total = sum(len(v) for v in self.negitems.values()) + \
+                len(self.pzero) + \
+                sum(len(v) for v in self.positems.values())
+        return total
+
+    def __iter__(self):
+        gen_negs = ((i, priority) 
+                    for priority in sorted(self.negitems.keys())
+                    for i in reversed(self.negitems[priority]))
+        gen_zeros = ((item,0) for item in self.pzero)
+        gen_pos = ((i, priority) 
+                    for priority in sorted(self.positems.keys())
+                    for i in reversed(self.positems[priority]))
+        return chain(gen_negs, gen_zeros, gen_pos)
+
+
+    def __nonzero__(self):
+        return bool(self.negitems or self.pzero or self.positems)
+
 #------------------------------------------------------------------------------
 
 class PriorityQueue5(object):
@@ -281,7 +366,5 @@ class PriorityQueue5c(PriorityQueue5b):
         raise IndexError("pop from an empty queue")
 
 #------------------------------------------------------------------------------
-
-
 
 __all__ = [name for name in globals().keys() if name.startswith('PriorityQueue')]

@@ -15,6 +15,7 @@ TESTCASES = (
        ("deque+heapq", PriorityQueue3),
        #("deque+heapq+int", PriorityQueue3b),
        ("deque+defaultdict+deque", PriorityQueue4),
+       ("deque+defaultdict+deque+cache", PriorityQueue4b),
        #('list+deque', PriorityQueue5),
        ('list+deque+cache', PriorityQueue5b),
        #('list+deque+cache+islice', PriorityQueue5c),
@@ -38,10 +39,9 @@ from __main__ import %(PriorityClass)s as PriorityQueue
 q = PriorityQueue(%(priorities)i)
 
 randomprio = deque()
-with open('%(samplefile)s') as samples:
-    for line in samples:
-        prio = int(line.strip())
-        randomprio.append(prio)
+for line in open('%(samplefile)s'):
+    prio = int(line.strip())
+    randomprio.append(prio)
 """
 
 
