@@ -1,6 +1,5 @@
 import sys
 import unittest
-from pq_classes import PriorityQueue1, PriorityQueue2, PriorityQueue3, PriorityQueue4, PriorityQueue5, PriorityQueue6
 from pq_classes import *
 
 # (ITEM, PRIORITY)
