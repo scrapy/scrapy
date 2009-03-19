@@ -15,6 +15,7 @@ TESTCASES = [
        ("deque+defaultdict+deque", PriorityQueue4),
        ('list+deque', PriorityQueue5),
        ('list+deque+cache', PriorityQueue6),
+       ('list+deque+cache+islice', PriorityQueue6b),
        ]
 
 

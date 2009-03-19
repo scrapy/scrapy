@@ -245,4 +245,21 @@ class PriorityQueue6(object):
         return bool(len(self))
 
 
+from itertools import islice
+class PriorityQueue6b(PriorityQueue6):
+    """Priority queue using a deque for priority 0"""
 
+    def pop(self):
+        cached = self.priolist[self.index]
+        if cached:
+            return (cached.pop(), self.index - self.zero)
+
+        for prio, queue in enumerate(islice(self.priolist, self.index, None), self.index):
+            if queue:
+                self.index = prio
+                return (queue.pop(), prio - self.zero)
+
+        raise IndexError("pop from an empty queue")
+
+
+__all__ = [name for name in globals().keys() if name.startswith('PriorityQueue')]
