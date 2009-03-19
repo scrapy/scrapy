@@ -216,20 +216,19 @@ class PriorityQueue6(object):
         self.priolist = [deque() for _ in range(size)]
 
     def push(self, item, priority=0):
-        final = priority + self.zero
-        if self.index > final:
-            self.index = final
-        self.priolist[final].appendleft(item)
+        i = priority + self.zero
+        self.priolist[i].appendleft(item)
+        self.index = min(self.index, i)
 
     def pop(self):
         cached = self.priolist[self.index]
-        if len(cached):
+        if cached:
             return (cached.pop(), self.index - self.zero)
 
         for prio, queue in enumerate(self.priolist[self.index:]):
-            if len(queue):
-                final = prio + self.index - self.zero
-                return (queue.pop(), final)
+            if queue:
+                self.index += prio
+                return (queue.pop(), self.index - self.zero)
 
         raise IndexError("pop from an empty queue")
 
