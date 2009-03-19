@@ -54,6 +54,10 @@ class TestPriorityQueue(object):
         pq.pop()
         self.assertEquals(len(pq), 0)
 
+    def test_indexerror(self):
+        pq = self.PriorityQueue(PRIOSIZE)
+        self.assertRaises(IndexError, pq.pop)
+
 
 # automatically test any PriorityQueueN class defined at pq_classes
 prioclasses = [(name, cls) for name, cls in globals().items() if name.startswith('PriorityQueue')]

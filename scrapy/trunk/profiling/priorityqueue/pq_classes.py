@@ -132,7 +132,7 @@ class PriorityQueue3b(PriorityQueue3):
     """deque+heapq+int"""
 
     left_time = 0
-    righ_time = 0
+    right_time = 0
 
     def push(self, item, priority=0):
         if priority == 0:
@@ -141,8 +141,8 @@ class PriorityQueue3b(PriorityQueue3):
             self.left_time += 1
             heappush(self.negitems, (priority, self.left_time, item))
         else:
-            self.righ_time += 1
-            heappush(self.positems, (priority, self.righ_time, item))
+            self.right_time += 1
+            heappush(self.positems, (priority, self.right_time, item))
 
 
 #------------------------------------------------------------------------------
@@ -240,7 +240,7 @@ class PriorityQueue5(object):
                 yield (i, final)
 
     def __nonzero__(self):
-        return bool(len(self))
+        return any(d for d in self.priolist)
 
 class PriorityQueue5b(PriorityQueue5):
     """list+deque+cache"""
@@ -281,6 +281,7 @@ class PriorityQueue5c(PriorityQueue5b):
         raise IndexError("pop from an empty queue")
 
 #------------------------------------------------------------------------------
+
 
 
 __all__ = [name for name in globals().keys() if name.startswith('PriorityQueue')]
