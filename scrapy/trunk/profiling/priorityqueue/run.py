@@ -1,5 +1,12 @@
+from __future__ import with_statement
+import os
 import timeit
+import random
+from optparse import OptionParser
+from tempfile import mktemp
 from pq_classes import *
+
+TESTID = os.getpid()
 
 TESTCASES = [
        ("heapq", PriorityQueue1),
@@ -11,46 +18,94 @@ TESTCASES = [
        ]
 
 
-stmt_single = """
-for n in xrange(%(pushpops)s):
-    q.push(n)
+stmt_fmt = """
+for n, prio in enumerate(randomprio):
+    q.push(n, prio)
 
-for n in xrange(%(pushpops)s):
-    q.pop()
-"""
-
-stmt_multi = """
-for n in xrange(%(pushpops)s):
-    q.push(n, int(random.random() * %(priorities)s) - %(priorities)s / 2)
-
-for n in xrange(%(pushpops)s):
-    q.pop()
+try:
+    while True:
+        q.pop()
+except IndexError:
+    pass
 """
 
 setup_fmt = """
-import random
+from collections import deque
 from __main__ import %(PriorityClass)s as PriorityQueue
 q = PriorityQueue(%(priorities)i)
+
+randomprio = deque()
+with open('%(samplefile)s') as samples:
+    for line in samples:
+        prio = int(line.strip())
+        randomprio.append(prio)
 """
 
+# def gen_random_priority(priorities):
+#     return int(random.random() * priorities) - (priorities / 2)
 
-def runtests(pushpops=50*1000, times=30, priorities=1):
-    print "\n== With %s priorities ==\n" % priorities
+def uniform_priority(priorities):
+    return int(random.random() * priorities) - (priorities / 2)
+
+def normal_priority(priorities):
+    prio = int(random.normalvariate(priorities/2, priorities/4)) - (priorities / 2)
+    return min(max(prio, -priorities/2), priorities/2)
+
+
+PRIORITY_DISTRIBUTIONS = {
+        'uniform': uniform_priority,
+        'normal': normal_priority,
+        }
+
+
+def gen_samples(count, priorities, priority_distribution=uniform_priority):
+    fn = '/tmp/pq-%i-%i-%i' % (TESTID, priorities, count)
+
+    with open(fn, 'w') as samplefile:
+        for n in xrange(count):
+            prio = priority_distribution(priorities)
+            samplefile.write('%i\n' % prio)
+    return fn
+
+def runtests(pushpops=50*1000, times=30, priorities=1, samplefile=None, priority_distribution=uniform_priority):
+    samplefile = samplefile or gen_samples(pushpops, priorities)
+
+    print "\n== With %s priorities (%s) ==\n" % (priorities, samplefile)
     print "pushpops = %s, times = %s" % (pushpops, times)
 
-    stmt_fmt = stmt_multi if priorities > 1 else stmt_single
-    stmt = stmt_fmt % {'priorities': priorities, 'pushpops': pushpops}
 
+    stmt = stmt_fmt
     for name, cls in TESTCASES:
-        setup = setup_fmt % {'PriorityClass': cls.__name__, 'priorities': priorities}
+        setup = setup_fmt % {
+                'PriorityClass': cls.__name__,
+                'priorities': priorities,
+                'samplefile': samplefile,
+                }
         t = timeit.Timer(stmt, setup)
         print "%s implementation: %s" % (name, t.timeit(number=times))
 
+
 if __name__ == '__main__':
-    runtests()
-    runtests(priorities=5)
-    runtests(priorities=10)
-    runtests(priorities=100)
+    o = OptionParser()
+    o.add_option('-n', '--samples-count', type='int', default=50000, metavar='NUMBER',
+            help='The max number or samples to generate')
+    o.add_option('-r', '--retry-times', type='int', default=30, metavar='NUMBER',
+            help='the times to retry each test')
+    o.add_option('-s', '--samplefile', default=None, metavar='FILENAME',
+            help='load samples from file, default: use sample generator')
+    o.add_option('-p', '--priorities', default='1,3,5,10,100', metavar='CSV_PRIOLIST',
+            help='a comma separated list of priorities to test')
+    o.add_option('-d', '--priority-distribution', default='uniform', metavar='DISTRIBUTION',
+            help='distribution used for random priority generator, default: uniform. possibles: %s' \
+                    % ','.join(PRIORITY_DISTRIBUTIONS.keys()))
+
+    opt, args = o.parse_args()
+
+    priolist = map(int, opt.priorities.split(','))
+    distribution = PRIORITY_DISTRIBUTIONS[opt.priority_distribution]
+    for prio in priolist:
+        runtests(pushpops=opt.samples_count, priorities=prio, times=opt.retry_times,
+                samplefile=opt.samplefile, priority_distribution=distribution)
 
 # Results (in seconds, on an intel core2 2.16ghz):
 # == Without priorities ==
