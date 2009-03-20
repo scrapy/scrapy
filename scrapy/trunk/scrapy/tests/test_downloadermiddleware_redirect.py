@@ -13,14 +13,12 @@ class RedirectMiddlewareTest(unittest.TestCase):
         spiders.reload()
         self.spider = spiders.fromdomain('scrapytest.org')
         dupefilter.open('scrapytest.org')
+        self.mw = RedirectMiddleware()
 
     def tearDown(self):
         dupefilter.close('scrapytest.org')
 
     def test_process_exception(self):
-
-        mw = RedirectMiddleware()
-
         url = 'http://www.example.com/301'
         url2 = 'http://www.example.com/redirected'
         req = Request(url)
@@ -28,7 +26,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
         rsp = Response(url, headers=hdr)
         exc = HttpException('301', None, rsp)
 
-        req2 = mw.process_exception(req, exc, self.spider)
+        req2 = self.mw.process_exception(req, exc, self.spider)
         assert isinstance(req2, Request)
         self.assertEqual(req2.url, url2)
 
@@ -39,22 +37,19 @@ class RedirectMiddlewareTest(unittest.TestCase):
         rsp = Response(url, headers=hdr)
         exc = HttpException('302', None, rsp)
 
-        req2 = mw.process_exception(req, exc, self.spider)
+        req2 = self.mw.process_exception(req, exc, self.spider)
         assert isinstance(req2, Request)
         self.assertEqual(req2.url, url2)
         self.assertEqual(req2.method, 'GET')
         assert not req2.body
 
     def test_process_response(self):
-
-        mw = RedirectMiddleware()
-
         body = """<html>
             <head><meta http-equiv="refresh" content="5;url=http://example.org/newpage" /></head>
             </html>"""
         req = Request(url='http://example.org')
         rsp = Response(url='http://example.org', body=body)
-        req2 = mw.process_response(req, rsp, self.spider)
+        req2 = self.mw.process_response(req, rsp, self.spider)
 
         assert isinstance(req2, Request)
         self.assertEqual(req2.url, 'http://example.org/newpage')
@@ -65,9 +60,32 @@ class RedirectMiddlewareTest(unittest.TestCase):
             </html>"""
         req = Request(url='http://example.org')
         rsp = Response(url='http://example.org', body=body)
-        rsp2 = mw.process_response(req, rsp, self.spider)
+        rsp2 = self.mw.process_response(req, rsp, self.spider)
 
         assert rsp is rsp2
+
+    def test_max_redirect_times(self):
+        self.mw.max_redirect_times = 1
+        req = Request('http://scrapytest.org/302')
+        exc = HttpException('302', None, Response('http://www.scrapytest.org/302', headers={'Location': '/redirected'}))
+
+        req = self.mw.process_exception(req, exc, self.spider)
+        assert isinstance(req, Request)
+        assert 'redirect_times' in req.meta
+        self.assertEqual(req.meta['redirect_times'], 1)
+
+        req = self.mw.process_exception(req, exc, self.spider)
+        self.assertEqual(req, None)
+
+    def test_ttl(self):
+        self.mw.max_redirect_times = 100
+        req = Request('http://scrapytest.org/302', meta={'redirect_ttl': 1})
+        exc = HttpException('302', None, Response('http://www.scrapytest.org/302', headers={'Location': '/redirected'}))
+
+        req = self.mw.process_exception(req, exc, self.spider)
+        assert isinstance(req, Request)
+        req = self.mw.process_exception(req, exc, self.spider)
+        self.assertEqual(req, None)
 
 if __name__ == "__main__":
     unittest.main()

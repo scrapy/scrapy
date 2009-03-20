@@ -2,9 +2,7 @@ from scrapy import log
 from scrapy.core.exceptions import HttpException
 from scrapy.utils.url import urljoin_rfc as urljoin
 from scrapy.utils.response import get_meta_refresh
-
-class RedirectLoop(Exception):
-    pass
+from scrapy.conf import settings
 
 # some sites use meta-refresh for redirecting to a session expired page, so we
 # restrict automatic redirection to a maximum delay (in number of seconds)
@@ -12,6 +10,9 @@ META_REFRESH_MAXSEC = 100
 MAX_REDIRECT_LOOP = 10
 
 class RedirectMiddleware(object):
+    def __init__(self):
+        self.max_redirect_times = settings.getint('REDIRECTMIDDLEWARE_MAX_TIMES')
+
     def process_exception(self, request, exception, spider):
         if not isinstance(exception, HttpException):
             return
@@ -39,7 +40,18 @@ class RedirectMiddleware(object):
         return response
 
     def _redirect(self, redirected, request, spider, reason):
-        domain = spider.domain_name
-        log.msg("Redirecting (%s) to %s from %s" % (reason, redirected, request), level=log.DEBUG, domain=domain)
-        return redirected
+        ttl = request.meta.setdefault('redirect_ttl', self.max_redirect_times)
+        redirects = request.meta.get('redirect_times', 0) + 1
+
+        if ttl and redirects <= self.max_redirect_times:
+            redirected.meta['redirect_times'] = redirects
+            redirected.meta['redirect_ttl'] = ttl - 1
+            redirected.dont_filter = request.dont_filter
+            log.msg("Redirecting (%s) to %s from %s" % (reason, redirected, request),
+                    domain=spider.domain_name, level=log.DEBUG)
+            return redirected
+        else:
+            log.msg("Discarding %s: max redirections reached" % request,
+                    domain=spider.domain_name, level=log.DEBUG)
+
 

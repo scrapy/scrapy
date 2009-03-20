@@ -135,6 +135,8 @@ NEWSPIDER_MODULE = ''
 
 PRIORITIZER = 'scrapy.core.prioritizers.RandomPrioritizer'
 
+REDIRECTMIDDLEWARE_MAX_TIMES = 20 # uses Firefox default setting
+
 REQUEST_HEADER_ACCEPT = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
 REQUEST_HEADER_ACCEPT_LANGUAGE = 'en'
 
@@ -144,6 +146,7 @@ REQUESTS_PER_DOMAIN = 8     # max simultaneous requests per domain
 # contrib.middleware.retry.RetryMiddleware default settings
 RETRY_TIMES = 2 # initial response + 2 retries = 3 requests
 RETRY_HTTP_CODES = ['500', '503', '504', '400', '408', '200']
+
 
 ROBOTSTXT_OBEY = False
 
