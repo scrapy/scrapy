@@ -46,7 +46,7 @@ class ScrapyCommand(object):
         parser.add_option("--profile", dest="profile", default=None, help="write profiling stats in FILE, to analyze later with: python -m pstats FILE", metavar="FILE")
         parser.add_option("--pidfile", dest="pidfile", help="Write process pid to file FILE", metavar="FILE")
         parser.add_option("--set", dest="settings", action="append", metavar="SETTING:VALUE", default=[], 
-                            help="Override Scrapy setting SETTING with VALUE")
+                            help="Override Scrapy setting SETTING with VALUE. May be repeated.")
         
     def process_options(self, args, opts):
         if opts.logfile:
@@ -74,10 +74,10 @@ class ScrapyCommand(object):
 
         for setting in opts.settings:
             if ':' in setting:
-                name, val = setting.split(':')
+                name, val = setting.split(':', 1)
                 settings.overrides[name] = val
             else:
-                sys.stderr.write("%s: invalid argument --set=%s - proper format is -set=SETTING:VALUE'\n" % (sys.argv[0], setting))
+                sys.stderr.write("%s: invalid argument --set=%s - proper format is --set=SETTING:VALUE'\n" % (sys.argv[0], setting))
                 sys.exit(2)
 
     def run(self, args, opts):

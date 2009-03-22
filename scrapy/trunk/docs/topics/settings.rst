@@ -41,10 +41,17 @@ Example::
    >>> from scrapy.conf import settings
    >>> settings.overrides['LOG_ENABLED'] = True
 
-2. Environment variables
-------------------------
+You can also override one (or more) settings from command line using the
+``--set`` command line argument. 
 
 .. highlight:: sh
+
+Example::
+
+    scrapy-ctl.py crawl domain.com --set=LOG_FILE:/tmp/scrapy.log
+
+2. Environment variables
+------------------------
 
 You can populate settings using environment variables prefixed with
 ``SCRAPY_``. For example, to change the log file location::
