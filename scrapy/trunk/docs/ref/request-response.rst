@@ -176,17 +176,18 @@ Using lambda function::
                           callback=lambda r: self.parse_page2(r, myarg))
 
     def parse_page2(self, response, referer_url):
-        self.log("Visited page %s from %s" % (response.url, arg))
+        self.log("Visited page %s from %s" % (response.url, referer_url))
 
 Using Request.meta::
 
     def parse_page1(self, response):
         request = Request("http://www.example.com/some_page.html", 
-                          callback=lambda r: self.parse_page2(r, myarg))
+                          callback=self.parse_page2)
         request.meta['referer_url'] = response.url
 
     def parse_page2(self, response):
-        self.log("Visited page %s from %s" % (response.url, request.meta['referer_url']))
+        referer_url = response.request.meta['referer_url']
+        self.log("Visited page %s from %s" % (response.url, referer_url))
 
 .. _ref-request-subclasses: 
 
