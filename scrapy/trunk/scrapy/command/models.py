@@ -2,6 +2,7 @@
 Base class for Scrapy commands
 """
 import os
+import sys
 from scrapy.conf import settings
 
 class ScrapyCommand(object):
@@ -44,6 +45,8 @@ class ScrapyCommand(object):
         parser.add_option("--nolog", dest="nolog", action="store_true", help="disable all log messages")
         parser.add_option("--profile", dest="profile", default=None, help="write profiling stats in FILE, to analyze later with: python -m pstats FILE", metavar="FILE")
         parser.add_option("--pidfile", dest="pidfile", help="Write process pid to file FILE", metavar="FILE")
+        parser.add_option("--set", dest="settings", action="append", metavar="SETTING:VALUE", default=[], 
+                            help="Override Scrapy setting SETTING with VALUE")
         
     def process_options(self, args, opts):
         if opts.logfile:
@@ -68,6 +71,14 @@ class ScrapyCommand(object):
         if opts.pidfile:
             pid = os.getpid()
             open(opts.pidfile, "w").write(str(pid))
+
+        for setting in opts.settings:
+            if ':' in setting:
+                name, val = setting.split(':')
+                settings.overrides[name] = val
+            else:
+                sys.stderr.write("%s: invalid argument --set=%s - proper format is -set=SETTING:VALUE'\n" % (sys.argv[0], setting))
+                sys.exit(2)
 
     def run(self, args, opts):
         """
