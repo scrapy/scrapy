@@ -39,15 +39,15 @@ If you're running Ubuntu/Debian Linux run the following command as root::
 Arch Linux
 ----------
 
-If you are running Arch Linux use the following command to install required dependencies::
+If you are running Arch Linux run the following command as root::
 
    pacman -S twisted libxml2 pyopenssl
 
 MacOSX
 ------
 
-MacOSX ships an libxml2 version too old to be used by Scrapy. Also, by
-looking on the web it seems that installing libxml2 on MacOSX is a bit
+MacOSX ships an ``libxml2`` version too old to be used by Scrapy. Also, by
+looking on the web it seems that installing ``libxml2`` on MacOSX is a bit
 of a challenge. Here is a way to achieve this, though not acceptable
 on the long run:
 
@@ -70,7 +70,7 @@ referencing your current python framework.
        sudo make install
 
    The libraries and modules should be installed in something like
-   /usr/local/lib/python2.5/site-packages. Add it to your PYTHONPATH
+   /usr/local/lib/python2.5/site-packages. Add it to your ``PYTHONPATH``
    and you are done. Check the library is there with a simple::
 
        python -c 'import libxml2'
@@ -84,8 +84,8 @@ Download and install:
 2. `PyOpenSSL for Windows <http://sourceforge.net/project/showfiles.php?group_id=31249>`_
 3. `libxml2 for Windows <http://users.skynet.be/sbi/libxml-python/>`_
 
-Install Scrapy code
-===================
+Install Scrapy
+==============
 
 We're working hard to get the first release of Scrapy out. In the meantime,
 please download the latest development version from the Subversion_ repository.
@@ -100,24 +100,43 @@ To do this, follow this steps:
 
 2. Add Scrapy to your Python path:
 
-   You can do this by making a symbolic link to your system ``site-packages``
-   directory like this::
+   If you're using Linux, Mac OS X or some other flavor of Unix, you can do
+   this by making a symbolic link to your system ``site-packages`` directory
+   like this::
 
-      ln -s `pwd`/scrapy-trunk/scrapy SITE-PACKAGES/scrapy
+      ln -s /path/to/scrapy-trunk/scrapy SITE-PACKAGES/scrapy
 
    Where ``SITE-PACKAGES`` is the location of your system ``site-packages``
    directory, to find this out execute the following::
 
       python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"
 
-   Or by adding the ``scrapy-trunk`` directory to your ``PYTHONPATH`` environment
-   variable, like this::
+   Alternatively, you can define your ``PYTHONPATH`` environment variable so
+   that it includes the scrapy-trunk directory. This is probably the most
+   convenient solution on Windows systems, which don't support symbolic links.
+   (Environment variables can be defined on Windows systems from the `Control
+   Panel`_.
 
-      export PYTHONPATH=`pwd`/scrapy-trunk:$PYTHONPATH
+   Unix-like example::
 
-3. Make the ``scrapy-trunk/scrapy/bin/scrapy-admin.py`` script executable
-   system-wide. To do this create a symbolic link to the file in a directory on
-   your sistem path, like::
+      PYTHONPATH=/path/to/scrapy-trunk
+
+   Windows example (from command line, but you should probably use the `Control
+   Panel`_)::
+
+      set PYTHONPATH=C:\path\to\scrapy-trunk
+
+3. Make the ``scrapy-admin.py`` script executable system-wide. This step is
+   optional, but convenient. If you want to be able to run "scrapy-admin-py"
+   without using its full path, you can:
+
+   In Unix-like platforms: create a symbolic link to the file in a directory on
+   your system path. Example::
    
-      ln -s `pwd`/scrapy-trunk/scrapy/bin/scrapy-admin.py /usr/local/bin
+      ln -s /path/to/scrapy-trunk/scrapy/bin/scrapy-admin.py /usr/local/bin
+
+   In Windows platforms, add the ``C:\path\to\scrapy-trunk\scrapy\bin`` folder
+   to the ``PATH`` environment variable using the `Control Panel`_.
+
+.. _Control Panel: http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
 
