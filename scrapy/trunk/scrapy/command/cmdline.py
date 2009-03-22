@@ -99,7 +99,6 @@ def execute():
     execute_with_args(sys.argv)
 
 def execute_with_args(argv):
-    spiders.load()
     cmds = builtin_commands_dict()
     cmds.update(custom_commands_dict())
 
@@ -109,7 +108,7 @@ def execute_with_args(argv):
     if not cmdname:
         print "Scrapy %s\n" % scrapy.__version__
         print usage(argv)
-        sys.exit()
+        sys.exit(2)
 
     parser = optparse.OptionParser()
 
@@ -134,6 +133,7 @@ def execute_with_args(argv):
     command_executed['opts'] = opts.__dict__.copy()
 
     cmd.process_options(args, opts)
+    spiders.load()
     log.start() # start logging
     if opts.profile:
         log.msg("Profiling enabled. Analyze later with: python -m pstats %s" % opts.profile)
