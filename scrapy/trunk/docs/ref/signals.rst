@@ -78,7 +78,7 @@ process has started).
 .. function:: engine_stopped()
 
 Sent when the Scrapy engine is stopped (for example, when a crawling
-process has started).
+process has finished).
 
 .. signal:: request_received
 .. function:: request_received(request, spider, response)
