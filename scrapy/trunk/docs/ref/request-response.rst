@@ -34,7 +34,8 @@ Request objects
     ``url`` is a string containing the URL for this request
 
     ``callback`` is a function that will be called with the response of this
-    request (once its downloaded) as its first parameter
+    request (once its downloaded) as its first parameter. For more information
+    see :ref:`ref-request-callbacks` below.
 
     ``method`` is a string with the HTTP method of this request
 
@@ -136,7 +137,58 @@ Request Methods
 
    Return a string with the raw HTTP representation of this response.
 
-.. _ref-request-subclasses:
+.. _ref-request-callbacks:
+
+Passing arguments to callback functions
+---------------------------------------
+
+The callback of a request is a function that will be called when the response
+of that request is downloaded. The callback function will be called with the
+:class:`Response` object downloaded as its first argument. 
+
+Example::
+
+    def parse_page1(self, response):
+        request = Request("http://www.example.com/some_page.html", 
+                          callback=self.parse_page2)
+
+    def parse_page2(self, response):
+        # this would log http://www.example.com/some_page.html
+        self.log("Visited %s" % response.url) 
+
+In some cases you may be interested in passing arguments to those callback
+functions so you can receive those arguments later, when the response is
+downloaded. There are two ways for doing this:
+
+    1. using a lambda function (or any other function/callable)
+    
+    2. using the :attr:`Request.meta` attribute.
+    
+Here's an example of logging the referer URL of each page using each mechanism.
+Keep in mind, however, that the referer URL could be accessed easier via
+``response.request.url``).
+
+Using lambda function::
+
+    def parse_page1(self, response):
+        myarg = response.url
+        request = Request("http://www.example.com/some_page.html", 
+                          callback=lambda r: self.parse_page2(r, myarg))
+
+    def parse_page2(self, response, referer_url):
+        self.log("Visited page %s from %s" % (response.url, arg))
+
+Using Request.meta::
+
+    def parse_page1(self, response):
+        request = Request("http://www.example.com/some_page.html", 
+                          callback=lambda r: self.parse_page2(r, myarg))
+        request.meta['referer_url'] = response.url
+
+    def parse_page2(self, response):
+        self.log("Visited page %s from %s" % (response.url, request.meta['referer_url']))
+
+.. _ref-request-subclasses: 
 
 Request subclasses
 ==================
