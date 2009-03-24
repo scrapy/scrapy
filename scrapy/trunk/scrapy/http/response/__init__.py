@@ -55,12 +55,12 @@ class Response(object):
         """
         if cls is None:
             cls = self.__class__
-        new = cls(url=url or self.url,
-                  status=status or self.status,
-                  headers=headers or copy.deepcopy(self.headers),
-                  body=body or self.body,
-                  meta=meta or self.meta,
-                  flags=flags or self.flags,
+        new = cls(url=self.url if url is None else url,
+                  status=self.status if status is None else status,
+                  headers=copy.deepcopy(self.headers) if headers is None else headers,
+                  body=self.body if body is None else body,
+                  meta=self.meta if meta is None else meta,
+                  flags=self.flags if flags is None else flags,
                   **kwargs)
         return new
 

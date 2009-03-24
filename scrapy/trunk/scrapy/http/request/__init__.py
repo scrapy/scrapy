@@ -18,7 +18,7 @@ from scrapy.utils.defer import chain_deferred
 class Request(object):
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None, 
-                 cookies=None, meta=None, encoding='utf-8', dont_filter=None):
+                 cookies=None, meta=None, encoding='utf-8', dont_filter=False):
 
         self._encoding = encoding  # this one has to be set first
         self.method = method.upper()
@@ -37,10 +37,13 @@ class Request(object):
         self.cache = {}
         
     def set_url(self, url):
-        assert isinstance(url, basestring), \
-            'Request url argument must be str or unicode, got %s:' % type(url).__name__
-        decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)
-        self._url = Url(safe_url_string(decoded_url, self.encoding))
+        if isinstance(url, basestring):
+            decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)
+            self._url = Url(safe_url_string(decoded_url, self.encoding))
+        elif isinstance(url, Url):
+            self._url = url
+        else:
+            raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
     url = property(lambda x: x._url, set_url)
 
     def set_body(self, body):
@@ -76,26 +79,23 @@ class Request(object):
         return "%s(%s)" % (self.__class__.__name__, repr(d))
 
     def copy(self):
-        """Return a copy a of this Request"""
-        new = copy.copy(self)
-        new.cache = {}
-        for att in self.__dict__:
-            if att not in ['cache', 'url', 'deferred']:
-                value = getattr(self, att)
-                setattr(new, att, copy.copy(value))
-        new.deferred = defer.Deferred()
-        return new
+        """Return a copy of this Request"""
+        return self.replace()
 
-    def replace(self, url=None, method=None, headers=None, body=None, cookies=None, meta=None):
+    def replace(self, url=None, callback=None, method=None, headers=None, body=None, 
+                cookies=None, meta=None, encoding=None, dont_filter=None):
         """Create a new Request with the same attributes except for those
         given new values.
         """
-        return self.__class__(url=url or self.url,
-                              method=method or self.method,
-                              headers=headers or copy.deepcopy(self.headers),
-                              body=body or self.body,
-                              cookies=cookies or self.cookies,
-                              meta=meta or self.meta)
+        return self.__class__(url=self.url if url is None else self.url,
+                              callback=callback,
+                              method=self.method if method is None else method,
+                              headers=copy.deepcopy(self.headers) if headers is None else headers,
+                              body=self.body if body is None else body,
+                              cookies=self.cookies if cookies is None else cookies,
+                              meta=self.meta if meta is None else meta,
+                              encoding=self.encoding if encoding is None else encoding,
+                              dont_filter=self.dont_filter if dont_filter is None else dont_filter)
 
     def httprepr(self):
         """ Return raw HTTP request representation (as string). This is

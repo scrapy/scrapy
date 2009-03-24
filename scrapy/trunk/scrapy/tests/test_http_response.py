@@ -97,6 +97,13 @@ class ResponseTest(unittest.TestCase):
         self.assertEqual(r3.url, "http://www.example.com/other")
         self.assertEqual(r3.encoding, "latin1")
 
+        # Empty attributes (which may fail if not compared properly)
+        r3 = Response("http://www.example.com", meta={'a': 1}, flags=['cached'])
+        r4 = r3.replace(body='', meta={}, flags=[])
+        self.assertEqual(r4.body, '')
+        self.assertEqual(r4.meta, {})
+        self.assertEqual(r4.flags, [])
+
     def test_httprepr(self):
         r1 = Response("http://www.example.com")
         self.assertEqual(r1.httprepr(), 'HTTP/1.1 200 OK\r\n\r\n')

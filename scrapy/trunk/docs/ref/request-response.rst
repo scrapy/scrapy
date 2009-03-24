@@ -35,7 +35,7 @@ Request objects
 
     ``callback`` is a function that will be called with the response of this
     request (once its downloaded) as its first parameter. For more information
-    see :ref:`ref-request-callbacks` below.
+    see :ref:`ref-request-callback-arguments` below.
 
     ``method`` is a string with the HTTP method of this request
 
@@ -125,19 +125,43 @@ Request Methods
 .. method:: Request.copy()
 
    Return a new Request which is a copy of this Request. The attribute
-   :attr:`Request.meta` is copied, while :attr:`Request.cache` is not.
+   :attr:`Request.meta` is copied, while :attr:`Request.cache` is not. See also
+   :ref:`ref-request-callback-arguments`.
 
 .. method:: Request.replace()
 
    Return a Request object with the same members, except for those members
    given new values by whichever keyword arguments are specified. The attribute
-   :attr:`Request.meta` is copied, while :attr:`Request.cache` is not.
+   :attr:`Request.meta` is copied, while :attr:`Request.cache` is not. See also
+   :ref:`ref-request-callback-arguments`.
 
 .. method:: Request.httprepr()
 
    Return a string with the raw HTTP representation of this response.
 
-.. _ref-request-callbacks:
+.. _ref-request-callback-copy:
+
+Copying Requests and callbacks
+------------------------------
+
+When you copy a request using the :meth:`Request.copy` or
+:meth:`Request.replace` methods the callback of the request is not copied by
+default. This is because of legacy reasons along with limitations in the
+underlying network library, which doesn't allow sharing `Twisted deferreds`.
+
+.. _Twisted deferreds: http://twistedmatrix.com/projects/core/documentation/howto/defer.html
+
+For example::
+
+    request = Request("http://www.example.com", callback=myfunc)
+    request2 = request.copy() # doesn't copy the callback
+    request3 = request.replace(callback=request.callback)
+
+In the above example, ``request2`` is a copy of ``request`` but it has no
+callback, while ``request3`` is a copy of ``request`` and also contains the
+callback.
+
+.. _ref-request-callback-arguments:
 
 Passing arguments to callback functions
 ---------------------------------------

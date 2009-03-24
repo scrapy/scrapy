@@ -7,6 +7,10 @@ class RequestTest(unittest.TestCase):
         # Request requires url in the constructor
         self.assertRaises(Exception, Request)
 
+        # url argument must be basestring or Url
+        self.assertRaises(TypeError, Request, 123)
+        r = Request(Url('http://www.example.com'))
+
         r = Request("http://www.example.com")
         assert isinstance(r.url, Url)
         self.assertEqual(r.url, "http://www.example.com")
@@ -124,6 +128,8 @@ class RequestTest(unittest.TestCase):
         # make sure headers attribute is shallow copied
         assert r1.headers is not r2.headers, "headers must be a shallow copy, not identical"
         self.assertEqual(r1.headers, r2.headers)
+        self.assertEqual(r1.encoding, r2.encoding)
+        self.assertEqual(r1.dont_filter, r2.dont_filter)
 
         # Request.body can be identical since it's an immutable object (str)
 
@@ -147,6 +153,13 @@ class RequestTest(unittest.TestCase):
         self.assertEqual((r1.method, r2.method), ("GET", "POST"))
         self.assertEqual((r1.body, r2.body), ('', "New body"))
         self.assertEqual((r1.headers, r2.headers), ({}, hdrs))
+
+        # Empty attributes (which may fail if not compared properly)
+        r3 = Request("http://www.example.com", meta={'a': 1}, dont_filter=True)
+        r4 = r3.replace(body='', meta={}, dont_filter=False)
+        self.assertEqual(r4.body, '')
+        self.assertEqual(r4.meta, {})
+        assert r4.dont_filter is False
 
     def test_httprepr(self):
         r1 = Request("http://www.example.com")
