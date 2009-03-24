@@ -87,7 +87,7 @@ class Request(object):
         """Create a new Request with the same attributes except for those
         given new values.
         """
-        return self.__class__(url=self.url if url is None else self.url,
+        return self.__class__(url=self.url if url is None else url,
                               callback=callback,
                               method=self.method if method is None else method,
                               headers=copy.deepcopy(self.headers) if headers is None else headers,

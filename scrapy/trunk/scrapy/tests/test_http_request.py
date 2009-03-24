@@ -156,7 +156,8 @@ class RequestTest(unittest.TestCase):
 
         # Empty attributes (which may fail if not compared properly)
         r3 = Request("http://www.example.com", meta={'a': 1}, dont_filter=True)
-        r4 = r3.replace(body='', meta={}, dont_filter=False)
+        r4 = r3.replace(url="http://www.example.com/2", body='', meta={}, dont_filter=False)
+        self.assertEqual(r4.url, "http://www.example.com/2")
         self.assertEqual(r4.body, '')
         self.assertEqual(r4.meta, {})
         assert r4.dont_filter is False
