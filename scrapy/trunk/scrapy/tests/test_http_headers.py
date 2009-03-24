@@ -1,4 +1,5 @@
 import unittest
+import copy
 
 from scrapy.http import Headers
 
@@ -73,4 +74,10 @@ class HeadersTest(unittest.TestCase):
         self.assertEqual(h.getlist('Content-Type'), ['text/html'])
         self.assertEqual(h.getlist('X-Forwarded-For'), ['ip1', 'ip2'])
 
+    #def test_copy(self):
+    #    h1 = Headers({'header1': ['value1', 'value2']})
+    #    h2 = copy.copy(h1)
+    #    self.assertEqual(h1, h2)
+    #    self.assertEqual(h1.getlist('header1'), h2.getlist('header1'))
+    #    assert h1.getlist('header1') is not h2.getlist('header1')
 
