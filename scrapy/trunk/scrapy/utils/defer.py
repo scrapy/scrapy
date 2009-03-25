@@ -2,6 +2,7 @@
 Helper functions for dealing with Twisted deferreds
 """
 
+from itertools import imap
 from twisted.internet import defer, reactor
 from twisted.python import failure
 
@@ -63,19 +64,38 @@ def lambda_deferred(func):
         return d
     return deferred.addCallbacks(_success, _fail)
 
-def deferred_degenerate(generator, container=None, next_delay=0):
-    generator = iter(generator or [])
+def deferred_imap(function, *sequences, **kwargs):
+    """Analog to itertools.imap python function but friendly iterable evaluation
+    taking in count cooperative multitasking.
+
+    It returns a Deferred object that is fired when StopIteration is reached or
+    when any exception is raised when calling function.
+
+    By default the output of the evaluation is collected into a list and
+    returned as deferred result when iterable finished. But it can be disabled
+    (to save memory) using `store_results` parameter.
+
+    """
+
+    next_delay = kwargs.pop('next_delay', 0)
+    store_results = kwargs.pop('store_results', True)
+
     deferred = defer.Deferred()
-    container = container or []
+    container = []
+
+    iterator = imap(function, *sequences)
+
     def _next():
         try:
-            container.append(generator.next())
+            value = iterator.next()
+            if store_results:
+                container.append(value)
         except StopIteration:
             reactor.callLater(0, deferred.callback, container)
         except:
             reactor.callLater(0, deferred.errback, failure.Failure())
         else:
             reactor.callLater(next_delay, _next)
+
     _next()
     return deferred
-

@@ -22,7 +22,7 @@ from scrapy.item import ScrapedItem
 from scrapy.item.pipeline import ItemPipelineManager
 from scrapy.spider import spiders
 from scrapy.spider.middleware import SpiderMiddlewareManager
-from scrapy.utils.defer import chain_deferred, defer_succeed, mustbe_deferred, deferred_degenerate
+from scrapy.utils.defer import chain_deferred, defer_succeed, mustbe_deferred, deferred_imap
 from scrapy.utils.request import request_info
 
 class ExecutionEngine(object):
@@ -255,12 +255,8 @@ class ExecutionEngine(object):
                 else:
                     log.msg("Spider must return Request, ScrapedItem or None, got '%s' while processing %s" % (type(item).__name__, request), log.WARNING, domain=domain)
 
-            class _ResultContainer(object):
-                def append(self, item):
-                    _onsuccess_per_item(item)
-
             def _onsuccess(result):
-                return deferred_degenerate(result, _ResultContainer())
+                return deferred_imap(_onsuccess_per_item, result)
 
             def _onerror(_failure):
                 if not isinstance(_failure.value, IgnoreRequest):
