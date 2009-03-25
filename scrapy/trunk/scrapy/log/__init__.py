@@ -59,4 +59,8 @@ def exc(message, level=ERROR, component=BOT_NAME, domain=None):
     message = message + '\n' + format_exc()
     msg(message, level, component, domain)
 
-err = log.err
+def err(*args, **kwargs):
+    domain = kwargs.pop('domain', '')
+    component = kwargs.pop('component', BOT_NAME)
+    kwargs['system'] = "%s/%s" % (BOT_NAME, domain) if domain else component
+    log.err(*args, **kwargs)
