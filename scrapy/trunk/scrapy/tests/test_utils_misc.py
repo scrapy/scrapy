@@ -1,7 +1,7 @@
 import unittest
 from cStringIO import StringIO
 
-from scrapy.utils.misc import hash_values, items_to_csv, load_object, arg_to_list, arg_to_iter
+from scrapy.utils.misc import hash_values, items_to_csv, load_object, arg_to_iter
 from scrapy.item import ScrapedItem
 
 class UtilsMiscTestCase(unittest.TestCase):
@@ -60,19 +60,6 @@ class UtilsMiscTestCase(unittest.TestCase):
         assert obj is load_object
         self.assertRaises(ImportError, load_object, 'nomodule999.mod.function')
         self.assertRaises(NameError, load_object, 'scrapy.utils.misc.load_object999')
-
-    def test_arg_to_list(self):
-        self.assertEqual(arg_to_list(None), [])
-        self.assertEqual(arg_to_list('lala'), ['lala'])
-        self.assertEqual(arg_to_list(100), [100])
-        self.assertEqual(arg_to_list(('lala', 'poo')), ['lala', 'poo'])
-
-    def test_arg_to_list(self):
-        self.assertEqual(arg_to_list(None), [])
-        self.assertEqual(arg_to_list('lala'), ['lala'])
-        self.assertEqual(arg_to_list(100), [100])
-        self.assertEqual(arg_to_list(('lala', 'poo')), ['lala', 'poo'])
-        self.assertEqual(arg_to_list(s for s in ['lala', 'poo']), ['lala', 'poo'])
 
     def test_arg_to_iter(self):
         assert hasattr(arg_to_iter(None), '__iter__')
