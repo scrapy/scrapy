@@ -25,7 +25,7 @@ functionality not required in the base classes. See
 Request objects
 ===============
 
-.. class:: Request(url, callback=None, method='GET', body=None, headers=None, cookies=None, meta=None, encoding='utf-8', dont_filter=None)
+.. class:: Request(url, callback=None, method='GET', body=None, headers=None, cookies=None, meta=None, encoding='utf-8', dont_filter=False, errback=None)
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
@@ -74,6 +74,11 @@ Request objects
     ``dont_filter`` is a boolean which indicates that this request should not
     be filtered by the scheduler. This is used when you want to perform an
     identical request multiple times, for whatever reason
+
+    ``errback`` is a function that will be called if any exception was raised while
+    processing the request, it takes a `Twisted Failure`_ instance as first parameter.
+
+.. _Twisted Failure: http://twistedmatrix.com/documents/8.2.0/api/twisted.python.failure.Failure.html
 
 Request Attributes
 ------------------
@@ -147,7 +152,7 @@ Copying Requests and callbacks
 When you copy a request using the :meth:`Request.copy` or
 :meth:`Request.replace` methods the callback of the request is not copied by
 default. This is because of legacy reasons along with limitations in the
-underlying network library, which doesn't allow sharing `Twisted deferreds`.
+underlying network library, which doesn't allow sharing `Twisted deferreds`_.
 
 .. _Twisted deferreds: http://twistedmatrix.com/projects/core/documentation/howto/defer.html
 

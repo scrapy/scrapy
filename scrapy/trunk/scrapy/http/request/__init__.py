@@ -18,7 +18,8 @@ from scrapy.utils.defer import chain_deferred
 class Request(object):
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None, 
-                 cookies=None, meta=None, encoding='utf-8', dont_filter=False):
+                 cookies=None, meta=None, encoding='utf-8', dont_filter=False,
+                 errback=None):
 
         self._encoding = encoding  # this one has to be set first
         self.method = method.upper()
@@ -26,7 +27,7 @@ class Request(object):
         self.set_body(body)
 
         if callable(callback):
-            callback = defer.Deferred().addCallback(callback)
+            callback = defer.Deferred().addCallbacks(callback, errback)
         self.deferred = callback or defer.Deferred()
 
         self.cookies = cookies or {}
