@@ -10,6 +10,7 @@ import re
 from scrapy.link import LinkExtractor
 from scrapy.utils.url import canonicalize_url, url_is_from_any_domain
 from scrapy.xpath import HtmlXPathSelector
+from scrapy.utils.misc import arg_to_iter
 
 _re_type = type(re.compile("", 0))
 
@@ -42,11 +43,11 @@ class RegexLinkExtractor(LinkExtractor):
 
     def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(), 
                  tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True):
-        self.allow_res = [x if isinstance(x, _re_type) else re.compile(x) for x in allow]
-        self.deny_res = [x if isinstance(x, _re_type) else re.compile(x) for x in deny]
-        self.allow_domains = set(allow_domains)
-        self.deny_domains = set(deny_domains)
-        self.restrict_xpaths = restrict_xpaths
+        self.allow_res = [x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(allow)]
+        self.deny_res = [x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(deny)]
+        self.allow_domains = set(arg_to_iter(allow_domains))
+        self.deny_domains = set(arg_to_iter(deny_domains))
+        self.restrict_xpaths = tuple(arg_to_iter(restrict_xpaths))
         self.canonicalize = canonicalize
         tag_func = lambda x: x in tags
         attr_func = lambda x: x in attrs

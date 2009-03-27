@@ -115,6 +115,28 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
 #            [ Link(url='http://example.com/sample1.html', text=u''),
 #              Link(url='http://example.com/sample2.html', text=u'sample 2') ])
 
+    def test_extraction_using_single_values(self):
+        '''Test the extractor's behaviour among different situations'''
+
+        lx = RegexLinkExtractor(allow='sample')
+        self.assertEqual([link for link in lx.extract_links(self.response)],
+            [ Link(url='http://example.com/sample1.html', text=u''),
+              Link(url='http://example.com/sample2.html', text=u'sample 2'),
+              Link(url='http://example.com/sample3.html', text=u'sample 3 text') ])
+
+        lx = RegexLinkExtractor(allow='sample', deny='3')
+        self.assertEqual([link for link in lx.extract_links(self.response)],
+            [ Link(url='http://example.com/sample1.html', text=u''),
+              Link(url='http://example.com/sample2.html', text=u'sample 2') ])
+
+        lx = RegexLinkExtractor(allow_domains='google.com')
+        self.assertEqual([link for link in lx.extract_links(self.response)],
+            [ Link(url='http://www.google.com/something', text=u'') ])
+
+        lx = RegexLinkExtractor(deny_domains='example.com')
+        self.assertEqual([link for link in lx.extract_links(self.response)],
+            [ Link(url='http://www.google.com/something', text=u'') ])
+
     def test_matches(self):
         url1 = 'http://lotsofstuff.com/stuff1/index'
         url2 = 'http://evenmorestuff.com/uglystuff/index'
