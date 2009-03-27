@@ -186,7 +186,7 @@ class SiteNode(object):
 
 class CaselessDict(dict):
     def __init__(self, seq=None):
-        dict.__init__(self)
+        super(CaselessDict, self).__init__()
         if seq:
             self.update(seq)
 
@@ -202,6 +202,10 @@ class CaselessDict(dict):
     def __contains__(self, key):
         return dict.__contains__(self, self.normkey(key))
     has_key = __contains__
+
+    def __copy__(self):
+        return self.__class__(self)
+    copy = __copy__
 
     def normkey(self, key):
         """Method to normalize dictionary key access"""
