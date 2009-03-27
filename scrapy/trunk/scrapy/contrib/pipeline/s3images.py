@@ -1,150 +1,77 @@
-import time
-import hashlib
 import rfc822
-from cStringIO import StringIO
 
-import Image
-
-from scrapy import log
 from scrapy.http import Request
 from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import NotConfigured
-from scrapy.contrib.pipeline.media import MediaPipeline
-from scrapy.contrib.aws import sign_request
+from scrapy.contrib.pipeline.images import BaseImagesPipeline, md5sum
 from scrapy.conf import settings
-
-from .images import BaseImagesPipeline, ImageException
-
-
-def md5sum(buffer):
-    m = hashlib.md5()
-    buffer.seek(0)
-    while 1:
-        d = buffer.read(8096)
-        if not d: break
-        m.update(d)
-    return m.hexdigest()
 
 
 class S3ImagesPipeline(BaseImagesPipeline):
-    MEDIA_TYPE = 'image'
-    THUMBS = (
-#             ('50', (50, 50)),
-#             ('110', (110, 110)),
-#             ('270', (270, 270))
-    )
+    """Images pipeline with amazon S3 support as image's store backend
 
-    # Automatically sign requests with AWS authorization header,
-    # alternative we can do this using scrapy.contrib.aws.AWSMiddleware
-    sign_requests = True
+    This pipeline tries to minimize the PUT requests made to amazon doing a
+    HEAD per full image, if HEAD returns a successfully response, then the
+    Last-Modified header is compared to current timestamp and if the difference
+    in days are greater that IMAGE_EXPIRES setting, then the image is
+    downloaded, reprocessed and uploaded to S3 again including its thumbnails.
 
-    s3_custom_spider = None
+    It is recommended to add an spider with domain_name 's3.amazonaws.com',
+    doing that you will overcome the limit of request per spider. The following
+    is the minimal code for this spider:
+
+        from scrapy.spider import BaseSpider
+
+        class S3AmazonAWSSpider(BaseSpider):
+            domain_name = "s3.amazonaws.com"
+            max_concurrent_requests = 100
+            start_urls = ('http://s3.amazonaws.com/',)
+
+        SPIDER = S3AmazonAWSSpider()
+
+    Commonly uploading images to S3 requires requests to be signed, the
+    recommended way is to enable scrapy.contrib.aws.AWSMiddleware downloader
+    middleware and configure AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+    settings
+
+    More info about amazon S3 at http://docs.amazonwebservices.com/AmazonS3/2006-03-01/
+
+    """
+
+    # amazon s3 bucket name to put images
+    bucket_name = settings.get('S3_BUCKET')
+
+    # prefix to prepend to image keys
+    key_prefix = settings.get('S3_PREFIX', '')
+
+    # Optional spider to use for image uploading
+    AmazonS3Spider = None
 
     def __init__(self):
         if not settings['S3_IMAGES']:
             raise NotConfigured
-
-        self.bucket_name = settings['S3_BUCKET']
-        self.prefix = settings['S3_PREFIX']
-        self.access_key = settings['AWS_ACCESS_KEY_ID']
-        self.secret_key = settings['AWS_SECRET_ACCESS_KEY']
-        self.image_refresh_days = settings.getint('IMAGES_EXPIRES', 90)
-        MediaPipeline.__init__(self)
+        super(S3ImagesPipeline, self).__init__()
 
     def s3_request(self, key, method, body=None, headers=None):
-        url = 'http://%s.s3.amazonaws.com/%s%s' % (self.bucket_name, self.prefix, key)
+        url = 'http://%s.s3.amazonaws.com/%s%s' % (self.bucket_name, self.key_prefix, key)
         req = Request(url, method=method, body=body, headers=headers)
-        if self.sign_requests:
-            sign_request(req, self.access_key, self.secret_key)
         return req
 
-    def image_downloaded(self, response, request, info):
-        try:
-            key = self.s3_image_key(request.url)
-            etag = self.s3_store_image(response, request.url, info)
-        except ImageException, ex:
-            log.msg(str(ex), level=log.WARNING, domain=info.domain)
-            raise ex
-        except Exception, ex:
-            log.msg(str(ex), level=log.WARNING, domain=info.domain)
-            raise ex
-
-        return '%s#%s' % (key, etag) # success value sent as input result for item_media_downloaded
-
-    def s3_image_key(self, url):
-        """Return the relative path on the target filesystem for an image to be
-        downloaded to.
-        """
-        image_guid = hashlib.sha1(url).hexdigest()
-        return 'full/%s.jpg' % (image_guid)
-
-    def s3_thumb_key(self, url, thumb_id):
-        """Return the relative path on the target filesystem for an image to be
-        downloaded to.
-        """
-        image_guid = hashlib.sha1(url).hexdigest()
-        return 'thumbs/%s/%s.jpg' % (thumb_id, image_guid)
-
-    def media_to_download(self, request, info):
-        """Return if the image should be downloaded by checking if it's already in
-        the S3 storage and not too old"""
-
+    def stat_key(self, key, info):
         def _onsuccess(response):
-            if 'Last-Modified' not in response.headers:
-                return # returning None force download
-
-            # check if last modified date did not expires
+            checksum = response.headers['Etag'].strip('"')
             last_modified = response.headers['Last-Modified']
             modified_tuple = rfc822.parsedate_tz(last_modified)
             modified_stamp = int(rfc822.mktime_tz(modified_tuple))
-            age_seconds = time.time() - modified_stamp
-            age_days = age_seconds / 60 / 60 / 24
+            return {'checksum': checksum, 'last_modified': modified_stamp}
 
-            if age_days > self.image_refresh_days:
-                return # returning None force download
-
-            etag = response.headers['Etag'].strip('"')
-            referer = request.headers.get('Referer')
-            log.msg('Image (uptodate) type=%s at <%s> referred from <%s>' % \
-                    (self.MEDIA_TYPE, request.url, referer), level=log.DEBUG, domain=info.domain)
-
-            self.inc_stats(info.domain, 'uptodate')
-            return '%s#%s' % (key, etag)
-
-        key = self.s3_image_key(request.url)
         req = self.s3_request(key, method='HEAD')
         dfd = self.s3_download(req, info)
-        dfd.addCallbacks(_onsuccess, lambda _:None)
-        dfd.addErrback(log.err, 'S3ImagesPipeline.media_to_download')
+        dfd.addCallback(_onsuccess)
         return dfd
 
-    def s3_store_image(self, response, url, info):
+    def store_image(self, key, image, buf, info):
         """Upload image to S3 storage"""
-        buf = StringIO(response.body)
-        image = Image.open(buf)
-        key = self.s3_image_key(url)
-        _, jpegbuf = self._s3_put_image(image, key, info)
-        self.s3_store_thumbnails(image, url, info)
-        return md5sum(jpegbuf) # Etag
-
-    def s3_store_thumbnails(self, image, url, info):
-        """Upload image thumbnails to S3 storage"""
-        for thumb_id, size in self.THUMBS or []:
-            thumb = image.copy() if image.mode == 'RGB' else image.convert('RGB')
-            thumb.thumbnail(size, Image.ANTIALIAS)
-            key = self.s3_thumb_key(url, thumb_id)
-            self._s3_put_image(thumb, key, info)
-
-    def _s3_put_image(self, image, key, info):
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
-
-        buf = StringIO()
-        try:
-            image.save(buf, 'JPEG')
-        except Exception, ex:
-            raise ImageException("Cannot process image. Error: %s" % ex)
-
         width, height = image.size
         headers = {
                 'Content-Type': 'image/jpeg',
@@ -156,7 +83,7 @@ class S3ImagesPipeline(BaseImagesPipeline):
 
         buf.seek(0)
         req = self.s3_request(key, method='PUT', body=buf.read(), headers=headers)
-        return self.s3_download(req, info), buf
+        self.s3_download(req, info)
 
     def s3_download(self, request, info):
         """This method is used for HEAD and PUT requests sent to amazon S3
@@ -165,8 +92,8 @@ class S3ImagesPipeline(BaseImagesPipeline):
         to current domain spider.
 
         """
-        if self.s3_custom_spider:
-            return scrapyengine.schedule(request, self.s3_custom_spider)
+        if self.AmazonS3Spider:
+            return scrapyengine.schedule(request, self.AmazonS3Spider)
         return self.download(request, info)
 
 

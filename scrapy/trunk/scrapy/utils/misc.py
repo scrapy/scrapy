@@ -185,3 +185,20 @@ def string_camelcase(string):
     return CAMELCASE_INVALID_CHARS.sub('', string.title())
 
 
+def md5sum(buffer):
+    """Calculate the md5 checksum of a file
+
+    >>> from StringIO import StringIO
+    >>> md5sum(StringIO('file content to hash'))
+    '784406af91dd5a54fbb9c84c2236595a'
+
+    """
+    m = hashlib.md5()
+    buffer.seek(0)
+    while 1:
+        d = buffer.read(8096)
+        if not d: break
+        m.update(d)
+    return m.hexdigest()
+
+
