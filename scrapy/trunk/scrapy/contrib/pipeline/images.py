@@ -115,7 +115,7 @@ class BaseImagesPipeline(MediaPipeline):
                 return # returning None force download
 
             referer = request.headers.get('Referer')
-            log.msg('Image (uptodate) type=%s at <%s> referred from <%s>' % \
+            log.msg('Image (uptodate): Downloaded %s from <%s> referred in <%s>' % \
                     (self.MEDIA_NAME, request.url, referer), level=log.DEBUG, domain=info.domain)
             self.inc_stats(info.domain, 'uptodate')
 
