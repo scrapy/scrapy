@@ -2,8 +2,11 @@
 Auxiliary functions which doesn't fit anywhere else
 """
 from __future__ import with_statement
+from contextlib import closing
 
+import os
 import re
+import gzip
 import string
 import hashlib
 import csv
@@ -200,5 +203,26 @@ def md5sum(buffer):
         if not d: break
         m.update(d)
     return m.hexdigest()
+
+
+def gzip_file(logfile):
+    """Gzip a file in place, just like gzip unix command
+
+    >>> import gzip
+    >>> import tempfile
+    >>> logfile = tempfile.mktemp()
+    >>> handle = open(logfile, 'wb')
+    >>> handle.write('something to compress')
+    >>> handle.close()
+    >>> logfile_gz = gzip_file(logfile)
+    >>> gzip.open(logfile_gz).read()
+    'something to compress'
+    """
+    logfile_gz = '%s.gz' % logfile
+    with closing(gzip.open(logfile_gz, 'wb')) as f_out:
+        with open(logfile) as f_in:
+            f_out.writelines(f_in)
+    os.remove(logfile)
+    return logfile_gz
 
 

@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 import time
 import datetime
 import cPickle as pickle
@@ -13,6 +13,7 @@ from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.conf import settings
+
 
 class ScrapyProcessProtocol(protocol.ProcessProtocol):
 
@@ -73,6 +74,12 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.worker.update_master(self.domain, "running")
 
     def processEnded(self, status):
+        if settings.getbool('CLUSTER_WORKER_GZIP_LOGS'):
+            try:
+                self.logfile = gzip_file(self.logfile)
+            except Exception, e:
+                log.msg("failed to compress %s exception=%s (domain=%s, pid=%s)" % (self.logfile, e, self.domain, self.pid))
+
         if isinstance(status.value, ProcessDone):
             st = "done"
             er = ""
