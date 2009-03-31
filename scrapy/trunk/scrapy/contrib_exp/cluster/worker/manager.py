@@ -11,7 +11,7 @@ from twisted.spread import pb
 from scrapy import log
 from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import NotConfigured
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import load_object, gzip_file
 from scrapy.conf import settings
 
 
