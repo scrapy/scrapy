@@ -83,3 +83,12 @@ scrapy.log module
     ``component`` - same as ``msg()`` function
 
     ``domain`` - same as ``msg()`` function
+
+Logging from Spiders
+====================
+
+The recommended way for logging from spiders is to use the Spider ``log()``
+method, which already populates the :func:`~scrapy.log.msg` ``domain``
+argument. The other arguments of the Spider ``log()`` method are the same as
+the :func:`~scrapy.log.msg` function.
+
