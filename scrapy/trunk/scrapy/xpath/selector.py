@@ -1,3 +1,9 @@
+"""
+XPath selectors 
+
+See documentation in docs/ref/selectors.rst
+"""
+
 import libxml2
 
 from scrapy.http import TextResponse
