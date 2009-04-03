@@ -4,6 +4,9 @@
 Selectors API
 =============
 
+.. module:: scrapy.xpath
+   :synopsis: XPath selectors classes
+
 There are two types of selectors bundled with Scrapy:
 :class:`HtmlXPathSelector` and :class:`XmlXPathSelector`. Both of them
 implement the same :class:`XPathSelector` interface. The only different is that

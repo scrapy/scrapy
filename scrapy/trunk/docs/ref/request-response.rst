@@ -5,7 +5,7 @@ Request and Response objects
 ============================
 
 .. module:: scrapy.http
-   :synopsis: Classes dealing with HTTP requests and responses.
+   :synopsis: Request and Response classes
 
 Quick overview
 ==============
