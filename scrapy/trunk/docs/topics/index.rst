@@ -9,6 +9,7 @@ This section introduces all key concepts of Scrapy.
    :maxdepth: 1
 
    architecture
+   shell
    spiders
    selectors
    link-extractors
