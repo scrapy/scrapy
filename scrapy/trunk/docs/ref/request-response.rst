@@ -75,8 +75,10 @@ Request objects
     be filtered by the scheduler. This is used when you want to perform an
     identical request multiple times, for whatever reason
 
-    ``errback`` is a function that will be called if any exception was raised while
-    processing the request, it takes a `Twisted Failure`_ instance as first parameter.
+    ``errback`` is a function that will be called if any exception was raised
+    while processing the request in Scrapy. This includes pages that failed
+    with 404 HTTP errors and such. , it receives a `Twisted Failure`_
+    instance as first parameter.
 
 .. _Twisted Failure: http://twistedmatrix.com/documents/8.2.0/api/twisted.python.failure.Failure.html
 

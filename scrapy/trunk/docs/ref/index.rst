@@ -9,6 +9,7 @@ This section documents the API of Scrapy |version|. For more information see :re
    :maxdepth: 1
 
    spiders
+   selectors
    exceptions
    request-response
    extension-manager

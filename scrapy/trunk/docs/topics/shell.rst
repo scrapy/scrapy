@@ -61,9 +61,9 @@ These commands can be typed without the leading percent sign if you have
 Custom Shell Objects
 --------------------
 
-The console automatically makes some useful Scrapy objects available for the
-downloaded page, like the Response object and the XPath selectors (for both
-HTML and XML content).
+The console automatically creates some useful Scrapy objects for the downloaded
+page, like the :class:`~scrapy.http.Response` object and the
+:class:`~scrapy.xpath.XPathSelector` objects (for both HTML and XML content).
 
 Those objects are:
 
@@ -75,9 +75,11 @@ Those objects are:
 
  * ``response`` - a Response object of the downloaded page
 
- * ``hxs`` - a HtmlXPathSelector object for the Response of the downloaded page
+ * ``hxs`` - a :class:`~scrapy.xpath.HtmlXPathSelector` object for the Response
+   of the downloaded page
 
- * ``xxs`` - a XmlXPathSelector object for the Response of the downloaded page
+ * ``xxs`` - a :class:`~scrapy.xpath.XmlXPathSelector` object for the Response
+   of the downloaded page
 
  * ``get <url>``- download a new response from the given URL and update all
    Scrapy objects accordingly

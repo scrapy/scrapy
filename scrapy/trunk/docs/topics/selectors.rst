@@ -4,65 +4,113 @@
 Selectors
 =========
 
-Selectors are the recommended way to extract information from documents. They retrieve information from the response's body, given an XPath, or a Regular Expression that you provide.
+Introduction
+------------
+
+When you're scraping web pages, the most common task you need to perform is
+extract data from the HTML source. There are several libraries available to
+achieve this: 
+
+ * `BeautifulSoup`_ is a very popular screen scraping library among Python
+   programmers which constructs a Python object based on the
+   structure of the HTML code and also deals with bad markup reasonable well,
+   but it has one drawback: it's slow.
+
+ * `lxml`_ is a XML parsing library (which also parses HTML) with a pythonic
+   API based on `ElementTree`_ (which is not part of the Python standard
+   library).
+
+Scrapy comes with its own mechanism for mechanism for extracting data. They're
+called selectors, because they "select" certain parts of the HTML document
+specified by XPaths.
+
+`XPath`_ is a language for selecting nodes in XML documents, and it's also
+applicable for HTML documents.
+
+Both `lxml`_ and Scrapy Selectors are built over the `libxml2`_ library, which
+means they're very similar in speed and parsing accuracy.
+
+This page explains how selectors work and describes their API which is very
+small and simple, unlike the `lxml`_ API which is much bigger because the
+`lxml`_ library can be use for many other tasks, besides selecting markup
+documents.
+
+For a complete reference of the selectors API see the :ref:`XPath selector
+reference <ref-selectors>`.
+
+.. _BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/
+.. _lxml: http://codespeak.net/lxml/
+.. _ElementTree: http://docs.python.org/library/xml.etree.elementtree.html
+.. _libxml2: http://xmlsoft.org/
+.. _XPath: http://www.w3.org/TR/xpath
+
+Constructing selectors
+----------------------
+
+There are two types of selectors bundled with Scrapy. Those are:
+
+ * :class:`~scrapy.xpath.HtmlXPathSelector` - for working with HTML documents
+
+ * :class:`~scrapy.xpath.XmlXPathSelector` - for working with XML documents
 
 .. highlight:: python
 
-Currently there are two kinds of selectors, HtmlXPathSelectors, and XmlXPathSelectors. Both work in the same way; they are first instanciated with a response, for example::
+Both share the same selector API, and are constructed with a Response object as
+its first parameter. This is the Response they're gonna be "selecting".
 
-    hxs = HtmlXPathSelector(response) # an HTML selector
-    xxs = XmlXPathSelector(response) # an XML selector
+Example::
 
-.. highlight:: sh
+    hxs = HtmlXPathSelector(response) # a HTML selector
+    xxs = XmlXPathSelector(response) # a XML selector
 
-Now, before going on with selectors, I'd suggest you to open a Scrapy shell, which you can use by calling your project manager with the 'shell' argument; something like::
+Using selectors with XPaths
+---------------------------
 
-    $ ./scrapy-ctl.py shell <url>
+To explain how to use the selectors we'll use the `Scrapy shell` (which
+provides interactive testing) and an example page located in Scrapy
+documentation server:
 
-Notice that you'll have to install IPython in order to use this feature, but believe me that it worths it; the shell is **very** useful.
+    http://doc.scrapy.org/_static/selectors-sample1.html
 
-With the shell you can simulate parsing a webpage, either by calling "scrapy-ctl.py shell" with an url as an additional parameter, or by using the shell's 'get' command, which tries
-to retreive the given url, and fills in the 'response' variable with the result.
+.. _topics-selectors-htmlcode:
 
-Ok, so now let's use the shell to show you a bit how do selectors work.
-
-We'll use an example page located in Scrapy's (here's a `direct link <../_static/selectors-sample1.html>`_ if you want to download it), whose markup is:
+Here's its HTML code:
 
 .. literalinclude:: ../_static/selectors-sample1.html
    :language: html
 
 .. highlight:: sh
 
-First, we open the shell::
+First, let's open the shell::
 
-    $ ./scrapy-ctl.py shell 'http://www.scrapy.org/docs/topics/sample1.htm'
+    scrapy-ctl.py shell http://doc.scrapy.org/_static/selectors-sample1.html
 
-Then, after the shell loads, you'll have some already-made objects for you to play with. Two of them, hxs and xxs, are selectors.
+Then, after the shell loads, you'll have some selectors already instanced and
+ready to use.
+
+Since we're dealing with HTML we'll be using the
+:class:`~scrapy.xpath.HtmlXPathSelector` object which is found, by default, in
+the ``hxs`` shell variable.
 
 .. highlight:: python
 
-You could instanciate your own by doing::
-
-    from scrapy.xpath.selector import HtmlXPathSelector, XmlXPathSelector
-    my_html_selector = HtmlXPathSelector(response)
-    my_xml_selector = XmlXPathSelector(response)
-
-Where 'response' is the object that Scrapy already created for you containing the given url's response.
-
-But anyway, we'll stick to the selectors that Scrapy already made for us, and more specifically, the HtmlXPathSelector (since we're working with an HTML document right now).
-
-Let's try extracting the title::
+So, by looking at the :ref:`HTML code <topics-selectors-htmlcode>` of that page
+let's construct an XPath (using an HTML selector) for selecting the text inside
+the title tag::
 
     >>> hxs.x('//title/text()')
     [<HtmlXPathSelector (text) xpath=//title/text()>]
 
-As you can see, the x method returns an XPathSelectorList, which is actually a list of selectors.
-To extract their data you must use the extract() method, as follows::
+As you can see, the x() method returns a XPathSelectorList, which is a list of
+new selectors. This API can be used quickly for extracting nested data. 
+
+To actually extract the textual data you must call the selector ``extract()``
+method, as follows::
 
     >>> hxs.x('//title/text()').extract()
     [u'Example website']
 
-Let's know extract the base URL and some image links::
+Now we're going to get the base URL and some image links::
 
     >>> hxs.x('//base/@href').extract()
     [u'http://example.com/']
@@ -81,8 +129,17 @@ Let's know extract the base URL and some image links::
      u'image4_thumb.jpg',
      u'image5_thumb.jpg']
 
-And here's an example which shows the `re()` method of xpath selectors which
-allows you to use regular expressions to select parts.
+
+Using selectors with regular expressions
+----------------------------------------
+
+Selectors also have a ``re()`` method for extracting data using regular
+expressions. However, unlike using the ``x()`` method, the ``re()`` method does
+not return a list of :class:`~scrapy.xpath.XPathSelector` objects, so you can't
+construct nested ``.re()`` calls. 
+
+Here's an example used to extract images names from the :ref:`HTML code
+<topics-selectors-htmlcode>` above::
 
     >>> hxs.x('//a[contains(@href, "image")]/text()').re(r'Name:\s*(.*)')
     [u'My image 1',
@@ -92,13 +149,11 @@ allows you to use regular expressions to select parts.
      u'My image 5']
 
 
-Now let's explain a bit what we just did.
+Nesting selectors
+-----------------
 
-Selector's x() method, is intended to select a node or an attribute from the
-document, given an XPath expression, as you could see upwards.
-
-You can apply an x() call to any node you have, which means that you can join
-different calls, for example:::
+The ``x()`` selector method returns a list of selectors, so you can call the
+``x()`` for those selectors too. Here's an example::
 
     >>> links = hxs.x('//a[contains(@href, "image")]')
     >>> links.extract()
@@ -109,24 +164,12 @@ different calls, for example:::
      u'<a href="image5.html">Name: My image 5 <br><img src="image5_thumb.jpg"></a>']
 
     >>> for index, link in enumerate(links):
-            print 'Link number %d points to url %s and image %s' % (index, link.x('@href').extract(), link.x('img/@src').extract())
+            args = (index, link.x('@href').extract(), link.x('img/@src').extract())
+            print 'Link number %d points to url %s and image %s' % args
 
     Link number 0 points to url [u'image1.html'] and image [u'image1_thumb.jpg']
     Link number 1 points to url [u'image2.html'] and image [u'image2_thumb.jpg']
     Link number 2 points to url [u'image3.html'] and image [u'image3_thumb.jpg']
     Link number 3 points to url [u'image4.html'] and image [u'image4_thumb.jpg']
     Link number 4 points to url [u'image5.html'] and image [u'image5_thumb.jpg']
-
-There are some things to keep in mind here:
-
-1. | x() calls always return an XPathSelectorList, which is basically a list of selectors, with the extra ability of applying XPath or Regexp to each of its items and
-     returning a new list.
-   | That's why you can concatenate x() calls, because they always return XPathSelectorLists, and you can always reapply that method over them.
-2. x() calls are relative to the node your standing on, so selector.x('body/div[@id="mydiv"]') equals selector.x('body').x('div[@id="mydiv"]').
-3. The extract() method *always* returns a list, even if it contains only one element. Don't forget that.
-
-| You may also have noticed that I've used another method up there; the re() method.
-| This one is very useful when the data extracted by XPath is not enough and you *have to* (remember to not abuse of regexp) make an extra parsing of the information you've got.
-| In this cases, you just apply the re() method over any XPathSelector/XPathSelectorList you have with a compiled regexp pattern as the only argument, or a string with the pattern to be compiled.
-| Remember that the re() method *always* returns an already extracted list, which means that you can't go back to a node from the result of a re() call.
 
