@@ -18,7 +18,7 @@ also described below.
 
 .. image:: _images/scrapy_architecture.png
    :width: 700
-   :height: 468
+   :height: 494
    :alt: Scrapy architecture
 
 Components
@@ -76,6 +76,14 @@ Spiders and are able to process spider input (responses) and output (items and
 requests). They provide a convenient mechanism for extending Scrapy
 functionality by plugging custom code. For more information see
 :ref:`topics-spider-middleware`.
+
+Scheduler middlewares
+---------------------
+
+Spider middlewares are specific hooks that sit between the Engine and the
+Scheduler and process requests when they pass from the Engine to the Scheduler
+and vice-versa. They provide a convenient mechanism for extending Scrapy
+functionality by plugging custom code.
 
 Data flow
 =========
