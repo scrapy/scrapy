@@ -50,8 +50,11 @@ Custom Shell Commands
  * ``%shelp`` - show the status of your Scrapy objects and get a list of
    all (Scrapy related) available objects. 
 
- * ``%get <url>``- download a new response from the given URL and update all
-   Scrapy objects accordingly
+ * ``%get [url]``- fetch a new response from the given URL and update all
+   Scrapy objects accordingly. If the url is omitted, the last request is
+   re-fetched. Since Requests are mutable objects, you can modify the Request
+   "in place" and issue ``get`` to fetch it again with the modifications you've
+   made.
 
 These commands can be typed without the leading percent sign if you have
 `automagic commands`_ enabled in IPython.
@@ -73,7 +76,12 @@ Those objects are:
    or a :class:`~scrapy.spider.BaseSpider` object if there is not spider
    configured to process that URL
 
- * ``response`` - a Response object of the downloaded page
+ * ``request`` - a :class:`~scrapy.http.Request` object of the last fetched
+   page. You can modify this Request "in place" and re-fetch it using the
+   command ``get`` without no argument.
+
+ * ``response`` - a :class:`~scrapy.http.Response` object of the last fetched
+   page
 
  * ``hxs`` - a :class:`~scrapy.xpath.HtmlXPathSelector` object for the Response
    of the downloaded page
@@ -89,23 +97,29 @@ Example of shell session
 ========================
 
 Here's an example of a typical shell session where we start by scraping the
-http://scrapy.org page, and then the http://slashdot.org page. Note, however,
-that the data extracted here may not be the same when you try, as those pages
-are not static and could have changed by the time you test this. The purpose of
-this example is just to get you familiarized with how the Scrapy shell works.
+http://scrapy.org page, and then proceed to scrape the http://slashdot.org
+page. Finally, we modify the (slashdot) request method to POST and re-fetch it
+getting a HTTP 405 (method not allowed) error. We end the session by typing
+Ctrl-D (in the ``In [6]`` prompt).
+
+Keep in mind that the data extracted here may not be the same when you try it,
+as those pages are not static and could have changed by the time you test this.
+The only purpose of this example is to get you familiarized with how the Scrapy
+shell works.
 
 ::
 
     scrapy-ctl.py shell http://scrapy.org
 
     2009-04-02 16:56:22-0300 [-] Log opened.
-    Starting Scrapy 0.7.0 shell...
-    Downloading URL...            Done.
+    Welcome to Scrapy shell!
+    Fetching <http://scrapy.org>...
 
     ------------------------------------------------------------
     Available Scrapy variables:
        xxs: <XmlXPathSelector (http://scrapy.org)>
        url: http://scrapy.org
+       request: <http://scrapy.org>
        spider: <class 'scrapy.spider.models.BaseSpider'>
        hxs: <HtmlXPathSelector (http://scrapy.org)>
        item: <class 'myproject.models.Item'>
@@ -127,11 +141,12 @@ this example is just to get you familiarized with how the Scrapy shell works.
     Out[1]: u'Welcome to Scrapy'
 
     In [2]: get http://slashdot.org
-    Downloading URL...            Done.
+    Fetching <http://slashdot.org>...
     ------------------------------------------------------------
     Available Scrapy variables:
        xxs: <XmlXPathSelector (http://slashdot.org)>
        url: http://slashdot.org
+       request: <http://slashdot.org>
        spider: <class 'scrapy.spider.models.BaseSpider'>
        hxs: <HtmlXPathSelector (http://slashdot.org)>
        item: <class 'myproject.models.Item'>
@@ -143,4 +158,17 @@ this example is just to get you familiarized with how the Scrapy shell works.
 
     In [3]: hxs.x("//h2/text()").extract()
     Out[3]: [u'News for nerds, stuff that matters']
+
+    In [3]: hxs.x("//h2/text()").extract()
+    Out[3]: [u'News for nerds, stuff that matters']
+
+    In [4]: request.method = "POST"
+
+    In [5]: get
+    Fetching <POST http://slashdot.org>...
+    2009-04-03 00:57:39-0300 [decobot/None] ERROR: Downloading <http://slashdot.org> from <None>: 405 Method Not Allowed
+
+    In [6]: 
+    2009-04-03 01:07:12-0300 [-] Main loop terminated.
+
 

@@ -1,3 +1,9 @@
+"""
+Scrapy Shell
+
+See documentation in docs/topics/shell.rst
+"""
+
 import os
 import urllib
 import urlparse
@@ -28,32 +34,36 @@ class Command(ScrapyCommand):
         """ You can use this function to update the Scrapy objects that will be available in the shell"""
         pass
 
+    def _get_response(self, response):
+        self.response = response
+        return []
+
     def get_url(self, url):
-        u = urlparse.urlparse(url)
-        if not u.scheme:
-            path = os.path.abspath(url).replace(os.sep, '/')
-            url = 'file://' + urllib.pathname2url(path)
+        self.response = None
+
+        url = url.strip()
+        if url:
             u = urlparse.urlparse(url)
+            if not u.scheme:
+                path = os.path.abspath(url).replace(os.sep, '/')
+                url = 'file://' + urllib.pathname2url(path)
+                u = urlparse.urlparse(url)
 
-        if u.scheme not in ('http', 'https', 'file'):
-            print "Unsupported scheme '%s' in URL: <%s>" % (u.scheme, url)
-            return
+            if u.scheme not in ('http', 'https', 'file'):
+                print "Unsupported scheme '%s' in URL: <%s>" % (u.scheme, url)
+                return
+            request = Request(url, callback=self._get_response)
+        else:
+            request = self.user_ns['request'].replace(callback=self._get_response)
 
-        self.result = None
-        def _get_response(response):
-            self.result = response
-            return []
-
-        print "Downloading URL..."
-        r = Request(url, callback=_get_response)
         spider = get_or_create_spider(url)
-        threads.blockingCallFromThread(reactor, scrapyengine.crawl, r, spider)
-        if self.result:
-            self.result.request = r
-            self.generate_vars(url, self.result)
+        print "Fetching %s..." % request
+        threads.blockingCallFromThread(reactor, scrapyengine.crawl, request, spider)
+        if self.response:
+            self.generate_vars(url, self.response, request)
             return True
 
-    def generate_vars(self, url, response):
+    def generate_vars(self, url=None, response=None, request=None):
         itemcls = load_object(settings['DEFAULT_ITEM_CLASS'])
         item = itemcls()
         self.vars['item'] = item
@@ -62,6 +72,7 @@ class Command(ScrapyCommand):
             self.vars['hxs'] = HtmlXPathSelector(response)
             self.vars['url'] = url
             self.vars['response'] = response
+            self.vars['request'] = request
             self.vars['spider'] = spiders.fromurl(url)
         self.update_vars()
         self.user_ns.update(self.vars)
@@ -73,7 +84,7 @@ class Command(ScrapyCommand):
         for key, val in self.vars.iteritems():
             print "   %s: %s" % (key, val)
         print "Available commands:"
-        print "   get <url>: Fetches a new page and updates all Scrapy objects."
+        print "   get [url]: Fetch a new URL or re-fetch current Request"
         print "   shelp: Prints this help."
         print '-' * 60
     
@@ -89,16 +100,16 @@ class Command(ScrapyCommand):
         def _console_thread():
             
             def _get_magic(shell, arg):
-                self.get_url(arg.strip())
+                self.get_url(arg)
             def _help_magic(shell, _):
                 self.print_vars()
                 
             if url:
                 result = self.get_url(url)
                 if not result:
-                    self.generate_vars(None, None)
+                    self.generate_vars()
             else:
-                self.generate_vars(None, None)
+                self.generate_vars()
             try: # use IPython if available
                 import IPython
                 shell = IPython.Shell.IPShell(argv=[], user_ns=self.user_ns)
