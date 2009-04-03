@@ -90,9 +90,9 @@ Example of shell session
 
 Here's an example of a typical shell session where we start by scraping the
 http://scrapy.org page, and then the http://slashdot.org page. Note, however,
-that the data extracted may not be the same when you try this as those pages
+that the data extracted here may not be the same when you try, as those pages
 are not static and could have changed by the time you test this. The purpose of
-this example is only to get you familiarized with how the Scrapy shell works.
+this example is just to get you familiarized with how the Scrapy shell works.
 
 ::
 
@@ -104,12 +104,12 @@ this example is only to get you familiarized with how the Scrapy shell works.
 
     ------------------------------------------------------------
     Available Scrapy variables:
-       xxs: <class 'scrapy.xpath.selector.XmlXPathSelector'>
+       xxs: <XmlXPathSelector (http://scrapy.org)>
        url: http://scrapy.org
        spider: <class 'scrapy.spider.models.BaseSpider'>
-       hxs: <class 'scrapy.xpath.selector.HtmlXPathSelector'>
+       hxs: <HtmlXPathSelector (http://scrapy.org)>
        item: <class 'myproject.models.Item'>
-       response: <class 'scrapy.http.response.html.HtmlResponse'>
+       response: <http://scrapy.org>
     Available commands:
        get <url>: Fetches an url and updates all variables.
        scrapehelp: Prints this help.
@@ -130,13 +130,12 @@ this example is only to get you familiarized with how the Scrapy shell works.
     Downloading URL...            Done.
     ------------------------------------------------------------
     Available Scrapy variables:
-       xxs: <class 'scrapy.xpath.selector.XmlXPathSelector'>
+       xxs: <XmlXPathSelector (http://slashdot.org)>
        url: http://slashdot.org
        spider: <class 'scrapy.spider.models.BaseSpider'>
-       hxs: <class 'scrapy.xpath.selector.HtmlXPathSelector'>
+       hxs: <HtmlXPathSelector (http://slashdot.org)>
        item: <class 'myproject.models.Item'>
-       r: <class 'scrapy.http.response.html.HtmlResponse'>
-       response: <class 'scrapy.http.response.html.HtmlResponse'>
+       response: <http://slashdot.org>
     Available commands:
        get <url>: Fetches an url and updates all variables.
        scrapehelp: Prints this help.

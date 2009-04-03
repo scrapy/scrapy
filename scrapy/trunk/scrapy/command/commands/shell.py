@@ -1,48 +1,18 @@
-from twisted.internet import reactor
+import os
+import urllib
+import urlparse
 
-import os, urllib, urlparse
-import scrapy
+from twisted.internet import reactor, threads
+
 from scrapy.command import ScrapyCommand
 from scrapy.spider import spiders
 from scrapy.xpath import XmlXPathSelector, HtmlXPathSelector
 from scrapy.utils.misc import load_object
-from scrapy.extension import extensions
 from scrapy.conf import settings
 from scrapy.core.manager import scrapymanager
 from scrapy.core.engine import scrapyengine
 from scrapy.http import Request
 from scrapy.fetcher import get_or_create_spider
-
-#This code comes from twisted 8. We define here while
-#using old twisted version.
-def blockingCallFromThread(reactor, f, *a, **kw):
-    """
-    Run a function in the reactor from a thread, and wait for the result
-    synchronously, i.e. until the callback chain returned by the function
-    get a result.
-
-    @param reactor: The L{IReactorThreads} provider which will be used to
-        schedule the function call.
-    @param f: the callable to run in the reactor thread
-    @type f: any callable.
-    @param a: the arguments to pass to C{f}.
-    @param kw: the keyword arguments to pass to C{f}.
-
-    @return: the result of the callback chain.
-    @raise: any error raised during the callback chain.
-    """
-    import Queue
-    from twisted.python import failure
-    from twisted.internet import defer
-    queue = Queue.Queue()
-    def _callFromThread():
-        result = defer.maybeDeferred(f, *a, **kw)
-        result.addBoth(queue.put)
-    reactor.callFromThread(_callFromThread)
-    result = queue.get()
-    if isinstance(result, failure.Failure):
-        result.raiseException()
-    return result
 
 class Command(ScrapyCommand):
     def syntax(self):
@@ -55,7 +25,7 @@ class Command(ScrapyCommand):
         return "Interactive console for scraping the given url. For scraping local files you can use a URL like file://path/to/file.html"
 
     def update_vars(self):
-        """ You can use this function to update the local variables that will be available in the scrape console """
+        """ You can use this function to update the Scrapy objects that will be available in the shell"""
         pass
 
     def get_url(self, url):
@@ -74,12 +44,11 @@ class Command(ScrapyCommand):
             self.result = response
             return []
 
-        print "Downloading URL...           ",
+        print "Downloading URL..."
         r = Request(url, callback=_get_response)
         spider = get_or_create_spider(url)
-        blockingCallFromThread(reactor, scrapyengine.crawl, r, spider)
+        threads.blockingCallFromThread(reactor, scrapyengine.crawl, r, spider)
         if self.result:
-            print "Done."
             self.result.request = r
             self.generate_vars(url, self.result)
             return True
@@ -99,17 +68,14 @@ class Command(ScrapyCommand):
         self.print_vars()
         
     def print_vars(self):
-        print '-' * 78
-        print "Available local variables:"
+        print '-' * 60
+        print "Available Scrapy objects:"
         for key, val in self.vars.iteritems():
-            if isinstance(val, basestring):
-                print "   %s: %s" % (key, val)
-            else:
-                print "   %s: %s" % (key, val.__class__)
+            print "   %s: %s" % (key, val)
         print "Available commands:"
-        print "   get <url>: Fetches an url and updates all variables."
-        print "   scrapehelp: Prints this help."
-        print '-' * 78
+        print "   get <url>: Fetches a new page and updates all Scrapy objects."
+        print "   shelp: Prints this help."
+        print '-' * 60
     
     def run(self, args, opts):
         self.vars = {}
@@ -118,7 +84,7 @@ class Command(ScrapyCommand):
         if args:
             url = args[0]
 
-        print "Scrapy %s - Interactive scraping console\n" % scrapy.__version__
+        print "Welcome to Scrapy shell!"
 
         def _console_thread():
             
@@ -138,7 +104,7 @@ class Command(ScrapyCommand):
                 shell = IPython.Shell.IPShell(argv=[], user_ns=self.user_ns)
                 ip = shell.IP.getapi()
                 ip.expose_magic("get", _get_magic)
-                ip.expose_magic("scrapehelp", _help_magic)
+                ip.expose_magic("shelp", _help_magic)
                 shell.mainloop()
                 reactor.callFromThread(scrapymanager.stop)
             except ImportError:
