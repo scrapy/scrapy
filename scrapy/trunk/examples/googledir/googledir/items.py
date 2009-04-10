@@ -1,13 +1,6 @@
 # Define here the models for your scraped items
 
-from scrapy.contrib.item import RobustScrapedItem
+from scrapy.item import ScrapedItem
 
-class GoogledirItem(RobustScrapedItem):
-    """Directory website link"""
-
-    ATTRIBUTES = {
-        'guid': basestring,
-        'name': basestring,
-        'url': basestring,
-        'description': basestring,
-        }
+class GoogledirItem(ScrapedItem):
+    pass

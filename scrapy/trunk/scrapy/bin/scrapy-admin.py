@@ -24,9 +24,9 @@ PROJECT_TEMPLATES_PATH = os.path.join(scrapy.__path__[0], 'templates/project')
 # project directory.
 TEMPLATES = (
         'scrapy-ctl.py',
-        '${project_name}/settings.py',
-        '${project_name}/items.py',
-        '${project_name}/pipelines.py',
+        '${project_name}/settings.py.tmpl',
+        '${project_name}/items.py.tmpl',
+        '${project_name}/pipelines.py.tmpl',
         )
 
 IGNORE = ignore_patterns('*.pyc', '.svn')

@@ -143,8 +143,10 @@ def render_templatefile(path, **kwargs):
 
     content = string.Template(raw).substitute(**kwargs)
 
-    with open(path, 'wb') as file:
+    with open(path.rstrip('.tmpl'), 'wb') as file:
         file.write(content)
+    if path.endswith('.tmpl'):
+        os.remove(path)
 
 
 def items_to_csv(file, items, delimiter=';', headers=None):
