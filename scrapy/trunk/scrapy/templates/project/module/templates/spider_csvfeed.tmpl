@@ -14,9 +14,9 @@ class $classname(CSVFeedSpider):
 
     def parse_row(self, response, row):
         i = ${ProjectName}Item()
-        #i.attribute('url', row['url'])
-        #i.attribute('name', row['name'])
-        #i.attribute('description', row['description'])
+        #i.url = row['url']
+        #i.name = row['name']
+        #i.description = row['description']
         return i
 
 SPIDER = $classname()
