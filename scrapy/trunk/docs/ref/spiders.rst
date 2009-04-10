@@ -173,9 +173,9 @@ Let's now take a look at an example CrawlSpider with rules::
 
             hxs = HtmlXPathSelector(response)
             item = ScrapedItem()
-            item.attribute('id', hxs.x('//td[@id="item_id"]/text()').re(r'ID: (\d+)'))
-            item.attribute('name', hxs.x('//td[@id="item_name"]/text()'))
-            item.attributE('description', hxs.x('//td[@id="item_description"]/text()'))
+            item.id = hxs.x('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
+            item.name = hxs.x('//td[@id="item_name"]/text()').extract()
+            item.description = hxs.x('//td[@id="item_description"]/text()').extract()
             return [item]
 
     SPIDER = MySpider()
@@ -269,9 +269,9 @@ These spiders are pretty easy to use, let's have at one example::
             log.msg('Hi, this is a <%s> node!: %s' % (self.itertag, ''.join(node.extract())))
 
             item = ScrapedItem()
-            item.attribute('id', node.x('@id'))
-            item.attribute('name', node.x('name'))
-            item.attribute('description', node.x('description'))
+            item.id = node.x('@id').extract()
+            item.name = node.x('name').extract()
+            item.description = node.x('description').extract()
             return item
 
     SPIDER = MySpider()
@@ -329,9 +329,9 @@ Let's see an example similar to the previous one, but using CSVFeedSpider::
             log.msg('Hi, this is a row!: %r' % row)
 
             item = ScrapedItem()
-            item.attribute('id', row['id'])
-            item.attribute('name', row['name'])
-            item.attribute('description', row['description'])
+            item.id = row['id']
+            item.name = row['name']
+            item.description = row['description']
             return item
 
     SPIDER = MySpider()
