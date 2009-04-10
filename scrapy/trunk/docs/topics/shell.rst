@@ -1,8 +1,8 @@
 .. _topics-shell:
 
-=====
-Shell
-=====
+================
+The Scrapy shell
+================
 
 The Scrapy shell is an interactive shell where you can try and debug your
 scraping code very quickly, without having to run the spider. It's meant to be
@@ -109,7 +109,7 @@ shell works.
 
 ::
 
-    scrapy-ctl.py shell http://scrapy.org
+    python scrapy-ctl.py shell http://scrapy.org
 
     2009-04-02 16:56:22-0300 [-] Log opened.
     Welcome to Scrapy shell!
@@ -125,8 +125,8 @@ shell works.
        item: <class 'myproject.models.Item'>
        response: <http://scrapy.org>
     Available commands:
-       get <url>: Fetches an url and updates all variables.
-       scrapehelp: Prints this help.
+       get [url]: Fetch a new URL or re-fetch current Request
+       shelp: Prints this help.
     ------------------------------------------------------------
     Python 2.5.2 (r252:60911, Oct  5 2008, 19:29:17) 
     Type "copyright", "credits" or "license" for more information.

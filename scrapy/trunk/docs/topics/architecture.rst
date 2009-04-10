@@ -1,8 +1,8 @@
 .. _topics-architecture:
 
-============
-Architecture
-============
+=====================
+Architecture overview
+=====================
 
 This document describes the architecture of Scrapy and how their components
 interact.

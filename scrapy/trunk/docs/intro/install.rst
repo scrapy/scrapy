@@ -1,8 +1,11 @@
 .. _intro-install:
 
-============
-Installation
-============
+==================
+Installation guide
+==================
+
+This document describes how to install Scrapy in Linux, Windows and Mac OS X
+systems.
 
 .. highlight:: sh
 

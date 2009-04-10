@@ -3,7 +3,7 @@
 Using Scrapy
 ============
 
-This section introduces all key concepts of Scrapy.
+This section describes all key concepts of Scrapy.
 
 .. toctree::
    :maxdepth: 1
@@ -14,7 +14,6 @@ This section introduces all key concepts of Scrapy.
    selectors
    link-extractors
    items
-   adaptors
    item-pipeline
    downloader-middleware
    spider-middleware
@@ -23,3 +22,5 @@ This section introduces all key concepts of Scrapy.
    stats
    webconsole
    robotstxt
+   firebug
+   firefox

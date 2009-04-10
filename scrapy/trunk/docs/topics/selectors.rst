@@ -1,14 +1,14 @@
 .. _topics-selectors:
 
-=========
-Selectors
-=========
+===============
+XPath Selectors
+===============
 
 Introduction
 ------------
 
 When you're scraping web pages, the most common task you need to perform is
-extract data from the HTML source. There are several libraries available to
+to extract data from the HTML source. There are several libraries available to
 achieve this: 
 
  * `BeautifulSoup`_ is a very popular screen scraping library among Python
@@ -20,12 +20,12 @@ achieve this:
    API based on `ElementTree`_ (which is not part of the Python standard
    library).
 
-Scrapy comes with its own mechanism for mechanism for extracting data. They're
-called selectors, because they "select" certain parts of the HTML document
-specified by XPaths.
+Scrapy comes with its own mechanism for extracting data. They're called XPath
+selectors (or just "selectors", for short) because they "select" certain parts
+of the HTML document specified by `XPath`_ expressions.
 
-`XPath`_ is a language for selecting nodes in XML documents, and it's also
-applicable for HTML documents.
+`XPath`_ is a language for selecting nodes in XML documents, which can be used
+to with HTML.
 
 Both `lxml`_ and Scrapy Selectors are built over the `libxml2`_ library, which
 means they're very similar in speed and parsing accuracy.

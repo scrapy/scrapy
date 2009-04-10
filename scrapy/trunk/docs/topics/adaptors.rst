@@ -1,8 +1,8 @@
 .. _topics-adaptors:
 
-========
-Adaptors
-========
+=======================
+Adaptors (experimental)
+=======================
 
 .. warning::
    

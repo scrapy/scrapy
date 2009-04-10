@@ -18,7 +18,3 @@ Proposed documentation
 
    introduction
 
-.. toctree::
-   :maxdepth: 1
-
-   tutorial

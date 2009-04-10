@@ -3,10 +3,10 @@
 API Reference
 =============
 
-This section documents the API of Scrapy |version|. For more information see :ref:`misc-api-stability`.
+This section documents the Scrapy |version| API. For more information see :ref:`misc-api-stability`.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    spiders
    selectors

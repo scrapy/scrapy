@@ -12,7 +12,7 @@ might help you.
 
    overview
    install
-   tutorial/index
+   tutorial
 
 .. seealso::
 

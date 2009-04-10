@@ -1,8 +1,8 @@
 .. _ref-selectors:
 
-=============
-Selectors API
-=============
+===================
+XPath Selectors API
+===================
 
 .. module:: scrapy.xpath
    :synopsis: XPath selectors classes

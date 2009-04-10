@@ -18,7 +18,9 @@ ADAPTORS_DEBUG
 
 Default: ``False``
 
-Enable debug mode for adaptors.
+Enable debug mode for adaptors. 
+
+See :ref:`topics-adaptors`.
 
 .. setting:: BOT_NAME
 
