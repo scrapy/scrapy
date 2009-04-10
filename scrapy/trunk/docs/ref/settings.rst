@@ -240,8 +240,8 @@ DEFAULT_ITEM_CLASS
 
 Default: ``'scrapy.item.ScrapedItem'``
 
-The default class that will be used for items, for example, in the shell
-console. 
+The default class that will be used for instantiating items in the :ref:`the
+Scrapy shell <topics-shell>`.
 
 .. setting:: DEFAULT_SPIDER
 
@@ -368,9 +368,16 @@ ENABLED_SPIDERS_FILE
 
 Default: ``''`` (empty string)
 
-A file name with the list of enabled spiders. Scrapy will this file to
-configure what spiders are enabled and which ones aren't. The file must contain
-one spider name (domain_name) per line.
+The path to a file containing a list of spiders (one domain name per line).
+Those spiders will be considered enabled by Scrapy, and will be the spiders
+crawled automatically when running ``scrapy-ctl.py crawl`` with no arguments.
+
+If this setting is unset, all spiders to crawl must be passed explicitly in the
+``crawl`` command.
+
+Example::
+
+    '/etc/mybot/enabled_spiders.list'
 
 .. setting:: EXTENSIONS 
 
