@@ -5,7 +5,12 @@ Installation guide
 ==================
 
 This document describes how to install Scrapy in Linux, Windows and Mac OS X
-systems.
+systems and it consists on the following 3 big steps:
+
+1. Install Python
+2. Install required libraries
+3. Install Scrapy
+
 
 .. highlight:: sh
 
@@ -13,7 +18,10 @@ Requirements
 ============
 
 * `Python <http://www.python.org>`_ 2.5 or 2.6
-* `Twisted <http://twistedmatrix.com>`_ 2.5.0, 8.0 or above (Windows users: you may need to install `pywin32`_ because of `this Twisted bug`_)
+
+* `Twisted <http://twistedmatrix.com>`_ 2.5.0, 8.0 or above (Windows users: you
+  may need to install `pywin32`_ because of `this Twisted bug`_)
+
 * `libxml2 <http://xmlsoft.org>`_ (2.6.28 or above recommended)
 
 Optional:
@@ -21,13 +29,13 @@ Optional:
 * `pyopenssl <http://pyopenssl.sourceforge.net>`_ (for HTTPS support)
 * `spidermonkey <http://www.mozilla.org/js/spidermonkey/>`_ (for Javascript support)
 
-Install Python
-==============
+1. Install Python
+=================
 
 Scrapy works with Python 2.5 or 2.6, you can get it at http://www.python.org/download/
 
-Install required libraries
-==========================
+2. Install required libraries
+=============================
 
 The procedure for installing the required third party libraries depends on the
 platform and operating system you use.
@@ -90,59 +98,102 @@ Download and install:
 .. _pywin32: http://sourceforge.net/projects/pywin32/
 .. _this Twisted bug: http://twistedmatrix.com/trac/ticket/3707
 
-Install Scrapy
-==============
+3. Install Scrapy
+=================
 
 We're working hard to get the first release of Scrapy out. In the meantime,
 please download the latest development version from the Subversion_ repository.
 
 .. _Subversion: http://subversion.tigris.org/
 
-To do this, follow this steps:
+Just follow these steps:
 
-1. Check out Scrapy code (you will need to have Subversion_ installed)::
+3.1. Install Subversion
+-----------------------
+
+Make sure that you have `Subversion`_ installed, and that you can run its
+commands from a shell. (Enter ``svn help`` at a shell prompt to test this.)
+
+3.2. Check out the Scrapy source code
+-------------------------------------
+
+By running the following command::
    
-      svn co http://svn.scrapy.org/scrapy/trunk/ scrapy-trunk
+    svn checkout http://svn.scrapy.org/scrapy/trunk/ scrapy-trunk
 
-2. Add Scrapy to your Python path:
+3.3. Install the Scrapy module
+------------------------------
 
-   If you're using Linux, Mac OS X or some other flavor of Unix, you can do
-   this by making a symbolic link to your system ``site-packages`` directory
-   like this::
+Install the Scrapy module by running the following commands::
 
-      ln -s /path/to/scrapy-trunk/scrapy SITE-PACKAGES/scrapy
+    cd scrapy-trunk
+    python setup.py install
 
-   Where ``SITE-PACKAGES`` is the location of your system ``site-packages``
-   directory, to find this out execute the following::
+If you're on Unix-like systems (Linux, Mac, etc) you may need to run the second
+command with root privileges, for example by running::
 
-      python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"
+    sudo python setup.py install
 
-   Alternatively, you can define your ``PYTHONPATH`` environment variable so
-   that it includes the scrapy-trunk directory. This is probably the most
-   convenient solution on Windows systems, which don't support symbolic links.
-   (Environment variables can be defined on Windows systems from the `Control
-   Panel`_.
+.. warning:: In Windows, you may need to add the ``C:\Python25\Scripts`` folder
+   to the system path by adding that directory to the ``PATH`` environment
+   variable from the `Control Panel`_.
 
-   Unix-like example::
+.. warning:: Keep in mind that Scrapy is still being changed, as we haven't yet
+   released the first stable version. So it's important that you keep updating
+   the Subversion code periodically and reinstalling the Scrapy module. A more
+   convenient way is to use Scrapy module without installing it (see below).
 
-      PYTHONPATH=/path/to/scrapy-trunk
+Use Scrapy without installing it
+================================
 
-   Windows example (from command line, but you should probably use the `Control
-   Panel`_)::
+Another alternative is to use the Scrapy module without installing it which
+makes it easier to keep using the last Subversion code without having to
+reinstall it everytime you do a ``svn update``.
 
-      set PYTHONPATH=C:\path\to\scrapy-trunk
+You can do this by following the next steps:
 
-3. Make the ``scrapy-admin.py`` script executable system-wide. This step is
-   optional, but convenient. If you want to be able to run "scrapy-admin-py"
-   without using its full path, you can:
+1. Add Scrapy to your Python path
+---------------------------------
 
-   In Unix-like platforms: create a symbolic link to the file in a directory on
-   your system path. Example::
-   
-      ln -s /path/to/scrapy-trunk/scrapy/bin/scrapy-admin.py /usr/local/bin
+If you're on Linux, Mac or any Unix-like system, you can make a symbolic link
+to your system ``site-packages`` directory like this::
 
-   In Windows platforms, add the ``C:\path\to\scrapy-trunk\scrapy\bin`` folder
-   to the ``PATH`` environment variable using the `Control Panel`_.
+    ln -s /path/to/scrapy-trunk/scrapy SITE-PACKAGES/scrapy
+
+Where ``SITE-PACKAGES`` is the location of your system ``site-packages``
+directory. To find this out execute the following::
+
+    python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"
+
+Alternatively, you can define your ``PYTHONPATH`` environment variable so that
+it includes the ``scrapy-trunk`` directory. This solution also works on Windows
+systems, which don't support symbolic links.  (Environment variables can be
+defined on Windows systems from the `Control Panel`_).
+
+Unix-like example::
+
+    PYTHONPATH=/path/to/scrapy-trunk
+
+Windows example (from command line, but you should probably use the `Control
+Panel`_)::
+
+    set PYTHONPATH=C:\path\to\scrapy-trunk
+
+4. Make the scrapy-admin.py script available
+--------------------------------------------
+
+On Unix-like systems, create a symbolic link to the file
+``scrapy-trunk/scrapy/bin/scrapy-admin.py`` in a directory on your system path,
+such as ``/usr/local/bin``. For example::
+
+    ln -s `pwd`/scrapy-trunk/scrapy/bin/scrapy-admin.py /usr/local/bin
+
+This simply lets you type scrapy-admin.py from within any directory, rather
+than having to qualify the command with the full path to the file.
+
+On Windows systems, the same result can be achieved by copying the file
+``scrapy-trunk/scrapy/bin/scrapy-admin.py`` to somewhere on your system path,
+for example ``C:\Python25\Scripts``, which is customary for Python scripts.
 
 .. _Control Panel: http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
 
