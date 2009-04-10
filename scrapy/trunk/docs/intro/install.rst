@@ -13,7 +13,7 @@ Requirements
 ============
 
 * `Python <http://www.python.org>`_ 2.5 or 2.6
-* `Twisted <http://twistedmatrix.com>`_ 8.0 or above
+* `Twisted <http://twistedmatrix.com>`_ 2.5.0, 8.0 or above (Windows users: you may need to install `pywin32`_ because of `this Twisted bug`_)
 * `libxml2 <http://xmlsoft.org>`_ (2.6.28 or above recommended)
 
 Optional:
@@ -83,9 +83,12 @@ Windows
 
 Download and install:
 
-1. `Twisted for Windows <http://twistedmatrix.com/trac/wiki/Downloads>`_
+1. `Twisted for Windows <http://twistedmatrix.com/trac/wiki/Downloads>`_ - you may need to install `pywin32`_ because of `this Twisted bug`_
 2. `PyOpenSSL for Windows <http://sourceforge.net/project/showfiles.php?group_id=31249>`_
 3. `libxml2 for Windows <http://users.skynet.be/sbi/libxml-python/>`_
+
+.. _pywin32: http://sourceforge.net/projects/pywin32/
+.. _this Twisted bug: http://twistedmatrix.com/trac/ticket/3707
 
 Install Scrapy
 ==============

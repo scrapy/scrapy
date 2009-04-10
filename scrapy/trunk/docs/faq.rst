@@ -58,3 +58,12 @@ variable won't work because Twisted (the library used by Scrapy to download
 pages) doesn't support it. See `this Twisted ticket
 <http://twistedmatrix.com/trac/ticket/2714>`_ for more info.
 
+Scrapy crashes with: ImportError: No module named win32api
+----------------------------------------------------------
+
+You need to install `pywin32`_ because of `this Twisted bug`_.
+
+.. _pywin32: http://sourceforge.net/projects/pywin32/
+.. _this Twisted bug: http://twistedmatrix.com/trac/ticket/3707
+
+
