@@ -1,8 +1,13 @@
-import unittest
-from scrapy.contrib.pipeline.images import BaseImagesPipeline
+from twisted.trial import unittest
 
 class ImagesPipelineTestCase(unittest.TestCase):
     def setUp(self):
+        try:
+            import Image
+        except ImportError, e:
+            raise unittest.SkipTest(e)
+
+        from scrapy.contrib.pipeline.images import BaseImagesPipeline
         self.pipeline = BaseImagesPipeline()
 
     def tearDown(self):
