@@ -9,7 +9,8 @@ Introduction
 
 This document explains how to use `Firebug`_ (a Firefox add-on) to make the
 scraping process easier and more fun. For other useful Firefox add-ons see
-:ref:`topics-firefox`.
+:ref:`topics-firefox-addons`. There are some caveats with using Firefox add-ons
+to inspect pages, see :ref:`topics-firefox-livedom`.
 
 In this example, we'll show how to use `Firebug`_ to scrape data from the
 `Google Directory`_, which contains the same data as the `Open Directory
@@ -152,3 +153,10 @@ Finally, we can write our ``parse_category()`` method::
             item.description = link.x('font[2]/text()').extract()
             yield item
 
+
+make sure you you may find some elements which appear in Firebug but
+doesn't belong to the original HTML, such as the typical case of ``<tbody>``
+elements.
+
+or tags which Therefer   in page HTML
+sources may on Firebug inspects the live DOM 

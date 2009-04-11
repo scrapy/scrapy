@@ -22,5 +22,5 @@ This section describes all key concepts of Scrapy.
    stats
    webconsole
    robotstxt
-   firebug
    firefox
+   firebug
