@@ -5,37 +5,48 @@ Installation guide
 ==================
 
 This document describes how to install Scrapy in Linux, Windows and Mac OS X
-systems and it consists on the following 3 big steps:
+systems and it consists on the following 3 steps:
 
-1. Install Python
-2. Install required libraries
-3. Install Scrapy
+* :ref:`intro-install-step1`
+* :ref:`intro-install-step2`
+* :ref:`intro-install-step3`
 
-
-.. highlight:: sh
+.. _intro-install-requirements:
 
 Requirements
 ============
 
-* `Python <http://www.python.org>`_ 2.5 or 2.6
+* `Python`_ 2.5 or 2.6 (3.x is not yet supported)
 
-* `Twisted <http://twistedmatrix.com>`_ 2.5.0, 8.0 or above (Windows users: you
-  may need to install `pywin32`_ because of `this Twisted bug`_)
+* `Twisted`_ 2.5.0, 8.0 or above (Windows users: you may need to install
+  `pywin32`_ because of `this Twisted bug`_)
 
-* `libxml2 <http://xmlsoft.org>`_ (2.6.28 or above recommended)
+* `libxml2`_ (2.6.28 or above is recommended)
+
+.. _Python: http://www.python.org
+.. _Twisted: http://twistedmatrix.com
+.. _libxml2: http://xmlsoft.org
+.. _pywin32: http://sourceforge.net/projects/pywin32/
+.. _this Twisted bug: http://twistedmatrix.com/trac/ticket/3707
 
 Optional:
 
-* `pyopenssl <http://pyopenssl.sourceforge.net>`_ (for HTTPS support)
-* `spidermonkey <http://www.mozilla.org/js/spidermonkey/>`_ (for Javascript support)
+* `pyopenssl <http://pyopenssl.sourceforge.net>`_ (for HTTPS support, highly recommended)
+* `spidermonkey <http://www.mozilla.org/js/spidermonkey/>`_ (for parsing Javascript)
 
-1. Install Python
-=================
+.. _intro-install-step1:
+
+Step 1. Install Python
+======================
 
 Scrapy works with Python 2.5 or 2.6, you can get it at http://www.python.org/download/
 
-2. Install required libraries
-=============================
+.. highlight:: sh
+
+.. _intro-install-step2:
+
+Step 2. Install required libraries
+==================================
 
 The procedure for installing the required third party libraries depends on the
 platform and operating system you use.
@@ -45,22 +56,34 @@ Ubuntu/Debian
 
 If you're running Ubuntu/Debian Linux run the following command as root::
 
-   apt-get install python-twisted python-libxml2 python-pyopenssl
+   apt-get install python-twisted python-libxml2
+
+To install optional libraries::
+
+   apt-get install python-pyopenssl spidermonkey-bin
 
 Arch Linux
 ----------
 
 If you are running Arch Linux run the following command as root::
 
-   pacman -S twisted libxml2 pyopenssl
+   pacman -S twisted libxml2
 
-MacOSX
-------
+To install optional libraries::
 
-MacOSX ships an ``libxml2`` version too old to be used by Scrapy. Also, by
-looking on the web it seems that installing ``libxml2`` on MacOSX is a bit
-of a challenge. Here is a way to achieve this, though not acceptable
-on the long run:
+   pacman -S pyopenssl spidermonkey
+
+Mac OS X
+--------
+
+First, download `Twisted for Mac`_.
+
+.. _Twisted for Mac: http://twistedmatrix.com/trac/wiki/Downloads#MacOSX
+
+Mac OS X ships an ``libxml2`` version too old to be used by Scrapy. Also, by
+looking on the web it seems that installing ``libxml2`` on MacOSX is a bit of a
+challenge. Here is a way to achieve this, though not acceptable on the long
+run:
 
 1. Fetch the following libxml2 and libxslt packages:
 
@@ -68,21 +91,25 @@ on the long run:
 
    ftp://xmlsoft.org/libxml2/libxslt-1.1.24.tar.gz
 
-2. Extract them, and make every one of them like::
+2. Extract, build and install them both with::
 
        ./configure --with-python=/Library/Frameworks/Python.framework/Versions/2.5/
        make
        sudo make install
    
-referencing your current python framework.
+   Replacing ``/Library/Frameworks/Python.framework/Version/2.5/`` with your
+   current python framework location.
 
-3. In libxml2-2.7.3/python, run::
+3. Install libxml2 Python bidings with::
 
+       cd libxml2-2.7.3/python
        sudo make install
 
    The libraries and modules should be installed in something like
-   /usr/local/lib/python2.5/site-packages. Add it to your ``PYTHONPATH``
-   and you are done. Check the library is there with a simple::
+   /usr/local/lib/python2.5/site-packages. Add it to your ``PYTHONPATH`` and
+   you are done.
+
+4. Check the ``libxml2`` library was installed propertly with::
 
        python -c 'import libxml2'
 
@@ -91,18 +118,21 @@ Windows
 
 Download and install:
 
-1. `Twisted for Windows <http://twistedmatrix.com/trac/wiki/Downloads>`_ - you may need to install `pywin32`_ because of `this Twisted bug`_
-2. `PyOpenSSL for Windows <http://sourceforge.net/project/showfiles.php?group_id=31249>`_
-3. `libxml2 for Windows <http://users.skynet.be/sbi/libxml-python/>`_
+1. `Twisted for Windows <http://twistedmatrix.com/trac/wiki/Downloads>`_ - you
+   may need to install `pywin32`_ because of `this Twisted bug`_
 
-.. _pywin32: http://sourceforge.net/projects/pywin32/
-.. _this Twisted bug: http://twistedmatrix.com/trac/ticket/3707
+2. `libxml2 for Windows <http://users.skynet.be/sbi/libxml-python/>`_
 
-3. Install Scrapy
-=================
+3. `PyOpenSSL for Windows <http://sourceforge.net/project/showfiles.php?group_id=31249>`_
+
+.. _intro-install-step3:
+
+Step 3. Install Scrapy
+======================
 
 We're working hard to get the first release of Scrapy out. In the meantime,
-please download the latest development version from the Subversion_ repository.
+please download the latest development version from the `Subversion`_
+repository.
 
 .. _Subversion: http://subversion.tigris.org/
 
@@ -152,8 +182,8 @@ reinstall it everytime you do a ``svn update``.
 
 You can do this by following the next steps:
 
-1. Add Scrapy to your Python path
----------------------------------
+Add Scrapy to your Python path
+------------------------------
 
 If you're on Linux, Mac or any Unix-like system, you can make a symbolic link
 to your system ``site-packages`` directory like this::
@@ -179,8 +209,8 @@ Panel`_)::
 
     set PYTHONPATH=C:\path\to\scrapy-trunk
 
-4. Make the scrapy-admin.py script available
---------------------------------------------
+Make the scrapy-admin.py script available
+-----------------------------------------
 
 On Unix-like systems, create a symbolic link to the file
 ``scrapy-trunk/scrapy/bin/scrapy-admin.py`` in a directory on your system path,
