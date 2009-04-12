@@ -66,4 +66,7 @@ You need to install `pywin32`_ because of `this Twisted bug`_.
 .. _pywin32: http://sourceforge.net/projects/pywin32/
 .. _this Twisted bug: http://twistedmatrix.com/trac/ticket/3707
 
+How can I simulate a user login in my spider?
+---------------------------------------------
 
+See :ref:`ref-request-userlogin`.

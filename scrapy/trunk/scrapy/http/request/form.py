@@ -1,11 +1,14 @@
 """
 This module implements the FormRequest class which is a more covenient class
-(that Request) to generate Requests based on form data.
+(than Request) to generate Requests based on form data.
 
 See documentation in docs/ref/request-response.rst
 """
 
 import urllib
+from cStringIO import StringIO
+
+from ClientForm import ParseFile
 
 from scrapy.http.request import Request
 from scrapy.utils.python import unicode_to_str
@@ -29,3 +32,22 @@ class FormRequest(Request):
                     for k, v in items]
             self.body = urllib.urlencode(query, doseq=1)
             self.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+
+    @classmethod
+    def from_response(cls, response, formnumber=0, formdata=None, **kwargs):
+        encoding = getattr(response, 'encoding', 'utf-8')
+        forms = ParseFile(StringIO(response.body), response.url,
+                          encoding=encoding, backwards_compat=False)
+        if not forms:
+            raise ValueError("No form control found in %s" % response)
+        try:
+            form = forms[formnumber]
+        except IndexError:
+            raise IndexError("No such form number: %d" % formnumber)
+        if formdata:
+            for k, v in formdata.iteritems():
+                for v2 in v if hasattr(v, '__iter__') else [v]:
+                    form.new_control('text', k, {'value': v2})
+        url, body, headers = form.click_request_data()       
+        request = cls(url, body=body, headers=headers, **kwargs)
+        return request

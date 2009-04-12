@@ -15,17 +15,17 @@ sites.
 
 Typically, :class:`Request` objects are generated in the spiders and pass
 across the system until they reach the Downloader, which executes the request
-and returns a :class:`Response` object which goes back to the spider that
-generated the request.
+and returns a :class:`Response` object which travels back to the spider that
+issued the request.
 
-Both Request and Response classes contains subclasses which adds additional
-functionality not required in the base classes. See
-:ref:`ref-request-subclasses` and :ref:`ref-response-subclasses` below.
+Both :class:`Request` and :class:`Response` classes have subclasses which adds
+additional functionality not required in the base classes. These are described
+below in :ref:`ref-request-subclasses` and :ref:`ref-response-subclasses`.
 
 Request objects
 ===============
 
-.. class:: Request(url, callback=None, method='GET', body=None, headers=None, cookies=None, meta=None, encoding='utf-8', dont_filter=False, errback=None)
+.. class:: Request(url[, callback, method, body, headers, cookies, meta, encoding, dont_filter, errback])
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
@@ -37,7 +37,8 @@ Request objects
     request (once its downloaded) as its first parameter. For more information
     see :ref:`ref-request-callback-arguments` below.
 
-    ``method`` is a string with the HTTP method of this request
+    ``method`` is a string with the HTTP method of this request, and defaults
+    to ``'GET'``.
 
     ``meta`` is a dict containing the initial values for the
     :attr:`Request.meta` attribute. If passed, the dict will be shallow copied.
@@ -67,9 +68,9 @@ Request objects
                                        cookies={currency: 'USD', country: 'UY'},
                                        meta={'dont_merge_cookies': True})
 
-    ``encoding`` is a string with the encoding of this request. This encoding
-    will be used to percent-encode the URL and to convert the body to str (when
-    given as unicode).
+    ``encoding`` is a string with the encoding of this request (defaults to
+    ``'utf-8'``). This encoding will be used to percent-encode the URL and to
+    convert the body to str (when given as unicode).
 
     ``dont_filter`` is a boolean which indicates that this request should not
     be filtered by the scheduler. This is used when you want to perform an
@@ -80,76 +81,71 @@ Request objects
     with 404 HTTP errors and such. , it receives a `Twisted Failure`_
     instance as first parameter.
 
-.. _Twisted Failure: http://twistedmatrix.com/documents/8.2.0/api/twisted.python.failure.Failure.html
+    .. _Twisted Failure: http://twistedmatrix.com/documents/8.2.0/api/twisted.python.failure.Failure.html
 
-Request Attributes
-------------------
+    .. attribute:: Request.url
 
-.. attribute:: Request.url
+        A string containing the URL of this request. Keep in mind that this
+        attribute contains the escaped URL, so it can differ from the URL passed in
+        the constructor.
 
-    A string containing the URL of this request. Keep in mind that this
-    attribute contains the escaped URL, so it can differ from the URL passed in
-    the constructor.
+    .. attribute:: Request.method
 
-.. attribute:: Request.method
+        A string representing the HTTP method in the request. This is guaranteed to
+        be uppercase. Example: ``"GET"``, ``"POST"``, ``"PUT"``, etc
 
-    A string representing the HTTP method in the request. This is guaranteed to
-    be uppercase. Example: ``"GET"``, ``"POST"``, ``"PUT"``, etc
+    .. attribute:: Request.headers
 
-.. attribute:: Request.headers
+        A dictionary-like object which contains the request headers.
 
-    A dictionary-like object which contains the request headers.
+    .. attribute:: Request.body
 
-.. attribute:: Request.body
+        A str that contains the request body
 
-    A str that contains the request body
+    .. attribute:: Request.meta
 
-.. attribute:: Request.meta
+        A dict that contains arbitrary metadata for this request. This dict is
+        empty for new Requests, and is usually  populated by different Scrapy
+        components (extensions, middlewares, etc). So the data contained in this
+        dict depends on the extensions you have enabled.
 
-    A dict that contains arbitrary metadata for this request. This dict is
-    empty for new Requests, and is usually  populated by different Scrapy
-    components (extensions, middlewares, etc). So the data contained in this
-    dict depends on the extensions you have enabled.
+        This dict is `shallow copied`_ when the request is cloned using the
+        ``copy()`` or ``replace()`` methods.
 
-    This dict is `shallow copied`_ when the request is cloned using the
-    ``copy()`` or ``replace()`` methods.
+    .. _shallow copied: http://docs.python.org/library/copy.html
 
-.. _shallow copied: http://docs.python.org/library/copy.html
+    .. attribute:: Request.cache
 
-.. attribute:: Request.cache
+        A dict that contains arbitrary cached data for this request. This dict is
+        empty for new Requests, and is usually populated by different Scrapy
+        components (extensions, middlewares, etc) to avoid duplicate processing. So
+        the data contained in this dict depends on the extensions you have enabled.
 
-    A dict that contains arbitrary cached data for this request. This dict is
-    empty for new Requests, and is usually populated by different Scrapy
-    components (extensions, middlewares, etc) to avoid duplicate processing. So
-    the data contained in this dict depends on the extensions you have enabled.
+        Unlike the ``meta`` attribute, this dict is not copied at all when the
+        request is cloned using the ``copy()`` or ``replace()`` methods.
 
-    Unlike the ``meta`` attribute, this dict is not copied at all when the
-    request is cloned using the ``copy()`` or ``replace()`` methods.
+    .. method:: Request.copy()
 
-Request Methods
----------------
+       Return a new Request which is a copy of this Request. The attribute
+       :attr:`Request.meta` is copied, while :attr:`Request.cache` is not. See also
+       :ref:`ref-request-callback-arguments`.
 
-.. method:: Request.copy()
+    .. method:: Request.replace([url, callback, method, headers, body, cookies, meta, encoding, dont_filter])
 
-   Return a new Request which is a copy of this Request. The attribute
-   :attr:`Request.meta` is copied, while :attr:`Request.cache` is not. See also
-   :ref:`ref-request-callback-arguments`.
+       Return a Request object with the same members, except for those members
+       given new values by whichever keyword arguments are specified. The attribute
+       :attr:`Request.meta` is copied by default (unless a new value is given
+       in the ``meta`` argument). The :attr:`Request.cache` attribute is always
+       cleared. See also :ref:`ref-request-callback-arguments`.
 
-.. method:: Request.replace()
+    .. method:: Request.httprepr()
 
-   Return a Request object with the same members, except for those members
-   given new values by whichever keyword arguments are specified. The attribute
-   :attr:`Request.meta` is copied, while :attr:`Request.cache` is not. See also
-   :ref:`ref-request-callback-arguments`.
-
-.. method:: Request.httprepr()
-
-   Return a string with the raw HTTP representation of this response.
+       Return a string with the raw HTTP representation of this response.
 
 .. _ref-request-callback-copy:
 
-Copying Requests and callbacks
-------------------------------
+Caveats with copying Requests and callbacks
+-------------------------------------------
 
 When you copy a request using the :meth:`Request.copy` or
 :meth:`Request.replace` methods the callback of the request is not copied by
@@ -225,31 +221,96 @@ Using Request.meta::
 Request subclasses
 ==================
 
-Here is the list of built-in Request subclasses. You can also subclass the
-Request class to implement your own functionality.
+Here is the list of built-in :class:`Request` subclasses. You can also subclass
+it to implement your own custom functionality.
 
 FormRequest objects
 -------------------
 
-.. class:: FormRequest
+The FormRequest class extends the base :class:`Request` with functionality for
+dealing with HTML forms. It uses the `ClientForm`_ library (bundled with
+Scrapy) to pre-populate form fields with form data from :class:`Response`
+objects.
 
-The FormRequest class adds a new parameter to the constructor:
+.. _ClientForm: http://wwwsearch.sourceforge.net/ClientForm/
 
-  `formdata` - a dictionary or list of (key, value) tuples (typically
-      containing HTML Form data) which will be urlencoded and assigned to the body
-      of the request.
+.. class:: FormRequest(url, [formdata, ...])
 
-For example, if you want to simulate a HTTP Form POST in your spider which
-sends a coupe of of key-values you would return a :class:`FormRequest` object
-(from your spider) like this::
+    The :class:`FormRequest` class adds a new argument to the constructor. The
+    remaining arguments are the same as for the :class:`Request` class and are
+    not documented here.
+
+    ``formdata`` is a dictionary (or iterable of (key, value) tuples) containing
+    HTML Form data which will be url-encoded and assigned to the body of the
+    request.
+
+    The :class:`FormRequest` objects support the following class method in
+    addition to the standard :class:`Request` methods:
+
+    .. classmethod:: FormRequest.from_response(response, [formnumber, formdata, ...])
+
+        Returns a new :class:`FormRequest` object with its form field values
+        pre-populated with those found in the HTML ``<form>`` element contained
+        in the given response. 
+
+        ``response`` is a :class:`Response` object containing a HTML form which
+        will be used to pre-populate the form fields
+      
+        ``formnumber`` is an integer which specifies the form to use, when the
+        response contains multiple forms. Defaults to ``0``.
+
+        ``formdata`` is a dict which contains fields to override in the form data.
+        For an example, see :ref:`ref-request-userlogin`.
+
+
+Request usage examples
+======================
+
+Using FormRequest to send data via HTTP POST
+--------------------------------------------
+
+If you want to simulate a HTML Form POST in your spider, and send a couple of
+key-value fields you could return a :class:`FormRequest` object (from your
+spider) like this::
 
    return [FormRequest(url="http://www.example.com/post/action", 
-                       formdata={'name': 'John Doe', age: '27'})]
+                       formdata={'name': 'John Doe', age: '27'},
+                       callback=self.after_post)]
+
+.. _ref-request-userlogin: 
+
+Using FormRequest.from_response() to simulate a user login
+----------------------------------------------------------
+
+It is usual for web sites to provide pre-populated form fields through ``<input
+type="hidden">`` elements, such as session related data or authentication
+tokens (for login pages). When scraping, you'll want these fields to be
+automatically pre-populated and only override a couple of them, such as the
+user name and password. You can use the :meth:`FormRequest.from_response`
+method for this job. Here's an example spider which uses it::
+
+    class LoginSpider(BaseSpider):
+        domain_name = 'example.com'
+        start_urls = ['http://www.example.com/users/login.php']
+
+        def parse(self, response):
+            return [FormRequest.from_response(response,
+                        formdata={'username': 'john', 'password': 'secret'},
+                        callback=self.after_login)]
+
+        def after_login(self, response): 
+            # check login succeed before going on
+            if "authentication failed" in response.body:
+                self.log("Login failed", level=log.ERROR)
+                return
+            
+            # continue scraping with authenticated session...
+
 
 Response objects
 ================
 
-.. class:: Response(url, status=200, headers=None, body=None, meta=None, flags=None)
+.. class:: Response(url, [status, headers, body, meta, flags])
 
     A :class:`Response` object represents an HTTP response, which is usually
     downloaded (by the Downloader) and fed to the Spiders for processing.
@@ -258,95 +319,93 @@ Response objects
 
     ``headers`` is a multivalued dict of the response headers
 
-    ``status`` is an integer with the HTTP status of the response
+    ``status`` is an integer with the HTTP status of the response. Defaults to
+    ``200``.
 
     ``body`` is a str with the response body. It must be str, not unicode,
-    unless you're using a Response sublcass such as :class:`TextResponse`.
+    unless you're using a :ref:`Response sublcass <ref-response-subclasses>`
+    such as :class:`TextResponse`.
 
     ``meta`` is a dict containing the initial values for the
-    :attr:`Response.meta` attribute. If passed, the dict will be shallow copied.
+    :attr:`Response.meta` attribute. If given, the dict will be shallow copied.
 
     ``flags`` is a list containing the initial values for the
-    :attr:`Response.flags` attribute. If passed, the list will be shallow copied.
+    :attr:`Response.flags` attribute. If given, the list will be shallow
+    copied.
 
+    .. attribute:: Response.url
 
-Response Attributes
--------------------
+        A string containing the URL of the response. 
 
-.. attribute:: Response.url
+    .. attribute:: Response.status
 
-    A string containing the URL of the response. 
+        An integer representing the HTTP status of the response. Example: ``200``,
+        ``404``.
 
-.. attribute:: Response.status
+    .. attribute:: Response.headers
 
-    An integer representing the HTTP status of the response. Example: ``200``,
-    ``404``.
+        A dictionary-like object which contains the response headers.
 
-.. attribute:: Response.headers
+    .. attribute:: Response.body
 
-    A dictionary-like object which contains the response headers.
+        A str containing the body of this Response. Keep in mind that Reponse.body
+        is always a str. If you want the unicode version use
+        :meth:`TextResponse.body_as_unicode` (only available in
+        :class:`TextResponse` and subclasses).
 
-.. attribute:: Response.body
+    .. attribute:: Response.request
 
-    A str containing the body of this Response. Keep in mind that Reponse.body
-    is always a str. If you want the unicode version use
-    :meth:`TextResponse.body_as_unicode` (only available in
-    :class:`TextResponse` and subclasses).
+        The :class:`Request` object that generated this response. This attribute is
+        assigned in the Scrapy engine, after the response and request has passed
+        through all :ref:`Downloader Middlewares <topics-downloader-middleware>`.
+        In particular, this means that:
 
-.. attribute:: Response.request
+        - HTTP redirections will cause the original request (to the URL before
+          redirection) to be assigned to the redirected response (with the final
+          URL after redirection).
 
-    The :class:`Request` object that generated this response. This attribute is
-    assigned in the Scrapy engine, after the response and request has passed
-    through all :ref:`Downloader Middlewares <topics-downloader-middleware>`.
-    In particular, this means that:
+        - Response.request.url doesn't always equals Response.url
 
-    - HTTP redirections will cause the original request (to the URL before
-      redirection) to be assigned to the redirected response (with the final
-      URL after redirection).
+        - This attribute is only available in the spider code, and in the 
+          :ref:`Spider Middlewares <topics-spider-middleware>`, but not in
+          Downloader Middlewares (although you have the Request available there by
+          other means) and handlers of the :signal:`response_downloaded` signal.
 
-    - Response.request.url doesn't always equals Response.url
+    .. attribute:: Response.meta
 
-    - This attribute is only available in the spider code, and in the 
-      :ref:`Spider Middlewares <topics-spider-middleware>`, but not in
-      Downloader Middlewares (although you have the Request available there by
-      other means) and handlers of the :signal:`response_downloaded` signal.
+        A dict that contains arbitrary metadata for this response, similar to the
+        :attr:`Request.meta` attribute. See the :attr:`Request.meta` attribute for
+        more info.
 
-.. attribute:: Response.meta
+    .. attribute:: Response.flags
 
-    A dict that contains arbitrary metadata for this response, similar to the
-    :attr:`Request.meta` attribute. See the :attr:`Request.meta` attribute for
-    more info.
+        A list that contains flags for this response. Flags are labels used for
+        tagging Responses. For example: `'cached'`, `'redirected`', etc. And
+        they're shown on the string representation of the Response (`__str__`
+        method) which is used by the engine for logging.
 
-.. attribute:: Response.flags
+    .. attribute:: Response.cache
 
-    A list that contains flags for this response. Flags are labels used for
-    tagging Responses. For example: `'cached'`, `'redirected`', etc. And
-    they're shown on the string representation of the Response (`__str__`
-    method) which is used by the engine for logging.
+        A dict that contains arbitrary cached data for this response, similar to
+        the :attr:`Request.cache` attribute. See the :attr:`Request.cache`
+        attribute for more info.
 
-.. attribute:: Response.cache
+    .. method:: Response.copy()
 
-    A dict that contains arbitrary cached data for this response, similar to
-    the :attr:`Request.cache` attribute. See the :attr:`Request.cache`
-    attribute for more info.
+       Return a new Response which is a copy of this Response. The attribute
+       :attr:`Response.meta` is copied, while :attr:`Response.cache` is not.
 
-Response Methods
-----------------
+    .. method:: Response.replace([url, status, headers, body, meta, flags, cls])
 
-.. method:: Response.copy()
+       Return a Response object with the same members, except for those members
+       given new values by whichever keyword arguments are specified. The
+       attribute :attr:`Response.meta` is copied by default (unless a new value
+       is given in the ``meta`` argument). The  :attr:`Response.cache`
+       attribute is always cleared.
 
-   Return a new Response which is a copy of this Response. The attribute
-   :attr:`Response.meta` is copied, while :attr:`Response.cache` is not.
+    .. method:: Response.httprepr()
 
-.. method:: Response.replace(url=None, status=None, headers=None, body=None)
-
-   Return a Response object with the same members, except for those members
-   given new values by whichever keyword arguments are specified. The attribute
-   :attr:`Response.meta` is copied, while :attr:`Response.cache` is not.
-
-.. method:: Response.httprepr()
-
-   Return a string with the raw HTTP representation of this response.
+       Return a string with the raw HTTP representation of this response.
 
 .. _ref-response-subclasses:
 
@@ -356,92 +415,90 @@ Response subclasses
 Here is the list of available built-in Response subclasses. You can also
 subclass the Response class to implement your own functionality.
 
-.. class:: TextResponse
+TextResponse objects
+--------------------
 
-The TextResponse class adds encoding capabilities to the base Response class.
-The base Response class is intended for binary data such as images or media
-files.
+.. class:: TextResponse(url, [encoding[, ...]])
 
-:class:`TextResponse` supports the following constructor arguments, attributes
-nd methods in addition to the base Request ones. The remaining functionality is
-the same as for the :class:`Response` class and is not documented here.
+    :class:`TextResponse` objects adds encoding capabilities to the base
+    :class:`Response` class, which is meant to be used only for binary data,
+    such as images, sounds or any media file.
 
-TextResponse
-------------
+    :class:`TextResponse` objects support a new constructor arguments, in
+    addition to the base :class:`Response` objects. The remaining functionality
+    is the same as for the :class:`Response` class and is not documented here.
 
-TextResponse constructor arguments
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ``encoding`` is a string which contains the encoding to use for this
+    response. If you create a :class:`TextResponse` object with a unicode body
+    it will be encoded using this encoding (remember the body attribute is
+    always a string). If ``encoding`` is ``None`` (default value), the encoding
+    will be looked up in the response headers anb body instead.
 
-    - `encoding` - a string which contains the encoding to use for this
-       TextResponse. If you create a TextResponse with a unicode body it will be
-       encoded using this encoding (remember the body attribute is always a
-       string). 
+    :class:`TextResponse` objects support the following attributes in addition
+    to the standard :class:`Response` ones:
 
-       If encoding is `None` the encoding will be looked up in the headers anb
-       body instead.
+    .. attribute:: TextResponse.encoding
 
-       It defaults to `None`.
+       A string with the encoding of this response. The encoding is resolved in the
+       following order: 
 
-TextResponse attributes
-~~~~~~~~~~~~~~~~~~~~~~~
+       1. the encoding passed in the constructor `encoding` argument
 
-.. attribute:: TextResponse.encoding
+       2. the encoding declared in the Content-Type HTTP header
 
-   A string with the encoding of this Response. The encoding is resolved in the
-   following order: 
+       3. the encoding declared in the response body. The TextResponse class
+          doesn't provide any special functionality for this. However, the
+          :class:`HtmlResponse` and :class:`XmlResponse` classes do.
 
-   1. the encoding passed in the constructor `encoding` argument
-   2. the encoding declared in the Content-Type HTTP header
-   3. the encoding declared in the response body. The TextResponse class
-      doesn't provide any special functionality for this. However, the
-      :class:`HtmlResponse` and :class:`XmlResponse` classes do.
-   4. the encoding inferred by looking at the response body. This is the more
-      fragile method but also the last one tried.
+       4. the encoding inferred by looking at the response body. This is the more
+          fragile method but also the last one tried.
 
-TextResponse methods
-~~~~~~~~~~~~~~~~~~~~
+    :class:`TextResponse` objects support the following methods in addition to
+    the standard :class:`Response` ones:
 
-.. method:: TextResponse.headers_encoding()
+    .. method:: TextResponse.headers_encoding()
 
-    Returns a string with the encoding declared in the headers (ie. the
-    Content-Type HTTP header).
+        Returns a string with the encoding declared in the headers (ie. the
+        Content-Type HTTP header).
 
-.. method:: TextResponse.body_encoding()
-
-    Returns a string with the encoding of the body, either declared or inferred
-    from its contents. The body encoding declaration is implemented in
-    :class:`TextResponse` subclasses such as: :class:`HtmlResponse` or
-    :class:`XmlResponse`.
-
-.. method:: TextResponse.body_as_unicode()
-
-    Returns the body of the response as unicode. This is equivalent to::
-
-        response.body.encode(response.encoding)
-
-    But keep in mind that this is not equivalent to::
-    
-        unicode(response.body)
-    
-    Since in the latter case you would be using you system default encoding
-    (typically `ascii`) to convert the body to uniode instead of the response
-    encoding.
-
+    .. method:: TextResponse.body_encoding()
+ 
+        Returns a string with the encoding of the body, either declared or inferred
+        from its contents. The body encoding declaration is implemented in
+        :class:`TextResponse` subclasses such as: :class:`HtmlResponse` or
+        :class:`XmlResponse`.
+ 
+    .. method:: TextResponse.body_as_unicode()
+ 
+        Returns the body of the response as unicode. This is equivalent to::
+ 
+            response.body.encode(response.encoding)
+ 
+        But keep in mind that this is not equivalent to::
+        
+            unicode(response.body)
+        
+        Since in the latter case you would be using you system default encoding
+        (typically `ascii`) to convert the body to uniode instead of the response
+        encoding.
+ 
 HtmlResponse objects
 --------------------
 
-.. class:: HtmlResponse
+.. class:: HtmlResponse(url[, ...])
 
-The HtmlResponse class is a subclass of :class:`TextResponse` which adds
-encoding auto-discovering by looking into the HTML meta http-equiv attribute.
-See :attr:`TextResponse.encoding`.
+    The :class:`HtmlResponse` class is a subclass of :class:`TextResponse`
+    which adds encoding auto-discovering support by looking into the HTML `meta
+    http-equiv`_ attribute.  See :attr:`TextResponse.encoding`.
+
+.. _meta http-equiv: http://www.w3schools.com/TAGS/att_meta_http_equiv.asp
 
 XmlResponse objects
 -------------------
 
-.. class:: HtmlResponse
+.. class:: XmlResponse(url[, ...])
 
-The XmlResponse class is a subclass of :class:`TextResponse` which adds
-encoding auto-discovering by looking into the XML declaration line.
-See :attr:`TextResponse.encoding`.
+    The :class:`XmlResponse` class is a subclass of :class:`TextResponse` which
+    adds encoding auto-discovering support by looking into the XML declaration
+    line.  See :attr:`TextResponse.encoding`.
 

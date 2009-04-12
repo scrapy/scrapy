@@ -1,5 +1,8 @@
 import unittest
-from scrapy.http import Request, FormRequest, XmlRpcRequest, Headers, Url
+from cStringIO import StringIO
+import cgi
+
+from scrapy.http import Request, FormRequest, XmlRpcRequest, Headers, Url, Response
 
 class RequestTest(unittest.TestCase):
 
@@ -195,6 +198,41 @@ class FormRequestTest(unittest.TestCase):
         data = {'price': u'\xa3 100', 'colours': ['red', 'blue', 'green']}
         r3 = FormRequest("http://www.example.com", formdata=data)
         self.assertEqual(r3.body, 'colours=red&colours=blue&colours=green&price=%C2%A3+100')
+
+    def test_from_response_post(self):
+        respbody = """
+<form action="post.php" method="POST">
+<input type="hidden" name="test" value="val1">
+<input type="hidden" name="test" value="val2">
+<input type="hidden" name="test2" value="xxx">
+</form>
+        """
+        response = Response("http://www.example.com/this/list.html", body=respbody)
+        r1 = FormRequest.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'}, callback=lambda x: x)
+        fs = cgi.FieldStorage(StringIO(r1.body), r1.headers, environ={"REQUEST_METHOD": "POST"})
+        self.assertEqual(r1.url, "http://www.example.com/this/post.php")
+        self.assertEqual(set([f.value for f in fs["test"]]), set(["val1", "val2"]))
+        self.assertEqual(set([f.value for f in fs["one"]]), set(["two", "three"]))
+        self.assertEqual(fs['test2'].value, 'xxx')
+        self.assertEqual(fs['six'].value, 'seven')
+
+    def test_from_response_get(self):
+        respbody = """
+<form action="get.php" method="GET">
+<input type="hidden" name="test" value="val1">
+<input type="hidden" name="test" value="val2">
+<input type="hidden" name="test2" value="xxx">
+</form>
+        """
+        response = Response("http://www.example.com/this/list.html", body=respbody)
+        r1 = FormRequest.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'})
+        self.assertEqual(r1.url.hostname, "www.example.com")
+        self.assertEqual(r1.url.path, "/this/get.php")
+        urlargs = cgi.parse_qs(r1.url.query)
+        self.assertEqual(set(urlargs['test']), set(['val1', 'val2']))
+        self.assertEqual(set(urlargs['one']), set(['two', 'three']))
+        self.assertEqual(urlargs['test2'], ['xxx'])
+        self.assertEqual(urlargs['six'], ['seven'])
 
 
 class XmlRpcRequestTest(unittest.TestCase):
