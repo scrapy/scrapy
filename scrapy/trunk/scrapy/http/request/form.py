@@ -39,11 +39,11 @@ class FormRequest(Request):
         forms = ParseFile(StringIO(response.body), response.url,
                           encoding=encoding, backwards_compat=False)
         if not forms:
-            raise ValueError("No form control found in %s" % response)
+            raise ValueError("No <form> element found in %s" % response)
         try:
             form = forms[formnumber]
         except IndexError:
-            raise IndexError("No such form number: %d" % formnumber)
+            raise IndexError("Form number %d not found in %s" % (formnumber, response))
         if formdata:
             for k, v in formdata.iteritems():
                 for v2 in v if hasattr(v, '__iter__') else [v]:

@@ -234,6 +234,21 @@ class FormRequestTest(unittest.TestCase):
         self.assertEqual(urlargs['test2'], ['xxx'])
         self.assertEqual(urlargs['six'], ['seven'])
 
+    def test_from_response_errors_noform(self):
+        respbody = """<html></html>"""
+        response = Response("http://www.example.com/lala.html", body=respbody)
+        self.assertRaises(ValueError, FormRequest.from_response, response)
+
+    def test_from_response_errors_formnumber(self):
+        respbody = """
+<form action="get.php" method="GET">
+<input type="hidden" name="test" value="val1">
+<input type="hidden" name="test" value="val2">
+<input type="hidden" name="test2" value="xxx">
+</form>
+        """
+        response = Response("http://www.example.com/lala.html", body=respbody)
+        self.assertRaises(IndexError, FormRequest.from_response, response, formnumber=1)
 
 class XmlRpcRequestTest(unittest.TestCase):
 
