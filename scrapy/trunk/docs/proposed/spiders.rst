@@ -6,7 +6,7 @@ Spiders
 
 Spiders are user written classes which define how a certain site (or domain)
 will be scraped; including how to crawl the site and how to scrape :ref:`Items
-<items>` from their pages. 
+<topics-items>` from their pages. 
 
 All Spiders must be descendant of :class:`~scrapy.spider.BaseSpider` or any
 subclass of it, below you can see a list of available Spiders in Scrapy.

@@ -19,7 +19,7 @@ The purpose of this document is to introduce you to the concepts behind Scrapy
 so you can get an idea of how it works and decide if Scrapy is what you need. 
 
 When you're ready to start a project, you can :ref:`start with the tutorial
-<intro-tutorial1>`. For more detailed information you can take a look at the
+<intro-tutorial>`. For more detailed information you can take a look at the
 :ref:`documentation contents <index>`.
 
 Pick a website
@@ -187,7 +187,7 @@ What's next?
 ============
 
 The next obvious steps are for you to `download Scrapy`_, read :ref:`the
-tutorial <intro-tutorial1>` and join `the community`_. Thanks for your
+tutorial <intro-tutorial>` and join `the community`_. Thanks for your
 interest!
 
 .. _download Scrapy: http://scrapy.org/download/
