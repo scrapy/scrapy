@@ -79,7 +79,7 @@ class Scheduler(object) :
             return domain
         return None
 
-    def add_domain(self, domain, priority=1):
+    def add_domain(self, domain, priority=0):
         """This functions schedules a new domain to be scraped, with the given priority.
 
         It doesn't check if the domain is already scheduled.
@@ -99,7 +99,7 @@ class Scheduler(object) :
         Priority = PriorityStack if self.dfo else PriorityQueue
         self.pending_requests[domain] = Priority()
 
-    def enqueue_request(self, domain, request, priority=1):
+    def enqueue_request(self, domain, request, priority=0):
         """Enqueue a request to be downloaded for a domain that is currently being scraped."""
         dfd = defer.Deferred()
         self.pending_requests[domain].push((request, dfd), priority)

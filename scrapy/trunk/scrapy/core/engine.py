@@ -226,7 +226,7 @@ class ExecutionEngine(object):
     def open_domains(self):
         return self.downloader.sites.keys()
 
-    def crawl(self, request, spider, priority=1, domain_priority=1):
+    def crawl(self, request, spider, priority=0, domain_priority=0):
         domain = spider.domain_name
 
         def _process(response):
@@ -290,7 +290,7 @@ class ExecutionEngine(object):
     def scrape(self, request, response, spider):
         return self.spidermiddleware.scrape(request, response, spider)
 
-    def schedule(self, request, spider, priority=1, domain_priority=1):
+    def schedule(self, request, spider, priority=0, domain_priority=0):
         domain = spider.domain_name
         if not self.scheduler.domain_is_open(domain):
             if self.debug_mode: 
@@ -356,7 +356,7 @@ class ExecutionEngine(object):
                 return response
             elif isinstance(response, Request):
                 redirected = response # proper alias
-                schd = self.schedule(redirected, spider, priority=4)
+                schd = self.schedule(redirected, spider, priority=-1)
                 chain_deferred(schd, redirected.deferred)
                 return schd
 
