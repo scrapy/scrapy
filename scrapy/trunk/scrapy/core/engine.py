@@ -42,6 +42,10 @@ class ExecutionEngine(object):
     process for that domain.
     """
 
+    # Scheduler priority of redirected requests. Negative means high priority.
+    # We use high priority to avoid hogging memory with pending redirected requests
+    REDIRECTION_PRIORITY = -10
+
     def __init__(self):
         self.configured = False
         self.keep_alive = False
@@ -356,7 +360,7 @@ class ExecutionEngine(object):
                 return response
             elif isinstance(response, Request):
                 redirected = response # proper alias
-                schd = self.schedule(redirected, spider, priority=-1)
+                schd = self.schedule(redirected, spider, priority=self.REDIRECTION_PRIORITY)
                 chain_deferred(schd, redirected.deferred)
                 return schd
 

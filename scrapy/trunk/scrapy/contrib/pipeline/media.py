@@ -10,6 +10,7 @@ from scrapy.spider import spiders
 
 
 class MediaPipeline(object):
+    DOWNLOAD_PRIORITY = -1
 
     class DomainInfo(object):
         def __init__(self, domain):
@@ -121,7 +122,7 @@ class MediaPipeline(object):
         request fingerprint is used as cache key.
 
         """
-        return scrapyengine.schedule(request, info.spider, priority=0)
+        return scrapyengine.schedule(request, info.spider, priority=self.DOWNLOAD_PRIORITY)
 
     def media_to_download(self, request, info):
         """ Ongoing request hook pre-cache

@@ -18,6 +18,7 @@ from scrapy.core.exceptions import IgnoreRequest
 from scrapy.conf import settings
 
 class RobotsTxtMiddleware(object):
+    DOWNLOAD_PRIORITY = -1
 
     def __init__(self):
         if not settings.getbool('ROBOTSTXT_OBEY'):
@@ -44,7 +45,7 @@ class RobotsTxtMiddleware(object):
             self._parsers[urldomain] = None
             robotsurl = "%s://%s/robots.txt" % parsedurl[0:2]
             robotsreq = Request(robotsurl)
-            dfd = scrapyengine.schedule(robotsreq, spiders.fromdomain(spiderdomain), priority=0)
+            dfd = scrapyengine.schedule(robotsreq, spiders.fromdomain(spiderdomain), priority=self.DOWNLOAD_PRIORITY)
             dfd.addCallbacks(callback=self._parse_robots, callbackArgs=[urldomain])
             self._spiderdomains[spiderdomain].add(urldomain)
 
