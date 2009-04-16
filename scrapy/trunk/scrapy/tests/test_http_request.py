@@ -259,6 +259,35 @@ class XmlRpcRequestTest(unittest.TestCase):
         self.assertEqual(r.method, 'POST')
         self.assertTrue(r.dont_filter, True)
 
+    def test_copy(self):
+        """Test XmlRpcRequest copy"""
+
+        def somecallback():
+            pass
+
+        r1 = XmlRpcRequest("http://www.example.com", callback=somecallback,
+                methodname='login', params=('username', 'password'))
+        r1.meta['foo'] = 'bar'
+        r1.cache['lala'] = 'lolo'
+        r2 = r1.copy()
+
+        assert r1.cache
+        assert not r2.cache
+
+        assert r1.deferred is not r2.deferred
+
+        # make sure meta dict is shallow copied
+        assert r1.meta is not r2.meta, "meta must be a shallow copy, not identical"
+        self.assertEqual(r1.meta, r2.meta)
+
+        # make sure headers attribute is shallow copied
+        assert r1.headers is not r2.headers, "headers must be a shallow copy, not identical"
+        self.assertEqual(r1.headers, r2.headers)
+        self.assertEqual(r1.encoding, r2.encoding)
+        self.assertEqual(r1.dont_filter, r2.dont_filter)
+        self.assertEqual(r1.body, r2.body)
+
+
 
 if __name__ == "__main__":
     unittest.main()

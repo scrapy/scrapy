@@ -13,8 +13,10 @@ from scrapy.http.request import Request
 class XmlRpcRequest(Request):
 
     def __init__(self, *args, **kwargs):
-        params = kwargs.pop('params')
-        methodname = kwargs.pop('methodname')
+        if 'body' not in kwargs:
+            params = kwargs.pop('params')
+            methodname = kwargs.pop('methodname')
+            kwargs['body'] = xmlrpclib.dumps(params, methodname)
 
         # spec defines that requests must use POST method
         kwargs.setdefault('method', 'POST')
@@ -23,5 +25,4 @@ class XmlRpcRequest(Request):
         kwargs.setdefault('dont_filter', True)
 
         Request.__init__(self, *args, **kwargs)
-        self.body = xmlrpclib.dumps(params, methodname)
         self.headers.setdefault('Content-Type', 'text/xml')
