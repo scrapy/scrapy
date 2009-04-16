@@ -4,7 +4,7 @@ from pydispatch import dispatcher
 
 from scrapy.spider import spiders 
 from scrapy.management.web import banner, webconsole_discover_module
-from scrapy.contrib_exp.cluster.master.manager import ClusterMaster
+from scrapy.contrib.cluster.master.manager import ClusterMaster
 from scrapy.utils.serialization import serialize
 
 class ClusterMasterWeb(ClusterMaster):
