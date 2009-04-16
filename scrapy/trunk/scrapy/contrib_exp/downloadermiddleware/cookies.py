@@ -11,36 +11,41 @@ class CookiesMiddleware(object):
     """This middleware enables working with sites that need cookies"""
 
     def __init__(self):
-        self.cookies = defaultdict(self.defaultdict_factory)
+        self.cookies = defaultdict(CookieJar)
         dispatcher.connect(self.domain_closed, signals.domain_closed)
 
     def process_request(self, request, spider):
         if request.meta.get('dont_merge_cookies', False):
             return
+
         jar = self.cookies[spider.domain_name]
         wreq = _WrappedRequest(request)
 
-        for key, value in request.cookies.items():
-            jar.set_cookie
+        # TODO: Merge cookies in request with jar here
+        # for key, value in request.cookies.items():
+        #     jar.set_cookie(..)
 
-
+        # set Cookie header with cookies in jar
         jar.add_cookie_header(wreq)
+
         print request.url.netloc, '    Cookie: ', request.headers.get('Cookie'), request.cookies
 
     def process_response(self, request, response, spider):
         print request.url.netloc, 'Set-Cookie:', response.headers.get('Set-Cookie'), request.cookies
+
+        # extract cookies from Set-Cookie and drop invalid/expired cookies
         wreq = _WrappedRequest(request)
         wrsp = _WrappedResponse(response)
         jar = self.cookies[spider.domain_name]
+
         jar.extract_cookies(wrsp, wreq)
+
+        # TODO: set current cookies in jar to response.cookies?
         return response
 
     def domain_closed(self, domain):
         if domain in self.cookies:
             del self.cookies[domain]
-
-    def defaultdict_factory(self):
-        return CookieJar()
 
 
 class _WrappedRequest(object):
