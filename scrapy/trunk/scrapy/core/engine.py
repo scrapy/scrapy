@@ -481,6 +481,7 @@ class ExecutionEngine(object):
         try:
             dispatcher.send(signal=signals.domain_idle, sender=self.__class__, domain=domain, spider=spider)
         except DontCloseDomain:
+            self.next_request(spider)
             return
         except:
             log.exc("Exception catched on domain_idle signal dispatch")
