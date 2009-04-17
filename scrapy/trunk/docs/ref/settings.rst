@@ -702,11 +702,23 @@ The scheduler to use for crawling.
 
 .. setting:: SCHEDULER_ORDER 
 
+SCHEDULER_ORDER
+---------------
+
 Default: ``'BFO'``
 
 Scope: ``scrapy.core.scheduler``
 
-The order to use for the crawling scheduler.
+The order to use for the crawling scheduler. Available orders are: 
+
+* ``'BFO'``:  `Breadth-first order`_ - typically consumes more memory but
+  reaches most relevant pages earlier.
+
+* ``'DFO'``:  `Depth-first order`_ - typically consumes less memory than
+  but takes longer to reach most relevant pages.
+
+.. _Breadth-first order: http://en.wikipedia.org/wiki/Breadth-first_search
+.. _Depth-first order: http://en.wikipedia.org/wiki/Depth-first_search
 
 .. setting:: SCHEDULER_MIDDLEWARES
 

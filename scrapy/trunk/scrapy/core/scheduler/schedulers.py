@@ -38,15 +38,6 @@ class Scheduler(object) :
         necesarily the order you put them in.
 
     ``pending_domains_count`` contains the names of all domains that are to be scheduled.
-
-    Two crawling orders are available by default, which can be set with the
-    SCHEDULER_ORDER settings:
-
-        * BFO - breath-first order (default). Consumes more memory than DFO but reaches
-                most relevant pages faster.
-
-        * DFO - depth-first order. Consumes less memory than BFO but usually takes
-                longer to reach the most relevant pages.
     """
 
     def __init__(self):

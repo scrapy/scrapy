@@ -70,3 +70,8 @@ How can I simulate a user login in my spider?
 ---------------------------------------------
 
 See :ref:`ref-request-userlogin`.
+
+Can I crawl in depth-first order instead of breadth-first order?
+----------------------------------------------------------------
+
+Yes, there's a setting for that: :setting:`SCHEDULER_ORDER`.
