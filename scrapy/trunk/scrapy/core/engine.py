@@ -49,7 +49,6 @@ class ExecutionEngine(object):
     def __init__(self):
         self.configured = False
         self.keep_alive = False
-        self.domain_close_delay = settings.getint('DOMAIN_CLOSE_DELAY') # seconds after an idle domain will be closed
         self.initializing = set() # domais in intialization state
         self.cancelled = set() # domains in cancelation state
         self.debug_mode = settings.getbool('ENGINE_DEBUG')
@@ -211,17 +210,7 @@ class ExecutionEngine(object):
         downloading = not self.downloader.domain_is_idle(domain)
         haspipe = not self.pipeline.domain_is_idle(domain)
         oninit = domain in self.initializing
-        if pending or downloading or haspipe or oninit or scraping:
-            return False
-        elif self.domain_close_delay:
-            lastseen = self.downloader.lastseen(domain)
-            if not lastseen: # domain not yet started
-                return False
-            now = datetime.now()
-            delta = now - lastseen
-            return (delta.seconds >= self.domain_close_delay)
-        else:
-            return True
+        return not (pending or downloading or haspipe or oninit or scraping)
 
     def domain_is_open(self, domain):
         return domain in self.downloader.sites
@@ -318,12 +307,6 @@ class ExecutionEngine(object):
         while self.running and self.downloader.has_capacity():
             if not self.next_domain():
                 return self._stop_if_idle()
-
-        # purge idle domains - (domain_close_delay support)
-        if self.domain_close_delay:
-            for domain in self.downloader.sites:
-                if self.domain_is_idle(domain):
-                    self._domain_idle(domain)
 
     def _add_starter(self, request, spider, domain_priority):
         domain = spider.domain_name
