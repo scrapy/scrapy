@@ -213,6 +213,7 @@ class ClusterMaster(object):
             self.get_spider_groupsettings = my_import(settings["GROUPSETTINGS_MODULE"]).get_spider_groupsettings
         else:
             self.get_spider_groupsettings = lambda x: {}
+
         # load pending domains
         try:
             statefile = open(self.statefile, "r")
@@ -220,13 +221,16 @@ class ClusterMaster(object):
             log.msg("ClusterMaster: Loaded state from %s" % self.statefile)
         except IOError:
             self.pending = []
+
         self.loading = []
         self.nodes = {}
         self.nodesconf = settings.get('CLUSTER_MASTER_NODES', {})
         self.start_time = datetime.datetime.utcnow()
+
         # for more info about statistics see self.update_nodes() and ClusterNodeBroker.remote_update()
         self.statistics = {"domains": {"running": set(), "scraped": {}, "lost_count": {}, "lost": set()}, "scraped_count": 0 }
         self.global_settings = {}
+
         # load cluster global settings
         for sname in settings.getlist('GLOBAL_CLUSTER_SETTINGS'):
             self.global_settings[sname] = settings[sname]
@@ -291,7 +295,7 @@ class ClusterMaster(object):
     def _schedule(self, domains, spider_settings=None, priority=20):
         """Private method which performs the schedule of the given domains,
         with the given priority. Used for both scheduling and rescheduling."""
-        insert_pos = len([p for p in self.pending if ['priority'] <= priority])
+        insert_pos = len([p for p in self.pending if p['priority'] <= priority])
         for domain in domains:
             pd = self.get_first_pending(domain)
             if pd: # domain already pending, so just change priority if new is higher
@@ -341,7 +345,7 @@ class ClusterMaster(object):
         """Remove all scheduled instances of the given domains (if they haven't
         started yet). Otherwise use stop() to stop running domains"""
 
-        self.pending = [p for p in self.pending if ['domain'] not in domains]
+        self.pending = [p for p in self.pending if p['domain'] not in domains]
 
     def discard(self, domains):
         """Stop and remove all running and pending instances of the given
