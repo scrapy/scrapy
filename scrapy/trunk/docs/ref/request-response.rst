@@ -25,61 +25,73 @@ below in :ref:`ref-request-subclasses` and :ref:`ref-response-subclasses`.
 Request objects
 ===============
 
-.. class:: Request(url[, callback, method, body, headers, cookies, meta, encoding, dont_filter, errback])
+.. class:: Request(url[, callback, method='GET', body, headers, cookies, meta, encoding='utf-8', dont_filter=False, errback])
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
     a :class:`Response`.
     
-    ``url`` is a string containing the URL for this request
+    :param url: the URL of this request
+    :type url: string
 
-    ``callback`` is a function that will be called with the response of this
-    request (once its downloaded) as its first parameter. For more information
-    see :ref:`ref-request-callback-arguments` below.
+    :param callback: the function that will be called with the response of this
+       request (once its downloaded) as its first parameter. For more information
+       see :ref:`ref-request-callback-arguments` below.
+    :type callback: callable
 
-    ``method`` is a string with the HTTP method of this request, and defaults
-    to ``'GET'``.
+    :param method: the HTTP method of this request. Defaults to ``'GET'``.
+    :type method: string
 
-    ``meta`` is a dict containing the initial values for the
-    :attr:`Request.meta` attribute. If passed, the dict will be shallow copied.
+    :param meta: the initial values for the :attr:`Request.meta` attribute. If
+       given, the dict passed in this parameter will be shallow copied.
+    :type meta: dict
 
-    ``body`` is a str or unicode containing the request body.
-    If ``body`` is a `unicode` it's encoded to str using the `encoding` passed.
-    If ``body`` is None, an empty string is stored.
-    In any case, the final stored value will be a string (never unicode, never None).
+    :param body: the request body. If a ``unicode`` is passed, then it's encoded to
+      ``str`` using the `encoding` passed (which defaults to ``utf-8``). If
+      ``body`` is not given,, an empty string is stored. Regardless of the
+      type of this argument, the final value stored will be a ``str``` (never
+      ``unicode`` or ``None``).
+    :type body: str or unicode
 
-    ``headers`` is a multi-valued dict containing the headers of this request
+    :param headers: the headers of this request. The dict values can be strings
+       (for single valued headers) or lists (for multi-valued headers).
+    :type headers: dict
 
-    ``cookies`` is a dict containing the request cookies. Example::
+    :param cookies: the request cookies. Example::
 
-        request_with_cookies = Request(url="http://www.example.com",
-                                       cookies={currency: 'USD', country: 'UY'})
+            request_with_cookies = Request(url="http://www.example.com",
+                                           cookies={currency: 'USD', country: 'UY'})
 
-    When some site returns cookies (in a response) those are stored in the
-    cookies for that domain and will be sent again in future Requests. That's
-    the typical behaviour of any regular web browser. However, if, for some
-    reason, you want to avoid merging with existing cookies you can instruct
-    Scrapy to do so by setting the ``dont_merge_cookies`` item in the
-    Request.meta. 
-  
-    Example of request without merging cookies::
+        When some site returns cookies (in a response) those are stored in the
+        cookies for that domain and will be sent again in future requests. That's
+        the typical behaviour of any regular web browser. However, if, for some
+        reason, you want to avoid merging with existing cookies you can instruct
+        Scrapy to do so by setting the ``dont_merge_cookies`` item in the
+        :attr:`Request.meta`. 
+      
+        Example of request without merging cookies::
 
-        request_with_cookies = Request(url="http://www.example.com",
-                                       cookies={currency: 'USD', country: 'UY'},
-                                       meta={'dont_merge_cookies': True})
+            request_with_cookies = Request(url="http://www.example.com",
+                                           cookies={currency: 'USD', country: 'UY'},
+                                           meta={'dont_merge_cookies': True})
+    :type cookies: dict
 
-    ``encoding`` is a string with the encoding of this request (defaults to
-    ``'utf-8'``). This encoding will be used to percent-encode the URL and to
-    convert the body to str (when given as unicode).
+    :param encoding: the encoding of this request (defaults to ``'utf-8'``).
+       This encoding will be used to percent-encode the URL and to convert the
+       body to ``str`` (if given as ``unicode``).
+    :type encoding: string
 
-    ``dont_filter`` is a boolean which indicates that this request should not
-    be filtered by the scheduler. This is used when you want to perform an
-    identical request multiple times, for whatever reason
+    :param dont_filter: indicates that this request should not be filtered by
+       the scheduler. This is used when you want to perform an identical
+       request multiple times, to ignore the duplicates filter. Use it with
+       care, or you will get into crawling loops. Default to ``False``.
+    :type dont_filter: boolean
 
-    ``errback`` is a function that will be called if any exception was raised
-    while processing the request in Scrapy. This includes pages that failed
-    with 404 HTTP errors and such. , it receives a `Twisted Failure`_
-    instance as first parameter.
+    :param errback: a function that will be called if any exception was
+       raised while processing the request. This includes pages that failed
+       with 404 HTTP errors and such. It receives a `Twisted Failure`_ instance
+       as first parameter.
+    :type errback: callable
 
     .. _Twisted Failure: http://twistedmatrix.com/documents/8.2.0/api/twisted.python.failure.Failure.html
 
@@ -240,27 +252,36 @@ objects.
     remaining arguments are the same as for the :class:`Request` class and are
     not documented here.
 
-    ``formdata`` is a dictionary (or iterable of (key, value) tuples) containing
-    HTML Form data which will be url-encoded and assigned to the body of the
-    request.
+    :param formdata: is a dictionary (or iterable of (key, value) tuples)
+       containing HTML Form data which will be url-encoded and assigned to the
+       body of the request.
+    :type formdata: dict or iterable of tuples
 
     The :class:`FormRequest` objects support the following class method in
     addition to the standard :class:`Request` methods:
 
-    .. classmethod:: FormRequest.from_response(response, [formnumber, formdata, ...])
+    .. classmethod:: FormRequest.from_response(response, [formnumber=0, formdata, ...])
 
-        Returns a new :class:`FormRequest` object with its form field values
-        pre-populated with those found in the HTML ``<form>`` element contained
-        in the given response. 
+       Returns a new :class:`FormRequest` object with its form field values
+       pre-populated with those found in the HTML ``<form>`` element contained
+       in the given response. For an example see :ref:`ref-request-userlogin`.
 
-        ``response`` is a :class:`Response` object containing a HTML form which
-        will be used to pre-populate the form fields
-      
-        ``formnumber`` is an integer which specifies the form to use, when the
-        response contains multiple forms. Defaults to ``0``.
 
-        ``formdata`` is a dict which contains fields to override in the form data.
-        For an example, see :ref:`ref-request-userlogin`.
+       :param response: the response containing a HTML form which will be used
+          to pre-populate the form fields
+       :type response: :class:`Response` object
+
+       :param formnumber: the number of form to use, when the response contains
+          multiple forms. The first one (and also the default) is ``0``.
+       :type formnumber: integer
+
+       :param formdata: fields to override in the form data. If a field was
+          already present in the response ``<form>`` element, its value is
+          overridden by the one passed in this parameter.
+       :type formdata: dict
+
+       The other parameters of this class method are passed directly to the
+       :class:`FormRequest` constructor.
 
 
 Request usage examples
@@ -310,28 +331,34 @@ method for this job. Here's an example spider which uses it::
 Response objects
 ================
 
-.. class:: Response(url, [status, headers, body, meta, flags])
+.. class:: Response(url, [status=200, headers, body, meta, flags])
 
     A :class:`Response` object represents an HTTP response, which is usually
     downloaded (by the Downloader) and fed to the Spiders for processing.
     
-    ``url`` is a string containing the URL for this response
+    :param url: the URL of this response
+    :type url: string
 
-    ``headers`` is a multivalued dict of the response headers
+    :param headers: the headers of this response. The dict values can be strings
+       (for single valued headers) or lists (for multi-valued headers).
+    :type headers: dict
 
-    ``status`` is an integer with the HTTP status of the response. Defaults to
-    ``200``.
+    :param status: the HTTP status of the response. Defaults to ``200``.
+    :type status: integer
 
-    ``body`` is a str with the response body. It must be str, not unicode,
-    unless you're using a :ref:`Response sublcass <ref-response-subclasses>`
-    such as :class:`TextResponse`.
+    :param body: the response body. It must be str, not unicode, unless you're
+       using a encoding-aware :ref:`Response sublcass <ref-response-subclasses>`,
+       such as :class:`TextResponse`.
+    :type body: str
 
-    ``meta`` is a dict containing the initial values for the
-    :attr:`Response.meta` attribute. If given, the dict will be shallow copied.
+    :param meta: the initial values for the :attr:`Response.meta` attribute. If
+       given, the dict will be shallow copied.
+    :type meta: dict
 
-    ``flags`` is a list containing the initial values for the
-    :attr:`Response.flags` attribute. If given, the list will be shallow
-    copied.
+    :param flags: is a list containing the initial values for the
+       :attr:`Response.flags` attribute. If given, the list will be shallow
+       copied.
+    :type flags: list
 
     .. attribute:: Response.url
 
@@ -428,11 +455,12 @@ TextResponse objects
     addition to the base :class:`Response` objects. The remaining functionality
     is the same as for the :class:`Response` class and is not documented here.
 
-    ``encoding`` is a string which contains the encoding to use for this
-    response. If you create a :class:`TextResponse` object with a unicode body
-    it will be encoded using this encoding (remember the body attribute is
-    always a string). If ``encoding`` is ``None`` (default value), the encoding
-    will be looked up in the response headers anb body instead.
+    :param encoding: is a string which contains the encoding to use for this
+       response. If you create a :class:`TextResponse` object with a unicode
+       body it will be encoded using this encoding (remember the body attribute
+       is always a string). If ``encoding`` is ``None`` (default value), the
+       encoding will be looked up in the response headers anb body instead.
+    :type encoding: string
 
     :class:`TextResponse` objects support the following attributes in addition
     to the standard :class:`Response` ones:
@@ -474,12 +502,12 @@ TextResponse objects
  
             response.body.encode(response.encoding)
  
-        But keep in mind that this is not equivalent to::
+        But **not** equivalent to::
         
             unicode(response.body)
         
-        Since in the latter case you would be using you system default encoding
-        (typically `ascii`) to convert the body to uniode instead of the response
+        Since, in the latter case, you would be using you system default encoding
+        (typically `ascii`) to convert the body to uniode, instead of the response
         encoding.
  
 HtmlResponse objects
