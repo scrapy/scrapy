@@ -209,6 +209,8 @@ class FormRequestTest(unittest.TestCase):
         """
         response = Response("http://www.example.com/this/list.html", body=respbody)
         r1 = FormRequest.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'}, callback=lambda x: x)
+        self.assertEqual(r1.method, 'POST')
+        self.assertEqual(r1.headers['Content-type'], 'application/x-www-form-urlencoded')
         fs = cgi.FieldStorage(StringIO(r1.body), r1.headers, environ={"REQUEST_METHOD": "POST"})
         self.assertEqual(r1.url, "http://www.example.com/this/post.php")
         self.assertEqual(set([f.value for f in fs["test"]]), set(["val1", "val2"]))
@@ -226,6 +228,7 @@ class FormRequestTest(unittest.TestCase):
         """
         response = Response("http://www.example.com/this/list.html", body=respbody)
         r1 = FormRequest.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'})
+        self.assertEqual(r1.method, 'GET')
         self.assertEqual(r1.url.hostname, "www.example.com")
         self.assertEqual(r1.url.path, "/this/get.php")
         urlargs = cgi.parse_qs(r1.url.query)
@@ -233,6 +236,19 @@ class FormRequestTest(unittest.TestCase):
         self.assertEqual(set(urlargs['one']), set(['two', 'three']))
         self.assertEqual(urlargs['test2'], ['xxx'])
         self.assertEqual(urlargs['six'], ['seven'])
+
+    def test_from_response_override_params(self):
+        respbody = """
+<form action="get.php" method="POST">
+<input type="hidden" name="one" value="1">
+<input type="hidden" name="two" value="3">
+</form>
+        """
+        response = Response("http://www.example.com/this/list.html", body=respbody)
+        r1 = FormRequest.from_response(response, formdata={'two': '2'})
+        fs = cgi.FieldStorage(StringIO(r1.body), r1.headers, environ={"REQUEST_METHOD": "POST"})
+        self.assertEqual(fs['one'].value, '1')
+        self.assertEqual(fs['two'].value, '2')
 
     def test_from_response_errors_noform(self):
         respbody = """<html></html>"""

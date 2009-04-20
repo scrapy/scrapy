@@ -45,9 +45,14 @@ class FormRequest(Request):
         except IndexError:
             raise IndexError("Form number %d not found in %s" % (formnumber, response))
         if formdata:
+            # remove all existing fields with the same name before, so that
+            # formdata fields properly can properly override existing ones,
+            # which is the desired behaviour
+            form.controls = [c for c in form.controls if c.name not in formdata.keys()]
             for k, v in formdata.iteritems():
                 for v2 in v if hasattr(v, '__iter__') else [v]:
                     form.new_control('text', k, {'value': v2})
+                    
         url, body, headers = form.click_request_data()       
-        request = cls(url, body=body, headers=headers, **kwargs)
+        request = cls(url, method=form.method, body=body, headers=headers, **kwargs)
         return request
