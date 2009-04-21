@@ -87,6 +87,11 @@ class HeadersTest(unittest.TestCase):
         h1.appendlist('header1', 'value3')
         self.assertEqual(h1.getlist('header1'), ['value1', 'value3'])
 
+        h1 = Headers()
+        h1.appendlist('header1', 'value1')
+        h1.appendlist('header1', 'value3')
+        self.assertEqual(h1.getlist('header1'), ['value1', 'value3'])
+
     def test_setlist(self):
         h1 = Headers({'header1': 'value1'})
         self.assertEqual(h1.getlist('header1'), ['value1'])

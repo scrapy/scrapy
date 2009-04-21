@@ -51,7 +51,9 @@ class Headers(CaselessDict):
         self.setdefault(key, default_list)
 
     def appendlist(self, key, value):
-        self.getlist(key).extend(self.normvalue(value))
+        lst = self.getlist(key)
+        lst.extend(self.normvalue(value))
+        self[key] = lst
 
     def items(self):
         return list(self.iteritems())
