@@ -1,4 +1,4 @@
-from cookielib import CookieJar as _CookieJar, DefaultCookiePolicy
+from cookielib import CookieJar as _CookieJar, DefaultCookiePolicy, Cookie
 
 
 class CookieJar(object):
@@ -13,11 +13,6 @@ class CookieJar(object):
     def add_cookie_header(self, request):
         wreq = WrappedRequest(request)
         self.jar.add_cookie_header(wreq)
-        for hdr in ('Cookie', 'Cookie2'):
-            v = wreq.get_header(hdr)
-            if hdr:
-                request.headers[hdr] = v
-
 
     @property
     def _cookies(self):

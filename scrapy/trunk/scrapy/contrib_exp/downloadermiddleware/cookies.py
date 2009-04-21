@@ -4,6 +4,7 @@ from collections import defaultdict
 
 from scrapy.core import signals
 from scrapy.utils.cookies import CookieJar
+from scrapy.core.exceptions import HttpException
 from scrapy import log
 
 class CookiesMiddleware(object):
@@ -22,7 +23,7 @@ class CookiesMiddleware(object):
             jar.set_cookie_if_ok(cookie, request)
 
         # set Cookie header
-        jar.add_cookie_header(wreq)
+        jar.add_cookie_header(request)
 
     def process_response(self, request, response, spider):
         if request.meta.get('dont_merge_cookies', False):
@@ -30,7 +31,7 @@ class CookiesMiddleware(object):
 
         # extract cookies from Set-Cookie and drop invalid/expired cookies
         jar = self.cookies[spider.domain_name]
-        jar.extract_cookies(wrsp, wreq)
+        jar.extract_cookies(response, request)
 
         # TODO: set current cookies in jar to response.cookies?
         return response
