@@ -18,7 +18,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
     def tearDown(self):
         dupefilter.close('scrapytest.org')
 
-    def test_process_exception(self):
+    def test_redirect_301(self):
         url = 'http://www.example.com/301'
         url2 = 'http://www.example.com/redirected'
         req = Request(url)
@@ -30,9 +30,11 @@ class RedirectMiddlewareTest(unittest.TestCase):
         assert isinstance(req2, Request)
         self.assertEqual(req2.url, url2)
 
+    def test_redirect_302(self):
         url = 'http://www.example.com/302'
         url2 = 'http://www.example.com/redirected2'
-        req = Request(url, method='POST')
+        req = Request(url, method='POST', body='test', 
+            headers={'Content-Type': 'text/plain', 'Content-length': '4'})
         hdr = Headers({'Location': [url2]})
         rsp = Response(url, headers=hdr)
         exc = HttpException('302', None, rsp)
@@ -41,9 +43,14 @@ class RedirectMiddlewareTest(unittest.TestCase):
         assert isinstance(req2, Request)
         self.assertEqual(req2.url, url2)
         self.assertEqual(req2.method, 'GET')
-        assert not req2.body
+        assert 'Content-Type' not in req2.headers, \
+            "Content-Type header must not be present in redirected request"
+        assert 'Content-Length' not in req2.headers, \
+            "Content-Length header must not be present in redirected request"
+        assert not req2.body, \
+            "Redirected body must be empty, not '%s'" % req2.body
 
-    def test_process_response(self):
+    def test_meta_refresh(self):
         body = """<html>
             <head><meta http-equiv="refresh" content="5;url=http://example.org/newpage" /></head>
             </html>"""
