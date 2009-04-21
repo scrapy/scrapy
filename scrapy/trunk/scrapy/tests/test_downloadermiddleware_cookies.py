@@ -73,16 +73,16 @@ class CookiesMiddlewareTest(TestCase):
         self.assertEquals(req.headers.get('Cookie'), 'C1=value1')
 
     def test_merge_request_cookies(self):
-        headers = {'Set-Cookie': 'C1=value1; path=/'}
         req = Request('http://scrapytest.org/', cookies={'galleta': 'salada'})
         self.mw.process_request(req, self.spider)
         self.assertEquals(req.headers.get('Cookie'), 'galleta=salada')
 
+        headers = {'Set-Cookie': 'C1=value1; path=/'}
         res = Response('http://scrapytest.org/', headers=headers)
         self.mw.process_response(req, res, self.spider)
         req2 = Request('http://scrapytest.org/sub1/')
         self.mw.process_request(req2, self.spider)
-        self.assertEquals(req2.headers.get('Cookie'), "C1=value1")
+        self.assertEquals(req2.headers.get('Cookie'), "C1=value1; galleta=salada")
 
 
 

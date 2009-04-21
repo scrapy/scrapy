@@ -1,11 +1,14 @@
+import operator
+from itertools import groupby
+from collections import defaultdict
 from pydispatch import dispatcher
 
-from collections import defaultdict
-
 from scrapy.core import signals
+from scrapy.http import Response
 from scrapy.utils.cookies import CookieJar
 from scrapy.core.exceptions import HttpException
 from scrapy import log
+
 
 class CookiesMiddleware(object):
     """This middleware enables working with sites that need cookies"""
@@ -19,7 +22,8 @@ class CookiesMiddleware(object):
             return
 
         jar = self.jars[spider.domain_name]
-        for name, cookie in request.cookies.items():
+        cookies = _get_cookies(jar, request)
+        for cookie in cookies:
             jar.set_cookie_if_ok(cookie, request)
 
         # set Cookie header
@@ -43,3 +47,12 @@ class CookiesMiddleware(object):
 
     def domain_closed(self, domain):
         self.jars.pop(domain, None)
+
+
+def _get_cookies(jar, request):
+    headers = {'Set-Cookie': ['%s=%s;' % (k, v) for k, v in request.cookies.iteritems()]}
+    response = Response(request.url, headers=headers)
+    cookies = jar.make_cookies(response, request)
+    return cookies
+    
+
