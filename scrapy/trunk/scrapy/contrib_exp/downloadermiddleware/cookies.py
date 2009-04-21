@@ -11,14 +11,14 @@ class CookiesMiddleware(object):
     """This middleware enables working with sites that need cookies"""
 
     def __init__(self):
-        self.cookies = defaultdict(CookieJar)
+        self.jars = defaultdict(CookieJar)
         dispatcher.connect(self.domain_closed, signals.domain_closed)
 
     def process_request(self, request, spider):
         if request.meta.get('dont_merge_cookies', False):
             return
 
-        jar = self.cookies[spider.domain_name]
+        jar = self.jars[spider.domain_name]
         for name, cookie in request.cookies.items():
             jar.set_cookie_if_ok(cookie, request)
 
@@ -30,7 +30,7 @@ class CookiesMiddleware(object):
             return
 
         # extract cookies from Set-Cookie and drop invalid/expired cookies
-        jar = self.cookies[spider.domain_name]
+        jar = self.jars[spider.domain_name]
         jar.extract_cookies(response, request)
 
         # TODO: set current cookies in jar to response.cookies?
@@ -42,6 +42,4 @@ class CookiesMiddleware(object):
             self.process_response(request, exception.response, spider)
 
     def domain_closed(self, domain):
-        if domain in self.cookies:
-            del self.cookies[domain]
-
+        self.jars.pop(domain, None)
