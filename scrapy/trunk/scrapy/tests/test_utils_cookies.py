@@ -1081,6 +1081,23 @@ class LWPCookieTests(TestCase):
             # we didn't have session cookies in the first place
             counter["session_before"] == 0))
 
+    def testMalformedCookieHeaderParsing(self):
+        headers = Headers({'Set-Cookie': [
+            'CUSTOMER=WILE_E_COYOTE; path=/; expires=Wednesday, 09-Nov-2100 23:12:40 GMT',
+            'PART_NUMBER=ROCKET_LAUNCHER_0001; path=/',
+            'SHIPPING=FEDEX; path=/foo',
+            'COUNTRY=UY; path=/foo',
+            'GOOD_CUSTOMER;',
+            'NO_A_BOT;']})
+        res = Response('http://www.perlmeister.com/foo', headers=headers)
+        req = Request('http://www.perlmeister.com/foo')
+
+        c = CookieJar()
+        c.extract_cookies(res, req)
+        c.add_cookie_header(req)
+        self.assertEquals(req.headers.get('Cookie'),
+                'COUNTRY=UY; SHIPPING=FEDEX; CUSTOMER=WILE_E_COYOTE; '
+                'PART_NUMBER=ROCKET_LAUNCHER_0001; NO_A_BOT; GOOD_CUSTOMER')
 
 
 class WrapperRequestResponse(TestCase):
@@ -1129,4 +1146,5 @@ class WrapperRequestResponse(TestCase):
         # port shouldn't be in request-host
         req = self.FakeRequest("http://www.acme.com:2345/resource.html", headers={"Host": "www.acme.com:5432"})
         self.assertEquals(request_host(req), "www.acme.com")
+
 

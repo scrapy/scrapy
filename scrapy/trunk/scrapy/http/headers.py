@@ -48,7 +48,7 @@ class Headers(CaselessDict):
         self[key] = list_
 
     def setlistdefault(self, key, default_list=()):
-        self.setdefault(key, default_list)
+        return self.setdefault(key, default_list)
 
     def appendlist(self, key, value):
         lst = self.getlist(key)
@@ -59,19 +59,16 @@ class Headers(CaselessDict):
         return list(self.iteritems())
 
     def iteritems(self):
-        return ((k, self[k]) for k in self.keys())
+        return ((k, self.getlist(k)) for k in self.keys())
 
     def values(self):
         return [self[k] for k in self.keys()]
-
-    def lists(self):
-        return super(Headers, self).items()
 
     def to_string(self):
         return headers_dict_to_raw(self)
 
     def __copy__(self):
-        return self.__class__(self.lists())
+        return self.__class__(self)
     copy = __copy__
 
 

@@ -52,7 +52,8 @@ class RequestTest(unittest.TestCase):
         h[u'newkey'] = u'newval'
         for k, v in h.iteritems():
             self.assert_(isinstance(k, str))
-            self.assert_(isinstance(v, str))
+            for s in v:
+                self.assert_(isinstance(s, str))
 
     def test_eq(self):
         url = 'http://www.scrapy.org'

@@ -60,13 +60,11 @@ class HeadersTest(unittest.TestCase):
         h = Headers(idict)
         self.assertEqual(dict(h), {'Content-Type': ['text/html'], 'X-Forwarded-For': ['ip1', 'ip2']})
         self.assertEqual(h.keys(), ['X-Forwarded-For', 'Content-Type'])
-        self.assertEqual(h.items(), [('X-Forwarded-For', 'ip2'), ('Content-Type', 'text/html')])
+        self.assertEqual(h.items(), [('X-Forwarded-For', ['ip1', 'ip2']), ('Content-Type', ['text/html'])])
         self.assertEqual(list(h.iteritems()),
-                [('X-Forwarded-For', 'ip2'), ('Content-Type', 'text/html')])
+                [('X-Forwarded-For', ['ip1', 'ip2']), ('Content-Type', ['text/html'])])
 
         self.assertEqual(h.values(), ['ip2', 'text/html'])
-        self.assertEqual(h.lists(),
-                [('X-Forwarded-For', ['ip1', 'ip2']), ('Content-Type', ['text/html'])])
 
     def test_update(self):
         h = Headers()

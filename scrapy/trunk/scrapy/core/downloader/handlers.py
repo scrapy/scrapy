@@ -55,7 +55,6 @@ def create_factory(request, spider):
                                 postdata=request.body or None, # see http://dev.scrapy.org/ticket/60
                                 headers=request.headers,
                                 agent=agent,
-                                cookies=request.cookies,
                                 timeout=getattr(spider, "download_timeout", None) or default_timeout,
                                 followRedirect=False)
 

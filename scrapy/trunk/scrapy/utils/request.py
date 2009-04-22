@@ -52,7 +52,8 @@ def request_fingerprint(request, include_headers=()):
         for hdr in include_headers:
             if hdr in request.headers:
                 fp.update(hdr)
-                fp.update(request.headers.get(hdr, ''))
+                for v in request.headers.getlist(hdr):
+                    fp.update(v)
         fphash = fp.hexdigest()
         request.cache[cachekey] = fphash
         return fphash

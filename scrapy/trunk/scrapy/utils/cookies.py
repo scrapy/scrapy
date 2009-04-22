@@ -95,7 +95,7 @@ class WrappedRequest(object):
         return self.request.headers.items()
 
     def add_unredirected_header(self, name, value):
-        self.request.headers[name] = value
+        self.request.headers.appendlist(name, value)
         #print 'add_unredirected_header', self.request.headers
 
 
