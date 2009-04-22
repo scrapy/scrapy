@@ -292,12 +292,12 @@ Default::
     [
         'scrapy.contrib.downloadermiddleware.robotstxt.RobotsTxtMiddleware',
         'scrapy.contrib.downloadermiddleware.errorpages.ErrorPagesMiddleware',
-        'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware',
         'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware',
         'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware',
         'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware',
         'scrapy.contrib.downloadermiddleware.common.CommonMiddleware',
         'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware',
+        'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware',
         'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware',
         'scrapy.contrib.downloadermiddleware.debug.CrawlDebug',
         'scrapy.contrib.downloadermiddleware.stats.DownloaderStats',
