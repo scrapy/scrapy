@@ -4,7 +4,7 @@ from cookielib import CookieJar as _CookieJar, DefaultCookiePolicy, Cookie
 class CookieJar(object):
     def __init__(self, policy=None):
         self.jar = _CookieJar(policy or DefaultCookiePolicy())
-        self.jar._cookies_jar = _DummyLock()
+        self.jar._cookies_lock = _DummyLock()
 
     def extract_cookies(self, response, request):
         wreq = WrappedRequest(request)
