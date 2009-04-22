@@ -5,7 +5,7 @@ from unittest import TestCase
 from scrapy.spider import spiders
 from scrapy.core.exceptions import HttpException
 from scrapy.http import Response, Request
-from scrapy.contrib_exp.downloadermiddleware.cookies import CookiesMiddleware
+from scrapy.contrib.downloadermiddleware.cookies import CookiesMiddleware
 
 
 class CookiesMiddlewareTest(TestCase):
