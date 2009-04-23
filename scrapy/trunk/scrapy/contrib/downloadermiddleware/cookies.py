@@ -35,7 +35,7 @@ class CookiesMiddleware(object):
 
     def process_response(self, request, response, spider):
         if request.meta.get('dont_merge_cookies', False):
-            return
+            return response
 
         # extract cookies from Set-Cookie and drop invalid/expired cookies
         jar = self.jars[spider.domain_name]
