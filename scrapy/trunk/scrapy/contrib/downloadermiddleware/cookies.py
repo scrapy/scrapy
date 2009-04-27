@@ -5,7 +5,7 @@ from pydispatch import dispatcher
 
 from scrapy.core import signals
 from scrapy.http import Response
-from scrapy.utils.cookies import CookieJar
+from scrapy.http.cookies import CookieJar
 from scrapy.core.exceptions import HttpException
 from scrapy.conf import settings
 from scrapy import log
