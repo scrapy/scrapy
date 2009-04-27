@@ -9,6 +9,6 @@ class UserAgentMiddleware(object):
     default_useragent = settings.get('USER_AGENT')
 
     def process_request(self, request, spider):
-        ua = getattr(spider, 'user_agent', self.default_useragent)
+        ua = getattr(spider, 'user_agent', None) or self.default_useragent
         if ua:
             request.headers.setdefault('User-Agent', ua)
