@@ -272,7 +272,7 @@ class WebClientTestCase(unittest.TestCase):
     def testFactoryInfo(self):
         url = self.getURL('file')
         scheme, host, port, path = client._parse(url)
-        factory = client.HTTPClientFactory(url)
+        factory = client.ScrapyHTTPClientFactory(url)
         reactor.connectTCP(host, port, factory)
         return factory.deferred.addCallback(self._cbFactoryInfo, factory)
 
@@ -280,7 +280,7 @@ class WebClientTestCase(unittest.TestCase):
         self.assertEquals(factory.status, '200')
         self.assert_(factory.version.startswith('HTTP/'))
         self.assertEquals(factory.message, 'OK')
-        self.assertEquals(factory.response_headers['content-length'][0], '10')
+        self.assertEquals(factory.response_headers['content-length'], '10')
 
     def testRedirect(self):
         return client.getPage(self.getURL("redirect")).addCallback(self._cbRedirect)
