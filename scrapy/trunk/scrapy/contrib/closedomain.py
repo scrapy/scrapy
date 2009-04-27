@@ -43,4 +43,5 @@ class CloseDomain(object):
             self.mail.send(self.notify, subj, body)
 
     def domain_closed(self, domain):
-        scrapyengine.removetask(self.tasks[domain])
+        if domain in self.tasks:
+            scrapyengine.removetask(self.tasks[domain])
