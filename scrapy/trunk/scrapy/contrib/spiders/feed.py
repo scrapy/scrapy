@@ -24,6 +24,7 @@ class XMLFeedSpider(BaseSpider):
 
     iterator = 'iternodes'
     itertag = 'item'
+    namespaces = ()
 
     def process_results(self, response, results):
         """This overridable method is called for each result (item or request)
@@ -42,6 +43,10 @@ class XMLFeedSpider(BaseSpider):
         """
         return response
 
+    def parse_item(self, response, selector):
+        """This method must be overriden with your custom spider functionality"""
+        raise NotImplemented
+        
     def parse_nodes(self, response, nodes):
         """This method is called for the nodes matching the provided tag name
         (itertag). Receives the response and an XPathSelector for each node.
@@ -67,13 +72,21 @@ class XMLFeedSpider(BaseSpider):
         if self.iterator == 'iternodes':
             nodes = xmliter(response, self.itertag)
         elif self.iterator == 'xml':
-            nodes = XmlXPathSelector(response).x('//%s' % self.itertag)
+            selector = XmlXPathSelector(response)
+            self._register_namespaces(selector)
+            nodes = selector.x('//%s' % self.itertag)
         elif self.iterator == 'html':
-            nodes = HtmlXPathSelector(response).x('//%s' % self.itertag)
+            selector = HtmlXPathSelector(response)
+            self._register_namespaces(selector)
+            nodes = selector.x('//%s' % self.itertag)
         else:
             raise NotSupported('Unsupported node iterator')
 
         return self.parse_nodes(response, nodes)
+
+    def _register_namespaces(self, selector):
+        for (prefix, uri) in self.namespaces:
+            selector.register_namespace(prefix, uri)
 
 class CSVFeedSpider(BaseSpider):
     """Spider for parsing CSV feeds.
@@ -94,6 +107,10 @@ class CSVFeedSpider(BaseSpider):
     def adapt_response(self, response):
         """This method has the same purpose as the one in XMLFeedSpider"""
         return response
+
+    def parse_row(self, row):
+        """This method must be overriden with your custom spider functionality"""
+        raise NotImplemented
 
     def parse_rows(self, response):
         """Receives a response and a dict (representing each row) with a key for

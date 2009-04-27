@@ -191,63 +191,84 @@ XMLFeedSpider
 
 .. class:: XMLFeedSpider
 
-XMLFeedSpider is designed for parsing XML feeds by iterating through them by a
-certain node name.  The iterator can be chosen from: ``iternodes``, ``xml``,
-and ``html``.  It's recommended to use the ``iternodes`` iterator for
-performance reasons, since the ``xml`` and ``html`` iterators generate the
-whole DOM at once in order to parse it.  However, using ``html`` as the
-iterator may be useful when parsing XML with bad markup.
+    XMLFeedSpider is designed for parsing XML feeds by iterating through them by a
+    certain node name.  The iterator can be chosen from: ``iternodes``, ``xml``,
+    and ``html``.  It's recommended to use the ``iternodes`` iterator for
+    performance reasons, since the ``xml`` and ``html`` iterators generate the
+    whole DOM at once in order to parse it.  However, using ``html`` as the
+    iterator may be useful when parsing XML with bad markup.
 
-For setting the iterator and the tag name, you must define the following class
-attributes:  
+    For setting the iterator and the tag name, you must define the following class
+    attributes:  
 
-.. attribute:: XMLFeedSpider.iterator
+    .. attribute:: iterator
 
-    A string which defines the iterator to use. It can be either:
+        A string which defines the iterator to use. It can be either:
 
-       - ``'iternodes'`` - a fast iterator based on regular expressions 
+           - ``'iternodes'`` - a fast iterator based on regular expressions 
 
-       - ``'html'`` - an iterator which uses HtmlXPathSelector. Keep in mind
-         this uses DOM parsing and must load all DOM in memory which could be a
-         problem for big feeds
+           - ``'html'`` - an iterator which uses HtmlXPathSelector. Keep in mind
+             this uses DOM parsing and must load all DOM in memory which could be a
+             problem for big feeds
 
-       - ``'xml'`` - an iterator which uses XmlXPathSelector. Keep in mind
-         this uses DOM parsing and must load all DOM in memory which could be a
-         problem for big feeds
+           - ``'xml'`` - an iterator which uses XmlXPathSelector. Keep in mind
+             this uses DOM parsing and must load all DOM in memory which could be a
+             problem for big feeds
 
-    It defaults to: ``'iternodes'``.
+        It defaults to: ``'iternodes'``.
 
-.. attribute:: XMLFeedSpider.itertag
+    .. attribute:: itertag
 
-    A stirng with the name of the node (or element) to iterate in.
+        A string with the name of the node (or element) to iterate in. Example::
 
-Apart from these new attributes, this spider has the following overrideable
-methods too:
+            itertag = 'product'
 
-.. method:: XMLFeedSpider.adapt_response(response)
+    .. attribute:: namespaces
 
-    A method that receives the response as soon as it arrives from the spider
-    middleware and before start parsing it. It can be used used for modifying
-    the response body before parsing it. This method receives a response and
-    returns response (it could be the same or another one).
+        A list of ``(prefix, uri)`` tuples which define the namespaces
+        available in that document that will be processed with this spider. The
+        ``prefix`` and ``uri`` will be used to automatically register
+        namespaces using the
+        :meth:`~scrapy.xpath.XPathSelector.register_namespace` method.
 
-.. method:: XMLFeedSpider.parse_item(response, selector)
-   
-    This method is called for the nodes matching the provided tag name
-    (``itertag``).  Receives the response and an XPathSelector for each node.
-    Overriding this method is mandatory. Otherwise, you spider won't work.
-    This method must return either a ScrapedItem, a Request, or a list
-    containing any of them.
+        You can then specify nodes with namespaces in the :attr:`itertag`
+        attribute.
 
-    .. warning:: This method will soon change its name to ``parse_node``
+        Example::
+            
+            class YourSpider(XMLFeedSpider):
 
-.. method:: XMLFeedSpider.process_results(response, results)
-   
-    This method is called for each result (item or request) returned by the
-    spider, and it's intended to perform any last time processing required
-    before returning the results to the framework core, for example setting the
-    item IDs. It receives a list of results and the response which originated
-    that results. It must return a list of results (Items or Requests)."""
+                namespaces = [('n', 'http://www.sitemaps.org/schemas/sitemap/0.9')]
+                itertag = 'n:url'
+                # ...
+
+    Apart from these new attributes, this spider has the following overrideable
+    methods too:
+
+    .. method:: adapt_response(response)
+
+        A method that receives the response as soon as it arrives from the spider
+        middleware and before start parsing it. It can be used used for modifying
+        the response body before parsing it. This method receives a response and
+        returns response (it could be the same or another one).
+
+    .. method:: parse_item(response, selector)
+       
+        This method is called for the nodes matching the provided tag name
+        (``itertag``).  Receives the response and an XPathSelector for each node.
+        Overriding this method is mandatory. Otherwise, you spider won't work.
+        This method must return either a ScrapedItem, a Request, or a list
+        containing any of them.
+
+        .. warning:: This method will soon change its name to ``parse_node``
+
+    .. method:: process_results(response, results)
+       
+        This method is called for each result (item or request) returned by the
+        spider, and it's intended to perform any last time processing required
+        before returning the results to the framework core, for example setting the
+        item IDs. It receives a list of results and the response which originated
+        that results. It must return a list of results (Items or Requests)."""
 
 
 XMLFeedSpider example
