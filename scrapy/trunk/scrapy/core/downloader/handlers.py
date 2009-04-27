@@ -25,7 +25,6 @@ from scrapy.core.downloader.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import ScrapyHTTPClientFactory as HTTPClientFactory
 
 default_timeout = settings.getint('DOWNLOAD_TIMEOUT')
-default_agent = settings.get('USER_AGENT')
 ssl_supported = 'ssl' in optional_features
 
 # Cache for dns lookups.
@@ -48,15 +47,13 @@ def download_any(request, spider):
 def create_factory(request, spider):
     """Return HTTPClientFactory for the given Request"""
     url = urlparse.urldefrag(request.url)[0]
+    timeout = getattr(spider, "download_timeout", None) or default_timeout
 
-    agent = request.headers.pop('user-agent', default_agent)
     factory = HTTPClientFactory(url=url, # never pass unicode urls to twisted
                                 method=request.method,
-                                postdata=request.body or None, # see http://dev.scrapy.org/ticket/60
+                                body=request.body or None, # see http://dev.scrapy.org/ticket/60
                                 headers=request.headers,
-                                agent=agent,
-                                timeout=getattr(spider, "download_timeout", None) or default_timeout,
-                                followRedirect=False)
+                                timeout=timeout)
 
     def _create_response(body):
         body = body or ''
@@ -69,16 +66,12 @@ def create_factory(request, spider):
         return r
 
     def _on_success(body):
-        return _create_response(body)
+        response = _create_response(body)
+        if response.status not in (200, 201, 202):
+            raise HttpException(response.status, None, response)
+        return response
 
-    def _on_error(_failure):
-        ex = _failure.value
-        if isinstance(ex, web_error.Error): # HttpException
-            raise HttpException(ex.status, ex.message, _create_response(ex.response))
-        return _failure
-
-    factory.noisy = False
-    factory.deferred.addCallbacks(_on_success, _on_error)
+    factory.deferred.addCallbacks(_on_success)
     return factory
 
 def download_http(request, spider):
