@@ -1,4 +1,3 @@
-# -*- coding: latin-1 -*-
 """Tests for cookielib.py."""
 
 import re, os, time
@@ -950,18 +949,21 @@ class LWPCookieTests(TestCase):
                       "foo  =   bar; version    =   1")
 
         cookie = interact_2965(
-            c, "http://www.acme.com/foo%2f%25/<<%0anewå/æøå",
+            c, "http://www.acme.com/foo%2f%25/<<%0anew\xc3\xa5/\xc3\xa6\xc3\xb8\xc3\xa5",
             'bar=baz; path="/foo/"; version=1');
         version_re = re.compile(r'^\$version=\"?1\"?', re.I)
         # FIXME: test disabled until fix
         #self.assert_("foo=bar" in cookie and version_re.search(cookie))
 
         cookie = interact_2965(
-            c, "http://www.acme.com/foo/%25/<<%0anewå/æøå")
+            c, "http://www.acme.com/foo/%25/<<%0anew\xc3\xa5/\xc3\xa6\xc3\xb8\xc3\xa5")
         self.assert_(not cookie)
 
         # unicode URL doesn't raise exception
-        cookie = interact_2965(c, u"http://www.acme.com/\xfc")
+        ## NOTE: this test is commented because it doesn't really test anything
+        ## useful any it conflicts with Scrapy management of response urls which
+        ## are not allowed to be unicode (except for encoding-aware responses)
+        #cookie = interact_2965(c, u"http://www.acme.com/\xfc")
 
     def test_netscape_misc(self):
         # Some additional Netscape cookies tests.
