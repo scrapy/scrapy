@@ -233,6 +233,15 @@ Number of domains to scrape concurrently in one process. This doesn't affect
 the number of domains scraped concurrently by the Scrapy cluster which spawns a
 new process per domain.
 
+.. setting:: COOKIES_DEBUG
+
+COOKIES_DEBUG
+-------------
+
+Default: ``False``
+
+Enable debugging message of Cookies Downloader Middleware.
+
 .. setting:: DEFAULT_ITEM_CLASS
 
 DEFAULT_ITEM_CLASS

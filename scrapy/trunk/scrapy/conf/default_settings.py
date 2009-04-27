@@ -45,6 +45,8 @@ COMMANDS_SETTINGS_MODULE = ''
 
 CONCURRENT_DOMAINS = 8    # number of domains to scrape in parallel
 
+COOKIES_DEBUG = False
+
 DEFAULT_ITEM_CLASS = 'scrapy.item.ScrapedItem'
 
 DEFAULT_SPIDER = None
