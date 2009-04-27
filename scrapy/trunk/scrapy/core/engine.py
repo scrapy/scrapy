@@ -236,7 +236,7 @@ class ExecutionEngine(object):
 
             def _onsuccess_per_item(item):
                 if isinstance(item, ScrapedItem):
-                    log.msg("Scraped %s in <%s>" % (item, request.url), log.DEBUG, domain=domain)
+                    log.msg("Scraped %s in <%s>" % (item, request.url), log.INFO, domain=domain)
                     signals.send_catch_log(signal=signals.item_scraped, sender=self.__class__, item=item, spider=spider, response=response)
                     piped = self.pipeline.pipe(item, spider)
                     piped.addBoth(_onpipelinefinish, item)
