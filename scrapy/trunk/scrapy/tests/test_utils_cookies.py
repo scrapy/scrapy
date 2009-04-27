@@ -1100,7 +1100,7 @@ class LWPCookieTests(TestCase):
                 'PART_NUMBER=ROCKET_LAUNCHER_0001; NO_A_BOT; GOOD_CUSTOMER')
 
 
-class WrapperRequestResponse(TestCase):
+class CookielibWrappersTest(TestCase):
 
     def FakeRequest(self, url, data='', headers={}):
         tail = '?' + urllib.quote(data) if data else ''
@@ -1146,5 +1146,14 @@ class WrapperRequestResponse(TestCase):
         # port shouldn't be in request-host
         req = self.FakeRequest("http://www.acme.com:2345/resource.html", headers={"Host": "www.acme.com:5432"})
         self.assertEquals(request_host(req), "www.acme.com")
+
+    def test_threadlock_override(self):
+        try:
+            import threading as _threading
+        except ImportError:
+            import dummy_threading as _threading
+
+        c = CookieJar()
+        assert not isinstance(c.jar._cookies_lock, _threading._RLock)
 
 
