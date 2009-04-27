@@ -42,7 +42,6 @@ class CookiesMiddleware(object):
         jar.extract_cookies(response, request)
         self._debug_set_cookie(response)
 
-        # TODO: set current cookies in jar to response.cookies?
         return response
 
     # cookies should be set on non-200 responses too
