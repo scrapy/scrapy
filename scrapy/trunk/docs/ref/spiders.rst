@@ -1,10 +1,11 @@
 .. _ref-spiders:
 
-=================
-Available Spiders
-=================
+=========================
+Available Generic Spiders
+=========================
 
 .. module:: scrapy.spider
+   :synopsis: Spiders base class, spider manager and spider middleware
 
 BaseSpider
 ==========
@@ -90,24 +91,24 @@ Let's see an example::
         ]
 
         def parse(self, response):
-            log.msg('Hey! A response from %s has just arrived!' % response.url)
+            self.log('A response from %s just arrived!' % response.url)
             return []
 
     SPIDER = MySpider()
 
 .. module:: scrapy.contrib.spiders
+   :synopsis: Collection of generic spiders
 
 CrawlSpider
 ===========
 
 .. class:: CrawlSpider
 
-This is the most commonly used spider, and it's the one preferred for crawling
-standard web sites (ie. HTML pages), extracts links from there (given certain
-extraction rules), and scrapes items from those pages.
-
-This spider is a bit more complicated than the previous one, because it
-introduces a few new concepts, but you'll probably find it useful.
+This is the most commonly used spider for crawling regular websites, as it
+provides a convenient mechanism for following links by defining a set of rules.
+It may not be the best suited for your particular web sites or project, but
+it's generic enough for several cases, so you can start from it and override it
+as need more custom functionality, or just implement your own spider.
 
 Apart from the attributes inherited from BaseSpider (that you must
 specify), this class supports a new attribute: 
@@ -150,7 +151,6 @@ CrawlSpider example
 
 Let's now take a look at an example CrawlSpider with rules::
 
-    from scrapy import log
     from scrapy.contrib.spiders import CrawlSpider, Rule
     from scrapy.link.extractors import RegexLinkExtractor
     from scrapy.xpath.selector import HtmlXPathSelector
@@ -161,7 +161,8 @@ Let's now take a look at an example CrawlSpider with rules::
         start_urls = ['http://www.example.com']
         
         rules = (
-            # Extract links matching 'category.php' (but not matching 'subsection.php') and follow links from them (since no callback means follow=True by default).
+            # Extract links matching 'category.php' (but not matching 'subsection.php') 
+            # and follow links from them (since no callback means follow=True by default).
             Rule(RegexLinkExtractor(allow=('category\.php', ), deny=('subsection\,php', ))),
 
             # Extract links matching 'item.php' and parse them with the spider's method parse_item
@@ -169,7 +170,7 @@ Let's now take a look at an example CrawlSpider with rules::
         )
 
         def parse_item(self, response):
-            log.msg('Hi, this is an item page! %s' % response.url)
+            self.log('Hi, this is an item page! %s' % response.url)
 
             hxs = HtmlXPathSelector(response)
             item = ScrapedItem()
@@ -182,9 +183,10 @@ Let's now take a look at an example CrawlSpider with rules::
 
 
 This spider would start crawling example.com's home page, collecting category
-links, and item links, parsing the latter with the *parse_item* method. For
-each item response, some data will be extracted from the HTML using XPath, and
-a ScrapedItem will be filled with it.
+links, and item links, parsing the latter with the
+:meth:`XMLFeedSpider.parse_item` method. For each item response, some data will
+be extracted from the HTML using XPath, and a ScrapedItem will be filled with
+it.
 
 XMLFeedSpider
 =============
