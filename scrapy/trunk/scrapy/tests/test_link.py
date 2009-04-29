@@ -110,11 +110,6 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
         self.assertEqual([link for link in lx.extract_links(self.response)],
             [ Link(url='http://example.com/sample2.jpg', text=u'') ])
 
-#        lx = RegexLinkExtractor(restrict_xpaths=('//div[@id="subwrapper"]', ))
-#        self.assertEqual([link for link in lx.extract_links(self.response)],
-#            [ Link(url='http://example.com/sample1.html', text=u''),
-#              Link(url='http://example.com/sample2.html', text=u'sample 2') ])
-
     def test_extraction_using_single_values(self):
         '''Test the extractor's behaviour among different situations'''
 
@@ -163,6 +158,30 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.matches('http://blah1.com/blah2'), False)
         self.assertEqual(lx.matches('http://blah2.com/blah1'), False)
         self.assertEqual(lx.matches('http://blah2.com/blah2'), False)
+
+    def test_restrict_xpaths(self):
+        lx = RegexLinkExtractor(restrict_xpaths=('//div[@id="subwrapper"]', ))
+        self.assertEqual([link for link in lx.extract_links(self.response)],
+            [ Link(url='http://example.com/sample1.html', text=u''),
+              Link(url='http://example.com/sample2.html', text=u'sample 2') ])
+
+    def test_restrict_xpaths_encoding(self):
+        """Test restrict_xpaths with encodings"""
+        html = """<html><head><title>Page title<title>
+        <body><p><a href="item/12.html">Item 12</a></p>
+        <div class='links'>
+        <p><a href="/about.html">About us\xa3</a></p>
+        </div>
+        <div>
+        <p><a href="/nofollow.html">This shouldn't be followed</a></p>
+        </div>
+        </body></html>"""
+        response = HtmlResponse("http://example.org/somepage/index.html", body=html, encoding='windows-1252')
+
+        lx = RegexLinkExtractor(restrict_xpaths="//div[@class='links']") 
+        self.assertEqual(lx.extract_links(response),
+                         [Link(url='http://example.org/about.html', text=u'About us\xa3')])
+
 
 class HTMLImageLinkExtractorTestCase(unittest.TestCase):
     def setUp(self):

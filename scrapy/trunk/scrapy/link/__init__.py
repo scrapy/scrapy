@@ -4,7 +4,7 @@ LinkExtractor provides en efficient way to extract links from pages
 See documentation in docs/ref/link-extractors.rst
 """
 
-from scrapy.utils.python import FixedSGMLParser, unique as unique_list
+from scrapy.utils.python import FixedSGMLParser, unique as unique_list, str_to_unicode
 from scrapy.utils.url import safe_url_string, urljoin_rfc as urljoin
 
 class LinkExtractor(FixedSGMLParser):
@@ -53,7 +53,7 @@ class LinkExtractor(FixedSGMLParser):
         for link in links:
             link.url = urljoin(base_url, link.url)
             link.url = safe_url_string(link.url, response_encoding)
-            link.text = link.text.decode(response_encoding)
+            link.text = str_to_unicode(link.text, response_encoding)
             ret.append(link)
 
         return ret
