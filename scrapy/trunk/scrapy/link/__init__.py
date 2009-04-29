@@ -8,31 +8,6 @@ from scrapy.utils.python import FixedSGMLParser, unique as unique_list, str_to_u
 from scrapy.utils.url import safe_url_string, urljoin_rfc as urljoin
 
 class LinkExtractor(FixedSGMLParser):
-    """LinkExtractor are used to extract links from web pages. They are
-    instantiated and later "applied" to a Response using the extract_links
-    method which must receive a Response object and return a list of Link objects
-    containing the (absolute) urls to follow, and the links texts.
-
-    This is the base LinkExtractor class that provides enough basic
-    functionality for extracting links to follow, but you could override this
-    class or create a new one if you need some additional functionality. The
-    only requisite is that the new (or overrided) class must provide a
-    extract_links method that receives a Response and returns a list of Link objects.
-
-    This LinkExtractor always returns percent-encoded URLs, using the detected encoding
-    from the response.
-
-    The constructor arguments are:
-
-    * tag (string or function)
-      * a tag name which is used to search for links (defaults to "a")
-      * a function which receives a tag name and returns whether to scan it
-    * attr (string or function)
-      * an attribute name which is used to search for links (defaults to "href")
-      * a function which receives an attribute name and returns whether to scan it
-    * unique - if True the same urls won't be extracted twice, otherwise the
-      same urls will be extracted multiple times (with potentially different link texts)
-    """
 
     def __init__(self, tag="a", attr="href", unique=False):
         FixedSGMLParser.__init__(self)

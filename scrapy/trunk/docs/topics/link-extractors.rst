@@ -4,22 +4,26 @@
 Link Extractors
 ===============
 
-.. module:: scrapy.link
+LinkExtractors are objects whose only purpose is to extract links from web
+pages (:class:`scrapy.http.Response` objects) which will be eventually
+followed.
 
-LinkExtractors are objects whose purpose is to extract links from web pages.
-They're used in the :class:`~scrapy.contrib.spiders.CrawlSpider`, for defining
-crawling rules, among other places.
+There are two Link Extractors available in Scrapy by default, but you create
+your own custom Link Extractors to suit your needs by implanting a simple
+interface.
 
-There are two different LinkExtractors available in Scrapy by default, but you
-create your own custom Link Extractor to suit your needs.
+The only public method that every LinkExtractor have is ``extract_links``,
+which receives a :class:`~scrapy.http.Response` object and returns a list
+of links. Link Extractors are meant to be instantiated once and their
+``extract_links`` method called several times with different responses, to
+extract links to follow. 
 
-The only public method that every LinkExtractor has is ``extract_links``, which
-always receives a response, independently of which LinkExtractor are you using.
-This method should be called by you in case you want to extract links from a
-response yourself. In the case of rules, however, you'll only have to define
-your rules with the corresponding LinkExtractors, and the CrawlSpider will take
-care of extracting them for each response arriving.
+Link extractors are used in the :class:`~scrapy.contrib.spiders.CrawlSpider`
+class (available in Scrapy), through a set of rules, but you can also use it in
+your spiders even if you don't subclass from
+:class:`~scrapy.contrib.spiders.CrawlSpider`, as its purpose is very simple: to
+extract links.
 
 See :ref:`ref-link-extractors` for the list of available built-in Link
-Extractors.
+Extractors, including some examples.
 

@@ -1,6 +1,6 @@
 """
 This module provides some LinkExtractors, which extend the base LinkExtractor
-(scrapy.link.LinkExtractor) with some addutional useful features.
+(scrapy.link.LinkExtractor) with some additional useful features.
 
 See documentation in docs/ref/link-extractors.rst
 """
@@ -18,28 +18,6 @@ _matches = lambda url, regexs: any((r.search(url) for r in regexs))
 _is_valid_url = lambda url: url.split('://', 1)[0] in set(['http', 'https', 'file'])
 
 class RegexLinkExtractor(LinkExtractor):
-    """RegexLinkExtractor implements extends the base LinkExtractor by
-    providing several mechanisms to extract the links.
-
-    It's constructor parameters are:
-
-    allow - list of regexes that the (absolute urls) must match to be extracted
-    deny - ignore urls that match any of these regexes
-    allow_domains - only extract urls from these domains
-    deny_domains - ignore urls from these dmoains
-    restrict_xpaths - restrict url extraction to given xpaths contents
-    tags - look for urls in this tags
-    attrs - look for urls in this attrs
-    canonicalize - canonicalize all extracted urls using scrapy.utils.url.canonicalize_url
-
-    Both 'allow' and 'deny' arguments can be a list of regexes strings or regex
-    python objects (already compiled)
-
-    Url matching is always performed against the absolute urls, never the
-    relative urls found in pages.
-
-    If no allow/deny arguments are given, match all links.
-    """
 
     def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(), 
                  tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True):
