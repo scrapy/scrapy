@@ -20,7 +20,7 @@ _is_valid_url = lambda url: url.split('://', 1)[0] in set(['http', 'https', 'fil
 class RegexLinkExtractor(LinkExtractor):
 
     def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(), 
-                 tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True):
+                 tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True, process_value=None):
         self.allow_res = [x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(allow)]
         self.deny_res = [x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(deny)]
         self.allow_domains = set(arg_to_iter(allow_domains))
@@ -29,7 +29,8 @@ class RegexLinkExtractor(LinkExtractor):
         self.canonicalize = canonicalize
         tag_func = lambda x: x in tags
         attr_func = lambda x: x in attrs
-        LinkExtractor.__init__(self, tag=tag_func, attr=attr_func, unique=unique)
+        LinkExtractor.__init__(self, tag=tag_func, attr=attr_func, 
+            unique=unique, process_value=process_value)
 
     def extract_links(self, response):
         if self.restrict_xpaths:

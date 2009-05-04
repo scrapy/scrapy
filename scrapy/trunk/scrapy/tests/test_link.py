@@ -1,4 +1,5 @@
 import os
+import re
 import unittest
 
 from scrapy.http import HtmlResponse
@@ -182,6 +183,22 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.extract_links(response),
                          [Link(url='http://example.org/about.html', text=u'About us\xa3')])
 
+    def test_process_value(self):
+        """Test restrict_xpaths with encodings"""
+        html = """
+        <a href="javascript:goToPage('../other/page.html','photo','width=600,height=540,scrollbars'); return false">Link text</a>
+        <a href="/about.html">About us</a>
+        """
+        response = HtmlResponse("http://example.org/somepage/index.html", body=html, encoding='windows-1252')
+
+        def process_value(value):
+            m = re.search("javascript:goToPage\('(.*?)'", value)
+            if m:
+                return m.group(1)
+
+        lx = RegexLinkExtractor(process_value=process_value)
+        self.assertEqual(lx.extract_links(response),
+                         [Link(url='http://example.org/other/page.html', text='Link text')])
 
 class HTMLImageLinkExtractorTestCase(unittest.TestCase):
     def setUp(self):

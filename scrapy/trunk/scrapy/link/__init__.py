@@ -9,10 +9,11 @@ from scrapy.utils.url import safe_url_string, urljoin_rfc as urljoin
 
 class LinkExtractor(FixedSGMLParser):
 
-    def __init__(self, tag="a", attr="href", unique=False):
+    def __init__(self, tag="a", attr="href", unique=False, process_value=None):
         FixedSGMLParser.__init__(self)
         self.scan_tag = tag if callable(tag) else lambda t: t == tag
         self.scan_attr = attr if callable(attr) else lambda a: a == attr
+        self.process_value = (lambda v: v) if process_value is None else process_value
         self.current_link = None
         self.unique = unique
 
@@ -48,9 +49,11 @@ class LinkExtractor(FixedSGMLParser):
         if self.scan_tag(tag):
             for attr, value in attrs:
                 if self.scan_attr(attr):
-                    link = Link(url=value)
-                    self.links.append(link)
-                    self.current_link = link
+                    url = self.process_value(value)
+                    if url is not None:
+                        link = Link(url=url)
+                        self.links.append(link)
+                        self.current_link = link
 
     def unknown_endtag(self, tag):
         self.current_link = None

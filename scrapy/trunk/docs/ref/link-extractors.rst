@@ -10,7 +10,7 @@ Available Link Extractors
 LinkExtractor
 =============
 
-.. class:: LinkExtractor(tag="a", href="href", unique=False)
+.. class:: LinkExtractor(tag="a", href="href", unique=False, process_value=None)
 
     This is the most basic Link Extractor which extracts links from a response with
     by looking at the given attributes inside the given tags.
@@ -34,10 +34,32 @@ LinkExtractor
         be applied to links extracted.
     :type unique: boolean
 
+    :param process_value: a function which receives each value extracted from
+        the tag and attributes scanned and can modify the value and return a
+        new one, or return ``None`` to ignore the link altogether. If not
+        given, ``process_value`` defaults to ``lambda x: x``.
+
+        .. highlight:: html
+
+        For example, to extract links from this code::
+
+            <a href="javascript:goToPage('../other/page.html'); return false">Link text</a>
+        
+        .. highlight:: python
+
+        You can use the following function in ``process_value``::
+        
+            def process_value(value):
+                m = re.search("javascript:goToPage\('(.*?)'", value)
+                if m:
+                    return m.group(1) 
+
+    :type process_value: callable
+
 RegexLinkExtractor
 ==================
 
-.. class:: RegexLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths(), tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True)
+.. class:: RegexLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths(), tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True, process_value=None)
 
     The RegexLinkExtractor extends the base :class:`LinkExtractor` by providing
     additional filters that you can specify to extract links, including regular
@@ -85,4 +107,8 @@ RegexLinkExtractor
     :param unique: whether duplicate filtering should be applied to extracted
         links.
     :type unique: boolean
+
+    :param process_value: see ``process_value`` argument of
+        :class:`LinkExtractor` class constructor
+    :type process_value: boolean
 
