@@ -1,7 +1,6 @@
 import re
-from scrapy.utils.markup import replace_tags, remove_escape_chars, unquote_markup
+from scrapy.utils.markup import replace_tags, replace_escape_chars, unquote_markup
 from scrapy.utils.python import str_to_unicode
-from scrapy.item.adaptors import adaptize
 
 def remove_tags(tags=()):
     """
@@ -30,8 +29,7 @@ def remove_root(value):
         value = m.group(1)
     return str_to_unicode(value)
 
-
-def remove_escape(which_ones=('\n','\t','\r'), replace_by=u''):
+def replace_escape(which_ones=('\n', '\t', '\r'), replace_by=u''):
     """
     Factory that returns an adaptor for removing/replacing each escape
     character in the `wich_ones` parameter found in the given value.
@@ -43,10 +41,9 @@ def remove_escape(which_ones=('\n','\t','\r'), replace_by=u''):
     Output: unicode
     
     """
-    def _remove_escape(value):
-        return remove_escape_chars(value, which_ones, replace_by)
-    return _remove_escape
-
+    def _replace_escape(value):
+        return replace_escape_chars(value, which_ones, replace_by)
+    return _replace_escape
 
 def unquote(keep=None):
     """

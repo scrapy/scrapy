@@ -2,7 +2,7 @@
 import unittest
 
 from scrapy.utils.markup import remove_entities, replace_tags, remove_comments
-from scrapy.utils.markup import remove_tags_with_content, remove_escape_chars, remove_tags
+from scrapy.utils.markup import remove_tags_with_content, replace_escape_chars, remove_tags
 from scrapy.utils.markup import unquote_markup
 
 class UtilsMarkupTest(unittest.TestCase):
@@ -99,20 +99,23 @@ class UtilsMarkupTest(unittest.TestCase):
         self.assertEqual(remove_tags_with_content(u'<b>not will removed</b><i>i will removed</i>', which_ones=('i',)),
                          u'<b>not will removed</b>')
 
-    def test_remove_escape_chars(self):
+    def test_replace_escape_chars(self):
         # make sure it always return unicode
-        assert isinstance(remove_escape_chars('no ec'), unicode)
-        assert isinstance(remove_escape_chars('no ec', which_ones=('\n','\t',)), unicode)
+        assert isinstance(replace_escape_chars('no ec'), unicode)
+        assert isinstance(replace_escape_chars('no ec', replace_by='str'), unicode)
+        assert isinstance(replace_escape_chars('no ec', which_ones=('\n','\t',)), unicode)
 
         # text without escape chars
-        self.assertEqual(remove_escape_chars(u'no ec'), u'no ec')
-        self.assertEqual(remove_escape_chars(u'no ec', which_ones=('\n',)), u'no ec')
+        self.assertEqual(replace_escape_chars(u'no ec'), u'no ec')
+        self.assertEqual(replace_escape_chars(u'no ec', which_ones=('\n',)), u'no ec')
 
         # text with escape chars
-        self.assertEqual(remove_escape_chars(u'escape\n\n'), u'escape')
-        self.assertEqual(remove_escape_chars(u'escape\n', which_ones=('\t',)), u'escape\n')
-        self.assertEqual(remove_escape_chars(u'escape\tchars\n', which_ones=('\t')), 'escapechars\n')
-        self.assertEqual(remove_escape_chars(u'escape\tchars\n', replace_by=' '), 'escape chars ')
+        self.assertEqual(replace_escape_chars(u'escape\n\n'), u'escape')
+        self.assertEqual(replace_escape_chars(u'escape\n', which_ones=('\t',)), u'escape\n')
+        self.assertEqual(replace_escape_chars(u'escape\tchars\n', which_ones=('\t')), 'escapechars\n')
+        self.assertEqual(replace_escape_chars(u'escape\tchars\n', replace_by=' '), 'escape chars ')
+        self.assertEqual(replace_escape_chars(u'escape\tchars\n', replace_by=u'\xa3'), u'escape\xa3chars\xa3')
+        self.assertEqual(replace_escape_chars(u'escape\tchars\n', replace_by='\xc2\xa3'), u'escape\xa3chars\xa3')
 
     def test_unquote_markup(self):
         sample_txt1 = u"""<node1>hi, this is sample text with entities: &amp; &copy;

@@ -105,7 +105,7 @@ def remove_tags_with_content(text, which_ones=()):
     return text
     
 
-def remove_escape_chars(text, which_ones=('\n','\t','\r'), replace_by=u''):
+def replace_escape_chars(text, which_ones=('\n','\t','\r'), replace_by=u''):
     """ Remove escape chars. Default : \\n, \\t, \\r
 
         which_ones -- is a tuple of which escape chars we want to remove.
@@ -117,6 +117,9 @@ def remove_escape_chars(text, which_ones=('\n','\t','\r'), replace_by=u''):
     for ec in which_ones:
         text = text.replace(ec, str_to_unicode(replace_by))
     return str_to_unicode(text)
+
+# FIXME: backwards compatibility - should be removed before 0.7 release
+remove_escape_chars = replace_escape_chars
 
 def unquote_markup(text, keep=(), remove_illegal=True):
     """
