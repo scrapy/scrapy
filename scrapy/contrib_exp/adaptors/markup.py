@@ -31,20 +31,20 @@ def remove_root(value):
     return str_to_unicode(value)
 
 
-def remove_escape(which_ones=('\n','\t','\r'), replace_str=u''):
+def remove_escape(which_ones=('\n','\t','\r'), replace_by=u''):
     """
     Factory that returns an adaptor for removing/replacing each escape
     character in the `wich_ones` parameter found in the given value.
 
-    If `replace_str` is given, escape characters are replaced by that
-    string, else they're removed.
+    If `replace_by` is given, escape characters are replaced by that
+    text, else they're removed.
 
     Input: string/unicode
     Output: unicode
     
     """
     def _remove_escape(value):
-        return remove_escape_chars(value, which_ones, replace_str)
+        return remove_escape_chars(value, which_ones, replace_by)
     return _remove_escape
 
 

@@ -110,6 +110,9 @@ def remove_escape_chars(text, which_ones=('\n','\t','\r'), replace_by=u''):
 
         which_ones -- is a tuple of which escape chars we want to remove.
                       By default removes \n, \t, \r.
+
+        replace_by -- text to replace the escape chars for.
+                      It defaults to '', so the escape chars are removed.
     """
     for ec in which_ones:
         text = text.replace(ec, str_to_unicode(replace_by))
