@@ -112,6 +112,7 @@ class UtilsMarkupTest(unittest.TestCase):
         self.assertEqual(remove_escape_chars(u'escape\n\n'), u'escape')
         self.assertEqual(remove_escape_chars(u'escape\n', which_ones=('\t',)), u'escape\n')
         self.assertEqual(remove_escape_chars(u'escape\tchars\n', which_ones=('\t')), 'escapechars\n')
+        self.assertEqual(remove_escape_chars(u'escape\tchars\n', replace_by=' '), 'escape chars ')
 
     def test_unquote_markup(self):
         sample_txt1 = u"""<node1>hi, this is sample text with entities: &amp; &copy;
