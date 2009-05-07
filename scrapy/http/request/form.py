@@ -30,6 +30,7 @@ class FormRequest(Request):
             items = formdata.iteritems() if isinstance(formdata, dict) else formdata
             query = [(unicode_to_str(k, self.encoding), _unicode_to_str(v, self.encoding))
                     for k, v in items]
+            self.method = 'POST'
             self.body = urllib.urlencode(query, doseq=1)
             self.headers['Content-Type'] = 'application/x-www-form-urlencoded'
 

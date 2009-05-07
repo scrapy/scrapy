@@ -184,6 +184,7 @@ class FormRequestTest(unittest.TestCase):
         # using default encoding (utf-8)
         data = {'one': 'two', 'price': '\xc2\xa3 100'}
         r2 = FormRequest("http://www.example.com", formdata=data)
+        self.assertEqual(r2.method, 'POST')
         self.assertEqual(r2.encoding, 'utf-8')
         self.assertEqual(r2.body, 'price=%C2%A3+100&one=two')
         self.assertEqual(r2.headers['Content-Type'], 'application/x-www-form-urlencoded')
