@@ -1,7 +1,7 @@
 .. _exceptions:
 
 .. module:: scrapy.core.exceptions
-   :synopsis: Exceptions definitions
+   :synopsis: Core exceptions
 
 Available Exceptions
 ====================
@@ -25,21 +25,6 @@ DropItem
 The exception that must be raised by item pipeline stages to stop processing an
 Item. For more information see :ref:`topics-item-pipeline`.
 
-.. exception:: NotConfigured
-
-NotConfigured
--------------
-
-This exception can be raised by some components to indicate that they will
-remain disabled. Those component include:
-
- * Extensions
- * Item pipelines
- * Downloader middlwares
- * Spider middlewares
-
-The exception must be raised in the component constructor.
-
 .. exception:: HttpException
 
 HttpException
@@ -55,6 +40,21 @@ IgnoreRequest
 
 This exception can be raised by the Scheduler or any downlaoder middleware to
 indicate that the request should be ignored.
+
+.. exception:: NotConfigured
+
+NotConfigured
+-------------
+
+This exception can be raised by some components to indicate that they will
+remain disabled. Those component include:
+
+ * Extensions
+ * Item pipelines
+ * Downloader middlwares
+ * Spider middlewares
+
+The exception must be raised in the component constructor.
 
 .. exception:: NotSupported
 
