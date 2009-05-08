@@ -30,6 +30,10 @@ class RedirectMiddlewareTest(unittest.TestCase):
         assert isinstance(req2, Request)
         self.assertEqual(req2.url, url2)
 
+        # response without Location header but with status code is 3XX should be ignored
+        del rsp.headers['Location']
+        assert self.mw.process_exception(req, exc, self.spider) is None
+
     def test_redirect_302(self):
         url = 'http://www.example.com/302'
         url2 = 'http://www.example.com/redirected2'
@@ -49,6 +53,10 @@ class RedirectMiddlewareTest(unittest.TestCase):
             "Content-Length header must not be present in redirected request"
         assert not req2.body, \
             "Redirected body must be empty, not '%s'" % req2.body
+
+        # response without Location header but with status code is 3XX should be ignored
+        del rsp.headers['Location']
+        assert self.mw.process_exception(req, exc, self.spider) is None
 
     def test_meta_refresh(self):
         body = """<html>

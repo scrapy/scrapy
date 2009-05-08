@@ -21,14 +21,14 @@ class RedirectMiddleware(object):
         status = exception.status
         response = exception.response
 
-        if status in [302, 303]:
+        if status in [302, 303] and 'Location' in response.headers:
             redirected_url = urljoin(request.url, response.headers['location'])
             redirected = request.replace(url=redirected_url, method='GET', body='')
             redirected.headers.pop('Content-Type', None)
             redirected.headers.pop('Content-Length', None)
             return self._redirect(redirected, request, spider, status)
 
-        if status in [301, 307]:
+        if status in [301, 307] and 'Location' in response.headers:
             redirected_url = urljoin(request.url, response.headers['location'])
             redirected = request.replace(url=redirected_url)
             return self._redirect(redirected, request, spider, status)
