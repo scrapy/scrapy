@@ -10,6 +10,7 @@ from scrapy import log
 from scrapy.core.exceptions import NotConfigured
 from scrapy.utils.misc import load_object, arg_to_iter
 from scrapy.utils.defer import mustbe_deferred, defer_result
+from scrapy.utils.middleware import build_middleware_list
 from scrapy.conf import settings
 
 def _isiterable(possible_iterator):
@@ -37,7 +38,9 @@ class SpiderMiddlewareManager(object):
     def load(self):
         """Load middleware defined in settings module"""
         mws = []
-        for mwpath in settings.getlist('SPIDER_MIDDLEWARES') or ():
+        mwlist = build_middleware_list(settings['SPIDER_MIDDLEWARES_BASE'],
+                                       settings['SPIDER_MIDDLEWARES'])
+        for mwpath in mwlist:
             cls = load_object(mwpath)
             if cls:
                 try:

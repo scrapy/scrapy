@@ -12,6 +12,7 @@ from scrapy.http import Response
 from scrapy.core.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.utils.defer import mustbe_deferred
+from scrapy.utils.middleware import build_middleware_list
 from scrapy.conf import settings
 
 class SchedulerMiddlewareManager(object):
@@ -29,7 +30,9 @@ class SchedulerMiddlewareManager(object):
     def load(self):
         """Load middleware defined in settings module"""
         mws = []
-        for mwpath in settings.getlist('SCHEDULER_MIDDLEWARES') or ():
+        mwlist = build_middleware_list(settings['SCHEDULER_MIDDLEWARES_BASE'],
+                                       settings['SCHEDULER_MIDDLEWARES'])
+        for mwpath in mwlist:
             cls = load_object(mwpath)
             if cls:
                 try:

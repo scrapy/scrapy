@@ -12,6 +12,7 @@ from scrapy.http import Request, Response
 from scrapy.core.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.utils.defer import mustbe_deferred
+from scrapy.utils.middleware import build_middleware_list
 from scrapy.core.downloader.handlers import download_any
 from scrapy.conf import settings
 
@@ -37,7 +38,9 @@ class DownloaderMiddlewareManager(object):
         """Load middleware defined in settings module
         """
         mws = []
-        for mwpath in settings.getlist('DOWNLOADER_MIDDLEWARES') or ():
+        mwlist = build_middleware_list(settings['DOWNLOADER_MIDDLEWARES_BASE'],
+                                       settings['DOWNLOADER_MIDDLEWARES'])
+        for mwpath in mwlist:
             cls = load_object(mwpath)
             if cls:
                 try:

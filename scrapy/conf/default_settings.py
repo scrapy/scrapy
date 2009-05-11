@@ -59,22 +59,24 @@ DOWNLOAD_TIMEOUT = 180      # 3mins
 
 DOWNLOADER_DEBUG = False
 
-DOWNLOADER_MIDDLEWARES = [
+DOWNLOADER_MIDDLEWARES = {}
+
+DOWNLOADER_MIDDLEWARES_BASE = {
     # Engine side
-    'scrapy.contrib.downloadermiddleware.robotstxt.RobotsTxtMiddleware',
-    'scrapy.contrib.downloadermiddleware.errorpages.ErrorPagesMiddleware',
-    'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware',
-    'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware',
-    'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware',
-    'scrapy.contrib.downloadermiddleware.common.CommonMiddleware',
-    'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware',
-    'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware',
-    'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware',
-    'scrapy.contrib.downloadermiddleware.debug.CrawlDebug',
-    'scrapy.contrib.downloadermiddleware.stats.DownloaderStats',
-    'scrapy.contrib.downloadermiddleware.cache.CacheMiddleware',
+    'scrapy.contrib.downloadermiddleware.robotstxt.RobotsTxtMiddleware': 100,
+    'scrapy.contrib.downloadermiddleware.errorpages.ErrorPagesMiddleware': 200,
+    'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware': 300,
+    'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': 400,
+    'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware': 500,
+    'scrapy.contrib.downloadermiddleware.common.CommonMiddleware': 550,
+    'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware': 600,
+    'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware': 700,
+    'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 800,
+    'scrapy.contrib.downloadermiddleware.debug.CrawlDebug': 840,
+    'scrapy.contrib.downloadermiddleware.stats.DownloaderStats': 850,
+    'scrapy.contrib.downloadermiddleware.cache.CacheMiddleware': 900,
     # Downloader side
-]
+}
 
 DOWNLOADER_STATS = True
 
@@ -151,9 +153,11 @@ ROBOTSTXT_OBEY = False
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 
-SCHEDULER_MIDDLEWARES = [
-        'scrapy.contrib.schedulermiddleware.duplicatesfilter.DuplicatesFilterMiddleware',
-        ]
+SCHEDULER_MIDDLEWARES = {}
+
+SCHEDULER_MIDDLEWARES_BASE = {
+    'scrapy.contrib.schedulermiddleware.duplicatesfilter.DuplicatesFilterMiddleware': 500,
+}
 
 SCHEDULER_ORDER = 'BFO'   # available orders: BFO (default), DFO
 
@@ -161,17 +165,19 @@ SPIDER_MODULES = []
 
 SPIDERPROFILER_ENABLED = False
 
-SPIDER_MIDDLEWARES = [
+SPIDER_MIDDLEWARES = {}
+
+SPIDER_MIDDLEWARES_BASE = {
     # Engine side
-    'scrapy.contrib.itemsampler.ItemSamplerMiddleware',
-    'scrapy.contrib.spidermiddleware.limit.RequestLimitMiddleware',
-    'scrapy.contrib.spidermiddleware.restrict.RestrictMiddleware',
-    'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware',
-    'scrapy.contrib.spidermiddleware.referer.RefererMiddleware',
-    'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware',
-    'scrapy.contrib.spidermiddleware.depth.DepthMiddleware',
+    'scrapy.contrib.itemsampler.ItemSamplerMiddleware': 100,
+    'scrapy.contrib.spidermiddleware.limit.RequestLimitMiddleware': 200,
+    'scrapy.contrib.spidermiddleware.restrict.RestrictMiddleware': 300,
+    'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware': 500,
+    'scrapy.contrib.spidermiddleware.referer.RefererMiddleware': 700,
+    'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware': 800,
+    'scrapy.contrib.spidermiddleware.depth.DepthMiddleware': 900,
     # Spider side
-]
+}
 
 STATS_ENABLED = True
 STATS_CLEANUP = False

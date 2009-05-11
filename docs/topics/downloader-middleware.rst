@@ -6,22 +6,47 @@ Downloader Middleware
 
 The downloader middleware is a framework of hooks into Scrapy's
 request/response processing.  It's a light, low-level system for globally
-altering Scrapy's input and/or output.
+altering Scrapy's requests and responses.
+
+.. _topics-downloader-middleware-setting:
 
 Activating a downloader middleware
 ==================================
 
 To activate a downloader middleware component, add it to the
-:setting:`DOWNLOADER_MIDDLEWARES` list in your Scrapy settings.  In
-:setting:`DOWNLOADER_MIDDLEWARES`, each middleware component is represented by
-a string: the full Python path to the middleware's class name. For example::
+:setting:`DOWNLOADER_MIDDLEWARES` setting, which is a dict whose keys are the
+middleware class paths and their values are the middleware orders.
 
-    DOWNLOADER_MIDDLEWARES = [
-            'scrapy.contrib.middleware.common.SpiderMiddleware',
-            'scrapy.contrib.middleware.common.CommonMiddleware',
-            'scrapy.contrib.middleware.redirect.RedirectMiddleware',
-            'scrapy.contrib.middleware.cache.CacheMiddleware',
-    ]
+Here's an example::
+
+    DOWNLOADER_MIDDLEWARES = {
+        'myproject.middlewares.CustomDownloaderMiddleware': 543,
+    }
+
+The :setting:`DOWNLOADER_MIDDLEWARES` setting is merged with the
+:setting:`DOWNLOADER_MIDDLEWARES_BASE` setting defined in Scrapy (and not meant to
+be overridden) and then sorted by order to get the final sorted list of enabled
+middlewares: the first middleware is the one closer to the engine and the last
+is the one closer to the downloader.
+
+To decide which order to assign to your middleware see the
+:setting:`DOWNLOADER_MIDDLEWARES_BASE` setting and pick a value according to
+where you want to insert the middleware. The order does matter because each
+middleware performs a different action and your middleware could depend on some
+previous (or subsequent) middleware being applied.
+
+If you want to disable a builtin middleware (the ones defined in
+:setting:`DOWNLOADER_MIDDLEWARES_BASE` and enabled by default) you must define it
+in your project :setting:`DOWNLOADER_MIDDLEWARES` setting and assign `None`
+as its value.  For example, if you want to disable the off-site middleware::
+
+    DOWNLOADER_MIDDLEWARES = {
+        'myproject.middlewares.CustomDownloaderMiddleware': 543,
+        'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': None,
+    }
+
+Finally, keep in mind that some middlewares may need to be enabled through a
+particular setting. See each middleware documentation for more info.
 
 Writing your own downloader middleware
 ======================================

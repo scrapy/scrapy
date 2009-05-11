@@ -52,34 +52,6 @@ EXTENSIONS = (
     'scrapy.management.telnet.TelnetConsole',
 )
 
-DOWNLOADER_MIDDLEWARES = (
-    # Engine side
-    'scrapy.contrib.downloadermiddleware.errorpages.ErrorPagesMiddleware',
-    'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware',
-    'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware',
-    'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware',
-    'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware',
-    'scrapy.contrib.downloadermiddleware.common.CommonMiddleware',
-    'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware',
-    'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware',
-    'scrapy.contrib.downloadermiddleware.debug.CrawlDebug',
-    'scrapy.contrib.downloadermiddleware.cache.CacheMiddleware',
-    # Downloader side
-)
-
-SPIDER_MIDDLEWARES = (
-    # Engine side
-    'scrapy.contrib.spidermiddleware.limit.RequestLimitMiddleware',
-    'scrapy.contrib.spidermiddleware.restrict.RestrictMiddleware',
-    'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware',
-    'scrapy.contrib.spidermiddleware.referer.RefererMiddleware',
-    'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware',
-    'scrapy.contrib.spidermiddleware.depth.DepthMiddleware',
-    'scrapy.contrib.spidermiddleware.urlfilter.UrlFilterMiddleware',
-    'scrapy.contrib.spidermiddleware.duplicatesfilter.DuplicatesFilterMiddleware',
-    # Spider side
-)
-
 ITEM_PIPELINES = (
     'googledir.pipelines.GoogledirPipeline',
 )

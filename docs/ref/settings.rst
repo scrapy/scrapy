@@ -296,26 +296,37 @@ Whether to enable the Downloader debugging mode.
 DOWNLOADER_MIDDLEWARES
 ----------------------
 
+Default:: ``{}``
+
+A dict containing the downloader middlewares enabled in your project, and their
+orders. For more info see :ref:`topics-downloader-middleware-setting`.
+
+.. setting:: DOWNLOADER_MIDDLEWARES_BASE
+
+DOWNLOADER_MIDDLEWARES_BASE
+---------------------------
+
 Default:: 
 
-    [
-        'scrapy.contrib.downloadermiddleware.robotstxt.RobotsTxtMiddleware',
-        'scrapy.contrib.downloadermiddleware.errorpages.ErrorPagesMiddleware',
-        'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware',
-        'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware',
-        'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware',
-        'scrapy.contrib.downloadermiddleware.common.CommonMiddleware',
-        'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware',
-        'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware',
-        'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware',
-        'scrapy.contrib.downloadermiddleware.debug.CrawlDebug',
-        'scrapy.contrib.downloadermiddleware.stats.DownloaderStats',
-        'scrapy.contrib.downloadermiddleware.cache.CacheMiddleware',
-    ]
+    {
+        'scrapy.contrib.downloadermiddleware.robotstxt.RobotsTxtMiddleware': 100,
+        'scrapy.contrib.downloadermiddleware.errorpages.ErrorPagesMiddleware': 200,
+        'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware': 300,
+        'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': 400,
+        'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware': 500,
+        'scrapy.contrib.downloadermiddleware.common.CommonMiddleware': 550,
+        'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware': 600,
+        'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware': 700,
+        'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 800,
+        'scrapy.contrib.downloadermiddleware.debug.CrawlDebug': 840,
+        'scrapy.contrib.downloadermiddleware.stats.DownloaderStats': 850,
+        'scrapy.contrib.downloadermiddleware.cache.CacheMiddleware': 900,
+    }
 
-The list of enabled downloader middlewares. Keep in mind that some may need to
-be enabled through a particular setting. The top (first) middleware is closer
-to the engine, while the bottom (last) middleware is closer to the downloader.
+A dict containing the downloader middlewares enabled by default in Scrapy. You
+should never modify this setting in your project, modify
+:setting:`DOWNLOADER_MIDDLEWARES` instead.  For more info see
+:ref:`topics-downloader-middleware-setting`.
 
 .. setting:: DOWNLOADER_STATS
 
@@ -732,7 +743,17 @@ The order to use for the crawling scheduler. Available orders are:
 .. setting:: SCHEDULER_MIDDLEWARES
 
 SCHEDULER_MIDDLEWARES
-----------------------
+---------------------
+
+Default:: ``{}``
+
+A dict containing the scheduler middlewares enabled in your project, and their
+orders. 
+
+.. setting:: SCHEDULER_MIDDLEWARES_BASE
+
+SCHEDULER_MIDDLEWARES_BASE
+--------------------------
 
 Default:: 
 
@@ -740,9 +761,10 @@ Default::
         'scrapy.contrib.schedulermiddleware.duplicatesfilter.DuplicatesFilterMiddleware',
     ]
 
-The list of enabled scheduler middlewares. Keep in mind that some may need to
-be enabled through a particular setting. The top (first) middleware is closer
-to the engine, while the bottom (last) middleware is closer to the scheduler.
+
+A dict containing the scheduler middlewares enabled by default in Scrapy. You
+should never modify this setting in your project, modify
+:setting:`SCHEDULER_MIDDLEWARES` instead. 
 
 .. setting:: SPIDERPROFILER_ENABLED
 
@@ -759,21 +781,32 @@ performance.
 SPIDER_MIDDLEWARES
 ------------------
 
+Default:: ``{}``
+
+A dict containing the spider middlewares enabled in your project, and their
+orders. For more info see :ref:`topics-spider-middleware-setting`.
+
+.. setting:: SPIDER_MIDDLEWARES_BASE
+
+SPIDER_MIDDLEWARES_BASE
+-----------------------
+
 Default::
 
-    [
-        'scrapy.contrib.itemsampler.ItemSamplerMiddleware',
-        'scrapy.contrib.spidermiddleware.limit.RequestLimitMiddleware',
-        'scrapy.contrib.spidermiddleware.restrict.RestrictMiddleware',
-        'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware',
-        'scrapy.contrib.spidermiddleware.referer.RefererMiddleware',
-        'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware',
-        'scrapy.contrib.spidermiddleware.depth.DepthMiddleware',
-    ]
+    {
+        'scrapy.contrib.itemsampler.ItemSamplerMiddleware': 100,
+        'scrapy.contrib.spidermiddleware.limit.RequestLimitMiddleware': 200,
+        'scrapy.contrib.spidermiddleware.restrict.RestrictMiddleware': 300,
+        'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware': 500,
+        'scrapy.contrib.spidermiddleware.referer.RefererMiddleware': 700,
+        'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware': 800,
+        'scrapy.contrib.spidermiddleware.depth.DepthMiddleware': 900,
+    }
 
-The list of enabled spider middlewares. Keep in mind that some may need to be
-enabled through a particular setting. The top (first) middleware is closer to
-the engine, while the bottom (last) middleware is closer to the spider.
+A dict containing the spider middlewares enabled by default in Scrapy. You
+should never modify this setting in your project, modify
+:setting:`SPIDER_MIDDLEWARES` instead. For more info see
+:ref:`topics-spider-middleware-setting`.
 
 .. setting:: SPIDER_MODULES
 
