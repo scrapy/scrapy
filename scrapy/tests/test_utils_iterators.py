@@ -5,11 +5,11 @@ import libxml2
 from scrapy.utils.iterators import csviter, xmliter
 from scrapy.http import XmlResponse, TextResponse
 
-class UtilsXmlTestCase(unittest.TestCase):
+class UtilsIteratorsTestCase(unittest.TestCase):
     ### NOTE: Encoding issues have been found with BeautifulSoup for utf-16 files, utf-16 test removed ###
     # pablo: Tests shouldn't be removed, but commented with proper steps on how
     # to reproduce the missing functionality
-    def test_iterator(self):
+    def test_xmliter(self):
         body = """<?xml version="1.0" encoding="UTF-8"?>\
             <products xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="someschmea.xsd">\
               <product id="001">\
@@ -30,13 +30,13 @@ class UtilsXmlTestCase(unittest.TestCase):
         self.assertEqual(attrs, 
                          [(['001'], ['Name 1'], ['Type 1']), (['002'], ['Name 2'], ['Type 2'])])
 
-    def test_iterator_text(self):
+    def test_xmliter_text(self):
         body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""
         
         self.assertEqual([x.x("text()").extract() for x in xmliter(body, 'product')],
                          [[u'one'], [u'two']])
 
-    def test_iterator_namespaces(self):
+    def test_xmliter_namespaces(self):
         body = """\
             <?xml version="1.0" encoding="UTF-8"?>
             <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
@@ -70,7 +70,7 @@ class UtilsXmlTestCase(unittest.TestCase):
         self.assertEqual(node.x('id/text()').extract(), [])
         self.assertEqual(node.x('price/text()').extract(), [])
 
-    def test_iterator_exception(self):
+    def test_xmliter_exception(self):
         body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""
         
         iter = xmliter(body, 'product')
@@ -79,13 +79,21 @@ class UtilsXmlTestCase(unittest.TestCase):
 
         self.assertRaises(StopIteration, iter.next)
 
+    def test_xmliter_encoding(self):
+        body = '<?xml version="1.0" encoding="ISO-8859-9"?>\n<xml>\n    <item>Some Turkish Characters \xd6\xc7\xde\xdd\xd0\xdc \xfc\xf0\xfd\xfe\xe7\xf6</item>\n</xml>\n\n'
+        response = XmlResponse('http://www.example.com', body=body)
+        self.assertEqual(
+            xmliter(response, 'item').next().extract(),
+            u'<item>Some Turkish Characters \xd6\xc7\u015e\u0130\u011e\xdc \xfc\u011f\u0131\u015f\xe7\xf6</item>'
+        )
+
 class UtilsCsvTestCase(unittest.TestCase):
     sample_feeds_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data', 'feeds')
     sample_feed_path = os.path.join(sample_feeds_dir, 'feed-sample3.csv')
     sample_feed2_path = os.path.join(sample_feeds_dir, 'feed-sample4.csv')
     sample_feed3_path = os.path.join(sample_feeds_dir, 'feed-sample5.csv')
 
-    def test_iterator_defaults(self):
+    def test_csviter_defaults(self):
         body = open(self.sample_feed_path).read()
 
         response = TextResponse(url="http://example.com/", body=body)
@@ -103,7 +111,7 @@ class UtilsCsvTestCase(unittest.TestCase):
             self.assert_(all((isinstance(k, unicode) for k in result_row.keys())))
             self.assert_(all((isinstance(v, unicode) for v in result_row.values())))
 
-    def test_iterator_delimiter(self):
+    def test_csviter_delimiter(self):
         body = open(self.sample_feed_path).read().replace(',', '\t')
 
         response = TextResponse(url="http://example.com/", body=body)
@@ -115,7 +123,7 @@ class UtilsCsvTestCase(unittest.TestCase):
                           {u'id': u'3', u'name': u'multi',   u'value': u'foo\nbar'},
                           {u'id': u'4', u'name': u'empty',   u'value': u''}])
 
-    def test_iterator_headers(self):
+    def test_csviter_headers(self):
         sample = open(self.sample_feed_path).read().splitlines()
         headers, body = sample[0].split(','), '\n'.join(sample[1:])
 
@@ -128,7 +136,7 @@ class UtilsCsvTestCase(unittest.TestCase):
                           {u'id': u'3', u'name': u'multi',   u'value': u'foo\nbar'},
                           {u'id': u'4', u'name': u'empty',   u'value': u''}])
 
-    def test_iterator_falserow(self):
+    def test_csviter_falserow(self):
         body = open(self.sample_feed_path).read()
         body = '\n'.join((body, 'a,b', 'a,b,c,d'))
 
@@ -141,7 +149,7 @@ class UtilsCsvTestCase(unittest.TestCase):
                           {u'id': u'3', u'name': u'multi',   u'value': u'foo\nbar'},
                           {u'id': u'4', u'name': u'empty',   u'value': u''}])
 
-    def test_iterator_exception(self):
+    def test_csviter_exception(self):
         body = open(self.sample_feed_path).read()
 
         response = TextResponse(url="http://example.com/", body=body)
@@ -153,7 +161,7 @@ class UtilsCsvTestCase(unittest.TestCase):
 
         self.assertRaises(StopIteration, iter.next)
 
-    def test_iterator_encoding(self):
+    def test_csviter_encoding(self):
         body1 = open(self.sample_feed2_path).read()
         body2 = open(self.sample_feed3_path).read()
 

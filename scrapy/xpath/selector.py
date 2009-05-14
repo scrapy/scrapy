@@ -34,7 +34,7 @@ class XPathSelector(object):
                 self.doc = Libxml2Document(response, constructor=constructor)
             self.xmlNode = self.doc.xmlDoc
         elif text:
-            response = TextResponse(url=None, body=unicode_to_str(text))
+            response = TextResponse(url=None, body=unicode_to_str(text), encoding='utf-8')
             self.doc = Libxml2Document(response, constructor=constructor)
             self.xmlNode = self.doc.xmlDoc
         self.expr = expr
