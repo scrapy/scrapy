@@ -347,7 +347,7 @@ Response objects
     :type status: integer
 
     :param body: the response body. It must be str, not unicode, unless you're
-       using a encoding-aware :ref:`Response sublcass <ref-response-subclasses>`,
+       using a encoding-aware :ref:`Response subclass <ref-response-subclasses>`,
        such as :class:`TextResponse`.
     :type body: str
 

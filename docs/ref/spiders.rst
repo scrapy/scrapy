@@ -163,7 +163,7 @@ Let's now take a look at an example CrawlSpider with rules::
         rules = (
             # Extract links matching 'category.php' (but not matching 'subsection.php') 
             # and follow links from them (since no callback means follow=True by default).
-            Rule(RegexLinkExtractor(allow=('category\.php', ), deny=('subsection\,php', ))),
+            Rule(RegexLinkExtractor(allow=('category\.php', ), deny=('subsection\.php', ))),
 
             # Extract links matching 'item.php' and parse them with the spider's method parse_item
             Rule(RegexLinkExtractor(allow=('item\.php', )), callback='parse_item'),
