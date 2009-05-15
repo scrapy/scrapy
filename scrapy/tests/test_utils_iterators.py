@@ -4,6 +4,7 @@ import libxml2
 
 from scrapy.utils.iterators import csviter, xmliter
 from scrapy.http import XmlResponse, TextResponse
+from scrapy.tests import get_testdata
 
 class UtilsIteratorsTestCase(unittest.TestCase):
     ### NOTE: Encoding issues have been found with BeautifulSoup for utf-16 files, utf-16 test removed ###
@@ -94,8 +95,7 @@ class UtilsCsvTestCase(unittest.TestCase):
     sample_feed3_path = os.path.join(sample_feeds_dir, 'feed-sample5.csv')
 
     def test_csviter_defaults(self):
-        body = open(self.sample_feed_path).read()
-
+        body = get_testdata('feeds', 'feed-sample3.csv')
         response = TextResponse(url="http://example.com/", body=body)
         csv = csviter(response)
 
@@ -112,8 +112,7 @@ class UtilsCsvTestCase(unittest.TestCase):
             self.assert_(all((isinstance(v, unicode) for v in result_row.values())))
 
     def test_csviter_delimiter(self):
-        body = open(self.sample_feed_path).read().replace(',', '\t')
-
+        body = get_testdata('feeds', 'feed-sample3.csv').replace(',', '\t')
         response = TextResponse(url="http://example.com/", body=body)
         csv = csviter(response, delimiter='\t')
 
@@ -124,7 +123,7 @@ class UtilsCsvTestCase(unittest.TestCase):
                           {u'id': u'4', u'name': u'empty',   u'value': u''}])
 
     def test_csviter_headers(self):
-        sample = open(self.sample_feed_path).read().splitlines()
+        sample = get_testdata('feeds', 'feed-sample3.csv').splitlines()
         headers, body = sample[0].split(','), '\n'.join(sample[1:])
 
         response = TextResponse(url="http://example.com/", body=body)
@@ -137,7 +136,7 @@ class UtilsCsvTestCase(unittest.TestCase):
                           {u'id': u'4', u'name': u'empty',   u'value': u''}])
 
     def test_csviter_falserow(self):
-        body = open(self.sample_feed_path).read()
+        body = get_testdata('feeds', 'feed-sample3.csv')
         body = '\n'.join((body, 'a,b', 'a,b,c,d'))
 
         response = TextResponse(url="http://example.com/", body=body)
@@ -150,7 +149,7 @@ class UtilsCsvTestCase(unittest.TestCase):
                           {u'id': u'4', u'name': u'empty',   u'value': u''}])
 
     def test_csviter_exception(self):
-        body = open(self.sample_feed_path).read()
+        body = get_testdata('feeds', 'feed-sample3.csv')
 
         response = TextResponse(url="http://example.com/", body=body)
         iter = csviter(response)
@@ -162,8 +161,8 @@ class UtilsCsvTestCase(unittest.TestCase):
         self.assertRaises(StopIteration, iter.next)
 
     def test_csviter_encoding(self):
-        body1 = open(self.sample_feed2_path).read()
-        body2 = open(self.sample_feed3_path).read()
+        body1 = get_testdata('feeds', 'feed-sample4.csv')
+        body2 = get_testdata('feeds', 'feed-sample5.csv')
 
         response = TextResponse(url="http://example.com/", body=body1, encoding='latin1')
         csv = csviter(response)

@@ -10,6 +10,8 @@ import unittest
 from twisted.internet import reactor
 from twisted.web import server, resource, static, util
 
+from scrapy.tests import tests_datadir
+
 #class TestResource(resource.Resource):
 #    isLeaf = True
 #
@@ -17,7 +19,7 @@ from twisted.web import server, resource, static, util
 #        return "hello world!"
 
 def start_test_site():
-    root_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "sample_data", "test_site")
+    root_dir = os.path.join(tests_datadir, "test_site")
     r = static.File(root_dir)
 #    r.putChild("test", TestResource())
     r.putChild("redirect", util.Redirect("/redirected"))

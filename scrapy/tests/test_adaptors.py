@@ -1,5 +1,4 @@
 # -*- coding: utf8 -*-
-import os
 import unittest
 import re
 
@@ -7,7 +6,7 @@ from scrapy.item.adaptors import AdaptorPipe
 from scrapy.contrib_exp import adaptors
 from scrapy.http import HtmlResponse, Headers
 from scrapy.xpath.selector import HtmlXPathSelector, XmlXPathSelector
-from scrapy.link import Link
+from scrapy.tests import get_testdata
 
 class AdaptorPipeTestCase(unittest.TestCase):
     def test_pipe_init(self):
@@ -37,12 +36,9 @@ class AdaptorPipeTestCase(unittest.TestCase):
         self.assertTrue(isinstance(pipe1 + sample_callable, AdaptorPipe))
 
 class AdaptorsTestCase(unittest.TestCase):
-    def setUp(self):
-        self.samplesdir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'sample_data', 'adaptors'))
 
     def get_selector(self, domain, url, sample_filename, headers=None, selector=HtmlXPathSelector):
-        sample_filename = os.path.join(self.samplesdir, sample_filename)
-        body = file(sample_filename).read()
+        body = get_testdata('adaptors', sample_filename)
         response = HtmlResponse(url=url, headers=Headers(headers), status=200, body=body)
         return selector(response)
 

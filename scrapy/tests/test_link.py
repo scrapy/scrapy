@@ -1,4 +1,3 @@
-import os
 import re
 import unittest
 
@@ -6,6 +5,7 @@ from scrapy.http import HtmlResponse
 from scrapy.link import LinkExtractor, Link
 from scrapy.link.extractors import RegexLinkExtractor
 from scrapy.contrib.link_extractors import HTMLImageLinkExtractor
+from scrapy.tests import get_testdata
 
 class LinkExtractorTestCase(unittest.TestCase):
     def test_basic(self):
@@ -36,11 +36,10 @@ class LinkExtractorTestCase(unittest.TestCase):
                          [Link(url='http://otherdomain.com/base/item/12.html', text='Item 12')])
 
     def test_extraction_encoding(self):
-        base_path = os.path.join(os.path.dirname(__file__), 'sample_data', 'link_extractor')
-        body = open(os.path.join(base_path, 'linkextractor_noenc.html'), 'r').read()
+        body = get_testdata('link_extractor', 'linkextractor_noenc.html')
         response_utf8 = HtmlResponse(url='http://example.com/utf8', body=body, headers={'Content-Type': ['text/html; charset=utf-8']})
         response_noenc = HtmlResponse(url='http://example.com/noenc', body=body)
-        body = open(os.path.join(base_path, 'linkextractor_latin1.html'), 'r').read()
+        body = get_testdata('link_extractor', 'linkextractor_latin1.html')
         response_latin1 = HtmlResponse(url='http://example.com/latin1', body=body)
 
         lx = LinkExtractor()
@@ -66,8 +65,7 @@ class LinkExtractorTestCase(unittest.TestCase):
 
 class RegexLinkExtractorTestCase(unittest.TestCase):
     def setUp(self):
-        base_path = os.path.join(os.path.dirname(__file__), 'sample_data', 'link_extractor')
-        body = open(os.path.join(base_path, 'regex_linkextractor.html'), 'r').read()
+        body = get_testdata('link_extractor', 'regex_linkextractor.html')
         self.response = HtmlResponse(url='http://example.com/index', body=body)
 
     def test_urls_type(self):
@@ -202,8 +200,7 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
 
 class HTMLImageLinkExtractorTestCase(unittest.TestCase):
     def setUp(self):
-        base_path = os.path.join(os.path.dirname(__file__), 'sample_data', 'link_extractor')
-        body = open(os.path.join(base_path, 'image_linkextractor.html'), 'r').read()
+        body = get_testdata('link_extractor', 'image_linkextractor.html')
         self.response = HtmlResponse(url='http://example.com/index', body=body)
 
     def tearDown(self):

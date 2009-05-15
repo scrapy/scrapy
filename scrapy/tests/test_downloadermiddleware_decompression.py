@@ -1,21 +1,14 @@
-import os
 from unittest import TestCase, main
 from scrapy.http import Response, XmlResponse
 from scrapy.contrib_exp.downloadermiddleware.decompression import DecompressionMiddleware
+from scrapy.tests import get_testdata
 
 def setUp():
-    datadir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data', 'compressed')
     formats = ['tar', 'xml.bz2', 'xml.gz', 'zip']
-
-    uncompressed_fd = open(os.path.join(datadir, 'feed-sample1.xml'), 'r')
-    uncompressed_body = uncompressed_fd.read()
-    uncompressed_fd.close()
-
+    uncompressed_body = get_testdata('compressed', 'feed-sample1.xml')
     test_responses = {}
     for format in formats:
-        fd = open(os.path.join(datadir, 'feed-sample1.' + format), 'r')
-        body = fd.read()
-        fd.close()
+        body = get_testdata('compressed', 'feed-sample1.' + format)
         test_responses[format] = Response('http://foo.com/bar', body=body)
     return uncompressed_body, test_responses
 

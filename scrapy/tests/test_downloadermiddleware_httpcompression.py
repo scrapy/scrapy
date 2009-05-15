@@ -6,9 +6,10 @@ from os.path import join, abspath, dirname
 from scrapy.spider import spiders
 from scrapy.http import Response, Request
 from scrapy.contrib.downloadermiddleware.httpcompression import HttpCompressionMiddleware
+from scrapy.tests import tests_datadir
 
 
-SAMPLEDIR = join(abspath(dirname(__file__)), 'sample_data/compressed')
+SAMPLEDIR = join(tests_datadir, 'compressed')
 
 FORMAT = {
         'gzip': ('html-gzip.bin', 'gzip'),
