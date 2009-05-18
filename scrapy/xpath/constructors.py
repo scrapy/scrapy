@@ -30,8 +30,8 @@ def xmlDoc_from_html(response):
     return lxdoc
 
 def xmlDoc_from_xml(response):
-    utf8body = body_as_utf8(response)
     """Return libxml2 doc for XMLs"""
+    utf8body = body_as_utf8(response)
     try:
         lxdoc = libxml2.readDoc(utf8body, response.url, 'utf-8', xml_parser_options)
     except TypeError:  # libxml2 doesn't parse text with null bytes
