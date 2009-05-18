@@ -2,9 +2,9 @@ import re
 import unittest
 
 from scrapy.http import HtmlResponse
-from scrapy.link import LinkExtractor, Link
-from scrapy.link.extractors import RegexLinkExtractor
-from scrapy.contrib.link_extractors import HTMLImageLinkExtractor
+from scrapy.link import Link
+from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor, BaseSgmlLinkExtractor
+from scrapy.contrib.linkextractors.image import HTMLImageLinkExtractor
 from scrapy.tests import get_testdata
 
 class LinkExtractorTestCase(unittest.TestCase):
@@ -18,7 +18,7 @@ class LinkExtractorTestCase(unittest.TestCase):
         </body></html>"""
         response = HtmlResponse("http://example.org/somepage/index.html", body=html)
 
-        lx = LinkExtractor()  # default: tag=a, attr=href
+        lx = BaseSgmlLinkExtractor()  # default: tag=a, attr=href
         self.assertEqual(lx.extract_links(response),
                          [Link(url='http://example.org/somepage/item/12.html', text='Item 12'), 
                           Link(url='http://example.org/about.html', text='About us'),
@@ -31,7 +31,7 @@ class LinkExtractorTestCase(unittest.TestCase):
         </body></html>"""
         response = HtmlResponse("http://example.org/somepage/index.html", body=html)
 
-        lx = LinkExtractor()  # default: tag=a, attr=href
+        lx = BaseSgmlLinkExtractor()  # default: tag=a, attr=href
         self.assertEqual(lx.extract_links(response),
                          [Link(url='http://otherdomain.com/base/item/12.html', text='Item 12')])
 
@@ -42,7 +42,7 @@ class LinkExtractorTestCase(unittest.TestCase):
         body = get_testdata('link_extractor', 'linkextractor_latin1.html')
         response_latin1 = HtmlResponse(url='http://example.com/latin1', body=body)
 
-        lx = LinkExtractor()
+        lx = BaseSgmlLinkExtractor()
         self.assertEqual(lx.extract_links(response_utf8),
             [ Link(url='http://example.com/sample_%C3%B1.html', text=''),
               Link(url='http://example.com/sample_%E2%82%AC.html', text='sample \xe2\x82\xac text'.decode('utf-8')) ])
@@ -59,75 +59,75 @@ class LinkExtractorTestCase(unittest.TestCase):
         url1 = 'http://lotsofstuff.com/stuff1/index'
         url2 = 'http://evenmorestuff.com/uglystuff/index'
 
-        lx = LinkExtractor()
+        lx = BaseSgmlLinkExtractor()
         self.assertEqual(lx.matches(url1), True)
         self.assertEqual(lx.matches(url2), True)
 
-class RegexLinkExtractorTestCase(unittest.TestCase):
+class SgmlLinkExtractorTestCase(unittest.TestCase):
     def setUp(self):
-        body = get_testdata('link_extractor', 'regex_linkextractor.html')
+        body = get_testdata('link_extractor', 'sgml_linkextractor.html')
         self.response = HtmlResponse(url='http://example.com/index', body=body)
 
     def test_urls_type(self):
         '''Test that the resulting urls are regular strings and not a unicode objects'''
-        lx = RegexLinkExtractor()
+        lx = SgmlLinkExtractor()
         self.assertTrue(all(isinstance(link.url, str) for link in lx.extract_links(self.response)))
 
     def test_extraction(self):
         '''Test the extractor's behaviour among different situations'''
 
-        lx = RegexLinkExtractor()
+        lx = SgmlLinkExtractor()
         self.assertEqual([link for link in lx.extract_links(self.response)],
             [ Link(url='http://example.com/sample1.html', text=u''),
               Link(url='http://example.com/sample2.html', text=u'sample 2'),
               Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
               Link(url='http://www.google.com/something', text=u'') ])
 
-        lx = RegexLinkExtractor(allow=('sample', ))
+        lx = SgmlLinkExtractor(allow=('sample', ))
         self.assertEqual([link for link in lx.extract_links(self.response)],
             [ Link(url='http://example.com/sample1.html', text=u''),
               Link(url='http://example.com/sample2.html', text=u'sample 2'),
               Link(url='http://example.com/sample3.html', text=u'sample 3 text') ])
 
-        lx = RegexLinkExtractor(allow=('sample', ), unique=False)
+        lx = SgmlLinkExtractor(allow=('sample', ), unique=False)
         self.assertEqual([link for link in lx.extract_links(self.response)],
             [ Link(url='http://example.com/sample1.html', text=u''),
               Link(url='http://example.com/sample2.html', text=u'sample 2'),
               Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
               Link(url='http://example.com/sample3.html', text=u'sample 3 repetition') ])
 
-        lx = RegexLinkExtractor(allow=('sample', ), deny=('3', ))
+        lx = SgmlLinkExtractor(allow=('sample', ), deny=('3', ))
         self.assertEqual([link for link in lx.extract_links(self.response)],
             [ Link(url='http://example.com/sample1.html', text=u''),
               Link(url='http://example.com/sample2.html', text=u'sample 2') ])
 
-        lx = RegexLinkExtractor(allow_domains=('google.com', ))
+        lx = SgmlLinkExtractor(allow_domains=('google.com', ))
         self.assertEqual([link for link in lx.extract_links(self.response)],
             [ Link(url='http://www.google.com/something', text=u'') ])
 
-        lx = RegexLinkExtractor(tags=('img', ), attrs=('src', ))
+        lx = SgmlLinkExtractor(tags=('img', ), attrs=('src', ))
         self.assertEqual([link for link in lx.extract_links(self.response)],
             [ Link(url='http://example.com/sample2.jpg', text=u'') ])
 
     def test_extraction_using_single_values(self):
         '''Test the extractor's behaviour among different situations'''
 
-        lx = RegexLinkExtractor(allow='sample')
+        lx = SgmlLinkExtractor(allow='sample')
         self.assertEqual([link for link in lx.extract_links(self.response)],
             [ Link(url='http://example.com/sample1.html', text=u''),
               Link(url='http://example.com/sample2.html', text=u'sample 2'),
               Link(url='http://example.com/sample3.html', text=u'sample 3 text') ])
 
-        lx = RegexLinkExtractor(allow='sample', deny='3')
+        lx = SgmlLinkExtractor(allow='sample', deny='3')
         self.assertEqual([link for link in lx.extract_links(self.response)],
             [ Link(url='http://example.com/sample1.html', text=u''),
               Link(url='http://example.com/sample2.html', text=u'sample 2') ])
 
-        lx = RegexLinkExtractor(allow_domains='google.com')
+        lx = SgmlLinkExtractor(allow_domains='google.com')
         self.assertEqual([link for link in lx.extract_links(self.response)],
             [ Link(url='http://www.google.com/something', text=u'') ])
 
-        lx = RegexLinkExtractor(deny_domains='example.com')
+        lx = SgmlLinkExtractor(deny_domains='example.com')
         self.assertEqual([link for link in lx.extract_links(self.response)],
             [ Link(url='http://www.google.com/something', text=u'') ])
 
@@ -135,23 +135,23 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
         url1 = 'http://lotsofstuff.com/stuff1/index'
         url2 = 'http://evenmorestuff.com/uglystuff/index'
 
-        lx = RegexLinkExtractor(allow=(r'stuff1', ))
+        lx = SgmlLinkExtractor(allow=(r'stuff1', ))
         self.assertEqual(lx.matches(url1), True)
         self.assertEqual(lx.matches(url2), False)
 
-        lx = RegexLinkExtractor(deny=(r'uglystuff', ))
+        lx = SgmlLinkExtractor(deny=(r'uglystuff', ))
         self.assertEqual(lx.matches(url1), True)
         self.assertEqual(lx.matches(url2), False)
 
-        lx = RegexLinkExtractor(allow_domains=('evenmorestuff.com', ))
+        lx = SgmlLinkExtractor(allow_domains=('evenmorestuff.com', ))
         self.assertEqual(lx.matches(url1), False)
         self.assertEqual(lx.matches(url2), True)
 
-        lx = RegexLinkExtractor(deny_domains=('lotsofstuff.com', ))
+        lx = SgmlLinkExtractor(deny_domains=('lotsofstuff.com', ))
         self.assertEqual(lx.matches(url1), False)
         self.assertEqual(lx.matches(url2), True)
 
-        lx = RegexLinkExtractor(allow=('blah1', ), deny=('blah2', ),
+        lx = SgmlLinkExtractor(allow=('blah1', ), deny=('blah2', ),
             allow_domains=('blah1.com', ), deny_domains=('blah2.com', ))
         self.assertEqual(lx.matches('http://blah1.com/blah1'), True)
         self.assertEqual(lx.matches('http://blah1.com/blah2'), False)
@@ -159,7 +159,7 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.matches('http://blah2.com/blah2'), False)
 
     def test_restrict_xpaths(self):
-        lx = RegexLinkExtractor(restrict_xpaths=('//div[@id="subwrapper"]', ))
+        lx = SgmlLinkExtractor(restrict_xpaths=('//div[@id="subwrapper"]', ))
         self.assertEqual([link for link in lx.extract_links(self.response)],
             [ Link(url='http://example.com/sample1.html', text=u''),
               Link(url='http://example.com/sample2.html', text=u'sample 2') ])
@@ -177,7 +177,7 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
         </body></html>"""
         response = HtmlResponse("http://example.org/somepage/index.html", body=html, encoding='windows-1252')
 
-        lx = RegexLinkExtractor(restrict_xpaths="//div[@class='links']") 
+        lx = SgmlLinkExtractor(restrict_xpaths="//div[@class='links']") 
         self.assertEqual(lx.extract_links(response),
                          [Link(url='http://example.org/about.html', text=u'About us\xa3')])
 
@@ -194,7 +194,7 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
             if m:
                 return m.group(1)
 
-        lx = RegexLinkExtractor(process_value=process_value)
+        lx = SgmlLinkExtractor(process_value=process_value)
         self.assertEqual(lx.extract_links(response),
                          [Link(url='http://example.org/other/page.html', text='Link text')])
 

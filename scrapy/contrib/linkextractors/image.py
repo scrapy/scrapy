@@ -1,7 +1,8 @@
 """
-This module provides additional LinkExtractors, apart from the ones in scrapy.link
-and scrapy.link.extractors.
+This module implements the HtmlImageLinkExtractor for extracting 
+image links only.
 """
+
 import urlparse
 
 from scrapy.link import Link

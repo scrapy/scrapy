@@ -1,5 +1,5 @@
 from scrapy.contrib.spiders import CrawlSpider, Rule
-from scrapy.link.extractors import RegexLinkExtractor
+from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 
 class GenericSpider(CrawlSpider):
     """
@@ -10,7 +10,7 @@ class GenericSpider(CrawlSpider):
     def __init__(self, domain_name):
         self.domain_name = domain_name
         self.rules = (
-            Rule(RegexLinkExtractor(allow_domains=(domain_name,)), self.parse_note, follow=True),
+            Rule(SgmlLinkExtractor(allow_domains=(domain_name,)), self.parse_note, follow=True),
         )
         super(GenericSpider, self).__init__()
         

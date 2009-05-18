@@ -4,67 +4,25 @@
 Available Link Extractors
 =========================
 
-.. module:: scrapy.link
+.. module:: scrapy.contrib.linkextractors
    :synopsis: Link extractors classes
 
-LinkExtractor
-=============
+All available link extractors classes bundled with Scrapy are provided in the
+:mod:`scrapy.contrib.linkextractors` module.
 
-.. class:: LinkExtractor(tag="a", href="href", unique=False, process_value=None)
+.. module:: scrapy.contrib.linkextractors.sgml
+   :synopsis: SGMLParser-based link extractors
 
-    This is the most basic Link Extractor which extracts links from a response with
-    by looking at the given attributes inside the given tags.
+SgmlLinkExtractor
+=================
 
-    The constructor arguments are:
+.. class:: SgmlLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths(), tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True, process_value=None)
 
-    :param tag: either a string (with the name of a tag) or a function that
-        receives a tag name and returns ``True`` if links should be extracted
-        from those tag, or ``False`` if they shouldn't. Defaults to ``'a'``.
-        request (once its downloaded) as its first parameter. For more
-        information see :ref:`ref-request-callback-arguments` below.
-    :type tag: str or callable
-
-    :param attr:  either string (with the name of a tag attribute), or a
-        function that receives a an attribute name and returns ``True`` if
-        links should be extracted from it, or ``False`` if the shouldn't.
-        Defaults to ``href``.
-    :type attr: str or callable
-
-    :param unique: is a boolean that specifies if a duplicate filtering should
-        be applied to links extracted.
-    :type unique: boolean
-
-    :param process_value: a function which receives each value extracted from
-        the tag and attributes scanned and can modify the value and return a
-        new one, or return ``None`` to ignore the link altogether. If not
-        given, ``process_value`` defaults to ``lambda x: x``.
-
-        .. highlight:: html
-
-        For example, to extract links from this code::
-
-            <a href="javascript:goToPage('../other/page.html'); return false">Link text</a>
-        
-        .. highlight:: python
-
-        You can use the following function in ``process_value``::
-        
-            def process_value(value):
-                m = re.search("javascript:goToPage\('(.*?)'", value)
-                if m:
-                    return m.group(1) 
-
-    :type process_value: callable
-
-RegexLinkExtractor
-==================
-
-.. class:: RegexLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths(), tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True, process_value=None)
-
-    The RegexLinkExtractor extends the base :class:`LinkExtractor` by providing
-    additional filters that you can specify to extract links, including regular
-    expressions patterns that the links must match to be extracted. All those
-    filters are configured through these constructor paramters:
+    The SgmlLinkExtractor extends the base :class:`BaseSgmlLinkExtractor` by
+    providing additional filters that you can specify to extract links,
+    including regular expressions patterns that the links must match to be
+    extracted. All those filters are configured through these constructor
+    parameters:
 
     :param allow: a single regular expression (or list of regular expressions)
         that the (absolute) urls must match in order to be extracted. If not
@@ -111,4 +69,53 @@ RegexLinkExtractor
     :param process_value: see ``process_value`` argument of
         :class:`LinkExtractor` class constructor
     :type process_value: boolean
+
+BaseSgmlLinkExtractor
+=====================
+
+.. class:: BaseSgmlLinkExtractor(tag="a", href="href", unique=False, process_value=None)
+
+    The purpose of this Link Extractor is only to serve as a base class for the
+    :class:`SgmlLinkExtractor`. You should use that one instead.
+    
+    The constructor arguments are:
+
+    :param tag: either a string (with the name of a tag) or a function that
+        receives a tag name and returns ``True`` if links should be extracted
+        from those tag, or ``False`` if they shouldn't. Defaults to ``'a'``.
+        request (once its downloaded) as its first parameter. For more
+        information see :ref:`ref-request-callback-arguments` below.
+    :type tag: str or callable
+
+    :param attr:  either string (with the name of a tag attribute), or a
+        function that receives a an attribute name and returns ``True`` if
+        links should be extracted from it, or ``False`` if the shouldn't.
+        Defaults to ``href``.
+    :type attr: str or callable
+
+    :param unique: is a boolean that specifies if a duplicate filtering should
+        be applied to links extracted.
+    :type unique: boolean
+
+    :param process_value: a function which receives each value extracted from
+        the tag and attributes scanned and can modify the value and return a
+        new one, or return ``None`` to ignore the link altogether. If not
+        given, ``process_value`` defaults to ``lambda x: x``.
+
+        .. highlight:: html
+
+        For example, to extract links from this code::
+
+            <a href="javascript:goToPage('../other/page.html'); return false">Link text</a>
+        
+        .. highlight:: python
+
+        You can use the following function in ``process_value``::
+        
+            def process_value(value):
+                m = re.search("javascript:goToPage\('(.*?)'", value)
+                if m:
+                    return m.group(1) 
+
+    :type process_value: callable
 

@@ -7,7 +7,7 @@ import re
 
 from scrapy.spider import BaseSpider
 from scrapy.item import ScrapedItem
-from scrapy.link import LinkExtractor
+from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 from scrapy.http import Request
 
 class TestSpider(BaseSpider):
@@ -20,7 +20,7 @@ class TestSpider(BaseSpider):
     price_re = re.compile(">Price: \$(.*?)<", re.M)
 
     def parse(self, response):
-        xlink = LinkExtractor()
+        xlink = SgmlLinkExtractor()
         itemre = re.compile(self.itemurl_re)
         for link in xlink.extract_links(response):
             if itemre.search(link.url):

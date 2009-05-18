@@ -10,7 +10,7 @@ from scrapy.utils.url import is_url
 from scrapy.utils.response import get_base_url
 from scrapy.utils.python import flatten, unicode_to_str
 from scrapy.xpath.selector import XPathSelector, XPathSelectorList
-from scrapy.contrib.link_extractors import HTMLImageLinkExtractor
+from scrapy.contrib.linkextractors.image import HTMLImageLinkExtractor
 
 def extract(location, adaptor_args=None):
     """

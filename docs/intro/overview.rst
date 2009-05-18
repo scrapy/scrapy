@@ -125,7 +125,7 @@ Finally, here's the spider code::
 
         domain_name = 'mininova.org'
         start_urls = ['http://www.mininova.org/today']
-        rules = [Rule(RegexLinkExtractor(allow=['/tor/\d+']), 'parse_torrent')]
+        rules = [Rule(SgmlLinkExtractor(allow=['/tor/\d+']), 'parse_torrent')]
         
         def parse_torrent(self, response):
             x = HtmlXPathSelector(response)
