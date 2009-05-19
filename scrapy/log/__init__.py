@@ -4,6 +4,7 @@ Scrapy logging facility
 See documentation in docs/ref/logging.rst
 """
 import sys
+from traceback import format_exc
 
 from twisted.python import log
 
@@ -11,7 +12,8 @@ from scrapy.conf import settings
 from scrapy.utils.python import unicode_to_str
  
 # Logging levels
-levels = {
+SILENT, CRITICAL, ERROR, WARNING, INFO, DEBUG, TRACE = range(7)
+level_names = {
     0: "SILENT",
     1: "CRITICAL",
     2: "ERROR",
@@ -23,17 +25,15 @@ levels = {
 
 BOT_NAME = settings['BOT_NAME']
 
-# Set logging level module attributes
-for v, k in levels.items():
-    setattr(sys.modules[__name__], k, v)
-
 # default logging level
 log_level = DEBUG
 
 started = False
 
 def start(logfile=None, loglevel=None, log_stdout=None):
-    """ Init logging """
+    """Initialize and start logging facility"""
+    global log_level, started
+
     if started or not settings.getbool('LOG_ENABLED'):
         return
 
@@ -44,23 +44,22 @@ def start(logfile=None, loglevel=None, log_stdout=None):
     file = open(logfile, 'a') if logfile else sys.stderr
     level = int(getattr(sys.modules[__name__], loglevel)) if loglevel else DEBUG
     log.startLogging(file, setStdout=log_stdout)
-    setattr(sys.modules[__name__], 'log_level', level)
-    setattr(sys.modules[__name__], 'started', True)
+    log_level = level
+    started = True
 
 def msg(message, level=INFO, component=BOT_NAME, domain=None):
-    """ Log message according to the level """
-    component = "%s/%s" % (BOT_NAME, domain) if domain else component
+    """Log message according to the level"""
+    component = "%s/%s" % (component, domain) if domain else component
     if level <= log_level:
-        msg_txt = unicode_to_str("%s: %s" % (levels[level], message))
+        msg_txt = unicode_to_str("%s: %s" % (level_names[level], message))
         log.msg(msg_txt, system=component)
 
 def exc(message, level=ERROR, component=BOT_NAME, domain=None):
-    from traceback import format_exc
     message = message + '\n' + format_exc()
     msg(message, level, component, domain)
 
 def err(*args, **kwargs):
-    domain = kwargs.pop('domain', '')
+    domain = kwargs.pop('domain', None)
     component = kwargs.pop('component', BOT_NAME)
-    kwargs['system'] = "%s/%s" % (BOT_NAME, domain) if domain else component
+    kwargs['system'] = "%s/%s" % (component, domain) if domain else component
     log.err(*args, **kwargs)
