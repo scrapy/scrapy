@@ -96,7 +96,7 @@ run:
        ./configure --with-python=/Library/Frameworks/Python.framework/Versions/2.5/
        make
        sudo make install
-   
+
    Replacing ``/Library/Frameworks/Python.framework/Version/2.5/`` with your
    current python framework location.
 
@@ -131,25 +131,25 @@ Step 3. Install Scrapy
 ======================
 
 We're working hard to get the first release of Scrapy out. In the meantime,
-please download the latest development version from the `Subversion`_
+please download the latest development version from the `Mercurial`_
 repository.
 
-.. _Subversion: http://subversion.tigris.org/
+.. _Mercurial: http://www.selenic.com/mercurial/
 
 Just follow these steps:
 
-3.1. Install Subversion
+3.1. Install Mercurial
 -----------------------
 
-Make sure that you have `Subversion`_ installed, and that you can run its
-commands from a shell. (Enter ``svn help`` at a shell prompt to test this.)
+Make sure that you have `Mercurial`_ installed, and that you can run its
+commands from a shell. (Enter ``hg help`` at a shell prompt to test this.)
 
 3.2. Check out the Scrapy source code
 -------------------------------------
 
 By running the following command::
-   
-    svn checkout http://svn.scrapy.org/scrapy/trunk/ scrapy-trunk
+
+    hg clone http://hg.scrapy.org/scrapy scrapy-trunk
 
 3.3. Install the Scrapy module
 ------------------------------
@@ -170,15 +170,15 @@ command with root privileges, for example by running::
 
 .. warning:: Keep in mind that Scrapy is still being changed, as we haven't yet
    released the first stable version. So it's important that you keep updating
-   the Subversion code periodically and reinstalling the Scrapy module. A more
-   convenient way is to use Scrapy module without installing it (see below).
+   the code periodically and reinstalling the Scrapy module. A more convenient
+   way is to use Scrapy module without installing it (see below).
 
 Use Scrapy without installing it
 ================================
 
 Another alternative is to use the Scrapy module without installing it which
-makes it easier to keep using the last Subversion code without having to
-reinstall it everytime you do a ``svn update``.
+makes it easier to keep using the last Development code without having to
+reinstall it everytime you do a ``hg pull -u``.
 
 You can do this by following the next steps:
 
