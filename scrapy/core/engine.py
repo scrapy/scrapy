@@ -338,7 +338,6 @@ class ExecutionEngine(object):
                 log.msg("Requested %s" % request_info(request), level=log.DEBUG, domain=domain)
             if isinstance(response, Response):
                 response.request = request # tie request to obtained response
-                cached = 'cached' if response.cached else 'live'
                 log.msg("Crawled %s from <%s>" % (response, request.headers.get('referer')), level=log.DEBUG, domain=domain)
                 return response
             elif isinstance(response, Request):
