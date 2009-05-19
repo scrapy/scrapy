@@ -115,7 +115,7 @@ This is the code for our first Spider, save it in a file named
         
        def parse(self, response):
            filename = response.url.split("/")[-2]
-           open(filename, 'w').write(response.body)
+           open(filename, 'wb').write(response.body)
            return []
             
    SPIDER = DmozSpider()
@@ -385,8 +385,8 @@ should be like this::
 
 Now doing a crawl on the dmoz.org domain yields ``DmozItem``'s::
 
-   [dmoz/dmoz.org] DEBUG: Scraped DmozItem({'title': [u'Text Processing in Python'], 'link': [u'http://gnosis.cx/TPiP/'], 'desc': [u' - By David Mertz; Addison Wesley. Book in progress, full text, ASCII format. Asks for feedback. [author website, Gnosis Software, Inc.]\n']}) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
-   [dmoz/dmoz.org] DEBUG: Scraped DmozItem({'title': [u'XML Processing with Python'], 'link': [u'http://www.informit.com/store/product.aspx?isbn=0130211192'], 'desc': [u' - By Sean McGrath; Prentice Hall PTR, 2000, ISBN 0130211192, has CD-ROM. Methods to build XML applications fast, Python tutorial, DOM and SAX, new Pyxie open source XML processing library. [Prentice Hall PTR]\n']}) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
+   [dmoz/dmoz.org] INFO: Scraped DmozItem({'title': [u'Text Processing in Python'], 'link': [u'http://gnosis.cx/TPiP/'], 'desc': [u' - By David Mertz; Addison Wesley. Book in progress, full text, ASCII format. Asks for feedback. [author website, Gnosis Software, Inc.]\n']}) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
+   [dmoz/dmoz.org] INFO: Scraped DmozItem({'title': [u'XML Processing with Python'], 'link': [u'http://www.informit.com/store/product.aspx?isbn=0130211192'], 'desc': [u' - By Sean McGrath; Prentice Hall PTR, 2000, ISBN 0130211192, has CD-ROM. Methods to build XML applications fast, Python tutorial, DOM and SAX, new Pyxie open source XML processing library. [Prentice Hall PTR]\n']}) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
 
 
 Storing the data (using an Item Pipeline)
@@ -413,16 +413,24 @@ creation step, it's in ``dmoz/pipelines.py`` and looks like this::
        def process_item(self, domain, item):
            return item
 
-We have to override the ``process_item`` method in order to store our Items for
-example in a csv file::
+We have to override the ``process_item`` method in order to store our Items
+somewhere. 
+
+Here's an example pipeline for storing the scraped items into a CSV (comma
+separated values) file using the standard library `csv module`_::
 
    import csv
 
-   class DmozPipeline(object):
+   class CsvWriterPipeline(object):
+
+       def __init__(self):
+           self.csvwriter = csv.writer(open('items.csv', 'wb'))
+        
        def process_item(self, domain, item):
-           item_writer = csv.writer(open('items.csv', 'a'))
-           item_writer.writerow([item.title[0], item.link[0], item.desc[0]])
+           self.csvwriter.writerow([item.title[0], item.link[0], item.desc[0]])
            return item
+
+.. _csv module: http://docs.python.org/library/csv.html
 
 Finale
 ======
