@@ -416,7 +416,7 @@ creation step, it's in ``dmoz/pipelines.py`` and looks like this::
 We have to override the ``process_item`` method in order to store our Items
 somewhere. 
 
-Here's an example pipeline for storing the scraped items into a CSV (comma
+Here's a simple pipeline for storing the scraped items into a CSV (comma
 separated values) file using the standard library `csv module`_::
 
    import csv
@@ -431,6 +431,12 @@ separated values) file using the standard library `csv module`_::
            return item
 
 .. _csv module: http://docs.python.org/library/csv.html
+
+
+Don't forget to enable the pipeline by adding it to the
+:setting:`ITEM_PIPELINES` setting in your settings.py, like this::
+
+    ITEM_PIPELINES = ['dmoz.pipelines.CsvWriterPipeline']
 
 Finale
 ======
