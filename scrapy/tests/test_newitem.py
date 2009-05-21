@@ -1,3 +1,5 @@
+import datetime
+import decimal
 import unittest
 
 from scrapy.contrib_exp.newitem import *
@@ -22,3 +24,80 @@ class NewItemTest(unittest.TestCase):
         i.name = 'name'
         i.names = ['name1', 'name2']
         assert i.names == ['name1', 'name2']
+
+
+class NewItemFieldsTest(unittest.TestCase):
+    def test_boolean_field(self):
+        class TestItem(Item):
+            field = BooleanField()
+
+        i = TestItem()
+
+        i.field = True
+        assert i.field == True
+        i.field = 1
+        assert i.field == True
+
+        i.field = False
+        assert i.field == False
+        i.field = 0
+        assert i.field == False
+
+    def test_date_field(self):
+        class TestItem(Item):
+            field = DateField()
+
+        i = TestItem()
+
+        today = datetime.date.today()
+        i.field = today
+        assert i.field == today
+ 
+        i.field = '2009-05-21'
+        assert i.field == datetime.date(2009, 5, 21)
+
+    def test_decimal_field(self):
+        class TestItem(Item):
+            field = DecimalField()
+
+        i = TestItem()
+
+        i.field = decimal.Decimal('3.14')
+        assert i.field == decimal.Decimal('3.14')
+
+        i.field = '3.14'
+        assert i.field == decimal.Decimal('3.14')
+
+    def test_float_field(self):
+        class TestItem(Item):
+            field = FloatField()
+
+        i = TestItem()
+
+        i.field = 3.14
+        assert i.field == 3.14
+
+        i.field = '3.14'
+        assert i.field == 3.14
+
+    def test_integer_field(self):
+        class TestItem(Item):
+            field = IntegerField()
+
+        i = TestItem()
+
+        i.field = 3
+        assert i.field == 3
+
+        i.field = '3'
+        assert i.field == 3
+
+    def test_sting_field(self):
+        class TestItem(Item):
+            field = StringField()
+
+        i = TestItem()
+
+        i.field = 'hello'
+        assert i.field == 'hello'
+
