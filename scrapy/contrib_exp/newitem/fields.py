@@ -1,10 +1,11 @@
 import datetime
 import decimal
 import re
+import time
 
 
-__all__ = ['MultiValuedField', 'BooleanField', 'DateField', 'DecimalField',
-           'FloatField', 'IntegerField', 'StringField']
+__all__ = ['MultiValuedField', 'BooleanField', 'DateField', 'DateTimeField',
+           'DecimalField', 'FloatField', 'IntegerField', 'StringField']
 
 
 class FieldValueError(Exception):
@@ -77,6 +78,43 @@ class DateField(Field):
             return datetime.date(year, month, day)
         except ValueError, e:
             raise FieldValueError("Invalid date: %s" % str(e))
+
+
+class DateTimeField(Field):
+    def to_python(self, value):
+        if value is None:
+            return value
+        if isinstance(value, datetime.datetime):
+            return value
+        if isinstance(value, datetime.date):
+            return datetime.datetime(value.year, value.month, value.day)
+
+        # Attempt to parse a datetime:
+        value = str(value)
+        # split usecs, because they are not recognized by strptime.
+        if '.' in value:
+            try:
+                value, usecs = value.split('.')
+                usecs = int(usecs)
+            except ValueError:
+                raise FieldValueError('Enter a valid date/time in YYYY-MM-DD HH:MM[:ss[.uuuuuu]] format.')
+        else:
+            usecs = 0
+        kwargs = {'microsecond': usecs}
+        try: # Seconds are optional, so try converting seconds first.
+            return datetime.datetime(*time.strptime(value, '%Y-%m-%d %H:%M:%S')[:6],
+                                     **kwargs)
+
+        except ValueError:
+            try: # Try without seconds.
+                return datetime.datetime(*time.strptime(value, '%Y-%m-%d %H:%M')[:5],
+                                         **kwargs)
+            except ValueError: # Try without hour/minutes/seconds.
+                try:
+                    return datetime.datetime(*time.strptime(value, '%Y-%m-%d')[:3],
+                                             **kwargs)
+                except ValueError:
+                    raise FieldValueError('Enter a valid date/time in YYYY-MM-DD HH:MM[:ss[.uuuuuu]] format.')
 
 
 class DecimalField(Field):

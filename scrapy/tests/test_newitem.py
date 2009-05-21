@@ -56,6 +56,30 @@ class NewItemFieldsTest(unittest.TestCase):
         i.field = '2009-05-21'
         assert i.field == datetime.date(2009, 5, 21)
 
+    def test_datetime_field(self):
+        class TestItem(Item):
+            field = DateTimeField()
+
+        i = TestItem()
+
+        dt_today = datetime.datetime.today()
+        i.field = dt_today
+        assert i.field == dt_today
+
+        d_today = datetime.date.today()
+        i.field = d_today
+        assert i.field == datetime.datetime(d_today.year, d_today.month,
+                                            d_today.day)
+ 
+        i.field = '2009-05-21 11:08:10'
+        assert i.field == datetime.datetime(2009, 5, 21, 11, 8, 10)
+
+        i.field = '2009-05-21 11:08'
+        assert i.field == datetime.datetime(2009, 5, 21, 11, 8)
+
+        i.field = '2009-05-21'
+        assert i.field == datetime.datetime(2009, 5, 21)
+
     def test_decimal_field(self):
         class TestItem(Item):
             field = DecimalField()
