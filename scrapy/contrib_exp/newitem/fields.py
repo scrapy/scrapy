@@ -8,10 +8,6 @@ __all__ = ['MultiValuedField', 'BooleanField', 'DateField', 'DateTimeField',
            'DecimalField', 'FloatField', 'IntegerField', 'StringField']
 
 
-class FieldValueError(Exception):
-    pass
-
-
 class BaseField(object):
     def __init__(self, required=False, default=None):
         self.required = required
@@ -70,14 +66,13 @@ class DateField(Field):
             return value
 
         if not ansi_date_re.search(value):
-            raise FieldValueError(
-                "Enter a valid date in YYYY-MM-DD format.")
+            raise ValueError("Enter a valid date in YYYY-MM-DD format.")
 
         year, month, day = map(int, value.split('-'))
         try:
             return datetime.date(year, month, day)
         except ValueError, e:
-            raise FieldValueError("Invalid date: %s" % str(e))
+            raise ValueError("Invalid date: %s" % str(e))
 
 
 class DateTimeField(Field):
@@ -97,7 +92,7 @@ class DateTimeField(Field):
                 value, usecs = value.split('.')
                 usecs = int(usecs)
             except ValueError:
-                raise FieldValueError('Enter a valid date/time in YYYY-MM-DD HH:MM[:ss[.uuuuuu]] format.')
+                raise ValueError('Enter a valid date/time in YYYY-MM-DD HH:MM[:ss[.uuuuuu]] format.')
         else:
             usecs = 0
         kwargs = {'microsecond': usecs}
@@ -114,7 +109,7 @@ class DateTimeField(Field):
                     return datetime.datetime(*time.strptime(value, '%Y-%m-%d')[:3],
                                              **kwargs)
                 except ValueError:
-                    raise FieldValueError('Enter a valid date/time in YYYY-MM-DD HH:MM[:ss[.uuuuuu]] format.')
+                    raise ValueError('Enter a valid date/time in YYYY-MM-DD HH:MM[:ss[.uuuuuu]] format.')
 
 
 class DecimalField(Field):
@@ -124,7 +119,7 @@ class DecimalField(Field):
         try:
             return decimal.Decimal(value)
         except decimal.InvalidOperation:
-            raise FieldValueError("This value must be a decimal number.")
+            raise ValueError("This value must be a decimal number.")
 
 
 class FloatField(Field):
@@ -134,7 +129,7 @@ class FloatField(Field):
         try:
             return float(value)
         except (TypeError, ValueError):
-            raise FieldValueError("This value must be a float.")
+            raise ValueError("This value must be a float.")
 
 
 class IntegerField(Field):
@@ -144,7 +139,7 @@ class IntegerField(Field):
         try:
             return int(value)
         except (TypeError, ValueError):
-            raise FieldValueError("This value must be an integer.")
+            raise ValueError("This value must be an integer.")
 
 
 class StringField(Field):
@@ -153,5 +148,5 @@ class StringField(Field):
             return value
         if value is None:
             return value
-        raise FieldValueError("This field must be a string.")
+        raise ValueError("This field must be a string.")
 
