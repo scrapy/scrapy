@@ -11,16 +11,13 @@ class FieldValueError(Exception):
     pass
 
 
-class Field(object):
+class BaseField(object):
     def __init__(self, required=False, default=None):
         self.required = required
         self.default = default or self.to_python(None)
 
     def assign(self, value):
-        if hasattr(value, '__iter__'):
-            return self.to_python(self.deiter(value))
-        else:
-            return self.to_python(value)
+        return self.to_python(value)
 
     def to_python(self, value):
         """
@@ -29,12 +26,20 @@ class Field(object):
         """
         return value
 
+
+class Field(BaseField):
+    def assign(self, value):
+        if hasattr(value, '__iter__'):
+            return self.to_python(self.deiter(value))
+        else:
+            return self.to_python(value)
+
     def deiter(self, value):
         "Converts the input iterable into a single value."
         return ' '.join(value)
 
 
-class MultiValuedField(Field):
+class MultiValuedField(BaseField):
     def __init__(self, field_type, required=False, default=None):
         self._field = field_type()
         super(MultiValuedField, self).__init__(required, default)
@@ -44,9 +49,6 @@ class MultiValuedField(Field):
             return []
         else:
             return [self._field.to_python(v) for v in value]
-
-    def deiter(self, value):
-        return value
 
 
 class BooleanField(Field):

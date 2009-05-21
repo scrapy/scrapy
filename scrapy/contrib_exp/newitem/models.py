@@ -1,5 +1,5 @@
 from scrapy.item import ScrapedItem
-from scrapy.contrib_exp.newitem.fields import Field
+from scrapy.contrib_exp.newitem.fields import BaseField
 
 
 class ItemMeta(type):
@@ -8,7 +8,7 @@ class ItemMeta(type):
         cls = type.__new__(meta, class_name, bases, attrs)
         cls.fields = cls.fields.copy()
         for n, v in attrs.items():
-            if isinstance(v, Field):
+            if isinstance(v, BaseField):
                 cls.fields[n] = v
 
         return cls
