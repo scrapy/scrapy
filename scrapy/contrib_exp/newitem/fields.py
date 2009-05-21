@@ -51,6 +51,7 @@ class MultiValuedField(Field):
 
 class BooleanField(Field):
     def to_python(self, value):
+        if value is None: return False
         if value in (True, False): return value
         if value in ('t', 'True', '1'): return True
         if value in ('f', 'False', '0'): return False
