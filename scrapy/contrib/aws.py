@@ -77,8 +77,8 @@ def sign_request(req, accesskey, secretkey):
 
 class AWSMiddleware(object):
     def __init__(self):
-        self.access_key = settings['AWS_ACCESS_KEY_ID']
-        self.secret_key = settings['AWS_SECRET_ACCESS_KEY']
+        self.access_key = settings['AWS_ACCESS_KEY_ID'] or os.environ.get('AWS_ACCESS_KEY_ID')
+        self.secret_key = settings['AWS_SECRET_ACCESS_KEY'] or os.environ.get('AWS_SECRET_ACCESS_KEY')
 
     def process_request(self, request, spider):
         if spider.domain_name == 's3.amazonaws.com' \
