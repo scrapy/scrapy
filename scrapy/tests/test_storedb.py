@@ -10,8 +10,7 @@ from scrapy.store.db import DomainDataHistory
 from scrapy.utils.db import mysql_connect, parse_uri, URIValidationError
 from scrapy.conf import settings
 
-class ConnectionTestCase(unittest.TestCase):
-    """ Test connection wrapper """
+class MySqlTestCase(unittest.TestCase):
     test_db = settings.get('TEST_SCRAPING_DB')
 
     def setUp(self):
@@ -25,6 +24,8 @@ class ConnectionTestCase(unittest.TestCase):
         except MySQLdb.OperationalError:
             raise unittest.SkipTest("Test database not available at: %s" % self.test_db)
 
+class ConnectionTestCase(MySqlTestCase):
+    """ Test connection wrapper """
     def test_parse_uri(self):
         self.assertRaises(URIValidationError, parse_uri, [self.test_db])
         self.assertRaises(URIValidationError, parse_uri, self.test_db.replace('mysql:', 'gopher:'))
@@ -41,21 +42,8 @@ class ConnectionTestCase(unittest.TestCase):
         self.assertTrue(isinstance(mysql_connect(self.test_db), MySQLdb.connection))
         self.assertTrue(isinstance(mysql_connect(parse_uri(self.test_db)), MySQLdb.connection))
 
-class ProductComparisonTestCase(unittest.TestCase):
+class ProductComparisonTestCase(MySqlTestCase):
     """ Test product comparison functions """
-    test_db = settings.get('TEST_SCRAPING_DB')
-
-    def setUp(self):
-        if not self.test_db:
-            raise unittest.SkipTest("Missing TEST_SCRAPING_DB setting")
-
-        try:
-            mysql_connect(self.test_db)
-        except ImportError:
-            raise unittest.SkipTest("MySQLdb module not available")
-        except MySQLdb.OperationalError:
-            raise unittest.SkipTest("Test database not available at: %s" % self.test_db)
-
     def test_domaindatahistory(self):
         ddh = DomainDataHistory(self.test_db, 'domain_data_history')
         c = ddh.mysql_conn.cursor()
