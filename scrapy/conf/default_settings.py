@@ -20,11 +20,6 @@ ADAPTORS_DEBUG = False
 BOT_NAME = 'scrapybot'
 BOT_VERSION = '1.0'
 
-CACHE2_DIR = ''
-CACHE2_IGNORE_MISSING = False
-CACHE2_SECTORIZE = True
-CACHE2_EXPIRATION_SECS = 0
-
 CLOSEDOMAIN_TIMEOUT = 0
 CLOSEDOMAIN_NOTIFY = []
 
@@ -74,7 +69,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 800,
     'scrapy.contrib.downloadermiddleware.debug.CrawlDebug': 840,
     'scrapy.contrib.downloadermiddleware.stats.DownloaderStats': 850,
-    'scrapy.contrib.downloadermiddleware.cache.CacheMiddleware': 900,
+    'scrapy.contrib.downloadermiddleware.cache.HttpCacheMiddleware': 900,
     # Downloader side
 }
 
@@ -107,6 +102,11 @@ EXTENSIONS = [
 
 GROUPSETTINGS_ENABLED = False
 GROUPSETTINGS_MODULE = ''
+
+HTTPCACHE_DIR = ''
+HTTPCACHE_IGNORE_MISSING = False
+HTTPCACHE_SECTORIZE = True
+HTTPCACHE_EXPIRATION_SECS = 0
 
 # Item pipelines are typically set in specific commands settings
 ITEM_PIPELINES = []

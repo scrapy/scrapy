@@ -48,9 +48,9 @@ Available, enabled and disabled extensions
 ==========================================
 
 Not all available extensions will be enabled. Some of them usually depend on a
-particular setting. For example, the Cache extension is typically available but
-disabled by default unless you the :setting:`CACHE2_DIR` setting is set. Both
-enabled and disabled extension can be accessed through the
+particular setting. For example, the HTTP Cache extension is available by default
+but disabled unless the :setting:`HTTPCACHE_DIR` setting is set.  Both enabled
+and disabled extension can be accessed through the
 :ref:`ref-extension-manager`.
 
 Accessing enabled extensions

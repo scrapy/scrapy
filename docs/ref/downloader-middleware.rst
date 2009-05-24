@@ -40,3 +40,32 @@ thus it's recommended to leave it always enabled. Those tasks are:
     
 .. _default Form content type: http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1
 
+HttpCacheMiddleware
+-------------------
+
+.. module:: scrapy.contrib.downloadermiddleware.httpcache
+   :synopsis: HTTP Cache downloader middleware
+
+.. class:: HttpCacheMiddleware
+
+    This middleware provides low-level cache to all HTTP requests and responses.
+    Every request and its corresponding response are cached and then, when that
+    same request is seen again, the response is returned without transferring
+    anything from the Internet.
+
+    The HTTP cache is useful for testing spiders faster (without having to wait for
+    downloads every time) and for trying your spider off-line when you don't have
+    an Internet connection.
+
+    The :class:`HttpCacheMiddleware` can be configured through the following
+    settings (see the settings documentation for more info):
+
+        * :setting:`HTTPCACHE_DIR` - this one actually enables the cache besides
+          settings the cache dir
+        * :setting:`HTTPCACHE_IGNORE_MISSING` - ignoring missing requests instead
+          of downloading them
+        * :setting:`HTTPCACHE_SECTORIZE` - split HTTP cache in several directories
+          (for performance reasons)
+        * :setting:`HTTPCACHE_EXPIRATION_SECS` - how many secs until the cache is
+          considered out of date
+

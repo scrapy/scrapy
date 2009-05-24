@@ -39,9 +39,9 @@ MYSQL_CONNECTION_PING_PERIOD = 600
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_ORDER = 'BFO'   # available orders: BFO (default), DFO
 
-#CACHE2_DIR = '/tmp/cache2'  # if set, enables HTTP cache
-#CACHE2_IGNORE_MISSING = 0   # ignore requests not in cache
-#CACHE2_SECTORIZE = 1         # sectorize domains to distribute storage among servers
+#HTTPCACHE_DIR = '/tmp/cache2'  # if set, enables HTTP cache
+#HTTPCACHE_IGNORE_MISSING = 0   # ignore requests not in cache
+#HTTPCACHE_SECTORIZE = 1         # sectorize domains to distribute storage among servers
 
 #STATS_ENABLED = 1   # enable stats
 #STATS_CLEANUP = 0   # cleanup domain stats when a domain is closed (saves memory)

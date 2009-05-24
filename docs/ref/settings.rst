@@ -42,44 +42,44 @@ Default: ``1.0``
 The version of the bot implemented by this Scrapy project. This will be used to
 construct the User-Agent by default.
 
-.. setting:: CACHE2_DIR
+.. setting:: HTTPCACHE_DIR
 
-CACHE2_DIR
-----------
+HTTPCACHE_DIR
+-------------
 
 Default: ``''`` (empty string)
 
-The directory to use for storing the low-level HTTP cache. If empty the HTTP
+The directory to use for storing the (low-level) HTTP cache. If empty the HTTP
 cache will be disabled.
 
-.. setting:: CACHE2_EXPIRATION_SECS
+.. setting:: HTTPCACHE_EXPIRATION_SECS
 
-CACHE2_EXPIRATION_SECS
-----------------------
+HTTPCACHE_EXPIRATION_SECS
+-------------------------
 
 Default: ``0``
 
-Number of seconds to use for cache expiration. Requests that were cached before
-this time will be re-downloaded. If zero, cached requests will always expire.
-Negative numbers means requests will never expire.
+Number of seconds to use for HTTP cache expiration. Requests that were cached
+before this time will be re-downloaded. If zero, cached requests will always
+expire. Negative numbers means requests will never expire.
 
-.. setting:: CACHE2_IGNORE_MISSING
+.. setting:: HTTPCACHE_IGNORE_MISSING
 
-CACHE2_IGNORE_MISSING
----------------------
+HTTPCACHE_IGNORE_MISSING
+------------------------
 
 Default: ``False``
 
 If enabled, requests not found in the cache will be ignored instead of downloaded. 
 
-.. setting:: CACHE2_SECTORIZE
+.. setting:: HTTPCACHE_SECTORIZE
 
-CACHE2_SECTORIZE
-----------------
+HTTPCACHE_SECTORIZE
+-------------------
 
 Default: ``True``
 
-Whether to split HTTP cache storage in several dirs for performance improvements.
+Whether to split HTTP cache storage in several dirs for performance.
 
 .. setting:: CLOSEDOMAIN_NOTIFY
 
@@ -320,7 +320,7 @@ Default::
         'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 800,
         'scrapy.contrib.downloadermiddleware.debug.CrawlDebug': 840,
         'scrapy.contrib.downloadermiddleware.stats.DownloaderStats': 850,
-        'scrapy.contrib.downloadermiddleware.cache.CacheMiddleware': 900,
+        'scrapy.contrib.downloadermiddleware.httpcache.HttpCacheMiddleware': 900,
     }
 
 A dict containing the downloader middlewares enabled by default in Scrapy. You
