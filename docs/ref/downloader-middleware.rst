@@ -18,10 +18,24 @@ DefaultHeadersMiddleware
 .. module:: scrapy.contrib.downloadermiddleware.defaultheaders
    :synopsis: Default Headers Downloader Middleware
 
-.. class:: scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware
+.. class:: DefaultHeadersMiddleware
 
-This middleware sets all default requests headers specified in the
-:setting:`DEFAULT_REQUEST_HEADERS` setting.
+    This middleware sets all default requests headers specified in the
+    :setting:`DEFAULT_REQUEST_HEADERS` setting.
+
+DebugMiddleware
+---------------
+
+.. module:: scrapy.contrib.downloadermiddleware.debug
+   :synopsis: Downloader middlewares for debugging
+
+.. class:: DebugMiddleware
+
+    This is a convenient middleware to inspect what's passing through the
+    downloader middleware. It logs all requests and responses catched by the
+    middleware component methods. This middleware does not use any settings and
+    does not come enabled by default. Instead, it's meant to be inserted at the
+    point of the middleware that you want to inspect.
 
 HttpCacheMiddleware
 -------------------
