@@ -44,6 +44,11 @@ COOKIES_DEBUG = False
 
 DEFAULT_ITEM_CLASS = 'scrapy.item.ScrapedItem'
 
+DEFAULT_REQUEST_HEADERS = {
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'en',
+}
+
 DEFAULT_SPIDER = None
 
 DEPTH_LIMIT = 0
@@ -63,7 +68,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware': 300,
     'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': 400,
     'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware': 500,
-    'scrapy.contrib.downloadermiddleware.common.CommonMiddleware': 550,
+    'scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware': 550,
     'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware': 600,
     'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware': 700,
     'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 800,
@@ -137,9 +142,6 @@ NEWSPIDER_MODULE = ''
 PRIORITIZER = 'scrapy.core.prioritizers.RandomPrioritizer'
 
 REDIRECTMIDDLEWARE_MAX_TIMES = 20 # uses Firefox default setting
-
-REQUEST_HEADER_ACCEPT = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-REQUEST_HEADER_ACCEPT_LANGUAGE = 'en'
 
 REQUESTS_QUEUE_SIZE = 0
 REQUESTS_PER_DOMAIN = 8     # max simultaneous requests per domain

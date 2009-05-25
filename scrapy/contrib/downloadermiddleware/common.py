@@ -1,22 +1,10 @@
-"""
-Common downloader middleware
 
-See documentation in docs/ref/downloader-middleware.rst
-"""
+import warnings
 
-from scrapy.conf import settings
+from scrapy.contrib.downloadermiddleware.defaultheaders import DefaultHeadersMiddleware
 
-class CommonMiddleware(object):
+class CommonMiddleware(DefaultHeadersMiddleware):
 
     def __init__(self):
-        self.header_accept = settings.get('REQUEST_HEADER_ACCEPT')
-        self.header_accept_language = settings.get('REQUEST_HEADER_ACCEPT_LANGUAGE')
-
-    def process_request(self, request, spider):
-        request.headers.setdefault('Accept', self.header_accept)
-        request.headers.setdefault('Accept-Language', self.header_accept_language)
-        if request.method == 'POST':
-            request.headers.setdefault('Content-Type', 'application/x-www-form-urlencoded')
-            if request.body:
-                request.headers.setdefault('Content-Length', '%d' % len(request.body))
-
+        warnings.warn("scrapy.contrib.downloadermiddleware.common.CommonMiddleware has been replaced by scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware")
+        DefaultHeadersMiddleware.__init__(self)

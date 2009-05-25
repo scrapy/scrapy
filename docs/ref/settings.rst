@@ -252,6 +252,21 @@ Default: ``'scrapy.item.ScrapedItem'``
 The default class that will be used for instantiating items in the :ref:`the
 Scrapy shell <topics-shell>`.
 
+.. setting:: DEFAULT_REQUEST_HEADERS
+
+DEFAULT_REQUEST_HEADERS
+-----------------------
+
+Default::
+
+    {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en',
+    }
+
+The default headers used for Scrapy HTTP Requests. They're populated in the
+DefaultHeadersMiddleware.
+
 .. setting:: DEFAULT_SPIDER
 
 DEFAULT_SPIDER
@@ -314,7 +329,7 @@ Default::
         'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware': 300,
         'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': 400,
         'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware': 500,
-        'scrapy.contrib.downloadermiddleware.common.CommonMiddleware': 550,
+        'scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware': 550,
         'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware': 600,
         'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware': 700,
         'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 800,
@@ -654,30 +669,6 @@ Default: ``Not Defined``
 
 The name of the current project. It matches the project module name as created
 by ``startproject`` command, and is only defined by project settings file.
-
-.. setting:: REQUEST_HEADER_ACCEPT
-
-REQUEST_HEADER_ACCEPT
----------------------
-
-Default: ``'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'``
-
-Default value to use for the ``Accept`` request header (if not already set
-before). 
-
-See :ref:`ref-downloader-middleware-common`.
-
-.. setting:: REQUEST_HEADER_ACCEPT_LANGUAGE
-
-REQUEST_HEADER_ACCEPT_LANGUAGE
-------------------------------
-
-Default: ``'en'``
-
-Default value to use for the ``Accept-Language`` request header, if not already
-set before. 
-
-See :ref:`ref-downloader-middleware-common`.
 
 .. setting:: REQUESTS_QUEUE_SIZE
 
