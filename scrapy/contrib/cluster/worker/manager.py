@@ -88,7 +88,7 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
             er = ", error=%s" % str(status.value)
         log.msg("ClusterWorker: finished domain=%s status=%s pid=%d log=%s%s" % (self.domain, st, self.pid, self.logfile, er))
         del self.worker.running[self.domain]
-        del self.worker.crawlers[self.pid]
+        self.worker.crawlers.pop(self.pid, None)
         self.worker.update_master(self.domain, st)
 
 class ClusterWorker(pb.Root):
