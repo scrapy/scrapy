@@ -911,7 +911,7 @@ The default User-Agent to use when crawling, unless overrided.
 WEBCONSOLE_ENABLED
 ------------------
 
-Default: ``"%s/%s" % (BOT_NAME, BOT_VERSION)``
+Default: True
 
 A boolean which specifies if the web management console will be enabled
 (provided its extension is also enabled).
