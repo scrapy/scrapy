@@ -4,6 +4,7 @@ scrapy.http.Response objects
 """
 
 import re
+from twisted.web import http
 from scrapy.http.response import Response
 
 def body_or_str(obj, unicode=True):
@@ -36,3 +37,14 @@ def get_meta_refresh(response):
         match = META_REFRESH_RE.search(response.body[0:4096])
         response.cache['meta_refresh_url'] = match.groups() if match else (None, None)
     return response.cache['meta_refresh_url']
+
+def response_status_message(status):
+    """Return status code plus status text descriptive message
+
+    >>> response_status_message(200)
+    200 OK
+
+    >>> response_status_message(404)
+    404 Not Found
+    """
+    return '%s %s' % (status, http.responses.get(int(status)))

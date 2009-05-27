@@ -655,6 +655,27 @@ Default: ``Not Defined``
 The name of the current project. It matches the project module name as created
 by ``startproject`` command, and is only defined by project settings file.
 
+.. setting:: REDIRECT_MAX_TIMES
+
+REDIRECT_MAX_TIMES
+------------------
+
+Default: ``20``
+
+Defines the maximun times a request can be redirected. After this maximun the
+request's response is returned as is. We used Firefox default value for the
+same task.
+
+.. setting:: REDIRECT_MAX_METAREFRESH_DELAY
+
+REDIRECT_MAX_METAREFRESH_DELAY
+---------------------------
+
+Default: ``100``
+
+Some sites use meta-refresh for redirecting to a session expired page, so we
+restrict automatic redirection to a maximum delay (in seconds)
+
 .. setting:: REQUEST_HEADER_ACCEPT
 
 REQUEST_HEADER_ACCEPT

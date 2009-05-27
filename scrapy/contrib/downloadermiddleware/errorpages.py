@@ -1,13 +1,17 @@
 from scrapy.core.exceptions import HttpException
+from scrapy.utils.response import response_status_message
 
 class ErrorPagesMiddleware(object):
-    """This middleware allows the spiders to receive error (non 200) responses,
-    the same way the receive normal responses"""
+    """This middleware filters out responses with status code others than 2XX
+    or defined in spider handle_httpstatus_list attribute.
 
-    def process_exception(self, request, exception, spider):
-        if isinstance(exception, HttpException):
-            statuses = getattr(spider, 'handle_httpstatus_list', None)
-            httpstatus = exception.response.status
-            if statuses and httpstatus in statuses:
-                return exception.response
+    TODO: move this mw to spidermiddleware and remove me
+    """
+
+    def process_response(self, request, response, spider):
+        status = response.status
+        if 200 <= status < 300 or status in getattr(spider, 'handle_httpstatus_list', []):
+            return response
+        else:
+            raise HttpException(status, None, response)
 

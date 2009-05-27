@@ -16,7 +16,7 @@ except ImportError:
 from scrapy import optional_features
 from scrapy.core import signals
 from scrapy.http import Headers
-from scrapy.core.exceptions import HttpException, NotSupported
+from scrapy.core.exceptions import NotSupported
 from scrapy.utils.defer import defer_succeed
 from scrapy.conf import settings
 
@@ -65,13 +65,7 @@ def create_factory(request, spider):
         signals.send_catch_log(signal=signals.response_downloaded, sender='download_http', response=r, spider=spider)
         return r
 
-    def _on_success(body):
-        response = _create_response(body)
-        if response.status not in (200, 201, 202):
-            raise HttpException(response.status, None, response)
-        return response
-
-    factory.deferred.addCallbacks(_on_success)
+    factory.deferred.addCallbacks(_create_response)
     return factory
 
 def download_http(request, spider):

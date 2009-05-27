@@ -10,11 +10,12 @@ from pydispatch import dispatcher
 from scrapy.core import signals
 from scrapy import log
 from scrapy.http import Response, Headers
-from scrapy.core.exceptions import NotConfigured, HttpException, IgnoreRequest
+from scrapy.core.exceptions import NotConfigured, IgnoreRequest
 from scrapy.core.downloader.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.http import headers_dict_to_raw, headers_raw_to_dict
 from scrapy.conf import settings
+
 
 class HttpCacheMiddleware(object):
     def __init__(self):
@@ -33,37 +34,25 @@ class HttpCacheMiddleware(object):
 
         key = request_fingerprint(request)
         domain = spider.domain_name
+
         try:
             response = self.cache.retrieve_response(domain, key)
         except:
             log.msg("Corrupt cache for %s" % request.url, log.WARNING)
             response = False
+
         if response:
-            if not 200 <= int(response.status) < 300:
-                raise HttpException(response.status, None, response)
             return response
         elif self.ignore_missing:
             raise IgnoreRequest("Ignored request not in cache: %s" % request)
 
     def process_response(self, request, response, spider):
-        if not is_cacheable(request):
-            return response
-
-        if isinstance(response, Response) and not response.meta.get('cached'):
+        if is_cacheable(request):
             key = request_fingerprint(request)
-            domain = spider.domain_name
-            self.cache.store(domain, key, request, response)
+            self.cache.store(spider.domain_name, key, request, response)
 
         return response
 
-    def process_exception(self, request, exception, spider):
-        if not is_cacheable(request):
-            return
-
-        if isinstance(exception, HttpException) and isinstance(exception.response, Response):
-            key = request_fingerprint(request)
-            domain = spider.domain_name
-            self.cache.store(domain, key, request, exception.response)
 
 def is_cacheable(request):
     return request.url.scheme in ['http', 'https']
