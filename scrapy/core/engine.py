@@ -16,7 +16,7 @@ from scrapy.conf import settings
 from scrapy.core import signals
 from scrapy.core.scheduler import Scheduler, SchedulerMiddlewareManager
 from scrapy.core.downloader import Downloader
-from scrapy.core.exceptions import IgnoreRequest, HttpException, DontCloseDomain
+from scrapy.core.exceptions import IgnoreRequest, DontCloseDomain
 from scrapy.http import Response, Request
 from scrapy.item import ScrapedItem
 from scrapy.item.pipeline import ItemPipelineManager
@@ -330,6 +330,7 @@ class ExecutionEngine(object):
         if self.debug_mode:
             log.msg('Downloading %s' % request_info(request), log.DEBUG)
         domain = spider.domain_name
+        referer = request.headers.get('Referer', None)
 
         def _on_success(response):
             """handle the result of a page download"""
@@ -338,7 +339,7 @@ class ExecutionEngine(object):
                 log.msg("Requested %s" % request_info(request), level=log.DEBUG, domain=domain)
             if isinstance(response, Response):
                 response.request = request # tie request to obtained response
-                log.msg("Crawled %s from <%s>" % (response, request.headers.get('referer')), level=log.DEBUG, domain=domain)
+                log.msg("Crawled %s from <%s>" % (response, referer), level=log.DEBUG, domain=domain)
                 return response
             elif isinstance(response, Request):
                 redirected = response # proper alias
@@ -349,11 +350,7 @@ class ExecutionEngine(object):
         def _on_error(_failure):
             """handle an error processing a page"""
             ex = _failure.value
-            if isinstance(ex, IgnoreRequest):
-                log.msg(_failure.getErrorMessage(), level=log.DEBUG, domain=domain)
-                return _failure
-            referer = request.headers.get('Referer', None)
-            errmsg = str(ex) if isinstance(ex, HttpException) else str(_failure)
+            errmsg = str(_failure) if not isinstance(ex, IgnoreRequest) else _failure.getErrorMessage()
             log.msg("Downloading <%s> from <%s>: %s" % (request.url, referer, errmsg), log.ERROR, domain=domain)
             return Failure(IgnoreRequest(str(ex)))
 

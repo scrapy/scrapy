@@ -21,20 +21,6 @@ class DontCloseDomain(Exception):
     """Request the domain not to be closed yet"""
     pass
 
-class HttpException(Exception):
-    def __init__(self, status, message, response):
-        if not message:
-            from twisted.web import http
-            message = http.responses.get(int(status))
-
-        self.status = int(status)
-        self.message = message
-        self.response = response
-        Exception.__init__(self, status, message, response)
-
-    def __str__(self):
-        return '%s %s' % (self.status, self.message)
-
 # Items
 
 class DropItem(Exception):

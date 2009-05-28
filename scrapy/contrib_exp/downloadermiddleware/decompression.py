@@ -83,7 +83,7 @@ class DecompressionMiddleware(object):
         return (response, None)
 
     def process_response(self, request, response, spider):
-        if isinstance(response, Response):
+        if isinstance(response, Response) and response.body:
             response, format = self.extract(response)
             if format:
                 log.msg('Decompressed response with format: %s' % format, log.DEBUG, domain=spider.domain_name)

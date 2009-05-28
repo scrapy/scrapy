@@ -1,41 +1,33 @@
 from scrapy import log
-from scrapy.core.exceptions import HttpException
 from scrapy.utils.url import urljoin_rfc as urljoin
 from scrapy.utils.response import get_meta_refresh
 from scrapy.conf import settings
 
-# some sites use meta-refresh for redirecting to a session expired page, so we
-# restrict automatic redirection to a maximum delay (in number of seconds)
-META_REFRESH_MAXSEC = 100
-MAX_REDIRECT_LOOP = 10
 
 class RedirectMiddleware(object):
+    """Handle redirection of requests based on response status and meta-refresh html tag"""
+
     def __init__(self):
-        self.max_redirect_times = settings.getint('REDIRECTMIDDLEWARE_MAX_TIMES')
+        self.max_metarefresh_delay = settings.getint('REDIRECT_MAX_METAREFRESH_DELAY')
+        self.max_redirect_times = settings.getint('REDIRECT_MAX_TIMES')
 
-    def process_exception(self, request, exception, spider):
-        if not isinstance(exception, HttpException):
-            return
-
+    def process_response(self, request, response, spider):
         domain = spider.domain_name
-        status = exception.status
-        response = exception.response
 
-        if status in [302, 303] and 'Location' in response.headers:
+        if response.status in [302, 303] and 'Location' in response.headers:
             redirected_url = urljoin(request.url, response.headers['location'])
             redirected = request.replace(url=redirected_url, method='GET', body='')
             redirected.headers.pop('Content-Type', None)
             redirected.headers.pop('Content-Length', None)
-            return self._redirect(redirected, request, spider, status)
+            return self._redirect(redirected, request, spider, response.status)
 
-        if status in [301, 307] and 'Location' in response.headers:
+        if response.status in [301, 307] and 'Location' in response.headers:
             redirected_url = urljoin(request.url, response.headers['location'])
             redirected = request.replace(url=redirected_url)
-            return self._redirect(redirected, request, spider, status)
+            return self._redirect(redirected, request, spider, response.status)
 
-    def process_response(self, request, response, spider):
         interval, url = get_meta_refresh(response)
-        if url and int(interval) < META_REFRESH_MAXSEC:
+        if url and int(interval) < self.max_metarefresh_delay:
             redirected = request.replace(url=urljoin(request.url, url))
             return self._redirect(redirected, request, spider, 'meta refresh')
 

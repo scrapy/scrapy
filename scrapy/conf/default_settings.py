@@ -64,7 +64,6 @@ DOWNLOADER_MIDDLEWARES = {}
 DOWNLOADER_MIDDLEWARES_BASE = {
     # Engine side
     'scrapy.contrib.downloadermiddleware.robotstxt.RobotsTxtMiddleware': 100,
-    'scrapy.contrib.downloadermiddleware.errorpages.ErrorPagesMiddleware': 200,
     'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware': 300,
     'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': 400,
     'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware': 500,
@@ -140,14 +139,15 @@ NEWSPIDER_MODULE = ''
 
 PRIORITIZER = 'scrapy.core.prioritizers.RandomPrioritizer'
 
-REDIRECTMIDDLEWARE_MAX_TIMES = 20 # uses Firefox default setting
+REDIRECT_MAX_METAREFRESH_DELAY = 100
+REDIRECT_MAX_TIMES = 20 # uses Firefox default setting
 
 REQUESTS_QUEUE_SIZE = 0
 REQUESTS_PER_DOMAIN = 8     # max simultaneous requests per domain
 
 # contrib.middleware.retry.RetryMiddleware default settings
 RETRY_TIMES = 2 # initial response + 2 retries = 3 requests
-RETRY_HTTP_CODES = ['500', '503', '504', '400', '408', '200']
+RETRY_HTTP_CODES = ['500', '503', '504', '400', '408']
 
 
 ROBOTSTXT_OBEY = False
@@ -170,6 +170,7 @@ SPIDER_MIDDLEWARES = {}
 
 SPIDER_MIDDLEWARES_BASE = {
     # Engine side
+    'scrapy.contrib.spidermiddleware.httperror.HttpErrorMiddleware': 50,
     'scrapy.contrib.itemsampler.ItemSamplerMiddleware': 100,
     'scrapy.contrib.spidermiddleware.limit.RequestLimitMiddleware': 200,
     'scrapy.contrib.spidermiddleware.restrict.RestrictMiddleware': 300,

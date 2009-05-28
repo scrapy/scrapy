@@ -6,7 +6,6 @@ from pydispatch import dispatcher
 from scrapy.core import signals
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
-from scrapy.core.exceptions import HttpException
 from scrapy.conf import settings
 from scrapy import log
 
@@ -43,11 +42,6 @@ class CookiesMiddleware(object):
         self._debug_set_cookie(response)
 
         return response
-
-    # cookies should be set on non-200 responses too
-    def process_exception(self, request, exception, spider):
-        if isinstance(exception, HttpException):
-            self.process_response(request, exception.response, spider)
 
     def domain_closed(self, domain):
         self.jars.pop(domain, None)

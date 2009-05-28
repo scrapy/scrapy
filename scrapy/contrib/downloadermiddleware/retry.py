@@ -19,46 +19,50 @@ About HTTP errors to consider:
 - You may want to remove 400 from RETRY_HTTP_CODES, if you stick to the HTTP
   protocol. It's included by default because it's a common code used to
   indicate server overload, which would be something we want to retry
-- 200 is included by default (and shoudln't be removed) to check for partial
-  downloads errors, which means the TCP connection has broken in the middle of
-  a HTTP download
 """
 
 from twisted.internet.error import TimeoutError as ServerTimeoutError, DNSLookupError, \
                                    ConnectionRefusedError, ConnectionDone, ConnectError, \
                                    ConnectionLost
 from twisted.internet.defer import TimeoutError as UserTimeoutError
+from twisted.web.client import PartialDownloadError
 
 from scrapy import log
-from scrapy.core.exceptions import HttpException
 from scrapy.utils.request import request_fingerprint
+from scrapy.utils.response import response_status_message
 from scrapy.conf import settings
 
 class RetryMiddleware(object):
 
     EXCEPTIONS_TO_RETRY = (ServerTimeoutError, UserTimeoutError, DNSLookupError,
                            ConnectionRefusedError, ConnectionDone, ConnectError,
-                           ConnectionLost)
+                           ConnectionLost, PartialDownloadError)
 
     def __init__(self):
         self.max_retry_times = settings.getint('RETRY_TIMES')
         self.retry_http_codes = map(int, settings.getlist('RETRY_HTTP_CODES'))
 
+    def process_response(self, request, response, spider):
+        if response.status in self.retry_http_codes:
+            reason = response_status_message(response.status)
+            return self._retry(request, reason, spider) or response
+        return response
+
     def process_exception(self, request, exception, spider):
-        if isinstance(exception, self.EXCEPTIONS_TO_RETRY) \
-                or (isinstance(exception, HttpException) \
-                        and (int(exception.status) in self.retry_http_codes)):
+        if isinstance(exception, self.EXCEPTIONS_TO_RETRY):
+            return self._retry(request, exception, spider)
 
-            retries = request.meta.get('retry_times', 0) + 1
+    def _retry(self, request, reason, spider):
+        retries = request.meta.get('retry_times', 0) + 1
 
-            if retries <= self.max_retry_times:
-                log.msg("Retrying %s (failed %d times): %s" % (request, retries, exception),
-                        domain=spider.domain_name, level=log.DEBUG)
-                retryreq = request.copy()
-                retryreq.meta['retry_times'] = retries
-                retryreq.dont_filter = True
-                return retryreq
-            else:
-                log.msg("Discarding %s (failed %d times): %s" % (request, retries, exception),
-                        domain=spider.domain_name, level=log.DEBUG)
+        if retries <= self.max_retry_times:
+            log.msg("Retrying %s (failed %d times): %s" % (request, retries, reason),
+                    domain=spider.domain_name, level=log.DEBUG)
+            retryreq = request.copy()
+            retryreq.meta['retry_times'] = retries
+            retryreq.dont_filter = True
+            return retryreq
+        else:
+            log.msg("Discarding %s (failed %d times): %s" % (request, retries, reason),
+                    domain=spider.domain_name, level=log.DEBUG)
 

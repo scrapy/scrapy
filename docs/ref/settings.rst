@@ -265,7 +265,7 @@ Default::
     }
 
 The default headers used for Scrapy HTTP Requests. They're populated in the
-DefaultHeadersMiddleware.
+:class:`~scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware`.
 
 .. setting:: DEFAULT_SPIDER
 
@@ -669,6 +669,27 @@ Default: ``Not Defined``
 The name of the current project. It matches the project module name as created
 by ``startproject`` command, and is only defined by project settings file.
 
+.. setting:: REDIRECT_MAX_TIMES
+
+REDIRECT_MAX_TIMES
+------------------
+
+Default: ``20``
+
+Defines the maximun times a request can be redirected. After this maximun the
+request's response is returned as is. We used Firefox default value for the
+same task.
+
+.. setting:: REDIRECT_MAX_METAREFRESH_DELAY
+
+REDIRECT_MAX_METAREFRESH_DELAY
+------------------------------
+
+Default: ``100``
+
+Some sites use meta-refresh for redirecting to a session expired page, so we
+restrict automatic redirection to a maximum delay (in seconds)
+
 .. setting:: REQUESTS_QUEUE_SIZE
 
 REQUESTS_PER_DOMAIN
@@ -901,7 +922,7 @@ The default User-Agent to use when crawling, unless overrided.
 WEBCONSOLE_ENABLED
 ------------------
 
-Default: ``"%s/%s" % (BOT_NAME, BOT_VERSION)``
+Default: True
 
 A boolean which specifies if the web management console will be enabled
 (provided its extension is also enabled).

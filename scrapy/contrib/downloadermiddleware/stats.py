@@ -1,4 +1,4 @@
-from scrapy.core.exceptions import HttpException, NotConfigured
+from scrapy.core.exceptions import NotConfigured
 from scrapy.stats import stats
 from scrapy.conf import settings
 
@@ -18,7 +18,7 @@ class DownloaderStats(object):
     def __init__(self):
         if not settings.getbool('DOWNLOADER_STATS'):
             raise NotConfigured
-            
+
     def process_request(self, request, spider):
         stats.incpath('_global/downloader/request_count')
         stats.incpath('%s/downloader/request_count' % spider.domain_name)
@@ -30,14 +30,12 @@ class DownloaderStats(object):
     def process_response(self, request, response, spider):
         self._inc_response_count(response, spider.domain_name)
         return response
-        
+
     def process_exception(self, request, exception, spider):
         ex_class = "%s.%s" % (exception.__class__.__module__, exception.__class__.__name__)
         stats.incpath('_global/downloader/exception_count')
         stats.incpath('%s/downloader/exception_count' % spider.domain_name)
         stats.incpath('%s/downloader/exception_type_count/%s' % (spider.domain_name, ex_class))
-        if isinstance(exception, HttpException):
-            self._inc_response_count(exception.response, spider.domain_name)
 
     def _inc_response_count(self, response, domain):
         stats.incpath('_global/downloader/response_count')

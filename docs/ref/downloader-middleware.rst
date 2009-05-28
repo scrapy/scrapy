@@ -4,10 +4,13 @@
 Built-in downloader middleware reference
 ========================================
 
-This document explains all downloader middleware components that come with
+This page describes all downloader middleware components that come with
 Scrapy. For information on how to use them and how to write your own downloader
 middleware, see the :ref:`downloader middleware usage guide
 <topics-downloader-middleware>`.
+
+For a list of the components enabled by default (and their orders) see the
+:setting:`DOWNLOADER_MIDDLEWARES_BASE` setting.
 
 Available downloader middlewares
 ================================
