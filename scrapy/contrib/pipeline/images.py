@@ -11,7 +11,6 @@ from scrapy import log
 from scrapy.stats import stats
 from scrapy.utils.misc import md5sum
 from scrapy.core.exceptions import DropItem, NotConfigured
-from scrapy.core.exceptions import HttpException, IgnoreRequest
 from scrapy.conf import settings
 from scrapy.contrib.pipeline.media import MediaPipeline
 
@@ -105,6 +104,9 @@ class BaseImagesPipeline(MediaPipeline):
 
     def media_to_download(self, request, info):
         def _onsuccess(result):
+            if not result:
+                return # returning None force download
+
             last_modified = result.get('last_modified', None)
             if not last_modified:
                 return # returning None force download

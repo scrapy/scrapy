@@ -1,4 +1,4 @@
-from scrapy.core.exceptions import HttpException
+from scrapy.core.exceptions import IgnoreRequest
 from scrapy.utils.response import response_status_message
 
 class ErrorPagesMiddleware(object):
@@ -13,5 +13,5 @@ class ErrorPagesMiddleware(object):
         if 200 <= status < 300 or status in getattr(spider, 'handle_httpstatus_list', []):
             return response
         else:
-            raise HttpException(status, None, response)
+            raise IgnoreRequest(response_status_message(status))
 
