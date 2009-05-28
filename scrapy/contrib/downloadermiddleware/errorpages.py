@@ -1,3 +1,5 @@
+import warnings
+
 from scrapy.core.exceptions import IgnoreRequest
 from scrapy.utils.response import response_status_message
 
@@ -7,6 +9,10 @@ class ErrorPagesMiddleware(object):
 
     TODO: move this mw to spidermiddleware and remove me
     """
+
+    def __init__(self):
+        warnings.warn("scrapy.contrib.downloadermiddleware.errorpages.ErrorPagesMiddleware downloader middleware is deprecated - use scrapy.contrib.spidermiddleware.httperror.HttpErrorMiddleware spider middleware instead",
+            DeprecationWarning, stacklevel=2)
 
     def process_response(self, request, response, spider):
         status = response.status
