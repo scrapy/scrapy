@@ -325,7 +325,6 @@ Default::
 
     {
         'scrapy.contrib.downloadermiddleware.robotstxt.RobotsTxtMiddleware': 100,
-        'scrapy.contrib.downloadermiddleware.errorpages.ErrorPagesMiddleware': 200,
         'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware': 300,
         'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': 400,
         'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware': 500,
@@ -805,6 +804,7 @@ SPIDER_MIDDLEWARES_BASE
 Default::
 
     {
+        'scrapy.contrib.spidermiddleware.httperror.HttpErrorMiddleware': 50,
         'scrapy.contrib.itemsampler.ItemSamplerMiddleware': 100,
         'scrapy.contrib.spidermiddleware.limit.RequestLimitMiddleware': 200,
         'scrapy.contrib.spidermiddleware.restrict.RestrictMiddleware': 300,
