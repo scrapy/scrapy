@@ -59,11 +59,12 @@ class S3ImagesPipeline(BaseImagesPipeline):
 
     def stat_key(self, key, info):
         def _onsuccess(response):
-            checksum = response.headers['Etag'].strip('"')
-            last_modified = response.headers['Last-Modified']
-            modified_tuple = rfc822.parsedate_tz(last_modified)
-            modified_stamp = int(rfc822.mktime_tz(modified_tuple))
-            return {'checksum': checksum, 'last_modified': modified_stamp}
+            if response.status == 200:
+                checksum = response.headers['Etag'].strip('"')
+                last_modified = response.headers['Last-Modified']
+                modified_tuple = rfc822.parsedate_tz(last_modified)
+                modified_stamp = int(rfc822.mktime_tz(modified_tuple))
+                return {'checksum': checksum, 'last_modified': modified_stamp}
 
         req = self.s3_request(key, method='HEAD')
         dfd = self.s3_download(req, info)
