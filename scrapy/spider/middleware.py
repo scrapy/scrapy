@@ -14,10 +14,7 @@ from scrapy.utils.middleware import build_middleware_list
 from scrapy.conf import settings
 
 def _isiterable(possible_iterator):
-    try:
-        return iter(possible_iterator)
-    except TypeError:
-        return None
+    return hasattr(possible_iterator, '__iter__')
 
 class SpiderMiddlewareManager(object):
     def __init__(self):
@@ -63,16 +60,7 @@ class SpiderMiddlewareManager(object):
                     (fname(method), type(result))
                 if result is not None:
                     return result
-            return self.call(request=request, response=response, spider=spider)
-
-
-        def process_spider_output(result):
-            for method in self.result_middleware:
-                result = method(response=response, result=result, spider=spider)
-                assert _isiterable(result), \
-                    'Middleware %s must returns an iterable object, got %s ' % \
-                    (fname(method), type(result))
-            return result
+            return self.call(request, response, spider)
 
         def process_spider_exception(_failure):
             exception = _failure.value
@@ -85,12 +73,20 @@ class SpiderMiddlewareManager(object):
                     return result
             return _failure
 
+        def process_spider_output(result):
+            for method in self.result_middleware:
+                result = method(response=response, result=result, spider=spider)
+                assert _isiterable(result), \
+                    'Middleware %s must returns an iterable object, got %s ' % \
+                    (fname(method), type(result))
+            return result
+
         dfd = mustbe_deferred(process_spider_input, response)
         dfd.addErrback(process_spider_exception)
         dfd.addCallback(process_spider_output)
         return dfd
 
-    def call(self, request, response, spider):
-        defer_result(response).chainDeferred(request.deferred)
+    def call(self, request, result, spider):
+        defer_result(result).chainDeferred(request.deferred)
         request.deferred.addCallback(arg_to_iter)
         return request.deferred
