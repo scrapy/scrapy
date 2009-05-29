@@ -11,6 +11,7 @@ from scrapy.core.exceptions import NotConfigured
 from scrapy.utils.misc import load_object, arg_to_iter
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy.utils.middleware import build_middleware_list
+from scrapy.http import Request
 from scrapy.conf import settings
 
 def _isiterable(possible_iterator):
@@ -79,7 +80,8 @@ class SpiderMiddlewareManager(object):
                 assert _isiterable(result), \
                     'Middleware %s must returns an iterable object, got %s ' % \
                     (fname(method), type(result))
-            return result
+
+            return self._validate_output(request, result)
 
         dfd = mustbe_deferred(process_spider_input, response)
         dfd.addErrback(process_spider_exception)
@@ -90,3 +92,16 @@ class SpiderMiddlewareManager(object):
         defer_result(result).chainDeferred(request.deferred)
         request.deferred.addCallback(arg_to_iter)
         return request.deferred
+
+    def _validate_output(self, request, result):
+        """Every request returned by spiders must be instanciate with a callback"""
+        for r in result:
+            if isinstance(r, Request) and not r.deferred.callbacks:
+                log.msg('Ignoring %s returned from spider while processing %s: ' \
+                        'Request has no callback, try adding callback=self.parse ' \
+                        'argument when instanciating Request objects inside your spiders' \
+                        % (r, request), level=log.WARNING)
+                continue
+            yield r
+
+
