@@ -196,8 +196,7 @@ class RobustScrapedItem(ScrapedItem):
 
     def validate(self):
         """Method used to validate item attributes data"""
-        if not self.guid:
-            raise ValidationError('A guid is required')
+        raise NotImplemented
 
     @property
     def version(self):
