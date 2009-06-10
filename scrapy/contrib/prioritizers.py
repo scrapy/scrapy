@@ -11,7 +11,10 @@ class LessScrapedPrioritizer(object):
     2. if spider was scraped before, then the less recently the spider
        has been scraped, the more priority it has
     """
-    def __init__(self, elements):
+    def __init__(self):
+        # FIXME this prioritizer must be refactored
+        raise NotImplemented
+
         if not settings['SCRAPING_DB']:
             raise NotConfigured("SCRAPING_DB setting is required")
 

@@ -63,32 +63,11 @@ class BaseSpider(object):
         """
         log.msg(message, domain=self.domain_name, level=level)
 
-    def start_requests(self, urls=None):
-        """Return the requests to crawl when this spider is opened for
-        scraping. urls contain the urls passed from command line (if any),
-        otherwise None if the entire domain was requested for scraping.
+    def start_requests(self):
+        return [self.make_request_from_url(url) for url in self.start_urls]
 
-        This function must return a list of Requests to be crawled, based on
-        the given urls. The Requests must include a callback function which
-        must return a list of:
-
-        * Request's for further crawling
-        * ScrapedItem's for processing
-        * Both
-
-        Or None (which will be treated the same way as an empty list)
-
-        When a Request object is returned, the Request is scheduled, then
-        downloaded and finally its results is handled to the Request callback.
-
-        When a ScrapedItem is returned, it is passed to the item pipeline.
-
-        Unless this method is overrided, the start_urls attribute will be used
-        to create the initial requests (when urls is None).
-        """
-        if urls is None:
-            urls = self.start_urls
-        return [Request(url, callback=self.parse, dont_filter=True) for url in urls]
+    def make_request_from_url(self, url):
+        return Request(url, callback=self.parse, dont_filter=True)
 
     def parse(self, response):
         """This is the default callback function used to parse the start

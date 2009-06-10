@@ -39,20 +39,23 @@ method ``parse`` for each of the resulting responses.
     listed here. The subsequent URLs will be generated successively from data
     contained in the start URLs.
 
-.. method:: BaseSpider.start_requests(urls=None)
+.. method:: BaseSpider.start_requests()
 
-    A method that receives a list of URLs to scrape (for that spider) and
-    returns a list of Requests for those urls.
+    This method must return an iterable with the first Requests to crawl for
+    this spider. 
+    
+    This is the method called by Scrapy when the spider is opened for scraping
+    when no particular URLs are specified. If particular URLs are specified,
+    the :meth:`BaseSpider.make_request_from_url` is used instead to create the
+    Requests. This method is also called only once from Scrapy, so it's safe to
+    implement it as a generator.
 
-    If urls is `None` it will use the :attr:`BaseSpider.start_urls` attribute.
+    The default implementation uses :meth:`BaseSpider.make_request_from_url` to
+    generate Requests for each url in :attr:`start_urls`.
 
-    Unless overriden, the Requests returned by this method will use the
-    :meth:`BaseSpider.parse` method as their callback function.
-
-    This is also the first method called by Scrapy when it opens a spider for
-    scraping, so you if you want to change the Requests used to start scraping
-    a domain, this is the method to override. For example, if you need to start
-    by login in using a POST request, you could do::
+    If you want to change the Requests used to start scraping a domain, this is
+    the method to override. For example, if you need to start by login in using
+    a POST request, you could do::
 
         def start_requests(self):
             return [FormRequest("http://www.example.com/login", 
@@ -61,8 +64,18 @@ method ``parse`` for each of the resulting responses.
 
         def logged_in(self, response):
             # here you would extract links to follow and return Requests for
-            # each of them, perhaps with another callback
+            # each of them, with another callback
             pass
+
+.. method:: BaseSpider.make_request_from_url(url)
+
+    A method that receives a URL and returns an :class:`~scrapy.http.Request`
+    object to scrape that URL with this spider. This method is used to
+    construct the initial requests in the :meth:`start_requests` method.
+
+    Unless overridden, this method returns Requests with the :meth:`parse`
+    method as their callback function, and with dont_filter parameter enabled
+    (see :class:`~scrapy.http.Request` class for more info).
 
 .. method:: BaseSpider.parse(response)
 

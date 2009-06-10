@@ -28,13 +28,8 @@ class ExecutionManager(object):
         log.msg("Enabled extensions: %s" % ", ".join(extensions.enabled.iterkeys()))
 
         scheduler = load_object(settings['SCHEDULER'])()
-
         scrapyengine.configure(scheduler=scheduler)
-
-        self.prioritizer_class = load_object(settings['PRIORITIZER'])
-
-        requests = self._parse_args(args)
-        self.priorities = self.prioritizer_class(requests.keys())
+        self.domainprio = load_object(settings['PRIORITIZER'])()
         
     def crawl(self, *args):
         """Schedule the given args for crawling. args is a list of urls or domains"""
@@ -43,7 +38,7 @@ class ExecutionManager(object):
         # schedule initial requets to be scraped at engine start
         for domain in requests or ():
             spider = spiders.fromdomain(domain) 
-            priority = self.priorities.get_priority(domain) 
+            priority = self.domainprio.get_priority(domain)
             for request in requests[domain]:
                 scrapyengine.crawl(request, spider, domain_priority=priority)
 
@@ -71,14 +66,10 @@ class ExecutionManager(object):
             signal.signal(signal.SIGBREAK, signal.SIG_IGN)
 
     def reload_spiders(self):
-        """
-        Reload all enabled spiders except for the ones that are currently
+        """Reload all enabled spiders except for the ones that are currently
         running.
-
         """
         spiders.reload(skip_domains=scrapyengine.open_domains)
-        # reload priorities for the new domains
-        self.priorities = self.prioritizer_class(spiders.asdict(include_disabled=False).keys())
 
     def _install_signals(self):
         def sig_handler_terminate(signalinfo, param):
@@ -122,8 +113,8 @@ class ExecutionManager(object):
         for url in urls:
             spider = spiders.fromurl(url)
             if spider:
-                reqs = spider.start_requests([url])
-                perdomain.setdefault(spider.domain_name, []).extend(reqs)
+                req = spider.make_request_from_url(url)
+                perdomain.setdefault(spider.domain_name, []).append(req)
             else:
                 log.msg('Could not find spider for <%s>' % url, log.ERROR)
 

@@ -17,9 +17,6 @@ class NullPrioritizer(object):
     """
     This prioritizer always return the same priority (1)
     """
-    def __init__(self, elements):
-        pass
-
     def get_priority(self, element):
         return 1
 
@@ -27,19 +24,6 @@ class RandomPrioritizer(object):
     """
     This prioritizer always return a random priority
     """
-    def __init__(self, elements):
-        self.count = len(elements)
-
     def get_priority(self, element):
-        return random.randrange(0, self.count)
+        return random.randrange(0, 1000)
 
-class AlphabeticPrioritizer(object):
-    """
-    This prioritizer priotizes based on the alphabetic order of the element
-    """
-    def __init__(self, elements):
-        self.elements = elements[:]
-        self.elements.sort()
-
-    def get_priority(self, element):
-        return self.elements.index(element)
