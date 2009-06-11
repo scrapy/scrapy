@@ -1,5 +1,5 @@
 """
-This module implements the XmlRpcRequest class which is a more covenient class
+This module implements the XmlRpcRequest class which is a more convenient class
 (that Request) to generate xml-rpc requests.
 
 See documentation in docs/ref/request-response.rst
