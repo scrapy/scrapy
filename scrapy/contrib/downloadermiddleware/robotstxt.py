@@ -44,8 +44,8 @@ class RobotsTxtMiddleware(object):
         else:
             self._parsers[urldomain] = None
             robotsurl = "%s://%s/robots.txt" % parsedurl[0:2]
-            robotsreq = Request(robotsurl)
-            dfd = scrapyengine.schedule(robotsreq, spiders.fromdomain(spiderdomain), priority=self.DOWNLOAD_PRIORITY)
+            robotsreq = Request(robotsurl, priority=self.DOWNLOAD_PRIORITY)
+            dfd = scrapyengine.schedule(robotsreq, spiders.fromdomain(spiderdomain))
             dfd.addCallbacks(callback=self._parse_robots, callbackArgs=[urldomain])
             self._spiderdomains[spiderdomain].add(urldomain)
 

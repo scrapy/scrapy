@@ -122,7 +122,8 @@ class MediaPipeline(object):
         request fingerprint is used as cache key.
 
         """
-        return scrapyengine.schedule(request, info.spider, priority=self.DOWNLOAD_PRIORITY)
+        request.priority = self.DOWNLOAD_PRIORITY
+        return scrapyengine.schedule(request, info.spider)
 
     def media_to_download(self, request, info):
         """ Ongoing request hook pre-cache
