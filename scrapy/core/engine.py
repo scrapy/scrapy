@@ -219,7 +219,7 @@ class ExecutionEngine(object):
     def open_domains(self):
         return self.downloader.sites.keys()
 
-    def crawl(self, request, spider, priority=0, domain_priority=0):
+    def crawl(self, request, spider, domain_priority=0):
         domain = spider.domain_name
 
         def _process(response):
@@ -242,7 +242,7 @@ class ExecutionEngine(object):
                     piped.addBoth(_onpipelinefinish, item)
                 elif isinstance(item, Request):
                     signals.send_catch_log(signal=signals.request_received, sender=self.__class__, request=item, spider=spider, response=response)
-                    self.crawl(request=item, spider=spider, priority=priority)
+                    self.crawl(request=item, spider=spider)
                 elif item is None:
                     pass # may be next time.
                 else:
@@ -276,14 +276,14 @@ class ExecutionEngine(object):
             request.deferred.addErrback(lambda _:None)
             request.deferred.errback(_failure) #TODO: merge into spider middleware.
 
-        schd = self.schedule(request, spider, priority, domain_priority)
+        schd = self.schedule(request, spider, domain_priority)
         schd.addCallbacks(_process, _cleanfailure)
         return schd
 
     def scrape(self, request, response, spider):
         return self.spidermiddleware.scrape(request, response, spider)
 
-    def schedule(self, request, spider, priority=0, domain_priority=0):
+    def schedule(self, request, spider, domain_priority=0):
         domain = spider.domain_name
         if not self.scheduler.domain_is_open(domain):
             if self.debug_mode: 
@@ -291,7 +291,7 @@ class ExecutionEngine(object):
             return self._add_starter(request, spider, domain_priority)
         if self.debug_mode: 
             log.msg('Scheduling %s (now)' % request_info(request), log.DEBUG)
-        schd = self.schedulermiddleware.enqueue_request(domain, request, priority)
+        schd = self.schedulermiddleware.enqueue_request(domain, request)
         self.next_request(spider)
         return schd
 
@@ -343,7 +343,8 @@ class ExecutionEngine(object):
                 return response
             elif isinstance(response, Request):
                 redirected = response # proper alias
-                schd = self.schedule(redirected, spider, priority=self.REDIRECTION_PRIORITY)
+                redirected.priority = self.REDIRECTION_PRIORITY
+                schd = self.schedule(redirected, spider)
                 chain_deferred(schd, redirected.deferred)
                 return schd
 

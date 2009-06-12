@@ -25,7 +25,7 @@ below in :ref:`ref-request-subclasses` and :ref:`ref-response-subclasses`.
 Request objects
 ===============
 
-.. class:: Request(url[, callback, method='GET', body, headers, cookies, meta, encoding='utf-8', dont_filter=False, errback])
+.. class:: Request(url[, callback, method='GET', body, headers, cookies, meta, encoding='utf-8', priority=0.0, dont_filter=False, errback])
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
@@ -80,6 +80,12 @@ Request objects
        This encoding will be used to percent-encode the URL and to convert the
        body to ``str`` (if given as ``unicode``).
     :type encoding: string
+
+    :param priority: the priority of this request (defaults to ``0.0``).
+       The priority is used by the scheduler to define the order used to return
+       requests. It can also be used to feed priorities externally, for
+       example, using an offline long-term scheduler.
+    :type encoding: int or float
 
     :param dont_filter: indicates that this request should not be filtered by
        the scheduler. This is used when you want to perform an identical

@@ -44,16 +44,16 @@ class SchedulerMiddlewareManager(object):
         log.msg("Enabled scheduler middlewares: %s" % ", ".join([type(m).__name__ for m in mws]))
         self.loaded = True
 
-    def enqueue_request(self, domain, request, priority):
+    def enqueue_request(self, domain, request):
         def _enqueue_request(request):
             for method in self.mw_enqueue_request:
-                result = method(domain=domain, request=request, priority=priority)
+                result = method(domain=domain, request=request)
                 assert result is None or isinstance(result, (Response, Deferred)), \
                         'Middleware %s.enqueue_request must return None, Response or Deferred, got %s' % \
                         (method.im_self.__class__.__name__, result.__class__.__name__)
                 if result:
                     return result
-            return self.scheduler.enqueue_request(domain=domain, request=request, priority=priority)
+            return self.scheduler.enqueue_request(domain=domain, request=request)
 
         deferred = mustbe_deferred(_enqueue_request, request)
         return deferred

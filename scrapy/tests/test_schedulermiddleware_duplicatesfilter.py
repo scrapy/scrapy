@@ -1,7 +1,6 @@
 import unittest
 
-from scrapy.spider import spiders
-from scrapy.http import Request, Response
+from scrapy.http import Request
 from scrapy.core.exceptions import IgnoreRequest
 from scrapy.contrib.schedulermiddleware.duplicatesfilter import DuplicatesFilterMiddleware
 from scrapy.dupefilter import dupefilter
@@ -25,7 +24,7 @@ class DuplicatesFilterMiddlewareTest(unittest.TestCase):
         r3 = Request('http://scrapytest.org/2')
         r4 = Request('http://scrapytest.org/1')
 
-        assert not mw.enqueue_request(domain, r1, 1)
-        assert not mw.enqueue_request(domain, r2, 1)
-        self.assertRaises(IgnoreRequest, mw.enqueue_request, domain, r3, 1)
-        self.assertRaises(IgnoreRequest, mw.enqueue_request, domain, r4, 1)
+        assert not mw.enqueue_request(domain, r1)
+        assert not mw.enqueue_request(domain, r2)
+        self.assertRaises(IgnoreRequest, mw.enqueue_request, domain, r3)
+        self.assertRaises(IgnoreRequest, mw.enqueue_request, domain, r4)

@@ -5,7 +5,6 @@ requests in Scrapy.
 See documentation in docs/ref/request-response.rst
 """
 
-import urllib
 import copy
 
 from twisted.internet import defer
@@ -13,18 +12,18 @@ from twisted.internet import defer
 from scrapy.http.url import Url
 from scrapy.http.headers import Headers
 from scrapy.utils.url import safe_url_string
-from scrapy.utils.defer import chain_deferred
 
 class Request(object):
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None, 
-                 cookies=None, meta=None, encoding='utf-8', dont_filter=False,
-                 errback=None):
+                 cookies=None, meta=None, encoding='utf-8', priority=0.0,
+                 dont_filter=False, errback=None):
 
         self._encoding = encoding  # this one has to be set first
         self.method = method.upper()
         self.set_url(url)
         self.set_body(body)
+        self.priority = priority
 
         if callable(callback):
             callback = defer.Deferred().addCallbacks(callback, errback)

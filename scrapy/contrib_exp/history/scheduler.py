@@ -33,7 +33,7 @@ class RulesScheduler(Scheduler):
     # How often we should process pages that have not changed (need to include depth)
     MIN_PROCESS_UNCHANGED_DAYS = 12
 
-    def enqueue_request(self, domain, request, priority=1):
+    def enqueue_request(self, domain, request):
         """Add a page to be scraped for a domain that is currently being scraped.
 
         The url will only be added if we have not checked it already within
@@ -55,7 +55,7 @@ class RulesScheduler(Scheduler):
                     return
             # put the version in the pending pages to avoid querying DB again
             record = (request, version, now)
-            self.pending_requests[domain].put(record, priority)
+            self.pending_requests[domain].push(record, request.priority)
 
     def next_request(self, domain):
         """Get the next page from the superclass. This will add a callback

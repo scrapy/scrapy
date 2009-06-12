@@ -62,7 +62,7 @@ class Scheduler(object) :
     def next_domain(self) :
         """Return next domain available to scrape and remove it from available domains queue"""
         if self.pending_domains_count:
-            domain, priority = self.domains_queue.pop()
+            domain = self.domains_queue.pop()[0]
             if self.pending_domains_count[domain] == 1:
                 del self.pending_domains_count[domain]
             else:
@@ -90,10 +90,10 @@ class Scheduler(object) :
         Priority = PriorityStack if self.dfo else PriorityQueue
         self.pending_requests[domain] = Priority()
 
-    def enqueue_request(self, domain, request, priority=0):
+    def enqueue_request(self, domain, request):
         """Enqueue a request to be downloaded for a domain that is currently being scraped."""
         dfd = defer.Deferred()
-        self.pending_requests[domain].push((request, dfd), priority)
+        self.pending_requests[domain].push((request, dfd), request.priority)
         return dfd
 
     def next_request(self, domain):
@@ -107,9 +107,8 @@ class Scheduler(object) :
 
         """
         try:
-            # The second value is the request scheduled priority, returns the first one.
-            return self.pending_requests[domain].pop()[0]
-        except (KeyError, IndexError), ex:
+            return self.pending_requests[domain].pop()[0] # [1] is priority
+        except (KeyError, IndexError):
             return (None, None)
 
     def close_domain(self, domain) :
