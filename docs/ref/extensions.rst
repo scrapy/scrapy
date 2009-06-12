@@ -192,6 +192,18 @@ one.
 
 .. _BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/documentation.html
 
+StatsMailer extension
+---------------------
+
+.. module:: scrapy.contrib.statsmailer
+   :synopsis: StatsMailer extension
+
+.. class:: scrapy.contrib.statsmailer.StatsMailer
+
+This simple extension can be used to send a notification email every time a
+domain has finished scraping, including the Scrapy stats collected. The email
+will be sent to all recipients specified in the :setting:`STATSMAILER_RCPTS`
+setting.
 
 Web console extensions
 ======================

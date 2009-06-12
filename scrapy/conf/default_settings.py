@@ -189,6 +189,8 @@ STATS_DEBUG = False
 STATS_WSPORT = 8089
 STATS_WSTIMEOUT = 15
 
+STATSMAILER_RCPTS = []
+
 TEMPLATES_DIR = abspath(join(dirname(__file__), '..', 'templates'))
 
 URLLENGTH_LIMIT = 2083

@@ -861,6 +861,16 @@ Default: ``True``
 
 Enable stats collection.
 
+.. setting:: STATSMAILER_RCPTS
+
+STATSMAILER_RCPTS
+-----------------
+
+Default: ``[]`` (empty list)
+
+Send Scrapy stats after domains finish scrapy. See
+:class:`~scrapy.contrib.statsmailer.StatsMailer` for more info.
+
 .. setting:: TELNETCONSOLE_ENABLED
 
 TELNETCONSOLE_ENABLED
