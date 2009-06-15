@@ -28,8 +28,7 @@ class ExecutionManager(object):
         self.control_reactor = control_reactor
         if control_reactor:
             self._install_signals()
-        else:
-            reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
+        reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
 
         if not log.started:
             log.start()

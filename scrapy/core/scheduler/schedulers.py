@@ -4,89 +4,53 @@ The Scrapy Scheduler
 
 from twisted.internet import defer
 
-from scrapy import log
 from scrapy.utils.datatypes import PriorityQueue, PriorityStack
 from scrapy.conf import settings
 
-
-class Scheduler(object) :
+class Scheduler(object):
     """The scheduler decides what to scrape next. In other words, it defines the
-    crawling order.
-
-    The scheduler schedules websites and requests to be scraped.  Individual
-    web pages that are to be scraped are batched up into a "run" for a website.
-
-    As the domain is being scraped, pages that are discovered are added to the
-    scheduler.
-
-    Typical usage:
-
-        * next_domain() called each time a domain slot is freed, and return
-        next domain to be scraped.
-
-        * open_domain() called to commence scraping a website
-
-        * enqueue_request() called multiple times to enqueue new requests to be downloaded
-
-        * next_request() called multiple times when there is capacity to download requests
-
-        * close_domain() called when there are no more pages for a website
-
-    Notes:
-
-        1. The order in which you get back the list of pages to scrape is not
-        necesarily the order you put them in.
-
-    ``pending_domains_count`` contains the names of all domains that are to be scheduled.
+    crawling order. The scheduler schedules websites and requests to be
+    scraped. Individual web pages that are to be scraped are batched up into a
+    "run" for a website. New pages discovered through the crawling process are
+    also added to the scheduler.
     """
 
     def __init__(self):
-        self.pending_domains_count = {}
+        self.pending_domains = set()
         self.domains_queue = PriorityQueue()
         self.pending_requests = {}
-        self.dfo = settings.get('SCHEDULER_ORDER', '').upper() == 'DFO'
+        self.dfo = settings['SCHEDULER_ORDER'].upper() == 'DFO'
 
     def domain_is_open(self, domain):
         """Check if scheduler's resources were allocated for a domain"""
         return domain in self.pending_requests
 
-    def is_pending(self, domain):
+    def domain_is_pending(self, domain):
         """Check if a domain is waiting to be scraped in domain's queue."""
-        return domain in self.pending_domains_count
+        return domain in self.pending_domains
 
-    def domain_has_pending(self, domain):
+    def domain_has_pending_requests(self, domain):
         """Check if are there pending requests for a domain"""
         if domain in self.pending_requests:
             return bool(self.pending_requests[domain])
 
     def next_domain(self) :
         """Return next domain available to scrape and remove it from available domains queue"""
-        if self.pending_domains_count:
+        if self.pending_domains:
             domain = self.domains_queue.pop()[0]
-            if self.pending_domains_count[domain] == 1:
-                del self.pending_domains_count[domain]
-            else:
-                self.pending_domains_count[domain] -= 1
+            self.pending_domains.remove(domain)
             return domain
-        return None
 
     def add_domain(self, domain, priority=0):
-        """This functions schedules a new domain to be scraped, with the given priority.
-
-        It doesn't check if the domain is already scheduled.
-
-        A domain can be scheduled twice, either with the same or with different
-        priority.
-
+        """Add a new domain to be scraped, with the given priority. If the
+        domain is already scheduled, it does nothing.
         """
-        self.domains_queue.push(domain, priority)
-        if domain not in self.pending_domains_count:
-            self.pending_domains_count[domain] = 1
-        else:
-            self.pending_domains_count[domain] += 1
+        if domain not in self.pending_domains:
+            self.domains_queue.push(domain, priority)
+            self.pending_domains.add(domain)
 
     def open_domain(self, domain):
-        """Allocates resources for maintaining a schedule for domain."""
+        """Allocates scheduling resources for the given domain"""
         Priority = PriorityStack if self.dfo else PriorityQueue
         self.pending_requests[domain] = Priority()
 
@@ -104,24 +68,17 @@ class Scheduler(object) :
 
         ``(None, None)`` should be returned if there aren't requests pending
         for the domain.
-
         """
         try:
             return self.pending_requests[domain].pop()[0] # [1] is priority
         except (KeyError, IndexError):
             return (None, None)
 
-    def close_domain(self, domain) :
-        """Called once we are finished scraping a domain.
-
-        The scheduler will free any resources associated with the domain.
-
+    def close_domain(self, domain):
+        """Called when a spider has finished scraping to free any resources
+        associated with the domain.
         """
-        try :
-            del self.pending_requests[domain]
-        except Exception, inst:
-            msg = "Could not clear pending pages for domain %s, %s" % (domain, inst)
-            log.msg(msg, level=log.WARNING)
+        self.pending_requests.pop(domain, None)
 
     def remove_pending_domain(self, domain):
         """
@@ -135,8 +92,8 @@ class Scheduler(object) :
         need to call close_domain for open domains.
 
         """
-        if not self.domain_is_open(domain):
-            return self.pending_domains_count.pop(domain, 0)
+        if domain in self.pending_domains and not self.domain_is_open(domain):
+            return self.pending_domains.remove(domain)
 
     def is_idle(self):
         """Checks if the schedulers has any request pendings"""
