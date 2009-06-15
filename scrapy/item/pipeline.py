@@ -51,10 +51,10 @@ class ItemPipelineManager(object):
 
         This pipeline is configurable with the ITEM_PIPELINES setting
         """
-        if not self.pipeline:
+        domain = spider.domain_name
+        if not self.pipeline or domain not in self.domaininfo:
             return defer_succeed(item)
 
-        domain = spider.domain_name
         pipeline = self.pipeline[:]
         current_stage = pipeline[0]
         info = self.domaininfo[domain]
