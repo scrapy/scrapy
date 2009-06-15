@@ -117,7 +117,7 @@ class Cache(object):
         if expiration_secs >= 0:
             expiration_date = metadata['timestamp'] + datetime.timedelta(seconds=expiration_secs)
             if datetime.datetime.utcnow() > expiration_date:
-                log.msg('dropping old cached response from %s' % metadata['timestamp'], level=log.DEBUG)
+                log.msg('dropping old cached response from %s' % metadata['timestamp'], level=log.DEBUG, domain=domain)
                 return None
         return metadata
 
