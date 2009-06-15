@@ -3,6 +3,7 @@ from __future__ import with_statement
 import sys
 import os
 import optparse
+import cProfile
 
 import scrapy
 from scrapy import log
@@ -134,10 +135,9 @@ def execute_with_args(argv):
 
     cmd.process_options(args, opts)
     spiders.load()
-    log.start() # start logging
+    log.start()
     if opts.profile:
         log.msg("Profiling enabled. Analyze later with: python -m pstats %s" % opts.profile)
-        import cProfile
         loc = locals()
         p = cProfile.Profile()
         p.runctx('ret = cmd.run(args, opts)', globals(), loc)
