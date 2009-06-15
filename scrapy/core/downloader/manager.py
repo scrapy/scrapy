@@ -73,7 +73,10 @@ class Downloader(object):
         domain = spider.domain_name
         site = self.sites[domain]
         if not site or site.closed:
-            raise IgnoreRequest('Unable to fetch (domain already closed): %s' % request)
+            if self.debug_mode:
+                raise IgnoreRequest('Unable to fetch (domain already closed): %s' % request)
+            else:
+                raise IgnoreRequest
 
         site.active.add(request)
         def _deactivate(_):
