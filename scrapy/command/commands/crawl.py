@@ -57,4 +57,4 @@ class Command(ScrapyCommand):
                 log.msg('Cannot create any requests with the provided arguments', log.ERROR)
                 return
 
-        scrapymanager.runonce(*args, **opts.__dict__)
+        scrapymanager.runonce(*args)

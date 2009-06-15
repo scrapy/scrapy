@@ -1,5 +1,7 @@
 import signal
 
+from twisted.internet import reactor
+
 from scrapy.extension import extensions
 from scrapy import log
 from scrapy.http import Request
@@ -20,11 +22,21 @@ class ExecutionManager(object):
     def __init__(self):
         self.interrupted = False
         self.configured = False
+        self.control_reactor = True
 
-    def configure(self, *args, **opts):
-        self._install_signals()
+    def configure(self, control_reactor=True):
+        self.control_reactor = control_reactor
+        if control_reactor:
+            self._install_signals()
+        else:
+            reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
 
-        extensions.load()
+        if not log.started:
+            log.start()
+        if not extensions.loaded:
+            extensions.load()
+        if not spiders.loaded:
+            spiders.load()
         log.msg("Enabled extensions: %s" % ", ".join(extensions.enabled.iterkeys()))
 
         scheduler = load_object(settings['SCHEDULER'])()
@@ -35,35 +47,37 @@ class ExecutionManager(object):
         """Schedule the given args for crawling. args is a list of urls or domains"""
 
         requests = self._parse_args(args)
-        # schedule initial requets to be scraped at engine start
+        # schedule initial requests to be scraped at engine start
         for domain in requests or ():
             spider = spiders.fromdomain(domain) 
             priority = self.domainprio.get_priority(domain)
             for request in requests[domain]:
                 scrapyengine.crawl(request, spider, domain_priority=priority)
 
-    def runonce(self, *args, **opts):
+    def runonce(self, *args):
         """Run the engine until it finishes scraping all domains and then exit"""
-        self.configure(*args, **opts)
+        self.configure()
         self.crawl(*args)
         scrapyengine.start()
 
-    def start(self, **opts):
+    def start(self, control_reactor=True):
         """Start the scrapy server, without scheduling any domains"""
-        self.configure(**opts)
+        self.configure(control_reactor)
         scrapyengine.keep_alive = True
-        scrapyengine.start()# blocking call
-        self.stop()
+        scrapyengine.start(control_reactor=control_reactor)
+        if control_reactor:
+            self.stop()
 
     def stop(self):
         """Stop the scrapy server, shutting down the execution engine"""
         self.interrupted = True
         scrapyengine.stop()
         log.log_level = -999 # disable logging
-        signal.signal(signal.SIGTERM, signal.SIG_IGN)
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
-        if hasattr(signal, "SIGBREAK"):
-            signal.signal(signal.SIGBREAK, signal.SIG_IGN)
+        if self.control_reactor:
+            signal.signal(signal.SIGTERM, signal.SIG_IGN)
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+            if hasattr(signal, "SIGBREAK"):
+                signal.signal(signal.SIGBREAK, signal.SIG_IGN)
 
     def reload_spiders(self):
         """Reload all enabled spiders except for the ones that are currently

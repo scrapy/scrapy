@@ -13,4 +13,4 @@ class Command(ScrapyCommand):
         ScrapyCommand.add_options(self, parser)
 
     def run(self, args, opts):
-        scrapymanager.start(*args, **opts.__dict__)
+        scrapymanager.start(*args)
