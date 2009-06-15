@@ -34,18 +34,20 @@ def start(logfile=None, loglevel=None, log_stdout=None):
     """Initialize and start logging facility"""
     global log_level, started
 
+    # set loglevel
+    loglevel = loglevel or settings['LOGLEVEL']
+    log_level = globals()[loglevel] if loglevel else DEBUG
     if started or not settings.getbool('LOG_ENABLED'):
         return
-
-    logfile = logfile or settings['LOGFILE']
-    loglevel = loglevel or settings['LOGLEVEL']
-    log_stdout = log_stdout or settings.getbool('LOG_STDOUT')
-
-    file = open(logfile, 'a') if logfile else sys.stderr
-    level = int(getattr(sys.modules[__name__], loglevel)) if loglevel else DEBUG
-    log.startLogging(file, setStdout=log_stdout)
-    log_level = level
     started = True
+
+    # set log observer
+    if log.defaultObserver: # check twisted log not already started
+        logfile = logfile or settings['LOGFILE']
+        log_stdout = log_stdout or settings.getbool('LOG_STDOUT')
+
+        file = open(logfile, 'a') if logfile else sys.stderr
+        log.startLogging(file, setStdout=log_stdout)
 
 def msg(message, level=INFO, component=BOT_NAME, domain=None):
     """Log message according to the level"""
