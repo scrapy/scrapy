@@ -93,5 +93,5 @@ setup(
     packages = packages,
     cmdclass = cmdclasses,
     data_files = data_files,
-    scripts = ['scrapy/bin/scrapy-admin.py'],
+    scripts = ['bin/scrapy-admin.py'],
 )
