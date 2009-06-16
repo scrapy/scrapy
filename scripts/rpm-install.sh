@@ -3,7 +3,7 @@
 # This file becomes the install section of the generated spec file.
 #
 
-python2.5 setup.py install --root=${RPM_BUILD_ROOT} --record="INSTALLED_FILES"
+python setup.py install --root=${RPM_BUILD_ROOT} --record="INSTALLED_FILES"
 
 # Sort the filelist so that directories appear before files. This avoids
 # duplicate filename problems on some systems.
