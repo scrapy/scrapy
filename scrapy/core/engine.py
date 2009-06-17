@@ -320,12 +320,11 @@ class ExecutionEngine(object):
 
     def _run_starters(self, spider):
         domain = spider.domain_name
-        starters = self.starters.get(domain, [])
+        starters = self.starters.pop(domain, [])
         while starters:
             request, deferred = starters.pop(0)
             schd = self.schedule(request, spider)
             chain_deferred(schd, deferred)
-        del self.starters[domain]
 
     def download(self, request, spider):
         if self.debug_mode:
