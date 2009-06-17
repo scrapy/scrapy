@@ -26,7 +26,7 @@ class DecompressionMiddleware(object):
 
     def is_tar(self, response):
         try:
-            tar_file = tarfile.open(name='tar.tmp', fileobj=self.archive)
+            tar_file = tarfile.open(fileobj=self.archive)
         except tarfile.ReadError:
             return False
         if tar_file.members:
