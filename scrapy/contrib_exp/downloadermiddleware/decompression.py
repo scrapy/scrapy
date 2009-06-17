@@ -7,6 +7,7 @@ import tarfile
 import gzip
 import bz2
 from cStringIO import StringIO
+from tempfile import mktemp
 
 from scrapy import log
 from scrapy.http import Response
@@ -26,7 +27,7 @@ class DecompressionMiddleware(object):
 
     def is_tar(self, response):
         try:
-            tar_file = tarfile.open(fileobj=self.archive)
+            tar_file = tarfile.open(name=mktemp(), fileobj=self.archive)
         except tarfile.ReadError:
             return False
         if tar_file.members:
