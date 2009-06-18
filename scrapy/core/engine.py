@@ -7,6 +7,7 @@ For more information see docs/topics/architecture.rst
 from datetime import datetime
 
 from twisted.internet import defer, reactor, task
+from twisted.internet.error import CannotListenError
 from twisted.python.failure import Failure
 from pydispatch import dispatcher
 
@@ -126,7 +127,10 @@ class ExecutionEngine(object):
             for tsk, interval, now in self.tasks:
                 tsk.start(interval, now)
             for args, kwargs in [t for t in self.ports if isinstance(t, tuple)]:
-                reactor.listenTCP(*args, **kwargs)
+                try:
+                    reactor.listenTCP(*args, **kwargs)
+                except CannotListenError:
+                    log.msg("Cannot listen on TCP port %d" % args[0], level=log.ERROR)
             self.running = True
             if control_reactor:
                 reactor.run() # blocking call
