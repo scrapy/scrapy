@@ -7,7 +7,7 @@ from scrapy import log
 from scrapy.http import Request
 from scrapy.core.engine import scrapyengine
 from scrapy.spider import spiders
-from scrapy.utils.misc import load_object
+from scrapy.utils.misc import load_object, arg_to_iter
 from scrapy.utils.url import is_url
 from scrapy.conf import settings
 
@@ -126,8 +126,8 @@ class ExecutionManager(object):
         for url in urls:
             spider = spiders.fromurl(url)
             if spider:
-                req = spider.make_request_from_url(url)
-                perdomain.setdefault(spider.domain_name, []).append(req)
+                for req in arg_to_iter(spider.make_requests_from_url(url)):
+                    perdomain.setdefault(spider.domain_name, []).append(req)
             else:
                 log.msg('Could not find spider for <%s>' % url, log.ERROR)
 

@@ -8,7 +8,7 @@ See documentation in docs/ref/spiders.rst
 import copy
 
 from scrapy.http import Request
-from scrapy.spider import BaseSpider
+from scrapy.contrib.spiders.init import InitSpider
 from scrapy.conf import settings
 
 class Rule(object):
@@ -45,7 +45,7 @@ class Rule(object):
         else:
             self.follow = follow
 
-class CrawlSpider(BaseSpider):
+class CrawlSpider(InitSpider):
     """
     Class for spiders that crawl over web pages and extract/parse their links
     given some crawling rules.

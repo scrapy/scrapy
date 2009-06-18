@@ -23,7 +23,7 @@ from scrapy.item import ScrapedItem
 from scrapy.item.pipeline import ItemPipelineManager
 from scrapy.spider import spiders
 from scrapy.spider.middleware import SpiderMiddlewareManager
-from scrapy.utils.defer import chain_deferred, defer_succeed, mustbe_deferred, deferred_imap
+from scrapy.utils.defer import chain_deferred, deferred_imap
 from scrapy.utils.request import request_info
 
 class ExecutionEngine(object):
@@ -50,7 +50,6 @@ class ExecutionEngine(object):
     def __init__(self):
         self.configured = False
         self.keep_alive = False
-        self.initializing = set() # domais in intialization state
         self.cancelled = set() # domains in cancelation state
         self.debug_mode = settings.getbool('ENGINE_DEBUG')
         self.tasks = []
@@ -216,8 +215,7 @@ class ExecutionEngine(object):
         pending = self.scheduler.domain_has_pending_requests(domain)
         downloading = not self.downloader.domain_is_idle(domain)
         haspipe = not self.pipeline.domain_is_idle(domain)
-        oninit = domain in self.initializing
-        return not (pending or downloading or haspipe or oninit or scraping)
+        return not (pending or downloading or haspipe or scraping)
 
     def domain_is_open(self, domain):
         return domain in self.downloader.sites
@@ -369,57 +367,6 @@ class ExecutionEngine(object):
         dwld.addBoth(_on_complete)
         return deferred
 
-    def initialize(self, spider):
-        domain = spider.domain_name
-        if not hasattr(spider, 'init_domain'):
-            return defer_succeed(True)
-
-        def _initialize(req):
-            if isinstance(req, Request):
-                _response = None
-                def _referer(response):
-                    req.deferred.addCallback(_setreferer, response)
-                    return response
-
-                def _setreferer(result, response):
-                    if isinstance(result, Request):
-                        result.headers.setdefault('Referer', response.url)
-                    return result
-
-                def _onerror(_failure):
-                    ex = _failure.value
-                    if isinstance(ex, IgnoreRequest):
-                        log.msg(ex.message, log.DEBUG, domain=domain)
-                    else:
-                        return _failure
-
-                schd = self.schedule(req, spider)
-                schd.addCallback(_referer)
-                chain_deferred(schd, req.deferred)
-                schd.addErrback(_onerror)
-                schd.addBoth(_initialize)
-                return schd
-            return req
-
-        def _bugtrap(_failure):
-            log.msg("Bug in %s init_domain code: %s" % (domain, _failure), log.ERROR, domain=domain)
-
-        def _state(state):
-            self.initializing.remove(domain)
-            if state is True:
-                log.msg('Succeded initialization for %s' % domain, log.INFO, domain=domain)
-            else:
-                log.msg('Failed initialization for %s' % domain, log.INFO, domain=domain)
-            return state
-
-        log.msg('Started initialization for %s' % domain, log.INFO, domain=domain)
-        self.initializing.add(domain)
-        req = spider.init_domain()
-        deferred = mustbe_deferred(_initialize, req)
-        deferred.addErrback(_bugtrap)
-        deferred.addCallback(_state)
-        return deferred
-
     def open_domain(self, domain, spider=None):
         log.msg("Domain opened", domain=domain)
         spider = spider or spiders.fromdomain(domain)
@@ -431,15 +378,8 @@ class ExecutionEngine(object):
         self._scraping[domain] = set()
         signals.send_catch_log(signals.domain_open, sender=self.__class__, domain=domain, spider=spider)
 
-        # init_domain
-        dfd = self.initialize(spider)
-        def _state(state):
-            if state is True:
-                signals.send_catch_log(signals.domain_opened, sender=self.__class__, domain=domain, spider=spider)
-                self._run_starters(spider)
-            else:
-                self._domain_idle(domain)
-        dfd.addCallback(_state)
+        signals.send_catch_log(signals.domain_opened, sender=self.__class__, domain=domain, spider=spider)
+        self._run_starters(spider)
 
     def _domain_idle(self, domain):
         """Called when a domain gets idle. This function is called when there are no

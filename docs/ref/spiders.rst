@@ -46,12 +46,12 @@ method ``parse`` for each of the resulting responses.
     
     This is the method called by Scrapy when the spider is opened for scraping
     when no particular URLs are specified. If particular URLs are specified,
-    the :meth:`BaseSpider.make_request_from_url` is used instead to create the
+    the :meth:`BaseSpider.make_requests_from_url` is used instead to create the
     Requests. This method is also called only once from Scrapy, so it's safe to
     implement it as a generator.
 
-    The default implementation uses :meth:`BaseSpider.make_request_from_url` to
-    generate Requests for each url in :attr:`start_urls`.
+    The default implementation uses :meth:`BaseSpider.make_requests_from_url`
+    to generate Requests for each url in :attr:`start_urls`.
 
     If you want to change the Requests used to start scraping a domain, this is
     the method to override. For example, if you need to start by login in using
@@ -67,11 +67,13 @@ method ``parse`` for each of the resulting responses.
             # each of them, with another callback
             pass
 
-.. method:: BaseSpider.make_request_from_url(url)
+.. method:: BaseSpider.make_requests_from_url(url)
 
-    A method that receives a URL and returns an :class:`~scrapy.http.Request`
-    object to scrape that URL with this spider. This method is used to
-    construct the initial requests in the :meth:`start_requests` method.
+    A method that receives a URL and returns a :class:`~scrapy.http.Request`
+    object (or a list of :class:`~scrapy.http.Request` objects) to scrape. This
+    method is used to construct the initial requests in the
+    :meth:`start_requests` method, and is typically used to convert urls to
+    requests.
 
     Unless overridden, this method returns Requests with the :meth:`parse`
     method as their callback function, and with dont_filter parameter enabled

@@ -8,6 +8,7 @@ from twisted.plugin import IPlugin
 
 from scrapy import log
 from scrapy.http import Request
+from scrapy.utils.misc import arg_to_iter
 
 def _valid_domain_name(obj):
     """Check the domain name specified is valid"""
@@ -39,13 +40,6 @@ class ISpider(Interface, IPlugin) :
     invariant(_valid_domain_name)
     invariant(_valid_download_delay)
 
-    def init_domain(self):
-        """This is first called to initialize domain specific quirks, like 
-        session cookies or login stuff
-        """
-        pass
-
-
 class BaseSpider(object):
     """Base class for scrapy spiders. All spiders must inherit from this
     class.
@@ -64,9 +58,12 @@ class BaseSpider(object):
         log.msg(message, domain=self.domain_name, level=level)
 
     def start_requests(self):
-        return [self.make_request_from_url(url) for url in self.start_urls]
+        reqs = []
+        for url in self.start_urls:
+            reqs.extend(arg_to_iter(self.make_requests_from_url(url)))
+        return reqs
 
-    def make_request_from_url(self, url):
+    def make_requests_from_url(self, url):
         return Request(url, callback=self.parse, dont_filter=True)
 
     def parse(self, response):
