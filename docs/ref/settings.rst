@@ -297,6 +297,16 @@ Default: ``True``
 
 Whether to collect depth stats.
 
+.. setting:: DOMAIN_SCHEDULER
+
+DOMAIN_SCHEDULER
+----------------
+
+Default: ``'scrapy.contrib.domainsch.FifoDomainScheduler'``
+
+The Domain Scheduler to use. The domain scheduler returns the next domain
+(spider) to scrape.
+
 .. setting:: DOWNLOADER_DEBUG
 
 DOWNLOADER_DEBUG

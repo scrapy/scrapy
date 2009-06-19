@@ -155,7 +155,7 @@ class Spiderctl(object):
         if "remove_pending_domains" in args:
             removed = []
             for domain in args["remove_pending_domains"]:
-                if scrapyengine.scheduler.remove_pending_domain(domain):
+                if scrapyengine.domain_scheduler.remove_pending_domain(domain):
                     removed.append(domain)
             if removed:
                 s += "<p>"

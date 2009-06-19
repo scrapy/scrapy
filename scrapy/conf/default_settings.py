@@ -54,6 +54,8 @@ DEFAULT_SPIDER = None
 DEPTH_LIMIT = 0
 DEPTH_STATS = True
 
+DOMAIN_SCHEDULER = 'scrapy.contrib.domainsch.FifoDomainScheduler'
+
 DOWNLOAD_DELAY = 0
 DOWNLOAD_TIMEOUT = 180      # 3mins
 
@@ -137,8 +139,6 @@ MYSQL_CONNECTION_SETTINGS = {}
 
 NEWSPIDER_MODULE = ''
 
-PRIORITIZER = 'scrapy.core.prioritizers.RandomPrioritizer'
-
 REDIRECT_MAX_METAREFRESH_DELAY = 100
 REDIRECT_MAX_TIMES = 20 # uses Firefox default setting
 
@@ -148,7 +148,6 @@ REQUESTS_PER_DOMAIN = 8     # max simultaneous requests per domain
 # contrib.middleware.retry.RetryMiddleware default settings
 RETRY_TIMES = 2 # initial response + 2 retries = 3 requests
 RETRY_HTTP_CODES = ['500', '503', '504', '400', '408']
-
 
 ROBOTSTXT_OBEY = False
 

@@ -40,7 +40,6 @@ class ExecutionManager(object):
 
         scheduler = load_object(settings['SCHEDULER'])()
         scrapyengine.configure(scheduler=scheduler)
-        self.domainprio = load_object(settings['PRIORITIZER'])()
         
     def crawl(self, *args):
         """Schedule the given args for crawling. args is a list of urls or domains"""
@@ -49,9 +48,8 @@ class ExecutionManager(object):
         # schedule initial requests to be scraped at engine start
         for domain in requests or ():
             spider = spiders.fromdomain(domain) 
-            priority = self.domainprio.get_priority(domain)
             for request in requests[domain]:
-                scrapyengine.crawl(request, spider, domain_priority=priority)
+                scrapyengine.crawl(request, spider)
 
     def runonce(self, *args):
         """Run the engine until it finishes scraping all domains and then exit"""

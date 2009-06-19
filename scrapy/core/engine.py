@@ -25,6 +25,7 @@ from scrapy.spider import spiders
 from scrapy.spider.middleware import SpiderMiddlewareManager
 from scrapy.utils.defer import chain_deferred, deferred_imap
 from scrapy.utils.request import request_info
+from scrapy.utils.misc import load_object
 
 class ExecutionEngine(object):
     """
@@ -64,6 +65,7 @@ class ExecutionEngine(object):
         """
         self.scheduler = scheduler or Scheduler()
         self.schedulermiddleware = SchedulerMiddlewareManager(self.scheduler)
+        self.domain_scheduler = load_object(settings['DOMAIN_SCHEDULER'])()
         self.downloader = downloader or Downloader(self)
         self.spidermiddleware = SpiderMiddlewareManager()
         self._scraping = {}
@@ -163,7 +165,7 @@ class ExecutionEngine(object):
         return self.scheduler.is_idle() and self.pipeline.is_idle() and self.downloader.is_idle() and not self._scraping
 
     def next_domain(self):
-        domain = self.scheduler.next_domain()
+        domain = self.domain_scheduler.next_domain()
         if domain:
             spider = spiders.fromdomain(domain)
             self.open_domain(domain, spider)
@@ -224,7 +226,7 @@ class ExecutionEngine(object):
     def open_domains(self):
         return self.downloader.sites.keys()
 
-    def crawl(self, request, spider, domain_priority=0):
+    def crawl(self, request, spider):
         domain = spider.domain_name
 
         def _process_response(response):
@@ -282,16 +284,16 @@ class ExecutionEngine(object):
             request.deferred.addErrback(lambda _:None)
             request.deferred.errback(_failure) # TODO: merge into spider middleware.
 
-        schd = self.schedule(request, spider, domain_priority)
+        schd = self.schedule(request, spider)
         schd.addCallbacks(_process_response, _cleanfailure)
         return schd
 
-    def schedule(self, request, spider, domain_priority=0):
+    def schedule(self, request, spider):
         domain = spider.domain_name
         if not self.scheduler.domain_is_open(domain):
             if self.debug_mode: 
                 log.msg('Scheduling %s (delayed)' % request_info(request), log.DEBUG)
-            return self._add_starter(request, spider, domain_priority)
+            return self._add_starter(request, spider)
         if self.debug_mode: 
             log.msg('Scheduling %s (now)' % request_info(request), log.DEBUG)
         schd = self.schedulermiddleware.enqueue_request(domain, request)
@@ -311,10 +313,10 @@ class ExecutionEngine(object):
             if not self.next_domain():
                 return self._stop_if_idle()
 
-    def _add_starter(self, request, spider, domain_priority):
+    def _add_starter(self, request, spider):
         domain = spider.domain_name
-        if not self.scheduler.domain_is_pending(domain):
-            self.scheduler.add_domain(domain, priority=domain_priority)
+        if not self.domain_scheduler.has_pending_domain(domain):
+            self.domain_scheduler.add_domain(domain)
             self.starters[domain] = []
         deferred = defer.Deferred()
         self.starters[domain] += [(request, deferred)]
