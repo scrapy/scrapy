@@ -699,6 +699,14 @@ Default: ``100``
 Some sites use meta-refresh for redirecting to a session expired page, so we
 restrict automatic redirection to a maximum delay (in seconds)
 
+REDIRECT_PRIORITY_ADJUST
+------------------------------
+
+Default: ``-2``
+
+Adjust redirect request priority relative to original request.
+A negative priority adjust means more priority.
+
 .. setting:: REQUESTS_QUEUE_SIZE
 
 REQUESTS_PER_DOMAIN

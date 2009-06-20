@@ -10,6 +10,7 @@ class RedirectMiddleware(object):
     def __init__(self):
         self.max_metarefresh_delay = settings.getint('REDIRECT_MAX_METAREFRESH_DELAY')
         self.max_redirect_times = settings.getint('REDIRECT_MAX_TIMES')
+        self.priority_adjust = settings.getint('REDIRECT_PRIORITY_ADJUST')
 
     def process_response(self, request, response, spider):
         domain = spider.domain_name
@@ -41,6 +42,7 @@ class RedirectMiddleware(object):
             redirected.meta['redirect_times'] = redirects
             redirected.meta['redirect_ttl'] = ttl - 1
             redirected.dont_filter = request.dont_filter
+            redirected.priority = request.priority + self.priority_adjust
             log.msg("Redirecting (%s) to %s from %s" % (reason, redirected, request),
                     domain=spider.domain_name, level=log.DEBUG)
             return redirected

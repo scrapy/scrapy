@@ -41,6 +41,7 @@ class RetryMiddleware(object):
     def __init__(self):
         self.max_retry_times = settings.getint('RETRY_TIMES')
         self.retry_http_codes = map(int, settings.getlist('RETRY_HTTP_CODES'))
+        self.priority_adjust = settings.getint('RETRY_PRIORITY_ADJUST')
 
     def process_response(self, request, response, spider):
         if response.status in self.retry_http_codes:
@@ -61,6 +62,7 @@ class RetryMiddleware(object):
             retryreq = request.copy()
             retryreq.meta['retry_times'] = retries
             retryreq.dont_filter = True
+            retryreq.priority = request.priority + self.priority_adjust
             return retryreq
         else:
             log.msg("Discarding %s (failed %d times): %s" % (request, retries, reason),
