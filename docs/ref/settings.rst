@@ -383,17 +383,17 @@ Default: ``180``
 
 The amount of time (in secs) that the downloader will wait before timing out.
 
-.. setting:: DUPEFILTER_FILTERCLASS
+.. setting:: DUPEFILTER_CLASS
 
-DUPEFILTER_FILTERCLASS
-----------------------------
+DUPEFILTER_CLASS
+----------------
 
-Default: ``scrapy.contrib.spidermiddleware.SimplePerDomainFilter``
+Default: ``'scrapy.contrib.dupefilter.RequestFingerprintDupeFilter'``
 
-The class used to detect and filter duplicated requests.
+The class used to detect and filter duplicate requests.
 
-Default ``SimplePerDomainFilter`` filter based on request fingerprint and
-grouping per domain.
+The default (``RequestFingerprintDupeFilter``) filters based on request fingerprint
+(using ``scrapy.utils.request.request_fingerprint``) and grouping per domain.
 
 .. setting:: ENGINE_DEBUG
 

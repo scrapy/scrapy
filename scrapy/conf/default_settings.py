@@ -80,7 +80,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
 
 DOWNLOADER_STATS = True
 
-DUPEFILTER_FILTERCLASS = 'scrapy.dupefilter.SimplePerDomainFilter'
+DUPEFILTER_CLASS = 'scrapy.contrib.dupefilter.RequestFingerprintDupeFilter'
 
 ENABLED_SPIDERS_FILE = ''
 
