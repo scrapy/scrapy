@@ -16,7 +16,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
         req = Request('http://a.com')
         rsp = Response('http://a.com', headers={'Location': 'http://a.com/redirected'}, status=301)
         req2 = self.mw.process_response(req, rsp, self.spider)
-        assert req2.priority < req.priority
+        assert req2.priority > req.priority
 
     def test_redirect_301(self):
         url = 'http://www.example.com/301'

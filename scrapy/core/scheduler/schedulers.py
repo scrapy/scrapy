@@ -54,7 +54,7 @@ class Scheduler(object):
 
     def _enqueue_request(self, domain, request):
         dfd = defer.Deferred()
-        self.pending_requests[domain].push((request, dfd), request.priority)
+        self.pending_requests[domain].push((request, dfd), -request.priority)
         return dfd
 
     def next_request(self, domain):

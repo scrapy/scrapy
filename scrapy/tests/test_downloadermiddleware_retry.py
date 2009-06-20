@@ -20,7 +20,7 @@ class RetryTest(unittest.TestCase):
         req = Request('http://www.scrapytest.org/503')
         rsp = Response('http://www.scrapytest.org/503', body='', status=503)
         req2 = self.mw.process_response(req, rsp, self.spider)
-        assert req2.priority > req.priority
+        assert req2.priority < req.priority
 
     def test_404(self):
         req = Request('http://www.scrapytest.org/404')

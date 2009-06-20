@@ -702,7 +702,7 @@ restrict automatic redirection to a maximum delay (in seconds)
 REDIRECT_PRIORITY_ADJUST
 ------------------------------
 
-Default: ``-2``
+Default: ``+2``
 
 Adjust redirect request priority relative to original request.
 A negative priority adjust means more priority.

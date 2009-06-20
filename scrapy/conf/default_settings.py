@@ -141,7 +141,7 @@ NEWSPIDER_MODULE = ''
 
 REDIRECT_MAX_METAREFRESH_DELAY = 100
 REDIRECT_MAX_TIMES = 20 # uses Firefox default setting
-REDIRECT_PRIORITY_ADJUST = -2
+REDIRECT_PRIORITY_ADJUST = +2
 
 REQUESTS_QUEUE_SIZE = 0
 REQUESTS_PER_DOMAIN = 8     # max simultaneous requests per domain
@@ -149,7 +149,7 @@ REQUESTS_PER_DOMAIN = 8     # max simultaneous requests per domain
 # contrib.middleware.retry.RetryMiddleware default settings
 RETRY_TIMES = 2 # initial response + 2 retries = 3 requests
 RETRY_HTTP_CODES = ['500', '503', '504', '400', '408']
-RETRY_PRIORITY_ADJUST = +1
+RETRY_PRIORITY_ADJUST = -1
 
 ROBOTSTXT_OBEY = False
 
