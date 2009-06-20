@@ -1,18 +1,8 @@
-from pydispatch import dispatcher
-
-from scrapy.core import signals
 from scrapy.utils.request import request_fingerprint
-from scrapy.utils.misc import load_object
-from scrapy.conf import settings
 
 
 class BaseFilter(dict):
     """Base class defining the duplicates requests filtering api"""
-
-    def __init__(self, *args, **kwargs):
-        super(BaseFilter, self).__init__(*args, **kwargs)
-        dispatcher.connect(self.open, signals.domain_open)
-        dispatcher.connect(self.close, signals.domain_closed)
 
     def open(self, domain):
         """Called when a domain starts"""
@@ -73,11 +63,4 @@ class NullFilter(dict):
     def has(self, domain, request):
         return None
 
-
-try:
-    dupefilter
-except NameError:
-    clspath = settings.get('DUPEFILTER_FILTERCLASS')
-    cls = load_object(clspath) if clspath else NullFilter
-    dupefilter = cls()
 

@@ -1,7 +1,6 @@
 import unittest
 
 from scrapy.contrib.downloadermiddleware.redirect import RedirectMiddleware
-from scrapy.dupefilter import dupefilter
 from scrapy.spider import spiders
 from scrapy.http import Request, Response, Headers
 
@@ -11,11 +10,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
         spiders.spider_modules = ['scrapy.tests.test_spiders']
         spiders.reload()
         self.spider = spiders.fromdomain('scrapytest.org')
-        dupefilter.open('scrapytest.org')
         self.mw = RedirectMiddleware()
-
-    def tearDown(self):
-        dupefilter.close('scrapytest.org')
 
     def test_redirect_301(self):
         url = 'http://www.example.com/301'

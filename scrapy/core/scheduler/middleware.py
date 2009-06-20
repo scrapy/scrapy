@@ -5,6 +5,7 @@ For more information see the Scheduler Middleware doc in:
 docs/topics/scheduler-middleware.rst
 
 """
+from collections import defaultdict
 from twisted.internet.defer import Deferred
 
 from scrapy import log
@@ -17,19 +18,13 @@ from scrapy.conf import settings
 
 class SchedulerMiddlewareManager(object):
 
-    def __init__(self, scheduler):
-        self.loaded = False
-        self.scheduler = scheduler
-        self.mw_enqueue_request = []
+    def __init__(self):
+        self.mw_cbs = defaultdict(list)
         self.load()
-
-    def _add_middleware(self, mw):
-        if hasattr(mw, 'enqueue_request'):
-            self.mw_enqueue_request.append(mw.enqueue_request)
 
     def load(self):
         """Load middleware defined in settings module"""
-        mws = []
+        self.mws = []
         mwlist = build_middleware_list(settings['SCHEDULER_MIDDLEWARES_BASE'],
                                        settings['SCHEDULER_MIDDLEWARES'])
         for mwpath in mwlist:
@@ -37,23 +32,38 @@ class SchedulerMiddlewareManager(object):
             if cls:
                 try:
                     mw = cls()
-                    self._add_middleware(mw)
-                    mws.append(mw)
                 except NotConfigured:
                     pass
-        log.msg("Enabled scheduler middlewares: %s" % ", ".join([type(m).__name__ for m in mws]))
-        self.loaded = True
+                else:
+                    self._add_middleware(mw)
+                    self.mws.append(mw)
 
-    def enqueue_request(self, domain, request):
+        log.msg("Enabled scheduler middlewares: %s" % ", ".join([type(m).__name__ for m in self.mws]))
+
+    def _add_middleware(self, mw):
+        for name in ('enqueue_request', 'open_domain', 'close_domain'):
+            mwfunc = getattr(mw, name, None)
+            if mwfunc:
+                self.mw_cbs[name].append(mwfunc)
+
+    def enqueue_request(self, wrappedfunc, domain, request):
         def _enqueue_request(request):
-            for method in self.mw_enqueue_request:
-                result = method(domain=domain, request=request)
+            for mwfunc in self.mw_cbs['enqueue_request']:
+                result = mwfunc(domain=domain, request=request)
                 assert result is None or isinstance(result, (Response, Deferred)), \
                         'Middleware %s.enqueue_request must return None, Response or Deferred, got %s' % \
-                        (method.im_self.__class__.__name__, result.__class__.__name__)
+                        (mwfunc.im_self.__class__.__name__, result.__class__.__name__)
                 if result:
                     return result
-            return self.scheduler.enqueue_request(domain=domain, request=request)
+            return wrappedfunc(domain=domain, request=request)
 
         deferred = mustbe_deferred(_enqueue_request, request)
         return deferred
+
+    def open_domain(self, domain):
+        for mwfunc in self.mw_cbs['open_domain']:
+            mwfunc(domain)
+
+    def close_domain(self, domain):
+        for mwfunc in self.mw_cbs['close_domain']:
+            mwfunc(domain)

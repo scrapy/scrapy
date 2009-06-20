@@ -15,7 +15,7 @@ from scrapy import log
 from scrapy.stats import stats
 from scrapy.conf import settings
 from scrapy.core import signals
-from scrapy.core.scheduler import Scheduler, SchedulerMiddlewareManager
+from scrapy.core.scheduler import Scheduler
 from scrapy.core.downloader import Downloader
 from scrapy.core.exceptions import IgnoreRequest, DontCloseDomain
 from scrapy.http import Response, Request
@@ -64,14 +64,11 @@ class ExecutionEngine(object):
         Configure execution engine with the given scheduling policy and downloader.
         """
         self.scheduler = scheduler or Scheduler()
-        self.schedulermiddleware = SchedulerMiddlewareManager(self.scheduler)
         self.domain_scheduler = load_object(settings['DOMAIN_SCHEDULER'])()
         self.downloader = downloader or Downloader(self)
         self.spidermiddleware = SpiderMiddlewareManager()
         self._scraping = {}
         self.pipeline = ItemPipelineManager()
-        # key dictionary of per domain lists of initial requests to scrape
-        self.starters = {}
 
         self.configured = True
 
@@ -291,14 +288,11 @@ class ExecutionEngine(object):
     def schedule(self, request, spider):
         domain = spider.domain_name
         if not self.scheduler.domain_is_open(domain):
-            if self.debug_mode: 
-                log.msg('Scheduling %s (delayed)' % request_info(request), log.DEBUG)
-            return self._add_starter(request, spider)
-        if self.debug_mode: 
-            log.msg('Scheduling %s (now)' % request_info(request), log.DEBUG)
-        schd = self.schedulermiddleware.enqueue_request(domain, request)
+            self.scheduler.open_domain(domain)
+            if not self.downloader.domain_is_open(domain):
+                self.domain_scheduler.add_domain(domain)
         self.next_request(spider)
-        return schd
+        return self.scheduler.enqueue_request(domain, request)
 
     def _mainloop(self):
         """Add more domains to be scraped if the downloader has the capacity.
@@ -312,23 +306,6 @@ class ExecutionEngine(object):
         while self.running and self.downloader.has_capacity():
             if not self.next_domain():
                 return self._stop_if_idle()
-
-    def _add_starter(self, request, spider):
-        domain = spider.domain_name
-        if not self.domain_scheduler.has_pending_domain(domain):
-            self.domain_scheduler.add_domain(domain)
-            self.starters[domain] = []
-        deferred = defer.Deferred()
-        self.starters[domain] += [(request, deferred)]
-        return deferred
-
-    def _run_starters(self, spider):
-        domain = spider.domain_name
-        starters = self.starters.pop(domain, [])
-        while starters:
-            request, deferred = starters.pop(0)
-            schd = self.schedule(request, spider)
-            chain_deferred(schd, deferred)
 
     def download(self, request, spider):
         if self.debug_mode:
@@ -372,16 +349,15 @@ class ExecutionEngine(object):
     def open_domain(self, domain, spider=None):
         log.msg("Domain opened", domain=domain)
         spider = spider or spiders.fromdomain(domain)
+        self.next_request(spider)
 
         self.cancelled.discard(domain)
-        self.scheduler.open_domain(domain)
         self.downloader.open_domain(domain)
         self.pipeline.open_domain(domain)
         self._scraping[domain] = set()
-        signals.send_catch_log(signals.domain_open, sender=self.__class__, domain=domain, spider=spider)
 
+        signals.send_catch_log(signals.domain_open, sender=self.__class__, domain=domain, spider=spider)
         signals.send_catch_log(signals.domain_opened, sender=self.__class__, domain=domain, spider=spider)
-        self._run_starters(spider)
 
     def _domain_idle(self, domain):
         """Called when a domain gets idle. This function is called when there are no
@@ -433,7 +409,6 @@ class ExecutionEngine(object):
         signals.send_catch_log(signal=signals.domain_closed, sender=self.__class__, domain=domain, spider=spider, status=status)
         log.msg("Domain closed (%s)" % status, domain=domain) 
         self.cancelled.discard(domain)
-        self.starters.pop(domain, None)
         self._mainloop()
 
     def getstatus(self):
