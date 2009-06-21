@@ -416,7 +416,7 @@ class ExecutionEngine(object):
             "datetime.now()-self.start_time", 
             "self.is_idle()", 
             "self.scheduler.is_idle()",
-            "len(self.scheduler.pending_domains)",
+            "len(self.scheduler.pending_requests)",
             "self.downloader.is_idle()",
             "len(self.downloader.sites)",
             "self.downloader.has_capacity()",
