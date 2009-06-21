@@ -38,18 +38,6 @@ def mustbe_deferred(f, *args, **kw):
 def chain_deferred(d1, d2):
     return d1.chainDeferred(d2).addBoth(lambda _:d2)
 
-def lambda_deferred(func):
-    deferred = defer.Deferred()
-    def _success(res):
-        d = func()
-        d.callback(res)
-        return d
-    def _fail(res):
-        d = func()
-        d.errback(res)
-        return d
-    return deferred.addCallbacks(_success, _fail)
-
 def deferred_imap(function, *sequences, **kwargs):
     """Analog to itertools.imap python function but friendly iterable evaluation
     taking in count cooperative multitasking.
