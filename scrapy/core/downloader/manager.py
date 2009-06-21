@@ -14,13 +14,21 @@ from scrapy.conf import settings
 from scrapy.utils.defer import chain_deferred, mustbe_deferred
 
 
-class SiteDetails(object):
+class SiteInfo(object):
     """This is a simple data record that encapsulates the details we hold on
     each domain which we are scraping.
     """
-    def __init__(self, download_delay=None, max_concurrent_requests=2):
-        self.download_delay = download_delay
-        self.max_concurrent_requests = max_concurrent_requests if not download_delay else 1
+    def __init__(self, download_delay=None, max_concurrent_requests=None):
+        if download_delay is None:
+            self.download_delay = settings.getint('DOWNLOAD_DELAY')
+        else:
+            self.download_delay = download_delay
+        if download_delay:
+            self.max_concurrent_requests = 1
+        elif max_concurrent_requests is None:
+            self.max_concurrent_requests = settings.getint('REQUESTS_PER_DOMAIN')
+        else:
+            self.max_concurrent_requests =  max_concurrent_requests
 
         self.queue = []
         self.active = set()
@@ -126,12 +134,11 @@ class Downloader(object):
         if domain in self.sites:
             raise RuntimeError('Downloader domain already opened: %s' % domain)
 
-        # Instanciate site specific handling based on info provided by spider
         spider = spiders.fromdomain(domain)
-        delay = getattr(spider, 'download_delay', None) or settings.getint("DOWNLOAD_DELAY", 0)
-        maxcr = getattr(spider, 'max_concurrent_requests', settings.getint('REQUESTS_PER_DOMAIN'))
-        site = SiteDetails(download_delay=delay, max_concurrent_requests=maxcr)
-        self.sites[domain] = site
+        self.sites[domain] = SiteInfo(
+            download_delay=getattr(spider, 'download_delay', None),
+            max_concurrent_requests=getattr(spider, 'max_concurrent_requests', None)
+        )
 
     def close_domain(self, domain):
         """Free any resources associated with the given domain"""
