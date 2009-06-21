@@ -13,7 +13,6 @@ from scrapy.core.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.middleware import build_middleware_list
-from scrapy.core.downloader.handlers import download_any
 from scrapy.conf import settings
 
 class DownloaderMiddlewareManager(object):
@@ -51,7 +50,7 @@ class DownloaderMiddlewareManager(object):
         log.msg("Enabled downloader middlewares: %s" % ", ".join([type(m).__name__ for m in mws]))
         self.loaded = True
 
-    def download(self, request, spider):
+    def download(self, download_func, request, spider):
         def process_request(request):
             for method in self.request_middleware:
                 response = method(request=request, spider=spider)
@@ -60,7 +59,7 @@ class DownloaderMiddlewareManager(object):
                         (method.im_self.__class__.__name__, response.__class__.__name__)
                 if response:
                     return response
-            return download_any(request=request, spider=spider)
+            return download_func(request=request, spider=spider)
 
         def process_response(response):
             assert response is not None, 'Received None in process_response'

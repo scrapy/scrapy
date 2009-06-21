@@ -9,6 +9,7 @@ from twisted.internet import reactor, defer
 from scrapy.core.exceptions import IgnoreRequest
 from scrapy.spider import spiders
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
+from scrapy.core.downloader.handlers import download_any
 from scrapy.conf import settings
 from scrapy.utils.defer import chain_deferred, mustbe_deferred
 
@@ -74,7 +75,7 @@ class Downloader(object):
             site.active.remove(request)
             return _
 
-        return self.middleware.download(request, spider).addBoth(_deactivate)
+        return self.middleware.download(self.enqueue, request, spider).addBoth(_deactivate)
 
     def enqueue(self, request, spider):
         """Enqueue a Request for a effective download from site"""
@@ -116,7 +117,7 @@ class Downloader(object):
             site.downloading.remove(request)
             self.process_queue(spider)
 
-        dwld = mustbe_deferred(request, spider)
+        dwld = mustbe_deferred(download_any, request, spider)
         chain_deferred(dwld, deferred)
         return dwld.addBoth(_finish)
 
