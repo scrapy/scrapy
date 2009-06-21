@@ -36,21 +36,7 @@ def mustbe_deferred(f, *args, **kw):
         return defer_result(result)
 
 def chain_deferred(d1, d2):
-    if callable(d2):
-        d2 = lambda_deferred(d2)
-
-    def _pause(_):
-        d2.pause()
-        reactor.callLater(0, d2.unpause)
-        return _
-
-    def _reclaim(_):
-        return d2
-
-    #d1.addBoth(_pause) ## needs more debugging before reenable it
-    d1.chainDeferred(d2)
-    d1.addBoth(_reclaim)
-    return d1
+    return d1.chainDeferred(d2).addBoth(lambda _:d2)
 
 def lambda_deferred(func):
     deferred = defer.Deferred()
