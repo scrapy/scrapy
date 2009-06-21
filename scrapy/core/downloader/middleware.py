@@ -24,7 +24,6 @@ class DownloaderMiddlewareManager(object):
         self.response_middleware = []
         self.exception_middleware = []
         self.load()
-        self.download_function = download_any
 
     def _add_middleware(self, mw):
         if hasattr(mw, 'process_request'):
@@ -61,7 +60,7 @@ class DownloaderMiddlewareManager(object):
                         (method.im_self.__class__.__name__, response.__class__.__name__)
                 if response:
                     return response
-            return self.download_function(request=request, spider=spider)
+            return download_any(request=request, spider=spider)
 
         def process_response(response):
             assert response is not None, 'Received None in process_response'

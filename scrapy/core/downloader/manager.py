@@ -8,12 +8,9 @@ from twisted.internet import reactor, defer
 
 from scrapy.core.exceptions import IgnoreRequest
 from scrapy.spider import spiders
-from scrapy.core.downloader.handlers import download_any
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
-from scrapy import log
 from scrapy.conf import settings
 from scrapy.utils.defer import chain_deferred, mustbe_deferred
-from scrapy.utils.request import request_info
 
 
 class SiteDetails(object):
@@ -58,10 +55,7 @@ class Downloader(object):
         self.engine = engine
         self.sites = {}
         self.middleware = DownloaderMiddlewareManager()
-        self.middleware.download_function = self.enqueue
-        self.download_function = download_any
         self.concurrent_domains = settings.getint('CONCURRENT_DOMAINS')
-        self.debug_mode = settings.getbool('DOWNLOADER_DEBUG')
 
     def fetch(self, request, spider):
         """ Main method to use to request a download
@@ -72,29 +66,20 @@ class Downloader(object):
         """
         domain = spider.domain_name
         site = self.sites[domain]
-        if not site or site.closed:
-            if self.debug_mode:
-                raise IgnoreRequest('Unable to fetch (domain already closed): %s' % request)
-            else:
-                raise IgnoreRequest
+        if site.closed:
+            raise IgnoreRequest('Can\'t fetch on a closed domain: %s' + request)
 
         site.active.add(request)
         def _deactivate(_):
             site.active.remove(request)
             return _
-        dwld = self.middleware.download(request, spider)
-        dwld.addBoth(_deactivate)
-        return dwld
+
+        return self.middleware.download(request, spider).addBoth(_deactivate)
 
     def enqueue(self, request, spider):
-        """ Enqueue a Request for a effective download from site
-        """
-        domain = spider.domain_name
-        site = self.sites.get(domain)
-        if not site or site.closed:
-            raise IgnoreRequest('Trying to enqueue %s from closed site %s' % (request, domain))
-
+        """Enqueue a Request for a effective download from site"""
         deferred = defer.Deferred()
+        site = self.sites[spider.domain_name]
         site.queue.append((request, deferred))
         self.process_queue(spider)
         return deferred
@@ -119,41 +104,29 @@ class Downloader(object):
 
         while site.queue and site.capacity()>0:
             request, deferred = site.queue.pop(0)
-            self._download(request, spider, deferred)
+            self._download(site, request, spider, deferred)
 
         if site.closed and site.is_idle():
             del self.sites[domain]
             self.engine.closed_domain(domain)
 
-    def _download(self, request, spider, deferred):
-        if self.debug_mode:
-            log.msg('Activating %s' % request_info(request), log.DEBUG)
-        domain = spider.domain_name
-        site = self.sites.get(domain)
+    def _download(self, site, request, spider, deferred):
         site.downloading.add(request)
-
-        def _remove(result):
-            if self.debug_mode:
-                log.msg('Deactivating %s' % request_info(request), log.DEBUG)
+        def _finish(_):
             site.downloading.remove(request)
-            return result
-
-        def _finish(result):
             self.process_queue(spider)
 
-        dwld = mustbe_deferred(self.download_function, request, spider)
-        dwld.addBoth(_remove)
+        dwld = mustbe_deferred(request, spider)
         chain_deferred(dwld, deferred)
-        dwld.addBoth(_finish)
+        return dwld.addBoth(_finish)
 
     def open_domain(self, domain):
         """Allocate resources to begin processing a domain"""
-        spider = spiders.fromdomain(domain)
-        if domain in self.sites: # reopen
-            self.sites[domain].closed = False
-            return
+        if domain in self.sites:
+            raise RuntimeError('Downloader domain already opened: %s' % domain)
 
         # Instanciate site specific handling based on info provided by spider
+        spider = spiders.fromdomain(domain)
         delay = getattr(spider, 'download_delay', None) or settings.getint("DOWNLOAD_DELAY", 0)
         maxcr = getattr(spider, 'max_concurrent_requests', settings.getint('REQUESTS_PER_DOMAIN'))
         site = SiteDetails(download_delay=delay, max_concurrent_requests=maxcr)
@@ -161,16 +134,13 @@ class Downloader(object):
 
     def close_domain(self, domain):
         """Free any resources associated with the given domain"""
-        if self.debug_mode:
-            log.msg("Downloader closing domain %s" % domain, log.DEBUG, domain=domain)
-        site = self.sites.get(domain)
-        if site:
-            site.closed = True
-            spider = spiders.fromdomain(domain)
-            self.process_queue(spider)
-        else:
-            if self.debug_mode:
-                log.msg('Domain %s already closed' % domain, log.DEBUG, domain=domain)
+        if domain not in self.sites:
+            raise RuntimeError('Downloader domain already closed: %s' % domain)
+
+        site = self.sites[domain]
+        site.closed = True
+        spider = spiders.fromdomain(domain)
+        self.process_queue(spider)
 
     def needs_backout(self, domain):
         site = self.sites.get(domain)
