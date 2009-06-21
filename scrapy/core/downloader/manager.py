@@ -24,15 +24,15 @@ class SiteDetails(object):
 
         self.queue = []
         self.active = set()
-        self.downloading = set()
+        self.transferring = set()
         self.closed = False
         self.lastseen = None
 
     def is_idle(self):
-        return not (self.active or self.downloading)
+        return not (self.active or self.transferring)
 
     def capacity(self):
-        return self.max_concurrent_requests - len(self.downloading)
+        return self.max_concurrent_requests - len(self.transferring)
 
     def outstanding(self):
         return len(self.active) + len(self.queue)
@@ -112,9 +112,9 @@ class Downloader(object):
             self.engine.closed_domain(domain)
 
     def _download(self, site, request, spider, deferred):
-        site.downloading.add(request)
+        site.transferring.add(request)
         def _finish(_):
-            site.downloading.remove(request)
+            site.transferring.remove(request)
             self.process_queue(spider)
 
         dwld = mustbe_deferred(download_any, request, spider)
