@@ -135,10 +135,10 @@ class Downloader(object):
 
     def close_domain(self, domain):
         """Free any resources associated with the given domain"""
-        if domain not in self.sites:
+        site = self.sites.get(domain)
+        if not site or site.closed:
             raise RuntimeError('Downloader domain already closed: %s' % domain)
 
-        site = self.sites[domain]
         site.closed = True
         spider = spiders.fromdomain(domain)
         self.process_queue(spider)
