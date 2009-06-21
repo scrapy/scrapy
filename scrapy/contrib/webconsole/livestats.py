@@ -55,7 +55,8 @@ class LiveStats(object):
         s += "<tr><th>Domain</th><th>Items<br>Scraped</th><th>Pages<br>Crawled</th><th>Scheduler<br>Pending</th><th>Downloader<br/>Pending</th><th>Downloader<br/>Active</th><th>Start time</th><th>Finish time</th><th>Run time</th></tr>\n"
         for d in sorted(self.domains.keys()):
             scheduled = len(sch.pending_requests[d]) if d in sch.pending_requests else 0
-            active, pending = len(dwl.active_requests(d)), len(dwl.request_queue(d))
+            active = len(dwl.sites[d].active) if d in dwl.sites else 0
+            pending = len(dwl.sites[d].queue) if d in dwl.queue else 0
             stats = self.domains[d]
             runtime = stats.finished - stats.started if stats.finished else datetime.now() - stats.started
 

@@ -25,7 +25,10 @@ class DelayedCloseDomain(object):
         dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
 
     def domain_idle(self, domain):
-        lastseen = scrapyengine.downloader.lastseen(domain)
+        try:
+            lastseen = scrapyengine.downloader.sites[domain].lastseen
+        except KeyError:
+            lastseen = None
         if not lastseen:
             lastseen = self.opened_at[domain]
 

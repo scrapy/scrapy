@@ -208,7 +208,7 @@ class ExecutionEngine(object):
     def domain_is_idle(self, domain):
         scraping = self._scraping.get(domain)
         pending = self.scheduler.domain_has_pending_requests(domain)
-        downloading = not self.downloader.domain_is_idle(domain)
+        downloading = domain in self.downloader.sites and self.downloader.sites[domain].outstanding() > 0
         haspipe = not self.pipeline.domain_is_idle(domain)
         return not (pending or downloading or haspipe or scraping)
 
@@ -426,11 +426,14 @@ class ExecutionEngine(object):
             ]
         domain_tests = [
             "self.domain_is_idle(domain)",
+            "domain in self.cancelled",
             "self.scheduler.domain_has_pending_requests(domain)",
             "len(self.scheduler.pending_requests[domain])",
-            "self.downloader.outstanding(domain)",
-            "len(self.downloader.request_queue(domain))",
-            "len(self.downloader.active_requests(domain))",
+            "len(self.downloader.sites[domain].queue)",
+            "len(self.downloader.sites[domain].active)",
+            "len(self.downloader.sites[domain].transferring)",
+            "self.downloader.sites[domain].closed",
+            "self.downloader.sites[domain].lastseen",
             "self.pipeline.domain_is_idle(domain)",
             "len(self.pipeline.domaininfo[domain])",
             "len(self._scraping[domain])",

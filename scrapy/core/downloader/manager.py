@@ -151,10 +151,6 @@ class Downloader(object):
     def domain_is_open(self, domain):
         return domain in self.sites
 
-    def lastseen(self, domain):
-        if domain in self.sites:
-            return self.sites[domain].lastseen
-
     def outstanding(self, domain):
         """The number of outstanding requests for a domain
         This includes both active requests and pending requests.
@@ -162,17 +158,6 @@ class Downloader(object):
         site = self.sites.get(domain)
         if site:
             return site.outstanding()
-
-    def domain_is_idle(self, domain):
-        return not self.outstanding(domain)
-
-    def request_queue(self, domain):
-        site = self.sites.get(domain)
-        return site.queue if site else []
-
-    def active_requests(self, domain):
-        site = self.sites.get(domain)
-        return site.active if site else []
 
     def has_capacity(self):
         """Does the downloader have capacity to handle more domains"""
