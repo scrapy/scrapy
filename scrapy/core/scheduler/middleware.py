@@ -38,7 +38,8 @@ class SchedulerMiddlewareManager(object):
                     self._add_middleware(mw)
                     self.mws.append(mw)
 
-        log.msg("Enabled scheduler middlewares: %s" % ", ".join([type(m).__name__ for m in self.mws]))
+        log.msg("Enabled scheduler middlewares: %s" % ", ".join([type(m).__name__ for m in self.mws]),
+            level=log.DEBUG)
 
     def _add_middleware(self, mw):
         for name in ('enqueue_request', 'open_domain', 'close_domain'):

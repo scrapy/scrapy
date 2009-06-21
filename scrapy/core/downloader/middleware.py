@@ -47,7 +47,8 @@ class DownloaderMiddlewareManager(object):
                     mws.append(mw)
                 except NotConfigured:
                     pass
-        log.msg("Enabled downloader middlewares: %s" % ", ".join([type(m).__name__ for m in mws]))
+        log.msg("Enabled downloader middlewares: %s" % ", ".join([type(m).__name__ for m in mws]),
+            level=log.DEBUG)
         self.loaded = True
 
     def download(self, download_func, request, spider):

@@ -47,7 +47,8 @@ class SpiderMiddlewareManager(object):
                     mws.append(mw)
                 except NotConfigured:
                     pass
-        log.msg("Enabled spider middlewares: %s" % ", ".join([type(m).__name__ for m in mws]))
+        log.msg("Enabled spider middlewares: %s" % ", ".join([type(m).__name__ for m in mws]),
+            level=log.DEBUG)
         self.loaded = True
 
     def scrape(self, request, response, spider):

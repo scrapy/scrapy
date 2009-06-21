@@ -36,7 +36,8 @@ class ExecutionManager(object):
             extensions.load()
         if not spiders.loaded:
             spiders.load()
-        log.msg("Enabled extensions: %s" % ", ".join(extensions.enabled.iterkeys()))
+        log.msg("Enabled extensions: %s" % ", ".join(extensions.enabled.iterkeys()),
+            level=log.DEBUG)
 
         scheduler = load_object(settings['SCHEDULER'])()
         scrapyengine.configure(scheduler=scheduler)

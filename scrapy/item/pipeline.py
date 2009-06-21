@@ -25,7 +25,8 @@ class ItemPipelineManager(object):
                     self.pipeline.append(stageinstance)
                 except NotConfigured:
                     pass
-        log.msg("Enabled item pipelines: %s" % ", ".join([type(p).__name__ for p in self.pipeline]))
+        log.msg("Enabled item pipelines: %s" % ", ".join([type(p).__name__ for p in self.pipeline]),
+            level=log.DEBUG)
         self.loaded = True
 
     def open_domain(self, domain):
