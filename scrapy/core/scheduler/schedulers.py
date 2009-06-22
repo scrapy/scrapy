@@ -3,8 +3,10 @@ The Scrapy Scheduler
 """
 
 from twisted.internet import defer
+from twisted.python.failure import Failure
 
 from scrapy.utils.datatypes import PriorityQueue, PriorityStack
+from scrapy.core.exceptions import IgnoreRequest
 from scrapy.conf import settings
 from .middleware import SchedulerMiddlewareManager
 
@@ -56,6 +58,13 @@ class Scheduler(object):
         dfd = defer.Deferred()
         self.pending_requests[domain].push((request, dfd), -request.priority)
         return dfd
+
+    def clear_pending_requests(self, domain):
+        """Remove all pending requests for the given domain"""
+        q = self.pending_requests[domain]
+        while q:
+            _, dfd = q.pop()[0]
+            dfd.errback(Failure(IgnoreRequest()))
 
     def next_request(self, domain):
         """Return the next available request to be downloaded for a domain.
