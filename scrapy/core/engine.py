@@ -372,7 +372,7 @@ class ExecutionEngine(object):
             log.exc("Exception catched on domain_idle signal dispatch")
 
         if self.domain_is_idle(domain):
-            self._close_domain(domain)
+            self.close_domain(domain, reason='finished')
 
     def _stop_if_idle(self):
         """Call the stop method if the system has no outstanding tasks. """
@@ -384,10 +384,7 @@ class ExecutionEngine(object):
         if domain not in self.closing:
             log.msg("Closing domain (%s)" % reason, domain=domain)
             self.closing[domain] = reason
-            self._close_domain(domain)
-
-    def _close_domain(self, domain):
-        self.downloader.close_domain(domain)
+            self.downloader.close_domain(domain)
 
     def closed_domain(self, domain):
         """
@@ -400,7 +397,7 @@ class ExecutionEngine(object):
         self.scheduler.close_domain(domain)
         self.pipeline.close_domain(domain)
         del self._scraping[domain]
-        reason = self.closing.get(domain, 'finished')
+        reason = self.closing[domain]
         signals.send_catch_log(signal=signals.domain_closed, sender=self.__class__, domain=domain, spider=spider, reason=reason)
         log.msg("Domain closed (%s)" % reason, domain=domain) 
         self.closing.pop(domain, None)
