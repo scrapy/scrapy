@@ -437,7 +437,10 @@ class ExecutionEngine(object):
             ]
 
         for test in global_tests:
-            s += "%-47s : %s\n" % (test, eval(test))
+            try:
+                s += "%-47s : %s\n" % (test, eval(test))
+            except Exception, e:
+                s += "%-47s : %s (exception)\n" % (test, type(e).__name__)
         s += "\n"
         for domain in self.downloader.sites:
             s += "%s\n" % domain
