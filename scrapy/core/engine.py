@@ -26,6 +26,7 @@ from scrapy.spider.middleware import SpiderMiddlewareManager
 from scrapy.utils.defer import chain_deferred, deferred_imap
 from scrapy.utils.request import request_info
 from scrapy.utils.misc import load_object
+from scrapy.utils.defer import mustbe_deferred
 
 class ExecutionEngine(object):
     """
@@ -182,7 +183,6 @@ class ExecutionEngine(object):
         domain = spider.domain_name
 
         if not self.running or \
-                domain in self.closing or \
                 self.domain_is_closed(domain) or \
                 self.downloader.sites[domain].needs_backout():
             return
@@ -190,18 +190,9 @@ class ExecutionEngine(object):
         # Next pending request from scheduler
         request, deferred = self.scheduler.next_request(domain)
         if request:
-            try:
-                dwld = self.download(request, spider)
-            except IgnoreRequest, ex:
-                log.msg(ex.message, log.WARNING, domain=domain)
-            except Exception, ex:
-                log.exc("Bug in download code: %s" % request, domain=domain)
-                self._domain_idle(domain)
-            else:
-                chain_deferred(dwld, deferred)
-        else:
-            if self.domain_is_idle(domain):
-                self._domain_idle(domain)
+            mustbe_deferred(self.download, request, spider).chainDeferred(deferred)
+        elif self.domain_is_idle(domain):
+            self._domain_idle(domain)
 
     def domain_is_idle(self, domain):
         scraping = self._scraping.get(domain)
