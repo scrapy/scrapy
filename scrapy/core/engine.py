@@ -151,7 +151,7 @@ class ExecutionEngine(object):
         """Pause the execution engine"""
         self.paused = True
 
-    def resume(self):
+    def unpause(self):
         """Resume the execution engine"""
         self.paused = False
 
