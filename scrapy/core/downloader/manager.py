@@ -73,10 +73,9 @@ class Downloader(object):
         Response object, then request never reach downloader queue, and it will
         not be downloaded from site.
         """
-        domain = spider.domain_name
-        site = self.sites[domain]
+        site = self.sites[spider.domain_name]
         if site.closed:
-            raise IgnoreRequest('Can\'t fetch on a closed domain: %s' + request)
+            raise IgnoreRequest('Can\'t fetch on a closed domain')
 
         site.active.add(request)
         def _deactivate(_):
@@ -101,7 +100,7 @@ class Downloader(object):
         if not site:
             return
 
-        # download delay handling
+        # Delay queue processing if a download_delay is configured
         now = datetime.datetime.now()
         if site.download_delay and site.lastseen:
             delta = now - site.lastseen
@@ -111,23 +110,23 @@ class Downloader(object):
                 return
         site.lastseen = now
 
-        while site.queue and site.capacity()>0:
+        # Process requests in queue if there are free slots to transfer for this site
+        while site.queue and site.capacity() > 0:
             request, deferred = site.queue.pop(0)
-            self._download(site, request, spider, deferred)
+            self._download(site, request, spider).chainDeferred(deferred)
 
+        # Free site resources if domain was asked to be closed and it is idle.
         if site.closed and site.is_idle():
             del self.sites[domain]
-            self.engine.closed_domain(domain)
+            self.engine.closed_domain(domain) # notify engine.
 
-    def _download(self, site, request, spider, deferred):
+    def _download(self, site, request, spider):
         site.transferring.add(request)
-        def _finish(_):
+        def _transferred(_):
             site.transferring.remove(request)
             self.process_queue(spider)
-
-        dwld = mustbe_deferred(download_any, request, spider)
-        chain_deferred(dwld, deferred)
-        return dwld.addBoth(_finish)
+            return _
+        return mustbe_deferred(download_any, request, spider).addBoth(_transferred)
 
     def open_domain(self, domain):
         """Allocate resources to begin processing a domain"""
