@@ -47,7 +47,7 @@ class ExecutionEngine(object):
     def __init__(self):
         self.configured = False
         self.keep_alive = False
-        self.cancelled = set() # domains in cancelation state
+        self.closing = {} # domains being closed
         self.debug_mode = settings.getbool('ENGINE_DEBUG')
         self.tasks = []
         self.ports = []
@@ -135,7 +135,7 @@ class ExecutionEngine(object):
             self.running = False
             for domain in self.open_domains:
                 spider = spiders.fromdomain(domain)
-                signals.send_catch_log(signal=signals.domain_closed, sender=self.__class__, domain=domain, spider=spider, status='cancelled')
+                signals.send_catch_log(signal=signals.domain_closed, sender=self.__class__, domain=domain, spider=spider, reason='shutdown')
             for tsk, _, _ in self.tasks: # stop looping calls
                 if tsk.running:
                     tsk.stop()
@@ -186,7 +186,7 @@ class ExecutionEngine(object):
             return
 
         # backout enqueing downloads if domain needs it
-        if domain in self.cancelled or self.downloader.needs_backout(domain):
+        if domain in self.closing or self.downloader.needs_backout(domain):
             return
 
         # Next pending request from scheduler
@@ -235,7 +235,7 @@ class ExecutionEngine(object):
                             signals.send_catch_log(signal=signals.item_passed, sender=self.__class__, item=item, spider=spider, response=response, pipe_output=pipe_result)
                         self.next_request(spider)
 
-                    if domain in self.cancelled:
+                    if domain in self.closing:
                         return
                     elif isinstance(output, ScrapedItem):
                         log.msg("Scraped %s in <%s>" % (output, request.url), log.INFO, domain=domain)
@@ -346,7 +346,7 @@ class ExecutionEngine(object):
         spider = spider or spiders.fromdomain(domain)
         self.next_request(spider)
 
-        self.cancelled.discard(domain)
+        self.closing.pop(domain, None)
         self.downloader.open_domain(domain)
         self.pipeline.open_domain(domain)
         self._scraping[domain] = set()
@@ -379,11 +379,11 @@ class ExecutionEngine(object):
         if self.is_idle() and not self.keep_alive:
             self.stop()
 
-    def close_domain(self, domain):
+    def close_domain(self, domain, reason='cancelled'):
         """Close (cancel) domain and clear all its outstanding requests"""
-        if domain not in self.cancelled:
-            log.msg("Closing domain", domain=domain)
-            self.cancelled.add(domain)
+        if domain not in self.closing:
+            log.msg("Closing domain (%s)" % reason, domain=domain)
+            self.closing[domain] = reason
             self._close_domain(domain)
 
     def _close_domain(self, domain):
@@ -400,10 +400,10 @@ class ExecutionEngine(object):
         self.scheduler.close_domain(domain)
         self.pipeline.close_domain(domain)
         del self._scraping[domain]
-        status = 'cancelled' if domain in self.cancelled else 'finished'
-        signals.send_catch_log(signal=signals.domain_closed, sender=self.__class__, domain=domain, spider=spider, status=status)
-        log.msg("Domain closed (%s)" % status, domain=domain) 
-        self.cancelled.discard(domain)
+        reason = self.closing.get(domain, 'finished')
+        signals.send_catch_log(signal=signals.domain_closed, sender=self.__class__, domain=domain, spider=spider, reason=reason)
+        log.msg("Domain closed (%s)" % reason, domain=domain) 
+        self.closing.pop(domain, None)
         self._mainloop()
 
     def getstatus(self):
@@ -426,7 +426,7 @@ class ExecutionEngine(object):
             ]
         domain_tests = [
             "self.domain_is_idle(domain)",
-            "domain in self.cancelled",
+            "self.closing.get(domain)",
             "self.scheduler.domain_has_pending_requests(domain)",
             "len(self.scheduler.pending_requests[domain])",
             "len(self.downloader.sites[domain].queue)",

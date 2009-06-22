@@ -47,6 +47,6 @@ class DNSCache(object):
             self._cache[host] = ips
         return ips[0]
 
-    def domain_closed(self, domain, spider, status):
+    def domain_closed(self, domain, spider, reason):
         if domain in self._cache:
             del self._cache[domain]

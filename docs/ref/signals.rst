@@ -23,131 +23,181 @@ Here's a list of signals used in Scrapy and their meaning, in alphabetical
 order.
 
 .. signal:: domain_closed
-.. function:: domain_closed(domain, spider, status)
+.. function:: domain_closed(domain, spider, reason)
 
-Sent right after a spider/domain has been closed.
+    Sent right after a spider/domain has been closed.
 
-``domain`` is a string which contains the domain of the spider which has been closed
-``spider`` is the spider which has been closed
-``status`` is a string which can have two values: ``'finished'`` if the domain
-has finished successfully, or ``'cancelled'`` if the domain was cancelled (for
-example, by hitting Ctrl-C, by calling the engine ``stop()`` method or by
-explicitly closing the domain).
+    :param domain: a string which contains the domain of the spider which has
+        been closed
+    :type domain: str
+
+    :param spider: the spider which has been closed
+    :type spider: :class:`~scrapy.spider.BaseSpider` object
+
+    :param reason: a string which describes the reason why the domain was closed. If
+        it was closed because the domain has completed scraping, it the reason
+        is ``'finished'``. Otherwise, if the domain was manually closed by
+        calling the ``close_domain`` engine method, then the reason is the one
+        passed in the ``reason`` argument of that method (which defaults to
+        ``'cancelled'``). If the engine was shutdown (for example, by hitting
+        Ctrl-C to stop it) the reason will be ``'shutdown'``.
+    :type reason: str
 
 .. signal:: domain_open
 .. function:: domain_open(domain, spider)
 
-Sent right before a spider has been opened for crawling.
+    Sent right before a spider has been opened for crawling.
 
-``domain`` is a string which contains the domain of the spider which is about
-to be opened
-``spider`` is the spider which is about to be opened
+    :param domain: a string which contains the domain of the spider which is about
+        to be opened
+    :type domain: str
+
+    :param spider: the spider which is about to be opened
+    :type spider: :class:`~scrapy.spider.BaseSpider` object
 
 .. signal:: domain_opened
 .. function:: domain_opened(domain, spider)
 
-Sent right after a spider has been opened for crawling.
+    Sent right after a spider has been opened for crawling.
 
-``domain`` is a string with the domain of the spider which has been opened
-``spider`` is the spider which has been opened
+    :param domain: a string with the domain of the spider which has been opened
+    :type domain: str
+
+    :param spider: the spider which has been opened
+    :type spider: :class:`~scrapy.spider.BaseSpider` object
 
 .. signal:: domain_idle
 .. function:: domain_idle(domain, spider)
 
-Sent when a domain has no further:
- * requests waiting to be downloaded
- * requests scheduled
- * items being processed in the item pipeline
+    Sent when a domain has gone idle, which means the spider has no further:
+        * requests waiting to be downloaded
+        * requests scheduled
+        * items being processed in the item pipeline
 
-``domain`` is a string with the domain of the spider which has gone idle
-``spider`` is the spider which has gone idle
+    :param domain: is a string with the domain of the spider which has gone idle
+    :type domain: str
 
-If any handler of this signals raises a :exception:`DontCloseDomain` the domain
-won't be closed at this time and will wait until another idle signal is sent.
-Otherwise (if no handler raises :exception:`DontCloseDomain`) the domain will
-be closed immediately after all handlers of ``domain_idle`` have finished, and
-a :signal:`domain_closed` will thus be sent.
+    :param spider: the spider which has gone idle
+    :type spider: :class:`~scrapy.spider.BaseSpider` object
+
+    If any handler of this signal handlers raises a
+    :exception:`DontCloseDomain` the domain won't be closed this time and will
+    wait until another idle signal is sent.  Otherwise (if no handler raises
+    :exception:`DontCloseDomain`) the domain will be closed immediately after
+    all handlers of ``domain_idle`` have finished, and a
+    :signal:`domain_closed` will thus be sent.
 
 .. signal:: engine_started
 .. function:: engine_started()
 
-Sent when the Scrapy engine is started (for example, when a crawling
-process has started).
+    Sent when the Scrapy engine is started (for example, when a crawling
+    process has started).
 
 .. signal:: engine_stopped
 .. function:: engine_stopped()
 
-Sent when the Scrapy engine is stopped (for example, when a crawling
-process has finished).
-
-.. signal:: request_received
-.. function:: request_received(request, spider, response)
-
-Sent when the engine receives a :class:`~scrapy.http.Request` from a spider.
-
-``request`` is the :class:`~scrapy.http.Request` received
-``spider`` is the spider which generated the request
-``response`` is the :class:`~scrapy.http.Response` fed to the spider which
-generated the request
-
-.. signal:: request_uploaded
-.. function:: request_uploaded(request, spider)
-
-Sent right after the download has sent a :class:`~scrapy.http.Request`.
-
-``request`` is the :class:`~scrapy.http.Request` uploaded/sent
-``spider`` is the spider which generated the request
-
-.. signal:: response_received
-.. function:: response_received(response, spider)
-
-``response`` is the :class:`~scrapy.http.Response` received
-``spider`` is  the spider for which the response is intended
-
-Sent when the engine receives a new :class:`~scrapy.http.Response` from the
-downloader.
-
-.. signal:: response_downloaded
-.. function:: response_downloaded(response, spider)
-
-Sent by the downloader right after a ``HTTPResponse`` is downloaded.
-
-``response`` is the ``HTTPResponse`` downloaded
-``spider`` is the spider for which the response is intended
+    Sent when the Scrapy engine is stopped (for example, when a crawling
+    process has finished).
 
 .. signal:: item_scraped
 .. function:: item_scraped(item, spider, response)
 
-Sent when the engine receives a new scraped item from the spider, and right
-before the item is sent to the :ref:`topics-item-pipeline`.
+    Sent when the engine receives a new scraped item from the spider, and right
+    before the item is sent to the :ref:`topics-item-pipeline`.
 
-``item`` is the item scraped
-``spider`` is the spider which scraped the item 
-``response`` is the :class:`~scrapy.http.Response` from which the item was
-scraped
+    :param item: is the item scraped
+    :type item: :class:`~scrapy.item.ScrapedItem` object
+
+    :param spider: the spider which scraped the item 
+    :type spider: :class:`~scrapy.spider.BaseSpider` object
+
+    :param response: the response from which the item was scraped
+    :type response: :class:`~scrapy.http.Response` object
 
 .. signal:: item_passed
 .. function:: item_passed(item, spider, response, pipe_output)
 
-Sent after an item has passed al the :ref:`topics-item-pipeline` stages without
-being dropped.
+    Sent after an item has passed al the :ref:`topics-item-pipeline` stages without
+    being dropped.
 
-``item`` is the item which passed the pipeline
-``spider`` is the spider which scraped the item 
-``response`` is the :class:`~scrapy.http.Response` from which the item was scraped
-``pipe_output`` is  the output of the item pipeline. Typically, this points to
-the same ``item`` object, unless some pipeline stage created a new item.
+    :param item: the item which passed the pipeline
+    :type item: :class:`~scrapy.item.ScrapedItem` object
+
+    :param spider: the spider which scraped the item 
+    :type spider: :class:`~scrapy.spider.BaseSpider` object
+
+    :param response: the response from which the item was scraped
+    :type response: :class:`~scrapy.http.Response` object
+
+    :param pipe_output: the output of the item pipeline. This is typically the
+        same :class:`~scrapy.item.ScrapedItem` object received in the ``item``
+        parameter, unless some pipeline stage created a new item.
 
 .. signal:: item_dropped
 .. function:: item_dropped(item, spider, response, exception)
 
-Sent after an item has dropped from the :ref:`topics-item-pipeline` when some stage
-raised a :exception:`DropItem` exception.
+    Sent after an item has dropped from the :ref:`topics-item-pipeline` when some stage
+    raised a :exception:`DropItem` exception.
 
-``item`` is the item dropped from the :ref:`topics-item-pipeline`
-``spider`` is the spider which scraped the item 
-``response`` is the :class:`~scrapy.http.Response` from which the item was scraped
-``exception`` is the (:exception:`DropItem` child) exception that caused the
-item to be dropped 
+    :param item: the item dropped from the :ref:`topics-item-pipeline`
+    :type item: :class:`~scrapy.item.ScrapedItem` object
 
+    :param spider: the spider which scraped the item 
+    :type spider: :class:`~scrapy.spider.BaseSpider` object
+
+    :param response: the response from which the item was scraped
+    :type response: :class:`~scrapy.http.Response` object
+
+    :param exception: the exception (which must be a :exception:`DropItem`
+        subclass) which caused the item to be dropped 
+    :type exception: :exception:`DropItem` exception
+
+.. signal:: request_received
+.. function:: request_received(request, spider, response)
+
+    Sent when the engine receives a :class:`~scrapy.http.Request` from a spider.
+
+    :param request: the request received
+    :type request: :class:`~scrapy.http.Request` object
+
+    :param spider: the spider which generated the request
+    :type spider: :class:`~scrapy.spider.BaseSpider` object
+
+    :param response: the :class:`~scrapy.http.Response` fed to the spider which
+        generated the request later
+    :type response: :class:`~scrapy.http.Response` object
+
+.. signal:: request_uploaded
+.. function:: request_uploaded(request, spider)
+
+    Sent right after the download has sent a :class:`~scrapy.http.Request`.
+
+    :param request: the request uploaded/sent
+    :type request: :class:`~scrapy.http.Request` object
+
+    :param spider: the spider which generated the request
+    :type spider: :class:`~scrapy.spider.BaseSpider` object
+
+.. signal:: response_received
+.. function:: response_received(response, spider)
+
+    :param response: the response received
+    :type response: :class:`~scrapy.http.Response` object
+
+    :param spider: the spider for which the response is intended
+    :type spider: :class:`~scrapy.spider.BaseSpider` object
+
+    Sent when the engine receives a new :class:`~scrapy.http.Response` from the
+    downloader.
+
+.. signal:: response_downloaded
+.. function:: response_downloaded(response, spider)
+
+    Sent by the downloader right after a ``HTTPResponse`` is downloaded.
+
+    :param response: the response downloaded
+    :type response: :class:`~scrapy.http.Response` object
+
+    :param spider: the spider for which the response is intended
+    :type spider: :class:`~scrapy.spider.BaseSpider` object
 

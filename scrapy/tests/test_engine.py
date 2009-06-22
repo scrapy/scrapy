@@ -186,7 +186,7 @@ class EngineTest(unittest.TestCase):
                          session.signals_catched[signals.domain_opened])
         self.assertEqual({'domain': session.domain, 'spider': session.spider},
                          session.signals_catched[signals.domain_idle])
-        self.assertEqual({'domain': session.domain, 'spider': session.spider, 'status': 'finished'},
+        self.assertEqual({'domain': session.domain, 'spider': session.spider, 'reason': 'finished'},
                          session.signals_catched[signals.domain_closed])
 
 if __name__ == "__main__":

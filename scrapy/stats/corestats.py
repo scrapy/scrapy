@@ -32,10 +32,10 @@ class CoreStats(object):
         stats.setpath('%s/envinfo' % domain, stats.getpath('_envinfo'))
         stats.incpath('_global/domain_count/opened')
 
-    def stats_domain_closing(self, domain, spider, status):
+    def stats_domain_closing(self, domain, spider, reason):
         stats.setpath('%s/finish_time' % domain, datetime.datetime.now())
-        stats.setpath('%s/finish_status' % domain, 'OK' if status == 'finished' else status)
-        stats.incpath('_global/domain_count/%s' % status)
+        stats.setpath('%s/finish_status' % domain, 'OK' if reason == 'finished' else reason)
+        stats.incpath('_global/domain_count/%s' % reason)
 
     def item_scraped(self, item, spider):
         stats.incpath('%s/item_scraped_count' % spider.domain_name)

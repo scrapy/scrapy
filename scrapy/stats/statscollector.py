@@ -66,12 +66,12 @@ class StatsCollector(dict):
     def _domain_open(self, domain, spider):
         dispatcher.send(signal=self.domain_open, sender=self.__class__, domain=domain, spider=spider)
 
-    def _domain_closed(self, domain, spider, status):
-        dispatcher.send(signal=self.domain_closing, sender=self.__class__, domain=domain, spider=spider, status=status)
+    def _domain_closed(self, domain, spider, reason):
+        dispatcher.send(signal=self.domain_closing, sender=self.__class__, domain=domain, spider=spider, reason=reason)
         if self.debug:
             log.msg(pprint.pformat(self[domain]), domain=domain, level=log.DEBUG)
         if self.db:
             self.db.put(domain, self[domain])
         if self.cleanup:
             del self[domain]
-        dispatcher.send(signal=self.domain_closed, sender=self.__class__, domain=domain, spider=spider, status=status)
+        dispatcher.send(signal=self.domain_closed, sender=self.__class__, domain=domain, spider=spider, reason=reason)

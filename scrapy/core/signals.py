@@ -30,8 +30,7 @@ domain_opened = object()
 domain_idle = object()
 
 # After a domain has been closed
-# args: domain, spider, status
-# status is a string and its possible values are: "finished" or "cancelled"
+# args: domain, spider, reason
 domain_closed = object()
 
 # New request received from spiders

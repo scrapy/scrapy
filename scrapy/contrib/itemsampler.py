@@ -68,8 +68,8 @@ class ItemSamplerPipeline(object):
         if self.empty_domains:
             log.msg("No products sampled for: %s" % " ".join(self.empty_domains), level=log.WARNING)
 
-    def domain_closed(self, domain, spider, status):
-        if status == 'finished' and not stats.getpath("%s/items_sampled" % domain):
+    def domain_closed(self, domain, spider, reason):
+        if reason == 'finished' and not stats.getpath("%s/items_sampled" % domain):
             self.empty_domains.add(domain)
         self.domains_count += 1
         log.msg("Sampled %d domains so far (%d empty)" % (self.domains_count, len(self.empty_domains)), level=log.INFO)
