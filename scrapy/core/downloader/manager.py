@@ -11,7 +11,8 @@ from scrapy.spider import spiders
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.core.downloader.handlers import download_any
 from scrapy.conf import settings
-from scrapy.utils.defer import chain_deferred, mustbe_deferred
+from scrapy.utils.defer import mustbe_deferred
+from scrapy import log
 
 
 class SiteInfo(object):
@@ -33,20 +34,14 @@ class SiteInfo(object):
         self.queue = []
         self.active = set()
         self.transferring = set()
-        self.closed = False
+        self.closing = False
         self.lastseen = None
 
-    def is_idle(self):
-        return not (self.active or self.transferring)
-
-    def capacity(self):
+    def free_transfer_slots(self):
         return self.max_concurrent_requests - len(self.transferring)
 
-    def outstanding(self):
-        return len(self.active) + len(self.queue)
-
     def needs_backout(self):
-        return self.outstanding() > (2 * self.max_concurrent_requests)
+        return len(self.queue) > 2 * self.max_concurrent_requests
 
 
 class Downloader(object):
@@ -74,12 +69,13 @@ class Downloader(object):
         not be downloaded from site.
         """
         site = self.sites[spider.domain_name]
-        if site.closed:
-            raise IgnoreRequest('Can\'t fetch on a closed domain')
+        if site.closing:
+            raise IgnoreRequest('Can\'t fetch on a closing domain')
 
         site.active.add(request)
         def _deactivate(_):
             site.active.remove(request)
+            self._close_if_idle(spider.domain_name)
             return _
 
         return self.middleware.download(self.enqueue, request, spider).addBoth(_deactivate)
@@ -117,12 +113,15 @@ class Downloader(object):
         site.lastseen = now
 
         # Process requests in queue if there are free slots to transfer for this site
-        while site.queue and site.capacity() > 0:
+        while site.queue and site.free_transfer_slots() > 0:
             request, deferred = site.queue.pop(0)
             self._download(site, request, spider).chainDeferred(deferred)
 
-        # Free site resources if domain was asked to be closed and it is idle.
-        if site.closed and site.is_idle():
+        self._close_if_idle(domain)
+
+    def _close_if_idle(self, domain):
+        site = self.sites.get(domain)
+        if site and site.closing and not site.active:
             del self.sites[domain]
             self.engine.closed_domain(domain) # notify engine.
 
@@ -148,28 +147,12 @@ class Downloader(object):
     def close_domain(self, domain):
         """Free any resources associated with the given domain"""
         site = self.sites.get(domain)
-        if not site or site.closed:
+        if not site or site.closing:
             raise RuntimeError('Downloader domain already closed: %s' % domain)
 
-        site.closed = True
+        site.closing = True
         spider = spiders.fromdomain(domain)
         self.process_queue(spider)
-
-    def needs_backout(self, domain):
-        site = self.sites.get(domain)
-        return (site.needs_backout() if site else True)
-
-    # Most of the following functions must be reviewed to decide if are really needed
-    def domain_is_open(self, domain):
-        return domain in self.sites
-
-    def outstanding(self, domain):
-        """The number of outstanding requests for a domain
-        This includes both active requests and pending requests.
-        """
-        site = self.sites.get(domain)
-        if site:
-            return site.outstanding()
 
     def has_capacity(self):
         """Does the downloader have capacity to handle more domains"""

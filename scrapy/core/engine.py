@@ -164,7 +164,7 @@ class ExecutionEngine(object):
             self.open_domain(domain, spider)
         return domain
 
-    def next_request(self, spider, breakloop=True):
+    def next_request(self, spider, now=False):
         """Scrape the next request for the domain passed.
 
         The next request to be scraped is retrieved from the scheduler and
@@ -175,18 +175,16 @@ class ExecutionEngine(object):
         if self.paused:
             return reactor.callLater(5, self.next_request, spider)
 
-        if breakloop:
-            # delaying make reentrant call to next_request safe
-            return reactor.callLater(0, self.next_request, spider, breakloop=False)
+        # call next_request in next reactor loop by default
+        if not now:
+            return reactor.callLater(0, self.next_request, spider, now=True)
 
         domain = spider.domain_name
 
-        # check that the engine is still running and domain is open
-        if not self.running:
-            return
-
-        # backout enqueing downloads if domain needs it
-        if domain in self.closing or self.downloader.needs_backout(domain):
+        if not self.running or \
+                domain in self.closing or \
+                self.domain_is_closed(domain) or \
+                self.downloader.sites[domain].needs_backout():
             return
 
         # Next pending request from scheduler
@@ -208,12 +206,12 @@ class ExecutionEngine(object):
     def domain_is_idle(self, domain):
         scraping = self._scraping.get(domain)
         pending = self.scheduler.domain_has_pending_requests(domain)
-        downloading = domain in self.downloader.sites and self.downloader.sites[domain].outstanding() > 0
+        downloading = domain in self.downloader.sites and self.downloader.sites[domain].active
         haspipe = not self.pipeline.domain_is_idle(domain)
         return not (pending or downloading or haspipe or scraping)
 
-    def domain_is_open(self, domain):
-        return domain in self.downloader.sites
+    def domain_is_closed(self, domain):
+        return domain not in self.downloader.sites
 
     @property
     def open_domains(self):
@@ -283,9 +281,11 @@ class ExecutionEngine(object):
 
     def schedule(self, request, spider):
         domain = spider.domain_name
+        if domain in self.closing:
+            raise IgnoreRequest()
         if not self.scheduler.domain_is_open(domain):
             self.scheduler.open_domain(domain)
-            if not self.downloader.domain_is_open(domain):
+            if self.domain_is_closed(domain): # scheduler auto-open
                 self.domain_scheduler.add_domain(domain)
         self.next_request(spider)
         return self.scheduler.enqueue_request(domain, request)
@@ -429,7 +429,7 @@ class ExecutionEngine(object):
             "len(self.downloader.sites[domain].queue)",
             "len(self.downloader.sites[domain].active)",
             "len(self.downloader.sites[domain].transferring)",
-            "self.downloader.sites[domain].closed",
+            "self.downloader.sites[domain].closing",
             "self.downloader.sites[domain].lastseen",
             "self.pipeline.domain_is_idle(domain)",
             "len(self.pipeline.domaininfo[domain])",
