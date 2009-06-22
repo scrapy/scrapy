@@ -93,6 +93,12 @@ class Downloader(object):
         return deferred
 
     def process_queue(self, spider):
+        try:
+            self._process_queue(spider)
+        except:
+            log.exc('Downloader process queue bug')
+
+    def _process_queue(self, spider):
         """ Effective download requests from site queue
         """
         domain = spider.domain_name
