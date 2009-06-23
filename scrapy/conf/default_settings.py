@@ -84,8 +84,6 @@ DUPEFILTER_CLASS = 'scrapy.contrib.dupefilter.RequestFingerprintDupeFilter'
 
 ENABLED_SPIDERS_FILE = ''
 
-ENGINE_DEBUG = False
-
 EXTENSIONS = [
     'scrapy.stats.corestats.CoreStats',
     'scrapy.xpath.extension.ResponseLibxml2',

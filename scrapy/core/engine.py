@@ -24,7 +24,6 @@ from scrapy.item.pipeline import ItemPipelineManager
 from scrapy.spider import spiders
 from scrapy.spider.middleware import SpiderMiddlewareManager
 from scrapy.utils.defer import chain_deferred, deferred_imap
-from scrapy.utils.request import request_info
 from scrapy.utils.misc import load_object
 from scrapy.utils.defer import mustbe_deferred
 
@@ -48,8 +47,7 @@ class ExecutionEngine(object):
     def __init__(self):
         self.configured = False
         self.keep_alive = False
-        self.closing = {} # domains being closed
-        self.debug_mode = settings.getbool('ENGINE_DEBUG')
+        self.closing = {} # dict (domain -> reason) of spiders being closed
         self.tasks = []
         self.ports = []
         self.running = False
@@ -161,8 +159,7 @@ class ExecutionEngine(object):
     def next_domain(self):
         domain = self.domain_scheduler.next_domain()
         if domain:
-            spider = spiders.fromdomain(domain)
-            self.open_domain(domain, spider)
+            self.open_domain(domain)
         return domain
 
     def next_request(self, spider, now=False):
@@ -295,22 +292,18 @@ class ExecutionEngine(object):
                 return self._stop_if_idle()
 
     def download(self, request, spider):
-        if self.debug_mode:
-            log.msg('Downloading %s' % request_info(request), log.DEBUG)
         domain = spider.domain_name
         referer = request.headers.get('Referer', None)
 
         def _on_success(response):
             """handle the result of a page download"""
             assert isinstance(response, (Response, Request))
-            if self.debug_mode:
-                log.msg("Requested %s" % request_info(request), level=log.DEBUG, domain=domain)
             if isinstance(response, Response):
-                response.request = request # tie request to obtained response
+                response.request = request # tie request to response received
                 log.msg("Crawled %s from <%s>" % (response, referer), level=log.DEBUG, domain=domain)
                 return response
             elif isinstance(response, Request):
-                newrequest = response # proper alias
+                newrequest = response
                 schd = self.schedule(newrequest, spider)
                 chain_deferred(schd, newrequest.deferred)
                 return schd
@@ -332,12 +325,11 @@ class ExecutionEngine(object):
         dwld.addBoth(_on_complete)
         return deferred
 
-    def open_domain(self, domain, spider=None):
+    def open_domain(self, domain):
         log.msg("Domain opened", domain=domain)
-        spider = spider or spiders.fromdomain(domain)
+        spider = spiders.fromdomain(domain)
         self.next_request(spider)
 
-        self.closing.pop(domain, None)
         self.downloader.open_domain(domain)
         self.pipeline.open_domain(domain)
         self._scraping[domain] = set()

@@ -395,15 +395,6 @@ The class used to detect and filter duplicate requests.
 The default (``RequestFingerprintDupeFilter``) filters based on request fingerprint
 (using ``scrapy.utils.request.request_fingerprint``) and grouping per domain.
 
-.. setting:: ENGINE_DEBUG
-
-ENGINE_DEBUG
-------------
-
-Default: ``False``
-
-Whether to enable the Scrapy Engine debugging mode.
-
 .. setting:: ENABLED_SPIDERS_FILE
 
 ENABLED_SPIDERS_FILE
