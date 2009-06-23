@@ -254,9 +254,10 @@ class ExecutionEngine(object):
             scd.addErrback(eb_framework)
 
             self._scraping[domain].add(response)
-            scd.addBoth(lambda _: self._scraping[domain].remove(response))
-            scd.addBoth(lambda _: self.next_request(spider))
-            return scd
+            def _remove(_):
+                self._scraping[domain].remove(response)
+                self.next_request(spider)
+            return scd.addBoth(_remove)
 
         def _cleanfailure(_failure):
             ex = _failure.value
