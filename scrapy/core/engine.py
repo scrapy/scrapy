@@ -219,6 +219,7 @@ class ExecutionEngine(object):
                             signals.send_catch_log(signal=signals.item_dropped, sender=self.__class__, item=item, spider=spider, response=response, exception=pipe_result.value)
                         else:
                             signals.send_catch_log(signal=signals.item_passed, sender=self.__class__, item=item, spider=spider, response=response, pipe_output=pipe_result)
+                        self.next_request(spider)
 
                     if domain in self.closing:
                         return
