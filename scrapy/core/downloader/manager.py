@@ -50,13 +50,7 @@ class Downloader(object):
     parallel.
     """
 
-    def __init__(self, engine):
-        """Create the downlaoder. 
-        
-        ``engine`` is the scrapy engine controlling this downloader
-        """
-
-        self.engine = engine
+    def __init__(self):
         self.sites = {}
         self.middleware = DownloaderMiddlewareManager()
         self.concurrent_domains = settings.getint('CONCURRENT_DOMAINS')
@@ -123,7 +117,6 @@ class Downloader(object):
         site = self.sites.get(domain)
         if site and site.closing and not site.active:
             del self.sites[domain]
-            self.engine.closed_domain(domain) # notify engine.
 
     def _download(self, site, request, spider):
         site.transferring.add(request)

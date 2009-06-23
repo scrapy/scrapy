@@ -62,7 +62,7 @@ class ExecutionEngine(object):
         """
         self.scheduler = scheduler or Scheduler()
         self.domain_scheduler = load_object(settings['DOMAIN_SCHEDULER'])()
-        self.downloader = downloader or Downloader(self)
+        self.downloader = downloader or Downloader()
         self.spidermiddleware = SpiderMiddlewareManager()
         self._scraping = {}
         self.pipeline = ItemPipelineManager()
@@ -361,7 +361,6 @@ class ExecutionEngine(object):
             return
         except:
             log.exc("Exception catched on domain_idle signal dispatch")
-
         if self.domain_is_idle(domain):
             self.close_domain(domain, reason='finished')
 
@@ -376,19 +375,23 @@ class ExecutionEngine(object):
             log.msg("Closing domain (%s)" % reason, domain=domain)
             self.closing[domain] = reason
             self.downloader.close_domain(domain)
+            self.scheduler.clear_pending_requests(domain)
+            self._finish_closing_domain_if_idle(domain)
 
-    def closed_domain(self, domain):
-        """
-        This function is called after the domain has been closed, and throws
-        the domain_closed signal which is meant to be used for cleaning up
-        purposes. In contrast to domain_idle, this function is called only
-        ONCE for each domain run.
-        """ 
+    def _finish_closing_domain_if_idle(self, domain):
+        """Call _finish_closing_domain if domain is idle"""
+        if self.domain_is_idle(domain):
+            self._finish_closing_domain(domain)
+        else:
+            reactor.callLater(5, self._finish_closing_domain_if_idle, domain)
+
+    def _finish_closing_domain(self, domain):
+        """This function is called after the domain has been closed"""
         spider = spiders.fromdomain(domain) 
         self.scheduler.close_domain(domain)
         self.pipeline.close_domain(domain)
         del self._scraping[domain]
-        reason = self.closing[domain]
+        reason = self.closing.get(domain, 'finished')
         signals.send_catch_log(signal=signals.domain_closed, sender=self.__class__, domain=domain, spider=spider, reason=reason)
         log.msg("Domain closed (%s)" % reason, domain=domain) 
         self.closing.pop(domain, None)
