@@ -21,6 +21,7 @@ This section describes all key concepts of Scrapy.
    extensions
    stats
    webconsole
+   telnetconsole
    robotstxt
    firefox
    firebug

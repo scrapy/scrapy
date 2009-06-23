@@ -58,6 +58,8 @@ See also :ref:`topics-webconsole` for information on how to write your own web
 console extension, and "Web console extensions" below for a list of available
 built-in (web console) extensions.
 
+.. _ref-extensions-telnetconsole:
+
 Telnet console extension
 ------------------------
 

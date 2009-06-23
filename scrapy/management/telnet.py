@@ -1,6 +1,11 @@
+"""
+Telnet Console extension 
+
+See documentation in docs/ref/telnetconsole.rst
+"""
+
 import pprint
 
-from twisted.internet import reactor
 from twisted.conch import manhole, telnet
 from twisted.conch.insults import insults
 from twisted.internet import protocol
@@ -8,6 +13,7 @@ from twisted.internet import protocol
 from scrapy.extension import extensions
 from scrapy.core.manager import scrapymanager
 from scrapy.core.engine import scrapyengine
+from scrapy.spider import spiders
 from scrapy.stats import stats
 from scrapy.conf import settings
 
@@ -17,12 +23,17 @@ try:
 except ImportError:
     hpy = None
 
-telnet_namespace = {'ee': scrapyengine,
-                    'em': scrapymanager,
-                    'ex': extensions.enabled,
-                    'st': stats,
-                    'h': hpy,
-                    'p': pprint.pprint}  # useful shortcut for debugging
+# if you add entries here also update topics/telnetconsole.rst
+telnet_namespace = {
+    'engine': scrapyengine,
+    'manager': scrapymanager,
+    'extensions': extensions,
+    'stats': stats,
+    'spiders': spiders,
+    'settings': settings,
+    'p': pprint.pprint,
+    'hpy': hpy,
+}
 
 def makeProtocol():
     return telnet.TelnetTransport(telnet.TelnetBootstrapProtocol,
@@ -34,8 +45,6 @@ class TelnetConsole(protocol.ServerFactory):
     def __init__(self):
         if not settings.getbool('TELNETCONSOLE_ENABLED'):
             return
-
-        #protocol.ServerFactory.__init__(self)
         self.protocol = makeProtocol
         self.noisy = False
         port = settings.getint('TELNETCONSOLE_PORT')

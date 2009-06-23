@@ -897,13 +897,10 @@ A boolean which specifies if the telnet management console will be enabled
 TELNETCONSOLE_PORT
 ------------------
 
-Default: ``None``
+Default: ``6023``
 
-Scope: ``scrapy.management.telnet``
-
-The port to use for the telnet console. If unset, a dynamically assigned port
-is used.
-
+The port to use for the telnet console. If ``None``, a dynamically assigned
+port is used.
 
 .. setting:: TEMPLATES_DIR
 
