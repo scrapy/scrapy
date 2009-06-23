@@ -5,6 +5,7 @@ For more information see docs/topics/architecture.rst
 
 """
 from datetime import datetime
+from itertools import imap
 
 from twisted.internet import defer, reactor, task
 from twisted.internet.error import CannotListenError
@@ -235,7 +236,7 @@ class ExecutionEngine(object):
                         log.msg("Spider must return Request, ScrapedItem or None, got '%s' while processing %s" \
                                 % (type(output).__name__, request), log.WARNING, domain=domain)
 
-                return task.coiterate(cb_spider_output, spmw_result)
+                return task.coiterate(imap(cb_spider_output, spmw_result))
 
             def eb_user(_failure):
                 if not isinstance(_failure.value, IgnoreRequest):
@@ -253,6 +254,7 @@ class ExecutionEngine(object):
 
             self._scraping[domain].add(response)
             scd.addBoth(lambda _: self._scraping[domain].remove(response))
+            scd.addBoth(lambda _: self.next_request(spider))
             return scd
 
         def _cleanfailure(_failure):
