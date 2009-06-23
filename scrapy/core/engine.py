@@ -245,19 +245,18 @@ class ExecutionEngine(object):
                     log.msg("Error while spider was processing <%s> from <%s>: %s" % (request.url, referer, _failure), log.ERROR, domain=domain)
                     stats.incpath("%s/spider_exceptions/%s" % (domain, _failure.value.__class__.__name__))
 
-            def eb_framework(_failure):
-                log.msg('FRAMEWORK BUG processing %s: %s' % (request, _failure), log.ERROR, domain=domain)
-
-
             scd = mustbe_deferred(self.spidermiddleware.scrape, request, response, spider)
             scd.addCallbacks(cb_spidermiddleware_output, eb_user)
-            scd.addErrback(eb_framework)
 
             self._scraping[domain].add(response)
             def _remove(_):
                 self._scraping[domain].remove(response)
                 self.next_request(spider)
-            return scd.addBoth(_remove)
+                return _
+
+            scd.addBoth(_remove)
+            scd.addErrback(log.err, 'FRAMEWORK BUG processing %s' % request, domain=domain)
+            return scd
 
         def _cleanfailure(_failure):
             ex = _failure.value
@@ -268,7 +267,7 @@ class ExecutionEngine(object):
 
         schd = mustbe_deferred(self.schedule, request, spider)
         schd.addCallbacks(_process_response, _cleanfailure)
-        return schd
+        return schd.addErrback(log.err)
 
     def schedule(self, request, spider):
         domain = spider.domain_name
