@@ -1,7 +1,7 @@
 """
-Telnet Console extension 
+Scrapy Telnet Console extension
 
-See documentation in docs/ref/telnetconsole.rst
+See documentation in docs/topics/telnetconsole.rst
 """
 
 import pprint

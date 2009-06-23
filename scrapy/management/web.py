@@ -1,8 +1,13 @@
+"""
+Scrapy Web Console extension
+
+See docs/topics/webconsole.rst
+"""
+
 import re
 import socket
 from datetime import datetime
 
-from twisted.internet import reactor
 from twisted.web import server, resource
 from pydispatch import dispatcher
 
