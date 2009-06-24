@@ -38,7 +38,7 @@ class ExecutionEngine(object):
         self.running = False
         self.paused = False
         self.control_reactor = True
-        self._next_request_called = set()
+        self._next_request_pending = set()
 
     def configure(self, scheduler=None, downloader=None):
         """
@@ -157,9 +157,9 @@ class ExecutionEngine(object):
         The domain is closed if there are no more pages to scrape.
         """
         if now:
-            self._next_request_called.discard(domain)
-        elif domain not in self._next_request_called:
-            self._next_request_called.add(domain)
+            self._next_request_pending.discard(domain)
+        elif domain not in self._next_request_pending:
+            self._next_request_pending.add(domain)
             return reactor.callLater(0, self.next_request, domain, now=True)
         else:
             return
