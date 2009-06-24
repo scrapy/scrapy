@@ -109,7 +109,7 @@ class Downloader(object):
         # Process requests in queue if there are free slots to transfer for this site
         while site.queue and site.free_transfer_slots() > 0:
             request, deferred = site.queue.pop(0)
-            self._download(site, request, spider).chainDeferred(deferred)
+            self._download(site, request, spider, deferred)
 
         self._close_if_idle(domain)
 
@@ -118,13 +118,15 @@ class Downloader(object):
         if site and site.closing and not site.active:
             del self.sites[domain]
 
-    def _download(self, site, request, spider):
+    def _download(self, site, request, spider, deferred):
         site.transferring.add(request)
         def _transferred(_):
             site.transferring.remove(request)
             self.process_queue(spider)
-            return _
-        return mustbe_deferred(download_any, request, spider).addBoth(_transferred)
+
+        dfd = mustbe_deferred(download_any, request, spider)
+        dfd.chainDeferred(deferred).addBoth(lambda _: deferred)
+        dfd.addBoth(_transferred) # request next download after finish processing current response
 
     def open_domain(self, domain):
         """Allocate resources to begin processing a domain"""

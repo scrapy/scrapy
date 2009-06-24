@@ -176,7 +176,9 @@ class ExecutionEngine(object):
         request, deferred = self.scheduler.next_request(domain)
         if request:
             spider = spiders.fromdomain(domain)
-            mustbe_deferred(self.download, request, spider).chainDeferred(deferred)
+            dwld = mustbe_deferred(self.download, request, spider)
+            dwld.chainDeferred(deferred).addBoth(lambda _: deferred)
+            dwld.addErrback(log.err)
         elif self.domain_is_idle(domain):
             self._domain_idle(domain)
 
