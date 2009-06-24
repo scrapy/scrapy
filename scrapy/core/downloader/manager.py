@@ -119,14 +119,31 @@ class Downloader(object):
             del self.sites[domain]
 
     def _download(self, site, request, spider, deferred):
-        site.transferring.add(request)
-        def _transferred(_):
-            site.transferring.remove(request)
-            self.process_queue(spider)
+        # The order is very important for the following deferreds. Do not
+        # change!
 
+        # 1. Create the download deferred
         dfd = mustbe_deferred(download_any, request, spider)
+
+        # 2. After response arrives,  remove the request from transferring
+        # state to free up the transferring slot so it can be used by the
+        # following requests (perhaps those which came from the downloader
+        # middleware itself)
+        site.transferring.add(request)
+        def finish_transferring(_):
+            site.transferring.remove(request)
+            return _
+        dfd.addBoth(finish_transferring)
+
+        # 3. Wait until deferred returned to engine completes
         dfd.chainDeferred(deferred).addBoth(lambda _: deferred)
-        dfd.addBoth(_transferred) # request next download after finish processing current response
+
+        # 4. Finally, continue processing the next request from the queue. This
+        # callback must be placed at the end to make sure processing is
+        # performed first, otherwise memory could increase severely
+        def next_request(_):
+            self.process_queue(spider)
+        dfd.addBoth(next_request)
 
     def open_domain(self, domain):
         """Allocate resources to begin processing a domain"""
