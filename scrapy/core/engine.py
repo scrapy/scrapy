@@ -7,7 +7,7 @@ For more information see docs/topics/architecture.rst
 from datetime import datetime
 from itertools import imap
 
-from twisted.internet import defer, reactor, task
+from twisted.internet import reactor, task
 from twisted.internet.error import CannotListenError
 from twisted.python.failure import Failure
 from pydispatch import dispatcher
@@ -384,10 +384,9 @@ class ExecutionEngine(object):
         self.scheduler.close_domain(domain)
         self.pipeline.close_domain(domain)
         del self._scraping[domain]
-        reason = self.closing.get(domain, 'finished')
+        reason = self.closing.pop(domain, 'finished')
         signals.send_catch_log(signal=signals.domain_closed, sender=self.__class__, domain=domain, spider=spider, reason=reason)
         log.msg("Domain closed (%s)" % reason, domain=domain) 
-        self.closing.pop(domain, None)
         self._mainloop()
 
     def getstatus(self):
