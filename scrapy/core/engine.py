@@ -28,21 +28,6 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.defer import mustbe_deferred
 
 class ExecutionEngine(object):
-    """
-    The Execution Engine controls execution of the scraping process.
-
-    The process begins with the _mainloop() method, which is called
-    periodically to add more domains to scrape. It adds the first page for a
-    domain to the scheduler by calling _schedule_page and calls
-    process_scheduled_requests, which starts the scraping process for a domain.
-
-    The process_scheduled_requests method asks the scheduler for the next
-    available page for a given domain and requests it from the downloader. The
-    downloader will execute a callback function that was added in the
-    _schedule_page method. This callback with process the output from the
-    spider and then call process_scheduled_requests to continue the scraping
-    process for that domain.
-    """
 
     def __init__(self):
         self.configured = False
@@ -175,15 +160,12 @@ class ExecutionEngine(object):
             self._next_request_called.discard(domain)
         elif domain not in self._next_request_called:
             self._next_request_called.add(domain)
+            return reactor.callLater(0, self.next_request, domain, now=True)
         else:
             return
 
         if self.paused:
             return reactor.callLater(5, self.next_request, domain)
-
-        # call next_request in next reactor loop by default
-        if not now:
-            return reactor.callLater(0, self.next_request, domain, now=True)
 
         if not self.running or \
                 self.domain_is_closed(domain) or \
