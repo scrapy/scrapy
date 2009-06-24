@@ -53,6 +53,7 @@ class ExecutionEngine(object):
         self.running = False
         self.paused = False
         self.control_reactor = True
+        self._next_request_called = set()
 
     def configure(self, scheduler=None, downloader=None):
         """
@@ -162,7 +163,7 @@ class ExecutionEngine(object):
             self.open_domain(domain)
         return domain
 
-    def next_request(self, spider, now=False):
+    def next_request(self, domain, now=False):
         """Scrape the next request for the domain passed.
 
         The next request to be scraped is retrieved from the scheduler and
@@ -170,14 +171,19 @@ class ExecutionEngine(object):
 
         The domain is closed if there are no more pages to scrape.
         """
+        if now:
+            self._next_request_called.discard(domain)
+        elif domain not in self._next_request_called:
+            self._next_request_called.add(domain)
+        else:
+            return
+
         if self.paused:
-            return reactor.callLater(5, self.next_request, spider)
+            return reactor.callLater(5, self.next_request, domain)
 
         # call next_request in next reactor loop by default
         if not now:
-            return reactor.callLater(0, self.next_request, spider, now=True)
-
-        domain = spider.domain_name
+            return reactor.callLater(0, self.next_request, domain, now=True)
 
         if not self.running or \
                 self.domain_is_closed(domain) or \
@@ -187,6 +193,7 @@ class ExecutionEngine(object):
         # Next pending request from scheduler
         request, deferred = self.scheduler.next_request(domain)
         if request:
+            spider = spiders.fromdomain(domain)
             mustbe_deferred(self.download, request, spider).chainDeferred(deferred)
         elif self.domain_is_idle(domain):
             self._domain_idle(domain)
@@ -219,7 +226,7 @@ class ExecutionEngine(object):
                             signals.send_catch_log(signal=signals.item_dropped, sender=self.__class__, item=item, spider=spider, response=response, exception=pipe_result.value)
                         else:
                             signals.send_catch_log(signal=signals.item_passed, sender=self.__class__, item=item, spider=spider, response=response, pipe_output=pipe_result)
-                        self.next_request(spider)
+                        self.next_request(domain)
 
                     if domain in self.closing:
                         return
@@ -251,7 +258,7 @@ class ExecutionEngine(object):
             self._scraping[domain].add(response)
             def _remove(_):
                 self._scraping[domain].remove(response)
-                self.next_request(spider)
+                self.next_request(domain)
                 return _
 
             scd.addBoth(_remove)
@@ -277,7 +284,7 @@ class ExecutionEngine(object):
             self.scheduler.open_domain(domain)
             if self.domain_is_closed(domain): # scheduler auto-open
                 self.domain_scheduler.add_domain(domain)
-        self.next_request(spider)
+        self.next_request(domain)
         return self.scheduler.enqueue_request(domain, request)
 
     def _mainloop(self):
@@ -318,7 +325,7 @@ class ExecutionEngine(object):
             return Failure(IgnoreRequest(str(ex)))
 
         def _on_complete(_):
-            self.next_request(spider)
+            self.next_request(domain)
             return _
 
         dwld = mustbe_deferred(self.downloader.fetch, request, spider)
@@ -329,7 +336,7 @@ class ExecutionEngine(object):
     def open_domain(self, domain):
         log.msg("Domain opened", domain=domain)
         spider = spiders.fromdomain(domain)
-        self.next_request(spider)
+        self.next_request(domain)
 
         self.downloader.open_domain(domain)
         self.pipeline.open_domain(domain)
@@ -350,7 +357,7 @@ class ExecutionEngine(object):
         try:
             dispatcher.send(signal=signals.domain_idle, sender=self.__class__, domain=domain, spider=spider)
         except DontCloseDomain:
-            self.next_request(spider)
+            self.next_request(domain)
             return
         except:
             log.exc("Exception catched on domain_idle signal dispatch")
