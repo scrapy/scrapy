@@ -10,7 +10,7 @@ from scrapy.spider import spiders
 
 
 class MediaPipeline(object):
-    DOWNLOAD_PRIORITY = -1
+    DOWNLOAD_PRIORITY = 1000
 
     class DomainInfo(object):
         def __init__(self, domain):

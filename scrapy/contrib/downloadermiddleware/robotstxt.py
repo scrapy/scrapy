@@ -18,7 +18,7 @@ from scrapy.core.exceptions import IgnoreRequest
 from scrapy.conf import settings
 
 class RobotsTxtMiddleware(object):
-    DOWNLOAD_PRIORITY = -1
+    DOWNLOAD_PRIORITY = 1000
 
     def __init__(self):
         if not settings.getbool('ROBOTSTXT_OBEY'):
