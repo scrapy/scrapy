@@ -2,7 +2,7 @@
 Download web pages using asynchronous IO
 """
 
-import datetime
+from time import time
 
 from twisted.internet import reactor, defer
 
@@ -35,7 +35,7 @@ class SiteInfo(object):
         self.active = set()
         self.transferring = set()
         self.closing = False
-        self.lastseen = None
+        self.lastseen = 0
 
     def free_transfer_slots(self):
         return self.max_concurrent_requests - len(self.transferring)
@@ -97,10 +97,9 @@ class Downloader(object):
             return
 
         # Delay queue processing if a download_delay is configured
-        now = datetime.datetime.now()
-        if site.download_delay and site.lastseen:
-            delta = now - site.lastseen
-            penalty = site.download_delay - delta.seconds
+        now = time()
+        if site.download_delay:
+            penalty = site.download_delay - now + site.lastseen
             if penalty > 0:
                 reactor.callLater(penalty, self.process_queue, spider=spider)
                 return
