@@ -190,7 +190,14 @@ class ExecutionEngine(object):
         return not (pending or downloading or haspipe or scraping)
 
     def domain_is_closed(self, domain):
+        """Return True if the domain is fully closed (ie. not even in the
+        closing stage)"""
         return domain not in self.downloader.sites
+
+    def domain_is_open(self, domain):
+        """Return True if the domain is fully opened (ie. not in closing
+        stage)"""
+        return domain in self.downloader.sites and domain not in self.closing
 
     @property
     def open_domains(self):
