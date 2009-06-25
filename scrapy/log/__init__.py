@@ -51,10 +51,10 @@ def start(logfile=None, loglevel=None, log_stdout=None):
 
 def msg(message, level=INFO, component=BOT_NAME, domain=None):
     """Log message according to the level"""
-    component = "%s/%s" % (component, domain) if domain else component
+    system = domain if domain else component
     if level <= log_level:
         msg_txt = unicode_to_str("%s: %s" % (level_names[level], message))
-        log.msg(msg_txt, system=component)
+        log.msg(msg_txt, system=system)
 
 def exc(message, level=ERROR, component=BOT_NAME, domain=None):
     message = message + '\n' + format_exc()
@@ -63,5 +63,5 @@ def exc(message, level=ERROR, component=BOT_NAME, domain=None):
 def err(*args, **kwargs):
     domain = kwargs.pop('domain', None)
     component = kwargs.pop('component', BOT_NAME)
-    kwargs['system'] = "%s/%s" % (component, domain) if domain else component
+    kwargs['system'] = domain if domain else component
     log.err(*args, **kwargs)

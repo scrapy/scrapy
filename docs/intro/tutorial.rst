@@ -138,16 +138,16 @@ you'll get an output like this::
    [dmoz] INFO: Enabled item pipelines: ...
    [-] scrapy.management.web.WebConsole starting on 60738
    [-] scrapy.management.telnet.TelnetConsole starting on 51506
-   [dmoz/dmoz.org] INFO: Domain opened
-   [dmoz/dmoz.org] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/> from <None>
-   [dmoz/dmoz.org] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> from <None>
-   [dmoz/dmoz.org] INFO: Domain closed (finished)
+   [dmoz.org] INFO: Domain opened
+   [dmoz.org] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/> from <None>
+   [dmoz.org] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> from <None>
+   [dmoz.org] INFO: Domain closed (finished)
    [scrapy.management.web.WebConsole] (Port 60738 Closed)
    [scrapy.management.telnet.TelnetConsole] (Port 51506 Closed)
    [-] Main loop terminated.
 
-Pay attention to the lines labeled ``[dmoz/dmoz.org]``, which corresponds to
-our spider identified by the domain "dmoz.org". You can see a log line for each
+Pay attention to the lines containing ``[dmoz.org]``, which corresponds to
+our spider (identified by the domain "dmoz.org"). You can see a log line for each
 URL defined in ``start_urls``. Because these URLs are the starting ones, they
 have no referrers, which is shown at the end of the log line, where it says
 ``from <None>``.
@@ -386,8 +386,8 @@ should be like this::
 
 Now doing a crawl on the dmoz.org domain yields ``DmozItem``'s::
 
-   [dmoz/dmoz.org] INFO: Scraped DmozItem({'title': [u'Text Processing in Python'], 'link': [u'http://gnosis.cx/TPiP/'], 'desc': [u' - By David Mertz; Addison Wesley. Book in progress, full text, ASCII format. Asks for feedback. [author website, Gnosis Software, Inc.]\n']}) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
-   [dmoz/dmoz.org] INFO: Scraped DmozItem({'title': [u'XML Processing with Python'], 'link': [u'http://www.informit.com/store/product.aspx?isbn=0130211192'], 'desc': [u' - By Sean McGrath; Prentice Hall PTR, 2000, ISBN 0130211192, has CD-ROM. Methods to build XML applications fast, Python tutorial, DOM and SAX, new Pyxie open source XML processing library. [Prentice Hall PTR]\n']}) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
+   [dmoz.org] INFO: Scraped DmozItem({'title': [u'Text Processing in Python'], 'link': [u'http://gnosis.cx/TPiP/'], 'desc': [u' - By David Mertz; Addison Wesley. Book in progress, full text, ASCII format. Asks for feedback. [author website, Gnosis Software, Inc.]\n']}) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
+   [dmoz.org] INFO: Scraped DmozItem({'title': [u'XML Processing with Python'], 'link': [u'http://www.informit.com/store/product.aspx?isbn=0130211192'], 'desc': [u' - By Sean McGrath; Prentice Hall PTR, 2000, ISBN 0130211192, has CD-ROM. Methods to build XML applications fast, Python tutorial, DOM and SAX, new Pyxie open source XML processing library. [Prentice Hall PTR]\n']}) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
 
 
 Storing the data (using an Item Pipeline)
