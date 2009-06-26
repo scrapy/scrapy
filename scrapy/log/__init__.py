@@ -7,6 +7,7 @@ import sys
 from traceback import format_exc
 
 from twisted.python import log
+from pydispatch import dispatcher
 
 from scrapy.conf import settings
 from scrapy.utils.python import unicode_to_str
@@ -24,6 +25,10 @@ level_names = {
 }
 
 BOT_NAME = settings['BOT_NAME']
+
+# signal sent when log message is received
+# args: message, level, domain
+logmessage_received = object()
 
 # default logging level
 log_level = DEBUG
@@ -51,6 +56,8 @@ def start(logfile=None, loglevel=None, log_stdout=None):
 
 def msg(message, level=INFO, component=BOT_NAME, domain=None):
     """Log message according to the level"""
+    dispatcher.send(signal=logmessage_received, message=message, level=level, \
+        domain=domain)
     system = domain if domain else component
     if level <= log_level:
         msg_txt = unicode_to_str("%s: %s" % (level_names[level], message))
