@@ -6,16 +6,17 @@ API Reference
 This section documents the Scrapy |version| API. For more information see :ref:`misc-api-stability`.
 
 .. toctree::
+   :maxdepth: 1
 
+   request-response
    spiders
    selectors
+   settings
+   signals
    exceptions
-   request-response
+   logging
+   email
    extension-manager
    extensions
    downloader-middleware
-   settings
-   signals
-   logging
-   email
    link-extractors

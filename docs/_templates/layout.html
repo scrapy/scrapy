@@ -1,0 +1,16 @@
+{% extends "!layout.html" %}
+
+{% block rootrellink %}
+        Scrapy v. {{ version }} documentation &raquo;
+    <li><a href="{{ pathto('index') }}">Home</a> | </li>
+        <li><a href="{{ pathto('intro/index') }}">Getting Started</a> | </li>
+        <li><a href="{{ pathto('topics/index') }}">Using Scrapy</a> | </li>
+        <li><a href="{{ pathto('ref/index') }}">API reference</a>  | </li>
+        <li><a href="{{ pathto('faq') }}">FAQ</a>  | </li>
+        <li><a href="{{ pathto('search') }}">Search</a> </li>
+     
+{% endblock %}
+
+
+
+

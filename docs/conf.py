@@ -11,7 +11,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import sys
 from os import path
 
 # If your extensions are in another directory, add it here. If the directory
@@ -29,7 +29,7 @@ sys.path.append(path.join(path.dirname(path.dirname(__file__)), "scrapy"))
 extensions = ['scrapydocs', 'sphinx.ext.autodoc']
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['../templates/docs']
+templates_path = ['_templates']
 
 # The suffix of source filenames.
 source_suffix = '.rst'
@@ -38,7 +38,7 @@ source_suffix = '.rst'
 #source_encoding = 'utf-8'
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = 'contents'
 
 # General information about the project.
 project = u'Scrapy'
@@ -130,7 +130,9 @@ html_use_smartypants = True
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
-#html_additional_pages = {}
+html_additional_pages = {
+    'index': 'index.html'
+}
 
 # If false, no module index is generated.
 #html_use_modindex = True
