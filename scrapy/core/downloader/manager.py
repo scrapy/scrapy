@@ -108,7 +108,7 @@ class Downloader(object):
         # Process requests in queue if there are free slots to transfer for this site
         while site.queue and site.free_transfer_slots() > 0:
             request, deferred = site.queue.pop(0)
-            self._download(site, request, spider, deferred)
+            self._download(site, request, spider).chainDeferred(deferred)
 
         self._close_if_idle(domain)
 
@@ -117,9 +117,8 @@ class Downloader(object):
         if site and site.closing and not site.active:
             del self.sites[domain]
 
-    def _download(self, site, request, spider, deferred):
-        # The order is very important for the following deferreds. Do not
-        # change!
+    def _download(self, site, request, spider):
+        # The order is very important for the following deferreds. Do not change!
 
         # 1. Create the download deferred
         dfd = mustbe_deferred(download_any, request, spider)
@@ -131,18 +130,9 @@ class Downloader(object):
         site.transferring.add(request)
         def finish_transferring(_):
             site.transferring.remove(request)
-            return _
-        dfd.addBoth(finish_transferring)
-
-        # 3. Wait until deferred returned to engine completes
-        dfd.chainDeferred(deferred).addBoth(lambda _: deferred)
-
-        # 4. Finally, continue processing the next request from the queue. This
-        # callback must be placed at the end to make sure processing is
-        # performed first, otherwise memory could increase severely
-        def next_request(_):
             self.process_queue(spider)
-        dfd.addBoth(next_request)
+            return _
+        return dfd.addBoth(finish_transferring)
 
     def open_domain(self, domain):
         """Allocate resources to begin processing a domain"""
