@@ -94,6 +94,7 @@ class S3ImagesPipeline(BaseImagesPipeline):
 
         """
         if self.AmazonS3Spider:
+            # need to use schedule to auto-open domain
             return scrapyengine.schedule(request, self.AmazonS3Spider)
         return self.download(request, info)
 
