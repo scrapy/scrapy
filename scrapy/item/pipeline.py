@@ -62,7 +62,9 @@ class ItemPipelineManager(object):
         info.add(item)
 
         def _next_stage(item):
-            assert isinstance(item, ScrapedItem), 'Pipeline stages must return a ScrapedItem or raise DropItem'
+            assert isinstance(item, ScrapedItem), \
+                    'Pipeline stages must return a ScrapedItem or raise DropItem, got %s' % type(item).__name__
+
             if not pipeline:
                 return item
 

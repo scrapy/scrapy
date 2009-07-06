@@ -20,8 +20,6 @@ from scrapy.core.scheduler import Scheduler
 from scrapy.core.downloader import Downloader
 from scrapy.core.exceptions import IgnoreRequest, DontCloseDomain
 from scrapy.http import Response, Request
-from scrapy.item import ScrapedItem
-from scrapy.item.pipeline import ItemPipelineManager
 from scrapy.spider import spiders
 from scrapy.spider.middleware import SpiderMiddlewareManager
 from scrapy.utils.misc import load_object
@@ -49,8 +47,6 @@ class ExecutionEngine(object):
         self.downloader = downloader or Downloader()
         self.spidermiddleware = SpiderMiddlewareManager()
         self._scraping = {}
-        self.pipeline = ItemPipelineManager()
-
         self.configured = True
 
     def addtask(self, function, interval, args=None, kwargs=None, now=False):
@@ -140,7 +136,7 @@ class ExecutionEngine(object):
         self.paused = False
 
     def is_idle(self):
-        return self.scheduler.is_idle() and self.pipeline.is_idle() and self.downloader.is_idle() and not self._scraping
+        return self.scheduler.is_idle() and self.downloader.is_idle() and not self._scraping
 
     def next_domain(self):
         domain = self.domain_scheduler.next_domain()
@@ -186,8 +182,7 @@ class ExecutionEngine(object):
         scraping = self._scraping.get(domain)
         pending = self.scheduler.domain_has_pending_requests(domain)
         downloading = domain in self.downloader.sites and self.downloader.sites[domain].active
-        haspipe = not self.pipeline.domain_is_idle(domain)
-        return not (pending or downloading or haspipe or scraping)
+        return not (pending or downloading or scraping)
 
     def domain_is_closed(self, domain):
         """Return True if the domain is fully closed (ie. not even in the
@@ -207,25 +202,13 @@ class ExecutionEngine(object):
         domain = spider.domain_name
 
         def _process_response(response):
-            assert isinstance(response, (Response, Exception)), "Expecting Response or Exception, got %s" % type(response).__name__
+            assert isinstance(response, (Response, Exception)), \
+                    "Expecting Response or Exception, got %s" % type(response).__name__
 
             def cb_spidermiddleware_output(spmw_result):
                 def cb_spider_output(output):
-                    def cb_pipeline_output(pipe_result, item):
-                        if isinstance(pipe_result, Failure):
-                            # can only be a DropItem exception, since other exceptions are caught in the Item Pipeline (item/pipeline.py)
-                            signals.send_catch_log(signal=signals.item_dropped, sender=self.__class__, item=item, spider=spider, response=response, exception=pipe_result.value)
-                        else:
-                            signals.send_catch_log(signal=signals.item_passed, sender=self.__class__, item=item, spider=spider, response=response, pipe_output=pipe_result)
-                        self.next_request(domain)
-
                     if domain in self.closing:
                         return
-                    elif isinstance(output, ScrapedItem):
-                        log.msg("Scraped %s in <%s>" % (output, request.url), log.INFO, domain=domain)
-                        signals.send_catch_log(signal=signals.item_scraped, sender=self.__class__, item=output, spider=spider, response=response)
-                        piped = self.pipeline.pipe(output, spider)
-                        piped.addBoth(cb_pipeline_output, output)
                     elif isinstance(output, Request):
                         signals.send_catch_log(signal=signals.request_received, sender=self.__class__, request=output, spider=spider, response=response)
                         self.crawl(request=output, spider=spider)
@@ -330,7 +313,6 @@ class ExecutionEngine(object):
         self.next_request(domain)
 
         self.downloader.open_domain(domain)
-        self.pipeline.open_domain(domain)
         self._scraping[domain] = set()
 
         signals.send_catch_log(signals.domain_open, sender=self.__class__, domain=domain, spider=spider)
@@ -380,7 +362,6 @@ class ExecutionEngine(object):
         """This function is called after the domain has been closed"""
         spider = spiders.fromdomain(domain) 
         self.scheduler.close_domain(domain)
-        self.pipeline.close_domain(domain)
         del self._scraping[domain]
         reason = self.closing.pop(domain, 'finished')
         signals.send_catch_log(signal=signals.domain_closed, sender=self.__class__, domain=domain, spider=spider, reason=reason)
@@ -401,8 +382,6 @@ class ExecutionEngine(object):
             "self.downloader.is_idle()",
             "len(self.downloader.sites)",
             "self.downloader.has_capacity()",
-            "self.pipeline.is_idle()",
-            "len(self.pipeline.domaininfo)",
             "len(self._scraping)",
             ]
         domain_tests = [
@@ -415,8 +394,6 @@ class ExecutionEngine(object):
             "len(self.downloader.sites[domain].transferring)",
             "self.downloader.sites[domain].closing",
             "self.downloader.sites[domain].lastseen",
-            "self.pipeline.domain_is_idle(domain)",
-            "len(self.pipeline.domaininfo[domain])",
             "len(self._scraping[domain])",
             ]
 

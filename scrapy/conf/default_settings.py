@@ -114,6 +114,9 @@ HTTPCACHE_EXPIRATION_SECS = 0
 # Item pipelines are typically set in specific commands settings
 ITEM_PIPELINES = []
 
+# max limit of items to process in parallel
+ITEMPIPELINE_CONCURRENTLIMIT = 0
+
 LOG_ENABLED = True
 LOG_STDOUT = False
 LOGLEVEL = 'DEBUG'
@@ -169,6 +172,7 @@ SPIDER_MIDDLEWARES = {}
 
 SPIDER_MIDDLEWARES_BASE = {
     # Engine side
+    'scrapy.contrib.spidermiddleware.itempipeline.ItemPipelineMiddleware': 30,
     'scrapy.contrib.spidermiddleware.httperror.HttpErrorMiddleware': 50,
     'scrapy.contrib.itemsampler.ItemSamplerMiddleware': 100,
     'scrapy.contrib.spidermiddleware.limit.RequestLimitMiddleware': 200,
