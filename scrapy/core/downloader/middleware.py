@@ -19,6 +19,8 @@ class DownloaderMiddlewareManager(object):
 
     def __init__(self):
         self.loaded = False
+        self.enabled = {}
+        self.disabled = {}
         self.request_middleware = []
         self.response_middleware = []
         self.exception_middleware = []
@@ -33,21 +35,22 @@ class DownloaderMiddlewareManager(object):
             self.exception_middleware.insert(0, mw.process_exception)
 
     def load(self):
-        """Load middleware defined in settings module
-        """
-        mws = []
+        """Load middleware defined in settings module"""
         mwlist = build_middleware_list(settings['DOWNLOADER_MIDDLEWARES_BASE'],
                                        settings['DOWNLOADER_MIDDLEWARES'])
+        self.enabled.clear()
+        self.disabled.clear()
         for mwpath in mwlist:
-            cls = load_object(mwpath)
-            if cls:
-                try:
-                    mw = cls()
-                    self._add_middleware(mw)
-                    mws.append(mw)
-                except NotConfigured:
-                    pass
-        log.msg("Enabled downloader middlewares: %s" % ", ".join([type(m).__name__ for m in mws]),
+            try:
+                cls = load_object(mwpath)
+                mw = cls()
+                self.enabled[cls.__name__] = mw
+                self._add_middleware(mw)
+            except NotConfigured, e:
+                self.disabled[cls.__name__] = mwpath
+                if e.args:
+                    log.msg(e)
+        log.msg("Enabled downloader middlewares: %s" % ", ".join(self.enabled.keys()), \
             level=log.DEBUG)
         self.loaded = True
 

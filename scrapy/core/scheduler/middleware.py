@@ -19,27 +19,31 @@ from scrapy.conf import settings
 class SchedulerMiddlewareManager(object):
 
     def __init__(self):
+        self.loaded = False
+        self.enabled = {}
+        self.disabled = {}
         self.mw_cbs = defaultdict(list)
         self.load()
 
     def load(self):
         """Load middleware defined in settings module"""
-        self.mws = []
         mwlist = build_middleware_list(settings['SCHEDULER_MIDDLEWARES_BASE'],
                                        settings['SCHEDULER_MIDDLEWARES'])
+        self.enabled.clear()
+        self.disabled.clear()
         for mwpath in mwlist:
-            cls = load_object(mwpath)
-            if cls:
-                try:
-                    mw = cls()
-                except NotConfigured:
-                    pass
-                else:
-                    self._add_middleware(mw)
-                    self.mws.append(mw)
-
-        log.msg("Enabled scheduler middlewares: %s" % ", ".join([type(m).__name__ for m in self.mws]),
+            try:
+                cls = load_object(mwpath)
+                mw = cls()
+                self.enabled[cls.__name__] = mw
+                self._add_middleware(mw)
+            except NotConfigured, e:
+                self.disabled[cls.__name__] = mwpath
+                if e.args:
+                    log.msg(e)
+        log.msg("Enabled scheduler middlewares: %s" % ", ".join(self.enabled.keys()), \
             level=log.DEBUG)
+        self.loaded = True
 
     def _add_middleware(self, mw):
         for name in ('enqueue_request', 'open_domain', 'close_domain'):
