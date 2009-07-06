@@ -5,7 +5,6 @@ For more information see docs/topics/architecture.rst
 
 """
 from datetime import datetime
-from itertools import imap
 
 from twisted.internet import reactor, task
 from twisted.internet.error import CannotListenError
@@ -13,15 +12,14 @@ from twisted.python.failure import Failure
 from pydispatch import dispatcher
 
 from scrapy import log
-from scrapy.stats import stats
 from scrapy.conf import settings
 from scrapy.core import signals
 from scrapy.core.scheduler import Scheduler
 from scrapy.core.downloader import Downloader
+from scrapy.core.scraper import Scraper
 from scrapy.core.exceptions import IgnoreRequest, DontCloseDomain
 from scrapy.http import Response, Request
 from scrapy.spider import spiders
-from scrapy.spider.middleware import SpiderMiddlewareManager
 from scrapy.utils.misc import load_object
 from scrapy.utils.defer import mustbe_deferred
 
@@ -45,8 +43,7 @@ class ExecutionEngine(object):
         self.scheduler = scheduler or Scheduler()
         self.domain_scheduler = load_object(settings['DOMAIN_SCHEDULER'])()
         self.downloader = downloader or Downloader()
-        self.spidermiddleware = SpiderMiddlewareManager()
-        self._scraping = {}
+        self.scraper = Scraper(self)
         self.configured = True
 
     def addtask(self, function, interval, args=None, kwargs=None, now=False):
@@ -136,7 +133,7 @@ class ExecutionEngine(object):
         self.paused = False
 
     def is_idle(self):
-        return self.scheduler.is_idle() and self.downloader.is_idle() and not self._scraping
+        return self.scheduler.is_idle() and self.downloader.is_idle() and self.scraper.is_idle()
 
     def next_domain(self):
         domain = self.domain_scheduler.next_domain()
@@ -179,7 +176,7 @@ class ExecutionEngine(object):
             self._domain_idle(domain)
 
     def domain_is_idle(self, domain):
-        scraping = self._scraping.get(domain)
+        scraping = domain in self.scraper.sites and bool(self.scraper.sites[domain])
         pending = self.scheduler.domain_has_pending_requests(domain)
         downloading = domain in self.downloader.sites and self.downloader.sites[domain].active
         return not (pending or downloading or scraping)
@@ -199,56 +196,10 @@ class ExecutionEngine(object):
         return self.downloader.sites.keys()
 
     def crawl(self, request, spider):
-        domain = spider.domain_name
-
-        def _process_response(response):
-            assert isinstance(response, (Response, Exception)), \
-                    "Expecting Response or Exception, got %s" % type(response).__name__
-
-            def cb_spidermiddleware_output(spmw_result):
-                def cb_spider_output(output):
-                    if domain in self.closing:
-                        return
-                    elif isinstance(output, Request):
-                        signals.send_catch_log(signal=signals.request_received, sender=self.__class__, request=output, spider=spider, response=response)
-                        self.crawl(request=output, spider=spider)
-                    elif output is None:
-                        pass # may be next time.
-                    else:
-                        log.msg("Spider must return Request, ScrapedItem or None, got '%s' while processing %s" \
-                                % (type(output).__name__, request), log.WARNING, domain=domain)
-
-                return task.coiterate(imap(cb_spider_output, spmw_result))
-
-            def eb_user(_failure):
-                if not isinstance(_failure.value, IgnoreRequest):
-                    referer = None if not isinstance(response, Response) else response.request.headers.get('Referer', None)
-                    log.msg("Error while spider was processing <%s> from <%s>: %s" % (request.url, referer, _failure), log.ERROR, domain=domain)
-                    stats.incpath("%s/spider_exceptions/%s" % (domain, _failure.value.__class__.__name__))
-
-            scd = mustbe_deferred(self.spidermiddleware.scrape, request, response, spider)
-            scd.addCallbacks(cb_spidermiddleware_output, eb_user)
-
-            self._scraping[domain].add(response)
-            def _remove(_):
-                self._scraping[domain].remove(response)
-                self.next_request(domain)
-                return _
-
-            scd.addBoth(_remove)
-            scd.addErrback(log.err, 'FRAMEWORK BUG processing %s' % request, domain=domain)
-            return scd
-
-        def _cleanfailure(_failure):
-            ex = _failure.value
-            if not isinstance(ex, IgnoreRequest):
-                log.msg("Unknown error propagated in %s: %s" % (request, _failure), log.ERROR, domain=domain)
-            request.deferred.addErrback(lambda _:None)
-            request.deferred.errback(_failure) # TODO: merge into spider middleware.
-
         schd = mustbe_deferred(self.schedule, request, spider)
-        schd.addCallbacks(_process_response, _cleanfailure)
-        return schd.addErrback(log.err)
+        schd.addBoth(self.scraper.scrape, request, spider)
+        schd.addErrback(log.err)
+        schd.addBoth(lambda _: self.next_request(spider.domain_name))
 
     def schedule(self, request, spider):
         domain = spider.domain_name
@@ -313,7 +264,7 @@ class ExecutionEngine(object):
         self.next_request(domain)
 
         self.downloader.open_domain(domain)
-        self._scraping[domain] = set()
+        self.scraper.open_domain(domain)
 
         signals.send_catch_log(signals.domain_open, sender=self.__class__, domain=domain, spider=spider)
         signals.send_catch_log(signals.domain_opened, sender=self.__class__, domain=domain, spider=spider)
@@ -362,7 +313,7 @@ class ExecutionEngine(object):
         """This function is called after the domain has been closed"""
         spider = spiders.fromdomain(domain) 
         self.scheduler.close_domain(domain)
-        del self._scraping[domain]
+        self.scraper.close_domain(domain)
         reason = self.closing.pop(domain, 'finished')
         signals.send_catch_log(signal=signals.domain_closed, sender=self.__class__, domain=domain, spider=spider, reason=reason)
         log.msg("Domain closed (%s)" % reason, domain=domain) 
@@ -382,7 +333,8 @@ class ExecutionEngine(object):
             "self.downloader.is_idle()",
             "len(self.downloader.sites)",
             "self.downloader.has_capacity()",
-            "len(self._scraping)",
+            "self.scraper.is_idle()",
+            "len(self.scraper.sites)",
             ]
         domain_tests = [
             "self.domain_is_idle(domain)",
@@ -394,7 +346,7 @@ class ExecutionEngine(object):
             "len(self.downloader.sites[domain].transferring)",
             "self.downloader.sites[domain].closing",
             "self.downloader.sites[domain].lastseen",
-            "len(self._scraping[domain])",
+            "len(self.scraper.sites[domain])",
             ]
 
         for test in global_tests:

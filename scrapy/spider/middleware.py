@@ -8,9 +8,9 @@ docs/topics/spider-middleware.rst
 
 from scrapy import log
 from scrapy.core.exceptions import NotConfigured
-from scrapy.utils.misc import load_object, arg_to_iter
-from scrapy.utils.defer import mustbe_deferred, defer_result
+from scrapy.utils.misc import load_object
 from scrapy.utils.middleware import build_middleware_list
+from scrapy.utils.defer import mustbe_deferred
 from scrapy.http import Request
 from scrapy.conf import settings
 
@@ -55,7 +55,7 @@ class SpiderMiddlewareManager(object):
             level=log.DEBUG)
         self.loaded = True
 
-    def scrape(self, request, response, spider):
+    def scrape_response(self, scrape_func, response, request, spider):
         fname = lambda f:'%s.%s' % (f.im_self.__class__.__name__, f.im_func.__name__)
 
         def process_spider_input(response):
@@ -66,7 +66,7 @@ class SpiderMiddlewareManager(object):
                     (fname(method), type(result))
                 if result is not None:
                     return result
-            return self.call(request, response, spider)
+            return scrape_func(response, request, spider)
 
         def process_spider_exception(_failure):
             exception = _failure.value
@@ -92,11 +92,6 @@ class SpiderMiddlewareManager(object):
         dfd.addErrback(process_spider_exception)
         dfd.addCallback(process_spider_output)
         return dfd
-
-    def call(self, request, result, spider):
-        defer_result(result).chainDeferred(request.deferred)
-        request.deferred.addCallback(arg_to_iter)
-        return request.deferred
 
     def _validate_output(self, request, result, spider):
         """Every request returned by spiders must be instanciate with a callback"""
