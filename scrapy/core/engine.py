@@ -113,7 +113,8 @@ class ExecutionEngine(object):
             self.running = False
             for domain in self.open_domains:
                 spider = spiders.fromdomain(domain)
-                signals.send_catch_log(signal=signals.domain_closed, sender=self.__class__, domain=domain, spider=spider, reason='shutdown')
+                signals.send_catch_log(signal=signals.domain_closed, sender=self.__class__, \
+                    domain=domain, spider=spider, reason='shutdown')
             for tsk, _, _ in self.tasks: # stop looping calls
                 if tsk.running:
                     tsk.stop()
@@ -162,7 +163,8 @@ class ExecutionEngine(object):
 
         if not self.running or \
                 self.domain_is_closed(domain) or \
-                self.downloader.sites[domain].needs_backout():
+                self.downloader.sites[domain].needs_backout() or \
+                self.scraper.sites[domain].needs_backout():
             return
 
         # Next pending request from scheduler
@@ -176,10 +178,10 @@ class ExecutionEngine(object):
             self._domain_idle(domain)
 
     def domain_is_idle(self, domain):
-        scraping = domain in self.scraper.sites and bool(self.scraper.sites[domain])
+        scraper_idle = domain in self.scraper.sites and self.scraper.sites[domain].is_idle()
         pending = self.scheduler.domain_has_pending_requests(domain)
         downloading = domain in self.downloader.sites and self.downloader.sites[domain].active
-        return not (pending or downloading or scraping)
+        return scraper_idle and not (pending or downloading)
 
     def domain_is_closed(self, domain):
         """Return True if the domain is fully closed (ie. not even in the
@@ -197,7 +199,7 @@ class ExecutionEngine(object):
 
     def crawl(self, request, spider):
         schd = mustbe_deferred(self.schedule, request, spider)
-        schd.addBoth(self.scraper.scrape, request, spider)
+        schd.addBoth(self.scraper.enqueue_scrape, request, spider)
         schd.addErrback(log.err)
         schd.addBoth(lambda _: self.next_request(spider.domain_name))
 
@@ -346,7 +348,9 @@ class ExecutionEngine(object):
             "len(self.downloader.sites[domain].transferring)",
             "self.downloader.sites[domain].closing",
             "self.downloader.sites[domain].lastseen",
-            "len(self.scraper.sites[domain])",
+            "len(self.scraper.sites[domain].queue)",
+            "len(self.scraper.sites[domain].processing)",
+            "self.scraper.sites[domain].backlog_size",
             ]
 
         for test in global_tests:

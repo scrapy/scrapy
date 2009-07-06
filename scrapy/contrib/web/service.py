@@ -68,7 +68,7 @@ def url_to_guid(httprequest):
 
     deferred = defer.Deferred().addCallbacks(_on_success, _on_error)
     request = Request(url=url, callback=deferred, dont_filter=True)
-    schd = scrapyengine.schedule(request, spider)
+    schd = scrapyengine.download(request, spider)
     schd.chainDeferred(deferred)
     return deferred
 

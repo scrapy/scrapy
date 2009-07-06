@@ -123,7 +123,7 @@ class MediaPipeline(object):
 
         """
         request.priority = self.DOWNLOAD_PRIORITY
-        return scrapyengine.schedule(request, info.spider)
+        return scrapyengine.download(request, info.spider)
 
     def media_to_download(self, request, info):
         """ Ongoing request hook pre-cache

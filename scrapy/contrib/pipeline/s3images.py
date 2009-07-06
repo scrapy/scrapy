@@ -94,7 +94,7 @@ class S3ImagesPipeline(BaseImagesPipeline):
 
         """
         if self.AmazonS3Spider:
-            return scrapyengine.schedule(request, self.AmazonS3Spider)
+            return scrapyengine.download(request, self.AmazonS3Spider)
         return self.download(request, info)
 
 
