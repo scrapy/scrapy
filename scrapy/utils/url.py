@@ -85,7 +85,8 @@ def is_url(text):
 def url_query_parameter(url, parameter, default=None, keep_blank_values=0):
     """Return the value of a url parameter, given the url and parameter name"""
     queryparams = cgi.parse_qs(urlparse.urlsplit(str(url))[3], keep_blank_values=keep_blank_values)
-    return queryparams.get(parameter, [default])[0] 
+    result = queryparams.get(parameter, [default])[0]
+    return result
 
 def url_query_cleaner(url, parameterlist=(), sep='&', kvsep='='):
     """Clean url arguments leaving only those passed in the parameterlist"""
@@ -97,26 +98,28 @@ def url_query_cleaner(url, parameterlist=(), sep='&', kvsep='='):
         base = url
         query = ""
         parameters = []
-    
+
     # unique parameters while keeping order
     unique = {}
     querylist = []
-    for pair in parameters: 
+    for pair in parameters:
         k = pair[0]
         if not unique.get(k):
             querylist += [pair]
             unique[k] = 1
-    
+
     query = sep.join([kvsep.join(pair) for pair in querylist if pair[0] in parameterlist])
     return '?'.join([base, query])
-    
-def add_or_replace_parameter(url, name, new_value, sep='&'):
+
+def add_or_replace_parameter(url, name, new_value, sep='&', url_is_quoted=False):
     """Add or remove a parameter to a given url"""
     def has_querystring(url):
         _, _, _, query, _ = urlparse.urlsplit(url)
         return bool(query)
 
     parameter = url_query_parameter(url, name, keep_blank_values=1)
+    if url_is_quoted:
+        parameter = urllib.quote(parameter)
     if parameter is None:
         if has_querystring(url):
             next_url = url + sep + name + '=' + new_value

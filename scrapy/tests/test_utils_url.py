@@ -39,7 +39,7 @@ class UrlUtilsTest(unittest.TestCase):
                                          "http://www.example.com/test?p(29)url(http://www.another.net/page)")
         self.assertEqual(safe_url_string("http://www.example.com/Brochures_&_Paint_Cards&PageSize=200"),
                                          "http://www.example.com/Brochures_&_Paint_Cards&PageSize=200")
-                  
+
     def test_safe_download_url(self):
         self.assertEqual(safe_download_url('http://www.scrapy.org/../'),
                          'http://www.scrapy.org/')
@@ -61,7 +61,7 @@ class UrlUtilsTest(unittest.TestCase):
     def test_url_query_parameter_2(self):
         """
         This problem was seen several times in the feeds. Sometime affiliate URLs contains
-        nested encoded affiliate URL with direct URL as parameters. For example: 
+        nested encoded affiliate URL with direct URL as parameters. For example:
         aff_url1 = 'http://www.tkqlhce.com/click-2590032-10294381?url=http%3A%2F%2Fwww.argos.co.uk%2Fwebapp%2Fwcs%2Fstores%2Fservlet%2FArgosCreateReferral%3FstoreId%3D10001%26langId%3D-1%26referrer%3DCOJUN%26params%3Dadref%253DGarden+and+DIY-%3EGarden+furniture-%3EChildren%26%2339%3Bs+garden+furniture%26referredURL%3Dhttp%3A%2F%2Fwww.argos.co.uk%2Fwebapp%2Fwcs%2Fstores%2Fservlet%2FProductDisplay%253FstoreId%253D10001%2526catalogId%253D1500001501%2526productId%253D1500357023%2526langId%253D-1'
         the typical code to extract needed URL from it is:
         aff_url2 = url_query_parameter(aff_url1, 'url')
@@ -70,7 +70,7 @@ class UrlUtilsTest(unittest.TestCase):
         the direct URL extraction is
         url = url_query_parameter(aff_url2, 'referredURL')
         but this will not work, because aff_url2 contains &#39; (comma sign encoded in the feed)
-        and the URL extraction will fail, current workaround was made in the spider, 
+        and the URL extraction will fail, current workaround was made in the spider,
         just a replace for &#39; to %27
         """
         return # FIXME: this test should pass but currently doesnt
@@ -102,6 +102,12 @@ class UrlUtilsTest(unittest.TestCase):
                          'http://domain/test?arg1=v1;arg2=v2')
         self.assertEqual(add_or_replace_parameter("http://domain/moreInfo.asp?prodID=", 'prodID', '20'),
                          'http://domain/moreInfo.asp?prodID=20')
+        url = 'http://rmc-offers.co.uk/productlist.asp?BCat=2%2C60&CatID=60'
+        self.assertEqual(add_or_replace_parameter(url, 'BCat', 'newvalue', is_quoted=True),
+                         'http://rmc-offers.co.uk/productlist.asp?BCat=newvalue&CatID=60')
+        url = 'http://rmc-offers.co.uk/productlist.asp?BCat=2,60&CatID=60'
+        self.assertEqual(add_or_replace_parameter(url, 'BCat', 'newvalue'),
+                         'http://rmc-offers.co.uk/productlist.asp?BCat=newvalue&CatID=60')
 
     def test_url_query_cleaner(self):
         self.assertEqual(url_query_cleaner("product.html?id=200&foo=bar&name=wired", 'id'),
@@ -126,7 +132,7 @@ class UrlUtilsTest(unittest.TestCase):
                                           "http://www.example.com/do?a=3&b=2&c=1")
         self.assertEqual(canonicalize_url("http://www.example.com/do?&a=1"),
                                           "http://www.example.com/do?a=1")
-        
+
         # sorting by argument values
         self.assertEqual(canonicalize_url("http://www.example.com/do?c=3&b=5&b=2&a=50"),
                                           "http://www.example.com/do?a=50&b=2&b=5&c=3")
@@ -143,7 +149,7 @@ class UrlUtilsTest(unittest.TestCase):
 
         self.assertEqual(canonicalize_url(u'http://www.example.com/do?1750,4'),
                                            'http://www.example.com/do?1750%2C4=')
-                        
+
         # spaces
         self.assertEqual(canonicalize_url("http://www.example.com/do?q=a space&a=1"),
                                           "http://www.example.com/do?a=1&q=a+space")
