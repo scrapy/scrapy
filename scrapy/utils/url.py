@@ -85,8 +85,7 @@ def is_url(text):
 def url_query_parameter(url, parameter, default=None, keep_blank_values=0):
     """Return the value of a url parameter, given the url and parameter name"""
     queryparams = cgi.parse_qs(urlparse.urlsplit(str(url))[3], keep_blank_values=keep_blank_values)
-    result = queryparams.get(parameter, [default])[0]
-    return result
+    return queryparams.get(parameter, [default])[0]
 
 def url_query_cleaner(url, parameterlist=(), sep='&', kvsep='='):
     """Clean url arguments leaving only those passed in the parameterlist"""

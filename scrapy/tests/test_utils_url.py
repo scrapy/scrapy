@@ -103,7 +103,7 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertEqual(add_or_replace_parameter("http://domain/moreInfo.asp?prodID=", 'prodID', '20'),
                          'http://domain/moreInfo.asp?prodID=20')
         url = 'http://rmc-offers.co.uk/productlist.asp?BCat=2%2C60&CatID=60'
-        self.assertEqual(add_or_replace_parameter(url, 'BCat', 'newvalue', is_quoted=True),
+        self.assertEqual(add_or_replace_parameter(url, 'BCat', 'newvalue', url_is_quoted=True),
                          'http://rmc-offers.co.uk/productlist.asp?BCat=newvalue&CatID=60')
         url = 'http://rmc-offers.co.uk/productlist.asp?BCat=2,60&CatID=60'
         self.assertEqual(add_or_replace_parameter(url, 'BCat', 'newvalue'),
