@@ -34,12 +34,8 @@ class Command(ScrapyCommand):
         """ You can use this function to update the Scrapy objects that will be available in the shell"""
         pass
 
-    def _get_response(self, response):
-        self.response = response
-        return []
-
     def get_url(self, url):
-        self.response = None
+        response = None
 
         url = url.strip()
         if url:
@@ -52,15 +48,15 @@ class Command(ScrapyCommand):
             if u.scheme not in ('http', 'https', 'file'):
                 print "Unsupported scheme '%s' in URL: <%s>" % (u.scheme, url)
                 return
-            request = Request(url, callback=self._get_response)
+            request = Request(url)
         else:
-            request = self.user_ns['request'].replace(callback=self._get_response)
+            request = self.user_ns['request']
 
         spider = get_or_create_spider(url)
         print "Fetching %s..." % request
-        threads.blockingCallFromThread(reactor, scrapyengine.crawl, request, spider)
-        if self.response:
-            self.generate_vars(url, self.response, request)
+        response = threads.blockingCallFromThread(reactor, scrapyengine.schedule, request, spider)
+        if response:
+            self.generate_vars(url, response, request)
             return True
 
     def generate_vars(self, url=None, response=None, request=None):
