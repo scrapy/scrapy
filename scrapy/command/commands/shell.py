@@ -35,8 +35,6 @@ class Command(ScrapyCommand):
         pass
 
     def get_url(self, url):
-        response = None
-
         url = url.strip()
         if url:
             u = urlparse.urlparse(url)
