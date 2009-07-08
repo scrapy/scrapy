@@ -9,7 +9,7 @@ import traceback
 class StackTraceDump(object):
     def __init__(self):
         try:
-            signal.signal(signal.SIGUSR1, self.dump_stacktrace)
+            signal.signal(signal.SIGUSR2, self.dump_stacktrace)
         except AttributeError:
             # win32 platforms don't support SIGUSR signals
             pass
