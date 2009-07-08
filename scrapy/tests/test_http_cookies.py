@@ -3,8 +3,6 @@
 import re, os, time
 from unittest import TestCase
 
-from test import test_support
-
 from scrapy.http import Request, Response, Headers
 from scrapy.http.cookies import WrappedRequest, WrappedResponse, CookieJar, DefaultCookiePolicy
 
