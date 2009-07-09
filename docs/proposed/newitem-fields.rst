@@ -42,7 +42,7 @@ A date, represented in Python by a ``datetime.date`` instance.
 A date with time, represented in Python by a ``datetime.datetime`` instance.
 
 ``DecimalField``
----------------
+----------------
 
 .. class:: DecimalField
 
