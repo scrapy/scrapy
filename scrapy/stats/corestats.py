@@ -41,7 +41,7 @@ class CoreStats(object):
         stats.incpath('%s/item_scraped_count' % spider.domain_name)
         stats.incpath('_global/item_scraped_count')
 
-    def item_passed(self, item, spider, pipe_output):
+    def item_passed(self, item, spider):
         stats.incpath('%s/item_passed_count' % spider.domain_name)
         stats.incpath('_global/item_passed_count')
 

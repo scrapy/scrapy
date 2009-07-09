@@ -7,7 +7,7 @@ from scrapy import log
 from scrapy.http import Request
 from scrapy.core.engine import scrapyengine
 from scrapy.spider import spiders
-from scrapy.utils.misc import load_object, arg_to_iter
+from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.url import is_url
 from scrapy.conf import settings
 
@@ -39,8 +39,7 @@ class ExecutionManager(object):
         log.msg("Enabled extensions: %s" % ", ".join(extensions.enabled.iterkeys()),
             level=log.DEBUG)
 
-        scheduler = load_object(settings['SCHEDULER'])()
-        scrapyengine.configure(scheduler=scheduler)
+        scrapyengine.configure()
         
     def crawl(self, *args):
         """Schedule the given args for crawling. args is a list of urls or domains"""

@@ -2,7 +2,7 @@
 Helper functions for dealing with Twisted deferreds
 """
 
-from twisted.internet import defer, reactor
+from twisted.internet import defer, reactor, task
 from twisted.python import failure
 
 def defer_fail(_failure):
@@ -36,4 +36,14 @@ def mustbe_deferred(f, *args, **kw):
 
 def chain_deferred(d1, d2):
     return d1.chainDeferred(d2).addBoth(lambda _:d2)
+
+def parallel(iterable, count, callable, *args, **named):
+    """Execute a callable over the objects in the given iterable, in parallel,
+    using no more than ``count`` concurrent calls.
+
+    Taken from: http://jcalderone.livejournal.com/24285.html
+    """
+    coop = task.Cooperator()
+    work = (callable(elem, *args, **named) for elem in iterable)
+    return defer.DeferredList([coop.coiterate(work) for i in xrange(count)])
 

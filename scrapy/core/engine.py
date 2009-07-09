@@ -36,13 +36,13 @@ class ExecutionEngine(object):
         self.control_reactor = True
         self._next_request_pending = set()
 
-    def configure(self, scheduler=None, downloader=None):
+    def configure(self):
         """
         Configure execution engine with the given scheduling policy and downloader.
         """
-        self.scheduler = scheduler or Scheduler()
+        self.scheduler = load_object(settings['SCHEDULER'])()
         self.domain_scheduler = load_object(settings['DOMAIN_SCHEDULER'])()
-        self.downloader = downloader or Downloader()
+        self.downloader = Downloader()
         self.scraper = Scraper(self)
         self.configured = True
 
@@ -161,9 +161,8 @@ class ExecutionEngine(object):
         if self.paused:
             return reactor.callLater(5, self.next_request, domain)
 
-        if not self.running or \
-                self.domain_is_closed(domain) or \
-                self.downloader.sites[domain].needs_backout() or \
+        if not self.running or self.domain_is_closed(domain) or \
+                self.downloader.sites[domain].needs_backout() or  \
                 self.scraper.sites[domain].needs_backout():
             return
 
@@ -222,7 +221,6 @@ class ExecutionEngine(object):
         if not self.running or self.paused:
             return
 
-        # main domain starter loop
         while self.running and self.downloader.has_capacity():
             if not self.next_domain():
                 return self._stop_if_idle()
@@ -349,8 +347,10 @@ class ExecutionEngine(object):
             "self.downloader.sites[domain].closing",
             "self.downloader.sites[domain].lastseen",
             "len(self.scraper.sites[domain].queue)",
-            "len(self.scraper.sites[domain].processing)",
-            "self.scraper.sites[domain].backlog_size",
+            "len(self.scraper.sites[domain].active)",
+            "self.scraper.sites[domain].active_size",
+            "self.scraper.sites[domain].itemproc_size",
+            "self.scraper.sites[domain].needs_backout()",
             ]
 
         for test in global_tests:

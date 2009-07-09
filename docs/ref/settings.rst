@@ -229,9 +229,17 @@ CONCURRENT_DOMAINS
 
 Default: ``8``
 
-Number of domains to scrape concurrently in one process. This doesn't affect
-the number of domains scraped concurrently by the Scrapy cluster which spawns a
-new process per domain.
+Maximum number of domains to scrape in parallel.
+
+.. setting:: CONCURRENT_ITEMS
+
+CONCURRENT_ITEMS
+----------------
+
+Default: ``100``
+
+Maximum number of concurrent items to process in parallel (per domain) in the
+Item Processor (aka. Item Pipeline).
 
 .. setting:: COOKIES_DEBUG
 

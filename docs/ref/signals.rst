@@ -115,9 +115,9 @@ order.
     :type response: :class:`~scrapy.http.Response` object
 
 .. signal:: item_passed
-.. function:: item_passed(item, spider, response, pipe_output)
+.. function:: item_passed(item, spider, response, output)
 
-    Sent after an item has passed al the :ref:`topics-item-pipeline` stages without
+    Sent after an item has passed all the :ref:`topics-item-pipeline` stages without
     being dropped.
 
     :param item: the item which passed the pipeline
@@ -129,7 +129,7 @@ order.
     :param response: the response from which the item was scraped
     :type response: :class:`~scrapy.http.Response` object
 
-    :param pipe_output: the output of the item pipeline. This is typically the
+    :param output: the output of the item pipeline. This is typically the
         same :class:`~scrapy.item.ScrapedItem` object received in the ``item``
         parameter, unless some pipeline stage created a new item.
 

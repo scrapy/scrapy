@@ -38,7 +38,9 @@ CLUSTER_WORKER_PORT = 8789
 COMMANDS_MODULE = ''
 COMMANDS_SETTINGS_MODULE = ''
 
-CONCURRENT_DOMAINS = 8    # number of domains to scrape in parallel
+CONCURRENT_DOMAINS = 8
+
+CONCURRENT_ITEMS = 100
 
 COOKIES_DEBUG = False
 
@@ -111,6 +113,8 @@ HTTPCACHE_IGNORE_MISSING = False
 HTTPCACHE_SECTORIZE = True
 HTTPCACHE_EXPIRATION_SECS = 0
 
+ITEM_PROCESSOR = 'scrapy.item.pipeline.ItemPipelineManager'
+
 # Item pipelines are typically set in specific commands settings
 ITEM_PIPELINES = []
 
@@ -172,7 +176,6 @@ SPIDER_MIDDLEWARES = {}
 
 SPIDER_MIDDLEWARES_BASE = {
     # Engine side
-    'scrapy.contrib.spidermiddleware.itempipeline.ItemPipelineMiddleware': 30,
     'scrapy.contrib.spidermiddleware.httperror.HttpErrorMiddleware': 50,
     'scrapy.contrib.itemsampler.ItemSamplerMiddleware': 100,
     'scrapy.contrib.spidermiddleware.requestlimit.RequestLimitMiddleware': 200,
