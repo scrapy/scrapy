@@ -118,9 +118,6 @@ ITEM_PROCESSOR = 'scrapy.item.pipeline.ItemPipelineManager'
 # Item pipelines are typically set in specific commands settings
 ITEM_PIPELINES = []
 
-# max limit of items to process in parallel
-ITEMPIPELINE_CONCURRENTLIMIT = 0
-
 LOG_ENABLED = True
 LOG_STDOUT = False
 LOGLEVEL = 'DEBUG'

@@ -238,8 +238,8 @@ CONCURRENT_ITEMS
 
 Default: ``100``
 
-Maximum number of concurrent items to process in parallel (per domain) in the
-Item Processor (aka. Item Pipeline).
+Maximum number of concurrent items (per response) to process in parallel in the
+Item Processor (also known as the Item Pipeline).
 
 .. setting:: COOKIES_DEBUG
 
