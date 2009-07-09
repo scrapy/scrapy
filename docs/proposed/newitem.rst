@@ -1,39 +1,79 @@
+.. _topic-items:
+
 =====
 Items
 =====
 
-The goal of the scraping process is to obtain Items (aka Scraped Items) from
-scraped pages.
+The goal of the scraping process is to obtain scraped items from scraped pages.
 
-Scrapy represent this using a model with fields for Items, much like you'll do
-in an ORM.
+ScrapedItem
+===========
 
-Let's see an example::
+.. class:: scrapy.item.ScrapedItem
+
+In Scrapy the items are represented by a :class:`scrapy.item.ScrapedItem`
+(almost an empty class) or any subclass of it.
+
+To use :class:`scrapy.item.ScrapedItem` you simply instantiate it and use
+instance attributes to store the information.
+
+   >>> from scrapy.item import ScrapedItem
+   >>> item = ScrapedItem()
+   >>> item.headline = 'Headline'
+   >>> item.content = 'Content'
+   >>> item.published = '2009-07-08'
+   >>> item
+   ScrapedItem({'headline': 'Headline', 'content': 'Content', 'published': '2009-07-08'})
+
+Or you can use your own class to represent items, just be sure it inherits from
+:class:`scrapy.item.ScrapedItem`.
+
+.. _topic-newitem:
+
+More advanced items
+===================
+
+.. class:: scrapy.contrib_exp.newitem.Item(ScrapedItem)
+
+Scrapy provides :class:`scrapy.contrib_exp.newitem.Item` (a subclass of
+:class:`scrapy.item.ScrapedItem`) that works like a form with fields to store
+the item's data.
+
+To use this items you first define the item's fields as class attributes::
+
+   from scrapy.contrib_exp.newitem import Item
+   from scrapy.contrib_exp.newitem import fields
 
    class NewsItem(Item):
-       url = StringField()
-       headline = StringField()
-       summary = StringField()
-       content = StringField()
-       published = DateField()
+       headline = fields.StringField()
+       content = fields.StringField()
+       published = fields.DateField()
+
+And then you instantiate the item and assign values to its fields, which will be
+converted to the expected Python types depending of their class::
+
+   >>> item = NewsItem()
+   >>> item.headline = 'Headline'
+   >>> item.content = 'Content'
+   >>> item.published = '2009-07-08'
+   >>> item
+   NewsItem({'headline': 'Headline', 'content': 'Content', 'published': datetime.date(2009, 7, 8)})
+
+Each field accepts a ``default`` argument, that sets the default value of the field.
+
+You can see the built-in field types in the :ref:`ref-newitem-fields`.
 
 Using this may seen complicated at first, but gives you much power over scraped
 data, like assigning defaults for fields that are not present in some pages,
-performing validation, etc.
+:ref:`topic-newitem-adaptors`, etc.
 
-To use Items you instantiate them and then assign values to their attributes,
-they will be converted to the expected Python types depending of the field
-kind::
+.. _topic-newitem-adaptors:
 
-   ni = NewsItem()
-   ni.url = 'http://www.news.com/news/1'
-   ni.summary = 'Summary'
-   ni.content = 'Content'
-   ni.published = '2009-02-28'
+=============
+Item Adaptors
+=============
 
-============
-ItemAdaptors
-============
+.. class:: scrapy.contrib_exp.newitem.adaptors.ItemAdaptor
 
 As you probably want to scrape the same kind of Items from many sources
 (different websites, RSS feeds, etc.), Scrapy implements ItemAdaptors, they

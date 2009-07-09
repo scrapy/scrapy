@@ -16,6 +16,7 @@ also contain outdated information, as it's not revised so frequently.
    :maxdepth: 1
 
    newitem
+   newitem-fields
    spiders
 
 
