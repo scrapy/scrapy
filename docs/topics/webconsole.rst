@@ -58,7 +58,7 @@ Example web console extension
 Here's an example of a simple web console extension that just displays a "Hello
 world!" text::
 
-    from pydispatch import dispatcher
+    from scrapy.xlib.pydispatch import dispatcher
     from scrapy.management.web import webconsole_discover_module
 
     class HelloWorldConsole(object):

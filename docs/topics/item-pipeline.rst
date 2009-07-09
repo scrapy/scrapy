@@ -66,7 +66,7 @@ that were already processed. Let say that our items has an unique id, but our
 spider returns multiples items with the same id::
 
 
-    from pydispatch import dispatcher
+    from scrapy.xlib.pydispatch import dispatcher
     from scrapy.core import signals
     from scrapy.core.exceptions import DropItem
 

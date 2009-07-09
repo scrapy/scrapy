@@ -81,7 +81,7 @@ enabled.
 Let's take a look at the following example extension which just logs a message
 everytime a domain/spider is opened and closed::
 
-    from pydispatch import dispatcher
+    from scrapy.xlib.pydispatch import dispatcher
     from scrapy.core import signals
 
     class SpiderOpenCloseLogging(object):
