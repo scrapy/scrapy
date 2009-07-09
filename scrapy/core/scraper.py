@@ -157,7 +157,7 @@ class Scraper(object):
                 item=output, spider=spider, response=response)
             self.sites[domain].itemproc_size += 1
             dfd = self.itemproc.process_item(output, spider)
-            dfd.addBoth(self._itemproc_finished, output, response, spider)
+            dfd.addBoth(self._itemproc_finished, output, spider)
             return dfd
         elif output is None:
             pass
@@ -179,7 +179,7 @@ class Scraper(object):
         else:
             return spider_failure # exceptions raised in the spider code
 
-    def _itemproc_finished(self, output, item, response, spider):
+    def _itemproc_finished(self, output, item, spider):
         """ItemProcessor finished for the given ``item`` and returned ``output``
         """
         domain = spider.domain_name
@@ -189,11 +189,11 @@ class Scraper(object):
             if isinstance(ex, DropItem):
                 log.msg("Dropped %s - %s" % (item, str(ex)), log.DEBUG, domain=domain)
                 signals.send_catch_log(signal=signals.item_dropped, sender=self.__class__, \
-                    item=item, spider=spider, response=response, exception=output.value)
+                    item=item, spider=spider, exception=output.value)
             else:
                 log.msg('Error processing %s - %s' % (item, output), \
                     log.ERROR, domain=domain)
         else:
             signals.send_catch_log(signal=signals.item_passed, sender=self.__class__, \
-                item=item, spider=spider, response=response, output=output)
+                item=item, spider=spider, output=output)
 
