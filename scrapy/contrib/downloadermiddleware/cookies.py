@@ -1,7 +1,7 @@
 import operator
 from itertools import groupby
 from collections import defaultdict
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.core import signals
 from scrapy.http import Response

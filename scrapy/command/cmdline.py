@@ -143,7 +143,7 @@ def execute_with_args(argv):
         p.runctx('ret = cmd.run(args, opts)', globals(), loc)
         p.dump_stats(opts.profile)
         try:
-            import lsprofcalltree
+            from scrapy.xlib import lsprofcalltree
             fn = opts.profile + ".cachegrind"
             k = lsprofcalltree.KCacheGrind(p)
             with open(fn, 'w') as f:

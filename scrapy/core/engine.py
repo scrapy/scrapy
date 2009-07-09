@@ -9,7 +9,7 @@ from datetime import datetime
 from twisted.internet import reactor, task
 from twisted.internet.error import CannotListenError
 from twisted.python.failure import Failure
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy import log
 from scrapy.conf import settings

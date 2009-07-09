@@ -1,7 +1,7 @@
 import hashlib
 from datetime import datetime
 
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.utils.misc import load_object
 from scrapy.core import signals

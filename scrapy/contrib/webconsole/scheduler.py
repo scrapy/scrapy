@@ -4,7 +4,7 @@ Scheduler queue web console module
 See documentation in docs/ref/extensions.rst
 """
 
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core.engine import scrapyengine
 from scrapy.management.web import banner, webconsole_discover_module
 

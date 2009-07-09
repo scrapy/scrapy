@@ -25,7 +25,7 @@ from __future__ import with_statement
 
 import cPickle as pickle
 
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import NotConfigured

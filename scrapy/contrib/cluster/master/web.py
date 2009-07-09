@@ -1,6 +1,6 @@
 import datetime
 
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.spider import spiders 
 from scrapy.management.web import banner, webconsole_discover_module

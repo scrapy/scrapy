@@ -8,7 +8,7 @@ See documentation in docs/ref/request-response.rst
 import urllib
 from cStringIO import StringIO
 
-from ClientForm import ParseFile
+from scrapy.xlib.ClientForm import ParseFile
 
 from scrapy.http.request import Request
 from scrapy.utils.python import unicode_to_str

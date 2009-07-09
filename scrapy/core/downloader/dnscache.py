@@ -5,7 +5,7 @@ crawler, reducing the dns lookups.
 """
 import socket
 from scrapy.core import signals
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 class DNSCache(object):
     """

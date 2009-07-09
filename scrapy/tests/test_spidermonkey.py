@@ -4,7 +4,7 @@ class SpidermonkeyTest(unittest.TestCase):
 
     def setUp(self):
         try:
-            from spidermonkey import Runtime
+            from scrapy.xlib.spidermonkey import Runtime
             r = Runtime()
             self.cx = r.new_context()
         except ImportError:

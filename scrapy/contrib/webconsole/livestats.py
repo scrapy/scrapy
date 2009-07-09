@@ -2,7 +2,7 @@
 Live statistics extension
 """
 from datetime import datetime
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core import signals
 from scrapy.core.engine import scrapyengine
 from scrapy.management.web import banner, webconsole_discover_module

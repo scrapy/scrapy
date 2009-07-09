@@ -4,7 +4,7 @@ ResponseSoup extension
 See documentation in docs/ref/extensions.rst
 """ 
 
-from BeautifulSoup import BeautifulSoup
+from scrapy.xlib.BeautifulSoup import BeautifulSoup
 
 from scrapy.http import Response
 

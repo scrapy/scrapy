@@ -7,7 +7,7 @@ import sys
 from traceback import format_exc
 
 from twisted.python import log
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.conf import settings
 from scrapy.utils.python import unicode_to_str
