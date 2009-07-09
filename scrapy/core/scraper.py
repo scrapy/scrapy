@@ -188,12 +188,12 @@ class Scraper(object):
             ex = output.value
             if isinstance(ex, DropItem):
                 log.msg("Dropped %s - %s" % (item, str(ex)), log.DEBUG, domain=domain)
-                signals.send_catch_log(signal=signals.item_dropped, \
-                    sender=self.__class__, item=item, spider=spider, exception=output.value)
+                signals.send_catch_log(signal=signals.item_dropped, sender=self.__class__, \
+                    item=item, spider=spider, response=response, exception=output.value)
             else:
                 log.msg('Error processing %s - %s' % (item, output), \
                     log.ERROR, domain=domain)
         else:
-            signals.send_catch_log(signal=signals.item_passed, \
-                sender=self.__class__, item=item, spider=spider, output=output)
+            signals.send_catch_log(signal=signals.item_passed, sender=self.__class__, \
+                item=item, spider=spider, response=response, output=output)
 
