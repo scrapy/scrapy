@@ -26,18 +26,20 @@ def url_is_from_spider(url, spider):
     domains.extend(spider.extra_domain_names)
     return url_is_from_any_domain(url, domains)
 
-def urljoin_rfc(base, ref):
-    """
-    Fixed urlparse.urljoin version that handles
-    relative query string as RFC states.
-    """
-    if ref.startswith('?'):
-        fpart = urlparse.urlsplit(str(base))[2].rsplit('/', 1)[-1]
-        ref = ''.join([fpart, ref])
-    # convert ref to a string. This should already
-    # be the case, however, many spiders do not convert.
-    return urlparse.urljoin(base, str(ref))
+def urljoin_rfc(base, ref, encoding='utf-8'):
+    """Same as urlparse.urljoin but supports unicode values in base and ref
+    parameters (in which case they will be converted to str using the given
+    encoding).
 
+    Always returns a str.
+    """
+    # XXX: this code was commented out because its purpose is unknown and
+    # there's no test or documentation that specifies its behaviour. please
+    # don't restore this code without adding unittests for it
+    #if ref.startswith('?'):
+    #    fpart = urlparse.urlsplit(unicode_to_str(base, encoding))[2].rsplit('/', 1)[-1]
+    #    ref = ''.join([fpart, ref])
+    return urlparse.urljoin(unicode_to_str(base, encoding), unicode_to_str(ref, encoding))
 
 _reserved = ';/?:@&=+$|,#' # RFC 2396 (Generic Syntax)
 _unreserved_marks = "-_.!~*'()" #RFC 2396 sec 2.3

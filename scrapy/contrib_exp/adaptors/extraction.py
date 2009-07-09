@@ -2,13 +2,9 @@
 Adaptors related with extraction of data
 """
 
-import urlparse
-import re
-from scrapy import log
-from scrapy.http import Response
-from scrapy.utils.url import is_url
+from scrapy.utils.url import urljoin_rfc
 from scrapy.utils.response import get_base_url
-from scrapy.utils.python import flatten, unicode_to_str
+from scrapy.utils.python import unicode_to_str
 from scrapy.xpath.selector import XPathSelector, XPathSelectorList
 from scrapy.contrib.linkextractors.image import HTMLImageLinkExtractor
 
@@ -70,7 +66,7 @@ class ExtractImageLinks(object):
 
         if raw_links:
             base_url = get_base_url(self.response)
-            raw_links = [urlparse.urljoin(base_url, unicode_to_str(rel_url)) for rel_url in raw_links]
+            raw_links = [urljoin_rfc(base_url, unicode_to_str(rel_url), self.response.encoding) for rel_url in raw_links]
 
         lx = HTMLImageLinkExtractor(locations=selectors, canonicalize=self.canonicalize)
         urls = map(lambda link: link.url, lx.extract_links(self.response))

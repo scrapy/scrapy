@@ -1,6 +1,6 @@
 import re
 
-from scrapy.utils.url import urljoin_rfc as urljoin
+from scrapy.utils.url import urljoin_rfc
 from scrapy.utils.markup import remove_tags, remove_entities, replace_escape_chars
 
 from scrapy.link import Link
@@ -19,7 +19,7 @@ class RegexLinkExtractor(SgmlLinkExtractor):
     def _extract_links(self, response_text, response_url, response_encoding):
         base_url = self.base_url if self.base_url else response_url
 
-        clean_url = lambda u: urljoin(base_url, remove_entities(clean_link(u.decode(response_encoding))))
+        clean_url = lambda u: urljoin_rfc(base_url, remove_entities(clean_link(u.decode(response_encoding))))
         clean_text = lambda t: replace_escape_chars(remove_tags(t.decode(response_encoding))).strip()
 
         links_text = linkre.findall(response_text)

@@ -1,5 +1,8 @@
 import unittest
-from scrapy.utils.url import url_is_from_any_domain, safe_url_string, safe_download_url, url_query_parameter, add_or_replace_parameter, url_query_cleaner, canonicalize_url
+from scrapy.utils.url import url_is_from_any_domain, safe_url_string, safe_download_url, \
+    url_query_parameter, add_or_replace_parameter, url_query_cleaner, canonicalize_url, \
+    urljoin_rfc
+
 
 class UrlUtilsTest(unittest.TestCase):
 
@@ -15,6 +18,21 @@ class UrlUtilsTest(unittest.TestCase):
         url = 'javascript:%20document.orderform_2581_1190810811.mode.value=%27add%27;%20javascript:%20document.orderform_2581_1190810811.submit%28%29'
         self.assertFalse(url_is_from_any_domain(url, ['testdomain.com']))
         self.assertFalse(url_is_from_any_domain(url+'.testdomain.com', ['testdomain.com']))
+
+    def test_urljoin_rfc(self):
+        self.assertEqual(urljoin_rfc('http://example.com/some/path', 'newpath/test'),
+                                     'http://example.com/some/newpath/test')
+        self.assertEqual(urljoin_rfc('http://example.com/some/path/a.jpg', '../key/other'),
+                                     'http://example.com/some/key/other')
+        u = urljoin_rfc(u'http://example.com/lolo/\xa3/lele', u'lala/\xa3')
+        self.assertEqual(u, 'http://example.com/lolo/\xc2\xa3/lala/\xc2\xa3')
+        assert isinstance(u, str)
+        u = urljoin_rfc(u'http://example.com/lolo/\xa3/lele', 'lala/\xa3', encoding='latin-1')
+        self.assertEqual(u, 'http://example.com/lolo/\xa3/lala/\xa3')
+        assert isinstance(u, str)
+        u = urljoin_rfc('http://example.com/lolo/\xa3/lele', 'lala/\xa3')
+        self.assertEqual(u, 'http://example.com/lolo/\xa3/lala/\xa3')
+        assert isinstance(u, str)
 
     def test_safe_url_string(self):
         # Motoko Kusanagi (Cyborg from Ghost in the Shell)

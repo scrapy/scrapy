@@ -10,7 +10,7 @@ import lxml.html
 
 from scrapy.link import Link
 from scrapy.utils.python import unique as unique_list
-from scrapy.utils.url import safe_url_string, urljoin_rfc as urljoin
+from scrapy.utils.url import safe_url_string, urljoin_rfc
 
 class LxmlLinkExtractor(object):
     def __init__(self, tag="a", attr="href", process=None, unique=False):
@@ -31,7 +31,7 @@ class LxmlLinkExtractor(object):
         ret = []
         base_url = self.base_url if self.base_url else response_url
         for link in links:
-            link.url = urljoin(base_url, link.url)
+            link.url = urljoin_rfc(base_url, link.url, response_encoding)
             link.url = safe_url_string(link.url, response_encoding)
             link.text = link.text.decode(response_encoding)
             ret.append(link)

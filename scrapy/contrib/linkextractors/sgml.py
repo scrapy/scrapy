@@ -8,7 +8,7 @@ from scrapy.xpath import HtmlXPathSelector
 from scrapy.link import Link
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import FixedSGMLParser, unique as unique_list, str_to_unicode
-from scrapy.utils.url import safe_url_string, urljoin_rfc as urljoin, canonicalize_url, url_is_from_any_domain
+from scrapy.utils.url import safe_url_string, urljoin_rfc, canonicalize_url, url_is_from_any_domain
 
 class BaseSgmlLinkExtractor(FixedSGMLParser):
 
@@ -30,7 +30,7 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
         ret = []
         base_url = self.base_url if self.base_url else response_url
         for link in links:
-            link.url = urljoin(base_url, link.url)
+            link.url = urljoin_rfc(base_url, link.url, response_encoding)
             link.url = safe_url_string(link.url, response_encoding)
             link.text = str_to_unicode(link.text, response_encoding)
             ret.append(link)

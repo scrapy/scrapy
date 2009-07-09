@@ -6,7 +6,7 @@ image links only.
 import urlparse
 
 from scrapy.link import Link
-from scrapy.utils.url import canonicalize_url
+from scrapy.utils.url import canonicalize_url, urljoin_rfc
 from scrapy.utils.python import unicode_to_str, flatten
 from scrapy.xpath.selector import XPathSelectorList, HtmlXPathSelector
 
@@ -67,7 +67,7 @@ class HTMLImageLinkExtractor(object):
 
         seen, ret = set(), []
         for link in links:
-            link.url = urlparse.urljoin(base_url, link.url)
+            link.url = urljoin_rfc(base_url, link.url, response.encoding)
             if self.unique:
                 if link.url in seen:
                     continue
