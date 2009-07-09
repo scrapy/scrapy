@@ -11,7 +11,7 @@ when needed.
 
 import datetime
 
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.extension import extensions
 from scrapy.core import signals

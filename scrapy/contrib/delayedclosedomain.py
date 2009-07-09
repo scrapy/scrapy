@@ -5,7 +5,7 @@ configurable amount of idle time is reached
 
 from datetime import datetime
 
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 from collections import defaultdict
 
 from scrapy.core import signals

@@ -4,7 +4,7 @@ Extension for persistent statistics by domain
 import re
 import pprint
 
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.spider import spiders
 from scrapy.core.exceptions import NotConfigured

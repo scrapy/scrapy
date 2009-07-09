@@ -1,6 +1,6 @@
 import unittest
 
-from BeautifulSoup import BeautifulSoup
+from scrapy.xlib.BeautifulSoup import BeautifulSoup
 
 from scrapy.http import Response
 from scrapy.contrib.response.soup import ResponseSoup

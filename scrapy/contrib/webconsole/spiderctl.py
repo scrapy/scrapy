@@ -2,7 +2,7 @@
 Extensions for allowing spider control from web console
 """
 
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.core import signals
 from scrapy.core.manager import scrapymanager

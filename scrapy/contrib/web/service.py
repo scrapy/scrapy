@@ -10,7 +10,7 @@ from scrapy.item import ScrapedItem
 from scrapy.core.exceptions import NotConfigured
 from scrapy.conf import settings
 from scrapy.utils.misc import memoize, arg_to_iter
-from lrucache import LRUCache
+from scrapy.xlib.lrucache import LRUCache
 
 from .site import WebSite, WebResource
 from .http import HttpResponse

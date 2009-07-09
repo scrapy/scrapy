@@ -919,7 +919,7 @@ def _create_bs_classes(bs,
 try:
     if sys.version_info[:2] < (2, 2):
         raise ImportError  # BeautifulSoup uses generators
-    import BeautifulSoup
+    from scrapy.xlib import BeautifulSoup
 except ImportError:
     pass
 else:

@@ -4,7 +4,7 @@ Reload spider modules once they are finished scraping
 This is to release any resources held on to by scraping spiders.
 """
 import sys
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core import signals
 from scrapy import log
 

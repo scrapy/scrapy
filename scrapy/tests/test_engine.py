@@ -58,7 +58,7 @@ class CrawlingSession(object):
             from scrapy.core import signals
             from scrapy.core.manager import scrapymanager
             from scrapy.core.engine import scrapyengine
-            from pydispatch import dispatcher
+            from scrapy.xlib.pydispatch import dispatcher
 
             dispatcher.connect(self.record_signal, signals.engine_started)
             dispatcher.connect(self.record_signal, signals.engine_stopped)

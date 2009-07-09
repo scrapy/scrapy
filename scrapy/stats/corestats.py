@@ -6,7 +6,7 @@ import getpass
 import socket
 import datetime
 
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.core import signals
 from scrapy.stats import stats

@@ -8,7 +8,7 @@ setting "REQUESTS_QUEUE_SIZE". If not specified (or 0), no limit will be
 applied. 
 """
 from itertools import imap
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.core import signals
 from scrapy.core.engine import scrapyengine

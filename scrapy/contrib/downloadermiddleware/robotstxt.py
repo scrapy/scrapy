@@ -7,7 +7,7 @@ enable this middleware and enable the ROBOTSTXT_OBEY setting.
 import urlparse
 import robotparser
 
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.core import signals
 from scrapy.core.engine import scrapyengine

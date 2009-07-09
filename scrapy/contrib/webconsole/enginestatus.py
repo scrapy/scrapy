@@ -1,7 +1,7 @@
 """
 Scheduler information module for Scrapy webconsole
 """
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core.engine import scrapyengine
 from scrapy.management.web import banner
 

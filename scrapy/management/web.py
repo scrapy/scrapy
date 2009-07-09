@@ -9,7 +9,7 @@ import socket
 from datetime import datetime
 
 from twisted.web import server, resource
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.core.engine import scrapyengine
 from scrapy.conf import settings

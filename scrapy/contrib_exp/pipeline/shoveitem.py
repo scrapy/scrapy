@@ -8,7 +8,7 @@ http://pypi.python.org/pypi/shove
 from string import Template
 
 from shove import Shove
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy import log
 from scrapy.core import signals

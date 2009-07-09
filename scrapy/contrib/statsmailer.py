@@ -6,7 +6,7 @@ Use STATSMAILER_RCPTS setting to enable and give the recipient mail address
 
 import pprint
 
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.stats import stats
 from scrapy.mail import MailSender

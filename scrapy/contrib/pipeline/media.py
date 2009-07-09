@@ -1,4 +1,4 @@
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 from twisted.internet import defer
 
 from scrapy.utils.defer import mustbe_deferred, defer_result

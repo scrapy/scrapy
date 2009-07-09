@@ -3,7 +3,7 @@ from __future__ import with_statement
 import datetime
 import cPickle as pickle
 
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 from twisted.spread import pb
 from twisted.internet import reactor
 

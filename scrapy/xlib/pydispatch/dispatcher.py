@@ -27,7 +27,7 @@ Internal attributes:
 """
 from __future__ import generators
 import types, weakref
-from pydispatch import saferef, robustapply, errors
+from scrapy.xlib.pydispatch import saferef, robustapply, errors
 
 __author__ = "Patrick K. O'Brien <pobrien@orbtech.com>"
 __cvsid__ = "$Id$"

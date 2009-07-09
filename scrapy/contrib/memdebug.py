@@ -9,7 +9,7 @@ import gc
 import socket
 
 import libxml2
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.core import signals
 from scrapy.core.exceptions import NotConfigured

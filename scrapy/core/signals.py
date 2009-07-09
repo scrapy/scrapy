@@ -5,7 +5,7 @@ These signals are documented in docs/ref/signals.rst. Please don't add new
 signals here without documenting them there.
 """
 
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy import log
 

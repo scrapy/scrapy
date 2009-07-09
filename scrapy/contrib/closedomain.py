@@ -6,7 +6,7 @@ time has expired.
 import datetime
 import pprint
 
-from pydispatch import dispatcher
+from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.core import signals
 from scrapy import log
