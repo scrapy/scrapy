@@ -115,7 +115,7 @@ order.
     :type response: :class:`~scrapy.http.Response` object
 
 .. signal:: item_passed
-.. function:: item_passed(item, spider, response, output)
+.. function:: item_passed(item, spider, output)
 
     Sent after an item has passed all the :ref:`topics-item-pipeline` stages without
     being dropped.
@@ -126,15 +126,12 @@ order.
     :param spider: the spider which scraped the item 
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
-    :param response: the response from which the item was scraped
-    :type response: :class:`~scrapy.http.Response` object
-
     :param output: the output of the item pipeline. This is typically the
         same :class:`~scrapy.item.ScrapedItem` object received in the ``item``
         parameter, unless some pipeline stage created a new item.
 
 .. signal:: item_dropped
-.. function:: item_dropped(item, spider, response, exception)
+.. function:: item_dropped(item, spider, exception)
 
     Sent after an item has been dropped from the :ref:`topics-item-pipeline`
     when some stage raised a :exception:`DropItem` exception.
@@ -144,9 +141,6 @@ order.
 
     :param spider: the spider which scraped the item 
     :type spider: :class:`~scrapy.spider.BaseSpider` object
-
-    :param response: the response from which the item was scraped
-    :type response: :class:`~scrapy.http.Response` object
 
     :param exception: the exception (which must be a :exception:`DropItem`
         subclass) which caused the item to be dropped 
