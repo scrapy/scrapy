@@ -32,6 +32,7 @@ Requirements
 Optional:
 
 * `pyopenssl <http://pyopenssl.sourceforge.net>`_ (for HTTPS support, highly recommended)
+* `simplejson <http://undefined.org/python/#simplejson>`_ (for (de)serializing JSON)
 * `spidermonkey <http://www.mozilla.org/js/spidermonkey/>`_ (for parsing Javascript)
 
 .. _intro-install-step1:
@@ -60,7 +61,7 @@ If you're running Ubuntu/Debian Linux run the following command as root::
 
 To install optional libraries::
 
-   apt-get install python-pyopenssl spidermonkey-bin
+   apt-get install python-pyopenssl python-simplejson spidermonkey-bin
 
 Arch Linux
 ----------
@@ -71,7 +72,7 @@ If you are running Arch Linux run the following command as root::
 
 To install optional libraries::
 
-   pacman -S pyopenssl spidermonkey
+   pacman -S pyopenssl spidermonkey python-simplejson
 
 Mac OS X
 --------
