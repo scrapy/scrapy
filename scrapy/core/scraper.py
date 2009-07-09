@@ -18,7 +18,7 @@ from scrapy.conf import settings
 class SiteInfo(object):
     """Object for holding data of the responses being scraped"""
 
-    FAILURE_SIZE = 1024 # make failures equivalent to 1K responses in size
+    MIN_RESPONSE_SIZE = 1024
 
     def __init__(self, max_active_size=5000000):
         self.max_active_size = max_active_size
@@ -31,9 +31,9 @@ class SiteInfo(object):
         deferred = defer.Deferred()
         self.queue.append((response, request, deferred))
         if isinstance(response, Response):
-            self.active_size += len(response.body)
+            self.active_size += max(len(response.body), self.MIN_RESPONSE_SIZE)
         else:
-            self.active_size += self.FAILURE_SIZE
+            self.active_size += self.MIN_RESPONSE_SIZE
         return deferred
 
     def next_response_request_deferred(self):
@@ -44,9 +44,9 @@ class SiteInfo(object):
     def finish_response(self, response):
         self.active.remove(response)
         if isinstance(response, Response):
-            self.active_size -= len(response.body)
+            self.active_size -= max(len(response.body), self.MIN_RESPONSE_SIZE)
         else:
-            self.active_size -= self.FAILURE_SIZE
+            self.active_size -= self.MIN_RESPONSE_SIZE
 
     def is_idle(self):
         return not (self.queue or self.active)
@@ -133,7 +133,6 @@ class Scraper(object):
             _failure.value.__class__.__name__))
 
     def handle_spider_output(self, result, request, response, spider):
-        domain = spider.domain_name
         if not result:
             return defer_succeed(None)
         dfd = parallel(iter(result), self.concurrent_items,
