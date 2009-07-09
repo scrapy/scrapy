@@ -9,8 +9,7 @@ __all__ = ['MultiValuedField', 'BooleanField', 'DateField', 'DateTimeField',
 
 
 class BaseField(object):
-    def __init__(self, required=False, default=None):
-        self.required = required
+    def __init__(self, default=None):
         self.default = default or self.to_python(None)
 
     def assign(self, value):
@@ -37,9 +36,9 @@ class Field(BaseField):
 
 
 class MultiValuedField(BaseField):
-    def __init__(self, field_type, required=False, default=None):
+    def __init__(self, field_type, default=None):
         self._field = field_type()
-        super(MultiValuedField, self).__init__(required, default)
+        super(MultiValuedField, self).__init__(default)
 
     def to_python(self, value):
         if value is None:
