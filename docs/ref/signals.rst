@@ -136,8 +136,8 @@ order.
 .. signal:: item_dropped
 .. function:: item_dropped(item, spider, response, exception)
 
-    Sent after an item has dropped from the :ref:`topics-item-pipeline` when some stage
-    raised a :exception:`DropItem` exception.
+    Sent after an item has been dropped from the :ref:`topics-item-pipeline`
+    when some stage raised a :exception:`DropItem` exception.
 
     :param item: the item dropped from the :ref:`topics-item-pipeline`
     :type item: :class:`~scrapy.item.ScrapedItem` object
