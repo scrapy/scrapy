@@ -54,6 +54,14 @@ if root_dir != '':
     os.chdir(root_dir)
 scrapy_dir = 'scrapy'
 
+# Generate dropin.cache for spiders under tests
+# if dropin.cache is missing, running tests under python site-packages fails with permission errors
+import os
+os.environ['SCRAPY_SETTINGS_DISABLED']='1'
+from twisted.plugin import getPlugins, IPlugin
+import scrapy.tests.test_spiders
+list(getPlugins(IPlugin, scrapy.tests.test_spiders))
+
 def is_not_module(filename):
     return os.path.splitext(f)[1] not in ['.py', '.pyc', '.pyo']
 
