@@ -36,7 +36,7 @@ class Spiderctl(object):
         if wc_request.args:
             changes = self.webconsole_control(wc_request)
 
-        enabled_domains = spiders.asdict(include_disabled=False).keys()
+        enabled_domains = spiders.asdict().keys()
         self.scheduled = set(scrapyengine.scheduler.pending_domains_count)
         self.not_scheduled = [d for d in enabled_domains if d not in self.scheduled
                                                         and d not in self.running
@@ -139,7 +139,7 @@ class Spiderctl(object):
 
     def webconsole_control(self, wc_request):
         args = wc_request.args
-        enabled_domains = spiders.asdict(include_disabled=False).keys()
+        enabled_domains = spiders.asdict().keys()
         s = "<hr />\n"
         if "reloadspiders" in args:
             scrapymanager.reload_spiders()

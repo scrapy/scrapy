@@ -3,7 +3,6 @@ SpiderManager is the class which locates and manages all website-specific
 spiders
 """
 import sys
-import os
 import urlparse
 
 from twisted.plugin import getCache
@@ -23,34 +22,24 @@ class SpiderManager(object):
         self.spider_modules = settings.getlist('SPIDER_MODULES')
         self.force_domain = None
 
-    @property
-    def all(self):
-        self._load_on_demand()
-        return self._alldict.values()
+    def fromdomain(self, domain_name):
+        return self.asdict().get(domain_name)
 
-    @property
-    def enabled(self):
-        self._load_on_demand()
-        return self._enableddict.values()
-
-    def fromdomain(self, domain_name, include_disabled=True): 
-        return self.asdict(include_disabled=include_disabled).get(domain_name)
-
-    def fromurl(self, url, include_disabled=True):
+    def fromurl(self, url):
         self._load_on_demand()
         if self.force_domain:
-            return self._alldict.get(self.force_domain)
+            return self.asdict().get(self.force_domain)
         domain = urlparse.urlparse(url).hostname
         domain = str(domain).replace('www.', '')
         if domain:
-            if domain in self._alldict:         # try first locating by domain
-                return self._alldict[domain]
+            if domain in self.asdict():         # try first locating by domain
+                return self.asdict()[domain]
             else:                               # else search spider by spider
-                plist = self.all if include_disabled else self.enabled
+                plist = self.asdict().values()
                 for p in plist:
                     if url_is_from_spider(url, p):
                         return p
-        spider = self._alldict.get(self.default_domain)
+        spider = self.asdict().get(self.default_domain)
         if not spider:                          # create a custom spider
             spiderclassname = settings.get('DEFAULT_SPIDER')
             if spiderclassname:
@@ -59,31 +48,17 @@ class SpiderManager(object):
             
         return spider
 
-    def asdict(self, include_disabled=True):
+    def asdict(self):
         self._load_on_demand()
-        return self._alldict if include_disabled else self._enableddict
+        return self._spiders
 
     def _load_on_demand(self):
         if not self.loaded:
             self.load()
 
-    def _enabled_spiders(self):
-        if settings['ENABLED_SPIDERS']:
-            return set(settings['ENABLED_SPIDERS'])
-        elif settings['ENABLED_SPIDERS_FILE']:
-            if os.path.exists(settings['ENABLED_SPIDERS_FILE']):
-                lines = open(settings['ENABLED_SPIDERS_FILE']).readlines()
-                return set([l.strip() for l in lines if not l.strip().startswith('#')])
-            else:
-                return set()
-        else:
-            return set()
-
     def load(self):
         self._invaliddict = {}
-        self._alldict = {}
-        self._enableddict = {}
-        self._enabled_spiders_set = self._enabled_spiders()
+        self._spiders = {}
 
         modules = [__import__(m, {}, {}, ['']) for m in self.spider_modules]
         for module in modules:
@@ -94,37 +69,24 @@ class SpiderManager(object):
     def add_spider(self, spider):
         try:
             ISpider.validateInvariants(spider)
-            self._alldict[spider.domain_name] = spider
-            if spider.domain_name in self._enabled_spiders_set:
-                self._enableddict[spider.domain_name] = spider
+            self._spiders[spider.domain_name] = spider
         except Exception, e:
             self._invaliddict[spider.domain_name] = spider
             # we can't use the log module here because it may not be available yet
             print "WARNING: Could not load spider %s: %s" % (spider, e)
 
     def reload(self, skip_domains=None):
-        """
-        Reload all enabled spiders.
-
-        This discovers any spiders added under the spiders module/packages,
-        removes any spiders removed, updates all enabled spiders code and
-        updates list of enabled spiders from ENABLED_SPIDERS_FILE or
-        ENABLED_SPIDERS setting.
-
-        Disabled spiders are intentionally excluded to avoid
-        syntax/initialization errors. Currently running spiders are also
-        excluded to avoid inconsistent behaviours.
+        """Reload spiders by trying to discover any spiders added under the
+        spiders module/packages, removes any spiders removed.
 
         If skip_domains is passed those spiders won't be reloaded.
-
         """
         skip_domains = set(skip_domains or [])
         modules = [__import__(m, {}, {}, ['']) for m in self.spider_modules]
         for m in modules:
             reload(m)
-        self.load()  # first call to update list of enabled spiders
         reloaded = 0
-        pdict = self.asdict(include_disabled=False)
+        pdict = self.asdict()
         for domain, spider in pdict.iteritems():
             if not domain in skip_domains:
                 reload(sys.modules[spider.__module__])
@@ -133,12 +95,10 @@ class SpiderManager(object):
         log.msg("Reloaded %d/%d scrapy spiders" % (reloaded, len(pdict)), level=log.DEBUG)
 
     def _getspiders(self, interface, package):
-        """
-        This is an override of twisted.plugin.getPlugin, because we're
+        """This is an override of twisted.plugin.getPlugin, because we're
         interested in catching exceptions thrown when loading spiders such as
         KeyboardInterrupt
         """
-
         try:
             allDropins = getCache(package)
             for dropin in allDropins.itervalues():

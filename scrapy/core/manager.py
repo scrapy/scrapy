@@ -96,10 +96,8 @@ class ExecutionManager(object):
             signal.signal(signal.SIGBREAK, sig_handler_terminate)
 
     def _parse_args(self, args):
-        """ Parse crawl arguments and return a dict domains -> [requests] """
-        if not args:
-            args = [p.domain_name for p in spiders.enabled]
-
+        """Parse crawl arguments and return a dict of domains -> list of 
+        requests"""
         requests, urls, sites = set(), set(), set()
         for a in args:
             if isinstance(a, Request):

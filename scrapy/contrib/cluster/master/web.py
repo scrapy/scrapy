@@ -147,7 +147,7 @@ class ClusterMasterWeb(ClusterMaster):
         if wc_request.args:
             self.webconsole_control(wc_request)
 
-        enabled_domains = set(spiders.asdict(include_disabled=False).keys())
+        enabled_domains = set(spiders.asdict().keys())
         print "Enabled domains: %s" % len(enabled_domains)
         inactive_domains = enabled_domains - set(self.running.keys() + [p['domain'] for p in self.pending])
 
