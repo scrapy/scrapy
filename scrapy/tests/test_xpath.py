@@ -164,6 +164,20 @@ class XPathTestCase(unittest.TestCase):
         self.assertEqual(x.x("//p:SecondTestTag/xmlns:material").extract()[0], '<material/>')
 
     @libxml2debug
+    def test_selector_invalid_xpath(self):
+        response = XmlResponse(url="http://example.com", body="<html></html>")
+        x = HtmlXPathSelector(response)
+        xpath = "//test[@foo='bar]"
+        try:
+            x.x(xpath)
+        except ValueError, e:
+            assert xpath in str(e), "Exception message does not contain invalid xpath"
+        except Exception:
+            raise AssertionError("A invalid XPath does not raise ValueError")
+        else:
+            raise AssertionError("A invalid XPath does not raise an exception")
+
+    @libxml2debug
     def test_http_header_encoding_precedence(self):
         # u'\xa3'     = pound symbol in unicode
         # u'\xc2\xa3' = pound symbol in utf-8

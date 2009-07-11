@@ -45,7 +45,10 @@ class XPathSelector(object):
         return a XPathSelectorList of the result"""
         if hasattr(self.xmlNode, 'xpathEval'):
             self.doc.xpathContext.setContextNode(self.xmlNode)
-            xpath_result = self.doc.xpathContext.xpathEval(xpath)
+            try:
+                xpath_result = self.doc.xpathContext.xpathEval(xpath)
+            except libxml2.xpathError:
+                raise ValueError("Invalid XPath: %s" % xpath)
             cls = type(self)
             if hasattr(xpath_result, '__iter__'):
                 return XPathSelectorList([cls(node=node, parent=self, expr=xpath, response=self.response)
