@@ -27,8 +27,6 @@ class MemoryDebugger(object):
         self.mail = MailSender()
         self.rcpts = settings.getlist('MEMDEBUG_NOTIFY')
 
-        self.domains_scraped = []
-        dispatcher.connect(self.domain_opened, signals.domain_opened)
         dispatcher.connect(self.engine_started, signals.engine_started)
         dispatcher.connect(self.engine_stopped, signals.engine_stopped)
 
@@ -70,6 +68,3 @@ class MemoryDebugger(object):
         if self.rcpts:
             self.mail.send(self.rcpts, "Scrapy Memory Debugger results at %s" % socket.gethostname(), report)
         print report
-
-    def domain_opened(self, domain):
-        self.domains_scraped.append(domain)
