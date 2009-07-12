@@ -54,6 +54,11 @@ Creating an item and setting its attributes inline::
 RobustScrapedItems
 ==================
 
+.. warning::
+
+   RobustScapedItems are deprecated and will be replaced by the :ref:`New item
+   API <topics-newitem>` (still in development).
+
 .. module:: scrapy.contrib.item
    :synopsis: Objects for storing scraped data
 

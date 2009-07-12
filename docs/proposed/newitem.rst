@@ -1,20 +1,18 @@
-.. _topic-items:
+.. _topics-newitem:
 
-=====
-Items
-=====
+=========
+New Items
+=========
 
 The goal of the scraping process is to obtain scraped items from scraped pages.
 
-ScrapedItem
-===========
+Basic scraped items
+===================
 
-.. class:: scrapy.item.ScrapedItem
-
-In Scrapy the items are represented by a :class:`scrapy.item.ScrapedItem`
+In Scrapy the items are represented by a :class:`~scrapy.item.ScrapedItem`
 (almost an empty class) or any subclass of it.
 
-To use :class:`scrapy.item.ScrapedItem` you simply instantiate it and use
+To use :class:`~scrapy.item.ScrapedItem` you simply instantiate it and use
 instance attributes to store the information.
 
    >>> from scrapy.item import ScrapedItem
@@ -26,17 +24,15 @@ instance attributes to store the information.
    ScrapedItem({'headline': 'Headline', 'content': 'Content', 'published': '2009-07-08'})
 
 Or you can use your own class to represent items, just be sure it inherits from
-:class:`scrapy.item.ScrapedItem`.
-
-.. _topic-newitem:
+:class:`~scrapy.item.ScrapedItem`.
 
 More advanced items
 ===================
 
 .. class:: scrapy.contrib_exp.newitem.Item(ScrapedItem)
 
-Scrapy provides :class:`scrapy.contrib_exp.newitem.Item` (a subclass of
-:class:`scrapy.item.ScrapedItem`) that works like a form with fields to store
+Scrapy provides :class:`~scrapy.contrib_exp.newitem.Item` (a subclass of
+:class:`~scrapy.item.ScrapedItem`) that works like a form with fields to store
 the item's data.
 
 To use this items you first define the item's fields as class attributes::
@@ -103,7 +99,7 @@ How do we use it? Let's see it in action in a Spider::
        i.headline = xhs.x('//h1[@class="headline"]')
        i.summary = xhs.x('//div[@class="summary"]')
        i.content = xhs.x('//div[@id="body"]')
-       # we intentionally left publish out of the example, see below for site
+       # we intentionally left published out of the example, see below for site
        # specific adaptors
        return [i]
 
@@ -118,7 +114,6 @@ finally assigned to the Item Field.
 This final assignment is done in an internal instance of the Item on the
 ItemAdaptor, that's why we can return an ItemAdaptor instead of an Item and
 Scrapy will know how to extract the item from it.
-many sources and formats are you scraping from.
 
 A Item can have as many ItemAdaptors as you want it generally depends on how
 many sources and formats are you scraping from.
@@ -158,7 +153,7 @@ other common case is adapting information for specific sites, think for example
 in our published field, it keeps the publication date of the news article.
 
 As sites offer this information in different formats, we will have to make
-custom adaptors for them, let's see an example using out Item published field::
+custom adaptors for it, let's see an example using our Item published field::
 
    class SpecificSiteNewsAdaptor(HtmlNewsAdaptor):
        published = adaptor(HtmlNewsAdaptor.published, to_date('%d.%m.%Y')) 
@@ -177,7 +172,7 @@ Let's see it in action::
 
    def parse_newspage(self, response):
        xhs = HtmlXPathSelector(response)
-       i = NewsAdaptor(response)
+       i = SpecificSiteNewsAdaptor(response)
 
        i.url = response.url
        i.headline = xhs.x('//h1[@class="headline"]')
@@ -191,7 +186,7 @@ ItemAdaptor default_adaptor
 
 If you look closely at the code for our ItemAdaptors you can see that we're using the same set of adaptation functions in every field.
 
-It is common for ItemAdaptors to have a basic set of adaptor functions that will be applied to almost every Field in the Item. To help you avoid repeating the same code, ItemAdaptor implements the ``default_adaptor`` shortcut.
+It is common for ItemAdaptors to have a basic set of adaptor functions that will be applied to almost every Field in the Item. To avoid repeating the same code, ItemAdaptor implements the ``default_adaptor`` shortcut.
 
 ``default_adaptor`` (if set) will be called when assigning a value for an Item
 Field that has no adaptor, so the process for determining what value gets assigned to an item when you assign a value to an ItemAdaptor field is as follows:
@@ -200,4 +195,4 @@ Field that has no adaptor, so the process for determining what value gets assign
   value to the item. 
 * If no adaptor function if set and default_adaptor is, the value passes for 
   ``default_adaptor`` before being assigned.
-* If no adaptor and no default_adaptor is set, the value is assigned directly.
+* If no adaptor is defined for that field and no ``default_adaptor`` is set, the value is assigned directly.

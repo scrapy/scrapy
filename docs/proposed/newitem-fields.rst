@@ -20,53 +20,59 @@ The default value for the field.
 Field types
 ===========
 
-``BooleanField``
-----------------
-
-.. class:: BooleanField
-
-A true/false field.
-
-``DateField``
--------------
-
-.. class:: DateField
-
-A date, represented in Python by a ``datetime.date`` instance.
-
-``DateTimeField``
------------------
-
-.. class:: DateTimeField
-
-A date with time, represented in Python by a ``datetime.datetime`` instance.
-
-``DecimalField``
-----------------
-
-.. class:: DecimalField
-
-A fixed-precision decimal number, represented in Python by a :class:`~decimal.Decimal` instance.
-
-``FloatField``
---------------
-
-.. class:: FloatField
-
-A floating-point number represented in Python by a ``float`` instance.
-
-``IntegerField``
-----------------
-
-.. class:: IntegerField
-
-An integer.
-
-``StringField``
----------------
-
-A text field.
+StringField
+-----------
 
 .. class:: StringField
 
+    A text field.
+
+IntegerField
+------------
+
+.. class:: IntegerField
+
+    An integer.
+
+DecimalField
+------------
+
+.. class:: DecimalField
+
+    A fixed-precision decimal number, represented in Python by a `Decimal`_
+    instance.
+
+.. _Decimal: http://docs.python.org/library/decimal.html#decimal.Decimal
+
+FloatField
+----------
+
+.. class:: FloatField
+
+    A floating-point number represented in Python by a ``float`` instance.
+
+BooleanField
+------------
+
+.. class:: BooleanField
+
+    A boolean (true/false) field.
+
+DateTimeField
+-------------
+
+.. class:: DateTimeField
+
+    A date with time, represented in Python by a `datetime.datetime`_ instance.
+
+.. _datetime.datetime: http://docs.python.org/library/datetime.html#datetime.datetime
+
+DateField
+---------
+
+.. class:: DateField
+
+    A date, represented in Python by a `datetime.date`_ instance.
+
+.. _datetime.date: http://docs.python.org/library/datetime.html#datetime.date
 
