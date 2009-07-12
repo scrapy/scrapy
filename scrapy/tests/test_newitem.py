@@ -2,7 +2,7 @@ import datetime
 import decimal
 import unittest
 
-from scrapy.contrib_exp.newitem import *
+from scrapy.contrib_exp.newitem import Item, fields
 from scrapy.contrib_exp.newitem.fields import BaseField
 
 
@@ -10,16 +10,30 @@ class NewItemTest(unittest.TestCase):
 
     def test_simple(self):
         class TestItem(Item):
-            name = StringField()
+            name = fields.StringField()
 
         i = TestItem()
         i.name = 'name'
         assert i.name == 'name'
 
+    def test_init(self):
+        class TestItem(Item):
+            name = fields.StringField()
+        
+        i = TestItem()
+        assert i.name is None
+
+        i2 = TestItem({'name': 'john doe'})
+        assert i2.name == 'john doe'
+
+        self.assertRaises(TypeError, TestItem, name='john doe')
+
+        self.assertRaises(AttributeError, TestItem, {'name': 'john doe', 'other': 'foo'})
+
     def test_multi(self):
         class TestMultiItem(Item):
-            name = StringField()
-            names = MultiValuedField(StringField)
+            name = fields.StringField()
+            names = fields.MultiValuedField(fields.StringField)
 
         i = TestMultiItem()
         i.name = 'name'
@@ -43,14 +57,14 @@ class NewItemTest(unittest.TestCase):
 
     def test_default_value(self):
         class TestItem(Item):
-            name = StringField(default='John')
+            name = fields.StringField(default='John')
  
         i = TestItem()
         assert i.name == 'John'
 
-    def test_topython_iter(self):
+    def test_to_python_iter(self):
         class TestItem(Item):
-            name = StringField()
+            name = fields.StringField()
  
         i = TestItem()
         i.name = ('John', 'Doe')
@@ -58,25 +72,31 @@ class NewItemTest(unittest.TestCase):
 
     def test_repr(self):
         class TestItem(Item):
-            name = StringField()
+            name = fields.StringField()
+            number = fields.IntegerField()
 
         i = TestItem()
         i.name = 'John Doe'
-        assert i.__repr__() == "TestItem({'name': 'John Doe'})"
+        i.number = '123'
+        itemrepr = repr(i)
+        assert itemrepr == "TestItem({'name': 'John Doe', 'number': 123})"
+
+        i2 = eval(itemrepr)
+        assert i2.name == 'John Doe'
+        assert i2.number == 123
 
 
 class NewItemFieldsTest(unittest.TestCase):
     
     def test_base_field(self):
-        f = BaseField()
+        f = fields.BaseField()
 
         assert f.default == None
-        assert f.assign(1) == 1
         assert f.to_python(1) == 1
 
     def test_boolean_field(self):
         class TestItem(Item):
-            field = BooleanField()
+            field = fields.BooleanField()
 
         i = TestItem()
 
@@ -94,7 +114,7 @@ class NewItemFieldsTest(unittest.TestCase):
 
     def test_date_field(self):
         class TestItem(Item):
-            field = DateField()
+            field = fields.DateField()
 
         i = TestItem()
 
@@ -121,7 +141,7 @@ class NewItemFieldsTest(unittest.TestCase):
 
     def test_datetime_field(self):
         class TestItem(Item):
-            field = DateTimeField()
+            field = fields.DateTimeField()
 
         i = TestItem()
 
@@ -163,7 +183,7 @@ class NewItemFieldsTest(unittest.TestCase):
 
     def test_decimal_field(self):
         class TestItem(Item):
-            field = DecimalField()
+            field = fields.DecimalField()
 
         i = TestItem()
 
@@ -176,11 +196,11 @@ class NewItemFieldsTest(unittest.TestCase):
         def set_invalid_value():
             i.field = 'text'
 
-        self.assertRaises(ValueError, set_invalid_value)
+        self.assertRaises(decimal.InvalidOperation, set_invalid_value)
 
     def test_float_field(self):
         class TestItem(Item):
-            field = FloatField()
+            field = fields.FloatField()
 
         i = TestItem()
 
@@ -197,7 +217,7 @@ class NewItemFieldsTest(unittest.TestCase):
 
     def test_integer_field(self):
         class TestItem(Item):
-            field = IntegerField()
+            field = fields.IntegerField()
 
         i = TestItem()
 
@@ -214,7 +234,7 @@ class NewItemFieldsTest(unittest.TestCase):
 
     def test_string_field(self):
         class TestItem(Item):
-            field = StringField()
+            field = fields.StringField()
 
         i = TestItem()
 

@@ -1,16 +1,16 @@
 import unittest
 import string
 from scrapy.contrib_exp.newitem.adaptors import adaptor, ItemAdaptor
-from scrapy.contrib_exp.newitem import * 
+from scrapy.contrib_exp.newitem import Item, fields
 
 
 class BaseItem(Item):
-    name = StringField()
+    name = fields.StringField()
 
 
 class TestItem(BaseItem):
-    url = StringField()
-    summary = StringField()
+    url = fields.StringField()
+    summary = fields.StringField()
 
 
 class BaseAdaptor(ItemAdaptor):
@@ -30,7 +30,7 @@ class InheritDefaultAdaptor(DefaultedAdaptor):
 
 
 class MultiValuedTestItem(Item):
-    names = MultiValuedField(StringField)
+    names = fields.MultiValuedField(fields.StringField)
 
 
 class MultiValuedItemAdaptor(ItemAdaptor):

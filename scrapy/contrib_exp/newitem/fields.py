@@ -3,17 +3,9 @@ import decimal
 import re
 import time
 
-
-__all__ = ['MultiValuedField', 'BooleanField', 'DateField', 'DateTimeField',
-           'DecimalField', 'FloatField', 'IntegerField', 'StringField']
-
-
 class BaseField(object):
     def __init__(self, default=None):
         self.default = default or self.to_python(None)
-
-    def assign(self, value):
-        return self.to_python(value)
 
     def to_python(self, value):
         """
@@ -21,18 +13,6 @@ class BaseField(object):
         Subclasses should override this.
         """
         return value
-
-
-class Field(BaseField):
-    def assign(self, value):
-        if hasattr(value, '__iter__'):
-            return self.to_python(self.deiter(value))
-        else:
-            return self.to_python(value)
-
-    def deiter(self, value):
-        "Converts the input iterable into a single value."
-        return ' '.join(value)
 
 
 class MultiValuedField(BaseField):
@@ -47,15 +27,14 @@ class MultiValuedField(BaseField):
             return [self._field.to_python(v) for v in value]
 
 
-class BooleanField(Field):
+class BooleanField(BaseField):
     def to_python(self, value):
         return bool(value)
 
 
-ansi_date_re = re.compile(r'^\d{4}-\d{1,2}-\d{1,2}$')
+class DateField(BaseField):
+    ansi_date_re = re.compile(r'^\d{4}-\d{1,2}-\d{1,2}$')
 
-
-class DateField(Field):
     def to_python(self, value):
         if value is None:
             return value
@@ -64,7 +43,7 @@ class DateField(Field):
         if isinstance(value, datetime.date):
             return value
 
-        if not ansi_date_re.search(value):
+        if not self.ansi_date_re.search(value):
             raise ValueError("Enter a valid date in YYYY-MM-DD format.")
 
         year, month, day = map(int, value.split('-'))
@@ -74,7 +53,7 @@ class DateField(Field):
             raise ValueError("Invalid date: %s" % str(e))
 
 
-class DateTimeField(Field):
+class DateTimeField(BaseField):
     def to_python(self, value):
         if value is None:
             return value
@@ -111,41 +90,34 @@ class DateTimeField(Field):
                     raise ValueError('Enter a valid date/time in YYYY-MM-DD HH:MM[:ss[.uuuuuu]] format.')
 
 
-class DecimalField(Field):
+class DecimalField(BaseField):
     def to_python(self, value):
-        if value is None:
-            return value
-        try:
-            return decimal.Decimal(value)
-        except decimal.InvalidOperation:
-            raise ValueError("This value must be a decimal number.")
+        return decimal.Decimal(value) if value is not None else None
 
 
-class FloatField(Field):
+class FloatField(BaseField):
     def to_python(self, value):
-        if value is None:
-            return value
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            raise ValueError("This value must be a float.")
+        return float(value) if value is not None else None
 
 
-class IntegerField(Field):
+class IntegerField(BaseField):
     def to_python(self, value):
-        if value is None:
-            return value
-        try:
-            return int(value)
-        except (TypeError, ValueError):
-            raise ValueError("This value must be an integer.")
+        return int(value) if value is not None else None
 
 
-class StringField(Field):
+class StringField(BaseField):
     def to_python(self, value):
-        if isinstance(value, basestring):
+        if hasattr(value, '__iter__'):
+            return self.to_python(self.to_single(value))
+        elif isinstance(value, basestring):
             return value
-        if value is None:
+        elif value is None:
             return value
-        raise ValueError("This field must be a string.")
+        else:
+            raise ValueError("StringField expects a basestring, got %s" \
+                % type(value).__name__)
+
+    def to_single(self, value):
+        "Converts the input iterable into a single value."
+        return ' '.join(value)
 
