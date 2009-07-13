@@ -44,7 +44,7 @@ class Item(ScrapedItem):
             return self._values[name]
         except KeyError:
             try:
-                return self.fields[name].default
+                return self.fields[name].get_default()
             except KeyError:
                 raise AttributeError(name)
 
@@ -54,3 +54,4 @@ class Item(ScrapedItem):
         """
         values = dict((field, getattr(self, field)) for field in self.fields)
         return "%s(%s)" % (self.__class__.__name__, repr(values))
+

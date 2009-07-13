@@ -63,6 +63,13 @@ class NewItemTest(unittest.TestCase):
         i = TestItem()
         assert i.name == u'John'
 
+    def test_wrong_default(self):
+        def set_wrong_default():
+            class TestItem(Item):
+                name = fields.TextField(default=3)
+        
+        self.assertRaises(ValueError, set_wrong_default)
+
     def test_to_python_iter(self):
         class TestItem(Item):
             name = fields.TextField()
@@ -117,7 +124,7 @@ class NewItemFieldsTest(unittest.TestCase):
     def test_base_field(self):
         f = fields.BaseField()
 
-        assert f.default == None
+        assert f.get_default() is None
         assert f.to_python(1) == 1
 
     def test_boolean_field(self):

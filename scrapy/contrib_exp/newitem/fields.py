@@ -6,7 +6,7 @@ import time
 
 class BaseField(object):
     def __init__(self, default=None):
-        self.default = default or self.to_python(None)
+        self._default = self.to_python(default) if default is not None else None
 
     def to_python(self, value):
         """
@@ -14,6 +14,10 @@ class BaseField(object):
         Subclasses should override this.
         """
         return value
+
+    def get_default(self):
+        """Returns the default value for the field."""
+        return self._default
 
 
 class MultiValuedField(BaseField):
