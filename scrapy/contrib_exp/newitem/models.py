@@ -10,6 +10,7 @@ class _ItemMeta(type):
         for n, v in attrs.iteritems():
             if isinstance(v, BaseField):
                 cls.fields[n] = v
+                delattr(cls, n)
         return cls
 
 
@@ -38,17 +39,14 @@ class Item(ScrapedItem):
         else:
             raise AttributeError(name)
 
-    def __getattribute__(self, name):
-        if name.startswith('_') or name == 'fields':
-            return ScrapedItem.__getattribute__(self, name)
-        
-        if name in self.fields.keys():
+    def __getattr__(self, name):
+        try:
+            return self._values[name]
+        except KeyError:
             try:
-                return self._values[name]
-            except KeyError:
                 return self.fields[name].default
-        else:
-            raise AttributeError(name)
+            except KeyError:
+                raise AttributeError(name)
 
     def __repr__(self):
         """Generate a representation of this item that can be used to

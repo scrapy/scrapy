@@ -85,6 +85,31 @@ class NewItemTest(unittest.TestCase):
         assert i2.name == 'John Doe'
         assert i2.number == 123
 
+    def test_private_attr(self):
+        class TestItem(Item):
+            name = fields.StringField()
+
+        i = TestItem()
+        i._private = 'test'
+        self.assertEqual(i._private, 'test')
+
+    def test_custom_methods(self):
+        class TestItem(Item):
+            name = fields.StringField()
+
+            def get_name(self):
+                return self.name
+
+            def change_name(self, name):
+                self.name = name
+
+        i = TestItem()
+        self.assertEqual(i.get_name(), None)
+        i.name = 'lala'
+        self.assertEqual(i.get_name(), 'lala')
+        i.change_name('other')
+        self.assertEqual(i.get_name(), 'other')
+
 
 class NewItemFieldsTest(unittest.TestCase):
     
