@@ -784,10 +784,9 @@ SCHEDULER_MIDDLEWARES_BASE
 
 Default:: 
 
-    [
-        'scrapy.contrib.schedulermiddleware.duplicatesfilter.DuplicatesFilterMiddleware',
-    ]
-
+    SCHEDULER_MIDDLEWARES_BASE = {
+        'scrapy.contrib.schedulermiddleware.duplicatesfilter.DuplicatesFilterMiddleware': 500,
+    }
 
 A dict containing the scheduler middlewares enabled by default in Scrapy. You
 should never modify this setting in your project, modify
