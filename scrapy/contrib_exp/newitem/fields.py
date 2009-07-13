@@ -3,6 +3,7 @@ import decimal
 import re
 import time
 
+
 class BaseField(object):
     def __init__(self, default=None):
         self.default = default or self.to_python(None)
@@ -120,4 +121,37 @@ class StringField(BaseField):
     def to_single(self, value):
         "Converts the input iterable into a single value."
         return ' '.join(value)
+
+
+class TimeField(BaseField):
+    def to_python(self, value):
+        if value is None:
+            return None
+        if isinstance(value, datetime.time):
+            return value
+        if isinstance(value, datetime.datetime):
+            return value.time
+
+        # Attempt to parse a datetime:
+        value = str(value)
+        # split usecs, because they are not recognized by strptime.
+        if '.' in value:
+            try:
+                value, usecs = value.split('.')
+                usecs = int(usecs)
+            except ValueError:
+                raise ValueError('Enter a valid time in HH:MM[:ss[.uuuuuu]] format.')
+        else:
+            usecs = 0
+        kwargs = {'microsecond': usecs}
+
+        try: # Seconds are optional, so try converting seconds first.
+            return datetime.time(*time.strptime(value, '%H:%M:%S')[3:6],
+                                 **kwargs)
+        except ValueError:
+            try: # Try without seconds.
+                return datetime.time(*time.strptime(value, '%H:%M')[3:5],
+                                         **kwargs)
+            except ValueError:
+                raise ValueError('Enter a valid time in HH:MM[:ss[.uuuuuu]] format.')
 

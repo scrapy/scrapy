@@ -76,3 +76,12 @@ DateField
 
 .. _datetime.date: http://docs.python.org/library/datetime.html#datetime.date
 
+TimeField
+---------
+
+.. class:: TimeField
+
+    A time, represented in Python by a `datetime.time`_ instance.
+
+.. _datetime.time: http://docs.python.org/library/datetime.html#datetime.time
+

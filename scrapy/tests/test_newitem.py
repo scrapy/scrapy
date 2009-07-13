@@ -246,3 +246,41 @@ class NewItemFieldsTest(unittest.TestCase):
 
         self.assertRaises(ValueError, set_invalid_value)
 
+    def test_time_field(self):
+        class TestItem(Item):
+            field = fields.TimeField()
+
+        i = TestItem()
+
+        dt_t = datetime.time(11, 8, 10, 100)
+        i.field = dt_t
+        assert i.field == dt_t
+
+        dt_dt = datetime.datetime.today()
+        i.field = dt_dt
+        assert i.field == dt_dt.time
+
+        i.field = '11:08:10.100'
+        assert i.field == datetime.time(11, 8, 10, 100)
+ 
+        i.field = '11:08:10'
+        assert i.field == datetime.time(11, 8, 10)
+
+        i.field = '11:08'
+        assert i.field == datetime.time(11, 8)
+
+        def set_invalid_usecs():
+            i.field = '11:08:10.usecs'
+
+        self.assertRaises(ValueError, set_invalid_usecs)
+
+        def set_invalid_format():
+            i.field = 'string'
+
+        self.assertRaises(ValueError, set_invalid_format)
+
+        def set_invalid_time():
+            i.field = '25:08:10'
+
+        self.assertRaises(ValueError, set_invalid_time)
+
