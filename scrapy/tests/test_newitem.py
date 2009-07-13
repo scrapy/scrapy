@@ -13,8 +13,8 @@ class NewItemTest(unittest.TestCase):
             name = fields.TextField()
 
         i = TestItem()
-        i.name = 'name'
-        assert i.name == 'name'
+        i.name = u'name'
+        assert i.name == u'name'
 
     def test_init(self):
         class TestItem(Item):
@@ -23,12 +23,13 @@ class NewItemTest(unittest.TestCase):
         i = TestItem()
         assert i.name is None
 
-        i2 = TestItem({'name': 'john doe'})
-        assert i2.name == 'john doe'
+        i2 = TestItem({'name': u'john doe'})
+        assert i2.name == u'john doe'
 
-        self.assertRaises(TypeError, TestItem, name='john doe')
+        self.assertRaises(TypeError, TestItem, name=u'john doe')
 
-        self.assertRaises(AttributeError, TestItem, {'name': 'john doe', 'other': 'foo'})
+        self.assertRaises(AttributeError, TestItem, {'name': u'john doe',
+                                                     'other': u'foo'})
 
     def test_multi(self):
         class TestMultiItem(Item):
@@ -36,9 +37,9 @@ class NewItemTest(unittest.TestCase):
             names = fields.MultiValuedField(fields.TextField)
 
         i = TestMultiItem()
-        i.name = 'name'
-        i.names = ['name1', 'name2']
-        assert i.names == ['name1', 'name2']
+        i.name = u'name'
+        i.names = [u'name1', u'name2']
+        assert i.names == [u'name1', u'name2']
 
     def test_invalid_field(self):
         class TestItem(Item):
@@ -57,18 +58,18 @@ class NewItemTest(unittest.TestCase):
 
     def test_default_value(self):
         class TestItem(Item):
-            name = fields.TextField(default='John')
+            name = fields.TextField(default=u'John')
  
         i = TestItem()
-        assert i.name == 'John'
+        assert i.name == u'John'
 
     def test_to_python_iter(self):
         class TestItem(Item):
             name = fields.TextField()
  
         i = TestItem()
-        i.name = ('John', 'Doe')
-        assert i.name == 'John Doe'
+        i.name = (u'John', u'Doe')
+        assert i.name == u'John Doe'
 
     def test_repr(self):
         class TestItem(Item):
@@ -76,10 +77,10 @@ class NewItemTest(unittest.TestCase):
             number = fields.IntegerField()
 
         i = TestItem()
-        i.name = 'John Doe'
+        i.name = u'John Doe'
         i.number = '123'
         itemrepr = repr(i)
-        assert itemrepr == "TestItem({'name': 'John Doe', 'number': 123})"
+        assert itemrepr == "TestItem({'name': u'John Doe', 'number': 123})"
 
         i2 = eval(itemrepr)
         assert i2.name == 'John Doe'
@@ -105,9 +106,9 @@ class NewItemTest(unittest.TestCase):
 
         i = TestItem()
         self.assertEqual(i.get_name(), None)
-        i.name = 'lala'
-        self.assertEqual(i.get_name(), 'lala')
-        i.change_name('other')
+        i.name = u'lala'
+        self.assertEqual(i.get_name(), u'lala')
+        i.change_name(u'other')
         self.assertEqual(i.get_name(), 'other')
 
 
@@ -263,8 +264,14 @@ class NewItemFieldsTest(unittest.TestCase):
 
         i = TestItem()
 
-        i.field = 'hello'
-        assert i.field == 'hello'
+        i.field = u'hello'
+        assert i.field == u'hello'
+        assert isinstance(i.field, unicode) 
+
+        def set_str():
+            i.field = 'string'
+
+        self.assertRaises(ValueError, set_str)
 
         def set_invalid_value():
             i.field = 3 

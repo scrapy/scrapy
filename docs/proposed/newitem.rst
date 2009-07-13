@@ -49,11 +49,11 @@ And then you instantiate the item and assign values to its fields, which will be
 converted to the expected Python types depending of their class::
 
    >>> item = NewsItem()
-   >>> item.headline = 'Headline'
-   >>> item.content = 'Content'
+   >>> item.headline = u'Headline'
+   >>> item.content = u'Content'
    >>> item.published = '2009-07-08'
    >>> item
-   NewsItem({'headline': 'Headline', 'content': 'Content', 'published': datetime.date(2009, 7, 8)})
+   NewsItem({'headline': u'Headline', 'content': u'Content', 'published': datetime.date(2009, 7, 8)})
 
 Each field accepts a ``default`` argument, that sets the default value of the field.
 

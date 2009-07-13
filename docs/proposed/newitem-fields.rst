@@ -25,7 +25,7 @@ TextField
 
 .. class:: TextField
 
-    A text field.
+    A unicode text.
 
 IntegerField
 ------------

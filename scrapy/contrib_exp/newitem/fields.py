@@ -110,13 +110,13 @@ class TextField(BaseField):
     def to_python(self, value):
         if hasattr(value, '__iter__'):
             return self.to_python(self.to_single(value))
-        elif isinstance(value, basestring):
+        elif isinstance(value, unicode):
             return value
         elif value is None:
             return value
         else:
-            raise ValueError("TextField expects a basestring, got %s" \
-                % type(value).__name__)
+            raise ValueError("TextField expects a unicode, got %s" \
+                             % type(value).__name__)
 
     def to_single(self, value):
         "Converts the input iterable into a single value."
