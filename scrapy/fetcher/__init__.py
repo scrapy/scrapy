@@ -40,12 +40,12 @@ def fetch(urls, perdomain=False):
 
 
 def get_or_create_spider(url):
-    # dirty hack to allow downloading pages from unknown domains
+    # XXX: hack to allow downloading pages from unknown domains
     spider = spiders.fromurl(url)
     if not spider:
         domain = str(urlparse.urlparse(url).hostname or spiders.default_domain)
         spider = BaseSpider()
         spider.domain_name = domain
-        spiders._alldict[domain] = spider
+        spiders.add_spider(spider)
     return spider
 
