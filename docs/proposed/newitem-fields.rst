@@ -20,10 +20,10 @@ The default value for the field.
 Field types
 ===========
 
-StringField
------------
+TextField
+---------
 
-.. class:: StringField
+.. class:: TextField
 
     A text field.
 

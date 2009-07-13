@@ -106,7 +106,7 @@ class IntegerField(BaseField):
         return int(value) if value is not None else None
 
 
-class StringField(BaseField):
+class TextField(BaseField):
     def to_python(self, value):
         if hasattr(value, '__iter__'):
             return self.to_python(self.to_single(value))
@@ -115,7 +115,7 @@ class StringField(BaseField):
         elif value is None:
             return value
         else:
-            raise ValueError("StringField expects a basestring, got %s" \
+            raise ValueError("TextField expects a basestring, got %s" \
                 % type(value).__name__)
 
     def to_single(self, value):

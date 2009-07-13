@@ -41,8 +41,8 @@ To use this items you first define the item's fields as class attributes::
    from scrapy.contrib_exp.newitem import fields
 
    class NewsItem(Item):
-       headline = fields.StringField()
-       content = fields.StringField()
+       headline = fields.TextField()
+       content = fields.TextField()
        published = fields.DateField()
 
 And then you instantiate the item and assign values to its fields, which will be

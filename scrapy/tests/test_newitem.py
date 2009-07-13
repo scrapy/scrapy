@@ -10,7 +10,7 @@ class NewItemTest(unittest.TestCase):
 
     def test_simple(self):
         class TestItem(Item):
-            name = fields.StringField()
+            name = fields.TextField()
 
         i = TestItem()
         i.name = 'name'
@@ -18,7 +18,7 @@ class NewItemTest(unittest.TestCase):
 
     def test_init(self):
         class TestItem(Item):
-            name = fields.StringField()
+            name = fields.TextField()
         
         i = TestItem()
         assert i.name is None
@@ -32,8 +32,8 @@ class NewItemTest(unittest.TestCase):
 
     def test_multi(self):
         class TestMultiItem(Item):
-            name = fields.StringField()
-            names = fields.MultiValuedField(fields.StringField)
+            name = fields.TextField()
+            names = fields.MultiValuedField(fields.TextField)
 
         i = TestMultiItem()
         i.name = 'name'
@@ -57,14 +57,14 @@ class NewItemTest(unittest.TestCase):
 
     def test_default_value(self):
         class TestItem(Item):
-            name = fields.StringField(default='John')
+            name = fields.TextField(default='John')
  
         i = TestItem()
         assert i.name == 'John'
 
     def test_to_python_iter(self):
         class TestItem(Item):
-            name = fields.StringField()
+            name = fields.TextField()
  
         i = TestItem()
         i.name = ('John', 'Doe')
@@ -72,7 +72,7 @@ class NewItemTest(unittest.TestCase):
 
     def test_repr(self):
         class TestItem(Item):
-            name = fields.StringField()
+            name = fields.TextField()
             number = fields.IntegerField()
 
         i = TestItem()
@@ -87,7 +87,7 @@ class NewItemTest(unittest.TestCase):
 
     def test_private_attr(self):
         class TestItem(Item):
-            name = fields.StringField()
+            name = fields.TextField()
 
         i = TestItem()
         i._private = 'test'
@@ -95,7 +95,7 @@ class NewItemTest(unittest.TestCase):
 
     def test_custom_methods(self):
         class TestItem(Item):
-            name = fields.StringField()
+            name = fields.TextField()
 
             def get_name(self):
                 return self.name
@@ -257,9 +257,9 @@ class NewItemFieldsTest(unittest.TestCase):
 
         self.assertRaises(ValueError, set_invalid_value)
 
-    def test_string_field(self):
+    def test_text_field(self):
         class TestItem(Item):
-            field = fields.StringField()
+            field = fields.TextField()
 
         i = TestItem()
 
