@@ -1,13 +1,13 @@
 .. _topics-adaptors:
 
-=======================
-Adaptors (experimental)
-=======================
+==============================
+Old Item Adaptors (deprecated)
+==============================
 
 .. warning::
    
-   Adaptors are an experimental feature of Scrapy, which mean its API is not
-   yet stable and could suffer minor changes before the next stable release.
+   This documentation is deprecated, and will be superseeded by the new item
+   adaptors (not yet documented).
 
 Quick overview
 ==============
