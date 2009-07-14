@@ -125,7 +125,7 @@ class NewItemFieldsTest(unittest.TestCase):
         f = fields.BaseField()
 
         assert f.get_default() is None
-        assert f.to_python(1) == 1
+        self.assertRaises(NotImplementedError, f.to_python, 1)
 
     def test_boolean_field(self):
         class TestItem(Item):

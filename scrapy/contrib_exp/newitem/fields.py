@@ -9,14 +9,9 @@ class BaseField(object):
         self._default = self.to_python(default) if default is not None else None
 
     def to_python(self, value):
-        """
-        Converts the input value into the expected Python data type.
-        Subclasses should override this.
-        """
-        return value
+        raise NotImplementedError()
 
     def get_default(self):
-        """Returns the default value for the field."""
         return self._default
 
 
