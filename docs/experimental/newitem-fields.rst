@@ -11,7 +11,7 @@ default value. For example::
 
     class NewsItem(Item):
         content = fields.TextField()
-        author = fields.TextField(default='Myself')
+        author = fields.TextField(default=u'Myself')
         published = fields.DateField()
         views = fields.IntegerField(default=0)
 
@@ -23,7 +23,7 @@ set, while fields which don't contain a default value will always return
     >>> it.content is None
     True
     >>> it.author
-    'Myself'
+    u'Myself'
     >>> it.published is None
     True
     >>> it.views
@@ -53,7 +53,7 @@ BaseField class
 
         class NewsItem(Item):
             content = fields.TextField() # correct, no default value
-            author = fields.TextField(default='Myself") # correct, with default value
+            author = fields.TextField(default=u'Myself") # correct, with default value
             published = fields.DateField(default=23) # wrong default type (will raise TypeError) 
 
     .. method:: to_python(value)
