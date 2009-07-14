@@ -11,5 +11,4 @@ Scrapy documentation contents
    ref/index
    faq
    topics/adaptors
-   experimental
-   proposed/index
+   experimental/index
