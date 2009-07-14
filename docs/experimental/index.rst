@@ -20,5 +20,5 @@ it's not revised so frequently), or documentation which overlaps with existing
    :maxdepth: 1
 
    newitem
-   newitem-fields
+   newitem-adaptors
 

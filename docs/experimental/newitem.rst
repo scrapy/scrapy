@@ -57,147 +57,173 @@ converted to the expected Python types depending of their class::
 
 Each field accepts a ``default`` argument, that sets the default value of the field.
 
-You can see the built-in field types in the :ref:`ref-newitem-fields`.
-
 Using this may seen complicated at first, but gives you much power over scraped
 data, like assigning defaults for fields that are not present in some pages,
 :ref:`topic-newitem-adaptors`, etc.
 
-.. _topic-newitem-adaptors:
+.. _ref-newitem-fields:
 
+===========
+Item Fields
+===========
+
+.. module:: scrapy.contrib_exp.newitem.fields
+
+Field options
 =============
-Item Adaptors
-=============
 
-.. class:: scrapy.contrib_exp.newitem.adaptors.ItemAdaptor
+Every ``Field`` class constructor accepts these arguments.
 
-As you probably want to scrape the same kind of Items from many sources
-(different websites, RSS feeds, etc.), Scrapy implements ItemAdaptors, they
-allow you to adapt chunks of HTML or XML (selected using Selectors) to the
-expected format of your Item fields.
+``default``
+-----------
 
-An ItemAdaptor acts like a wrapper of an Item, you define an ItemAdaptor class,
-set the Item class to wrap and assign a set of functions (adaptor functions) to be called when you assign a value to a field.
+The default value for the field.
 
-Here's an example of an ItemAdaptor for our previously created Item::
+Fields which contain a default value will always return that value when not
+set, while fields which don't contain a default value will always return
+``None`` when not set::
 
-   class NewsAdaptor(ItemAdaptor):
-       item_class = NewsItem
+    from scrapy.contrib_exp.newitem import Item, fields
 
-       url = adaptor(extract, remove_tags(), unquote(), strip)
-       headline = adaptor(extract, remove_tags(), unquote(), strip)
-       summary = adaptor(extract, remove_tags(), unquote(), strip)
-       content = adaptor(extract, remove_tags(), unquote(), strip)
+    class NewsItem(Item):
+        content = fields.TextField()
+        author = fields.TextField(default=u'Myself')
+        published = fields.DateField()
+        views = fields.IntegerField(default=0)
 
-How do we use it? Let's see it in action in a Spider::
+    >>> it = NewsItem()
+    >>> it.content is None
+    True
+    >>> it.author
+    u'Myself'
+    >>> it.published is None
+    True
+    >>> it.views
+    0
 
-   def parse_newspage(self, response):
-       xhs = HtmlXPathSelector(response)
-       i = NewsAdaptor(response)
+Field types
+===========
 
-       i.url = response.url
-       i.headline = xhs.x('//h1[@class="headline"]')
-       i.summary = xhs.x('//div[@class="summary"]')
-       i.content = xhs.x('//div[@id="body"]')
-       # published attribute is intentionally omitted, see below for site-specific adaptors
-       return [i]
+These are the available built-in ``Field`` types. See
+:ref:`newitem-custom-fields` for info on creating your own field types.
 
-What happens underneath?
+TextField
+---------
 
-When we assign a value to a ItemAdaptor field it passes for the chain of
-functions defined previously in it's class, in this case, the value gets
-extracted (note that we assign directly the value obtained from the Selector),
-then tags will be removed, then the result will be unquoted, stripped and
-finally assigned to the Item Field.
+.. class:: TextField
 
-This final assignment is done in an internal instance of the Item on the
-ItemAdaptor, that's why we can return an ItemAdaptor instead of an Item and
-Scrapy will know how to extract the item from it.
+    A unicode text.
 
-An Item can have as many ItemAdaptors as you want. It generally depends on how
-many sources and formats are you scraping from.
+IntegerField
+------------
 
-ItemAdaptor inheritance
-=======================
+.. class:: IntegerField
 
-As we said before you generally want an ItemAdaptor for each different source of
-data and maybe some for specific sites, inheritance make this really easy, let's
-see an example of adapting HTML and XML::
+    An integer.
 
-   class NewsAdaptor(ItemAdaptor):
-       item_class = NewsItem
+DecimalField
+------------
+
+.. class:: DecimalField
+
+    A fixed-precision decimal number, represented in Python by a `Decimal`_
+    instance.
+
+.. _Decimal: http://docs.python.org/library/decimal.html#decimal.Decimal
+
+FloatField
+----------
+
+.. class:: FloatField
+
+    A floating-point number represented in Python by a ``float`` instance.
+
+BooleanField
+------------
+
+.. class:: BooleanField
+
+    A boolean (true/false) field.
+
+DateTimeField
+-------------
+
+.. class:: DateTimeField
+
+    A date with time, represented in Python by a `datetime.datetime`_ instance.
+
+.. _datetime.datetime: http://docs.python.org/library/datetime.html#datetime.datetime
+
+DateField
+---------
+
+.. class:: DateField
+
+    A date, represented in Python by a `datetime.date`_ instance.
+
+.. _datetime.date: http://docs.python.org/library/datetime.html#datetime.date
+
+TimeField
+---------
+
+.. class:: TimeField
+
+    A time, represented in Python by a `datetime.time`_ instance.
+
+.. _datetime.time: http://docs.python.org/library/datetime.html#datetime.time
 
 
-   class HtmlNewsAdaptor(NewsAdaptor):
-       url = adaptor(extract, remove_tags(), unquote(), strip)
-       headline = adaptor(extract, remove_tags(), unquote(), strip)
-       summary = adaptor(extract, remove_tags(), unquote(), strip)
-       content = adaptor(extract, remove_tags(), unquote(), strip)
-       published = adaptor(extract, remove_tags(), unquote(), strip)
+.. _newitem-custom-fields:
 
+Creating custom fields
+======================
+
+All field classes are subclasses of the :class:`BaseField` class (see below)
+which you can also subclass to create your own custom fields. 
+
+You can also subclass a more specific field class, say :class:`DecimalField`,
+to implement a ``PriceField``, for example.
+
+BaseField class
+---------------
+
+.. class:: BaseField(default=None)
+
+    The base class for all fields. It only provides code for handling default
+    values, not any particular type. It cannot be used directly either, as its
+    :meth:`BaseField.to_python` method is not implemented.
+
+    The ``default`` argument (if given) must be of the type expected by this
+    field, or any type that is accepted by the :meth:``BaseField.to_python``
+    method of this field.
+
+    For example::
+
+        class NewsItem(Item):
+            content = fields.TextField() # correct, no default value
+            author = fields.TextField(default=u'Myself") # correct, with default value
+            published = fields.DateField(default=23) # wrong default type (will raise TypeError) 
+
+    .. method:: to_python(value)
+
+       Convert the input value to the type expected by this field and return
+       it.
        
-   class XmlNewsAdaptor(HtmlNewsAdaptor):
-       url = adaptor(extract, remove_root, strip)
-       headline = adaptor(extract, remove_root, strip)
-       summary = adaptor(extract, remove_root, strip)
-       content = adaptor(extract, remove_root, strip)
-       published = adaptor(extract, remove_root, strip)
+       For example, :class:`IntegerField` would convert ``'1'`` to ``1``, while
+       :class:`DecimalField` would convert ``'1'`` to ``Decimal('1')`` and so
+       on.
+       
+       This method is not implemented in the :class:`BaseField` class, so it
+       must always be implemented in all its subclasses, in order to be usable.
 
+       This method should raise ``TypeError`` if the input type is not
+       supported, and ``ValueError`` if the input type is support but its value
+       is not appropriate (for example, an integer outside a given range).
 
-Site specific ItemAdaptors
-==========================
+       This method must always return object of the expected field type.
+       
+    .. method:: get_default()
 
-For the moment we have covered adapting information from different sources, but
-other common case is adapting information for specific sites, think for example
-in our published field, it keeps the publication date of the news article.
+       Return the default value for this field, or ``None`` if the field
+       doesn't specify any.
 
-As sites offer this information in different formats, we will have to make
-custom adaptors for it, let's see an example using our Item published field::
-
-   class SpecificSiteNewsAdaptor(HtmlNewsAdaptor):
-       published = adaptor(HtmlNewsAdaptor.published, to_date('%d.%m.%Y')) 
-
-
-The ``to_date`` adaptor function converts a string with the format specified in
-its parameter to one in 'YYYY-mm-dd' format (the one that DateField expects).
-
-And in this example we're appending it to the of the chain of adaptor functions
-of published.
-
-Note that ``SpecificSiteNewsAdaptor`` will inherit the field adaptations from
-``HtmlNewsAdaptor``.
-
-Let's see it in action::
-
-   def parse_newspage(self, response):
-       xhs = HtmlXPathSelector(response)
-       i = SpecificSiteNewsAdaptor(response)
-
-       i.url = response.url
-       i.headline = xhs.x('//h1[@class="headline"]')
-       i.summary = xhs.x('//div[@class="summary"]')
-       i.content = xhs.x('//div[@id="body"]')
-       i.published = xhs.x('//h1[@class="date"]').re('\d{2}\.\d{2}\.\d{4}')
-       return [i]
-
-ItemAdaptor default_adaptor
-===========================
-
-If you look closely at the code for our ItemAdaptors you can see that we're
-using the same set of adaptation functions in every field.
-
-It is common for ItemAdaptors to have a basic set of adaptor functions that
-will be applied to almost every Field in the Item. To avoid repeating the same
-code, ItemAdaptor implements the ``default_adaptor`` shortcut.
-
-``default_adaptor`` (if set) will be called when assigning a value for an Item
-Field that has no adaptor, so the process for determining what value gets
-assigned to an item when you assign a value to an ItemAdaptor field is as
-follows:
-
-1. If there's an adaptor function for this field its called before assigning
-   the value to the item.
-2. If no adaptor function if set and default_adaptor is, the value passes for
-   ``default_adaptor`` before being assigned.
-3. If no adaptor is defined for that field and no ``default_adaptor`` is set,
-   the value is assigned directly.
