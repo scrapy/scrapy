@@ -99,8 +99,7 @@ How do we use it? Let's see it in action in a Spider::
        i.headline = xhs.x('//h1[@class="headline"]')
        i.summary = xhs.x('//div[@class="summary"]')
        i.content = xhs.x('//div[@id="body"]')
-       # we intentionally left published out of the example, see below for site
-       # specific adaptors
+       # published attribute is intentionally omitted, see below for site-specific adaptors
        return [i]
 
 What happens underneath?
@@ -115,7 +114,7 @@ This final assignment is done in an internal instance of the Item on the
 ItemAdaptor, that's why we can return an ItemAdaptor instead of an Item and
 Scrapy will know how to extract the item from it.
 
-A Item can have as many ItemAdaptors as you want it generally depends on how
+An Item can have as many ItemAdaptors as you want. It generally depends on how
 many sources and formats are you scraping from.
 
 ItemAdaptor inheritance
@@ -178,21 +177,27 @@ Let's see it in action::
        i.headline = xhs.x('//h1[@class="headline"]')
        i.summary = xhs.x('//div[@class="summary"]')
        i.content = xhs.x('//div[@id="body"]')
-       i.published = xhs.x('//h1[@class="date"]').re( '\d{2}\.\d{2}\.\d{4}')
+       i.published = xhs.x('//h1[@class="date"]').re('\d{2}\.\d{2}\.\d{4}')
        return [i]
 
 ItemAdaptor default_adaptor
 ===========================
 
-If you look closely at the code for our ItemAdaptors you can see that we're using the same set of adaptation functions in every field.
+If you look closely at the code for our ItemAdaptors you can see that we're
+using the same set of adaptation functions in every field.
 
-It is common for ItemAdaptors to have a basic set of adaptor functions that will be applied to almost every Field in the Item. To avoid repeating the same code, ItemAdaptor implements the ``default_adaptor`` shortcut.
+It is common for ItemAdaptors to have a basic set of adaptor functions that
+will be applied to almost every Field in the Item. To avoid repeating the same
+code, ItemAdaptor implements the ``default_adaptor`` shortcut.
 
 ``default_adaptor`` (if set) will be called when assigning a value for an Item
-Field that has no adaptor, so the process for determining what value gets assigned to an item when you assign a value to an ItemAdaptor field is as follows:
+Field that has no adaptor, so the process for determining what value gets
+assigned to an item when you assign a value to an ItemAdaptor field is as
+follows:
 
-* If there's an adaptor function for this field its called before assigning the
-  value to the item. 
-* If no adaptor function if set and default_adaptor is, the value passes for 
-  ``default_adaptor`` before being assigned.
-* If no adaptor is defined for that field and no ``default_adaptor`` is set, the value is assigned directly.
+1. If there's an adaptor function for this field its called before assigning
+   the value to the item.
+2. If no adaptor function if set and default_adaptor is, the value passes for
+   ``default_adaptor`` before being assigned.
+3. If no adaptor is defined for that field and no ``default_adaptor`` is set,
+   the value is assigned directly.
