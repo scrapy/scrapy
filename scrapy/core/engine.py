@@ -165,7 +165,9 @@ class ExecutionEngine(object):
                 self.downloader.sites[domain].needs_backout() or  \
                 self.scraper.sites[domain].needs_backout():
             return
+        self._next_request(domain)
 
+    def _next_request(self, domain):
         # Next pending request from scheduler
         request, deferred = self.scheduler.next_request(domain)
         if request:
