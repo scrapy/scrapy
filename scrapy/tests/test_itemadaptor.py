@@ -5,12 +5,12 @@ from scrapy.contrib_exp.newitem import Item, fields
 
 
 class BaseItem(Item):
-    name = fields.StringField()
+    name = fields.TextField()
 
 
 class TestItem(BaseItem):
-    url = fields.StringField()
-    summary = fields.StringField()
+    url = fields.TextField()
+    summary = fields.TextField()
 
 
 class BaseAdaptor(ItemAdaptor):
@@ -30,7 +30,7 @@ class InheritDefaultAdaptor(DefaultedAdaptor):
 
 
 class MultiValuedTestItem(Item):
-    names = fields.MultiValuedField(fields.StringField)
+    names = fields.MultiValuedField(fields.TextField)
 
 
 class MultiValuedItemAdaptor(ItemAdaptor):
@@ -43,20 +43,20 @@ class ItemAdaptorTest(unittest.TestCase):
 
     def test_basic(self):
         ia = TestAdaptor()
-        ia.name = 'marta'
-        self.assertEqual(ia.item_instance.name, 'Marta')
-        self.assertEqual(ia.name, 'Marta')
+        ia.name = u'marta'
+        self.assertEqual(ia.item_instance.name, u'Marta')
+        self.assertEqual(ia.name, u'Marta')
 
     def test_defaultadaptor(self):
         dta = DefaultedAdaptor()
         assert dta.default_adaptor
-        dta.name = 'marta'
-        self.assertEqual(dta.name, 'mart')
+        dta.name = u'marta'
+        self.assertEqual(dta.name, u'mart')
 
     def test_inheritdefaultadaptor(self):
         ida = InheritDefaultAdaptor()
-        ida.name = 'marta'
-        assert ida.name == 'mart'
+        ida.name = u'marta'
+        assert ida.name == u'mart'
 
     def test_inheritance(self):
         class ChildTestAdaptor(TestAdaptor):
@@ -66,11 +66,11 @@ class ItemAdaptorTest(unittest.TestCase):
         assert 'url' in ia._field_adaptors
         assert 'name' in ia._field_adaptors
 
-        ia.url = 'HTTP://scrapy.ORG'
-        self.assertEqual(ia.url, 'http://scrapy.org')
+        ia.url = u'HTTP://scrapy.ORG'
+        self.assertEqual(ia.url, u'http://scrapy.org')
 
-        ia.name = 'marta'
-        self.assertEqual(ia.name, 'Marta')
+        ia.name = u'marta'
+        self.assertEqual(ia.name, u'Marta')
 
         class ChildChildTestAdaptor(ChildTestAdaptor):
             url = lambda v: v.upper()
@@ -81,32 +81,32 @@ class ItemAdaptorTest(unittest.TestCase):
         assert 'name' in ia._field_adaptors
         assert 'summary' in ia._field_adaptors
 
-        ia.url = 'HTTP://scrapy.ORG'
-        self.assertEqual(ia.url, 'HTTP://SCRAPY.ORG')
+        ia.url = u'HTTP://scrapy.ORG'
+        self.assertEqual(ia.url, u'HTTP://SCRAPY.ORG')
 
-        ia.name = 'marta'
-        self.assertEqual(ia.name, 'Marta')
+        ia.name = u'marta'
+        self.assertEqual(ia.name, u'Marta')
 
     def test_staticmethods(self):
         class ChildAdaptor(TestAdaptor):
             name = adaptor(TestAdaptor.name, string.swapcase)
 
         ia = ChildAdaptor()
-        ia.name = 'Marta'
-        self.assertEqual(ia.name, 'mARTA')
+        ia.name = u'Marta'
+        self.assertEqual(ia.name, u'mARTA')
 
     def test_staticdefaults(self):
         class ChildAdaptorDefaulted(DefaultedAdaptor):
             name = adaptor(DefaultedAdaptor.name, string.swapcase)
 
         dia = ChildAdaptorDefaulted()
-        dia.name = 'marta'
-        self.assertEqual(dia.name, 'MART')
+        dia.name = u'marta'
+        self.assertEqual(dia.name, u'MART')
 
     def test_multiplevaluedadaptor(self):
         ma = MultiValuedItemAdaptor()
-        ma.names = ['name1', 'name2']
-        assert ma.names == ['Name1', 'Name2']
+        ma.names = [u'name1', u'name2']
+        assert ma.names == [u'Name1', u'Name2']
 
 
 class TreeadaptTest(unittest.TestCase):
