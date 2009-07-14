@@ -68,7 +68,7 @@ class NewItemTest(unittest.TestCase):
             class TestItem(Item):
                 name = fields.TextField(default=3)
         
-        self.assertRaises(ValueError, set_wrong_default)
+        self.assertRaises(TypeError, set_wrong_default)
 
     def test_to_python_iter(self):
         class TestItem(Item):
@@ -134,16 +134,19 @@ class NewItemFieldsTest(unittest.TestCase):
         i = TestItem()
 
         i.field = True
-        assert i.field == True
+        assert i.field is True
     
         i.field = 1
-        assert i.field == True
+        assert i.field is True
 
         i.field = False
-        assert i.field == False
+        assert i.field is False
 
         i.field = 0
-        assert i.field == False
+        assert i.field is False
+
+        i.field = None
+        assert i.field is False
 
     def test_date_field(self):
         class TestItem(Item):
@@ -171,6 +174,8 @@ class NewItemFieldsTest(unittest.TestCase):
             i.field = '2009-05-51'
 
         self.assertRaises(ValueError, set_invalid_date)
+
+        self.assertRaises(TypeError, setattr, i, 'field', None)
 
     def test_datetime_field(self):
         class TestItem(Item):
@@ -214,6 +219,8 @@ class NewItemFieldsTest(unittest.TestCase):
 
         self.assertRaises(ValueError, set_invalid_date)
 
+        self.assertRaises(TypeError, setattr, i, 'field', None)
+
     def test_decimal_field(self):
         class TestItem(Item):
             field = fields.DecimalField()
@@ -230,6 +237,8 @@ class NewItemFieldsTest(unittest.TestCase):
             i.field = 'text'
 
         self.assertRaises(decimal.InvalidOperation, set_invalid_value)
+
+        self.assertRaises(TypeError, setattr, i, 'field', None)
 
     def test_float_field(self):
         class TestItem(Item):
@@ -248,6 +257,8 @@ class NewItemFieldsTest(unittest.TestCase):
 
         self.assertRaises(ValueError, set_invalid_value)
 
+        self.assertRaises(TypeError, setattr, i, 'field', None)
+
     def test_integer_field(self):
         class TestItem(Item):
             field = fields.IntegerField()
@@ -265,6 +276,8 @@ class NewItemFieldsTest(unittest.TestCase):
 
         self.assertRaises(ValueError, set_invalid_value)
 
+        self.assertRaises(TypeError, setattr, i, 'field', None)
+
     def test_text_field(self):
         class TestItem(Item):
             field = fields.TextField()
@@ -278,12 +291,23 @@ class NewItemFieldsTest(unittest.TestCase):
         def set_str():
             i.field = 'string'
 
-        self.assertRaises(ValueError, set_str)
+        # must be unicode!
+        self.assertRaises(TypeError, set_str)
+
+        self.assertRaises(TypeError, setattr, i, 'field', None)
 
         def set_invalid_value():
             i.field = 3 
 
-        self.assertRaises(ValueError, set_invalid_value)
+        self.assertRaises(TypeError, set_invalid_value)
+
+        i = TestItem()
+        i.field = [u'hello', u'world']
+        self.assertEqual(i.field, u'hello world')
+        assert isinstance(i.field, unicode)
+
+        self.assertRaises(TypeError, setattr, i, 'field', [u'hello', 3, u'world']) 
+        self.assertRaises(TypeError, setattr, i, 'field', [u'hello', 'world']) 
 
     def test_time_field(self):
         class TestItem(Item):
@@ -294,6 +318,8 @@ class NewItemFieldsTest(unittest.TestCase):
         dt_t = datetime.time(11, 8, 10, 100)
         i.field = dt_t
         assert i.field == dt_t
+
+        self.assertRaises(TypeError, setattr, i, 'field', None)
 
         dt_dt = datetime.datetime.today()
         i.field = dt_dt
