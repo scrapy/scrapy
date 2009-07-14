@@ -46,15 +46,10 @@ class NewItemTest(unittest.TestCase):
             pass
 
         i = TestItem()
-        def set_invalid_field():
-            i.field = 'text'
 
-        self.assertRaises(AttributeError, set_invalid_field)
+        self.assertRaises(AttributeError, setattr, i, 'field', 'text')
 
-        def get_invalid_field():
-            return i.field
-
-        self.assertRaises(AttributeError, get_invalid_field)
+        self.assertRaises(AttributeError, getattr, i, 'field')
 
     def test_default_value(self):
         class TestItem(Item):
@@ -166,15 +161,9 @@ class NewItemFieldsTest(unittest.TestCase):
         i.field = '2009-05-21'
         self.assertEqual(i.field, datetime.date(2009, 5, 21))
 
-        def set_invalid_format():
-            i.field = '21-05-2009'
+        self.assertRaises(ValueError, setattr, i, 'field', '21-05-2009')
 
-        self.assertRaises(ValueError, set_invalid_format)
-
-        def set_invalid_date():
-            i.field = '2009-05-51'
-
-        self.assertRaises(ValueError, set_invalid_date)
+        self.assertRaises(ValueError, setattr, i, 'field', '2009-05-51')
 
         self.assertRaises(TypeError, setattr, i, 'field', None)
 
@@ -206,20 +195,11 @@ class NewItemFieldsTest(unittest.TestCase):
         i.field = '2009-05-21'
         self.assertEqual(i.field, datetime.datetime(2009, 5, 21))
 
-        def set_invalid_usecs():
-            i.field = '2009-05-21 11:08:10.usecs'
+        self.assertRaises(ValueError, setattr, i, 'field', '2009-05-21 11:08:10.usecs')
 
-        self.assertRaises(ValueError, set_invalid_usecs)
+        self.assertRaises(ValueError, setattr, i, 'field', '21-05-2009')
 
-        def set_invalid_format():
-            i.field = '21-05-2009'
-
-        self.assertRaises(ValueError, set_invalid_format)
-
-        def set_invalid_date():
-            i.field = '2009-05-51'
-
-        self.assertRaises(ValueError, set_invalid_date)
+        self.assertRaises(ValueError, setattr, i, 'field', '2009-05-51')
 
         self.assertRaises(TypeError, setattr, i, 'field', None)
 
@@ -235,10 +215,7 @@ class NewItemFieldsTest(unittest.TestCase):
         i.field = '3.14'
         self.assertEqual(i.field, decimal.Decimal('3.14'))
         
-        def set_invalid_value():
-            i.field = 'text'
-
-        self.assertRaises(decimal.InvalidOperation, set_invalid_value)
+        self.assertRaises(decimal.InvalidOperation, setattr, i, 'field', 'text')
 
         self.assertRaises(TypeError, setattr, i, 'field', None)
 
@@ -254,10 +231,7 @@ class NewItemFieldsTest(unittest.TestCase):
         i.field = '3.14'
         self.assertEqual(i.field, 3.14)
         
-        def set_invalid_value():
-            i.field = 'text'
-
-        self.assertRaises(ValueError, set_invalid_value)
+        self.assertRaises(ValueError, setattr, i, 'field', 'text')
 
         self.assertRaises(TypeError, setattr, i, 'field', None)
 
@@ -273,10 +247,7 @@ class NewItemFieldsTest(unittest.TestCase):
         i.field = '3'
         self.assertEqual(i.field, 3)
 
-        def set_invalid_value():
-            i.field = 'text'
-
-        self.assertRaises(ValueError, set_invalid_value)
+        self.assertRaises(ValueError, setattr, i, 'field', 'text')
 
         self.assertRaises(TypeError, setattr, i, 'field', None)
 
@@ -290,11 +261,8 @@ class NewItemFieldsTest(unittest.TestCase):
         self.assertEqual(i.field, u'hello')
         self.assert_(isinstance(i.field, unicode))
 
-        def set_str():
-            i.field = 'string'
-
         # must be unicode!
-        self.assertRaises(TypeError, set_str)
+        self.assertRaises(TypeError, setattr, i, 'field', 'string')
 
         self.assertRaises(TypeError, setattr, i, 'field', None)
 
@@ -341,18 +309,9 @@ class NewItemFieldsTest(unittest.TestCase):
         i.field = '11:08'
         self.assertEqual(i.field, datetime.time(11, 8))
 
-        def set_invalid_usecs():
-            i.field = '11:08:10.usecs'
+        self.assertRaises(ValueError, setattr, i, 'field', '11:08:10.usecs')
 
-        self.assertRaises(ValueError, set_invalid_usecs)
+        self.assertRaises(ValueError, setattr, i, 'field', '25:08:10')
 
-        def set_invalid_format():
-            i.field = 'string'
-
-        self.assertRaises(ValueError, set_invalid_format)
-
-        def set_invalid_time():
-            i.field = '25:08:10'
-
-        self.assertRaises(ValueError, set_invalid_time)
+        self.assertRaises(ValueError, setattr, i, 'field', 'string')
 
