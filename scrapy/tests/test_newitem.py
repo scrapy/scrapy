@@ -309,6 +309,11 @@ class NewItemFieldsTest(unittest.TestCase):
         self.assertRaises(TypeError, setattr, i, 'field', [u'hello', 3, u'world']) 
         self.assertRaises(TypeError, setattr, i, 'field', [u'hello', 'world']) 
 
+        i = TestItem()
+        i.field = []
+        assert isinstance(i.field, unicode)
+        self.assertEqual(i.field, '')
+
     def test_time_field(self):
         class TestItem(Item):
             field = fields.TimeField()

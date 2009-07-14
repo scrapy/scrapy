@@ -120,7 +120,7 @@ class TextField(BaseField):
 
     def to_single(self, value):
         """Converts the input iterable into a single value"""
-        return ' '.join((self.to_python(x) for x in value))
+        return u' '.join((self.to_python(x) for x in value))
 
 
 class TimeField(BaseField):
