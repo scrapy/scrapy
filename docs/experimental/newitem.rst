@@ -29,7 +29,7 @@ Or you can use your own class to represent items, just be sure it inherits from
 More advanced items
 ===================
 
-.. class:: scrapy.contrib_exp.newitem.Item(ScrapedItem)
+.. class:: scrapy.contrib_exp.newitem.Item
 
 Scrapy provides :class:`~scrapy.contrib_exp.newitem.Item` (a subclass of
 :class:`~scrapy.item.ScrapedItem`) that works like a form with fields to store

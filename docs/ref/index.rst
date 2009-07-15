@@ -20,3 +20,5 @@ This section documents the Scrapy |version| API. For more information see :ref:`
    extensions
    downloader-middleware
    link-extractors
+
+* :ref:`topics-stats-api`

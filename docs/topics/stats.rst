@@ -4,6 +4,9 @@
 Stats Collector
 ===============
 
+Overview
+========
+
 Scrapy provides a convenient facility for collecting stats in the form of
 key/values, both globally and per spider/domain. It's called the Stats
 Collector, and it's a singleton which can be imported and used quickly, as
@@ -74,6 +77,8 @@ Get all stats from a given domain::
 
     >>> stats.get_stats('pages_crawled', domain='example.com')
     {'pages_crawled': 1238, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
+
+.. _topics-stats-api:
 
 Stats Collector API
 ===================
