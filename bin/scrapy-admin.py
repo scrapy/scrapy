@@ -4,6 +4,7 @@ tasks"""
 import os
 import string
 from optparse import OptionParser
+import re
 
 import scrapy
 from scrapy.utils.misc import render_templatefile, string_camelcase
@@ -43,20 +44,28 @@ def main():
     if cmd == "startproject":
         if len(args) >= 2:
             project_name = args[1]
-            project_root_path = project_name
+            if not re.search(r'^[_a-zA-Z]\w*$', project_name): # If it's not a valid directory name.
+                # Provide a smart error message, depending on the error.
+                if not re.search(r'^[_a-zA-Z]', project_name):
+                    message = 'make sure the project_name begins with a letter or underscore'
+                else:
+                    message = 'use only numbers, letters and underscores'
+                print "scrapy-admin.py: %r is not a valid project name. Please %s." % (project_name, message)
+            else:
+                project_root_path = project_name
 
-            roottpl = os.path.join(PROJECT_TEMPLATES_PATH, 'root')
-            copytree(roottpl, project_name, ignore=IGNORE)
+                roottpl = os.path.join(PROJECT_TEMPLATES_PATH, 'root')
+                copytree(roottpl, project_name, ignore=IGNORE)
 
-            moduletpl = os.path.join(PROJECT_TEMPLATES_PATH, 'module')
-            copytree(moduletpl, '%s/%s' % (project_name, project_name),
-                     ignore=IGNORE)
+                moduletpl = os.path.join(PROJECT_TEMPLATES_PATH, 'module')
+                copytree(moduletpl, '%s/%s' % (project_name, project_name),
+                         ignore=IGNORE)
 
-            for path in TEMPLATES:
-                tplfile = os.path.join(project_root_path,
-                        string.Template(path).substitute(project_name=project_name))
-                render_templatefile(tplfile, project_name=project_name,
-                        ProjectName=string_camelcase(project_name))
+                for path in TEMPLATES:
+                    tplfile = os.path.join(project_root_path,
+                            string.Template(path).substitute(project_name=project_name))
+                    render_templatefile(tplfile, project_name=project_name,
+                            ProjectName=string_camelcase(project_name))
         else:
             print "scrapy-admin.py: missing project name"
     else:
