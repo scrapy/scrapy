@@ -52,11 +52,11 @@ class ItemSamplerPipeline(object):
         dispatcher.connect(self.engine_stopped, signal=signals.engine_stopped)
 
     def process_item(self, domain, item):
-        sampled = stats.getpath("%s/items_sampled" % domain, 0)
+        sampled = stats.get_value("items_sampled", 0, domain=domain)
         if sampled < items_per_domain:
             self.items[item.guid] = item
             sampled += 1
-            stats.setpath("%s/items_sampled" % domain, sampled)
+            stats.set_value("items_sampled", sampled, domain=domain)
             log.msg("Sampled %s" % item, domain=domain, level=log.INFO)
             if close_domain and sampled == items_per_domain:
                 scrapyengine.close_domain(domain)
@@ -69,7 +69,7 @@ class ItemSamplerPipeline(object):
             log.msg("No products sampled for: %s" % " ".join(self.empty_domains), level=log.WARNING)
 
     def domain_closed(self, domain, spider, reason):
-        if reason == 'finished' and not stats.getpath("%s/items_sampled" % domain):
+        if reason == 'finished' and not stats.get_value("items_sampled", domain=domain):
             self.empty_domains.add(domain)
         self.domains_count += 1
         log.msg("Sampled %d domains so far (%d empty)" % (self.domains_count, len(self.empty_domains)), level=log.INFO)
@@ -84,7 +84,7 @@ class ItemSamplerMiddleware(object):
             raise NotConfigured
 
     def process_spider_input(self, response, spider):
-        if stats.getpath("%s/items_sampled" % spider.domain_name) >= items_per_domain:
+        if stats.get_value("items_sampled", domain=spider.domain_name) >= items_per_domain:
             return []
         elif max_response_size and max_response_size > len(response.httprepr()):  
             return []
@@ -97,7 +97,7 @@ class ItemSamplerMiddleware(object):
             else:
                 items.append(r)
 
-        if stats.getpath("%s/items_sampled" % spider.domain_name) >= items_per_domain:
+        if stats.get_value("items_sampled", domain=spider.domain_name) >= items_per_domain:
             return []
         else:
             # TODO: this needs some revision, as keeping only the first item

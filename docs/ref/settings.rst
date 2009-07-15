@@ -848,15 +848,15 @@ Example::
 
     SPIDER_MODULES = ['mybot.spiders_prod', 'mybot.spiders_dev']
 
-.. setting:: STATS_CLEANUP
+.. setting:: STATS_CLASS
 
-STATS_CLEANUP
--------------
+STATS_CLASS
+-----------
 
-Default: ``False``
+Default: ``'scrapy.stats.collector.MemoryStatsCollector'``
 
-Whether to cleanup (to save memory) the stats for a given domain,
-when the domain is closed.
+The class to use for collecting stats (must implement the Stats Collector API,
+or subclass the StatsCollector class).
 
 .. setting:: STATS_DEBUG
 

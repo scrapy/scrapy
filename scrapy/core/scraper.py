@@ -129,8 +129,8 @@ class Scraper(object):
         referer = request.headers.get('Referer', None)
         msg = "SPIDER BUG processing <%s> from <%s>: %s" % (request.url, referer, _failure)
         log.msg(msg, log.ERROR, domain=spider.domain_name)
-        stats.incpath("%s/spider_exceptions/%s" % (spider.domain_name, \
-            _failure.value.__class__.__name__))
+        stats.inc_value("spider_exceptions/%s" % _failure.value.__class__.__name__, \
+            domain=spider.domain_name)
 
     def handle_spider_output(self, result, request, response, spider):
         if not result:

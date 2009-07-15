@@ -184,9 +184,12 @@ SPIDER_MIDDLEWARES_BASE = {
     # Spider side
 }
 
+STATS_CLASS = 'scrapy.stats.collector.MemoryStatsCollector'
 STATS_ENABLED = True
-STATS_CLEANUP = False
 STATS_DEBUG = False
+
+STATS_SDB_DOMAIN = 'scrapy_stats'
+STATS_SDB_ASYNC = False
 
 # deprecated settings - the stats web service should be moved to the web console
 STATS_WSPORT = 8089

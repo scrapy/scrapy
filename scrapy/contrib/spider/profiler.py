@@ -43,16 +43,17 @@ class SpiderProfiler(object):
             tafter = datetime.datetime.now()
             mafter = self._memusage()
             ct = tafter-tbefore
-            tcc = stats.getpath('%s/profiling/total_callback_time' % spider.domain_name, datetime.timedelta(0))
-            sct = stats.getpath('%s/profiling/slowest_callback_time' % spider.domain_name, datetime.timedelta(0))
-            stats.setpath('%s/profiling/total_callback_time' % spider.domain_name, tcc+ct)
+            domain = spider.domain_name
+            tcc = stats.get_value('profiling/total_callback_time', datetime.timedelta(0), domain=domain)
+            sct = stats.get_value('profiling/slowest_callback_time', datetime.timedelta(0), domain=domain)
+            stats.set_value('profiling/total_callback_time' % spider.domain_name, tcc+ct, domain=domain)
             if ct > sct:
-                stats.setpath('%s/profiling/slowest_callback_time' % spider.domain_name, ct)
-                stats.setpath('%s/profiling/slowest_callback_name' % spider.domain_name, function.__name__)
-                stats.setpath('%s/profiling/slowest_callback_url' % spider.domain_name, args[0].url)
+                stats.set_value('profiling/slowest_callback_time', ct, domain=domain)
+                stats.set_value('profiling/slowest_callback_name', function.__name__, domain=domain)
+                stats.set_value('profiling/slowest_callback_url', args[0].url, domain=domain)
             if self.memusage:
-                tma = stats.getpath('%s/profiling/total_mem_allocated_in_callbacks' % spider.domain_name, 0)
-                stats.setpath('%s/profiling/total_mem_allocated_in_callbacks' % spider.domain_name, tma+mafter-mbefore)
+                tma = stats.get_value('profiling/total_mem_allocated_in_callbacks', 0, domain=domain)
+                stats.set_value('profiling/total_mem_allocated_in_callbacks', tma+mafter-mbefore, domain=domain)
             return r
         return new_callback
 

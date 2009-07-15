@@ -65,14 +65,6 @@ def memoize(cache, hash):
         return wrapper
     return decorator
 
-def stats_getpath(dict_, path, default=None):
-    for key in path.split('/'):
-        if key in dict_:
-            dict_ = dict_[key]
-        else:
-            return default
-    return dict_
-
 def load_object(path):
     """Load an object given its absolute object path, and return it.
 

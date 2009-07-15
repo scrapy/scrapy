@@ -156,8 +156,8 @@ class BaseImagesPipeline(MediaPipeline):
             yield thumb_key, thumb_image, thumb_buf
 
     def inc_stats(self, domain, status):
-        stats.incpath('%s/image_count' % domain)
-        stats.incpath('%s/image_status_count/%s' % (domain, status))
+        stats.inc_value('image_count', domain=domain)
+        stats.inc_value('image_status_count/%s' % status, domain=domain)
 
     def convert_image(self, image, size=None):
         if image.mode != 'RGB':
