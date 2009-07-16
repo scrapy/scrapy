@@ -173,3 +173,36 @@ The ``x()`` selector method returns a list of selectors, so you can call the
     Link number 3 points to url [u'image4.html'] and image [u'image4_thumb.jpg']
     Link number 4 points to url [u'image5.html'] and image [u'image5_thumb.jpg']
 
+Working with relative XPaths
+----------------------------
+
+Keep in mind that if you are nesting XPathSelectors and use an XPath that
+starts with ``/``, that XPath will be absolute to the document and not relative
+to the ``XPathSelector`` you're calling it from.
+
+For example, suppose you want to extract all ``<p>`` elements inside ``<div>``
+elements. First you get would get all ``<div>`` elements::
+
+    >>> divs = hxs.x('//div')
+
+At first, you may be tempted to use the following approach, which is wrong, as
+it actually extracts all ``<p>`` elements from the document, not only those
+inside ``<div>`` elements::
+
+    >>> for p in divs.x('//p') # this is wrong - gets all <p> from the whole document
+    >>>     print p.extract()
+
+This is the proper way to do it (note the dot prefixing the ``.//p`` XPath)::
+
+    >>> for p in divs.x('//p') # extracts all <p> inside
+    >>>     print p.extract()
+
+Another common case would be to extract all direct ``<p>`` children::
+
+    >>> for p in divs.x('p')
+    >>>     print p.extract()
+
+For more details about relative XPaths see the `Location Paths`_ section in the
+XPath specification.
+
+.. _Location Paths: http://www.w3.org/TR/xpath#location-paths
