@@ -865,7 +865,9 @@ STATS_DUMP
 
 Default: ``False``
 
-Dump (to log) collected Scrapy stats when a domain is closed.
+Dump (to log) domain-specific stats collected when a domain is closed, and all
+global stats when the Scrapy process finishes (ie. when the engine is
+shutdown).
 
 .. setting:: STATS_ENABLED
 
