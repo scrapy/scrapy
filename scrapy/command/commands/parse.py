@@ -11,7 +11,7 @@ class Command(ScrapyCommand):
         return "[options] <url>"
 
     def short_desc(self):
-        return "Parse the given URL and print the results"
+        return "Parse the given URL (using the spider) and print the results"
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
