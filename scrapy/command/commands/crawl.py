@@ -9,10 +9,10 @@ from scrapy import log
 
 class Command(ScrapyCommand):
     def syntax(self):
-        return "[options] [domain|url] ..."
+        return "[options] <domain|url> ..."
 
     def short_desc(self):
-        return "Run the web scraping engine from the command line"
+        return "Start crawling a domain or URL"
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)

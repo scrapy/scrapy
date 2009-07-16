@@ -15,10 +15,10 @@ class Command(ScrapyCommand):
     custom_tvars = {}
 
     def syntax(self):
-        return "<spider_name> <spider_domain_name> [--template=template_name]"
+        return "[options] <spider_name> <spider_domain_name>"
 
     def short_desc(self):
-        return "Generate new spider based on a predefined template"
+        return "Generate new spider based on template passed with --template"
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
