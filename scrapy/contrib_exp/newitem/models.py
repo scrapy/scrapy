@@ -6,10 +6,10 @@ class _ItemMeta(type):
 
     def __new__(meta, class_name, bases, attrs):
         cls = type.__new__(meta, class_name, bases, attrs)
-        cls.fields = cls.fields.copy()
+        cls._fields = cls._fields.copy()
         for n, v in attrs.iteritems():
             if isinstance(v, BaseField):
-                cls.fields[n] = v
+                cls._fields[n] = v
                 delattr(cls, n)
         return cls
 
@@ -19,7 +19,7 @@ class Item(ScrapedItem):
 
     __metaclass__ = _ItemMeta
 
-    fields = {}
+    _fields = {}
 
     def __init__(self, values=None):
         self._values = {}
@@ -34,8 +34,8 @@ class Item(ScrapedItem):
         if name.startswith('_'):
             return ScrapedItem.__setattr__(self, name, value)
 
-        if name in self.fields.keys():
-            self._values[name] = self.fields[name].to_python(value)
+        if name in self._fields:
+            self._values[name] = self._fields[name].to_python(value)
         else:
             raise AttributeError(name)
 
@@ -44,7 +44,7 @@ class Item(ScrapedItem):
             return self._values[name]
         except KeyError:
             try:
-                return self.fields[name].get_default()
+                return self._fields[name].get_default()
             except KeyError:
                 raise AttributeError(name)
 
@@ -52,6 +52,11 @@ class Item(ScrapedItem):
         """Generate a representation of this item that can be used to
         reconstruct the item by evaluating it
         """
-        values = dict((field, getattr(self, field)) for field in self.fields)
+        values = dict((field, getattr(self, field)) for field in self._fields)
         return "%s(%s)" % (self.__class__.__name__, repr(values))
+
+    @classmethod
+    def get_fields(cls):
+        """Returns the item fields"""
+        return cls._fields
 

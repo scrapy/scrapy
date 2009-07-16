@@ -1,4 +1,3 @@
-
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import get_func_args
 
@@ -28,7 +27,7 @@ class ItemAdaptorMeta(type):
         cls._field_adaptors = cls._field_adaptors.copy()
     
         if cls.item_class:
-            for item_field in cls.item_class.fields.keys():
+            for item_field in cls.item_class.get_fields():
                 if item_field in attrs:
                     adaptor = adaptize(attrs[item_field])
                     cls._field_adaptors[item_field] = adaptor
@@ -36,7 +35,7 @@ class ItemAdaptorMeta(type):
         return cls
 
     def __getattr__(cls, name):
-        if name in cls.item_class.fields:
+        if name in cls.item_class.get_fields():
             return cls.default_adaptor
         raise AttributeError(name)
 
