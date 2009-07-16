@@ -14,7 +14,7 @@ from scrapy.conf import settings
 class StatsCollector(object):
 
     def __init__(self):
-        self.debug = settings.getbool('STATS_DEBUG')
+        self._dump = settings.getbool('STATS_DUMP')
         self._stats = {None: {}} # None is for global stats
 
         dispatcher.connect(self.open_domain, signal=signals.domain_open)
@@ -48,8 +48,8 @@ class StatsCollector(object):
 
     def close_domain(self, domain, reason):
         signals.send_catch_log(stats_domain_closing, domain=domain, reason=reason)
-        if self.debug:
-            log.msg(pprint.pformat(self[domain]), domain=domain, level=log.DEBUG)
+        if self._dump:
+            log.msg("Dumping stats:\n" + pprint.pformat(self._stats[domain]), domain=domain)
         del self._stats[domain]
         signals.send_catch_log(stats_domain_closed, domain=domain, reason=reason)
 

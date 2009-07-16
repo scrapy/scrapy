@@ -7,10 +7,10 @@ Stats Collector
 Overview
 ========
 
-Scrapy provides a convenient facility for collecting stats in the form of
+Scrapy provides a convenient service for collecting stats in the form of
 key/values, both globally and per spider/domain. It's called the Stats
 Collector, and it's a singleton which can be imported and used quickly, as
-illustrated by the example in the :ref:`topics-stats-usecases` section below.
+illustrated by the examples in the :ref:`topics-stats-usecases` section below.
 
 The stats collection is enabled by default but can be disabled through the
 :setting:`STATS_ENABLED` setting.

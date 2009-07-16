@@ -17,7 +17,6 @@ from scrapy.core.manager import scrapymanager
 from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import NotConfigured
 from scrapy.mail import MailSender
-from scrapy.stats import stats
 from scrapy.conf import settings
 
 class MemoryUsage(object):
@@ -120,9 +119,4 @@ class MemoryUsage(object):
         s += "\r\n"
         s += scrapyengine.getstatus()
         s += "\r\n"
-
-        if stats:
-            s += "SCRAPING STATS ------------------------------------------------------ \r\n"
-            s += "\r\n"
-            s += pprint.pformat(stats)
         self.mail.send(rcpts, subject, s)

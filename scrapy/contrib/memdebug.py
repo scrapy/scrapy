@@ -14,7 +14,6 @@ from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core import signals
 from scrapy.core.exceptions import NotConfigured
 from scrapy.mail import MailSender
-from scrapy.stats import stats
 from scrapy.extension import extensions
 from scrapy.conf import settings
 
@@ -58,10 +57,6 @@ class MemoryDebugger(object):
         s += "SCRAPY MEMORY DEBUGGER RESULTS\n\n"
         for f in figures:
             s += "%-30s : %s %s\n" % f
-        s += "\n"
-        if stats:
-            s += "SCRAPING STATS --------------------------------------------------\n\n"
-            s += pprint.pformat(stats)
         return s
 
     def print_or_send_report(self, report):

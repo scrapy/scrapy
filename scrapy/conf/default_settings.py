@@ -186,7 +186,7 @@ SPIDER_MIDDLEWARES_BASE = {
 
 STATS_CLASS = 'scrapy.stats.collector.MemoryStatsCollector'
 STATS_ENABLED = True
-STATS_DEBUG = False
+STATS_DUMP = False
 
 STATS_SDB_DOMAIN = 'scrapy_stats'
 STATS_SDB_ASYNC = False

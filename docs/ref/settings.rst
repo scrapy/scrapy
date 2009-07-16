@@ -858,15 +858,14 @@ Default: ``'scrapy.stats.collector.MemoryStatsCollector'``
 The class to use for collecting stats (must implement the Stats Collector API,
 or subclass the StatsCollector class).
 
-.. setting:: STATS_DEBUG
+.. setting:: STATS_DUMP
 
-STATS_DEBUG
------------
+STATS_DUMP
+----------
 
 Default: ``False``
 
-Enable debugging mode for Scrapy stats. This logs the stats when a domain is
-closed.
+Dump (to log) collected Scrapy stats when a domain is closed.
 
 .. setting:: STATS_ENABLED
 
