@@ -127,8 +127,8 @@ To put our spider to work, go to the project's top level directory and run::
 
    python scrapy-ctl.py crawl dmoz.org
 
-The ``crawl dmoz.org`` subcommand runs the spider for the ``dmoz.org`` domain,
-you'll get an output like this:: 
+The ``crawl dmoz.org`` command runs the spider for the ``dmoz.org`` domain. You
+will get an output similar to this::
 
    [-] Log opened.
    [dmoz] INFO: Enabled extensions: ...
@@ -136,14 +136,10 @@ you'll get an output like this::
    [dmoz] INFO: Enabled downloader middlewares: ...
    [dmoz] INFO: Enabled spider middlewares: ...
    [dmoz] INFO: Enabled item pipelines: ...
-   [-] scrapy.management.web.WebConsole starting on 60738
-   [-] scrapy.management.telnet.TelnetConsole starting on 51506
    [dmoz.org] INFO: Domain opened
    [dmoz.org] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/> from <None>
    [dmoz.org] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> from <None>
    [dmoz.org] INFO: Domain closed (finished)
-   [scrapy.management.web.WebConsole] (Port 60738 Closed)
-   [scrapy.management.telnet.TelnetConsole] (Port 51506 Closed)
    [-] Main loop terminated.
 
 Pay attention to the lines containing ``[dmoz.org]``, which corresponds to
