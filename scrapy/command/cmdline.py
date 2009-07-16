@@ -49,25 +49,16 @@ def getcmdname(argv):
             return arg
 
 def usage(argv):
-    s  = "usage: %s <subcommand> [options] [args]\n" % argv[0]
-    s += "       %s <subcommand> -h\n\n" % argv[0]
-    s += "Built-in subcommands:\n"
+    s  = "usage: %s <command> [options] [args]\n" % argv[0]
+    s += "       %s <command> -h\n\n" % argv[0]
+    s += "Available commands:\n\n"
 
-    builtin_cmds = builtin_commands_dict()
-    custom_cmds = custom_commands_dict()
+    cmds = builtin_commands_dict()
+    cmds.update(custom_commands_dict())
 
-    filtered_builtin_cmds = [(name, cls) for name, cls in builtin_cmds.iteritems() if name not in custom_cmds]
-
-    for cmdname, cmdclass in filtered_builtin_cmds:
-        s += "  %s %s\n" % (cmdname, cmdclass.syntax())
-        s += "    %s\n" % cmdclass.short_desc()
-
-    if custom_cmds:
-        s += "\n"
-        s += "Custom (or overloaded) subcommands:\n"
-        for cmdname, cmdclass in custom_cmds.iteritems():
-            s += "  %s %s\n" % (cmdname, cmdclass.syntax())
-            s += "    %s\n" % cmdclass.short_desc()
+    for cmdname, cmdclass in sorted(cmds.iteritems()):
+        s += "%s %s\n" % (cmdname, cmdclass.syntax())
+        s += "  %s\n" % cmdclass.short_desc()
 
     return s
 
