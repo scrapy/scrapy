@@ -19,6 +19,10 @@ it's not revised so frequently), or documentation which overlaps with existing
 .. toctree::
    :maxdepth: 1
 
-   newitem
-   newitem-adaptors
+   topics/index
+
+.. toctree::
+   :maxdepth: 2
+
+   ref/index
 

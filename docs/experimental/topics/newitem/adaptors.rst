@@ -1,4 +1,4 @@
-.. _topic-newitem-adaptors:
+.. _topics-newitem-adaptors:
 
 =============
 Item Adaptors
