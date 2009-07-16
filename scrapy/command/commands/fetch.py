@@ -1,4 +1,4 @@
-import sys, pprint
+import pprint
 
 from scrapy.command import ScrapyCommand
 from scrapy.fetcher import fetch
@@ -8,12 +8,14 @@ class Command(ScrapyCommand):
         return "[options] <url>"
 
     def short_desc(self):
-        return "Download a URL using the Scrapy downloader"
+        return "Fetch a URL using the Scrapy downloader"
+
+    def long_desc(self):
+        return "Fetch a URL using the Scrapy downloader and print its content to stdout. You may want to use --nolog to disable logging"
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("-s", "--source", dest="source", action="store_true", help="output HTTP body only")
-        parser.add_option("--headers", dest="headers", action="store_true", help="output HTTP headers only")
+        parser.add_option("--headers", dest="headers", action="store_true", help="print HTTP headers instead of body")
 
     def run(self, args, opts):
         if not args:
@@ -25,4 +27,4 @@ class Command(ScrapyCommand):
             if opts.headers:
                 pprint.pprint(responses[0].headers)
             else:
-                sys.stdout.write(str(responses[0].body))
+                print responses[0].body
