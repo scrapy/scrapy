@@ -123,9 +123,15 @@ Event-driven networking
 
 Scrapy is written with `Twisted`_, a popular event-driven networking framework
 for Python. Thus, it's implemented using a non-blocking (aka asynchronous) code
-for concurrency. For more information about this topic see `Asynchronous
-Programming with Twisted`.
+for concurrency.
+
+For more information about asynchronous programming and Twisted see these
+links:
+
+* `Asynchronous Programming with Twisted`_
+* `Twisted - hello, asynchronous programming`_
 
 .. _Twisted: http://twistedmatrix.com/trac/
 .. _Asynchronous Programming with Twisted: http://twistedmatrix.com/projects/core/documentation/howto/async.html
+.. _Twisted - hello, asynchronous programming: http://jessenoller.com/2009/02/11/twisted-hello-asynchronous-programming/
 
