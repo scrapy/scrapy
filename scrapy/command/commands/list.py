@@ -6,11 +6,7 @@ class Command(ScrapyCommand):
         return ""
     
     def short_desc(self):
-        return "List available spiders (both enabled and disabled)"
+        return "List available spiders"
 
     def run(self, args, opts):
-        spiders_dict = spiders.asdict()
-        for n, p in spiders_dict.items():
-            disabled = "disabled" if getattr(p, 'disabled', False) else "enabled"
-            print "%-30s %-30s %s" % (n, p.__class__.__name__, disabled)
-        print "Total spiders: %d" % len(spiders_dict)
+        print "\n".join(spiders.asdict().keys())
