@@ -136,31 +136,6 @@ class MultiValueDict(dict):
         for key, value in kwargs.iteritems():
             self.setlistdefault(key, []).append(value)
 
-class Sitemap(object):
-    """Sitemap class is used to build a map of the traversed pages"""
-
-    def __init__(self):
-        self._nodes = {}
-        self._roots = []
-
-    def add_node(self, url, parent_url):
-        if not url in self._nodes:
-            parent = self._nodes.get(parent_url, None)
-            node = SiteNode(url)
-            self._nodes[url] = node
-            if parent:
-                parent.add_child(node)
-            else:
-                self._roots.append(node)
-
-    def add_item(self, url, item):
-        if url in self._nodes:
-            self._nodes[url].itemnames.append(str(item))
-    
-    def to_string(self):
-        s = ''.join([n.to_string(0) for n in self._roots])
-        return s
-
 class SiteNode(object):
     """Class to represent a site node (page, image or any other file)"""
 
