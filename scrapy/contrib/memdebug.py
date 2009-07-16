@@ -16,6 +16,7 @@ from scrapy.core.exceptions import NotConfigured
 from scrapy.mail import MailSender
 from scrapy.extension import extensions
 from scrapy.conf import settings
+from scrapy import log
 
 class MemoryDebugger(object):
 
@@ -35,7 +36,7 @@ class MemoryDebugger(object):
     def engine_stopped(self):
         figures = self.collect_figures()
         report = self.create_report(figures)
-        self.print_or_send_report(report)
+        self.log_or_send_report(report)
 
     def collect_figures(self):
         libxml2.cleanupParser()
@@ -59,7 +60,7 @@ class MemoryDebugger(object):
             s += "%-30s : %s %s\n" % f
         return s
 
-    def print_or_send_report(self, report):
+    def log_or_send_report(self, report):
         if self.rcpts:
             self.mail.send(self.rcpts, "Scrapy Memory Debugger results at %s" % socket.gethostname(), report)
-        print report
+        log.msg(report)
