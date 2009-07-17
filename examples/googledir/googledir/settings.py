@@ -1,4 +1,4 @@
-# - Scrapy settings for googledir                                    -
+# - Scrapy settings for googledir project
 
 import googledir
 
@@ -13,10 +13,5 @@ TEMPLATES_DIR = '%s/templates' % googledir.__path__[0]
 DEFAULT_ITEM_CLASS = 'scrapy.item.ScrapedItem'
 USER_AGENT = '%s/%s' % (BOT_NAME, BOT_VERSION)
 
-# uncomment if you want to add your own custom scrapy commands
-#COMMANDS_MODULE = 'googledir.commands'
-#COMMANDS_SETTINGS_MODULE = 'googledir.conf.commands'
+ITEM_PIPELINES = ['googledir.pipelines.FilterWordsPipeline']
 
-# global mail sending settings
-#MAIL_HOST = 'localhost'
-#MAIL_FROM = 'scrapybot@localhost'

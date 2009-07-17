@@ -1,17 +1,15 @@
-# -*- coding: utf8 -*-
-import re
-
 from scrapy.xpath import HtmlXPathSelector
-from scrapy.link.extractors import RegexLinkExtractor
+from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 from scrapy.contrib.spiders import CrawlSpider, Rule
 from googledir.items import GoogledirItem
 
 class GoogleDirectorySpider(CrawlSpider):
-    domain_name = 'google.com'
-    start_urls = ['http://www.google.com/dirhp']
+
+    domain_name = 'directory.google.com'
+    start_urls = ['http://directory.google.com/']
 
     rules = (
-        Rule(RegexLinkExtractor(allow='google.com/[A-Z][a-zA-Z_/]+$'),
+        Rule(SgmlLinkExtractor(allow='directory.google.com/[A-Z][a-zA-Z_/]+$'),
             'parse_category',
             follow=True,
         ),
@@ -29,7 +27,7 @@ class GoogleDirectorySpider(CrawlSpider):
 
             item.name = link.x('a/text()').extract()
             item.url = link.x('a/@href').extract()
-            item.description = link.x('font[2]/text()')
+            item.description = link.x('font[2]/text()').extract()
             yield item
 
 SPIDER = GoogleDirectorySpider()

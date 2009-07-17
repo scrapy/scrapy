@@ -3,4 +3,7 @@
 from scrapy.item import ScrapedItem
 
 class GoogledirItem(ScrapedItem):
-    pass
+
+    def __str__(self):
+        return "Google Category: name=%s url=%s" % (self.name, self.url)
+
