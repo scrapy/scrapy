@@ -201,7 +201,8 @@ SimpledbStatsCollector
     A Stats collector which persists stats to `Amazon SimpleDB`_, using one
     SimpleDB item per scraping run (ie. it keeps history of all scraping runs).
     The data is persisted to the SimpleDB domain specified by the
-    :setting:`STATS_SDB_DOMAIN` setting.
+    :setting:`STATS_SDB_DOMAIN` setting. The domain will be created if it
+    doesn't exist.
     
     In addition to the existing stats keys the following keys are added at
     persitance time:

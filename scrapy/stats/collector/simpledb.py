@@ -20,6 +20,8 @@ class SimpledbStatsCollector(StatsCollector):
         super(SimpledbStatsCollector, self).__init__()
         self._sdbdomain = settings['STATS_SDB_DOMAIN']
         self._async = settings.getbool('STATS_SDB_ASYNC')
+        sdb = boto.connect_sdb()
+        sdb.create_domain(self._sdbdomain)
         
     def close_domain(self, domain, reason):
         if self._sdbdomain:
@@ -39,7 +41,6 @@ class SimpledbStatsCollector(StatsCollector):
         sdb_item['domain'] = domain
         sdb_item['timestamp'] = self._to_sdb_value(ts)
         sdb = boto.connect_sdb()
-        sdb.create_domain(self._sdbdomain)
         sdb.batch_put_attributes(self._sdbdomain, {sdb_item_id: sdb_item})
 
     def _to_sdb_value(self, obj):
