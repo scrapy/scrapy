@@ -193,10 +193,20 @@ class ResponseTest(unittest.TestCase):
         r2 = XmlResponse("http://www.example.com", body=body)
         self._assert_response_values(r2, 'iso-8859-1', body)
 
-        # make sure replace() preserves the encoding of the original response
-        body = "New body \xa3"
-        r3 = r2.replace(body=body)
-        self._assert_response_values(r3, 'iso-8859-1', body)
+        # make sure replace() preserves the explicit encoding passed in the constructor
+        body = """<?xml version="1.0" encoding="iso-8859-1"?><xml></xml>"""
+        r3 = XmlResponse("http://www.example.com", body=body, encoding='utf-8')
+        body2 = "New body"
+        r4 = r3.replace(body=body2)
+        self._assert_response_values(r4, 'utf-8', body2)
+
+        # make sure replace() rediscovers the encoding (if not given explicitly) when changing the body
+        body = """<?xml version="1.0" encoding="iso-8859-1"?><xml></xml>"""
+        r5 = XmlResponse("http://www.example.com", body=body)
+        body2 = """<?xml version="1.0" encoding="utf-8"?><xml></xml>"""
+        r6 = r5.replace(body=body2)
+        self._assert_response_values(r5, 'iso-8859-1', body)
+        self._assert_response_values(r6, 'utf-8', body2)
 
 
 if __name__ == "__main__":
