@@ -27,7 +27,7 @@ class ItemAdaptorMeta(type):
         cls._field_adaptors = cls._field_adaptors.copy()
     
         if cls.item_class:
-            for item_field in cls.item_class.get_fields():
+            for item_field in cls.item_class.fields:
                 if item_field in attrs:
                     adaptor = adaptize(attrs[item_field])
                     cls._field_adaptors[item_field] = adaptor
@@ -35,7 +35,7 @@ class ItemAdaptorMeta(type):
         return cls
 
     def __getattr__(cls, name):
-        if name in cls.item_class.get_fields():
+        if name in cls.item_class.fields:
             return cls.default_adaptor
         raise AttributeError(name)
 
@@ -61,14 +61,14 @@ class ItemAdaptor(object):
 
         adaptor_args = {'response': self._response, 'item': self.item_instance}
         ovalue = fa(value, adaptor_args=adaptor_args)
-        setattr(self.item_instance, name, ovalue)
+        self.item_instance[name] = ovalue
 
     def __getattribute__(self, name):
         if (name.startswith('_') or name.startswith('item_') \
                 or name == 'default_adaptor'):
             return object.__getattribute__(self, name)
 
-        return getattr(self.item_instance, name)
+        return self.item_instance[name]
 
 
 def adaptor(*funcs, **default_adaptor_args):

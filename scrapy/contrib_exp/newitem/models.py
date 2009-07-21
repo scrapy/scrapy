@@ -1,3 +1,5 @@
+from UserDict import DictMixin
+
 from scrapy.item import ScrapedItem
 from scrapy.contrib_exp.newitem.fields import BaseField
 
@@ -5,58 +7,60 @@ from scrapy.contrib_exp.newitem.fields import BaseField
 class _ItemMeta(type):
 
     def __new__(meta, class_name, bases, attrs):
-        cls = type.__new__(meta, class_name, bases, attrs)
-        cls._fields = cls._fields.copy()
+        fields = {}
+        new_attrs = {}
         for n, v in attrs.iteritems():
             if isinstance(v, BaseField):
-                cls._fields[n] = v
-                delattr(cls, n)
+                fields[n] = v
+            else:
+                new_attrs[n] = v
+
+        cls = type.__new__(meta, class_name, bases, new_attrs)
+        cls.fields = cls.fields.copy()
+        cls.fields.update(fields)
         return cls
 
 
-class Item(ScrapedItem):
-    """ This is the base class for all scraped items. """
+class Item(DictMixin, ScrapedItem):
 
     __metaclass__ = _ItemMeta
 
-    _fields = {}
+    fields = {}
 
-    def __init__(self, values=None):
+    def __init__(self, *args, **kwargs):
         self._values = {}
-        if isinstance(values, dict):
-            for k, v in values.iteritems():
-                setattr(self, k, v)
-        elif values is not None:
-            raise TypeError("Items must be instantiated with dicts, got %s" % \
-                type(values).__name__)
+        
+        # load default values
+        for name, field in self.fields.iteritems():
+            default = field.get_default()
+            if default:
+                self._values[name] = default
+            
+        # load init values
+        if args or kwargs: # don't instantiate dict for simple (most common) case
+            for k, v in dict(*args, **kwargs).iteritems():
+                self[k] = v
 
-    def __setattr__(self, name, value):
-        if name.startswith('_'):
-            return ScrapedItem.__setattr__(self, name, value)
+    def __getitem__(self, key):
+        return self._values[key]
 
-        if name in self._fields:
-            self._values[name] = self._fields[name].to_python(value)
-        else:
-            raise AttributeError(name)
+    def __setitem__(self, key, value):
+        self._values[key] = self.fields[key].to_python(value)
 
-    def __getattr__(self, name):
-        try:
-            return self._values[name]
-        except KeyError:
-            try:
-                return self._fields[name].get_default()
-            except KeyError:
-                raise AttributeError(name)
+    def __delitem__(self, key):
+        del self._values[key]
+
+    def keys(self):
+        return self._values.keys()
 
     def __repr__(self):
         """Generate a representation of this item that can be used to
         reconstruct the item by evaluating it
         """
-        values = dict((field, getattr(self, field)) for field in self._fields)
-        return "%s(%s)" % (self.__class__.__name__, repr(values))
+        values = ', '.join('%s=%r' % field for field in self.iteritems())
+        return "%s(%s)" % (self.__class__.__name__, values)
 
-    @classmethod
-    def get_fields(cls):
-        """Returns the item fields"""
-        return cls._fields
+    def get_id(self):
+        """Returns the unique id for this item."""
+        raise NotImplementedError
 

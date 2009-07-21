@@ -53,9 +53,9 @@ And then you instantiate the item and assign values to its fields, which will be
 converted to the expected Python types depending of their class::
 
    >>> item = NewsItem()
-   >>> item.headline = u'Headline'
-   >>> item.content = u'Content'
-   >>> item.published = '2009-07-08'
+   >>> item['headline'] = u'Headline'
+   >>> item['content'] = u'Content'
+   >>> item['published'] = '2009-07-08'
    >>> item
    NewsItem({'headline': u'Headline', 'content': u'Content', 'published': datetime.date(2009, 7, 8)})
 
@@ -72,8 +72,8 @@ Each field accepts a ``default`` argument, that sets the default value of the
 field.
 
 Fields which contain a default value will always return that value when not
-set, while fields which don't contain a default value will always return
-``None`` when not set:
+set, while fields which don't contain a default value will raise ``KeyError``,
+you can use ``get`` method to avoid this.
 
 .. code-block:: python
 
@@ -89,12 +89,14 @@ set, while fields which don't contain a default value will always return
 .. code-block:: python
 
    >>> it = NewsItem()
-   >>> it.content is None
-   True
-   >>> it.author
+   >>> it['author']
    u'Myself'
-   >>> it.published is None
-   True
-   >>> it.views
+   >>> it['views']
    0
+   >>> it['headline']
+   Traceback (most recent call last):
+   ...
+   KeyError: 'content
+   >>> it.get('content') is None
+   True
 

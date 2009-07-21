@@ -44,7 +44,7 @@ class ItemAdaptorTest(unittest.TestCase):
     def test_basic(self):
         ia = TestAdaptor()
         ia.name = u'marta'
-        self.assertEqual(ia.item_instance.name, u'Marta')
+        self.assertEqual(ia.item_instance['name'], u'Marta')
         self.assertEqual(ia.name, u'Marta')
 
     def test_defaultadaptor(self):
