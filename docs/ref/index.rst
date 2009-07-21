@@ -19,6 +19,7 @@ This section documents the Scrapy |version| API. For more information see :ref:`
    extension-manager
    extensions
    downloader-middleware
+   scheduler-middleware
    link-extractors
 
 * :ref:`topics-stats-api`

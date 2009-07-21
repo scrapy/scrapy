@@ -1,5 +1,7 @@
 """
 DuplicatesFilterMiddleware: Filter out already visited urls
+
+See documentation in docs/ref/scheduler-middleware.rst
 """
 
 from scrapy.core.exceptions import IgnoreRequest, NotConfigured
@@ -7,7 +9,7 @@ from scrapy.utils.misc import load_object
 from scrapy.conf import settings
 
 class DuplicatesFilterMiddleware(object):
-    """Filter out already seen requests to avoid visiting pages more than once."""
+
     def __init__(self):
         clspath = settings.get('DUPEFILTER_CLASS')
         if not clspath:
