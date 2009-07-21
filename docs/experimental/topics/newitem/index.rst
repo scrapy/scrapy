@@ -6,16 +6,18 @@
 Items
 =====
 
+.. currentmodule:: scrapy.item
+
 The goal of the scraping process is to obtain scraped items from scraped pages.
 
 Basic scraped items
 ===================
 
-In Scrapy the items are represented by a :class:`~scrapy.item.ScrapedItem`
-(almost an empty class) or any subclass of it.
+In Scrapy the items are represented by a :class:`ScrapedItem` (almost an empty
+class) or any subclass of it.
 
-To use :class:`~scrapy.item.ScrapedItem` you simply instantiate it and use
-instance attributes to store the information.
+To use :class:`ScrapedItem` you simply instantiate it and use instance
+attributes to store the information.
 
    >>> from scrapy.item import ScrapedItem
    >>> item = ScrapedItem()
@@ -26,18 +28,17 @@ instance attributes to store the information.
    ScrapedItem({'headline': 'Headline', 'content': 'Content', 'published': '2009-07-08'})
 
 Or you can use your own class to represent items, just be sure it inherits from
-:class:`~scrapy.item.ScrapedItem`.
+:class:`ScrapedItem`.
 
 .. _topics-newitem-index-item:
 
 More advanced items
 ===================
 
-.. class:: scrapy.contrib_exp.newitem.Item
+.. currentmodule:: scrapy.contrib_exp.newitem
 
-Scrapy provides :class:`~scrapy.contrib_exp.newitem.Item` (a subclass of
-:class:`~scrapy.item.ScrapedItem`) that works like a form with fields to store
-the item's data.
+Scrapy provides :class:`Item` (a subclass of :class:`~scrapy.item.ScrapedItem`)
+that works like a form with fields to store the item's data.
 
 To use this items you first define the item's fields as class attributes::
 
@@ -73,7 +74,7 @@ field.
 
 Fields which contain a default value will always return that value when not
 set, while fields which don't contain a default value will raise ``KeyError``,
-you can use ``get`` method to avoid this.
+you can use :meth:`Item.get` method to avoid this.
 
 .. code-block:: python
 
@@ -88,15 +89,15 @@ you can use ``get`` method to avoid this.
 
 .. code-block:: python
 
-   >>> it = NewsItem()
-   >>> it['author']
+   >>> item = NewsItem()
+   >>> item['author']
    u'Myself'
-   >>> it['views']
+   >>> item['views']
    0
-   >>> it['headline']
+   >>> item['headline']
    Traceback (most recent call last):
    ...
    KeyError: 'content
-   >>> it.get('content') is None
+   >>> item.get('content') is None
    True
 
