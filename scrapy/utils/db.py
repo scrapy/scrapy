@@ -15,11 +15,15 @@ def parse_uri(db_uri):
     if not (isinstance(db_uri, basestring) and db_uri.startswith('mysql://')):
         raise URIValidationError("Incorrect MySQL URI: %s" % db_uri)
 
-    m = re.search(r"mysql:\/\/(?P<user>[^:]+)(:(?P<passwd>[^@]+))?@(?P<host>[^/]+)/(?P<db>.*)$", db_uri)
+    m = re.search(r"mysql:\/\/(?P<user>[^:]+)(:(?P<passwd>[^@]+))?@(?P<host>[^/:]+)(:(?P<port>\d+))?/(?P<db>.*)$", db_uri)
     if m:
         d = m.groupdict()
         if d['passwd'] is None:
             del(d['passwd'])
+        if d['port'] is None:
+            del(d['port'])
+        else:
+            d['port'] = int(d['port'])
         return d
 
 def mysql_connect(db_uri_or_dict, **kwargs):
