@@ -1,6 +1,6 @@
 from UserDict import DictMixin
 
-from scrapy.item import ScrapedItem
+from scrapy.item.models import BaseItem
 from scrapy.contrib_exp.newitem.fields import BaseField
 
 
@@ -21,7 +21,7 @@ class _ItemMeta(type):
         return cls
 
 
-class Item(DictMixin, ScrapedItem):
+class Item(DictMixin, BaseItem):
 
     __metaclass__ = _ItemMeta
 

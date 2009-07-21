@@ -9,7 +9,7 @@ from scrapy.utils.misc import arg_to_iter, load_object
 from scrapy.core.exceptions import IgnoreRequest, DropItem
 from scrapy.core import signals
 from scrapy.http import Request, Response
-from scrapy.item import ScrapedItem
+from scrapy.item.models import BaseItem
 from scrapy.spider.middleware import SpiderMiddlewareManager
 from scrapy import log
 from scrapy.stats import stats
@@ -151,7 +151,7 @@ class Scraper(object):
             signals.send_catch_log(signal=signals.request_received, request=output, \
                 spider=spider)
             self.engine.crawl(request=output, spider=spider)
-        elif isinstance(output, ScrapedItem):
+        elif isinstance(output, BaseItem):
             log.msg("Scraped %s in <%s>" % (output, request.url), domain=domain)
             signals.send_catch_log(signal=signals.item_scraped, sender=self.__class__, \
                 item=output, spider=spider, response=response)
@@ -162,7 +162,7 @@ class Scraper(object):
         elif output is None:
             pass
         else:
-            log.msg("Spider must return Request, ScrapedItem or None, got '%s' in %s" % \
+            log.msg("Spider must return Request, BaseItem or None, got '%s' in %s" % \
                 (type(output).__name__, request), log.ERROR, domain=domain)
 
     def _check_propagated_failure(self, spider_failure, propagated_failure, request, spider):

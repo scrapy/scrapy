@@ -71,7 +71,7 @@ class CrawlSpider(InitSpider):
 
     def parse_start_url(self, response):
         """Overrideable callback function for processing start_urls. It must
-        return a list of ScrapedItems and/or Requests"""
+        return a list of BaseItem and/or Requests"""
         return []
 
     def process_results(self, response, results):

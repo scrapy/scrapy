@@ -1,9 +1,9 @@
-import copy
+class BaseItem(object):
+    """Base class for all scraped items."""
+    pass
 
-class ScrapedItem(object):
-    """
-    This is the base class for all scraped items.
-    """
+
+class ScrapedItem(BaseItem):
 
     def __init__(self, data=None):
         """
@@ -24,12 +24,3 @@ class ScrapedItem(object):
         reprdict = dict(items for items in self.__dict__.iteritems() if not items[0].startswith('_'))
         return "%s(%s)" % (self.__class__.__name__, repr(reprdict))
 
-    def __sub__(self, other):
-        raise NotImplementedError
-
-    def copy(self):
-        """Create a new ScrapedItem based on the current one"""
-        return copy.deepcopy(self)
-
-class ItemDelta(object):
-    pass

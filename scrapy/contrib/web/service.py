@@ -6,7 +6,7 @@ from twisted.internet import defer
 from scrapy.core.engine import scrapyengine
 from scrapy.spider import spiders
 from scrapy.http import Request
-from scrapy.item import ScrapedItem
+from scrapy.item.models import BaseItem
 from scrapy.core.exceptions import NotConfigured
 from scrapy.conf import settings
 from scrapy.utils.misc import memoize, arg_to_iter
@@ -63,7 +63,7 @@ def url_to_guid(httprequest):
         except Exception, ex:
             return _response(message='Error processing url')
 
-        guids = [i.guid for i in arg_to_iter(items) if isinstance(i, ScrapedItem)]
+        guids = [i.guid for i in arg_to_iter(items) if isinstance(i, BaseItem)]
         return _response(guids=guids)
 
     deferred = defer.Deferred().addCallbacks(_on_success, _on_error)

@@ -1,7 +1,7 @@
 from scrapy.command import ScrapyCommand
 from scrapy.fetcher import fetch
 from scrapy.http import Request
-from scrapy.item import ScrapedItem
+from scrapy.item.models import BaseItem
 from scrapy.spider import spiders
 from scrapy.utils import display
 from scrapy import log
@@ -42,7 +42,8 @@ class Command(ScrapyCommand):
 
             result = callback_fcn(response)
             links = [i for i in result if isinstance(i, Request)]
-            items = [self.pipeline_process(i, spider, opts) for i in result if isinstance(i, ScrapedItem)]
+            items = [self.pipeline_process(i, spider, opts) for i in result if \
+                     isinstance(i, BaseItem)]
             return items, links
 
         return (), ()

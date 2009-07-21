@@ -3,11 +3,12 @@ This module contains some extra base models for scraped items which could be
 useful in some Scrapy implementations
 """
 
+import copy
 import hashlib
 
 from pprint import PrettyPrinter
 
-from scrapy.item import ScrapedItem, ItemDelta
+from scrapy.item import ScrapedItem
 from scrapy.item.adaptors import AdaptorPipe
 from scrapy.core.exceptions import DropItem
 from scrapy.utils.python import unique
@@ -194,6 +195,10 @@ class RobustScrapedItem(ScrapedItem):
         pipe.add_adaptor(adaptor, position)
         self.set_attrib_adaptors(attrib, pipe)
 
+    def copy(self):
+        """Create a new RobustScrapedItem based on the current one"""
+        return copy.deepcopy(self)
+
     def validate(self):
         """Method used to validate item attributes data"""
         raise NotImplemented
@@ -215,7 +220,7 @@ class RobustScrapedItem(ScrapedItem):
         return hash_.hexdigest()
 
 
-class RobustItemDelta(ItemDelta):
+class RobustItemDelta(object):
     """
     This class represents the difference between
     a pair of RobustScrapedItems.

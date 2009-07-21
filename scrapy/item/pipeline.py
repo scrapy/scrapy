@@ -1,6 +1,6 @@
 from scrapy import log
 from scrapy.core.exceptions import NotConfigured
-from scrapy.item import ScrapedItem
+from scrapy.item.models import BaseItem
 from scrapy.utils.misc import load_object
 from scrapy.utils.defer import defer_succeed, mustbe_deferred
 from scrapy.conf import settings
@@ -39,8 +39,8 @@ class ItemPipelineManager(object):
             return defer_succeed(item)
 
         def next_stage(item, stages_left):
-            assert isinstance(item, ScrapedItem), \
-                'Item pipelines must return a ScrapedItem, got %s' % type(item).__name__
+            assert isinstance(item, BaseItem), \
+                'Item pipelines must return a BaseItem, got %s' % type(item).__name__
             if not stages_left:
                 return item
             current_stage = stages_left.pop(0)

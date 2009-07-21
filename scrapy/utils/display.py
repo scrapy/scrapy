@@ -4,7 +4,7 @@ Helper functions for formatting and pretty printing some objects
 import sys
 import pprint as pypprint
 
-from scrapy.item import ScrapedItem
+from scrapy.item.models import BaseItem
 from scrapy.http import Request, Response
 
 nocolour = False
@@ -35,7 +35,7 @@ def pformat(obj, *args, **kwargs):
 
     if isinstance(obj, (list, tuple)):
         return "".join([pformat(i, *args, **kwargs) for i in obj])
-    elif isinstance(obj, (ScrapedItem, Request, Response)):
+    elif isinstance(obj, (BaseItem, Request, Response)):
         return pformat_dictobj(obj)
     else:
         return colorize(pypprint.pformat(obj))

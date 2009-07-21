@@ -6,7 +6,7 @@ See documentation in docs/ref/spiders.rst
 """
 
 from scrapy.contrib.spiders.init import InitSpider
-from scrapy.item import ScrapedItem
+from scrapy.item.models import BaseItem
 from scrapy.http import Request
 from scrapy.utils.iterators import xmliter, csviter
 from scrapy.xpath.selector import XmlXPathSelector, HtmlXPathSelector
@@ -51,13 +51,13 @@ class XMLFeedSpider(InitSpider):
         """This method is called for the nodes matching the provided tag name
         (itertag). Receives the response and an XPathSelector for each node.
         Overriding this method is mandatory. Otherwise, you spider won't work.
-        This method must return either a ScrapedItem, a Request, or a list
+        This method must return either a BaseItem, a Request, or a list
         containing any of them.
         """
 
         for xSel in nodes:
             ret = self.parse_item(response, xSel)
-            if isinstance(ret, (ScrapedItem, Request)):
+            if isinstance(ret, (BaseItem, Request)):
                 ret = [ret]
             if not isinstance(ret, (list, tuple)):
                 raise TypeError('You cannot return an "%s" object from a spider' % type(ret).__name__)
@@ -121,7 +121,7 @@ class CSVFeedSpider(InitSpider):
 
         for row in csviter(response, self.delimiter, self.headers):
             ret = self.parse_row(response, row)
-            if isinstance(ret, (ScrapedItem, Request)):
+            if isinstance(ret, (BaseItem, Request)):
                 ret = [ret]
             if not isinstance(ret, (list, tuple)):
                 raise TypeError('You cannot return an "%s" object from a spider' % type(ret).__name__)
