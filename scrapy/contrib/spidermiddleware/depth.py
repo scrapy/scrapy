@@ -1,7 +1,7 @@
 """
-DepthMiddleware is a scrape middleware used for tracking the depth of each
-Request inside the site being scraped. It can be used to limit the maximum
-depth to scrape or things like that
+Depth Spider Middleware
+
+See documentation in docs/ref/spider-middleware.rst
 """
 
 from scrapy import log
@@ -18,21 +18,24 @@ class DepthMiddleware(object):
             stats.set_value('envinfo/request_depth_limit', self.maxdepth)
 
     def process_spider_output(self, response, result, spider):
+        domain = spider.domain_name
         def _filter(request):
             if isinstance(request, Request):
                 depth = response.request.meta['depth'] + 1
                 request.meta['depth'] = depth
                 if self.maxdepth and depth > self.maxdepth:
-                    log.msg("Ignoring link (depth > %d): %s " % (self.maxdepth, request.url), level=log.DEBUG, domain=spider.domain_name)
+                    log.msg("Ignoring link (depth > %d): %s " % (self.maxdepth, request.url), \
+                        level=log.DEBUG, domain=domain)
                     return False
                 elif self.stats:
-                    stats.inc_value('request_depth_count/%s' % depth, domain=spider.domain_name)
-                    if depth > stats.get_value('request_depth_max', 0, domain=spider.domain_name):
-                        stats.set_value('request_depth_max', depth, domain=spider.domain_name)
+                    stats.inc_value('request_depth_count/%s' % depth, domain=domain)
+                    if depth > stats.get_value('request_depth_max', 0, domain=domain):
+                        stats.set_value('request_depth_max', depth, domain=domain)
             return True
 
-        if self.stats and 'depth' not in response.request.meta: # otherwise we loose stats for depth=0 
+        # base case (depth=0)
+        if self.stats and 'depth' not in response.request.meta: 
             response.request.meta['depth'] = 0
-            stats.inc_value('request_depth_count/0', domain=spider.domain_name)
+            stats.inc_value('request_depth_count/0', domain=domain)
 
         return (r for r in result or () if _filter(r))

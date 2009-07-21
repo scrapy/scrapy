@@ -1,5 +1,7 @@
 """
-UrlFilterMiddleware: canonicalizes URLs to filter out duplicated ones
+Url Filter Middleware
+
+See documentation in docs/refs/spider-middleware.rst
 """
 
 from scrapy.http import Request

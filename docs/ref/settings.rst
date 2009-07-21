@@ -680,6 +680,8 @@ Default: ``100``
 Some sites use meta-refresh for redirecting to a session expired page, so we
 restrict automatic redirection to a maximum delay (in seconds)
 
+.. setting:: REDIRECT_PRIORITY_ADJUST
+
 REDIRECT_PRIORITY_ADJUST
 ------------------------------
 
@@ -688,7 +690,7 @@ Default: ``+2``
 Adjust redirect request priority relative to original request.
 A negative priority adjust means more priority.
 
-.. setting:: REQUESTS_QUEUE_SIZE
+.. setting:: REQUESTS_PER_DOMAIN
 
 REQUESTS_PER_DOMAIN
 -------------------
@@ -697,6 +699,8 @@ Default: ``8``
 
 Specifies how many concurrent (ie. simultaneous) requests will be performed per
 open spider.
+
+.. setting:: REQUESTS_QUEUE_SIZE
 
 REQUESTS_QUEUE_SIZE
 -------------------

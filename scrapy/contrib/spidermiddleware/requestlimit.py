@@ -1,11 +1,7 @@
 """
-RequestLimitMiddleware: Limits the scheduler request queue size. When spiders
-try to schedule more than the allowed amount of requests the new requests
-(returned by the spider) will be dropped.
+Request Limit Spider middleware
 
-The limit can be set using the spider attribue `requests_queue_size` or the
-setting "REQUESTS_QUEUE_SIZE". If not specified (or 0), no limit will be
-applied. 
+See documentation in docs/ref/spider-middleware.rst
 """
 from itertools import imap
 from scrapy.xlib.pydispatch import dispatcher

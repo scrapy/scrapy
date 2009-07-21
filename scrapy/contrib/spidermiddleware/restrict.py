@@ -1,6 +1,10 @@
 """
-RestrictMiddleware: restricts crawling to fixed set of particular URLs
+Restrict Spider Middleware
+
+See documentation in docs/ref/spider-middleware.rst
 """
+
+from itertools import ifilter
 
 from scrapy.http import Request
 from scrapy.core.exceptions import NotConfigured
@@ -13,9 +17,6 @@ class RestrictMiddleware(object):
             raise NotConfigured
 
     def process_spider_output(self, response, result, spider):
-        def _filter(r):
-            if isinstance(r, Request) and r.url not in self.allowed_urls:
-                return False
-            return True
-        return (r for r in result or () if _filter(r))
+        return ifilter(lambda r: isinstance(r, Request) \
+            and r.url not in self.allowed_urls, result or ())
 

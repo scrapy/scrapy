@@ -1,6 +1,7 @@
 """
-OffsiteMiddleware: Filters out Requests for URLs outside the domains covered by
-the spider.
+Offsite Spider Middleware
+
+See documentation in docs/ref/spider-middleware.rst
 """
 
 from scrapy.http import Request

@@ -1,5 +1,7 @@
 """
-UrlLengthMiddleware: Filters out requests with URLs longer than URLLENGTH_LIMIT
+Url Length Spider Middleware
+
+See documentation in docs/ref/spider-middleware.rst
 """
 
 from scrapy import log
@@ -16,7 +18,8 @@ class UrlLengthMiddleware(object):
     def process_spider_output(self, response, result, spider):
         def _filter(request):
             if isinstance(request, Request) and len(request.url) > self.maxlength:
-                log.msg("Ignoring link (url length > %d): %s " % (self.maxlength, request.url), level=log.DEBUG, domain=spider.domain_name)
+                log.msg("Ignoring link (url length > %d): %s " % (self.maxlength, request.url), \
+                    level=log.DEBUG, domain=spider.domain_name)
                 return False
             else:
                 return True
