@@ -403,24 +403,6 @@ The class used to detect and filter duplicate requests.
 The default (``RequestFingerprintDupeFilter``) filters based on request fingerprint
 (using ``scrapy.utils.request.request_fingerprint``) and grouping per domain.
 
-.. setting:: ENABLED_SPIDERS_FILE
-
-ENABLED_SPIDERS_FILE
---------------------
-
-Default: ``''`` (empty string)
-
-The path to a file containing a list of spiders (one domain name per line).
-Those spiders will be considered enabled by Scrapy, and will be the spiders
-crawled automatically when running ``scrapy-ctl.py crawl`` with no arguments.
-
-If this setting is unset, all spiders to crawl must be passed explicitly in the
-``crawl`` command.
-
-Example::
-
-    '/etc/mybot/enabled_spiders.list'
-
 .. setting:: EXTENSIONS 
 
 EXTENSIONS

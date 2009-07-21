@@ -84,8 +84,6 @@ DOWNLOADER_STATS = True
 
 DUPEFILTER_CLASS = 'scrapy.contrib.dupefilter.RequestFingerprintDupeFilter'
 
-ENABLED_SPIDERS_FILE = ''
-
 EXTENSIONS = [
     'scrapy.stats.corestats.CoreStats',
     'scrapy.xpath.extension.ResponseLibxml2',
