@@ -10,8 +10,8 @@ Scrapy.
 For a list of the components enabled by default (and their orders) see the
 :setting:`SCHEDULER_MIDDLEWARES_BASE` setting.
 
-Available downloader middlewares
-================================
+Available scheduler middlewares
+===============================
 
 DuplicatesFilterMiddleware
 --------------------------
