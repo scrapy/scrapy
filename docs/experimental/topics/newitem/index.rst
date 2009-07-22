@@ -58,7 +58,7 @@ converted to the expected Python types depending of their class::
    >>> item['content'] = u'Content'
    >>> item['published'] = '2009-07-08'
    >>> item
-   NewsItem({'headline': u'Headline', 'content': u'Content', 'published': datetime.date(2009, 7, 8)})
+   NewsItem(headline=u'Headline', content=u'Content', published=datetime.date(2009, 7, 8))
 
 Using this may seen complicated at first, but gives you much power over scraped
 data, like :ref:`topics-newitem-index-defaults`,
@@ -97,7 +97,7 @@ you can use :meth:`Item.get` method to avoid this.
    >>> item['headline']
    Traceback (most recent call last):
    ...
-   KeyError: 'content
-   >>> item.get('content') is None
+   KeyError: 'headline
+   >>> item.get('headline') is None
    True
 
