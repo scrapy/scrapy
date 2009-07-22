@@ -29,20 +29,20 @@ class Item(DictMixin, BaseItem):
 
     def __init__(self, *args, **kwargs):
         self._values = {}
-        
-        # load default values
-        for name, field in self.fields.iteritems():
-            default = field.get_default()
-            if default:
-                self._values[name] = default
-            
-        # load init values
+
         if args or kwargs: # don't instantiate dict for simple (most common) case
             for k, v in dict(*args, **kwargs).iteritems():
                 self[k] = v
 
     def __getitem__(self, key):
-        return self._values[key]
+        try:
+            return self._values[key]
+        except KeyError:
+            default = self.fields[key].get_default()
+            if default is not None:
+                return default
+            else:
+                raise KeyError(key)
 
     def __setitem__(self, key, value):
         self._values[key] = self.fields[key].to_python(value)
