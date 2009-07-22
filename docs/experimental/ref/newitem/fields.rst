@@ -4,7 +4,7 @@
 Item Fields
 ===========
 
-.. module:: scrapy.contrib_exp.newitem.fields
+.. module:: scrapy.newitem.fields
 
 Field options
 =============

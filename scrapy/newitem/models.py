@@ -1,7 +1,7 @@
 from UserDict import DictMixin
 
 from scrapy.item.models import BaseItem
-from scrapy.contrib_exp.newitem.fields import BaseField
+from scrapy.newitem.fields import BaseField
 
 
 class _ItemMeta(type):

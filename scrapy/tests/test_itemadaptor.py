@@ -1,7 +1,7 @@
 import unittest
 import string
 from scrapy.contrib_exp.newitem.adaptors import adaptor, ItemAdaptor
-from scrapy.contrib_exp.newitem import Item, fields
+from scrapy.newitem import Item, fields
 
 
 class BaseItem(Item):

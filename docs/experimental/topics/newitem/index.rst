@@ -35,15 +35,15 @@ Or you can use your own class to represent items, just be sure it inherits from
 More advanced items
 ===================
 
-.. currentmodule:: scrapy.contrib_exp.newitem
+.. currentmodule:: scrapy.newitem
 
 Scrapy provides :class:`Item` (a subclass of :class:`~scrapy.item.ScrapedItem`)
 that works like a form with fields to store the item's data.
 
 To use this items you first define the item's fields as class attributes::
 
-   from scrapy.contrib_exp.newitem import Item
-   from scrapy.contrib_exp.newitem import fields
+   from scrapy.newitem import Item
+   from scrapy.newitem import fields
 
    class NewsItem(Item):
        headline = fields.TextField()
@@ -78,7 +78,7 @@ you can use :meth:`Item.get` method to avoid this.
 
 .. code-block:: python
 
-   from scrapy.contrib_exp.newitem import Item, fields
+   from scrapy.newitem import Item, fields
 
    class NewsItem(Item):
        headline = fields.TextField()

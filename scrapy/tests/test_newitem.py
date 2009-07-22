@@ -2,8 +2,8 @@ import datetime
 import decimal
 import unittest
 
-from scrapy.contrib_exp.newitem import Item, fields
-from scrapy.contrib_exp.newitem.fields import BaseField
+from scrapy.newitem import Item, fields
+from scrapy.newitem.fields import BaseField
 
 
 class NewItemTest(unittest.TestCase):
