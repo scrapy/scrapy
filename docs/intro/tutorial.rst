@@ -323,7 +323,7 @@ that property here, so::
 
 .. note::
 
-   For a detailed description of using nested selectors see
+   For a more detailed description of using nested selectors see
    :ref:`topics-selectors-nesting-selectors` and
    :ref:`topics-selectors-relative-xpaths` in :ref:`topics-selectors`
    documentation
