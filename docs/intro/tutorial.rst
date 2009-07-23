@@ -321,6 +321,13 @@ that property here, so::
        desc = site.x('text()').extract()
        print title, link, desc
 
+.. note::
+
+   For a detailed description of using nested selectors see
+   :ref:`topics-selectors-nesting-selectors` and
+   :ref:`topics-selectors-relative-xpaths` in :ref:`topics-selectors`
+   documentation
+
 Let's add this code to our spider::
 
    from scrapy.spider import BaseSpider

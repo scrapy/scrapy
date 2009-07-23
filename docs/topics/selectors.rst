@@ -148,6 +148,7 @@ Here's an example used to extract images names from the :ref:`HTML code
      u'My image 4',
      u'My image 5']
 
+.. _topics-selectors-nesting-selectors:
 
 Nesting selectors
 -----------------
@@ -172,6 +173,8 @@ The ``x()`` selector method returns a list of selectors, so you can call the
     Link number 2 points to url [u'image3.html'] and image [u'image3_thumb.jpg']
     Link number 3 points to url [u'image4.html'] and image [u'image4_thumb.jpg']
     Link number 4 points to url [u'image5.html'] and image [u'image5_thumb.jpg']
+
+.. _topics-selectors-relative-xpaths:
 
 Working with relative XPaths
 ----------------------------
