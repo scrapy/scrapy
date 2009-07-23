@@ -18,7 +18,7 @@ class StatsCollector(object):
         self._stats = {None: {}} # None is for global stats
 
         dispatcher.connect(self.open_domain, signal=signals.domain_open)
-        dispatcher.connect(self.close_domain, signal=signals.domain_closed)
+        dispatcher.connect(self._start_closing_domain, signal=signals.domain_closed)
         dispatcher.connect(self.engine_stopped, signal=signals.engine_stopped)
 
     def get_value(self, key, default=None, domain=None):
@@ -48,7 +48,6 @@ class StatsCollector(object):
         signals.send_catch_log(stats_domain_opened, domain=domain)
 
     def close_domain(self, domain, reason):
-        signals.send_catch_log(stats_domain_closing, domain=domain, reason=reason)
         if self._dump:
             log.msg("Dumping stats:\n" + pprint.pformat(self.get_stats(domain)), \
                 domain=domain)
@@ -59,6 +58,9 @@ class StatsCollector(object):
         if self._dump:
             log.msg("Dumping global stats:\n" + pprint.pformat(self.get_stats()))
 
+    def _start_closing_domain(self, domain, reason):
+        signals.send_catch_log(stats_domain_closing, domain=domain, reason=reason)
+        self.close_domain(domain, reason)
 
 class MemoryStatsCollector(StatsCollector):
 
@@ -82,5 +84,5 @@ class DummyStatsCollector(StatsCollector):
     def set_stats(self, stats, domain=None):
         pass
 
-    def inc_value(self, key, count=1, domain=None):
+    def inc_value(self, key, count=1, start=0, domain=None):
         pass
