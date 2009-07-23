@@ -194,7 +194,7 @@ inside ``<div>`` elements::
 
 This is the proper way to do it (note the dot prefixing the ``.//p`` XPath)::
 
-    >>> for p in divs.x('//p') # extracts all <p> inside
+    >>> for p in divs.x('.//p') # extracts all <p> inside
     >>>     print p.extract()
 
 Another common case would be to extract all direct ``<p>`` children::
