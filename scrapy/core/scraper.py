@@ -152,7 +152,8 @@ class Scraper(object):
                 spider=spider)
             self.engine.crawl(request=output, spider=spider)
         elif isinstance(output, BaseItem):
-            log.msg("Scraped %s in <%s>" % (output, request.url), domain=domain)
+            log.msg("Scraped %s in <%s>" % (output, request.url), level=log.DEBUG, \
+                domain=domain)
             signals.send_catch_log(signal=signals.item_scraped, sender=self.__class__, \
                 item=output, spider=spider, response=response)
             self.sites[domain].itemproc_size += 1
@@ -187,13 +188,14 @@ class Scraper(object):
         if isinstance(output, Failure):
             ex = output.value
             if isinstance(ex, DropItem):
-                log.msg("Dropped %s - %s" % (item, str(ex)), log.DEBUG, domain=domain)
+                log.msg("Dropped %s - %s" % (item, str(ex)), level=log.WARNING, domain=domain)
                 signals.send_catch_log(signal=signals.item_dropped, sender=self.__class__, \
                     item=item, spider=spider, exception=output.value)
             else:
                 log.msg('Error processing %s - %s' % (item, output), \
                     log.ERROR, domain=domain)
         else:
+            log.msg("Passed %s" % item, log.INFO, domain=domain)
             signals.send_catch_log(signal=signals.item_passed, sender=self.__class__, \
                 item=item, spider=spider, output=output)
 
