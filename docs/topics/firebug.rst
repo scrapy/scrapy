@@ -18,7 +18,7 @@ Project`_ used in the :ref:`tutorial <intro-tutorial>` but with a different
 face.
 
 .. _Firebug: http://getfirebug.com
-.. _Google Directory: http://www.google.com/dirhp
+.. _Google Directory: http://directory.google.com/
 .. _Open Directory Project: http://www.dmoz.org
 
 Firebug comes with a very useful feature called `Inspect Element`_ which allows
@@ -54,16 +54,16 @@ Getting links to follow
 
 By looking at the category URLs we can see they share a pattern:
 
-    http://www.google.com/Category/Subcategory/Another_Subcategory
+    http://directory.google.com/Category/Subcategory/Another_Subcategory
     
 Once we know that, we are able to construct a regular expression to follow
 those links. For example, the following one::
 
-    google.com/[A-Z][a-zA-Z_/]+$
+    directory\.google\.com/[A-Z][a-zA-Z_/]+$
 
 So, based on that regular expression we can create the first crawling rule::
 
-    Rule(SgmlLinkExtractor(allow='google.com/[A-Z][a-zA-Z_/]+$', ),
+    Rule(SgmlLinkExtractor(allow='directory.google.com/[A-Z][a-zA-Z_/]+$', ),
         'parse_category',
         follow=True,
     ),
@@ -79,11 +79,11 @@ This is how the spider would look so far::
    from scrapy.contrib.spiders import CrawlSpider, Rule
 
    class GoogleDirectorySpider(CrawlSpider):
-       domain_name = 'google.com'
-       start_urls = ['http://www.google.com/dirhp']
+       domain_name = 'directory.google.com'
+       start_urls = ['http://directory.google.com/']
 
        rules = (
-           Rule(SgmlLinkExtractor(allow='google.com/[A-Z][a-zA-Z_/]+$'),
+           Rule(SgmlLinkExtractor(allow='directory\.google\.com/[A-Z][a-zA-Z_/]+$'),
                'parse_category', follow=True,
            ),
        )
@@ -101,7 +101,7 @@ Extracting the data
 Now we're gonna write the code to extract data from those pages. 
 
 With the help of Firebug, we'll take a look at some page containing links to
-websites (say http://www.google.com/Top/Arts/Awards/) and find out how we can
+websites (say http://directory.google.com/Top/Arts/Awards/) and find out how we can
 extract those links using :ref:`XPath selectors <topics-selectors>`. We'll also
 use the :ref:`Scrapy shell <topics-shell>` to test those XPath's and make sure
 they work as we expect.
