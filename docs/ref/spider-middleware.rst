@@ -54,6 +54,12 @@ OffsiteMiddleware
 
    Filters out Requests for URLs outside the domains covered by the spider.
 
+   This middleware filters out every request whose host names doesn't match
+   :attr:`~scrapy.spider.BaseSpider.domain_name`, or the spider
+   :attr:`~scrapy.spider.BaseSpider.domain_name` prefixed by "www.".  
+   Spider can add more domains to exclude using 
+   :attr:`~scrapy.spider.BaseSpider.extra_domain_names` attribute.
+
 RequestLimitMiddleware
 ----------------------
 
