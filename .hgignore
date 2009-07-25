@@ -3,3 +3,4 @@ syntax: glob
 _trial_temp
 dropin.cache
 .svn
+docs/build
