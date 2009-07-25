@@ -4,7 +4,10 @@ scrapy.http.Response objects
 """
 
 import re
+
 from twisted.web import http
+from twisted.web.http import RESPONSES
+
 from scrapy.http.response import Response
 
 def body_or_str(obj, unicode=True):
@@ -48,3 +51,16 @@ def response_status_message(status):
     404 Not Found
     """
     return '%s %s' % (status, http.responses.get(int(status)))
+
+def response_httprepr(response):
+    """Return raw HTTP representation (as string) of the given response. This
+    is provided only for reference, since it's not the exact stream of bytes
+    that was received (that's not exposed by Twisted).
+    """
+
+    s  = "HTTP/1.1 %d %s\r\n" % (response.status, RESPONSES[response.status])
+    if response.headers:
+        s += response.headers.to_string() + "\r\n"
+    s += "\r\n"
+    s += response.body
+    return s

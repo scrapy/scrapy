@@ -156,10 +156,6 @@ Request objects
        in the ``meta`` argument). The :attr:`Request.cache` attribute is always
        cleared. See also :ref:`ref-request-callback-arguments`.
 
-    .. method:: Request.httprepr()
-
-       Return a string with the raw HTTP representation of this response.
-
 .. _ref-request-callback-copy:
 
 Caveats with copying Requests and callbacks
@@ -435,10 +431,6 @@ Response objects
        attribute :attr:`Response.meta` is copied by default (unless a new value
        is given in the ``meta`` argument). The  :attr:`Response.cache`
        attribute is always cleared.
-
-    .. method:: Response.httprepr()
-
-       Return a string with the raw HTTP representation of this response.
 
 .. _ref-response-subclasses:
 

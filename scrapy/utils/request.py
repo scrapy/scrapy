@@ -72,3 +72,17 @@ def request_info(request):
     fp = request_fingerprint(request)
     return "<Request: %s %s (%s..)>" % (request.method, request.url, fp[:8])
 
+def request_httprepr(request):
+    """Return the raw HTTP representation (as string) of the given request.
+    This is provided only for reference since it's not the actual stream of
+    bytes that will be send when performing the request (that's controlled
+    by Twisted).
+    """
+
+    s  = "%s %s HTTP/1.1\r\n" % (request.method, request.url)
+    s += "Host: %s\r\n" % request.url.hostname
+    if request.headers:
+        s += request.headers.to_string() + "\r\n"
+    s += "\r\n"
+    s += request.body
+    return s

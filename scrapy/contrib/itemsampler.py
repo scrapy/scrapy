@@ -30,6 +30,7 @@ from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import NotConfigured
 from scrapy.core import signals
+from scrapy.utils.response import response_httprepr
 from scrapy.stats import stats
 from scrapy.http import Request
 from scrapy import log
@@ -86,7 +87,7 @@ class ItemSamplerMiddleware(object):
     def process_spider_input(self, response, spider):
         if stats.get_value("items_sampled", domain=spider.domain_name) >= items_per_domain:
             return []
-        elif max_response_size and max_response_size > len(response.httprepr()):  
+        elif max_response_size and max_response_size > len(response_httprepr(response)):  
             return []
 
     def process_spider_output(self, response, result, spider):

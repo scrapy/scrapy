@@ -166,13 +166,6 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r4.meta, {})
         assert r4.dont_filter is False
 
-    def test_httprepr(self):
-        r1 = Request("http://www.example.com")
-        self.assertEqual(r1.httprepr(), 'GET http://www.example.com HTTP/1.1\r\nHost: www.example.com\r\n\r\n')
-
-        r1 = Request("http://www.example.com", method='POST', headers={"Content-type": "text/html"}, body="Some body")
-        self.assertEqual(r1.httprepr(), 'POST http://www.example.com HTTP/1.1\r\nHost: www.example.com\r\nContent-Type: text/html\r\n\r\nSome body')
-
 
 class FormRequestTest(unittest.TestCase):
 

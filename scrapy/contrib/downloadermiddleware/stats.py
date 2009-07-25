@@ -1,4 +1,6 @@
 from scrapy.core.exceptions import NotConfigured
+from scrapy.utils.request import request_httprepr
+from scrapy.utils.response import response_httprepr
 from scrapy.stats import stats
 from scrapy.conf import settings
 
@@ -18,7 +20,7 @@ class DownloaderStats(object):
         stats.inc_value('downloader/request_count')
         stats.inc_value('downloader/request_count', domain=domain)
         stats.inc_value('downloader/request_method_count/%s' % request.method, domain=domain)
-        reqlen = len(request.httprepr())
+        reqlen = len(request_httprepr(request))
         stats.inc_value('downloader/request_bytes', reqlen, domain=domain)
         stats.inc_value('downloader/request_bytes', reqlen)
 
@@ -27,7 +29,7 @@ class DownloaderStats(object):
         stats.inc_value('downloader/response_count')
         stats.inc_value('downloader/response_count', domain=domain)
         stats.inc_value('downloader/response_status_count/%s' % response.status, domain=domain)
-        reslen = len(response.httprepr())
+        reslen = len(response_httprepr(response))
         stats.inc_value('downloader/response_bytes', reslen, domain=domain)
         stats.inc_value('downloader/response_bytes', reslen)
         return response

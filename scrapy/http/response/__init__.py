@@ -7,8 +7,6 @@ See documentation in docs/ref/request-response.rst
 
 import copy
 
-from twisted.web.http import RESPONSES
-
 from scrapy.http.url import Url
 from scrapy.http.headers import Headers
 
@@ -63,17 +61,3 @@ class Response(object):
                   flags=self.flags if flags is None else flags,
                   **kwargs)
         return new
-
-    def httprepr(self):
-        """
-        Return raw HTTP response representation (as string). This is provided
-        only for reference, since it's not the exact stream of bytes that was
-        received (that's not exposed by Twisted).
-        """
-
-        s  = "HTTP/1.1 %d %s\r\n" % (self.status, RESPONSES[self.status])
-        if self.headers:
-            s += self.headers.to_string() + "\r\n"
-        s += "\r\n"
-        s += self.body
-        return s

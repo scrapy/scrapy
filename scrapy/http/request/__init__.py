@@ -96,18 +96,3 @@ class Request(object):
                               meta=self.meta if meta is None else meta,
                               encoding=self.encoding if encoding is None else encoding,
                               dont_filter=self.dont_filter if dont_filter is None else dont_filter)
-
-    def httprepr(self):
-        """ Return raw HTTP request representation (as string). This is
-        provided only for reference since it's not the actual stream of bytes
-        that will be send when performing the request (that's controlled by
-        Twisted).
-        """
-
-        s  = "%s %s HTTP/1.1\r\n" % (self.method, self.url)
-        s += "Host: %s\r\n" % self.url.hostname
-        if self.headers:
-            s += self.headers.to_string() + "\r\n"
-        s += "\r\n"
-        s += self.body
-        return s

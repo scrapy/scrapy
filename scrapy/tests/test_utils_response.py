@@ -1,6 +1,6 @@
 import unittest
 from scrapy.http import Response, TextResponse
-from scrapy.utils.response import body_or_str, get_base_url, get_meta_refresh
+from scrapy.utils.response import body_or_str, get_base_url, get_meta_refresh, response_httprepr
 
 class ResponseUtilsTest(unittest.TestCase):
     dummy_response = TextResponse(url='http://example.org/', body='dummy_response')
@@ -33,7 +33,7 @@ class ResponseUtilsTest(unittest.TestCase):
         self.assertEqual(get_base_url(response), 'http://example.org/something')
 
     def test_get_meta_refresh(self):
-        body="""
+        body = """
             <html>
             <head><title>Dummy</title><meta http-equiv="refresh" content="5;url=http://example.org/newpage" /></head>
             <body>blahablsdfsal&amp;</body>
@@ -42,14 +42,22 @@ class ResponseUtilsTest(unittest.TestCase):
         self.assertEqual(get_meta_refresh(response), ('5', 'http://example.org/newpage'))
 
         # refresh without url should return (None, None)
-        body="""<meta http-equiv="refresh" content="5" />"""
+        body = """<meta http-equiv="refresh" content="5" />"""
         response = Response(url='http://example.org', body=body)
         self.assertEqual(get_meta_refresh(response), (None, None))
 
-        body="""<meta http-equiv="refresh" content="5;
+        body = """<meta http-equiv="refresh" content="5;
             url=http://example.org/newpage" /></head>"""
         response = Response(url='http://example.org', body=body)
         self.assertEqual(get_meta_refresh(response), ('5', 'http://example.org/newpage'))
+
+    def test_response_httprepr(self):
+        r1 = Response("http://www.example.com")
+        self.assertEqual(response_httprepr(r1), 'HTTP/1.1 200 OK\r\n\r\n')
+
+        r1 = Response("http://www.example.com", status=404, headers={"Content-type": "text/html"}, body="Some body")
+        self.assertEqual(response_httprepr(r1), 'HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\nSome body')
+
 
 if __name__ == "__main__":
     unittest.main()

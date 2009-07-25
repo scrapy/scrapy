@@ -1,14 +1,10 @@
 import unittest
 from scrapy.http import Request
-from scrapy.utils.request import request_fingerprint, request_authenticate
+from scrapy.utils.request import request_fingerprint, request_authenticate, request_httprepr
 
 class UtilsRequestTest(unittest.TestCase):
 
     def test_request_fingerprint(self):
-        url = 'http://www.scrapy.org'
-        r = Request(url=url)
-        urlhash = request_fingerprint(r)
-
         r1 = Request("http://www.example.com/query?id=111&cat=222")
         r2 = Request("http://www.example.com/query?cat=222&id=111")
         self.assertEqual(request_fingerprint(r1), request_fingerprint(r1))
@@ -59,11 +55,17 @@ class UtilsRequestTest(unittest.TestCase):
         fp2 = request_fingerprint(r2)
         self.assertNotEqual(fp1, fp2)
 
-
     def test_request_authenticate(self):
         r = Request("http://www.example.com")
         request_authenticate(r, 'someuser', 'somepass')
         self.assertEqual(r.headers['Authorization'], 'Basic c29tZXVzZXI6c29tZXBhc3M=')
+
+    def test_request_httprepr(self):
+        r1 = Request("http://www.example.com")
+        self.assertEqual(request_httprepr(r1), 'GET http://www.example.com HTTP/1.1\r\nHost: www.example.com\r\n\r\n')
+
+        r1 = Request("http://www.example.com", method='POST', headers={"Content-type": "text/html"}, body="Some body")
+        self.assertEqual(request_httprepr(r1), 'POST http://www.example.com HTTP/1.1\r\nHost: www.example.com\r\nContent-Type: text/html\r\n\r\nSome body')
 
 if __name__ == "__main__":
     unittest.main()
