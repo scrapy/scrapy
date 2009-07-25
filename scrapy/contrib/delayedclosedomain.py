@@ -3,7 +3,7 @@ DelayedCloseDomain is an extension that keeps open a domain until a
 configurable amount of idle time is reached
 """
 
-from datetime import datetime
+from time import time
 
 from scrapy.xlib.pydispatch import dispatcher
 from collections import defaultdict
@@ -20,7 +20,7 @@ class DelayedCloseDomain(object):
         if not self.delay:
             raise NotConfigured
 
-        self.opened_at = defaultdict(datetime.now)
+        self.opened_at = defaultdict(time)
         dispatcher.connect(self.domain_idle, signal=signals.domain_idle)
         dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
 
@@ -32,8 +32,7 @@ class DelayedCloseDomain(object):
         if not lastseen:
             lastseen = self.opened_at[domain]
 
-        delta = datetime.now() - lastseen
-        if delta.seconds < self.delay:
+        if time() < lastseen + self.delay:
             raise DontCloseDomain
 
     def domain_closed(self, domain):
