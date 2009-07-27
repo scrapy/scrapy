@@ -81,28 +81,6 @@ Default: ``True``
 
 Whether to split HTTP cache storage in several dirs for performance.
 
-.. setting:: CLOSEDOMAIN_NOTIFY
-
-CLOSEDOMAIN_NOTIFY
-------------------
-
-Default: ``[]``
-Scope: ``scrapy.contrib.closedomain``
-
-A list of emails to notify if the domain has been automatically closed by timeout.
-
-.. setting:: CLOSEDOMAIN_TIMEOUT
-
-CLOSEDOMAIN_TIMEOUT
--------------------
-
-Default: ``0``
-Scope: ``scrapy.contrib.closedomain``
-
-A timeout (in secs) for automatically closing a spider. Spiders that remain
-open for more than this time will be automatically closed. If zero, the
-automatically closing is disabled.
-
 .. setting:: CLUSTER_LOGDIR
 
 CLUSTER_LOGDIR

@@ -139,18 +139,32 @@ Close domain extension
 Closes a domain/spider automatically when some conditions are met, using a
 specific closing reason for each condition.
 
-The supported conditions for closing a domain can be configured thorough these
-settings:
+The conditions for closing a domain can be configured through the following
+settings. Other conditions will be supported in the future.
 
-* :setting:`CLOSEDOMAIN_TIMEOUT` - an integer which specifies a number of
-  seconds. If the domain remains open for more than that time, it will be
-  closed with the reason ``closedomain_timeout``.
-* :setting:`CLOSEDOMAIN_ITEMPASSED` - an integer which specifies a number of
-  items. If the spider scrapes more than that amount if items and those items
-  are passed by the item pipeline, the domain will be closed with the reason
-  ``closedomain_itempassed``.
+.. setting:: CLOSEDOMAIN_TIMEOUT
 
-Other conditions will be supported in the future.
+CLOSEDOMAIN_TIMEOUT
+~~~~~~~~~~~~~~~~~~~
+
+Default: ``0``
+
+An integer which specifies a number of seconds. If the domain remains open for
+more than that number of second, it will be automatically closed with the
+reason ``closedomain_timeout``. If zero (or non set) domains won't be closed by
+timeout.
+
+.. setting:: CLOSEDOMAIN_ITEMPASSED
+
+CLOSEDOMAIN_ITEMPASSED
+~~~~~~~~~~~~~~~~~~~~~~
+
+Default: ``0``
+
+An integer which specifies a number of items. If the spider scrapes more than
+that amount if items and those items are passed by the item pipeline, the
+domain will be closed with the reason ``closedomain_itempassed``. If zero (or
+non set) domains won't be closed by number of passed items.
 
 Stack trace dump extension
 ---------------------------
