@@ -136,16 +136,19 @@ Close domain extension
 
 .. class:: scrapy.contrib.closedomain.CloseDomain
 
-Allows a domain/spider to be automatically closed when some conditions are met
-and optionally notifies a list of emails if the :setting:`CLOSEDOMAIN_NOTIFY`
-is set.
+Closes a domain/spider automatically when some conditions are met, using a
+specific closing reason for each condition.
 
-The conditions for auto-closing a domain can be configured thorough these
+The supported conditions for closing a domain can be configured thorough these
 settings:
 
 * :setting:`CLOSEDOMAIN_TIMEOUT` - an integer which specifies a number of
   seconds. If the domain remains open for more than that time, it will be
-  closed.
+  closed with the reason ``closedomain_timeout``.
+* :setting:`CLOSEDOMAIN_ITEMPASSED` - an integer which specifies a number of
+  items. If the spider scrapes more than that amount if items and those items
+  are passed by the item pipeline, the domain will be closed with the reason
+  ``closedomain_itempassed``.
 
 Other conditions will be supported in the future.
 

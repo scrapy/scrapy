@@ -1,47 +1,44 @@
-"""
-CloseDomain is an extension that forces spiders to be closed after a given
-time has expired.
+"""CloseDomain is an extension that forces spiders to be closed after certain
+conditions are met.
 
+See documentation in docs/ref/extensions.rst
 """
-import datetime
-import pprint
 
+from collections import defaultdict
+
+from twisted.internet import reactor
 from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.core import signals
-from scrapy import log
 from scrapy.core.engine import scrapyengine
-from scrapy.core.exceptions import NotConfigured
-from scrapy.mail import MailSender
-from scrapy.stats import stats
 from scrapy.conf import settings
 
 class CloseDomain(object):
+
     def __init__(self):
         self.timeout = settings.getint('CLOSEDOMAIN_TIMEOUT')
-        if not self.timeout:
-            raise NotConfigured
+        self.itempassed = settings.getint('CLOSEDOMAIN_ITEMPASSED')
 
+        self.counts = defaultdict(int)
         self.tasks = {}
-        self.mail = MailSender()
-        self.notify = settings.getlist('CLOSEDOMAIN_NOTIFY')
 
-        dispatcher.connect(self.domain_opened, signal=signals.domain_opened)
+        if self.timeout:
+            dispatcher.connect(self.domain_opened, signal=signals.domain_opened)
+        if self.itempassed:
+            dispatcher.connect(self.item_passed, signal=signals.item_passed)
         dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
 
     def domain_opened(self, domain):
-        self.tasks[domain] = scrapyengine.addtask(self.close_domain, self.timeout, args=[domain])
+        self.tasks[domain] = reactor.callLater(self.timeout, scrapyengine.close_domain, \
+            domain=domain, reason='closedomain_timeout')
         
-    def close_domain(self, domain): 
-        log.msg("Domain was opened for more than %d seconds, closing it..." % self.timeout, domain=domain)
-        scrapyengine.close_domain(domain)
-        if self.notify:
-            body = "Closed domain %s because it remained opened for more than %s\n\n" % (domain, datetime.timedelta(seconds=self.timeout))
-            body += "DOMAIN STATS ------------------------------------------------------\n\n"
-            body += pprint.pformat(stats.get(domain, None))
-            subj = "Closed domain by timeout: %s" % domain
-            self.mail.send(self.notify, subj, body)
+    def item_passed(self, item, spider):
+        self.counts[spider.domain_name] += 1
+        if self.counts[spider.domain_name] == self.itempassed:
+            scrapyengine.close_domain(spider.domain_name, 'closedomain_itempassed')
 
     def domain_closed(self, domain):
-        if domain in self.tasks:
-            scrapyengine.removetask(self.tasks[domain])
+        self.counts.pop(domain, None)
+        tsk = self.tasks.pop(domain)
+        if not tsk.called:
+            tsk.cancel()
