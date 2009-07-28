@@ -26,6 +26,8 @@ class MultiValuedField(BaseField):
         else:
             return [self._field.to_python(v) for v in value]
 
+# FIXME: temporary alias required for ItemExporters (to be removed on ListField merge)
+ListField = MultiValuedField
 
 class BooleanField(BaseField):
     def to_python(self, value):
