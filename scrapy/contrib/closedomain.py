@@ -39,6 +39,6 @@ class CloseDomain(object):
 
     def domain_closed(self, domain):
         self.counts.pop(domain, None)
-        tsk = self.tasks.pop(domain)
-        if not tsk.called:
+        tsk = self.tasks.pop(domain, None)
+        if tsk and not tsk.called:
             tsk.cancel()
