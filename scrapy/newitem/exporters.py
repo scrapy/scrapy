@@ -73,7 +73,7 @@ class BaseItemExporter(object):
 class PprintItemExporter(BaseItemExporter):
 
     def __init__(self, file):
-        super(PprintItemExporter, self).__init__(self)
+        super(PprintItemExporter, self).__init__()
         self.file = file
 
     def export(self, item):
@@ -83,7 +83,7 @@ class PprintItemExporter(BaseItemExporter):
 class PickleItemExporter(BaseItemExporter):
 
     def __init__(self, *args, **kwargs):
-        super(PickleItemExporter, self).__init__(self)
+        super(PickleItemExporter, self).__init__()
         self.pickler = Pickler(*args, **kwargs)
 
     def export(self, item):
@@ -95,7 +95,7 @@ class CsvItemExporter(BaseItemExporter):
     fields_to_export = ()
 
     def __init__(self, *args, **kwargs):
-        super(CsvItemExporter, self).__init__(self)
+        super(CsvItemExporter, self).__init__()
         self.csv_writer = csv.writer(*args, **kwargs)
 
     def export(self, item):
