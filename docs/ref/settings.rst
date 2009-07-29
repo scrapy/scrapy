@@ -871,8 +871,9 @@ TELNETCONSOLE_PORT
 
 Default: ``6023``
 
-The port to use for the telnet console. If ``None``, a dynamically assigned
-port is used.
+The port to use for the telnet console. If set to ``None`` or ``0``, a
+dynamically assigned port is used. For more info see
+:ref:`topics-telnetconsole`.
 
 .. setting:: TEMPLATES_DIR
 
@@ -930,7 +931,8 @@ the log is sent to standard scrapy log.
 WEBCONSOLE_PORT
 ---------------
 
-Default: ``None``
+Default: ``6080``
 
-The port to use for the web console. If unset, a dynamically assigned port is
-used.
+The port to use for the web console. If set to ``None`` or ``0``, a dynamically
+assigned port is used. For more info see :ref:`topics-webconsole`.
+

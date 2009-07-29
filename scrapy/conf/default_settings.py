@@ -200,7 +200,7 @@ TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_PORT = 6023  # if None, uses a dynamic port
 
 WEBCONSOLE_ENABLED = True
-WEBCONSOLE_PORT = None
+WEBCONSOLE_PORT = 6080
 WEBCONSOLE_LOGFILE = None
 
 # this setting is used by the cluster master to pass additional settings to
