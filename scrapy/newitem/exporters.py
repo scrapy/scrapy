@@ -143,7 +143,7 @@ class XmlItemExporter(BaseItemExporter):
     def _export_xml_field(self, field, name, value):
         if isinstance(field, fields.ListField):
             for v in value:
-                self._export_xml_field(field, 'value', v)
+                self._export_xml_field(field._field, 'value', v)
         self.xg.startElement(name, {})
         self.xg.characters(self._serialize_field(field, name, value))
         self.xg.endElement(name)
