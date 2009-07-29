@@ -8,7 +8,7 @@ import cProfile
 import scrapy
 from scrapy import log
 from scrapy.spider import spiders
-from scrapy.conf import settings
+from scrapy.conf import settings, SETTINGS_MODULE
 
 def find_commands(dir):
     try:
@@ -88,6 +88,10 @@ def command_settings(cmdname):
 command_executed = {}
 
 def execute():
+    if not settings.settings_module:
+        print "Scrapy %s\n" % scrapy.__version__
+        print "Error: Cannot find %r module in python path." % SETTINGS_MODULE
+        sys.exit(1)
     execute_with_args(sys.argv)
 
 def execute_with_args(argv):
@@ -113,7 +117,7 @@ def execute_with_args(argv):
         print "Scrapy %s\n" % scrapy.__version__
         print "Unknown command: %s\n" % cmdname
         print 'Type "%s -h" for help' % argv[0]
-        sys.exit()
+        sys.exit(2)
 
     (opts, args) = parser.parse_args(args=argv[1:])
     del args[0]  # args[0] is cmdname
