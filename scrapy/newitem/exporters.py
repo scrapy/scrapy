@@ -77,7 +77,7 @@ class PprintItemExporter(BaseItemExporter):
         self.file = file
 
     def export(self, item):
-        self.file.write(pprint.pprint(dict(item)) + '\n')
+        self.file.write(pprint.pformat(dict(item)) + '\n')
 
 
 class PickleItemExporter(BaseItemExporter):
