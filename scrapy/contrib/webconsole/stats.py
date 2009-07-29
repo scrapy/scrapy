@@ -1,9 +1,15 @@
-import pprint
-
 from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.stats import stats
 from scrapy.management.web import banner, webconsole_discover_module
+
+def stats_html_table(statsdict):
+    s = ""
+    s += "<table border='1'>\n"
+    for kv in statsdict.iteritems():
+        s += "<tr><th align='left'>%s</th><td>%s</td></tr>\n" % kv
+    s += "</table>\n"
+    return s
 
 class StatsDump(object):
     webconsole_id = 'stats'
@@ -14,9 +20,11 @@ class StatsDump(object):
 
     def webconsole_render(self, wc_request):
         s = banner(self)
-        s += "<pre><code>\n"
-        s += pprint.pformat(stats)
-        s += "</pre></code>\n"
+        s += "<h3>Global stats</h3>\n"
+        s += stats_html_table(stats.get_stats())
+        for domain in stats.list_domains():
+            s += "<h3>%s</h3>\n" % domain
+            s += stats_html_table(stats.get_stats(domain))
         s += "</body>\n"
         s += "</html>\n"
 
@@ -24,3 +32,4 @@ class StatsDump(object):
 
     def webconsole_discover_module(self):
         return self
+
