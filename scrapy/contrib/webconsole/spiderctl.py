@@ -28,8 +28,7 @@ class Spiderctl(object):
         self.running.add(domain)
 
     def domain_closed(self, domain, spider):
-        if domain in self.running:
-            self.running.remove(domain)
+        self.running.remove(domain)
         self.finished.add(domain)
 
     def webconsole_render(self, wc_request):
@@ -37,20 +36,19 @@ class Spiderctl(object):
             changes = self.webconsole_control(wc_request)
 
         enabled_domains = spiders.asdict().keys()
-        self.scheduled = set(scrapyengine.scheduler.pending_domains_count)
-        self.not_scheduled = [d for d in enabled_domains if d not in self.scheduled
+        self.scheduled = scrapyengine.domain_scheduler.pending_domains
+        self.idle = [d for d in enabled_domains if d not in self.scheduled
                                                         and d not in self.running
                                                         and d not in self.finished]
 
         s = banner(self)
-        s += '<p><a href="?reloadspiders=1">Reload spiders</a></p>\n'
         s += '<table border=1">\n'
-        s += "<tr><th>Running (%d/%d)</th><th>Scheduled (%d)</th><th>Finished (%d)</th><th>Not scheduled (%d)</th></tr>\n" % \
+        s += "<tr><th>Running (%d/%d)</th><th>Scheduled (%d)</th><th>Finished (%d)</th><th>Idle (%d)</th></tr>\n" % \
                 (len(self.running),
                  settings['CONCURRENT_DOMAINS'],
                  len(self.scheduled),
                  len(self.finished),
-                 len(self.not_scheduled))
+                 len(self.idle))
         s += "<tr>\n"
 
         # running
@@ -69,7 +67,7 @@ class Spiderctl(object):
         s += "<td valign='top'>\n"
         s += '<form method="post" action=".">\n'
         s += '<select name="remove_pending_domains" multiple="multiple">\n'
-        for domain in sorted(self.scheduled):
+        for domain in self.scheduled:
             s += "<option>%s</option>\n" % domain
         s += '</select><br>\n'
         s += '<br />'
@@ -90,11 +88,11 @@ class Spiderctl(object):
         s += '</form>\n'
         s += "</td>\n"
 
-        # not scheduled
+        # idle
         s += "<td valign='top'>\n"
         s += '<form method="post" action=".">\n'
         s += '<select name="add_pending_domains" multiple="multiple">\n'
-        for domain in sorted(self.not_scheduled):
+        for domain in sorted(self.idle):
             s += "<option>%s</option>\n" % domain
         s += '</select><br>\n'
         s += '<br />'
@@ -111,7 +109,8 @@ class Spiderctl(object):
         s += '<form method="post" action=".">\n'
         s += "<textarea name='bulk_remove_domains' rows='10' cols='25'></textarea>\n"
         s += '<br>\n'
-        s += '<input type="submit" value="Bulk remove domains">\n'
+        s += '<input type="submit" value="Bulk remove domains"><br />\n'
+        s += "<span style='font-size: small'>(enter one domain per line)</span>\n"
         s += '</form>\n'
         s += '</td>\n'
 
@@ -121,7 +120,8 @@ class Spiderctl(object):
         s += '<form method="post" action=".">\n'
         s += "<textarea name='bulk_schedule_domains' rows='10' cols='25'></textarea>\n"
         s += '<br>\n'
-        s += '<input type="submit" value="Bulk schedule domains">\n'
+        s += '<input type="submit" value="Bulk schedule domains"><br/>\n'
+        s += "<span style='font-size: small'>(enter one domain per line)</span>\n"
         s += '</form>\n'
         s += "</td>\n"
 
@@ -141,10 +141,6 @@ class Spiderctl(object):
         args = wc_request.args
         enabled_domains = spiders.asdict().keys()
         s = "<hr />\n"
-        if "reloadspiders" in args:
-            scrapymanager.reload_spiders()
-            s += "<p><b>Spiders reloaded</b></p>\n"
-            return s
 
         if "stop_running_domains" in args:
             s += "<p>"
@@ -175,7 +171,7 @@ class Spiderctl(object):
                 s += "</p>"
         if "add_pending_domains" in args:
             for domain in args["add_pending_domains"]:
-                if domain not in scrapyengine.scheduler.pending_domains_count:
+                if domain not in scrapyengine.scheduler.pending_requests:
                     scrapymanager.crawl(domain)
             s += "<p>"
             s += "Scheduled spiders: <ul><li>%s</li></ul>" % "</li><li>".join(args["add_pending_domains"])
@@ -184,7 +180,7 @@ class Spiderctl(object):
             to_schedule = set([d.strip() for d in args["bulk_schedule_domains"][0].split("\n")])
             scheduled = set()
             for domain in to_schedule:
-                if domain in enabled_domains and domain not in scrapyengine.scheduler.pending_domains_count:
+                if domain in enabled_domains and domain not in scrapyengine.scheduler.pending_requests:
                     scrapymanager.crawl(domain)
                     scheduled.add(domain)
             if scheduled:
@@ -196,7 +192,7 @@ class Spiderctl(object):
                 s += "</p>"
         if "rerun_finished_domains" in args:
             for domain in args["rerun_finished_domains"]:
-                if domain not in scrapyengine.scheduler.pending_domains_count:
+                if domain not in scrapyengine.scheduler.pending_requests:
                     scrapymanager.crawl(domain)
                 self.finished.remove(domain)
             s += "<p>"
