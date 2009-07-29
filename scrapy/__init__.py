@@ -12,8 +12,8 @@ if sys.version_info < (2,5):
     sys.exit(1)
 
 # monkey patches to fix external library issues
-from scrapy.patches import monkeypatches
-monkeypatches.apply_patches()
+from scrapy.patches import apply_patches
+apply_patches()
 
 # optional_features is a set containing Scrapy optional features
 optional_features = set()
