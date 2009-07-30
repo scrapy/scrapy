@@ -15,8 +15,10 @@ class HistoryMiddleware(object):
     # How often we should process pages that have not changed (need to include depth)
     MIN_PROCESS_UNCHANGED_DAYS = 12
 
+    MEMORYSTORE = 'scrapy.contrib_exp.history.memorystore.MemoryStore'
+
     def __init__(self):
-        historycls = load_object(settings['MEMORYSTORE'])
+        historycls = load_object(self.MEMORYSTORE)
         if not historycls:
             raise NotConfigured
         self.historydata = historycls()

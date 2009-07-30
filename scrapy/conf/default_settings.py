@@ -126,8 +126,6 @@ MAIL_FROM = 'scrapy@localhost'
 MEMDEBUG_ENABLED = False        # enable memory debugging
 MEMDEBUG_NOTIFY = []            # send memory debugging report by mail at engine shutdown
 
-MEMORYSTORE = 'scrapy.core.scheduler.MemoryStore'
-
 MEMUSAGE_ENABLED = 1
 MEMUSAGE_LIMIT_MB = 0
 MEMUSAGE_NOTIFY_MAIL = []
