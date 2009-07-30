@@ -35,7 +35,7 @@ class NewItemTest(unittest.TestCase):
         self.assertRaises(KeyError, TestItem, {'name': u'john doe',
                                                'other': u'foo'})
 
-        self.assertRaises(TypeError, TestItem, name=3)
+        self.assertRaises(TypeError, TestItem, name=set())
 
     def test_multi(self):
         class TestMultiItem(Item):
@@ -63,19 +63,7 @@ class NewItemTest(unittest.TestCase):
         self.assertEqual(i['name'], u'John')
 
     def test_wrong_default(self):
-        def set_wrong_default():
-            class TestItem(Item):
-                name = fields.TextField(default=3)
-        
-        self.assertRaises(TypeError, set_wrong_default)
-
-    def test_to_python_iter(self):
-        class TestItem(Item):
-            name = fields.TextField()
- 
-        i = TestItem()
-        i['name'] = (u'John', u'Doe')
-        self.assertEqual(i['name'], u'John Doe')
+        self.assertRaises(TypeError, fields.TextField, default=set())
 
     def test_repr(self):
         class TestItem(Item):
@@ -316,32 +304,45 @@ class NewItemFieldsTest(unittest.TestCase):
 
         i = TestItem()
 
+        # valid castings
         i['field'] = u'hello'
         self.assertEqual(i['field'], u'hello')
         self.assert_(isinstance(i['field'], unicode))
 
-        # must be unicode!
-        self.assertRaises(TypeError, i.__setitem__, 'field', 'string')
+        i['field'] = 3
+        self.assertEqual(i['field'], u'3')
+        self.assert_(isinstance(i['field'], unicode))
 
+        i['field'] = 3.2
+        self.assertEqual(i['field'], u'3.2')
+        self.assert_(isinstance(i['field'], unicode))
+
+        i['field'] = 100L
+        self.assertEqual(i['field'], u'100')
+        self.assert_(isinstance(i['field'], unicode))
+
+        # invalid castings
+        self.assertRaises(TypeError, i.__setitem__, 'field', [u'hello', u'world'])
+        self.assertRaises(TypeError, i.__setitem__, 'field', 'string') # must be unicode!
+        self.assertRaises(TypeError, i.__setitem__, 'field', set())
+        self.assertRaises(TypeError, i.__setitem__, 'field', True)
         self.assertRaises(TypeError, i.__setitem__, 'field', None)
 
-        def set_invalid_value():
-            i['field'] = 3 
 
-        self.assertRaises(TypeError, set_invalid_value)
+    def test_from_unicode_list(self):
+        field = fields.BaseField()
+        self.assertEqual(field.from_unicode_list([]), None)
 
-        i = TestItem()
-        i['field'] = [u'hello', u'world']
-        self.assertEqual(i['field'], u'hello world')
-        self.assert_(isinstance(i['field'], unicode))
+        field = fields.TextField()
+        self.assertEqual(field.from_unicode_list([]), u'')
+        self.assertEqual(field.from_unicode_list([u'hello', u'world']), u'hello world')
 
-        self.assertRaises(TypeError, i.__setitem__, 'field', [u'hello', 3, u'world']) 
-        self.assertRaises(TypeError, i.__setitem__, 'field', [u'hello', 'world']) 
+        field = fields.MultiValuedField(fields.TextField)
+        self.assertEqual(field.from_unicode_list([]), [])
+        self.assertEqual(field.from_unicode_list([u'hello', u'world']), [u'hello', u'world'])
 
-        i = TestItem()
-        i['field'] = []
-        self.assert_(isinstance(i['field'], unicode))
-        self.assertEqual(i['field'], '')
+        field = fields.IntegerField()
+        self.assertEqual(field.from_unicode_list([u'123']), 123)
 
     def test_time_field(self):
         class TestItem(Item):

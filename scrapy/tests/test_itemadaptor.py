@@ -87,21 +87,23 @@ class ItemAdaptorTest(unittest.TestCase):
         ia.name = u'marta'
         self.assertEqual(ia.name, u'Marta')
 
-    def test_staticmethods(self):
-        class ChildAdaptor(TestAdaptor):
-            name = adaptor(TestAdaptor.name, string.swapcase)
-
-        ia = ChildAdaptor()
-        ia.name = u'Marta'
-        self.assertEqual(ia.name, u'mARTA')
-
-    def test_staticdefaults(self):
-        class ChildAdaptorDefaulted(DefaultedAdaptor):
-            name = adaptor(DefaultedAdaptor.name, string.swapcase)
-
-        dia = ChildAdaptorDefaulted()
-        dia.name = u'marta'
-        self.assertEqual(dia.name, u'MART')
+# FIXME: deprecated tests - will be replaced by ItemBuilder tests
+#
+#    def test_staticmethods(self):
+#        class ChildAdaptor(TestAdaptor):
+#            name = adaptor(TestAdaptor.name, string.swapcase)
+#
+#        ia = ChildAdaptor()
+#        ia.name = u'Marta'
+#        self.assertEqual(ia.name, u'mARTA')
+#
+#    def test_staticdefaults(self):
+#        class ChildAdaptorDefaulted(DefaultedAdaptor):
+#            name = adaptor(DefaultedAdaptor.name, string.swapcase)
+#
+#        dia = ChildAdaptorDefaulted()
+#        dia.name = u'marta'
+#        self.assertEqual(dia.name, u'MART')
 
     def test_multiplevaluedadaptor(self):
         ma = MultiValuedItemAdaptor()

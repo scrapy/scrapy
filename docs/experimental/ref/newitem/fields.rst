@@ -29,6 +29,16 @@ TextField
 
     A unicode text.
 
+    This class overrides the following methods from :class:`BaseField`:
+
+    .. method:: from_unicode_list(unicode_list)
+
+       Return a unicode string composed by joining the elements of
+       ``unicode_list`` with spaces.
+
+       For more info about this method see :class:`BaseField.from_unicode_list`.
+
+
 IntegerField
 ------------
 
@@ -136,6 +146,22 @@ BaseField class
 
        This method must always return object of the expected field type.
        
+    .. method:: from_unicode_list(unicode_list)
+
+       Take the input list of unicode strings and convert it to a proper value
+       with the type expected by this field. If no proper value if found,
+       ``None`` is returned instead.
+
+       The default behaviour is to return the value of the first item of the
+       list, passed through the :meth:`to_python` method, or ``None`` if the
+       list is empty::
+
+          return self.to_python(unicode_list[0]) if unicode_list else None
+
+       This default behaviour is provided because it's the more common one, but
+       it's typical for :class:`BaseField` subclasses to override this method,
+       such as the :meth:`TextField.from_unicode_list` method.
+
     .. method:: get_default()
 
        Return the default value for this field, or ``None`` if the field

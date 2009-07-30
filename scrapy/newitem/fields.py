@@ -11,6 +11,9 @@ class BaseField(object):
     def to_python(self, value):
         raise NotImplementedError()
 
+    def from_unicode_list(self, unicode_list):
+        return self.to_python(unicode_list[0]) if unicode_list else None
+
     def get_default(self):
         return self._default
 
@@ -21,10 +24,14 @@ class MultiValuedField(BaseField):
         super(MultiValuedField, self).__init__(default)
 
     def to_python(self, value):
-        if value is None:
-            return []
-        else:
+        if hasattr(value, '__iter__'):
             return [self._field.to_python(v) for v in value]
+        else:
+            raise TypeError("Cannot instatiante %s with %s" \
+                             % (self.__class__.__name__, type(value).__name__))
+
+    def from_unicode_list(self, unicode_list):
+        return self.to_python(unicode_list)
 
 # FIXME: temporary alias required for ItemExporters (to be removed on ListField merge)
 ListField = MultiValuedField
@@ -32,6 +39,9 @@ ListField = MultiValuedField
 class BooleanField(BaseField):
     def to_python(self, value):
         return bool(value)
+
+    def from_unicode_list(self, unicode_list):
+        return self.to_python(unicode_list)
 
 
 class DateField(BaseField):
@@ -112,18 +122,19 @@ class IntegerField(BaseField):
 
 class TextField(BaseField):
     def to_python(self, value):
-        if hasattr(value, '__iter__'):
-            return self.to_python(self.to_single(value))
-        elif isinstance(value, unicode):
+        if isinstance(value, unicode):
             return value
+        elif isinstance(value, (long, float)):
+            return unicode(value)
+        # Note: True and False are instances of int!
+        elif isinstance(value, int) and not isinstance(value, bool): 
+            return unicode(value)
         else:
-            raise TypeError("%s requires a unicode (or iterable of unicodes), got %s" \
-                             % (self.__class__.__name__, type(value).__name__))
+            raise TypeError("%s values cannot be created from '%s' objects" % \
+                (self.__class__.__name__, value.__class__.__name__))
 
-    def to_single(self, value):
-        """Converts the input iterable into a single value"""
-        return u' '.join((self.to_python(x) for x in value))
-
+    def from_unicode_list(self, unicode_list):
+        return u' '.join((self.to_python(x) for x in unicode_list))
 
 class TimeField(BaseField):
     def to_python(self, value):
