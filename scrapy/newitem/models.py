@@ -50,6 +50,11 @@ class Item(DictMixin, BaseItem):
     def __delitem__(self, key):
         del self._values[key]
 
+    def __getattr__(self, name):
+        if name in self.fields:
+            raise AttributeError("Use [%r] to access item field value" % name)
+        raise AttributeError(name)
+
     def keys(self):
         return self._values.keys()
 
