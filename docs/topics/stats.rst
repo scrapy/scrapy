@@ -281,7 +281,7 @@ functionality:
     :type reason: str
 
 .. signal:: stats_domain_closed
-.. function:: stats_domain_closed(domain, reason)
+.. function:: stats_domain_closed(domain, reason, domain_stats)
 
     Sent right after the stats domain is closed. You can use this signal to
     collect resources.
@@ -289,6 +289,9 @@ functionality:
     :param domain: the stats domain just closed
     :type domain: str
 
-    :param reason: the reason why the domain is being closed. See
+    :param reason: the reason why the domain was closed. See
         :signal:`domain_closed` signal for more info.
     :type reason: str
+
+    :param domain_stats: the stats of the domain just closed.
+    :type reason: dict

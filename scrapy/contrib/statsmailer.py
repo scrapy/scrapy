@@ -17,12 +17,12 @@ class StatsMailer(object):
         self.recipients = settings.getlist("STATSMAILER_RCPTS")
         if not self.recipients:
             raise NotConfigured
-        dispatcher.connect(self.send_stats, signal=signals.stats_domain_closing)
+        dispatcher.connect(self.stats_domain_closed, signal=signals.stats_domain_closed)
         
-    def send_stats(self, domain):
+    def stats_domain_closed(self, domain, domain_stats):
         mail = MailSender()
         body = "Global stats\n\n"
         body += "\n".join("%-50s : %s" % i for i in stats.get_stats().items())
         body += "\n\n%s stats\n\n" % domain
-        body += "\n".join("%-50s : %s" % i for i in stats.get_stats(domain).items())
+        body += "\n".join("%-50s : %s" % i for i in domain_stats.items())
         mail.send(self.recipients, "Scrapy stats for: %s" % domain, body)

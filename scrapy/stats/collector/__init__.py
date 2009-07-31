@@ -51,8 +51,9 @@ class StatsCollector(object):
         if self._dump:
             log.msg("Dumping stats:\n" + pprint.pformat(self.get_stats(domain)), \
                 domain=domain)
-        del self._stats[domain]
-        signals.send_catch_log(stats_domain_closed, domain=domain, reason=reason)
+        stats = self._stats.pop(domain)
+        signals.send_catch_log(stats_domain_closed, domain=domain, reason=reason, \
+            domain_stats=stats)
 
     def engine_stopped(self):
         if self._dump:
