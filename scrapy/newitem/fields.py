@@ -18,10 +18,10 @@ class BaseField(object):
         return self._default
 
 
-class MultiValuedField(BaseField):
+class ListField(BaseField):
     def __init__(self, field_type, default=None):
         self._field = field_type()
-        super(MultiValuedField, self).__init__(default)
+        super(ListField, self).__init__(default)
 
     def to_python(self, value):
         if hasattr(value, '__iter__'):
@@ -33,8 +33,6 @@ class MultiValuedField(BaseField):
     def from_unicode_list(self, unicode_list):
         return self.to_python(unicode_list)
 
-# FIXME: temporary alias required for ItemExporters (to be removed on ListField merge)
-ListField = MultiValuedField
 
 class BooleanField(BaseField):
     def to_python(self, value):

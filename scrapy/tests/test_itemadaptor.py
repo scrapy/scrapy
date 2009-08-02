@@ -29,12 +29,12 @@ class InheritDefaultAdaptor(DefaultedAdaptor):
     pass
 
 
-class MultiValuedTestItem(Item):
-    names = fields.MultiValuedField(fields.TextField)
+class ListFieldTestItem(Item):
+    names = fields.ListField(fields.TextField)
 
 
-class MultiValuedItemAdaptor(ItemAdaptor):
-    item_class = MultiValuedTestItem
+class ListFieldItemAdaptor(ItemAdaptor):
+    item_class = ListFieldTestItem
 
     names = adaptor(lambda v: v.title())
 
@@ -106,7 +106,7 @@ class ItemAdaptorTest(unittest.TestCase):
 #        self.assertEqual(dia.name, u'MART')
 
     def test_multiplevaluedadaptor(self):
-        ma = MultiValuedItemAdaptor()
+        ma = ListFieldItemAdaptor()
         ma.names = [u'name1', u'name2']
         assert ma.names == [u'Name1', u'Name2']
 

@@ -38,11 +38,11 @@ class NewItemTest(unittest.TestCase):
         self.assertRaises(TypeError, TestItem, name=set())
 
     def test_multi(self):
-        class TestMultiItem(Item):
+        class TestListItem(Item):
             name = fields.TextField()
-            names = fields.MultiValuedField(fields.TextField)
+            names = fields.ListField(fields.TextField)
 
-        i = TestMultiItem()
+        i = TestListItem()
         i['name'] = u'name'
         i['names'] = [u'name1', u'name2']
         self.assertEqual(i['names'], [u'name1', u'name2'])
@@ -337,7 +337,7 @@ class NewItemFieldsTest(unittest.TestCase):
         self.assertEqual(field.from_unicode_list([]), u'')
         self.assertEqual(field.from_unicode_list([u'hello', u'world']), u'hello world')
 
-        field = fields.MultiValuedField(fields.TextField)
+        field = fields.ListField(fields.TextField)
         self.assertEqual(field.from_unicode_list([]), [])
         self.assertEqual(field.from_unicode_list([u'hello', u'world']), [u'hello', u'world'])
 
