@@ -6,15 +6,18 @@ Item Fields
 
 .. module:: scrapy.newitem.fields
 
+
 Field options
 =============
 
 Every ``Field`` class constructor accepts these arguments.
 
+
 ``default``
 -----------
 
 The default value for the field. See :ref:`topics-newitem-index-defaults`.
+
 
 Field types
 ===========
@@ -22,8 +25,83 @@ Field types
 These are the available built-in ``Field`` types. See
 :ref:`ref-newitem-fields-custom-fields` for info on creating your own field types.
 
-TextField
----------
+
+``BooleanField``
+----------------
+
+.. class:: BooleanField
+
+    A boolean (true/false) field.
+
+
+``DateField``
+-------------
+
+.. class:: DateField
+
+    A date, represented in Python by a `datetime.date`_ instance.
+
+.. _datetime.date: http://docs.python.org/library/datetime.html#datetime.date
+
+
+``DateTimeField``
+-----------------
+
+.. class:: DateTimeField
+
+    A date with time, represented in Python by a `datetime.datetime`_ instance.
+
+.. _datetime.datetime: http://docs.python.org/library/datetime.html#datetime.datetime
+
+
+``DecimalField``
+----------------
+
+.. class:: DecimalField
+
+    A fixed-precision decimal number, represented in Python by a `Decimal`_
+    instance.
+
+.. _Decimal: http://docs.python.org/library/decimal.html#decimal.Decimal
+
+
+``FloatField``
+--------------
+
+.. class:: FloatField
+
+    A floating-point number represented in Python by a ``float`` instance.
+
+
+``IntegerField``
+----------------
+
+.. class:: IntegerField
+
+    An integer.
+
+
+``ListField``
+-------------
+
+.. class:: ListField(field)
+
+   A special field that works like a list of fields of another provided field kind.
+
+   :param field: The field which the elements of this list must conform to. 
+   :type field: a :class:`~scrapy.newitem.fields.BaseField` object
+
+   Usage example::
+
+      class ExampleItem(Item)
+         names = fields.ListField(fields.TextField())
+
+      item = ExampleItem()
+      item['names'] = [u'John', u'Jeena']
+
+
+``TextField``
+-------------
 
 .. class:: TextField
 
@@ -39,57 +117,8 @@ TextField
        For more info about this method see :class:`BaseField.from_unicode_list`.
 
 
-IntegerField
-------------
-
-.. class:: IntegerField
-
-    An integer.
-
-DecimalField
-------------
-
-.. class:: DecimalField
-
-    A fixed-precision decimal number, represented in Python by a `Decimal`_
-    instance.
-
-.. _Decimal: http://docs.python.org/library/decimal.html#decimal.Decimal
-
-FloatField
-----------
-
-.. class:: FloatField
-
-    A floating-point number represented in Python by a ``float`` instance.
-
-BooleanField
-------------
-
-.. class:: BooleanField
-
-    A boolean (true/false) field.
-
-DateTimeField
+``TimeField``
 -------------
-
-.. class:: DateTimeField
-
-    A date with time, represented in Python by a `datetime.datetime`_ instance.
-
-.. _datetime.datetime: http://docs.python.org/library/datetime.html#datetime.datetime
-
-DateField
----------
-
-.. class:: DateField
-
-    A date, represented in Python by a `datetime.date`_ instance.
-
-.. _datetime.date: http://docs.python.org/library/datetime.html#datetime.date
-
-TimeField
----------
 
 .. class:: TimeField
 
@@ -99,6 +128,7 @@ TimeField
 
 .. _ref-newitem-fields-custom-fields:
 
+
 Creating custom fields
 ======================
 
@@ -107,6 +137,7 @@ which you can also subclass to create your own custom fields.
 
 You can also subclass a more specific field class, say :class:`DecimalField`,
 to implement a ``PriceField``, for example.
+
 
 BaseField class
 ---------------
