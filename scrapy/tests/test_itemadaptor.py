@@ -30,7 +30,7 @@ class InheritDefaultAdaptor(DefaultedAdaptor):
 
 
 class ListFieldTestItem(Item):
-    names = fields.ListField(fields.TextField)
+    names = fields.ListField(fields.TextField())
 
 
 class ListFieldItemAdaptor(ItemAdaptor):

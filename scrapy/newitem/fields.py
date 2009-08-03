@@ -19,13 +19,13 @@ class BaseField(object):
 
 
 class ListField(BaseField):
-    def __init__(self, field_type, default=None):
-        self._field = field_type()
+    def __init__(self, field, default=None):
+        self.field = field
         super(ListField, self).__init__(default)
 
     def to_python(self, value):
         if hasattr(value, '__iter__'):
-            return [self._field.to_python(v) for v in value]
+            return [self.field.to_python(v) for v in value]
         else:
             raise TypeError("Cannot instatiante %s with %s" \
                              % (self.__class__.__name__, type(value).__name__))
