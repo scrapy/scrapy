@@ -50,11 +50,10 @@ def tree_expander(*functions, **default_loader_args):
         largs = default_loader_args
         if loader_args:
             largs = MergeDict(loader_args, default_loader_args)
-        for func2 in wrapped_funcs:
+        for func in wrapped_funcs:
             next_values = []
-            for val in values:
-                val = func2(loader, val, largs)
-                next_values.extend(arg_to_iter(val))
+            for v in values:
+                next_values += arg_to_iter(func(loader, v, largs))
             values = next_values
         return list(values)
 
