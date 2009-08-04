@@ -1,13 +1,12 @@
+"""Some common reducers"""
+
 def take_first(values):
     for value in values:
-        if value is not u'':
+        if value:
             return value
 
-
-def return_values(values):
+def identity(values):
     return values
-
 
 def join_strings(values):
     return u' '.join(values)
-

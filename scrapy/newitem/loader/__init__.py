@@ -4,8 +4,8 @@ from types import UnboundMethodType
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import get_func_args
 from scrapy.utils.datatypes import MergeDict
-
-from scrapy.newitem.models import Item
+from scrapy.newitem import Item
+from scrapy.newitem.reducers import take_first
 
 def tree_expander(*functions, **default_loader_args):
     """Create an ItemLoader expander from a list of functions using the tree
@@ -86,16 +86,14 @@ class ItemLoader(object):
 
     def get_value(self, field_name):
         values = self._values[field_name]
-        field = self._item.fields[field_name]
         reducer = self.get_reducer(field_name)
-        # XXX: calling different methods based on reducer is ugly
-        if reducer:
-            return field.to_python(reducer(values))
-        else:
-            return field.from_unicode_list(values)
+        return reducer(values)
 
     def get_reducer(self, field_name):
-        return getattr(self, 'reduce_%s' % field_name, None)
+        try:
+            return getattr(self, 'reduce_%s' % field_name)
+        except AttributeError:
+            return self._item.fields[field_name].get('reducer', self.reduce)
 
     def get_expander(self, field_name):
         return getattr(self, 'expand_%s' % field_name, self.expand)
@@ -111,3 +109,6 @@ class ItemLoader(object):
 
     def expand(self, value, loader_args): # default expander
         return value
+
+    def reduce(self, values):
+        return take_first(values)
