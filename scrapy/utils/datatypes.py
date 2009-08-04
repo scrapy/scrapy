@@ -209,6 +209,59 @@ class CaselessDict(dict):
         return dict.pop(self, self.normkey(key), *args)
 
 
+class MergeDict(object):
+    """
+    A simple class for creating new "virtual" dictionaries that actually look
+    up values in more than one dictionary, passed in the constructor.
+
+    If a key appears in more than one of the given dictionaries, only the
+    first occurrence will be used.
+    """
+    def __init__(self, *dicts):
+        self.dicts = dicts
+
+    def __getitem__(self, key):
+        for dict_ in self.dicts:
+            try:
+                return dict_[key]
+            except KeyError:
+                pass
+        raise KeyError
+
+    def __copy__(self):
+        return self.__class__(*self.dicts)
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def getlist(self, key):
+        for dict_ in self.dicts:
+            if key in dict_.keys():
+                return dict_.getlist(key)
+        return []
+
+    def items(self):
+        item_list = []
+        for dict_ in self.dicts:
+            item_list.extend(dict_.items())
+        return item_list
+
+    def has_key(self, key):
+        for dict_ in self.dicts:
+            if key in dict_:
+                return True
+        return False
+
+    __contains__ = has_key
+
+    def copy(self):
+        """Returns a copy of this object."""
+        return self.__copy__()
+
+
 class PriorityQueue(object):
     """Priority queue using a deque for priority 0"""
 
