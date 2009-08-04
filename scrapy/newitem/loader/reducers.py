@@ -1,4 +1,6 @@
-"""Some common reducers"""
+"""
+ItemLoader reducers
+"""
 
 def take_first(values):
     for value in values:
