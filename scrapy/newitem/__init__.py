@@ -3,7 +3,7 @@ from UserDict import DictMixin
 from scrapy.item.models import BaseItem
 
 class Field(dict):
-    pass
+    """Container of field metadata"""
 
 class _ItemMeta(type):
 
@@ -30,8 +30,7 @@ class Item(DictMixin, BaseItem):
 
     def __init__(self, *args, **kwargs):
         self._values = {}
-
-        if args or kwargs: # don't instantiate dict for simple (most common) case
+        if args or kwargs: # avoid instantiating dict for most common case
             for k, v in dict(*args, **kwargs).iteritems():
                 self[k] = v
 
@@ -70,8 +69,3 @@ class Item(DictMixin, BaseItem):
         """
         values = ', '.join('%s=%r' % field for field in self.iteritems())
         return "%s(%s)" % (self.__class__.__name__, values)
-
-    def get_id(self):
-        """Returns the unique id for this item."""
-        raise NotImplementedError
-
