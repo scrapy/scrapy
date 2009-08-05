@@ -12,8 +12,9 @@ class ItemLoader(object):
     default_reducer = TakeFirst()
 
     def __init__(self, **loader_args):
-        self._response = loader_args.get('response')
-        self._item = loader_args.setdefault('item', self.default_item_class())
+        if 'item' not in loader_args:
+            loader_args['item'] = self.default_item_class()
+        self._item = loader_args['item']
         self._loader_args = loader_args
         self._values = defaultdict(list)
 

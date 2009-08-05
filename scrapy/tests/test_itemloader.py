@@ -127,7 +127,7 @@ class ItemLoaderTest(unittest.TestCase):
         il.add_value('name', u'marta')
         self.assertEqual(il.get_reduced_value('name'), u'marta')
 
-    def test_extend_expanders(self):
+    def test_extend_custom_expanders(self):
         class ChildItemLoader(TestItemLoader):
             name_exp = TreeExpander(TestItemLoader.name_exp, unicode.swapcase)
 
@@ -135,7 +135,7 @@ class ItemLoaderTest(unittest.TestCase):
         il.add_value('name', u'marta')
         self.assertEqual(il.get_reduced_value('name'), u'mARTA')
 
-    def test_staticdefaults(self):
+    def test_extend_default_expanders(self):
         class ChildDefaultedItemLoader(DefaultedItemLoader):
             name_exp = TreeExpander(DefaultedItemLoader.default_expander, unicode.swapcase)
 
@@ -209,6 +209,18 @@ class ItemLoaderTest(unittest.TestCase):
         il = ChildItemLoader()
         il.add_value('url', u'text', key=u'val')
         self.assertEqual(il.get_reduced_value('url'), 'val')
+
+    def test_item_passed_to_expander_functions(self):
+        def exp_func(value, loader_args):
+            return loader_args['item']['name']
+
+        class ChildItemLoader(TestItemLoader):
+            url_exp = TreeExpander(exp_func)
+
+        it = TestItem(name='marta')
+        il = ChildItemLoader(item=it)
+        il.add_value('url', u'text', key=u'val')
+        self.assertEqual(il.get_reduced_value('url'), 'marta')
 
     def test_add_value_on_unknown_field(self):
         il = TestItemLoader()
