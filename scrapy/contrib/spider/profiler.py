@@ -6,10 +6,10 @@ caused by spiders code.
 The results are collected using the StatsCollector.
 
 This extension introduces a big impact on crawling performance, so enable only
-when needed.
+for debugging.
 """
 
-import datetime
+from time import time
 
 from scrapy.xlib.pydispatch import dispatcher
 
@@ -37,15 +37,14 @@ class SpiderProfiler(object):
 
     def _profiled_callback(self, function, spider):
         def new_callback(*args, **kwargs):
-            tbefore = datetime.datetime.now()
+            tbefore = time()
             mbefore = self._memusage()
             r = function(*args, **kwargs)
-            tafter = datetime.datetime.now()
             mafter = self._memusage()
-            ct = tafter-tbefore
+            ct = time() - tbefore
             domain = spider.domain_name
-            tcc = stats.get_value('profiling/total_callback_time', datetime.timedelta(0), domain=domain)
-            sct = stats.get_value('profiling/slowest_callback_time', datetime.timedelta(0), domain=domain)
+            tcc = stats.get_value('profiling/total_callback_time', 0, domain=domain)
+            sct = stats.get_value('profiling/slowest_callback_time', 0, domain=domain)
             stats.set_value('profiling/total_callback_time' % spider.domain_name, tcc+ct, domain=domain)
             if ct > sct:
                 stats.set_value('profiling/slowest_callback_time', ct, domain=domain)
