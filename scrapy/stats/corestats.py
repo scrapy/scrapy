@@ -29,12 +29,12 @@ class CoreStats(object):
         dispatcher.connect(self.item_dropped, signal=signals.item_dropped)
 
     def stats_domain_opened(self, domain):
-        stats.set_value('start_time', datetime.datetime.now(), domain=domain)
+        stats.set_value('start_time', datetime.datetime.utcnow(), domain=domain)
         stats.set_value('envinfo/host', stats.get_value('envinfo/host'), domain=domain)
         stats.inc_value('domain_count/opened')
 
     def stats_domain_closing(self, domain, reason):
-        stats.set_value('finish_time', datetime.datetime.now(), domain=domain)
+        stats.set_value('finish_time', datetime.datetime.utcnow(), domain=domain)
         stats.set_value('finish_status', 'OK' if reason == 'finished' else reason, domain=domain)
         stats.inc_value('domain_count/%s' % reason, domain=domain)
 

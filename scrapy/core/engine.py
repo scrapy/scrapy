@@ -93,7 +93,7 @@ class ExecutionEngine(object):
         if not self.running:
             self.control_reactor = control_reactor
             reactor.callLater(0, self._mainloop)
-            self.start_time = datetime.now()
+            self.start_time = datetime.utcnow()
             signals.send_catch_log(signal=signals.engine_started, sender=self.__class__)
             self.addtask(self._mainloop, 5.0)
             for tsk, interval, now in self.tasks:
@@ -328,7 +328,7 @@ class ExecutionEngine(object):
         s = "Execution engine status\n\n"
 
         global_tests = [
-            "datetime.now()-self.start_time", 
+            "datetime.utcnow()-self.start_time", 
             "self.is_idle()", 
             "self.scheduler.is_idle()",
             "len(self.scheduler.pending_requests)",

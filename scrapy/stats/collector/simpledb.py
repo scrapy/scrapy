@@ -35,7 +35,7 @@ class SimpledbStatsCollector(StatsCollector):
         super(SimpledbStatsCollector, self).close_domain(domain, reason)
 
     def _persist_to_sdb(self, domain, stats):
-        ts = datetime.now().isoformat()
+        ts = datetime.utcnow().isoformat()
         sdb_item_id = "%s_%s" % (domain, ts)
         sdb_item = dict([(k, self._to_sdb_value(v)) for k, v in stats.iteritems()])
         sdb_item['domain'] = domain
