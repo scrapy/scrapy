@@ -18,7 +18,7 @@ class MysqlStatsCollector(StatsCollector):
         
     def close_domain(self, domain, reason):
         if self._mysql_conn:
-            stored = datetime.now()
+            stored = datetime.utcnow()
             datas = pickle.dumps(self._stats[domain])
             table = 'domain_data_history'
 
