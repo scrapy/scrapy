@@ -30,6 +30,8 @@ class UtilsMarkupTest(unittest.TestCase):
                          u'a < b  c  six')
         self.assertEqual(remove_entities('x&#x2264;y'), u'x\u2264y')
 
+        # check browser hack for numeric character references in the 80-9F range
+        self.assertEqual(remove_entities('x&#153;y', encoding='cp1252'), u'x\u2122y')
 
     def test_replace_tags(self):
         # make sure it always return uncode

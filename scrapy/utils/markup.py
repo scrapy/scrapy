@@ -37,6 +37,12 @@ def remove_entities(text, keep=(), remove_illegal=True, encoding='utf-8'):
                     number = int(entity_body, 16)
                 else:
                     number = int(entity_body, 10)
+                # Numeric character references in the 80-9F range are typically
+                # interpreted by browsers as representing the characters mapped
+                # to bytes 80-9F in the Windows-1252 encoding. For more info
+                # see: http://en.wikipedia.org/wiki/Character_encodings_in_HTML
+                if 0x80 <= number <= 0x9f:
+                    return chr(number).decode('cp1252')
             except ValueError:
                 number = None
         else:
