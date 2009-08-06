@@ -3,17 +3,18 @@ Functions for dealing with markup text
 """
 
 import re
-from htmlentitydefs import name2codepoint as entity_defs
+from htmlentitydefs import name2codepoint
 
 from scrapy.utils.python import str_to_unicode
 
 _ent_re = re.compile(r'&(#?(x?))([^&;\s]+);')
 _tag_re = re.compile(r'<[a-zA-Z\/!].*?>', re.DOTALL)
 
-def remove_entities(text, keep=(), remove_illegal=True):
+def remove_entities(text, keep=(), remove_illegal=True, encoding='utf-8'):
     """Remove entities from the given text.
 
-    'text' can be a unicode string or a regular string encoded as 'utf-8'
+    'text' can be a unicode string or a regular string encoded in the given
+    `encoding` (which defaults to 'utf-8').
 
     If 'keep' is passed (with a list of entity names) those entities will
     be kept (they won't be removed).
@@ -30,7 +31,6 @@ def remove_entities(text, keep=(), remove_illegal=True):
 
     def convert_entity(m):
         entity_body = m.group(3)
-
         if m.group(1):
             try:
                 if m.group(2):
@@ -43,20 +43,16 @@ def remove_entities(text, keep=(), remove_illegal=True):
             if entity_body in keep:
                 return m.group(0)
             else:
-                number = entity_defs.get(entity_body)
-
+                number = name2codepoint.get(entity_body)
         if number is not None:
             try:
                 return unichr(number)
             except ValueError:
                 pass
 
-        if remove_illegal:
-            return u''
-        else:
-            return m.group(0)
+        return u'' if remove_illegal else m.group(0)
 
-    return _ent_re.sub(convert_entity, str_to_unicode(text))
+    return _ent_re.sub(convert_entity, str_to_unicode(text, encoding))
 
 def has_entities(text):
     return bool(_ent_re.search(str_to_unicode(text)))
