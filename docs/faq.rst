@@ -51,7 +51,7 @@ to steal from us!
 Does Scrapy work with HTTP proxies?
 -----------------------------------
 
-No. support for HTTP proxies is not currently implemented in Scrapy, but it
+No. Support for HTTP proxies is not currently implemented in Scrapy, but it
 will be in the future. For more information about this, follow `this ticket
 <http://dev.scrapy.org/ticket/71>`_. Setting the ``http_proxy`` environment
 variable won't work because Twisted (the library used by Scrapy to download

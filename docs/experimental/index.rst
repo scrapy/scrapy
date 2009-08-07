@@ -3,26 +3,21 @@
 Experimental features
 =====================
 
-This section documents experimental features that may become stable in the
-future, but whose API is not yet stable. Use them with caution, and subscribe
-to the `mailing lists <http://scrapy.org/community/>`_ to be notified of any
-changes. 
+This section documents experimental Scrapy features that may become stable in
+future releases, but whose API is not yet stable. Use them with caution, and
+subscribe to the `mailing lists <http://scrapy.org/community/>`_ to get
+notified of any changes. 
 
-This section may also contain documentation which is outdated or incomplete (as
-it's not revised so frequently), or documentation which overlaps with existing
-(stable) documentation and needs to be manually merged, use at your own risk.
+Since it's not revised so frequently, this section may contain documentation
+which is outdated, incomplete or overlapping with stable documentation (until
+it's properly merged) . Use at your own risk.
 
 .. warning::
 
-   This documentation is a work in progress, use at your own risk.
+   This documentation is a work in progress. Use at your own risk.
 
 .. toctree::
    :maxdepth: 1
 
-   topics/index
-
-.. toctree::
-   :maxdepth: 2
-
-   ref/index
-
+   newitem
+   newitem-loader
