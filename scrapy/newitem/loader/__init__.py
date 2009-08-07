@@ -11,10 +11,10 @@ class ItemLoader(object):
     default_expander = IdentityExpander()
     default_reducer = TakeFirst()
 
-    def __init__(self, **loader_args):
-        if 'item' not in loader_args:
-            loader_args['item'] = self.default_item_class()
-        self._item = loader_args['item']
+    def __init__(self, item=None, **loader_args):
+        if not item:
+            item = self.default_item_class()
+        self._item = loader_args['item'] = item
         self._loader_args = loader_args
         self._values = defaultdict(list)
 

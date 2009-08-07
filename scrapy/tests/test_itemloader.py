@@ -2,7 +2,7 @@ import unittest
 
 from scrapy.newitem.loader import ItemLoader
 from scrapy.newitem.loader.expanders import TreeExpander, IdentityExpander
-from scrapy.newitem.loader.reducers import JoinStrings, Identity
+from scrapy.newitem.loader.reducers import Join, Identity
 from scrapy.newitem import Item, Field
 
 # test items
@@ -161,14 +161,14 @@ class ItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.get_reduced_value('name'), u'Mar')
 
         class TakeFirstItemLoader(TestItemLoader):
-            name_red = JoinStrings()
+            name_red = Join()
 
         il = TakeFirstItemLoader()
         il.add_value('name', [u'mar', u'ta'])
         self.assertEqual(il.get_reduced_value('name'), u'Mar Ta')
 
         class TakeFirstItemLoader(TestItemLoader):
-            name_red = JoinStrings("<br>")
+            name_red = Join("<br>")
 
         il = TakeFirstItemLoader()
         il.add_value('name', [u'mar', u'ta'])
