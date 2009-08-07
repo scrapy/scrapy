@@ -27,7 +27,7 @@ Using Loaders to populate items
 To use a Loader, you must first instantiate it. You can either instantiate it
 with an Item object or without one, in which case an Item is automatically
 instantiated in the Loader constructor using the Item class specified in the
-:attr:`ItemLoader.default_item_class` attribute.
+:attr:`Loader.default_item_class` attribute.
 
 Then, you start adding values to the Loader, typically collecting them using
 :ref:`Selectors <topics-selectors>`. You can add more than one value to the
@@ -43,7 +43,7 @@ Here is a typical Loader usage in a :ref:`Spider <topics-spiders>` using the
 
     def parse(self, response):
         x = HtmlXPathSelector(response)
-        l = ItemLoader(item=Product())
+        l = Loader(item=Product())
         l.add_value('name', x.x('//div[@class="product_name"]').extract())
         l.add_value('name', x.x('//div[@class="product_title"]').extract())
         l.add_value('price', x.x('//p[@id="price"]').extract())
@@ -64,7 +64,7 @@ Afterwards, similar calls are used for ``price`` and ``stock`` fields, and
 finally the ``last_update`` field is populated directly with a literal value
 (``today``).
 
-Finally, when all data is collected, the :meth:`ItemLoader.get_item` method is
+Finally, when all data is collected, the :meth:`Loader.get_item` method is
 called which actually populates and returns the item populated with the data
 previously extracted with the ``add_value`` calls.
 
@@ -73,9 +73,9 @@ Expanders and Reducers
 
 A Loader is composed of one expander and reducer for each item field. The
 Expander processes the extracted data as soon as it's received through the
-:meth:`ItemLoader.add_value` method, and the result of the expander is collected
+:meth:`Loader.add_value` method, and the result of the expander is collected
 and kept inside the Loader. After collecting all data, the
-:meth:`ItemLoader.get_item` method is called to actually populate and get the Item.
+:meth:`Loader.get_item` method is called to actually populate and get the Item.
 That's when the Reducers are called with the data previously collected (using
 the Expanders) and the output of the Reducers are the actual values that get
 assigned to the item.
@@ -83,7 +83,7 @@ assigned to the item.
 Let's see an example to illustrate how Expanders and Reducers are called, for a
 particular field (the same applies for any other field)::
 
-    l = ItemLoader(Product())
+    l = Loader(Product())
     l.add_value('name', x.x(xpath1).extract()) # (1)
     l.add_value('name', x.x(xpath2).extract()) # (2)
     return l.get_item() # (3)
@@ -112,11 +112,11 @@ Declaring Loaders
 Loaders are declared like Items, by using a class definition syntax. Here is an
 example::
 
-    from scrapy.newitem.loader import ItemLoader
+    from scrapy.newitem.loader import Loader
     from scrapy.newitem.loader.expanders import TreeExpander
     from scrapy.newitem.loader.reducers import Join, TakeFirst
 
-    class ProductLoader(ItemLoader):
+    class ProductLoader(Loader):
 
         default_expander = TakeFirst()
 
@@ -130,7 +130,7 @@ example::
 
 As you can see, expanders are declared using the ``_exp`` suffix while reducers
 are declared using the ``_red`` suffix. And you can also declare a default
-expander using the :attr:`ItemLoader.default_expander` attribute.
+expander using the :attr:`Loader.default_expander` attribute.
 
 .. _topics-loader-args:
 
@@ -156,21 +156,21 @@ There are seveal ways to pass loader arguments:
 
 1. Passing arguments on Loader declaration::
 
-    class ProductLoader(ItemLoader):
+    class ProductLoader(Loader):
         length_exp = TreeExpander(parse_length, unit='cm') 
 
 2. Passing arguments on Loader instantiation::
 
-    l = ItemLoader(product, unit='cm')
+    l = Loader(product, unit='cm')
 
 3. Passing arguments on Loader usage::
 
     l.add_value('length', x.x('//div').extract(), unit='cm')
 
-ItemLoader objects
-==================
+Loader objects
+==============
 
-.. class:: ItemLoader([item], \**loader_args)
+.. class:: Loader([item], \**loader_args)
 
     Return a new Item Loader for populating the given Item. If no item is
     given, one is instantiated using the class in :attr:`default_item_class`.

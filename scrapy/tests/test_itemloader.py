@@ -1,6 +1,6 @@
 import unittest
 
-from scrapy.newitem.loader import ItemLoader
+from scrapy.newitem.loader import Loader
 from scrapy.newitem.loader.expanders import TreeExpander, IdentityExpander
 from scrapy.newitem.loader.reducers import Join, Identity
 from scrapy.newitem import Item, Field
@@ -16,13 +16,13 @@ class TestItem(NameItem):
 
 # test loaders
 
-class NameItemLoader(ItemLoader):
+class NameLoader(Loader):
     default_item_class = TestItem
 
-class TestItemLoader(NameItemLoader):
+class TestLoader(NameLoader):
     name_exp = TreeExpander(lambda v: v.title())
 
-class DefaultedItemLoader(NameItemLoader):
+class DefaultedLoader(NameLoader):
     default_expander = TreeExpander(lambda v: v[:-1])
 
 # test expanders
@@ -32,12 +32,12 @@ def expander_func_with_args(value, other=None, loader_args=None):
         return loader_args['key']
     return value
 
-class ItemLoaderTest(unittest.TestCase):
+class Loader(unittest.TestCase):
 
     def test_get_item_using_default_loader(self):
         i = TestItem()
         i['summary'] = u'lala'
-        il = ItemLoader(item=i)
+        il = Loader(item=i)
         il.add_value('name', u'marta')
         item = il.get_item()
         assert item is i
@@ -45,13 +45,13 @@ class ItemLoaderTest(unittest.TestCase):
         self.assertEqual(item['name'], u'marta')
 
     def test_get_item_using_custom_loader(self):
-        il = TestItemLoader()
+        il = TestLoader()
         il.add_value('name', u'marta')
         item = il.get_item()
         self.assertEqual(item['name'], u'Marta')
 
     def test_add_value(self):
-        il = TestItemLoader()
+        il = TestLoader()
         il.add_value('name', u'marta')
         self.assertEqual(il.get_expanded_value('name'), [u'Marta'])
         self.assertEqual(il.get_reduced_value('name'), u'Marta')
@@ -60,7 +60,7 @@ class ItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.get_reduced_value('name'), u'Marta')
 
     def test_replace_value(self):
-        il = TestItemLoader()
+        il = TestLoader()
         il.replace_value('name', u'marta')
         self.assertEqual(il.get_expanded_value('name'), [u'Marta'])
         self.assertEqual(il.get_reduced_value('name'), u'Marta')
@@ -69,144 +69,144 @@ class ItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.get_reduced_value('name'), u'Pepe')
 
     def test_tree_expander_multiple_functions(self):
-        class TestItemLoader(NameItemLoader):
+        class TestLoader(NameLoader):
             name_exp = TreeExpander(lambda v: v.title(), lambda v: v[:-1])
 
-        il = TestItemLoader()
+        il = TestLoader()
         il.add_value('name', u'marta')
         self.assertEqual(il.get_reduced_value('name'), u'Mart')
         item = il.get_item()
         self.assertEqual(item['name'], u'Mart')
 
     def test_default_expander(self):
-        il = DefaultedItemLoader()
+        il = DefaultedLoader()
         il.add_value('name', u'marta')
         self.assertEqual(il.get_reduced_value('name'), u'mart')
 
     def test_inherited_default_expander(self):
-        class InheritDefaultedItemLoader(DefaultedItemLoader):
+        class InheritDefaultedLoader(DefaultedLoader):
             pass
 
-        il = InheritDefaultedItemLoader()
+        il = InheritDefaultedLoader()
         il.add_value('name', u'marta')
         self.assertEqual(il.get_reduced_value('name'), u'mart')
 
     def test_expander_inheritance(self):
-        class ChildItemLoader(TestItemLoader):
+        class ChildLoader(TestLoader):
             url_exp = TreeExpander(lambda v: v.lower())
 
-        il = ChildItemLoader()
+        il = ChildLoader()
         il.add_value('url', u'HTTP://scrapy.ORG')
         self.assertEqual(il.get_reduced_value('url'), u'http://scrapy.org')
         il.add_value('name', u'marta')
         self.assertEqual(il.get_reduced_value('name'), u'Marta')
 
-        class ChildChildItemLoader(ChildItemLoader):
+        class ChildChildLoader(ChildLoader):
             url_exp = TreeExpander(lambda v: v.upper())
             summary_exp = TreeExpander(lambda v: v)
 
-        il = ChildChildItemLoader()
+        il = ChildChildLoader()
         il.add_value('url', u'http://scrapy.org')
         self.assertEqual(il.get_reduced_value('url'), u'HTTP://SCRAPY.ORG')
         il.add_value('name', u'marta')
         self.assertEqual(il.get_reduced_value('name'), u'Marta')
 
     def test_empty_tree_expander(self):
-        class IdentityDefaultedItemLoader(DefaultedItemLoader):
+        class IdentityDefaultedLoader(DefaultedLoader):
             name_exp = TreeExpander()
 
-        il = IdentityDefaultedItemLoader()
+        il = IdentityDefaultedLoader()
         il.add_value('name', u'marta')
         self.assertEqual(il.get_reduced_value('name'), u'marta')
 
     def test_identity_expander(self):
-        class IdentityDefaultedItemLoader(DefaultedItemLoader):
+        class IdentityDefaultedLoader(DefaultedLoader):
             name_exp = IdentityExpander()
 
-        il = IdentityDefaultedItemLoader()
+        il = IdentityDefaultedLoader()
         il.add_value('name', u'marta')
         self.assertEqual(il.get_reduced_value('name'), u'marta')
 
     def test_extend_custom_expanders(self):
-        class ChildItemLoader(TestItemLoader):
-            name_exp = TreeExpander(TestItemLoader.name_exp, unicode.swapcase)
+        class ChildLoader(TestLoader):
+            name_exp = TreeExpander(TestLoader.name_exp, unicode.swapcase)
 
-        il = ChildItemLoader()
+        il = ChildLoader()
         il.add_value('name', u'marta')
         self.assertEqual(il.get_reduced_value('name'), u'mARTA')
 
     def test_extend_default_expanders(self):
-        class ChildDefaultedItemLoader(DefaultedItemLoader):
-            name_exp = TreeExpander(DefaultedItemLoader.default_expander, unicode.swapcase)
+        class ChildDefaultedLoader(DefaultedLoader):
+            name_exp = TreeExpander(DefaultedLoader.default_expander, unicode.swapcase)
 
-        il = ChildDefaultedItemLoader()
+        il = ChildDefaultedLoader()
         il.add_value('name', u'marta')
         self.assertEqual(il.get_reduced_value('name'), u'MART')
 
     def test_reducer_using_function(self):
-        il = TestItemLoader()
+        il = TestLoader()
         il.add_value('name', [u'mar', u'ta'])
         self.assertEqual(il.get_reduced_value('name'), u'Mar')
 
-        class TakeFirstItemLoader(TestItemLoader):
+        class TakeFirstLoader(TestLoader):
             name_red = u" ".join
 
-        il = TakeFirstItemLoader()
+        il = TakeFirstLoader()
         il.add_value('name', [u'mar', u'ta'])
         self.assertEqual(il.get_reduced_value('name'), u'Mar Ta')
 
     def test_reducer_using_classes(self):
-        il = TestItemLoader()
+        il = TestLoader()
         il.add_value('name', [u'mar', u'ta'])
         self.assertEqual(il.get_reduced_value('name'), u'Mar')
 
-        class TakeFirstItemLoader(TestItemLoader):
+        class TakeFirstLoader(TestLoader):
             name_red = Join()
 
-        il = TakeFirstItemLoader()
+        il = TakeFirstLoader()
         il.add_value('name', [u'mar', u'ta'])
         self.assertEqual(il.get_reduced_value('name'), u'Mar Ta')
 
-        class TakeFirstItemLoader(TestItemLoader):
+        class TakeFirstLoader(TestLoader):
             name_red = Join("<br>")
 
-        il = TakeFirstItemLoader()
+        il = TakeFirstLoader()
         il.add_value('name', [u'mar', u'ta'])
         self.assertEqual(il.get_reduced_value('name'), u'Mar<br>Ta')
 
     def test_default_reducer(self):
-        il = TestItemLoader()
+        il = TestLoader()
         il.add_value('name', [u'mar', u'ta'])
         self.assertEqual(il.get_reduced_value('name'), u'Mar')
 
-        class LalaItemLoader(TestItemLoader):
+        class LalaLoader(TestLoader):
             default_reducer = Identity()
 
-        il = LalaItemLoader()
+        il = LalaLoader()
         il.add_value('name', [u'mar', u'ta'])
         self.assertEqual(il.get_reduced_value('name'), [u'Mar', u'Ta'])
 
     def test_expander_args_on_declaration(self):
-        class ChildItemLoader(TestItemLoader):
+        class ChildLoader(TestLoader):
             url_exp = TreeExpander(expander_func_with_args, key=u'val')
 
-        il = ChildItemLoader()
+        il = ChildLoader()
         il.add_value('url', u'text', key=u'val')
         self.assertEqual(il.get_reduced_value('url'), 'val')
 
     def test_expander_args_on_instantiation(self):
-        class ChildItemLoader(TestItemLoader):
+        class ChildLoader(TestLoader):
             url_exp = TreeExpander(expander_func_with_args)
 
-        il = ChildItemLoader(key=u'val')
+        il = ChildLoader(key=u'val')
         il.add_value('url', u'text')
         self.assertEqual(il.get_reduced_value('url'), 'val')
 
     def test_expander_args_on_assign(self):
-        class ChildItemLoader(TestItemLoader):
+        class ChildLoadeLoader(TestLoader):
             url_exp = TreeExpander(expander_func_with_args)
 
-        il = ChildItemLoader()
+        il = ChildLoader()
         il.add_value('url', u'text', key=u'val')
         self.assertEqual(il.get_reduced_value('url'), 'val')
 
@@ -214,16 +214,16 @@ class ItemLoaderTest(unittest.TestCase):
         def exp_func(value, loader_args):
             return loader_args['item']['name']
 
-        class ChildItemLoader(TestItemLoader):
+        class ChildLoader(TestLoader):
             url_exp = TreeExpander(exp_func)
 
         it = TestItem(name='marta')
-        il = ChildItemLoader(item=it)
+        il = ChildLoader(item=it)
         il.add_value('url', u'text', key=u'val')
         self.assertEqual(il.get_reduced_value('url'), 'marta')
 
     def test_add_value_on_unknown_field(self):
-        il = TestItemLoader()
+        il = TestLoader()
         self.assertRaises(KeyError, il.add_value, 'wrong_field', [u'lala', u'lolo'])
 
 if __name__ == "__main__":

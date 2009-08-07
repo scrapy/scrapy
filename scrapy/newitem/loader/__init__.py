@@ -5,7 +5,7 @@ from scrapy.newitem import Item
 from scrapy.newitem.loader.reducers import TakeFirst
 from scrapy.newitem.loader.expanders import IdentityExpander
 
-class ItemLoader(object):
+class Loader(object):
 
     default_item_class = Item
     default_expander = IdentityExpander()
