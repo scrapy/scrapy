@@ -8,12 +8,12 @@ Item Loaders
    :synopsis: Item Loader class
 
 Item Loaders (or Loaders, for short) provide a convenient mechanism for
-populating scraped :ref:`Items <topics-newitem>`. Even though Items can be
+populating scraped :ref:`Items <topics-newitems>`. Even though Items can be
 populated using their own dictionary-like API, the Loaders provide a much more
 convenient API for populating them from a scraping process, by automating some
 common tasks like parsing the raw extracted data before assigning it.
 
-In other words, :ref:`Items <topics-newitem>` provide the *container* of
+In other words, :ref:`Items <topics-newitems>` provide the *container* of
 scraped data, while Loaders provide the mechanism for *populating* that
 container.
 
@@ -34,8 +34,8 @@ Then, you start adding values to the Loader, typically collecting them using
 same item field, the Loader will know how to "join" those values later using a
 Reducer.
 
-Here's a typical Loader usage in a :ref:`Spider <topics-spiders>` the
-:ref:`Product item defined in the Items chapter <topics-newitem-declaring>`.::
+Here is a typical Loader usage in a :ref:`Spider <topics-spiders>` using the
+:ref:`Product item defined in the Items chapter <topics-newitems-declaring>`.::
 
     from scrapy.item.loader import Loader
     from scrapy.xpath import HtmlXPathSelector

@@ -19,5 +19,5 @@ it's properly merged) . Use at your own risk.
 .. toctree::
    :maxdepth: 1
 
-   newitem
-   newitem-loader
+   newitems
+   loaders

@@ -1,8 +1,8 @@
-.. _topics-newitem:
+.. _topics-newitems:
 
-=====
-Items
-=====
+=================
+Items (version 2)
+=================
 
 .. module:: scrapy.newitem
    :synopsis: Item and Field classes
@@ -17,7 +17,7 @@ their available fields.
 
 .. _dictionary-like: http://docs.python.org/library/stdtypes.html#dict
 
-.. _topics-newitem-declaring:
+.. _topics-newitems-declaring:
 
 Declaring Items
 ===============
@@ -204,6 +204,15 @@ For example::
         discount_percent = Field(default=0)
         discount_expiration_date = Field()
 
+You can also extend field metadata by using the previous field metadata and
+appending more values, or changing existing values, like this::
+
+    class SpecificProduct(Product):
+        name = Field(Product.fields['name'], default='product')
+
+That adds (or replaces) the ``default`` metadata key for the ``name`` field,
+keeping all the previously existing metadata values.
+
 Item objects
 ============
 
@@ -219,7 +228,7 @@ Item objects
         A dictionary containing *all declared fields* for this Item, not only
         those populated. The keys are the field names and the values are the
         :class:`Field` objects used in the :ref:`Item declaration
-        <topics-newitem-declaring>`.
+        <topics-newitems-declaring>`.
 
 .. _dict API: http://docs.python.org/library/stdtypes.html#dict
 
@@ -231,7 +240,7 @@ Field objects
     The :class:`Field` class is just an alias to the built-in `dict`_ class and
     doesn't provide any extra functionality or attributes. In other words,
     :class:`Field` objects are plain-old Python dicts. A separate class is used
-    to support the :ref:`item declaration syntax <topics-newitem-declaring>`
+    to support the :ref:`item declaration syntax <topics-newitems-declaring>`
     based on class attributes.
 
 .. _dict: http://docs.python.org/library/stdtypes.html#dict
