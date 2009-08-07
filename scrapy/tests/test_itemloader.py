@@ -32,7 +32,7 @@ def expander_func_with_args(value, other=None, loader_args=None):
         return loader_args['key']
     return value
 
-class Loader(unittest.TestCase):
+class LoaderTest(unittest.TestCase):
 
     def test_get_item_using_default_loader(self):
         i = TestItem()
@@ -203,7 +203,7 @@ class Loader(unittest.TestCase):
         self.assertEqual(il.get_reduced_value('url'), 'val')
 
     def test_expander_args_on_assign(self):
-        class ChildLoadeLoader(TestLoader):
+        class ChildLoader(TestLoader):
             url_exp = TreeExpander(expander_func_with_args)
 
         il = ChildLoader()
