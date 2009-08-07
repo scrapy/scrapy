@@ -44,7 +44,7 @@ class NewItemTest(unittest.TestCase):
 
     def test_default_value(self):
         class TestItem(Item):
-            name = Field(default_factory=lambda: u'John')
+            name = Field(default=u'John')
  
         i = TestItem()
         self.assertEqual(i['name'], u'John')

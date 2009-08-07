@@ -30,7 +30,7 @@ class Item(DictMixin, BaseItem):
 
     def __init__(self, *args, **kwargs):
         self._values = {}
-        if args or kwargs: # avoid instantiating dict for most common case
+        if args or kwargs: # avoid creating dict for most common case
             for k, v in dict(*args, **kwargs).iteritems():
                 self[k] = v
 
@@ -39,11 +39,9 @@ class Item(DictMixin, BaseItem):
             return self._values[key]
         except KeyError:
             field = self.fields[key]
-            default_factory = field.get('default_factory')
-            if default_factory:
-                return default_factory()
-            else:
-                raise KeyError(key)
+            if 'default' in field:
+                return field['default']
+            raise
 
     def __setitem__(self, key, value):
         if key in self.fields:
