@@ -115,8 +115,6 @@ class MemoryUsage(object):
                         (settings['BOT_NAME'], mem, socket.gethostname())
                 self._send_report(self.notify_mails, subj)
                 stats.set_value('memusage/warning_notified', 1)
-            else:
-                stats.set_value('memusage/warning_notified', 0)
             self.warned = True
 
     def _send_report(self, rcpts, subject):
