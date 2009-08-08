@@ -65,7 +65,7 @@ Working with Items
 ==================
 
 Here are some examples of common tasks performed with items, using the
-``Product`` item :ref:`declared above  <topics-newitem-declaring>`. You will
+``Product`` item :ref:`declared above  <topics-newitems-declaring>`. You will
 notice the API is very similar to the `dict API`_.
 
 Creating items

@@ -37,55 +37,58 @@ Reducer.
 Here is a typical Loader usage in a :ref:`Spider <topics-spiders>` using the
 :ref:`Product item defined in the Items chapter <topics-newitems-declaring>`.::
 
-    from scrapy.item.loader import Loader
+    from scrapy.item.loader import XPathLoader
     from scrapy.xpath import HtmlXPathSelector
     from myproject.items import Product
 
     def parse(self, response):
-        x = HtmlXPathSelector(response)
-        l = Loader(item=Product())
-        l.add_value('name', x.x('//div[@class="product_name"]').extract())
-        l.add_value('name', x.x('//div[@class="product_title"]').extract())
-        l.add_value('price', x.x('//p[@id="price"]').extract())
-        l.add_value('stock', x.x('//p[@id="stock"]').extract())
-        l.add_value('last_updated', 'today')
+        l = XPathLoader(item=Product(), response=response)
+        l.add_xpath('name', '//div[@class="product_name"]')
+        l.add_xpath('name', '//div[@class="product_title"]')
+        l.add_xpath('price', '//p[@id="price"]')
+        l.add_xpath('stock', '//p[@id="stock"]')
+        l.add_value('last_updated', 'today') # you can also literal values
         return l.get_item()
 
-By looking at that code we can see the ``name`` field is being extracted from
-two different XPath locations in the page:
+By quickly looking at that code we can see the ``name`` field is being
+extracted from two different XPath locations in the page:
 
 * ``//div[@class="product_name"]``
 * ``//div[@class="product_title"]``
 
-So both XPaths are used for extracting data from the page, and the data
-returned by them is collected to be assigned to the ``name`` attribute.
+In other words, data is being collected by extracting it from two XPath
+locations, using the :meth:`~XPathLoader.add_xpath` method. This is the data
+that will be assigned to the ``name`` field later.
 
 Afterwards, similar calls are used for ``price`` and ``stock`` fields, and
 finally the ``last_update`` field is populated directly with a literal value
-(``today``).
+(``today``) using a different method: :meth:`~Loader.add_value`.
 
 Finally, when all data is collected, the :meth:`Loader.get_item` method is
 called which actually populates and returns the item populated with the data
-previously extracted with the ``add_value`` calls.
+previously extracted and collected with the :meth:`~XPathLoader.add_xpath` and
+:meth:`~Loader.add_value` calls.
+
+.. _topics-loader-expred:
 
 Expanders and Reducers
 ======================
 
-A Loader is composed of one expander and reducer for each item field. The
-Expander processes the extracted data as soon as it's received through the
-:meth:`Loader.add_value` method, and the result of the expander is collected
-and kept inside the Loader. After collecting all data, the
-:meth:`Loader.get_item` method is called to actually populate and get the Item.
-That's when the Reducers are called with the data previously collected (using
-the Expanders) and the output of the Reducers are the actual values that get
-assigned to the item.
+A Loader is composed of one expander and one reducer for each item field. The
+Expander processes the extracted data as soon as it's received (through the
+:meth:`~XPathLoader.add_xpath` or :meth:`~Loader.add_value` methods) and the
+result of the expander is collected and kept inside the Loader. After
+collecting all data, the :meth:`Loader.get_item` method is called to actually
+populate and get the Item.  That's when the Reducers are called with the data
+previously collected (using the Expanders) and the output of the Reducers are
+the actual values that get assigned to the item.
 
 Let's see an example to illustrate how Expanders and Reducers are called, for a
 particular field (the same applies for any other field)::
 
-    l = Loader(Product())
-    l.add_value('name', x.x(xpath1).extract()) # (1)
-    l.add_value('name', x.x(xpath2).extract()) # (2)
+    l = XPathLoader(Product(), some_selector)
+    l.add_xpath('name', xpath1) # (1)
+    l.add_xpath('name', xpath2) # (2)
     return l.get_item() # (3)
 
 So what happens is:
@@ -150,14 +153,14 @@ value and extracts a length from it::
         return parsed_length
 
 Since it receives a ``loader_args`` the Expander will pass the currently active
-loader arguments when calling it. 
+Loader arguments when calling it.
 
-There are seveal ways to pass loader arguments:
+There are seveal ways to pass Loader arguments:
 
 1. Passing arguments on Loader declaration::
 
     class ProductLoader(Loader):
-        length_exp = TreeExpander(parse_length, unit='cm') 
+        length_exp = TreeExpander(parse_length, unit='cm')
 
 2. Passing arguments on Loader instantiation::
 
@@ -165,7 +168,7 @@ There are seveal ways to pass loader arguments:
 
 3. Passing arguments on Loader usage::
 
-    l.add_value('length', x.x('//div').extract(), unit='cm')
+    l.add_xpath('length', '//div', unit='cm')
 
 Loader objects
 ==============
@@ -176,15 +179,22 @@ Loader objects
     given, one is instantiated using the class in :attr:`default_item_class`.
 
     .. method:: add_value(field_name, value, \**new_loader_args)
- 
-        Add the given ``value`` for the given field. 
-        
-        The value is passed through the field expander and its output appened
-        to the data collected for that field. If the field already contains
-        collected data, the new data is added.
+
+        Add the given ``value`` for the given field.
+
+        The value is passed through the :ref:`field expander
+        <topics-loader-expred>` and its output appened to the data collected
+        for that field. If the field already contains collected data, the new
+        data is added.
 
         If any keyword arguments are passed, they're used as :ref:`Loader
         arguments <topics-loader-args>` when calling the expanders.
+
+        Examples::
+
+            loader.add_value('name', u'Color TV')
+            loader.add_value('colours', [u'white', u'blue'])
+            loader.add_value('length', u'100', default_unit='cm')
 
     .. method:: replace_value(field_name, value, \**new_loader_args)
 
@@ -194,7 +204,10 @@ Loader objects
 
     .. method:: get_item()
 
-        Populate the item with the data collected so far, and return it.
+        Populate the item with the data collected so far, and return it. The
+        data collected is first passed through the :ref:`field reducers
+        <topics-loader-expred>` to get the final value to assign to each item
+        field.
 
     .. method:: get_expanded_value(field_name)
 
@@ -228,6 +241,41 @@ Loader objects
 
         The default reducer to use for those fields which don't define a
         specific expander
+
+.. class:: XPathLoader([item, selector, response], \**loader_args)
+
+    The :class:`XPathLoader` class extends the :class:`Loader` class providing
+    more convenient mechanisms for extracting data from web pages using
+    :ref:`XPath selectors <topics-selectors>`.
+
+    :class:`XPathLoader` objects accept two more additional parameters in their
+    constructors:
+
+    :param selector: The selector to extract data from, when using the
+        :meth:`add_xpath` or :meth:`replace_xpath` method.
+    :type selector: :class:`~scrapy.xpath.XPathSelector` object
+
+    :param response: The response used to construct the selector using the
+        :attr:`default_selector_class`, unless the selector argument is given,
+        in which case this argument is ignored.
+    :type response: :class:`~scrapy.http.Response` object
+
+    .. attribute:: default_selector_class
+
+        The class used to construct the selector, if only a response is given
+        in the constructor
+
+    .. method:: add_xpath(field_name, xpath, \**new_loader_args)
+
+        Similar to :meth:`Loader.add_value` but receives an XPath instead of a
+        value, which is used to extract a list of unicode strings from the
+        selector associated with this :class:`XPathLoader`.
+
+    .. method:: replace_xpath(field_name, xpath, \**new_loader_args)
+
+        Similar to :meth:`add_xpath` but replaces collected data instead of
+        adding it.
+
 
 Reusing and extending Loaders
 =============================
@@ -283,7 +331,7 @@ one, as the other is just an identity expander.
 
 .. module:: scrapy.newitem.loader.expanders
    :synopsis: Expander classes to use with Item Loaders
-   
+
 .. class:: TreeExpander(\*functions, \**default_loader_arguments)
 
     An expander which applies the given functions consecutively, in order, to
@@ -297,11 +345,12 @@ one, as the other is just an identity expander.
     is why this expander is called Tree Expander.
 
     Each expander function can optionally receive a ``loader_args`` argument,
-    which will contain the currently active loader arguments.
+    which will contain the currently active :ref:`Loader arguments
+    <topics-loader-args>`.
 
     The keyword arguments passed in the consturctor are used as the default
-    loader arguments passed to on each expander call. This arguments can be
-    overriden with specific loader arguments passed on each expander call.
+    Loader arguments passed to on each expander call. This arguments can be
+    overriden with specific noader arguments passed on each expander call.
 
 IdentityExpander
 ----------------
@@ -337,7 +386,7 @@ or callable as reducer.
 
     Return the values to reduce unchanged, so it's used for multi-valued
     fields. It doesn't receive any constructor arguments.
-    
+
     Example::
 
         features_red = Identity()
@@ -345,13 +394,13 @@ or callable as reducer.
 .. class:: Join(separator=u' ')
 
     Return a the values to reduce joined with the separator given in the
-    constructor, which defaults to ``u' '``. 
+    constructor, which defaults to ``u' '``.
 
     When using the default separator, this reducer is equivalent to the
     function: ``u' '.join``
 
     Examples::
-        
+
         name_red = Join()
         name_red = Join('<br>')
 

@@ -1,9 +1,11 @@
 import unittest
 
-from scrapy.newitem.loader import Loader
+from scrapy.newitem.loader import Loader, XPathLoader
 from scrapy.newitem.loader.expanders import TreeExpander, IdentityExpander
 from scrapy.newitem.loader.reducers import Join, Identity
 from scrapy.newitem import Item, Field
+from scrapy.xpath import HtmlXPathSelector
+from scrapy.http import HtmlResponse
 
 # test items
 
@@ -225,6 +227,28 @@ class LoaderTest(unittest.TestCase):
     def test_add_value_on_unknown_field(self):
         il = TestLoader()
         self.assertRaises(KeyError, il.add_value, 'wrong_field', [u'lala', u'lolo'])
+
+
+class TestXPathLoader(XPathLoader):
+    default_item_class = TestItem
+    name_exp = TreeExpander(lambda v: v.title())
+
+class XPathLoaderTest(unittest.TestCase):
+
+    def test_constructor_errors(self):
+        self.assertRaises(RuntimeError, XPathLoader)
+
+    def test_constructor_with_selector(self):
+        sel = HtmlXPathSelector(text=u"<html><body><div>marta</div></body></html>")
+        l = TestXPathLoader(selector=sel)
+        l.add_xpath('name', '//div/text()')
+        self.assertEqual(l.get_reduced_value('name'), u'Marta')
+
+    def test_constructor_with_response(self):
+        response = HtmlResponse(url="", body="<html><body><div>marta</div></body></html>")
+        l = TestXPathLoader(response=response)
+        l.add_xpath('name', '//div/text()')
+        self.assertEqual(l.get_reduced_value('name'), u'Marta')
 
 if __name__ == "__main__":
     unittest.main()

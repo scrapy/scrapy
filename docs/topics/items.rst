@@ -57,7 +57,7 @@ RobustScrapedItems
 .. warning::
 
    RobustScapedItems are deprecated and will be replaced by the :ref:`New item
-   API <topics-newitem>` (still in development).
+   API <topics-newitems>` (still in development).
 
 .. module:: scrapy.contrib.item
    :synopsis: Objects for storing scraped data
