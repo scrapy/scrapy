@@ -6,7 +6,6 @@ See documentation in docs/ref/extensions.rst
 
 import sys
 import os
-import pprint
 import socket
 
 from scrapy.xlib.pydispatch import dispatcher
@@ -18,6 +17,7 @@ from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import NotConfigured
 from scrapy.mail import MailSender
 from scrapy.conf import settings
+from scrapy.stats import stats
 
 class MemoryUsage(object):
     
@@ -68,10 +68,12 @@ class MemoryUsage(object):
 
     def engine_started(self):
         self.data['startup'] = self.virtual
+        stats.set_value('memusage/startup', int(self.virtual))
 
     def update(self):
         if self.virtual > self.data['max']:
             self.data['max'] = self.virtual
+            stats.set_value('memusage/max', int(self.virtual))
 
     def _vmvalue(self, VmKey):
         # get pseudo file  /proc/<pid>/status
@@ -91,22 +93,30 @@ class MemoryUsage(object):
 
     def _check_limit(self):
         if self.virtual > self.limit:
+            stats.set_value('memusage/limit_reached', 1)
             mem = self.limit/1024/1024
             log.msg("Memory usage exceeded %dM. Shutting down Scrapy..." % mem, level=log.ERROR)
             if self.notify_mails:
-                subj = "%s terminated: memory usage exceeded %dM at %s" % (settings['BOT_NAME'], mem, socket.gethostname())
+                subj = "%s terminated: memory usage exceeded %dM at %s" % \
+                        (settings['BOT_NAME'], mem, socket.gethostname())
                 self._send_report(self.notify_mails, subj)
+                stats.set_value('memusage/limit_notified', 1)
             scrapymanager.stop()
 
     def _check_warning(self):
         if self.warned: # warn only once
             return
         if self.virtual > self.warning:
+            stats.set_value('memusage/warning_reached', 1)
             mem = self.warning/1024/1024
             log.msg("Memory usage reached %dM" % mem, level=log.WARNING)
             if self.notify_mails:
-                subj = "%s warning: memory usage reached %dM at %s" % (settings['BOT_NAME'], mem, socket.gethostname())
+                subj = "%s warning: memory usage reached %dM at %s" % \
+                        (settings['BOT_NAME'], mem, socket.gethostname())
                 self._send_report(self.notify_mails, subj)
+                stats.set_value('memusage/warning_notified', 1)
+            else:
+                stats.set_value('memusage/warning_notified', 0)
             self.warned = True
 
     def _send_report(self, rcpts, subject):
