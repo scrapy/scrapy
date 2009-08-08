@@ -110,7 +110,7 @@ HTTPCACHE_IGNORE_MISSING = False
 HTTPCACHE_SECTORIZE = True
 HTTPCACHE_EXPIRATION_SECS = 0
 
-ITEM_PROCESSOR = 'scrapy.item.pipeline.ItemPipelineManager'
+ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'
 
 # Item pipelines are typically set in specific commands settings
 ITEM_PIPELINES = []
