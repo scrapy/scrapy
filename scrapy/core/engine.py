@@ -229,14 +229,14 @@ class ExecutionEngine(object):
 
     def download(self, request, spider):
         domain = spider.domain_name
-        referer = request.headers.get('Referer', None)
+        referer = request.headers.get('Referer')
 
         def _on_success(response):
             """handle the result of a page download"""
             assert isinstance(response, (Response, Request))
             if isinstance(response, Response):
                 response.request = request # tie request to response received
-                log.msg("Crawled %s from <%s>" % (response, referer), level=log.DEBUG, \
+                log.msg("Crawled %s (referer: <%s>)" % (response, referer), level=log.DEBUG, \
                     domain=domain)
                 return response
             elif isinstance(response, Request):
@@ -248,8 +248,10 @@ class ExecutionEngine(object):
         def _on_error(_failure):
             """handle an error processing a page"""
             ex = _failure.value
-            errmsg = str(_failure) if not isinstance(ex, IgnoreRequest) else _failure.getErrorMessage()
-            log.msg("Downloading <%s> from <%s>: %s" % (request.url, referer, errmsg), log.ERROR, domain=domain)
+            errmsg = str(_failure) if not isinstance(ex, IgnoreRequest) \
+                else _failure.getErrorMessage()
+            log.msg("Downloading <%s> (referer: <%s>): %s" % (request.url, referer, errmsg), \
+                log.ERROR, domain=domain)
             return Failure(IgnoreRequest(str(ex)))
 
         def _on_complete(_):
