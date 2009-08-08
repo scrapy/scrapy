@@ -11,40 +11,36 @@ from scrapy.spider import spiders
 from scrapy.xlib import lsprofcalltree
 from scrapy.conf import settings, SETTINGS_MODULE
 
+# This dict holds information about the executed command for later use
+command_executed = {}
+
 def find_commands(dir):
     try:
-        return [f[:-3] for f in os.listdir(dir) if not f.startswith('_') and f.endswith('.py')]
+        return [f[:-3] for f in os.listdir(dir) if not f.startswith('_') and \
+            f.endswith('.py')]
     except OSError:
         return []
 
-def builtin_commands_dict():
+def get_commands_from_module(module):
     d = {}
-    scrapy_dir = scrapy.__path__[0]
-    commands_dir = os.path.join(scrapy_dir, 'command', 'commands')
-    for cmdname in find_commands(commands_dir):
-        modname = 'scrapy.command.commands.%s' % cmdname
+    mod = __import__(module, {}, {}, [''])
+    for cmdname in find_commands(mod.__path__[0]):
+        modname = '%s.%s' % (module, cmdname)
         command = getattr(__import__(modname, {}, {}, [cmdname]), 'Command', None)
         if callable(command):
             d[cmdname] = command()
         else:
-            print 'WARNING: Builtin command module %s exists but Command class not found' % modname
+            print 'WARNING: Module %r does not define a Command class' % modname
     return d
 
-def custom_commands_dict():
-    d = {}
-    cmdsmod = settings['COMMANDS_MODULE']
-    if cmdsmod:
-        mod = __import__(cmdsmod, {}, {}, [''])
-        for cmdname in find_commands(mod.__path__[0]):
-            modname = '%s.%s' % (cmdsmod, cmdname)
-            command = getattr(__import__(modname, {}, {}, [cmdname]), 'Command', None)
-            if callable(command):
-                d[cmdname] = command()
-            else:
-                print 'WARNING: Custom command module %s exists but Command class not found' % modname
-    return d
+def get_commands_dict():
+    cmds = get_commands_from_module('scrapy.command.commands')
+    cmds_module = settings['COMMANDS_MODULE']
+    if cmds_module:
+        cmds.update(get_commands_from_module(cmds_module))
+    return cmds
 
-def getcmdname(argv):
+def get_command_name(argv):
     for arg in argv[1:]:
         if not arg.startswith('-'):
             return arg
@@ -58,54 +54,35 @@ def usage(prog):
     s += "  Print command help and options\n\n"
     s += "Available commands\n"
     s += "===================\n"
-
-    cmds = builtin_commands_dict()
-    cmds.update(custom_commands_dict())
-
+    cmds = get_commands_dict()
     for cmdname, cmdclass in sorted(cmds.iteritems()):
         s += "%s %s\n" % (cmdname, cmdclass.syntax())
         s += "  %s\n" % cmdclass.short_desc()
-
     return s
 
-
-def update_defaults(defaults, module):
-    settingsdict = vars(module)
+def update_default_settings(module, cmdname):
+    try:
+        mod = __import__('%s.%s' % (module, cmdname), {}, {}, [''])
+    except ImportError:
+        return
+    settingsdict = vars(mod)
     for k, v in settingsdict.iteritems():
         if not k.startswith("_"):
-            defaults[k] = v
-
-def command_settings(cmdname):
-    try:
-        module = __import__('%s.%s' % ('scrapy.conf.commands', cmdname), {}, {}, [''])
-        update_defaults(settings.defaults, module)
-    except ImportError:
-        pass
-
-    basepath = settings['COMMANDS_SETTINGS_MODULE']
-    if basepath:
-        try:
-            module = __import__('%s.%s' % (basepath, cmdname), {}, {}, [''])
-            update_defaults(settings.defaults, module)
-        except ImportError:
-            pass
-
-# This dict holds information about the executed command for later use
-command_executed = {}
+            settings.defaults[k] = v
 
 def execute():
     if not settings.settings_module:
         print "Scrapy %s\n" % scrapy.__version__
-        print "Error: Cannot find %r module in python path." % SETTINGS_MODULE
+        print "Error: Cannot find %r module in python path" % SETTINGS_MODULE
         sys.exit(1)
     execute_with_args(sys.argv)
 
 def execute_with_args(argv):
-    cmds = builtin_commands_dict()
-    cmds.update(custom_commands_dict())
+    cmds = get_commands_dict()
 
-    cmdname = getcmdname(argv)
-    command_settings(cmdname)
+    cmdname = get_command_name(argv)
+    update_default_settings('scrapy.conf.commands', cmdname)
+    update_default_settings(settings['COMMANDS_SETTINGS_MODULE'], cmdname)
 
     if not cmdname:
         print "Scrapy %s\n" % scrapy.__version__
@@ -142,6 +119,11 @@ def execute_with_args(argv):
     cmd.process_options(args, opts)
     spiders.load()
     log.start()
+    ret = run_command(cmd, args, opts)
+    if ret is False:
+        parser.print_help()
+
+def run_command(cmd, args, opts):
     if opts.profile or opts.lsprof:
         if opts.profile:
             log.msg("writing cProfile stats to %r" % opts.profile)
@@ -159,5 +141,4 @@ def execute_with_args(argv):
         ret = loc['ret']
     else:
         ret = cmd.run(args, opts)
-    if ret is False:
-        parser.print_help()
+    return ret
