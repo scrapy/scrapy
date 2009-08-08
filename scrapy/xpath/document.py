@@ -3,12 +3,12 @@ This module contains a simple class (Libxml2Document) to wrap libxml2 documents
 (xmlDoc) for proper garbage collection.
 """
 
-from scrapy.xpath.constructors import xmlDoc_from_html
+from scrapy.xpath.factories import xmlDoc_from_html
 
 class Libxml2Document(object):
 
-    def __init__(self, response, constructor=xmlDoc_from_html):
-        self.xmlDoc = constructor(response)
+    def __init__(self, response, factory=xmlDoc_from_html):
+        self.xmlDoc = factory(response)
         self.xpathContext = self.xmlDoc.xpathNewContext()
 
     def __del__(self):

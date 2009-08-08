@@ -8,7 +8,7 @@ import libxml2
 
 from scrapy.http import TextResponse
 from scrapy.xpath.extension import Libxml2Document
-from scrapy.xpath.constructors import xmlDoc_from_html, xmlDoc_from_xml
+from scrapy.xpath.factories import xmlDoc_from_html, xmlDoc_from_xml
 from scrapy.utils.python import flatten, unicode_to_str
 from scrapy.utils.misc import extract_regex
 
@@ -23,19 +23,23 @@ class XPathSelector(object):
     - HtmlXPathSelector (for HTML content)
     """
 
-    def __init__(self, response=None, text=None, node=None, parent=None, expr=None, constructor=xmlDoc_from_html):
+    xmlDoc_factory = staticmethod(xmlDoc_from_html)
+
+    def __init__(self, response=None, text=None, node=None, parent=None, expr=None):
         if parent:
             self.doc = parent.doc
             self.xmlNode = node
         elif response:
             try:
-                self.doc = response.getlibxml2doc(constructor=constructor)  # try with cached version first
+                # try with cached version first
+                self.doc = response.getlibxml2doc(factory=self.xmlDoc_factory)
             except AttributeError:
-                self.doc = Libxml2Document(response, constructor=constructor)
+                self.doc = Libxml2Document(response, factory=self.xmlDoc_factory)
             self.xmlNode = self.doc.xmlDoc
         elif text:
-            response = TextResponse(url=None, body=unicode_to_str(text), encoding='utf-8')
-            self.doc = Libxml2Document(response, constructor=constructor)
+            response = TextResponse(url=None, body=unicode_to_str(text), \
+                encoding='utf-8')
+            self.doc = Libxml2Document(response, factory=self.xmlDoc_factory)
             self.xmlNode = self.doc.xmlDoc
         self.expr = expr
         self.response = response
@@ -51,10 +55,11 @@ class XPathSelector(object):
                 raise ValueError("Invalid XPath: %s" % xpath)
             cls = type(self)
             if hasattr(xpath_result, '__iter__'):
-                return XPathSelectorList([cls(node=node, parent=self, expr=xpath, response=self.response)
-                                          for node in xpath_result])
+                return XPathSelectorList([cls(node=node, parent=self, expr=xpath, \
+                    response=self.response) for node in xpath_result])
             else:
-                return XPathSelectorList([cls(node=xpath_result, parent=self, expr=xpath, response=self.response)])
+                return XPathSelectorList([cls(node=xpath_result, parent=self, \
+                    expr=xpath, response=self.response)])
         else:
             return XPathSelectorList([])
     __call__ = x
@@ -132,12 +137,9 @@ class XPathSelectorList(list):
 
 class XmlXPathSelector(XPathSelector):
     """XPathSelector for XML content"""
-    def __init__(self, *args, **kwargs):
-        kwargs['constructor'] = xmlDoc_from_xml
-        XPathSelector.__init__(self, *args, **kwargs)
+    xmlDoc_factory = staticmethod(xmlDoc_from_xml)
+
 
 class HtmlXPathSelector(XPathSelector):
     """XPathSelector for HTML content"""
-    def __init__(self, *args, **kwargs):
-        kwargs['constructor'] = xmlDoc_from_html
-        XPathSelector.__init__(self, *args, **kwargs)
+    xmlDoc_factory = staticmethod(xmlDoc_from_html)
