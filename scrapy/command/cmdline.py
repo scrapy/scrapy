@@ -61,6 +61,8 @@ def usage(prog):
     return s
 
 def update_default_settings(module, cmdname):
+    if not module:
+        return
     try:
         mod = __import__('%s.%s' % (module, cmdname), {}, {}, [''])
     except ImportError:
