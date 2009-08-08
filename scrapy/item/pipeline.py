@@ -1,3 +1,8 @@
+"""
+Item pipeline manager
+
+See documentation in docs/item-pipeline.rst
+"""
 from scrapy import log
 from scrapy.core.exceptions import NotConfigured
 from scrapy.item.models import BaseItem
@@ -9,6 +14,8 @@ class ItemPipelineManager(object):
 
     def __init__(self):
         self.loaded = False
+        self.enabled = {}
+        self.disabled = {}
         self.pipeline = []
         self.load()
 
@@ -16,15 +23,20 @@ class ItemPipelineManager(object):
         """
         Load pipelines stages defined in settings module
         """
-        for stage in settings.getlist('ITEM_PIPELINES') or ():
-            cls = load_object(stage)
+        self.enabled.clear()
+        self.disabled.clear()
+        for pipepath in settings.getlist('ITEM_PIPELINES'):
+            cls = load_object(pipepath)
             if cls:
                 try:
-                    stageinstance = cls()
-                    self.pipeline.append(stageinstance)
-                except NotConfigured:
-                    pass
-        log.msg("Enabled item pipelines: %s" % ", ".join([type(p).__name__ for p in self.pipeline]),
+                    pipe = cls()
+                    self.pipeline.append(pipe)
+                    self.enabled[cls.__name__] = pipe
+                except NotConfigured, e:
+                    self.disabled[cls.__name__] = pipepath
+                    if e.args:
+                        log.msg(e)
+        log.msg("Enabled item pipelines: %s" % ", ".join(self.enabled.keys()),
             level=log.DEBUG)
         self.loaded = True
 
