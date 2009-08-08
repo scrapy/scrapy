@@ -13,17 +13,6 @@ from scrapy.utils.python import flatten, unicode_to_str
 from scrapy.utils.misc import extract_regex
 
 class XPathSelector(object):
-    """The XPathSelector class provides a convenient way for selecting document
-    parts using XPaths and regexs, with support for nested queries.
-
-    Although this is not an abstract class, you usually instantiate one of its
-    children:
-    
-    - XmlXPathSelector (for XML content)
-    - HtmlXPathSelector (for HTML content)
-    """
-
-    xmlDoc_factory = staticmethod(xmlDoc_from_html)
 
     def __init__(self, response=None, text=None, node=None, parent=None, expr=None):
         if parent:
@@ -32,14 +21,14 @@ class XPathSelector(object):
         elif response:
             try:
                 # try with cached version first
-                self.doc = response.getlibxml2doc(factory=self.xmlDoc_factory)
+                self.doc = response.getlibxml2doc(factory=self._get_libxml2_doc)
             except AttributeError:
-                self.doc = Libxml2Document(response, factory=self.xmlDoc_factory)
+                self.doc = Libxml2Document(response, factory=self._get_libxml2_doc)
             self.xmlNode = self.doc.xmlDoc
         elif text:
             response = TextResponse(url=None, body=unicode_to_str(text), \
                 encoding='utf-8')
-            self.doc = Libxml2Document(response, factory=self.xmlDoc_factory)
+            self.doc = Libxml2Document(response, factory=self._get_libxml2_doc)
             self.xmlNode = self.doc.xmlDoc
         self.expr = expr
         self.response = response
@@ -101,11 +90,16 @@ class XPathSelector(object):
         """Register namespace so that it can be used in XPath queries"""
         self.doc.xpathContext.xpathRegisterNs(prefix, uri)
 
+    def _get_libxml2_doc(self, response):
+        """Return libxml2 document (xmlDoc) from response"""
+        return xmlDoc_from_html(response)
+
     def __nonzero__(self):
         return bool(self.extract())
 
     def __str__(self):
-        return "<%s (%s) xpath=%s>" % (type(self).__name__, getattr(self.xmlNode, 'name', type(self.xmlNode).__name__), self.expr)
+        return "<%s (%s) xpath=%s>" % (type(self).__name__, getattr(self.xmlNode, \
+            'name', type(self.xmlNode).__name__), self.expr)
 
     __repr__ = __str__
 
@@ -137,9 +131,9 @@ class XPathSelectorList(list):
 
 class XmlXPathSelector(XPathSelector):
     """XPathSelector for XML content"""
-    xmlDoc_factory = staticmethod(xmlDoc_from_xml)
+    _get_libxml2_doc = staticmethod(xmlDoc_from_xml)
 
 
 class HtmlXPathSelector(XPathSelector):
     """XPathSelector for HTML content"""
-    xmlDoc_factory = staticmethod(xmlDoc_from_html)
+    _get_libxml2_doc = staticmethod(xmlDoc_from_html)

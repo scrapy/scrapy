@@ -236,7 +236,8 @@ class ExecutionEngine(object):
             assert isinstance(response, (Response, Request))
             if isinstance(response, Response):
                 response.request = request # tie request to response received
-                log.msg("Crawled %s from <%s>" % (response, referer), level=log.DEBUG, domain=domain)
+                log.msg("Crawled %s from <%s>" % (response, referer), level=log.DEBUG, \
+                    domain=domain)
                 return response
             elif isinstance(response, Request):
                 newrequest = response
