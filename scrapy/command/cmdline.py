@@ -106,7 +106,7 @@ def execute_with_args(argv):
         print usage(argv)
         sys.exit(2)
 
-    parser = optparse.OptionParser()
+    parser = optparse.OptionParser(conflict_handler='resolve')
 
     if cmdname in cmds:
         cmd = cmds[cmdname]

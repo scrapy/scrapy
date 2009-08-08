@@ -1,6 +1,9 @@
 """
 Base class for Scrapy commands
 """
+
+from __future__ import with_statement
+
 import os
 import sys
 from scrapy.conf import settings
@@ -38,15 +41,22 @@ class ScrapyCommand(object):
         """
         Populate option parse with options available for this command
         """
-        parser.add_option("-f", "--logfile", dest="logfile", help="logfile to use. if omitted stderr will be used", metavar="FILE")
-        parser.add_option("-o", "--loglevel", dest="loglevel", default=None, help="log level")
-        parser.add_option("--default-spider", dest="default_spider", default=None, help="default spider (domain) to use if no spider is found")
-        parser.add_option("--spider", dest="spider", default=None, help="Force using the given spider when the arguments are urls")
-        parser.add_option("--nolog", dest="nolog", action="store_true", help="disable all log messages")
-        parser.add_option("--profile", dest="profile", default=None, help="write profiling stats in FILE, to analyze later with: python -m pstats FILE", metavar="FILE")
-        parser.add_option("--pidfile", dest="pidfile", help="Write process pid to file FILE", metavar="FILE")
-        parser.add_option("--set", dest="settings", action="append", metavar="SETTING=VALUE", default=[],
-                            help="Override Scrapy setting SETTING with VALUE. May be repeated.")
+        parser.add_option("--logfile", dest="logfile", metavar="FILE", \
+            help="log file. if omitted stderr will be used")
+        parser.add_option("-L", "--loglevel", dest="loglevel", metavar="LEVEL", \
+            default=None, \
+            help="log level. use SILENT level to diasble all log messages")
+        parser.add_option("--default-spider", dest="default_spider", default=None, \
+            help="use this spider when arguments are urls and no spider is found")
+        parser.add_option("--spider", dest="spider", default=None, \
+            help="always use this spider when arguments are urls")
+        parser.add_option("--profile", dest="profile", metavar="FILE", default=None, \
+            help="write python cProfile stats to FILE")
+        parser.add_option("--pidfile", dest="pidfile", metavar="FILE", \
+            help="write process ID to FILE")
+        parser.add_option("--set", dest="settings", action="append", \
+            metavar="SETTING=VALUE", default=[], \
+            help="set/override setting (may be repeated)")
         
     def process_options(self, args, opts):
         if opts.logfile:
@@ -57,9 +67,6 @@ class ScrapyCommand(object):
             settings.overrides['LOG_ENABLED'] = True
             settings.overrides['LOGLEVEL'] = opts.loglevel
 
-        if opts.nolog:
-            settings.overrides['LOG_ENABLED'] = False
-
         if opts.default_spider:
             from scrapy.spider import spiders
             spiders.default_domain = opts.default_spider
@@ -69,8 +76,8 @@ class ScrapyCommand(object):
             spiders.force_domain = opts.spider
 
         if opts.pidfile:
-            pid = os.getpid()
-            open(opts.pidfile, "w").write(str(pid))
+            with open(opts.pidfile, "w") as f:
+                f.write(str(os.getpid()))
 
         for setting in opts.settings:
             if '=' in setting:
