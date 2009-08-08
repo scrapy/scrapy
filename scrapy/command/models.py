@@ -6,6 +6,8 @@ from __future__ import with_statement
 
 import os
 import sys
+from optparse import OptionGroup
+
 from scrapy.conf import settings
 
 class ScrapyCommand(object):
@@ -22,16 +24,14 @@ class ScrapyCommand(object):
         return ""
 
     def long_desc(self):
-        """
-        A long description of the command. Return short description when not
+        """A long description of the command. Return short description when not
         available. It cannot contain newlines, since contents will be formatted
         by optparser which removes newlines and wraps text.
         """
         return self.short_desc()
 
     def help(self):
-        """
-        An extensive help for the command. It will be shown when using the
+        """An extensive help for the command. It will be shown when using the
         "help" command. It can contain newlines, since not post-formatting will
         be applied to its contents.
         """
@@ -41,22 +41,30 @@ class ScrapyCommand(object):
         """
         Populate option parse with options available for this command
         """
-        parser.add_option("--logfile", dest="logfile", metavar="FILE", \
+        group = OptionGroup(parser, "Global Options")
+        group.add_option("-h", "--help", action="store_true", dest="help", \
+            help="print command help and options")
+        group.add_option("--logfile", dest="logfile", metavar="FILE", \
             help="log file. if omitted stderr will be used")
-        parser.add_option("-L", "--loglevel", dest="loglevel", metavar="LEVEL", \
+        group.add_option("-L", "--loglevel", dest="loglevel", metavar="LEVEL", \
             default=None, \
-            help="log level. use SILENT level to diasble all log messages")
-        parser.add_option("--default-spider", dest="default_spider", default=None, \
+            help="log level (default: %s)" % settings['LOGLEVEL'])
+        group.add_option("--nolog", action="store_true", dest="nolog", \
+            help="disable logging completely")
+        group.add_option("--default-spider", dest="default_spider", default=None, \
             help="use this spider when arguments are urls and no spider is found")
-        parser.add_option("--spider", dest="spider", default=None, \
+        group.add_option("--spider", dest="spider", default=None, \
             help="always use this spider when arguments are urls")
-        parser.add_option("--profile", dest="profile", metavar="FILE", default=None, \
+        group.add_option("--profile", dest="profile", metavar="FILE", default=None, \
             help="write python cProfile stats to FILE")
-        parser.add_option("--pidfile", dest="pidfile", metavar="FILE", \
+        group.add_option("--lsprof", dest="lsprof", metavar="FILE", default=None, \
+            help="write lsprof profiling stats to FILE")
+        group.add_option("--pidfile", dest="pidfile", metavar="FILE", \
             help="write process ID to FILE")
-        parser.add_option("--set", dest="settings", action="append", \
+        group.add_option("--set", dest="settings", action="append", \
             metavar="SETTING=VALUE", default=[], \
             help="set/override setting (may be repeated)")
+        parser.add_option_group(group)
         
     def process_options(self, args, opts):
         if opts.logfile:
@@ -66,6 +74,9 @@ class ScrapyCommand(object):
         if opts.loglevel:
             settings.overrides['LOG_ENABLED'] = True
             settings.overrides['LOGLEVEL'] = opts.loglevel
+
+        if opts.nolog:
+            settings.overrides['LOG_ENABLED'] = False
 
         if opts.default_spider:
             from scrapy.spider import spiders

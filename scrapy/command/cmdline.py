@@ -8,6 +8,7 @@ import cProfile
 import scrapy
 from scrapy import log
 from scrapy.spider import spiders
+from scrapy.xlib import lsprofcalltree
 from scrapy.conf import settings, SETTINGS_MODULE
 
 def find_commands(dir):
@@ -48,10 +49,15 @@ def getcmdname(argv):
         if not arg.startswith('-'):
             return arg
 
-def usage(argv):
-    s  = "usage: %s <command> [options] [args]\n" % argv[0]
-    s += "       %s <command> -h\n\n" % argv[0]
-    s += "Available commands:\n\n"
+def usage(prog):
+    s = "Usage\n"
+    s += "=====\n"
+    s += "%s <command> [options] [args]\n" % prog
+    s += "  Run a command\n\n"
+    s += "%s <command> -h\n" % prog
+    s += "  Print command help and options\n\n"
+    s += "Available commands\n"
+    s += "===================\n"
 
     cmds = builtin_commands_dict()
     cmds.update(custom_commands_dict())
@@ -103,10 +109,11 @@ def execute_with_args(argv):
 
     if not cmdname:
         print "Scrapy %s\n" % scrapy.__version__
-        print usage(argv)
+        print usage(argv[0])
         sys.exit(2)
 
-    parser = optparse.OptionParser(conflict_handler='resolve')
+    parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(), \
+        conflict_handler='resolve', add_help_option=False)
 
     if cmdname in cmds:
         cmd = cmds[cmdname]
@@ -122,6 +129,10 @@ def execute_with_args(argv):
     (opts, args) = parser.parse_args(args=argv[1:])
     del args[0]  # args[0] is cmdname
 
+    if opts.help:
+        parser.print_help()
+        sys.exit()
+
     # storing command executed info for later reference
     command_executed['name'] = cmdname
     command_executed['class'] = cmd
@@ -131,20 +142,20 @@ def execute_with_args(argv):
     cmd.process_options(args, opts)
     spiders.load()
     log.start()
-    if opts.profile:
-        log.msg("Profiling enabled. Analyze later with: python -m pstats %s" % opts.profile)
+    if opts.profile or opts.lsprof:
+        if opts.profile:
+            log.msg("writing cProfile stats to %r" % opts.profile)
+        if opts.lsprof:
+            log.msg("writing lsprof stats to %r" % opts.lsprof)
         loc = locals()
         p = cProfile.Profile()
         p.runctx('ret = cmd.run(args, opts)', globals(), loc)
-        p.dump_stats(opts.profile)
-        try:
-            from scrapy.xlib import lsprofcalltree
-            fn = opts.profile + ".cachegrind"
-            k = lsprofcalltree.KCacheGrind(p)
-            with open(fn, 'w') as f:
+        if opts.profile:
+            p.dump_stats(opts.profile)
+        k = lsprofcalltree.KCacheGrind(p)
+        if opts.lsprof:
+            with open(opts.lsprof, 'w') as f:
                 k.output(f)
-        except ImportError:
-            pass
         ret = loc['ret']
     else:
         ret = cmd.run(args, opts)
