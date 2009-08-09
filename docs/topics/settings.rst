@@ -48,16 +48,21 @@ You can also override one (or more) settings from command line using the
 
 Example::
 
-    scrapy-ctl.py crawl domain.com --set=LOG_FILE:/tmp/scrapy.log
+    scrapy-ctl.py crawl domain.com --set LOG_FILE=scrapy.log
 
 2. Environment variables
 ------------------------
 
 You can populate settings using environment variables prefixed with
-``SCRAPY_``. For example, to change the log file location::
+``SCRAPY_``. For example, to change the log file location un Unix systems::
 
-    $ export SCRAPY_LOG_FILE=/tmp/scrapy.log
+    $ export SCRAPY_LOG_FILE=scrapy.log
     $ scrapy-ctl.py crawl example.com
+
+In Windows systems, you can change the environment variables from the Control
+Panel following `these guidelines`_.
+
+.. _these guidelines: http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
 
 3. scrapy_settings
 ------------------
