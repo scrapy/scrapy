@@ -26,7 +26,7 @@ class TreeExpander(object):
     def wrap_with_args(self, f):
         return lambda x, y: f(x, loader_args=y)
 
-    def __call__(self, value, loader_args):
+    def __call__(self, value, loader_args=None):
         values = arg_to_iter(value)
         largs = self.default_loader_args
         if loader_args:

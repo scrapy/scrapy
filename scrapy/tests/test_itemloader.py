@@ -70,6 +70,14 @@ class LoaderTest(unittest.TestCase):
         self.assertEqual(il.get_expanded_value('name'), [u'Pepe'])
         self.assertEqual(il.get_reduced_value('name'), u'Pepe')
 
+    def test_tree_expander_filter(self):
+        def filter_world(x):
+            return None if x == 'world' else x
+
+        expander = TreeExpander(filter_world, str.upper)
+        self.assertEqual(expander(['hello', 'world', 'this', 'is', 'scrapy']),
+                         ['HELLO', 'THIS', 'IS', 'SCRAPY'])
+
     def test_tree_expander_multiple_functions(self):
         class TestLoader(NameLoader):
             name_exp = TreeExpander(lambda v: v.title(), lambda v: v[:-1])

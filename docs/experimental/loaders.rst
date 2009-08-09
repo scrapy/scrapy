@@ -404,6 +404,17 @@ one, as the other is just an identity expander.
     Loader arguments passed to on each expander call. This arguments can be
     overriden with specific noader arguments passed on each expander call.
 
+    Example::
+
+        >>> def filter_world(x):
+        ...     return None if x == 'world' else x
+        ...
+        >>> from scrapy.newitem.loader.expanders import TreeExpander
+        >>> expander = TreeExpander(filter_world, str.upper)
+        >>> expander(['hello', 'world', 'this', 'is', 'scrapy'])
+        ['HELLO, 'THIS', 'IS', 'SCRAPY']
+
+
 IdentityExpander
 ----------------
 
