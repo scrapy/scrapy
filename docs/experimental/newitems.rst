@@ -40,6 +40,11 @@ objects. Here is an example::
 .. _Django: http://www.djangoproject.com/
 .. _Django Models: http://docs.djangoproject.com/en/dev/topics/db/models/
 
+.. _topics-newitems-fields:
+
+Item Fields
+===========
+
 :class:`Field` objects are used to specify metadata for each field. For
 example, the default value for the ``stock`` field illustrated in the example
 above. 

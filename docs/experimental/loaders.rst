@@ -34,8 +34,9 @@ Then, you start adding values to the Loader, typically collecting them using
 same item field, the Loader will know how to "join" those values later using a
 Reducer.
 
-Here is a typical Loader usage in a :ref:`Spider <topics-spiders>` using the
-:ref:`Product item defined in the Items chapter <topics-newitems-declaring>`.::
+Here is a typical Loader usage in a :ref:`Spider <topics-spiders>`, using the
+:ref:`Product item <topics-newitems-declaring>` declared in the :ref:`Items
+section <topics-newitems>`::
 
     from scrapy.item.loader import XPathLoader
     from scrapy.xpath import HtmlXPathSelector
@@ -47,14 +48,14 @@ Here is a typical Loader usage in a :ref:`Spider <topics-spiders>` using the
         l.add_xpath('name', '//div[@class="product_title"]')
         l.add_xpath('price', '//p[@id="price"]')
         l.add_xpath('stock', '//p[@id="stock"]')
-        l.add_value('last_updated', 'today') # you can also literal values
+        l.add_value('last_updated', 'today') # you can also use literal values
         return l.get_item()
 
 By quickly looking at that code we can see the ``name`` field is being
 extracted from two different XPath locations in the page:
 
-* ``//div[@class="product_name"]``
-* ``//div[@class="product_title"]``
+1. ``//div[@class="product_name"]``
+2. ``//div[@class="product_title"]``
 
 In other words, data is being collected by extracting it from two XPath
 locations, using the :meth:`~XPathLoader.add_xpath` method. This is the data
@@ -74,14 +75,15 @@ previously extracted and collected with the :meth:`~XPathLoader.add_xpath` and
 Expanders and Reducers
 ======================
 
-A Loader is composed of one expander and one reducer for each item field. The
+A Loader is composed of one expander and one reducer for each (item) field. The
 Expander processes the extracted data as soon as it's received (through the
 :meth:`~XPathLoader.add_xpath` or :meth:`~Loader.add_value` methods) and the
 result of the expander is collected and kept inside the Loader. After
 collecting all data, the :meth:`Loader.get_item` method is called to actually
-populate and get the Item.  That's when the Reducers are called with the data
-previously collected (using the Expanders) and the output of the Reducers are
-the actual values that get assigned to the item.
+populate and get the :class:`~scrapy.newitem.Item` object.  That's when the
+Reducers are called with the data previously collected (using the Expanders)
+and the output of the Reducers are the actual values that get assigned to the
+item.
 
 Let's see an example to illustrate how Expanders and Reducers are called, for a
 particular field (the same applies for any other field)::
@@ -134,6 +136,45 @@ example::
 As you can see, expanders are declared using the ``_exp`` suffix while reducers
 are declared using the ``_red`` suffix. And you can also declare a default
 expander using the :attr:`Loader.default_expander` attribute.
+
+.. _topics-loader-expred-declaring:
+
+Declaring Extenders and Reducers
+================================
+
+As seen in the previous section, extenders and reducers can be declared in the
+Loader definition, and it's very common to declare expanders this way. However,
+there is one more place where you can specify the exanders and reducers to use:
+in the :ref:`Item Field <topics-newitem-fields` metadata. Here is an example::
+
+    from scrapy.newitem import Item, Field
+    from scrapy.newitem.loader.expanders import TreeExpander
+    from scrapy.newitem.loader.reducers import Join, TakeFirst
+
+    from scrapy.utils.markup import remove_entities
+    from myprojct.utils import filter_prices
+
+    class Product(Item):
+        name = Field(
+            expander=TreeExpander(remove_entities),
+            reducer=Join(),
+        )
+        price = Field(
+            default=0,
+            expander=TreeExpander(remove_entities, filter_prices),
+            reducer=TakeFirst(),
+        )
+
+The precendece order, for both expander and reducer declarations, is as
+follows:
+
+1. Loader field-specific attributes: ``field_exp`` and ``field_red`` (more
+   precedence)
+2. Field metadata (``expander`` and ``reducer`` key)
+3. Loader defaults: :meth:`Loader.default_expander` and
+   :meth:`Loader.default_reducer` (less precedence)
+
+See also: :ref:`topics-loader-extending`.
 
 .. _topics-loader-args:
 
@@ -260,22 +301,27 @@ Loader objects
         in which case this argument is ignored.
     :type response: :class:`~scrapy.http.Response` object
 
-    .. attribute:: default_selector_class
-
-        The class used to construct the selector, if only a response is given
-        in the constructor
-
     .. method:: add_xpath(field_name, xpath, \**new_loader_args)
 
         Similar to :meth:`Loader.add_value` but receives an XPath instead of a
         value, which is used to extract a list of unicode strings from the
         selector associated with this :class:`XPathLoader`.
 
+        Example::
+
+            loader.add_xpath('name', '//p[@class="product-name"]')
+
     .. method:: replace_xpath(field_name, xpath, \**new_loader_args)
 
         Similar to :meth:`add_xpath` but replaces collected data instead of
         adding it.
 
+    .. attribute:: default_selector_class
+
+        The class used to construct the selector, if only a response is given
+        in the constructor
+
+.. _topics-loader-extending:
 
 Reusing and extending Loaders
 =============================
@@ -311,6 +357,12 @@ want to remove ``CDATA`` occurrences. Here's an example of how to do it::
 
     class XmlLoader(ProductLoader):
         name_exp = TreeExpander(remove_cdata, ProductLoader.name_exp)
+
+And that's how you typically extend expanders.
+
+As for reducers, it is more common to declare them in the field metadata, as
+they usually depend only on the field and not on each specific site parsing
+rule (as expanders do). See also: :ref:`topics-loader-expred-declaring`.
 
 There are many other possible ways to extend, inherit and override your
 Loaders, and different Loader hierarchies may fit better for different
