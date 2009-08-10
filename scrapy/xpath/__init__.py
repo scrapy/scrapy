@@ -1,13 +1,9 @@
 """
-The scrapy.xpath module provides useful classes for parsing HTML and XML
+The scrapy.xpath module provides useful classes for selecting HTML and XML
 documents using XPath. It requires libxml2 and its python bindings.
 
 This parent module exports the classes most commonly used when building
 spiders, for convenience.
-
-* XPath - a simple class to represent a XPath expression
-* XPathSelector - to extract data using XPaths (parses the entire response)
 """
 
-from scrapy.xpath.types import XPath
 from scrapy.xpath.selector import XPathSelector, XmlXPathSelector, HtmlXPathSelector
