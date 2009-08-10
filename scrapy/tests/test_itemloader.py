@@ -249,14 +249,24 @@ class XPathLoaderTest(unittest.TestCase):
     def test_constructor_with_selector(self):
         sel = HtmlXPathSelector(text=u"<html><body><div>marta</div></body></html>")
         l = TestXPathLoader(selector=sel)
+        self.assert_(l.selector is sel)
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_reduced_value('name'), u'Marta')
 
     def test_constructor_with_response(self):
         response = HtmlResponse(url="", body="<html><body><div>marta</div></body></html>")
         l = TestXPathLoader(response=response)
+        self.assert_(l.selector)
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_reduced_value('name'), u'Marta')
 
+    def test_add_xpath_re(self):
+        response = HtmlResponse(url="", body="<html><body><div>marta</div></body></html>")
+        l = TestXPathLoader(response=response)
+        l.add_xpath('name', '//div/text()', re='ma')
+        self.assertEqual(l.get_reduced_value('name'), u'Ma')
+
+
 if __name__ == "__main__":
     unittest.main()
+

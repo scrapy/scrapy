@@ -145,7 +145,7 @@ Declaring Extenders and Reducers
 As seen in the previous section, extenders and reducers can be declared in the
 Loader definition, and it's very common to declare expanders this way. However,
 there is one more place where you can specify the exanders and reducers to use:
-in the :ref:`Item Field <topics-newitem-fields` metadata. Here is an example::
+in the :ref:`Item Field <topics-newitems-fields>` metadata. Here is an example::
 
     from scrapy.newitem import Item, Field
     from scrapy.newitem.loader.expanders import TreeExpander
@@ -301,25 +301,47 @@ Loader objects
         in which case this argument is ignored.
     :type response: :class:`~scrapy.http.Response` object
 
-    .. method:: add_xpath(field_name, xpath, \**new_loader_args)
+    .. method:: add_xpath(field_name, xpath, re=None, \**new_loader_args)
 
         Similar to :meth:`Loader.add_value` but receives an XPath instead of a
         value, which is used to extract a list of unicode strings from the
-        selector associated with this :class:`XPathLoader`.
+        selector associated with this :class:`XPathLoader`. If the ``re``
+        argument is given, it's used for extrating data from the selector using
+        the :meth:`~scrapy.xpath.XPathSelector.re` method.
 
-        Example::
+        :param xpath: the XPath to extract data from
+        :type xpath: str
 
+        :param re: a regular expression to use for extracting data from the
+            selected XPath region
+        :type re: str or compiled regex
+
+        Examples::
+
+            # HTML snippet: <p class="product-name">Color TV</p>
             loader.add_xpath('name', '//p[@class="product-name"]')
+            # HTML snippet: <p id="price">the price is $1200</p>
+            loader.add_xpath('price', '//p[@id="price"]', re='the price is (.*)')
 
-    .. method:: replace_xpath(field_name, xpath, \**new_loader_args)
+    .. method:: replace_xpath(field_name, xpath, re=None, \**new_loader_args)
 
         Similar to :meth:`add_xpath` but replaces collected data instead of
         adding it.
 
     .. attribute:: default_selector_class
 
-        The class used to construct the selector, if only a response is given
-        in the constructor
+        The class used to construct the :attr:`selector` of this
+        :class:`XPathLoader`, if only a response is given in the constructor.
+        If a selector is given in the constructor this attribute is ignored.
+        This attribute is sometimes overridden in subclasses.
+
+    .. attribute:: selector
+
+        The :class:`~scrapy.xpath.XPathSelector` object to extract data from.
+        It's either the selector given in the constructor or one created from
+        the response given in the constructor using the
+        :attr:`default_selector_class`. This attribute is meant to be
+        read-only.
 
 .. _topics-loader-extending:
 

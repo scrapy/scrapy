@@ -72,14 +72,18 @@ class XPathLoader(Loader):
                 "or response" % self.__class__.__name__)
         if selector is None:
             selector = self.default_selector_class(response)
-        self._selector = selector
+        self.selector = selector
         loader_args.update(selector=selector, response=response)
         super(XPathLoader, self).__init__(item, **loader_args)
 
-    def add_xpath(self, field_name, xpath, **new_loader_args):
-        self.add_value(field_name, self._selector.x(xpath).extract(), \
+    def add_xpath(self, field_name, xpath, re=None, **new_loader_args):
+        self.add_value(field_name, self._get_values(field_name, xpath, re),
             **new_loader_args)
 
-    def replace_xpath(self, field_name, xpath, **new_loader_args):
-        self.replace_value(field_name, self._selector.x(xpath).extract(), \
+    def replace_xpath(self, field_name, xpath, re=None, **new_loader_args):
+        self.replace_value(field_name, self._get_values(field_name, xpath, re), \
             **new_loader_args)
+
+    def _get_values(self, field_name, xpath, re):
+        x = self.selector.x(xpath)
+        return x.re(re) if re else x.extract()
