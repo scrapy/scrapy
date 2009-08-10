@@ -443,7 +443,10 @@ or callable as reducer.
 
     Example::
 
-        name_red = TakeFirst()
+        >>> from scrapy.newitem.loader.reducers import TakeFirst
+        >>> reducer = TakeFirst()
+        >>> reducer(['', 'one', 'two', 'three'])
+        'one'
 
 .. class:: Identity
 
@@ -452,7 +455,10 @@ or callable as reducer.
 
     Example::
 
-        features_red = Identity()
+        >>> from scrapy.newitem.loader.reducers import Identity
+        >>> reducer = Identity()
+        >>> reducer(['one', 'two', 'three'])
+        ['one', 'two', 'three']
 
 .. class:: Join(separator=u' ')
 
@@ -464,6 +470,10 @@ or callable as reducer.
 
     Examples::
 
-        name_red = Join()
-        name_red = Join('<br>')
-
+        >>> from scrapy.newitem.loader.reducers import Join
+        >>> reducer = Join()
+        >>> reducer(['one', 'two', 'three'])
+        u'one two three'
+        >>> reducer = Join('<br>')
+        >>> reducer(['one', 'two', 'three'])
+        u'one<br>two<br>three'
