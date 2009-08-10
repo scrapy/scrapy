@@ -7,8 +7,8 @@ See documentation in docs/ref/selectors.rst
 import libxml2
 
 from scrapy.http import TextResponse
-from scrapy.xpath.extension import Libxml2Document
 from scrapy.xpath.factories import xmlDoc_from_html, xmlDoc_from_xml
+from scrapy.xpath.document import Libxml2Document
 from scrapy.utils.python import flatten, unicode_to_str
 from scrapy.utils.misc import extract_regex
 
@@ -19,11 +19,7 @@ class XPathSelector(object):
             self.doc = parent.doc
             self.xmlNode = node
         elif response:
-            try:
-                # try with cached version first
-                self.doc = response.getlibxml2doc(factory=self._get_libxml2_doc)
-            except AttributeError:
-                self.doc = Libxml2Document(response, factory=self._get_libxml2_doc)
+            self.doc = Libxml2Document(response, factory=self._get_libxml2_doc)
             self.xmlNode = self.doc.xmlDoc
         elif text:
             response = TextResponse(url=None, body=unicode_to_str(text), \

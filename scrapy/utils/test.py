@@ -6,6 +6,8 @@ import os
 
 import libxml2
 
+from scrapy.xpath.document import Libxml2Document
+
 def libxml2debug(testfunction):
     """Decorator for debugging libxml2 memory leaks inside a function.
     

@@ -86,7 +86,6 @@ DUPEFILTER_CLASS = 'scrapy.contrib.dupefilter.RequestFingerprintDupeFilter'
 
 EXTENSIONS = [
     'scrapy.stats.corestats.CoreStats',
-    'scrapy.xpath.extension.ResponseLibxml2',
     'scrapy.management.web.WebConsole',
     'scrapy.management.telnet.TelnetConsole',
     'scrapy.contrib.webconsole.scheduler.SchedulerQueue',

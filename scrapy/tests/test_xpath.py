@@ -5,9 +5,10 @@ import libxml2
 
 from scrapy.http import TextResponse, HtmlResponse, XmlResponse
 from scrapy.xpath.selector import XmlXPathSelector, HtmlXPathSelector
+from scrapy.xpath.document import Libxml2Document
 from scrapy.utils.test import libxml2debug
 
-class XPathTestCase(unittest.TestCase):
+class XPathSelectorTestCase(unittest.TestCase):
 
     @libxml2debug
     def test_selector_simple(self):
@@ -237,6 +238,45 @@ class XPathTestCase(unittest.TestCase):
             u'lalalal&ppppp<b>PPPP</b>ppp&amp;la',
             u'\n  ',
             u'\n  pff\n'])
+
+class Libxml2DocumentTest(unittest.TestCase):
+
+    @libxml2debug
+    def test_response_libxml2_caching(self):
+        r1 = HtmlResponse('http://www.example.com', body='<html><head></head><body></body></html>')
+        r2 = r1.copy()
+
+        doc1 = Libxml2Document(r1)
+        doc2 = Libxml2Document(r1)
+        doc3 = Libxml2Document(r2)
+
+        # make sure it's cached
+        assert doc1 is doc2
+        assert doc1.xmlDoc is doc2.xmlDoc
+        assert doc1 is not doc3
+        assert doc1.xmlDoc is not doc3.xmlDoc
+
+        # don't leave libxml2 documents in memory to avoid wrong libxml2 leaks reports
+        del doc1, doc2, doc3
+
+    @libxml2debug
+    def test_null_char(self):
+        # make sure bodies with null char ('\x00') don't raise a TypeError exception
+        self.body_content = 'test problematic \x00 body'
+        response = TextResponse('http://example.com/catalog/product/blabla-123',
+                            headers={'Content-Type': 'text/plain; charset=utf-8'}, body=self.body_content)
+        Libxml2Document(response)
+
+class Libxml2Test(unittest.TestCase):
+
+    @libxml2debug
+    def test_libxml2_bug_2_6_27(self):
+        # this test will fail in version 2.6.27 but passes on 2.6.29+
+        html = "<td>1<b>2</b>3</td>"
+        node = libxml2.htmlParseDoc(html, 'utf-8')
+        result = [str(r) for r in node.xpathEval('//text()')]
+        self.assertEquals(result, ['1', '2', '3'])
+        node.freeDoc()
 
 if __name__ == "__main__":
     unittest.main()

@@ -23,19 +23,6 @@ Core Stats extension
 Enable the collection of core statistics, provided the stats collection are
 enabled (see :ref:`topics-stats`).
 
-Response Libxml2 extension
---------------------------
-
-.. module:: scrapy.xpath.extension
-   :synopsis: Libxml2 document caching for Responses
-
-.. class:: scrapy.path.extension.ResponseLibxml2
-
-Causes the :class:`~scrapy.http.Response` objects to grow a new method
-(``getlibxml2doc()``) which returns a (cached) libxml2 document of their
-contents. :ref:`XPath Selectors <topics-selectors>` use this extension for
-better performance, so it's highly recommended not to disable it.
-
 .. _ref-extensions-webconsole:
 
 Web console extension
@@ -284,13 +271,3 @@ Stats collector dump WC extension
 .. class:: scrapy.contrib.webconsole.stats.StatsDump
 
 Display the stats collected so far by the stats collector.
-
-Spider stats WC extension
--------------------------
-
-.. module:: scrapy.contrib.webconsole.spiderstats
-   :synopsis: Spider stats web console extension
-
-.. class:: scrapy.contrib.webconsole.spiderstats.SpiderStats
-
-

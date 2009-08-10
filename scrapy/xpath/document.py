@@ -1,15 +1,24 @@
 """
-This module contains a simple class (Libxml2Document) to wrap libxml2 documents
-(xmlDoc) for proper garbage collection.
+This module contains a simple class (Libxml2Document) which provides cache and
+garbage collection to libxml2 documents (xmlDoc).
 """
+
+import weakref
 
 from scrapy.xpath.factories import xmlDoc_from_html
 
 class Libxml2Document(object):
 
-    def __init__(self, response, factory=xmlDoc_from_html):
-        self.xmlDoc = factory(response)
-        self.xpathContext = self.xmlDoc.xpathNewContext()
+    cache = weakref.WeakKeyDictionary()
+
+    def __new__(cls, response, factory=xmlDoc_from_html):
+        cache = cls.cache.setdefault(response, {})
+        if factory not in cache:
+            obj = object.__new__(cls)
+            obj.xmlDoc = factory(response)
+            obj.xpathContext = obj.xmlDoc.xpathNewContext()
+            cache[factory] = obj
+        return cache[factory]
 
     def __del__(self):
         # we must call both cleanup functions, so we try/except all exceptions

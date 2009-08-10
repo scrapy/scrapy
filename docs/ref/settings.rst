@@ -390,7 +390,6 @@ Default::
 
     [
         'scrapy.stats.corestats.CoreStats',
-        'scrapy.xpath.extension.ResponseLibxml2',
         'scrapy.management.web.WebConsole',
         'scrapy.management.telnet.TelnetConsole',
         'scrapy.contrib.webconsole.scheduler.SchedulerQueue',
@@ -398,7 +397,6 @@ Default::
         'scrapy.contrib.webconsole.spiderctl.Spiderctl',
         'scrapy.contrib.webconsole.enginestatus.EngineStatus',
         'scrapy.contrib.webconsole.stats.StatsDump',
-        'scrapy.contrib.webconsole.spiderstats.SpiderStats',
         'scrapy.contrib.spider.reloader.SpiderReloader',
         'scrapy.contrib.memusage.MemoryUsage',
         'scrapy.contrib.memdebug.MemoryDebugger',
