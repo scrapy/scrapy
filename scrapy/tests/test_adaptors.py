@@ -2,7 +2,7 @@
 import unittest
 import re
 
-from scrapy.item.adaptors import AdaptorPipe
+from scrapy.contrib.item.adaptors import AdaptorPipe
 from scrapy.contrib_exp import adaptors
 from scrapy.http import HtmlResponse, Headers
 from scrapy.xpath.selector import HtmlXPathSelector, XmlXPathSelector

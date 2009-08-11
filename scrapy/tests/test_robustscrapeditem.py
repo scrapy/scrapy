@@ -2,7 +2,7 @@
 import unittest
 
 from scrapy.contrib.item import RobustScrapedItem
-from scrapy.item.adaptors import AdaptorPipe
+from scrapy.contrib.item.adaptors import AdaptorPipe
 from scrapy.contrib_exp import adaptors
 
 class MyItem(RobustScrapedItem):

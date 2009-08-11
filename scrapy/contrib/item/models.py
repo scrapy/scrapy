@@ -5,11 +5,12 @@ useful in some Scrapy implementations
 
 import copy
 import hashlib
+import warnings
 
 from pprint import PrettyPrinter
 
 from scrapy.item import ScrapedItem
-from scrapy.item.adaptors import AdaptorPipe
+from scrapy.contrib.item.adaptors import AdaptorPipe
 from scrapy.core.exceptions import DropItem
 from scrapy.utils.python import unique
 

@@ -4,7 +4,7 @@ import re
 from scrapy.xpath.selector import XPathSelector, XPathSelectorList
 from scrapy.utils.misc import extract_regex
 from scrapy.utils.python import flatten, str_to_unicode, unicode_to_str
-from scrapy.item.adaptors import adaptize
+from scrapy.contrib.item.adaptors import adaptize
 
 def to_unicode(value, adaptor_args):
     """
