@@ -402,7 +402,6 @@ Default::
         'scrapy.contrib.memdebug.MemoryDebugger',
         'scrapy.contrib.closedomain.CloseDomain',
         'scrapy.contrib.debug.StackTraceDump',
-        'scrapy.contrib.response.soup.ResponseSoup',
     ]
 
 The list of available extensions. Keep in mind that some of them need need to

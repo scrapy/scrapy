@@ -98,7 +98,6 @@ EXTENSIONS = [
     'scrapy.contrib.memdebug.MemoryDebugger',
     'scrapy.contrib.closedomain.CloseDomain',
     'scrapy.contrib.debug.StackTraceDump',
-    'scrapy.contrib.response.soup.ResponseSoup',
 ]
 
 GROUPSETTINGS_ENABLED = False

@@ -3,11 +3,12 @@ This module provides some useful functions for working with
 scrapy.http.Response objects
 """
 
-import re
+import re, weakref
 
 from twisted.web import http
 from twisted.web.http import RESPONSES
 
+from scrapy.xlib.BeautifulSoup import BeautifulSoup
 from scrapy.http.response import Response
 
 def body_or_str(obj, unicode=True):
@@ -40,6 +41,14 @@ def get_meta_refresh(response):
         match = META_REFRESH_RE.search(response.body[0:4096])
         response.cache['meta_refresh_url'] = match.groups() if match else (None, None)
     return response.cache['meta_refresh_url']
+
+_beautifulsoup_cache = weakref.WeakKeyDictionary()
+def get_cached_beautifulsoup(response):
+    """Return BeautifulSoup object of the given response, with caching
+    support"""
+    if response not in _beautifulsoup_cache:
+        _beautifulsoup_cache[response] = BeautifulSoup(response.body)
+    return _beautifulsoup_cache[response]
 
 def response_status_message(status):
     """Return status code plus status text descriptive message

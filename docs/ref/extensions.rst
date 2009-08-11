@@ -172,32 +172,6 @@ This extension only works on POSIX-compliant platforms (ie. not Windows).
 
 .. _SIGUSR1: http://en.wikipedia.org/wiki/SIGUSR1_and_SIGUSR2
 
-Response soup extension
------------------------
-
-.. module:: scrapy.contrib.response.soup
-   :synopsis: Response soup extension
-
-.. class:: scrapy.contrib.response.soup.ResponseSoup
-
-The ResponseSoup extension causes the :class:`~scrapy.http.Response` objects to
-grow a new method (``getsoup()``) which returns a cached `BeautifulSoup`_
-object of their body, and a ``soup`` attribute with the same effect. The
-``soup`` attribute is provided only for convenience, as you cannot pass pass
-any BeautifulSoup constructor arguments (use the ``getsoup()`` method for those
-cases). 
-
-The advantage of using the Response soup extension over instantiating a
-BeautifulSoup object directly is performance, as BeautifulSoup is known to be
-very slow.
-
-For example, if you have a downloader middleware and a spider that both need to
-construct a BeautifulSoup object of the responses, you would be constructing
-two BeautifulSoup objects unless you use this extension which caches the first
-one.
-
-.. _BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/documentation.html
-
 StatsMailer extension
 ---------------------
 
