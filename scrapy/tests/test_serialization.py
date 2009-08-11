@@ -4,9 +4,12 @@ class SerializationTest(unittest.TestCase):
 
     def setUp(self):
         try:
-            import simplejson
-        except ImportError, e:
-            raise unittest.SkipTest(e)
+            import json
+        except ImportError:
+            try:
+                import simplejson
+            except ImportError, e:
+                raise unittest.SkipTest(e)
 
     def test_string_serialization(self):
         """Test simple string serialization"""

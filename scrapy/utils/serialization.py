@@ -11,9 +11,13 @@ import decimal
 import cPickle as pickle
 import pprint
 
-import simplejson
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
-class ScrapyJSONEncoder(simplejson.JSONEncoder):
+
+class ScrapyJSONEncoder(json.JSONEncoder):
     """
     JSONEncoder subclass that knows how to encode date/time and decimal types.
     """
@@ -34,13 +38,13 @@ class ScrapyJSONEncoder(simplejson.JSONEncoder):
             return super(ScrapyJSONEncoder, self).default(o)
 
 serialize_funcs = {
-    'json': lambda obj: simplejson.dumps(obj, cls=ScrapyJSONEncoder),
+    'json': lambda obj: json.dumps(obj, cls=ScrapyJSONEncoder),
     'pprint': lambda obj: pprint.pformat(obj),
     'pickle': lambda obj: pickle.dumps(obj),
 }
 
 unserialize_funcs = {
-    'json': lambda text: simplejson.loads(text),
+    'json': lambda text: json.loads(text),
     'pprint': lambda text: eval(text),
     'pickle': lambda text: pickle.loads(text),
 }
