@@ -37,6 +37,14 @@ class StatsCollector(object):
         d = self._stats[domain]
         d[key] = d.setdefault(key, start) + count
 
+    def max_value(self, key, value, default, domain=None):
+        d = self._stats[domain]
+        d[key] = max(d.setdefault(key, default), value)
+
+    def min_value(self, key, value, default, domain=None):
+        d = self._stats[domain]
+        d[key] = min(d.setdefault(key, default), value)
+
     def clear_stats(self, domain=None):
         self._stats[domain].clear()
 

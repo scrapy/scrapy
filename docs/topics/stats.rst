@@ -48,6 +48,14 @@ Increment global stat value::
 
     stats.inc_value('spiders_crawled')
 
+Set global stat value only if greater than previous::
+
+    stats.max_value('max_items_scraped', value, default=0)
+
+Set global stat value only if lower than previous::
+
+    stats.min_value('min_free_memory_percent', value, default=100)
+
 Get global stat value::
 
     >>> stats.get_value('spiders_crawled')
@@ -64,9 +72,17 @@ signal)::
 
     stats.set_value('start_time', datetime.now(), domain='example.com')
 
-Increment domain/spider specific stat value::
+Increment domain-specific stat value::
 
     stats.inc_value('pages_crawled', domain='example.com')
+
+Set domain-specific stat value only if greater than previous::
+
+    stats.max_value('max_items_scraped', value, default=0, domain='example.com')
+
+Set domain-specific stat value only if lower than previous::
+
+    stats.min_value('min_free_memory_percent', value, default=100, domain='example.com')
 
 Get domain-specific stat value::
 
@@ -130,6 +146,16 @@ class (which they all inherit from).
         given the global stats table is used, otherwise the domain-specific
         stats table is used, which must be opened or a ``KeyError`` will be
         raised.
+
+    .. method:: max_value(key, value, default, domain=None)
+
+        Set the given value for the given stats only if previous value for same
+        key (or default if not seted) is lower than value.
+
+    .. method:: min_value(key, value, default, domain=None)
+
+        Set the given value for the given stats only if previous value for same
+        key (or default if not seted) is greater than value.
 
     .. method:: clear_stats(domain=None)
 
