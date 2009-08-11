@@ -145,13 +145,13 @@ class (which they all inherit from).
 
         Set the given value for the given key only if current value for the
         same key is lower than value. If there is no current value for the
-        given key, the value values is always set.
+        given key, the value is always set.
 
     .. method:: min_value(key, value, domain=None)
 
         Set the given value for the given key only if current value for the
         same key is greater than value. If there is no current value for the
-        given key, the value values is always set.
+        given key, the value is always set.
 
     .. method:: clear_stats(domain=None)
 
