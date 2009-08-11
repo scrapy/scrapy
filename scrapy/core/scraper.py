@@ -84,6 +84,8 @@ class Scraper(object):
     def enqueue_scrape(self, response, request, spider):
         site = self.sites[spider.domain_name]
         dfd = site.add_response_request(response, request)
+        stats.max_value('scraper/max_active_size', \
+                site.active_size, 0, domain=spider.domain_name),
         def finish_scraping(_):
             site.finish_response(response)
             self._scrape_next(spider, site)
@@ -158,6 +160,8 @@ class Scraper(object):
             signals.send_catch_log(signal=signals.item_scraped, sender=self.__class__, \
                 item=output, spider=spider, response=response)
             self.sites[domain].itemproc_size += 1
+            stats.max_value('scraper/max_itemproc_size', \
+                    self.sites[domain].itemproc_size, 0, domain=domain)
             dfd = self.itemproc.process_item(output, spider)
             dfd.addBoth(self._itemproc_finished, output, spider)
             return dfd
