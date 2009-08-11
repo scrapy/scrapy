@@ -105,11 +105,6 @@ class EngineTest(unittest.TestCase):
         if not session.wasrun:
             session.run()
 
-            # disable extensions that cause problems with tests (probably
-            # because they leave the reactor in an unclean state)
-            from scrapy.conf import settings
-            settings.overrides['CLUSTER_MANAGER_ENABLED'] = 0
-
     def test_spider_locator(self):
         """
         Check the spider is loaded and located properly via the SpiderLocator
