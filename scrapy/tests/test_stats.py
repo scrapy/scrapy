@@ -1,55 +1,49 @@
-from unittest import TestCase, main
-from scrapy.conf import settings
+import unittest 
+
 from scrapy.stats.collector import StatsCollector, DummyStatsCollector
 
-class StatsTest(TestCase):
-    def test_stats(self):
-        # TODO: restore stats tests for new stats collector
-        """
-        stats = DummyStatsCollector()
-        self.assertEqual(stats, {})
-        self.assertEqual(stats.get_value('anything'), None)
-        self.assertEqual(stats.getpath('anything', 'default'), 'default')
-        stats.setpath('test', 'value')
-        self.assertEqual(stats, {})
+class StatsCollectorTest(unittest.TestCase):
 
+    def test_collector(self):
         stats = StatsCollector()
-        self.assertEqual(stats, {})
-        self.assertEqual(stats.getpath('anything'), None)
-        self.assertEqual(stats.getpath('anything', 'default'), 'default')
-        stats.setpath('test', 'value')
-        self.assertEqual(stats, {'test': 'value'})
-        stats.setpath('test2', 23)
-        self.assertEqual(stats, {'test': 'value', 'test2': 23})
-        stats.setpath('one/two', 'val2')
-        self.assertEqual(stats, {'test': 'value', 'test2': 23, 'one': {'two': 'val2'}})
-        self.assertEqual(stats.getpath('one/two'), 'val2')
-        self.assertEqual(stats.getpath('one/three'), None)
-        self.assertEqual(stats.getpath('one/three', 'four'), 'four')
-        self.assertEqual(stats.getpath('one'), {'two': 'val2'})
+        self.assertEqual(stats.get_stats(), {})
+        self.assertEqual(stats.get_value('anything'), None)
+        self.assertEqual(stats.get_value('anything', 'default'), 'default')
+        stats.set_value('test', 'value')
+        self.assertEqual(stats.get_stats(), {'test': 'value'})
+        stats.set_value('test2', 23)
+        self.assertEqual(stats.get_stats(), {'test': 'value', 'test2': 23})
+        self.assertEqual(stats.get_value('test2'), 23)
+        stats.inc_value('test2')
+        self.assertEqual(stats.get_value('test2'), 24)
+        stats.inc_value('test2', 6)
+        self.assertEqual(stats.get_value('test2'), 30)
+        stats.max_value('test2', 6)
+        self.assertEqual(stats.get_value('test2'), 30)
+        stats.max_value('test2', 40)
+        self.assertEqual(stats.get_value('test2'), 40)
+        stats.max_value('test3', 1)
+        self.assertEqual(stats.get_value('test3'), 1)
+        stats.min_value('test2', 60)
+        self.assertEqual(stats.get_value('test2'), 40)
+        stats.min_value('test2', 35)
+        self.assertEqual(stats.get_value('test2'), 35)
+        stats.min_value('test4', 7)
+        self.assertEqual(stats.get_value('test4'), 7)
 
-        # nodes must contain either data or other nodes, but not both!
-        self.assertRaises(TypeError, stats.setpath, 'one/two/three', 22)
-
-        stats.delpath('test2')
-        self.assertEqual(stats, {'test': 'value', 'one': {'two': 'val2'}})
-        stats.delpath('one/two')
-        self.assertEqual(stats, {'test': 'value', 'one': {}})
-        stats.delpath('one')
-        self.assertEqual(stats, {'test': 'value'})
-
-        stats.setpath('one/other/three', 20)
-        self.assertEqual(stats.getpath('one/other/three'), 20)
-        stats.incpath('one/other/three')
-        self.assertEqual(stats.getpath('one/other/three'), 21)
-        stats.incpath('one/other/three', 4)
-        self.assertEqual(stats.getpath('one/other/three'), 25)
-
-        stats.incpath('one/newnode', 1)
-        self.assertEqual(stats.getpath('one/newnode'), 1)
-        stats.incpath('one/newnode', -1)
-        self.assertEqual(stats.getpath('one/newnode'), 0)
-        """
+    def test_dummy_collector(self):
+        stats = DummyStatsCollector()
+        self.assertEqual(stats.get_stats(), {})
+        self.assertEqual(stats.get_value('anything'), None)
+        self.assertEqual(stats.get_value('anything', 'default'), 'default')
+        stats.set_value('test', 'value')
+        stats.inc_value('v1')
+        stats.max_value('v2', 100)
+        stats.min_value('v3', 100)
+        stats.open_domain('a')
+        stats.set_value('test', 'value', domain='a')
+        self.assertEqual(stats.get_stats(), {})
+        self.assertEqual(stats.get_stats('a'), {})
 
 if __name__ == "__main__":
-    main()
+    unittest.main()
