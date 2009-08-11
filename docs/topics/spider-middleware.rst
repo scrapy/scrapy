@@ -14,13 +14,9 @@ and item that are generated from spiders.
 Activating a spider middleware
 ==============================
 
-To activate a downloader middleware component, add it to the
+To activate a spider middleware component, add it to the
 :setting:`SPIDER_MIDDLEWARES` setting, which is a dict whose keys are the
 middleware class path and their values are the middleware orders.
-
-To activate a middleware component, add it to the :setting:`SPIDER_MIDDLEWARES`
-setting, which is a dict whose keys are the middleware class path and their
-values are the middleware orders.
 
 Here's an example::
 
