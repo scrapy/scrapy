@@ -7,25 +7,12 @@ import pprint
 from cPickle import Pickler
 from xml.sax.saxutils import XMLGenerator
 
-from scrapy.newitem import fields
 
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter', \
     'CsvItemExporter', 'XmlItemExporter']
 
-class BaseItemExporter(object):
 
-    def __init__(self):
-        self.field_serializers = {
-            fields.TextField: self._serialize_text_field,
-            fields.IntegerField: self._serialize_integer_field,
-            fields.DecimalField: self._serialize_decimal_field,
-            fields.FloatField: self._serialize_float_field,
-            fields.BooleanField: self._serialize_boolean_field,
-            fields.DateTimeField: self._serialize_datetime_field,
-            fields.DateField: self._serialize_date_field,
-            fields.TimeField: self._serialize_time_field,
-            fields.ListField: self._serialize_list_field,
-         }
+class BaseItemExporter(object):
 
     def export(self, item):
         raise NotImplementedError
@@ -34,40 +21,17 @@ class BaseItemExporter(object):
         pass
 
     def _serialize_field(self, field, name, value):
-        try:
-            fieldexp = self.field_serializers[field.__class__]
-            return fieldexp(field, name, value)
-        except KeyError:
-            raise TypeError("%s doesn't know how to export field type: %s" % \
-                self.__class__.__name__, field.__class__.__name__)
+        if hasattr(self, 'serialize_%s' % name):
+            serializer = getattr('serialize_%s' % name)
+        elif hasattr(field, 'serializer'):
+            serializer = field.serializer
+        else:
+            serializer = _default_serializer(field, name, value)
 
-    def _serialize_text_field(self, field, name, value):
-        return value.encode('utf-8')
+        return serializer(field, name, value)
 
-    def _serialize_integer_field(self, field, name, value):
+    def _default_serializer(field, name, value):
         return str(value)
-
-    def _serialize_decimal_field(self, field, name, value):
-        return str(value)
-
-    def _serialize_float_field(self, field, name, value):
-        return str(value)
-
-    def _serialize_boolean_field(self, field, name, value):
-        return '1' if value else '0'
-
-    def _serialize_datetime_field(self, field, name, value):
-        return str(value)
-
-    def _serialize_date_field(self, field, name, value):
-        return str(value)
-
-    def _serialize_time_field(self, field, name, value):
-        return str(value)
-
-    def _serialize_list_field(self, field, name, value):
-        item_field = field._field # TODO: should this attribute be public?
-        return " ".join([self._serialize_field(item_field, name, v) for v in value])
 
 
 class PprintItemExporter(BaseItemExporter):
@@ -147,3 +111,4 @@ class XmlItemExporter(BaseItemExporter):
         self.xg.startElement(name, {})
         self.xg.characters(self._serialize_field(field, name, value))
         self.xg.endElement(name)
+
