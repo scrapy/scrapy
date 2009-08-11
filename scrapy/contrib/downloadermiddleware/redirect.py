@@ -1,6 +1,7 @@
 from scrapy import log
 from scrapy.utils.url import urljoin_rfc
 from scrapy.utils.response import get_meta_refresh
+from scrapy.core.exceptions import IgnoreRequest
 from scrapy.conf import settings
 
 
@@ -49,5 +50,6 @@ class RedirectMiddleware(object):
         else:
             log.msg("Discarding %s: max redirections reached" % request,
                     domain=spider.domain_name, level=log.DEBUG)
+            raise IgnoreRequest
 
 

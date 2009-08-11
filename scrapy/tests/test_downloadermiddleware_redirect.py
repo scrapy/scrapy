@@ -2,6 +2,7 @@ import unittest
 
 from scrapy.contrib.downloadermiddleware.redirect import RedirectMiddleware
 from scrapy.spider import spiders
+from scrapy.core.exceptions import IgnoreRequest
 from scrapy.http import Request, Response, Headers
 
 class RedirectMiddlewareTest(unittest.TestCase):
@@ -84,9 +85,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
         assert isinstance(req, Request)
         assert 'redirect_times' in req.meta
         self.assertEqual(req.meta['redirect_times'], 1)
-
-        req = self.mw.process_response(req, rsp, self.spider)
-        self.assertEqual(req, None)
+        self.assertRaises(IgnoreRequest, self.mw.process_response, req, rsp, self.spider)
 
     def test_ttl(self):
         self.mw.max_redirect_times = 100
@@ -95,8 +94,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
 
         req = self.mw.process_response(req, rsp, self.spider)
         assert isinstance(req, Request)
-        req = self.mw.process_response(req, rsp, self.spider)
-        self.assertEqual(req, None)
+        self.assertRaises(IgnoreRequest, self.mw.process_response, req, rsp, self.spider)
 
 if __name__ == "__main__":
     unittest.main()
