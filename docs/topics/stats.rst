@@ -50,11 +50,11 @@ Increment global stat value::
 
 Set global stat value only if greater than previous::
 
-    stats.max_value('max_items_scraped', value, default=0)
+    stats.max_value('max_items_scraped', value)
 
 Set global stat value only if lower than previous::
 
-    stats.min_value('min_free_memory_percent', value, default=100)
+    stats.min_value('min_free_memory_percent', value)
 
 Get global stat value::
 
@@ -78,11 +78,11 @@ Increment domain-specific stat value::
 
 Set domain-specific stat value only if greater than previous::
 
-    stats.max_value('max_items_scraped', value, default=0, domain='example.com')
+    stats.max_value('max_items_scraped', value, domain='example.com')
 
 Set domain-specific stat value only if lower than previous::
 
-    stats.min_value('min_free_memory_percent', value, default=100, domain='example.com')
+    stats.min_value('min_free_memory_percent', value, domain='example.com')
 
 Get domain-specific stat value::
 
@@ -116,12 +116,6 @@ class (which they all inherit from).
         domain specific one is. If the domain is not yet opened a ``KeyError``
         exception is raised.
 
-    .. method:: set_value(key, value, domain=None)
-
-        Set the given value for the given stats key. If domain is ``None`` the
-        global stat table is used, otherwise the domain-specific one is, which
-        must be opened or a ``KeyError`` will be raised.
-
     .. method:: get_stats(domain=None)
 
         Get all stats from the given domain/spider (if domain is given) or all
@@ -147,15 +141,17 @@ class (which they all inherit from).
         stats table is used, which must be opened or a ``KeyError`` will be
         raised.
 
-    .. method:: max_value(key, value, default, domain=None)
+    .. method:: max_value(key, value, domain=None)
 
-        Set the given value for the given stats only if previous value for same
-        key (or default if not seted) is lower than value.
+        Set the given value for the given key only if current value for the
+        same key is lower than value. If there is no current value for the
+        given key, the value values is always set.
 
-    .. method:: min_value(key, value, default, domain=None)
+    .. method:: min_value(key, value, domain=None)
 
-        Set the given value for the given stats only if previous value for same
-        key (or default if not seted) is greater than value.
+        Set the given value for the given key only if current value for the
+        same key is greater than value. If there is no current value for the
+        given key, the value values is always set.
 
     .. method:: clear_stats(domain=None)
 
