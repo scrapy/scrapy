@@ -16,6 +16,7 @@ fi
 # disable custom settings for running tests in a neutral environment
 export SCRAPY_SETTINGS_DISABLED=1
 
+find -name '*.py[co]' -delete
 if [ $# -eq 0 ]; then
     $trial scrapy
 else
