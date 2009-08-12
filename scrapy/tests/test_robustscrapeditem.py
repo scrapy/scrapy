@@ -2,8 +2,6 @@
 import unittest
 
 from scrapy.contrib.item import RobustScrapedItem
-from scrapy.contrib.item.adaptors import AdaptorPipe
-from scrapy.contrib_exp import adaptors
 
 class MyItem(RobustScrapedItem):
     ATTRIBUTES = {
@@ -55,37 +53,3 @@ class RobustScrapedItemTestCase(unittest.TestCase):
         self.item.attribute('children', 'Johnny', 'Rodrigo', add=True)
         self.assertEqual(self.item.children, ['Ken', 'Tom', 'Jimmy', 'Johnny', 'Rodrigo'])
 
-    def test_set_adaptors(self):
-        self.assertEqual(self.item._adaptors_dict, {})
-
-        delist = adaptors.delist()
-        self.item.set_adaptors({'name': [adaptors.extract, delist]})
-        self.assertTrue(isinstance(self.item._adaptors_dict['name'], AdaptorPipe))
-        self.assertEqual(self.item._adaptors_dict['name'][0].name, "extract")
-        self.assertEqual(self.item._adaptors_dict['name'][1].name, "delist")
-
-        self.item.set_adaptors({'description': [adaptors.extract]})
-        self.assertEqual(self.item._adaptors_dict['description'][0].name, "extract")
-
-    def test_set_attrib_adaptors(self):
-        self.assertEqual(self.item._adaptors_dict, {})
-
-        self.item.set_attrib_adaptors('name', [adaptors.extract, adaptors.strip])
-        self.assertTrue(isinstance(self.item._adaptors_dict['name'], AdaptorPipe))
-        self.assertEqual(self.item._adaptors_dict['name'][0].name, "extract")
-        self.assertEqual(self.item._adaptors_dict['name'][1].name, "strip")
-
-        unquote = adaptors.unquote()
-        self.item.set_attrib_adaptors('name', [adaptors.extract, unquote])
-        self.assertTrue(isinstance(self.item._adaptors_dict['name'], AdaptorPipe))
-        self.assertEqual(self.item._adaptors_dict['name'][0].name, "extract")
-        self.assertEqual(self.item._adaptors_dict['name'][1].name, "unquote")
-
-    def test_add_adaptor(self):
-        self.assertEqual(self.item._adaptors_dict, {})
-
-        self.item.add_adaptor('name', adaptors.strip)
-        self.assertEqual(self.item._adaptors_dict['name'][0].name, "strip")
-        self.item.add_adaptor('name', adaptors.extract, position=0)
-        self.assertEqual(self.item._adaptors_dict['name'][0].name, "extract")
-        self.assertEqual(self.item._adaptors_dict['name'][1].name, "strip")
