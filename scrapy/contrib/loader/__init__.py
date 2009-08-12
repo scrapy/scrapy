@@ -1,7 +1,7 @@
 """
-Item Parser
+Item Loader
 
-See documentation in docs/topics/itemparser.rst
+See documentation in docs/topics/loaders.rst
 """
 
 from collections import defaultdict
@@ -9,14 +9,14 @@ from collections import defaultdict
 from scrapy.newitem import Item
 from scrapy.xpath import HtmlXPathSelector
 from scrapy.utils.misc import arg_to_iter
-from .common import wrap_parser_context
-from .parsers import Identity
+from .common import wrap_loader_context
+from .processor import Identity
 
-class ItemParser(object):
+class ItemLoader(object):
 
     default_item_class = Item
-    default_input_parser = Identity()
-    default_output_parser = Identity()
+    default_input_processor = Identity()
+    default_output_processor = Identity()
 
     def __init__(self, item=None, **context):
         if item is None:
@@ -40,34 +40,34 @@ class ItemParser(object):
         return item
 
     def get_output_value(self, field_name):
-        parser = self.get_output_parser(field_name)
-        parser = wrap_parser_context(parser, self.context)
-        return parser(self._values[field_name])
+        proc = self.get_output_processor(field_name)
+        proc = wrap_loader_context(proc, self.context)
+        return proc(self._values[field_name])
 
     def get_collected_values(self, field_name):
         return self._values[field_name]
 
-    def get_input_parser(self, field_name):
-        parser = getattr(self, '%s_in' % field_name, None)
-        if not parser:
-            parser = self.item.fields[field_name].get('input_parser', \
-                self.default_input_parser)
-        return parser
+    def get_input_processor(self, field_name):
+        proc = getattr(self, '%s_in' % field_name, None)
+        if not proc:
+            proc = self.item.fields[field_name].get('input_processor', \
+                self.default_input_processor)
+        return proc
 
-    def get_output_parser(self, field_name):
-        parser = getattr(self, '%s_out' % field_name, None)
-        if not parser:
-            parser = self.item.fields[field_name].get('output_parser', \
-                self.default_output_parser)
-        return parser
+    def get_output_processor(self, field_name):
+        proc = getattr(self, '%s_out' % field_name, None)
+        if not proc:
+            proc = self.item.fields[field_name].get('output_processor', \
+                self.default_output_processor)
+        return proc
 
     def _parse_input_value(self, field_name, value):
-        parser = self.get_input_parser(field_name)
-        parser = wrap_parser_context(parser, self.context)
-        return parser(value)
+        proc = self.get_input_processor(field_name)
+        proc = wrap_loader_context(proc, self.context)
+        return proc(value)
 
 
-class XPathItemParser(ItemParser):
+class XPathItemLoader(ItemLoader):
 
     default_selector_class = HtmlXPathSelector
 
@@ -79,7 +79,7 @@ class XPathItemParser(ItemParser):
             selector = self.default_selector_class(response)
         self.selector = selector
         context.update(selector=selector, response=response)
-        super(XPathItemParser, self).__init__(item, **context)
+        super(XPathItemLoader, self).__init__(item, **context)
 
     def add_xpath(self, field_name, xpath, re=None):
         self.add_value(field_name, self._get_values(field_name, xpath, re))

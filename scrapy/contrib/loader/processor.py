@@ -1,26 +1,26 @@
 """
-This module provides some commonly used parser functions for Item Parsers.
+This module provides some commonly used processors for Item Loaders.
 
-See documentation in docs/topics/itemparser.rst
+See documentation in docs/topics/loaders.rst
 """
 
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.datatypes import MergeDict
-from .common import wrap_parser_context
+from .common import wrap_loader_context
 
 class ApplyConcat(object):
 
-    def __init__(self, *functions, **default_parser_context):
+    def __init__(self, *functions, **default_loader_context):
         self.functions = functions
-        self.default_parser_context = default_parser_context
+        self.default_loader_context = default_loader_context
         
-    def __call__(self, value, parser_context=None):
+    def __call__(self, value, loader_context=None):
         values = arg_to_iter(value)
-        if parser_context:
-            context = MergeDict(parser_context, self.default_parser_context)
+        if loader_context:
+            context = MergeDict(loader_context, self.default_loader_context)
         else:
-            context = self.default_parser_context
-        wrapped_funcs = [wrap_parser_context(f, context) for f in self.functions]
+            context = self.default_loader_context
+        wrapped_funcs = [wrap_loader_context(f, context) for f in self.functions]
         for func in wrapped_funcs:
             next_values = []
             for v in values:
