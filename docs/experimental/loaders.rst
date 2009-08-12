@@ -43,13 +43,13 @@ chapter <topics-newitems>`::
     from myproject.items import Product
 
     def parse(self, response):
-        p = XPathItemLoader(item=Product(), response=response)
-        p.add_xpath('name', '//div[@class="product_name"]')
-        p.add_xpath('name', '//div[@class="product_title"]')
-        p.add_xpath('price', '//p[@id="price"]')
-        p.add_xpath('stock', '//p[@id="stock"]')
-        p.add_value('last_updated', 'today') # you can also use literal values
-        return p.loader_item()
+        l = XPathItemLoader(item=Product(), response=response)
+        l.add_xpath('name', '//div[@class="product_name"]')
+        l.add_xpath('name', '//div[@class="product_title"]')
+        l.add_xpath('price', '//p[@id="price"]')
+        l.add_xpath('stock', '//p[@id="stock"]')
+        l.add_value('last_updated', 'today') # you can also use literal values
+        return l.load_item()
 
 By quickly looking at that code we can see the ``name`` field is being
 extracted from two different XPath locations in the page:
@@ -89,10 +89,10 @@ to the item.
 Let's see an example to illustrate how this input and output processors are
 called for a particular field (the same applies for any other field)::
 
-    p = XPathItemLoader(Product(), some_xpath_selector)
-    p.add_xpath('name', xpath1) # (1)
-    p.add_xpath('name', xpath2) # (2)
-    return p.loader_item() # (3)
+    l = XPathItemLoader(Product(), some_xpath_selector)
+    l.add_xpath('name', xpath1) # (1)
+    l.add_xpath('name', xpath2) # (2)
+    return l.load_item() # (3)
 
 So what happens is:
 
@@ -215,13 +215,13 @@ There are several ways to modify Item Loader context values:
 1. By modifying the currently active Item Loader context
 (:meth:`ItemLoader.context` attribute)::
 
-    loader = ItemLoader(product, unit='cm')
+    loader = ItemLoader(product)
     loader.context['unit'] = 'cm'
 
 2. On Item Loader instantiation (the keyword arguments of Item Loader
    constructor are stored in the Item Loader context)::
 
-    p = ItemLoader(product, unit='cm')
+    loader = ItemLoader(product, unit='cm')
 
 2. On Item Loader declaration, for those input/output processors that support
    instatiating them with a Item Loader context. :class:`MapCompose` is one of
@@ -263,7 +263,7 @@ ItemLoader objects
         Similar to :meth:`add_value` but replaces the collected data with the
         new value instead of adding it.
 
-    .. method:: loader_item()
+    .. method:: load_item()
 
         Populate the item with the data collected so far, and return it. The
         data collected is first passed through the :ref:`output processors
