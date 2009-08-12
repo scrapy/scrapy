@@ -49,7 +49,7 @@ chapter <topics-newitems>`::
         p.add_xpath('price', '//p[@id="price"]')
         p.add_xpath('stock', '//p[@id="stock"]')
         p.add_value('last_updated', 'today') # you can also use literal values
-        return p.populate_item()
+        return p.loader_item()
 
 By quickly looking at that code we can see the ``name`` field is being
 extracted from two different XPath locations in the page:
@@ -65,7 +65,7 @@ Afterwards, similar calls are used for ``price`` and ``stock`` fields, and
 finally the ``last_update`` field is populated directly with a literal value
 (``today``) using a different method: :meth:`~ItemLoader.add_value`.
 
-Finally, when all data is collected, the :meth:`ItemLoader.populate_item`
+Finally, when all data is collected, the :meth:`ItemLoader.loader_item`
 method is called which actually populates and returns the item populated with
 the data previously extracted and collected with the
 :meth:`~XPathItemLoader.add_xpath` and :meth:`~ItemLoader.add_value` calls.
@@ -80,7 +80,7 @@ An Item Loader contains one input processor and one output processor for each
 received (through the :meth:`~XPathItemLoader.add_xpath` or
 :meth:`~ItemLoader.add_value` methods) and the result of the input processor is
 collected and kept inside the ItemLoader. After collecting all data, the
-:meth:`ItemLoader.populate_item` method is called to populate and get the
+:meth:`ItemLoader.loader_item` method is called to populate and get the
 populated :class:`~scrapy.newitem.Item` object.  That's when the output processor
 is called with the data previously collected (and processed using the input
 processor). The result of the output processor is the final value that gets assigned
@@ -92,7 +92,7 @@ called for a particular field (the same applies for any other field)::
     p = XPathItemLoader(Product(), some_xpath_selector)
     p.add_xpath('name', xpath1) # (1)
     p.add_xpath('name', xpath2) # (2)
-    return p.populate_item() # (3)
+    return p.loader_item() # (3)
 
 So what happens is:
 
@@ -263,10 +263,10 @@ ItemLoader objects
         Similar to :meth:`add_value` but replaces the collected data with the
         new value instead of adding it.
 
-    .. method:: populate_item()
+    .. method:: loader_item()
 
         Populate the item with the data collected so far, and return it. The
-        data collected is first passed through the :ref:`field output processors
+        data collected is first passed through the :ref:`output processors
         <topics-loaders-processors>` to get the final value to assign to each
         item field.
 

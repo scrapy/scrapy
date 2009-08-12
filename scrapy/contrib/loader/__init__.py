@@ -33,7 +33,7 @@ class ItemLoader(object):
         parsed_value = self._parse_input_value(field_name, value)
         self._values[field_name] = arg_to_iter(parsed_value)
 
-    def populate_item(self):
+    def load_item(self):
         item = self.item
         for field_name in self._values:
             item[field_name] = self.get_output_value(field_name)

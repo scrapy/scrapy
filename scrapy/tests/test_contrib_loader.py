@@ -35,20 +35,20 @@ def processor_with_args(value, other=None, loader_context=None):
 
 class ItemLoaderTest(unittest.TestCase):
 
-    def test_populate_item_using_default_loader(self):
+    def test_load_item_using_default_loader(self):
         i = TestItem()
         i['summary'] = u'lala'
         ip = ItemLoader(item=i)
         ip.add_value('name', u'marta')
-        item = ip.populate_item()
+        item = ip.load_item()
         assert item is i
         self.assertEqual(item['summary'], u'lala')
         self.assertEqual(item['name'], [u'marta'])
 
-    def test_populate_item_using_custom_loader(self):
+    def test_load_item_using_custom_loader(self):
         ip = TestItemLoader()
         ip.add_value('name', u'marta')
-        item = ip.populate_item()
+        item = ip.load_item()
         self.assertEqual(item['name'], [u'Marta'])
 
     def test_add_value(self):
@@ -84,7 +84,7 @@ class ItemLoaderTest(unittest.TestCase):
         ip = TestItemLoader()
         ip.add_value('name', u'marta')
         self.assertEqual(ip.get_output_value('name'), [u'Mart'])
-        item = ip.populate_item()
+        item = ip.load_item()
         self.assertEqual(item['name'], [u'Mart'])
 
     def test_default_input_processor(self):
@@ -251,7 +251,7 @@ class ItemLoaderTest(unittest.TestCase):
         il = TestItemLoader()
         il.add_value('name', [u'marta', u'other'])
         self.assertEqual(il.get_output_value('name'), u'Mart')
-        item = il.populate_item()
+        item = il.load_item()
         self.assertEqual(item['name'], u'Mart')
 
 
