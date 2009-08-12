@@ -8,7 +8,7 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.datatypes import MergeDict
 from .common import wrap_loader_context
 
-class ApplyConcat(object):
+class MapCompose(object):
 
     def __init__(self, *functions, **default_loader_context):
         self.functions = functions
@@ -26,7 +26,7 @@ class ApplyConcat(object):
             for v in values:
                 next_values += arg_to_iter(func(v))
             values = next_values
-        return list(values)
+        return values
 
 
 class Compose(object):

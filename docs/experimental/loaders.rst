@@ -115,8 +115,8 @@ positional (required) argument.
 
 The other thing you need to keep in mind is that the values returned by input
 processors are collected internally (in lists) and then passed to output
-processors to populate the fields, so output processors should expect iterables as
-input. 
+processors to populate the fields, so output processors should expect iterables
+as input.
 
 Last, but not least, Scrapy comes with some :ref:`commonly used processors
 <topics-loaders-available-processors>` built-in for convenience.
@@ -129,16 +129,16 @@ Item Loaders are declared like Items, by using a class definition syntax. Here
 is an example::
 
     from scrapy.contrib.loader import ItemLoader
-    from scrapy.contrib.loader.processor import TakeFirst, ApplyConcat, Join
+    from scrapy.contrib.loader.processor import TakeFirst, MapCompose, Join
 
     class ProductLoader(ItemLoader):
 
         default_input_processor = TakeFirst()
 
-        name_in = ApplyConcat(unicode.title)
+        name_in = MapCompose(unicode.title)
         name_out = Join()
 
-        price_in = ApplyConcat(unicode.strip)
+        price_in = MapCompose(unicode.strip)
         price_out = TakeFirst()
 
         # ...
@@ -161,19 +161,19 @@ output processors to use: in the :ref:`Item Field <topics-newitems-fields>`
 metadata. Here is an example::
 
     from scrapy.newitem import Item, Field
-    from scrapy.contrib.loader.processor import ApplyConcat, Join, TakeFirst
+    from scrapy.contrib.loader.processor import MapCompose, Join, TakeFirst
 
     from scrapy.utils.markup import remove_entities
     from myproject.utils import filter_prices
 
     class Product(Item):
         name = Field(
-            input_processor=ApplyConcat(remove_entities),
+            input_processor=MapCompose(remove_entities),
             output_processor=Join(),
         )
         price = Field(
             default=0,
-            input_processor=ApplyConcat(remove_entities, filter_prices),
+            input_processor=MapCompose(remove_entities, filter_prices),
             output_processor=TakeFirst(),
         )
 
@@ -224,11 +224,11 @@ There are several ways to modify Item Loader context values:
     p = ItemLoader(product, unit='cm')
 
 2. On Item Loader declaration, for those input/output processors that support
-   instatiating them with a Item Loader context. :class:`ApplyConcat` is one of
+   instatiating them with a Item Loader context. :class:`MapCompose` is one of
    them::
 
     class ProductLoader(ItemLoader):
-        length_out = ApplyConcat(parse_length, unit='cm')
+        length_out = MapCompose(parse_length, unit='cm')
 
 
 ItemLoader objects
@@ -395,25 +395,25 @@ those dashes in the final product names.
 Here's how you can remove those dashes by reusing and extending the default
 Product Item Loader (``ProductLoader``)::
 
-    from scrapy.contrib.loader.processor import ApplyConcat
+    from scrapy.contrib.loader.processor import MapCompose
     from myproject.ItemLoaders import ProductLoader
 
     def strip_dashes(x):
         return x.strip('-')
 
     class SiteSpecificLoader(ProductLoader):
-        name_in = ApplyConcat(ProductLoader.name_in, strip_dashes)
+        name_in = MapCompose(ProductLoader.name_in, strip_dashes)
 
 Another case where extending Item Loaders can be very helpful is when you have
 multiple source formats, for example XML and HTML. In the XML version you may
 want to remove ``CDATA`` occurrences. Here's an example of how to do it::
 
-    from scrapy.contrib.loader.processor import ApplyConcat
+    from scrapy.contrib.loader.processor import MapCompose
     from myproject.ItemLoaders import ProductLoader
     from myproject.utils.xml import remove_cdata
 
     class XmlProductLoader(ProductLoader):
-        name_in = ApplyConcat(remove_cdata, ProductLoader.name_in)
+        name_in = MapCompose(remove_cdata, ProductLoader.name_in)
 
 And that's how you typically extend input processors.
 
@@ -438,7 +438,7 @@ Available built-in processors
 
 Even though you can use any callable function as input and output processors,
 Scrapy provides some commonly used processors, which are described below. Some
-of them, like the :class:`ApplyConcat` (which is typically used as input
+of them, like the :class:`MapCompose` (which is typically used as input
 processor) composes the output of several functions executed in order, to
 produce the final parsed value.
 
@@ -496,9 +496,16 @@ Here is a list of all built-in processors:
     function, and so on, until the last function returns the output value of
     this processor.
 
+    Example::
+
+        >>> from scrapy.contrib.loader.processor import Compose
+        >>> proc = Compose(lambda v: v[0], str.upper)
+        >>> proc(['hello', 'world'])
+        'HELLO'
+
     Each function can optionally receive a ``loader_context`` parameter. For
     those which does this processor will pass the currently active :ref:`Loader
-    context <topics-loaders-context>` through that parameter. 
+    context <topics-loaders-context>` through that parameter.
 
     The keyword arguments passed in the constructor are used as the default
     Loader context values passed to each function call. However, the final
@@ -506,28 +513,44 @@ Here is a list of all built-in processors:
     active Loader context accessible through the :meth:`ItemLoader.context`
     attribute.
 
-.. class:: ApplyConcat(\*functions, \**default_loader_context)
+.. class:: MapCompose(\*functions, \**default_loader_context)
 
-    A processor which applies the given functions consecutively, in order,
-    concatenating their results before next function call. So each function
-    returns a list of values (though it could return ``None`` or a signle value
-    too) and the next function is called once for each of those values,
-    receiving one of those values as input each time. The output of each
-    function call (for each input value) is concatenated and each values of the
-    concatenation is used to call the next function, and the process repeats
-    until there are no functions left.
-    
-    As with the Compose processor, functions can receive Loader contexts, and
-    constructor keyword arguments are used as default context values. See
-    :class:`Compose` processor for more info.
+    A processor which is constructed from the composition of the given
+    functions, similar to the :class:`Compose` processor. The difference with
+    this processor is the way internal results are passed among functions,
+    which is as follows:
 
-    Example::
+    The input value of this processor is *iterated* and each element is passed
+    to the first function, and the result of that function (for each element)
+    is concatenated to construct a new iterable, which is then passed to the
+    second function, and so on, until the last function is applied for each
+    value of the list of values collected so far. The output values of the last
+    function are concatenated together to produce the output of this processor.
+
+    Each particular function can return a value or a list of values, which is
+    flattened with the list of values returned by the same function applied to
+    the other input values. The functions can also return ``None`` in which
+    case the output of that function is ignored for further processing over the
+    chain.
+
+    This processor provides a convenient way to compose functions that only
+    work with single values (instead of iterables). For this reason the
+    :class:`MapCompose` processor is typically used as input processor, since
+    data is often extracted using the
+    :meth:`~scrapy.xpath.XPathSelector.extract` method of :ref:`selectors
+    <topics-selectors>`, which returns a list of unicode strings.
+
+    The example below should clarify how it works::
 
         >>> def filter_world(x):
         ...     return None if x == 'world' else x
         ...
-        >>> from scrapy.contrib.loader.processor import ApplyConcat
-        >>> proc = ApplyConcat(filter_world, str.upper)
-        >>> proc(['hello', 'world', 'this', 'is', 'scrapy'])
-        ['HELLO, 'THIS', 'IS', 'SCRAPY']
+        >>> from scrapy.contrib.loader.processor import MapCompose
+        >>> proc = MapCompose(filter_world, unicode.upper)
+        >>> proc([u'hello', u'world', u'this', u'is', u'scrapy'])
+        [u'HELLO, u'THIS', u'IS', u'SCRAPY']
+
+    As with the Compose processor, functions can receive Loader contexts, and
+    constructor keyword arguments are used as default context values. See
+    :class:`Compose` processor for more info.
 

@@ -1,7 +1,7 @@
 import unittest
 
 from scrapy.contrib.loader import ItemLoader, XPathItemLoader
-from scrapy.contrib.loader.processor import ApplyConcat, Join, Identity, Compose
+from scrapy.contrib.loader.processor import Join, Identity, Compose, MapCompose
 from scrapy.newitem import Item, Field
 from scrapy.xpath import HtmlXPathSelector
 from scrapy.http import HtmlResponse
@@ -21,10 +21,10 @@ class NameItemLoader(ItemLoader):
     default_item_class = TestItem
 
 class TestItemLoader(NameItemLoader):
-    name_in = ApplyConcat(lambda v: v.title())
+    name_in = MapCompose(lambda v: v.title())
 
 class DefaultedItemLoader(NameItemLoader):
-    default_input_processor = ApplyConcat(lambda v: v[:-1])
+    default_input_processor = MapCompose(lambda v: v[:-1])
 
 # test processors
 
@@ -73,13 +73,13 @@ class ItemLoaderTest(unittest.TestCase):
         def filter_world(x):
             return None if x == 'world' else x
 
-        proc = ApplyConcat(filter_world, str.upper)
+        proc = MapCompose(filter_world, str.upper)
         self.assertEqual(proc(['hello', 'world', 'this', 'is', 'scrapy']),
                          ['HELLO', 'THIS', 'IS', 'SCRAPY'])
 
     def test_map_concat_filter_multiple_functions(self):
         class TestItemLoader(NameItemLoader):
-            name_in = ApplyConcat(lambda v: v.title(), lambda v: v[:-1])
+            name_in = MapCompose(lambda v: v.title(), lambda v: v[:-1])
 
         ip = TestItemLoader()
         ip.add_value('name', u'marta')
@@ -102,7 +102,7 @@ class ItemLoaderTest(unittest.TestCase):
 
     def test_input_processor_inheritance(self):
         class ChildItemLoader(TestItemLoader):
-            url_in = ApplyConcat(lambda v: v.lower())
+            url_in = MapCompose(lambda v: v.lower())
 
         ip = ChildItemLoader()
         ip.add_value('url', u'HTTP://scrapy.ORG')
@@ -111,8 +111,8 @@ class ItemLoaderTest(unittest.TestCase):
         self.assertEqual(ip.get_output_value('name'), [u'Marta'])
 
         class ChildChildItemLoader(ChildItemLoader):
-            url_in = ApplyConcat(lambda v: v.upper())
-            summary_in = ApplyConcat(lambda v: v)
+            url_in = MapCompose(lambda v: v.upper())
+            summary_in = MapCompose(lambda v: v)
 
         ip = ChildChildItemLoader()
         ip.add_value('url', u'http://scrapy.org')
@@ -122,7 +122,7 @@ class ItemLoaderTest(unittest.TestCase):
 
     def test_empty_map_concat(self):
         class IdentityDefaultedItemLoader(DefaultedItemLoader):
-            name_in = ApplyConcat()
+            name_in = MapCompose()
 
         ip = IdentityDefaultedItemLoader()
         ip.add_value('name', u'marta')
@@ -138,7 +138,7 @@ class ItemLoaderTest(unittest.TestCase):
 
     def test_extend_custom_input_processors(self):
         class ChildItemLoader(TestItemLoader):
-            name_in = ApplyConcat(TestItemLoader.name_in, unicode.swapcase)
+            name_in = MapCompose(TestItemLoader.name_in, unicode.swapcase)
 
         ip = ChildItemLoader()
         ip.add_value('name', u'marta')
@@ -146,7 +146,7 @@ class ItemLoaderTest(unittest.TestCase):
 
     def test_extend_default_input_processors(self):
         class ChildDefaultedItemLoader(DefaultedItemLoader):
-            name_in = ApplyConcat(DefaultedItemLoader.default_input_processor, unicode.swapcase)
+            name_in = MapCompose(DefaultedItemLoader.default_input_processor, unicode.swapcase)
 
         ip = ChildDefaultedItemLoader()
         ip.add_value('name', u'marta')
@@ -197,7 +197,7 @@ class ItemLoaderTest(unittest.TestCase):
 
     def test_loader_context_on_declaration(self):
         class ChildItemLoader(TestItemLoader):
-            url_in = ApplyConcat(processor_with_args, key=u'val')
+            url_in = MapCompose(processor_with_args, key=u'val')
 
         ip = ChildItemLoader()
         ip.add_value('url', u'text')
@@ -207,7 +207,7 @@ class ItemLoaderTest(unittest.TestCase):
 
     def test_loader_context_on_instantiation(self):
         class ChildItemLoader(TestItemLoader):
-            url_in = ApplyConcat(processor_with_args)
+            url_in = MapCompose(processor_with_args)
 
         ip = ChildItemLoader(key=u'val')
         ip.add_value('url', u'text')
@@ -217,7 +217,7 @@ class ItemLoaderTest(unittest.TestCase):
 
     def test_loader_context_on_assign(self):
         class ChildItemLoader(TestItemLoader):
-            url_in = ApplyConcat(processor_with_args)
+            url_in = MapCompose(processor_with_args)
 
         ip = ChildItemLoader()
         ip.context['key'] = u'val'
@@ -231,7 +231,7 @@ class ItemLoaderTest(unittest.TestCase):
             return loader_context['item']['name']
 
         class ChildItemLoader(TestItemLoader):
-            url_in = ApplyConcat(processor)
+            url_in = MapCompose(processor)
 
         it = TestItem(name='marta')
         ip = ChildItemLoader(item=it)
@@ -257,7 +257,7 @@ class ItemLoaderTest(unittest.TestCase):
 
 class TestXPathItemLoader(XPathItemLoader):
     default_item_class = TestItem
-    name_in = ApplyConcat(lambda v: v.title())
+    name_in = MapCompose(lambda v: v.title())
 
 class XPathItemLoaderTest(unittest.TestCase):
 
