@@ -1,7 +1,7 @@
 import unittest
 
 from scrapy.contrib.loader import ItemLoader, XPathItemLoader
-from scrapy.contrib.loader.processor import ApplyConcat, Join, Identity
+from scrapy.contrib.loader.processor import ApplyConcat, Join, Identity, Pipe
 from scrapy.newitem import Item, Field
 from scrapy.xpath import HtmlXPathSelector
 from scrapy.http import HtmlResponse
@@ -243,6 +243,16 @@ class ItemLoaderTest(unittest.TestCase):
     def test_add_value_on_unknown_field(self):
         ip = TestItemLoader()
         self.assertRaises(KeyError, ip.add_value, 'wrong_field', [u'lala', u'lolo'])
+
+    def test_pipe_pprocwssor(self):
+        class TestItemLoader(NameItemLoader):
+            name_out = Pipe(lambda v: v[0], lambda v: v.title(), lambda v: v[:-1])
+
+        il = TestItemLoader()
+        il.add_value('name', [u'marta', u'other'])
+        self.assertEqual(il.get_output_value('name'), u'Mart')
+        item = il.populate_item()
+        self.assertEqual(item['name'], u'Mart')
 
 
 class TestXPathItemLoader(XPathItemLoader):
