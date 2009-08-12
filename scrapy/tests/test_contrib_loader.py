@@ -1,7 +1,7 @@
 import unittest
 
 from scrapy.contrib.loader import ItemLoader, XPathItemLoader
-from scrapy.contrib.loader.processor import ApplyConcat, Join, Identity, Pipe
+from scrapy.contrib.loader.processor import ApplyConcat, Join, Identity, Compose
 from scrapy.newitem import Item, Field
 from scrapy.xpath import HtmlXPathSelector
 from scrapy.http import HtmlResponse
@@ -244,9 +244,9 @@ class ItemLoaderTest(unittest.TestCase):
         ip = TestItemLoader()
         self.assertRaises(KeyError, ip.add_value, 'wrong_field', [u'lala', u'lolo'])
 
-    def test_pipe_pprocwssor(self):
+    def test_compose_processor(self):
         class TestItemLoader(NameItemLoader):
-            name_out = Pipe(lambda v: v[0], lambda v: v.title(), lambda v: v[:-1])
+            name_out = Compose(lambda v: v[0], lambda v: v.title(), lambda v: v[:-1])
 
         il = TestItemLoader()
         il.add_value('name', [u'marta', u'other'])

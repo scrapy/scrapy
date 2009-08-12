@@ -29,17 +29,17 @@ class ApplyConcat(object):
         return list(values)
 
 
-class Pipe(object):
+class Compose(object):
 
-    def __init__(self, *functions, **default_parser_context):
+    def __init__(self, *functions, **default_loader_context):
         self.functions = functions
-        self.default_parser_context = default_parser_context
+        self.default_loader_context = default_loader_context
     
-    def __call__(self, value, parser_context=None):
-        if parser_context:
-            context = MergeDict(parser_context, self.default_parser_context)
+    def __call__(self, value, loader_context=None):
+        if loader_context:
+            context = MergeDict(loader_context, self.default_loader_context)
         else:
-            context = self.default_parser_context
+            context = self.default_loader_context
         wrapped_funcs = [wrap_loader_context(f, context) for f in self.functions]
         for func in wrapped_funcs:
             value = func(value)

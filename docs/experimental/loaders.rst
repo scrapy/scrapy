@@ -433,6 +433,9 @@ needs.
 Available built-in processors
 =============================
 
+.. module:: scrapy.contrib.loader.processor
+   :synopsis: A collection of processors to use with Item Loaders
+
 Even though you can use any callable function as input and output processors,
 Scrapy provides some commonly used processors, which are described below. Some
 of them, like the :class:`ApplyConcat` (which is typically used as input
@@ -441,65 +444,11 @@ produce the final parsed value.
 
 Here is a list of all built-in processors:
 
-.. _topics-loaders-applyconcat:
-
-ApplyConcat processor
----------------------
-
-The ApplyConcat processor is the recommended processor to use if you want to
-concatenate the processing of several functions in a pipeline.
-
-.. module:: scrapy.contrib.loader.processor
-   :synopsis: A collection of processors to use with Item Loaders
-
-.. class:: ApplyConcat(\*functions, \**default_loader_context)
-
-    A processor which applies the given functions consecutively, in order,
-    concatenating their results before next function call. So each function
-    returns a list of values (though it could return ``None`` or a signle value
-    too) and the next function is called once for each of those values,
-    receiving one of those values as input each time. The output of each
-    function call (for each input value) is concatenated and each values of the
-    concatenation is used to call the next function, and the process repeats
-    until there are no functions left.
-    
-    Each function can optionally receive a ``loader_context`` parameter, which
-    will contain the currently active :ref:`Item Loader context
-    <topics-loaders-context>`. 
-
-    The keyword arguments passed in the consturctor are used as the default
-    Item Loader context values passed on each function call. However, the final
-    Item Loader context values passed to funtions get overriden with the
-    currently active Item Loader context accesible through the
-    :meth:`ItemLoader.context` attribute.
-
-    Example::
-
-        >>> def filter_world(x):
-        ...     return None if x == 'world' else x
-        ...
-        >>> from scrapy.contrib.loader.processor import ApplyConcat
-        >>> proc = ApplyConcat(filter_world, str.upper)
-        >>> proc(['hello', 'world', 'this', 'is', 'scrapy'])
-        ['HELLO, 'THIS', 'IS', 'SCRAPY']
-
-.. class:: TakeFirst
-
-    Return the first non null/empty value from the values to received, so it's
-    typically used as output processor of single-valued fields. It doesn't
-    receive any constructor arguments, nor accepts a Item Loader context.
-
-    Example::
-
-        >>> from scrapy.contrib.loader.processor import TakeFirst
-        >>> proc = TakeFirst()
-        >>> proc(['', 'one', 'two', 'three'])
-        'one'
-
 .. class:: Identity
 
-    Return the original values unchanged. It doesn't receive any constructor
-    arguments nor accepts a Item Loader context.
+    The simplest processor, which doesn't do anything. It returns the original
+    values unchanged. It doesn't receive any constructor arguments nor accepts
+    Loader contexts.
 
     Example::
 
@@ -508,10 +457,23 @@ concatenate the processing of several functions in a pipeline.
         >>> proc(['one', 'two', 'three'])
         ['one', 'two', 'three']
 
+.. class:: TakeFirst
+
+    Return the first non null/empty value from the values to received, so it's
+    typically used as output processor of single-valued fields. It doesn't
+    receive any constructor arguments, nor accepts Loader contexts.
+
+    Example::
+
+        >>> from scrapy.contrib.loader.processor import TakeFirst
+        >>> proc = TakeFirst()
+        >>> proc(['', 'one', 'two', 'three'])
+        'one'
+
 .. class:: Join(separator=u' ')
 
     Return the values joined with the separator given in the constructor, which
-    defaults to ``u' '``. It doesn't accept a Item Loader context.
+    defaults to ``u' '``. It doesn't accept Loader contexts.
 
     When using the default separator, this processor is equivalent to the
     function: ``u' '.join``
@@ -525,3 +487,47 @@ concatenate the processing of several functions in a pipeline.
         >>> proc = Join('<br>')
         >>> proc(['one', 'two', 'three'])
         u'one<br>two<br>three'
+
+.. class:: Compose(\*functions, \**default_loader_context)
+
+    A processor which is constructed from the composition of the given
+    functions. This means that each input value of this processor is passed to
+    the first function, and the result of that function is passed to the second
+    function, and so on, until the last function returns the output value of
+    this processor.
+
+    Each function can optionally receive a ``loader_context`` parameter. For
+    those which does this processor will pass the currently active :ref:`Loader
+    context <topics-loaders-context>` through that parameter. 
+
+    The keyword arguments passed in the constructor are used as the default
+    Loader context values passed to each function call. However, the final
+    Loader context values passed to functions are overridden with the currently
+    active Loader context accessible through the :meth:`ItemLoader.context`
+    attribute.
+
+.. class:: ApplyConcat(\*functions, \**default_loader_context)
+
+    A processor which applies the given functions consecutively, in order,
+    concatenating their results before next function call. So each function
+    returns a list of values (though it could return ``None`` or a signle value
+    too) and the next function is called once for each of those values,
+    receiving one of those values as input each time. The output of each
+    function call (for each input value) is concatenated and each values of the
+    concatenation is used to call the next function, and the process repeats
+    until there are no functions left.
+    
+    As with the Compose processor, functions can receive Loader contexts, and
+    constructor keyword arguments are used as default context values. See
+    :class:`Compose` processor for more info.
+
+    Example::
+
+        >>> def filter_world(x):
+        ...     return None if x == 'world' else x
+        ...
+        >>> from scrapy.contrib.loader.processor import ApplyConcat
+        >>> proc = ApplyConcat(filter_world, str.upper)
+        >>> proc(['hello', 'world', 'this', 'is', 'scrapy'])
+        ['HELLO, 'THIS', 'IS', 'SCRAPY']
+
