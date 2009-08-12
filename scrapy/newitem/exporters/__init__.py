@@ -22,15 +22,15 @@ class BaseItemExporter(object):
 
     def _serialize_field(self, field, name, value):
         if hasattr(self, 'serialize_%s' % name):
-            serializer = getattr('serialize_%s' % name)
+            serializer = getattr(self, 'serialize_%s' % name)
         elif hasattr(field, 'serializer'):
             serializer = field.serializer
         else:
-            serializer = _default_serializer(field, name, value)
+            serializer = self._default_serializer
 
         return serializer(field, name, value)
 
-    def _default_serializer(field, name, value):
+    def _default_serializer(self, field, name, value):
         return str(value)
 
 
@@ -67,8 +67,8 @@ class CsvItemExporter(BaseItemExporter):
         values = []
         for field in self.fields_to_export:
             if field in item:
-                values.append(self._serialize_field(item.fields[field]), field, \
-                    item[field])
+                values.append(self._serialize_field(item.fields[field], field,
+                                                    item[field]))
             else:
                 values.append('')
         self.csv_writer.writerow(values)
@@ -92,9 +92,7 @@ class XmlItemExporter(BaseItemExporter):
         self.xg.startElement(self.item_element, {})
         for field in self.fields_to_export:
             if field in item:
-                self.xg.startElement(self.item_element, {})
                 self._export_xml_field(item.fields[field], field, item[field])
-                self.xg.endElement(self.item_element)
             elif self.include_empty_elements:
                 self.xg.startElement(self.item_element, {})
                 self.xg.endElement()
@@ -105,9 +103,6 @@ class XmlItemExporter(BaseItemExporter):
         self.xg.endDocument()
 
     def _export_xml_field(self, field, name, value):
-        if isinstance(field, fields.ListField):
-            for v in value:
-                self._export_xml_field(field._field, 'value', v)
         self.xg.startElement(name, {})
         self.xg.characters(self._serialize_field(field, name, value))
         self.xg.endElement(name)
