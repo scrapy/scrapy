@@ -54,6 +54,14 @@ class ResponseUtilsTest(unittest.TestCase):
         response = Response(url='http://example.org', body=body)
         self.assertEqual(get_meta_refresh(response), ('5', 'http://example.org/newpage'))
 
+        # meta refresh in multiple lines
+        body = """<html><head>
+               <META
+               HTTP-EQUIV="Refresh"
+               CONTENT="1; URL=http://example.org/newpage">"""
+        response = Response(url='http://example.org', body=body)
+        self.assertEqual(get_meta_refresh(response), ('1', 'http://example.org/newpage'))
+
     def test_response_httprepr(self):
         r1 = Response("http://www.example.com")
         self.assertEqual(response_httprepr(r1), 'HTTP/1.1 200 OK\r\n\r\n')

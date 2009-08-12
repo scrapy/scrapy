@@ -31,7 +31,7 @@ def get_base_url(response):
         response.cache['base_url'] = match.group(1) if match else response.url
     return response.cache['base_url']
 
-META_REFRESH_RE = re.compile(r'<meta[^>]*http-equiv[^>]*refresh[^>].*?(\d+);\s*url=([^"\']+)', re.IGNORECASE)
+META_REFRESH_RE = re.compile(r'<meta[^>]*http-equiv[^>]*refresh[^>].*?(\d+);\s*url=([^"\']+)', re.DOTALL | re.IGNORECASE)
 def get_meta_refresh(response):
     """ Return a tuple of two strings containing the interval and url included
     in the http-equiv parameter of the HTML meta element. If no url is included
