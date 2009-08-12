@@ -10,5 +10,4 @@ Scrapy documentation contents
    topics/index
    ref/index
    faq
-   topics/adaptors
    experimental/index

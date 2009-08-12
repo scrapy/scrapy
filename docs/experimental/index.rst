@@ -20,4 +20,4 @@ it's properly merged) . Use at your own risk.
    :maxdepth: 1
 
    newitems
-   itemparser
+   loaders
