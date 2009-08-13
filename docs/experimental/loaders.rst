@@ -58,17 +58,17 @@ extracted from two different XPath locations in the page:
 2. ``//div[@class="product_title"]``
 
 In other words, data is being collected by extracting it from two XPath
-locations, using the :meth:`~XPathItemLoader.add_xpath` method. This is the data
-that will be assigned to the ``name`` field later.
+locations, using the :meth:`~XPathItemLoader.add_xpath` method. This is the
+data that will be assigned to the ``name`` field later.
 
 Afterwards, similar calls are used for ``price`` and ``stock`` fields, and
 finally the ``last_update`` field is populated directly with a literal value
 (``today``) using a different method: :meth:`~ItemLoader.add_value`.
 
-Finally, when all data is collected, the :meth:`ItemLoader.loader_item`
-method is called which actually populates and returns the item populated with
-the data previously extracted and collected with the
-:meth:`~XPathItemLoader.add_xpath` and :meth:`~ItemLoader.add_value` calls.
+Finally, when all data is collected, the :meth:`ItemLoader.load_item` method is
+called which actually populates and returns the item populated with the data
+previously extracted and collected with the :meth:`~XPathItemLoader.add_xpath`
+and :meth:`~ItemLoader.add_value` calls.
 
 .. _topics-loaders-processors:
 
@@ -80,11 +80,11 @@ An Item Loader contains one input processor and one output processor for each
 received (through the :meth:`~XPathItemLoader.add_xpath` or
 :meth:`~ItemLoader.add_value` methods) and the result of the input processor is
 collected and kept inside the ItemLoader. After collecting all data, the
-:meth:`ItemLoader.loader_item` method is called to populate and get the
-populated :class:`~scrapy.newitem.Item` object.  That's when the output processor
-is called with the data previously collected (and processed using the input
-processor). The result of the output processor is the final value that gets assigned
-to the item.
+:meth:`ItemLoader.load_item` method is called to populate and get the populated
+:class:`~scrapy.newitem.Item` object.  That's when the output processor is
+called with the data previously collected (and processed using the input
+processor). The result of the output processor is the final value that gets
+assigned to the item.
 
 Let's see an example to illustrate how this input and output processors are
 called for a particular field (the same applies for any other field)::
@@ -133,13 +133,12 @@ is an example::
 
     class ProductLoader(ItemLoader):
 
-        default_input_processor = TakeFirst()
+        default_output_processor = TakeFirst()
 
         name_in = MapCompose(unicode.title)
         name_out = Join()
 
         price_in = MapCompose(unicode.strip)
-        price_out = TakeFirst()
 
         # ...
 
@@ -213,22 +212,22 @@ function (``parse_length`` in this case) can thus use them.
 There are several ways to modify Item Loader context values:
 
 1. By modifying the currently active Item Loader context
-(:meth:`ItemLoader.context` attribute)::
+   (:attr:`~ItemLoader.context` attribute)::
 
-    loader = ItemLoader(product)
-    loader.context['unit'] = 'cm'
+      loader = ItemLoader(product)
+      loader.context['unit'] = 'cm'
 
 2. On Item Loader instantiation (the keyword arguments of Item Loader
    constructor are stored in the Item Loader context)::
 
-    loader = ItemLoader(product, unit='cm')
+      loader = ItemLoader(product, unit='cm')
 
-2. On Item Loader declaration, for those input/output processors that support
-   instatiating them with a Item Loader context. :class:`MapCompose` is one of
+3. On Item Loader declaration, for those input/output processors that support
+   instatiating them with a Item Loader context. :class:`~processor.MapCompose` is one of
    them::
 
-    class ProductLoader(ItemLoader):
-        length_out = MapCompose(parse_length, unit='cm')
+       class ProductLoader(ItemLoader):
+           length_out = MapCompose(parse_length, unit='cm')
 
 
 ItemLoader objects
