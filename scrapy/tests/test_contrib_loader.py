@@ -1,7 +1,8 @@
 import unittest
 
 from scrapy.contrib.loader import ItemLoader, XPathItemLoader
-from scrapy.contrib.loader.processor import Join, Identity, Compose, MapCompose
+from scrapy.contrib.loader.processor import Join, Identity, TakeFirst, \
+    Compose, MapCompose
 from scrapy.newitem import Item, Field
 from scrapy.xpath import HtmlXPathSelector
 from scrapy.http import HtmlResponse
@@ -254,6 +255,33 @@ class ItemLoaderTest(unittest.TestCase):
         item = il.load_item()
         self.assertEqual(item['name'], u'Mart')
 
+class ProcessorsTest(unittest.TestCase):
+
+    def test_take_first(self):
+        proc = TakeFirst()
+        self.assertEqual(proc([None, '', 'hello', 'world']), 'hello')
+
+    def test_identity(self):
+        proc = Identity()
+        self.assertEqual(proc([None, '', 'hello', 'world']),
+                         [None, '', 'hello', 'world'])
+
+    def test_join(self):
+        proc = Join()
+        self.assertRaises(TypeError, proc, [None, '', 'hello', 'world'])
+        self.assertEqual(proc(['', 'hello', 'world']), u' hello world')
+        self.assertEqual(proc(['hello', 'world']), u'hello world')
+        self.assert_(isinstance(proc(['hello', 'world']), unicode))
+
+    def test_compose(self):
+        proc = Compose(lambda v: v[0], str.upper)
+        self.assertEqual(proc(['hello', 'world']), 'HELLO')
+
+    def test_mapcompose(self):
+        filter_world = lambda x: None if x == 'world' else x
+        proc = MapCompose(filter_world, unicode.upper)
+        self.assertEqual(proc([u'hello', u'world', u'this', u'is', u'scrapy']),
+                         [u'HELLO', u'THIS', u'IS', u'SCRAPY'])
 
 class TestXPathItemLoader(XPathItemLoader):
     default_item_class = TestItem
