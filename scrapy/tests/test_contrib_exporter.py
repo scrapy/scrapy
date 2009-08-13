@@ -1,10 +1,11 @@
 from cPickle import Pickler
 from cStringIO import StringIO
-import pprint
+
 from twisted.trial import unittest
 
 from scrapy.newitem import Item, Field
-from scrapy.newitem.exporters import *
+from scrapy.contrib.exporter import BaseItemExporter, PprintItemExporter, \
+    PickleItemExporter, CsvItemExporter, XmlItemExporter
 
 class TestItem(Item):
     name = Field()
@@ -115,17 +116,20 @@ class JSONItemExporterTest(unittest.TestCase):
 
     def setUp(self):
         try:
-            from scrapy.newitem.exporters.jsonexporter import JSONItemExporter
-            self.output = StringIO()
-            self.ie = JSONItemExporter(self.output)
-
-        except ImportError, e:
-            raise unittest.SkipTest("Json library not available") 
+            import json
+        except ImportError:
+            try:
+                import simplejson
+            except ImportError:
+                raise unittest.SkipTest("simplejson module not available") 
 
     def test_export(self):
+        from scrapy.contrib.exporter.jsonexporter import JSONItemExporter
+
+        output = StringIO()
+        ie = JSONItemExporter(output)
         i = TestItem(name=u'John', age=22)
+        ie.export(i)
 
-        self.ie.export(i)
-
-        self.assertEqual(self.output.getvalue(), '{"age": 22, "name": "John"}\n')
+        self.assertEqual(output.getvalue(), '{"age": 22, "name": "John"}\n')
 
