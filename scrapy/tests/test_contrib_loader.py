@@ -38,36 +38,36 @@ class ItemLoaderTest(unittest.TestCase):
     def test_load_item_using_default_loader(self):
         i = TestItem()
         i['summary'] = u'lala'
-        ip = ItemLoader(item=i)
-        ip.add_value('name', u'marta')
-        item = ip.load_item()
+        il = ItemLoader(item=i)
+        il.add_value('name', u'marta')
+        item = il.load_item()
         assert item is i
         self.assertEqual(item['summary'], u'lala')
         self.assertEqual(item['name'], [u'marta'])
 
     def test_load_item_using_custom_loader(self):
-        ip = TestItemLoader()
-        ip.add_value('name', u'marta')
-        item = ip.load_item()
+        il = TestItemLoader()
+        il.add_value('name', u'marta')
+        item = il.load_item()
         self.assertEqual(item['name'], [u'Marta'])
 
     def test_add_value(self):
-        ip = TestItemLoader()
-        ip.add_value('name', u'marta')
-        self.assertEqual(ip.get_collected_values('name'), [u'Marta'])
-        self.assertEqual(ip.get_output_value('name'), [u'Marta'])
-        ip.add_value('name', u'pepe')
-        self.assertEqual(ip.get_collected_values('name'), [u'Marta', u'Pepe'])
-        self.assertEqual(ip.get_output_value('name'), [u'Marta', u'Pepe'])
+        il = TestItemLoader()
+        il.add_value('name', u'marta')
+        self.assertEqual(il.get_collected_values('name'), [u'Marta'])
+        self.assertEqual(il.get_output_value('name'), [u'Marta'])
+        il.add_value('name', u'pepe')
+        self.assertEqual(il.get_collected_values('name'), [u'Marta', u'Pepe'])
+        self.assertEqual(il.get_output_value('name'), [u'Marta', u'Pepe'])
 
     def test_replace_value(self):
-        ip = TestItemLoader()
-        ip.replace_value('name', u'marta')
-        self.assertEqual(ip.get_collected_values('name'), [u'Marta'])
-        self.assertEqual(ip.get_output_value('name'), [u'Marta'])
-        ip.replace_value('name', u'pepe')
-        self.assertEqual(ip.get_collected_values('name'), [u'Pepe'])
-        self.assertEqual(ip.get_output_value('name'), [u'Pepe'])
+        il = TestItemLoader()
+        il.replace_value('name', u'marta')
+        self.assertEqual(il.get_collected_values('name'), [u'Marta'])
+        self.assertEqual(il.get_output_value('name'), [u'Marta'])
+        il.replace_value('name', u'pepe')
+        self.assertEqual(il.get_collected_values('name'), [u'Pepe'])
+        self.assertEqual(il.get_output_value('name'), [u'Pepe'])
 
     def test_apply_concat_filter(self):
         def filter_world(x):
@@ -77,154 +77,154 @@ class ItemLoaderTest(unittest.TestCase):
         self.assertEqual(proc(['hello', 'world', 'this', 'is', 'scrapy']),
                          ['HELLO', 'THIS', 'IS', 'SCRAPY'])
 
-    def test_map_concat_filter_multiple_functions(self):
+    def test_map_concat_filter_multil(self):
         class TestItemLoader(NameItemLoader):
             name_in = MapCompose(lambda v: v.title(), lambda v: v[:-1])
 
-        ip = TestItemLoader()
-        ip.add_value('name', u'marta')
-        self.assertEqual(ip.get_output_value('name'), [u'Mart'])
-        item = ip.load_item()
+        il = TestItemLoader()
+        il.add_value('name', u'marta')
+        self.assertEqual(il.get_output_value('name'), [u'Mart'])
+        item = il.load_item()
         self.assertEqual(item['name'], [u'Mart'])
 
     def test_default_input_processor(self):
-        ip = DefaultedItemLoader()
-        ip.add_value('name', u'marta')
-        self.assertEqual(ip.get_output_value('name'), [u'mart'])
+        il = DefaultedItemLoader()
+        il.add_value('name', u'marta')
+        self.assertEqual(il.get_output_value('name'), [u'mart'])
 
     def test_inherited_default_input_processor(self):
         class InheritDefaultedItemLoader(DefaultedItemLoader):
             pass
 
-        ip = InheritDefaultedItemLoader()
-        ip.add_value('name', u'marta')
-        self.assertEqual(ip.get_output_value('name'), [u'mart'])
+        il = InheritDefaultedItemLoader()
+        il.add_value('name', u'marta')
+        self.assertEqual(il.get_output_value('name'), [u'mart'])
 
     def test_input_processor_inheritance(self):
         class ChildItemLoader(TestItemLoader):
             url_in = MapCompose(lambda v: v.lower())
 
-        ip = ChildItemLoader()
-        ip.add_value('url', u'HTTP://scrapy.ORG')
-        self.assertEqual(ip.get_output_value('url'), [u'http://scrapy.org'])
-        ip.add_value('name', u'marta')
-        self.assertEqual(ip.get_output_value('name'), [u'Marta'])
+        il = ChildItemLoader()
+        il.add_value('url', u'HTTP://scrapy.ORG')
+        self.assertEqual(il.get_output_value('url'), [u'http://scrapy.org'])
+        il.add_value('name', u'marta')
+        self.assertEqual(il.get_output_value('name'), [u'Marta'])
 
         class ChildChildItemLoader(ChildItemLoader):
             url_in = MapCompose(lambda v: v.upper())
             summary_in = MapCompose(lambda v: v)
 
-        ip = ChildChildItemLoader()
-        ip.add_value('url', u'http://scrapy.org')
-        self.assertEqual(ip.get_output_value('url'), [u'HTTP://SCRAPY.ORG'])
-        ip.add_value('name', u'marta')
-        self.assertEqual(ip.get_output_value('name'), [u'Marta'])
+        il = ChildChildItemLoader()
+        il.add_value('url', u'http://scrapy.org')
+        self.assertEqual(il.get_output_value('url'), [u'HTTP://SCRAPY.ORG'])
+        il.add_value('name', u'marta')
+        self.assertEqual(il.get_output_value('name'), [u'Marta'])
 
     def test_empty_map_concat(self):
         class IdentityDefaultedItemLoader(DefaultedItemLoader):
             name_in = MapCompose()
 
-        ip = IdentityDefaultedItemLoader()
-        ip.add_value('name', u'marta')
-        self.assertEqual(ip.get_output_value('name'), [u'marta'])
+        il = IdentityDefaultedItemLoader()
+        il.add_value('name', u'marta')
+        self.assertEqual(il.get_output_value('name'), [u'marta'])
 
     def test_identity_input_processor(self):
         class IdentityDefaultedItemLoader(DefaultedItemLoader):
             name_in = Identity()
 
-        ip = IdentityDefaultedItemLoader()
-        ip.add_value('name', u'marta')
-        self.assertEqual(ip.get_output_value('name'), [u'marta'])
+        il = IdentityDefaultedItemLoader()
+        il.add_value('name', u'marta')
+        self.assertEqual(il.get_output_value('name'), [u'marta'])
 
     def test_extend_custom_input_processors(self):
         class ChildItemLoader(TestItemLoader):
             name_in = MapCompose(TestItemLoader.name_in, unicode.swapcase)
 
-        ip = ChildItemLoader()
-        ip.add_value('name', u'marta')
-        self.assertEqual(ip.get_output_value('name'), [u'mARTA'])
+        il = ChildItemLoader()
+        il.add_value('name', u'marta')
+        self.assertEqual(il.get_output_value('name'), [u'mARTA'])
 
     def test_extend_default_input_processors(self):
         class ChildDefaultedItemLoader(DefaultedItemLoader):
             name_in = MapCompose(DefaultedItemLoader.default_input_processor, unicode.swapcase)
 
-        ip = ChildDefaultedItemLoader()
-        ip.add_value('name', u'marta')
-        self.assertEqual(ip.get_output_value('name'), [u'MART'])
+        il = ChildDefaultedItemLoader()
+        il.add_value('name', u'marta')
+        self.assertEqual(il.get_output_value('name'), [u'MART'])
 
     def test_output_processor_using_function(self):
-        ip = TestItemLoader()
-        ip.add_value('name', [u'mar', u'ta'])
-        self.assertEqual(ip.get_output_value('name'), [u'Mar', u'Ta'])
+        il = TestItemLoader()
+        il.add_value('name', [u'mar', u'ta'])
+        self.assertEqual(il.get_output_value('name'), [u'Mar', u'Ta'])
 
         class TakeFirstItemLoader(TestItemLoader):
             name_out = u" ".join
 
-        ip = TakeFirstItemLoader()
-        ip.add_value('name', [u'mar', u'ta'])
-        self.assertEqual(ip.get_output_value('name'), u'Mar Ta')
+        il = TakeFirstItemLoader()
+        il.add_value('name', [u'mar', u'ta'])
+        self.assertEqual(il.get_output_value('name'), u'Mar Ta')
 
     def test_output_processor_using_classes(self):
-        ip = TestItemLoader()
-        ip.add_value('name', [u'mar', u'ta'])
-        self.assertEqual(ip.get_output_value('name'), [u'Mar', u'Ta'])
+        il = TestItemLoader()
+        il.add_value('name', [u'mar', u'ta'])
+        self.assertEqual(il.get_output_value('name'), [u'Mar', u'Ta'])
 
         class TakeFirstItemLoader(TestItemLoader):
             name_out = Join()
 
-        ip = TakeFirstItemLoader()
-        ip.add_value('name', [u'mar', u'ta'])
-        self.assertEqual(ip.get_output_value('name'), u'Mar Ta')
+        il = TakeFirstItemLoader()
+        il.add_value('name', [u'mar', u'ta'])
+        self.assertEqual(il.get_output_value('name'), u'Mar Ta')
 
         class TakeFirstItemLoader(TestItemLoader):
             name_out = Join("<br>")
 
-        ip = TakeFirstItemLoader()
-        ip.add_value('name', [u'mar', u'ta'])
-        self.assertEqual(ip.get_output_value('name'), u'Mar<br>Ta')
+        il = TakeFirstItemLoader()
+        il.add_value('name', [u'mar', u'ta'])
+        self.assertEqual(il.get_output_value('name'), u'Mar<br>Ta')
 
     def test_default_output_processor(self):
-        ip = TestItemLoader()
-        ip.add_value('name', [u'mar', u'ta'])
-        self.assertEqual(ip.get_output_value('name'), [u'Mar', u'Ta'])
+        il = TestItemLoader()
+        il.add_value('name', [u'mar', u'ta'])
+        self.assertEqual(il.get_output_value('name'), [u'Mar', u'Ta'])
 
         class LalaItemLoader(TestItemLoader):
             default_output_processor = Identity()
 
-        ip = LalaItemLoader()
-        ip.add_value('name', [u'mar', u'ta'])
-        self.assertEqual(ip.get_output_value('name'), [u'Mar', u'Ta'])
+        il = LalaItemLoader()
+        il.add_value('name', [u'mar', u'ta'])
+        self.assertEqual(il.get_output_value('name'), [u'Mar', u'Ta'])
 
     def test_loader_context_on_declaration(self):
         class ChildItemLoader(TestItemLoader):
             url_in = MapCompose(processor_with_args, key=u'val')
 
-        ip = ChildItemLoader()
-        ip.add_value('url', u'text')
-        self.assertEqual(ip.get_output_value('url'), ['val'])
-        ip.replace_value('url', u'text2')
-        self.assertEqual(ip.get_output_value('url'), ['val'])
+        il = ChildItemLoader()
+        il.add_value('url', u'text')
+        self.assertEqual(il.get_output_value('url'), ['val'])
+        il.replace_value('url', u'text2')
+        self.assertEqual(il.get_output_value('url'), ['val'])
 
     def test_loader_context_on_instantiation(self):
         class ChildItemLoader(TestItemLoader):
             url_in = MapCompose(processor_with_args)
 
-        ip = ChildItemLoader(key=u'val')
-        ip.add_value('url', u'text')
-        self.assertEqual(ip.get_output_value('url'), ['val'])
-        ip.replace_value('url', u'text2')
-        self.assertEqual(ip.get_output_value('url'), ['val'])
+        il = ChildItemLoader(key=u'val')
+        il.add_value('url', u'text')
+        self.assertEqual(il.get_output_value('url'), ['val'])
+        il.replace_value('url', u'text2')
+        self.assertEqual(il.get_output_value('url'), ['val'])
 
     def test_loader_context_on_assign(self):
         class ChildItemLoader(TestItemLoader):
             url_in = MapCompose(processor_with_args)
 
-        ip = ChildItemLoader()
-        ip.context['key'] = u'val'
-        ip.add_value('url', u'text')
-        self.assertEqual(ip.get_output_value('url'), ['val'])
-        ip.replace_value('url', u'text2')
-        self.assertEqual(ip.get_output_value('url'), ['val'])
+        il = ChildItemLoader()
+        il.context['key'] = u'val'
+        il.add_value('url', u'text')
+        self.assertEqual(il.get_output_value('url'), ['val'])
+        il.replace_value('url', u'text2')
+        self.assertEqual(il.get_output_value('url'), ['val'])
 
     def test_item_passed_to_input_processor_functions(self):
         def processor(value, loader_context):
@@ -234,15 +234,15 @@ class ItemLoaderTest(unittest.TestCase):
             url_in = MapCompose(processor)
 
         it = TestItem(name='marta')
-        ip = ChildItemLoader(item=it)
-        ip.add_value('url', u'text')
-        self.assertEqual(ip.get_output_value('url'), ['marta'])
-        ip.replace_value('url', u'text2')
-        self.assertEqual(ip.get_output_value('url'), ['marta'])
+        il = ChildItemLoader(item=it)
+        il.add_value('url', u'text')
+        self.assertEqual(il.get_output_value('url'), ['marta'])
+        il.replace_value('url', u'text2')
+        self.assertEqual(il.get_output_value('url'), ['marta'])
 
     def test_add_value_on_unknown_field(self):
-        ip = TestItemLoader()
-        self.assertRaises(KeyError, ip.add_value, 'wrong_field', [u'lala', u'lolo'])
+        il = TestItemLoader()
+        self.assertRaises(KeyError, il.add_value, 'wrong_field', [u'lala', u'lolo'])
 
     def test_compose_processor(self):
         class TestItemLoader(NameItemLoader):
