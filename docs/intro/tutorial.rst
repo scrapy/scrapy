@@ -239,7 +239,7 @@ This is what the shell looks like::
       url: http://www.dmoz.org/Computers/Programming/Languages/Python/Books/
       spider: <class 'dmoz.spiders.dmoz.OpenDirectorySpider'>
       hxs: <class 'scrapy.xpath.selector.HtmlXPathSelector'>
-      item: <class 'scrapy.item.models.ScrapedItem'>
+      item: <class 'scrapy.item.ScrapedItem'>
       response: <class 'scrapy.http.response.html.HtmlResponse'>
    Available commands:
       get [url]: Fetch a new URL or re-fetch current Request

@@ -1,6 +1,6 @@
 from UserDict import DictMixin
 
-from scrapy.item.models import BaseItem
+from scrapy.item import BaseItem
 
 class Field(dict):
     """Container of field metadata"""

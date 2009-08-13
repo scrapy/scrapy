@@ -6,7 +6,7 @@ See documentation in docs/ref/spiders.rst
 """
 
 from scrapy.contrib.spiders.init import InitSpider
-from scrapy.item.models import BaseItem
+from scrapy.item import BaseItem
 from scrapy.http import Request
 from scrapy.utils.iterators import xmliter, csviter
 from scrapy.xpath.selector import XmlXPathSelector, HtmlXPathSelector

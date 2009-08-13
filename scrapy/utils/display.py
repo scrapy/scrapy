@@ -4,7 +4,7 @@ Helper functions for formatting and pretty printing some objects
 import sys
 import pprint as pypprint
 
-from scrapy.item.models import BaseItem
+from scrapy.item import BaseItem
 from scrapy.http import Request, Response
 
 nocolour = False
