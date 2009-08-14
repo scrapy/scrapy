@@ -42,7 +42,7 @@ http://www.crummy.com/software/BeautifulSoup/documentation.html
 
 Here, have some legalese:
 
-Copyright (c) 2004-2007, Leonard Richardson
+Copyright (c) 2004-2008, Leonard Richardson
 
 All rights reserved.
 
@@ -79,12 +79,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE, DAMMIT.
 from __future__ import generators
 
 __author__ = "Leonard Richardson (leonardr@segfault.org)"
-__version__ = "3.0.6"
+__version__ = "3.0.7a"
 __copyright__ = "Copyright (c) 2004-2008 Leonard Richardson"
 __license__ = "New-style BSD"
 
 from sgmllib import SGMLParser, SGMLParseError
 import codecs
+import markupbase
 import types
 import re
 import sgmllib
@@ -92,9 +93,14 @@ try:
   from htmlentitydefs import name2codepoint
 except ImportError:
   name2codepoint = {}
+try:
+    set
+except NameError:
+    from sets import Set as set
 
-#This hack makes Beautiful Soup able to parse XML with namespaces
+#These hacks make Beautiful Soup able to parse XML with namespaces
 sgmllib.tagfind = re.compile('[a-zA-Z][-_.:a-zA-Z0-9]*')
+markupbase._declname_match = re.compile(r'[a-zA-Z][-_.:a-zA-Z0-9]*\s*').match
 
 DEFAULT_OUTPUT_ENCODING = "utf-8"
 
@@ -390,6 +396,18 @@ class PageElement:
         return s
 
 class NavigableString(unicode, PageElement):
+
+    def __new__(cls, value):
+        """Create a new NavigableString.
+
+        When unpickling a NavigableString, this method is called with
+        the string in DEFAULT_OUTPUT_ENCODING. That encoding needs to be
+        passed in to the superclass's __new__ or the superclass won't know
+        how to handle non-ASCII characters.
+        """
+        if isinstance(value, unicode):
+            return unicode.__new__(cls, value)
+        return unicode.__new__(cls, value, DEFAULT_OUTPUT_ENCODING)
 
     def __getnewargs__(self):
         return (NavigableString.__str__(self),)
@@ -982,6 +1000,7 @@ class BeautifulStoneSoup(Tag, SGMLParser):
     NESTABLE_TAGS = {}
     RESET_NESTING_TAGS = {}
     QUOTE_TAGS = {}
+    PRESERVE_WHITESPACE_TAGS = []
 
     MARKUP_MASSAGE = [(re.compile('(<[^<>]*)/>'),
                        lambda x: x.group(1) + ' />'),
@@ -1005,7 +1024,7 @@ class BeautifulStoneSoup(Tag, SGMLParser):
 
     def __init__(self, markup="", parseOnlyThese=None, fromEncoding=None,
                  markupMassage=True, smartQuotesTo=XML_ENTITIES,
-                 convertEntities=None, selfClosingTags=None):
+                 convertEntities=None, selfClosingTags=None, isHTML=False):
         """The Soup object is initialized as the 'root tag', and the
         provided markup (which can be a string or a file-like object)
         is fed into the underlying parser.
@@ -1067,7 +1086,7 @@ class BeautifulStoneSoup(Tag, SGMLParser):
         self.markup = markup
         self.markupMassage = markupMassage
         try:
-            self._feed()
+            self._feed(isHTML=isHTML)
         except StopParsing:
             pass
         self.markup = None                 # The markup can now be GCed
@@ -1082,7 +1101,7 @@ class BeautifulStoneSoup(Tag, SGMLParser):
             return
         return self.convert_codepoint(n)
 
-    def _feed(self, inDocumentEncoding=None):
+    def _feed(self, inDocumentEncoding=None, isHTML=False):
         # Convert the document to Unicode.
         markup = self.markup
         if isinstance(markup, unicode):
@@ -1091,9 +1110,10 @@ class BeautifulStoneSoup(Tag, SGMLParser):
         else:
             dammit = UnicodeDammit\
                      (markup, [self.fromEncoding, inDocumentEncoding],
-                      smartQuotesTo=self.smartQuotesTo)
+                      smartQuotesTo=self.smartQuotesTo, isHTML=isHTML)
             markup = dammit.unicode
             self.originalEncoding = dammit.originalEncoding
+            self.declaredHTMLEncoding = dammit.declaredHTMLEncoding
         if markup:
             if self.markupMassage:
                 if not isList(self.markupMassage):
@@ -1166,8 +1186,10 @@ class BeautifulStoneSoup(Tag, SGMLParser):
 
     def endData(self, containerClass=NavigableString):
         if self.currentData:
-            currentData = ''.join(self.currentData)
-            if not currentData.translate(self.STRIP_ASCII_SPACES):
+            currentData = u''.join(self.currentData)
+            if (currentData.translate(self.STRIP_ASCII_SPACES) == '' and
+                not set([tag.name for tag in self.tagStack]).intersection(
+                    self.PRESERVE_WHITESPACE_TAGS)):
                 if '\n' in currentData:
                     currentData = '\n'
                 else:
@@ -1444,11 +1466,14 @@ class BeautifulSoup(BeautifulStoneSoup):
     def __init__(self, *args, **kwargs):
         if not kwargs.has_key('smartQuotesTo'):
             kwargs['smartQuotesTo'] = self.HTML_ENTITIES
+        kwargs['isHTML'] = True
         BeautifulStoneSoup.__init__(self, *args, **kwargs)
 
     SELF_CLOSING_TAGS = buildTagMap(None,
                                     ['br' , 'hr', 'input', 'img', 'meta',
                                     'spacer', 'link', 'frame', 'base'])
+
+    PRESERVE_WHITESPACE_TAGS = set(['pre', 'textarea'])
 
     QUOTE_TAGS = {'script' : None, 'textarea' : None}
 
@@ -1494,7 +1519,7 @@ class BeautifulSoup(BeautifulStoneSoup):
                                 NESTABLE_LIST_TAGS, NESTABLE_TABLE_TAGS)
 
     # Used to detect the charset in a META tag; see start_meta
-    CHARSET_RE = re.compile("((^|;)\s*charset=)([^;]*)")
+    CHARSET_RE = re.compile("((^|;)\s*charset=)([^;]*)", re.M)
 
     def start_meta(self, attrs):
         """Beautiful Soup can detect a charset included in a META tag,
@@ -1517,25 +1542,28 @@ class BeautifulSoup(BeautifulStoneSoup):
         if httpEquiv and contentType: # It's an interesting meta tag.
             match = self.CHARSET_RE.search(contentType)
             if match:
-                if getattr(self, 'declaredHTMLEncoding') or \
-                       (self.originalEncoding == self.fromEncoding):
-                    # This is our second pass through the document, or
-                    # else an encoding was specified explicitly and it
-                    # worked. Rewrite the meta tag.
-                    newAttr = self.CHARSET_RE.sub\
-                              (lambda(match):match.group(1) +
-                               "%SOUP-ENCODING%", contentType)
+                if (self.declaredHTMLEncoding is not None or
+                    self.originalEncoding == self.fromEncoding):
+                    # An HTML encoding was sniffed while converting
+                    # the document to Unicode, or an HTML encoding was
+                    # sniffed during a previous pass through the
+                    # document, or an encoding was specified
+                    # explicitly and it worked. Rewrite the meta tag.
+                    def rewrite(match):
+                        return match.group(1) + "%SOUP-ENCODING%"
+                    newAttr = self.CHARSET_RE.sub(rewrite, contentType)
                     attrs[contentTypeIndex] = (attrs[contentTypeIndex][0],
                                                newAttr)
                     tagNeedsEncodingSubstitution = True
                 else:
                     # This is our first pass through the document.
-                    # Go through it again with the new information.
+                    # Go through it again with the encoding information.
                     newCharset = match.group(3)
                     if newCharset and newCharset != self.originalEncoding:
                         self.declaredHTMLEncoding = newCharset
                         self._feed(self.declaredHTMLEncoding)
                         raise StopParsing
+                    pass
         tag = self.unknown_starttag("meta", attrs)
         if tag and tagNeedsEncodingSubstitution:
             tag.containsSubstitutions = True
@@ -1687,9 +1715,10 @@ class UnicodeDammit:
                         "x-sjis" : "shift-jis" }
 
     def __init__(self, markup, overrideEncodings=[],
-                 smartQuotesTo='xml'):
+                 smartQuotesTo='xml', isHTML=False):
+        self.declaredHTMLEncoding = None
         self.markup, documentEncoding, sniffedEncoding = \
-                     self._detectEncoding(markup)
+                     self._detectEncoding(markup, isHTML)
         self.smartQuotesTo = smartQuotesTo
         self.triedEncodings = []
         if markup == '' or isinstance(markup, unicode):
@@ -1715,6 +1744,7 @@ class UnicodeDammit:
             for proposed_encoding in ("utf-8", "windows-1252"):
                 u = self._convertFrom(proposed_encoding)
                 if u: break
+
         self.unicode = u
         if not u: self.originalEncoding = None
 
@@ -1782,7 +1812,7 @@ class UnicodeDammit:
         newdata = unicode(data, encoding)
         return newdata
 
-    def _detectEncoding(self, xml_data):
+    def _detectEncoding(self, xml_data, isHTML=False):
         """Given a document, tries to detect its XML encoding."""
         xml_encoding = sniffed_xml_encoding = None
         try:
@@ -1830,13 +1860,17 @@ class UnicodeDammit:
             else:
                 sniffed_xml_encoding = 'ascii'
                 pass
-            xml_encoding_match = re.compile \
-                                 ('^<\?.*encoding=[\'"](.*?)[\'"].*\?>')\
-                                 .match(xml_data)
         except:
             xml_encoding_match = None
-        if xml_encoding_match:
+        xml_encoding_match = re.compile(
+            '^<\?.*encoding=[\'"](.*?)[\'"].*\?>').match(xml_data)
+        if not xml_encoding_match and isHTML:
+            regexp = re.compile('<\s*meta[^>]+charset=([^>]*?)[;\'">]', re.I)
+            xml_encoding_match = regexp.search(xml_data)
+        if xml_encoding_match is not None:
             xml_encoding = xml_encoding_match.groups()[0].lower()
+            if isHTML:
+                self.declaredHTMLEncoding = xml_encoding
             if sniffed_xml_encoding and \
                (xml_encoding in ('iso-10646-ucs-2', 'ucs-2', 'csunicode',
                                  'iso-10646-ucs-4', 'ucs-4', 'csucs4',
@@ -1927,5 +1961,5 @@ class UnicodeDammit:
 #By default, act as an HTML pretty-printer.
 if __name__ == '__main__':
     import sys
-    soup = BeautifulSoup(sys.stdin.read())
+    soup = BeautifulSoup(sys.stdin)
     print soup.prettify()
