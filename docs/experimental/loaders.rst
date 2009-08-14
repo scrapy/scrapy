@@ -254,7 +254,7 @@ ItemLoader objects
 
             loader.add_value('name', u'Color TV')
             loader.add_value('colours', [u'white', u'blue'])
-            loader.add_value('length', u'100', default_unit='cm')
+            loader.add_value('length', u'100')
 
     .. method:: replace_value(field_name, value)
 
