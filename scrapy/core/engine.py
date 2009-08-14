@@ -161,11 +161,18 @@ class ExecutionEngine(object):
         if self.paused:
             return reactor.callLater(5, self.next_request, domain)
 
-        if not self.running or self.domain_is_closed(domain) or \
-                self.downloader.sites[domain].needs_backout() or  \
-                self.scraper.sites[domain].needs_backout():
-            return
-        self._next_request(domain)
+        while not self._needs_backout(domain):
+            if not self._next_request(domain):
+                break
+
+        if self.domain_is_idle(domain):
+            self._domain_idle(domain)
+
+    def _needs_backout(self, domain):
+        return not self.running \
+            or self.domain_is_closed(domain) \
+            or self.downloader.sites[domain].needs_backout() \
+            or self.scraper.sites[domain].needs_backout()
 
     def _next_request(self, domain):
         # Next pending request from scheduler
@@ -174,9 +181,7 @@ class ExecutionEngine(object):
             spider = spiders.fromdomain(domain)
             dwld = mustbe_deferred(self.download, request, spider)
             dwld.chainDeferred(deferred).addBoth(lambda _: deferred)
-            dwld.addErrback(log.err)
-        elif self.domain_is_idle(domain):
-            self._domain_idle(domain)
+            return dwld.addErrback(log.err)
 
     def domain_is_idle(self, domain):
         scraper_idle = domain in self.scraper.sites and self.scraper.sites[domain].is_idle()
