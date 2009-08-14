@@ -84,8 +84,10 @@ class Scraper(object):
     def enqueue_scrape(self, response, request, spider):
         site = self.sites[spider.domain_name]
         dfd = site.add_response_request(response, request)
-        stats.max_value('scraper/max_active_size', \
-                site.active_size, domain=spider.domain_name),
+        # FIXME: this can't be called here because the stats domain may be
+        # already closed
+        #stats.max_value('scraper/max_active_size', site.active_size, \
+        #    domain=spider.domain_name)
         def finish_scraping(_):
             site.finish_response(response)
             self._scrape_next(spider, site)
