@@ -29,7 +29,7 @@ instantiate it with an Item object or without one, in which case an Item is
 automatically instantiated in the Item Loader constructor using the Item class
 specified in the :attr:`ItemLoader.default_item_class` attribute.
 
-Then, you start collecting values into the Item Loader, typically using using
+Then, you start collecting values into the Item Loader, typically using
 :ref:`XPath Selectors <topics-selectors>`. You can add more than one value to
 the same item field, the Item Loader will know how to "join" those values later
 using a proper processing function.
@@ -39,7 +39,6 @@ the :ref:`Product item <topics-newitems-declaring>` declared in the :ref:`Items
 chapter <topics-newitems>`::
 
     from scrapy.contrib.loader import XPathItemLoader
-    from scrapy.xpath import HtmlXPathSelector
     from myproject.items import Product
 
     def parse(self, response):
