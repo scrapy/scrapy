@@ -36,13 +36,13 @@ def urljoin_rfc(base, ref, encoding='utf-8'):
     return urlparse.urljoin(unicode_to_str(base, encoding), \
         unicode_to_str(ref, encoding))
 
-_reserved = ';/?:@&=+$|,#' # RFC 2396 (Generic Syntax)
-_unreserved_marks = "-_.!~*'()" # RFC 2396 sec 2.3
+_reserved = ';/?:@&=+$|,#' # RFC 3986 (Generic Syntax)
+_unreserved_marks = "-_.!~*'()" # RFC 3986 sec 2.3
 _safe_chars = urllib.always_safe + '%' + _reserved + _unreserved_marks
 
 def safe_url_string(url, encoding='utf8'):
     """Convert the given url into a legal URL by escaping unsafe characters
-    according to RFC-2396.
+    according to RFC-3986.
 
     If a unicode url is given, it is first converted to str using the given
     encoding (which defaults to 'utf-8'). When passing a encoding, you should
