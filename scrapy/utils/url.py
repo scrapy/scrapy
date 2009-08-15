@@ -12,7 +12,7 @@ import cgi
 from scrapy.utils.python import unicode_to_str
 
 def url_is_from_any_domain(url, domains):
-    """Return True if the url belongs to the given domain"""
+    """Return True if the url belongs to any of the given domains"""
     host = urlparse.urlparse(url).hostname
 
     if host:
@@ -33,13 +33,8 @@ def urljoin_rfc(base, ref, encoding='utf-8'):
 
     Always returns a str.
     """
-    # XXX: this code was commented out because its purpose is unknown and
-    # there's no test or documentation that specifies its behaviour. please
-    # don't restore this code without adding unittests for it
-    #if ref.startswith('?'):
-    #    fpart = urlparse.urlsplit(unicode_to_str(base, encoding))[2].rsplit('/', 1)[-1]
-    #    ref = ''.join([fpart, ref])
-    return urlparse.urljoin(unicode_to_str(base, encoding), unicode_to_str(ref, encoding))
+    return urlparse.urljoin(unicode_to_str(base, encoding), \
+        unicode_to_str(ref, encoding))
 
 _reserved = ';/?:@&=+$|,#' # RFC 2396 (Generic Syntax)
 _unreserved_marks = "-_.!~*'()" # RFC 2396 sec 2.3
@@ -88,7 +83,8 @@ def is_url(text):
 
 def url_query_parameter(url, parameter, default=None, keep_blank_values=0):
     """Return the value of a url parameter, given the url and parameter name"""
-    queryparams = cgi.parse_qs(urlparse.urlsplit(str(url))[3], keep_blank_values=keep_blank_values)
+    queryparams = cgi.parse_qs(urlparse.urlsplit(str(url))[3], \
+        keep_blank_values=keep_blank_values)
     return queryparams.get(parameter, [default])[0]
 
 def url_query_cleaner(url, parameterlist=(), sep='&', kvsep='='):
@@ -111,7 +107,8 @@ def url_query_cleaner(url, parameterlist=(), sep='&', kvsep='='):
             querylist += [pair]
             unique[k] = 1
 
-    query = sep.join([kvsep.join(pair) for pair in querylist if pair[0] in parameterlist])
+    query = sep.join([kvsep.join(pair) for pair in querylist if pair[0] in \
+        parameterlist])
     return '?'.join([base, query])
 
 def add_or_replace_parameter(url, name, new_value, sep='&', url_is_quoted=False):
