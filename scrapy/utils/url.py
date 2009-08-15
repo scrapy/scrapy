@@ -42,22 +42,24 @@ def urljoin_rfc(base, ref, encoding='utf-8'):
     return urlparse.urljoin(unicode_to_str(base, encoding), unicode_to_str(ref, encoding))
 
 _reserved = ';/?:@&=+$|,#' # RFC 2396 (Generic Syntax)
-_unreserved_marks = "-_.!~*'()" #RFC 2396 sec 2.3
+_unreserved_marks = "-_.!~*'()" # RFC 2396 sec 2.3
 _safe_chars = urllib.always_safe + '%' + _reserved + _unreserved_marks
 
-def safe_url_string(url, use_encoding='utf8'):
-    """Convert a unicode object (using 'use_encoding' as the encoding), or an already
-    encoded string into a legal URL.
+def safe_url_string(url, encoding='utf8'):
+    """Convert the given url into a legal URL by escaping unsafe characters
+    according to RFC-2396.
 
-    Illegal characters are escaped (RFC-3986)
+    If a unicode url is given, it is first converted to str using the given
+    encoding (which defaults to 'utf-8'). When passing a encoding, you should
+    use the encoding of the original page (the page from which the url was
+    extracted from).
 
-    It is safe to call this function multiple times.
+    Calling this function on an already "safe" url will return the url
+    unmodified.
 
-    The use_encoding argument is the encoding to use to determine the numerical
-    values in the escaping. For urls on html pages, you should use the original
-    encoding of that page.
+    Always returns a str.
     """
-    s = unicode_to_str(url, use_encoding)
+    s = unicode_to_str(url, encoding)
     return urllib.quote(s,  _safe_chars)
 
 
