@@ -15,8 +15,6 @@ Scrapy developers, if you add a setting here remember to:
 
 from os.path import join, abspath, dirname
 
-ADAPTORS_DEBUG = False
-
 BOT_NAME = 'scrapybot'
 BOT_VERSION = '1.0'
 
