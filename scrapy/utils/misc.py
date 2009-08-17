@@ -41,7 +41,6 @@ def load_object(path):
         raise NameError, "Module '%s' doesn't define any object named '%s'" % (module, name)
 
     return obj
-load_class = load_object # backwards compatibility, but isnt going to be available for too long.
 
 def extract_regex(regex, text, encoding):
     """Extract a list of unicode strings from the given text/encoding using the following policies:
