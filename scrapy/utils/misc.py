@@ -112,21 +112,6 @@ def extract_regex(regex, text, encoding):
     else:
         return [remove_entities(unicode(s, encoding), keep=['lt', 'amp']) for s in strings]
 
-def hash_values(*values):
-    """Hash a series of non-None values.
-
-    For example:
-    >>> hash_values('some', 'values', 'to', 'hash')
-    'f37f5dc65beaaea35af05e16e26d439fd150c576'
-    """
-    hash = hashlib.sha1()
-    for value in values:
-        if value is None:
-            message = "hash_values was passed None at argument index %d" % list(values).index(None)
-            raise ValueError(message)
-        hash.update(value)
-    return hash.hexdigest()
-
 def items_to_csv(file, items, delimiter=';', headers=None):
     """
     This function takes a list of items and stores their attributes

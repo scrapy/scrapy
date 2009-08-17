@@ -1,15 +1,10 @@
 import unittest
 from cStringIO import StringIO
 
-from scrapy.utils.misc import hash_values, items_to_csv, load_object, arg_to_iter
+from scrapy.utils.misc import items_to_csv, load_object, arg_to_iter
 from scrapy.item import ScrapedItem
 
 class UtilsMiscTestCase(unittest.TestCase):
-    def test_hash_values(self):
-        self.assertEqual(hash_values('some', 'values', 'to', 'hash'),
-                         'f37f5dc65beaaea35af05e16e26d439fd150c576')
-
-        self.assertRaises(ValueError, hash_values, 'some', None, 'value')
 
     def test_items_to_csv(self):
         item_1 = ScrapedItem()
