@@ -7,7 +7,6 @@ from contextlib import closing
 import os
 import re
 import gzip
-import string
 import hashlib
 import csv
 
@@ -128,19 +127,6 @@ def hash_values(*values):
         hash.update(value)
     return hash.hexdigest()
 
-
-def render_templatefile(path, **kwargs):
-    with open(path, 'rb') as file:
-        raw = file.read()
-
-    content = string.Template(raw).substitute(**kwargs)
-
-    with open(path.rstrip('.tmpl'), 'wb') as file:
-        file.write(content)
-    if path.endswith('.tmpl'):
-        os.remove(path)
-
-
 def items_to_csv(file, items, delimiter=';', headers=None):
     """
     This function takes a list of items and stores their attributes
@@ -168,20 +154,6 @@ def items_to_csv(file, items, delimiter=';', headers=None):
         csv_file.writerow(row)
 
 
-CAMELCASE_INVALID_CHARS = re.compile('[^a-zA-Z]')
-def string_camelcase(string):
-    """ Convert a word  to its CamelCase version and remove invalid chars
-
-    >>> string_camelcase('lost-pound')
-    'LostPound'
-
-    >>> string_camelcase('missing_images')
-    'MissingImages'
-
-    """
-    return CAMELCASE_INVALID_CHARS.sub('', string.title())
-
-
 def md5sum(buffer):
     """Calculate the md5 checksum of a file
 
@@ -194,7 +166,8 @@ def md5sum(buffer):
     buffer.seek(0)
     while 1:
         d = buffer.read(8096)
-        if not d: break
+        if not d:
+            break
         m.update(d)
     return m.hexdigest()
 

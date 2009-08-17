@@ -5,13 +5,21 @@ from os.path import join, dirname, abspath, exists
 from scrapy.spider import spiders
 from scrapy.command import ScrapyCommand
 from scrapy.conf import settings
-from scrapy.utils.misc import render_templatefile, string_camelcase
+from scrapy.utils.template import render_templatefile, string_camelcase
 
+def sanitize_module_name(module_name):
+    """Sanitize the given module name, by replacing dashes with underscores and
+    prefixing it with a letter if it doesn't start with one
+    """
+    module_name = module_name.replace('-', '_')
+    if module_name[0] not in string.letters:
+        module_name = "a" + module_name
+    return module_name
 
 class Command(ScrapyCommand):
 
     def syntax(self):
-        return "[options] <spider_name> <spider_domain_name>"
+        return "[options] <spider_module_name> <spider_domain_name>"
 
     def short_desc(self):
         return "Generate new spider based on template passed with --template"
@@ -27,45 +35,39 @@ class Command(ScrapyCommand):
         if len(args) < 2:
             return False
 
-        template_file = join(settings['TEMPLATES_DIR'], 'spider_%s.tmpl' % opts.template)
+        template_file = join(settings['TEMPLATES_DIR'], 'spider_%s.tmpl' % \
+            opts.template)
         if not exists(template_file):
-            print "Template '%s.tmpl' not found" % opts.template
+            print "Unable to create spider: template %r not found." % opts.template
+            print "Use genspider --list to see all available templates."
             return
 
-        name = self.normalize_name(args[0])
+        module = sanitize_module_name(args[0])
         domain = args[1]
-        spiders_dict = spiders.asdict()
-        if domain in spiders_dict.keys():
-            if opts.force:
-                print "Spider '%s' already exists. Overwriting it..." % domain
-            else:
-                print "Spider '%s' already exists" % domain
-                return
-        self._genspider(name, domain, template_file)
+        spider = spiders.fromdomain(domain)
+        if spider and not opts.force:
+            print "Spider '%s' already exists in module:" % domain
+            print "  %s" % spider.__module__
+            return
+        self._genspider(module, domain, opts.template, template_file)
 
-    def normalize_name(self, name):
-        # - are replaced by _, for valid python modules
-        name = name.replace('-', '_')
-        # name must start with a letter, for valid python modules
-        if name[0] not in string.letters:
-            name = "a" + name
-            print "Spider names must start with a letter; converted to %s." % name
-        return name
-        
-    def _genspider(self, name, domain, template_file):
+    def _genspider(self, module, domain, template_name, template_file):
         """Generate the spider module, based on the given template"""
         tvars = {
             'project_name': settings.get('PROJECT_NAME'),
             'ProjectName': string_camelcase(settings.get('PROJECT_NAME')),
-            'name': name,
+            'module': module,
             'site': domain,
-            'classname': '%sSpider' % ''.join([s.capitalize() for s in name.split('_')])
+            'classname': '%sSpider' % ''.join([s.capitalize() \
+                for s in module.split('_')])
         }
 
         spiders_module = __import__(settings['NEWSPIDER_MODULE'], {}, {}, [''])
         spiders_dir = abspath(dirname(spiders_module.__file__))
-        spider_file = '%s/%s.py' % (spiders_dir, name)
+        spider_file = "%s.py" % join(spiders_dir, module)
 
         shutil.copyfile(template_file, spider_file)
         render_templatefile(spider_file, **tvars)
-
+        print "Created spider %r using template %r in module:" % (domain, \
+            template_name)
+        print "  %s.%s" % (spiders_module.__name__, module)
