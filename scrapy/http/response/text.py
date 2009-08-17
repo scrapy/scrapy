@@ -16,6 +16,8 @@ class TextResponse(Response):
 
     _ENCODING_RE = re.compile(r'charset=([\w-]+)', re.I)
 
+    __slots__ = ['_encoding']
+
     def __init__(self, url, status=200, headers=None, body=None, meta=None, flags=None, encoding=None):
         self._encoding = encoding
         if isinstance(body, unicode):

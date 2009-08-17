@@ -5,6 +5,8 @@ from scrapy.utils.http import headers_dict_to_raw
 class Headers(CaselessDict):
     """Case insensitive http headers dictionary"""
 
+    __slots__ = ['encoding']
+
     def __init__(self, seq=None, encoding='utf-8'):
         self.encoding = encoding
         super(Headers, self).__init__(seq)

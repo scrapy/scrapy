@@ -12,18 +12,35 @@ from scrapy.http.headers import Headers
 
 class Response(object):
 
+    __slots__ = ['url', 'headers', 'status', '_body', 'request', '_meta', \
+        'flags', '_cache', '__weakref__']
+
     def __init__(self, url, status=200, headers=None, body='', meta=None, flags=None):
         self.url = Url(url)
         self.headers = Headers(headers or {})
         self.status = int(status)
-        self.set_body(body)
-        self.cached = False
+        self._set_body(body)
         self.request = None
-        self.meta = {} if meta is None else dict(meta)
         self.flags = [] if flags is None else list(flags)
-        self.cache = {}
+        self._meta = dict(meta) if meta else None
+        self._cache = None
 
-    def set_body(self, body):
+    @property
+    def meta(self):
+        if self._meta is None:
+            self._meta = {}
+        return self._meta
+
+    @property
+    def cache(self):
+        if self._cache is None:
+            self._cache = {}
+        return self._cache
+
+    def _get_body(self):
+        return self._body
+
+    def _set_body(self, body):
         if isinstance(body, str):
             self._body = body
         elif isinstance(body, unicode):
@@ -32,7 +49,8 @@ class Response(object):
             self._body = ''
         else:
             raise TypeError("Response body must either str or unicode. Got: '%s'" % type(body).__name__)
-    body = property(lambda x: x._body, set_body)
+
+    body = property(_get_body, _set_body)
 
     def __repr__(self):
         return "%s(url=%s, headers=%s, status=%s, body=%s)" % \

@@ -15,14 +15,18 @@ from scrapy.utils.url import safe_url_string
 
 class Request(object):
 
+    __slots__ = ['_encoding', 'method', '_url', '_body', '_meta', '_cache', \
+        'dont_filter', 'headers', 'cookies', 'deferred', 'priority', \
+        '__weakref__']
+
     def __init__(self, url, callback=None, method='GET', headers=None, body=None, 
                  cookies=None, meta=None, encoding='utf-8', priority=0.0,
                  dont_filter=False, errback=None):
 
         self._encoding = encoding  # this one has to be set first
         self.method = method.upper()
-        self.set_url(url)
-        self.set_body(body)
+        self._set_url(url)
+        self._set_body(body)
         self.priority = priority
 
         if callable(callback):
@@ -33,10 +37,25 @@ class Request(object):
         self.headers = Headers(headers or {}, encoding=encoding)
         self.dont_filter = dont_filter
 
-        self.meta = {} if meta is None else dict(meta)
-        self.cache = {}
-        
-    def set_url(self, url):
+        self._meta = dict(meta) if meta else None
+        self._cache = None
+
+    @property
+    def meta(self):
+        if self._meta is None:
+            self._meta = {}
+        return self._meta
+
+    @property
+    def cache(self):
+        if self._cache is None:
+            self._cache = {}
+        return self._cache
+
+    def _get_url(self):
+        return self._url
+
+    def _set_url(self, url):
         if isinstance(url, basestring):
             decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)
             self._url = Url(safe_url_string(decoded_url, self.encoding))
@@ -44,9 +63,13 @@ class Request(object):
             self._url = url
         else:
             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
-    url = property(lambda x: x._url, set_url)
 
-    def set_body(self, body):
+    url = property(_get_url, _set_url)
+
+    def _get_body(self):
+        return self._body
+
+    def _set_body(self, body):
         if isinstance(body, str):
             self._body = body
         elif isinstance(body, unicode):
@@ -55,7 +78,8 @@ class Request(object):
             self._body = ''
         else:
             raise TypeError("Request body must either str or unicode. Got: '%s'" % type(body).__name__)
-    body = property(lambda x: x._body, set_body)
+
+    body = property(_get_body, _set_body)
 
     @property
     def encoding(self):
