@@ -13,9 +13,7 @@ from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core import signals
 from scrapy.core.exceptions import NotConfigured
 from scrapy.mail import MailSender
-from scrapy.stats import stats
 from scrapy.conf import settings
-from scrapy.utils.memory import get_vmvalue_from_procfs
 from scrapy import log
 
 class MemoryDebugger(object):
@@ -43,13 +41,6 @@ class MemoryDebugger(object):
         gc.collect()
 
         figures = []
-        if stats.get_value('memusage/startup'):
-            figures.append(("Memory usage at startup", \
-                stats.get_value('memusage/startup')/1024/1024, "Mb"))
-            figures.append(("Maximum memory usage", \
-                stats.get_value('memusage/max')/1024/1024, "Mb"))
-            figures.append(("Memory usage at shutdown", \
-                get_vmvalue_from_procfs()/1024/1024, "Mb"))
         figures.append(("Objects in gc.garbage", len(gc.garbage), ""))
         figures.append(("libxml2 memory leak", libxml2.debugMemory(1), "bytes"))
         return figures
