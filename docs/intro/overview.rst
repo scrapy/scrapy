@@ -132,9 +132,9 @@ Finally, here's the spider code::
 
             torrent = ScrapedItem()
             torrent.url = response.url
-            torrent.name = x.x("//h1/text()").extract()
-            torrent.description = x.x("//div[@id='description']").extract()
-            torrent.size = x.x("//div[@id='info-left']/p[2]/text()[2]").extract()
+            torrent.name = x.select("//h1/text()").extract()
+            torrent.description = x.select("//div[@id='description']").extract()
+            torrent.size = x.select("//div[@id='info-left']/p[2]/text()[2]").extract()
             return [torrent]
 
 

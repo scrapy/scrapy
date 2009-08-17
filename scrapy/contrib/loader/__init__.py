@@ -88,6 +88,6 @@ class XPathItemLoader(ItemLoader):
         self.replace_value(field_name, self._get_values(field_name, xpath, re))
 
     def _get_values(self, field_name, xpath, re):
-        x = self.selector.x(xpath)
+        x = self.selector.select(xpath)
         return x.re(re) if re else x.extract()
 

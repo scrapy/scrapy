@@ -26,7 +26,7 @@ class UtilsIteratorsTestCase(unittest.TestCase):
         response = XmlResponse(url="http://example.com", body=body)
         attrs = []
         for x in xmliter(response, 'product'):
-            attrs.append((x.x("@id").extract(), x.x("name/text()").extract(), x.x("./type/text()").extract()))
+            attrs.append((x.select("@id").extract(), x.select("name/text()").extract(), x.select("./type/text()").extract()))
 
         self.assertEqual(attrs, 
                          [(['001'], ['Name 1'], ['Type 1']), (['002'], ['Name 2'], ['Type 2'])])
@@ -34,7 +34,7 @@ class UtilsIteratorsTestCase(unittest.TestCase):
     def test_xmliter_text(self):
         body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""
         
-        self.assertEqual([x.x("text()").extract() for x in xmliter(body, 'product')],
+        self.assertEqual([x.select("text()").extract() for x in xmliter(body, 'product')],
                          [[u'one'], [u'two']])
 
     def test_xmliter_namespaces(self):
@@ -61,15 +61,15 @@ class UtilsIteratorsTestCase(unittest.TestCase):
 
         node = my_iter.next()
         node.register_namespace('g', 'http://base.google.com/ns/1.0')
-        self.assertEqual(node.x('title/text()').extract(), ['Item 1'])
-        self.assertEqual(node.x('description/text()').extract(), ['This is item 1'])
-        self.assertEqual(node.x('link/text()').extract(), ['http://www.mydummycompany.com/items/1'])
-        self.assertEqual(node.x('g:image_link/text()').extract(), ['http://www.mydummycompany.com/images/item1.jpg'])
-        self.assertEqual(node.x('g:id/text()').extract(), ['ITEM_1'])
-        self.assertEqual(node.x('g:price/text()').extract(), ['400'])
-        self.assertEqual(node.x('image_link/text()').extract(), [])
-        self.assertEqual(node.x('id/text()').extract(), [])
-        self.assertEqual(node.x('price/text()').extract(), [])
+        self.assertEqual(node.select('title/text()').extract(), ['Item 1'])
+        self.assertEqual(node.select('description/text()').extract(), ['This is item 1'])
+        self.assertEqual(node.select('link/text()').extract(), ['http://www.mydummycompany.com/items/1'])
+        self.assertEqual(node.select('g:image_link/text()').extract(), ['http://www.mydummycompany.com/images/item1.jpg'])
+        self.assertEqual(node.select('g:id/text()').extract(), ['ITEM_1'])
+        self.assertEqual(node.select('g:price/text()').extract(), ['400'])
+        self.assertEqual(node.select('image_link/text()').extract(), [])
+        self.assertEqual(node.select('id/text()').extract(), [])
+        self.assertEqual(node.select('price/text()').extract(), [])
 
     def test_xmliter_exception(self):
         body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""

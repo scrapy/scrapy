@@ -31,7 +31,7 @@ XPathSelector objects
 XPathSelector Methods
 ---------------------
 
-.. method:: XPathSelector.x(xpath)
+.. method:: XPathSelector.select(xpath)
 
     Apply the given XPath relative to this XPathSelector and return a list
     of :class:`XPathSelector` objects (ie. a :class:`XPathSelectorList`) with
@@ -84,7 +84,7 @@ XPathSelectorList objects
 XPathSelectorList Methods
 -------------------------
 
-.. method:: XPathSelectorList.x(xpath)
+.. method:: XPathSelectorList.select(xpath)
 
     Call the :meth:`XPathSelector.re` method for all :class:`XPathSelector`
     objects in this list and return their results flattened, as new
@@ -136,27 +136,27 @@ instanced with a :class:`~scrapy.http.Response` object like this::
 1. Select all ``<h1>`` elements from a HTML response body, returning a list of
    :class:`XPathSelector` objects (ie. a :class:`XPathSelectorList` object)::
 
-      x.x("//h1")
+      x.select("//h1")
 
 2. Extract the text of all ``<h1>`` elements from a HTML response body,
    returning a list of unicode strings::
 
-      x.x("//h1").extract()         # this includes the h1 tag
-      x.x("//h1/text()").extract()  # this excludes the h1 tag
+      x.select("//h1").extract()         # this includes the h1 tag
+      x.select("//h1/text()").extract()  # this excludes the h1 tag
 
 3. Iterate over all ``<p>`` tags and print their class attribute::
 
-      for node in x.x("//p"):
-      ...    print node.x("@href")
+      for node in x.select("//p"):
+      ...    print node.select("@href")
 
 4. Extract textual data from all ``<p>`` tags without entities, as a list of
    unicode strings::
 
-      x.x("//p/text()").extract_unquoted()
+      x.select("//p/text()").extract_unquoted()
 
       # the following line is wrong. extract_unquoted() should only be used
       # with textual XPathSelectors
-      x.x("//p").extract_unquoted()  # it may work but output is unpredictable
+      x.select("//p").extract_unquoted()  # it may work but output is unpredictable
 
 XmlXPathSelector objects
 ========================
@@ -178,12 +178,12 @@ instanced with a :class:`~scrapy.http.Response` object like this::
 1. Select all ``<product>`` elements from a XML response body, returning a list of
    :class:`XPathSelector` objects (ie. a :class:`XPathSelectorList` object)::
 
-      x.x("//h1")
+      x.select("//h1")
 
 2. Extract all prices from a `Google Base XML feed`_ which requires registering
    a namespace::
 
       x.register_namespace("g", "http://base.google.com/ns/1.0")
-      x.x("//g:price").extract()
+      x.select("//g:price").extract()
 
 .. _Google Base XML feed: http://base.google.com/support/bin/answer.py?hl=en&answer=59461

@@ -189,9 +189,9 @@ Let's now take a look at an example CrawlSpider with rules::
 
             hxs = HtmlXPathSelector(response)
             item = ScrapedItem()
-            item.id = hxs.x('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
-            item.name = hxs.x('//td[@id="item_name"]/text()').extract()
-            item.description = hxs.x('//td[@id="item_description"]/text()').extract()
+            item.id = hxs.select('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
+            item.name = hxs.select('//td[@id="item_name"]/text()').extract()
+            item.description = hxs.select('//td[@id="item_description"]/text()').extract()
             return [item]
 
     SPIDER = MySpider()
@@ -307,9 +307,9 @@ These spiders are pretty easy to use, let's have at one example::
             log.msg('Hi, this is a <%s> node!: %s' % (self.itertag, ''.join(node.extract())))
 
             item = ScrapedItem()
-            item.id = node.x('@id').extract()
-            item.name = node.x('name').extract()
-            item.description = node.x('description').extract()
+            item.id = node.select('@id').extract()
+            item.name = node.select('name').extract()
+            item.description = node.select('description').extract()
             return item
 
     SPIDER = MySpider()

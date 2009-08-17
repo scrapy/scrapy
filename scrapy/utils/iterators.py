@@ -27,7 +27,7 @@ def xmliter(obj, nodename):
     r = re.compile(r"<%s[\s>].*?</%s>" % (nodename, nodename), re.DOTALL)
     for match in r.finditer(text):
         nodetext = header_start + match.group() + header_end
-        yield XmlXPathSelector(text=nodetext).x('//' + nodename)[0]
+        yield XmlXPathSelector(text=nodetext).select('//' + nodename)[0]
 
 def csviter(obj, delimiter=None, headers=None, encoding=None):
     """ Returns an iterator of dictionaries from the given csv object

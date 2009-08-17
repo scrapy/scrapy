@@ -35,14 +35,15 @@ class HTMLImageLinkExtractor(object):
 
         if selector.xmlNode.type == 'element':
             if selector.xmlNode.name == 'img':
-                _add_link(selector.x('@src'), selector.x('@alt') or selector.x('@title'))
+                _add_link(selector.select('@src'), selector.select('@alt') or \
+                          selector.select('@title'))
             else:
-                children = selector.x('child::*')
+                children = selector.select('child::*')
                 if len(children):
                     for child in children:
                         ret.extend(self.extract_from_selector(child, parent=selector))
                 elif selector.xmlNode.name == 'a' and not parent:
-                    _add_link(selector.x('@href'), selector.x('@title'))
+                    _add_link(selector.select('@href'), selector.select('@title'))
         else:
             _add_link(selector)
 
@@ -50,13 +51,13 @@ class HTMLImageLinkExtractor(object):
 
     def extract_links(self, response):
         xs = HtmlXPathSelector(response)
-        base_url = xs.x('//base/@href').extract()
+        base_url = xs.select('//base/@href').extract()
         base_url = unicode_to_str(base_url[0]) if base_url else unicode_to_str(response.url)
 
         links = []
         for location in self.locations:
             if isinstance(location, basestring):
-                selectors = xs.x(location)
+                selectors = xs.select(location)
             elif isinstance(location, (XPathSelectorList, HtmlXPathSelector)):
                 selectors = [location] if isinstance(location, HtmlXPathSelector) else location
             else:

@@ -264,19 +264,19 @@ The shell also instantiates two selectors, one for HTML (in the ``hxs``
 variable) and one for XML (in the ``xxs`` variable)with this response. So let's
 try them::
 
-   In [1]: hxs.x('/html/head/title')
+   In [1]: hxs.select('/html/head/title')
    Out[1]: [<HtmlXPathSelector (title) xpath=/html/head/title>]
 
-   In [2]: hxs.x('/html/head/title').extract()
+   In [2]: hxs.select('/html/head/title').extract()
    Out[2]: [u'<title>Open Directory - Computers: Programming: Languages: Python: Books</title>']
 
-   In [3]: hxs.x('/html/head/title/text()')
+   In [3]: hxs.select('/html/head/title/text()')
    Out[3]: [<HtmlXPathSelector (text) xpath=/html/head/title/text()>]
 
-   In [4]: hxs.x('/html/head/title/text()').extract()
+   In [4]: hxs.select('/html/head/title/text()').extract()
    Out[4]: [u'Open Directory - Computers: Programming: Languages: Python: Books']
 
-   In [5]: hxs.x('/html/head/title/text()').re('(\w+):')
+   In [5]: hxs.select('/html/head/title/text()').re('(\w+):')
    Out[5]: [u'Computers', u'Programming', u'Languages', u'Python']
 
 Extracting the data
@@ -296,29 +296,29 @@ is inside a ``<ul>`` element, in fact the *second* ``<ul>`` element.
 So we can select each ``<li>`` element belonging to the sites list with this
 code::
 
-   hxs.x('//ul[2]/li')
+   hxs.select('//ul[2]/li')
 
 And from them, the sites descriptions::
 
-   hxs.x('//ul[2]/li/text()').extract()
+   hxs.select('//ul[2]/li/text()').extract()
 
 The sites titles::
 
-   hxs.x('//ul[2]/li/a/text()').extract()
+   hxs.select('//ul[2]/li/a/text()').extract()
 
 And the sites links::
 
-   hxs.x('//ul[2]/li/a/@href').extract()
+   hxs.select('//ul[2]/li/a/@href').extract()
 
-As we said before, each ``x()`` call returns a list of selectors, so we can
-concatenate further ``x()`` calls to dig deeper into a node. We are going to use
+As we said before, each ``select()`` call returns a list of selectors, so we can
+concatenate further ``select()`` calls to dig deeper into a node. We are going to use
 that property here, so::
 
-   sites = hxs.x('//ul[2]/li')
+   sites = hxs.select('//ul[2]/li')
    for site in sites:
-       title = site.x('a/text()').extract()
-       link = site.x('a/@href').extract()
-       desc = site.x('text()').extract()
+       title = site.select('a/text()').extract()
+       link = site.select('a/@href').extract()
+       desc = site.select('text()').extract()
        print title, link, desc
 
 .. note::
@@ -342,11 +342,11 @@ Let's add this code to our spider::
        
       def parse(self, response):
           hxs = HtmlXPathSelector(response)
-          sites = hxs.x('//ul[2]/li')
+          sites = hxs.select('//ul[2]/li')
           for site in sites:
-              title = site.x('a/text()').extract()
-              link = site.x('a/@href').extract()
-              desc = site.x('text()').extract()
+              title = site.select('a/text()').extract()
+              link = site.select('a/@href').extract()
+              desc = site.select('text()').extract()
               print title, link, desc
           return []
            
@@ -375,13 +375,13 @@ should be like this::
        
       def parse(self, response):
           hxs = HtmlXPathSelector(response)
-          sites = hxs.x('//ul[2]/li')
+          sites = hxs.select('//ul[2]/li')
           items = []
           for site in sites:
               item = DmozItem()
-              item.title = site.x('a/text()').extract()
-              item.link = site.x('a/@href').extract()
-              item.desc = site.x('text()').extract()
+              item.title = site.select('a/text()').extract()
+              item.link = site.select('a/@href').extract()
+              item.desc = site.select('text()').extract()
               items.append(item)
           return items
            

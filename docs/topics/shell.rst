@@ -137,7 +137,7 @@ shell works.
     help      -> Python's own help system.
     object?   -> Details about 'object'. ?object also works, ?? prints more.
 
-    In [1]: hxs.x("//h2/text()").extract()[2]
+    In [1]: hxs.select("//h2/text()").extract()[2]
     Out[1]: u'Welcome to Scrapy'
 
     In [2]: get http://slashdot.org
@@ -156,10 +156,10 @@ shell works.
        scrapehelp: Prints this help.
     ------------------------------------------------------------
 
-    In [3]: hxs.x("//h2/text()").extract()
+    In [3]: hxs.select("//h2/text()").extract()
     Out[3]: [u'News for nerds, stuff that matters']
 
-    In [3]: hxs.x("//h2/text()").extract()
+    In [3]: hxs.select("//h2/text()").extract()
     Out[3]: [u'News for nerds, stuff that matters']
 
     In [4]: request.method = "POST"

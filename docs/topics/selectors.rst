@@ -98,31 +98,31 @@ So, by looking at the :ref:`HTML code <topics-selectors-htmlcode>` of that page
 let's construct an XPath (using an HTML selector) for selecting the text inside
 the title tag::
 
-    >>> hxs.x('//title/text()')
+    >>> hxs.select('//title/text()')
     [<HtmlXPathSelector (text) xpath=//title/text()>]
 
-As you can see, the x() method returns a XPathSelectorList, which is a list of
+As you can see, the select() method returns a XPathSelectorList, which is a list of
 new selectors. This API can be used quickly for extracting nested data. 
 
 To actually extract the textual data you must call the selector ``extract()``
 method, as follows::
 
-    >>> hxs.x('//title/text()').extract()
+    >>> hxs.select('//title/text()').extract()
     [u'Example website']
 
 Now we're going to get the base URL and some image links::
 
-    >>> hxs.x('//base/@href').extract()
+    >>> hxs.select('//base/@href').extract()
     [u'http://example.com/']
 
-    >>> hxs.x('//a[contains(@href, "image")]/@href').extract()
+    >>> hxs.select('//a[contains(@href, "image")]/@href').extract()
     [u'image1.html',
      u'image2.html',
      u'image3.html',
      u'image4.html',
      u'image5.html']
 
-    >>> hxs.x('//a[contains(@href, "image")]/img/@src').extract()
+    >>> hxs.select('//a[contains(@href, "image")]/img/@src').extract()
     [u'image1_thumb.jpg',
      u'image2_thumb.jpg',
      u'image3_thumb.jpg',
@@ -134,14 +134,14 @@ Using selectors with regular expressions
 ----------------------------------------
 
 Selectors also have a ``re()`` method for extracting data using regular
-expressions. However, unlike using the ``x()`` method, the ``re()`` method does
-not return a list of :class:`~scrapy.xpath.XPathSelector` objects, so you can't
-construct nested ``.re()`` calls. 
+expressions. However, unlike using the ``select()`` method, the ``re()`` method
+does not return a list of :class:`~scrapy.xpath.XPathSelector` objects, so you
+can't construct nested ``.re()`` calls. 
 
 Here's an example used to extract images names from the :ref:`HTML code
 <topics-selectors-htmlcode>` above::
 
-    >>> hxs.x('//a[contains(@href, "image")]/text()').re(r'Name:\s*(.*)')
+    >>> hxs.select('//a[contains(@href, "image")]/text()').re(r'Name:\s*(.*)')
     [u'My image 1',
      u'My image 2',
      u'My image 3',
@@ -153,10 +153,10 @@ Here's an example used to extract images names from the :ref:`HTML code
 Nesting selectors
 -----------------
 
-The ``x()`` selector method returns a list of selectors, so you can call the
-``x()`` for those selectors too. Here's an example::
+The ``select()`` selector method returns a list of selectors, so you can call the
+``select()`` for those selectors too. Here's an example::
 
-    >>> links = hxs.x('//a[contains(@href, "image")]')
+    >>> links = hxs.select('//a[contains(@href, "image")]')
     >>> links.extract()
     [u'<a href="image1.html">Name: My image 1 <br><img src="image1_thumb.jpg"></a>',
      u'<a href="image2.html">Name: My image 2 <br><img src="image2_thumb.jpg"></a>',
@@ -165,7 +165,7 @@ The ``x()`` selector method returns a list of selectors, so you can call the
      u'<a href="image5.html">Name: My image 5 <br><img src="image5_thumb.jpg"></a>']
 
     >>> for index, link in enumerate(links):
-            args = (index, link.x('@href').extract(), link.x('img/@src').extract())
+            args = (index, link.select('@href').extract(), link.select('img/@src').extract())
             print 'Link number %d points to url %s and image %s' % args
 
     Link number 0 points to url [u'image1.html'] and image [u'image1_thumb.jpg']
@@ -186,23 +186,23 @@ to the ``XPathSelector`` you're calling it from.
 For example, suppose you want to extract all ``<p>`` elements inside ``<div>``
 elements. First you get would get all ``<div>`` elements::
 
-    >>> divs = hxs.x('//div')
+    >>> divs = hxs.select('//div')
 
 At first, you may be tempted to use the following approach, which is wrong, as
 it actually extracts all ``<p>`` elements from the document, not only those
 inside ``<div>`` elements::
 
-    >>> for p in divs.x('//p') # this is wrong - gets all <p> from the whole document
+    >>> for p in divs.select('//p') # this is wrong - gets all <p> from the whole document
     >>>     print p.extract()
 
 This is the proper way to do it (note the dot prefixing the ``.//p`` XPath)::
 
-    >>> for p in divs.x('.//p') # extracts all <p> inside
+    >>> for p in divs.select('.//p') # extracts all <p> inside
     >>>     print p.extract()
 
 Another common case would be to extract all direct ``<p>`` children::
 
-    >>> for p in divs.x('p')
+    >>> for p in divs.select('p')
     >>>     print p.extract()
 
 For more details about relative XPaths see the `Location Paths`_ section in the

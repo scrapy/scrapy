@@ -11,6 +11,7 @@ from scrapy.xpath.factories import xmlDoc_from_html, xmlDoc_from_xml
 from scrapy.xpath.document import Libxml2Document
 from scrapy.utils.python import flatten, unicode_to_str
 from scrapy.utils.misc import extract_regex
+from scrapy.utils.decorator import deprecated
 
 class XPathSelector(object):
 
@@ -29,7 +30,7 @@ class XPathSelector(object):
         self.expr = expr
         self.response = response
 
-    def x(self, xpath):
+    def select(self, xpath):
         """Perform the given XPath query on the current XPathSelector and
         return a XPathSelectorList of the result"""
         if hasattr(self.xmlNode, 'xpathEval'):
@@ -47,7 +48,14 @@ class XPathSelector(object):
                     expr=xpath, response=self.response)])
         else:
             return XPathSelectorList([])
-    __call__ = x
+
+    @deprecated(use_instead='XPathSelector.select')
+    def __call__(self, xpath):
+        return self.select(xpath)
+
+    @deprecated(use_instead='XPathSelector.select')
+    def x(self, xpath):
+        return self.select(xpath)
 
     def re(self, regex):
         """Return a list of unicode strings by applying the regex over all
@@ -77,7 +85,7 @@ class XPathSelector(object):
 
     def extract_unquoted(self):
         """Get unescaped contents from the text node (no entities, no CDATA)"""
-        if self.x('self::text()'):
+        if self.select('self::text()'):
             return unicode(self.xmlNode.getContent(), 'utf-8', errors='ignore')
         else:
             return u''
@@ -106,10 +114,14 @@ class XPathSelectorList(list):
     def __getslice__(self, i, j):
         return XPathSelectorList(list.__getslice__(self, i, j))
 
-    def x(self, xpath):
+    def select(self, xpath):
         """Perform the given XPath query on each XPathSelector of the list and
         return a new (flattened) XPathSelectorList of the results"""
-        return XPathSelectorList(flatten([x.x(xpath) for x in self]))
+        return XPathSelectorList(flatten([x.select(xpath) for x in self]))
+
+    @deprecated(use_instead='XPathSelectorList.select')
+    def x(self, xpath):
+        return self.select(xpath)
 
     def re(self, regex):
         """Perform the re() method on each XPathSelector of the list, and

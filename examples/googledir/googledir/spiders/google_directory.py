@@ -20,14 +20,14 @@ class GoogleDirectorySpider(CrawlSpider):
         hxs = HtmlXPathSelector(response)
 
         # The path to website links in directory page
-        links = hxs.x('//td[descendant::a[contains(@href, "#pagerank")]]/following-sibling::td/font')
+        links = hxs.select('//td[descendant::a[contains(@href, "#pagerank")]]/following-sibling::td/font')
 
         for link in links:
             item = GoogledirItem()
 
-            item.name = link.x('a/text()').extract()
-            item.url = link.x('a/@href').extract()
-            item.description = link.x('font[2]/text()').extract()
+            item.name = link.select('a/text()').extract()
+            item.url = link.select('a/@href').extract()
+            item.description = link.select('font[2]/text()').extract()
             yield item
 
 SPIDER = GoogleDirectorySpider()
