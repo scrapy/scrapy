@@ -4,17 +4,14 @@ enable this middleware and enable the ROBOTSTXT_OBEY setting.
 
 """
 
-import urlparse
 import robotparser
 
 from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.core import signals
 from scrapy.core.engine import scrapyengine
-from scrapy.core.exceptions import NotConfigured
-from scrapy.spider import spiders
+from scrapy.core.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
-from scrapy.core.exceptions import IgnoreRequest
 from scrapy.conf import settings
 
 class RobotsTxtMiddleware(object):
@@ -25,39 +22,41 @@ class RobotsTxtMiddleware(object):
             raise NotConfigured
 
         self._parsers = {}
-        self._spiderdomains = {}
+        self._spider_netlocs = {}
+        self._useragents = {}
         self._pending = {}
         dispatcher.connect(self.domain_open, signals.domain_open)
         dispatcher.connect(self.domain_closed, signals.domain_closed)
 
     def process_request(self, request, spider):
-        agent = getattr(spider, 'user_agent', None) or settings['USER_AGENT']
-        rp = self.robot_parser(request.url, spider.domain_name)
-        if rp and not rp.can_fetch(agent, request.url):
+        useragent = self._useragents[spider]
+        rp = self.robot_parser(request.url, spider)
+        if rp and not rp.can_fetch(useragent, request.url):
             raise IgnoreRequest("URL forbidden by robots.txt: %s" % request.url)
 
-    def robot_parser(self, url, spiderdomain):
-        parsedurl = urlparse.urlparse(url)
-        urldomain = parsedurl.hostname
-        if urldomain in self._parsers:
-            return self._parsers[urldomain]
-        else:
-            self._parsers[urldomain] = None
-            robotsurl = "%s://%s/robots.txt" % parsedurl[0:2]
+    def robot_parser(self, url, spider):
+        netloc = url.netloc
+        if netloc not in self._parsers:
+            self._parsers[netloc] = None
+            robotsurl = "%s://%s/robots.txt" % (url.scheme, url.netloc)
             robotsreq = Request(robotsurl, priority=self.DOWNLOAD_PRIORITY)
-            dfd = scrapyengine.download(robotsreq, spiders.fromdomain(spiderdomain))
-            dfd.addCallbacks(callback=self._parse_robots, callbackArgs=[urldomain])
-            self._spiderdomains[spiderdomain].add(urldomain)
+            dfd = scrapyengine.download(robotsreq, spider)
+            dfd.addCallback(self._parse_robots)
+            self._spider_netlocs[spider].add(netloc)
+        return self._parsers[netloc]
 
-    def _parse_robots(self, response, urldomain):
-        rp = robotparser.RobotFileParser()
-        rp.parse(response.to_string().splitlines())
-        self._parsers[urldomain] = rp
+    def _parse_robots(self, response):
+        rp = robotparser.RobotFileParser(response.url)
+        rp.parse(response.body.splitlines())
+        self._parsers[response.url.netloc] = rp
 
-    def domain_open(self, domain):
-        self._spiderdomains[domain] = set()
+    def domain_open(self, spider):
+        self._spider_netlocs[spider] = set()
+        self._useragents[spider] = getattr(spider, 'user_agent', None) \
+            or settings['USER_AGENT']
 
-    def domain_closed(self, domain):
-        for urldomain in self._spiderdomains[domain]:
-            del self._parsers[urldomain]
-        del self._spiderdomains[domain]
+    def domain_closed(self, domain, spider):
+        for netloc in self._spider_netlocs[domain]:
+            del self._parsers[netloc]
+        del self._spider_netlocs[domain]
+        del self._useragents[spider]
