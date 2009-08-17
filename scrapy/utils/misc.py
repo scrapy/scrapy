@@ -1,20 +1,10 @@
-"""
-Auxiliary functions which doesn't fit anywhere else
-"""
-from __future__ import with_statement
-from contextlib import closing
+"""Helper functions which doesn't fit anywhere else"""
 
-import os
 import re
-import gzip
 import hashlib
-import csv
 
-from twisted.internet import defer
-
-from scrapy.utils.python import flatten, unicode_to_str
+from scrapy.utils.python import flatten
 from scrapy.utils.markup import remove_entities
-from scrapy.utils.defer import defer_succeed
 
 def arg_to_iter(arg):
     """Convert an argument to an iterable. The argument can be a None, single
@@ -26,25 +16,6 @@ def arg_to_iter(arg):
         return arg
     else:
         return [arg]
-
-def memoize(cache, hash):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            key = hash(*args, **kwargs)
-            if key in cache:
-                return defer_succeed(cache[key])
-
-            def _store(_):
-                cache[key] = _
-                return _
-
-            result = func(*args, **kwargs)
-            if isinstance(result, defer.Deferred):
-                return result.addBoth(_store)
-            cache[key] = result
-            return result
-        return wrapper
-    return decorator
 
 def load_object(path):
     """Load an object given its absolute object path, and return it.
@@ -110,26 +81,4 @@ def md5sum(buffer):
             break
         m.update(d)
     return m.hexdigest()
-
-
-def gzip_file(logfile):
-    """Gzip a file in place, just like gzip unix command
-
-    >>> import gzip
-    >>> import tempfile
-    >>> logfile = tempfile.mktemp()
-    >>> handle = open(logfile, 'wb')
-    >>> handle.write('something to compress')
-    >>> handle.close()
-    >>> logfile_gz = gzip_file(logfile)
-    >>> gzip.open(logfile_gz).read()
-    'something to compress'
-    """
-    logfile_gz = '%s.gz' % logfile
-    with closing(gzip.open(logfile_gz, 'wb')) as f_out:
-        with open(logfile) as f_in:
-            f_out.writelines(f_in)
-    os.remove(logfile)
-    return logfile_gz
-
 
