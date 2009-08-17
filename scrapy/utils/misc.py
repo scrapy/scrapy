@@ -27,24 +27,6 @@ def arg_to_iter(arg):
     else:
         return [arg]
 
-def dict_updatedefault(D, E, **F):
-    """
-    updatedefault(D, E, **F) -> None.
-
-    Update D from E and F: for k in E: D.setdefault(k, E[k])
-    (if E has keys else: for (k, v) in E: D.setdefault(k, v))
-    then: for k in F: D.setdefault(k, F[k])
-    """
-    for k in E:
-        if isinstance(k, tuple):
-            k, v = k
-        else:
-            v = E[k]
-        D.setdefault(k, v)
-
-    for k in F:
-        D.setdefault(k, F[k])
-
 def memoize(cache, hash):
     def decorator(func):
         def wrapper(*args, **kwargs):
