@@ -4,7 +4,6 @@ MemoryUsage extension
 See documentation in docs/ref/extensions.rst
 """
 
-import sys
 import os
 import socket
 
@@ -18,24 +17,17 @@ from scrapy.core.exceptions import NotConfigured
 from scrapy.mail import MailSender
 from scrapy.conf import settings
 from scrapy.stats import stats
+from scrapy.utils.memory import get_vmvalue_from_procfs
 
 class MemoryUsage(object):
     
-    _proc_status = '/proc/%d/status' % os.getpid()
-    _scale = {'kB': 1024.0, 'mB': 1024.0*1024.0,
-              'KB': 1024.0, 'MB': 1024.0*1024.0}
-
     def __init__(self):
         if not settings.getbool('MEMUSAGE_ENABLED'):
             raise NotConfigured
-        if sys.platform != 'linux2':
-            raise NotConfigured("MemoryUsage extension is only available on Linux")
+        if not os.path.exists('/proc'):
+            raise NotConfigured
 
         self.warned = False
-
-        self.data = {}
-        self.data['startup'] = 0
-        self.data['max'] = 0
 
         scrapyengine.addtask(self.update, 60.0, now=True)
 
@@ -56,40 +48,13 @@ class MemoryUsage(object):
 
     @property
     def virtual(self):
-        return self._vmvalue('VmSize:')
-
-    @property
-    def resident(self):
-        return self._vmvalue('VmRSS:')
-        
-    @property
-    def stacksize(self):
-        return self._vmvalue('VmStk:')
+        return get_vmvalue_from_procfs('VmSize')
 
     def engine_started(self):
-        self.data['startup'] = self.virtual
-        stats.set_value('memusage/startup', int(self.virtual))
+        stats.set_value('memusage/startup', self.virtual)
 
     def update(self):
-        if self.virtual > self.data['max']:
-            self.data['max'] = self.virtual
-            stats.set_value('memusage/max', int(self.virtual))
-
-    def _vmvalue(self, VmKey):
-        # get pseudo file  /proc/<pid>/status
-        try:
-            t = open(self._proc_status)
-            v = t.read()
-            t.close()
-        except:
-            return 0.0  # non-Linux?
-        # get VmKey line e.g. 'VmRSS:  9999  kB\n ...'
-        i = v.index(VmKey)
-        v = v[i:].split(None, 3)  # whitespace
-        if len(v) < 3:
-            return 0.0  # invalid format?
-        # convert Vm value to bytes
-        return float(v[1]) * self._scale[v[2]]
+        stats.max_value('memusage/max', self.virtual)
 
     def _check_limit(self):
         if self.virtual > self.limit:
@@ -119,8 +84,8 @@ class MemoryUsage(object):
 
     def _send_report(self, rcpts, subject):
         """send notification mail with some additional useful info"""
-        s = "Memory usage at engine startup : %dM\r\n" % (self.data['startup']/1024/1024)
-        s += "Maximum memory usage           : %dM\r\n" % (self.data['max']/1024/1024)
+        s = "Memory usage at engine startup : %dM\r\n" % (stats.get_value('memusage/startup')/1024/1024)
+        s += "Maximum memory usage           : %dM\r\n" % (stats.get_value('memusage/max')/1024/1024)
         s += "Current memory usage           : %dM\r\n" % (self.virtual/1024/1024)
 
         s += "ENGINE STATUS ------------------------------------------------------- \r\n"
