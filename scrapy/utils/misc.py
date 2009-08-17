@@ -94,33 +94,6 @@ def extract_regex(regex, text, encoding):
     else:
         return [remove_entities(unicode(s, encoding), keep=['lt', 'amp']) for s in strings]
 
-def items_to_csv(file, items, delimiter=';', headers=None):
-    """
-    This function takes a list of items and stores their attributes
-    in a csv file given in 'file' (which can be either a descriptor, or a filename).
-    The saved attributes are either the ones found in the 'headers' parameter
-    (if specified) or the first item's list of public attributes.
-    The written file will be encoded as utf-8.
-    """
-    if not items or not hasattr(items, '__iter__'):
-        return
-
-    if isinstance(file, basestring):
-        file = open(file, 'ab+')
-    csv_file = csv.writer(file, delimiter=delimiter, quoting=csv.QUOTE_ALL)
-    header = headers or sorted([key for key in items[0].__dict__.keys() if not key.startswith('_')])
-    if not file.tell():
-        csv_file.writerow(header)
-
-    for item in items:
-        row = []
-        for attrib in header:
-            value = getattr(item, attrib, None)
-            value = unicode_to_str(value) if isinstance(value, basestring) else value
-            row.append(value)
-        csv_file.writerow(row)
-
-
 def md5sum(buffer):
     """Calculate the md5 checksum of a file
 
