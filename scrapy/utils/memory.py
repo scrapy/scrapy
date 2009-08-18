@@ -21,5 +21,5 @@ def get_vmvalue_from_procfs(vmkey='VmSize', pid=None):
     if len(v) < 3:
         return 0  # invalid format?
     # convert Vm value to bytes
-    return float(v[1]) * _vmvalue_scale[v[2]]
+    return int(v[1]) * _vmvalue_scale[v[2]]
 

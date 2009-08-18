@@ -11,9 +11,10 @@ class UtilsMemoryTestCase(unittest.TestCase):
             raise unittest.SkipTest('/proc filesystem not supported')
         vmsize = get_vmvalue_from_procfs('VmSize')
         vmrss = get_vmvalue_from_procfs('VmRSS')
-        assert vmsize > 0
-        assert vmrss > 0
-        assert vmsize > vmrss
+        self.assert_(isinstance(vmsize, int))
+        self.assert_(vmsize > 0)
+        self.assert_(vmrss > 0)
+        self.assert_(vmsize > vmrss)
 
 if __name__ == "__main__":
     unittest.main()
