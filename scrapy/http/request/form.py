@@ -22,6 +22,8 @@ def _unicode_to_str(string, encoding):
 
 class FormRequest(Request):
 
+    __slots__ = ()
+
     def __init__(self, *args, **kwargs):
         formdata = kwargs.pop('formdata', None)
         Request.__init__(self, *args, **kwargs)

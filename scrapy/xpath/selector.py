@@ -140,9 +140,10 @@ class XPathSelectorList(list):
 
 class XmlXPathSelector(XPathSelector):
     """XPathSelector for XML content"""
+    __slots__ = ()
     _get_libxml2_doc = staticmethod(xmlDoc_from_xml)
-
 
 class HtmlXPathSelector(XPathSelector):
     """XPathSelector for HTML content"""
+    __slots__ = ()
     _get_libxml2_doc = staticmethod(xmlDoc_from_html)

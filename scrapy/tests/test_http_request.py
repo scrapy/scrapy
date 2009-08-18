@@ -1,5 +1,6 @@
 import unittest
 import cgi
+import weakref
 from cStringIO import StringIO
 from urlparse import urlparse
 
@@ -166,6 +167,14 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r4.meta, {})
         assert r4.dont_filter is False
 
+    def test_weakref_slots(self):
+        """Check that classes are using slots and are weak-referenceable"""
+        for cls in [Request, FormRequest]:
+            x = cls('http://www.example.com')
+            weakref.ref(x)
+            assert not hasattr(x, '__dict__'), "%s does not use __slots__" % \
+                x.__class__.__name__
+
 
 class FormRequestTest(unittest.TestCase):
 
@@ -297,7 +306,6 @@ class XmlRpcRequestTest(unittest.TestCase):
         self.assertEqual(r1.encoding, r2.encoding)
         self.assertEqual(r1.dont_filter, r2.dont_filter)
         self.assertEqual(r1.body, r2.body)
-
 
 
 if __name__ == "__main__":

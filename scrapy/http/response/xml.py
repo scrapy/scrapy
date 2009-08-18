@@ -12,6 +12,8 @@ from scrapy.utils.python import memoizemethod
 
 class XmlResponse(TextResponse):
 
+    __slots__ = ()
+
     _template = r'''%s\s*=\s*["']?\s*%s\s*["']?'''
     _encoding_re  = _template % ('encoding', r'(?P<charset>[\w-]+)')
     XMLDECL_RE  = re.compile(r'<\?xml\s.*?%s' % _encoding_re, re.I)

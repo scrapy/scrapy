@@ -1,10 +1,12 @@
 import re
 import unittest
+import weakref
 
 import libxml2
 
 from scrapy.http import TextResponse, HtmlResponse, XmlResponse
-from scrapy.xpath.selector import XmlXPathSelector, HtmlXPathSelector
+from scrapy.xpath.selector import XmlXPathSelector, HtmlXPathSelector, \
+    XPathSelector
 from scrapy.xpath.document import Libxml2Document
 from scrapy.utils.test import libxml2debug
 
@@ -238,6 +240,15 @@ class XPathSelectorTestCase(unittest.TestCase):
             u'lalalal&ppppp<b>PPPP</b>ppp&amp;la',
             u'\n  ',
             u'\n  pff\n'])
+
+    @libxml2debug
+    def test_weakref_slots(self):
+        """Check that classes are using slots and are weak-referenceable"""
+        for cls in [XPathSelector, HtmlXPathSelector, XmlXPathSelector]:
+            x = cls()
+            weakref.ref(x)
+            assert not hasattr(x, '__dict__'), "%s does not use __slots__" % \
+                x.__class__.__name__
 
 class Libxml2DocumentTest(unittest.TestCase):
 

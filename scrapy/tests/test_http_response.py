@@ -1,4 +1,6 @@
 import unittest
+import weakref
+
 from scrapy.http import Response, TextResponse, HtmlResponse, XmlResponse, Headers
 
 class ResponseTest(unittest.TestCase):
@@ -200,6 +202,14 @@ class ResponseTest(unittest.TestCase):
         r6 = r5.replace(body=body2)
         self._assert_response_values(r5, 'iso-8859-1', body)
         self._assert_response_values(r6, 'utf-8', body2)
+
+    def test_weakref_slots(self):
+        """Check that classes are using slots and are weak-referenceable"""
+        for cls in [Response, TextResponse, XmlResponse, HtmlResponse]:
+            x = cls('http://www.example.com')
+            weakref.ref(x)
+            assert not hasattr(x, '__dict__'), "%s does not use __slots__" % \
+                x.__class__.__name__
 
 
 if __name__ == "__main__":

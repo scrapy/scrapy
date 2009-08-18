@@ -160,6 +160,9 @@ class SiteNode(object):
 
 
 class CaselessDict(dict):
+
+    __slots__ = ()
+
     def __init__(self, seq=None):
         super(CaselessDict, self).__init__()
         if seq:

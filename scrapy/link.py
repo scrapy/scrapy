@@ -10,7 +10,7 @@ class Link(object):
     At the moment, it contains just the url and link text.
     """
 
-    __slots__ = 'url', 'text'
+    __slots__ = ['url', 'text']
 
     def __init__(self, url, text=''):
         self.url = url
