@@ -53,82 +53,82 @@ BaseSpider
 
 .. class:: BaseSpider()
 
-This is the simplest spider, and the one from which every other spider
-must inherit from (either the ones that come bundled with Scrapy, or the ones
-that you write yourself). It doesn't provide any special functionality. It just
-requests the given ``start_urls``/``start_requests``, and calls the spider's
-method ``parse`` for each of the resulting responses.
+   This is the simplest spider, and the one from which every other spider
+   must inherit from (either the ones that come bundled with Scrapy, or the ones
+   that you write yourself). It doesn't provide any special functionality. It just
+   requests the given ``start_urls``/``start_requests``, and calls the spider's
+   method ``parse`` for each of the resulting responses.
 
-.. attribute:: BaseSpider.domain_name
-   
-    A string which defines the domain name for this spider, which will also be
-    the unique identifier for this spider (which means you can't have two
-    spider with the same ``domain_name``). This is the most important spider
-    attribute and it's required, and it's the name by which Scrapy will known
-    the spider. 
+   .. attribute:: domain_name
+      
+       A string which defines the domain name for this spider, which will also be
+       the unique identifier for this spider (which means you can't have two
+       spider with the same ``domain_name``). This is the most important spider
+       attribute and it's required, and it's the name by which Scrapy will known
+       the spider. 
 
-.. attribute:: BaseSpider.extra_domain_names
+   .. attribute:: extra_domain_names
 
-    An optional list of strings containing additional domains that this spider
-    is allowed to crawl. Requests for URLs not belonging to the domain name
-    specified in :attr:`Spider.domain_name` or this list won't be followed.
+       An optional list of strings containing additional domains that this spider
+       is allowed to crawl. Requests for URLs not belonging to the domain name
+       specified in :attr:`Spider.domain_name` or this list won't be followed.
 
-.. attribute:: BaseSpider.start_urls
+   .. attribute:: start_urls
 
-    Is a list of URLs where the spider will begin to crawl from, when no
-    particular URLs are specified. So, the first pages downloaded will be those
-    listed here. The subsequent URLs will be generated successively from data
-    contained in the start URLs.
+       Is a list of URLs where the spider will begin to crawl from, when no
+       particular URLs are specified. So, the first pages downloaded will be those
+       listed here. The subsequent URLs will be generated successively from data
+       contained in the start URLs.
 
-.. method:: BaseSpider.start_requests()
+   .. method:: start_requests()
 
-    This method must return an iterable with the first Requests to crawl for
-    this spider. 
-    
-    This is the method called by Scrapy when the spider is opened for scraping
-    when no particular URLs are specified. If particular URLs are specified,
-    the :meth:`BaseSpider.make_requests_from_url` is used instead to create the
-    Requests. This method is also called only once from Scrapy, so it's safe to
-    implement it as a generator.
+       This method must return an iterable with the first Requests to crawl for
+       this spider. 
+       
+       This is the method called by Scrapy when the spider is opened for scraping
+       when no particular URLs are specified. If particular URLs are specified,
+       the :meth:`BaseSpider.make_requests_from_url` is used instead to create the
+       Requests. This method is also called only once from Scrapy, so it's safe to
+       implement it as a generator.
 
-    The default implementation uses :meth:`BaseSpider.make_requests_from_url`
-    to generate Requests for each url in :attr:`start_urls`.
+       The default implementation uses :meth:`BaseSpider.make_requests_from_url`
+       to generate Requests for each url in :attr:`start_urls`.
 
-    If you want to change the Requests used to start scraping a domain, this is
-    the method to override. For example, if you need to start by login in using
-    a POST request, you could do::
+       If you want to change the Requests used to start scraping a domain, this is
+       the method to override. For example, if you need to start by login in using
+       a POST request, you could do::
 
-        def start_requests(self):
-            return [FormRequest("http://www.example.com/login", 
-                                formdata={'user': 'john', 'pass': 'secret'},
-                                callback=self.logged_in)]
+           def start_requests(self):
+               return [FormRequest("http://www.example.com/login", 
+                                   formdata={'user': 'john', 'pass': 'secret'},
+                                   callback=self.logged_in)]
 
-        def logged_in(self, response):
-            # here you would extract links to follow and return Requests for
-            # each of them, with another callback
-            pass
+           def logged_in(self, response):
+               # here you would extract links to follow and return Requests for
+               # each of them, with another callback
+               pass
 
-.. method:: BaseSpider.make_requests_from_url(url)
+   .. method:: make_requests_from_url(url)
 
-    A method that receives a URL and returns a :class:`~scrapy.http.Request`
-    object (or a list of :class:`~scrapy.http.Request` objects) to scrape. This
-    method is used to construct the initial requests in the
-    :meth:`start_requests` method, and is typically used to convert urls to
-    requests.
+       A method that receives a URL and returns a :class:`~scrapy.http.Request`
+       object (or a list of :class:`~scrapy.http.Request` objects) to scrape. This
+       method is used to construct the initial requests in the
+       :meth:`start_requests` method, and is typically used to convert urls to
+       requests.
 
-    Unless overridden, this method returns Requests with the :meth:`parse`
-    method as their callback function, and with dont_filter parameter enabled
-    (see :class:`~scrapy.http.Request` class for more info).
+       Unless overridden, this method returns Requests with the :meth:`parse`
+       method as their callback function, and with dont_filter parameter enabled
+       (see :class:`~scrapy.http.Request` class for more info).
 
-.. method:: BaseSpider.parse(response)
+   .. method:: parse(response)
 
-    This is the default callback used by the :meth:`start_requests` method, and
-    will be used to parse the first pages crawled by the spider.
+       This is the default callback used by the :meth:`start_requests` method, and
+       will be used to parse the first pages crawled by the spider.
 
-    The ``parse`` method is in charge of processing the response and returning
-    scraped data and/or more URLs to follow, because of this, the method must
-    always return a list or at least an empty one. Other Requests callbacks
-    have the same requirements as the BaseSpider class.
+       The ``parse`` method is in charge of processing the response and returning
+       scraped data and/or more URLs to follow, because of this, the method must
+       always return a list or at least an empty one. Other Requests callbacks
+       have the same requirements as the BaseSpider class.
 
 BaseSpider example
 ~~~~~~~~~~~~~~~~~~
@@ -160,46 +160,45 @@ CrawlSpider
 
 .. class:: CrawlSpider
 
-This is the most commonly used spider for crawling regular websites, as it
-provides a convenient mechanism for following links by defining a set of rules.
-It may not be the best suited for your particular web sites or project, but
-it's generic enough for several cases, so you can start from it and override it
-as need more custom functionality, or just implement your own spider.
+   This is the most commonly used spider for crawling regular websites, as it
+   provides a convenient mechanism for following links by defining a set of rules.
+   It may not be the best suited for your particular web sites or project, but
+   it's generic enough for several cases, so you can start from it and override it
+   as need more custom functionality, or just implement your own spider.
 
-Apart from the attributes inherited from BaseSpider (that you must
-specify), this class supports a new attribute: 
+   Apart from the attributes inherited from BaseSpider (that you must
+   specify), this class supports a new attribute: 
 
-.. attribute:: CrawlSpider.rules
+   .. attribute:: rules
 
-    Which is a list of one (or more) :class:`Rule` objects.  Each :class:`Rule`
-    defines a certain behaviour for crawling the site. Rules objects are
-    described below .
-    
+       Which is a list of one (or more) :class:`Rule` objects.  Each :class:`Rule`
+       defines a certain behaviour for crawling the site. Rules objects are
+       described below .
+       
 Crawling rules
 ~~~~~~~~~~~~~~
-
 .. class:: Rule(link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None)
 
-``link_extractor`` is a :ref:`Link Extractor <topics-link-extractors>` object which
-defines how links will be extracted from each crawled page.
-   
-``callback`` is a callable or a string (in which case a method from the spider
-object with that name will be used) to be called for each link extracted with
-the specified link_extractor. This callback receives a response as its first
-argument and must return a list containing either ScrapedItems and Requests (or
-any subclass of them).
+   ``link_extractor`` is a :ref:`Link Extractor <topics-link-extractors>` object which
+   defines how links will be extracted from each crawled page.
+      
+   ``callback`` is a callable or a string (in which case a method from the spider
+   object with that name will be used) to be called for each link extracted with
+   the specified link_extractor. This callback receives a response as its first
+   argument and must return a list containing either ScrapedItems and Requests (or
+   any subclass of them).
 
-``cb_kwargs`` is a dict containing the keyword arguments to be passed to the
-callback function
+   ``cb_kwargs`` is a dict containing the keyword arguments to be passed to the
+   callback function
 
-``follow`` is a boolean which specified if links should be followed from each
-response extracted with this rule. If ``callback`` is None ``follow`` defaults
-to ``True``, otherwise it default to ``False``.
+   ``follow`` is a boolean which specified if links should be followed from each
+   response extracted with this rule. If ``callback`` is None ``follow`` defaults
+   to ``True``, otherwise it default to ``False``.
 
-``process_links`` is a callable, or a string (in which case a method from the
-spider object with that name will be used) which will be called for each list
-of links extracted from each response using the specified ``link_extractor``.
-This is mainly used for filtering purposes. 
+   ``process_links`` is a callable, or a string (in which case a method from the
+   spider object with that name will be used) which will be called for each list
+   of links extracted from each response using the specified ``link_extractor``.
+   This is mainly used for filtering purposes. 
 
 
 CrawlSpider example
@@ -364,30 +363,30 @@ CSVFeedSpider
 
 .. class:: CSVFeedSpider
 
-.. warning:: The API of the CSVFeedSpider is not yet stable. Use with caution.
+   .. warning:: The API of the CSVFeedSpider is not yet stable. Use with caution.
 
-This spider is very similar to the XMLFeedSpider, although it iterates through
-rows, instead of nodes.  It also has other two different attributes:
+   This spider is very similar to the XMLFeedSpider, although it iterates through
+   rows, instead of nodes.  It also has other two different attributes:
 
-.. attribute:: CSVFeedSpider.delimiter
+   .. attribute:: CSVFeedSpider.delimiter
 
-    A string with the separator character for each field in the CSV file
-    Defaults to ``','`` (comma).
+       A string with the separator character for each field in the CSV file
+       Defaults to ``','`` (comma).
 
-.. attribute:: CSVFeedSpider.headers
-   
-    A list of the rows contained in the file CSV feed which will be used for
-    extracting fields from it.
+   .. attribute:: CSVFeedSpider.headers
+      
+       A list of the rows contained in the file CSV feed which will be used for
+       extracting fields from it.
 
-In this spider, the method that gets called in each row iteration ``parse_row``
-instead of ``parse_item`` (like in :class:`XMLFeedSpider`).
+   In this spider, the method that gets called in each row iteration ``parse_row``
+   instead of ``parse_item`` (like in :class:`XMLFeedSpider`).
 
-.. method:: CSVFeedSpider.parse_row(response, row)
-   
-    Receives a response and a dict (representing each row) with a key for each
-    provided (or detected) header of the CSV file.  This spider also gives the
-    opportunity to override ``adapt_response`` and ``process_results`` methods
-    for pre and post-processing purposes.
+   .. method:: CSVFeedSpider.parse_row(response, row)
+      
+       Receives a response and a dict (representing each row) with a key for each
+       provided (or detected) header of the CSV file.  This spider also gives the
+       opportunity to override ``adapt_response`` and ``process_results`` methods
+       for pre and post-processing purposes.
 
 CSVFeedSpider example
 ~~~~~~~~~~~~~~~~~~~~~
