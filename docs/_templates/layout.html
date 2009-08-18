@@ -1,15 +1,9 @@
 {% extends "!layout.html" %}
 
-{% block rootrellink %}
-        Scrapy v. {{ version }} documentation &raquo;
-    <li><a href="{{ pathto('index') }}">Start</a> | </li>
-        <li><a href="{{ pathto('intro/index') }}">Intro</a> | </li>
-        <li><a href="{{ pathto('topics/index') }}">Topics</a> | </li>
-        <li><a href="{{ pathto('reference') }}">Reference</a> | </li>
-        <li><a href="{{ pathto('faq') }}">FAQ</a> </li>
-     
+{% block relbaritems %}
+    <li class="right"><a title="Getting Started" href="{{ pathto('faq') }}">faq</a> &mdash; </li>
+    <li class="right"><a title="API Reference" href="{{ pathto('reference') }}">reference</a> | </li>
+    <li class="right"><a title="Usage guide" href="{{ pathto('topics/index') }}">topics</a> | </li>
+    <li class="right"><a title="API Reference" href="{{ pathto('intro/index') }}">intro</a> | </li>
+    <li class="right"><a title="Docomentation home" href="{{ pathto('index') }}">start</a> | </li>
 {% endblock %}
-
-
-
-
