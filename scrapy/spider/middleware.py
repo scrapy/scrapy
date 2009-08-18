@@ -9,7 +9,7 @@ docs/topics/spider-middleware.rst
 from scrapy import log
 from scrapy.core.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
-from scrapy.utils.middleware import build_middleware_list
+from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.http import Request
 from scrapy.conf import settings
@@ -37,8 +37,8 @@ class SpiderMiddlewareManager(object):
 
     def load(self):
         """Load middleware defined in settings module"""
-        mwlist = build_middleware_list(settings['SPIDER_MIDDLEWARES_BASE'],
-                                       settings['SPIDER_MIDDLEWARES'])
+        mwlist = build_component_list(settings['SPIDER_MIDDLEWARES_BASE'], \
+            settings['SPIDER_MIDDLEWARES'])
         self.enabled.clear()
         self.disabled.clear()
         for mwpath in mwlist:

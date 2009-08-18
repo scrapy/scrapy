@@ -5,6 +5,7 @@ ExtensionManager (extensions) to be used as singleton.
 """
 from scrapy.core.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
+from scrapy.utils.conf import build_component_list
 from scrapy import log
 from scrapy.conf import settings
 
@@ -23,7 +24,9 @@ class ExtensionManager(object):
         self.loaded = False
         self.enabled.clear()
         self.disabled.clear()
-        for extension_path in settings.getlist('EXTENSIONS'):
+        extlist = build_component_list(settings['EXTENSIONS_BASE'], \
+            settings['EXTENSIONS'])
+        for extension_path in extlist:
             try:
                 cls = load_object(extension_path)
                 self.enabled[cls.__name__] = cls()

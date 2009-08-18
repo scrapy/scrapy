@@ -30,19 +30,33 @@ Extensions are loaded and activated at startup by instantiating a single
 instance of the extension class. Therefore, all the extension initialization
 code must be performed in the class constructor (``__init__`` method).
 
-To make an extension available, add it to the :setting:`EXTENSIONS` list in
+To make an extension available, add it to the :setting:`EXTENSIONS` setting in
 your Scrapy settings. In :setting:`EXTENSIONS`, each extension is represented
 by a string: the full Python path to the extension's class name. For example::
 
-    EXTENSIONS = [
-        'scrapy.stats.corestats.CoreStats',
-        'scrapy.management.web.WebConsole',
-        'scrapy.management.telnet.TelnetConsole',
-        'scrapy.contrib.webconsole.enginestatus.EngineStatus',
-        'scrapy.contrib.webconsole.stats.StatsDump',
-        'scrapy.contrib.debug.StackTraceDump',
-    ]
+    EXTENSIONS = {
+        'scrapy.stats.corestats.CoreStats': 500,
+        'scrapy.management.web.WebConsole': 500,
+        'scrapy.management.telnet.TelnetConsole': 500,
+        'scrapy.contrib.webconsole.enginestatus.EngineStatus': 500,
+        'scrapy.contrib.webconsole.stats.StatsDump': 500,
+        'scrapy.contrib.debug.StackTraceDump': 500,
+    }
 
+
+As you can see, the :setting:`EXTENSIONS` setting is a dict where the keys are
+the extension paths, and their values are the orders, which define the
+extension *loading* order. Extensions orders are not as important as middleware
+orders though, and they are typically irrelevant, ie. it doesn't matter in
+which order the extensions are loaded because they don't depend on each other
+[1].
+
+However this feature can be exploited if you need to add an extension which
+depends on other extension already loaded.
+
+[1] This is is why the :setting:`EXTENSIONS_BASE` setting in Scrapy (which
+contains all built-in extensions enabled by default) defines all the extensions
+with the same order (``500``).
 
 Available, enabled and disabled extensions
 ==========================================

@@ -70,21 +70,23 @@ DOWNLOADER_STATS = True
 
 DUPEFILTER_CLASS = 'scrapy.contrib.dupefilter.RequestFingerprintDupeFilter'
 
-EXTENSIONS = [
-    'scrapy.stats.corestats.CoreStats',
-    'scrapy.management.web.WebConsole',
-    'scrapy.management.telnet.TelnetConsole',
-    'scrapy.contrib.webconsole.scheduler.SchedulerQueue',
-    'scrapy.contrib.webconsole.livestats.LiveStats',
-    'scrapy.contrib.webconsole.spiderctl.Spiderctl',
-    'scrapy.contrib.webconsole.enginestatus.EngineStatus',
-    'scrapy.contrib.webconsole.stats.StatsDump',
-    'scrapy.contrib.spider.reloader.SpiderReloader',
-    'scrapy.contrib.memusage.MemoryUsage',
-    'scrapy.contrib.memdebug.MemoryDebugger',
-    'scrapy.contrib.closedomain.CloseDomain',
-    'scrapy.contrib.debug.StackTraceDump',
-]
+EXTENSIONS = {}
+
+EXTENSIONS_BASE = {
+    'scrapy.stats.corestats.CoreStats': 0,
+    'scrapy.management.web.WebConsole': 0,
+    'scrapy.management.telnet.TelnetConsole': 0,
+    'scrapy.contrib.webconsole.scheduler.SchedulerQueue': 0,
+    'scrapy.contrib.webconsole.livestats.LiveStats': 0,
+    'scrapy.contrib.webconsole.spiderctl.Spiderctl': 0,
+    'scrapy.contrib.webconsole.enginestatus.EngineStatus': 0,
+    'scrapy.contrib.webconsole.stats.StatsDump': 0,
+    'scrapy.contrib.spider.reloader.SpiderReloader': 0,
+    'scrapy.contrib.memusage.MemoryUsage': 0,
+    'scrapy.contrib.memdebug.MemoryDebugger': 0,
+    'scrapy.contrib.closedomain.CloseDomain': 0,
+    'scrapy.contrib.debug.StackTraceDump': 0,
+}
 
 GROUPSETTINGS_ENABLED = False
 GROUPSETTINGS_MODULE = ''
