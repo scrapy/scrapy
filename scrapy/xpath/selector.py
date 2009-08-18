@@ -11,9 +11,10 @@ from scrapy.xpath.factories import xmlDoc_from_html, xmlDoc_from_xml
 from scrapy.xpath.document import Libxml2Document
 from scrapy.utils.python import flatten, unicode_to_str
 from scrapy.utils.misc import extract_regex
+from scrapy.utils.ref import object_ref
 from scrapy.utils.decorator import deprecated
 
-class XPathSelector(object):
+class XPathSelector(object_ref):
 
     def __init__(self, response=None, text=None, node=None, parent=None, expr=None):
         if parent:

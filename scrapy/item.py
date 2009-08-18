@@ -1,4 +1,6 @@
-class BaseItem(object):
+from scrapy.utils.ref import object_ref
+
+class BaseItem(object_ref):
     """Base class for all scraped items."""
     pass
 

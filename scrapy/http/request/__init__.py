@@ -11,8 +11,9 @@ from twisted.internet import defer
 
 from scrapy.http.headers import Headers
 from scrapy.utils.url import safe_url_string
+from scrapy.utils.ref import object_ref
 
-class Request(object):
+class Request(object_ref):
 
     __slots__ = ['_encoding', 'method', '_url', '_body', '_meta', '_cache', \
         'dont_filter', 'headers', 'cookies', 'deferred', 'priority', \

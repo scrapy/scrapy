@@ -8,8 +8,9 @@ See documentation in docs/ref/request-response.rst
 import copy
 
 from scrapy.http.headers import Headers
+from scrapy.utils.ref import object_ref
 
-class Response(object):
+class Response(object_ref):
 
     __slots__ = ['url', 'headers', 'status', '_body', 'request', '_meta', \
         'flags', '_cache', '__weakref__']

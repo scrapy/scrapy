@@ -15,6 +15,7 @@ from scrapy.core.manager import scrapymanager
 from scrapy.core.engine import scrapyengine
 from scrapy.spider import spiders
 from scrapy.stats import stats
+from scrapy.utils.ref import print_live_refs
 from scrapy.conf import settings
 
 try:
@@ -32,6 +33,7 @@ telnet_namespace = {
     'spiders': spiders,
     'settings': settings,
     'p': pprint.pprint,
+    'prefs': print_live_refs,
     'hpy': hpy,
 }
 
