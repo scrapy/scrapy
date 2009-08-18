@@ -22,3 +22,4 @@ it's properly merged) . Use at your own risk.
    newitems
    loaders
    exporters
+   images

@@ -5,6 +5,9 @@ Using Scrapy
 
 This section describes all key concepts of Scrapy.
 
+Chapter 1. Main topics
+----------------------
+
 .. toctree::
    :maxdepth: 1
 
@@ -12,22 +15,60 @@ This section describes all key concepts of Scrapy.
    shell
    spiders
    selectors
-   link-extractors
    items
+   request-response
+
+Chapter 2. Extension Mechanisms
+-------------------------------
+
+.. toctree::
+   :maxdepth: 1
+
    item-pipeline
    downloader-middleware
    spider-middleware
-   settings
+   scheduler-middleware
    extensions
+
+Chapter 3. Services
+-------------------
+
+.. toctree::
+   :maxdepth: 1
+
+   settings
+   logging
+   signals
    stats
+   email
+
+Chapter 4. Administration consoles
+----------------------------------
+
+.. toctree::
+   :maxdepth: 1
+
    webconsole
    telnetconsole
-   robotstxt
+
+.. toctree::
+   :maxdepth: 1
+
+Chapter 5. Reference
+--------------------
+
+.. toctree::
+   :maxdepth: 1
+
+   exceptions
+   link-extractors
+
+Appendix 1: Third party tools
+-----------------------------
+
+.. toctree::
+   :maxdepth: 1
+
    firefox
    firebug
-   signals
-   logging
-   scheduler-middleware
-   request-response
-   exceptions
-   email
+

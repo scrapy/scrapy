@@ -196,3 +196,22 @@ HttpCacheMiddleware
         * :setting:`HTTPCACHE_EXPIRATION_SECS` - how many secs until the cache is
           considered out of date
 
+RobotsTxtMiddleware
+-------------------
+
+.. module:: scrapy.contrib.downloadermiddleware.robotstxt
+   :synopsis: robots.txt middleware
+
+.. class:: RobotsTxtMiddleware:
+
+    This middleware filters out requests forbidden by the robots.txt exclusion
+    standard.
+
+    To make sure Scrapy respects robots.txt make sure the middleware is enabled
+    amd the :setting:`ROBOTSTXT_OBEY` setting is enabled.
+
+    .. warning:: Keep in mind that, if you crawl using multiple concurrent
+       requests per domain, Scrapy could still  download some forbidden pages
+       if they were requested before the robots.txt file was downloaded. This
+       is a known limitation of the current robots.txt middleware and will
+       be fixed in the future.
