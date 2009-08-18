@@ -7,7 +7,7 @@ from optparse import OptionParser
 import re
 
 import scrapy
-from scrapy.utils.misc import render_templatefile, string_camelcase
+from scrapy.utils.template import render_templatefile, string_camelcase
 from scrapy.utils.python import ignore_patterns, copytree
 
 usage = """
