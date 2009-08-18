@@ -1,5 +1,5 @@
 import unittest
-from scrapy.http import Response, TextResponse, HtmlResponse, XmlResponse, Headers, Url
+from scrapy.http import Response, TextResponse, HtmlResponse, XmlResponse, Headers
 
 class ResponseTest(unittest.TestCase):
 
@@ -14,7 +14,7 @@ class ResponseTest(unittest.TestCase):
         self.assertTrue(isinstance(Response('http://example.com/', headers={}, status=200, body=''), Response))
 
         r = Response("http://www.example.com")
-        assert isinstance(r.url, Url)
+        assert isinstance(r.url, str)
         self.assertEqual(r.url, "http://www.example.com")
         self.assertEqual(r.status, 200)
 

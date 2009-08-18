@@ -5,6 +5,8 @@ import hmac
 import base64
 import hashlib
 from urlparse import urlsplit
+
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.conf import settings
 
 
@@ -82,7 +84,8 @@ class AWSMiddleware(object):
         self.secret_key = settings['AWS_SECRET_ACCESS_KEY'] or os.environ.get('AWS_SECRET_ACCESS_KEY')
 
     def process_request(self, request, spider):
+        hostname = urlparse_cached(request).hostname
         if spider.domain_name == 's3.amazonaws.com' \
-                or (request.url.hostname and request.url.hostname.endswith('s3.amazonaws.com')):
+                or (hostname and hostname.endswith('s3.amazonaws.com')):
             request.headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
             sign_request(request, self.access_key, self.secret_key)

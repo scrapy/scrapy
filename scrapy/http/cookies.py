@@ -1,5 +1,6 @@
-from cookielib import CookieJar as _CookieJar, DefaultCookiePolicy, Cookie
+from cookielib import CookieJar as _CookieJar, DefaultCookiePolicy
 
+from scrapy.utils.httpobj import urlparse_cached
 
 class CookieJar(object):
     def __init__(self, policy=None):
@@ -67,10 +68,10 @@ class WrappedRequest(object):
         return self.request.url
 
     def get_host(self):
-        return self.request.url.netloc
+        return urlparse_cached(self.request).netloc
 
     def get_type(self):
-        return self.request.url.scheme
+        return urlparse_cached(self.request).scheme
 
     def is_unverifiable(self):
         """Unverifiable should indicate whether the request is unverifiable, as defined by RFC 2965.

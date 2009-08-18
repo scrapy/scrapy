@@ -1,8 +1,9 @@
 import unittest
-from cStringIO import StringIO
 import cgi
+from cStringIO import StringIO
+from urlparse import urlparse
 
-from scrapy.http import Request, FormRequest, XmlRpcRequest, Headers, Url, Response
+from scrapy.http import Request, FormRequest, XmlRpcRequest, Headers, Response
 
 class RequestTest(unittest.TestCase):
 
@@ -10,17 +11,17 @@ class RequestTest(unittest.TestCase):
         # Request requires url in the constructor
         self.assertRaises(Exception, Request)
 
-        # url argument must be basestring or Url
+        # url argument must be basestring
         self.assertRaises(TypeError, Request, 123)
-        r = Request(Url('http://www.example.com'))
+        r = Request('http://www.example.com')
 
         r = Request("http://www.example.com")
-        assert isinstance(r.url, Url)
+        assert isinstance(r.url, str)
         self.assertEqual(r.url, "http://www.example.com")
         self.assertEqual(r.method, "GET")
 
         r.url = "http://www.example.com/other"
-        assert isinstance(r.url, Url)
+        assert isinstance(r.url, str)
 
         assert isinstance(r.headers, Headers)
         self.assertEqual(r.headers, {})
@@ -28,7 +29,6 @@ class RequestTest(unittest.TestCase):
 
         meta = {"lala": "lolo"}
         headers = {"caca": "coco"}
-        body = "a body"
         r = Request("http://www.example.com", meta=meta, headers=headers, body="a body")
 
         assert r.meta is not meta
@@ -224,9 +224,9 @@ class FormRequestTest(unittest.TestCase):
         response = Response("http://www.example.com/this/list.html", body=respbody)
         r1 = FormRequest.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'})
         self.assertEqual(r1.method, 'GET')
-        self.assertEqual(r1.url.hostname, "www.example.com")
-        self.assertEqual(r1.url.path, "/this/get.php")
-        urlargs = cgi.parse_qs(r1.url.query)
+        self.assertEqual(urlparse(r1.url).hostname, "www.example.com")
+        self.assertEqual(urlparse(r1.url).path, "/this/get.php")
+        urlargs = cgi.parse_qs(urlparse(r1.url).query)
         self.assertEqual(set(urlargs['test']), set(['val1', 'val2']))
         self.assertEqual(set(urlargs['one']), set(['two', 'three']))
         self.assertEqual(urlargs['test2'], ['xxx'])

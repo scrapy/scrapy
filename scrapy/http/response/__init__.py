@@ -7,7 +7,6 @@ See documentation in docs/ref/request-response.rst
 
 import copy
 
-from scrapy.http.url import Url
 from scrapy.http.headers import Headers
 
 class Response(object):
@@ -16,7 +15,7 @@ class Response(object):
         'flags', '_cache', '__weakref__']
 
     def __init__(self, url, status=200, headers=None, body='', meta=None, flags=None):
-        self.url = Url(url)
+        self.url = url
         self.headers = Headers(headers or {})
         self.status = int(status)
         self._set_body(body)

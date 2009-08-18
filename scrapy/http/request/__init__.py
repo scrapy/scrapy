@@ -9,7 +9,6 @@ import copy
 
 from twisted.internet import defer
 
-from scrapy.http.url import Url
 from scrapy.http.headers import Headers
 from scrapy.utils.url import safe_url_string
 
@@ -58,9 +57,7 @@ class Request(object):
     def _set_url(self, url):
         if isinstance(url, basestring):
             decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)
-            self._url = Url(safe_url_string(decoded_url, self.encoding))
-        elif isinstance(url, Url):
-            self._url = url
+            self._url = safe_url_string(decoded_url, self.encoding)
         else:
             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
 

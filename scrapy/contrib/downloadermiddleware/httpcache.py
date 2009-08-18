@@ -9,11 +9,12 @@ from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.core import signals
 from scrapy import log
-from scrapy.http import Response, Headers
+from scrapy.http import Headers
 from scrapy.core.exceptions import NotConfigured, IgnoreRequest
 from scrapy.core.downloader.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.http import headers_dict_to_raw, headers_raw_to_dict
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.conf import settings
 
 
@@ -55,7 +56,7 @@ class HttpCacheMiddleware(object):
 
 
 def is_cacheable(request):
-    return request.url.scheme in ['http', 'https']
+    return urlparse_cached(request).scheme in ['http', 'https']
 
 
 class Cache(object):

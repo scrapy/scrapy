@@ -12,6 +12,7 @@ from scrapy.core import signals
 from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.conf import settings
 
 class RobotsTxtMiddleware(object):
@@ -48,7 +49,7 @@ class RobotsTxtMiddleware(object):
     def _parse_robots(self, response):
         rp = robotparser.RobotFileParser(response.url)
         rp.parse(response.body.splitlines())
-        self._parsers[response.url.netloc] = rp
+        self._parsers[urlparse_cached(response).netloc] = rp
 
     def domain_open(self, spider):
         self._spider_netlocs[spider] = set()

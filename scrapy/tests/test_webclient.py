@@ -13,14 +13,14 @@ from twisted.python.filepath import FilePath
 from twisted.protocols.policies import WrappingFactory
 
 from scrapy.core.downloader import webclient as client
-from scrapy.http import Url, Headers
+from scrapy.http import Headers
 
 
 class ParseUrlTestCase(unittest.TestCase):
     """Test URL parsing facility and defaults values."""
 
     def _parse(self, url):
-        f = client.ScrapyHTTPClientFactory(Url(url))
+        f = client.ScrapyHTTPClientFactory(url)
         return (f.scheme, f.host, f.port, f.path)
 
     def testParse(self):

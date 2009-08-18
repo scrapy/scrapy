@@ -1,30 +1,26 @@
-from urlparse import urlunparse
+from urlparse import urlparse, urlunparse
 
 from twisted.python import failure
 from twisted.web.client import HTTPClientFactory, PartialDownloadError
 from twisted.web.http import HTTPClient
 from twisted.internet import defer
 
-from scrapy.http import Url, Headers
+from scrapy.http import Headers
+from scrapy.utils.httpobj import urlparse_cached
 
-
-def _parse(url):
-    url = url.strip()
-    try:
-        parsed = url.parsedurl
-    except AttributeError:
-        parsed = Url(url.strip()).parsedurl
-
+def _parsed_url_args(parsed):
     path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
     host = parsed.hostname
     port = parsed.port
     scheme = parsed.scheme
-
     if port is None:
         port = 443 if scheme == 'https' else 80
-
     return scheme, host, port, path
 
+def _parse(url):
+    url = url.strip()
+    parsed = urlparse(url)
+    return _parsed_url_args(parsed)
 
 class ScrapyHTTPPageGetter(HTTPClient):
 
@@ -81,11 +77,15 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
     waiting = 1
     noisy = False
 
-    def __init__(self, url, method='GET', body=None, headers=None, timeout=0):
+    def __init__(self, url, method='GET', body=None, headers=None, timeout=0, parsedurl=None):
         self.url = url
         self.method = method
         self.body = body or None
-        self.scheme, self.host, self.port, self.path = _parse(url)
+        if parsedurl:
+            self.scheme, self.host, self.port, self.path = _parsed_url_args(parsedurl)
+        else:
+            self.scheme, self.host, self.port, self.path = _parse(url)
+
         self.timeout = timeout
         self.headers = Headers(headers or {})
         self.deferred = defer.Deferred()
@@ -98,6 +98,16 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
             self.headers['Content-Length'] = len(self.body)
             # just in case a broken http/1.1 decides to keep connection alive
             self.headers.setdefault("Connection", "close")
+
+    @classmethod
+    def from_request(cls, request, timeout):
+        return cls(request.url,
+            method=request.method,
+            body=request.body or None, # see http://dev.scrapy.org/ticket/60
+            headers=Headers(request.headers or {}),
+            timeout=timeout,
+            parsedurl=urlparse_cached(request),
+            )
 
     def gotHeaders(self, headers):
         self.response_headers = headers

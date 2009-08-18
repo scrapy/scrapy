@@ -6,8 +6,6 @@ from __future__ import with_statement
 import urlparse
 
 from twisted.internet import reactor
-from twisted.web import error as web_error
-
 try:
     from twisted.internet import ssl
 except ImportError:
@@ -18,11 +16,12 @@ from scrapy.core import signals
 from scrapy.http import Headers
 from scrapy.core.exceptions import NotSupported
 from scrapy.utils.defer import defer_succeed
-from scrapy.conf import settings
-
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.core.downloader.dnscache import DNSCache
 from scrapy.core.downloader.responsetypes import responsetypes
-from scrapy.core.downloader.webclient import ScrapyHTTPClientFactory as HTTPClientFactory
+from scrapy.core.downloader.webclient import ScrapyHTTPClientFactory
+from scrapy.conf import settings
+
 
 default_timeout = settings.getint('DOWNLOAD_TIMEOUT')
 ssl_supported = 'ssl' in optional_features
@@ -31,7 +30,7 @@ ssl_supported = 'ssl' in optional_features
 dnscache = DNSCache()
 
 def download_any(request, spider):
-    scheme = request.url.scheme
+    scheme = urlparse_cached(request).scheme
     if scheme == 'http':
         return download_http(request, spider)
     elif scheme == 'https':
@@ -39,21 +38,16 @@ def download_any(request, spider):
             return download_https(request, spider)
         else:
             raise NotSupported("HTTPS not supported: install pyopenssl library")
-    elif request.url.scheme == 'file':
+    elif scheme == 'file':
         return download_file(request, spider)
     else:
-        raise NotSupported("Unsupported URL scheme '%s' in: <%s>" % (request.url.scheme, request.url))
+        raise NotSupported("Unsupported URL scheme '%s' in: <%s>" % (scheme, request.url))
 
 def create_factory(request, spider):
     """Return HTTPClientFactory for the given Request"""
     url = urlparse.urldefrag(request.url)[0]
     timeout = getattr(spider, "download_timeout", None) or default_timeout
-
-    factory = HTTPClientFactory(url=url, # never pass unicode urls to twisted
-                                method=request.method,
-                                body=request.body or None, # see http://dev.scrapy.org/ticket/60
-                                headers=request.headers,
-                                timeout=timeout)
+    factory = ScrapyHTTPClientFactory.from_request(request, timeout)
 
     def _create_response(body):
         body = body or ''
@@ -71,16 +65,18 @@ def create_factory(request, spider):
 def download_http(request, spider):
     """Return a deferred for the HTTP download"""
     factory = create_factory(request, spider)
-    ip = dnscache.get(request.url.hostname)
-    port = request.url.port
+    url = urlparse_cached(request)
+    ip = dnscache.get(url.hostname)
+    port = url.port
     reactor.connectTCP(ip, port or 80, factory)
     return factory.deferred
 
 def download_https(request, spider):
     """Return a deferred for the HTTPS download"""
     factory = create_factory(request, spider)
-    ip = dnscache.get(request.url.hostname)
-    port = request.url.port
+    url = urlparse_cached(request)
+    ip = dnscache.get(url.hostname)
+    port = url.port
     contextFactory = ssl.ClientContextFactory()
     reactor.connectSSL(ip, port or 443, factory, contextFactory)
     return factory.deferred
