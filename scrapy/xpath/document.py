@@ -10,6 +10,7 @@ from scrapy.xpath.factories import xmlDoc_from_html
 class Libxml2Document(object):
 
     cache = weakref.WeakKeyDictionary()
+    __slots__ = ['xmlDoc', 'xpathContext']
 
     def __new__(cls, response, factory=xmlDoc_from_html):
         cache = cls.cache.setdefault(response, {})

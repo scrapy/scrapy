@@ -16,6 +16,8 @@ from scrapy.utils.decorator import deprecated
 
 class XPathSelector(object_ref):
 
+    __slots__ = ['doc', 'xmlNode', 'response', 'expr']
+
     def __init__(self, response=None, text=None, node=None, parent=None, expr=None):
         if parent:
             self.doc = parent.doc
