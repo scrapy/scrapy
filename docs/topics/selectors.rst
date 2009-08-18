@@ -229,16 +229,12 @@ XPathSelector objects
 
 .. class:: XPathSelector(response)
 
-    A :class:`XPathSelector` object is a wrapper over response to select
-    certain parts of its content.
+   A :class:`XPathSelector` object is a wrapper over response to select
+   certain parts of its content.
 
-    A :class:`Request` object represents an HTTP request, which is usually
-    generated in the Spider and executed by the Downloader, and thus generating
-    a :class:`Response`.
-    
-    ``url`` is a :class:`~scrapy.http.Response` object that will be used for
-       selecting and extracting data 
-   
+   ``response`` is a :class:`~scrapy.http.Response` object that will be used
+   for selecting and extracting data 
+
    .. method:: XPathSelector.select(xpath)
 
        Apply the given XPath relative to this XPathSelector and return a list
@@ -285,9 +281,8 @@ XPathSelectorList objects
 
 .. class:: XPathSelectorList
 
-    The :class:`XPathSelectorList` class is subclass of the builtin ``list``
-    class, which provides a few additional methods.
-
+   The :class:`XPathSelectorList` class is subclass of the builtin ``list``
+   class, which provides a few additional methods.
 
    .. method:: XPathSelectorList.select(xpath)
 
