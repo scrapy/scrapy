@@ -326,6 +326,51 @@ Default: ``''`` (empty string)
 
 The module to use for pulling settings from, if the group settings is enabled. 
 
+.. setting:: IMAGES_DIR
+
+IMAGES_DIR
+----------
+
+Default: ``None``
+
+Directory where :class:`ImagesPipeline` will store its images. 
+
+For more information see :ref:`topics-images`.
+
+.. setting:: IMAGES_EXPIRES
+
+IMAGES_EXPIRES
+--------------
+
+Default = 90
+
+Number of days for an image to be considered `expired` (downloaded again) in
+:class:`ImagesPipeline`.
+
+For more information see :ref:`topics-images`.
+
+.. setting:: IMAGES_MIN_HEIGHT
+
+IMAGES_MIN_HEIGHT
+-----------------
+
+Default = 0
+
+Minimum height that an image is allowed to have in :class:`ImagesPipeline`.
+
+For more information see :ref:`topics-images-size`.
+
+.. setting:: IMAGES_MIN_WIDTH
+
+IMAGES_MIN_WIDTH
+-----------------
+
+Default = 0
+
+Minimum width that an image is allowed to have in :class:`ImagesPipeline`.
+
+For more information see :ref:`topics-images-size`.
+
 .. setting:: ITEM_PIPELINES
 
 ITEM_PIPELINES
