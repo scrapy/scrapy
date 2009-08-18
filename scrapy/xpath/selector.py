@@ -16,7 +16,7 @@ from scrapy.utils.decorator import deprecated
 
 class XPathSelector(object_ref):
 
-    __slots__ = ['doc', 'xmlNode', 'response', 'expr']
+    __slots__ = ['doc', 'xmlNode', 'expr', '__weakref__']
 
     def __init__(self, response=None, text=None, node=None, parent=None, expr=None):
         if parent:
@@ -31,7 +31,6 @@ class XPathSelector(object_ref):
             self.doc = Libxml2Document(response, factory=self._get_libxml2_doc)
             self.xmlNode = self.doc.xmlDoc
         self.expr = expr
-        self.response = response
 
     def select(self, xpath):
         """Perform the given XPath query on the current XPathSelector and
@@ -42,23 +41,14 @@ class XPathSelector(object_ref):
                 xpath_result = self.doc.xpathContext.xpathEval(xpath)
             except libxml2.xpathError:
                 raise ValueError("Invalid XPath: %s" % xpath)
-            cls = type(self)
             if hasattr(xpath_result, '__iter__'):
-                return XPathSelectorList([cls(node=node, parent=self, expr=xpath, \
-                    response=self.response) for node in xpath_result])
+                return XPathSelectorList([self.__class__(node=node, parent=self, \
+                    expr=xpath) for node in xpath_result])
             else:
-                return XPathSelectorList([cls(node=xpath_result, parent=self, \
-                    expr=xpath, response=self.response)])
+                return XPathSelectorList([self.__class__(node=xpath_result, \
+                    parent=self, expr=xpath)])
         else:
             return XPathSelectorList([])
-
-    @deprecated(use_instead='XPathSelector.select')
-    def __call__(self, xpath):
-        return self.select(xpath)
-
-    @deprecated(use_instead='XPathSelector.select')
-    def x(self, xpath):
-        return self.select(xpath)
 
     def re(self, regex):
         """Return a list of unicode strings by applying the regex over all
@@ -110,6 +100,14 @@ class XPathSelector(object_ref):
 
     __repr__ = __str__
 
+    @deprecated(use_instead='XPathSelector.select')
+    def __call__(self, xpath):
+        return self.select(xpath)
+
+    @deprecated(use_instead='XPathSelector.select')
+    def x(self, xpath):
+        return self.select(xpath)
+
 
 class XPathSelectorList(list):
     """List of XPathSelector objects"""
@@ -121,10 +119,6 @@ class XPathSelectorList(list):
         """Perform the given XPath query on each XPathSelector of the list and
         return a new (flattened) XPathSelectorList of the results"""
         return XPathSelectorList(flatten([x.select(xpath) for x in self]))
-
-    @deprecated(use_instead='XPathSelectorList.select')
-    def x(self, xpath):
-        return self.select(xpath)
 
     def re(self, regex):
         """Perform the re() method on each XPathSelector of the list, and
@@ -138,6 +132,10 @@ class XPathSelectorList(list):
 
     def extract_unquoted(self):
         return [x.extract_unquoted() if isinstance(x, XPathSelector) else x for x in self]
+
+    @deprecated(use_instead='XPathSelectorList.select')
+    def x(self, xpath):
+        return self.select(xpath)
 
 
 class XmlXPathSelector(XPathSelector):
