@@ -1,14 +1,11 @@
-.. _ref-request-response:
+.. _topics-request-response:
 
-============================
-Request and Response objects
-============================
+======================
+Requests and Responses 
+======================
 
 .. module:: scrapy.http
    :synopsis: Request and Response classes
-
-Quick overview
-==============
 
 Scrapy uses :class:`Request` and :class:`Response` objects for crawling web
 sites. 
@@ -20,7 +17,9 @@ issued the request.
 
 Both :class:`Request` and :class:`Response` classes have subclasses which adds
 additional functionality not required in the base classes. These are described
-below in :ref:`ref-request-subclasses` and :ref:`ref-response-subclasses`.
+below in :ref:`topics-request-response-ref-request-subclasses` and
+:ref:`topics-request-response-ref-response-subclasses`.
+
 
 Request objects
 ===============
@@ -36,7 +35,7 @@ Request objects
 
     :param callback: the function that will be called with the response of this
        request (once its downloaded) as its first parameter. For more information
-       see :ref:`ref-request-callback-arguments` below.
+       see :ref:`topics-request-response-ref-request-callback-arguments` below.
     :type callback: callable
 
     :param method: the HTTP method of this request. Defaults to ``'GET'``.
@@ -145,18 +144,19 @@ Request objects
     .. method:: Request.copy()
 
        Return a new Request which is a copy of this Request. The attribute
-       :attr:`Request.meta` is copied, while :attr:`Request.cache` is not. See also
-       :ref:`ref-request-callback-arguments`.
+       :attr:`Request.meta` is copied, while :attr:`Request.cache` is not. See
+       also :ref:`topics-request-response-ref-request-callback-arguments`.
 
     .. method:: Request.replace([url, callback, method, headers, body, cookies, meta, encoding, dont_filter])
 
        Return a Request object with the same members, except for those members
-       given new values by whichever keyword arguments are specified. The attribute
-       :attr:`Request.meta` is copied by default (unless a new value is given
-       in the ``meta`` argument). The :attr:`Request.cache` attribute is always
-       cleared. See also :ref:`ref-request-callback-arguments`.
+       given new values by whichever keyword arguments are specified. The
+       attribute :attr:`Request.meta` is copied by default (unless a new value
+       is given in the ``meta`` argument). The :attr:`Request.cache` attribute
+       is always cleared. See also
+       :ref:`topics-request-response-ref-request-callback-arguments`.
 
-.. _ref-request-callback-copy:
+.. _topics-request-response-ref-callback-copy:
 
 Caveats with copying Requests and callbacks
 -------------------------------------------
@@ -178,7 +178,7 @@ In the above example, ``request2`` is a copy of ``request`` but it has no
 callback, while ``request3`` is a copy of ``request`` and also contains the
 callback.
 
-.. _ref-request-callback-arguments:
+.. _topics-request-response-ref-request-callback-arguments:
 
 Passing arguments to callback functions
 ---------------------------------------
@@ -230,7 +230,7 @@ Using Request.meta::
         referer_url = response.request.meta['referer_url']
         self.log("Visited page %s from %s" % (response.url, referer_url))
 
-.. _ref-request-subclasses: 
+.. _topics-request-response-ref-request-subclasses:
 
 Request subclasses
 ==================
@@ -266,7 +266,8 @@ objects.
 
        Returns a new :class:`FormRequest` object with its form field values
        pre-populated with those found in the HTML ``<form>`` element contained
-       in the given response. For an example see :ref:`ref-request-userlogin`.
+       in the given response. For an example see
+       :ref:`topics-request-response-ref-request-userlogin`.
 
 
        :param response: the response containing a HTML form which will be used
@@ -287,10 +288,10 @@ objects.
 
 
 Request usage examples
-======================
+----------------------
 
 Using FormRequest to send data via HTTP POST
---------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you want to simulate a HTML Form POST in your spider, and send a couple of
 key-value fields you could return a :class:`FormRequest` object (from your
@@ -300,10 +301,10 @@ spider) like this::
                        formdata={'name': 'John Doe', age: '27'},
                        callback=self.after_post)]
 
-.. _ref-request-userlogin: 
+.. _topics-request-response-ref-request-userlogin:
 
 Using FormRequest.from_response() to simulate a user login
-----------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 It is usual for web sites to provide pre-populated form fields through ``<input
 type="hidden">`` elements, such as session related data or authentication
@@ -349,8 +350,9 @@ Response objects
     :type status: integer
 
     :param body: the response body. It must be str, not unicode, unless you're
-       using a encoding-aware :ref:`Response subclass <ref-response-subclasses>`,
-       such as :class:`TextResponse`.
+       using a encoding-aware :ref:`Response subclass
+       <topics-request-response-ref-response-subclasses>`, such as
+       :class:`TextResponse`.
     :type body: str
 
     :param meta: the initial values for the :attr:`Response.meta` attribute. If
@@ -432,7 +434,7 @@ Response objects
        is given in the ``meta`` argument). The  :attr:`Response.cache`
        attribute is always cleared.
 
-.. _ref-response-subclasses:
+.. _topics-request-response-ref-response-subclasses:
 
 Response subclasses
 ===================

@@ -94,7 +94,7 @@ Get all stats from a given domain::
     >>> stats.get_stats('pages_crawled', domain='example.com')
     {'pages_crawled': 1238, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
 
-.. _topics-stats-api:
+.. _topics-stats-ref:
 
 Stats Collector API
 ===================

@@ -1,10 +1,16 @@
-.. _exceptions:
+.. _topics-exceptions:
+
+==========
+Exceptions
+==========
 
 .. module:: scrapy.core.exceptions
    :synopsis: Core exceptions
 
-Available Exceptions
-====================
+.. _topics-exceptions-ref:
+
+Built-in Exceptions reference
+=============================
 
 Here's a list of all exceptions included in Scrapy and their usage.
 

@@ -11,9 +11,10 @@ Scrapy comes with a built-in telnet console for inspecting and controlling a
 Scrapy running process. The telnet console is just a regular python shell
 running inside the Scrapy process, so you can do literally anything from it.
 
-The telnet console is a :ref:`built-in Scrapy extension <ref-extensions>` which
-comes enabled by default, but you can also disable it if you want. For more
-information about the extension itself see :ref:`ref-extensions-telnetconsole`.
+The telnet console is a :ref:`built-in Scrapy extension
+<topics-extensions-ref>` which comes enabled by default, but you can also
+disable it if you want. For more information about the extension itself see
+:ref:`topics-extensions-ref-telnetconsole`.
 
 .. highlight:: none
 

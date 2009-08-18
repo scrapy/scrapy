@@ -1,4 +1,4 @@
-.. _ref-logging:
+.. _topics-logging:
 
 =======
 Logging

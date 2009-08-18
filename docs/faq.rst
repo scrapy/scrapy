@@ -69,7 +69,7 @@ You need to install `pywin32`_ because of `this Twisted bug`_.
 How can I simulate a user login in my spider?
 ---------------------------------------------
 
-See :ref:`ref-request-userlogin`.
+See :ref:`topics-request-response-ref-request-userlogin`.
 
 Can I crawl in depth-first order instead of breadth-first order?
 ----------------------------------------------------------------

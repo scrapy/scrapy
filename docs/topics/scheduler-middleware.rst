@@ -1,6 +1,12 @@
-.. _ref-scheduler-middleware:
+.. _topics-scheduler-middleware:
 
-========================================
+====================
+Scheduler middleware
+====================
+
+
+.. _topics-scheduler-middleware-ref:
+
 Built-in scheduler middleware reference
 ========================================
 
@@ -9,9 +15,6 @@ Scrapy.
 
 For a list of the components enabled by default (and their orders) see the
 :setting:`SCHEDULER_MIDDLEWARES_BASE` setting.
-
-Available scheduler middlewares
-===============================
 
 DuplicatesFilterMiddleware
 --------------------------

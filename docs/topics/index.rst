@@ -25,3 +25,9 @@ This section describes all key concepts of Scrapy.
    robotstxt
    firefox
    firebug
+   signals
+   logging
+   scheduler-middleware
+   request-response
+   exceptions
+   email

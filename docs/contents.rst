@@ -8,6 +8,6 @@ Scrapy documentation contents
 
    intro/index
    topics/index
-   ref/index
+   reference
    faq
    experimental/index

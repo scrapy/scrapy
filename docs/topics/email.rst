@@ -1,4 +1,4 @@
-.. _ref-email:
+.. _topics-email:
 
 =============
 Sending email

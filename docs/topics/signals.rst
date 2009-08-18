@@ -1,10 +1,11 @@
-.. _signals:
+.. _topics-signals:
 
 .. module:: scrapy.core.signals
    :synopsis: Signals definitions
 
-Available Signals
-=================
+=======
+Signals
+=======
 
 Scrapy uses signals extensively to notify when certain actions occur. You can
 catch some of those signals in your Scrapy project or extension to perform
@@ -18,6 +19,12 @@ For more information about working when see the documentation of
 `pydispatcher`_ (library used to implement signals).
 
 .. _pydispatcher: http://pydispatcher.sourceforge.net/
+
+
+.. _topics-signals-ref:
+
+Built-in signals reference
+==========================
 
 Here's a list of signals used in Scrapy and their meaning, in alphabetical
 order.

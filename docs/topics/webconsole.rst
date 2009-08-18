@@ -7,11 +7,12 @@ Web Console
 Scrapy comes with a built-in web server for monitoring and controlling a Scrapy
 running process. 
 
-The web console is :ref:`built-in Scrapy extension <ref-extensions>` which
-comes enabled by default, but you can also disable it if you're running tight
-on memory.
+The web console is :ref:`built-in Scrapy extension
+<topics-extensions-ref>` which comes enabled by default, but you can also
+disable it if you're running tight on memory.
 
-For more information about this extension see :ref:`ref-extensions-webconsole`.
+For more information about this extension see
+:ref:`topics-extensions-ref-webconsole`.
 
 Writing a web console extension
 ===============================
