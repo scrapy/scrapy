@@ -82,6 +82,9 @@ class CsvItemExporter(BaseItemExporter):
         super(CsvItemExporter, self).__init__()
         self.csv_writer = csv.writer(*args, **kwargs)
         if self.include_headers_line:
+            if not self.fields_to_export:
+                raise RuntimeError("To use include_headers_line you must " \
+                    "define fields_to_export attribute")
             self.csv_writer.writerow(self.fields_to_export)
 
     def export(self, item):
