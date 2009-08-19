@@ -18,7 +18,7 @@ class BaseItemExporter(object):
     fields_to_export = None
     export_empty_fields = False
 
-    def export(self, item):
+    def export_item(self, item):
         raise NotImplementedError
 
     def serialize(self, field, name, value):
@@ -43,8 +43,12 @@ class BaseItemExporter(object):
                     nonempty_fields)
         return [(k, item.get(k, default_value)) for k in field_iter]
 
-    def close(self):
+    def start_exporting(self):
         pass
+
+    def finish_exporting(self):
+        pass
+
 
 
 class XmlItemExporter(BaseItemExporter):
@@ -55,15 +59,18 @@ class XmlItemExporter(BaseItemExporter):
     def __init__(self, file):
         super(XmlItemExporter, self).__init__()
         self.xg = XMLGenerator(file)
+
+    def start_exporting(self):
         self.xg.startDocument()
         self.xg.startElement(self.root_element, {})
 
-    def export(self, item):
+    def export_item(self, item):
         self.xg.startElement(self.item_element, {})
         for field, value in self._get_fields_to_export(item, default_value=''):
             self._export_xml_field(item.fields[field], field, value)
+        self.xg.endElement(self.item_element)
 
-    def close(self):
+    def finish_exporting(self):
         self.xg.endElement(self.root_element)
         self.xg.endDocument()
 
@@ -81,15 +88,18 @@ class CsvItemExporter(BaseItemExporter):
     def __init__(self, *args, **kwargs):
         super(CsvItemExporter, self).__init__()
         self.csv_writer = csv.writer(*args, **kwargs)
+
+    def start_exporting(self):
         if self.include_headers_line:
             if not self.fields_to_export:
-                raise RuntimeError("To use include_headers_line you must " \
-                    "define fields_to_export attribute")
+                raise RuntimeError("You must set fields_to_export in order to" + \
+                                   " use include_headers_line")
             self.csv_writer.writerow(self.fields_to_export)
 
-    def export(self, item):
+    def export_item(self, item):
         fields = self._get_fields_to_export(item, default_value='', \
             include_empty=True)
+
         values = [x[1] for x in fields]
         self.csv_writer.writerow(values)
 
@@ -100,7 +110,7 @@ class PickleItemExporter(BaseItemExporter):
         super(PickleItemExporter, self).__init__()
         self.pickler = Pickler(*args, **kwargs)
 
-    def export(self, item):
+    def export_item(self, item):
         self.pickler.dump(dict(self._get_fields_to_export(item)))
 
 
@@ -110,6 +120,6 @@ class PprintItemExporter(BaseItemExporter):
         super(PprintItemExporter, self).__init__()
         self.file = file
 
-    def export(self, item):
+    def export_item(self, item):
         itemdict = dict(self._get_fields_to_export(item))
         self.file.write(pprint.pformat(itemdict) + '\n')

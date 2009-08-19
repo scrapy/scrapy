@@ -20,8 +20,11 @@ Using Item Exporters
 In order to use a Item Exporter, you  must instantiate it with its required
 args.  Different exporters require different args, so check each exporter
 documentation to be sure, in :ref:`topics-exporters-reference`. After you have
-instantiated you exporter, you have to call the
-:meth:`~BaseItemExporter.export` method with each item you want to export.
+instantiated you exporter, you call the method
+:meth:`~BaseItemExporter.start_exporting` in order to initialize the exporting
+proces, then you call :meth:`~BaseItemExporter.export_item` method for each
+item you want to export, and finally call
+:meth:`~BaseItemExporter.finish_exporting` to finalize the exporting process.
 
 Here you can see a typical Item Exporter usage in an :ref:`Item Pipeline
 <topics-item-pipeline>`::
@@ -38,13 +41,14 @@ Here you can see a typical Item Exporter usage in an :ref:`Item Pipeline
        def domain_open(self, domain):
            self.file = open('%s_products.xml' % domain)
            self.exporter = XmlItemExporter(self.file)
+           self.exporter.start_exporting()
 
        def domain_closed(self, domain):
-           self.exporter.close()
+           self.exporter.finish_exporting()
            self.file.close()
 
        def process_item(self, domain, item):
-           self.exporter.export(item)
+           self.exporter.export_item(item)
            return item
 
 
@@ -120,7 +124,7 @@ BaseItemExporter
 
    This is the base class for all Item Exporters, and it's an abstract class.
 
-   .. method:: export(item)
+   .. method:: export_item(item)
 
       Exports the item to the specific exporter format. This method must be
       implemented in subclasses.
@@ -130,10 +134,16 @@ BaseItemExporter
       Serializes the field value to ``str``. You can override this method in
       custom Item Exporters.
 
-   .. method:: close()
+   .. method:: start_exporting()
 
-      Called when there are no more items to export, so the exporter can close
-      the serialization, for those formats that require it (like XML).
+      Makes the exporter initialize the export process, in here exporters may
+      output information required by the exporter's format.
+
+   .. method:: finish_exporting()
+
+      You must call it when there are no more items to export, so the exporter
+      can close the serialization output, for those formats that require it
+      (like XML).
 
    .. attribute:: fields_to_export
 
@@ -196,9 +206,11 @@ CsvItemExporter
       
    .. attribute:: include_headers_line
 
-      If ``True`` the first line in the CSV export will include the name of the
-      fields columns, taken from the :attr:`BaseItemExporter.fields_to_export`
-      attribute. Defaults to ``False``.
+      Makes the exporter output a header line with the field names taken from
+      :attr:`BaseItemExporter.fields_to_export` so that attribute must also be
+      set in order to work.
+
+      Defaults to ``False``.
 
 .. _csv.writer: http://docs.python.org/library/csv.html#csv.writer
 

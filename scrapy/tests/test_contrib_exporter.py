@@ -5,8 +5,6 @@ from twisted.trial import unittest
 
 from scrapy.newitem import Item, Field
 
-# FIXME: fix tests
-"""
 from scrapy.contrib.exporter import BaseItemExporter, PprintItemExporter, \
     PickleItemExporter, CsvItemExporter, XmlItemExporter
 
@@ -15,108 +13,128 @@ class TestItem(Item):
     age = Field()
 
 
-class BaseItemExporterTest(unittest.TestCase):
-    
+class BaseTest(unittest.TestCase):
+    def setUp(self):
+        self.i = TestItem(name=u'John', age='22')
+        self.ie = BaseItemExporter()
+
+        self.output = StringIO()
+
+class BaseItemExporterTest(BaseTest):
+        
     def test_export(self):
-        i = TestItem(name=u'John', age=22)
+        self.assertRaises(NotImplementedError, self.ie.export_item, self.i)
 
-        ie = BaseItemExporter()
-
-        self.assertRaises(NotImplementedError, ie.export, i)
-
-    def test_default_serializer(self):
-        i = TestItem(name=u'John', age=22)
-
-        ie = BaseItemExporter()
-
-        self.assertEqual(ie._serialize_field(i.fields['name'], 'name', i['name']), 'John')
-        self.assertEqual( ie._serialize_field(i.fields['age'], 'age', i['age']), '22')
+    def test_serialize(self):
+        self.assertEqual(self.ie.serialize( \
+            self.i.fields['name'], 'name', self.i['name']), 'John')
+        self.assertEqual( \
+            self.ie.serialize(self.i.fields['age'], 'age', self.i['age']), '22')
 
     def test_exporter_custom_serializer(self):
         class CustomItemExporter(BaseItemExporter):
-            def serialize_age(self, field, name, value):
-                return str(value + 1)
-
-        i = TestItem(name=u'John', age=22)
+            def serialize(self, field, name, value):
+                if name == 'age':
+                    return str(int(value) + 1)
+                else:
+                    return super(CustomItemExporter, self).serialize(field, \
+                        name, value)
 
         ie = CustomItemExporter()
 
-        self.assertEqual(ie._serialize_field(i.fields['name'], 'name', i['name']), 'John')
-        self.assertEqual(ie._serialize_field(i.fields['age'], 'age', i['age']), '23')
+        self.assertEqual( \
+            ie.serialize(self.i.fields['name'], 'name', self.i['name']), 'John')
+        self.assertEqual(
+            ie.serialize(self.i.fields['age'], 'age', self.i['age']), '23')
 
     def test_field_custom_serializer(self):
-        class CustomField(Field):
-            def serializer(self, field, name, value):
-                return str(value + 2)
+        def custom_serializer(value):
+            return str(int(value) + 2)
 
         class CustomFieldItem(Item):
             name = Field()
-            age = CustomField()
+            age = Field(serializer=custom_serializer)
 
-        i = CustomFieldItem(name=u'John', age=22)
+        i = CustomFieldItem(name=u'John', age='22')
 
+        self.assertEqual( \
+            self.ie.serialize(i.fields['name'], 'name', i['name']), 'John')
+        self.assertEqual( \
+            self.ie.serialize(i.fields['age'], 'age', i['age']), '24')
+
+    def test_fields_to_export(self):
         ie = BaseItemExporter()
+        ie.fields_to_export = ['name']
 
-        self.assertEqual(ie._serialize_field(i.fields['name'], 'name', i['name']), 'John')
-        self.assertEqual(ie._serialize_field(i.fields['age'], 'age', i['age']), '24')
+        self.assertEqual(ie._get_fields_to_export(self.i), [('name', 'John')])
 
 
-class PprintItemExporterTest(unittest.TestCase):
+class PprintItemExporterTest(BaseTest):
 
     def test_export(self):
-        i = TestItem(name=u'John', age=22)
+        ie = PprintItemExporter(self.output)
+        ie.start_exporting()
+        ie.export_item(self.i)
+        ie.finish_exporting()
 
-        output = StringIO()
-        ie = PprintItemExporter(output)
-        ie.export(i)
-
-        self.assertEqual(output.getvalue(), "{'age': 22, 'name': u'John'}\n")
+        self.assertEqual(self.output.getvalue(), "{'age': '22', 'name': u'John'}\n")
 
 
-class PickleItemExporterTest(unittest.TestCase):
+class PickleItemExporterTest(BaseTest):
         
     def test_export(self):
-        i = TestItem(name=u'John', age=22)
-
         output = StringIO()
         ie = PickleItemExporter(output)
-        ie.export(i)
+
+        ie.start_exporting()
+        ie.export_item(self.i)
+        ie.finish_exporting()
 
         poutput = StringIO()
         p = Pickler(poutput)
-        p.dump(dict(i))
+        p.dump(dict(self.i))
         
         self.assertEqual(output.getvalue(), poutput.getvalue())
 
 
-class CsvItemExporterTest(unittest.TestCase):
+class CsvItemExporterTest(BaseTest):
 
     def test_export(self):
-        i = TestItem(name=u'John', age=22)
+        ie = CsvItemExporter(self.output)
+        ie.start_exporting()
+        ie.export_item(self.i)
+        ie.finish_exporting()
 
-        output = StringIO()
-        ie = CsvItemExporter(output)
-        ie.fields_to_export = i.fields.keys()
-        ie.export(i)
+        self.assertEqual(self.output.getvalue(), '22,John\r\n')
 
-        self.assertEqual(output.getvalue(), 'age,name\r\n22,John\r\n')
+    def test_header(self):
+        ie = CsvItemExporter(self.output)
+        ie.include_headers_line = True
+
+        self.assertRaises(RuntimeError, ie.start_exporting)
+
+        ie.fields_to_export = self.i.fields.keys()
+        ie.start_exporting()
+        ie.export_item(self.i)
+        ie.finish_exporting()
+
+        self.assertEqual(self.output.getvalue(), 'age,name\r\n22,John\r\n')
 
 
-class XmlItemExporterTest(unittest.TestCase):
+class XmlItemExporterTest(BaseTest):
 
     def test_export(self):
-        i = TestItem(name=u'John', age=22)
+        ie = XmlItemExporter(self.output)
+        ie.start_exporting()
+        ie.export_item(self.i)
+        ie.finish_exporting()
 
-        output = StringIO()
-        ie = XmlItemExporter(output)
-        ie.fields_to_export = i.fields.keys()
-        ie.export(i)
+        expected_value = '<?xml version="1.0" encoding="iso-8859-1"?>\n<items><item><age>22</age><name>John</name></item></items>'
 
-        self.assertEqual(output.getvalue(), \
-            '<?xml version="1.0" encoding="iso-8859-1"?>\n<items><item><age>22</age><name>John</name></item>')
+        self.assertEqual(self.output.getvalue(), expected_value)
 
 
-class JSONItemExporterTest(unittest.TestCase):
+class JSONItemExporterTest(BaseTest):
 
     def setUp(self):
         try:
@@ -127,17 +145,19 @@ class JSONItemExporterTest(unittest.TestCase):
             except ImportError:
                 raise unittest.SkipTest("simplejson module not available") 
 
+        from scrapy.contrib.exporter.jsonlines import JsonLinesItemExporter
+
+        super(JSONItemExporterTest, self).__init__()
+
     def test_export(self):
-        from scrapy.contrib.exporter.jsonexporter import JSONItemExporter
 
-        output = StringIO()
-        ie = JSONItemExporter(output)
-        i = TestItem(name=u'John', age=22)
-        ie.export(i)
+        ie = JsonLinesItemExporter(output)
+        ie.start_exporting()
+        ie.export_item(self.i)
+        ie.finish_exporting()
 
-        self.assertEqual(output.getvalue(), '{"age": 22, "name": "John"}\n')
+        self.assertEqual(output.getvalue(), '{"age": "22", "name": "John"}\n')
 
-"""
 
 if __name__ == '__main__':
     unittest.main()
