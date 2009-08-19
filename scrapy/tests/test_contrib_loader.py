@@ -70,7 +70,30 @@ class ItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.get_collected_values('name'), [u'Pepe'])
         self.assertEqual(il.get_output_value('name'), [u'Pepe'])
 
-    def test_apply_concat_filter(self):
+    def test_iter_on_input_processor_input(self):
+        class NameFirstItemLoader(NameItemLoader):
+            name_in = TakeFirst()
+
+        il = NameFirstItemLoader()
+        il.add_value('name', u'marta')
+        self.assertEqual(il.get_collected_values('name'), [u'marta'])
+        il = NameFirstItemLoader()
+        il.add_value('name', [u'marta', u'jose'])
+        self.assertEqual(il.get_collected_values('name'), [u'marta'])
+
+        il = NameFirstItemLoader()
+        il.replace_value('name', u'marta')
+        self.assertEqual(il.get_collected_values('name'), [u'marta'])
+        il = NameFirstItemLoader()
+        il.replace_value('name', [u'marta', u'jose'])
+        self.assertEqual(il.get_collected_values('name'), [u'marta'])
+
+        il = NameFirstItemLoader()
+        il.add_value('name', u'marta')
+        il.add_value('name', [u'jose', u'pedro'])
+        self.assertEqual(il.get_collected_values('name'), [u'marta', u'jose'])
+
+    def test_map_compose_filter(self):
         def filter_world(x):
             return None if x == 'world' else x
 
@@ -78,7 +101,7 @@ class ItemLoaderTest(unittest.TestCase):
         self.assertEqual(proc(['hello', 'world', 'this', 'is', 'scrapy']),
                          ['HELLO', 'THIS', 'IS', 'SCRAPY'])
 
-    def test_map_concat_filter_multil(self):
+    def test_map_compose_filter_multil(self):
         class TestItemLoader(NameItemLoader):
             name_in = MapCompose(lambda v: v.title(), lambda v: v[:-1])
 
@@ -121,7 +144,7 @@ class ItemLoaderTest(unittest.TestCase):
         il.add_value('name', u'marta')
         self.assertEqual(il.get_output_value('name'), [u'Marta'])
 
-    def test_empty_map_concat(self):
+    def test_empty_map_compose(self):
         class IdentityDefaultedItemLoader(DefaultedItemLoader):
             name_in = MapCompose()
 

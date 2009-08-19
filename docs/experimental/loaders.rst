@@ -91,7 +91,8 @@ called for a particular field (the same applies for any other field)::
     l = XPathItemLoader(Product(), some_xpath_selector)
     l.add_xpath('name', xpath1) # (1)
     l.add_xpath('name', xpath2) # (2)
-    return l.load_item() # (3)
+    l.add_value('name', 'test') # (3)
+    return l.load_item() # (4)
 
 So what happens is:
 
@@ -103,19 +104,31 @@ So what happens is:
    processor* used in (1). The result of the input processor is appended to the
    data collected in (1) (if any).
 
-3. The data collected in (1) and (2) is passed through the *output processor* of
+3. This case is similar to the previous ones, except that the values to be
+   collected is assigned directly, instead of being extracted from a XPath.
+   However, the value is still passed through the input processors. In this
+   case, since the value is not iterable it is converted to an iterable of a
+   single element before passing it to the input processor, because input
+   processor always receive iterables.
+
+4. The data collected in (1) and (2) is passed through the *output processor* of
    the ``name`` field. The result of the output processor is the value assigned to
    the ``name`` field in the item.
 
 It's worth noticing that processors are just callable objects, which are called
 with the data to be parsed, and return a parsed value. So you can use any
-function as input or output processor, provided they can receive only one
-positional (required) argument.
+function as input or output processor. They only requirement is that they must
+accept one (and only one) positional argument, which will be an iterator.
+
+.. note:: Both input and output processors must receive an iterator as their
+   first argument. The output of those functions can be anything. The result of
+   input processors will be appended to an internal list (in the Loader)
+   containing the collected values (for that field). The result of the output
+   processors is the value that will be finally assigned to the item.
 
 The other thing you need to keep in mind is that the values returned by input
 processors are collected internally (in lists) and then passed to output
-processors to populate the fields, so output processors should expect iterables
-as input.
+processors to populate the fields.
 
 Last, but not least, Scrapy comes with some :ref:`commonly used processors
 <topics-loaders-available-processors>` built-in for convenience.
