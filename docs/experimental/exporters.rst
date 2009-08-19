@@ -7,37 +7,40 @@ Item Exporters
 .. module:: scrapy.contrib.exporter
    :synopsis: Item Exporters
 
-Once you have scraped your Items, you probably will want to use the data in some
-external application. For this purpose Scrapy provides simple Item Exporters
-that allow you to export your scraped Items in different formats.
+Once you have scraped your Items, one of the most common tasks to perform on
+those items is to export them, to use the data in some other application. That
+is, after all, the whole purpose of the scraping process.
 
+To help in this purpose Scrapy provides a collectioon of Item Exporters for
+different output formats, such as XML, CSV or JSON.
 
 Using Item Exporters
 ====================
 
-In order to use a Item Exporter, you  must instantiate it with its required args
-(different exporters require different args in order to work, look at the
-reference of the specific Item Exporter in :ref:`topics-exporters-reference` )
-then call the :meth:`~BaseItemExporter.export` method with the item to export as
-its argument.
+In order to use a Item Exporter, you  must instantiate it with its required
+args.  Different exporters require different args, so check each exporter
+documentation to be sure, in :ref:`topics-exporters-reference`. After you have
+instantiated you exporter, you have to call the
+:meth:`~BaseItemExporter.export` method with each item you want to export.
 
-Here you can see a typical Item Exporter usage in a :ref:`Item Pipeline
+Here you can see a typical Item Exporter usage in an :ref:`Item Pipeline
 <topics-item-pipeline>`::
 
    from scrapy.xlib.pydispatch import dispatcher
-   from scrapy.contrib.exporter.jsonexporter import JSONItemExporter
+   from scrapy.contrib.exporter import XmlItemExporter
 
+   class XmlExportPipeline(object):
 
-   class ProductJSONPipeline(object):
        def __init__(self):
            dispatcher.connect(self.domain_open, signals.domain_open) 
            dispatcher.connect(self.domain_closed, signals.domain_closed)
 
        def domain_open(self, domain):
-           self.file = open('%s_products.json' % domain)
-           self.exporter = JSONItemExporter(self.file)
+           self.file = open('%s_products.xml' % domain)
+           self.exporter = XmlItemExporter(self.file)
 
        def domain_closed(self, domain):
+           self.exporter.close()
            self.file.close()
 
        def process_item(self, domain, item):
@@ -47,132 +50,198 @@ Here you can see a typical Item Exporter usage in a :ref:`Item Pipeline
 
 .. _topics-exporters-field-serialization:
 
-Field serialization
-===================
+Serialization of item fields
+============================
 
-By default each field is serialized to its string representation using the 
-:meth:`~BaseItemExporter._default_serializer` method.
+By default the field values are passed unmodified to the underlying
+serialization library, and the decision of how to serialize them is delegated
+to each particular serialization library.
 
-You can customize how a field will be serialized in two ways:
+However, you can customize how each field value is serialized, prior to passing
+it to the serialization library, if the exporter supports it.
 
-1. Providing a ``serialize_(field-name)`` method in your custom Item Exporter.
-2. Implementing a ``serializer`` method in a custom Field of your Item.
+There are ways to customize how a field will be serialized, which are described
+next.
 
-.. note:: This is the order of precedence, so if you provide both, the custom
-   serialize_(field-name) method in the Item Exporter will be used.
+1. Declaring a serializer in the field
+--------------------------------------
 
-In any case, your method must accept the same parameters as the
-:meth:`~BaseItemExporter._default_serializer` method and return the serialized
-version of the field in a string format.  
+You can declare a serializer in the :ref:`field metadata
+<topics-newitems-fields>`. The serializer must be a callable which receives a
+value and returns its serialized form.
 
-Let's see some examples on using the methods described above:
-
-1. Providing a ``serialize_price`` method::
-
-      from scrapy.contrib.exporter.jsonexporter import JSONItemExporter
-
-      class ProductJSONExporter(JSONItemExporter):
-          def serialize_price(self, field, name, value):
-              return '$ %s' % str(value)
-             
-2. Using a custom ``PriceField``::
+Example::
 
       from scrapy.newitem import Item, Field
 
-      class PriceField(Field):
-         def serializer(self, field, name, value):
-             return '$ %s' % str(value)
+      def serialize_price(value):
+         return '$ %s' % str(value)
 
       class Product(Item):
           name = Field()
-          price = PriceField()
-          stock = Field(default=0)
-          last_updated = Field()
+          price = Field(serializer=serialize_price)
 
 
+2. Overriding the serialize() method
+------------------------------------
+
+You can also override the :meth:`~BaseItemExporter.serialize` method to
+customize how your field value will be exported.
+
+Make sure you call the base class :meth:`~BaseItemExporter.serialize` method
+after your custom code. 
+
+Example::
+
+      from scrapy.contrib.exporter import XmlItemExporter
+
+      class ProductXmlExporter(XmlItemExporter):
+
+          def serialize(self, field, name, value):
+              if filed == 'price':
+                  return '$ %s' % str(value)
+              return super(Product, self).serialize(field, name, value)
+             
 .. _topics-exporters-reference:
 
-Available Item Exporters
-========================
+Built-in Item Exporters reference
+=================================
+
+For the examples shown in the following exporters we always assume we export
+these two items::
+
+    Item(name='Color TV', price='1200')
+    Item(name='DVD player', price='200')
 
 BaseItemExporter
 ----------------
 
 .. class:: BaseItemExporter
 
-   This is the base class for all Item Exporters.
+   This is the base class for all Item Exporters, and it's an abstract class.
 
    .. method:: export(item)
 
-      Exports the item to the specific exporter format. Descendant classes must
-      override this method.
+      Exports the item to the specific exporter format. This method must be
+      implemented in subclasses.
 
-   .. method:: _default_serializer(field, name, value)
+   .. method:: serialize_default(field, name, value)
 
-      Serializes the field, the base implementation returns it string
-      representation. You can override this in custom Item Exporters.
+      Serializes the field value to ``str``. You can override this method in
+      custom Item Exporters.
 
+   .. method:: close()
 
-PprintItemExporter
-------------------
+      Called when there are no more items to export, so the exporter can close
+      the serialization, for those formats that require it (like XML).
 
-.. class:: PprintItemExporter(file)
+   .. attribute:: fields_to_export
 
-   Exports Items in preety print format to the specified file object.
+      A list with the name of the fields that will be exported, or None if you
+      want to export all fields. Defaults to None.
 
+      Some exporters (like :class:`CsvItemExporter`) respect the order of the
+      fields defined in this attribute.
 
-.. class:: PickleItemExporter(\*args, \**kwargs)
+   .. attribute:: export_empty_elements
 
-   Exports Items in pickle format. The arguments in the constructor will be used
-   to construct a ``cPickle.Pickler`` object.
+      Whether to include empty elements in the exported XML (in case of
+      empty/missing fields). Defaults to ``False``.
 
+.. highlight:: none
+
+XmlItemExporter
+---------------
+
+.. class:: XmlItemExporter(file)
+
+   Exports Items in XML format to the specified file object. You must also set
+   the :attr:`fields_to_export` attribute to use it.
+
+   The default output of this exporter would be::
+
+       <?xml version="1.0" encoding="iso-8859-1"?>
+       <items>
+         <item>
+           <name>Color TV</name>
+           <price>1200</price>
+        </item>
+         <item>
+           <name>DVD player</name>
+           <price>200</price>
+        </item>
+       </items>
+
+   .. attribute:: root_element
+
+      The name of root element in the exported XML. Defaults to ``'items'``.
+
+   .. attribute:: item_element
+
+      The name of each item element in the exported XML. Defaults to ``'item'``.
 
 CsvItemExporter
 ---------------
 
 .. class:: CsvItemExporter(\*args, \**kwargs)
 
-   Exports Items in CSV format. The arguments in the constructor will be used to
-   construct a ``csv.writer`` object. You must also set its
-   :attr:`~CsvItemExporter.fields_to_export` attribute to use it.
+   Exports Items in CSV format. The constructor arguments will be passed to the
+   `csv.writer`_ constructor. This exporter respects the order of fields in the
+   :attr:`BaseItemExporter.fields_to_export` attribute.
 
-   .. attribute:: fields_to_export
+   The default output of this exporter would be::
 
-      Iterable containing the Item Field names to be exported.       
+      Color TV,1200
+      DVD player,200
+      
+   .. attribute:: include_headers_line
 
+      If ``True`` the first line in the CSV export will include the name of the
+      fields columns, taken from the :attr:`BaseItemExporter.fields_to_export`
+      attribute. Defaults to ``False``.
 
-XmlItemExporter
----------------
+.. _csv.writer: http://docs.python.org/library/csv.html#csv.writer
 
-.. class:: XmlItemExporter(\*args, \**kwargs)
+PickleItemExporter
+------------------
 
-   Exports Items in XML format to the specified file object. You must also set its
-   :attr:`~XmlItemExporter.fields_to_export` attribute to use it.
+.. class:: PickleItemExporter(\*args, \**kwargs)
 
-   .. attribute:: root_element
+   Exports Items in pickle format. The constructor arguments will be passed to
+   the `Pickler`_ constructor. This is a binary format, so no output examples
+   are provided.
 
-      The name of the root element in the exported file. It defaults to
-      ``items``.
+.. _Pickler: http://docs.python.org/library/pickle.html#pickle.Pickler
 
-   .. attribute:: item_element
+PprintItemExporter
+------------------
 
-      The name of each item element in the exported file. It defaults to
-      ``item``.
+.. class:: PprintItemExporter(file)
 
-   .. attribute:: include_empty_elements
+   Exports Items in pretty print format to the specified file object.
 
-      Whether to include or not empty elements in the exported file. It defaults to
-      ``False``.
+   The default output of this exporter would be::
 
-   .. attribute:: fields_to_export
+        {'name': 'Color TV', 'price': '1200'}
+        {'name': 'DVD player', 'price': '200'}
 
-      Iterable containing the Item Field names to be exported. 
+   Longer lines would get pretty-formatted.
 
+JsonLinesItemExporter
+---------------------
 
-JSONItemExporter
-----------------
+.. module:: scrapy.contrib.exporter.jsonlines
+   :synopsis: JsonLines Item Exporter
 
-.. class:: scrapy.contrib.exporter.jsonexporter.JsonItemExporter(file)
+.. class:: JsonLinesItemExporter(file, \*args, \**kwargs)
 
-   Exports Items in JSON format to the specified file object.
+   Exports Items in JSON format to the specified file object, writing one
+   serialized item per line. The additional constructor arguments are passed to
+   the `JSONEncoder` constructor.
 
+   The default output of this exporter would be::
+
+        {"name": "Color TV", "price": "1200"}
+        {"name": "DVD player", "price": "200"}
+
+.. _JSONEncoder: http://docs.python.org/library/json.html#json.JSONEncoder
