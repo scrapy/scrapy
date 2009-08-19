@@ -31,7 +31,7 @@ class OffsiteMiddleware(object):
     def get_host_regex(self, domains):
         """Override this method to implement a different offsite policy"""
         domains = [d.replace('.', r'\.') for d in domains]
-        regex = r'^(|.*\.)(%s)$' % '|'.join(domains)
+        regex = r'^(.*\.)?(%s)$' % '|'.join(domains)
         return re.compile(regex)
 
     def domain_opened(self, spider):
