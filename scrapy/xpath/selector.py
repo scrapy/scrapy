@@ -11,7 +11,7 @@ from scrapy.xpath.factories import xmlDoc_from_html, xmlDoc_from_xml
 from scrapy.xpath.document import Libxml2Document
 from scrapy.utils.python import flatten, unicode_to_str
 from scrapy.utils.misc import extract_regex
-from scrapy.utils.ref import object_ref
+from scrapy.utils.trackref import object_ref
 from scrapy.utils.decorator import deprecated
 
 class XPathSelector(object_ref):

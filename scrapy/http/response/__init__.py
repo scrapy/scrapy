@@ -8,7 +8,7 @@ See documentation in docs/ref/request-response.rst
 import copy
 
 from scrapy.http.headers import Headers
-from scrapy.utils.ref import object_ref
+from scrapy.utils.trackref import object_ref
 
 class Response(object_ref):
 

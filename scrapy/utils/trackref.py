@@ -1,5 +1,14 @@
-"""This module provides some functions and classes to record and report live
-references to object instances, for certain classes"""
+"""This module provides some functions and classes to record and report
+references to live object instances.
+
+If you want live objects for a particular class to be tracked, you only have to
+subclass form object_ref (instead of object). Also, remember to turn on
+tracking by enabling the TRACK_REFS setting.
+
+About performance: This library has a minimal performance impact when enabled,
+and no performance penalty at all when disabled (as object_ref becomes just an
+alias to object in that case).
+"""
 
 import weakref
 from collections import defaultdict

@@ -1,4 +1,4 @@
-from scrapy.utils.ref import object_ref
+from scrapy.utils.trackref import object_ref
 
 class BaseItem(object_ref):
     """Base class for all scraped items."""
@@ -23,6 +23,7 @@ class ScrapedItem(BaseItem):
         Generate the following format so that items can be deserialized
         easily: ClassName({'attrib': value, ...})
         """
-        reprdict = dict(items for items in self.__dict__.iteritems() if not items[0].startswith('_'))
+        reprdict = dict(items for items in self.__dict__.iteritems() \
+            if not items[0].startswith('_'))
         return "%s(%s)" % (self.__class__.__name__, repr(reprdict))
 

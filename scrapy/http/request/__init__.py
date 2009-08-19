@@ -11,7 +11,7 @@ from twisted.internet import defer
 
 from scrapy.http.headers import Headers
 from scrapy.utils.url import safe_url_string
-from scrapy.utils.ref import object_ref
+from scrapy.utils.trackref import object_ref
 
 class Request(object_ref):
 
