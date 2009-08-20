@@ -64,18 +64,17 @@ def extract_regex(regex, text, encoding):
     else:
         return [remove_entities(unicode(s, encoding), keep=['lt', 'amp']) for s in strings]
 
-def md5sum(buffer):
-    """Calculate the md5 checksum of a file
+def md5sum(file):
+    """Calculate the md5 checksum of a file-like object without reading its
+    whole content in memory.
 
     >>> from StringIO import StringIO
     >>> md5sum(StringIO('file content to hash'))
     '784406af91dd5a54fbb9c84c2236595a'
-
     """
     m = hashlib.md5()
-    buffer.seek(0)
     while 1:
-        d = buffer.read(8096)
+        d = file.read(8096)
         if not d:
             break
         m.update(d)

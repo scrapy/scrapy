@@ -3,7 +3,7 @@ import rfc822
 from scrapy.http import Request
 from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import NotConfigured
-from scrapy.contrib.pipeline.images import BaseImagesPipeline, md5sum
+from scrapy.contrib.pipeline.images import BaseImagesPipeline
 from scrapy.conf import settings
 
 

@@ -136,6 +136,7 @@ class BaseImagesPipeline(MediaPipeline):
             self.store_image(key, image, buf, info)
             if first_buf is None:
                 first_buf = buf
+        first_buf.seek(0)
         return md5sum(first_buf)
 
     def get_images(self, response, request, info):
