@@ -14,8 +14,9 @@ Chapter 1. Main topics
    architecture
    shell
    spiders
-   selectors
    items
+   loaders
+   selectors
    request-response
 
 Chapter 2. Extension Mechanisms

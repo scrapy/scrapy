@@ -75,7 +75,7 @@ class XPathItemLoader(ItemLoader):
 
     def __init__(self, item=None, selector=None, response=None, **context):
         if selector is None and response is None:
-            raise RuntimeError("%s must be instantiated with a selector" \
+            raise RuntimeError("%s must be instantiated with a selector " \
                 "or response" % self.__class__.__name__)
         if selector is None:
             selector = self.default_selector_class(response)

@@ -8,4 +8,3 @@ class GoogledirItem(Item):
 
     def __str__(self):
         return "Google Category: name=%s url=%s" % (self['name'], self['url'])
-
