@@ -13,7 +13,7 @@ from scrapy.conf import settings
 from scrapy.utils.python import unicode_to_str
  
 # Logging levels
-SILENT, CRITICAL, ERROR, WARNING, INFO, DEBUG, TRACE = range(7)
+SILENT, CRITICAL, ERROR, WARNING, INFO, DEBUG = range(6)
 level_names = {
     0: "SILENT",
     1: "CRITICAL",
@@ -21,7 +21,6 @@ level_names = {
     3: "WARNING",
     4: "INFO",
     5: "DEBUG",
-    6: "TRACE",
 }
 
 BOT_NAME = settings['BOT_NAME']

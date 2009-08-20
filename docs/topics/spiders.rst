@@ -141,6 +141,13 @@ BaseSpider
        always return a list or at least an empty one. Other Requests callbacks
        have the same requirements as the BaseSpider class.
 
+   .. method:: log(message, [level, component])
+
+       Log a message using the :func:`scrapy.log.msg` function, automatically
+       populating the domain argument with the :attr:`domain_name` of this
+       spider. For more information see :ref:`topics-logging`.
+
+
 BaseSpider example
 ~~~~~~~~~~~~~~~~~~
 

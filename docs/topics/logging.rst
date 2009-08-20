@@ -4,20 +4,48 @@
 Logging
 =======
 
-Scrapy logging facility is provided by the ``scrapy.log`` module, and is
-currently implemented as a wrapper for `Twisted logging`_.
+Scrapy provides a logging facility which can be used through the
+:mod:`scrapy.log` module. The current underling implementation uses `Twisted
+logging`_ but this may change in the future.
 
 .. _Twisted logging: http://twistedmatrix.com/projects/core/documentation/howto/logging.html
 
-Logging must be started through the ``scrapy.log.start`` function.
+Logging service must be explicitly started through the :func:`scrapy.log.start` function.
 
-Quick example
-=============
+.. _topics-logging-levels:
+
+Log levels
+==========
+
+Scrapy provides 5 logging levels:
+
+1. :data:`~scrapy.log.CRITICAL` - for critical errors
+2. :data:`~scrapy.log.ERROR` - for regular errors
+3. :data:`~scrapy.log.WARNING` - for warning messages
+4. :data:`~scrapy.log.INFO` - for informational messages
+5. :data:`~scrapy.log.DEBUG` - for debugging messages
+
+How to set the log level
+========================
+
+You can set the log level using the `--loglevel/-L` command line option, or
+using the :setting:`LOGLEVEL` setting.
+
+How to log messages
+===================
 
 Here's a quick example of how to log a message using the ``WARNING`` level::
 
     from scrapy import log
     log.msg("This is a warning", level=log.WARNING)
+
+Logging from Spiders
+====================
+
+The recommended way to log from spiders is by using the Spider
+:meth:`~scrapy.spider.BaseSpider.log` method, which already populates the
+``domain`` argument of the :func:`scrapy.log.msg` function. The other arguments
+are passed directly to the :func:`~scrapy.log.msg` function.
 
 scrapy.log module
 =================
@@ -44,12 +72,8 @@ scrapy.log module
     ``True``) or standard error (if ``log_stderr`` or :setting:`LOG_STDOUT` is
     ``False``).
 
-    ``loglevel`` is the logging level. Availables ones are:
-        * ``scrapy.log.CRITICAL``
-        * ``scrapy.log.ERROR``
-        * ``scrapy.log.WARNING``
-        * ``scrapy.log.INFO``
-        * ``scrapy.log.DEBUG``
+    ``loglevel`` is the logging level. Availables ones are: :data:`CRITICAL`,
+    :data:`ERROR`, :data:`WARNING`, :data:`INFO` and :data:`DEBUG`.
 
     ``log_stdout`` is a boolean which specifies if log should be sent to standard
     output (if ``True``) or standard error (if ``False``)
@@ -58,16 +82,20 @@ scrapy.log module
 
     Log a message
 
-    ``message`` is a string with the message to log
+    :param message: the message to log
+    :type message: str
 
-    ``level`` is the log level for this message. See ``start()`` function for
-    available log levels.
+    :param level: the log level for this message. See
+        :ref:`topics-logging-levels`.
 
-    ``component`` is a string with the component to use for logging, it defaults to :setting:`BOT_NAME`
+    :param component: the component to use for logging, it defaults to
+        :setting:`BOT_NAME`
+    :type component: str
 
-    ``domain`` is a string with the domain to use for logging this message.
-    This parameter should always be used when logging stuff paricular to any
-    domain or spider.
+    :param domain: the spider domain to use for logging this message. This
+        parameter should always be used when logging things related to a
+        particular spider.
+    :type domain: str
 
 .. function:: exc(message, level=ERROR, component=BOT_NAME, domain=None)
 
@@ -76,19 +104,25 @@ scrapy.log module
 
     .. _traceback.format_exc: http://docs.python.org/library/traceback.html#traceback.format_exc
 
-    ``message`` - same as ``msg()`` function
-    
-    ``level`` - same as ``msg()`` function
+    It accepts the same parameters as the :func:`msg` function.
 
-    ``component`` - same as ``msg()`` function
+.. data:: CRITICAL
 
-    ``domain`` - same as ``msg()`` function
+    Log level for critical errors
 
-Logging from Spiders
-====================
+.. data:: ERROR
 
-The recommended way for logging from spiders is to use the Spider ``log()``
-method, which already populates the :func:`~scrapy.log.msg` ``domain``
-argument. The other arguments of the Spider ``log()`` method are the same as
-the :func:`~scrapy.log.msg` function.
+    Log level for errors
+
+.. data:: WARNING
+
+    Log level for warnings
+
+.. data:: INFO
+
+    Log level for informational messages (recommended level for production)
+
+.. data:: DEBUG
+
+    Log level for debugging messages (recommended level for development)
 

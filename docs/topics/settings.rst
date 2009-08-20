@@ -553,8 +553,8 @@ LOGLEVEL
 
 Default: ``'DEBUG'``
 
-Minimum level to log. Available levels are: SILENT, CRITICAL, ERROR, WARNING,
-INFO, DEBUG, TRACE
+Minimum level to log. Available levels are: CRITICAL, ERROR, WARNING,
+INFO, DEBUG. For more info see :ref:`topics-logging`.
 
 .. setting:: MAIL_FROM
 
