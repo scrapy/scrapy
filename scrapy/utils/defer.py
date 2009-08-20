@@ -25,7 +25,7 @@ def defer_result(result):
     if isinstance(result, defer.Deferred):
         return result
     elif isinstance(result, failure.Failure):
-        return defer_fail(result)
+        return defer_failed(result)
     else:
         return defer_succeed(result)
 
@@ -36,7 +36,7 @@ def mustbe_deferred(f, *args, **kw):
     try:
         result = f(*args, **kw)
     except:
-        return defer_fail(failure.Failure())
+        return defer_failed(failure.Failure())
     else:
         return defer_result(result)
 
