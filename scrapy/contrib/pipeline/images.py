@@ -66,8 +66,8 @@ class BaseImagesPipeline(MediaPipeline):
         referer = request.headers.get('Referer')
 
         if response.status != 200:
-            msg = 'Image (http-error): Error downloading %s from %s referred in <%s>: %s' \
-                    % (mtype, request, referer, errmsg)
+            msg = 'Image (http-error): Error downloading %s from %s referred in <%s>' \
+                    % (mtype, request, referer)
             log.msg(msg, level=log.WARNING, domain=info.domain)
             raise ImageException(msg)
 
