@@ -5,10 +5,6 @@ These signals are documented in docs/topics/signals.rst. Please don't add new
 signals here without documenting them there.
 """
 
-from scrapy.xlib.pydispatch import dispatcher
-
-from scrapy import log
-
 engine_started = object()
 engine_stopped = object()
 domain_opened = object()
@@ -25,11 +21,3 @@ item_dropped = object()
 # XXX: deprecated signals (will be removed in Scrapy 0.8)
 domain_open = object()
 
-def send_catch_log(signal, sender=None, **kwargs):
-    """
-    Send a signal and log any exceptions raised by its listeners
-    """
-    try:
-        dispatcher.send(signal=signal, sender=sender, **kwargs)
-    except:
-        log.exc("Exception catched on signal dispatch")

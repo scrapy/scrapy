@@ -7,6 +7,7 @@ from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.stats.signals import stats_domain_opened, stats_domain_closing, \
     stats_domain_closed
+from scrapy.utils.signal import send_catch_log
 from scrapy.core import signals
 from scrapy import log
 from scrapy.conf import settings
@@ -49,14 +50,14 @@ class StatsCollector(object):
 
     def open_domain(self, domain):
         self._stats[domain] = {}
-        signals.send_catch_log(stats_domain_opened, domain=domain)
+        send_catch_log(stats_domain_opened, domain=domain)
 
     def close_domain(self, domain, reason):
         if self._dump:
             log.msg("Dumping stats:\n" + pprint.pformat(self.get_stats(domain)), \
                 domain=domain)
         stats = self._stats.pop(domain)
-        signals.send_catch_log(stats_domain_closed, domain=domain, reason=reason, \
+        send_catch_log(stats_domain_closed, domain=domain, reason=reason, \
             domain_stats=stats)
 
     def engine_stopped(self):
@@ -64,7 +65,7 @@ class StatsCollector(object):
             log.msg("Dumping global stats:\n" + pprint.pformat(self.get_stats()))
 
     def _start_closing_domain(self, domain, reason):
-        signals.send_catch_log(stats_domain_closing, domain=domain, reason=reason)
+        send_catch_log(stats_domain_closing, domain=domain, reason=reason)
         self.close_domain(domain, reason)
 
 class MemoryStatsCollector(StatsCollector):

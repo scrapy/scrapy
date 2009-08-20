@@ -17,6 +17,7 @@ from scrapy.http import Headers
 from scrapy.core.exceptions import NotSupported
 from scrapy.utils.defer import defer_succeed
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.signal import send_catch_log
 from scrapy.core.downloader.dnscache import DNSCache
 from scrapy.core.downloader.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import ScrapyHTTPClientFactory
@@ -55,8 +56,10 @@ def create_factory(request, spider):
         headers = Headers(factory.response_headers)
         respcls = responsetypes.from_args(headers=headers, url=url)
         r = respcls(url=request.url, status=status, headers=headers, body=body)
-        signals.send_catch_log(signal=signals.request_uploaded, sender='download_http', request=request, spider=spider)
-        signals.send_catch_log(signal=signals.response_downloaded, sender='download_http', response=r, spider=spider)
+        send_catch_log(signal=signals.request_uploaded, sender='download_http', \
+            request=request, spider=spider)
+        send_catch_log(signal=signals.response_downloaded, sender='download_http', \
+            response=r, spider=spider)
         return r
 
     factory.deferred.addCallbacks(_create_response)

@@ -15,13 +15,13 @@ from scrapy import log
 from scrapy.stats import stats
 from scrapy.conf import settings
 from scrapy.core import signals
-from scrapy.core.scheduler import Scheduler
 from scrapy.core.downloader import Downloader
 from scrapy.core.scraper import Scraper
 from scrapy.core.exceptions import IgnoreRequest, DontCloseDomain
 from scrapy.http import Response, Request
 from scrapy.spider import spiders
 from scrapy.utils.misc import load_object
+from scrapy.utils.signal import send_catch_log
 from scrapy.utils.defer import mustbe_deferred
 
 class ExecutionEngine(object):
@@ -95,7 +95,7 @@ class ExecutionEngine(object):
             self.control_reactor = control_reactor
             reactor.callLater(0, self._mainloop)
             self.start_time = datetime.utcnow()
-            signals.send_catch_log(signal=signals.engine_started, sender=self.__class__)
+            send_catch_log(signal=signals.engine_started, sender=self.__class__)
             self.addtask(self._mainloop, 5.0)
             for tsk, interval, now in self.tasks:
                 tsk.start(interval, now)
@@ -114,7 +114,7 @@ class ExecutionEngine(object):
             self.running = False
             for domain in self.open_domains:
                 spider = spiders.fromdomain(domain)
-                signals.send_catch_log(signal=signals.domain_closed, sender=self.__class__, \
+                send_catch_log(signal=signals.domain_closed, sender=self.__class__, \
                     domain=domain, spider=spider, reason='shutdown')
                 stats.close_domain(domain, reason='shutdown')
             for tsk, _, _ in self.tasks: # stop looping calls
@@ -125,7 +125,7 @@ class ExecutionEngine(object):
                 p.stopListening()
             if self.control_reactor and reactor.running:
                 reactor.stop()
-            signals.send_catch_log(signal=signals.engine_stopped, sender=self.__class__)
+            send_catch_log(signal=signals.engine_stopped, sender=self.__class__)
 
     def pause(self):
         """Pause the execution engine"""
@@ -280,26 +280,29 @@ class ExecutionEngine(object):
         stats.open_domain(domain)
 
         # XXX: sent for backwards compatibility (will be removed in Scrapy 0.8)
-        signals.send_catch_log(signals.domain_open, sender=self.__class__, domain=domain, spider=spider)
+        send_catch_log(signals.domain_open, sender=self.__class__, \
+            domain=domain, spider=spider)
 
-        signals.send_catch_log(signals.domain_opened, sender=self.__class__, domain=domain, spider=spider)
+        send_catch_log(signals.domain_opened, sender=self.__class__, \
+            domain=domain, spider=spider)
 
     def _domain_idle(self, domain):
-        """Called when a domain gets idle. This function is called when there are no
-        remaining pages to download or schedule. It can be called multiple
-        times. If some extension raises a DontCloseDomain exception (in the
-        domain_idle signal handler) the domain is not closed until the next
-        loop and this function is guaranteed to be called (at least) once again
-        for this domain.
+        """Called when a domain gets idle. This function is called when there
+        are no remaining pages to download or schedule. It can be called
+        multiple times. If some extension raises a DontCloseDomain exception
+        (in the domain_idle signal handler) the domain is not closed until the
+        next loop and this function is guaranteed to be called (at least) once
+        again for this domain.
         """
         spider = spiders.fromdomain(domain)
         try:
-            dispatcher.send(signal=signals.domain_idle, sender=self.__class__, domain=domain, spider=spider)
+            dispatcher.send(signal=signals.domain_idle, sender=self.__class__, \
+                domain=domain, spider=spider)
         except DontCloseDomain:
             self.next_request(domain)
             return
         except:
-            log.exc("Exception catched on domain_idle signal dispatch")
+            log.err(_why="Exception catched on domain_idle signal dispatch")
         if self.domain_is_idle(domain):
             self.close_domain(domain, reason='finished')
 
@@ -330,7 +333,7 @@ class ExecutionEngine(object):
         self.scheduler.close_domain(domain)
         self.scraper.close_domain(domain)
         reason = self.closing.pop(domain, 'finished')
-        signals.send_catch_log(signal=signals.domain_closed, sender=self.__class__, \
+        send_catch_log(signal=signals.domain_closed, sender=self.__class__, \
             domain=domain, spider=spider, reason=reason)
         stats.close_domain(domain, reason=reason)
         log.msg("Domain closed (%s)" % reason, domain=domain) 

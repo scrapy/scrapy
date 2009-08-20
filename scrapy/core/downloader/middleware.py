@@ -7,6 +7,7 @@ docs/topics/downloader-middleware.rst
 """
 
 from scrapy.core import signals
+from scrapy.utils.signal import send_catch_log
 from scrapy import log
 from scrapy.http import Request, Response
 from scrapy.core.exceptions import NotConfigured
@@ -76,9 +77,11 @@ class DownloaderMiddlewareManager(object):
                     'Middleware %s.process_response must return Response or Request, got %s' % \
                     (method.im_self.__class__.__name__, type(response))
                 if isinstance(response, Request):
-                    signals.send_catch_log(signal=signals.response_received, sender=self.__class__, response=response, spider=spider)
+                    send_catch_log(signal=signals.response_received, \
+                        sender=self.__class__, response=response, spider=spider)
                     return response
-            signals.send_catch_log(signal=signals.response_received, sender=self.__class__, response=response, spider=spider)
+            send_catch_log(signal=signals.response_received, sender=self.__class__, \
+                response=response, spider=spider)
             return response
 
         def process_exception(_failure):
