@@ -6,9 +6,14 @@ See scrapy/tests/test_engine.py for more info.
 import re
 
 from scrapy.spider import BaseSpider
-from scrapy.item import ScrapedItem
+from scrapy.item import Item, Field
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 from scrapy.http import Request
+
+class TestItem(Item):
+    name = Field()
+    url = Field()
+    price = Field()
 
 class TestSpider(BaseSpider):
     domain_name = "scrapytest.org"
@@ -27,14 +32,14 @@ class TestSpider(BaseSpider):
                 yield Request(url=link.url, callback=self.parse_item)
 
     def parse_item(self, response):
-        item = ScrapedItem()
+        item = TestItem()
         m = self.name_re.search(response.body)
         if m:
-            item.name = m.group(1)
-        item.url = response.url
+            item['name'] = m.group(1)
+        item['url'] = response.url
         m = self.price_re.search(response.body)
         if m:
-            item.price = m.group(1)
+            item['price'] = m.group(1)
         return [item]
         
 

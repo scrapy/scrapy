@@ -296,7 +296,7 @@ Enable debugging message of Cookies Downloader Middleware.
 DEFAULT_ITEM_CLASS
 ------------------
 
-Default: ``'scrapy.item.ScrapedItem'``
+Default: ``'scrapy.item.Item'``
 
 The default class that will be used for instantiating items in the :ref:`the
 Scrapy shell <topics-shell>`.

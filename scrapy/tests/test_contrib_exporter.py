@@ -3,7 +3,7 @@ from cStringIO import StringIO
 
 from twisted.trial import unittest
 
-from scrapy.newitem import Item, Field
+from scrapy.item import Item, Field
 
 from scrapy.contrib.exporter import BaseItemExporter, PprintItemExporter, \
     PickleItemExporter, CsvItemExporter, XmlItemExporter

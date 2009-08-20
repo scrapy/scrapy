@@ -56,7 +56,7 @@ Defining our Item
 =================
 
 Items are placeholders for extracted data, they're represented by a simple
-Python class: :class:`scrapy.item.ScrapedItem`, or any subclass of it.
+Python class: :class:`scrapy.item.Item`, or any subclass of it.
 
 In simple projects you won't need to worry about defining Items, because the
 ``startproject`` command has defined one for you in the ``items.py`` file, let's
@@ -64,9 +64,9 @@ see its contents::
 
     # Define here the models for your scraped items
 
-    from scrapy.item import ScrapedItem
+    from scrapy.item import Item
 
-    class DmozItem(ScrapedItem):
+    class DmozItem(Item):
         pass
 
 Our first Spider
@@ -98,7 +98,7 @@ define the three main, mandatory, attributes:
   scraped data (as scraped items) and more URLs to follow.
 
   The :meth:`~scrapy.spider.BaseSpider.parse` method is in charge of processing
-  the response and returning scraped data (as :class:`~scrapy.item.ScrapedItem`
+  the response and returning scraped data (as :class:`~scrapy.item.Item`
   objects) and more URLs to follow (as :class:`~scrapy.http.Request` objects).
 
 This is the code for our first Spider, save it in a file named
@@ -239,7 +239,7 @@ This is what the shell looks like::
       url: http://www.dmoz.org/Computers/Programming/Languages/Python/Books/
       spider: <class 'dmoz.spiders.dmoz.OpenDirectorySpider'>
       hxs: <class 'scrapy.xpath.selector.HtmlXPathSelector'>
-      item: <class 'scrapy.item.ScrapedItem'>
+      item: <class 'scrapy.item.Item'>
       response: <class 'scrapy.http.response.html.HtmlResponse'>
    Available commands:
       get [url]: Fetch a new URL or re-fetch current Request
@@ -357,9 +357,9 @@ in your output, run::
 
    python scrapy-ctl.py crawl dmoz.org
 
-Spiders are supposed to return their scraped data in the form of ScrapedItems,
-so to actually return the data we've scraped so far, the code for our Spider
-should be like this::
+Spiders are expected to return their scraped data inside
+:class:`~scrapy.item.Item` objects, so to actually return the data we've
+scraped so far, the code for our Spider should be like this::
 
    from scrapy.spider import BaseSpider
    from scrapy.xpath.selector import HtmlXPathSelector
@@ -379,9 +379,9 @@ should be like this::
           items = []
           for site in sites:
               item = DmozItem()
-              item.title = site.select('a/text()').extract()
-              item.link = site.select('a/@href').extract()
-              item.desc = site.select('text()').extract()
+              item['title'] = site.select('a/text()').extract()
+              item['link'] = site.select('a/@href').extract()
+              item['desc'] = site.select('text()').extract()
               items.append(item)
           return items
            

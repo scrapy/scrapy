@@ -1,9 +1,11 @@
-# Define here the models for your scraped items
+from scrapy.item import Item, Field
 
-from scrapy.item import ScrapedItem
+class GoogledirItem(Item):
 
-class GoogledirItem(ScrapedItem):
+    name = Field()
+    url = Field()
+    description = Field()
 
     def __str__(self):
-        return "Google Category: name=%s url=%s" % (self.name, self.url)
+        return "Google Category: name=%s url=%s" % (self['name'], self['url'])
 

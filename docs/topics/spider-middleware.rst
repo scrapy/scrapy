@@ -64,7 +64,7 @@ single Python class that defines one or more of the following methods:
 This method is called for each request that goes through the spider middleware.
 
 ``process_spider_input()`` should return either ``None`` or an iterable of
-:class:`~scrapy.http.Response` or :class:`~scrapy.http.ScrapedItem` objects.
+:class:`~scrapy.http.Response` or :class:`~scrapy.http.Item` objects.
 
 If returns ``None``, Scrapy will continue processing this response, executing all
 other middlewares until, finally, the response is handled to the spider for
@@ -77,14 +77,14 @@ for the ``process_spider_exception()`` and ``process_spider_output()`` methods t
 .. method:: process_spider_output(response, result, spider)
 
 ``response`` is a :class:`~scrapy.http.Response` object
-``result`` is an iterable of :class:`~scrapy.http.Request` or :class:`~scrapy.item.ScrapedItem` objects
+``result`` is an iterable of :class:`~scrapy.http.Request` or :class:`~scrapy.item.Item` objects
 ``spider`` is a :class:`~scrapy.item.BaseSpider` object
 
 This method is called with the results that are returned from the Spider, after
 it has processed the response.
 
 ``process_spider_output()`` must return an iterable of :class:`~scrapy.http.Request`
-or :class:`~scrapy.item.ScrapedItem` objects.
+or :class:`~scrapy.item.Item` objects.
 
 .. method:: process_spider_exception(request, exception, spider)
 
@@ -96,7 +96,7 @@ Scrapy calls ``process_spider_exception()`` when a spider or ``process_spider_in
 (from a spider middleware) raises an exception.
 
 ``process_spider_exception()`` should return either ``None`` or an iterable of
-:class:`~scrapy.http.Response` or :class:`~scrapy.item.ScrapedItem` objects.
+:class:`~scrapy.http.Response` or :class:`~scrapy.item.Item` objects.
 
 If it returns ``None``, Scrapy will continue processing this exception,
 executing any other ``process_spider_exception()`` in the middleware pipeline, until

@@ -130,11 +130,11 @@ Finally, here's the spider code::
         def parse_torrent(self, response):
             x = HtmlXPathSelector(response)
 
-            torrent = ScrapedItem()
-            torrent.url = response.url
-            torrent.name = x.select("//h1/text()").extract()
-            torrent.description = x.select("//div[@id='description']").extract()
-            torrent.size = x.select("//div[@id='info-left']/p[2]/text()[2]").extract()
+            torrent = TorrentItem()
+            torrent['url'] = response.url
+            torrent['name'] = x.select("//h1/text()").extract()
+            torrent['description'] = x.select("//div[@id='description']").extract()
+            torrent['size'] = x.select("//div[@id='info-left']/p[2]/text()[2]").extract()
             return [torrent]
 
 
@@ -151,7 +151,7 @@ extracted item into a file using `pickle`_::
 
     class StoreItemPipeline(object):
         def process_item(self, domain, response, item):
-            torrent_id = item.url.split('/')[-1]
+            torrent_id = item['url'].split('/')[-1]
             f = open("torrent-%s.pickle" % torrent_id, "w")
             pickle.dump(item, f)
             f.close()

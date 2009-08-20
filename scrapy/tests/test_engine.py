@@ -157,13 +157,13 @@ class EngineTest(unittest.TestCase):
         # item tests
         self.assertEqual(2, len(session.itemresp))
         for item, response in session.itemresp:
-            self.assertEqual(item.url, response.url)
-            if 'item1.html' in item.url:
-                self.assertEqual('Item 1 name', item.name)
-                self.assertEqual('100', item.price)
-            if 'item2.html' in item.url:
-                self.assertEqual('Item 2 name', item.name)
-                self.assertEqual('200', item.price)
+            self.assertEqual(item['url'], response.url)
+            if 'item1.html' in item['url']:
+                self.assertEqual('Item 1 name', item['name'])
+                self.assertEqual('100', item['price'])
+            if 'item2.html' in item['url']:
+                self.assertEqual('Item 2 name', item['name'])
+                self.assertEqual('200', item['price'])
 
     def test_signals(self):
         """

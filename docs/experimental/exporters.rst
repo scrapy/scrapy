@@ -71,12 +71,12 @@ next.
 --------------------------------------
 
 You can declare a serializer in the :ref:`field metadata
-<topics-newitems-fields>`. The serializer must be a callable which receives a
+<topics-items-fields>`. The serializer must be a callable which receives a
 value and returns its serialized form.
 
 Example::
 
-      from scrapy.newitem import Item, Field
+      from scrapy.item import Item, Field
 
       def serialize_price(value):
          return '$ %s' % str(value)

@@ -147,10 +147,10 @@ Finally, we can write our ``parse_category()`` method::
         links = hxs.select('//td[descendant::a[contains(@href, "#pagerank")]]/following-sibling::td/font')
 
         for link in links:
-            item = ScrapedItem()
-            item.name = link.select('a/text()').extract()
-            item.url = link.select('a/@href').extract()
-            item.description = link.select('font[2]/text()').extract()
+            item = DirectoryItem()
+            item['name'] = link.select('a/text()').extract()
+            item['url'] = link.select('a/@href').extract()
+            item['description'] = link.select('font[2]/text()').extract()
             yield item
 
 

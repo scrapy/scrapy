@@ -8,12 +8,12 @@ Item Loaders
    :synopsis: Item Loader class
 
 Item Loaders provide a convenient mechanism for populating scraped :ref:`Items
-<topics-newitems>`. Even though Items can be populated using their own
+<topics-items>`. Even though Items can be populated using their own
 dictionary-like API, the Item Loaders provide a much more convenient API for
 populating them from a scraping process, by automating some common tasks like
 parsing the raw extracted data before assigning it.
 
-In other words, :ref:`Items <topics-newitems>` provide the *container* of
+In other words, :ref:`Items <topics-items>` provide the *container* of
 scraped data, while Item Loaders provide the mechanism for *populating* that
 container.
 
@@ -35,8 +35,8 @@ the same item field, the Item Loader will know how to "join" those values later
 using a proper processing function.
 
 Here is a typical Item Loader usage in a :ref:`Spider <topics-spiders>`, using
-the :ref:`Product item <topics-newitems-declaring>` declared in the :ref:`Items
-chapter <topics-newitems>`::
+the :ref:`Product item <topics-items-declaring>` declared in the :ref:`Items
+chapter <topics-items>`::
 
     from scrapy.contrib.loader import XPathItemLoader
     from myproject.items import Product
@@ -80,7 +80,7 @@ received (through the :meth:`~XPathItemLoader.add_xpath` or
 :meth:`~ItemLoader.add_value` methods) and the result of the input processor is
 collected and kept inside the ItemLoader. After collecting all data, the
 :meth:`ItemLoader.load_item` method is called to populate and get the populated
-:class:`~scrapy.newitem.Item` object.  That's when the output processor is
+:class:`~scrapy.item.Item` object.  That's when the output processor is
 called with the data previously collected (and processed using the input
 processor). The result of the output processor is the final value that gets
 assigned to the item.
@@ -168,10 +168,10 @@ Declaring Input and Output Processors
 As seen in the previous section, input and output processors can be declared in
 the Item Loader definition, and it's very common to declare input processors
 this way. However, there is one more place where you can specify the input and
-output processors to use: in the :ref:`Item Field <topics-newitems-fields>`
+output processors to use: in the :ref:`Item Field <topics-items-fields>`
 metadata. Here is an example::
 
-    from scrapy.newitem import Item, Field
+    from scrapy.item import Item, Field
     from scrapy.contrib.loader.processor import MapCompose, Join, TakeFirst
 
     from scrapy.utils.markup import remove_entities
@@ -300,8 +300,7 @@ ItemLoader objects
 
     .. attribute:: item
 
-        The :class:`~scrapy.newitem.Item` object being parsed by this Item
-        Loader.
+        The :class:`~scrapy.item.Item` object being parsed by this Item Loader.
 
     .. attribute:: context
 

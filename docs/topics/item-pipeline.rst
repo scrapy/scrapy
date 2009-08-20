@@ -25,12 +25,12 @@ single Python class that must define the following method:
 
 ``domain`` is a string with the domain of the spider which scraped the item
 
-``item`` is a :class:`scrapy.item.ScrapedItem` with the item scraped
+``item`` is a :class:`~scrapy.item.Item` with the item scraped
 
 This method is called for every item pipeline component and must either return
-a ScrapedItem (or any descendant class) object or raise a :exception:`DropItem`
-exception. Dropped items are no longer processed by further pipeline
-components.
+a :class:`~scrapy.item.Item` (or any descendant class) object or raise a
+:exception:`DropItem` exception. Dropped items are no longer processed by
+further pipeline components.
 
 
 Item pipeline example
@@ -47,9 +47,9 @@ attribute), and drops those items which don't contain a price::
         vat_factor = 1.15
 
         def process_item(self, domain, item):
-            if item.price:
-                if item.price_excludes_vat:
-                    item.price = item.price * self.vat_factor
+            if item['price']:
+                if item['price_excludes_vat']:
+                    item['price'] = item['price'] * self.vat_factor
                 return item
             else:
                 raise DropItem("Missing price in %s" % item)

@@ -23,10 +23,10 @@ For spiders, the scraping cycle goes through something like this:
    Requests.
 
 2. In the callback function you parse the response (web page) and return an
-   iterable containing either ScrapedItem or Requests, or both. Those Requests
-   will also contain a callback (maybe the same) and will then be followed by
-   downloaded by Scrapy and then their response handled to the specified
-   callback.
+   iterable containing either :class:`~scrapy.item.Item` objects,
+   :class:`~scrapy.http.Request` objects, or both. Those Requests will also
+   contain a callback (maybe the same) and will then be followed by downloaded
+   by Scrapy and then their response handled to the specified callback.
 
 3. In callback functions you parse the page contants, typically using
    :ref:`topics-selectors` (but you can also use BeautifuSoup, lxml or whatever
@@ -44,6 +44,17 @@ We will talk about those types here.
 
 Built-in spiders reference
 ==========================
+
+For the examples used in the following spiders reference we'll assume we have a
+``TestItem`` declared in a ``myproject.items`` module, in your project::
+
+    from scrapy.item import Item
+
+    class TestItem(Item):
+        id = Field()
+        name = Field()
+        description = Field()
+
 
 .. module:: scrapy.spider
    :synopsis: Spiders base class, spider manager and spider middleware
@@ -185,8 +196,8 @@ Crawling rules
    ``callback`` is a callable or a string (in which case a method from the spider
    object with that name will be used) to be called for each link extracted with
    the specified link_extractor. This callback receives a response as its first
-   argument and must return a list containing either ScrapedItems and Requests (or
-   any subclass of them).
+   argument and must return a list containing :class:`~scrapy.item.Item` and/or
+   :class:`~scrapy.http.Request` objects (or any subclass of them).
 
    ``cb_kwargs`` is a dict containing the keyword arguments to be passed to the
    callback function
@@ -209,7 +220,7 @@ Let's now take a look at an example CrawlSpider with rules::
     from scrapy.contrib.spiders import CrawlSpider, Rule
     from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
     from scrapy.xpath.selector import HtmlXPathSelector
-    from scrapy.item import ScrapedItem
+    from scrapy.item import Item
 
     class MySpider(CrawlSpider):
         domain_name = 'example.com'
@@ -228,10 +239,10 @@ Let's now take a look at an example CrawlSpider with rules::
             self.log('Hi, this is an item page! %s' % response.url)
 
             hxs = HtmlXPathSelector(response)
-            item = ScrapedItem()
-            item.id = hxs.select('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
-            item.name = hxs.select('//td[@id="item_name"]/text()').extract()
-            item.description = hxs.select('//td[@id="item_description"]/text()').extract()
+            item = Item()
+            item['id'] = hxs.select('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
+            item['name'] = hxs.select('//td[@id="item_name"]/text()').extract()
+            item['description'] = hxs.select('//td[@id="item_description"]/text()').extract()
             return [item]
 
     SPIDER = MySpider()
@@ -240,8 +251,8 @@ Let's now take a look at an example CrawlSpider with rules::
 This spider would start crawling example.com's home page, collecting category
 links, and item links, parsing the latter with the
 :meth:`XMLFeedSpider.parse_item` method. For each item response, some data will
-be extracted from the HTML using XPath, and a ScrapedItem will be filled with
-it.
+be extracted from the HTML using XPath, and a :class:`~scrapy.item.Item` will
+be filled with it.
 
 XMLFeedSpider
 -------------
@@ -314,8 +325,9 @@ XMLFeedSpider
         This method is called for the nodes matching the provided tag name
         (``itertag``).  Receives the response and an XPathSelector for each node.
         Overriding this method is mandatory. Otherwise, you spider won't work.
-        This method must return either a ScrapedItem, a Request, or a list
-        containing any of them.
+        This method must return either a :class:`~scrapy.item.Item` object, a
+        :class:`~scrapy.http.Request` object, or an iterable containing any of
+        them.
 
         .. warning:: This method will soon change its name to ``parse_node``
 
@@ -335,7 +347,7 @@ These spiders are pretty easy to use, let's have at one example::
 
     from scrapy import log
     from scrapy.contrib.spiders import XMLFeedSpider
-    from scrapy.item import ScrapedItem
+    from myproject.items import TestItem
 
     class MySpider(XMLFeedSpider):
         domain_name = 'example.com'
@@ -346,17 +358,17 @@ These spiders are pretty easy to use, let's have at one example::
         def parse_item(self, response, node):
             log.msg('Hi, this is a <%s> node!: %s' % (self.itertag, ''.join(node.extract())))
 
-            item = ScrapedItem()
-            item.id = node.select('@id').extract()
-            item.name = node.select('name').extract()
-            item.description = node.select('description').extract()
+            item = Item()
+            item['id'] = node.select('@id').extract()
+            item['name'] = node.select('name').extract()
+            item['description'] = node.select('description').extract()
             return item
 
     SPIDER = MySpider()
 
 Basically what we did up there was creating a spider that downloads a feed from
 the given ``start_urls``, and then iterates through each of its ``item`` tags,
-prints them out, and stores some random data in ScrapedItems.
+prints them out, and stores some random data in an :class:`~scrapy.item.Item`.
 
 CSVFeedSpider
 -------------
@@ -391,11 +403,12 @@ CSVFeedSpider
 CSVFeedSpider example
 ~~~~~~~~~~~~~~~~~~~~~
 
-Let's see an example similar to the previous one, but using CSVFeedSpider::
+Let's see an example similar to the previous one, but using a
+:class:`CSVFeedSpider`::
 
     from scrapy import log
     from scrapy.contrib.spiders import CSVFeedSpider
-    from scrapy.item import ScrapedItem
+    from myproject.items import TestItem
 
     class MySpider(CSVFeedSpider):
         domain_name = 'example.com'
@@ -406,10 +419,10 @@ Let's see an example similar to the previous one, but using CSVFeedSpider::
         def parse_row(self, response, row):
             log.msg('Hi, this is a row!: %r' % row)
 
-            item = ScrapedItem()
-            item.id = row['id']
-            item.name = row['name']
-            item.description = row['description']
+            item = TestItem()
+            item['id'] = row['id']
+            item['name'] = row['name']
+            item['description'] = row['description']
             return item
 
     SPIDER = MySpider()

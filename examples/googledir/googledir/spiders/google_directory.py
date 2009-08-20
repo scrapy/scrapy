@@ -25,9 +25,9 @@ class GoogleDirectorySpider(CrawlSpider):
         for link in links:
             item = GoogledirItem()
 
-            item.name = link.select('a/text()').extract()
-            item.url = link.select('a/@href').extract()
-            item.description = link.select('font[2]/text()').extract()
+            item['name'] = link.select('a/text()').extract()
+            item['url'] = link.select('a/@href').extract()
+            item['description'] = link.select('font[2]/text()').extract()
             yield item
 
 SPIDER = GoogleDirectorySpider()

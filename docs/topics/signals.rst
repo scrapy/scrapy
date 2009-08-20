@@ -113,7 +113,7 @@ order.
     before the item is sent to the :ref:`topics-item-pipeline`.
 
     :param item: is the item scraped
-    :type item: :class:`~scrapy.item.ScrapedItem` object
+    :type item: :class:`~scrapy.item.Item` object
 
     :param spider: the spider which scraped the item 
     :type spider: :class:`~scrapy.spider.BaseSpider` object
@@ -128,13 +128,13 @@ order.
     being dropped.
 
     :param item: the item which passed the pipeline
-    :type item: :class:`~scrapy.item.ScrapedItem` object
+    :type item: :class:`~scrapy.item.Item` object
 
     :param spider: the spider which scraped the item 
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
     :param output: the output of the item pipeline. This is typically the
-        same :class:`~scrapy.item.ScrapedItem` object received in the ``item``
+        same :class:`~scrapy.item.Item` object received in the ``item``
         parameter, unless some pipeline stage created a new item.
 
 .. signal:: item_dropped
@@ -144,7 +144,7 @@ order.
     when some stage raised a :exception:`DropItem` exception.
 
     :param item: the item dropped from the :ref:`topics-item-pipeline`
-    :type item: :class:`~scrapy.item.ScrapedItem` object
+    :type item: :class:`~scrapy.item.Item` object
 
     :param spider: the spider which scraped the item 
     :type spider: :class:`~scrapy.spider.BaseSpider` object

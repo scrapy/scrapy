@@ -30,7 +30,7 @@ CONCURRENT_ITEMS = 100
 
 COOKIES_DEBUG = False
 
-DEFAULT_ITEM_CLASS = 'scrapy.item.ScrapedItem'
+DEFAULT_ITEM_CLASS = 'scrapy.item.Item'
 
 DEFAULT_REQUEST_HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
