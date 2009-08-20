@@ -134,7 +134,7 @@ class XmlItemExporterTest(BaseTest):
         self.assertEqual(self.output.getvalue(), expected_value)
 
 
-class JSONItemExporterTest(BaseTest):
+class JsonLinesItemExporterTest(BaseTest):
 
     def setUp(self):
         try:
@@ -145,18 +145,17 @@ class JSONItemExporterTest(BaseTest):
             except ImportError:
                 raise unittest.SkipTest("simplejson module not available") 
 
-        from scrapy.contrib.exporter.jsonlines import JsonLinesItemExporter
-
-        super(JSONItemExporterTest, self).__init__()
+        super(JsonLinesItemExporterTest, self).setUp()
 
     def test_export(self):
+        from scrapy.contrib.exporter.jsonlines import JsonLinesItemExporter
 
-        ie = JsonLinesItemExporter(output)
+        ie = JsonLinesItemExporter(self.output)
         ie.start_exporting()
         ie.export_item(self.i)
         ie.finish_exporting()
 
-        self.assertEqual(output.getvalue(), '{"age": "22", "name": "John"}\n')
+        self.assertEqual(self.output.getvalue(), '{"age": "22", "name": "John"}\n')
 
 
 if __name__ == '__main__':
