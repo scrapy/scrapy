@@ -4,7 +4,7 @@ from scrapy.contrib.loader import ItemLoader, XPathItemLoader
 from scrapy.contrib.loader.processor import Join, Identity, TakeFirst, \
     Compose, MapCompose
 from scrapy.item import Item, Field
-from scrapy.xpath import HtmlXPathSelector
+from scrapy.selector import HtmlXPathSelector
 from scrapy.http import HtmlResponse
 
 # test items

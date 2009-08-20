@@ -12,7 +12,7 @@ from twisted.internet import reactor, threads
 
 from scrapy.command import ScrapyCommand
 from scrapy.spider import spiders
-from scrapy.xpath import XmlXPathSelector, HtmlXPathSelector
+from scrapy.selector import XmlXPathSelector, HtmlXPathSelector
 from scrapy.utils.misc import load_object
 from scrapy.conf import settings
 from scrapy.core.manager import scrapymanager

@@ -1,9 +1,5 @@
-"""
-The scrapy.xpath module provides useful classes for selecting HTML and XML
-documents using XPath. It requires libxml2 and its python bindings.
+from scrapy.selector import *
 
-This parent module exports the classes most commonly used when building
-spiders, for convenience.
-"""
-
-from scrapy.xpath.selector import XPathSelector, XmlXPathSelector, HtmlXPathSelector
+import warnings
+warnings.warn("scrapy.xpath module is deprecated, use scrapy.selector instead",
+    DeprecationWarning, stacklevel=2)

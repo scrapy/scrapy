@@ -5,7 +5,7 @@ garbage collection to libxml2 documents (xmlDoc).
 
 import weakref
 
-from scrapy.xpath.factories import xmlDoc_from_html
+from .factories import xmlDoc_from_html
 
 class Libxml2Document(object):
 

@@ -49,9 +49,9 @@ Constructing selectors
 
 There are two types of selectors bundled with Scrapy. Those are:
 
- * :class:`~scrapy.xpath.HtmlXPathSelector` - for working with HTML documents
+ * :class:`~scrapy.selector.HtmlXPathSelector` - for working with HTML documents
 
- * :class:`~scrapy.xpath.XmlXPathSelector` - for working with XML documents
+ * :class:`~scrapy.selector.XmlXPathSelector` - for working with XML documents
 
 .. highlight:: python
 
@@ -89,7 +89,7 @@ Then, after the shell loads, you'll have some selectors already instanced and
 ready to use.
 
 Since we're dealing with HTML we'll be using the
-:class:`~scrapy.xpath.HtmlXPathSelector` object which is found, by default, in
+:class:`~scrapy.selector.HtmlXPathSelector` object which is found, by default, in
 the ``hxs`` shell variable.
 
 .. highlight:: python
@@ -135,7 +135,7 @@ Using selectors with regular expressions
 
 Selectors also have a ``re()`` method for extracting data using regular
 expressions. However, unlike using the ``select()`` method, the ``re()`` method
-does not return a list of :class:`~scrapy.xpath.XPathSelector` objects, so you
+does not return a list of :class:`~scrapy.selector.XPathSelector` objects, so you
 can't construct nested ``.re()`` calls. 
 
 Here's an example used to extract images names from the :ref:`HTML code
@@ -216,7 +216,7 @@ XPath specification.
 Built-in XPath Selectors reference
 ==================================
 
-.. module:: scrapy.xpath
+.. module:: scrapy.selector
    :synopsis: XPath selectors classes
 
 There are two types of selectors bundled with Scrapy:

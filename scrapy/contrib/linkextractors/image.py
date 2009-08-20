@@ -8,7 +8,7 @@ import urlparse
 from scrapy.link import Link
 from scrapy.utils.url import canonicalize_url, urljoin_rfc
 from scrapy.utils.python import unicode_to_str, flatten
-from scrapy.xpath.selector import XPathSelectorList, HtmlXPathSelector
+from scrapy.selector import XPathSelectorList, HtmlXPathSelector
 
 class HTMLImageLinkExtractor(object):
     '''HTMLImageLinkExtractor objects are intended to extract image links from HTML pages

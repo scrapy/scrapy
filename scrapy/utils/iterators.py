@@ -1,7 +1,7 @@
 import re, csv
 
 from scrapy.http import Response
-from scrapy.xpath import XmlXPathSelector
+from scrapy.selector import XmlXPathSelector
 from scrapy import log
 from scrapy.utils.python import re_rsearch, str_to_unicode
 from scrapy.utils.response import body_or_str

@@ -4,7 +4,7 @@ SGMLParser-based Link extractors
 
 import re
 
-from scrapy.xpath import HtmlXPathSelector
+from scrapy.selector import HtmlXPathSelector
 from scrapy.link import Link
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import FixedSGMLParser, unique as unique_list, str_to_unicode

@@ -7,7 +7,7 @@ See documentation in docs/topics/loaders.rst
 from collections import defaultdict
 
 from scrapy.item import Item
-from scrapy.xpath import HtmlXPathSelector
+from scrapy.selector import HtmlXPathSelector
 from scrapy.utils.misc import arg_to_iter
 from .common import wrap_loader_context
 from .processor import Identity

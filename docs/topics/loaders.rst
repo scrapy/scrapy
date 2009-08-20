@@ -333,7 +333,7 @@ ItemLoader objects
 
     :param selector: The selector to extract data from, when using the
         :meth:`add_xpath` or :meth:`replace_xpath` method.
-    :type selector: :class:`~scrapy.xpath.XPathSelector` object
+    :type selector: :class:`~scrapy.selector.XPathSelector` object
 
     :param response: The response used to construct the selector using the
         :attr:`default_selector_class`, unless the selector argument is given,
@@ -346,7 +346,7 @@ ItemLoader objects
         value, which is used to extract a list of unicode strings from the
         selector associated with this :class:`XPathItemLoader`. If the ``re``
         argument is given, it's used for extrating data from the selector using
-        the :meth:`~scrapy.xpath.XPathSelector.re` method.
+        the :meth:`~scrapy.selector.XPathSelector.re` method.
 
         :param xpath: the XPath to extract data from
         :type xpath: str
@@ -376,7 +376,7 @@ ItemLoader objects
 
     .. attribute:: selector
 
-        The :class:`~scrapy.xpath.XPathSelector` object to extract data from.
+        The :class:`~scrapy.selector.XPathSelector` object to extract data from.
         It's either the selector given in the constructor or one created from
         the response given in the constructor using the
         :attr:`default_selector_class`. This attribute is meant to be
@@ -547,7 +547,7 @@ Here is a list of all built-in processors:
     work with single values (instead of iterables). For this reason the
     :class:`MapCompose` processor is typically used as input processor, since
     data is often extracted using the
-    :meth:`~scrapy.xpath.XPathSelector.extract` method of :ref:`selectors
+    :meth:`~scrapy.selector.XPathSelector.extract` method of :ref:`selectors
     <topics-selectors>`, which returns a list of unicode strings.
 
     The example below should clarify how it works::

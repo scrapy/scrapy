@@ -9,7 +9,7 @@ from scrapy.contrib.spiders.init import InitSpider
 from scrapy.item import BaseItem
 from scrapy.http import Request
 from scrapy.utils.iterators import xmliter, csviter
-from scrapy.xpath.selector import XmlXPathSelector, HtmlXPathSelector
+from scrapy.selector import XmlXPathSelector, HtmlXPathSelector
 from scrapy.core.exceptions import NotConfigured, NotSupported
 
 class XMLFeedSpider(InitSpider):

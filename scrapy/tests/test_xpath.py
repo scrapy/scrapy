@@ -5,9 +5,9 @@ import weakref
 import libxml2
 
 from scrapy.http import TextResponse, HtmlResponse, XmlResponse
-from scrapy.xpath.selector import XmlXPathSelector, HtmlXPathSelector, \
+from scrapy.selector import XmlXPathSelector, HtmlXPathSelector, \
     XPathSelector
-from scrapy.xpath.document import Libxml2Document
+from scrapy.selector.document import Libxml2Document
 from scrapy.utils.test import libxml2debug
 
 class XPathSelectorTestCase(unittest.TestCase):

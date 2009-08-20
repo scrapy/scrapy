@@ -219,7 +219,7 @@ Let's now take a look at an example CrawlSpider with rules::
 
     from scrapy.contrib.spiders import CrawlSpider, Rule
     from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
-    from scrapy.xpath.selector import HtmlXPathSelector
+    from scrapy.selector import HtmlXPathSelector
     from scrapy.item import Item
 
     class MySpider(CrawlSpider):
@@ -297,7 +297,7 @@ XMLFeedSpider
         available in that document that will be processed with this spider. The
         ``prefix`` and ``uri`` will be used to automatically register
         namespaces using the
-        :meth:`~scrapy.xpath.XPathSelector.register_namespace` method.
+        :meth:`~scrapy.selector.XPathSelector.register_namespace` method.
 
         You can then specify nodes with namespaces in the :attr:`itertag`
         attribute.

@@ -192,9 +192,9 @@ These are just a couple of simple examples of what you can do with XPath, but
 XPath expression are indeed much more powerful. To learn more about XPath we
 recommend `this XPath tutorial <http://www.w3schools.com/XPath/default.asp>`_.
 
-For working with XPaths, Scrapy provides a :class:`~scrapy.xpath.XPathSelector`
-class, which comes in two flavours, :class:`~scrapy.xpath.HtmlXPatSelector`
-(for HTML data) and :class:`~scrapy.xpath.XmlXPathSelector` (for XML data). In
+For working with XPaths, Scrapy provides a :class:`~scrapy.selector.XPathSelector`
+class, which comes in two flavours, :class:`~scrapy.selector.HtmlXPatSelector`
+(for HTML data) and :class:`~scrapy.selector.XmlXPathSelector` (for XML data). In
 order to use them you must instantiate the desired class with a
 :class:`~scrapy.http.Response` object.
 
@@ -205,14 +205,14 @@ node, or the entire document.
 Selectors have three methods (click on the method to see the complete API
 documentation).
 
-* :meth:`~scrapy.xpath.XPathSelector.x`: returns a list of selectors, each of
+* :meth:`~scrapy.selector.XPathSelector.x`: returns a list of selectors, each of
   them representing the nodes selected by the xpath expression given as
   argument. 
 
-* :meth:`~scrapy.xpath.XPathSelector.extract`: returns a unicode string with
+* :meth:`~scrapy.selector.XPathSelector.extract`: returns a unicode string with
    the data selected by the XPath selector.
 
-* :meth:`~scrapy.xpath.XPathSelector.re`: returns a list unicode strings
+* :meth:`~scrapy.selector.XPathSelector.re`: returns a list unicode strings
   extracted by applying the regular expression given as argument.
 
 
@@ -235,10 +235,10 @@ This is what the shell looks like::
 
    ------------------------------------------------------------------------------
    Available Scrapy variables:
-      xxs: <class 'scrapy.xpath.selector.XmlXPathSelector'>
+      xxs: <class 'scrapy.selector.XmlXPathSelector'>
       url: http://www.dmoz.org/Computers/Programming/Languages/Python/Books/
       spider: <class 'dmoz.spiders.dmoz.OpenDirectorySpider'>
-      hxs: <class 'scrapy.xpath.selector.HtmlXPathSelector'>
+      hxs: <class 'scrapy.selector.HtmlXPathSelector'>
       item: <class 'scrapy.item.Item'>
       response: <class 'scrapy.http.response.html.HtmlResponse'>
    Available commands:
@@ -331,7 +331,7 @@ that property here, so::
 Let's add this code to our spider::
 
    from scrapy.spider import BaseSpider
-   from scrapy.xpath.selector import HtmlXPathSelector
+   from scrapy.selector import HtmlXPathSelector
 
    class DmozSpider(BaseSpider):
       domain_name = "dmoz.org"
@@ -362,7 +362,7 @@ Spiders are expected to return their scraped data inside
 scraped so far, the code for our Spider should be like this::
 
    from scrapy.spider import BaseSpider
-   from scrapy.xpath.selector import HtmlXPathSelector
+   from scrapy.selector import HtmlXPathSelector
 
    from dmoz.items import DmozItem
 

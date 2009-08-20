@@ -66,7 +66,7 @@ Custom Shell Objects
 
 The console automatically creates some useful Scrapy objects for the downloaded
 page, like the :class:`~scrapy.http.Response` object and the
-:class:`~scrapy.xpath.XPathSelector` objects (for both HTML and XML content).
+:class:`~scrapy.selector.XPathSelector` objects (for both HTML and XML content).
 
 Those objects are:
 
@@ -83,10 +83,10 @@ Those objects are:
  * ``response`` - a :class:`~scrapy.http.Response` object of the last fetched
    page
 
- * ``hxs`` - a :class:`~scrapy.xpath.HtmlXPathSelector` object for the Response
+ * ``hxs`` - a :class:`~scrapy.selector.HtmlXPathSelector` object for the Response
    of the downloaded page
 
- * ``xxs`` - a :class:`~scrapy.xpath.XmlXPathSelector` object for the Response
+ * ``xxs`` - a :class:`~scrapy.selector.XmlXPathSelector` object for the Response
    of the downloaded page
 
  * ``get <url>``- download a new response from the given URL and update all
