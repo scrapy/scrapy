@@ -24,7 +24,7 @@ class ShoveItemPipeline(object):
         self.opts = settings['SHOVEITEM_STORE_OPT'] or {}
         self.stores = {}
 
-        dispatcher.connect(self.domain_open, signal=signals.domain_open)
+        dispatcher.connect(self.domain_opened, signal=signals.domain_opened)
         dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
 
     def process_item(self, domain, item):
@@ -43,7 +43,7 @@ class ShoveItemPipeline(object):
         self.log(domain, item, status)
         return item
 
-    def domain_open(self, domain):
+    def domain_opened(self, domain):
         uri = Template(self.uritpl).substitute(domain=domain)
         self.stores[domain] = Shove(uri, **self.opts)
 

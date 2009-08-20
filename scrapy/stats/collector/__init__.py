@@ -17,10 +17,6 @@ class StatsCollector(object):
         self._dump = settings.getbool('STATS_DUMP')
         self._stats = {None: {}} # None is for global stats
 
-        dispatcher.connect(self.open_domain, signal=signals.domain_open)
-        dispatcher.connect(self._start_closing_domain, signal=signals.domain_closed)
-        dispatcher.connect(self.engine_stopped, signal=signals.engine_stopped)
-
     def get_value(self, key, default=None, domain=None):
         return self._stats[domain].get(key, default)
 

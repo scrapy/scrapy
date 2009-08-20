@@ -35,10 +35,10 @@ Here you can see a typical Item Exporter usage in an :ref:`Item Pipeline
    class XmlExportPipeline(object):
 
        def __init__(self):
-           dispatcher.connect(self.domain_open, signals.domain_open) 
+           dispatcher.connect(self.domain_opened, signals.domain_opened) 
            dispatcher.connect(self.domain_closed, signals.domain_closed)
 
-       def domain_open(self, domain):
+       def domain_opened(self, domain):
            self.file = open('%s_products.xml' % domain)
            self.exporter = XmlItemExporter(self.file)
            self.exporter.start_exporting()

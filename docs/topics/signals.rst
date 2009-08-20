@@ -32,7 +32,8 @@ order.
 .. signal:: domain_closed
 .. function:: domain_closed(domain, spider, reason)
 
-    Sent right after a spider/domain has been closed.
+    Sent after a spider/domain has been closed. This can be used to release
+    per-spider resources reserved on :signal:`domain_opened`.
 
     :param domain: a string which contains the domain of the spider which has
         been closed
@@ -50,22 +51,12 @@ order.
         Ctrl-C to stop it) the reason will be ``'shutdown'``.
     :type reason: str
 
-.. signal:: domain_open
-.. function:: domain_open(domain, spider)
-
-    Sent right before a spider has been opened for crawling.
-
-    :param domain: a string which contains the domain of the spider which is about
-        to be opened
-    :type domain: str
-
-    :param spider: the spider which is about to be opened
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
-
 .. signal:: domain_opened
 .. function:: domain_opened(domain, spider)
 
-    Sent right after a spider has been opened for crawling.
+    Sent after a spider/domain has been opened for crawling. This is typically
+    used to reserve per-spider resources, but can be used for any task that
+    needs to be performed when a spider/domain is opened.
 
     :param domain: a string with the domain of the spider which has been opened
     :type domain: str

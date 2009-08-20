@@ -67,8 +67,7 @@ Get all global stats from a given domain::
     {'hostname': 'localhost', 'spiders_crawled': 8}
 
 Set domain/spider specific stat value (domains must be opened first, but this
-is done automatically by the Stats Collector on the :signal:`domain_open`
-signal)::
+task is handled automatically by the Scrapy engine)::
 
     stats.set_value('start_time', datetime.now(), domain='example.com')
 
@@ -170,8 +169,8 @@ class (which they all inherit from).
     .. method:: open_domain(domain)
 
         Open the given domain for stats collection. This method must be called
-        prior to working with any stats specific to that domain, but it's
-        called automatically when the :signal:`domain_open` signal is received.
+        prior to working with any stats specific to that domain, but this task
+        is handled automatically by the Scrapy engine.
 
     .. method:: close_domain(domain)
 

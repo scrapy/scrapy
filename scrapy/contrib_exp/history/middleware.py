@@ -22,7 +22,7 @@ class HistoryMiddleware(object):
         if not historycls:
             raise NotConfigured
         self.historydata = historycls()
-        dispatcher.connect(self.open_domain, signal=signals.domain_open)
+        dispatcher.connect(self.open_domain, signal=signals.domain_opened)
         dispatcher.connect(self.close_domain, signal=signals.domain_closed)
 
     def process_request(self, request, spider):

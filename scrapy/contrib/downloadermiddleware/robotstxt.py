@@ -26,7 +26,7 @@ class RobotsTxtMiddleware(object):
         self._spider_netlocs = {}
         self._useragents = {}
         self._pending = {}
-        dispatcher.connect(self.domain_open, signals.domain_open)
+        dispatcher.connect(self.domain_opened, signals.domain_opened)
         dispatcher.connect(self.domain_closed, signals.domain_closed)
 
     def process_request(self, request, spider):
@@ -51,7 +51,7 @@ class RobotsTxtMiddleware(object):
         rp.parse(response.body.splitlines())
         self._parsers[urlparse_cached(response).netloc] = rp
 
-    def domain_open(self, spider):
+    def domain_opened(self, spider):
         self._spider_netlocs[spider] = set()
         self._useragents[spider] = getattr(spider, 'user_agent', None) \
             or settings['USER_AGENT']

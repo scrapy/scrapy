@@ -11,7 +11,6 @@ from scrapy import log
 
 engine_started = object()
 engine_stopped = object()
-domain_open = object()
 domain_opened = object()
 domain_idle = object()
 domain_closed = object()
@@ -22,6 +21,9 @@ response_downloaded = object()
 item_scraped = object()
 item_passed = object()
 item_dropped = object()
+
+# XXX: deprecated signals (will be removed in Scrapy 0.8)
+domain_open = object()
 
 def send_catch_log(signal, sender=None, **kwargs):
     """

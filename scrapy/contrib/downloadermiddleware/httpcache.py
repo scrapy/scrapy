@@ -24,7 +24,7 @@ class HttpCacheMiddleware(object):
             raise NotConfigured
         self.cache = Cache(settings['HTTPCACHE_DIR'], sectorize=settings.getbool('HTTPCACHE_SECTORIZE'))
         self.ignore_missing = settings.getbool('HTTPCACHE_IGNORE_MISSING')
-        dispatcher.connect(self.open_domain, signal=signals.domain_open)
+        dispatcher.connect(self.open_domain, signal=signals.domain_opened)
 
     def open_domain(self, domain):
         self.cache.open_domain(domain)

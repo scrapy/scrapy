@@ -20,14 +20,14 @@ class LiveStats(object):
 
     def __init__(self):
         self.domains = {}
-        dispatcher.connect(self.domain_open, signal=signals.domain_open)
+        dispatcher.connect(self.domain_opened, signal=signals.domain_opened)
         dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
         dispatcher.connect(self.item_scraped, signal=signals.item_scraped)
         dispatcher.connect(self.response_downloaded, signal=signals.response_downloaded)
 
         dispatcher.connect(self.webconsole_discover_module, signal=webconsole_discover_module)
 
-    def domain_open(self, domain, spider):
+    def domain_opened(self, domain, spider):
         pstats = SpiderStats()
         self.domains[spider.domain_name] = pstats
         pstats.started = datetime.now().replace(microsecond=0)

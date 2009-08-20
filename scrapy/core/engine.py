@@ -12,6 +12,7 @@ from twisted.python.failure import Failure
 from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy import log
+from scrapy.stats import stats
 from scrapy.conf import settings
 from scrapy.core import signals
 from scrapy.core.scheduler import Scheduler
@@ -115,6 +116,7 @@ class ExecutionEngine(object):
                 spider = spiders.fromdomain(domain)
                 signals.send_catch_log(signal=signals.domain_closed, sender=self.__class__, \
                     domain=domain, spider=spider, reason='shutdown')
+                stats.close_domain(domain, reason='shutdown')
             for tsk, _, _ in self.tasks: # stop looping calls
                 if tsk.running:
                     tsk.stop()
@@ -275,8 +277,11 @@ class ExecutionEngine(object):
 
         self.downloader.open_domain(domain)
         self.scraper.open_domain(domain)
+        stats.open_domain(domain)
 
+        # XXX: sent for backwards compatibility (will be removed in Scrapy 0.8)
         signals.send_catch_log(signals.domain_open, sender=self.__class__, domain=domain, spider=spider)
+
         signals.send_catch_log(signals.domain_opened, sender=self.__class__, domain=domain, spider=spider)
 
     def _domain_idle(self, domain):
@@ -325,7 +330,9 @@ class ExecutionEngine(object):
         self.scheduler.close_domain(domain)
         self.scraper.close_domain(domain)
         reason = self.closing.pop(domain, 'finished')
-        signals.send_catch_log(signal=signals.domain_closed, sender=self.__class__, domain=domain, spider=spider, reason=reason)
+        signals.send_catch_log(signal=signals.domain_closed, sender=self.__class__, \
+            domain=domain, spider=spider, reason=reason)
+        stats.close_domain(domain, reason=reason)
         log.msg("Domain closed (%s)" % reason, domain=domain) 
         self._mainloop()
 
