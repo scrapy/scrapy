@@ -18,7 +18,6 @@ from scrapy.core.exceptions import NotSupported
 from scrapy.utils.defer import defer_succeed
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.signal import send_catch_log
-from scrapy.core.downloader.dnscache import DNSCache
 from scrapy.core.downloader.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import ScrapyHTTPClientFactory
 from scrapy.conf import settings
@@ -26,9 +25,6 @@ from scrapy.conf import settings
 
 default_timeout = settings.getint('DOWNLOAD_TIMEOUT')
 ssl_supported = 'ssl' in optional_features
-
-# Cache for dns lookups.
-dnscache = DNSCache()
 
 def download_any(request, spider):
     scheme = urlparse_cached(request).scheme
@@ -69,19 +65,17 @@ def download_http(request, spider):
     """Return a deferred for the HTTP download"""
     factory = create_factory(request, spider)
     url = urlparse_cached(request)
-    ip = dnscache.get(url.hostname)
     port = url.port
-    reactor.connectTCP(ip, port or 80, factory)
+    reactor.connectTCP(url.hostname, port or 80, factory)
     return factory.deferred
 
 def download_https(request, spider):
     """Return a deferred for the HTTPS download"""
     factory = create_factory(request, spider)
     url = urlparse_cached(request)
-    ip = dnscache.get(url.hostname)
     port = url.port
     contextFactory = ssl.ClientContextFactory()
-    reactor.connectSSL(ip, port or 443, factory, contextFactory)
+    reactor.connectSSL(url.hostname, port or 443, factory, contextFactory)
     return factory.deferred
 
 def download_file(request, spider) :
