@@ -13,7 +13,5 @@ class JsonLinesItemExporter(BaseItemExporter):
         self.encoder = json.JSONEncoder(*args, **kwargs)
 
     def export_item(self, item):
-        itemdict = {}
-        for field, value in self._get_fields_to_export(item):
-            itemdict[field] = self.serialize(item.fields[field], field, value)
+        itemdict = dict(self._get_serialized_fields(item))
         self.file.write(self.encoder.encode(itemdict) + '\n')

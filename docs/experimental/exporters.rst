@@ -86,8 +86,8 @@ Example::
           price = Field(serializer=serialize_price)
 
 
-2. Overriding the serialize() method
-------------------------------------
+2. Overriding the serialize_field() method
+------------------------------------------
 
 You can also override the :meth:`~BaseItemExporter.serialize` method to
 customize how your field value will be exported.
@@ -101,10 +101,10 @@ Example::
 
       class ProductXmlExporter(XmlItemExporter):
 
-          def serialize(self, field, name, value):
+          def serialize_field(self, field, name, value):
               if filed == 'price':
                   return '$ %s' % str(value)
-              return super(Product, self).serialize(field, name, value)
+              return super(Product, self).serialize_field(field, name, value)
              
 .. _topics-exporters-reference:
 
@@ -129,10 +129,19 @@ BaseItemExporter
       Exports the item to the specific exporter format. This method must be
       implemented in subclasses.
 
-   .. method:: serialize_default(field, name, value)
+   .. method:: serialize_field(field, name, value)
 
-      Serializes the field value to ``str``. You can override this method in
-      custom Item Exporters.
+      Return the serialized value for the given field. You can override this
+      method (in your custom Item Exporters) if you want to control how a
+      particular field or value will be serialized/exported.
+
+      :param field: the field being serialized
+      :type field: :class:`~scrapy.item.Field` object
+
+      :param name: the name of the field being serialized
+      :type name: str
+
+      :param value: the value being serialized
 
    .. method:: start_exporting()
 

@@ -21,12 +21,14 @@ class BaseItemExporter(object):
     def export_item(self, item):
         raise NotImplementedError
 
-    def serialize(self, field, name, value):
+    def serialize_field(self, field, name, value):
         serializer = field.get('serializer', identity)
         return serializer(value)
 
-    def _get_fields_to_export(self, item, default_value=None, include_empty=None):
-        """Return the fields to export as a list of tuples (name, value)"""
+    def _get_serialized_fields(self, item, default_value=None, include_empty=None):
+        """Return the fields to export as an iterable of tuples (name,
+        serialized_value)
+        """
         if include_empty is None:
             include_empty = self.export_empty_fields
         if self.fields_to_export is None:
@@ -41,7 +43,14 @@ class BaseItemExporter(object):
                 nonempty_fields = set(item.keys())
                 field_iter = (x for x in self.fields_to_export if x in \
                     nonempty_fields)
-        return [(k, item.get(k, default_value)) for k in field_iter]
+        for field_name in field_iter:
+            if field_name in item:
+                field = item.fields[field_name]
+                value = self.serialize_field(field, field_name, item[field_name])
+            else:
+                value = default_value
+
+            yield field_name, value
 
     def start_exporting(self):
         pass
@@ -66,18 +75,17 @@ class XmlItemExporter(BaseItemExporter):
 
     def export_item(self, item):
         self.xg.startElement(self.item_element, {})
-        for field, value in self._get_fields_to_export(item, default_value=''):
-            self._export_xml_field(item.fields[field], field, value)
+        for name, value in self._get_serialized_fields(item, default_value=''):
+            self._export_xml_field(name, value)
         self.xg.endElement(self.item_element)
 
     def finish_exporting(self):
         self.xg.endElement(self.root_element)
         self.xg.endDocument()
 
-    def _export_xml_field(self, field, name, value):
+    def _export_xml_field(self, name, serialized_value):
         self.xg.startElement(name, {})
-        if value is not None:
-            self.xg.characters(self.serialize(field, name, value))
+        self.xg.characters(serialized_value)
         self.xg.endElement(name)
 
 
@@ -97,7 +105,7 @@ class CsvItemExporter(BaseItemExporter):
             self.csv_writer.writerow(self.fields_to_export)
 
     def export_item(self, item):
-        fields = self._get_fields_to_export(item, default_value='', \
+        fields = self._get_serialized_fields(item, default_value='', \
             include_empty=True)
 
         values = [x[1] for x in fields]
@@ -111,7 +119,7 @@ class PickleItemExporter(BaseItemExporter):
         self.pickler = Pickler(*args, **kwargs)
 
     def export_item(self, item):
-        self.pickler.dump(dict(self._get_fields_to_export(item)))
+        self.pickler.dump(dict(self._get_serialized_fields(item)))
 
 
 class PprintItemExporter(BaseItemExporter):
@@ -121,5 +129,5 @@ class PprintItemExporter(BaseItemExporter):
         self.file = file
 
     def export_item(self, item):
-        itemdict = dict(self._get_fields_to_export(item))
+        itemdict = dict(self._get_serialized_fields(item))
         self.file.write(pprint.pformat(itemdict) + '\n')
