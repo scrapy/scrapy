@@ -1,1 +1,2 @@
-"""This directory contains third party modules used by Scrapy"""
+"""This package contains some third party modules that are distributed along
+with Scrapy"""
