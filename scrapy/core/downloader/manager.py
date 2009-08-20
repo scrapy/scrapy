@@ -13,7 +13,6 @@ from scrapy.utils.defer import mustbe_deferred
 from scrapy import log
 from .middleware import DownloaderMiddlewareManager
 from .handlers import download_any
-from .resolver import CachingThreadedResolver
 
 
 class SiteInfo(object):
@@ -55,8 +54,6 @@ class Downloader(object):
         self.sites = {}
         self.middleware = DownloaderMiddlewareManager()
         self.concurrent_domains = settings.getint('CONCURRENT_DOMAINS')
-        cached_resolver = CachingThreadedResolver(reactor)
-        reactor.installResolver(cached_resolver)
 
     def fetch(self, request, spider):
         """ Main method to use to request a download
