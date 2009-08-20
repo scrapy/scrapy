@@ -1,7 +1,7 @@
 """
 Request Limit Spider middleware
 
-See documentation in docs/ref/spider-middleware.rst
+See documentation in docs/topics/spider-middleware.rst
 """
 from itertools import imap
 from scrapy.xlib.pydispatch import dispatcher

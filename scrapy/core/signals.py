@@ -1,7 +1,7 @@
 """
 Scrapy core signals
 
-These signals are documented in docs/ref/signals.rst. Please don't add new
+These signals are documented in docs/topics/signals.rst. Please don't add new
 signals here without documenting them there.
 """
 

@@ -1,7 +1,7 @@
 """
 DefaultHeaders downloader middleware
 
-See documentation in docs/ref/downloader-middleware.rst
+See documentation in docs/topics/downloader-middleware.rst
 """
 
 from scrapy.conf import settings

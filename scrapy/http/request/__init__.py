@@ -2,7 +2,7 @@
 This module implements the Request class which is used to represent HTTP
 requests in Scrapy.
 
-See documentation in docs/ref/request-response.rst
+See documentation in docs/topics/request-response.rst
 """
 
 import copy

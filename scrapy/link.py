@@ -2,7 +2,7 @@
 This module defines the Link object used in Link extractors.
 
 For actual link extractors implementation see scrapy.contrib.linkextractor, or
-its documentation in: docs/ref/link-extractors.rst
+its documentation in: docs/topics/link-extractors.rst
 """
 
 class Link(object):

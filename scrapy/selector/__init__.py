@@ -1,7 +1,7 @@
 """
 XPath selectors 
 
-See documentation in docs/ref/selectors.rst
+See documentation in docs/topics/selectors.rst
 """
 
 import libxml2

@@ -1,7 +1,7 @@
 """ 
 Scrapy logging facility
 
-See documentation in docs/ref/logging.rst
+See documentation in docs/topics/logging.rst
 """
 import sys
 from traceback import format_exc

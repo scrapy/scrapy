@@ -1,7 +1,7 @@
 """
 MemoryDebugger extension
 
-See documentation in docs/ref/extensions.rst
+See documentation in docs/topics/extensions.rst
 """
 
 import gc

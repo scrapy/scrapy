@@ -2,7 +2,7 @@
 This module implements the XmlResponse class which adds encoding
 discovering through XML encoding declarations to the TextResponse class.
 
-See documentation in docs/ref/request-response.rst
+See documentation in docs/topics/request-response.rst
 """
 
 import re

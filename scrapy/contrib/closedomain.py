@@ -1,7 +1,7 @@
 """CloseDomain is an extension that forces spiders to be closed after certain
 conditions are met.
 
-See documentation in docs/ref/extensions.rst
+See documentation in docs/topics/extensions.rst
 """
 
 from collections import defaultdict

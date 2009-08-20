@@ -1,7 +1,7 @@
 """
 Mail sending helpers
 
-See documentation in docs/ref/email.rst
+See documentation in docs/topics/email.rst
 """
 from cStringIO import StringIO
 from email.MIMEMultipart import MIMEMultipart

@@ -1,7 +1,7 @@
 """
 Offsite Spider Middleware
 
-See documentation in docs/ref/spider-middleware.rst
+See documentation in docs/topics/spider-middleware.rst
 """
 
 import re

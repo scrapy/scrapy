@@ -1,7 +1,7 @@
 """
 Base class for Scrapy spiders
 
-See documentation in docs/ref/spiders.rst
+See documentation in docs/topics/spiders.rst
 """
 from zope.interface import Interface, Attribute, invariant, implements
 from twisted.plugin import IPlugin

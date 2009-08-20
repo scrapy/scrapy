@@ -1,7 +1,7 @@
 """
 Scheduler queue web console module 
 
-See documentation in docs/ref/extensions.rst
+See documentation in docs/topics/extensions.rst
 """
 
 from scrapy.xlib.pydispatch import dispatcher

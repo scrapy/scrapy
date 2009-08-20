@@ -2,7 +2,7 @@
 This modules implements the CrawlSpider which is the recommended spider to use
 for scraping typical web sites that requires crawling pages.
 
-See documentation in docs/ref/spiders.rst
+See documentation in docs/topics/spiders.rst
 """
 
 import copy

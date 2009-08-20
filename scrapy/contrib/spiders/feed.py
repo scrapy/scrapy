@@ -2,7 +2,7 @@
 This module implements the XMLFeedSpider which is the recommended spider to use
 for scraping from an XML feed.
 
-See documentation in docs/ref/spiders.rst
+See documentation in docs/topics/spiders.rst
 """
 
 from scrapy.contrib.spiders.init import InitSpider
