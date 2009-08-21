@@ -55,19 +55,31 @@ These are basically:
 Defining our Item
 =================
 
-Items are placeholders for extracted data, they're represented by a simple
-Python class: :class:`scrapy.item.Item`, or any subclass of it.
+`Items` are containers that will be loaded with the scraped data, they work
+like simple python dicts but they offer some additional features like providing
+default values.
 
-In simple projects you won't need to worry about defining Items, because the
-``startproject`` command has defined one for you in the ``items.py`` file, let's
-see its contents::
+They are declared by creating an :class:`scrapy.item.Item` class an defining
+its attributes as :class:`scrapy.item.Field` objects, like you will in an ORM
+(don't worry if you're not familiar with ORM's, you will see that this is an
+easy task).
+
+We begin by modeling the item that we will use to hold the sites data obtained
+from dmoz.org, as we want to capture the name, url and description of the
+sites, we define fields for each of these three attributes. Our Item class
+looks like::
 
     # Define here the models for your scraped items
 
-    from scrapy.item import Item
+    from scrapy.item import Item, Field
 
     class DmozItem(Item):
-        pass
+        title = Field()
+        link = Field()
+        desc = Field()
+        
+This may seem complicated at first, but defining the item allows you to use other handy
+components of Scrapy that need to know how your item looks like.
 
 Our first Spider
 ================
@@ -158,9 +170,9 @@ Scrapy creates :class:`scrapy.http.Request` objects for each URL in the
 ``start_urls`` attribute of the Spider, and assigns them the ``parse`` method of
 the spider as their callback function.
 
-These Requests are scheduled, then executed, and a :class:`scrapy.http.Response`
-objects are returned and then fed to the spider, through the
-:meth:`~scrapy.spider.BaseSpider.parse` method.
+These Requests are scheduled, then executed, and a
+:class:`scrapy.http.Response` objects are returned and then fed back to the
+spider, through the :meth:`~scrapy.spider.BaseSpider.parse` method.
 
 Extracting Items
 ----------------
@@ -356,6 +368,18 @@ Now try crawling the dmoz.org domain again and you'll see sites being printed
 in your output, run::
 
    python scrapy-ctl.py crawl dmoz.org
+
+Using our item
+--------------
+
+:class:`~scrapy.item.Item` objects are custom python dict, you can access the
+values oftheir fields (attributes of the class we defined earlier) using the
+standard dict syntax like::
+
+   >>> item = DmozItem()
+   >>> item['title'] = 'Example title'
+   >>> item['title']
+   'Example title'
 
 Spiders are expected to return their scraped data inside
 :class:`~scrapy.item.Item` objects, so to actually return the data we've
