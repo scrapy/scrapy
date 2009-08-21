@@ -3,7 +3,7 @@
 API Reference
 =============
 
-This section documents the Scrapy |version| API. For more information see :ref:`misc-api-stability`.
+This section documents the Scrapy |version| API. For more information see :ref:`api-stability`.
 
 * :ref:`topics-request-response`
 * :ref:`topics-spiders-ref`
