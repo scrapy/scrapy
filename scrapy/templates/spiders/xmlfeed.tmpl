@@ -6,11 +6,11 @@ class $classname(XMLFeedSpider):
     domain_name = '$site'
     start_urls = ['http://www.$site/feed.xml']
 
-    def parse_item(self, response, xSel):
+    def parse_item(self, response, selector):
         i = ${ProjectName}Item()
-        #i['url'] = xSel('url'.extract()
-        #i['name'] = xSel('name').extract()
-        #i['description'] = xSel('description').extract()
+        #i['url'] = selector.select('url').extract()
+        #i['name'] = selector.select('name').extract()
+        #i['description'] = selector.select('description').extract()
         return i
 
 SPIDER = $classname()
