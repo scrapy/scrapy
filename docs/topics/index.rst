@@ -43,14 +43,15 @@ Chapter 3. Services
    stats
    email
 
-Chapter 4. Administration consoles
-----------------------------------
+Chapter 4. Debugging and monitoring
+-----------------------------------
 
 .. toctree::
    :maxdepth: 1
 
    webconsole
    telnetconsole
+   leaks
 
 .. toctree::
    :maxdepth: 1

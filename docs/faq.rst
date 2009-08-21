@@ -76,8 +76,8 @@ Can I crawl in depth-first order instead of breadth-first order?
 
 Yes, there's a setting for that: :setting:`SCHEDULER_ORDER`.
 
-How can I debug memory leaks in my Scrapy process?
+My Scrapy crawler has memory leaks. What can I do?
 --------------------------------------------------
 
-See :ref:`topics-telnetconsole-leaks`.
+See :ref:`topics-leaks`.
 
