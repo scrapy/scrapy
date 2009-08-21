@@ -327,7 +327,7 @@ MediaPipeline
       The return value of this method is used as output of pipeline stage.
 
       :meth:`item_completed` can return item itself or raise
-      :exception:`DropItem` exception.
+      :exc:`~scrapy.core.exceptions.DropItem` exception.
 
       Default returns item
 

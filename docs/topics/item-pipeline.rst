@@ -29,8 +29,8 @@ single Python class that must define the following method:
 
 This method is called for every item pipeline component and must either return
 a :class:`~scrapy.item.Item` (or any descendant class) object or raise a
-:exception:`DropItem` exception. Dropped items are no longer processed by
-further pipeline components.
+:exc:`~scrapy.core.exceptions.DropItem` exception. Dropped items are no longer
+processed by further pipeline components.
 
 
 Item pipeline example

@@ -79,9 +79,9 @@ order.
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
     If any handler of this signal handlers raises a
-    :exception:`DontCloseDomain` the domain won't be closed this time and will
+    :exc:`DontCloseDomain` the domain won't be closed this time and will
     wait until another idle signal is sent.  Otherwise (if no handler raises
-    :exception:`DontCloseDomain`) the domain will be closed immediately after
+    :exc:`DontCloseDomain`) the domain will be closed immediately after
     all handlers of ``domain_idle`` have finished, and a
     :signal:`domain_closed` will thus be sent.
 
@@ -106,7 +106,7 @@ order.
     :param item: is the item scraped
     :type item: :class:`~scrapy.item.Item` object
 
-    :param spider: the spider which scraped the item 
+    :param spider: the spider which scraped the item
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
     :param response: the response from which the item was scraped
@@ -121,7 +121,7 @@ order.
     :param item: the item which passed the pipeline
     :type item: :class:`~scrapy.item.Item` object
 
-    :param spider: the spider which scraped the item 
+    :param spider: the spider which scraped the item
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
     :param output: the output of the item pipeline. This is typically the
@@ -132,17 +132,18 @@ order.
 .. function:: item_dropped(item, spider, exception)
 
     Sent after an item has been dropped from the :ref:`topics-item-pipeline`
-    when some stage raised a :exception:`DropItem` exception.
+    when some stage raised a :exc:`~scrapy.core.exceptions.DropItem` exception.
 
     :param item: the item dropped from the :ref:`topics-item-pipeline`
     :type item: :class:`~scrapy.item.Item` object
 
-    :param spider: the spider which scraped the item 
+    :param spider: the spider which scraped the item
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
-    :param exception: the exception (which must be a :exception:`DropItem`
-        subclass) which caused the item to be dropped 
-    :type exception: :exception:`DropItem` exception
+    :param exception: the exception (which must be a
+        :exc:`~scrapy.core.exceptions.DropItem` subclass) which caused the item
+        to be dropped
+    :type exception: :exc:`~scrapy.core.exceptions.DropItem` exception
 
 .. signal:: request_received
 .. function:: request_received(request, spider, response)

@@ -769,7 +769,7 @@ Default: ``False``
 Scope: ``scrapy.contrib.downloadermiddleware.robotstxt``
 
 If enabled, Scrapy will respect robots.txt policies. For more information see
-:topic:`robotstxt`
+:ref:`topics-dlmw-robots`
 
 .. setting:: SCHEDULER
 

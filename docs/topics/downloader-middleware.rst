@@ -83,8 +83,8 @@ will then be passed to the original callback. If the new request doesn't have a
 callback, the response downloaded will be just passed to the original request
 callback.
 
-If returns an :exception:`IgnoreRequest` exception, the entire request will be
-dropped completely and its callback never called.
+If returns an :exc:`~scrapy.core.exceptions.IgnoreRequest` exception, the
+entire request will be dropped completely and its callback never called.
 
 
 .. method:: process_response(request, response, spider)
@@ -94,14 +94,14 @@ dropped completely and its callback never called.
 ``spider`` is a BaseSpider object
 
 ``process_response()`` should return a Response object or raise a
-:exception:`IgnoreRequest` exception. 
+:exc:`~scrapy.core.exceptions.IgnoreRequest` exception. 
 
 If returns a Response (it could be the same given response, or a brand-new one)
 that response will continue to be processed with the ``process_response()`` of
 the next middleware in the pipeline.
 
-If returns an :exception:`IgnoreRequest` exception, the response will be
-dropped completely and its callback never called.
+If returns an :exc:`~scrapy.core.exceptions.IgnoreRequest` exception, the
+response will be dropped completely and its callback never called.
 
 .. method:: process_download_exception(request, exception, spider)
 
@@ -195,6 +195,8 @@ HttpCacheMiddleware
           (for performance reasons)
         * :setting:`HTTPCACHE_EXPIRATION_SECS` - how many secs until the cache is
           considered out of date
+
+.. _topics-dlmw-robots:
 
 RobotsTxtMiddleware
 -------------------
