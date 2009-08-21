@@ -93,8 +93,8 @@ SgmlLinkExtractor
     :type unique: boolean
 
     :param process_value: see ``process_value`` argument of
-        :class:`LinkExtractor` class constructor
-    :type process_value: boolean
+        :class:`BaseSgmlLinkExtractor` class constructor
+    :type process_value: callable
 
 BaseSgmlLinkExtractor
 ---------------------
