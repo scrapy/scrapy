@@ -62,7 +62,7 @@ production environments.
 
 Once you have ``trackref`` enabled you can enter the telnet console and inspect
 how many objects (of the classes mentioned above) are currently alive using the
-``pref()`` function which is an alias to the
+``prefs()`` function which is an alias to the
 :func:`~scrapy.utils.trackref.print_live_refs` function::
 
     telnet localhost 6023
