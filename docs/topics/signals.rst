@@ -29,6 +29,9 @@ Built-in signals reference
 Here's a list of signals used in Scrapy and their meaning, in alphabetical
 order.
 
+domain_closed
+-------------
+
 .. signal:: domain_closed
 .. function:: domain_closed(domain, spider, reason)
 
@@ -51,6 +54,9 @@ order.
         Ctrl-C to stop it) the reason will be ``'shutdown'``.
     :type reason: str
 
+domain_opened
+-------------
+
 .. signal:: domain_opened
 .. function:: domain_opened(domain, spider)
 
@@ -63,6 +69,9 @@ order.
 
     :param spider: the spider which has been opened
     :type spider: :class:`~scrapy.spider.BaseSpider` object
+
+domain_idle
+-----------
 
 .. signal:: domain_idle
 .. function:: domain_idle(domain, spider)
@@ -85,17 +94,26 @@ order.
     all handlers of ``domain_idle`` have finished, and a
     :signal:`domain_closed` will thus be sent.
 
+engine_started
+--------------
+
 .. signal:: engine_started
 .. function:: engine_started()
 
     Sent when the Scrapy engine is started (for example, when a crawling
     process has started).
 
+engine_stopped
+--------------
+
 .. signal:: engine_stopped
 .. function:: engine_stopped()
 
     Sent when the Scrapy engine is stopped (for example, when a crawling
     process has finished).
+
+item_scraped
+------------
 
 .. signal:: item_scraped
 .. function:: item_scraped(item, spider, response)
@@ -112,6 +130,9 @@ order.
     :param response: the response from which the item was scraped
     :type response: :class:`~scrapy.http.Response` object
 
+item_passed
+-----------
+
 .. signal:: item_passed
 .. function:: item_passed(item, spider, output)
 
@@ -127,6 +148,9 @@ order.
     :param output: the output of the item pipeline. This is typically the
         same :class:`~scrapy.item.Item` object received in the ``item``
         parameter, unless some pipeline stage created a new item.
+
+item_dropped
+------------
 
 .. signal:: item_dropped
 .. function:: item_dropped(item, spider, exception)
@@ -145,6 +169,9 @@ order.
         to be dropped
     :type exception: :exc:`~scrapy.core.exceptions.DropItem` exception
 
+request_received
+----------------
+
 .. signal:: request_received
 .. function:: request_received(request, spider, response)
 
@@ -160,6 +187,9 @@ order.
         generated the request later
     :type response: :class:`~scrapy.http.Response` object
 
+request_uploaded
+----------------
+
 .. signal:: request_uploaded
 .. function:: request_uploaded(request, spider)
 
@@ -170,6 +200,9 @@ order.
 
     :param spider: the spider which generated the request
     :type spider: :class:`~scrapy.spider.BaseSpider` object
+
+response_received
+-----------------
 
 .. signal:: response_received
 .. function:: response_received(response, spider)
@@ -182,6 +215,9 @@ order.
 
     Sent when the engine receives a new :class:`~scrapy.http.Response` from the
     downloader.
+
+response_downloaded
+-------------------
 
 .. signal:: response_downloaded
 .. function:: response_downloaded(response, spider)
