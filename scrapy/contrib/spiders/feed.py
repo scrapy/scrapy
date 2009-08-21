@@ -55,8 +55,8 @@ class XMLFeedSpider(InitSpider):
         containing any of them.
         """
 
-        for xSel in nodes:
-            ret = self.parse_item(response, xSel)
+        for selector in nodes:
+            ret = self.parse_item(response, selector)
             if isinstance(ret, (BaseItem, Request)):
                 ret = [ret]
             if not isinstance(ret, (list, tuple)):
