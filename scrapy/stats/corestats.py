@@ -19,7 +19,7 @@ class CoreStats(object):
     def __init__(self):
         stats.set_value('envinfo/user', getpass.getuser())
         stats.set_value('envinfo/host', socket.gethostname())
-        stats.set_value('envinfo/logfile', settings['LOGFILE'])
+        stats.set_value('envinfo/logfile', settings['LOG_FILE'])
         stats.set_value('envinfo/pid', os.getpid())
 
         dispatcher.connect(self.stats_domain_opened, signal=stats_domain_opened)

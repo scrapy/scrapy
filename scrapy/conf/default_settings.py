@@ -103,8 +103,8 @@ ITEM_PIPELINES = []
 
 LOG_ENABLED = True
 LOG_STDOUT = False
-LOGLEVEL = 'DEBUG'
-LOGFILE = None
+LOG_LEVEL = 'DEBUG'
+LOG_FILE = None
 
 MAIL_HOST = 'localhost'
 MAIL_FROM = 'scrapy@localhost'

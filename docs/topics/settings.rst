@@ -526,6 +526,26 @@ Default: ``True``
 
 Enable logging.
 
+.. setting:: LOG_FILE
+
+LOG_FILE
+--------
+
+Default: ``None``
+
+File name to use for logging output. If None, standard input (or error) will be
+used depending on the value of the LOG_STDOUT setting.
+
+.. setting:: LOG_LEVEL
+
+LOG_LEVEL
+---------
+
+Default: ``'DEBUG'``
+
+Minimum level to log. Available levels are: CRITICAL, ERROR, WARNING,
+INFO, DEBUG. For more info see :ref:`topics-logging`.
+
 .. setting:: LOG_STDOUT
 
 LOG_STDOUT
@@ -535,26 +555,6 @@ Default: ``False``
 
 If enabled logging will be sent to standard output, otherwise standard error
 will be used.
-
-.. setting:: LOGFILE
-
-LOGFILE
--------
-
-Default: ``None``
-
-File name to use for logging output. If None, standard input (or error) will be
-used depending on the value of the LOG_STDOUT setting.
-
-.. setting:: LOGLEVEL
-
-LOGLEVEL
---------
-
-Default: ``'DEBUG'``
-
-Minimum level to log. Available levels are: CRITICAL, ERROR, WARNING,
-INFO, DEBUG. For more info see :ref:`topics-logging`.
 
 .. setting:: MAIL_FROM
 

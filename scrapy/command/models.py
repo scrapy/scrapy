@@ -69,11 +69,11 @@ class ScrapyCommand(object):
     def process_options(self, args, opts):
         if opts.logfile:
             settings.overrides['LOG_ENABLED'] = True
-            settings.overrides['LOGFILE'] = opts.logfile
+            settings.overrides['LOG_FILE'] = opts.logfile
 
         if opts.loglevel:
             settings.overrides['LOG_ENABLED'] = True
-            settings.overrides['LOGLEVEL'] = opts.loglevel
+            settings.overrides['LOG_LEVEL'] = opts.loglevel
 
         if opts.nolog:
             settings.overrides['LOG_ENABLED'] = False

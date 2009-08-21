@@ -29,7 +29,7 @@ How to set the log level
 ========================
 
 You can set the log level using the `--loglevel/-L` command line option, or
-using the :setting:`LOGLEVEL` setting.
+using the :setting:`LOG_LEVEL` setting.
 
 How to log messages
 ===================
@@ -61,14 +61,14 @@ scrapy.log module
 
    A boolean which is ``True`` is logging has been started or ``False`` otherwise.
 
-.. function:: start(logfile=None, loglevel=None, log_stdout=None)
+.. function:: start(logfile=None, loglevel=None, logstdout=None)
 
     Start the logging facility. This must be called before actually logging any
     messages. Otherwise, messages logged before this call will get lost.
 
     ``logfile`` is a string with the file path to use for logging output. If
-    omitted, :setting:`LOGFILE` setting will be used. If both are ``None``, log
-    will be sent to standard output (if ``log_stdout`` or :setting:`LOG_STDOUT` is
+    omitted, :setting:`LOG_FILE` setting will be used. If both are ``None``, log
+    will be sent to standard output (if ``logstdout`` or :setting:`LOG_STDOUT` is
     ``True``) or standard error (if ``log_stderr`` or :setting:`LOG_STDOUT` is
     ``False``).
 
