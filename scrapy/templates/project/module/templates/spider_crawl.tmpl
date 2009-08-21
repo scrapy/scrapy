@@ -15,11 +15,11 @@ class $classname(CrawlSpider):
     )
 
     def parse_item(self, response):
+        xs = HtmlXPathSelector(response)
         i = ${ProjectName}Item()
-        #xs = HtmlXPathSelector(response)
-        #i.site_id = xs.select('//input[@id="sid"]/@value').extract()
-        #i.name = xs.select('//div[@id="name"]').extract()
-        #i.description = xs.select('//div[@id="description"]').extract()
+        #i['site_id'] = xs.select('//input[@id="sid"]/@value').extract()
+        #i['name'] = xs.select('//div[@id="name"]').extract()
+        #i['description'] = xs.select('//div[@id="description"]').extract()
         return [i]
 
 SPIDER = $classname()

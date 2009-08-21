@@ -8,9 +8,9 @@ class $classname(XMLFeedSpider):
 
     def parse_item(self, response, xSel):
         i = ${ProjectName}Item()
-        #i.url = xSel('url'.extract()
-        #i.name = xSel('name').extract()
-        #i.description = xSel('description').extract()
+        #i['url'] = xSel('url'.extract()
+        #i['name'] = xSel('name').extract()
+        #i['description'] = xSel('description').extract()
         return i
 
 SPIDER = $classname()
