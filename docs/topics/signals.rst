@@ -1,8 +1,5 @@
 .. _topics-signals:
 
-.. module:: scrapy.core.signals
-   :synopsis: Signals definitions
-
 =======
 Signals
 =======
@@ -25,6 +22,9 @@ For more information about working when see the documentation of
 
 Built-in signals reference
 ==========================
+
+.. module:: scrapy.core.signals
+   :synopsis: Signals definitions
 
 Here's a list of signals used in Scrapy and their meaning, in alphabetical
 order.

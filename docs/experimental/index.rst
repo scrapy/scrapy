@@ -1,4 +1,4 @@
-.. _experimental-index:
+.. _experimental:
 
 Experimental features
 =====================

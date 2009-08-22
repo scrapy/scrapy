@@ -1,9 +1,0 @@
-{% extends "!layout.html" %}
-
-{% block rootrellink %}
-    <li><a href="{{ pathto('index') }}">{{ shorttitle|e }}</a> (</li>
-    <li><a title="Introduction and tutorial" href="{{ pathto('intro/index') }}">intro</a> | </li>
-    <li><a title="Usage guide" href="{{ pathto('topics/index') }}">topics</a> | </li>
-    <li><a title="API Reference" href="{{ pathto('reference') }}">reference</a> | </li>
-    <li><a title="Frequently Asked Questions" href="{{ pathto('faq') }}">faq</a> ) {{ reldelim1 }} </li>
-{% endblock %}

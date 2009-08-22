@@ -19,8 +19,7 @@ The purpose of this document is to introduce you to the concepts behind Scrapy
 so you can get an idea of how it works and decide if Scrapy is what you need. 
 
 When you're ready to start a project, you can :ref:`start with the tutorial
-<intro-tutorial>`. For more detailed information you can take a look at the
-:ref:`documentation contents <contents>`.
+<intro-tutorial>`.
 
 Pick a website
 ==============
