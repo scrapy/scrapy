@@ -15,7 +15,7 @@ Having trouble? We'd like to help!
 * Looking for specific information? Try the :ref:`genindex` or :ref:`modindex`.
 * Search for information in the `archives of the scrapy-users mailing list`_, or
   `post a question`_.
-* Ask a question in the `#scrapy IRC channel`_
+* Ask a question in the `#scrapy IRC channel`_.
 * Report bugs with Scrapy in our `ticket tracker`_.
 
 .. _archives of the scrapy-users mailing list: http://groups.google.com/group/scrapy-users/
@@ -41,7 +41,7 @@ First steps
     Get Scrapy installed on your computer.
 
 :ref:`intro-tutorial`
-    Write your first Scrapy project
+    Write your first Scrapy project.
 
 
 Scraping basics
@@ -192,7 +192,7 @@ All the rest
    experimental/index
 
 :ref:`api-stability`
-    Understand Scrapy versioning and API stability
+    Understand Scrapy versioning and API stability.
 
 :ref:`experimental`
-    Learn about bleeding-edge features
+    Learn about bleeding-edge features.
