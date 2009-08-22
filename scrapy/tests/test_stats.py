@@ -1,6 +1,9 @@
 import unittest 
 
+from scrapy.xlib.pydispatch import dispatcher
 from scrapy.stats.collector import StatsCollector, DummyStatsCollector
+from scrapy.stats.signals import stats_domain_opened, stats_domain_closing, \
+    stats_domain_closed
 
 class StatsCollectorTest(unittest.TestCase):
 
@@ -44,6 +47,34 @@ class StatsCollectorTest(unittest.TestCase):
         stats.set_value('test', 'value', domain='a')
         self.assertEqual(stats.get_stats(), {})
         self.assertEqual(stats.get_stats('a'), {})
+
+    def test_signals(self):
+        signals_catched = set()
+
+        def domain_open(domain):
+            assert domain == 'example.com'
+            signals_catched.add(stats_domain_opened)
+        def domain_closing(domain, reason):
+            assert domain == 'example.com'
+            assert reason == 'testing'
+            signals_catched.add(stats_domain_closing)
+        def domain_closed(domain, reason, domain_stats):
+            assert domain == 'example.com'
+            assert reason == 'testing'
+            assert domain_stats == {'test': 1}
+            signals_catched.add(stats_domain_closed)
+
+        dispatcher.connect(domain_open, signal=stats_domain_opened)
+        dispatcher.connect(domain_closing, signal=stats_domain_closing)
+        dispatcher.connect(domain_closed, signal=stats_domain_closed)
+
+        stats = StatsCollector()
+        stats.open_domain('example.com')
+        stats.set_value('test', 1, domain='example.com')
+        stats.close_domain('example.com', 'testing')
+        assert stats_domain_opened in signals_catched
+        assert stats_domain_closing in signals_catched
+        assert stats_domain_closed in signals_catched
 
 if __name__ == "__main__":
     unittest.main()

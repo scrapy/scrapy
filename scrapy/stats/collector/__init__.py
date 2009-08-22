@@ -53,20 +53,18 @@ class StatsCollector(object):
         send_catch_log(stats_domain_opened, domain=domain)
 
     def close_domain(self, domain, reason):
-        if self._dump:
-            log.msg("Dumping stats:\n" + pprint.pformat(self.get_stats(domain)), \
-                domain=domain)
+        send_catch_log(stats_domain_closing, domain=domain, reason=reason)
         stats = self._stats.pop(domain)
         send_catch_log(stats_domain_closed, domain=domain, reason=reason, \
             domain_stats=stats)
+        if self._dump:
+            log.msg("Dumping domain stats:\n" + pprint.pformat(stats), \
+                domain=domain)
 
     def engine_stopped(self):
         if self._dump:
             log.msg("Dumping global stats:\n" + pprint.pformat(self.get_stats()))
 
-    def _start_closing_domain(self, domain, reason):
-        send_catch_log(stats_domain_closing, domain=domain, reason=reason)
-        self.close_domain(domain, reason)
 
 class MemoryStatsCollector(StatsCollector):
 
