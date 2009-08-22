@@ -54,10 +54,12 @@ class StatsCollectorTest(unittest.TestCase):
         def domain_open(domain):
             assert domain == 'example.com'
             signals_catched.add(stats_domain_opened)
+
         def domain_closing(domain, reason):
             assert domain == 'example.com'
             assert reason == 'testing'
             signals_catched.add(stats_domain_closing)
+
         def domain_closed(domain, reason, domain_stats):
             assert domain == 'example.com'
             assert reason == 'testing'
@@ -75,6 +77,10 @@ class StatsCollectorTest(unittest.TestCase):
         assert stats_domain_opened in signals_catched
         assert stats_domain_closing in signals_catched
         assert stats_domain_closed in signals_catched
+
+        dispatcher.disconnect(domain_open, signal=stats_domain_opened)
+        dispatcher.disconnect(domain_closing, signal=stats_domain_closing)
+        dispatcher.disconnect(domain_closed, signal=stats_domain_closed)
 
 if __name__ == "__main__":
     unittest.main()
