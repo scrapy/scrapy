@@ -8,7 +8,9 @@ def send_catch_log(*args, **kwargs):
     """Same as dispatcher.robust.sendRobust but logs any exceptions raised by
     the signal handlers
     """
-    for receiver, result in sendRobust(*args, **kwargs):
-        if isinstance(result, Exception):
+    results = sendRobust(*args, **kwargs)
+    for receiver, response in results:
+        if isinstance(response, Exception):
             log.msg("Exception caught on signal dispatch: receiver=%r, " \
-                " exception=%r" % (receiver, result), level=log.ERROR)
+                " exception=%r" % (receiver, response), level=log.ERROR)
+    return results
