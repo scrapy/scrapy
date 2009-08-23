@@ -7,10 +7,10 @@ except ImportError:
 
 class JsonLinesItemExporter(BaseItemExporter):
 
-    def __init__(self, file, *args, **kwargs):
-        super(JsonLinesItemExporter, self).__init__()
+    def __init__(self, file, **kwargs):
+        self._configure(kwargs)
         self.file = file
-        self.encoder = json.JSONEncoder(*args, **kwargs)
+        self.encoder = json.JSONEncoder(**kwargs)
 
     def export_item(self, item):
         itemdict = dict(self._get_serialized_fields(item))

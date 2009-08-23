@@ -11,19 +11,37 @@ from xml.sax.saxutils import XMLGenerator
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter', \
     'CsvItemExporter', 'XmlItemExporter']
 
-identity = lambda x: x
-
 class BaseItemExporter(object):
 
-    fields_to_export = None
-    export_empty_fields = False
+    def __init__(self, **kwargs):
+        self._configure(kwargs)
+
+    def _configure(self, options, dont_fail=False):
+        """Configure the exporter by poping options from the ``options`` dict.
+        If dont_fail is set, it won't raise an exception on unexpected options
+        (useful for using with keyword arguments in subclasses constructors)
+        """
+        self.fields_to_export = options.pop('fields_to_export', None)
+        self.export_empty_fields = options.pop('export_empty_fields', False)
+        self.encoding = options.pop('encoding', 'utf-8')
+        if not dont_fail and options:
+            raise TypeError("Unexpected options: %s" % ', '.join(options.keys()))
 
     def export_item(self, item):
         raise NotImplementedError
 
     def serialize_field(self, field, name, value):
-        serializer = field.get('serializer', identity)
+        serializer = field.get('serializer', self._to_str_if_unicode)
         return serializer(value)
+
+    def start_exporting(self):
+        pass
+
+    def finish_exporting(self):
+        pass
+
+    def _to_str_if_unicode(self, value):
+        return value.encode(self.encoding) if isinstance(value, unicode) else value
 
     def _get_serialized_fields(self, item, default_value=None, include_empty=None):
         """Return the fields to export as an iterable of tuples (name,
@@ -52,22 +70,14 @@ class BaseItemExporter(object):
 
             yield field_name, value
 
-    def start_exporting(self):
-        pass
-
-    def finish_exporting(self):
-        pass
-
-
 
 class XmlItemExporter(BaseItemExporter):
 
-    item_element = 'item'
-    root_element = 'items'
-
-    def __init__(self, file):
-        super(XmlItemExporter, self).__init__()
-        self.xg = XMLGenerator(file)
+    def __init__(self, file, **kwargs):
+        self.item_element = kwargs.pop('item_element', 'item')
+        self.root_element = kwargs.pop('root_element', 'items')
+        self._configure(kwargs)
+        self.xg = XMLGenerator(file, encoding=self.encoding)
 
     def start_exporting(self):
         self.xg.startDocument()
@@ -91,17 +101,16 @@ class XmlItemExporter(BaseItemExporter):
 
 class CsvItemExporter(BaseItemExporter):
 
-    include_headers_line = False
-
-    def __init__(self, *args, **kwargs):
-        super(CsvItemExporter, self).__init__()
-        self.csv_writer = csv.writer(*args, **kwargs)
+    def __init__(self, file, include_headers_line=False, **kwargs):
+        self._configure(kwargs, dont_fail=True)
+        self.include_headers_line = include_headers_line
+        self.csv_writer = csv.writer(file, **kwargs)
 
     def start_exporting(self):
         if self.include_headers_line:
             if not self.fields_to_export:
-                raise RuntimeError("You must set fields_to_export in order to" + \
-                                   " use include_headers_line")
+                raise RuntimeError("You must set fields_to_export in order" + \
+                                   " to use include_headers_line")
             self.csv_writer.writerow(self.fields_to_export)
 
     def export_item(self, item):
@@ -114,9 +123,9 @@ class CsvItemExporter(BaseItemExporter):
 
 class PickleItemExporter(BaseItemExporter):
 
-    def __init__(self, *args, **kwargs):
-        super(PickleItemExporter, self).__init__()
-        self.pickler = Pickler(*args, **kwargs)
+    def __init__(self, file, protocol=0, **kwargs):
+        self._configure(kwargs)
+        self.pickler = Pickler(file, protocol)
 
     def export_item(self, item):
         self.pickler.dump(dict(self._get_serialized_fields(item)))
@@ -124,8 +133,8 @@ class PickleItemExporter(BaseItemExporter):
 
 class PprintItemExporter(BaseItemExporter):
 
-    def __init__(self, file):
-        super(PprintItemExporter, self).__init__()
+    def __init__(self, file, **kwargs):
+        self._configure(kwargs)
         self.file = file
 
     def export_item(self, item):

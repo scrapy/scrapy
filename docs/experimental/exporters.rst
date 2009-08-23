@@ -67,6 +67,8 @@ it to the serialization library, if the exporter supports it.
 There are ways to customize how a field will be serialized, which are described
 next.
 
+.. _topics-exporters-serializers:
+
 1. Declaring a serializer in the field
 --------------------------------------
 
@@ -120,9 +122,16 @@ these two items::
 BaseItemExporter
 ----------------
 
-.. class:: BaseItemExporter
+.. class:: BaseItemExporter(fields_to_export=None, export_empty_fields=False, encoding='utf-8')
 
-   This is the base class for all Item Exporters, and it's an abstract class.
+   This is the (abstract) base class for all Item Exporters. It provides
+   support for common features used by all (concrete) Item Exporters, such as
+   defining what fields to export, whether to export empty fields, or which
+   encoding to use.
+   
+   These features can be configured through the constructor arguments which
+   populate their respective attributes: :attr:`fields_to_export`,
+   :attr:`export_empty_fields`, :attr:`encoding`.
 
    .. method:: export_item(item)
 
@@ -134,6 +143,12 @@ BaseItemExporter
       Return the serialized value for the given field. You can override this
       method (in your custom Item Exporters) if you want to control how a
       particular field or value will be serialized/exported.
+
+      By default, this method looks for a serializer :ref:`declared in the item
+      field <topics-exporters-serializers>` and returns the result of applying
+      that serializer to the value. If no serializer is found, it returns the
+      value unchanged except for ``unicode`` values which are encoded to
+      ``str`` using the encoding declared in the :attr:`encoding` attribute.
 
       :param field: the field being serialized
       :type field: :class:`~scrapy.item.Field` object
@@ -162,24 +177,39 @@ BaseItemExporter
       Some exporters (like :class:`CsvItemExporter`) respect the order of the
       fields defined in this attribute.
 
-   .. attribute:: export_empty_elements
+   .. attribute:: export_empty_fields
 
-      Whether to include empty elements in the exported XML (in case of
-      empty/missing fields). Defaults to ``False``.
+      Whether to include empty/unpopulated item fields in the exported data.
+      Defaults to ``False``.
+
+   .. attribute:: encoding
+
+      The encoding that will be used to encode unicode values. This only
+      affects unicode values (which are always serialized to str using this
+      encoding). Other value types are passed unchanged to the specific
+      serialization library.
 
 .. highlight:: none
 
 XmlItemExporter
 ---------------
 
-.. class:: XmlItemExporter(file)
+.. class:: XmlItemExporter(file, item_element='item', root_element='items', \**kwargs)
 
-   Exports Items in XML format to the specified file object. You must also set
-   the :attr:`fields_to_export` attribute to use it.
+   Exports Items in XML format to the specified file object.
 
-   The default output of this exporter would be::
+   :param root_element: The name of root element in the exported XML.
+   :type root_element: str
 
-       <?xml version="1.0" encoding="iso-8859-1"?>
+   :param item_element: The name of each item element in the exported XML.
+   :type item_element: str
+
+   The additional keyword arguments of this constructor are passed to the
+   :class:`BaseItemExporter` constructor.
+
+   A typical output of this exporter would be::
+
+       <?xml version="1.0" encoding="utf-8"?>
        <items>
          <item>
            <name>Color TV</name>
@@ -191,62 +221,70 @@ XmlItemExporter
         </item>
        </items>
 
-   .. attribute:: root_element
-
-      The name of root element in the exported XML. Defaults to ``'items'``.
-
-   .. attribute:: item_element
-
-      The name of each item element in the exported XML. Defaults to ``'item'``.
 
 CsvItemExporter
 ---------------
 
-.. class:: CsvItemExporter(\*args, \**kwargs)
+.. class:: CsvItemExporter(file, include_headers_line=False, \**kwargs)
 
-   Exports Items in CSV format. The constructor arguments will be passed to the
-   `csv.writer`_ constructor. This exporter respects the order of fields in the
-   :attr:`BaseItemExporter.fields_to_export` attribute.
+   Exports Items in CSV format to the given file-like object. If the
+   :attr:`fields_to_export` attribute is set, it will be used to define the
+   CSV columns and their order. The :attr:`export_empty_fields` attribute has
+   no effect on this exporter.
 
-   The default output of this exporter would be::
+   :param include_headers_line: If enabled, makes the exporter output a header
+       line with the field names taken from
+       :attr:`BaseItemExporter.fields_to_export` so that attribute must also be
+       set in order to work (otherwise it raises a :exc:`RuntimeError`)
+   :type include_headers_line: boolean
+
+   The additional keyword arguments of this constructor are passed to the
+   :class:`BaseItemExporter` constructor, and then to the `csv.writer`_
+   constructor, so you can use any `csv.writer` constructor argument to
+   customize this exporter.
+
+   A typical output of this exporter would be::
 
       Color TV,1200
       DVD player,200
       
-   .. attribute:: include_headers_line
-
-      Makes the exporter output a header line with the field names taken from
-      :attr:`BaseItemExporter.fields_to_export` so that attribute must also be
-      set in order to work.
-
-      Defaults to ``False``.
-
 .. _csv.writer: http://docs.python.org/library/csv.html#csv.writer
 
 PickleItemExporter
 ------------------
 
-.. class:: PickleItemExporter(\*args, \**kwargs)
+.. class:: PickleItemExporter(file, protocol=0, \**kwargs)
 
-   Exports Items in pickle format. The constructor arguments will be passed to
-   the `Pickler`_ constructor. This is a binary format, so no output examples
-   are provided.
+   Exports Items in pickle format to the given file-like object. 
+   
+   :param protocol: The pickle protocol to use.
+   :type protocol: int
 
-.. _Pickler: http://docs.python.org/library/pickle.html#pickle.Pickler
+   For more information, refer to the `pickle module documentation`_.
+
+   The additional keyword arguments of this constructor are passed to the
+   :class:`BaseItemExporter` constructor.
+
+   This isn't a human readable format, so no output examples are provided.
+
+.. _pickle module: http://docs.python.org/library/pickle.html
 
 PprintItemExporter
 ------------------
 
-.. class:: PprintItemExporter(file)
+.. class:: PprintItemExporter(file, \**kwargs)
 
    Exports Items in pretty print format to the specified file object.
 
-   The default output of this exporter would be::
+   The additional keyword arguments of this constructor are passed to the
+   :class:`BaseItemExporter` constructor.
+
+   A typical output of this exporter would be::
 
         {'name': 'Color TV', 'price': '1200'}
         {'name': 'DVD player', 'price': '200'}
 
-   Longer lines would get pretty-formatted.
+   Longer lines (when present) are pretty-formatted.
 
 JsonLinesItemExporter
 ---------------------
@@ -254,11 +292,13 @@ JsonLinesItemExporter
 .. module:: scrapy.contrib.exporter.jsonlines
    :synopsis: JsonLines Item Exporter
 
-.. class:: JsonLinesItemExporter(file, \*args, \**kwargs)
+.. class:: JsonLinesItemExporter(file, \**kwargs)
 
-   Exports Items in JSON format to the specified file object, writing one
-   serialized item per line. The additional constructor arguments are passed to
-   the `JSONEncoder` constructor.
+   Exports Items in JSON format to the specified file-like object, writing one
+   JSON-encoded item per line. The additional constructor arguments are passed
+   to the :class:`BaseItemExporter` constructor, and to the `JSONEncoder`_
+   constructor, so you can use any `JSONEncoder`_ constructor argument to
+   customize the exporter.
 
    The default output of this exporter would be::
 
