@@ -79,19 +79,63 @@ class.
 
 If you do have leaks, chances are you can figure out which spider is leaking by
 looking at the oldest request or response. You can get the oldest object of
-each class using the :func:`get_oldest` function like this (from the telnet
-console)::
+each class using the :func:`~scrapy.utils.trackref.get_oldest` function like
+this (from the telnet console).
+
+A real example
+--------------
+
+Let's see a concrete example of an hypothetical case of memory leaks.
+
+Suppose we have some spider with a line similar to this one::
+
+    return Request("http://www.somenastyspider.com/product.php?pid=%d" % product_id,
+        callback=self.parse, meta={referer: response}")
+
+That line is passing a response reference inside a request which effectively
+ties the response lifetime to the requests one, and that's would definitely
+cause memory leaks.
+
+Let's see how we can discover which one is the nasty spider (without knowing it
+a-priori, of course) by using the ``trackref`` tool.
+
+After the crawler is running for a few minutes and we notice its memory usage
+has grown a lot, we can enter its telnet console and check the live
+references::
+
+    >>> prefs()
+    Live References
+
+    HtmlResponse                     3890   oldest: 265s ago
+    XPathSelector                       2   oldest: 0s ago
+    Request                          3878   oldest: 250s ago
+
+The fact that there are so many live responses (and that they're so old) is
+definitely suspicious, as responses should have a relatively short lifetime
+compared to Requests. So let's check the oldest response::
 
     >>> from scrapy.utils.trackref import get_oldest
-    >>> req = get_oldest('FormRequest')
-    >>> req.url
-    'http://www.example.com/ecommerce/product.php?pid=123'
+    >>> r = get_oldest('HtmlResponse')
+    >>> r.url
+    'http://www.somenastyspider.com/product.php?pid=123'
+
+There it is. By looking at the URL of the oldest response we can see it belongs
+to the ``somenastyspider.com`` spider. We can now go and check the code of that
+spider to discover the nasty line that is generating the leaks (passing
+response references inside requests).
+
+.. module:: scrapy.utils.trackref
+   :synopsis: Track references of live objects
 
 scrapy.utils.trackref module
 ----------------------------
 
-.. module:: scrapy.utils.trackref
-   :synopsis: Track references of live objects
+Here are the functions available in the :mod:`~scrapy.utils.trackref` module.
+
+.. class:: object_ref
+
+    Inherit from this class (instead of object) if you want to track live
+    instances with the ``trackref`` module.
 
 .. function:: print_live_refs(class_name)
 
@@ -99,8 +143,9 @@ scrapy.utils.trackref module
 
 .. function:: get_oldest(class_name)
 
-    Return the old object alive from the given class name, or ``None`` if not
-    found.
+    Return the oldest object alive with the given class name, or ``None`` if
+    none is found. Use :func:`print_live_refs` first to get a list of all
+    tracked live objects.
 
 .. _topics-leaks-guppy:
 

@@ -267,7 +267,7 @@ PickleItemExporter
 
    This isn't a human readable format, so no output examples are provided.
 
-.. _pickle module: http://docs.python.org/library/pickle.html
+.. _pickle module documentation: http://docs.python.org/library/pickle.html
 
 PprintItemExporter
 ------------------
