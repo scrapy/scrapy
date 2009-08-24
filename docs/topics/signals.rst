@@ -77,9 +77,17 @@ domain_idle
 .. function:: domain_idle(domain, spider)
 
     Sent when a domain has gone idle, which means the spider has no further:
+
         * requests waiting to be downloaded
         * requests scheduled
         * items being processed in the item pipeline
+
+    If the idle state persists after all handlers of this signal have finished,
+    the engine starts closing the domain. After the domain has finished
+    closing, the :signal:`domain_closed` signal is sent.
+
+    You can, for example, schedule some requests in your :signal:`domain_idle`
+    handler to prevent the domain from being closed.
 
     :param domain: is a string with the domain of the spider which has gone idle
     :type domain: str
@@ -87,12 +95,6 @@ domain_idle
     :param spider: the spider which has gone idle
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
-    If any handler of this signal handlers raises a
-    :exc:`DontCloseDomain` the domain won't be closed this time and will
-    wait until another idle signal is sent.  Otherwise (if no handler raises
-    :exc:`DontCloseDomain`) the domain will be closed immediately after
-    all handlers of ``domain_idle`` have finished, and a
-    :signal:`domain_closed` will thus be sent.
 
 engine_started
 --------------

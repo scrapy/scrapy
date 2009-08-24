@@ -14,15 +14,6 @@ Built-in Exceptions reference
 
 Here's a list of all exceptions included in Scrapy and their usage.
 
-DontCloseDomain
----------------
-
-.. exception:: DontCloseDomain
-
-This exception can be raised by any handler of the :signal:`domain_idle` signal
-to avoid the domain from being closed at this time, and wait for the next idle
-state.
-
 DropItem
 --------
 
