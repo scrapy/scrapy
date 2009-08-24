@@ -81,3 +81,8 @@ My Scrapy crawler has memory leaks. What can I do?
 
 See :ref:`topics-leaks`.
 
+Can I use Basic HTTP Authentication in my spiders?
+--------------------------------------------------
+
+Yes, see :class:`~scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware`.
+

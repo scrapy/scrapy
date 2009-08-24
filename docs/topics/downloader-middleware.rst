@@ -167,6 +167,32 @@ DebugMiddleware
     does not come enabled by default. Instead, it's meant to be inserted at the
     point of the middleware that you want to inspect.
 
+HttpAuthMiddleware
+------------------
+
+.. module:: scrapy.contrib.downloadermiddleware.httpauth
+   :synopsis: HTTP Auth downloader middleware
+
+.. class:: HttpAuthMiddleware
+
+    This middleware authenticates all requests generated from certain spiders
+    using `Basic access authentication`_ (aka. HTTP auth).
+
+    To enable HTTP authentication from certain spiders set the ``http_user``
+    and ``http_pass`` attributes of those spiders.
+
+    Example::
+
+        class SomeIntranetSiteSpider(CrawlSpider):
+
+            http_user = 'someuser'
+            http_pass = 'somepass'
+            domain_name = 'intranet.example.com'
+
+            # .. rest of the spider code omitted ...
+
+.. _Basic access authentication: http://en.wikipedia.org/wiki/Basic_access_authentication
+
 HttpCacheMiddleware
 -------------------
 
