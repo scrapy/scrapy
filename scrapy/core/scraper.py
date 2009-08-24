@@ -5,7 +5,7 @@ from twisted.python.failure import Failure
 from twisted.internet import defer
 
 from scrapy.utils.defer import defer_result, defer_succeed, parallel
-from scrapy.utils.misc import arg_to_iter, load_object
+from scrapy.utils.misc import load_object
 from scrapy.utils.signal import send_catch_log
 from scrapy.core.exceptions import IgnoreRequest, DropItem
 from scrapy.core import signals
@@ -131,10 +131,7 @@ class Scraper(object):
         return request.deferred.addCallback(self._iterable_spider_output)
 
     def _iterable_spider_output(self, result):
-        if isinstance(result, (BaseItem, Request)):
-            return [result]
-        else:
-            return arg_to_iter(result)
+        return [result] if isinstance(result, (BaseItem, Request)) else result
 
     def handle_spider_error(self, _failure, request, spider, propagated_failure=None):
         referer = request.headers.get('Referer', None)
@@ -177,7 +174,7 @@ class Scraper(object):
         elif output is None:
             pass
         else:
-            log.msg("Spider must return Request, BaseItem or None, got '%s' in %s" % \
+            log.msg("Spider must return Request, BaseItem or None, got %r in %s" % \
                 (type(output).__name__, request), log.ERROR, domain=domain)
 
     def _check_propagated_failure(self, spider_failure, propagated_failure, request, spider):
