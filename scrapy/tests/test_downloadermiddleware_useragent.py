@@ -6,7 +6,7 @@ from scrapy.contrib.downloadermiddleware.useragent import UserAgentMiddleware
 from scrapy.conf import settings
 
 
-class CookiesMiddlewareTest(TestCase):
+class UserAgentMiddlewareTest(TestCase):
 
     def setUp(self):
         spiders.spider_modules = ['scrapy.tests.test_spiders']
