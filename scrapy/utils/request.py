@@ -4,12 +4,15 @@ scrapy.http.Request objects
 """
 
 import hashlib
+import weakref
 from base64 import urlsafe_b64encode
 
 from scrapy.utils.url import canonicalize_url
 from scrapy.utils.httpobj import urlparse_cached
 
-def request_fingerprint(request, include_headers=()):
+
+_fingerprint_cache = weakref.WeakKeyDictionary()
+def request_fingerprint(request, include_headers=None):
     """
     Return the request fingerprint.
     
@@ -36,28 +39,22 @@ def request_fingerprint(request, include_headers=()):
     include_headers argument, which is a list of Request headers to include.
 
     """
-
     if include_headers:
-        include_headers = [h.lower() for h in sorted(include_headers)]
-        cachekey = 'fingerprint' + '_'.join(include_headers)
-    else:
-        cachekey = 'fingerprint'
-
-    try:
-        return request.cache[cachekey]
-    except KeyError:
+        include_headers = tuple([h.lower() for h in sorted(include_headers)])
+    cache = _fingerprint_cache.setdefault(request, {})
+    if include_headers not in cache:
         fp = hashlib.sha1()
         fp.update(request.method)
         fp.update(canonicalize_url(request.url))
         fp.update(request.body or '')
-        for hdr in include_headers:
-            if hdr in request.headers:
-                fp.update(hdr)
-                for v in request.headers.getlist(hdr):
-                    fp.update(v)
-        fphash = fp.hexdigest()
-        request.cache[cachekey] = fphash
-        return fphash
+        if include_headers:
+            for hdr in include_headers:
+                if hdr in request.headers:
+                    fp.update(hdr)
+                    for v in request.headers.getlist(hdr):
+                        fp.update(v)
+        cache[include_headers] = fp.hexdigest()
+    return cache[include_headers]
 
 def request_authenticate(request, username, password):
     """Autenticate the given request (in place) using the HTTP basic access
