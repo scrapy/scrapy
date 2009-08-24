@@ -49,7 +49,6 @@ This will create a ``dmoz`` directory with the following contents::
            settings.py
            spiders/
                __init__.py 
-           templates/
                ... 
 
 These are basically: 
@@ -61,7 +60,6 @@ These are basically:
 * ``dmoz/pipelines.py``: the project's pipelines file.
 * ``dmoz/settings.py``: the project's settings file.
 * ``dmoz/spiders/``: a directory where you'll later put your spiders.
-* ``dmoz/templates/``: directory containing the spider's templates.
 
 Defining our Item
 =================
