@@ -2,17 +2,15 @@ from __future__ import with_statement
 
 from unittest import TestCase
 
-from scrapy.spider import spiders
 from scrapy.http import Response, Request
+from scrapy.spider import BaseSpider
 from scrapy.contrib.downloadermiddleware.cookies import CookiesMiddleware
 
 
 class CookiesMiddlewareTest(TestCase):
 
     def setUp(self):
-        spiders.spider_modules = ['scrapy.tests.test_spiders']
-        spiders.reload()
-        self.spider = spiders.fromdomain('scrapytest.org')
+        self.spider = BaseSpider()
         self.mw = CookiesMiddleware()
 
     def tearDown(self):

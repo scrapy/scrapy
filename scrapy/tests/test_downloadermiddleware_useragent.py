@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from scrapy.spider import spiders
+from scrapy.spider import BaseSpider
 from scrapy.http import Request
 from scrapy.contrib.downloadermiddleware.useragent import UserAgentMiddleware
 from scrapy.conf import settings
@@ -9,9 +9,7 @@ from scrapy.conf import settings
 class UserAgentMiddlewareTest(TestCase):
 
     def setUp(self):
-        spiders.spider_modules = ['scrapy.tests.test_spiders']
-        spiders.reload()
-        self.spider = spiders.fromdomain('scrapytest.org')
+        self.spider = BaseSpider()
         self.mw = UserAgentMiddleware()
 
     def tearDown(self):

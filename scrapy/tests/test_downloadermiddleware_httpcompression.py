@@ -3,7 +3,7 @@ from __future__ import with_statement
 from unittest import TestCase
 from os.path import join, abspath, dirname
 
-from scrapy.spider import spiders
+from scrapy.spider import BaseSpider
 from scrapy.http import Response, Request
 from scrapy.contrib.downloadermiddleware.httpcompression import HttpCompressionMiddleware
 from scrapy.tests import tests_datadir
@@ -20,9 +20,7 @@ FORMAT = {
 class HttpCompressionTest(TestCase):
 
     def setUp(self):
-        spiders.spider_modules = ['scrapy.tests.test_spiders']
-        spiders.reload()
-        self.spider = spiders.fromdomain('scrapytest.org')
+        self.spider = BaseSpider()
         self.mw = HttpCompressionMiddleware()
 
     def _getresponse(self, coding):

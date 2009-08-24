@@ -11,6 +11,9 @@ from optparse import OptionGroup
 from scrapy.conf import settings
 
 class ScrapyCommand(object):
+
+    requires_project = False
+
     def syntax(self):
         """
         Command syntax (preferably one-line). Do not include command name.
@@ -61,12 +64,17 @@ class ScrapyCommand(object):
             help="write lsprof profiling stats to FILE")
         group.add_option("--pidfile", dest="pidfile", metavar="FILE", \
             help="write process ID to FILE")
-        group.add_option("--set", dest="settings", action="append", \
+        group.add_option("--set", dest="set", action="append", \
             metavar="SETTING=VALUE", default=[], \
             help="set/override setting (may be repeated)")
+        group.add_option("--settings", dest="settings", metavar="MODULE",
+            help="python path to the Scrapy project settings")
         parser.add_option_group(group)
         
     def process_options(self, args, opts):
+        if opts.settings:
+            settings.set_settings_module(opts.settings)
+
         if opts.logfile:
             settings.overrides['LOG_ENABLED'] = True
             settings.overrides['LOG_FILE'] = opts.logfile
@@ -90,7 +98,7 @@ class ScrapyCommand(object):
             with open(opts.pidfile, "w") as f:
                 f.write(str(os.getpid()))
 
-        for setting in opts.settings:
+        for setting in opts.set:
             if '=' in setting:
                 name, val = setting.split('=', 1)
                 settings.overrides[name] = val

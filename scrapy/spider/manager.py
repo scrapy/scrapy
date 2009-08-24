@@ -19,8 +19,8 @@ class SpiderManager(object):
     def __init__(self):
         self.loaded = False
         self.default_domain = None
-        self.spider_modules = settings.getlist('SPIDER_MODULES')
         self.force_domain = None
+        self.spider_modules = None
 
     def fromdomain(self, domain_name):
         return self.asdict().get(domain_name)
@@ -56,7 +56,10 @@ class SpiderManager(object):
         if not self.loaded:
             self.load()
 
-    def load(self):
+    def load(self, spider_modules=None):
+        if spider_modules is None:
+            spider_modules = settings.getlist('SPIDER_MODULES')
+        self.spider_modules = spider_modules
         self._invaliddict = {}
         self._spiders = {}
 
@@ -75,7 +78,7 @@ class SpiderManager(object):
             # we can't use the log module here because it may not be available yet
             print "WARNING: Could not load spider %s: %s" % (spider, e)
 
-    def reload(self, skip_domains=None):
+    def reload(self, spider_modules=None, skip_domains=None):
         """Reload spiders by trying to discover any spiders added under the
         spiders module/packages, removes any spiders removed.
 
@@ -91,7 +94,7 @@ class SpiderManager(object):
             if not domain in skip_domains:
                 reload(sys.modules[spider.__module__])
                 reloaded += 1
-        self.load()  # second call to update spider instances
+        self.load(spider_modules=spider_modules)  # second call to update spider instances
         log.msg("Reloaded %d/%d scrapy spiders" % (reloaded, len(pdict)), level=log.DEBUG)
 
     def _getspiders(self, interface, package):

@@ -4,6 +4,9 @@ from scrapy.command import ScrapyCommand
 from scrapy.fetcher import fetch
 
 class Command(ScrapyCommand):
+
+    requires_project = False
+
     def syntax(self):
         return "[options] <url>"
 

@@ -7,7 +7,6 @@ See documentation in docs/topics/settings.rst
 import os
 import cPickle as pickle
 
-SETTINGS_MODULE = os.environ.get('SCRAPYSETTINGS_MODULE', 'scrapy_settings')
 SETTINGS_DISABLED = os.environ.get('SCRAPY_SETTINGS_DISABLED', False)
 
 class Settings(object):
@@ -19,17 +18,11 @@ class Settings(object):
     global_defaults = None
 
     def __init__(self):
+        self.set_settings_module()
         pickled_settings = os.environ.get("SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE")
         self.overrides = pickle.loads(pickled_settings) if pickled_settings else {}
-        self.settings_module = self._import(SETTINGS_MODULE)
         self.defaults = {}
-        self.global_defaults = self._import('scrapy.conf.default_settings')
-
-    def _import(self, modulepath):
-        try:
-            return __import__(modulepath, {}, {}, [''])
-        except ImportError:
-            pass
+        self.global_defaults = __import__('scrapy.conf.default_settings', {}, {}, [''])
 
     def __getitem__(self, opt_name):
         if not SETTINGS_DISABLED:
@@ -42,6 +35,16 @@ class Settings(object):
             if opt_name in self.defaults:
                 return self.defaults[opt_name]
         return getattr(self.global_defaults, opt_name, None)
+
+    def set_settings_module(self, settings_module_path=None):
+        if settings_module_path is None:
+            settings_module_path = os.environ.get('SCRAPYSETTINGS_MODULE', \
+                'scrapy_settings')
+        self.settings_module_path = settings_module_path
+        try:
+            self.settings_module = __import__(settings_module_path, {}, {}, [''])
+        except ImportError:
+            self.settings_module = None
 
     def get(self, name, default=None):
         return self[name] if self[name] is not None else default
@@ -67,5 +70,8 @@ class Settings(object):
             return value
         else:
             return str(value).split(',')
+
+    def __str__(self):
+        return "<Settings %r>" % self.settings_module_path
 
 settings = Settings()

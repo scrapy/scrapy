@@ -45,8 +45,7 @@ class CrawlingSession(object):
         self.portno = self.port.getHost().port
 
         from scrapy.spider import spiders
-        spiders.spider_modules = ['scrapy.tests.test_spiders']
-        spiders.reload()
+        spiders.load(['scrapy.tests.test_spiders'])
 
         self.spider = spiders.fromdomain(self.domain)
         if self.spider:

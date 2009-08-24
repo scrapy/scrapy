@@ -8,6 +8,9 @@ from scrapy import log
 
 
 class Command(ScrapyCommand):
+
+    requires_project = True
+
     def syntax(self):
         return "[options] <domain|url> ..."
 

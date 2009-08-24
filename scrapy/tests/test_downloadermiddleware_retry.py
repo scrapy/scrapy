@@ -5,14 +5,12 @@ from twisted.internet.error import TimeoutError as ServerTimeoutError, DNSLookup
                                    ConnectionLost
 
 from scrapy.contrib.downloadermiddleware.retry import RetryMiddleware
-from scrapy.spider import spiders
+from scrapy.spider import BaseSpider
 from scrapy.http import Request, Response
 
 class RetryTest(unittest.TestCase):
     def setUp(self):
-        spiders.spider_modules = ['scrapy.tests.test_spiders']
-        spiders.reload()
-        self.spider = spiders.fromdomain('scrapytest.org')
+        self.spider = BaseSpider()
         self.mw = RetryMiddleware()
         self.mw.max_retry_times = 2
 

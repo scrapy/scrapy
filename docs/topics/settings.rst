@@ -704,7 +704,7 @@ PROJECT_NAME
 Default: ``Not Defined``
 
 The name of the current project. It matches the project module name as created
-by :ref:`scrapy-admin.py startproject <topics-scripts-scrapy-admin>` command,
+by :ref:`scrapy-ctl.py startproject <topics-scripts-scrapy-ctl-startproject>` command,
 and is only defined by project settings file.
 
 .. setting:: REDIRECT_MAX_TIMES
@@ -953,7 +953,7 @@ TEMPLATES_DIR
 Default: ``templates`` dir inside scrapy module
 
 The directory where to look for template when creating new projects with
-:ref:`scrapy-admin.py startproject <topics-scripts-scrapy-admin>` command.
+:ref:`scrapy-ctl.py startproject <topics-scripts-scrapy-ctl>` command.
 
 .. setting:: URLLENGTH_LIMIT
 

@@ -9,7 +9,7 @@ import scrapy
 from scrapy import log
 from scrapy.spider import spiders
 from scrapy.xlib import lsprofcalltree
-from scrapy.conf import settings, SETTINGS_MODULE
+from scrapy.conf import settings
 
 # This dict holds information about the executed command for later use
 command_executed = {}
@@ -45,12 +45,12 @@ def get_command_name(argv):
         if not arg.startswith('-'):
             return arg
 
-def usage(prog):
+def usage():
     s = "Usage\n"
     s += "=====\n"
-    s += "%s <command> [options] [args]\n" % prog
+    s += "scrapy-ctl.py <command> [options] [args]\n"
     s += "  Run a command\n\n"
-    s += "%s <command> -h\n" % prog
+    s += "scrapy-ctl.py <command> -h\n"
     s += "  Print command help and options\n\n"
     s += "Available commands\n"
     s += "===================\n"
@@ -72,14 +72,10 @@ def update_default_settings(module, cmdname):
         if not k.startswith("_"):
             settings.defaults[k] = v
 
-def execute():
-    if not settings.settings_module:
-        print "Scrapy %s\n" % scrapy.__version__
-        print "Error: Cannot find %r module in python path" % SETTINGS_MODULE
-        sys.exit(1)
-    execute_with_args(sys.argv)
+def execute(argv=None):
+    if argv is None:
+        argv = sys.argv
 
-def execute_with_args(argv):
     cmds = get_commands_dict()
 
     cmdname = get_command_name(argv)
@@ -88,7 +84,7 @@ def execute_with_args(argv):
 
     if not cmdname:
         print "Scrapy %s\n" % scrapy.__version__
-        print usage(argv[0])
+        print usage()
         sys.exit(2)
 
     parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(), \
@@ -119,6 +115,11 @@ def execute_with_args(argv):
     command_executed['opts'] = opts.__dict__.copy()
 
     cmd.process_options(args, opts)
+    if cmd.requires_project and not settings.settings_module:
+        print "Error running: scrapy-ctl.py %s\n" % cmdname
+        print "Cannot find project settings module in python path: %s" % \
+            settings.settings_module_path
+        sys.exit(1)
     spiders.load()
     log.start()
     ret = run_command(cmd, args, opts)

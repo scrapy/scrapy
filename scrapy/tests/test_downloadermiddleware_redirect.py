@@ -1,16 +1,14 @@
 import unittest
 
 from scrapy.contrib.downloadermiddleware.redirect import RedirectMiddleware
-from scrapy.spider import spiders
+from scrapy.spider import BaseSpider
 from scrapy.core.exceptions import IgnoreRequest
 from scrapy.http import Request, Response, Headers
 
 class RedirectMiddlewareTest(unittest.TestCase):
 
     def setUp(self):
-        spiders.spider_modules = ['scrapy.tests.test_spiders']
-        spiders.reload()
-        self.spider = spiders.fromdomain('scrapytest.org')
+        self.spider = BaseSpider()
         self.mw = RedirectMiddleware()
 
     def test_priority_adjust(self):

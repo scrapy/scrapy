@@ -21,6 +21,9 @@ from scrapy.http import Request
 from scrapy.fetcher import get_or_create_spider
 
 class Command(ScrapyCommand):
+
+    requires_project = False
+
     def syntax(self):
         return "[url]"
 

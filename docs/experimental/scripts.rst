@@ -4,35 +4,14 @@
 Management scripts
 ==================
 
-Scrapy is controlled by two commmandline scripts:
-
-1. :ref:`topics-scripts-scrapy-admin`: used to create Scrapy projects.  
-2. :ref:`topics-scripts-scrapy-ctl`: located in every project's root dir, used
-   to manage each project.
-
-.. _topics-scripts-scrapy-admin:
-
-scrapy-admin.py
-===============
-Usage: ``scrapy-admin.py <subcommand>``
-
-This script should be in your system path.
-
-Available subcommands
----------------------
-
-startproject
-~~~~~~~~~~~~
-Usage: ``startproject <project_name>``
-
-Starts a new project with name ``project_name``
-
+Scrapy is controlled by the ``scrapy-ctl.py`` command.
 
 .. _topics-scripts-scrapy-ctl:
 
 scrapy-ctl.py
 =============
-Usage: ``scrapy-admin.py <subcommand>``
+
+Usage: ``scrapy-ctl.py <command>``
 
 This script is located in every project's root folder.
 
@@ -153,4 +132,10 @@ usage documentation.
 start
 ~~~~~
 Start the Scrapy manager but don't run any spider (idle mode)
+
+startproject
+~~~~~~~~~~~~
+Usage: ``startproject <project_name>``
+
+Starts a new project with name ``project_name``
 

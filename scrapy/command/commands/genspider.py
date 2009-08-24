@@ -24,6 +24,8 @@ def sanitize_module_name(module_name):
 
 class Command(ScrapyCommand):
 
+    requires_project = True
+
     def syntax(self):
         return "[options] <spider_module_name> <spider_domain_name>"
 

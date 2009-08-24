@@ -36,7 +36,7 @@ Creating a project
 Before start scraping, you will have set up a new Scrapy project. Enter a
 directory where you'd like to store your code and then run::
 
-   scrapy-admin.py startproject dmoz
+   python scrapy-ctl.py startproject dmoz
 
 This will create a ``dmoz`` directory with the following contents::
 

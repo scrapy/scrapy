@@ -1,6 +1,9 @@
 from scrapy.command import ScrapyCommand, cmdline
 
 class Command(ScrapyCommand):
+
+    requires_project = False
+
     def syntax(self):
         return "<command>"
     
