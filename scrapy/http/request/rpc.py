@@ -12,6 +12,8 @@ from scrapy.http.request import Request
 
 class XmlRpcRequest(Request):
 
+    __slots__ = ()
+
     def __init__(self, *args, **kwargs):
         if 'body' not in kwargs:
             params = kwargs.pop('params')
@@ -24,5 +26,5 @@ class XmlRpcRequest(Request):
         # xmlrpc query multiples times over the same url
         kwargs.setdefault('dont_filter', True)
 
-        Request.__init__(self, *args, **kwargs)
+        super(XmlRpcRequest, self).__init__(*args, **kwargs)
         self.headers.setdefault('Content-Type', 'text/xml')

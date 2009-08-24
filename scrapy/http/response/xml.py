@@ -19,7 +19,7 @@ class XmlResponse(TextResponse):
     XMLDECL_RE  = re.compile(r'<\?xml\s.*?%s' % _encoding_re, re.I)
 
     def body_encoding(self):
-        return self._body_declared_encoding() or self._body_inferred_encoding()
+        return self._body_declared_encoding() or super(XmlResponse, self).body_encoding()
 
     @memoizemethod('cache')
     def _body_declared_encoding(self):

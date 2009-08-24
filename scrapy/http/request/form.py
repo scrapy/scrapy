@@ -26,7 +26,7 @@ class FormRequest(Request):
 
     def __init__(self, *args, **kwargs):
         formdata = kwargs.pop('formdata', None)
-        Request.__init__(self, *args, **kwargs)
+        super(FormRequest, self).__init__(*args, **kwargs)
 
         if formdata:
             items = formdata.iteritems() if isinstance(formdata, dict) else formdata

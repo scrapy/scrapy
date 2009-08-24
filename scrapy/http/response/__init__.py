@@ -44,17 +44,20 @@ class Response(object_ref):
         if isinstance(body, str):
             self._body = body
         elif isinstance(body, unicode):
-            raise TypeError("Cannot assign a unicode body to a raw Response. Use TextResponse, HtmlResponse, etc")
+            raise TypeError("Cannot assign a unicode body to a raw Response. " \
+                "Use TextResponse, HtmlResponse, etc")
         elif body is None:
             self._body = ''
         else:
-            raise TypeError("Response body must either str or unicode. Got: '%s'" % type(body).__name__)
+            raise TypeError("Response body must either str or unicode. Got: '%s'" \
+                % type(body).__name__)
 
     body = property(_get_body, _set_body)
 
     def __repr__(self):
         return "%s(url=%s, headers=%s, status=%s, body=%s)" % \
-                (type(self).__name__, repr(self.url), repr(self.headers), repr(self.status), repr(self.body))
+            (type(self).__name__, repr(self.url), repr(self.headers), \
+            repr(self.status), repr(self.body))
 
     def __str__(self):
         flags = "(%s) " % ",".join(self.flags) if self.flags else ""
@@ -65,7 +68,8 @@ class Response(object_ref):
         """Return a copy of this Response"""
         return self.replace()
 
-    def replace(self, url=None, status=None, headers=None, body=None, meta=None, flags=None, cls=None, **kwargs):
+    def replace(self, url=None, status=None, headers=None, body=None, meta=None, \
+            flags=None, cls=None, **kwargs):
         """Create a new Response with the same attributes except for those
         given new values.
         """
