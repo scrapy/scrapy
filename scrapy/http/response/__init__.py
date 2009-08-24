@@ -55,9 +55,15 @@ class Response(object_ref):
     body = property(_get_body, _set_body)
 
     def __repr__(self):
-        return "%s(url=%s, headers=%s, status=%s, body=%s)" % \
-            (type(self).__name__, repr(self.url), repr(self.headers), \
-            repr(self.status), repr(self.body))
+        d = {
+            'status': self.status,
+            'url': self.url,
+            'headers': self.headers,
+            'body': self.body,
+            'meta': self.meta,
+            'flags': self.flags,
+        }
+        return "%s(%s)" % (self.__class__.__name__, repr(d))
 
     def __str__(self):
         flags = "(%s) " % ",".join(self.flags) if self.flags else ""

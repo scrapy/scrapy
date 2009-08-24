@@ -97,7 +97,7 @@ class Request(object_ref):
             'body': self.body,
             'cookies': self.cookies,
             'meta': self.meta,
-            }
+        }
         return "%s(%s)" % (self.__class__.__name__, repr(d))
 
     def copy(self):
