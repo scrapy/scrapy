@@ -21,36 +21,37 @@ class ParseUrlTestCase(unittest.TestCase):
 
     def _parse(self, url):
         f = client.ScrapyHTTPClientFactory(url)
-        return (f.scheme, f.host, f.port, f.path)
+        return (f.scheme, f.netloc, f.host, f.port, f.path)
 
     def testParse(self):
+        lip = '127.0.0.1'
         tests = (
-                ("http://127.0.0.1?c=v&c2=v2#fragment",     ('http', '127.0.0.1', 80, '/?c=v&c2=v2')),
-                ("http://127.0.0.1/?c=v&c2=v2#fragment",    ('http', '127.0.0.1', 80, '/?c=v&c2=v2')),
-                ("http://127.0.0.1/foo?c=v&c2=v2#frag",     ('http', '127.0.0.1', 80, '/foo?c=v&c2=v2')),
-                ("http://127.0.0.1:100?c=v&c2=v2#fragment", ('http', '127.0.0.1', 100, '/?c=v&c2=v2')),
-                ("http://127.0.0.1:100/?c=v&c2=v2#frag",    ('http', '127.0.0.1', 100, '/?c=v&c2=v2')),
-                ("http://127.0.0.1:100/foo?c=v&c2=v2#frag", ('http', '127.0.0.1', 100, '/foo?c=v&c2=v2')),
+    ("http://127.0.0.1?c=v&c2=v2#fragment",     ('http', lip, lip, 80, '/?c=v&c2=v2')),
+    ("http://127.0.0.1/?c=v&c2=v2#fragment",    ('http', lip, lip, 80, '/?c=v&c2=v2')),
+    ("http://127.0.0.1/foo?c=v&c2=v2#frag",     ('http', lip, lip, 80, '/foo?c=v&c2=v2')),
+    ("http://127.0.0.1:100?c=v&c2=v2#fragment", ('http', lip+':100', lip, 100, '/?c=v&c2=v2')),
+    ("http://127.0.0.1:100/?c=v&c2=v2#frag",    ('http', lip+':100', lip, 100, '/?c=v&c2=v2')),
+    ("http://127.0.0.1:100/foo?c=v&c2=v2#frag", ('http', lip+':100', lip, 100, '/foo?c=v&c2=v2')),
 
-                ("http://127.0.0.1",                    ('http', '127.0.0.1', 80, '/')),
-                ("http://127.0.0.1/",                   ('http', '127.0.0.1', 80, '/')),
-                ("http://127.0.0.1/foo",                ('http', '127.0.0.1', 80, '/foo')),
-                ("http://127.0.0.1?param=value",        ('http', '127.0.0.1', 80, '/?param=value')),
-                ("http://127.0.0.1/?param=value",       ('http', '127.0.0.1', 80, '/?param=value')),
-                ("http://127.0.0.1:12345/foo",          ('http', '127.0.0.1', 12345, '/foo')),
-                ("http://spam:12345/foo",               ('http', 'spam', 12345, '/foo')),
-                ("http://spam.scrapytest.org/foo",      ('http', 'spam.scrapytest.org', 80, '/foo')),
+    ("http://127.0.0.1",              ('http', lip, lip, 80, '/')),
+    ("http://127.0.0.1/",             ('http', lip, lip, 80, '/')),
+    ("http://127.0.0.1/foo",          ('http', lip, lip, 80, '/foo')),
+    ("http://127.0.0.1?param=value",  ('http', lip, lip, 80, '/?param=value')),
+    ("http://127.0.0.1/?param=value", ('http', lip, lip, 80, '/?param=value')),
+    ("http://127.0.0.1:12345/foo",    ('http', lip+':12345', lip, 12345, '/foo')),
+    ("http://spam:12345/foo",         ('http', 'spam:12345', 'spam', 12345, '/foo')),
+    ("http://spam.test.org/foo",      ('http', 'spam.test.org', 'spam.test.org', 80, '/foo')),
 
-                ("https://127.0.0.1/foo",               ('https', '127.0.0.1', 443, '/foo')),
-                ("https://127.0.0.1/?param=value",      ('https', '127.0.0.1', 443, '/?param=value')),
-                ("https://127.0.0.1:12345/",            ('https', '127.0.0.1', 12345, '/')),
+    ("https://127.0.0.1/foo",         ('https', lip, lip, 443, '/foo')),
+    ("https://127.0.0.1/?param=value", ('https', lip, lip, 443, '/?param=value')),
+    ("https://127.0.0.1:12345/",      ('https', lip+':12345', lip, 12345, '/')),
 
-                ("http://scrapytest.org/foo ",          ('http', 'scrapytest.org', 80, '/foo')),
-                ("http://egg:7890 ",                     ('http', 'egg', 7890, '/')),
-                )
+    ("http://scrapytest.org/foo ",    ('http', 'scrapytest.org', 'scrapytest.org', 80, '/foo')),
+    ("http://egg:7890 ",              ('http', 'egg:7890', 'egg', 7890, '/')),
+    )
 
         for url, test in tests:
-            self.assertEquals(self._parse(url), test, url)
+            self.assertEquals(client._parse(url), test, url)
 
     def test_externalUnicodeInterference(self):
         """
@@ -61,8 +62,9 @@ class ParseUrlTestCase(unittest.TestCase):
         badInput = u'http://example.com/path'
         goodInput = badInput.encode('ascii')
         urlparse(badInput)
-        scheme, host, port, path = self._parse(goodInput)
+        scheme, netloc, host, port, path = self._parse(goodInput)
         self.assertTrue(isinstance(scheme, str))
+        self.assertTrue(isinstance(netloc, str))
         self.assertTrue(isinstance(host, str))
         self.assertTrue(isinstance(path, str))
         self.assertTrue(isinstance(port, int))
@@ -204,7 +206,7 @@ class WebClientTestCase(unittest.TestCase):
         # if we pass Host header explicitly, it should be used, otherwise
         # it should extract from url
         return defer.gatherResults([
-            client.getPage(self.getURL("host")).addCallback(self.assertEquals, "127.0.0.1"),
+            client.getPage(self.getURL("host")).addCallback(self.assertEquals, "127.0.0.1:%d" % self.portno),
             client.getPage(self.getURL("host"), headers={"Host": "www.example.com"}).addCallback(self.assertEquals, "www.example.com")])
 
 
@@ -238,7 +240,7 @@ class WebClientTestCase(unittest.TestCase):
         called back with the contents of the page.
         """
         d = client.getPage(self.getURL("host"), timeout=100)
-        d.addCallback(self.assertEquals, "127.0.0.1")
+        d.addCallback(self.assertEquals, "127.0.0.1:%d" % self.portno)
         return d
 
 
@@ -271,7 +273,7 @@ class WebClientTestCase(unittest.TestCase):
 
     def testFactoryInfo(self):
         url = self.getURL('file')
-        scheme, host, port, path = client._parse(url)
+        scheme, netloc, host, port, path = client._parse(url)
         factory = client.ScrapyHTTPClientFactory(url)
         reactor.connectTCP(host, port, factory)
         return factory.deferred.addCallback(self._cbFactoryInfo, factory)

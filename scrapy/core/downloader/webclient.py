@@ -13,9 +13,10 @@ def _parsed_url_args(parsed):
     host = parsed.hostname
     port = parsed.port
     scheme = parsed.scheme
+    netloc = parsed.netloc
     if port is None:
         port = 443 if scheme == 'https' else 80
-    return scheme, host, port, path
+    return scheme, netloc, host, port, path
 
 def _parse(url):
     url = url.strip()
@@ -82,16 +83,16 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
         self.method = method
         self.body = body or None
         if parsedurl:
-            self.scheme, self.host, self.port, self.path = _parsed_url_args(parsedurl)
+            self.scheme, self.netloc, self.host, self.port, self.path = _parsed_url_args(parsedurl)
         else:
-            self.scheme, self.host, self.port, self.path = _parse(url)
+            self.scheme, self.netloc, self.host, self.port, self.path = _parse(url)
 
         self.timeout = timeout
         self.headers = Headers(headers or {})
         self.deferred = defer.Deferred()
 
         # set Host header based on url
-        self.headers.setdefault('Host', self.host)
+        self.headers.setdefault('Host', self.netloc)
 
         # set Content-Length based len of body
         if self.body is not None:
