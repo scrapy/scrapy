@@ -1,3 +1,4 @@
+import sys
 import warnings
 from functools import wraps
 
@@ -13,14 +14,7 @@ def deprecated(use_instead=None):
             message = "Call to deprecated function %s." % func.__name__
             if use_instead:
                 message += " Use %s instead." % use_instead
-
-            warnings.warn_explicit(message,
-                category=DeprecationWarning,
-                filename=func.func_code.co_filename,
-                lineno=func.func_code.co_firstlineno + 1,
-                registry=func.func_globals.setdefault('__warningregistry__', \
-                                                      {}),
-                module_globals=func.func_globals)
+            warnings.warn(message, category=DeprecationWarning, stacklevel=2)
             return func(*args, **kwargs)
         return new_func
     return wrapped
