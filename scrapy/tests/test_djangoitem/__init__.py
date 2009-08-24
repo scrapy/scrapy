@@ -24,9 +24,9 @@ class OverrideFieldPersonItem(BasePersonItem):
     age = Field(default=1)
 
 
-class DjangoItemTest(TestCase):
+class DjangoItemTest(unittest.TestCase):
     
-    def setUp(
+    def setUp(self):
         if not django:
             raise unittest.SkipTest("Django is not available")
 
