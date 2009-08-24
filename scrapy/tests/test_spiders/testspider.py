@@ -40,7 +40,7 @@ class TestSpider(BaseSpider):
         m = self.price_re.search(response.body)
         if m:
             item['price'] = m.group(1)
-        return [item]
+        return item
         
 
 SPIDER = TestSpider()

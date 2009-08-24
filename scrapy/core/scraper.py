@@ -128,7 +128,13 @@ class Scraper(object):
 
     def call_spider(self, result, request, spider):
         defer_result(result).chainDeferred(request.deferred)
-        return request.deferred.addCallback(arg_to_iter)
+        return request.deferred.addCallback(self._iterable_spider_output)
+
+    def _iterable_spider_output(self, result):
+        if isinstance(result, (BaseItem, Request)):
+            return [result]
+        else:
+            return arg_to_iter(result)
 
     def handle_spider_error(self, _failure, request, spider, propagated_failure=None):
         referer = request.headers.get('Referer', None)
