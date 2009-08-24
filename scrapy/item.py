@@ -34,9 +34,7 @@ class _ItemMeta(type):
         return cls
 
 
-class Item(DictMixin, BaseItem):
-
-    __metaclass__ = _ItemMeta
+class DictItem(DictMixin, BaseItem):
 
     fields = {}
 
@@ -79,6 +77,11 @@ class Item(DictMixin, BaseItem):
         """
         values = ', '.join('%s=%r' % field for field in self.iteritems())
         return "%s(%s)" % (self.__class__.__name__, values)
+
+
+class Item(DictItem):
+
+    __metaclass__ = _ItemMeta
 
 
 class ScrapedItem(BaseItem):
