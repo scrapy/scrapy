@@ -18,7 +18,7 @@ def sanitize_module_name(module_name):
     prefixing it with a letter if it doesn't start with one
     """
     module_name = module_name.replace('-', '_')
-    if module_name[0] not in string.letters:
+    if module_name[0] not in string.ascii_letters:
         module_name = "a" + module_name
     return module_name
 
@@ -88,7 +88,7 @@ class Command(ScrapyCommand):
         print "  %s.%s" % (spiders_module.__name__, module)
 
     def _find_template(self, template):
-        template_file = join(settings['TEMPLATES_DIR'], '%s.tmpl' % template)
+        template_file = join(settings['TEMPLATES_DIR'], 'spiders', '%s.tmpl' % template)
         if not exists(template_file):
             template_file = join(SPIDER_TEMPLATES_PATH, '%s.tmpl' % template)
             if not exists(template_file):
@@ -99,10 +99,9 @@ class Command(ScrapyCommand):
         return template_file
 
     def _list_templates(self):
-        files = set()
+        files = set(listdir(SPIDER_TEMPLATES_PATH))
         if exists(settings['TEMPLATES_DIR']):
-            files.update(listdir(settings['TEMPLATES_DIR']))
-        files.update(listdir(SPIDER_TEMPLATES_PATH))
+            files.update(listdir(join(settings['TEMPLATES_DIR'], 'spiders')))
 
         for filename in sorted(files):
             if filename.endswith('.tmpl'):
