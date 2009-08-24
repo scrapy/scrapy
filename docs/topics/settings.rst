@@ -73,7 +73,7 @@ It's where most of your custom settings will be populated.
 4. Default settings per-command
 -------------------------------
 
-Each scrapy-ctl command can have its own default settings, which override the
+Each :ref:`topics-scripts-scrapy-ctl` command can have its own default settings, which override the
 global default settings. Those custom command settings are located inside the
 ``scrapy.conf.commands`` module, or you can specify custom settings to override
 per-comand inside your project, by writing them in the module referenced by the
@@ -704,7 +704,8 @@ PROJECT_NAME
 Default: ``Not Defined``
 
 The name of the current project. It matches the project module name as created
-by ``startproject`` command, and is only defined by project settings file.
+by :ref:`scrapy-admin.py startproject <topics-scripts-scrapy-admin>` command,
+and is only defined by project settings file.
 
 .. setting:: REDIRECT_MAX_TIMES
 
@@ -952,7 +953,7 @@ TEMPLATES_DIR
 Default: ``templates`` dir inside scrapy module
 
 The directory where to look for template when creating new projects with
-scrapy-admin.py newproject.
+:ref:`scrapy-admin.py startproject <topics-scripts-scrapy-admin>` command.
 
 .. setting:: URLLENGTH_LIMIT
 
