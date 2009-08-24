@@ -256,10 +256,9 @@ Let's now take a look at an example CrawlSpider with rules::
 
 
 This spider would start crawling example.com's home page, collecting category
-links, and item links, parsing the latter with the
-:meth:`XMLFeedSpider.parse_item` method. For each item response, some data will
-be extracted from the HTML using XPath, and a :class:`~scrapy.item.Item` will
-be filled with it.
+links, and item links, parsing the latter with the ``parse_item`` method. For
+each item response, some data will be extracted from the HTML using XPath, and
+a :class:`~scrapy.item.Item` will be filled with it.
 
 XMLFeedSpider
 -------------
@@ -327,7 +326,7 @@ XMLFeedSpider
         the response body before parsing it. This method receives a response and
         returns response (it could be the same or another one).
 
-    .. method:: parse_item(response, selector)
+    .. method:: parse_node(response, selector)
        
         This method is called for the nodes matching the provided tag name
         (``itertag``).  Receives the response and an XPathSelector for each node.
@@ -335,8 +334,6 @@ XMLFeedSpider
         This method must return either a :class:`~scrapy.item.Item` object, a
         :class:`~scrapy.http.Request` object, or an iterable containing any of
         them.
-
-        .. warning:: This method will soon change its name to ``parse_node``
 
     .. method:: process_results(response, results)
        
@@ -362,7 +359,7 @@ These spiders are pretty easy to use, let's have at one example::
         iterator = 'iternodes' # This is actually unnecesary, since it's the default value
         itertag = 'item'
 
-        def parse_item(self, response, node):
+        def parse_node(self, response, node):
             log.msg('Hi, this is a <%s> node!: %s' % (self.itertag, ''.join(node.extract())))
 
             item = Item()
@@ -382,10 +379,9 @@ CSVFeedSpider
 
 .. class:: CSVFeedSpider
 
-   .. warning:: The API of the CSVFeedSpider is not yet stable. Use with caution.
-
-   This spider is very similar to the XMLFeedSpider, although it iterates through
-   rows, instead of nodes.  It also has other two different attributes:
+   This spider is very similar to the XMLFeedSpider, except that it iterates
+   over rows, instead of nodes. The method that gets called in each iteration
+   is :meth:`parse_row`.
 
    .. attribute:: CSVFeedSpider.delimiter
 
@@ -396,9 +392,6 @@ CSVFeedSpider
       
        A list of the rows contained in the file CSV feed which will be used for
        extracting fields from it.
-
-   In this spider, the method that gets called in each row iteration ``parse_row``
-   instead of ``parse_item`` (like in :class:`XMLFeedSpider`).
 
    .. method:: CSVFeedSpider.parse_row(response, row)
       

@@ -43,8 +43,10 @@ class XMLFeedSpider(InitSpider):
         """
         return response
 
-    def parse_item(self, response, selector):
+    def parse_node(self, response, selector):
         """This method must be overriden with your custom spider functionality"""
+        if hasattr(self, 'parse_item'): # backward compatibility
+            return self.parse_item(response, selector)
         raise NotImplemented
         
     def parse_nodes(self, response, nodes):
@@ -56,7 +58,7 @@ class XMLFeedSpider(InitSpider):
         """
 
         for selector in nodes:
-            ret = self.parse_item(response, selector)
+            ret = self.parse_node(response, selector)
             if isinstance(ret, (BaseItem, Request)):
                 ret = [ret]
             if not isinstance(ret, (list, tuple)):
@@ -65,8 +67,8 @@ class XMLFeedSpider(InitSpider):
                 yield result_item
 
     def parse(self, response):
-        if not hasattr(self, 'parse_item'):
-            raise NotConfigured('You must define parse_item method in order to scrape this XML feed')
+        if not hasattr(self, 'parse_node'):
+            raise NotConfigured('You must define parse_node method in order to scrape this XML feed')
 
         response = self.adapt_response(response)
         if self.iterator == 'iternodes':
