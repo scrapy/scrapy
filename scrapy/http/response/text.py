@@ -10,7 +10,7 @@ import re
 from scrapy.xlib.BeautifulSoup import UnicodeDammit
 
 from scrapy.http.response import Response
-from scrapy.utils.python import memoizemethod
+from scrapy.utils.python import memoizemethod_noargs
 
 class TextResponse(Response):
 
@@ -41,17 +41,15 @@ class TextResponse(Response):
     def encoding(self):
         return self._encoding or self.headers_encoding() or self.body_encoding()
 
-    @memoizemethod('cache')
-    def headers_encoding(self, headers=None):
-        if headers is None:
-            headers = self.headers
-        content_type = headers.get('Content-Type')
+    @memoizemethod_noargs
+    def headers_encoding(self):
+        content_type = self.headers.get('Content-Type')
         if content_type:
             encoding = self._ENCODING_RE.search(content_type)
             if encoding:
                 return encoding.group(1)
 
-    @memoizemethod('cache')
+    @memoizemethod_noargs
     def body_as_unicode(self):
         """Return body as unicode"""
         possible_encodings = (self._encoding, self.headers_encoding(), \

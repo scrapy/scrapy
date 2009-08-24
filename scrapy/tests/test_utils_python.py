@@ -1,6 +1,7 @@
 import unittest
 
-from scrapy.utils.python import str_to_unicode, unicode_to_str, memoizemethod, isbinarytext
+from scrapy.utils.python import str_to_unicode, unicode_to_str, \
+    memoizemethod_noargs, isbinarytext
 
 class UtilsPythonTestCase(unittest.TestCase):
     def test_str_to_unicode(self):
@@ -29,23 +30,24 @@ class UtilsPythonTestCase(unittest.TestCase):
         # converting a strange object should raise TypeError
         self.assertRaises(TypeError, unicode_to_str, unittest)
 
-    def test_memoizemethod(self):
+    def test_memoizemethod_noargs(self):
         class A(object):
             def __init__(self):
                 self.cache = {}
 
-            @memoizemethod('cache')
-            def heavyfunc(self, arg1=None, arg2=None):
-                return [arg1, arg2]
+            @memoizemethod_noargs
+            def cached(self):
+                return object()
+
+            def noncached(self):
+                return object()
 
         a = A()
-        one = a.heavyfunc()
-        two = a.heavyfunc()
-        three = a.heavyfunc('two')
-        four = a.heavyfunc('two')
+        one = a.cached()
+        two = a.cached()
+        three = a.noncached()
         assert one is two
         assert one is not three
-        assert three is four
 
     def test_isbinarytext(self):
 
