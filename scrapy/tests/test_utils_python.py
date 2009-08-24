@@ -32,8 +32,6 @@ class UtilsPythonTestCase(unittest.TestCase):
 
     def test_memoizemethod_noargs(self):
         class A(object):
-            def __init__(self):
-                self.cache = {}
 
             @memoizemethod_noargs
             def cached(self):

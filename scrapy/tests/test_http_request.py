@@ -118,11 +118,7 @@ class RequestTest(unittest.TestCase):
 
         r1 = Request("http://www.example.com", callback=somecallback)
         r1.meta['foo'] = 'bar'
-        r1.cache['lala'] = 'lolo'
         r2 = r1.copy()
-
-        assert r1.cache
-        assert not r2.cache
 
         assert r1.deferred is not r2.deferred
 
@@ -288,11 +284,7 @@ class XmlRpcRequestTest(unittest.TestCase):
         r1 = XmlRpcRequest("http://www.example.com", callback=somecallback,
                 methodname='login', params=('username', 'password'))
         r1.meta['foo'] = 'bar'
-        r1.cache['lala'] = 'lolo'
         r2 = r1.copy()
-
-        assert r1.cache
-        assert not r2.cache
 
         assert r1.deferred is not r2.deferred
 

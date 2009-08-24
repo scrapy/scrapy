@@ -15,7 +15,7 @@ from scrapy.utils.trackref import object_ref
 
 class Request(object_ref):
 
-    __slots__ = ['_encoding', 'method', '_url', '_body', '_meta', '_cache', \
+    __slots__ = ['_encoding', 'method', '_url', '_body', '_meta', \
         'dont_filter', 'headers', 'cookies', 'deferred', 'priority', \
         '__weakref__']
 
@@ -38,19 +38,12 @@ class Request(object_ref):
         self.dont_filter = dont_filter
 
         self._meta = dict(meta) if meta else None
-        self._cache = None
 
     @property
     def meta(self):
         if self._meta is None:
             self._meta = {}
         return self._meta
-
-    @property
-    def cache(self):
-        if self._cache is None:
-            self._cache = {}
-        return self._cache
 
     def _get_url(self):
         return self._url

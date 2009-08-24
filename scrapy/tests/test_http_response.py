@@ -46,14 +46,10 @@ class ResponseTest(unittest.TestCase):
         r1 = Response("http://www.example.com", body="Some body")
         r1.meta['foo'] = 'bar'
         r1.flags.append('cached')
-        r1.cache['lala'] = 'lolo'
         r2 = r1.copy()
 
         self.assertEqual(r1.status, r2.status)
         self.assertEqual(r1.body, r2.body)
-
-        assert r1.cache
-        assert not r2.cache
 
         # make sure meta dict is shallow copied
         assert r1.meta is not r2.meta, "meta must be a shallow copy, not identical"

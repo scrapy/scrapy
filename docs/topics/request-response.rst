@@ -131,29 +131,17 @@ Request objects
 
     .. _shallow copied: http://docs.python.org/library/copy.html
 
-    .. attribute:: Request.cache
-
-        A dict that contains arbitrary cached data for this request. This dict is
-        empty for new Requests, and is usually populated by different Scrapy
-        components (extensions, middlewares, etc) to avoid duplicate processing. So
-        the data contained in this dict depends on the extensions you have enabled.
-
-        Unlike the ``meta`` attribute, this dict is not copied at all when the
-        request is cloned using the ``copy()`` or ``replace()`` methods.
-
     .. method:: Request.copy()
 
-       Return a new Request which is a copy of this Request. The attribute
-       :attr:`Request.meta` is copied, while :attr:`Request.cache` is not. See
-       also :ref:`topics-request-response-ref-request-callback-arguments`.
+       Return a new Request which is a copy of this Request. See also:
+       :ref:`topics-request-response-ref-request-callback-arguments`.
 
     .. method:: Request.replace([url, callback, method, headers, body, cookies, meta, encoding, dont_filter])
 
        Return a Request object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The
        attribute :attr:`Request.meta` is copied by default (unless a new value
-       is given in the ``meta`` argument). The :attr:`Request.cache` attribute
-       is always cleared. See also
+       is given in the ``meta`` argument). See also
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
 .. _topics-request-response-ref-callback-copy:
@@ -415,24 +403,16 @@ Response objects
         they're shown on the string representation of the Response (`__str__`
         method) which is used by the engine for logging.
 
-    .. attribute:: Response.cache
-
-        A dict that contains arbitrary cached data for this response, similar to
-        the :attr:`Request.cache` attribute. See the :attr:`Request.cache`
-        attribute for more info.
-
     .. method:: Response.copy()
 
-       Return a new Response which is a copy of this Response. The attribute
-       :attr:`Response.meta` is copied, while :attr:`Response.cache` is not.
+       Return a new Response which is a copy of this Response.
 
     .. method:: Response.replace([url, status, headers, body, meta, flags, cls])
 
        Return a Response object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The
        attribute :attr:`Response.meta` is copied by default (unless a new value
-       is given in the ``meta`` argument). The  :attr:`Response.cache`
-       attribute is always cleared.
+       is given in the ``meta`` argument).
 
 .. _topics-request-response-ref-response-subclasses:
 

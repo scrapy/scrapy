@@ -13,7 +13,7 @@ from scrapy.utils.trackref import object_ref
 class Response(object_ref):
 
     __slots__ = ['url', 'headers', 'status', '_body', 'request', '_meta', \
-        'flags', '_cache', '__weakref__']
+        'flags', '__weakref__']
 
     def __init__(self, url, status=200, headers=None, body='', meta=None, flags=None):
         self.url = url
@@ -23,19 +23,12 @@ class Response(object_ref):
         self.request = None
         self.flags = [] if flags is None else list(flags)
         self._meta = dict(meta) if meta else None
-        self._cache = None
 
     @property
     def meta(self):
         if self._meta is None:
             self._meta = {}
         return self._meta
-
-    @property
-    def cache(self):
-        if self._cache is None:
-            self._cache = {}
-        return self._cache
 
     def _get_body(self):
         return self._body
