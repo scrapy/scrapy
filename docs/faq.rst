@@ -86,3 +86,10 @@ Can I use Basic HTTP Authentication in my spiders?
 
 Yes, see :class:`~scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware`.
 
+Why does Scrapy download pages in English instead of my native language?
+------------------------------------------------------------------------
+
+Try changing the default `Accept-Language`_ request header by overriding the
+:setting:`DEFAULT_REQUEST_HEADERS` setting.
+
+.. _Accept-Language: http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.4
