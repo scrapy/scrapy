@@ -50,7 +50,7 @@ that to construct the regular expression for the links to follow: ``/tor/\d+``.
 For extracting data we'll use `XPath`_ to select the part of the document where
 the data is to be extracted. Let's take one of those torrent pages:
 
-    http://www.mininova.org/tor/2004522
+    http://www.mininova.org/tor/2657665
 
 .. _XPath: http://www.w3.org/TR/xpath
   
@@ -62,7 +62,7 @@ want to extract which is: torrent name, description and size.
 By looking at the page HTML source we can see that the file name is contained
 inside a ``<h1>`` tag::
 
-    <h1>The Dark Knight[2008]DvDrip-aXXo</h1>
+   <h1>Home[2009][Eng]XviD-ovd</h1>
 
 .. highlight:: none
 
@@ -74,15 +74,18 @@ An XPath expression to extract the name could be::
 
 And the description is contained inside a ``<div>`` tag with ``id="description"``::
 
-    <h2>Description:</h2>
+   <h2>Description:</h2>
 
-    <div id="description">
-    &gt;  F i L E   i N F O <br />
-    &gt;<br />
-    &gt;  TiTLE......[ The Dark Knight<br />
-    &gt;  AKA........[ Batman Begins 2<br />
+   <div id="description">
+   "HOME" - a documentary film by Yann Arthus-Bertrand
+   <br/>
+   <br/>
+   ***
+   <br/>
+   <br/>
+   "We are living in exceptional times. Scientists tell us that we have 10 years to change the way we live, avert the depletion of natural resources and the catastrophic evolution of the Earth's climate.
 
-    ...
+   ...
 
 .. highlight:: none
 
@@ -93,24 +96,25 @@ An XPath expression to select the description could be::
 .. highlight:: html
 
 Finally, the file size is contained in the second ``<p>`` tag inside the ``<div>``
-tag with ``id=info-left``::
+tag with ``id=specifications``::
 
-   <div id="info-left">
+   <div id="specifications">
 
    <p>
    <strong>Category:</strong>
-   <a href="/cat/4">Movies</a> &gt; <a href="/sub/1">Action</a>
+   <a href="/cat/4">Movies</a> &gt; <a href="/sub/35">Documentary</a>
    </p>
 
    <p>
    <strong>Total size:</strong>
-   801.44&nbsp;megabyte</p>
+   699.79&nbsp;megabyte</p>
+
 
 .. highlight:: none
 
 An XPath expression to select the description could be::
 
-   //div[@id='info-left']/p[2]/text()[2]
+   //div[@id='specifications']/p[2]/text()[2]
 
 .. highlight:: python
 
