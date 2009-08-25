@@ -95,6 +95,7 @@ class XmlItemExporter(BaseItemExporter):
 
     def _export_xml_field(self, name, serialized_value):
         self.xg.startElement(name, {})
+        print '%r %r' % (name, serialized_value), self.encoding
         self.xg.characters(serialized_value)
         self.xg.endElement(name)
 
