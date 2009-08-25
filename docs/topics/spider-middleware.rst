@@ -146,8 +146,21 @@ HttpErrorMiddleware
     Filter out response outside of a range of valid status codes.
 
     This middleware filters out every response with status outside of the range
-    200<=status<300. Spiders can add more exceptions using
-    ``handle_httpstatus_list`` spider attribute.
+    200-300. Spiders can add more exceptions using ``handle_httpstatus_list``
+    spider attribute.
+
+    For example, if you want your spider to handle 404 responses you can do
+    this::
+
+        class MySpider(CrawlSpider):
+            handle_httpstatus_list = [404]
+
+    Keep in mind, however, that it's usually not a bad idea to handle non-200
+    responses, unless you really know what you're doing.
+
+    For more information see: `HTTP Status Code Definitions`_.
+
+.. _HTTP Status Code Definitions: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 
 OffsiteMiddleware
 -----------------
