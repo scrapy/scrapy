@@ -17,7 +17,7 @@ class Field(dict):
     """Container of field metadata"""
 
 
-class _ItemMeta(type):
+class ItemMeta(type):
 
     def __new__(mcs, class_name, bases, attrs):
         fields = {}
@@ -81,7 +81,7 @@ class DictItem(DictMixin, BaseItem):
 
 class Item(DictItem):
 
-    __metaclass__ = _ItemMeta
+    __metaclass__ = ItemMeta
 
 
 class ScrapedItem(BaseItem):
