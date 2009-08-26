@@ -1,3 +1,5 @@
+import textwrap
+
 from scrapy.command import ScrapyCommand, cmdline
 
 class Command(ScrapyCommand):
@@ -14,16 +16,25 @@ class Command(ScrapyCommand):
         if not args:
             return False
 
-        commands = cmdline.builtin_commands_dict()
-        commands.update(cmdline.custom_commands_dict())
+        commands = cmdline.get_commands_dict()
 
         cmdname = args[0]
         if cmdname in commands:
             cmd = commands[cmdname]
             help = getattr(cmd, 'help', None) or getattr(cmd, 'long_desc', None)
-            print "%s: %s" % (cmdname, cmd.short_desc())
+            title = "%s command" % cmdname
+            print title
+            print "-" * len(title)
+            print
+            print cmd.short_desc()
+            print
             print "usage: %s %s" % (cmdname, cmd.syntax())
             print
-            print help()
+            print "\n".join(textwrap.wrap(help()))
+            print
+            print "For a list of supported arguments use:"
+            print
+            print "   scrapy-ctl.py %s -h" % cmdname
+            print
         else:
             print "Unknown command: %s" % cmdname
