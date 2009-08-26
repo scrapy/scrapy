@@ -143,11 +143,18 @@ HttpErrorMiddleware
 
 .. class:: HttpErrorMiddleware
 
-    Filter out response outside of a range of valid status codes.
+    Filter out unsuccessful (erroneous) HTTP responses so that spiders don't
+    have to deal with them, which (most of the times) imposes an overhead,
+    consumes more resources, and makes the spider logic more complex.
 
-    This middleware filters out every response with status outside of the range
-    200-300. Spiders can add more exceptions using ``handle_httpstatus_list``
-    spider attribute.
+    According to the `HTTP standard`_, successful responses are those whose
+    status codes are in the 200-300 range.
+
+.. _HTTP standard: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+
+    If you still want to process response codes outside that range, you can
+    specify which response codes the spider is able to handle using the
+    ``handle_httpstatus_list`` spider attribute.
 
     For example, if you want your spider to handle 404 responses you can do
     this::
@@ -155,7 +162,7 @@ HttpErrorMiddleware
         class MySpider(CrawlSpider):
             handle_httpstatus_list = [404]
 
-    Keep in mind, however, that it's usually not a bad idea to handle non-200
+    Keep in mind, however, that it's usually a bad idea to handle non-200
     responses, unless you really know what you're doing.
 
     For more information see: `HTTP Status Code Definitions`_.
