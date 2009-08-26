@@ -54,3 +54,12 @@ class DjangoItemTest(unittest.TestCase):
         self.assertEqual(person.name, 'John')
         self.assertEqual(person.age, '22')
 
+    def test_override_save(self):
+        i = OverrideFieldPersonItem()
+
+        i['name'] = 'John'
+        person = i.save(commit=False)
+
+        self.assertEqual(person.name, 'John')
+        self.assertEqual(person.age, 1)
+
