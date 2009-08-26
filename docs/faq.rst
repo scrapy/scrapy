@@ -8,14 +8,17 @@ How does Scrapy compare to BeautifulSoul or lxml?
 
 `BeautifulSoup`_ and `lxml`_ are libraries for parsing HTML and XML. Scrapy is
 an application framework for writing web spiders that crawl web sites and
-extract data from it. Scrapy provides some mechanisms for extracting data
-(called selectors) but you can easily use `BeautifulSoup`_ or `lxml`_ if you
-feel more comfortable with them. After all, they're just parsing libraries
-which can be imported and used from any Python code.
+extract data from them.
+
+Scrapy provides a built-in mechanism for extracting data (called
+:ref:`selectors <topics-selectors>`) but you can easily use `BeautifulSoup`_
+(or `lxml`_) instead, if you feel more comfortable working with them. After
+all, they're just parsing libraries which can be imported and used from any
+Python code.
 
 In other words, comparing `BeautifulSoup`_ or `lxml`_ to Scrapy is like
 comparing `urllib`_ or `urlparse`_ to `Django`_ (a popular Python web
-framework).
+application framework).
 
 .. _BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/
 .. _lxml: http://codespeak.net/lxml/
