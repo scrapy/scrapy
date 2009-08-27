@@ -3,13 +3,16 @@ This module provides some useful functions for working with
 scrapy.http.Response objects
 """
 
-import re, weakref
+import re
+import weakref
+import webbrowser
+from tempfile import NamedTemporaryFile
 
 from twisted.web import http
 from twisted.web.http import RESPONSES
 
 from scrapy.xlib.BeautifulSoup import BeautifulSoup
-from scrapy.http.response import Response
+from scrapy.http import Response, HtmlResponse
 
 def body_or_str(obj, unicode=True):
     assert isinstance(obj, (Response, basestring)), "obj must be Response or basestring, not %s" % type(obj).__name__
@@ -72,3 +75,18 @@ def response_httprepr(response):
     s += "\r\n"
     s += response.body
     return s
+
+def open_in_browser(response):
+    """Open the given response in a local web browser, populating the <base>
+    tag for external links to work
+    """
+    # XXX: this implementation is a bit dirty and could be improved
+    if not isinstance(response, HtmlResponse):
+        raise TypeError("Unsupported response type: %s" % \
+            response.__class__.__name__)
+    body = response.body
+    if '<base' not in body:
+        body = body.replace('<head>', '<head><base href="%s">' % response.url)
+    with NamedTemporaryFile(suffix='.html', delete=False) as f:
+        f.write(body)
+        webbrowser.open("file://%s" % f.name)
