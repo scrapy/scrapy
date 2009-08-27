@@ -67,11 +67,11 @@ Scraping basics
 :ref:`topics-selectors`
     Extract the data from web pages.
 
+:ref:`topics-shell`
+    Test your extraction code in an interactive environment.
+
 :ref:`topics-loaders`
     Populate your items with the extracted data.
-
-:ref:`topics-shell`
-    Test your extracted data in an interactive environment.
 
 :ref:`topics-item-pipeline`
     Post-process and store your scraped data.
