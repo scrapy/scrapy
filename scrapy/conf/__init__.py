@@ -7,25 +7,24 @@ See documentation in docs/topics/settings.rst
 import os
 import cPickle as pickle
 
-SETTINGS_DISABLED = os.environ.get('SCRAPY_SETTINGS_DISABLED', False)
+import_ = lambda x: __import__(x, {}, {}, [''])
 
 class Settings(object):
 
-    # settings in precedence order
-    overrides = None
-    settings_module = None
-    defaults = None
-    global_defaults = None
+    default_settings_module = 'scrapy.conf.default_settings'
 
     def __init__(self):
         self.set_settings_module()
+        self.defaults = {}
+        self.global_defaults = import_(self.default_settings_module)
+        self.disabled = os.environ.get('SCRAPY_SETTINGS_DISABLED', False)
+
+        # XXX: find a better solution for this hack
         pickled_settings = os.environ.get("SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE")
         self.overrides = pickle.loads(pickled_settings) if pickled_settings else {}
-        self.defaults = {}
-        self.global_defaults = __import__('scrapy.conf.default_settings', {}, {}, [''])
 
     def __getitem__(self, opt_name):
-        if not SETTINGS_DISABLED:
+        if not self.disabled:
             if opt_name in self.overrides:
                 return self.overrides[opt_name]
             if 'SCRAPY_' + opt_name in os.environ:
@@ -42,7 +41,7 @@ class Settings(object):
                 'scrapy_settings')
         self.settings_module_path = settings_module_path
         try:
-            self.settings_module = __import__(settings_module_path, {}, {}, [''])
+            self.settings_module = import_(settings_module_path)
         except ImportError:
             self.settings_module = None
 
