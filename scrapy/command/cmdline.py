@@ -145,3 +145,6 @@ def run_command(cmd, args, opts):
     else:
         ret = cmd.run(args, opts)
     return ret
+
+if __name__ == '__main__':
+    execute()
