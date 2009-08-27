@@ -20,6 +20,7 @@ from scrapy.core.manager import scrapymanager
 from scrapy.core.engine import scrapyengine
 from scrapy.http import Request
 from scrapy.fetcher import get_or_create_spider
+from scrapy import log
 
 def relevant_var(varname):
     return varname not in ['shelp', 'fetch', 'view', '__builtins__', 'In', \
@@ -40,10 +41,11 @@ class Shell(object):
 
     requires_project = False
 
-    def __init__(self, update_vars):
+    def __init__(self, update_vars=None, nofetch=False):
         self.vars = {}
         self.update_vars = update_vars
         self.item_class = load_object(settings['DEFAULT_ITEM_CLASS'])
+        self.nofetch = nofetch
 
     def fetch(self, request_or_url, print_help=False):
         if isinstance(request_or_url, Request):
@@ -74,11 +76,13 @@ class Shell(object):
             self.vars['request'] = request
             self.vars['spider'] = spiders.fromurl(url)
 
-            self.vars['fetch'] = self.fetch
+            if not self.nofetch:
+                self.vars['fetch'] = self.fetch
             self.vars['view'] = open_in_browser
             self.vars['shelp'] = self.print_help
 
-        self.update_vars(self.vars)
+        if self.update_vars:
+            self.update_vars(self.vars)
 
     def print_help(self):
         print "Available objects"
@@ -92,7 +96,8 @@ class Shell(object):
         print "==================="
         print
         print "  shelp()           : Prints this help."
-        print "  fetch(req_or_url) : Fetch a new request or URL and update objects"
+        if not self.nofetch:
+            print "  fetch(req_or_url) : Fetch a new request or URL and update objects"
         print "  view(response)    : View response in a browser"
         print
 
@@ -103,12 +108,20 @@ class Shell(object):
         reactor.callInThread(self._console_thread, url)
         scrapymanager.start()
 
-    def _console_thread(self, url=None):
-        self.populate_vars()
-        if url:
-            result = self.fetch(url, print_help=True)
-        else:
-            self.print_help()
+    def inspect_response(self, response):
+        print
+        print "Scrapy Shell"
+        print "============"
+        print
+        print "Inspecting: %s" % response
+        print "Use shelp() to see available objects"
+        print
+        request = response.request
+        url = request.url
+        self.populate_vars(url, response, request)
+        self._run_console()
+
+    def _run_console(self):
         try: # use IPython if available
             import IPython
             shell = IPython.Shell.IPShell(argv=[], user_ns=self.vars)
@@ -124,4 +137,19 @@ class Shell(object):
                 import rlcompleter
                 readline.parse_and_bind("tab:complete")
             code.interact(local=self.vars)
+
+    def _console_thread(self, url=None):
+        self.populate_vars()
+        if url:
+            result = self.fetch(url, print_help=True)
+        else:
+            self.print_help()
+        self._run_console()
         reactor.callFromThread(scrapymanager.stop)
+
+def inspect_response(response):
+    """Open a shell to inspect the given response"""
+    shell = Shell(nofetch=True)
+    log._switch_descriptors()
+    shell.inspect_response(response)
+    log._switch_descriptors()

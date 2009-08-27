@@ -53,8 +53,12 @@ Built-in Shortcuts
    URL and update all related objects accordingly.
 
  * ``view(response)`` - open the given response in your local web browser, for
-   inspection. Note that this will generate a temporary file which won't be
-   removed automatically.
+   inspection. This will add a `\<base\> tag`_ to the response body in order
+   for external links (such as images and style sheets) to display properly.
+   Note, however,that this will create a temporary file in your computer,
+   which won't be removed automatically.
+
+.. _<base> tag: http://www.w3schools.com/TAGS/tag_base.asp
 
 Built-in Objects
 ----------------
@@ -77,7 +81,7 @@ Those objects are:
    fetch a new request (without leaving the shell) using the ``fetch``
    shortcut.
 
- * ``response`` - a :class:`~scrapy.http.Response` object contaning the last
+ * ``response`` - a :class:`~scrapy.http.Response` object containing the last
    fetched page
 
  * ``hxs`` - a :class:`~scrapy.selector.HtmlXPathSelector` object constructed
@@ -145,4 +149,67 @@ After that, we can stary playing with the objects::
     Fetching <POST http://slashdot.org>...
     2009-04-03 00:57:39-0300 [scrapybot] ERROR: Downloading <http://slashdot.org> from <None>: 405 Method Not Allowed
     >>> 
+
+
+Invoking the shell from spiders to inspect responses
+====================================================
+
+Sometimes you want to inspect the responses that are being processed in a
+certain point of your spider, if only to check that response you expect is
+getting there.
+
+This can be achieved by using the ``scrapy.shell.inspect_response`` function.
+
+Here's an example of how you would call it from your spider::
+
+    class MySpider(BaseSpider):
+        domain_name = 'example.com'
+
+        def parse(self, response):
+            if response.url == 'http://www.example.com/products.php':
+                from scrapy.shell import inspect_response
+                inspect_response(response)
+
+            # ... your parsing code ..
+
+When you the spider you will get something similar to this::
+
+    2009-08-27 19:15:25-0300 [example.com] DEBUG: Crawled <http://www.example.com/> (referer: <None>)
+    2009-08-27 19:15:26-0300 [example.com] DEBUG: Crawled <http://www.example.com/products.php> (referer: <http://www.example.com/>)
+
+    Scrapy Shell
+    ============
+
+    Inspecting: <http://www.example.com/products.php
+    Use shelp() to see available objects
+
+    Python 2.6.2 (release26-maint, Apr 19 2009, 01:58:18) 
+    [GCC 4.3.3] on linux2
+    Type "help", "copyright", "credits" or "license" for more information.
+    (InteractiveConsole)
+    >>> response.url
+    'http://www.example.com/products.php'
+
+Then, you can check if the extraction code is working::
+
+    >>> hxs.select('//h1')
+    []
+
+Nope, it doesn't. So you can open the response in your web browser and see if
+it's the response you were expecting::
+
+    >>> view(response)
+    >>>
+
+Finally you hit Ctrl-D (or Ctrl-Z in Windows) to exit the shell and resume the
+crawling::
+
+    >>> ^D
+    2009-08-27 19:15:25-0300 [example.com] DEBUG: Crawled <http://www.example.com/product.php?id=1> (referer: <None>)
+    2009-08-27 19:15:25-0300 [example.com] DEBUG: Crawled <http://www.example.com/product.php?id=2> (referer: <None>)
+    # ...
+
+Note that you can't use the ``fetch`` shortcut here since the Scrapy engine is
+blocked by the shell. However, after you leave the shell, the spider will
+continue crawling where it stopped, as shown above.
 

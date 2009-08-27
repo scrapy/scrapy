@@ -34,6 +34,8 @@ log_level = DEBUG
 
 started = False
 
+_prev_descriptors = (sys.stdout, sys.stderr)
+
 def start(logfile=None, loglevel=None, logstdout=None):
     """Initialize and start logging facility"""
     global log_level, started
@@ -52,6 +54,13 @@ def start(logfile=None, loglevel=None, logstdout=None):
 
         file = open(logfile, 'a') if logfile else sys.stderr
         log.startLogging(file, setStdout=logstdout)
+
+def _switch_descriptors():
+    global _prev_descriptors
+
+    cur = (sys.stdout, sys.stderr)
+    sys.stdout, sys.stderr = _prev_descriptors
+    _prev_descriptors = cur
 
 def msg(message, level=INFO, component=BOT_NAME, domain=None):
     """Log message according to the level"""
