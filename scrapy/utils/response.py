@@ -3,6 +3,8 @@ This module provides some useful functions for working with
 scrapy.http.Response objects
 """
 
+from __future__ import with_statement
+
 import re
 import weakref
 import webbrowser
