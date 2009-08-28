@@ -13,8 +13,6 @@ from scrapy import log
 from scrapy.conf import settings
 
 class SimpledbStatsCollector(StatsCollector):
-    """A simple in-memory stats collector which keeps scraping stats of last
-    run. Those can be accessed through the ``domain_stats`` attribute"""
 
     def __init__(self):
         super(SimpledbStatsCollector, self).__init__()
