@@ -17,8 +17,8 @@ class Settings(object):
         self.defaults = {}
         self.global_defaults = import_(self.default_settings_module)
         self.disabled = os.environ.get('SCRAPY_SETTINGS_DISABLED', False)
-        settings_module_path = os.environ.get('SCRAPYSETTINGS_MODULE', \
-            'scrapy_settings')
+        settings_module_path = os.environ.get('SCRAPY_SETTINGS_MODULE', \
+            os.environ.get('SCRAPYSETTINGS_MODULE', 'scrapy_settings'))
         self.set_settings_module(settings_module_path)
 
         # XXX: find a better solution for this hack
