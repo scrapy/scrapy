@@ -1,16 +1,13 @@
-import os
-from os.path import exists, join
-import subprocess
-from shutil import rmtree
 import sys
+import os
+import subprocess
+from os.path import exists, join
+from shutil import rmtree
 from tempfile import mkdtemp
-from unittest import TestCase
-
-import scrapy
-from scrapy.conf import settings
+import unittest
 
 
-class ProjectTest(TestCase):
+class ProjectTest(unittest.TestCase):
     project_name = 'testproject'
 
     def setUp(self):
@@ -25,7 +22,7 @@ class ProjectTest(TestCase):
         args = [sys.executable, '-m', 'scrapy.command.cmdline']
         args.extend(new_args)
 
-        env = self.env if hasattr(self, 'env') else os.environ
+        env = getattr(self, 'env', os.environ)
 
         return subprocess.call(args, stdout=out, stderr=out, cwd=self.cwd, \
                                env=env, **kwargs)
@@ -115,3 +112,5 @@ class CsvFeedGenspiderTest(BaseGenspiderTest):
 class XMLFeedGenspiderTest(BaseGenspiderTest):
     template = 'xmlfeed'
 
+if __name__ == '__main__':
+    unittest.main()

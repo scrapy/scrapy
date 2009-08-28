@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
+import sys
 import os
 import string
 import re
-import sys
 
 import scrapy
 from scrapy.command import ScrapyCommand

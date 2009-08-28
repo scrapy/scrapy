@@ -1,8 +1,8 @@
+import sys
 import shutil
 import string
 from os import listdir
 from os.path import join, dirname, abspath, exists
-import sys
 
 import scrapy
 from scrapy.spider import spiders
