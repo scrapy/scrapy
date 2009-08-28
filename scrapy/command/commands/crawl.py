@@ -19,10 +19,14 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("--nopipeline", dest="nopipeline", action="store_true", help="disable scraped item pipeline")
-        parser.add_option("--restrict", dest="restrict", action="store_true", help="restrict crawling only to the given urls")
-        parser.add_option("-n", "--nofollow", dest="nofollow", action="store_true", help="don't follow links (for use with URLs only)")
-        parser.add_option("-c", "--callback", dest="callback", action="store", help="use the provided callback for starting to crawl the given url")
+        parser.add_option("--nopipeline", dest="nopipeline", action="store_true", \
+            help="disable scraped item pipeline")
+        parser.add_option("--restrict", dest="restrict", action="store_true", \
+            help="restrict crawling only to the given urls")
+        parser.add_option("-n", "--nofollow", dest="nofollow", action="store_true", \
+            help="don't follow links (for use with URLs only)")
+        parser.add_option("-c", "--callback", dest="callback", action="store", \
+            help="use the provided callback for starting to crawl the given url")
 
     def process_options(self, args, opts):
         ScrapyCommand.process_options(self, args, opts)
@@ -44,20 +48,24 @@ class Command(ScrapyCommand):
                     urls = [a]
                 else:
                     spider = spiders.fromdomain(a)
-                    urls = spider.start_urls if hasattr(spider.start_urls, '__iter__') else [spider.start_urls]
+                    urls = spider.start_urls if hasattr(spider.start_urls, \
+                        '__iter__') else [spider.start_urls]
 
                 if spider:
                     if hasattr(spider, opts.callback):
-                        requests.extend(Request(url=url, callback=getattr(spider, opts.callback)) for url in urls)
+                        requests.extend(Request(url=url, callback=getattr(spider, \
+                            opts.callback)) for url in urls)
                     else:
-                        log.msg('Callback %s doesnt exist in spider %s' % (opts.callback, spider.domain_name), log.ERROR)
+                        log.msg('Callback %s doesnt exist in spider %s' % \
+                            (opts.callback, spider.domain_name), log.ERROR)
                 else:
                     log.msg('Cannot find spider for %s' % a, log.ERROR)
 
             if requests:
                 args = requests
             else:
-                log.msg('Cannot create any requests with the provided arguments', log.ERROR)
+                log.msg('Cannot create any requests with the provided arguments', \
+                    log.ERROR)
                 return
 
         scrapymanager.runonce(*args)
