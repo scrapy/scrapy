@@ -3,6 +3,7 @@
 import os
 import string
 import re
+import sys
 
 import scrapy
 from scrapy.command import ScrapyCommand
@@ -44,7 +45,12 @@ class Command(ScrapyCommand):
             else:
                 message = 'Project names must contain only letters, numbers and underscores'
             print "Invalid project name: %s\n\n%s" % (project_name, message)
+            sys.exit(1)
         else:
+            if os.path.exists(project_name):
+                print "%s dir already exists" % project_name
+                sys.exit(1)
+
             project_root_path = project_name
 
             roottpl = os.path.join(PROJECT_TEMPLATES_PATH, 'root')

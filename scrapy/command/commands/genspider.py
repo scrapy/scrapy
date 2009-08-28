@@ -2,6 +2,7 @@ import shutil
 import string
 from os import listdir
 from os.path import join, dirname, abspath, exists
+import sys
 
 import scrapy
 from scrapy.spider import spiders
@@ -62,7 +63,7 @@ class Command(ScrapyCommand):
         if spider and not opts.force:
             print "Spider '%s' already exists in module:" % domain
             print "  %s" % spider.__module__
-            return
+            sys.exit(1)
 
         template_file = self._find_template(opts.template)
         if template_file:
