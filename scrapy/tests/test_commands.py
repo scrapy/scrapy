@@ -35,13 +35,13 @@ class StartprojectTest(ProjectTest):
         ret = self.call(['startproject', self.project_name])
         self.assertEqual(ret, 0)
 
-        self.assertEqual(exists(join(proj_path, 'scrapy-ctl.py')), True)
-        self.assertEqual(exists(join(proj_path, 'testproject')), True)
-        self.assertEqual(exists(join(proj_mod_path, '__init__.py')), True)
-        self.assertEqual(exists(join(proj_mod_path, 'items.py')), True)
-        self.assertEqual(exists(join(proj_mod_path, 'pipelines.py')), True)
-        self.assertEqual(exists(join(proj_mod_path, 'settings.py')), True)
-        self.assertEqual(exists(join(proj_mod_path, 'spiders', '__init__.py')), True)
+        assert exists(join(proj_path, 'scrapy-ctl.py'))
+        assert exists(join(proj_path, 'testproject'))
+        assert exists(join(proj_mod_path, '__init__.py'))
+        assert exists(join(proj_mod_path, 'items.py'))
+        assert exists(join(proj_mod_path, 'pipelines.py'))
+        assert exists(join(proj_mod_path, 'settings.py'))
+        assert exists(join(proj_mod_path, 'spiders', '__init__.py'))
 
         ret = self.call(['startproject', self.project_name])
         self.assertEqual(ret, 1)
@@ -92,8 +92,8 @@ class BaseGenspiderTest(CommandTest):
         ret = self.call(['genspider', 'testspider', 'test.com',
                           '--template=%s' % self.template])
         self.assertEqual(ret, 0)
-        self.assertEqual(os.path.exists(join(self.cwd, self.project_name, \
-            'spiders', 'testspider.py')), True)
+        assert os.path.exists(join(self.cwd, self.project_name, 'spiders', \
+            'testspider.py'))
 
         ret = self.call(['genspider', 'otherspider', 'test.com'])
         self.assertEqual(ret, 1)
