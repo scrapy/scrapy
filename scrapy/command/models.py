@@ -8,6 +8,7 @@ import os
 import sys
 from optparse import OptionGroup
 
+import scrapy
 from scrapy.conf import settings
 
 class ScrapyCommand(object):
@@ -47,6 +48,8 @@ class ScrapyCommand(object):
         group = OptionGroup(parser, "Global Options")
         group.add_option("-h", "--help", action="store_true", dest="help", \
             help="print command help and options")
+        group.add_option("--version", action="store_true", dest="version", \
+            help="print Scrapy version and exit")
         group.add_option("--logfile", dest="logfile", metavar="FILE", \
             help="log file. if omitted stderr will be used")
         group.add_option("-L", "--loglevel", dest="loglevel", metavar="LEVEL", \
@@ -74,6 +77,10 @@ class ScrapyCommand(object):
     def process_options(self, args, opts):
         if opts.settings:
             settings.set_settings_module(opts.settings)
+
+        if opts.version:
+            print scrapy.__version__
+            sys.exit()
 
         if opts.logfile:
             settings.overrides['LOG_ENABLED'] = True
