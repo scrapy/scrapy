@@ -21,8 +21,6 @@ class Command(ScrapyCommand):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--nopipeline", dest="nopipeline", action="store_true", \
             help="disable scraped item pipeline")
-        parser.add_option("--restrict", dest="restrict", action="store_true", \
-            help="restrict crawling only to the given urls")
         parser.add_option("-n", "--nofollow", dest="nofollow", action="store_true", \
             help="don't follow links (for use with URLs only)")
         parser.add_option("-c", "--callback", dest="callback", action="store", \
@@ -32,9 +30,6 @@ class Command(ScrapyCommand):
         ScrapyCommand.process_options(self, args, opts)
         if opts.nopipeline:
             settings.overrides['ITEM_PIPELINES'] = []
-
-        if opts.restrict:
-            settings.overrides['RESTRICT_TO_URLS'] = args
 
         if opts.nofollow:
             settings.overrides['CRAWLSPIDER_FOLLOW_LINKS'] = False
