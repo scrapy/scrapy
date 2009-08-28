@@ -10,9 +10,17 @@ from scrapy import log
 from scrapy.spider import spiders
 from scrapy.xlib import lsprofcalltree
 from scrapy.conf import settings
+from scrapy.command.models import ScrapyCommand
 
 # This dict holds information about the executed command for later use
 command_executed = {}
+
+def save_command_executed(cmdname, cmd, args, opts):
+    """Save command executed info for later reference"""
+    command_executed['name'] = cmdname
+    command_executed['class'] = cmd
+    command_executed['args'] = args[:]
+    command_executed['opts'] = opts.__dict__.copy()
 
 def find_commands(dir):
     try:
@@ -45,20 +53,26 @@ def get_command_name(argv):
         if not arg.startswith('-'):
             return arg
 
-def usage():
-    s = "Usage\n"
-    s += "=====\n"
-    s += "scrapy-ctl.py <command> [options] [args]\n"
-    s += "  Run a command\n\n"
-    s += "scrapy-ctl.py <command> -h\n"
-    s += "  Print command help and options\n\n"
-    s += "Available commands\n"
-    s += "===================\n"
+def print_usage(inside_project):
+    if inside_project:
+        print "Scrapy %s - project: %s\n" % (scrapy.__version__, \
+            settings['BOT_NAME'])
+    else:
+        print "Scrapy %s - no active project\n" % scrapy.__version__
+    print "Usage"
+    print "=====\n"
+    print "To run a command:"
+    print "  scrapy-ctl.py <command> [options] [args]\n"
+    print "To get help:"
+    print "  scrapy-ctl.py <command> -h\n"
+    print "Available commands"
+    print "==================\n"
     cmds = get_commands_dict()
     for cmdname, cmdclass in sorted(cmds.iteritems()):
-        s += "%s %s\n" % (cmdname, cmdclass.syntax())
-        s += "  %s\n" % cmdclass.short_desc()
-    return s
+        if inside_project or not cmdclass.requires_project:
+            print "%s %s" % (cmdname, cmdclass.syntax())
+            print "  %s" % cmdclass.short_desc()
+    print
 
 def update_default_settings(module, cmdname):
     if not module:
@@ -82,44 +96,38 @@ def execute(argv=None):
     update_default_settings('scrapy.conf.commands', cmdname)
     update_default_settings(settings['COMMANDS_SETTINGS_MODULE'], cmdname)
 
-    if not cmdname:
-        print "Scrapy %s\n" % scrapy.__version__
-        print usage()
-        sys.exit(2)
-
     parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(), \
         conflict_handler='resolve', add_help_option=False)
 
     if cmdname in cmds:
         cmd = cmds[cmdname]
         cmd.add_options(parser)
+        opts, args = parser.parse_args(args=argv[1:])
+        cmd.process_options(args, opts)
         parser.usage = "%%prog %s %s" % (cmdname, cmd.syntax())
         parser.description = cmd.long_desc()
+        if cmd.requires_project and not settings.settings_module:
+            print "Error running: scrapy-ctl.py %s\n" % cmdname
+            print "Cannot find project settings module in python path: %s" % \
+                settings.settings_module_path
+            sys.exit(1)
+        if opts.help:
+            parser.print_help()
+            sys.exit()
+    elif not cmdname:
+        cmd = ScrapyCommand()
+        cmd.add_options(parser)
+        opts, args = parser.parse_args(args=argv)
+        cmd.process_options(args, opts)
+        print_usage(settings.settings_module)
+        sys.exit(2)
     else:
-        print "Scrapy %s\n" % scrapy.__version__
         print "Unknown command: %s\n" % cmdname
-        print 'Type "%s -h" for help' % argv[0]
+        print 'Use "scrapy-ctl.py -h" for help' 
         sys.exit(2)
 
-    (opts, args) = parser.parse_args(args=argv[1:])
-    del args[0]  # args[0] is cmdname
-
-    if opts.help:
-        parser.print_help()
-        sys.exit()
-
-    # storing command executed info for later reference
-    command_executed['name'] = cmdname
-    command_executed['class'] = cmd
-    command_executed['args'] = args[:]
-    command_executed['opts'] = opts.__dict__.copy()
-
-    cmd.process_options(args, opts)
-    if cmd.requires_project and not settings.settings_module:
-        print "Error running: scrapy-ctl.py %s\n" % cmdname
-        print "Cannot find project settings module in python path: %s" % \
-            settings.settings_module_path
-        sys.exit(1)
+    del args[0]  # remove command name from args
+    save_command_executed(cmdname, cmd, args, opts)
     spiders.load()
     log.start()
     ret = run_command(cmd, args, opts)

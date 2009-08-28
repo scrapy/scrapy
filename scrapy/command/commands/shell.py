@@ -12,14 +12,13 @@ class Command(ScrapyCommand):
     requires_project = False
 
     def syntax(self):
-        return "[url]"
+        return "[url|file]"
 
     def short_desc(self):
         return "Interactive scraping console"
 
     def long_desc(self):
-        return "Interactive console for scraping the given url. For scraping " \
-            "local files you can use a URL like file://path/to/file.html"
+        return "Interactive console for scraping the given url"
 
     def update_vars(self, vars):
         """You can use this function to update the Scrapy objects that will be
