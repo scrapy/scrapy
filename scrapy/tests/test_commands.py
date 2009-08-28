@@ -19,16 +19,14 @@ class ProjectTest(unittest.TestCase):
 
     def call(self, new_args, **kwargs):
         out = os.tmpfile()
+        env = getattr(self, 'env', os.environ)
         args = [sys.executable, '-m', 'scrapy.command.cmdline']
         args.extend(new_args)
-
-        env = getattr(self, 'env', os.environ)
-
         return subprocess.call(args, stdout=out, stderr=out, cwd=self.cwd, \
-                               env=env, **kwargs)
+            env=env, **kwargs)
 
 
-class ScrapyCtlStartprojectTest(ProjectTest):
+class StartprojectTest(ProjectTest):
     
     def test_startproject(self):
         proj_path = join(self.temp_path, self.project_name)
@@ -66,7 +64,7 @@ class CommandTest(ProjectTest):
         self.env['SCRAPY_SETTINGS_MODULE'] = '%s.settings' % self.project_name
 
 
-class ScrapyCtlCommandsTest(CommandTest):
+class MiscCommandsTest(CommandTest):
 
     def test_crawl(self):
         ret = self.call(['crawl'])
@@ -111,6 +109,7 @@ class CsvFeedGenspiderTest(BaseGenspiderTest):
 
 class XMLFeedGenspiderTest(BaseGenspiderTest):
     template = 'xmlfeed'
+
 
 if __name__ == '__main__':
     unittest.main()
