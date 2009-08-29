@@ -122,7 +122,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
 
 class JsonLinesItemExporterTest(BaseItemExporterTest):
 
-    def _get_exporter(self, **kwargs):
+    def setUp(self):
         try:
             import json
         except ImportError:
@@ -130,12 +130,15 @@ class JsonLinesItemExporterTest(BaseItemExporterTest):
                 import simplejson
             except ImportError:
                 raise unittest.SkipTest("simplejson module not available")
+        super(JsonLinesItemExporterTest, self).setUp()
+
+    def _get_exporter(self, **kwargs):
         from scrapy.contrib.exporter.jsonlines import JsonLinesItemExporter
         return JsonLinesItemExporter(self.output, **kwargs)
 
     def _check_output(self):
-        import simplejson
-        exported = simplejson.loads(self.output.getvalue().strip())
+        from scrapy.contrib.exporter.jsonlines import json
+        exported = json.loads(self.output.getvalue().strip())
         self.assertEqual(exported, dict(self.i))
 
 
