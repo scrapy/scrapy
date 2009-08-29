@@ -184,8 +184,13 @@ BOT_NAME
 
 Default: ``scrapybot``
 
-The name of the bot implemented by this Scrapy project. This will be used to
-construct the User-Agent by default, and also for logging.
+The name of the bot implemented by this Scrapy project (also known as the
+project name). This will be used to construct the User-Agent by default, and
+also for logging.
+
+It's automatically populated with your project name when you create your
+project with the :doc:`scrapy-ctl.py </topics/scrapy-ctl>` ``startproject``
+command.
 
 .. setting:: BOT_VERSION
 
@@ -695,17 +700,6 @@ Module where to create new spiders using the ``genspider`` command.
 Example::
 
     NEWSPIDER_MODULE = 'mybot.spiders_dev'
-
-.. setting:: PROJECT_NAME
-
-PROJECT_NAME
-------------
-
-Default: ``Not Defined``
-
-The name of the current project. It matches the project module name as created
-by :ref:`scrapy-ctl.py startproject <topics-scripts-scrapy-ctl-startproject>` command,
-and is only defined by project settings file.
 
 .. setting:: REDIRECT_MAX_TIMES
 

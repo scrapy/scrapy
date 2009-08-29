@@ -72,8 +72,8 @@ class Command(ScrapyCommand):
     def _genspider(self, module, domain, template_name, template_file):
         """Generate the spider module, based on the given template"""
         tvars = {
-            'project_name': settings.get('PROJECT_NAME'),
-            'ProjectName': string_camelcase(settings.get('PROJECT_NAME')),
+            'project_name': settings.get('BOT_NAME'),
+            'ProjectName': string_camelcase(settings.get('BOT_NAME')),
             'module': module,
             'site': domain,
             'classname': '%sSpider' % ''.join([s.capitalize() \

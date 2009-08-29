@@ -1,9 +1,9 @@
 # Scrapy settings for $project_name project
 #
 # For simplicity, this file contains only the most important settings by
-# default. All the other settings are documented here
+# default. All the other settings are documented here:
 #
-#     http://doc.scrapy.org/ref/settings.html
+#     http://doc.scrapy.org/topics/settings.html
 #
 # Or you can copy and paste them from where they're defined in Scrapy:
 # 
@@ -12,14 +12,11 @@
 
 import $project_name
 
-PROJECT_NAME = '$project_name'
-
-BOT_NAME = PROJECT_NAME
+BOT_NAME = '$project_name'
 BOT_VERSION = '1.0'
 
 SPIDER_MODULES = ['$project_name.spiders']
 NEWSPIDER_MODULE = '$project_name.spiders'
-TEMPLATES_DIR = '%s/templates' % $project_name.__path__[0]
 DEFAULT_ITEM_CLASS = '$project_name.items.${ProjectName}Item'
 USER_AGENT = '%s/%s' % (BOT_NAME, BOT_VERSION)
 
