@@ -1,8 +1,8 @@
 .. _topics-stats:
 
-===============
-Stats Collector
-===============
+================
+Stats Collection
+================
 
 Overview
 ========
@@ -309,7 +309,8 @@ functionality:
 .. function:: stats_domain_closed(domain, reason, domain_stats)
 
     Sent right after the stats domain is closed. You can use this signal to
-    collect resources.
+    collect resources, but not to add any more stats as the stats domain has
+    already been close (use :signal:`stats_domain_closing` for that instead).
 
     :param domain: the stats domain just closed
     :type domain: str

@@ -7,6 +7,7 @@ Requires the boto library: http://code.google.com/p/boto/
 from datetime import datetime
 
 import boto
+from twisted.internet import threads
 
 from scrapy.stats.collector import StatsCollector
 from scrapy import log
@@ -21,16 +22,17 @@ class SimpledbStatsCollector(StatsCollector):
         sdb = boto.connect_sdb()
         sdb.create_domain(self._sdbdomain)
         
-    def close_domain(self, domain, reason):
-        if self._sdbdomain:
-            if self._async:
-                from twisted.internet import threads
-                dfd = threads.deferToThread(self._persist_to_sdb, domain, \
-                    self._stats[domain].copy())
-                dfd.addErrback(log.err, 'Error uploading stats to SimpleDB', domain=domain)
-            else:
-                self._persist_to_sdb(domain, self._stats[domain])
-        super(SimpledbStatsCollector, self).close_domain(domain, reason)
+    def _persist_stats(self, stats, domain=None):
+        if domain is None: # only store domain-specific stats
+            return
+        if not self._sdbdomain:
+            return
+        if self._async:
+            dfd = threads.deferToThread(self._persist_to_sdb, domain, stats.copy())
+            dfd.addErrback(log.err, 'Error uploading stats to SimpleDB', \
+                domain=domain)
+        else:
+            self._persist_to_sdb(domain, stats)
 
     def _persist_to_sdb(self, domain, stats):
         ts = datetime.utcnow().isoformat()
