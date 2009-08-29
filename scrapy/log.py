@@ -50,7 +50,8 @@ def start(logfile=None, loglevel=None, logstdout=None):
     # set log observer
     if log.defaultObserver: # check twisted log not already started
         logfile = logfile or settings['LOG_FILE'] or settings['LOGFILE']
-        logstdout = logstdout or settings.getbool('LOG_STDOUT')
+        if logstdout is None:
+            logstdout = settings.getbool('LOG_STDOUT')
 
         file = open(logfile, 'a') if logfile else sys.stderr
         log.startLogging(file, setStdout=logstdout)

@@ -66,17 +66,20 @@ scrapy.log module
     Start the logging facility. This must be called before actually logging any
     messages. Otherwise, messages logged before this call will get lost.
 
-    ``logfile`` is a string with the file path to use for logging output. If
-    omitted, :setting:`LOG_FILE` setting will be used. If both are ``None``, log
-    will be sent to standard output (if ``logstdout`` or :setting:`LOG_STDOUT` is
-    ``True``) or standard error (if ``log_stderr`` or :setting:`LOG_STDOUT` is
-    ``False``).
+    :param logfile: the file path to use for logging output. If omitted, the
+        :setting:`LOG_FILE` setting will be used. If both are ``None``, the log
+        will be sent to standard error.
+    :type logfile: str
 
-    ``loglevel`` is the logging level. Availables ones are: :data:`CRITICAL`,
-    :data:`ERROR`, :data:`WARNING`, :data:`INFO` and :data:`DEBUG`.
+    :param loglevel: the minimum logging level to log. Availables values are:
+        :data:`CRITICAL`, :data:`ERROR`, :data:`WARNING`, :data:`INFO` and
+        :data:`DEBUG`.
 
-    ``log_stdout`` is a boolean which specifies if log should be sent to standard
-    output (if ``True``) or standard error (if ``False``)
+    :param logstdout: if ``True``, all standard output (and error) of your
+        application will be logged instead. For example if you "print 'hello'"
+        it will appear in the Scrapy log. If ommited, the :setting:`LOG_STDOUT`
+        setting will be used.
+    :type logstdout: boolean
 
 .. function:: msg(message, level=INFO, component=BOT_NAME, domain=None)
 
