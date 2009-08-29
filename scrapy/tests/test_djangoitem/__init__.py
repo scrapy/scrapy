@@ -6,10 +6,14 @@ from scrapy.contrib_exp.djangoitem import DjangoItem, Field
 os.environ['DJANGO_SETTINGS_MODULE'] = 'scrapy.tests.test_djangoitem.settings'
 
 try:
-    from models import Person
-    django = True
+    import django
 except ImportError:
-    django = False
+    django = None
+
+if django:
+    from models import Person
+else:
+    Person = None
 
 
 class BasePersonItem(DjangoItem):
