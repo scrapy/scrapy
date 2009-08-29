@@ -10,14 +10,30 @@ Settings
 The Scrapy settings allows you to customize the behaviour of all Scrapy
 components, including the core, extensions, pipelines and spiders themselves.
 
-The settings infrastructure provides a global namespace of key-value mappings
-where the code can pull configuration values from. The settings can be
+The infrastructure of setting provides a global namespace of key-value mappings
+that the code can use to pull configuration values from. The settings can be
 populated through different mechanisms, which are described below.
 
-Read :ref:`topics-settings-ref` for all supported entries.
+The settings is also the mechanism for selecting the currently active Scrapy
+project (in case you have many).
 
-How to populate settings
+For a list of available built-in settings see: :ref:`topics-settings-ref`.
+
+Designating the settings
 ========================
+
+When you use Scrapy, you have to tell it which settings you're using. You can
+do this by using an environment variable, ``SCRAPY_SETTINGS_MODULE``, or the
+``--settings`` argument of the :doc:`scrapy-ctl.py <scrapy-ctl> script``.
+
+The value of ``SCRAPY_SETTINGS_MODULE`` should be in Python path syntax, e.g.
+``myproject.settings``. Note that the settings module should be on the
+Python `import search path`_.
+
+.. _import search path: http://diveintopython.org/getting_to_know_python/everything_is_an_object.html
+
+Populating the settings
+=======================
 
 Settings can be populated using different mechanisms, each of which having a
 different precedence. Here is the list of them in decreasing order of
