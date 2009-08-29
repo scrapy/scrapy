@@ -122,6 +122,7 @@ DepthMiddleware
 ---------------
 
 .. module:: scrapy.contrib.spidermiddleware.depth
+   :synopsis: Depth Spider Middleware
 
 .. class:: DepthMiddleware
 
@@ -140,6 +141,7 @@ HttpErrorMiddleware
 -------------------
 
 .. module:: scrapy.contrib.spidermiddleware.httperror
+   :synopsis: HTTP Error Spider Middleware
 
 .. class:: HttpErrorMiddleware
 
@@ -173,6 +175,7 @@ OffsiteMiddleware
 -----------------
 
 .. module:: scrapy.contrib.spidermiddleware.offsite
+   :synopsis: Offiste Spider Middleware
 
 .. class:: OffsiteMiddleware
 
@@ -188,6 +191,7 @@ RequestLimitMiddleware
 ----------------------
 
 .. module:: scrapy.contrib.spidermiddleware.requestlimit
+   :synopsis: Request limit Spider Middleware
 
 .. class:: RequestLimitMiddleware
 
@@ -206,6 +210,7 @@ RestrictMiddleware
 ------------------
 
 .. module:: scrapy.contrib.spidermiddleware.restrict
+   :synopsis: Restrict Spider Middleware
 
 .. class:: RestrictMiddleware 
 
@@ -220,6 +225,7 @@ UrlFilterMiddleware
 -------------------
 
 .. module:: scrapy.contrib.spidermiddleware.urlfilter
+   :synopsis: URL Filter Spider Middleware
 
 .. class:: UrlFilterMiddleware 
 
@@ -229,6 +235,7 @@ UrlLengthMiddleware
 -------------------
 
 .. module:: scrapy.contrib.spidermiddleware.urllength
+   :synopsis: URL Length Spider Middleware
 
 .. class:: UrlLengthMiddleware 
 

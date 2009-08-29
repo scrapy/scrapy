@@ -20,6 +20,7 @@ DuplicatesFilterMiddleware
 --------------------------
 
 .. module:: scrapy.contrib.schedulermiddleware.duplicatesfilter
+   :synopsis: Duplicates Filter Scheduler Middleware
 
 .. class:: DuplicatesFilterMiddleware
 

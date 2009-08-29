@@ -1,6 +1,7 @@
 .. _topics-images:
 
 .. module:: scrapy.contrib.pipeline.images
+   :synopsis: Images Pipeline
 
 ===============
 Handling Images
@@ -175,8 +176,8 @@ BaseImagesPipeline
 
 .. class:: BaseImagesPipeline
 
-   :class:`~scrapy.contrib.pipeline.MediaPipeline` descendant that implements
-   image downloading and thumbnail generation logic.
+   :class:`~scrapy.contrib.pipeline.media.MediaPipeline` descendant that
+   implements image downloading and thumbnail generation logic.
 
    This pipeline tries to minimize network transfers and image processing,
    doing stat of the images and determining if image is new, uptodate or
@@ -233,7 +234,8 @@ BaseImagesPipeline
       hash sign.
 
 
-.. module:: scrapy.contrib.pipeline
+.. module:: scrapy.contrib.pipeline.media
+   :synopsis: Media Pipeline
 
 MediaPipeline
 -------------
