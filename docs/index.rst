@@ -11,7 +11,7 @@ Getting help
 
 Having trouble? We'd like to help!
 
-* Try the :ref:`FAQ <faq>` -- it's got answers to some common questions.
+* Try the :doc:`FAQ <faq>` -- it's got answers to some common questions.
 * Looking for specific information? Try the :ref:`genindex` or :ref:`modindex`.
 * Search for information in the `archives of the scrapy-users mailing list`_, or
   `post a question`_.
@@ -34,13 +34,13 @@ First steps
    intro/install
    intro/tutorial
 
-:ref:`intro-overview`
+:doc:`intro/overview`
     Understand what Scrapy is and how it can help you.
 
-:ref:`intro-install`
+:doc:`intro/install`
     Get Scrapy installed on your computer.
 
-:ref:`intro-tutorial`
+:doc:`intro/tutorial`
     Write your first Scrapy project.
 
 
@@ -58,22 +58,22 @@ Scraping basics
    topics/shell
    topics/item-pipeline
 
-:ref:`topics-items`
+:doc:`topics/items`
     Define the data you want to scrape.
 
-:ref:`topics-spiders`
+:doc:`topics/spiders`
     Write the rules to crawl your websites.
 
-:ref:`topics-selectors`
+:doc:`topics/selectors`
     Extract the data from web pages.
 
-:ref:`topics-shell`
+:doc:`topics/shell`
     Test your extraction code in an interactive environment.
 
-:ref:`topics-loaders`
+:doc:`topics/loaders`
     Populate your items with the extracted data.
 
-:ref:`topics-item-pipeline`
+:doc:`topics/item-pipeline`
     Post-process and store your scraped data.
 
 
@@ -89,19 +89,19 @@ Built-in services
    topics/telnetconsole
    topics/webconsole
 
-:ref:`topics-logging`
+:doc:`topics/logging`
     Understand the simple logging facility provided by Scrapy.
    
-:ref:`topics-stats`
+:doc:`topics/stats`
     Collect statistics about your scraping crawler.
 
-:ref:`topics-email`
+:doc:`topics/email`
     Send email notifications when certain events occur.
 
-:ref:`topics-telnetconsole`
+:doc:`topics/telnetconsole`
     Inspect a running crawler using a built-in Python console.
 
-:ref:`topics-webconsole`
+:doc:`topics/webconsole`
     Monitor and control a crawler using a web interface.
 
 
@@ -116,16 +116,16 @@ Solving specific problems
    topics/firebug
    topics/leaks
 
-:ref:`faq`
+:doc:`faq`
     Get answers to most frequently asked questions.
 
-:ref:`topics-firefox`
+:doc:`topics/firefox`
     Learn how to scrape with Firefox and some useful add-ons.
 
-:ref:`topics-firebug`
+:doc:`topics/firebug`
     Learn how to scrape efficiently using Firebug.
 
-:ref:`topics-leaks`
+:doc:`topics/leaks`
     Learn how to find and get rid of memory leaks in your crawler.
 
 
@@ -141,20 +141,20 @@ Extending Scrapy
    topics/scheduler-middleware
    topics/extensions
 
-:ref:`topics-architecture`
+:doc:`topics/architecture`
     Understand the Scrapy architecture.
 
-:ref:`topics-downloader-middleware`
+:doc:`topics/downloader-middleware`
     Customize how pages get requested and downloaded.
 
-:ref:`topics-spider-middleware`
+:doc:`topics/spider-middleware`
     Customize the input and output of your spiders.
 
-:ref:`topics-scheduler-middleware`
+:doc:`topics/scheduler-middleware`
     Customize how pages are scheduled.
 
-:ref:`topics-extensions`
-    Add any custom functionality using :ref:`signals <topics-signals>` and the
+:doc:`topics/extensions`
+    Add any custom functionality using :doc:`signals <topics/signals>` and the
     Scrapy API
 
 
@@ -170,19 +170,19 @@ Reference
    topics/signals
    topics/exceptions
 
-:ref:`topics-scrapy-ctl`
+:doc:`topics/scrapy-ctl`
     Understand the command used to control your Scrapy project.
 
-:ref:`topics-request-response`
+:doc:`topics/request-response`
     Understand the classes used to represent HTTP requests and responses.
 
-:ref:`topics-settings`
+:doc:`topics/settings`
     Learn how to configure Scrapy and see all :ref:`available settings <topics-settings-ref>`.
 
-:ref:`topics-signals`
+:doc:`topics/signals`
     See all available signals and how to work with them.
 
-:ref:`topics-exceptions`
+:doc:`topics/exceptions`
     See all available exceptions and their meaning.
 
 
@@ -195,8 +195,8 @@ All the rest
    api-stability
    experimental/index
 
-:ref:`api-stability`
+:doc:`api-stability`
     Understand Scrapy versioning and API stability.
 
-:ref:`experimental`
+:doc:`experimental/index`
     Learn about bleeding-edge features.
