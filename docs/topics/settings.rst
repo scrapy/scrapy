@@ -24,7 +24,8 @@ Designating the settings
 
 When you use Scrapy, you have to tell it which settings you're using. You can
 do this by using an environment variable, ``SCRAPY_SETTINGS_MODULE``, or the
-``--settings`` argument of the :doc:`scrapy-ctl.py <scrapy-ctl> script``.
+``--settings`` argument of the :doc:`scrapy-ctl.py script
+</topics/scrapy-ctl>`.
 
 The value of ``SCRAPY_SETTINGS_MODULE`` should be in Python path syntax, e.g.
 ``myproject.settings``. Note that the settings module should be on the
@@ -89,11 +90,12 @@ It's where most of your custom settings will be populated.
 4. Default settings per-command
 -------------------------------
 
-Each :ref:`topics-scripts-scrapy-ctl` command can have its own default settings, which override the
-global default settings. Those custom command settings are located inside the
-``scrapy.conf.commands`` module, or you can specify custom settings to override
-per-comand inside your project, by writing them in the module referenced by the
-:setting:`COMMANDS_SETTINGS_MODULE` setting. Those settings will take more
+Each :doc:`/topics/scrapy-ctl` command can have its own default settings, which
+override the global default settings. Those custom command settings are located
+inside the ``scrapy.conf.commands`` module, or you can specify custom settings
+to override per-comand inside your project, by writing them in the module
+referenced by the :setting:`COMMANDS_SETTINGS_MODULE` setting. Those settings
+will take more
 
 5. Default global settings
 --------------------------
@@ -963,7 +965,7 @@ TEMPLATES_DIR
 Default: ``templates`` dir inside scrapy module
 
 The directory where to look for template when creating new projects with
-:ref:`scrapy-ctl.py startproject <topics-scripts-scrapy-ctl>` command.
+:doc:`scrapy-ctl.py startproject </topics/scrapy-ctl>` command.
 
 .. setting:: URLLENGTH_LIMIT
 
