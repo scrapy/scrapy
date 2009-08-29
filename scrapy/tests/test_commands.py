@@ -15,17 +15,17 @@ class ProjectTest(unittest.TestCase):
         self.cwd = self.temp_path
         self.proj_path = join(self.temp_path, self.project_name)
         self.proj_mod_path = join(self.proj_path, self.project_name)
+        self.env = os.environ.copy()
 
     def tearDown(self):
         rmtree(self.temp_path)
 
     def call(self, new_args, **kwargs):
         out = os.tmpfile()
-        env = getattr(self, 'env', os.environ)
         args = [sys.executable, '-m', 'scrapy.command.cmdline']
         args.extend(new_args)
         return subprocess.call(args, stdout=out, stderr=out, cwd=self.cwd, \
-            env=env, **kwargs)
+            env=self.env, **kwargs)
 
 
 class StartprojectTest(ProjectTest):
@@ -53,12 +53,8 @@ class CommandTest(ProjectTest):
 
     def setUp(self):
         super(CommandTest, self).setUp()
-
         self.call(['startproject', self.project_name])
-
         self.cwd = join(self.temp_path, self.project_name)
-
-        self.env = os.environ.copy()
         self.env.pop('SCRAPY_SETTINGS_DISABLED', None)
         self.env['SCRAPY_SETTINGS_MODULE'] = '%s.settings' % self.project_name
 
