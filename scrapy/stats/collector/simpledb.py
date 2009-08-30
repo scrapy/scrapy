@@ -4,15 +4,13 @@ A Stats collector for persisting stats to Amazon SimpleDB.
 Requires the boto library: http://code.google.com/p/boto/
 """
 
-from datetime import datetime
-
 from boto import connect_sdb
 from twisted.internet import threads
 
+from scrapy.utils.simpledb import to_sdb_value
 from scrapy.stats.collector import StatsCollector
 from scrapy import log
 from scrapy.conf import settings
-
 
 class SimpledbStatsCollector(StatsCollector):
 
@@ -45,17 +43,9 @@ class SimpledbStatsCollector(StatsCollector):
     def _get_timestamp(self, domain):
         return datetime.utcnow()
 
-    def _to_sdb_value(self, obj, ref=None):
-        if isinstance(obj, bool):
-            return u'%d' % obj
-        elif isinstance(obj, (int, long)):
-            return "%016d" % obj
-        elif isinstance(obj, datetime):
-            return obj.isoformat()
-        elif isinstance(obj, basestring):
-            return obj
-        elif obj is None:
-            return u''
-        else:
-            raise TypeError("%s unsupported type '%s' referenced as '%s'" % \
-                (type(self).__name__, type(obj).__name__, ref))
+    def _to_sdb_value(self, obj, key=None):
+        try:
+            return to_sdb_value(obj)
+        except TypeError:
+            raise TypeError("%s unsupported type %r used in key %r" % \
+                (type(self).__name__, type(obj).__name__, key))
