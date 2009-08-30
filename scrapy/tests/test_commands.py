@@ -20,7 +20,7 @@ class ProjectTest(unittest.TestCase):
     def tearDown(self):
         rmtree(self.temp_path)
 
-    def call(self, new_args, **kwargs):
+    def call(self, *new_args, **kwargs):
         out = os.tmpfile()
         args = [sys.executable, '-m', 'scrapy.command.cmdline']
         args.extend(new_args)
@@ -29,10 +29,9 @@ class ProjectTest(unittest.TestCase):
 
 
 class StartprojectTest(ProjectTest):
-    
+
     def test_startproject(self):
-        ret = self.call(['startproject', self.project_name])
-        self.assertEqual(ret, 0)
+        self.assertEqual(0, self.call('startproject', self.project_name))
 
         assert exists(join(self.proj_path, 'scrapy-ctl.py'))
         assert exists(join(self.proj_path, 'testproject'))
@@ -42,18 +41,15 @@ class StartprojectTest(ProjectTest):
         assert exists(join(self.proj_mod_path, 'settings.py'))
         assert exists(join(self.proj_mod_path, 'spiders', '__init__.py'))
 
-        ret = self.call(['startproject', self.project_name])
-        self.assertEqual(ret, 1)
-
-        ret = self.call(['startproject', 'wrong---project---name'])
-        self.assertEqual(ret, 1)
+        self.assertEqual(1, self.call('startproject', self.project_name))
+        self.assertEqual(1, self.call('startproject', 'wrong---project---name'))
 
 
 class CommandTest(ProjectTest):
 
     def setUp(self):
         super(CommandTest, self).setUp()
-        self.call(['startproject', self.project_name])
+        self.call('startproject', self.project_name)
         self.cwd = join(self.temp_path, self.project_name)
         self.env.pop('SCRAPY_SETTINGS_DISABLED', None)
         self.env['SCRAPY_SETTINGS_MODULE'] = '%s.settings' % self.project_name
@@ -62,37 +58,27 @@ class CommandTest(ProjectTest):
 class MiscCommandsTest(CommandTest):
 
     def test_crawl(self):
-        ret = self.call(['crawl'])
-        self.assertEqual(ret, 0)
+        self.assertEqual(0, self.call('crawl'))
 
     def test_genspider_subcommands(self):
-        ret = self.call(['genspider', '--list'])
-        self.assertEqual(ret, 0)
-
-        ret = self.call(['genspider', '--dump'])
-        self.assertEqual(ret, 0)
-
-        ret = self.call(['genspider', '--dump', '--template=basic'])
-        self.assertEqual(ret, 0)
+        self.assertEqual(0, self.call('genspider', '--list'))
+        self.assertEqual(0, self.call('genspider', '--dump'))
+        self.assertEqual(0, self.call('genspider', '--dump', '--template=basic'))
 
     def test_list(self):
-        ret = self.call(['list'])
-        self.assertEqual(ret, 0)
+        self.assertEqual(0, self.call('list'))
 
 
 class BaseGenspiderTest(CommandTest):
     template = 'basic'
 
     def test_genspider(self):
-        ret = self.call(['genspider', 'testspider', 'test.com',
-                          '--template=%s' % self.template])
-        self.assertEqual(ret, 0)
+        self.assertEqual(0, self.call('genspider', 'testspider', 'test.com', \
+                '--template=%s' % self.template))
         assert exists(join(self.proj_mod_path, 'spiders', 'testspider.py'))
+        self.assertEqual(1, self.call('genspider', 'otherspider', 'test.com'))
 
-        ret = self.call(['genspider', 'otherspider', 'test.com'])
-        self.assertEqual(ret, 1)
 
-    
 class CrawlGenspiderTest(BaseGenspiderTest):
     template = 'crawl'
 
