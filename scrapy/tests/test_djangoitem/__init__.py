@@ -11,7 +11,7 @@ except ImportError:
     django = None
 
 if django:
-    from models import Person
+    from .models import Person
 else:
     Person = None
 
