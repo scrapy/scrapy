@@ -6,12 +6,13 @@ Requires the boto library: http://code.google.com/p/boto/
 
 from datetime import datetime
 
-import boto
+from boto import connect_sdb
 from twisted.internet import threads
 
 from scrapy.stats.collector import StatsCollector
 from scrapy import log
 from scrapy.conf import settings
+
 
 class SimpledbStatsCollector(StatsCollector):
 
@@ -19,9 +20,8 @@ class SimpledbStatsCollector(StatsCollector):
         super(SimpledbStatsCollector, self).__init__()
         self._sdbdomain = settings['STATS_SDB_DOMAIN']
         self._async = settings.getbool('STATS_SDB_ASYNC')
-        sdb = boto.connect_sdb()
-        sdb.create_domain(self._sdbdomain)
-        
+        connect_sdb().create_domain(self._sdbdomain)
+
     def _persist_stats(self, stats, domain=None):
         if domain is None: # only store domain-specific stats
             return
@@ -35,21 +35,27 @@ class SimpledbStatsCollector(StatsCollector):
             self._persist_to_sdb(domain, stats)
 
     def _persist_to_sdb(self, domain, stats):
-        ts = datetime.utcnow().isoformat()
+        ts = self._get_timestamp(domain).isoformat()
         sdb_item_id = "%s_%s" % (domain, ts)
-        sdb_item = dict([(k, self._to_sdb_value(v)) for k, v in stats.iteritems()])
+        sdb_item = dict((k, self._to_sdb_value(v, k)) for k, v in stats.iteritems())
         sdb_item['domain'] = domain
         sdb_item['timestamp'] = self._to_sdb_value(ts)
-        sdb = boto.connect_sdb()
-        sdb.batch_put_attributes(self._sdbdomain, {sdb_item_id: sdb_item})
+        connect_sdb().put_attributes(self._sdbdomain, sdb_item_id, sdb_item)
 
-    def _to_sdb_value(self, obj):
-        if isinstance(obj, int):
+    def _get_timestamp(self, domain):
+        return datetime.utcnow()
+
+    def _to_sdb_value(self, obj, ref=None):
+        if isinstance(obj, bool):
+            return u'%d' % obj
+        elif isinstance(obj, (int, long)):
             return "%016d" % obj
         elif isinstance(obj, datetime):
             return obj.isoformat()
         elif isinstance(obj, basestring):
             return obj
+        elif obj is None:
+            return u''
         else:
-            raise TypeError("SimpledbStatsCollector unsupported type: %s" % \
-                type(obj).__name__)
+            raise TypeError("%s unsupported type '%s' referenced as '%s'" % \
+                (type(self).__name__, type(obj).__name__, ref))
