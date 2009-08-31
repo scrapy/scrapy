@@ -19,6 +19,7 @@ from scrapy.mail import MailSender
 from scrapy.conf import settings
 from scrapy.stats import stats
 from scrapy.utils.memory import get_vmvalue_from_procfs
+from scrapy.utils.engine import get_engine_status
 
 class MemoryUsage(object):
     
@@ -97,6 +98,6 @@ class MemoryUsage(object):
 
         s += "ENGINE STATUS ------------------------------------------------------- \r\n"
         s += "\r\n"
-        s += scrapyengine.getstatus()
+        s += get_engine_status()
         s += "\r\n"
         self.mail.send(rcpts, subject, s)

@@ -37,17 +37,32 @@ Available aliases in the telnet console
 The telnet console is like a regular Python shell running inside the Scrapy
 process, so you can do anything from it including imports, etc. 
 
-However, the telnet console comes with some default aliases defined for
+However, the telnet console comes with some default shortcuts defined for
 convenience:
 
-    * ``engine``: the Scrapy engine object (``scrapy.core.engine.scrapyengine``)
-    * ``manager``: the Scrapy manager object (``scrapy.core.manager.scrapymanager``)
-    * ``extensions``: the extensions object (``scrapy.extension.extensions``)
-    * ``stats``: the Scrapy stats object (``scrapy.stats.stats``)
-    * ``settings``: the Scrapy settings object (``scrapy.conf.settings``)
-    * ``p``: the pprint function (``pprint.pprint``)
-    * ``prefs``: for memory debugging (see :ref:`topics-leaks`)
-    * ``hpy``: for memory debugging (see :ref:`topics-leaks`)
++----------------+-------------------------------------------------------------------+
+| Shortcut       | Description                                                       |
++================+===================================================================+
+| ``engine``     | the Scrapy engine object (``scrapy.core.engine.scrapyengine``)    |
++----------------+-------------------------------------------------------------------+
+| ``manager``    | the Scrapy manager object (``scrapy.core.manager.scrapymanager``) |
++----------------+-------------------------------------------------------------------+
+| ``extensions`` | the extensions object (``scrapy.extension.extensions``)           |
++----------------+-------------------------------------------------------------------+
+| ``stats``      | the Scrapy stats object (``scrapy.stats.stats``)                  |
++----------------+-------------------------------------------------------------------+
+| ``settings``   | the Scrapy settings object (``scrapy.conf.settings``)             |
++----------------+-------------------------------------------------------------------+
+| ``est``        | print a report of the current engine status                       |
++----------------+-------------------------------------------------------------------+
+| ``prefs``      | for memory debugging (see :ref:`topics-leaks`)                    |
++----------------+-------------------------------------------------------------------+
+| ``p``          | a shortcut to the `pprint.pprint`_ function                       |
++----------------+-------------------------------------------------------------------+
+| ``hpy``        | for memory debugging (see :ref:`topics-leaks`)                    |
++----------------+-------------------------------------------------------------------+
+
+.. _pprint.pprint: http://docs.python.org/library/pprint.html#pprint.pprint
 
 Some example of using the telnet console
 ========================================
@@ -61,7 +76,7 @@ You can use the ``st()`` method of the Scrapy engine to quickly show its state
 using the telnet console::
 
     telnet localhost 6023
-    >>> engine.st()
+    >>> est()
     Execution engine status
 
     datetime.now()-self.start_time                  : 0:00:09.051588

@@ -2,7 +2,7 @@
 Scheduler information module for Scrapy webconsole
 """
 from scrapy.xlib.pydispatch import dispatcher
-from scrapy.core.engine import scrapyengine
+from scrapy.utils.engine import get_engine_status
 from scrapy.management.web import banner
 
 class EngineStatus(object):
@@ -16,7 +16,7 @@ class EngineStatus(object):
     def webconsole_render(self, wc_request):
         s = banner(self)
         s += "<pre><code>\n"
-        s += scrapyengine.getstatus()
+        s += get_engine_status()
         s += "</pre></code>\n"
         s += "</body>\n"
         s += "</html>\n"

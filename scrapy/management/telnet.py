@@ -16,6 +16,7 @@ from scrapy.core.engine import scrapyengine
 from scrapy.spider import spiders
 from scrapy.stats import stats
 from scrapy.utils.trackref import print_live_refs
+from scrapy.utils.engine import print_engine_status
 from scrapy.conf import settings
 
 try:
@@ -32,6 +33,7 @@ telnet_namespace = {
     'stats': stats,
     'spiders': spiders,
     'settings': settings,
+    'est': print_engine_status,
     'p': pprint.pprint,
     'prefs': print_live_refs,
     'hpy': hpy,
@@ -39,8 +41,7 @@ telnet_namespace = {
 
 def makeProtocol():
     return telnet.TelnetTransport(telnet.TelnetBootstrapProtocol,
-                                  insults.ServerProtocol,
-                                  manhole.Manhole, telnet_namespace)
+        insults.ServerProtocol, manhole.Manhole, telnet_namespace)
 
 class TelnetConsole(protocol.ServerFactory):
 
