@@ -7,15 +7,15 @@ See documentation in docs/topics/settings.rst
 import os
 import cPickle as pickle
 
+from scrapy.conf import default_settings
+
 import_ = lambda x: __import__(x, {}, {}, [''])
 
 class Settings(object):
 
-    default_settings_module = 'scrapy.conf.default_settings'
-
     def __init__(self):
         self.defaults = {}
-        self.global_defaults = import_(self.default_settings_module)
+        self.global_defaults = default_settings
         self.disabled = os.environ.get('SCRAPY_SETTINGS_DISABLED', False)
         settings_module_path = os.environ.get('SCRAPY_SETTINGS_MODULE', \
             os.environ.get('SCRAPYSETTINGS_MODULE', 'scrapy_settings'))
