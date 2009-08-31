@@ -169,6 +169,7 @@ Reference
    topics/settings
    topics/signals
    topics/exceptions
+   topics/exporters
 
 :doc:`topics/scrapy-ctl`
     Understand the command used to control your Scrapy project.
@@ -184,6 +185,9 @@ Reference
 
 :doc:`topics/exceptions`
     See all available exceptions and their meaning.
+
+:doc:`topics/exporters`
+    Quickly export your scraped items to a file (XML, CSV, etc).
 
 
 All the rest

@@ -106,10 +106,10 @@ File Export Pipeline
 
 This pipeline exports all scraped items into a file, using different formats.
 
-It is simple but convenient wrapper to use :doc:`Item Exporters
-</experimental/exporters>` as :ref:`Item Pipelines <topics-item-pipeline>`. If
-you need more custom/advanced functionality you can write your own pipeline or
-subclass the :doc:`Item Exporters </experimental/exporters>` .
+It is simple but convenient wrapper to use :doc:`Item Exporters <exporters>` as
+:ref:`Item Pipelines <topics-item-pipeline>`. If you need more custom/advanced
+functionality you can write your own pipeline or subclass the :doc:`Item
+Exporters <exporters>` .
 
 It supports the following settings:
 

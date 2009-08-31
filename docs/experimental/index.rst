@@ -19,6 +19,5 @@ it's properly merged) . Use at your own risk.
 .. toctree::
    :maxdepth: 1
 
-   exporters
    images
    djangoitems
