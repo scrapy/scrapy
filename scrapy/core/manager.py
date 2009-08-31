@@ -40,6 +40,7 @@ class ExecutionManager(object):
             level=log.DEBUG)
 
         scrapyengine.configure()
+        self.configured = True
         
     def crawl(self, *args):
         """Schedule the given args for crawling. args is a list of urls or domains"""
@@ -53,7 +54,8 @@ class ExecutionManager(object):
 
     def runonce(self, *args):
         """Run the engine until it finishes scraping all domains and then exit"""
-        self.configure()
+        if not self.configured:
+            self.configure()
         self.crawl(*args)
         scrapyengine.start()
 

@@ -67,8 +67,7 @@ class ScrapyCommand(object):
             help="write lsprof profiling stats to FILE")
         group.add_option("--pidfile", dest="pidfile", metavar="FILE", \
             help="write process ID to FILE")
-        group.add_option("--set", dest="set", action="append", \
-            metavar="SETTING=VALUE", default=[], \
+        group.add_option("--set", dest="set", action="append", default=[], \
             help="set/override setting (may be repeated)")
         group.add_option("--settings", dest="settings", metavar="MODULE",
             help="python path to the Scrapy project settings")
@@ -77,6 +76,15 @@ class ScrapyCommand(object):
     def process_options(self, args, opts):
         if opts.settings:
             settings.set_settings_module(opts.settings)
+
+        for setting in opts.set:
+            if '=' in setting:
+                name, val = setting.split('=', 1)
+                settings.overrides[name] = val
+            else:
+                sys.stderr.write("%s: invalid argument --set %s - proper format " \
+                    "is --set SETTING=VALUE'\n" % (sys.argv[0], setting))
+                sys.exit(2)
 
         if opts.version:
             print scrapy.__version__
@@ -104,14 +112,6 @@ class ScrapyCommand(object):
         if opts.pidfile:
             with open(opts.pidfile, "w") as f:
                 f.write(str(os.getpid()))
-
-        for setting in opts.set:
-            if '=' in setting:
-                name, val = setting.split('=', 1)
-                settings.overrides[name] = val
-            else:
-                sys.stderr.write("%s: invalid argument --set %s - proper format is --set SETTING=VALUE'\n" % (sys.argv[0], setting))
-                sys.exit(2)
 
     def run(self, args, opts):
         """
