@@ -31,7 +31,6 @@ class ExecutionEngine(object):
         self.keep_alive = False
         self.closing = {} # dict (domain -> reason) of spiders being closed
         self.tasks = []
-        self.ports = []
         self.running = False
         self.paused = False
         self.control_reactor = True
@@ -63,32 +62,6 @@ class ExecutionEngine(object):
             tsk.start(interval, now)
         return tsk
 
-    def removetask(self, tsk):
-        """Remove a looping task previously added with addtask() method"""
-        self.tasks = [(t, i, n) for (t, i, n) in self.tasks if t is not tsk]
-        if tsk.running:
-            tsk.stop()
-
-    def listenTCP(self, *args, **kwargs):
-        if self.running:
-            self.ports.append(reactor.listenTCP(*args, **kwargs))
-        else:
-            self.ports.append((args, kwargs))
-
-    def clean_reactor(self):
-        """Leaves the reactor in a clean state by removing all pending tasks
-        and listening ports. It can only be called when the engine is not
-        running.
-        """
-        if not self.running:
-            for tsk, _, _ in self.tasks:
-                if tsk.running:
-                    tsk.stop()
-            self.tasks = []
-            for p in [p for p in self.ports if not isinstance(p, tuple)]:
-                p.stopListening()
-            self.ports = []
-
     def start(self, control_reactor=True):
         """Start the execution engine"""
         if not self.running:
@@ -99,11 +72,6 @@ class ExecutionEngine(object):
             self.addtask(self._mainloop, 5.0)
             for tsk, interval, now in self.tasks:
                 tsk.start(interval, now)
-            for args, kwargs in [t for t in self.ports if isinstance(t, tuple)]:
-                try:
-                    reactor.listenTCP(*args, **kwargs)
-                except CannotListenError:
-                    log.msg("Cannot listen on TCP port %d" % args[0], level=log.ERROR)
             self.running = True
             if control_reactor:
                 reactor.run() # blocking call
@@ -121,8 +89,6 @@ class ExecutionEngine(object):
                 if tsk.running:
                     tsk.stop()
             self.tasks = []
-            for p in [p for p in self.ports if not isinstance(p, tuple)]:
-                p.stopListening()
             if self.control_reactor and reactor.running:
                 reactor.stop()
             send_catch_log(signal=signals.engine_stopped, sender=self.__class__)

@@ -8,7 +8,7 @@ import pprint
 
 from twisted.conch import manhole, telnet
 from twisted.conch.insults import insults
-from twisted.internet import protocol
+from twisted.internet import reactor, protocol
 
 from scrapy.extension import extensions
 from scrapy.core.manager import scrapymanager
@@ -50,4 +50,4 @@ class TelnetConsole(protocol.ServerFactory):
         self.protocol = makeProtocol
         self.noisy = False
         port = settings.getint('TELNETCONSOLE_PORT')
-        scrapyengine.listenTCP(port, self)
+        reactor.callWhenRunning(reactor.listenTCP, port, self)

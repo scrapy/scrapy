@@ -8,6 +8,7 @@ import re
 import socket
 from datetime import datetime
 
+from twisted.internet import reactor
 from twisted.web import server, resource
 from scrapy.xlib.pydispatch import dispatcher
 
@@ -89,4 +90,4 @@ class WebConsole(server.Site):
         server.Site.__init__(self, WebConsoleResource(), logPath=logfile)
         self.noisy = False
         port = settings.getint('WEBCONSOLE_PORT')
-        scrapyengine.listenTCP(port, self)
+        reactor.callWhenRunning(reactor.listenTCP, port, self)
