@@ -18,11 +18,16 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("--nolinks", dest="nolinks", action="store_true", help="don't show extracted links")
-        parser.add_option("--noitems", dest="noitems", action="store_true", help="don't show scraped items")
-        parser.add_option("--nocolour", dest="nocolour", action="store_true", help="avoid using pygments to colorize the output")
-        parser.add_option("-r", "--rules", dest="rules", action="store_true", help="try to match and parse the url with the defined rules (if any)")
-        parser.add_option("-c", "--callbacks", dest="callbacks", action="store", help="use the provided callback(s) for parsing the url (separated with commas)")
+        parser.add_option("--nolinks", dest="nolinks", action="store_true", \
+            help="don't show extracted links")
+        parser.add_option("--noitems", dest="noitems", action="store_true", \
+            help="don't show scraped items")
+        parser.add_option("--nocolour", dest="nocolour", action="store_true", \
+            help="avoid using pygments to colorize the output")
+        parser.add_option("-r", "--rules", dest="rules", action="store_true", \
+            help="try to match and parse the url with the defined rules (if any)")
+        parser.add_option("-c", "--callbacks", dest="callbacks", action="store", \
+            help="use the provided callback(s) for parsing the url (separated with commas)")
 
     def process_options(self, args, opts):
         super(Command, self).process_options(args, opts)
@@ -91,7 +96,8 @@ class Command(ScrapyCommand):
                             self.print_results(items, links, rule.callback, opts)
                             break
                 else:
-                    log.msg('No rules found for spider "%s", please specify a callback for parsing' % spider.domain_name)
+                    log.msg('No rules found for spider "%s", please specify a callback for parsing' \
+                        % spider.domain_name)
                     continue
 
             else:
