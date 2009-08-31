@@ -6,8 +6,13 @@ See documentation in docs/topics/settings.rst
 
 import os
 import cPickle as pickle
+import warnings
 
 from scrapy.conf import default_settings
+
+if 'SCRAPYSETTINGS_MODULE' in os.environ:
+    warnings.warn("SCRAPYSETTINGS_MODULE environment variable is deprecated, " \
+        "use SCRAPY_SETTINGS_MODULE instead", DeprecationWarning, stacklevel=2)
 
 import_ = lambda x: __import__(x, {}, {}, [''])
 
