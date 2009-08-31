@@ -7,7 +7,6 @@ For more information see docs/topics/architecture.rst
 from datetime import datetime
 
 from twisted.internet import reactor, task
-from twisted.internet.error import CannotListenError
 from twisted.python.failure import Failure
 from scrapy.xlib.pydispatch import dispatcher
 
@@ -30,11 +29,11 @@ class ExecutionEngine(object):
         self.configured = False
         self.keep_alive = False
         self.closing = {} # dict (domain -> reason) of spiders being closed
-        self.tasks = []
         self.running = False
         self.paused = False
         self.control_reactor = True
         self._next_request_pending = set()
+        self._mainloop_task = task.LoopingCall(self._mainloop)
 
     def configure(self):
         """
@@ -46,52 +45,34 @@ class ExecutionEngine(object):
         self.scraper = Scraper(self)
         self.configured = True
 
-    def addtask(self, function, interval, args=None, kwargs=None, now=False):
-        """
-        Adds a looping task. Use this instead of twisted task.LooopingCall to
-        make sure the reactor is left in a clean state after the engine is
-        stopped.
-        """
-        if not args:
-            args = []
-        if not kwargs:
-            kwargs = {}
-        tsk = task.LoopingCall(function, *args, **kwargs)
-        self.tasks.append((tsk, interval, now))
-        if self.running:
-            tsk.start(interval, now)
-        return tsk
-
     def start(self, control_reactor=True):
         """Start the execution engine"""
-        if not self.running:
-            self.control_reactor = control_reactor
-            reactor.callLater(0, self._mainloop)
-            self.start_time = datetime.utcnow()
-            send_catch_log(signal=signals.engine_started, sender=self.__class__)
-            self.addtask(self._mainloop, 5.0)
-            for tsk, interval, now in self.tasks:
-                tsk.start(interval, now)
-            self.running = True
-            if control_reactor:
-                reactor.run() # blocking call
+        if self.running:
+            return
+        self.control_reactor = control_reactor
+        self.start_time = datetime.utcnow()
+        send_catch_log(signal=signals.engine_started, sender=self.__class__)
+        self._mainloop_task.start(5.0, now=True)
+        reactor.callWhenRunning(self._mainloop)
+        self.running = True
+        if control_reactor:
+            reactor.run() # blocking call
 
     def stop(self):
         """Stop the execution engine"""
-        if self.running:
-            self.running = False
-            for domain in self.open_domains:
-                spider = spiders.fromdomain(domain)
-                send_catch_log(signal=signals.domain_closed, sender=self.__class__, \
-                    domain=domain, spider=spider, reason='shutdown')
-                stats.close_domain(domain, reason='shutdown')
-            for tsk, _, _ in self.tasks: # stop looping calls
-                if tsk.running:
-                    tsk.stop()
-            self.tasks = []
-            if self.control_reactor and reactor.running:
-                reactor.stop()
-            send_catch_log(signal=signals.engine_stopped, sender=self.__class__)
+        if not self.running:
+            return
+        self.running = False
+        for domain in self.open_domains:
+            spider = spiders.fromdomain(domain)
+            send_catch_log(signal=signals.domain_closed, sender=self.__class__, \
+                domain=domain, spider=spider, reason='shutdown')
+            stats.close_domain(domain, reason='shutdown')
+        if self._mainloop_task.running:
+            self._mainloop_task.stop()
+        if self.control_reactor and reactor.running:
+            reactor.stop()
+        send_catch_log(signal=signals.engine_stopped, sender=self.__class__)
 
     def pause(self):
         """Pause the execution engine"""

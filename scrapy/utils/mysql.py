@@ -4,7 +4,6 @@ import re
 
 import MySQLdb
 
-from scrapy.core.engine import scrapyengine
 from scrapy.conf import settings
 from scrapy import log
 
@@ -36,14 +35,5 @@ def mysql_connect(db_uri_or_dict, **kwargs):
     log.msg("Connecting to MySQL: db=%r, host=%r, user=%r" % (d['db'], \
         d['host'], d['user']), level=log.DEBUG)
     conn = MySQLdb.connect(**d)
-
-    # connection keep-alive
-    def conn_ping():
-        log.msg("Pinging connection to %s/%s" % (d['host'], d['db']), \
-            level=log.DEBUG)
-        conn.ping()
-    ping_period = settings.getint("MYSQL_CONNECTION_PING_PERIOD")
-    if ping_period:
-        scrapyengine.addtask(conn_ping, ping_period)
 
     return conn

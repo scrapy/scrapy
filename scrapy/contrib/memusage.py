@@ -7,8 +7,9 @@ See documentation in docs/topics/extensions.rst
 import os
 import socket
 
-from scrapy.xlib.pydispatch import dispatcher
+from twisted.internet import task
 
+from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core import signals
 from scrapy import log
 from scrapy.core.manager import scrapymanager
@@ -26,24 +27,15 @@ class MemoryUsage(object):
             raise NotConfigured
         if not os.path.exists('/proc'):
             raise NotConfigured
-
         self.warned = False
-
-        scrapyengine.addtask(self.update, 60.0, now=True)
 
         self.notify_mails = settings.getlist('MEMUSAGE_NOTIFY')
         self.limit = settings.getint('MEMUSAGE_LIMIT_MB')*1024*1024
         self.warning = settings.getint('MEMUSAGE_WARNING_MB')*1024*1024
         self.report = settings.getbool('MEMUSAGE_REPORT')
-
-        if self.limit:
-            scrapyengine.addtask(self._check_limit, 60.0, now=True)
-        if self.warning:
-            scrapyengine.addtask(self._check_warning, 60.0, now=True)
-
         self.mail = MailSender()
-
         dispatcher.connect(self.engine_started, signal=signals.engine_started)
+        dispatcher.connect(self.engine_stopped, signal=signals.engine_stopped)
 
 
     @property
@@ -52,6 +44,23 @@ class MemoryUsage(object):
 
     def engine_started(self):
         stats.set_value('memusage/startup', self.virtual)
+        self.tasks = []
+        tsk = task.LoopingCall(self.update)
+        self.tasks.append(tsk)
+        tsk.start(60.0, now=True)
+        if self.limit:
+            tsk = task.LoopingCall(self._check_limit)
+            self.tasks.append(tsk)
+            tsk.start(60.0, now=True)
+        if self.warning:
+            tsk = task.LoopingCall(self._check_warning)
+            self.tasks.append(tsk)
+            tsk.start(60.0, now=True)
+
+    def engine_stopped(self):
+        for tsk in self.tasks:
+            if tsk.running:
+                tsk.stop()
 
     def update(self):
         stats.max_value('memusage/max', self.virtual)
