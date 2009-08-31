@@ -27,8 +27,8 @@ class MemoryUsage(object):
             raise NotConfigured
         if not os.path.exists('/proc'):
             raise NotConfigured
-        self.warned = False
 
+        self.warned = False
         self.notify_mails = settings.getlist('MEMUSAGE_NOTIFY')
         self.limit = settings.getint('MEMUSAGE_LIMIT_MB')*1024*1024
         self.warning = settings.getint('MEMUSAGE_WARNING_MB')*1024*1024
@@ -37,13 +37,11 @@ class MemoryUsage(object):
         dispatcher.connect(self.engine_started, signal=signals.engine_started)
         dispatcher.connect(self.engine_stopped, signal=signals.engine_stopped)
 
-
-    @property
-    def virtual(self):
+    def get_virtual_size(self):
         return get_vmvalue_from_procfs('VmSize')
 
     def engine_started(self):
-        stats.set_value('memusage/startup', self.virtual)
+        stats.set_value('memusage/startup', self.get_virtual_size())
         self.tasks = []
         tsk = task.LoopingCall(self.update)
         self.tasks.append(tsk)
@@ -63,10 +61,10 @@ class MemoryUsage(object):
                 tsk.stop()
 
     def update(self):
-        stats.max_value('memusage/max', self.virtual)
+        stats.max_value('memusage/max', self.get_virtual_size())
 
     def _check_limit(self):
-        if self.virtual > self.limit:
+        if self.get_virtual_size() > self.limit:
             stats.set_value('memusage/limit_reached', 1)
             mem = self.limit/1024/1024
             log.msg("Memory usage exceeded %dM. Shutting down Scrapy..." % mem, level=log.ERROR)
@@ -80,7 +78,7 @@ class MemoryUsage(object):
     def _check_warning(self):
         if self.warned: # warn only once
             return
-        if self.virtual > self.warning:
+        if self.get_virtual_size() > self.warning:
             stats.set_value('memusage/warning_reached', 1)
             mem = self.warning/1024/1024
             log.msg("Memory usage reached %dM" % mem, level=log.WARNING)
@@ -95,7 +93,7 @@ class MemoryUsage(object):
         """send notification mail with some additional useful info"""
         s = "Memory usage at engine startup : %dM\r\n" % (stats.get_value('memusage/startup')/1024/1024)
         s += "Maximum memory usage           : %dM\r\n" % (stats.get_value('memusage/max')/1024/1024)
-        s += "Current memory usage           : %dM\r\n" % (self.virtual/1024/1024)
+        s += "Current memory usage           : %dM\r\n" % (self.get_virtual_size()/1024/1024)
 
         s += "ENGINE STATUS ------------------------------------------------------- \r\n"
         s += "\r\n"
