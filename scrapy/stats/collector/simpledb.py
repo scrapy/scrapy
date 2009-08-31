@@ -4,6 +4,8 @@ A Stats collector for persisting stats to Amazon SimpleDB.
 Requires the boto library: http://code.google.com/p/boto/
 """
 
+from datetime import datetime
+
 from boto import connect_sdb
 from twisted.internet import threads
 
