@@ -10,8 +10,9 @@ from datetime import datetime
 
 from twisted.internet import reactor
 from twisted.web import server, resource
-from scrapy.xlib.pydispatch import dispatcher
 
+from scrapy.xlib.pydispatch import dispatcher
+from scrapy.core.exceptions import NotConfigured
 from scrapy.core.engine import scrapyengine
 from scrapy.conf import settings
 
@@ -84,8 +85,7 @@ class WebConsole(server.Site):
 
     def __init__(self):
         if not settings.getbool('WEBCONSOLE_ENABLED'):
-            return
-
+            raise NotConfigured
         logfile = settings['WEBCONSOLE_LOGFILE']
         server.Site.__init__(self, WebConsoleResource(), logPath=logfile)
         self.noisy = False

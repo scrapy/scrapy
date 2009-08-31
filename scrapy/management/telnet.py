@@ -11,6 +11,7 @@ from twisted.conch.insults import insults
 from twisted.internet import reactor, protocol
 
 from scrapy.extension import extensions
+from scrapy.core.exceptions import NotConfigured
 from scrapy.core.manager import scrapymanager
 from scrapy.core.engine import scrapyengine
 from scrapy.spider import spiders
@@ -47,7 +48,7 @@ class TelnetConsole(protocol.ServerFactory):
 
     def __init__(self):
         if not settings.getbool('TELNETCONSOLE_ENABLED'):
-            return
+            raise NotConfigured
         self.protocol = makeProtocol
         self.noisy = False
         port = settings.getint('TELNETCONSOLE_PORT')
