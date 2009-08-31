@@ -54,40 +54,40 @@ class CommandTest(ProjectTest):
         self.env['SCRAPY_SETTINGS_MODULE'] = '%s.settings' % self.project_name
 
 
+class GenspiderCommandTest(CommandTest):
+
+    def test_template_default(self, *args):
+        self.assertEqual(0, self.call('genspider', 'testspider', 'test.com', *args))
+        assert exists(join(self.proj_mod_path, 'spiders', 'testspider.py'))
+        self.assertEqual(1, self.call('genspider', 'otherspider', 'test.com'))
+
+    def test_template_basic(self):
+        self.test_template_default('--template=basic')
+
+    def test_template_csvfeed(self):
+        self.test_template_default('--template=csvfeed')
+
+    def test_template_xmlfeed(self):
+        self.test_template_default('--template=xmlfeed')
+
+    def test_template_crawl(self):
+        self.test_template_default('--template=crawl')
+
+    def test_list(self):
+        self.assertEqual(0, self.call('genspider', '--list'))
+
+    def test_dump(self):
+        self.assertEqual(0, self.call('genspider', '--dump'))
+        self.assertEqual(0, self.call('genspider', '--dump', '--template=basic'))
+
+
 class MiscCommandsTest(CommandTest):
 
     def test_crawl(self):
         self.assertEqual(0, self.call('crawl'))
 
-    def test_genspider_subcommands(self):
-        self.assertEqual(0, self.call('genspider', '--list'))
-        self.assertEqual(0, self.call('genspider', '--dump'))
-        self.assertEqual(0, self.call('genspider', '--dump', '--template=basic'))
-
     def test_list(self):
         self.assertEqual(0, self.call('list'))
-
-
-class BaseGenspiderTest(CommandTest):
-    template = 'basic'
-
-    def test_genspider(self):
-        self.assertEqual(0, self.call('genspider', 'testspider', 'test.com', \
-                '--template=%s' % self.template))
-        assert exists(join(self.proj_mod_path, 'spiders', 'testspider.py'))
-        self.assertEqual(1, self.call('genspider', 'otherspider', 'test.com'))
-
-
-class CrawlGenspiderTest(BaseGenspiderTest):
-    template = 'crawl'
-
-
-class CsvFeedGenspiderTest(BaseGenspiderTest):
-    template = 'csvfeed'
-
-
-class XMLFeedGenspiderTest(BaseGenspiderTest):
-    template = 'xmlfeed'
 
 
 if __name__ == '__main__':
