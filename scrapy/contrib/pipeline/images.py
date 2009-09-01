@@ -72,7 +72,7 @@ class BaseImagesPipeline(MediaPipeline):
             log.msg(str(ex), level=log.WARNING, domain=info.domain)
             raise ex
 
-        return '%s#%s' % (key, checksum) if checksum else key
+        return {'scraped_url': request.url, 'path': key, 'checksum': checksum}
 
     def media_failed(self, failure, request, info):
         referer = request.headers.get('Referer')
@@ -101,7 +101,7 @@ class BaseImagesPipeline(MediaPipeline):
             self.inc_stats(info.domain, 'uptodate')
 
             checksum = result.get('checksum', None)
-            return '%s#%s' % (key, checksum) if checksum else key
+            return {'scraped_url': request.url, 'path': key, 'checksum': checksum}
 
         key = self.image_key(request.url)
         dfd = defer.maybeDeferred(self.stat_key, key, info)
