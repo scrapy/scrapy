@@ -166,8 +166,10 @@ class Scraper(object):
             send_catch_log(signal=signals.item_scraped, sender=self.__class__, \
                 item=output, spider=spider, response=response)
             self.sites[domain].itemproc_size += 1
-            stats.max_value('scraper/max_itemproc_size', \
-                    self.sites[domain].itemproc_size, domain=domain)
+            # FIXME: this can't be called here because the stats domain may be
+            # already closed
+            #stats.max_value('scraper/max_itemproc_size', \
+            #        self.sites[domain].itemproc_size, domain=domain)
             dfd = self.itemproc.process_item(output, spider)
             dfd.addBoth(self._itemproc_finished, output, spider)
             return dfd
