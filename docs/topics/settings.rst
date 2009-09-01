@@ -133,7 +133,7 @@ to do that you'll have to use one of the following methods:
 
    ``default`` is the value to return if no setting is found
 
-.. method:: Settings.getbool(name, default=Flse)
+.. method:: Settings.getbool(name, default=False)
 
    Get a setting value as a boolean. For example, both ``1`` and ``'1'``, and
    ``True`` return ``True``, while ``0``, ``'0'``, ``False`` and ``None``
