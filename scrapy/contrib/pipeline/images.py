@@ -190,24 +190,23 @@ class ImagesPipeline(MediaPipeline):
         return store_cls(uri)
 
     def media_downloaded(self, response, request, info):
-        mtype = self.MEDIA_NAME
         referer = request.headers.get('Referer')
 
         if response.status != 200:
-            msg = 'Image (http-error): Error downloading %s from %s referred in <%s>' \
-                    % (mtype, request, referer)
+            msg = 'Image (http-error): Error downloading image from %s referred in <%s>' \
+                    % (request, referer)
             log.msg(msg, level=log.WARNING, domain=info.domain)
             raise ImageException(msg)
 
         if not response.body:
-            msg = 'Image (empty-content): Empty %s from %s referred in <%s>: no-content' \
-                    % (mtype, request, referer)
+            msg = 'Image (empty-content): Empty image from %s referred in <%s>: no-content' \
+                    % (request, referer)
             log.msg(msg, level=log.WARNING, domain=info.domain)
             raise ImageException(msg)
 
         status = 'cached' if 'cached' in response.flags else 'downloaded'
-        msg = 'Image (%s): Downloaded %s from %s referred in <%s>' % \
-                (status, mtype, request, referer)
+        msg = 'Image (%s): Downloaded image from %s referred in <%s>' % \
+                (status, request, referer)
         log.msg(msg, level=log.DEBUG, domain=info.domain)
         self.inc_stats(info.domain, status)
 
