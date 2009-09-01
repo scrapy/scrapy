@@ -146,9 +146,7 @@ SCHEDULER_MIDDLEWARES_BASE = {
 
 SCHEDULER_ORDER = 'BFO'   # available orders: BFO (default), DFO
 
-SPIDER_MODULES = []
-
-SPIDERPROFILER_ENABLED = False
+SPIDER_MANAGER_CLASS = 'scrapy.contrib.spidermanager.TwistedPluginSpiderManager'
 
 SPIDER_MIDDLEWARES = {}
 
@@ -164,6 +162,10 @@ SPIDER_MIDDLEWARES_BASE = {
     'scrapy.contrib.spidermiddleware.depth.DepthMiddleware': 900,
     # Spider side
 }
+
+SPIDER_MODULES = []
+
+SPIDERPROFILER_ENABLED = False
 
 STATS_CLASS = 'scrapy.stats.collector.MemoryStatsCollector'
 STATS_ENABLED = True

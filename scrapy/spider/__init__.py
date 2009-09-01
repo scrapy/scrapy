@@ -1,4 +1,5 @@
 from scrapy.spider.models import BaseSpider
-from scrapy.spider.manager import SpiderManager
+from scrapy.utils.misc import load_object
+from scrapy.conf import settings
 
-spiders = SpiderManager()
+spiders = load_object(settings['SPIDER_MANAGER_CLASS'])()
