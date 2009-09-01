@@ -1,5 +1,5 @@
 from scrapy.xlib.pydispatch import dispatcher
-from twisted.internet import defer
+from twisted.internet.defer import Deferred, DeferredList
 
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy import log
@@ -7,6 +7,7 @@ from scrapy.core import signals
 from scrapy.core.engine import scrapyengine
 from scrapy.utils.request import request_fingerprint
 from scrapy.spider import spiders
+from scrapy.utils.misc import arg_to_iter
 
 
 class MediaPipeline(object):
@@ -33,39 +34,29 @@ class MediaPipeline(object):
 
     def process_item(self, domain, item):
         info = self.domaininfo[domain]
-        requests = self.get_media_requests(item, info)
-        assert requests is None or hasattr(requests, '__iter__'), \
-                'get_media_requests should return None or iterable'
-
-        def _bugtrap(_failure, request):
-            log.msg('Unhandled ERROR in MediaPipeline.item_media_{downloaded,failed} for %s: %s' \
-                    % (request, _failure), log.ERROR, domain=domain)
-
-        lst = []
-        for request in requests or ():
+        requests = arg_to_iter(self.get_media_requests(item, info))
+        dlist = []
+        for request in requests:
             dfd = self._enqueue(request, info)
             dfd.addCallbacks(
                     callback=self.item_media_downloaded,
                     callbackArgs=(item, request, info),
                     errback=self.item_media_failed,
-                    errbackArgs=(item, request, info),
-                    )
-            dfd.addErrback(_bugtrap, request)
-            lst.append(dfd)
+                    errbackArgs=(item, request, info),)
+            dfd.addErrback(log.err, \
+                    'Unhandled ERROR in %s.item_media_{downloaded,failed} for %s' \
+                    % (type(self).__name__, request), domain=domain)
+            dlist.append(dfd)
 
-        dlst = defer.DeferredList(lst, consumeErrors=False)
-        dlst.addBoth(self.item_completed, item, info)
-        return dlst
+        return DeferredList(dlist).addCallback(self.item_completed, item, info)
 
     def _enqueue(self, request, info):
-        wad = request.deferred or defer.Deferred()
+        wad = request.deferred or Deferred()
         fp = request_fingerprint(request)
 
         # if already downloaded, return cached result.
         if fp in info.downloaded:
-            cached = info.downloaded[fp]
-            defer_result(cached).chainDeferred(wad)
-            return wad # break
+            return defer_result(info.downloaded[fp]).chainDeferred(wad)
 
         # add to pending list for this request, and wait for result like the others.
         info.waiting.setdefault(fp, []).append(wad)
@@ -77,19 +68,13 @@ class MediaPipeline(object):
         return wad
 
     def _download(self, request, info, fp):
-        def _bugtrap(_failure):
-            log.msg('Unhandled ERROR in MediaPipeline._downloaded: %s' \
-                    % (_failure), log.ERROR, domain=info.domain)
-
         def _downloaded(result):
-            info.downloaded[fp] = result # cache result
-            waiting = info.waiting[fp] # client list
-            del info.waiting[fp]
-            del info.downloading[fp]
-            for wad in waiting: # call each waiting client with result
+            info.downloading.pop(fp)
+            info.downloaded[fp] = result
+            for wad in info.waiting.pop(fp): # pass result to each waiting client
                 defer_result(result).chainDeferred(wad)
 
-        def _evaluated(result):
+        def _post_media_to_download(result):
             if result is None: # continue with download
                 dwld = mustbe_deferred(self.download, request, info)
                 dwld.addCallbacks(
@@ -102,14 +87,14 @@ class MediaPipeline(object):
 
             info.downloading[fp] = (request, dwld) # fill downloading state data
             dwld.addBoth(_downloaded) # append post-download hook
-            dwld.addErrback(_bugtrap) # catch media_downloaded and media_failed unhandled errors
+            dwld.addErrback(log.err, domain=info.domain)
 
         # declare request in downloading state (None is used as place holder)
         info.downloading[fp] = None
 
         # defer pre-download request processing
         dfd = mustbe_deferred(self.media_to_download, request, info)
-        dfd.addCallback(_evaluated)
+        dfd.addCallback(_post_media_to_download)
 
     ### Overradiable Interface
     def download(self, request, info):
@@ -166,8 +151,9 @@ class MediaPipeline(object):
         result is the return value of `media_downloaded` hook, or the non-Failure instance
         returned by `media_failed` hook.
 
-        return value of this method isn't important and is recommended to return None.
+        return value of this method is used for results parameter of item_completed hook
         """
+        return result
 
     def item_media_failed(self, failure, item, request, info):
         """ Method to handle failed result of requested media for item.
@@ -175,8 +161,9 @@ class MediaPipeline(object):
         result is the returned Failure instance of `media_failed` hook, or Failure instance
         of an exception raised by `media_downloaded` hook.
 
-        return value of this method isn't important and is recommended to return None.
+        return value of this method is used for results parameter of item_completed hook
         """
+        return failure
 
     def item_completed(self, results, item, info):
         return item
