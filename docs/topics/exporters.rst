@@ -17,6 +17,12 @@ different output formats, such as XML, CSV or JSON.
 Using Item Exporters
 ====================
 
+If you are in a hurry, and just want to use an Item Exporter as an :doc:`Item
+Pipeline <item-pipeline>` see the :ref:`File Export Pipeline
+<file-export-pipeline>`. Otherwise, if you want to know how Item Exporters
+work, or need more custom functionality (not covered by the :ref:`File Export
+Pipeline <file-export-pipeline>`) continue reading below.
+
 In order to use a Item Exporter, you  must instantiate it with its required
 args.  Different exporters require different args, so check each exporter
 documentation to be sure, in :ref:`topics-exporters-reference`. After you have
