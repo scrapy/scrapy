@@ -54,8 +54,7 @@ class S3ImagesPipeline(BaseImagesPipeline):
 
     def s3_request(self, key, method, body=None, headers=None):
         url = 'http://%s.s3.amazonaws.com/%s%s' % (self.bucket_name, self.key_prefix, key)
-        req = Request(url, method=method, body=body, headers=headers)
-        return req
+        return Request(url, method=method, body=body, headers=headers)
 
     def stat_key(self, key, info):
         def _onsuccess(response):
@@ -97,5 +96,3 @@ class S3ImagesPipeline(BaseImagesPipeline):
             # need to use schedule to auto-open domain
             return scrapyengine.schedule(request, self.AmazonS3Spider)
         return self.download(request, info)
-
-
