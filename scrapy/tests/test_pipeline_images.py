@@ -1,4 +1,9 @@
 from twisted.trial import unittest
+from scrapy.conf import settings
+from tempfile import mkdtemp
+from shutil import rmtree
+
+SETTINGS_DISABLED = settings.disabled
 
 class ImagesPipelineTestCase(unittest.TestCase):
     def setUp(self):
@@ -7,11 +12,16 @@ class ImagesPipelineTestCase(unittest.TestCase):
         except ImportError, e:
             raise unittest.SkipTest(e)
 
-        from scrapy.contrib.pipeline.images import BaseImagesPipeline
-        self.pipeline = BaseImagesPipeline()
+        from scrapy.contrib.pipeline.images import ImagesPipeline
+        self.tempdir = mkdtemp()
+        settings.disabled = False
+        settings.overrides['IMAGES_STORE'] = self.tempdir
+        self.pipeline = ImagesPipeline()
 
     def tearDown(self):
         del self.pipeline
+        rmtree(self.tempdir)
+        settings.disabled = SETTINGS_DISABLED
 
     def test_image_path(self):
         image_path = self.pipeline.image_key
