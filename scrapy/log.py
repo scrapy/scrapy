@@ -5,6 +5,7 @@ See documentation in docs/topics/logging.rst
 """
 import sys
 from traceback import format_exc
+from contextlib import contextmanager
 
 from twisted.python import log
 from scrapy.xlib.pydispatch import dispatcher
@@ -34,8 +35,6 @@ log_level = DEBUG
 
 started = False
 
-_prev_descriptors = (sys.stdout, sys.stderr)
-
 def start(logfile=None, loglevel=None, logstdout=None):
     """Initialize and start logging facility"""
     global log_level, started
@@ -56,13 +55,6 @@ def start(logfile=None, loglevel=None, logstdout=None):
         file = open(logfile, 'a') if logfile else sys.stderr
         log.startLogging(file, setStdout=logstdout)
 
-def _switch_descriptors():
-    global _prev_descriptors
-
-    cur = (sys.stdout, sys.stderr)
-    sys.stdout, sys.stderr = _prev_descriptors
-    _prev_descriptors = cur
-
 def msg(message, level=INFO, component=BOT_NAME, domain=None):
     """Log message according to the level"""
     dispatcher.send(signal=logmessage_received, message=message, level=level, \
@@ -81,3 +73,13 @@ def err(*args, **kwargs):
     component = kwargs.pop('component', BOT_NAME)
     kwargs['system'] = domain if domain else component
     log.err(*args, **kwargs)
+
+_std_descriptors_backup = (sys.stdout, sys.stderr)
+
+@contextmanager
+def _std_descriptors():
+    cur = (sys.stdout, sys.stderr)
+    sys.stdout, sys.stderr = _std_descriptors_backup
+    yield
+    sys.stdout, sys.stderr = cur
+

@@ -4,6 +4,8 @@ Scrapy Shell
 See documentation in docs/topics/shell.rst
 """
 
+from __future__ import with_statement
+
 import os
 import urllib
 import urlparse
@@ -149,7 +151,6 @@ class Shell(object):
 
 def inspect_response(response):
     """Open a shell to inspect the given response"""
-    shell = Shell(nofetch=True)
-    log._switch_descriptors()
-    shell.inspect_response(response)
-    log._switch_descriptors()
+    with log._std_descriptors():
+        shell = Shell(nofetch=True)
+        shell.inspect_response(response)
