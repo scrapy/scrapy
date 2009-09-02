@@ -74,11 +74,10 @@ class Shell(object):
             self.vars['response'] = response
             self.vars['request'] = request
             self.vars['spider'] = spiders.fromurl(url)
-
-            if not self.nofetch:
-                self.vars['fetch'] = self.fetch
-            self.vars['view'] = open_in_browser
-            self.vars['shelp'] = self.print_help
+        if not self.nofetch:
+            self.vars['fetch'] = self.fetch
+        self.vars['view'] = open_in_browser
+        self.vars['shelp'] = self.print_help
 
         if self.update_vars:
             self.update_vars(self.vars)
