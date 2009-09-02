@@ -117,7 +117,9 @@ class TwistedPluginSpiderManager(object):
         spider
         """
         module_name = spider.__module__
-        log.msg("Reloading module %s" % module_name, domain=domain, \
-            level=log.DEBUG)
-        new_module = rebuild(sys.modules[module_name], doLog=0)
-        self._spiders[domain] = new_module.SPIDER
+        module = sys.modules[module_name]
+        if hasattr(module, 'SPIDER'):
+            log.msg("Reloading module %s" % module_name, domain=domain, \
+                level=log.DEBUG)
+            new_module = rebuild(module, doLog=0)
+            self._spiders[domain] = new_module.SPIDER
