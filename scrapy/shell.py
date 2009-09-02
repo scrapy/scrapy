@@ -4,8 +4,6 @@ Scrapy Shell
 See documentation in docs/topics/shell.rst
 """
 
-from __future__ import with_statement
-
 import os
 import urllib
 import urlparse
@@ -22,7 +20,6 @@ from scrapy.core.manager import scrapymanager
 from scrapy.core.engine import scrapyengine
 from scrapy.http import Request
 from scrapy.fetcher import get_or_create_spider
-from scrapy import log
 
 def relevant_var(varname):
     return varname not in ['shelp', 'fetch', 'view', '__builtins__', 'In', \
@@ -151,6 +148,4 @@ class Shell(object):
 
 def inspect_response(response):
     """Open a shell to inspect the given response"""
-    with log._std_descriptors():
-        shell = Shell(nofetch=True)
-        shell.inspect_response(response)
+    Shell(nofetch=True).inspect_response(response)

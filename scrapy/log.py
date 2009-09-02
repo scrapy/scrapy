@@ -5,7 +5,6 @@ See documentation in docs/topics/logging.rst
 """
 import sys
 from traceback import format_exc
-from contextlib import contextmanager
 
 from twisted.python import log
 from scrapy.xlib.pydispatch import dispatcher
@@ -73,13 +72,3 @@ def err(*args, **kwargs):
     component = kwargs.pop('component', BOT_NAME)
     kwargs['system'] = domain if domain else component
     log.err(*args, **kwargs)
-
-_std_descriptors_backup = (sys.stdout, sys.stderr)
-
-@contextmanager
-def _std_descriptors():
-    cur = (sys.stdout, sys.stderr)
-    sys.stdout, sys.stderr = _std_descriptors_backup
-    yield
-    sys.stdout, sys.stderr = cur
-
