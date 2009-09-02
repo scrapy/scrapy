@@ -484,7 +484,7 @@ EXTENSIONS_BASE
 Default:: 
 
     {
-        'scrapy.stats.corestats.CoreStats': 0,
+        'scrapy.contrib.corestats.CoreStats': 0,
         'scrapy.management.web.WebConsole': 0,
         'scrapy.management.telnet.TelnetConsole': 0,
         'scrapy.contrib.webconsole.scheduler.SchedulerQueue': 0,

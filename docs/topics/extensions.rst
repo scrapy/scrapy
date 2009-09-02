@@ -35,7 +35,7 @@ your Scrapy settings. In :setting:`EXTENSIONS`, each extension is represented
 by a string: the full Python path to the extension's class name. For example::
 
     EXTENSIONS = {
-        'scrapy.stats.corestats.CoreStats': 500,
+        'scrapy.contrib.corestats.CoreStats': 500,
         'scrapy.management.web.WebConsole': 500,
         'scrapy.management.telnet.TelnetConsole': 500,
         'scrapy.contrib.webconsole.enginestatus.EngineStatus': 500,
@@ -151,7 +151,7 @@ how you :ref:`configure the downloader middlewares
             >>> from scrapy.extension import extensions
             >>> extensions.load()
             >>> print extensions.enabled
-            {'CoreStats': <scrapy.stats.corestats.CoreStats object at 0x9e272ac>,
+            {'CoreStats': <scrapy.contrib.corestats.CoreStats object at 0x9e272ac>,
              'WebConsoke': <scrapy.management.telnet.TelnetConsole instance at 0xa05670c>,
             ...
 
@@ -185,10 +185,10 @@ General purpose extensions
 Core Stats extension
 ~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.stats.corestats
+.. module:: scrapy.contrib.corestats.corestats
    :synopsis: Core stats collection
 
-.. class:: scrapy.stats.corestats.CoreStats
+.. class:: CoreStats
 
 Enable the collection of core statistics, provided the stats collection are
 enabled (see :ref:`topics-stats`).
