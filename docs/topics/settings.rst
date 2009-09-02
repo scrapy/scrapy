@@ -492,7 +492,6 @@ Default::
         'scrapy.contrib.webconsole.spiderctl.Spiderctl': 0,
         'scrapy.contrib.webconsole.enginestatus.EngineStatus': 0,
         'scrapy.contrib.webconsole.stats.StatsDump': 0,
-        'scrapy.contrib.spider.reloader.SpiderReloader': 0,
         'scrapy.contrib.memusage.MemoryUsage': 0,
         'scrapy.contrib.memdebug.MemoryDebugger': 0,
         'scrapy.contrib.closedomain.CloseDomain': 0,

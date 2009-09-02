@@ -232,17 +232,6 @@ The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
 setting, and the server will listen in the port specified in
 :setting:`WEBCONSOLE_PORT`.
 
-Spider reloader extension
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. module:: scrapy.contrib.spider.reloader
-   :synopsis: Spider reloader extension
-
-.. class:: scrapy.contrib.spider.reloader.SpiderReloader
-
-Reload spider objects once they've finished scraping, to release the resources
-and references to other objects they may hold.
-
 .. _topics-extensions-ref-memusage:
 
 Memory usage extension
