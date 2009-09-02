@@ -838,16 +838,6 @@ A dict containing the scheduler middlewares enabled by default in Scrapy. You
 should never modify this setting in your project, modify
 :setting:`SCHEDULER_MIDDLEWARES` instead. 
 
-.. setting:: SPIDERPROFILER_ENABLED
-
-SPIDERPROFILER_ENABLED
-----------------------
-
-Default: ``False``
-
-Enable the spider profiler. Warning: this could have a big impact in
-performance.
-
 .. setting:: SPIDER_MIDDLEWARES
 
 SPIDER_MIDDLEWARES

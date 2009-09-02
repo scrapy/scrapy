@@ -165,7 +165,7 @@ how you :ref:`configure the downloader middlewares
             >>> extensions.load()
             >>> print extensions.disabled
             {'MemoryDebugger': 'scrapy.contrib.webconsole.stats.MemoryDebugger',
-             'SpiderProfiler': 'scrapy.contrib.spider.profiler.SpiderProfiler',
+             'MyExtension': 'myproject.extensions.MyExtension',
             ...
 
     .. method:: load()
