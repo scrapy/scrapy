@@ -7,7 +7,10 @@ import sys
 import urlparse
 
 from twisted.plugin import getCache
+from twisted.python.rebuild import rebuild
 
+from scrapy.xlib.pydispatch import dispatcher
+from scrapy.core import signals
 from scrapy.spider.models import ISpider
 from scrapy import log
 from scrapy.conf import settings
@@ -22,6 +25,7 @@ class TwistedPluginSpiderManager(object):
         self.default_domain = None
         self.force_domain = None
         self.spider_modules = None
+        dispatcher.connect(self._domain_closed, signal=signals.domain_closed)
 
     def fromdomain(self, domain_name):
         return self.asdict().get(domain_name)
@@ -107,3 +111,12 @@ class TwistedPluginSpiderManager(object):
         except KeyboardInterrupt:
             sys.stderr.write("Interrupted while loading Scrapy spiders\n")
             sys.exit(2)
+
+    def _domain_closed(self, domain, spider):
+        """Reload spider module to release any resources held on to by the
+        spider
+        """
+        module_name = spider.__module__
+        log.msg("reloading module %s" % module_name, domain=domain)
+        new_module = rebuild(sys.modules[module_name])
+        self._spiders[domain] = new_module.SPIDER
