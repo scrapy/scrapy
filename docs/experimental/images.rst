@@ -1,144 +1,174 @@
 .. _topics-images:
 
-.. module:: scrapy.contrib.pipeline.images
-   :synopsis: Images Pipeline
+==================
+Downloading Images
+==================
 
-===============
-Handling Images
-===============
+.. currentmodule:: scrapy.contrib.pipeline.images
 
-In Scrapy, the recommended way of handling image downloads is using the
-:class:`ImagesPipeline`. 
+Scrapy provides an :doc:`item pipeline </topics/item-pipeline>` for downloading
+images attached to a particular item. For example, when you scrape products and
+also want to download their images locally.
 
-This pipeline provides convenient mechanisms to download and store images and
-also the following features:
+This pipeline, called the Images Pipeline and implemented in the
+:class:`ImagesPipeline` class, provides a convenient way for
+downloading and storing images locally with some additional features:
 
-* Image format normalization (JPG)
-* Image expiration
-* Thumbnail creation
-* Image size checking
+* Convert all downloaded images to a common format (JPG) and mode (RGB)
+* Avoid re-downloading images which were downloaded recently
+* Thumbnail generation
+* Check images width/height to make sure they meet a minimum constraint
+
+This pipeline also keeps an internal queue of those images which are currently
+being scheduled for download, and connects those items that arrive containing
+the same image, to that queue. This avoids downloading the same image more than
+once when it's shared by several items.
 
 
-Using a ImagesPipeline
-=======================
+Using the Images Pipeline
+=========================
 
-The typical workflow of working with a :class:`ImagesPipeline` goes like this:
+The typical workflow, when using the :class:`ImagesPipeline` goes like
+this:
 
-1. In a Spider, you obtain the URLs of the images to be downloaded and store
-   them in an Item.
+1. In a Spider, you scrape an item and put the URLs of its images into a
+   pre-defined field, for example ``image_urls``.
 
-2. An :class:`ImagesPipeline` process the Item, downloads the images and stores
-   back their resulting paths in the processed Item
+2. The item is returned from the spider and goes to the item pipeline.
 
-We assume that if you're here you know how to handle the first part of the
-workflow (if not, please refer to the tutorial), so let's focus on the second
-part, using a :class:`ImagesPipeline`.
+3. When the item reaches the :class:`ImagesPipeline`, the URLs in the
+   ``image_urls`` attribute are scheduled for download using the standard
+   Scrapy scheduler and downloader (which means the scheduler and downloader
+   middlewares are reused), but higher priority to process them before other
+   pages to scrape. The item remains "locked" at that particular pipeline stage
+   until the images have finish downloading (or fail for some reason).
 
-:class:`ImagesPipeline` is a descendant of BaseImagesPipeline which in turn is
-a descendant of :class:`~scrapy.contrib.pipeline.MediaPipeline`, all of this classes provide
-overrideable methods, hooks and settings to customize their behaviour.
+4. When the images finish downloading (or fail for some reason) the images gets
+   another field populated with the data of the images downloaded, for example,
+   ``images``. This attribute is a list of dictionaries containing information
+   about the image downloaded, such as the downloaded path, and the original
+   scraped url. This images in the list of the ``images`` field retains the
+   same order of the original ``image_urls`` field, which is useful if you
+   decide to use the first image in the list as the primary image.
 
-So, for using the :class:`ImagesPipeline` you subclass it, override some
-methods with custom code and set some required settings.
+.. setting:: IMAGES_DIR
 
 The first thing we need to do is tell the pipeline where to store the
-downloaded images, so set :setting:`IMAGES_DIR` to a valid directory name that
-will be used for this purpose::
+downloaded images, by setting :setting:`IMAGES_DIR`::
 
    IMAGES_DIR = '/path/to/valid/dir'
 
 Then, as seen on the workflow, the pipeline will get the URLs of the images to
 download from the item. In order to do this, you must override the
-:meth:`~scrapy.contrib.pipeline.MediaPipeline.get_media_requests` method and
-return a Request for each image URL::
+:meth:`~ImagesPipeline.get_media_requests` method and return a Request for each
+image URL::
 
    def get_media_requests(self, item, info):
        for image_url in item['image_urls']:
-           yield Request(image_url) 
+           yield Request(image_url)
 
-Those requests will be processed by the pipeline, downloaded an when completed
-the processed results will be sent to the
-:meth:`~scrapy.contrib.pipeline.MediaPipeline.item_completed` method. 
-
-The results will be a list of tuples, in wich each tuple indicates the sucess
-of the downloading process and the stored image path concatenated with the
-checksum of the image ::
+Those requests will be processed by the pipeline, and they have finished
+downloading the results will be sent to the
+:meth:`~ImagesPipeline.item_completed` method, as a list of dictionaries. Each
+dictionary will contain status and information about the download, and the list
+of dictionaries will retain the original order of the requests returned from
+the :meth:`~ImagesPipeline.get_media_requests` method::
 
    results = [(True, 'path#checksum'), ..., (False, Failure)]
 
-The :meth:`~scrapy.contrib.pipeline.MediaPipeline.item_completed` is also in
-charge of returning the output value to be used as the output of the pipeline
-stage, so we must return (or drop) the item as in any pipeline.
+There is one additional method: :meth:`~ImagesPipeline.item_completed` which
+must return the output value that will be sent to further item pipeline stages,
+so you must return (or drop) the item as in any pipeline.
 
 We will override it to store the resulting image paths (passed in results) back
 in the item::
 
+   # XXX: improve this example and add a condition for dropping images
    def item_completed(self, results, item, info):
        item['image_paths'] = [result.split('#')[0] for succes, result in results if succes]
 
        return item
 
-.. note:: This is a simplification of the actual process, it will be described
-   with more detail in upcoming sections.
-
 So, the complete example of our pipeline looks like this::
 
    from scrapy.contrib.pipeline.images import ImagesPipeline
+
+   # XXX: improve this example and add a condition for dropping images
 
    class MyImagesPipeline(ImagesPipeline):
 
        def get_media_requests(self, item, info):
            for image_url in item['image_urls']:
-               yield Request(image_url) 
+               yield Request(image_url)
 
        def item_completed(self, results, item, info):
            item['image_paths'] = [result.split('#')[0] for succes, result in results if succes]
 
            return item
 
-This is the most basic use of :class:`ImagesPipeline`, see upcoming sections for more details.
-
-
 .. _topics-images-expiration:
 
 Image expiration
 -----------------
 
-XXX
+.. setting:: IMAGES_EXPIRES
+
+The Image Pipeline avoids downloading images that were downloaded recently. To
+adjust this delay use the :setting:`IMAGES_EXPIRES` setting, which specifies
+the delay in days::
+
+    # 90 days of delay for image expiration
+    IMAGES_EXPIRES = 90
 
 .. _topics-images-thumbnails:
 
-Creating thumbnails
--------------------
+Thumbnail generation
+--------------------
 
-As mentioned in the features, :class:`ImagesPipeline` can create thumbnails of
-the processed images. 
+The Images Pipeline can automatically create thumbnails of the downloaded
+images.
 
-In order use this feature you must set the :attr:`~BaseImagesPipeline.THUMBS` to
-a tuple of tuples, in wich each sub-tuple is a pair of thumb_id string and a
-compatible python image library size (another tuple).  
+In order use this feature you must set the :attr:`~ImagesPipeline.THUMBS`
+to a tuple of ``(size_name, (width, height))`` tuples.
 
-See ``thumbnail`` method at http://www.pythonware.com/library/pil/handbook/image.htm.
+The `Python Imaging Library`_ is used for thumbnailing, so you need that
+library.
 
-Example::
+.. _Python Imaging Library: http://www.pythonware.com/products/pil/
+
+Here are some examples examples.
+
+Using numeric names::
 
    THUMBS = (
        ('50', (50, 50)),
        ('110', (110, 110)),
-       ('270', (270, 270))
    )
 
+Using textual names::
 
-When you use this feature, :class:`ImagesPipeline` will create thumbnails of
-the specified sizes in ``IMAGES_DIR/thumbs/<image_id>/<thumb_id>.jpg``, where
-``<image_id>`` is the ``sha1`` digest of the url of the image and
-``<thumb_id>`` is the thumb_id string specified in THUMBS attribute.
+   THUMBS = (
+       ('small', (50, 50)),
+       ('big', (270, 270)),
+   )
+
+When you use this feature, the Images Pipeline will create thumbnails of the
+each specified size with this format::
+
+    IMAGES_DIR/thumbs/<image_id>/<size_name>.jpg
+  
+Where:
+
+* ``<image_id>`` is the `SHA1 hash`_ of the image url
+* and ``<size_name>`` is the one specified in ``THUMBS`` attribute
+
+.. _SHA1 hash: http://en.wikipedia.org/wiki/SHA_hash_functions
 
 Example with previous THUMB attribute::
 
-   IMAGES_DIR/thumbs/image_sha1_digest/50.jpg
-   IMAGES_DIR/thumbs/image_sha1_digest/110.jpg
-   IMAGES_DIR/thumbs/image_sha1_digest/270.jpg
+   IMAGES_DIR/thumbs/63bbfea82b8880ed33cdb762aa11fab722a90a24/50.jpg
+   IMAGES_DIR/thumbs/63bbfea82b8880ed33cdb762aa11fab722a90a24/110.jpg
+   IMAGES_DIR/thumbs/63bbfea82b8880ed33cdb762aa11fab722a90a24/270.jpg
 
 
 .. _topics-images-size:
@@ -146,66 +176,39 @@ Example with previous THUMB attribute::
 Checking image size
 -------------------
 
-You can skip the processing of an image if its size is less than a specified
-one. To use this set :setting:`IMAGES_MIN_HEIGHT` and/or
-:setting:`IMAGES_MIN_WIDTH` to your likings::
+.. setting:: IMAGES_MIN_HEIGHT
 
-   IMAGES_MIN_HEIGHT = 270
-   IMAGES_MIN_WIDTH = 270
+.. setting:: IMAGES_MIN_WIDTH
+
+You can drop images which are too small, by specifying the minimum allowed size
+in the :setting:`IMAGES_MIN_HEIGHT` and :setting:`IMAGES_MIN_WIDTH` settings.
+
+For example::
+
+   IMAGES_MIN_HEIGHT = 110
+   IMAGES_MIN_WIDTH = 110
 
 
 .. _ref-images:
 
-Reference
-=========
+API Reference
+=============
+
+.. module:: scrapy.contrib.pipeline.images
+   :synopsis: Images Pipeline
 
 ImagesPipeline
 --------------
 
 .. class:: ImagesPipeline
 
-   :class:`BaseImagesPipeline` descendant with filesystem support as
-   image's store backend
+   A pipeline to download images attached to items, for example product images.
 
-   In order to enable this pipeline you must set :setting:`IMAGES_DIR` to a
-   valid dirname that will be used for storing images.
-
-
-BaseImagesPipeline
-------------------
-
-.. class:: BaseImagesPipeline
-
-   :class:`~scrapy.contrib.pipeline.media.MediaPipeline` descendant that
-   implements image downloading and thumbnail generation logic.
-
-   This pipeline tries to minimize network transfers and image processing,
-   doing stat of the images and determining if image is new, uptodate or
-   expired.
-
-   `'new'` images are those that pipeline never processed and needs to be
-   downloaded from supplier site the first time.
-
-   `'uptodate'` images are the ones that the pipeline processed and are still
-   valid images.
-
-   `'expired'` images are those that pipeline already processed but the last
-   modification was made long time ago, so a reprocessing is recommended to
-   refresh it in case of change.
-
-   :setting:`IMAGES_EXPIRES` setting controls the maximun days since an image
-   was modified to consider it `uptodate`.
-
-   Downloaded images are skipped if sizes aren't greater than
-   :setting:`IMAGES_MIN_WIDTH` and :setting:`IMAGES_MIN_HEIGHT` limit. A proper
-   log messages will be printed.
-
-   .. attribute:: THUMBS 
-
-      Thumbnail generation configuration, see :ref:`topics-images-thumbnails`
+   To enable this pipeline you must set :setting:`IMAGES_DIR` to a valid
+   directory that will be used for storing the downloaded images.
 
    .. method:: store_image(key, image, buf, info)
-   
+ 
       Override this method with specific code to persist an image.
 
       This method is used to persist the full image and any defined
@@ -215,7 +218,7 @@ BaseImagesPipeline
 
 
    .. method:: stat_key(key, info)
-   
+ 
       Override this method with specific code to stat an image.
 
       This method should return and dictionary with two parameters:
@@ -233,103 +236,28 @@ BaseImagesPipeline
       (#), if ``checksum`` is ``None``, then nothing is appended including the
       hash sign.
 
-
-.. module:: scrapy.contrib.pipeline.media
-   :synopsis: Media Pipeline
-
-MediaPipeline
--------------
-
-.. class:: MediaPipeline
-
-   Generic pipeline that handles the media associated with an item.
-
-   .. method:: download(request, info)
-
-      Defines how to request the download of media.
-
-      Default gives high priority to media requests and use scheduler, shouldn't
-      be necessary to override.
-
-      This methods is called only if result for request isn't cached, request
-      fingerprint is used as cache key.
-
-
-   .. method:: media_to_download(request, info)
-
-      Ongoing request hook pre-cache.
-
-      This method is called every time a media is requested for download, and only
-      once for the same request because return value is cached as media result.
-
-      Returning a non-None value implies:
-
-      * the return value is cached and piped into :meth:`item_media_downloaded`
-        or :meth:`item_media_failed`
-      * prevents downloading, this means calling :meth:`download` method.
-      * :meth:`media_downloaded` or :meth:`media_failed` isn't called.
-
-
    .. method:: get_media_requests(item, info)
 
-      Return a list of Request objects to download for this item.
+      Return a list of Request objects to download images for this item.
 
-      Should return ``None`` or an iterable.
+      Must return ``None`` or an iterable.
 
-      Defaults return ``None`` (no media to download)
-
-
-   .. method:: media_downloaded(response, request, info)
-
-      Method called on success download of media request
-
-      Return value is cached and used as input for
-      :meth:`item_media_downloaded` method.  Default implementation returns
-      ``None``.
-
-      WARNING: returning the response object can eat your memory.
-
-
-   .. method:: media_failed(failure, request, info)
-
-      Method called when media request failed due to any kind of download error.
-
-      Return value is cached and used as input for :meth:`item_media_failed` method.
-
-      Default implementation returns same Failure object.
-
-
-   .. method:: item_media_downloaded(result, item, request, info)
-
-      Method to handle result of requested media for item.
-
-      ``result`` is the return value of :meth:`media_downloaded` hook, or the
-      non-Failure instance returned by :meth:`media_failed` hook.
-
-      Return value of this method isn't important and is recommended to return
-      ``None``.
-
-
-   .. method:: item_media_failed(failure, item, request, info)
-
-      Method to handle failed result of requested media for item.
-
-      result is the returned Failure instance of :meth:`media_failed` hook, or Failure
-      instance of an exception raised by :meth:`media_downloaded` hook.
-
-      Return value of this method isn't important and is recommended to return
-      ``None``.
-
+      By default it returns ``None`` (no images to download).
 
    .. method:: item_completed(results, item, info)
 
-      Method called when all media requests for a single item has returned a result
-      or failure.
+      Method called when all image requests for a single item have been
+      downloaded (or failed).
 
-      The return value of this method is used as output of pipeline stage.
+      The output of this method is used as the output of the Image Pipeline
+      stage.
 
-      :meth:`item_completed` can return item itself or raise
+      This method typically returns the item itself or raises a
       :exc:`~scrapy.core.exceptions.DropItem` exception.
 
-      Default returns item
+      By default, it returns the item.
+
+   .. attribute:: THUMBS
+
+      Thumbnail generation configuration, see :ref:`topics-images-thumbnails`.
 

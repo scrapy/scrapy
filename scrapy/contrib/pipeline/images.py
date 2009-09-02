@@ -1,3 +1,9 @@
+"""
+Images Pipeline
+
+See documentation in topics/images.rst
+"""
+
 from __future__ import with_statement
 import os
 import time
@@ -23,33 +29,6 @@ class ImageException(Exception):
 
 
 class BaseImagesPipeline(MediaPipeline):
-    """Abstract pipeline that implement the image downloading and thumbnail generation logic
-
-    This pipeline tries to minimize network transfers and image processing,
-    doing stat of the images and determining if image is new, uptodate or
-    expired.
-
-    `new` images are those that pipeline never processed and needs to be
-        downloaded from supplier site the first time.
-
-    `uptodate` images are the ones that the pipeline processed and are still
-        valid images.
-
-    `expired` images are those that pipeline already processed but the last
-        modification was made long time ago, so a reprocessing is recommended to
-        refresh it in case of change.
-
-    IMAGES_EXPIRES setting controls the maximun days since an image was modified
-    to consider it uptodate.
-
-    THUMBS is a tuple of tuples, each sub-tuple is a pair of thumb_id string
-    and a compatible python image library size (a tuple).
-    See thumbnail method at http://www.pythonware.com/library/pil/handbook/image.htm
-
-    Downloaded images are skipped if sizes aren't greater than MIN_WIDTH and
-    MIN_HEIGHT limit. A proper log messages will be printed.
-
-    """
 
     MIN_WIDTH = settings.getint('IMAGES_MIN_WIDTH', 0)
     MIN_HEIGHT = settings.getint('IMAGES_MIN_HEIGHT', 0)
@@ -186,34 +165,9 @@ class BaseImagesPipeline(MediaPipeline):
 
     # Required overradiable interface
     def store_image(self, key, image, buf, info):
-        """Override this method with specific code to persist an image
-
-        This method is used to persist the full image and any defined
-        thumbnail, one a time.
-
-        Return value is ignored.
-
-        """
         raise NotImplementedError
 
     def stat_key(self, key, info):
-        """Override this method with specific code to stat an image
-
-        this method should return and dictionary with two parameters:
-         * last_modified: the last modification time in seconds since the epoch
-         * checksum: the md5sum of the content of the stored image if found
-
-         If an exception is raised or last_modified is None, then the image
-         will be re-downloaded.
-
-         If the difference in days between last_modified and now is greater than
-         IMAGES_EXPIRES settings, then the image will be re-downloaded
-
-         The checksum value is appended to returned image path after a hash
-         sign (#), if checksum is None, then nothing is appended including the
-         hash sign.
-
-        """
         raise NotImplementedError
 
 

@@ -140,13 +140,7 @@ class MediaPipeline(object):
         """
 
     def get_media_requests(self, item, info):
-        """ Return a list of Request objects to download for this item
-
-        Should return None or an iterable
-
-        Defaults return None (no media to download)
-
-        """
+        pass
 
     def media_downloaded(self, response, request, info):
         """ Method called on success download of media request
@@ -185,13 +179,5 @@ class MediaPipeline(object):
         """
 
     def item_completed(self, results, item, info):
-        """ Method called when all media requests for a single item has returned a result or failure.
-
-        The return value of this method is used as output of pipeline stage.
-
-        `item_completed` can return item itself or raise DropItem exception.
-
-        Default returns item
-        """
         return item
 
