@@ -129,7 +129,7 @@ def execute(argv=None):
     del args[0]  # remove command name from args
     _save_command_executed(cmdname, cmd, args, opts)
     from scrapy.core.manager import scrapymanager
-    scrapymanager.configure()
+    scrapymanager.configure(control_reactor=True)
     ret = _run_command(cmd, args, opts)
     if ret is False:
         parser.print_help()

@@ -5,6 +5,7 @@ Download web pages using asynchronous IO
 from time import time
 
 from twisted.internet import reactor, defer
+from twisted.python.failure import Failure
 
 from scrapy.core.exceptions import IgnoreRequest
 from scrapy.spider import spiders
@@ -31,8 +32,8 @@ class SiteInfo(object):
         else:
             self.max_concurrent_requests =  max_concurrent_requests
 
-        self.queue = []
         self.active = set()
+        self.queue = []
         self.transferring = set()
         self.closing = False
         self.lastseen = 0
@@ -56,7 +57,7 @@ class Downloader(object):
         self.concurrent_domains = settings.getint('CONCURRENT_DOMAINS')
 
     def fetch(self, request, spider):
-        """ Main method to use to request a download
+        """Main method to use to request a download
 
         This method includes middleware mangling. Middleware can returns a
         Response object, then request never reach downloader queue, and it will
@@ -64,7 +65,7 @@ class Downloader(object):
         """
         site = self.sites[spider.domain_name]
         if site.closing:
-            raise IgnoreRequest('Can\'t fetch on a closing domain')
+            raise IgnoreRequest('Cannot fetch on a closing domain')
 
         site.active.add(request)
         def _deactivate(_):
@@ -72,25 +73,21 @@ class Downloader(object):
             self._close_if_idle(spider.domain_name)
             return _
 
-        return self.middleware.download(self.enqueue, request, spider).addBoth(_deactivate)
+        dfd = self.middleware.download(self.enqueue, request, spider)
+        return dfd.addBoth(_deactivate)
 
     def enqueue(self, request, spider):
         """Enqueue a Request for a effective download from site"""
-        deferred = defer.Deferred()
         site = self.sites[spider.domain_name]
+        if site.closing:
+            raise IgnoreRequest
+        deferred = defer.Deferred()
         site.queue.append((request, deferred))
-        self.process_queue(spider)
+        self._process_queue(spider)
         return deferred
 
-    def process_queue(self, spider):
-        try:
-            self._process_queue(spider)
-        except:
-            log.exc('Downloader process queue bug')
-
     def _process_queue(self, spider):
-        """ Effective download requests from site queue
-        """
+        """Effective download requests from site queue"""
         domain = spider.domain_name
         site = self.sites.get(domain)
         if not site:
@@ -101,14 +98,18 @@ class Downloader(object):
         if site.download_delay:
             penalty = site.download_delay - now + site.lastseen
             if penalty > 0:
-                reactor.callLater(penalty, self.process_queue, spider=spider)
+                reactor.callLater(penalty, self._process_queue, spider=spider)
                 return
         site.lastseen = now
 
-        # Process requests in queue if there are free slots to transfer for this site
+        # Process enqueued requests if there are free slots to transfer for this site
         while site.queue and site.free_transfer_slots() > 0:
             request, deferred = site.queue.pop(0)
-            self._download(site, request, spider).chainDeferred(deferred)
+            if site.closing:
+                dfd = defer.fail(Failure(IgnoreRequest()))
+            else:
+                dfd = self._download(site, request, spider)
+            dfd.chainDeferred(deferred)
 
         self._close_if_idle(domain)
 
@@ -130,7 +131,13 @@ class Downloader(object):
         site.transferring.add(request)
         def finish_transferring(_):
             site.transferring.remove(request)
-            self.process_queue(spider)
+            self._process_queue(spider)
+            # avoid partially downloaded responses from propagating to the
+            # downloader middleware, to speed-up the closing process
+            if site.closing:
+                log.msg("Crawled while closing domain: %s" % request, \
+                    level=log.DEBUG)
+                raise IgnoreRequest
             return _
         return dfd.addBoth(finish_transferring)
 
@@ -153,7 +160,7 @@ class Downloader(object):
 
         site.closing = True
         spider = spiders.fromdomain(domain)
-        self.process_queue(spider)
+        self._process_queue(spider)
 
     def has_capacity(self):
         """Does the downloader have capacity to handle more domains"""

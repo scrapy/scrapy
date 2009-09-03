@@ -5,6 +5,8 @@ These exceptions are documented in docs/topics/exceptions.rst. Please don't add
 new exceptions here without documenting them there.
 """
 
+from scrapy import log
+
 # Internal
 
 class NotConfigured(Exception):
@@ -15,7 +17,13 @@ class NotConfigured(Exception):
 
 class IgnoreRequest(Exception):
     """Indicates a decision was made not to process a request"""
-    pass
+
+    def __init__(self, msg='', level=log.ERROR):
+        self.msg = msg
+        self.level = level
+
+    def __str__(self):
+        return self.msg
 
 class DontCloseDomain(Exception):
     """Request the domain not to be closed yet"""

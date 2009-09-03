@@ -9,7 +9,48 @@ from scrapy.core.engine import scrapyengine
 from scrapy.spider import spiders
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.url import is_url
-from scrapy.conf import settings
+from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
+
+def _parse_args(args):
+    """Parse crawl arguments and return a dict of domains -> list of requests"""
+    requests, urls, sites = set(), set(), set()
+    for a in args:
+        if isinstance(a, Request):
+            requests.add(a)
+        elif is_url(a):
+            urls.add(a)
+        else:
+            sites.add(a)
+
+    perdomain = {}
+
+    # sites
+    for domain in sites:
+        spider = spiders.fromdomain(domain)
+        if not spider:
+            log.msg('Could not find spider for %s' % domain, log.ERROR)
+            continue
+        reqs = spider.start_requests()
+        perdomain.setdefault(domain, []).extend(reqs)
+
+    # urls
+    for url in urls:
+        spider = spiders.fromurl(url)
+        if spider:
+            for req in arg_to_iter(spider.make_requests_from_url(url)):
+                perdomain.setdefault(spider.domain_name, []).append(req)
+        else:
+            log.msg('Could not find spider for <%s>' % url, log.ERROR)
+
+    # requests
+    for request in requests:
+        spider = spiders.fromurl(request.url)
+        if not spider:
+            log.msg('Could not find spider for %s' % request, log.ERROR)
+            continue
+        perdomain.setdefault(spider.domain_name, []).append(request)
+    return perdomain
+
 
 class ExecutionManager(object):
     """Process a list of sites or urls.
@@ -27,8 +68,8 @@ class ExecutionManager(object):
     def configure(self, control_reactor=True):
         self.control_reactor = control_reactor
         if control_reactor:
-            self._install_signals()
-        reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
+            install_shutdown_handlers(self._signal_shutdown)
+        reactor.addSystemEventTrigger('before', 'shutdown', scrapyengine.stop)
 
         if not log.started:
             log.start()
@@ -45,7 +86,7 @@ class ExecutionManager(object):
     def crawl(self, *args):
         """Schedule the given args for crawling. args is a list of urls or domains"""
 
-        requests = self._parse_args(args)
+        requests = _parse_args(args)
         # schedule initial requests to be scraped at engine start
         for domain in requests or ():
             spider = spiders.fromdomain(domain) 
@@ -54,88 +95,40 @@ class ExecutionManager(object):
 
     def runonce(self, *args):
         """Run the engine until it finishes scraping all domains and then exit"""
-        if not self.configured:
-            self.configure()
+        assert self.configured, "Scrapy Manger not yet configured"
         self.crawl(*args)
         scrapyengine.start()
+        if self.control_reactor:
+            reactor.run(installSignalHandlers=False)
 
-    def start(self, control_reactor=True):
+    def start(self):
         """Start the scrapy server, without scheduling any domains"""
-        self.configure(control_reactor)
+        assert self.configured, "Scrapy Manger not yet configured"
         scrapyengine.keep_alive = True
-        scrapyengine.start(control_reactor=control_reactor)
-        if control_reactor:
-            self.stop()
+        scrapyengine.start()
+        if self.control_reactor:
+            reactor.run(installSignalHandlers=False)
 
     def stop(self):
         """Stop the scrapy server, shutting down the execution engine"""
         self.interrupted = True
         scrapyengine.stop()
-        log.log_level = -999 # disable logging
-        if self.control_reactor:
-            signal.signal(signal.SIGTERM, signal.SIG_IGN)
-            signal.signal(signal.SIGINT, signal.SIG_IGN)
-            if hasattr(signal, "SIGBREAK"):
-                signal.signal(signal.SIGBREAK, signal.SIG_IGN)
+        if self.control_reactor and reactor.running:
+            reactor.stop()
 
-    def reload_spiders(self):
-        """Reload all enabled spiders except for the ones that are currently
-        running.
-        """
-        spiders.reload(skip_domains=scrapyengine.open_domains)
+    def _signal_shutdown(self, signum, _):
+        signame = signal_names[signum]
+        log.msg("Received %s, shutting down gracefully. Send again to force " \
+            "unclean shutdown" % signame, level=log.INFO)
+        reactor.callFromThread(self.stop)
+        install_shutdown_handlers(self._signal_kill)
 
-    def _install_signals(self):
-        def sig_handler_terminate(signalinfo, param):
-            log.msg('Received shutdown request, waiting for deferreds to finish...', log.INFO)
-            self.stop()
-
-        signal.signal(signal.SIGTERM, sig_handler_terminate)
-        # only handle SIGINT if there isn't already a handler (e.g. for Pdb)
-        if signal.getsignal(signal.SIGINT) == signal.default_int_handler:
-            signal.signal(signal.SIGINT, sig_handler_terminate)
-        # Catch Ctrl-Break in windows
-        if hasattr(signal, "SIGBREAK"):
-            signal.signal(signal.SIGBREAK, sig_handler_terminate)
-
-    def _parse_args(self, args):
-        """Parse crawl arguments and return a dict of domains -> list of 
-        requests"""
-        requests, urls, sites = set(), set(), set()
-        for a in args:
-            if isinstance(a, Request):
-                requests.add(a)
-            elif is_url(a):
-                urls.add(a)
-            else:
-                sites.add(a)
-
-        perdomain = {}
-
-        # sites
-        for domain in sites:
-            spider = spiders.fromdomain(domain)
-            if not spider:
-                log.msg('Could not find spider for %s' % domain, log.ERROR)
-                continue
-            reqs = spider.start_requests()
-            perdomain.setdefault(domain, []).extend(reqs)
-
-        # urls
-        for url in urls:
-            spider = spiders.fromurl(url)
-            if spider:
-                for req in arg_to_iter(spider.make_requests_from_url(url)):
-                    perdomain.setdefault(spider.domain_name, []).append(req)
-            else:
-                log.msg('Could not find spider for <%s>' % url, log.ERROR)
-
-        # requests
-        for request in requests:
-            spider = spiders.fromurl(request.url)
-            if not spider:
-                log.msg('Could not find spider for %s' % request, log.ERROR)
-                continue
-            perdomain.setdefault(spider.domain_name, []).append(request)
-        return perdomain
+    def _signal_kill(self, signum, _):
+        signame = signal_names[signum]
+        log.msg('Received %s twice, forcing unclean shutdown' % signame, \
+            level=log.INFO)
+        log.log_level = log.SILENT # disable logging of confusing tracebacks
+        reactor.callFromThread(scrapyengine.kill)
+        install_shutdown_handlers(signal.SIG_IGN)
 
 scrapymanager = ExecutionManager()

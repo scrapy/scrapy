@@ -6,7 +6,7 @@ For more information see docs/topics/architecture.rst
 """
 from datetime import datetime
 
-from twisted.internet import reactor, task
+from twisted.internet import reactor, task, defer
 from twisted.python.failure import Failure
 from scrapy.xlib.pydispatch import dispatcher
 
@@ -30,8 +30,8 @@ class ExecutionEngine(object):
         self.keep_alive = False
         self.closing = {} # dict (domain -> reason) of spiders being closed
         self.running = False
+        self.killed = False
         self.paused = False
-        self.control_reactor = True
         self._next_request_pending = set()
         self._mainloop_task = task.LoopingCall(self._mainloop)
 
@@ -45,34 +45,34 @@ class ExecutionEngine(object):
         self.scraper = Scraper(self)
         self.configured = True
 
-    def start(self, control_reactor=True):
+    def start(self):
         """Start the execution engine"""
         if self.running:
             return
-        self.control_reactor = control_reactor
         self.start_time = datetime.utcnow()
         send_catch_log(signal=signals.engine_started, sender=self.__class__)
         self._mainloop_task.start(5.0, now=True)
         reactor.callWhenRunning(self._mainloop)
         self.running = True
-        if control_reactor:
-            reactor.run() # blocking call
 
     def stop(self):
-        """Stop the execution engine"""
+        """Stop the execution engine gracefully"""
         if not self.running:
             return
         self.running = False
         for domain in self.open_domains:
-            spider = spiders.fromdomain(domain)
-            send_catch_log(signal=signals.domain_closed, sender=self.__class__, \
-                domain=domain, spider=spider, reason='shutdown')
-            stats.close_domain(domain, reason='shutdown')
+            reactor.addSystemEventTrigger('before', 'shutdown', \
+                self.close_domain, domain, reason='shutdown')
         if self._mainloop_task.running:
             self._mainloop_task.stop()
-        if self.control_reactor and reactor.running:
-            reactor.stop()
-        send_catch_log(signal=signals.engine_stopped, sender=self.__class__)
+
+    def kill(self):
+        """Forces shutdown without waiting for pending transfers to finish.
+        stop() must have been called first
+        """
+        if self.running:
+            return
+        self.killed = True
 
     def pause(self):
         """Pause the execution engine"""
@@ -83,7 +83,8 @@ class ExecutionEngine(object):
         self.paused = False
 
     def is_idle(self):
-        return self.scheduler.is_idle() and self.downloader.is_idle() and self.scraper.is_idle()
+        return self.scheduler.is_idle() and self.downloader.is_idle() and \
+            self.scraper.is_idle()
 
     def next_domain(self):
         domain = self.domain_scheduler.next_domain()
@@ -130,12 +131,15 @@ class ExecutionEngine(object):
             spider = spiders.fromdomain(domain)
             dwld = mustbe_deferred(self.download, request, spider)
             dwld.chainDeferred(deferred).addBoth(lambda _: deferred)
-            return dwld.addErrback(log.err)
+            dwld.addErrback(log.err, "Unhandled error on engine._next_request")
+            return dwld
 
     def domain_is_idle(self, domain):
-        scraper_idle = domain in self.scraper.sites and self.scraper.sites[domain].is_idle()
+        scraper_idle = domain in self.scraper.sites \
+            and self.scraper.sites[domain].is_idle()
         pending = self.scheduler.domain_has_pending_requests(domain)
-        downloading = domain in self.downloader.sites and self.downloader.sites[domain].active
+        downloading = domain in self.downloader.sites \
+            and self.downloader.sites[domain].active
         return scraper_idle and not (pending or downloading)
 
     def domain_is_closed(self, domain):
@@ -155,7 +159,7 @@ class ExecutionEngine(object):
     def crawl(self, request, spider):
         schd = mustbe_deferred(self.schedule, request, spider)
         schd.addBoth(self.scraper.enqueue_scrape, request, spider)
-        schd.addErrback(log.err)
+        schd.addErrback(log.err, "Unhandled error on engine.crawl()")
         schd.addBoth(lambda _: self.next_request(spider.domain_name))
 
     def schedule(self, request, spider):
@@ -190,8 +194,8 @@ class ExecutionEngine(object):
             assert isinstance(response, (Response, Request))
             if isinstance(response, Response):
                 response.request = request # tie request to response received
-                log.msg("Crawled %s (referer: <%s>)" % (response, referer), level=log.DEBUG, \
-                    domain=domain)
+                log.msg("Crawled %s (referer: <%s>)" % (response, referer), \
+                    level=log.DEBUG, domain=domain)
                 return response
             elif isinstance(response, Request):
                 newrequest = response
@@ -201,12 +205,17 @@ class ExecutionEngine(object):
 
         def _on_error(_failure):
             """handle an error processing a page"""
-            ex = _failure.value
-            errmsg = str(_failure) if not isinstance(ex, IgnoreRequest) \
-                else _failure.getErrorMessage()
-            log.msg("Downloading <%s> (referer: <%s>): %s" % (request.url, referer, errmsg), \
-                log.ERROR, domain=domain)
-            return Failure(IgnoreRequest(str(ex)))
+            exc = _failure.value
+            if isinstance(exc, IgnoreRequest):
+                errmsg = _failure.getErrorMessage()
+                level = exc.level
+            else:
+                errmsg = str(_failure)
+                level = log.ERROR
+            if errmsg:
+                log.msg("Downloading <%s> (referer: <%s>): %s" % (request.url, \
+                    referer, errmsg), level=level, domain=domain)
+            return Failure(IgnoreRequest(str(exc)))
 
         def _on_complete(_):
             self.next_request(domain)
@@ -249,7 +258,7 @@ class ExecutionEngine(object):
             self.next_request(domain)
             return
         except:
-            log.err(_why="Exception catched on domain_idle signal dispatch")
+            log.err("Exception catched on domain_idle signal dispatch")
         if self.domain_is_idle(domain):
             self.close_domain(domain, reason='finished')
 
@@ -265,14 +274,19 @@ class ExecutionEngine(object):
             self.closing[domain] = reason
             self.downloader.close_domain(domain)
             self.scheduler.clear_pending_requests(domain)
-            self._finish_closing_domain_if_idle(domain)
+            return self._finish_closing_domain_if_idle(domain)
+        return defer.succeed(None)
 
     def _finish_closing_domain_if_idle(self, domain):
         """Call _finish_closing_domain if domain is idle"""
-        if self.domain_is_idle(domain):
+        if self.domain_is_idle(domain) or self.killed:
             self._finish_closing_domain(domain)
         else:
-            reactor.callLater(5, self._finish_closing_domain_if_idle, domain)
+            dfd = defer.Deferred()
+            dfd.addCallback(self._finish_closing_domain_if_idle)
+            delay = 5 if self.running else 1
+            reactor.callLater(delay, dfd.callback, domain)
+            return dfd
 
     def _finish_closing_domain(self, domain):
         """This function is called after the domain has been closed"""
@@ -284,6 +298,10 @@ class ExecutionEngine(object):
             domain=domain, spider=spider, reason=reason)
         stats.close_domain(domain, reason=reason)
         log.msg("Domain closed (%s)" % reason, domain=domain) 
-        self._mainloop()
+        spiders.close_domain(domain)
+        if self.running:
+            self._mainloop()
+        elif not self.open_domains:
+            send_catch_log(signal=signals.engine_stopped, sender=self.__class__)
 
 scrapyengine = ExecutionEngine()

@@ -56,19 +56,24 @@ def start(logfile=None, loglevel=None, logstdout=None):
 
 def msg(message, level=INFO, component=BOT_NAME, domain=None):
     """Log message according to the level"""
+    if level > log_level:
+        return
     dispatcher.send(signal=logmessage_received, message=message, level=level, \
         domain=domain)
     system = domain if domain else component
-    if level <= log_level:
-        msg_txt = unicode_to_str("%s: %s" % (level_names[level], message))
-        log.msg(msg_txt, system=system)
+    msg_txt = unicode_to_str("%s: %s" % (level_names[level], message))
+    log.msg(msg_txt, system=system)
 
 def exc(message, level=ERROR, component=BOT_NAME, domain=None):
     message = message + '\n' + format_exc()
     msg(message, level, component, domain)
 
-def err(*args, **kwargs):
+def err(_stuff=None, _why=None, **kwargs):
+    if ERROR > log_level:
+        return
     domain = kwargs.pop('domain', None)
     component = kwargs.pop('component', BOT_NAME)
     kwargs['system'] = domain if domain else component
-    log.err(*args, **kwargs)
+    if _why:
+        _why = unicode_to_str("ERROR: %s" % _why)
+    log.err(_stuff, _why, **kwargs)
