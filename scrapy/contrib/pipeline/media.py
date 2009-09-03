@@ -43,9 +43,6 @@ class MediaPipeline(object):
                     callbackArgs=(item, request, info),
                     errback=self.item_media_failed,
                     errbackArgs=(item, request, info),)
-            dfd.addErrback(log.err, \
-                    'Unhandled ERROR in %s.item_media_{downloaded,failed} for %s' \
-                    % (type(self).__name__, request), domain=domain)
             dlist.append(dfd)
 
         return DeferredList(dlist).addCallback(self.item_completed, item, info)
