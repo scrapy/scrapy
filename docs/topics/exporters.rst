@@ -244,7 +244,7 @@ XmlItemExporter
 CsvItemExporter
 ---------------
 
-.. class:: CsvItemExporter(file, include_headers_line=False, \**kwargs)
+.. class:: CsvItemExporter(file, include_headers_line=True, \**kwargs)
 
    Exports Items in CSV format to the given file-like object. If the
    :attr:`fields_to_export` attribute is set, it will be used to define the
@@ -254,9 +254,8 @@ CsvItemExporter
    :param file: the file-like object to use for exporting the data.
 
    :param include_headers_line: If enabled, makes the exporter output a header
-       line with the field names taken from
-       :attr:`BaseItemExporter.fields_to_export` so that attribute must also be
-       set in order to work (otherwise it raises a :exc:`RuntimeError`)
+      line with the field names taken from 
+      :attr:`BaseItemExporter.fields_to_export` or the first exported item fields.
    :type include_headers_line: boolean
 
    The additional keyword arguments of this constructor are passed to the
@@ -266,6 +265,7 @@ CsvItemExporter
 
    A typical output of this exporter would be::
 
+      product,price
       Color TV,1200
       DVD player,200
       

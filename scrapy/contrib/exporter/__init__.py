@@ -101,24 +101,28 @@ class XmlItemExporter(BaseItemExporter):
 
 class CsvItemExporter(BaseItemExporter):
 
-    def __init__(self, file, include_headers_line=False, **kwargs):
+    def __init__(self, file, include_headers_line=True, **kwargs):
         self._configure(kwargs, dont_fail=True)
         self.include_headers_line = include_headers_line
         self.csv_writer = csv.writer(file, **kwargs)
-
-    def start_exporting(self):
-        if self.include_headers_line:
-            if not self.fields_to_export:
-                raise RuntimeError("You must set fields_to_export in order" + \
-                                   " to use include_headers_line")
-            self.csv_writer.writerow(self.fields_to_export)
+        self._header_written = False
 
     def export_item(self, item):
+        if not self._header_written:
+            self._write_header(item)
+
         fields = self._get_serialized_fields(item, default_value='', \
             include_empty=True)
 
         values = [x[1] for x in fields]
         self.csv_writer.writerow(values)
+
+    def _write_header(self, item):
+        self._header_written = True
+        if self.include_headers_line:
+            if not self.fields_to_export:
+                self.fields_to_export = item.fields.keys()
+            self.csv_writer.writerow(self.fields_to_export)
 
 
 class PickleItemExporter(BaseItemExporter):

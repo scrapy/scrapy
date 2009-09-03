@@ -95,19 +95,37 @@ class CsvItemExporterTest(BaseItemExporterTest):
         return CsvItemExporter(self.output, **kwargs)
 
     def _check_output(self):
-        self.assertEqual(self.output.getvalue(), '22,John\xc2\xa3\r\n')
+        self.assertEqual(self.output.getvalue(), 'age,name\r\n22,John\xc2\xa3\r\n')
 
     def test_header(self):
         output = StringIO()
-        ie = CsvItemExporter(output, include_headers_line=True)
-        self.assertRaises(RuntimeError, ie.start_exporting)
-
-        ie = CsvItemExporter(output, include_headers_line=True, \
-            fields_to_export=self.i.fields.keys())
+        ie = CsvItemExporter(output, fields_to_export=self.i.fields.keys())
         ie.start_exporting()
         ie.export_item(self.i)
         ie.finish_exporting()
         self.assertEqual(output.getvalue(), 'age,name\r\n22,John\xc2\xa3\r\n')
+
+        output = StringIO()
+        ie = CsvItemExporter(output, fields_to_export=['age'])
+        ie.start_exporting()
+        ie.export_item(self.i)
+        ie.finish_exporting()
+        self.assertEqual(output.getvalue(), 'age\r\n22\r\n')
+
+        output = StringIO()
+        ie = CsvItemExporter(output)
+        ie.start_exporting()
+        ie.export_item(self.i)
+        ie.export_item(self.i)
+        ie.finish_exporting()
+        self.assertEqual(output.getvalue(), 'age,name\r\n22,John\xc2\xa3\r\n22,John\xc2\xa3\r\n')
+
+        output = StringIO()
+        ie = CsvItemExporter(output, include_headers_line=False)
+        ie.start_exporting()
+        ie.export_item(self.i)
+        ie.finish_exporting()
+        self.assertEqual(output.getvalue(), '22,John\xc2\xa3\r\n')
 
 
 class XmlItemExporterTest(BaseItemExporterTest):
