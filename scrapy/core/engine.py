@@ -65,8 +65,10 @@ class ExecutionEngine(object):
                 self.close_domain, domain, reason='shutdown')
         if self._mainloop_task.running:
             self._mainloop_task.stop()
-        if reactor.running:
+        try:
             reactor.stop()
+        except RuntimeError: # raised if already stopped or in shutdown stage
+            pass
 
     def kill(self):
         """Forces shutdown without waiting for pending transfers to finish.
