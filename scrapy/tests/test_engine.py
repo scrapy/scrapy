@@ -68,6 +68,7 @@ class CrawlingSession(object):
             dispatcher.connect(self.request_received, signals.request_received)
             dispatcher.connect(self.response_downloaded, signals.response_downloaded)
 
+            scrapymanager.configure()
             scrapymanager.runonce(self.domain)
             self.port.stopListening()
             self.wasrun = True

@@ -65,6 +65,8 @@ class ExecutionEngine(object):
                 self.close_domain, domain, reason='shutdown')
         if self._mainloop_task.running:
             self._mainloop_task.stop()
+        if reactor.running:
+            reactor.stop()
 
     def kill(self):
         """Forces shutdown without waiting for pending transfers to finish.
@@ -299,9 +301,8 @@ class ExecutionEngine(object):
         stats.close_domain(domain, reason=reason)
         log.msg("Domain closed (%s)" % reason, domain=domain) 
         spiders.close_domain(domain)
-        if self.running:
-            self._mainloop()
-        elif not self.open_domains:
+        self._mainloop()
+        if not self.open_domains:
             send_catch_log(signal=signals.engine_stopped, sender=self.__class__)
 
 scrapyengine = ExecutionEngine()
