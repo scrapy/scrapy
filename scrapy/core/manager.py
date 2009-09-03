@@ -113,8 +113,6 @@ class ExecutionManager(object):
         """Stop the scrapy server, shutting down the execution engine"""
         self.interrupted = True
         scrapyengine.stop()
-        if self.control_reactor and reactor.running:
-            reactor.stop()
 
     def _signal_shutdown(self, signum, _):
         signame = signal_names[signum]
