@@ -5,7 +5,7 @@ DjangoItem
 ==========
 
 DjangoItems are a class of Item that gets its fields definition from a Django
-model, yo simply create a DjangoItem and specify to what Django model it
+model, you simply create a DjangoItem and specify to what Django model it
 relates to.
 
 Besides of getting the model fields defined on your Item, DjangoItem provides a
