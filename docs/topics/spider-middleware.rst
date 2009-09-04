@@ -55,55 +55,81 @@ Writing your own spider middleware
 Writing your own spider middleware is easy. Each middleware component is a
 single Python class that defines one or more of the following methods:
 
+.. class:: SpiderMiddleware
 
-.. method:: process_spider_input(response, spider)
+    .. method:: process_spider_input(response, spider)
 
-``response`` is a :class:`~scrapy.http.Response` object
-``spider`` is a :class:`~scrapy.spider.BaseSpider` object
+        This method is called for each response that goes through the spider
+        middleware and into the spider, for processing.
 
-This method is called for each request that goes through the spider middleware.
+        :meth:`process_spider_input` should return either ``None`` or an
+        iterable of :class:`~scrapy.http.Request` or :class:`~scrapy.item.Item`
+        objects.
 
-``process_spider_input()`` should return either ``None`` or an iterable of
-:class:`~scrapy.http.Response` or :class:`~scrapy.http.Item` objects.
+        If it returns ``None``, Scrapy will continue processing this response,
+        executing all other middlewares until, finally, the response is handled
+        to the spider for processing.
 
-If returns ``None``, Scrapy will continue processing this response, executing all
-other middlewares until, finally, the response is handled to the spider for
-processing.
+        If returns an iterable, Scrapy won't bother calling ANY other spider
+        middleware ``process_spider_input()`` and will return the iterable back
+        in the other direction for the ``process_spider_exception()`` and
+        ``process_spider_output()`` methods to hook it.
 
-If returns an iterable, Scrapy won't bother calling ANY other spider middleware
-``process_spider_input()`` and will return the iterable back in the other direction
-for the ``process_spider_exception()`` and ``process_spider_output()`` methods to hook it.
+        :param reponse: the response being processed
+        :type response: :class:`~scrapy.http.Response` object
 
-.. method:: process_spider_output(response, result, spider)
+        :param spider: the spider for which this response is intended
+        :type spider: :class:`~scrapy.spider.BaseSpider` object
 
-``response`` is a :class:`~scrapy.http.Response` object
-``result`` is an iterable of :class:`~scrapy.http.Request` or :class:`~scrapy.item.Item` objects
-``spider`` is a :class:`~scrapy.item.BaseSpider` object
 
-This method is called with the results that are returned from the Spider, after
-it has processed the response.
+    .. method:: process_spider_output(response, result, spider)
 
-``process_spider_output()`` must return an iterable of :class:`~scrapy.http.Request`
-or :class:`~scrapy.item.Item` objects.
+        This method is called with the results returned from the Spider, after
+        it has processed the response.
+     
+        :meth:`process_spider_output` must return an iterable of
+        :class:`~scrapy.http.Request` or :class:`~scrapy.item.Item` objects.
 
-.. method:: process_spider_exception(request, exception, spider)
+        :param response: the response which generated this output from the
+          spider
+        :type response: class:`~scrapy.http.Response` object
 
-``request`` is a :class:`~scrapy.http.Request` object.
-``exception`` is an Exception object
-``spider`` is a BaseSpider object
+        :param result: the result returned by the spider
+        :type result: an iterable of :class:`~scrapy.http.Request` or
+          :class:`~scrapy.item.Item` objects
 
-Scrapy calls ``process_spider_exception()`` when a spider or ``process_spider_input()``
-(from a spider middleware) raises an exception.
+        :param spider: the spider whose result is being processed
+        :type spider: :class:`~scrapy.item.BaseSpider` object
 
-``process_spider_exception()`` should return either ``None`` or an iterable of
-:class:`~scrapy.http.Response` or :class:`~scrapy.item.Item` objects.
 
-If it returns ``None``, Scrapy will continue processing this exception,
-executing any other ``process_spider_exception()`` in the middleware pipeline, until
-no middleware is left and the default exception handling kicks in.
+    .. method:: process_spider_exception(response, exception, spider)
 
-If it returns an iterable the ``process_spider_output()`` pipeline kicks in, and no
-other ``process_spider_exception()`` will be called.
+        This method is called when when a spider or :meth:process_spider_input:
+        method (from other spider middleware) raises an exception.
+
+        :meth:`process_spider_exception` should return either ``None`` or an
+        iterable of :class:`~scrapy.http.Response` or
+        :class:`~scrapy.item.Item` objects.
+
+        If it returns ``None``, Scrapy will continue processing this exception,
+        executing any other :meth:`process_spider_exception` in the following
+        middleware components, until no middleware components are left and the
+        exception reaches the engine (where it's logged and discarded).
+
+        If it returns an iterable the :meth:`process_spider_output` pipeline
+        kicks in, and no other :meth:`process_spider_exception` will be called.
+
+        :param response: the response being processed when the exception was
+          raised
+        :type response: :class:`~scrapy.http.Response` object
+
+        :param exception: the exception raised
+        :type exception: `Exception`_ object
+
+        :param spider: the spider which raised the exception
+        :type spider: :class:`scrapy.spider.BaseSpider` object
+
+.. _Exception: http://docs.python.org/library/exceptions.html#exceptions.Exception
 
 
 .. _topics-spider-middleware-ref:
