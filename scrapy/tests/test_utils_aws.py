@@ -1,8 +1,9 @@
 from unittest import TestCase, main
-from scrapy.contrib import aws
+
+from scrapy.utils import aws
 from scrapy.http import Request
 
-# keys are provided by amazon developer guide at
+# just some random keys. keys are provided by amazon developer guide at
 # http://s3.amazonaws.com/awsdocs/S3/20060301/s3-dg-20060301.pdf
 # and the tests described here are the examples from that manual
 
@@ -101,8 +102,6 @@ class ScrapyAWSTest(TestCase):
         aws.sign_request(req, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
         self.assertEqual(req.headers['Authorization'], \
                 'AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI=')
-
-
 
 
 if __name__ == '__main__':
