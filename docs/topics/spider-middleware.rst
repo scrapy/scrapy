@@ -214,6 +214,16 @@ OffsiteMiddleware
    Spider can add more domains to exclude using 
    :attr:`~scrapy.spider.BaseSpider.extra_domain_names` attribute.
 
+RefererMiddleware
+-----------------
+
+.. module:: scrapy.contrib.spidermiddleware.referer
+   :synopsis: Referer Spider Middleware
+
+.. class:: RefererMiddleware
+
+   Populates Request referer field, based on the Response which originated it.
+
 RequestLimitMiddleware
 ----------------------
 

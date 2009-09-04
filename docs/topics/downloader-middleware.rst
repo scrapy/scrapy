@@ -142,6 +142,16 @@ middleware, see the :ref:`downloader middleware usage guide
 For a list of the components enabled by default (and their orders) see the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting.
 
+CookiesMiddleware
+-----------------
+
+.. module:: scrapy.contrib.downloadermiddleware.cookies
+   :synopsis: Cookies Downloader Middleware
+
+.. class:: CookiesMiddleware
+
+   This middleware enables working with sites that need cookies.
+   
 DefaultHeadersMiddleware
 ------------------------
 
@@ -199,16 +209,73 @@ HttpCacheMiddleware
     The :class:`HttpCacheMiddleware` can be configured through the following
     settings (see the settings documentation for more info):
 
-        * :setting:`HTTPCACHE_DIR` - this one actually enables the cache besides
-          settings the cache dir
-        * :setting:`HTTPCACHE_IGNORE_MISSING` - ignoring missing requests instead
-          of downloading them
-        * :setting:`HTTPCACHE_SECTORIZE` - split HTTP cache in several directories
-          (for performance reasons)
-        * :setting:`HTTPCACHE_EXPIRATION_SECS` - how many secs until the cache is
-          considered out of date
+    * :setting:`HTTPCACHE_DIR` - this one actually enables the cache besides
+      settings the cache dir
+    * :setting:`HTTPCACHE_IGNORE_MISSING` - ignoring missing requests instead
+      of downloading them
+    * :setting:`HTTPCACHE_SECTORIZE` - split HTTP cache in several directories
+      (for performance reasons)
+    * :setting:`HTTPCACHE_EXPIRATION_SECS` - how many secs until the cache is
+      considered out of date
 
 .. _topics-dlmw-robots:
+
+HttpCompressionMiddleware
+-------------------------
+
+.. module:: scrapy.contrib.downloadermiddleware.httpcompression
+   :synopsis: Http Compression Middleware
+
+.. class:: HttpCompressionMiddleware 
+
+   This middleware allows compressed (gzip, deflate) traffic to be
+   sent/received from web sites.
+
+RedirectMiddleware
+-------------------
+
+.. module:: scrapy.contrib.downloadermiddleware.redirect
+   :synopsis: Redirection Middleware
+
+.. class:: RedirectMiddleware
+
+   This middlware handles redirection of requests based on response status and
+   meta-refresh html tag.
+
+   The :class:`RedirectMiddleware` can be configured through the following
+   settings (see the settings documentation for more info):
+
+   * :setting:`REDIRECT_MAX_METAREFRESH_DELAY` - Maximum meta-refresh delay that a page is allowed to have for redirection.
+   * :setting:`REDIRECT_MAX_TIMES` - Maximum number of redirects to perform on a request.
+   * :setting:`REDIRECT_PRIORITY_ADJUST` - Adjusts the redirected request priority by this amount.
+
+RetryMiddleware
+---------------
+
+.. module:: scrapy.contrib.downloadermiddleware.retry
+   :synopsis: Retry Middleware
+
+.. class:: RetryMiddleware
+
+   A middlware to retry failed requests that are potentially caused by
+   temporary problems such as a connection timeout or HTTP 500 error.
+
+   Failed pages are collected on the scraping process and rescheduled at the
+   end, once the spider has finished crawling all regular (non failed) pages.
+   Once there is no more failed pages to retry this middleware sends a signal
+   (retry_complete), so other extensions could connect to that signal.
+
+   The :class:`RetryMiddleware` can be configured through the following
+   settings (see the settings documentation for more info):
+
+   * :setting:`RETRY_TIMES` - how many times to retry a failed page
+   * :setting:`RETRY_HTTP_CODES` - which HTTP response codes to retry
+
+   About HTTP errors to consider:
+
+   You may want to remove 400 from RETRY_HTTP_CODES, if you stick to the
+   HTTP protocol. It's included by default because it's a common code used
+   to indicate server overload, which would be something we want to retry.
 
 RobotsTxtMiddleware
 -------------------
@@ -216,7 +283,7 @@ RobotsTxtMiddleware
 .. module:: scrapy.contrib.downloadermiddleware.robotstxt
    :synopsis: robots.txt middleware
 
-.. class:: RobotsTxtMiddleware:
+.. class:: RobotsTxtMiddleware
 
     This middleware filters out requests forbidden by the robots.txt exclusion
     standard.
@@ -229,3 +296,31 @@ RobotsTxtMiddleware
        if they were requested before the robots.txt file was downloaded. This
        is a known limitation of the current robots.txt middleware and will
        be fixed in the future.
+
+DownloaderStats
+---------------
+
+.. module:: scrapy.contrib.downloadermiddleware.stats
+   :synopsis: Downloader Stats Middleware
+
+.. class:: DownloaderStats
+
+   Middleware that store stats of all requests, responses and exceptions that
+   pass through it.
+
+   To use this middleware you must enable the :setting:`DOWNLOADER_STATS`
+   setting.
+
+UserAgentMiddleware
+-------------------
+
+.. module:: scrapy.contrib.downloadermiddleware.useragent
+   :synopsis: User Agent Middleware
+
+.. class:: UserAgentMiddleware
+
+   Middleware that allows spiders to override the default user agent.
+   
+   In order for a spider to override the default user agent, its `user_agent`
+   attribute must be set.
+
