@@ -693,18 +693,6 @@ Scope: ``scrapy.contrib.memusage``
 The maximum amount of memory to allow (in megabytes) before sending a warning
 email notifying about it. If zero, no warning will be produced.
 
-.. setting:: MYSQL_CONNECTION_SETTINGS
-
-MYSQL_CONNECTION_SETTINGS
--------------------------
-
-Default: ``{}``
-
-Scope: ``scrapy.utils.db.mysql_connect``
-
-Settings to use for MySQL connections performed through
-``scrapy.utils.db.mysql_connect``
-
 .. setting:: NEWSPIDER_MODULE
 
 NEWSPIDER_MODULE

@@ -6,7 +6,7 @@ import cPickle as pickle
 from datetime import datetime
 
 from scrapy.stats.collector import StatsCollector
-from scrapy.utils.db import mysql_connect
+from scrapy.utils.mysql import mysql_connect
 from scrapy.conf import settings
 
 class MysqlStatsCollector(StatsCollector):
