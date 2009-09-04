@@ -243,21 +243,6 @@ RequestLimitMiddleware
         upper limit for the amount of requests that can be scheduled per
         domain. Can be set per spider using ``requests_queue_size`` attribute.
 
-RestrictMiddleware
-------------------
-
-.. module:: scrapy.contrib.spidermiddleware.restrict
-   :synopsis: Restrict Spider Middleware
-
-.. class:: RestrictMiddleware 
-
-   Restricts crawling to fixed set of particular URLs.
-
-   The :class:`RestrictMiddleware` can be configured through the following
-   settings (see the settings documentation for more info):
-
-      * :setting:`RESTRICT_TO_URLS` - Set of URLs allowed to crawl.
-
 UrlFilterMiddleware
 -------------------
 

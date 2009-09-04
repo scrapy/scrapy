@@ -858,7 +858,6 @@ Default::
         'scrapy.contrib.spidermiddleware.httperror.HttpErrorMiddleware': 50,
         'scrapy.contrib.itemsampler.ItemSamplerMiddleware': 100,
         'scrapy.contrib.spidermiddleware.requestlimit.RequestLimitMiddleware': 200,
-        'scrapy.contrib.spidermiddleware.restrict.RestrictMiddleware': 300,
         'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware': 500,
         'scrapy.contrib.spidermiddleware.referer.RefererMiddleware': 700,
         'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware': 800,
