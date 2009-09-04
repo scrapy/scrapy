@@ -31,11 +31,12 @@ class RobotsTxtMiddleware(object):
 
     def process_request(self, request, spider):
         useragent = self._useragents[spider]
-        rp = self.robot_parser(request.url, spider)
+        rp = self.robot_parser(request, spider)
         if rp and not rp.can_fetch(useragent, request.url):
             raise IgnoreRequest("URL forbidden by robots.txt: %s" % request.url)
 
-    def robot_parser(self, url, spider):
+    def robot_parser(self, request, spider):
+        url = urlparse_cached(request)
         netloc = url.netloc
         if netloc not in self._parsers:
             self._parsers[netloc] = None
