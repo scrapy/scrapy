@@ -62,7 +62,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware': 700,
     'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 800,
     'scrapy.contrib.downloadermiddleware.stats.DownloaderStats': 850,
-    'scrapy.contrib.downloadermiddleware.cache.HttpCacheMiddleware': 900,
+    'scrapy.contrib.downloadermiddleware.httpcache.HttpCacheMiddleware': 900,
     # Downloader side
 }
 
