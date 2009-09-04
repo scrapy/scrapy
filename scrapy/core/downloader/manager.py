@@ -42,6 +42,7 @@ class SiteInfo(object):
         return self.max_concurrent_requests - len(self.transferring)
 
     def needs_backout(self):
+        # use self.active to include requests in the downloader middleware
         return len(self.active) > 2 * self.max_concurrent_requests
 
 
