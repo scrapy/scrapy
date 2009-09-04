@@ -66,14 +66,15 @@ single Python class that defines one or more of the following methods:
         iterable of :class:`~scrapy.http.Request` or :class:`~scrapy.item.Item`
         objects.
 
-        If it returns ``None``, Scrapy will continue processing this response,
+        If returns ``None``, Scrapy will continue processing this response,
         executing all other middlewares until, finally, the response is handled
         to the spider for processing.
 
-        If returns an iterable, Scrapy won't bother calling ANY other spider
-        middleware ``process_spider_input()`` and will return the iterable back
-        in the other direction for the ``process_spider_exception()`` and
-        ``process_spider_output()`` methods to hook it.
+        If returns an iterable, Scrapy won't bother calling any other spider
+        middleware :meth:`process_spider_input` and will return the iterable
+        back in the other direction for the :meth:`process_spider_output` to
+        process it, or the :meth:`process_spider_exception` if it raised an
+        exception.
 
         :param reponse: the response being processed
         :type response: :class:`~scrapy.http.Response` object
