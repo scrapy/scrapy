@@ -29,7 +29,7 @@ class XPathSelector(object_ref):
             self.doc = Libxml2Document(response, factory=self._get_libxml2_doc)
             self.xmlNode = self.doc.xmlDoc
         elif text:
-            response = TextResponse(url=None, body=unicode_to_str(text), \
+            response = TextResponse(url='about:blank', body=unicode_to_str(text), \
                 encoding='utf-8')
             self.doc = Libxml2Document(response, factory=self._get_libxml2_doc)
             self.xmlNode = self.doc.xmlDoc

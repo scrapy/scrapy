@@ -24,6 +24,17 @@ class TextResponse(Response):
         self._body_inferred_encoding = None
         super(TextResponse, self).__init__(url, status, headers, body, meta, flags)
 
+    def _get_url(self):
+        return self._url
+
+    def _set_url(self, url):
+        if isinstance(url, unicode):
+            self._url = url.encode(self.encoding)
+        else:
+            super(TextResponse, self)._set_url(url)
+
+    url = property(_get_url, _set_url)
+
     def _set_body(self, body):
         if isinstance(body, unicode):
             if self._encoding is None:
