@@ -54,80 +54,96 @@ Writing your own downloader middleware
 Writing your own downloader middleware is easy. Each middleware component is a
 single Python class that defines one or more of the following methods:
 
+.. module:: scrapy.contrib.downloadermiddleware
 
-.. method:: process_request(request, spider)
+.. class:: DownloaderMiddleware
 
-``request`` is a :class:`~scrapy.http.Request` object
-``spider`` is a :class:`~scrapy.spider.BaseSpider` object
+   .. method:: process_request(request, spider)
 
-This method is called for each request that goes through the download
-middleware.
+      This method is called for each request that goes through the download
+      middleware.
 
-``process_request()`` should return either ``None``, a
-:class:`~scrapy.http.Response` object, or a :class:`~scrapy.http.Request`
-object.
+      :meth:`process_request` should return either ``None``, a
+      :class:`~scrapy.http.Response` object, or a :class:`~scrapy.http.Request`
+      object.
 
-If returns ``None``, Scrapy will continue processing this request, executing all
-other middlewares until, finally, the appropriate downloader handler is called
-the request performed (and its response downloaded).
+      If returns ``None``, Scrapy will continue processing this request, executing all
+      other middlewares until, finally, the appropriate downloader handler is called
+      the request performed (and its response downloaded).
 
-If returns a Response object, Scrapy won't bother calling ANY other request or
-exception middleware, or the appropriate download function; it'll return that
-Response. Response middleware is always called on every response.
+      If returns a :class:`~scrapy.http.Response` object, Scrapy won't bother
+      calling ANY other request or exception middleware, or the appropriate
+      download function; it'll return that Response. Response middleware is
+      always called on every response.
 
-If returns a :class:`~scrapy.http.Request` object, the returned request will be
-re-scheduled (in the Scheduler) to be downloaded in the future. The callback of
-the original request will always be called. If the new request has a callback
-it will be called with the response downloaded, and the output of that callback
-will then be passed to the original callback. If the new request doesn't have a
-callback, the response downloaded will be just passed to the original request
-callback.
+      If returns a :class:`~scrapy.http.Request` object, the returned request will be
+      re-scheduled (in the Scheduler) to be downloaded in the future. The callback of
+      the original request will always be called. If the new request has a callback
+      it will be called with the response downloaded, and the output of that callback
+      will then be passed to the original callback. If the new request doesn't have a
+      callback, the response downloaded will be just passed to the original request
+      callback.
 
-If returns an :exc:`~scrapy.core.exceptions.IgnoreRequest` exception, the
-entire request will be dropped completely and its callback never called.
+      If returns an :exc:`~scrapy.core.exceptions.IgnoreRequest` exception, the
+      entire request will be dropped completely and its callback never called.
 
+      :param request: the request being processed
+      :type request: :class:`~scrapy.http.Request` object
 
-.. method:: process_response(request, response, spider)
+      :param spider: the spider for which this request is intended
+      :type spider: :class:`~scrapy.spider.BaseSpider` object
 
-``request`` is a :class:`~scrapy.http.Request` object
-``response`` is a :class:`~scrapy.http.Response` object
-``spider`` is a BaseSpider object
+   .. method:: process_response(request, response, spider)
 
-``process_response()`` should return a Response object or raise a
-:exc:`~scrapy.core.exceptions.IgnoreRequest` exception. 
+      meth:`process_response` should return a :class:`~scrapy.http.Response`
+      object or raise a :exc:`~scrapy.core.exceptions.IgnoreRequest` exception. 
 
-If returns a Response (it could be the same given response, or a brand-new one)
-that response will continue to be processed with the ``process_response()`` of
-the next middleware in the pipeline.
+      If returns a :class:`~scrapy.http.Response` (it could be the same given
+      response, or a brand-new one) that response will continue to be processed
+      with the :meth:`process_response` of the next middleware in the pipeline.
 
-If returns an :exc:`~scrapy.core.exceptions.IgnoreRequest` exception, the
-response will be dropped completely and its callback never called.
+      If returns an :exc:`~scrapy.core.exceptions.IgnoreRequest` exception, the
+      response will be dropped completely and its callback never called.
 
-.. method:: process_download_exception(request, exception, spider)
+      :param request: the request that originated the response
+      :type request: is a :class:`~scrapy.http.Request` object
 
-``request`` is a :class:`~scrapy.http.Request` object.
-``exception`` is an Exception object
-``spider`` is a BaseSpider object
+      :param reponse: the response being processed
+      :type response: :class:`~scrapy.http.Response` object
 
-Scrapy calls ``process_download_exception()`` when a download handler or a
-``process_request()`` (from a downloader middleware) raises an exception.
+      :param spider: the spider for which this response is intended
+      :type spider: :class:`~scrapy.spider.BaseSpider` object
 
-``process_download_exception()`` should return either ``None``,
-:class:`~scrapy.http.Response` or :class:`~scrapy.http.Request` object.
+   .. method:: process_download_exception(request, exception, spider)
 
-If it returns ``None``, Scrapy will continue processing this exception,
-executing any other exception middleware, until no middleware is left and
-the default exception handling kicks in.
+      Scrapy calls :meth:`process_download_exception` when a download handler
+      or a :meth:`process_request` (from a downloader middleware) raises an
+      exception.
 
-If it returns a :class:`~scrapy.http.Response` object, the response middleware
-kicks in, and won't bother calling any other exception middleware.
+      :meth:`process_download_exception` should return either ``None``,
+      :class:`~scrapy.http.Response` or :class:`~scrapy.http.Request` object.
 
-If it returns a :class:`~scrapy.http.Request` object, returned request is used
-to instruct a immediate redirection. Redirection is handled inside middleware
-scope, and the original request won't finish until redirected request is
-completed. This stop ``process_download_exception()`` middleware as returning Response
-would do.
+      If it returns ``None``, Scrapy will continue processing this exception,
+      executing any other exception middleware, until no middleware is left and
+      the default exception handling kicks in.
 
+      If it returns a :class:`~scrapy.http.Response` object, the response middleware
+      kicks in, and won't bother calling any other exception middleware.
+
+      If it returns a :class:`~scrapy.http.Request` object, returned request is
+      used to instruct a immediate redirection. Redirection is handled inside
+      middleware scope, and the original request won't finish until redirected
+      request is completed. This stop :meth:`process_download_exception`
+      middleware as returning Response would do.
+
+      :param request: the request that generated the exception
+      :type request: is a :class:`~scrapy.http.Request` object
+
+      :param exception: the raised exception
+      :type exception: a ``Exception`` object
+
+      :param spider: the spider for which this request is intended
+      :type spider: :class:`~scrapy.spider.BaseSpider` object
 
 .. _topics-downloader-middleware-ref:
 
