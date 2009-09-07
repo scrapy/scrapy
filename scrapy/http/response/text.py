@@ -29,6 +29,9 @@ class TextResponse(Response):
 
     def _set_url(self, url):
         if isinstance(url, unicode):
+            if self.encoding is None:
+                raise TypeError('Cannot convert unicode url - %s has no encoding' %
+                    type(self).__name__)
             self._url = url.encode(self.encoding)
         else:
             super(TextResponse, self)._set_url(url)
@@ -36,10 +39,11 @@ class TextResponse(Response):
     url = property(_get_url, _set_url)
 
     def _set_body(self, body):
+        self._body = ''
         if isinstance(body, unicode):
-            if self._encoding is None:
-                raise TypeError("To instantiate a %s with unicode body you " \
-                    "must specify the encoding" % self.__class__.__name__)
+            if self.encoding is None:
+                raise TypeError('Cannot convert unicode body - %s has no encoding' %
+                    type(self).__name__)
             self._body = body.encode(self._encoding)
         else:
             super(TextResponse, self)._set_body(body)

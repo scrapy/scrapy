@@ -49,9 +49,14 @@ class Request(object_ref):
         return self._url
 
     def _set_url(self, url):
-        if isinstance(url, basestring):
-            decoded_url = url if isinstance(url, unicode) else url.decode(self.encoding)
-            self._url = safe_url_string(decoded_url, self.encoding)
+        if isinstance(url, str):
+            self._url = safe_url_string(url)
+        elif isinstance(url, unicode):
+            if self.encoding is None:
+                raise TypeError('Cannot convert unicode url - %s has no encoding' %
+                    type(self).__name__)
+            unicode_url = url if isinstance(url, unicode) else url.decode(self.encoding)
+            self._url = safe_url_string(unicode_url, self.encoding)
         else:
             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
 
@@ -64,6 +69,9 @@ class Request(object_ref):
         if isinstance(body, str):
             self._body = body
         elif isinstance(body, unicode):
+            if self.encoding is None:
+                raise TypeError('Cannot convert unicode body - %s has no encoding' %
+                    type(self).__name__)
             self._body = body.encode(self.encoding)
         elif body is None:
             self._body = ''

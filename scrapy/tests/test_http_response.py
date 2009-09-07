@@ -138,6 +138,12 @@ class TextResponseTest(BaseResponseTest):
         self.assertEqual(r3.encoding, "latin1")
 
     def test_unicode_url(self):
+        # instantiate with unicode url without encoding
+        self.assertRaises(TypeError, self.response_class, u"http://www.example.com/")
+        # make sure urls are converted to str
+        resp = self.response_class(url=u"http://www.example.com/", encoding='utf-8')
+        assert isinstance(resp.url, str)
+
         resp = self.response_class(url=u"http://www.example.com/price/\xa3", encoding='utf-8')
         self.assertEqual(resp.url, 'http://www.example.com/price/\xc2\xa3')
         resp = self.response_class(url=u"http://www.example.com/price/\xa3", encoding='latin-1')
