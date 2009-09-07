@@ -34,6 +34,6 @@ class TestDownloaderStats(TestCase):
         self.assertEqual(stats.get_value('downloader/exception_count', \
             domain=self.spider.domain_name), 1)
 
-    def tearUp(self):
-        stats.close_domain(self.spider.domain_name)
+    def tearDown(self):
+        stats.close_domain(self.spider.domain_name, '')
 
