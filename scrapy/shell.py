@@ -120,21 +120,24 @@ class Shell(object):
         self._run_console()
 
     def _run_console(self):
-        try: # use IPython if available
-            import IPython
-            shell = IPython.Shell.IPShell(argv=[], user_ns=self.vars)
-            ip = shell.IP.getapi()
-            shell.mainloop()
-        except ImportError:
-            import code
-            try: # readline module is only available on unix systems
-                import readline
+        try:
+            try: # use IPython if available
+                import IPython
+                shell = IPython.Shell.IPShell(argv=[], user_ns=self.vars)
+                ip = shell.IP.getapi()
+                shell.mainloop()
             except ImportError:
-                pass
-            else:
-                import rlcompleter
-                readline.parse_and_bind("tab:complete")
-            code.interact(local=self.vars)
+                import code
+                try: # readline module is only available on unix systems
+                    import readline
+                except ImportError:
+                    pass
+                else:
+                    import rlcompleter
+                    readline.parse_and_bind("tab:complete")
+                code.interact(local=self.vars)
+        except SystemExit: # raised when using exit() in python code.interact
+            pass
 
     def _console_thread(self, url=None):
         self.populate_vars()
