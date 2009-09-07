@@ -55,6 +55,8 @@ Writing your own spider middleware
 Writing your own spider middleware is easy. Each middleware component is a
 single Python class that defines one or more of the following methods:
 
+.. module:: scrapy.contrib.spidermiddleware
+
 .. class:: SpiderMiddleware
 
     .. method:: process_spider_input(response, spider)
