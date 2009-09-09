@@ -40,7 +40,6 @@ by a string: the full Python path to the extension's class name. For example::
         'scrapy.management.telnet.TelnetConsole': 500,
         'scrapy.contrib.webconsole.enginestatus.EngineStatus': 500,
         'scrapy.contrib.webconsole.stats.StatsDump': 500,
-        'scrapy.contrib.debug.StackTraceDump': 500,
     }
 
 
@@ -112,15 +111,10 @@ everytime a domain/spider is opened and closed::
             log.msg("closed domain %s" % domain)
 
 
-.. _topics-extensions-ref:
-
-Built-in extensions reference
-=============================
-
 .. _topics-extensions-ref-manager:
 
 Extension manager
------------------
+=================
 
 .. module:: scrapy.extension
    :synopsis: The extension manager
@@ -178,6 +172,12 @@ how you :ref:`configure the downloader middlewares
     .. method:: reload()
 
         Reload the available extensions. See :meth:`load`.
+
+
+.. _topics-extensions-ref:
+
+Built-in extensions reference
+=============================
 
 General purpose extensions
 --------------------------
@@ -312,25 +312,6 @@ that amount if items and those items are passed by the item pipeline, the
 domain will be closed with the reason ``closedomain_itempassed``. If zero (or
 non set) domains won't be closed by number of passed items.
 
-Stack trace dump extension
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. module:: scrapy.contrib.debug
-   :synopsis: Extensions for debugging Scrapy
-
-.. class:: scrapy.contrib.debug.StackTraceDump
-
-Adds a `SIGUSR1`_ signal handler which dumps the stack trace of a runnning
-Scrapy process when a ``SIGUSR1`` signal is catched. After the stack trace is
-dumped, the Scrapy process continues to run normally.
-
-The stack trace is sent to standard output, or to the Scrapy log file if
-:setting:`LOG_STDOUT` is enabled.
-
-This extension only works on POSIX-compliant platforms (ie. not Windows).
-
-.. _SIGUSR1: http://en.wikipedia.org/wiki/SIGUSR1_and_SIGUSR2
-
 StatsMailer extension
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -343,6 +324,7 @@ This simple extension can be used to send a notification email every time a
 domain has finished scraping, including the Scrapy stats collected. The email
 will be sent to all recipients specified in the :setting:`STATSMAILER_RCPTS`
 setting.
+
 
 Web console extensions
 ----------------------
@@ -405,3 +387,40 @@ Stats collector dump WC extension
 
 Display the stats collected so far by the stats collector.
 
+
+.. module:: scrapy.contrib.debug
+   :synopsis: Extensions for debugging Scrapy
+
+Debugging extensions
+--------------------
+
+Stack trace dump extension
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. class:: scrapy.contrib.debug.StackTraceDump
+
+Dumps the stack trace of a runnning Scrapy process when a `SIGUSR2`_ signal is
+received. After the stack trace is dumped, the Scrapy process continues running
+normally.
+
+The stack trace is sent to standard output.
+
+This extension only works on POSIX-compliant platforms (ie. not Windows).
+
+.. _SIGUSR2: http://en.wikipedia.org/wiki/SIGUSR1_and_SIGUSR2
+
+Debugger extension
+~~~~~~~~~~~~~~~~~~
+
+.. class:: scrapy.contrib.debug.Debugger
+
+Invokes a `Python debugger`_ inside a running Scrapy process when a `SIGUSR2`_
+signal is received. After the debugger is exited, the Scrapy process continues
+running normally.
+
+For more info see `Debugging in Python`.
+
+This extension only works on POSIX-compliant platforms (ie. not Windows).
+
+.. _Python debugger: http://docs.python.org/library/pdb.html
+.. _Debugging in Python: http://www.ferg.org/papers/debugging_in_python.html

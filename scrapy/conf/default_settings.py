@@ -84,7 +84,6 @@ EXTENSIONS_BASE = {
     'scrapy.contrib.memusage.MemoryUsage': 0,
     'scrapy.contrib.memdebug.MemoryDebugger': 0,
     'scrapy.contrib.closedomain.CloseDomain': 0,
-    'scrapy.contrib.debug.StackTraceDump': 0,
 }
 
 GROUPSETTINGS_ENABLED = False
