@@ -96,3 +96,20 @@ Try changing the default `Accept-Language`_ request header by overriding the
 :setting:`DEFAULT_REQUEST_HEADERS` setting.
 
 .. _Accept-Language: http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.4
+
+Where can I find some example code using Scrapy?
+------------------------------------------------
+
+Scrapy comes with a built-in, fully functional project to scrape the `Google
+Directory`_. You can find it in the ``examples/googledir`` directory of the
+Scrapy distribution.
+
+Also, there is a public repository of spiders called `Community Spiders`_.
+
+Finally, you can find some example code for performing not-so-trivial tasks in
+the `Scrapy Recipes`_ page.
+
+.. _Google Directory: http://www.google.com/dirhp
+.. _Community Spiders: http://dev.scrapy.org/wiki/CommunitySpiders
+.. _Scrapy Recipes: http://dev.scrapy.org/wiki/ScrapyRecipes
+
