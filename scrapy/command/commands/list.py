@@ -9,4 +9,4 @@ class Command(ScrapyCommand):
         return "List available spiders"
 
     def run(self, args, opts):
-        print "\n".join(spiders.asdict().keys())
+        print "\n".join(spiders.list())

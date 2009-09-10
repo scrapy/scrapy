@@ -35,7 +35,7 @@ class Spiderctl(object):
         if wc_request.args:
             changes = self.webconsole_control(wc_request)
 
-        enabled_domains = spiders.asdict().keys()
+        enabled_domains = spiders.list()
         self.scheduled = scrapyengine.domain_scheduler.pending_domains
         self.idle = [d for d in enabled_domains if d not in self.scheduled
                                                         and d not in self.running
@@ -139,7 +139,7 @@ class Spiderctl(object):
 
     def webconsole_control(self, wc_request):
         args = wc_request.args
-        enabled_domains = spiders.asdict().keys()
+        enabled_domains = spiders.list()
         s = "<hr />\n"
 
         if "stop_running_domains" in args:

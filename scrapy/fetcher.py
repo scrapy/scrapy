@@ -43,7 +43,7 @@ def get_or_create_spider(url):
     # XXX: hack to allow downloading pages from unknown domains
     spider = spiders.fromurl(url)
     if not spider:
-        domain = str(urlparse.urlparse(url).hostname or spiders.default_domain)
+        domain = urlparse.urlparse(url).hostname
         spider = BaseSpider()
         spider.domain_name = domain
         spiders.add_spider(spider)

@@ -37,8 +37,6 @@ DEFAULT_REQUEST_HEADERS = {
     'Accept-Language': 'en',
 }
 
-DEFAULT_SPIDER = None
-
 DEPTH_LIMIT = 0
 DEPTH_STATS = True
 

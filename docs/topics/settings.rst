@@ -339,17 +339,6 @@ Default::
 The default headers used for Scrapy HTTP Requests. They're populated in the
 :class:`~scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware`.
 
-.. setting:: DEFAULT_SPIDER
-
-DEFAULT_SPIDER
---------------
-
-Default: ``None``
-
-The default spider class that will be instantiated for URLs for which no
-specific spider is found. This class must have a constructor which receives as
-only parameter the domain name of the given URL.
-
 .. setting:: DEPTH_LIMIT
 
 DEPTH_LIMIT
