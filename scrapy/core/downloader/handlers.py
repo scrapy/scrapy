@@ -18,11 +18,12 @@ from scrapy.core.exceptions import NotSupported
 from scrapy.utils.defer import defer_succeed
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.signal import send_catch_log
+from scrapy.utils.misc import load_object
 from scrapy.core.downloader.responsetypes import responsetypes
-from scrapy.core.downloader.webclient import ScrapyHTTPClientFactory
 from scrapy.conf import settings
 
 
+HTTPClientFactory = load_object(settings['DOWNLOADER_HTTPCLIENTFACTORY'])
 default_timeout = settings.getint('DOWNLOAD_TIMEOUT')
 ssl_supported = 'ssl' in optional_features
 
@@ -44,7 +45,7 @@ def create_factory(request, spider):
     """Return HTTPClientFactory for the given Request"""
     url = urlparse.urldefrag(request.url)[0]
     timeout = getattr(spider, "download_timeout", None) or default_timeout
-    factory = ScrapyHTTPClientFactory.from_request(request, timeout)
+    factory = HTTPClientFactory.from_request(request, timeout)
 
     def _create_response(body):
         body = body or ''
