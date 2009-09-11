@@ -170,7 +170,7 @@ class ImagesPipeline(MediaPipeline):
     MIN_WIDTH = settings.getint('IMAGES_MIN_WIDTH', 0)
     MIN_HEIGHT = settings.getint('IMAGES_MIN_HEIGHT', 0)
     EXPIRES = settings.getint('IMAGES_EXPIRES', 90)
-    THUMBS = settings.getlist('IMAGES_THUMBS')
+    THUMBS = settings['IMAGES_THUMBS']
     STORE_SCHEMES = {
             '': FSImagesStore,
             'file': FSImagesStore,
@@ -278,7 +278,7 @@ class ImagesPipeline(MediaPipeline):
         image, buf = self.convert_image(orig_image)
         yield key, image, buf
 
-        for thumb_id, size in self.THUMBS or []:
+        for thumb_id, size in self.THUMBS.iteritems() or []:
             thumb_key = self.thumb_key(request.url, thumb_id)
             thumb_image, thumb_buf = self.convert_image(image, size)
             yield thumb_key, thumb_image, thumb_buf

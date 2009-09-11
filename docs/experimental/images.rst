@@ -188,6 +188,38 @@ For example::
 
    IMAGES_STORE = '/path/to/valid/dir'
 
+Images Storage
+==============
+
+File system is currently the only officially supported storage, but there is
+also (undocumented) support for `Amazon S3`_.
+
+.. _Amazon S3: https://s3.amazonaws.com/
+
+File system storage
+-------------------
+
+The images are stored in files (one per image), using a `SHA1 hash`_ of their
+URLs for the file names. 
+
+For example, the following image URL::
+
+    http://www.example.com/image.jpg
+
+Whose `SHA1 hash` is::
+
+    3afec3b4765f8f0a07b78f98c07b83f013567a0a
+
+Will be downloaded and stored in the following file::
+
+   <IMAGES_STORE>/full/3afec3b4765f8f0a07b78f98c07b83f013567a0a.jpg
+
+Where:
+
+* ``<IMAGES_STORE>`` is the directory defined in :setting:`IMAGES_STORE` setting
+
+* ``full`` is a sub-directory to separate full images from thumbnails (if
+  used). For more info see :ref:`topics-images-thumbnails`.
 
 Additional features
 ===================
@@ -203,6 +235,8 @@ specifies the delay in number of days::
 
     # 90 days of delay for image expiration
     IMAGES_EXPIRES = 90
+
+.. _topics-images-thumbnails:
 
 Thumbnail generation
 --------------------
@@ -225,24 +259,24 @@ For example::
 When you use this feature, the Images Pipeline will create thumbnails of the
 each specified size with this format::
 
-    <IMAGES_STORE>/thumbs/<image_id>/<size_name>.jpg
+    <IMAGES_STORE>/thumbs/<size_name>/<image_id>.jpg
   
 Where:
 
+* ``<size_name>`` is the one specified in the :setting:`IMAGES_THUMBS`
+  dictionary keys (``small``, ``big``, etc)
+
 * ``<image_id>`` is the `SHA1 hash`_ of the image url
-* ``<size_name>`` is the one specified in the ``THUMBS`` attribute
 
 .. _SHA1 hash: http://en.wikipedia.org/wiki/SHA_hash_functions
 
-Example with using ``50`` and ``110`` thumbnail names::
+Example of image files stored using ``small`` and ``big`` thumbnail names::
 
-   <IMAGES_STORE>/thumbs/63bbfea82b8880ed33cdb762aa11fab722a90a24/50.jpg
-   <IMAGES_STORE>/thumbs/63bbfea82b8880ed33cdb762aa11fab722a90a24/110.jpg
+   <IMAGES_STORE>/full/63bbfea82b8880ed33cdb762aa11fab722a90a24.jpg
+   <IMAGES_STORE>/thumbs/small/63bbfea82b8880ed33cdb762aa11fab722a90a24.jpg
+   <IMAGES_STORE>/thumbs/big/63bbfea82b8880ed33cdb762aa11fab722a90a24.jpg
 
-Example with using ``small`` and ``big`` thumbnail names::
-
-   <IMAGES_STORE>/thumbs/63bbfea82b8880ed33cdb762aa11fab722a90a24/small.jpg
-   <IMAGES_STORE>/thumbs/63bbfea82b8880ed33cdb762aa11fab722a90a24/big.jpg
+The first one is the full image, as downloaded from the site.
 
 Filtering out small images
 --------------------------
@@ -258,4 +292,8 @@ For example::
 
    IMAGES_MIN_HEIGHT = 110
    IMAGES_MIN_WIDTH = 110
+
+Note: this size constraints only doesn't affect thumbnail generation at all.
+
+By default, there are no size constrains, so all images are precessed.
 
