@@ -220,7 +220,7 @@ class ImagesPipeline(MediaPipeline):
             log.msg(str(ex), level=log.WARNING, domain=info.domain)
             raise ex
 
-        return {'scraped_url': request.url, 'path': key, 'checksum': checksum}
+        return {'url': request.url, 'path': key, 'checksum': checksum}
 
     def media_failed(self, failure, request, info):
         referer = request.headers.get('Referer')
@@ -249,7 +249,7 @@ class ImagesPipeline(MediaPipeline):
             self.inc_stats(info.domain, 'uptodate')
 
             checksum = result.get('checksum', None)
-            return {'scraped_url': request.url, 'path': key, 'checksum': checksum}
+            return {'url': request.url, 'path': key, 'checksum': checksum}
 
         key = self.image_key(request.url)
         dfd = defer.maybeDeferred(self.store.stat_image, key, info)
