@@ -4,8 +4,8 @@
 Scheduler middleware
 ====================
 
-The scheduler middleware is a framework of hooks in the Scrapy's scheduling
-mechanism where you can plug custom functionality to process request being
+The scheduler middleware is a framework of hooks in the Scrapy scheduling
+mechanism where you can plug custom functionality to process requests being
 enqueued.
 
 Activating a scheduler middleware
@@ -58,6 +58,9 @@ single Python class that defines one or more of the following methods:
 
    .. method:: enqueue_request(domain, request)
 
+      Process the given request which is being enqueued. This method can return
+      None to avoid the request from being scheduled.
+
       :meth:`enqueue_request` should return either ``None``, a
       :class:`~scrapy.http.Response` object or a ``Deferred``.
 
@@ -66,16 +69,6 @@ single Python class that defines one or more of the following methods:
 
       :param requests: the request to be enqueued
       :type request: :class:`~scrapy.http.Request` object
-
-   .. method:: open_domain(domain)
-
-      :param domain: the domain being opened
-      :type domain: string
-
-   .. method:: close_domain(domain)
-
-      :param domain: the domain being closed
-      :type domain: string
 
 .. _topics-scheduler-middleware-ref:
 
@@ -101,6 +94,6 @@ DuplicatesFilterMiddleware
    The :class:`DuplicatesFilterMiddleware` can be configured through the following
    settings (see the settings documentation for more info):
 
-      * :setting:`DUPEFILTER_CLASS` - The class used to detect and filter
-        duplicate requests.
+      * :setting:`DUPEFILTER_CLASS` - The class that implements the duplicate
+        filtering policy.
 

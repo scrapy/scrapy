@@ -149,9 +149,6 @@ Extending Scrapy
 :doc:`topics/spider-middleware`
     Customize the input and output of your spiders.
 
-:doc:`experimental/scheduler-middleware`
-    Customize how pages are scheduled (warning: experimental doc).
-
 :doc:`topics/extensions`
     Add any custom functionality using :doc:`signals <topics/signals>` and the
     Scrapy API
