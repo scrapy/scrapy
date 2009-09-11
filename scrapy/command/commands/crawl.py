@@ -19,8 +19,6 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("--nopipeline", dest="nopipeline", action="store_true", \
-            help="disable scraped item pipeline")
         parser.add_option("-n", "--nofollow", dest="nofollow", action="store_true", \
             help="don't follow links (for use with URLs only)")
         parser.add_option("-c", "--callback", dest="callback", action="store", \
@@ -28,9 +26,6 @@ class Command(ScrapyCommand):
 
     def process_options(self, args, opts):
         ScrapyCommand.process_options(self, args, opts)
-        if opts.nopipeline:
-            settings.overrides['ITEM_PIPELINES'] = []
-
         if opts.nofollow:
             settings.overrides['CRAWLSPIDER_FOLLOW_LINKS'] = False
 
