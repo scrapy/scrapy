@@ -105,7 +105,7 @@ Here are the methods that you should override in your custom Images Pipeline:
       guaranteed to retain the same order of the requests returned from the
       :meth:`~get_media_requests` method.
         
-      Here's a typical an example value of ``results`` argumentt::
+      Here's a typical value of the ``results`` argument::
 
           [(True,
             {'checksum': '2b00042f7481c7b056c4b410d28f33cf',
