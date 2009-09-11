@@ -1,10 +1,6 @@
 from scrapy.command import ScrapyCommand
 from scrapy.core.manager import scrapymanager
 from scrapy.conf import settings
-from scrapy.utils.url import is_url
-from scrapy.spider import spiders
-from scrapy.http import Request
-from scrapy import log
 
 
 class Command(ScrapyCommand):
