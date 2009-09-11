@@ -21,3 +21,4 @@ it's properly merged) . Use at your own risk.
 
    images
    djangoitems
+   scheduler-middleware

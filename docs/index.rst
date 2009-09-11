@@ -138,7 +138,6 @@ Extending Scrapy
    topics/architecture
    topics/downloader-middleware
    topics/spider-middleware
-   topics/scheduler-middleware
    topics/extensions
 
 :doc:`topics/architecture`
