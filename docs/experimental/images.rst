@@ -59,9 +59,6 @@ this:
 
 .. setting:: IMAGES_STORE
 
-IMAGES_STORE setting
---------------------
-
 The first thing we need to do is tell the pipeline where to store the
 downloaded images, through the :setting:`IMAGES_STORE` setting::
 
