@@ -1,8 +1,8 @@
 .. _topics-images:
 
-==================
-Downloading Images
-==================
+=======================
+Downloading Item Images
+=======================
 
 .. currentmodule:: scrapy.contrib.pipeline.images
 
@@ -24,6 +24,11 @@ being scheduled for download, and connects those items that arrive containing
 the same image, to that queue. This avoids downloading the same image more than
 once when it's shared by several items.
 
+The `Python Imaging Library`_ is used for thumbnailing and normalizing images
+to JPEG/RGB format, so you need to install that library in order to use the
+images pipeline.
+
+.. _Python Imaging Library: http://www.pythonware.com/products/pil/
 
 Using the Images Pipeline
 =========================
@@ -44,78 +49,118 @@ this:
    until the images have finish downloading (or fail for some reason).
 
 4. When the images finish downloading (or fail for some reason) the images gets
-   another field populated with the data of the images downloaded, for example,
-   ``images``. This attribute is a list of dictionaries containing information
-   about the image downloaded, such as the downloaded path, and the original
-   scraped url. This images in the list of the ``images`` field retains the
-   same order of the original ``image_urls`` field, which is useful if you
-   decide to use the first image in the list as the primary image.
+   another field populated with the path of the images downloaded, for example,
+   ``image_paths``. This attribute is a list of dictionaries containing
+   information about the image downloaded, such as the downloaded path, and the
+   original scraped url. This images in the list of the ``image_paths`` field
+   would retain the same order of the original ``image_urls`` field, which is
+   useful if you decide to use the first image in the list as the primary
+   image.
 
-.. setting:: IMAGES_DIR
+.. setting:: IMAGES_STORE
+
+IMAGES_STORE setting
+--------------------
 
 The first thing we need to do is tell the pipeline where to store the
-downloaded images, by setting :setting:`IMAGES_DIR`::
+downloaded images, through the :setting:`IMAGES_STORE` setting::
 
-   IMAGES_DIR = '/path/to/valid/dir'
+   IMAGES_STORE = '/path/to/valid/dir'
 
 Then, as seen on the workflow, the pipeline will get the URLs of the images to
 download from the item. In order to do this, you must override the
 :meth:`~ImagesPipeline.get_media_requests` method and return a Request for each
 image URL::
 
-   def get_media_requests(self, item, info):
-       for image_url in item['image_urls']:
-           yield Request(image_url)
+    def get_media_requests(self, item, info):
+        for image_url in item['image_urls']:
+            yield Request(image_url)
 
-Those requests will be processed by the pipeline, and they have finished
-downloading the results will be sent to the
-:meth:`~ImagesPipeline.item_completed` method, as a list of dictionaries. Each
-dictionary will contain status and information about the download, and the list
-of dictionaries will retain the original order of the requests returned from
-the :meth:`~ImagesPipeline.get_media_requests` method::
+Those requests will be processed by the pipeline and, when they have finished
+downloading, the results will be sent to the
+:meth:`~ImagesPipeline.item_completed` method, as a list of 2-element tuples.
+Each tuple will contain ``(success, image_info_or_failure)`` where:
 
-   results = [(True, 'path#checksum'), ..., (False, Failure)]
+* ``success`` is a boolean which is ``True`` if the image was downloading
+  successfully or ``False`` if it failed for some reason
 
-There is one additional method: :meth:`~ImagesPipeline.item_completed` which
-must return the output value that will be sent to further item pipeline stages,
-so you must return (or drop) the item as in any pipeline.
+* ``image_info_or_error`` is a dict containing the following keys (if success
+  is ``True``) or a `Twisted Failure`_ if there was a problem.
 
-We will override it to store the resulting image paths (passed in results) back
-in the item::
+  * ``url`` - the url where the image was downloaded from. This is the url of
+    the request returned from the :meth:`~ImagesPipeline.get_media_requests`
+    method.
 
-   # XXX: improve this example and add a condition for dropping images
-   def item_completed(self, results, item, info):
-       item['image_paths'] = [result.split('#')[0] for succes, result in results if succes]
+  * ``path`` - the path (relative to :setting:`IMAGES_STORE`) where the image
+    was stored
 
-       return item
+  * ``checksum`` - a `MD5`_ hash of the image contents
 
-So, the complete example of our pipeline looks like this::
+.. _Twisted Failure: http://twistedmatrix.com/documents/8.2.0/api/twisted.python.failure.Failure.html
+.. _MD5: http://en.wikipedia.org/wiki/MD5
 
-   from scrapy.contrib.pipeline.images import ImagesPipeline
+The list of tuples received by :meth:`~ImagesPipeline.item_completed` is
+guaranteed to retain the same order of the requests returned from the
+:meth:`~ImagesPipeline.get_media_requests` method.
+  
+Here's a typical an example value of ``results`` argument::
 
-   # XXX: improve this example and add a condition for dropping images
+    [(True,
+      {'checksum': '2b00042f7481c7b056c4b410d28f33cf',
+       'path': '7d97e98f8af710c7e7fe703abc8f639e0ee507c4.jpg',
+       'url': 'http://www.example.com/images/product1.jpg'}),
+     (True,
+      {'checksum': 'b9628c4ab9b595f72f280b90c4fd093d',
+       'path': '1ca5879492b8fd606df1964ea3c1e2f4520f076f',
+       'url': 'http://www.example.com/images/product2.jpg'}),
+     (False,
+      Failure(...))]
 
-   class MyImagesPipeline(ImagesPipeline):
+The :meth:`~ImagesPipeline.item_completed` method must return the output that
+will be sent to further item pipeline stages, so you must return (or drop) the
+item, as you would in any pipeline.
 
-       def get_media_requests(self, item, info):
-           for image_url in item['image_urls']:
-               yield Request(image_url)
+Here is an example of :meth:`~ImagesPipeline.item_completed` method where we
+store the downloaded image paths (passed in results) in the ``image_paths``
+item field, and we drop the item if it doesn't contain any images::
 
-       def item_completed(self, results, item, info):
-           item['image_paths'] = [result.split('#')[0] for succes, result in results if succes]
+    from scrapy.core.exceptions import DropItem
 
-           return item
+    def item_completed(self, results, item, info):
+        image_paths = [info['path'] for success, info in results if success]
+        if not image_paths:
+            raise DropItem("Item contains no images")
+        item['image_paths'] = image_paths
+        return item
+
+So, the complete example of our pipeline would look like this::
+
+    from scrapy.contrib.pipeline.images import ImagesPipeline
+    from scrapy.core.exceptions import DropItem
+
+    class MyImagesPipeline(ImagesPipeline):
+
+        def get_media_requests(self, item, info):
+            for image_url in item['image_urls']:
+                yield Request(image_url)
+
+        def item_completed(self, results, item, info):
+            image_paths = [info['path'] for success, info in results if success]
+            if not image_paths:
+                raise DropItem("Item contains no images")
+            item['image_paths'] = image_paths
+            return item
 
 .. _topics-images-expiration:
 
 Image expiration
------------------
+----------------
 
 .. setting:: IMAGES_EXPIRES
 
 The Image Pipeline avoids downloading images that were downloaded recently. To
-adjust this delay use the :setting:`IMAGES_EXPIRES` setting, which specifies
-the delay in days::
+adjust this retention delay use the :setting:`IMAGES_EXPIRES` setting, which
+specifies the delay in number of days::
 
     # 90 days of delay for image expiration
     IMAGES_EXPIRES = 90
@@ -130,11 +175,6 @@ images.
 
 In order use this feature you must set the :attr:`~ImagesPipeline.THUMBS`
 to a tuple of ``(size_name, (width, height))`` tuples.
-
-The `Python Imaging Library`_ is used for thumbnailing, so you need that
-library.
-
-.. _Python Imaging Library: http://www.pythonware.com/products/pil/
 
 Here are some examples examples.
 
@@ -155,21 +195,24 @@ Using textual names::
 When you use this feature, the Images Pipeline will create thumbnails of the
 each specified size with this format::
 
-    IMAGES_DIR/thumbs/<image_id>/<size_name>.jpg
+    IMAGES_STORE/thumbs/<image_id>/<size_name>.jpg
   
 Where:
 
 * ``<image_id>`` is the `SHA1 hash`_ of the image url
-* and ``<size_name>`` is the one specified in ``THUMBS`` attribute
+* ``<size_name>`` is the one specified in the ``THUMBS`` attribute
 
 .. _SHA1 hash: http://en.wikipedia.org/wiki/SHA_hash_functions
 
-Example with previous THUMB attribute::
+Example with using ``50`` and ``110`` thumbnail names::
 
-   IMAGES_DIR/thumbs/63bbfea82b8880ed33cdb762aa11fab722a90a24/50.jpg
-   IMAGES_DIR/thumbs/63bbfea82b8880ed33cdb762aa11fab722a90a24/110.jpg
-   IMAGES_DIR/thumbs/63bbfea82b8880ed33cdb762aa11fab722a90a24/270.jpg
+   IMAGES_STORE/thumbs/63bbfea82b8880ed33cdb762aa11fab722a90a24/50.jpg
+   IMAGES_STORE/thumbs/63bbfea82b8880ed33cdb762aa11fab722a90a24/110.jpg
 
+Example with using ``small`` and ``big`` thumbnail names::
+
+   IMAGES_STORE/thumbs/63bbfea82b8880ed33cdb762aa11fab722a90a24/small.jpg
+   IMAGES_STORE/thumbs/63bbfea82b8880ed33cdb762aa11fab722a90a24/big.jpg
 
 .. _topics-images-size:
 
@@ -204,37 +247,10 @@ ImagesPipeline
 
    A pipeline to download images attached to items, for example product images.
 
-   To enable this pipeline you must set :setting:`IMAGES_DIR` to a valid
-   directory that will be used for storing the downloaded images.
-
-   .. method:: store_image(key, image, buf, info)
- 
-      Override this method with specific code to persist an image.
-
-      This method is used to persist the full image and any defined
-      thumbnail, one a time.
-
-      Return value is ignored.
-
-
-   .. method:: stat_key(key, info)
- 
-      Override this method with specific code to stat an image.
-
-      This method should return and dictionary with two parameters:
-
-      * ``last_modified``: the last modification time in seconds since the epoch
-      * ``checksum``: the md5sum of the content of the stored image if found
-
-      If an exception is raised or ``last_modified`` is ``None``, then the image
-      will be re-downloaded.
-
-      If the difference in days between last_modified and now is greater than
-      :setting:`IMAGES_EXPIRES` settings, then the image will be re-downloaded
-
-      The checksum value is appended to returned image path after a hash sign
-      (#), if ``checksum`` is ``None``, then nothing is appended including the
-      hash sign.
+   To enable this pipeline you must set :setting:`IMAGES_STORE` to a valid
+   directory that will be used for storing the downloaded images. Otherwise the
+   pipeline will remain disabled, even if you include it in the
+   :setting:`ITEM_PIPELINES` setting.
 
    .. method:: get_media_requests(item, info)
 
@@ -242,7 +258,8 @@ ImagesPipeline
 
       Must return ``None`` or an iterable.
 
-      By default it returns ``None`` (no images to download).
+      By default it returns ``None`` which means there are no images to
+      download for the item.
 
    .. method:: item_completed(results, item, info)
 
@@ -252,12 +269,13 @@ ImagesPipeline
       The output of this method is used as the output of the Image Pipeline
       stage.
 
-      This method typically returns the item itself or raises a
+      This method must returns the item itself or raise a
       :exc:`~scrapy.core.exceptions.DropItem` exception.
 
       By default, it returns the item.
 
    .. attribute:: THUMBS
 
-      Thumbnail generation configuration, see :ref:`topics-images-thumbnails`.
+      List of thumbnails to generate for the images. See
+      :ref:`topics-images-thumbnails`.
 
