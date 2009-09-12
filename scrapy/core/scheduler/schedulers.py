@@ -23,60 +23,60 @@ class Scheduler(object):
         self.dfo = settings['SCHEDULER_ORDER'].upper() == 'DFO'
         self.middleware = SchedulerMiddlewareManager()
 
-    def domain_is_open(self, domain):
-        """Check if scheduler's resources were allocated for a domain"""
-        return domain in self.pending_requests
+    def spider_is_open(self, spider):
+        """Check if scheduler's resources were allocated for a spider"""
+        return spider in self.pending_requests
 
-    def domain_has_pending_requests(self, domain):
-        """Check if are there pending requests for a domain"""
-        if domain in self.pending_requests:
-            return bool(self.pending_requests[domain])
+    def spider_has_pending_requests(self, spider):
+        """Check if are there pending requests for a spider"""
+        if spider in self.pending_requests:
+            return bool(self.pending_requests[spider])
 
-    def open_domain(self, domain):
-        """Allocates scheduling resources for the given domain"""
-        if domain in self.pending_requests:
-            raise RuntimeError('Scheduler domain already opened: %s' % domain)
+    def open_spider(self, spider):
+        """Allocates scheduling resources for the given spider"""
+        if spider in self.pending_requests:
+            raise RuntimeError('Scheduler spider already opened: %s' % spider)
 
         Priority = PriorityStack if self.dfo else PriorityQueue
-        self.pending_requests[domain] = Priority()
-        self.middleware.open_domain(domain)
+        self.pending_requests[spider] = Priority()
+        self.middleware.open_spider(spider)
 
-    def close_domain(self, domain):
+    def close_spider(self, spider):
         """Called when a spider has finished scraping to free any resources
-        associated with the domain.
+        associated with the spider.
         """
-        if domain not in self.pending_requests:
-            raise RuntimeError('Scheduler domain is not open: %s' % domain)
-        self.middleware.close_domain(domain)
-        self.pending_requests.pop(domain, None)
+        if spider not in self.pending_requests:
+            raise RuntimeError('Scheduler spider is not open: %s' % spider)
+        self.middleware.close_spider(spider)
+        self.pending_requests.pop(spider, None)
 
-    def enqueue_request(self, domain, request):
-        """Enqueue a request to be downloaded for a domain that is currently being scraped."""
-        return self.middleware.enqueue_request(self._enqueue_request, domain, request)
+    def enqueue_request(self, spider, request):
+        """Enqueue a request to be downloaded for a spider that is currently being scraped."""
+        return self.middleware.enqueue_request(self._enqueue_request, spider, request)
 
-    def _enqueue_request(self, domain, request):
+    def _enqueue_request(self, spider, request):
         dfd = defer.Deferred()
-        self.pending_requests[domain].push((request, dfd), -request.priority)
+        self.pending_requests[spider].push((request, dfd), -request.priority)
         return dfd
 
-    def clear_pending_requests(self, domain):
-        """Remove all pending requests for the given domain"""
-        q = self.pending_requests[domain]
+    def clear_pending_requests(self, spider):
+        """Remove all pending requests for the given spider"""
+        q = self.pending_requests[spider]
         while q:
             _, dfd = q.pop()[0]
             dfd.errback(Failure(IgnoreRequest()))
 
-    def next_request(self, domain):
-        """Return the next available request to be downloaded for a domain.
+    def next_request(self, spider):
+        """Return the next available request to be downloaded for a spider.
 
         Returns a pair ``(request, deferred)`` where ``deferred`` is the
         `Deferred` instance returned to the original requester.
 
         ``(None, None)`` is returned if there aren't any request pending for
-        the given domain.
+        the given spider.
         """
         try:
-            return self.pending_requests[domain].pop()[0] # [1] is priority
+            return self.pending_requests[spider].pop()[0] # [1] is priority
         except (KeyError, IndexError):
             return (None, None)
 

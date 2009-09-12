@@ -23,6 +23,7 @@ from scrapy.utils.misc import md5sum
 from scrapy.core import signals
 from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import DropItem, NotConfigured
+from scrapy.spider import BaseSpider
 from scrapy.contrib.pipeline.media import MediaPipeline
 from scrapy.http import Request
 from scrapy.conf import settings
@@ -76,6 +77,25 @@ class FSImagesStore(object):
             seen.add(dirname)
 
 
+class _S3AmazonAWSSpider(BaseSpider):
+    """This spider is used for uploading images to Amazon S3
+
+    It is basically not a crawling spider like a normal spider is, this spider is
+    a placeholder that allows us to open a different slot in downloader and use it
+    for uploads to S3.
+
+    The use of another downloader slot for S3 images avoid the effect of normal
+    spider downloader slot to be affected by requests to a complete different
+    domain (s3.amazonaws.com).
+
+    It means that a spider that uses download_delay or alike is not going to be
+    delayed even more because it is uploading images to s3.
+    """
+    domain_name = "s3.amazonaws.com"
+    start_urls = ['http://s3.amazonaws.com/']
+    max_concurrent_requests = 100
+
+
 class S3ImagesStore(object):
 
     request_priority = 1000
@@ -86,10 +106,9 @@ class S3ImagesStore(object):
         self._set_custom_spider()
 
     def _set_custom_spider(self):
-        domain = settings['IMAGES_S3STORE_SPIDER']
-        if domain:
-            from scrapy.spider import spiders
-            self.s3_spider = spiders.fromdomain(domain)
+        use_custom_spider = bool(settings['IMAGES_S3STORE_SPIDER'])
+        if use_custom_spider:
+            self.s3_spider = _S3AmazonAWSSpider()
         else:
             self.s3_spider = None
 

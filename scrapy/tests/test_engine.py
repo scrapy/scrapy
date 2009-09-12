@@ -2,15 +2,51 @@
 Scrapy engine tests
 """
 
-import sys
-import os
-import urlparse
-import unittest
+import sys, os, re, urlparse, unittest
 
 from twisted.internet import reactor
 from twisted.web import server, resource, static, util
 
+from scrapy.core import signals
+from scrapy.core.manager import scrapymanager
+from scrapy.xlib.pydispatch import dispatcher
 from scrapy.tests import tests_datadir
+from scrapy.spider import BaseSpider
+from scrapy.item import Item, Field
+from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
+from scrapy.http import Request
+
+class TestItem(Item):
+    name = Field()
+    url = Field()
+    price = Field()
+
+class TestSpider(BaseSpider):
+    domain_name = "scrapytest.org"
+    extra_domain_names = ["localhost"]
+    start_urls = ['http://localhost']
+
+    itemurl_re = re.compile("item\d+.html")
+    name_re = re.compile("<h1>(.*?)</h1>", re.M)
+    price_re = re.compile(">Price: \$(.*?)<", re.M)
+
+    def parse(self, response):
+        xlink = SgmlLinkExtractor()
+        itemre = re.compile(self.itemurl_re)
+        for link in xlink.extract_links(response):
+            if itemre.search(link.url):
+                yield Request(url=link.url, callback=self.parse_item)
+
+    def parse_item(self, response):
+        item = TestItem()
+        m = self.name_re.search(response.body)
+        if m:
+            item['name'] = m.group(1)
+        item['url'] = response.url
+        m = self.price_re.search(response.body)
+        if m:
+            item['price'] = m.group(1)
+        return item
 
 #class TestResource(resource.Resource):
 #    isLeaf = True
@@ -44,20 +80,12 @@ class CrawlingSession(object):
         self.port = start_test_site()
         self.portno = self.port.getHost().port
 
-        from scrapy.spider import spiders
-        spiders.load(['scrapy.tests.test_spiders'])
-
-        self.spider = spiders.fromdomain(self.domain)
+        self.spider = TestSpider()
         if self.spider:
             self.spider.start_urls = [
                 self.geturl("/"),
                 self.geturl("/redirect"),
                 ]
-
-            from scrapy.core import signals
-            from scrapy.core.manager import scrapymanager
-            from scrapy.core.engine import scrapyengine
-            from scrapy.xlib.pydispatch import dispatcher
 
             dispatcher.connect(self.record_signal, signals.engine_started)
             dispatcher.connect(self.record_signal, signals.engine_stopped)
@@ -69,7 +97,7 @@ class CrawlingSession(object):
             dispatcher.connect(self.response_downloaded, signals.response_downloaded)
 
             scrapymanager.configure()
-            scrapymanager.runonce(self.domain)
+            scrapymanager.runonce(self.spider)
             self.port.stopListening()
             self.wasrun = True
 

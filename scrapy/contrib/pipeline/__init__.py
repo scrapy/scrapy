@@ -41,10 +41,10 @@ class ItemPipelineManager(object):
             level=log.DEBUG)
         self.loaded = True
 
-    def open_domain(self, domain):
+    def open_spider(self, spider):
         pass
 
-    def close_domain(self, domain):
+    def close_spider(self, spider):
         pass
 
     def process_item(self, item, spider):

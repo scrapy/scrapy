@@ -18,21 +18,21 @@ def get_engine_status(engine=None):
         "engine.scraper.is_idle()",
         "len(engine.scraper.sites)",
     ]
-    domain_tests = [
-        "engine.domain_is_idle(domain)",
-        "engine.closing.get(domain)",
-        "engine.scheduler.domain_has_pending_requests(domain)",
-        "len(engine.scheduler.pending_requests[domain])",
-        "len(engine.downloader.sites[domain].queue)",
-        "len(engine.downloader.sites[domain].active)",
-        "len(engine.downloader.sites[domain].transferring)",
-        "engine.downloader.sites[domain].closing",
-        "engine.downloader.sites[domain].lastseen",
-        "len(engine.scraper.sites[domain].queue)",
-        "len(engine.scraper.sites[domain].active)",
-        "engine.scraper.sites[domain].active_size",
-        "engine.scraper.sites[domain].itemproc_size",
-        "engine.scraper.sites[domain].needs_backout()",
+    spider_tests = [
+        "engine.spider_is_idle(spider)",
+        "engine.closing.get(spider)",
+        "engine.scheduler.spider_has_pending_requests(spider)",
+        "len(engine.scheduler.pending_requests[spider])",
+        "len(engine.downloader.sites[spider].queue)",
+        "len(engine.downloader.sites[spider].active)",
+        "len(engine.downloader.sites[spider].transferring)",
+        "engine.downloader.sites[spider].closing",
+        "engine.downloader.sites[spider].lastseen",
+        "len(engine.scraper.sites[spider].queue)",
+        "len(engine.scraper.sites[spider].active)",
+        "engine.scraper.sites[spider].active_size",
+        "engine.scraper.sites[spider].itemproc_size",
+        "engine.scraper.sites[spider].needs_backout()",
     ]
 
     s = "Execution engine status\n\n"
@@ -43,9 +43,9 @@ def get_engine_status(engine=None):
         except Exception, e:
             s += "%-47s : %s (exception)\n" % (test, type(e).__name__)
     s += "\n"
-    for domain in engine.downloader.sites:
-        s += "%s\n" % domain
-        for test in domain_tests:
+    for spider in engine.downloader.sites:
+        s += "Spider: %s\n" % spider
+        for test in spider_tests:
             try:
                 s += "  %-50s : %s\n" % (test, eval(test))
             except Exception, e:

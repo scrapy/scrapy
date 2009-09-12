@@ -11,7 +11,7 @@ import signal
 
 from twisted.internet import reactor, threads
 
-from scrapy.spider import spiders
+from scrapy.spider import BaseSpider, spiders
 from scrapy.selector import XmlXPathSelector, HtmlXPathSelector
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
@@ -19,7 +19,6 @@ from scrapy.conf import settings
 from scrapy.core.manager import scrapymanager
 from scrapy.core.engine import scrapyengine
 from scrapy.http import Request
-from scrapy.fetcher import get_or_create_spider
 
 def relevant_var(varname):
     return varname not in ['shelp', 'fetch', 'view', '__builtins__', 'In', \
@@ -53,7 +52,7 @@ class Shell(object):
         else:
             url = parse_url(request_or_url)
             request = Request(url)
-        spider = get_or_create_spider(url)
+        spider = spiders.fromurl(url) or BaseSpider('default')
         print "Fetching %s..." % request
         response = threads.blockingCallFromThread(reactor, scrapyengine.schedule, \
             request, spider)

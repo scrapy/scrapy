@@ -1,4 +1,5 @@
 import signal
+from collections import defaultdict
 
 from twisted.internet import reactor
 
@@ -6,50 +7,44 @@ from scrapy.extension import extensions
 from scrapy import log
 from scrapy.http import Request
 from scrapy.core.engine import scrapyengine
-from scrapy.spider import spiders
+from scrapy.spider import BaseSpider, spiders
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.url import is_url
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 
-def _parse_args(args):
-    """Parse crawl arguments and return a dict of domains -> list of requests"""
-    requests, urls, sites = set(), set(), set()
-    for a in args:
-        if isinstance(a, Request):
-            requests.add(a)
-        elif is_url(a):
-            urls.add(a)
+def _get_spider_requests(*args):
+    """Collect requests and spiders from the given arguments. Returns a dict of
+    spider -> list of requests
+    """
+    spider_requests = defaultdict(list)
+    for arg in args:
+        if isinstance(arg, tuple):
+            request, spider = arg
+            spider_requests[spider] = request
+        elif isinstance(arg, Request):
+            spider = spiders.fromurl(arg.url) or BaseSpider('default')
+            if spider:
+                spider_requests[spider] += [arg]
+            else:
+                log.msg('Could not find spider for request: %s' % arg, log.ERROR)
+        elif isinstance(arg, BaseSpider):
+            spider_requests[arg] += arg.start_requests()
+        elif is_url(arg):
+            spider = spiders.fromurl(arg) or BaseSpider('default')
+            if spider:
+                for req in arg_to_iter(spider.make_requests_from_url(arg)):
+                    spider_requests[spider] += [req]
+            else:
+                log.msg('Could not find spider for url: %s' % arg, log.ERROR)
+        elif isinstance(arg, basestring):
+            spider = spiders.fromdomain(arg)
+            if spider:
+                spider_requests[spider] += spider.start_requests()
+            else:
+                log.msg('Could not find spider for domain: %s' % arg, log.ERROR)
         else:
-            sites.add(a)
-
-    perdomain = {}
-
-    # sites
-    for domain in sites:
-        spider = spiders.fromdomain(domain)
-        if not spider:
-            log.msg('Could not find spider for %s' % domain, log.ERROR)
-            continue
-        reqs = spider.start_requests()
-        perdomain.setdefault(domain, []).extend(reqs)
-
-    # urls
-    for url in urls:
-        spider = spiders.fromurl(url)
-        if spider:
-            for req in arg_to_iter(spider.make_requests_from_url(url)):
-                perdomain.setdefault(spider.domain_name, []).append(req)
-        else:
-            log.msg('Could not find spider for <%s>' % url, log.ERROR)
-
-    # requests
-    for request in requests:
-        spider = spiders.fromurl(request.url)
-        if not spider:
-            log.msg('Could not find spider for %s' % request, log.ERROR)
-            continue
-        perdomain.setdefault(spider.domain_name, []).append(request)
-    return perdomain
+            raise TypeError("Unsupported argument: %r" % arg)
+    return spider_requests
 
 
 class ExecutionManager(object):
@@ -85,17 +80,14 @@ class ExecutionManager(object):
         
     def crawl(self, *args):
         """Schedule the given args for crawling. args is a list of urls or domains"""
-
-        requests = _parse_args(args)
-        # schedule initial requests to be scraped at engine start
-        for domain in requests or ():
-            spider = spiders.fromdomain(domain) 
-            for request in requests[domain]:
+        assert self.configured, "Scrapy Manager not yet configured"
+        spider_requests = _get_spider_requests(*args)
+        for spider, requests in spider_requests.iteritems():
+            for request in requests:
                 scrapyengine.crawl(request, spider)
 
     def runonce(self, *args):
         """Run the engine until it finishes scraping all domains and then exit"""
-        assert self.configured, "Scrapy Manger not yet configured"
         self.crawl(*args)
         scrapyengine.start()
         if self.control_reactor:
@@ -103,7 +95,6 @@ class ExecutionManager(object):
 
     def start(self):
         """Start the scrapy server, without scheduling any domains"""
-        assert self.configured, "Scrapy Manger not yet configured"
         scrapyengine.keep_alive = True
         scrapyengine.start()
         if self.control_reactor:

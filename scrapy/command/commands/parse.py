@@ -1,5 +1,5 @@
 from scrapy.command import ScrapyCommand
-from scrapy.fetcher import fetch
+from scrapy.utils.fetch import fetch
 from scrapy.http import Request
 from scrapy.item import BaseItem
 from scrapy.spider import spiders

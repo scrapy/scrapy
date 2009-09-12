@@ -80,6 +80,8 @@ class TwistedPluginSpiderManager(object):
         """Reload spider module to release any resources held on to by the
         spider
         """
+        if domain not in self._spiders:
+            return
         spider = self._spiders[domain]
         module_name = spider.__module__
         module = sys.modules[module_name]

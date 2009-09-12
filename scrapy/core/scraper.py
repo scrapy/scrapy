@@ -16,7 +16,7 @@ from scrapy import log
 from scrapy.stats import stats
 from scrapy.conf import settings
 
-class SiteInfo(object):
+class SpiderInfo(object):
     """Object for holding data of the responses being scraped"""
 
     MIN_RESPONSE_SIZE = 1024
@@ -64,26 +64,26 @@ class Scraper(object):
         self.concurrent_items = settings.getint('CONCURRENT_ITEMS')
         self.engine = engine
 
-    def open_domain(self, domain):
-        """Open the given domain for scraping and allocate resources for it"""
-        if domain in self.sites:
-            raise RuntimeError('Scraper domain already opened: %s' % domain)
-        self.sites[domain] = SiteInfo()
-        self.itemproc.open_domain(domain)
+    def open_spider(self, spider):
+        """Open the given spider for scraping and allocate resources for it"""
+        if spider in self.sites:
+            raise RuntimeError('Scraper spider already opened: %s' % spider)
+        self.sites[spider] = SpiderInfo()
+        self.itemproc.open_spider(spider)
 
-    def close_domain(self, domain):
-        """Close a domain being scraped and release its resources"""
-        if domain not in self.sites:
-            raise RuntimeError('Scraper domain already closed: %s' % domain)
-        self.sites.pop(domain)
-        self.itemproc.open_domain(domain)
+    def close_spider(self, spider):
+        """Close a spider being scraped and release its resources"""
+        if spider not in self.sites:
+            raise RuntimeError('Scraper spider already closed: %s' % spider)
+        self.sites.pop(spider)
+        self.itemproc.close_spider(spider)
 
     def is_idle(self):
         """Return True if there isn't any more spiders to process"""
         return not self.sites
 
     def enqueue_scrape(self, response, request, spider):
-        site = self.sites[spider.domain_name]
+        site = self.sites[spider]
         dfd = site.add_response_request(response, request)
         # FIXME: this can't be called here because the stats domain may be
         # already closed
@@ -154,7 +154,7 @@ class Scraper(object):
         """
         # TODO: keep closing state internally instead of checking engine
         domain = spider.domain_name
-        if domain in self.engine.closing:
+        if spider in self.engine.closing:
             return
         elif isinstance(output, Request):
             send_catch_log(signal=signals.request_received, request=output, \
@@ -165,7 +165,7 @@ class Scraper(object):
                 domain=domain)
             send_catch_log(signal=signals.item_scraped, sender=self.__class__, \
                 item=output, spider=spider, response=response)
-            self.sites[domain].itemproc_size += 1
+            self.sites[spider].itemproc_size += 1
             # FIXME: this can't be called here because the stats domain may be
             # already closed
             #stats.max_value('scraper/max_itemproc_size', \
@@ -197,7 +197,7 @@ class Scraper(object):
         """ItemProcessor finished for the given ``item`` and returned ``output``
         """
         domain = spider.domain_name
-        self.sites[domain].itemproc_size -= 1
+        self.sites[spider].itemproc_size -= 1
         if isinstance(output, Failure):
             ex = output.value
             if isinstance(ex, DropItem):

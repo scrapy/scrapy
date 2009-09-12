@@ -47,9 +47,20 @@ class BaseSpider(object):
 
     implements(ISpider)
 
-    start_urls = []
+    # XXX: class attributes kept for backwards compatibility
     domain_name = None
+    start_urls = []
     extra_domain_names = []
+
+    def __init__(self, domain_name=None):
+        if domain_name is not None:
+            self.domain_name = domain_name
+        # XXX: create instance attributes (class attributes were kept for
+        # backwards compatibility)
+        if not self.start_urls:
+            self.start_urls = []
+        if not self.extra_domain_names:
+            self.extra_domain_names = []
 
     def log(self, message, level=log.DEBUG):
         """Log the given messages at the given log level. Always use this
@@ -71,3 +82,8 @@ class BaseSpider(object):
         requests, although it can be overrided in descendant spiders.
         """
         pass
+
+    def __str__(self):
+        return "<%s %r>" % (type(self).__name__, self.domain_name)
+
+    __repr__ = __str__

@@ -52,7 +52,8 @@ class ItemSamplerPipeline(object):
         dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
         dispatcher.connect(self.engine_stopped, signal=signals.engine_stopped)
 
-    def process_item(self, domain, item):
+    def process_item(self, item, spider):
+        domain = spider.domain_name
         sampled = stats.get_value("items_sampled", 0, domain=domain)
         if sampled < items_per_domain:
             self.items[item.guid] = item
@@ -60,7 +61,7 @@ class ItemSamplerPipeline(object):
             stats.set_value("items_sampled", sampled, domain=domain)
             log.msg("Sampled %s" % item, domain=domain, level=log.INFO)
             if close_domain and sampled == items_per_domain:
-                scrapyengine.close_domain(domain)
+                scrapyengine.close_spider(spider)
         return item
 
     def engine_stopped(self):

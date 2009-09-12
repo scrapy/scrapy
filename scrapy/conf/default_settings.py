@@ -40,7 +40,7 @@ DEFAULT_REQUEST_HEADERS = {
 DEPTH_LIMIT = 0
 DEPTH_STATS = True
 
-DOMAIN_SCHEDULER = 'scrapy.contrib.domainsch.FifoDomainScheduler'
+SPIDER_SCHEDULER = 'scrapy.contrib.spiderscheduler.FifoSpiderScheduler'
 
 DOWNLOAD_DELAY = 0
 DOWNLOAD_TIMEOUT = 180      # 3mins

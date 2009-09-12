@@ -28,7 +28,7 @@ class ExecutionEngine(object):
     def __init__(self):
         self.configured = False
         self.keep_alive = False
-        self.closing = {} # dict (domain -> reason) of spiders being closed
+        self.closing = {} # dict (spider -> reason) of spiders being closed
         self.running = False
         self.killed = False
         self.paused = False
@@ -40,7 +40,7 @@ class ExecutionEngine(object):
         Configure execution engine with the given scheduling policy and downloader.
         """
         self.scheduler = load_object(settings['SCHEDULER'])()
-        self.domain_scheduler = load_object(settings['DOMAIN_SCHEDULER'])()
+        self.spider_scheduler = load_object(settings['SPIDER_SCHEDULER'])()
         self.downloader = Downloader()
         self.scraper = Scraper(self)
         self.configured = True
@@ -60,9 +60,9 @@ class ExecutionEngine(object):
         if not self.running:
             return
         self.running = False
-        for domain in self.open_domains:
+        for spider in self.open_spiders:
             reactor.addSystemEventTrigger('before', 'shutdown', \
-                self.close_domain, domain, reason='shutdown')
+                self.close_spider, spider, reason='shutdown')
         if self._mainloop_task.running:
             self._mainloop_task.stop()
         try:
@@ -90,92 +90,90 @@ class ExecutionEngine(object):
         return self.scheduler.is_idle() and self.downloader.is_idle() and \
             self.scraper.is_idle()
 
-    def next_domain(self):
-        domain = self.domain_scheduler.next_domain()
-        if domain:
-            self.open_domain(domain)
-        return domain
+    def next_spider(self):
+        spider = self.spider_scheduler.next_spider()
+        if spider:
+            self.open_spider(spider)
+            return True
 
-    def next_request(self, domain, now=False):
+    def next_request(self, spider, now=False):
         """Scrape the next request for the domain passed.
 
         The next request to be scraped is retrieved from the scheduler and
         requested from the downloader.
 
-        The domain is closed if there are no more pages to scrape.
+        The spider is closed if there are no more pages to scrape.
         """
         if now:
-            self._next_request_pending.discard(domain)
-        elif domain not in self._next_request_pending:
-            self._next_request_pending.add(domain)
-            return reactor.callLater(0, self.next_request, domain, now=True)
+            self._next_request_pending.discard(spider)
+        elif spider not in self._next_request_pending:
+            self._next_request_pending.add(spider)
+            return reactor.callLater(0, self.next_request, spider, now=True)
         else:
             return
 
         if self.paused:
-            return reactor.callLater(5, self.next_request, domain)
+            return reactor.callLater(5, self.next_request, spider)
 
-        while not self._needs_backout(domain):
-            if not self._next_request(domain):
+        while not self._needs_backout(spider):
+            if not self._next_request(spider):
                 break
 
-        if self.domain_is_idle(domain):
-            self._domain_idle(domain)
+        if self.spider_is_idle(spider):
+            self._spider_idle(spider)
 
-    def _needs_backout(self, domain):
+    def _needs_backout(self, spider):
         return not self.running \
-            or self.domain_is_closed(domain) \
-            or self.downloader.sites[domain].needs_backout() \
-            or self.scraper.sites[domain].needs_backout()
+            or self.spider_is_closed(spider) \
+            or self.downloader.sites[spider].needs_backout() \
+            or self.scraper.sites[spider].needs_backout()
 
-    def _next_request(self, domain):
+    def _next_request(self, spider):
         # Next pending request from scheduler
-        request, deferred = self.scheduler.next_request(domain)
+        request, deferred = self.scheduler.next_request(spider)
         if request:
-            spider = spiders.fromdomain(domain)
             dwld = mustbe_deferred(self.download, request, spider)
             dwld.chainDeferred(deferred).addBoth(lambda _: deferred)
             dwld.addErrback(log.err, "Unhandled error on engine._next_request")
             return dwld
 
-    def domain_is_idle(self, domain):
-        scraper_idle = domain in self.scraper.sites \
-            and self.scraper.sites[domain].is_idle()
-        pending = self.scheduler.domain_has_pending_requests(domain)
-        downloading = domain in self.downloader.sites \
-            and self.downloader.sites[domain].active
+    def spider_is_idle(self, spider):
+        scraper_idle = spider in self.scraper.sites \
+            and self.scraper.sites[spider].is_idle()
+        pending = self.scheduler.spider_has_pending_requests(spider)
+        downloading = spider in self.downloader.sites \
+            and self.downloader.sites[spider].active
         return scraper_idle and not (pending or downloading)
 
-    def domain_is_closed(self, domain):
-        """Return True if the domain is fully closed (ie. not even in the
+    def spider_is_closed(self, spider):
+        """Return True if the spider is fully closed (ie. not even in the
         closing stage)"""
-        return domain not in self.downloader.sites
+        return spider not in self.downloader.sites
 
-    def domain_is_open(self, domain):
-        """Return True if the domain is fully opened (ie. not in closing
+    def spider_is_open(self, spider):
+        """Return True if the spider is fully opened (ie. not in closing
         stage)"""
-        return domain in self.downloader.sites and domain not in self.closing
+        return spider in self.downloader.sites and spider not in self.closing
 
     @property
-    def open_domains(self):
+    def open_spiders(self):
         return self.downloader.sites.keys()
 
     def crawl(self, request, spider):
         schd = mustbe_deferred(self.schedule, request, spider)
         schd.addBoth(self.scraper.enqueue_scrape, request, spider)
         schd.addErrback(log.err, "Unhandled error on engine.crawl()")
-        schd.addBoth(lambda _: self.next_request(spider.domain_name))
+        schd.addBoth(lambda _: self.next_request(spider))
 
     def schedule(self, request, spider):
-        domain = spider.domain_name
-        if domain in self.closing:
+        if spider in self.closing:
             raise IgnoreRequest()
-        if not self.scheduler.domain_is_open(domain):
-            self.scheduler.open_domain(domain)
-            if self.domain_is_closed(domain): # scheduler auto-open
-                self.domain_scheduler.add_domain(domain)
-        self.next_request(domain)
-        return self.scheduler.enqueue_request(domain, request)
+        if not self.scheduler.spider_is_open(spider):
+            self.scheduler.open_spider(spider)
+            if self.spider_is_closed(spider): # scheduler auto-open
+                self.spider_scheduler.add_spider(spider)
+        self.next_request(spider)
+        return self.scheduler.enqueue_request(spider, request)
 
     def _mainloop(self):
         """Add more domains to be scraped if the downloader has the capacity.
@@ -186,7 +184,7 @@ class ExecutionEngine(object):
             return
 
         while self.running and self.downloader.has_capacity():
-            if not self.next_domain():
+            if not self.next_spider():
                 return self._stop_if_idle()
 
     def download(self, request, spider):
@@ -222,7 +220,7 @@ class ExecutionEngine(object):
             return Failure(IgnoreRequest(str(exc)))
 
         def _on_complete(_):
-            self.next_request(domain)
+            self.next_request(spider)
             return _
 
         dwld = mustbe_deferred(self.downloader.fetch, request, spider)
@@ -230,13 +228,13 @@ class ExecutionEngine(object):
         dwld.addBoth(_on_complete)
         return dwld
 
-    def open_domain(self, domain):
+    def open_spider(self, spider):
+        domain = spider.domain_name
         log.msg("Domain opened", domain=domain)
-        spider = spiders.fromdomain(domain)
-        self.next_request(domain)
+        self.next_request(spider)
 
-        self.downloader.open_domain(domain)
-        self.scraper.open_domain(domain)
+        self.downloader.open_spider(spider)
+        self.scraper.open_spider(spider)
         stats.open_domain(domain)
 
         # XXX: sent for backwards compatibility (will be removed in Scrapy 0.8)
@@ -246,7 +244,7 @@ class ExecutionEngine(object):
         send_catch_log(signals.domain_opened, sender=self.__class__, \
             domain=domain, spider=spider)
 
-    def _domain_idle(self, domain):
+    def _spider_idle(self, spider):
         """Called when a domain gets idle. This function is called when there
         are no remaining pages to download or schedule. It can be called
         multiple times. If some extension raises a DontCloseDomain exception
@@ -254,57 +252,58 @@ class ExecutionEngine(object):
         next loop and this function is guaranteed to be called (at least) once
         again for this domain.
         """
-        spider = spiders.fromdomain(domain)
+        domain = spider.domain_name
         try:
             dispatcher.send(signal=signals.domain_idle, sender=self.__class__, \
                 domain=domain, spider=spider)
         except DontCloseDomain:
-            self.next_request(domain)
+            self.next_request(spider)
             return
         except:
             log.err("Exception catched on domain_idle signal dispatch")
-        if self.domain_is_idle(domain):
-            self.close_domain(domain, reason='finished')
+        if self.spider_is_idle(spider):
+            self.close_spider(spider, reason='finished')
 
     def _stop_if_idle(self):
         """Call the stop method if the system has no outstanding tasks. """
         if self.is_idle() and not self.keep_alive:
             self.stop()
 
-    def close_domain(self, domain, reason='cancelled'):
-        """Close (cancel) domain and clear all its outstanding requests"""
-        if domain not in self.closing:
+    def close_spider(self, spider, reason='cancelled'):
+        """Close (cancel) spider and clear all its outstanding requests"""
+        domain = spider.domain_name
+        if spider not in self.closing:
             log.msg("Closing domain (%s)" % reason, domain=domain)
-            self.closing[domain] = reason
-            self.downloader.close_domain(domain)
-            self.scheduler.clear_pending_requests(domain)
-            return self._finish_closing_domain_if_idle(domain)
+            self.closing[spider] = reason
+            self.downloader.close_spider(spider)
+            self.scheduler.clear_pending_requests(spider)
+            return self._finish_closing_spider_if_idle(spider)
         return defer.succeed(None)
 
-    def _finish_closing_domain_if_idle(self, domain):
-        """Call _finish_closing_domain if domain is idle"""
-        if self.domain_is_idle(domain) or self.killed:
-            self._finish_closing_domain(domain)
+    def _finish_closing_spider_if_idle(self, spider):
+        """Call _finish_closing_spider if domain is idle"""
+        if self.spider_is_idle(spider) or self.killed:
+            self._finish_closing_spider(spider)
         else:
             dfd = defer.Deferred()
-            dfd.addCallback(self._finish_closing_domain_if_idle)
+            dfd.addCallback(self._finish_closing_spider_if_idle)
             delay = 5 if self.running else 1
-            reactor.callLater(delay, dfd.callback, domain)
+            reactor.callLater(delay, dfd.callback, spider)
             return dfd
 
-    def _finish_closing_domain(self, domain):
-        """This function is called after the domain has been closed"""
-        spider = spiders.fromdomain(domain) 
-        self.scheduler.close_domain(domain)
-        self.scraper.close_domain(domain)
-        reason = self.closing.pop(domain, 'finished')
+    def _finish_closing_spider(self, spider):
+        """This function is called after the spider has been closed"""
+        domain = spider.domain_name
+        self.scheduler.close_spider(spider)
+        self.scraper.close_spider(spider)
+        reason = self.closing.pop(spider, 'finished')
         send_catch_log(signal=signals.domain_closed, sender=self.__class__, \
             domain=domain, spider=spider, reason=reason)
         stats.close_domain(domain, reason=reason)
-        log.msg("Domain closed (%s)" % reason, domain=domain) 
         spiders.close_domain(domain)
+        log.msg("Domain closed (%s)" % reason, domain=domain) 
         self._mainloop()
-        if not self.open_domains:
+        if not self.open_spiders:
             send_catch_log(signal=signals.engine_stopped, sender=self.__class__)
 
 scrapyengine = ExecutionEngine()

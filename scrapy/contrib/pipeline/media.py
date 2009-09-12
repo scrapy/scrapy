@@ -6,7 +6,6 @@ from scrapy import log
 from scrapy.core import signals
 from scrapy.core.engine import scrapyengine
 from scrapy.utils.request import request_fingerprint
-from scrapy.spider import spiders
 from scrapy.utils.misc import arg_to_iter
 
 
@@ -14,9 +13,9 @@ class MediaPipeline(object):
     DOWNLOAD_PRIORITY = 1000
 
     class DomainInfo(object):
-        def __init__(self, domain):
-            self.domain = domain
-            self.spider = spiders.fromdomain(domain)
+        def __init__(self, spider):
+            self.domain = spider.domain_name
+            self.spider = spider
             self.downloading = {}
             self.downloaded = {}
             self.waiting = {}
@@ -26,8 +25,8 @@ class MediaPipeline(object):
         dispatcher.connect(self.domain_opened, signals.domain_opened)
         dispatcher.connect(self.domain_closed, signals.domain_closed)
 
-    def domain_opened(self, domain):
-        self.domaininfo[domain] = self.DomainInfo(domain)
+    def domain_opened(self, spider):
+        self.domaininfo[spider.domain_name] = self.DomainInfo(spider)
 
     def domain_closed(self, domain):
         del self.domaininfo[domain]

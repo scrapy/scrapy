@@ -360,13 +360,13 @@ Whether to collect depth stats.
 
 .. setting:: DOMAIN_SCHEDULER
 
-DOMAIN_SCHEDULER
+SPIDER_SCHEDULER
 ----------------
 
-Default: ``'scrapy.contrib.domainsch.FifoDomainScheduler'``
+Default: ``'scrapy.contrib.spiderscheduler.FifoSpiderScheduler'``
 
-The Domain Scheduler to use. The domain scheduler returns the next domain
-(spider) to scrape.
+The Spider Scheduler to use. The spider scheduler returns the next spider to
+scrape.
 
 .. setting:: DOWNLOADER_DEBUG
 

@@ -1,7 +1,7 @@
 import pprint
 
 from scrapy.command import ScrapyCommand
-from scrapy.fetcher import fetch
+from scrapy.utils.fetch import fetch
 
 class Command(ScrapyCommand):
 
@@ -20,11 +20,11 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--headers", dest="headers", action="store_true", \
-            help="print HTTP headers instead of body")
+            help="print response HTTP headers instead of body")
 
     def run(self, args, opts):
-        if not args:
-            print "A URL is required"
+        if len(args) != 1:
+            print "One URL is required"
             return
 
         responses = fetch(args)

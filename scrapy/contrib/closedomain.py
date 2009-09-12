@@ -28,17 +28,17 @@ class CloseDomain(object):
             dispatcher.connect(self.item_passed, signal=signals.item_passed)
         dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
 
-    def domain_opened(self, domain):
-        self.tasks[domain] = reactor.callLater(self.timeout, scrapyengine.close_domain, \
-            domain=domain, reason='closedomain_timeout')
+    def domain_opened(self, spider):
+        self.tasks[spider] = reactor.callLater(self.timeout, scrapyengine.close_spider, \
+            spider=spider, reason='closedomain_timeout')
         
     def item_passed(self, item, spider):
-        self.counts[spider.domain_name] += 1
-        if self.counts[spider.domain_name] == self.itempassed:
-            scrapyengine.close_domain(spider.domain_name, 'closedomain_itempassed')
+        self.counts[spider] += 1
+        if self.counts[spider] == self.itempassed:
+            scrapyengine.close_spider(spider, 'closedomain_itempassed')
 
-    def domain_closed(self, domain):
-        self.counts.pop(domain, None)
-        tsk = self.tasks.pop(domain, None)
+    def domain_closed(self, spider):
+        self.counts.pop(spider, None)
+        tsk = self.tasks.pop(spider, None)
         if tsk and not tsk.called:
             tsk.cancel()
