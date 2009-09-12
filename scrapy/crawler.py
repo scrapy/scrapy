@@ -15,7 +15,7 @@ requests. For example:
     >>> request = Request('http://scrapy.org', callback=parse_response)
     >>> crawler = Crawler()
     >>> crawler.crawl(request)
-    Visited http://scrapy.org 
+    Visited: http://scrapy.org 
     >>>
 
 Request callbacks follow the same API of spiders callback, which means that all
