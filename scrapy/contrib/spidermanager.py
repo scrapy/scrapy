@@ -15,7 +15,7 @@ from scrapy.conf import settings
 from scrapy.utils.url import url_is_from_spider
 
 class TwistedPluginSpiderManager(object):
-    """Spider locator and manager"""
+    """Spider manager based in Twisted Plugin System"""
 
     def __init__(self):
         self.loaded = False
@@ -53,12 +53,9 @@ class TwistedPluginSpiderManager(object):
         modules = [__import__(m, {}, {}, ['']) for m in self.spider_modules]
         for module in modules:
             for spider in self._getspiders(ISpider, module):
-                self.add_spider(spider)
+                ISpider.validateInvariants(spider)
+                self._spiders[spider.domain_name] = spider
         self.loaded = True
-
-    def add_spider(self, spider):
-        ISpider.validateInvariants(spider)
-        self._spiders[spider.domain_name] = spider
 
     def _getspiders(self, interface, package):
         """This is an override of twisted.plugin.getPlugin, because we're
