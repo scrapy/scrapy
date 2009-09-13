@@ -56,7 +56,7 @@ single Python class that defines one or more of the following methods:
 
 .. class:: SchedulerMiddleware
 
-   .. method:: enqueue_request(domain, request)
+   .. method:: enqueue_request(spider, request)
 
       Process the given request which is being enqueued. This method can return
       None to avoid the request from being scheduled.
@@ -64,8 +64,8 @@ single Python class that defines one or more of the following methods:
       :meth:`enqueue_request` should return either ``None``, a
       :class:`~scrapy.http.Response` object or a ``Deferred``.
 
-      :param domain: the domain originating the request
-      :type domain: string
+      :param spider: the spider originating the request
+      :type spider: :class:`~scrapy.spider.BaseSpider` object
 
       :param requests: the request to be enqueued
       :type request: :class:`~scrapy.http.Request` object

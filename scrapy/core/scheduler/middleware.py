@@ -46,7 +46,7 @@ class SchedulerMiddlewareManager(object):
         self.loaded = True
 
     def _add_middleware(self, mw):
-        for name in ['enqueue_request', 'open_domain', 'close_domain']:
+        for name in ['enqueue_request', 'open_spider', 'close_spider']:
             mwfunc = getattr(mw, name, None)
             if mwfunc:
                 self.mw_cbs[name].append(mwfunc)
@@ -54,7 +54,7 @@ class SchedulerMiddlewareManager(object):
     def enqueue_request(self, wrappedfunc, spider, request):
         def _enqueue_request(request):
             for mwfunc in self.mw_cbs['enqueue_request']:
-                result = mwfunc(domain=spider.domain_name, request=request)
+                result = mwfunc(spider=spider, request=request)
                 assert result is None or isinstance(result, (Response, Deferred)), \
                         'Middleware %s.enqueue_request must return None, Response or Deferred, got %s' % \
                         (mwfunc.im_self.__class__.__name__, result.__class__.__name__)
@@ -66,10 +66,10 @@ class SchedulerMiddlewareManager(object):
         return deferred
 
     def open_spider(self, spider):
-        for mwfunc in self.mw_cbs['open_domain']:
-            mwfunc(spider.domain_name)
+        for mwfunc in self.mw_cbs['open_spider']:
+            mwfunc(spider)
 
     def close_spider(self, spider):
-        for mwfunc in self.mw_cbs['close_domain']:
-            mwfunc(spider.domain_name)
+        for mwfunc in self.mw_cbs['close_spider']:
+            mwfunc(spider)
 
