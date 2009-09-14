@@ -161,7 +161,10 @@ class ExecutionEngine(object):
 
     def crawl(self, request, spider):
         schd = mustbe_deferred(self.schedule, request, spider)
-        schd.addErrback(log.err, "Unhandled error on engine.crawl()")
+        # FIXME: we can't log errors because we would be preventing them from
+        # propagating to the request errback. This should be fixed after the
+        # next core refactoring.
+        #schd.addErrback(log.err, "Error on engine.crawl()")
         schd.addBoth(self.scraper.enqueue_scrape, request, spider)
         schd.addErrback(log.err, "Unhandled error on engine.crawl()")
         schd.addBoth(lambda _: self.next_request(spider))
