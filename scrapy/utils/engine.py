@@ -1,5 +1,7 @@
 """Some debugging functions for working with the Scrapy engine"""
 
+from time import time
+
 from scrapy.core.engine import scrapyengine
 
 def get_engine_status(engine=None):
@@ -8,7 +10,7 @@ def get_engine_status(engine=None):
         engine = scrapyengine
 
     global_tests = [
-        "datetime.utcnow()-engine.start_time",
+        "time()-engine.start_time",
         "engine.is_idle()",
         "engine.scheduler.is_idle()",
         "len(engine.scheduler.pending_requests)",

@@ -4,7 +4,7 @@ This is the Scrapy engine which controls the Scheduler, Downloader and Spiders.
 For more information see docs/topics/architecture.rst
 
 """
-from datetime import datetime
+from time import time
 
 from twisted.internet import reactor, task, defer
 from twisted.python.failure import Failure
@@ -49,7 +49,7 @@ class ExecutionEngine(object):
         """Start the execution engine"""
         if self.running:
             return
-        self.start_time = datetime.utcnow()
+        self.start_time = time()
         send_catch_log(signal=signals.engine_started, sender=self.__class__)
         self._mainloop_task.start(5.0, now=True)
         reactor.callWhenRunning(self._mainloop)
