@@ -21,17 +21,17 @@ class FifoSpiderScheduler(object):
     """Basic spider scheduler based on a FIFO queue"""
 
     def __init__(self):
-        self.pending_spiders = []
+        self._pending_spiders = []
 
     def next_spider(self) :
-        if self.pending_spiders:
-            return self.pending_spiders.pop(0)
+        if self._pending_spiders:
+            return self._pending_spiders.pop(0)
 
     def add_spider(self, spider):
-        self.pending_spiders.append(spider)
+        self._pending_spiders.append(spider)
 
     def remove_pending_spider(self, spider):
-        self.pending_spiders = [d for d in self.pending_spiders if d != spider]
+        self._pending_spiders = [d for d in self._pending_spiders if d != spider]
 
     def has_pending_spider(self, spider):
-        return spider in self.pending_spiders
+        return spider in self._pending_spiders
