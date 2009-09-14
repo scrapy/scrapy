@@ -6,7 +6,7 @@ See docs/topics/webconsole.rst
 
 import re
 import socket
-from datetime import datetime
+from time import time
 
 from twisted.internet import reactor
 from twisted.web import server, resource
@@ -38,11 +38,12 @@ def banner(module=None):
     s += "<head><title>Scrapy</title></head>\n"
     s += "<body>\n"
     s += "<h1><a href='/'>Scrapy web console</a></h1>\n"
-    now = datetime.now()
-    uptime = now - scrapyengine.start_time
-    s += "<p>Bot: <b>%s</b> | Host: <b>%s</b> | Uptime: <b>%s</b> | Time: <b>%s</b> </p>\n" % (settings['BOT_NAME'], socket.gethostname(), str(uptime), str(now.replace(microsecond=0)))
+    uptime = time() - scrapyengine.start_time
+    s += "<p>Bot: <b>%s</b> | Host: <b>%s</b> | Uptime: <b>%ds</b></p>\n" % \
+        (settings['BOT_NAME'], socket.gethostname(), uptime)
     if module:
-        s += "<h2><a href='/%s/'>%s</a></h2>\n" % (module.webconsole_id, module.webconsole_name)
+        s += "<h2><a href='/%s/'>%s</a></h2>\n" % (module.webconsole_id, \
+            module.webconsole_name)
     return s
 
 class WebConsoleResource(resource.Resource):
@@ -52,7 +53,8 @@ class WebConsoleResource(resource.Resource):
     def modules(self):
         if not hasattr(self, '_modules'):
             self._modules = {}
-            for _, obj in dispatcher.send(signal=webconsole_discover_module, sender=self.__class__):
+            for _, obj in dispatcher.send(signal=webconsole_discover_module, \
+                    sender=self.__class__):
                 self._modules[obj.webconsole_id] = obj
         return self._modules
 
