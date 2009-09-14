@@ -301,7 +301,7 @@ class ExecutionEngine(object):
         send_catch_log(signal=signals.domain_closed, sender=self.__class__, \
             domain=domain, spider=spider, reason=reason)
         stats.close_domain(domain, reason=reason)
-        spiders.close_domain(domain)
+        spiders.close_spider(spider)
         log.msg("Domain closed (%s)" % reason, domain=domain) 
         self._mainloop()
         if not self.open_spiders:

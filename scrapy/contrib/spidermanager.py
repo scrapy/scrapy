@@ -73,10 +73,11 @@ class TwistedPluginSpiderManager(object):
             sys.stderr.write("Interrupted while loading Scrapy spiders\n")
             sys.exit(2)
 
-    def close_domain(self, domain):
+    def close_spider(self, spider):
         """Reload spider module to release any resources held on to by the
         spider
         """
+        domain = spider.domain_name
         if domain not in self._spiders:
             return
         spider = self._spiders[domain]
