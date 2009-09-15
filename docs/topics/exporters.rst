@@ -240,6 +240,26 @@ XmlItemExporter
         </item>
        </items>
 
+   Unless overriden in :meth:`serialize_field` method, multi-valued fields are
+   exported by serializing each value inside a ``<value>`` element. This is for
+   convenience, as multi-valued fields are very common.
+
+   For example, the item::
+
+        Item(name=['John', 'Doe'], age='23')
+
+   Would be serialized as::
+
+       <?xml version="1.0" encoding="utf-8"?>
+       <items>
+         <item>
+           <name>
+             <value>John</value>
+             <value>Doe</value>
+           </name>
+           <age>23</age>
+         </item>
+       </items>
 
 CsvItemExporter
 ---------------

@@ -95,7 +95,11 @@ class XmlItemExporter(BaseItemExporter):
 
     def _export_xml_field(self, name, serialized_value):
         self.xg.startElement(name, {})
-        self.xg.characters(serialized_value)
+        if hasattr(serialized_value, '__iter__'):
+            for value in serialized_value:
+                self._export_xml_field('value', value)
+        else:
+            self.xg.characters(serialized_value)
         self.xg.endElement(name)
 
 

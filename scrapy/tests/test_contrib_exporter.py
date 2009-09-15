@@ -137,6 +137,15 @@ class XmlItemExporterTest(BaseItemExporterTest):
         expected_value = '<?xml version="1.0" encoding="utf-8"?>\n<items><item><age>22</age><name>John\xc2\xa3</name></item></items>'
         self.assertEqual(self.output.getvalue(), expected_value)
 
+    def test_multivalued_fields(self):
+        output = StringIO()
+        item = TestItem(name=[u'John\xa3', u'Doe'])
+        ie = XmlItemExporter(output)
+        ie.start_exporting()
+        ie.export_item(item)
+        ie.finish_exporting()
+        expected_value = '<?xml version="1.0" encoding="utf-8"?>\n<items><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></items>'
+        self.assertEqual(output.getvalue(), expected_value)
 
 class JsonLinesItemExporterTest(BaseItemExporterTest):
 
