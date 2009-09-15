@@ -5,7 +5,7 @@ Helper functions for dealing with Twisted deferreds
 from twisted.internet import defer, reactor, task
 from twisted.python import failure
 
-def defer_failed(_failure):
+def defer_fail(_failure):
     """Same as twisted.internet.defer.fail, but delay calling errback until
     next reactor loop
     """
@@ -25,7 +25,7 @@ def defer_result(result):
     if isinstance(result, defer.Deferred):
         return result
     elif isinstance(result, failure.Failure):
-        return defer_failed(result)
+        return defer_fail(result)
     else:
         return defer_succeed(result)
 
@@ -36,7 +36,7 @@ def mustbe_deferred(f, *args, **kw):
     try:
         result = f(*args, **kw)
     except:
-        return defer_failed(failure.Failure())
+        return defer_fail(failure.Failure())
     else:
         return defer_result(result)
 
