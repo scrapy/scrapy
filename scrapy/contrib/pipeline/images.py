@@ -173,23 +173,13 @@ class ImagesPipeline(MediaPipeline):
         modification was made long time ago, so a reprocessing is recommended to
         refresh it in case of change.
 
-    IMAGES_EXPIRES setting controls the maximun days since an image was modified
-    to consider it uptodate.
-
-    THUMBS is a tuple of tuples, each sub-tuple is a pair of thumb_id string
-    and a compatible python image library size (a tuple).
-    See thumbnail method at http://www.pythonware.com/library/pil/handbook/image.htm
-
-    Downloaded images are skipped if sizes aren't greater than MIN_WIDTH and
-    MIN_HEIGHT limit. A proper log messages will be printed.
-
     """
 
     MEDIA_NAME = 'image'
     MIN_WIDTH = settings.getint('IMAGES_MIN_WIDTH', 0)
     MIN_HEIGHT = settings.getint('IMAGES_MIN_HEIGHT', 0)
     EXPIRES = settings.getint('IMAGES_EXPIRES', 90)
-    THUMBS = settings['IMAGES_THUMBS']
+    THUMBS = settings.get('IMAGES_THUMBS', {})
     STORE_SCHEMES = {
             '': FSImagesStore,
             'file': FSImagesStore,
@@ -297,7 +287,7 @@ class ImagesPipeline(MediaPipeline):
         image, buf = self.convert_image(orig_image)
         yield key, image, buf
 
-        for thumb_id, size in self.THUMBS.iteritems() or []:
+        for thumb_id, size in self.THUMBS.iteritems():
             thumb_key = self.thumb_key(request.url, thumb_id)
             thumb_image, thumb_buf = self.convert_image(image, size)
             yield thumb_key, thumb_image, thumb_buf
