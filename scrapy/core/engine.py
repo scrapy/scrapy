@@ -60,9 +60,10 @@ class ExecutionEngine(object):
         if not self.running:
             return
         self.running = False
-        for spider in self.open_spiders:
-            reactor.addSystemEventTrigger('before', 'shutdown', \
-                self.close_spider, spider, reason='shutdown')
+        def before_shutdown():
+            dfd = self._close_all_spiders()
+            return dfd.addBoth(lambda _: self._finish_stopping_engine())
+        reactor.addSystemEventTrigger('before', 'shutdown', before_shutdown)
         if self._mainloop_task.running:
             self._mainloop_task.stop()
         try:
@@ -284,10 +285,15 @@ class ExecutionEngine(object):
             return self._finish_closing_spider_if_idle(spider)
         return defer.succeed(None)
 
+    def _close_all_spiders(self):
+        dfds = [self.close_spider(s, reason='shutdown') for s in self.open_spiders]
+        dlist = defer.DeferredList(dfds)
+        return dlist
+
     def _finish_closing_spider_if_idle(self, spider):
         """Call _finish_closing_spider if domain is idle"""
         if self.spider_is_idle(spider) or self.killed:
-            self._finish_closing_spider(spider)
+            return self._finish_closing_spider(spider)
         else:
             dfd = defer.Deferred()
             dfd.addCallback(self._finish_closing_spider_if_idle)
@@ -304,10 +310,12 @@ class ExecutionEngine(object):
         send_catch_log(signal=signals.domain_closed, sender=self.__class__, \
             domain=domain, spider=spider, reason=reason)
         stats.close_domain(domain, reason=reason)
-        spiders.close_spider(spider)
-        log.msg("Domain closed (%s)" % reason, domain=domain) 
-        self._mainloop()
-        if not self.open_spiders:
-            send_catch_log(signal=signals.engine_stopped, sender=self.__class__)
+        dfd = defer.maybeDeferred(spiders.close_spider, spider)
+        dfd.addBoth(log.msg, "Domain closed (%s)" % reason, domain=domain)
+        reactor.callLater(0, self._mainloop)
+        return dfd
+
+    def _finish_stopping_engine(self):
+        send_catch_log(signal=signals.engine_stopped, sender=self.__class__)
 
 scrapyengine = ExecutionEngine()
