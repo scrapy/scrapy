@@ -134,12 +134,12 @@ To export all scraped items into a XML file::
     EXPORT_FORMAT = 'xml'
     EXPORT_FILE = 'scraped_items.xml'
 
-To export all scraped items into a CSV file (without a headers line)::
+To export all scraped items into a CSV file (with all fields in headers line)::
 
     EXPORT_FORMAT = 'csv'
     EXPORT_FILE = 'scraped_items.csv'
 
-To export all scraped items into a CSV file (with a headers line)::
+To export all scraped items into a CSV file (with specific fields in headers line)::
 
     EXPORT_FORMAT = 'csv_headers'
     EXPORT_FILE = 'scraped_items_with_headers.csv'
