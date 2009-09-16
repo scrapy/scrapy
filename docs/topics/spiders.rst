@@ -80,9 +80,10 @@ BaseSpider
 
    .. attribute:: extra_domain_names
 
-       An optional list of strings containing additional domains that this spider
-       is allowed to crawl. Requests for URLs not belonging to the domain name
-       specified in :attr:`Spider.domain_name` or this list won't be followed.
+       An optional list of strings containing additional domains that this
+       spider is allowed to crawl. Requests for URLs not belonging to the
+       domain name specified in :attr:`domain_name` or this list won't be
+       followed.
 
    .. attribute:: start_urls
 
@@ -96,14 +97,14 @@ BaseSpider
        This method must return an iterable with the first Requests to crawl for
        this spider. 
        
-       This is the method called by Scrapy when the spider is opened for scraping
-       when no particular URLs are specified. If particular URLs are specified,
-       the :meth:`BaseSpider.make_requests_from_url` is used instead to create the
-       Requests. This method is also called only once from Scrapy, so it's safe to
-       implement it as a generator.
+       This is the method called by Scrapy when the spider is opened for
+       scraping when no particular URLs are specified. If particular URLs are
+       specified, the :meth:`make_requests_from_url` is used instead to create
+       the Requests. This method is also called only once from Scrapy, so it's
+       safe to implement it as a generator.
 
-       The default implementation uses :meth:`BaseSpider.make_requests_from_url`
-       to generate Requests for each url in :attr:`start_urls`.
+       The default implementation uses :meth:`make_requests_from_url` to
+       generate Requests for each url in :attr:`start_urls`.
 
        If you want to change the Requests used to start scraping a domain, this is
        the method to override. For example, if you need to start by login in using
