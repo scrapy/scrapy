@@ -58,6 +58,16 @@ attribute), and drops those items which don't contain a price::
                 raise DropItem("Missing price in %s" % item)
 
 
+Activating a Item Pipeline component
+====================================
+
+To activate an Item Pipeline component you must add its class to the
+:setting:`ITEM_PIPELINES` list, like in the following example::
+
+   ITEM_PIPELINES = [
+       'myproject.pipeline.PricePipeline',
+   ]
+
 Item pipeline example with resources per domain
 ===============================================
 
