@@ -1,14 +1,19 @@
-import unittest
 import cgi
 import weakref
+import unittest
+import xmlrpclib
 from cStringIO import StringIO
 from urlparse import urlparse
 
 from scrapy.http import Request, FormRequest, XmlRpcRequest, Headers, Response
 
+
 class RequestTest(unittest.TestCase):
 
     request_class = Request
+    default_method = 'GET'
+    default_headers = {}
+    default_meta = {}
 
     def test_init(self):
         # Request requires url in the constructor
@@ -21,14 +26,14 @@ class RequestTest(unittest.TestCase):
         r = self.request_class("http://www.example.com")
         assert isinstance(r.url, str)
         self.assertEqual(r.url, "http://www.example.com")
-        self.assertEqual(r.method, "GET")
+        self.assertEqual(r.method, self.default_method)
 
         r.url = "http://www.example.com/other"
         assert isinstance(r.url, str)
 
         assert isinstance(r.headers, Headers)
-        self.assertEqual(r.headers, {})
-        self.assertEqual(r.meta, {})
+        self.assertEqual(r.headers, self.default_headers)
+        self.assertEqual(r.meta, self.default_meta)
 
         meta = {"lala": "lolo"}
         headers = {"caca": "coco"}
@@ -149,13 +154,13 @@ class RequestTest(unittest.TestCase):
 
     def test_replace(self):
         """Test Request.replace() method"""
-        hdrs = Headers({"key": "value"})
-        r1 = self.request_class("http://www.example.com")
+        r1 = self.request_class("http://www.example.com", method='GET')
+        hdrs = Headers(dict(r1.headers, key='value'))
         r2 = r1.replace(method="POST", body="New body", headers=hdrs)
         self.assertEqual(r1.url, r2.url)
         self.assertEqual((r1.method, r2.method), ("GET", "POST"))
         self.assertEqual((r1.body, r2.body), ('', "New body"))
-        self.assertEqual((r1.headers, r2.headers), ({}, hdrs))
+        self.assertEqual((r1.headers, r2.headers), (self.default_headers, hdrs))
 
         # Empty attributes (which may fail if not compared properly)
         r3 = self.request_class("http://www.example.com", meta={'a': 1}, dont_filter=True)
@@ -269,14 +274,30 @@ class FormRequestTest(RequestTest):
         response = Response("http://www.example.com/lala.html", body=respbody)
         self.assertRaises(IndexError, self.request_class.from_response, response, formnumber=1)
 
+
 class XmlRpcRequestTest(RequestTest):
 
-    def test_xmlrpc_basic(self):
-        r = XmlRpcRequest('http://scrapytest.org/rpc2', methodname='login', params=('username', 'password'))
+    request_class = XmlRpcRequest
+    default_method = 'POST'
+    default_headers = {'Content-Type': ['text/xml']}
+
+    def _test_request(self, **kwargs):
+        r = self.request_class('http://scrapytest.org/rpc2', **kwargs)
         self.assertEqual(r.headers['Content-Type'], 'text/xml')
-        self.assertEqual(r.body, "<?xml version='1.0'?>\n<methodCall>\n<methodName>login</methodName>\n<params>\n<param>\n<value><string>username</string></value>\n</param>\n<param>\n<value><string>password</string></value>\n</param>\n</params>\n</methodCall>\n")
+        self.assertEqual(r.body, xmlrpclib.dumps(**kwargs))
         self.assertEqual(r.method, 'POST')
+        self.assertEqual(r.encoding, kwargs.get('encoding', 'utf-8'))
         self.assertTrue(r.dont_filter, True)
+
+    def test_xmlrpc_dumps(self):
+        self._test_request(params=('value',))
+        self._test_request(params=('username', 'password'), methodname='login')
+        self._test_request(params=('response', ), methodresponse='login')
+        self._test_request(params=(u'pas\xa3',), encoding='utf-8')
+        self._test_request(params=(u'pas\xa3',), encoding='latin')
+        self._test_request(params=(None,), allow_none=1)
+        self.assertRaises(TypeError, self._test_request)
+        self.assertRaises(TypeError, self._test_request, params=(None,))
 
 
 if __name__ == "__main__":
