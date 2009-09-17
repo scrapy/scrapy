@@ -94,4 +94,18 @@ setup(
     cmdclass = cmdclasses,
     data_files = data_files,
     scripts = ['bin/scrapy-ctl.py'],
+    classifiers = [
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2.5',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'License :: OSI Approved :: BSD License',
+        'Operating System :: OS Independent',
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Developers',
+        'Environment :: Console',
+        'Topic :: Software Development :: Libraries :: Application Frameworks',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+        'Topic :: Internet :: WWW/HTTP',
+    ]
 )
