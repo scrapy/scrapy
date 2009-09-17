@@ -7,7 +7,9 @@ hg purge --all
 
 # build packages
 version=$(python -c "import scrapy; print scrapy.__version__")
-python setup.py sdist bdist_wininst -t "Scrapy $version" -p "win32"
+python setup.py sdist
+# FIXME: bdist_wininst doesn't work on Unix (it doesn't include the data_files)
+#python setup.py bdist_wininst -t "Scrapy $version" -p "win32"
 
 # hash and sign
 cd dist
