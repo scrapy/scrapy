@@ -63,7 +63,7 @@ The first line will print the currently active project (if any).
 
 Example (active project)::
 
-    Scrapy 0.7.0 - project: myproject
+    Scrapy X.X.X - project: myproject
 
     Usage
     =====
@@ -72,7 +72,7 @@ Example (active project)::
 
 Example (no active project)::
 
-    Scrapy 0.7.0 - no active project
+    Scrapy X.X.X - no active project
 
     Usage
     =====

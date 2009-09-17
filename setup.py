@@ -81,14 +81,14 @@ if u'SVN' in version:
     version = ' '.join(version.split(' ')[:-1])
 
 setup(
-    name = 'Scrapy',
+    name = 'scrapy',
     version = version,
     url = 'http://scrapy.org',
-    download_url = "http://scrapy.org/releases/scrapy-0.7.0.tar.gz",
     description = 'A high-level Python Screen Scraping framework',
     long_description = 'Scrapy is a high level scraping and web crawling framework for writing spiders to crawl and parse web pages for all kinds of purposes, from information retrieval to monitoring or testing web sites.',
     author = 'Scrapy developers',
-    author_email = '',
+    maintainer = 'Pablo Hoffman',
+    maintainer_email = 'pablo@pablohoffman.com',
     license = 'BSD',
     packages = packages,
     cmdclass = cmdclasses,

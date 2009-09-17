@@ -1,10 +1,12 @@
 import sys
 import os
 import subprocess
-from os.path import exists, join
+from os.path import exists, join, dirname
 from shutil import rmtree
 from tempfile import mkdtemp
 import unittest
+
+import scrapy
 
 
 class ProjectTest(unittest.TestCase):
@@ -16,6 +18,7 @@ class ProjectTest(unittest.TestCase):
         self.proj_path = join(self.temp_path, self.project_name)
         self.proj_mod_path = join(self.proj_path, self.project_name)
         self.env = os.environ.copy()
+        self.env['PYTHONPATH'] = dirname(scrapy.__path__[0])
 
     def tearDown(self):
         rmtree(self.temp_path)

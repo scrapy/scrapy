@@ -3,8 +3,11 @@ include AUTHORS
 include INSTALL
 include LICENSE
 include MANIFEST.in
+include scrapy/core/downloader/responsetypes/mime.types
+recursive-include scrapy/templates *
+recursive-include scrapy/tests/sample_data *
 recursive-include docs *
+prune docs/build
 recursive-include scripts *
-recursive-include examples *
 recursive-include extras *
 recursive-include bin *

@@ -49,7 +49,12 @@ copyright = u'2008-2009, Insophia'
 # built documents.
 #
 # The short X.Y version.
-version = '0.7.0'
+try:
+    import scrapy
+    version = scrapy.__version__
+except ImportError:
+    version = ''
+
 # The full version, including alpha/beta/rc tags.
 release = version
 
