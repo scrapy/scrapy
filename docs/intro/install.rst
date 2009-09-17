@@ -131,55 +131,45 @@ Download and install:
 Step 3. Install Scrapy
 ======================
 
-We're working hard to get the first release of Scrapy out. In the meantime,
-please download the latest development version from the `Mercurial`_
-repository.
+There are three ways to download and install Scrapy:
 
+1. Download Scrapy from the `Download page`_. Scrapy is distributed in two
+   ways: a source code tarball (for Unix and Mac OS X systems) and a Windows
+   installer (for Windows). If you downloaded the tar.gz you can install it as
+   any Python package using ``setup.py``::
+
+        tar zxf scrapy-X.X.X.tar.gz
+        cd scrapy-X.X.X
+        python setup.py install
+
+   If you downloaded the Windows installer, just run it.
+
+2. Install Scrapy using `easy_install`_::
+
+        easy_install -U scrapy
+
+3. Check out the latest development code from the `Mercurial`_ repository (you
+   need to install Mercurial first)::
+
+        hg clone http://hg.scrapy.org/scrapy scrapy-trunk
+
+.. note:: If you use the development version of Scrapy, you should subscribe
+   to the mailing lists to get notified of any changes to the API.
+
+.. _Download page: http://scrapy.org/download/
 .. _Mercurial: http://www.selenic.com/mercurial/
+.. _easy_install: http://peak.telecommunity.com/DevCenter/EasyInstall
 
-Just follow these steps:
+.. warning:: In Windows, you may need to add the ``C:\Python25\Scripts`` (or
+   ``C:\Python26\scripts``) folder to the system path by adding that directory
+   to the ``PATH`` environment variable from the `Control Panel`_.
 
-3.1. Install Mercurial
------------------------
-
-Make sure that you have `Mercurial`_ installed, and that you can run its
-commands from a shell. (Enter ``hg help`` at a shell prompt to test this.)
-
-3.2. Check out the Scrapy source code
--------------------------------------
-
-By running the following command::
-
-    hg clone http://hg.scrapy.org/scrapy scrapy-trunk
-
-3.3. Install the Scrapy module
-------------------------------
-
-Install the Scrapy module by running the following commands::
-
-    cd scrapy-trunk
-    python setup.py install
-
-If you're on Unix-like systems (Linux, Mac, etc) you may need to run the second
-command with root privileges, for example by running::
-
-    sudo python setup.py install
-
-.. warning:: In Windows, you may need to add the ``C:\Python25\Scripts`` folder
-   to the system path by adding that directory to the ``PATH`` environment
-   variable from the `Control Panel`_.
-
-.. warning:: Keep in mind that Scrapy is still being changed, as we haven't yet
-   released the first stable version. So it's important that you keep updating
-   the code periodically and reinstalling the Scrapy module. A more convenient
-   way is to use Scrapy module without installing it (see below).
-
-Use Scrapy without installing it
-================================
+Use Scrapy without "installing" it
+==================================
 
 Another alternative is to use the Scrapy module without installing it which
-makes it easier to keep using the last Development code without having to
-reinstall it everytime you do a ``hg pull -u``.
+makes it easier to keep using the last development code without having to
+reinstall it every time you do a ``hg pull -u``.
 
 You can do this by following the next steps:
 
