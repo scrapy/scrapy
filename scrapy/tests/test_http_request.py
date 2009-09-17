@@ -269,40 +269,14 @@ class FormRequestTest(RequestTest):
         response = Response("http://www.example.com/lala.html", body=respbody)
         self.assertRaises(IndexError, self.request_class.from_response, response, formnumber=1)
 
-# XXX: XmlRpcRequest doesn't respect original Request API. is this expected?
+class XmlRpcRequestTest(RequestTest):
 
-class XmlRpcRequestTest(unittest.TestCase):
-
-    def test_basic(self):
+    def test_xmlrpc_basic(self):
         r = XmlRpcRequest('http://scrapytest.org/rpc2', methodname='login', params=('username', 'password'))
         self.assertEqual(r.headers['Content-Type'], 'text/xml')
         self.assertEqual(r.body, "<?xml version='1.0'?>\n<methodCall>\n<methodName>login</methodName>\n<params>\n<param>\n<value><string>username</string></value>\n</param>\n<param>\n<value><string>password</string></value>\n</param>\n</params>\n</methodCall>\n")
         self.assertEqual(r.method, 'POST')
         self.assertTrue(r.dont_filter, True)
-
-    def test_copy(self):
-        """Test XmlRpcRequest copy"""
-
-        def somecallback():
-            pass
-
-        r1 = XmlRpcRequest("http://www.example.com", callback=somecallback,
-                methodname='login', params=('username', 'password'))
-        r1.meta['foo'] = 'bar'
-        r2 = r1.copy()
-
-        assert r1.deferred is not r2.deferred
-
-        # make sure meta dict is shallow copied
-        assert r1.meta is not r2.meta, "meta must be a shallow copy, not identical"
-        self.assertEqual(r1.meta, r2.meta)
-
-        # make sure headers attribute is shallow copied
-        assert r1.headers is not r2.headers, "headers must be a shallow copy, not identical"
-        self.assertEqual(r1.headers, r2.headers)
-        self.assertEqual(r1.encoding, r2.encoding)
-        self.assertEqual(r1.dont_filter, r2.dont_filter)
-        self.assertEqual(r1.body, r2.body)
 
 
 if __name__ == "__main__":
