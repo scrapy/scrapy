@@ -8,6 +8,7 @@ See documentation in docs/topics/spiders.rst
 import copy
 
 from scrapy.http import Request
+from scrapy.utils.spider import iterate_spider_output
 from scrapy.contrib.spiders.init import InitSpider
 from scrapy.conf import settings
 
@@ -116,7 +117,7 @@ class CrawlSpider(InitSpider):
         if callback:
             cb_res = callback(response, **cb_kwargs) or ()
             cb_res = self.process_results(response, cb_res)
-            res.extend(cb_res)
+            res.extend(iterate_spider_output(cb_res))
         return res
 
     def _compile_rules(self):
