@@ -19,6 +19,6 @@ class $classname(CrawlSpider):
         #i['site_id'] = xs.select('//input[@id="sid"]/@value').extract()
         #i['name'] = xs.select('//div[@id="name"]').extract()
         #i['description'] = xs.select('//div[@id="description"]').extract()
-        return [i]
+        return i
 
 SPIDER = $classname()
