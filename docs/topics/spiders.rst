@@ -22,11 +22,11 @@ For spiders, the scraping cycle goes through something like this:
    :attr:`~scrapy.spider.BaseSpider.parse` method as callback function for the
    Requests.
 
-2. In the callback function you parse the response (web page) and return an
-   iterable containing either :class:`~scrapy.item.Item` objects,
-   :class:`~scrapy.http.Request` objects, or both. Those Requests will also
-   contain a callback (maybe the same) and will then be followed by downloaded
-   by Scrapy and then their response handled to the specified callback.
+2. In the callback function you parse the response (web page) and return either
+   :class:`~scrapy.item.Item` objects, :class:`~scrapy.http.Request` objects,
+   or an iterable of both. Those Requests will also contain a callback (maybe
+   the same) and will then be followed by downloaded by Scrapy and then their
+   response handled to the specified callback.
 
 3. In callback functions you parse the page contants, typically using
    :ref:`topics-selectors` (but you can also use BeautifuSoup, lxml or whatever
@@ -138,9 +138,8 @@ BaseSpider
        will be used to parse the first pages crawled by the spider.
 
        The ``parse`` method is in charge of processing the response and returning
-       scraped data and/or more URLs to follow, because of this, the method must
-       always return a list or at least an empty one. Other Requests callbacks
-       have the same requirements as the BaseSpider class.
+       scraped data and/or more URLs to follow. Other Requests callbacks have
+       the same requirements as the BaseSpider class.
 
    .. method:: log(message, [level, component])
 
@@ -167,7 +166,6 @@ Let's see an example::
 
         def parse(self, response):
             self.log('A response from %s just arrived!' % response.url)
-            return []
 
     SPIDER = MySpider()
 
@@ -251,7 +249,7 @@ Let's now take a look at an example CrawlSpider with rules::
             item['id'] = hxs.select('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
             item['name'] = hxs.select('//td[@id="item_name"]/text()').extract()
             item['description'] = hxs.select('//td[@id="item_description"]/text()').extract()
-            return [item]
+            return item
 
     SPIDER = MySpider()
 

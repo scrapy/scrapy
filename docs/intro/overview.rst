@@ -138,7 +138,7 @@ Finally, here's the spider code::
             torrent['name'] = x.select("//h1/text()").extract()
             torrent['description'] = x.select("//div[@id='description']").extract()
             torrent['size'] = x.select("//div[@id='info-left']/p[2]/text()[2]").extract()
-            return [torrent]
+            return torrent
 
 
 For brevity sake, we intentionally left out the import statements and the

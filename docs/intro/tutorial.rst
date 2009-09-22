@@ -137,7 +137,6 @@ This is the code for our first Spider, save it in a file named
        def parse(self, response):
            filename = response.url.split("/")[-2]
            open(filename, 'wb').write(response.body)
-           return []
             
    SPIDER = DmozSpider()
 
@@ -369,7 +368,6 @@ Let's add this code to our spider::
               link = site.select('a/@href').extract()
               desc = site.select('text()').extract()
               print title, link, desc
-          return []
            
    SPIDER = DmozSpider()
 
