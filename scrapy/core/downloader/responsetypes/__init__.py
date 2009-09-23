@@ -21,8 +21,11 @@ class ResponseTypes(object):
         'application/rss+xml': 'scrapy.http.XmlResponse',
         'application/xhtml+xml': 'scrapy.http.HtmlResponse',
         'application/xml': 'scrapy.http.XmlResponse',
+        'application/json': 'scrapy.http.TextResponse',
+        'application/javascript': 'scrapy.http.TextResponse',
+        'application/x-javascript': 'scrapy.http.TextResponse',
         'text/xml': 'scrapy.http.XmlResponse',
-        'text': 'scrapy.http.TextResponse',
+        'text/*': 'scrapy.http.TextResponse',
     }
 
     def __init__(self):
@@ -35,10 +38,13 @@ class ResponseTypes(object):
 
     def from_mimetype(self, mimetype):
         """Return the most appropiate Response class for the given mimetype"""
-        if mimetype is not None:
-            return self.classes.get(mimetype, self.classes.get(mimetype.split('/')[0], Response))
-        else:
+        if mimetype is None:
             return Response
+        elif mimetype in self.classes:
+            return self.classes[mimetype]
+        else:
+            basetype = "%s/*" % mimetype.split('/')[0]
+            return self.classes.get(basetype, Response)
 
     def from_content_type(self, content_type):
         """Return the most appropiate Response class from an HTTP Content-Type
