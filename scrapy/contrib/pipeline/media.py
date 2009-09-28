@@ -44,7 +44,7 @@ class MediaPipeline(object):
                     errbackArgs=(item, request, info),)
             dlist.append(dfd)
 
-        return DeferredList(dlist).addCallback(self.item_completed, item, info)
+        return DeferredList(dlist, consumeErrors=1).addCallback(self.item_completed, item, info)
 
     def _enqueue(self, request, info):
         wad = request.deferred or Deferred()

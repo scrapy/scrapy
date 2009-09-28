@@ -22,7 +22,7 @@ from scrapy.stats import stats
 from scrapy.utils.misc import md5sum
 from scrapy.core import signals
 from scrapy.core.engine import scrapyengine
-from scrapy.core.exceptions import DropItem, NotConfigured
+from scrapy.core.exceptions import DropItem, NotConfigured, IgnoreRequest
 from scrapy.spider import BaseSpider
 from scrapy.contrib.pipeline.media import MediaPipeline
 from scrapy.http import Request
@@ -202,16 +202,14 @@ class ImagesPipeline(MediaPipeline):
         referer = request.headers.get('Referer')
 
         if response.status != 200:
-            msg = 'Image (http-error): Error downloading image from %s referred in <%s>' \
-                    % (request, referer)
-            log.msg(msg, level=log.WARNING, domain=info.domain)
-            raise ImageException(msg)
+            log.msg('Image (http-error): Error downloading image from %s referred in <%s>' \
+                    % (request, referer), level=log.WARNING, domain=info.domain)
+            raise ImageException
 
         if not response.body:
-            msg = 'Image (empty-content): Empty image from %s referred in <%s>: no-content' \
-                    % (request, referer)
-            log.msg(msg, level=log.WARNING, domain=info.domain)
-            raise ImageException(msg)
+            log.msg('Image (empty-content): Empty image from %s referred in <%s>: no-content' \
+                    % (request, referer), level=log.WARNING, domain=info.domain)
+            raise ImageException
 
         status = 'cached' if 'cached' in response.flags else 'downloaded'
         msg = 'Image (%s): Downloaded image from %s referred in <%s>' % \
@@ -224,19 +222,20 @@ class ImagesPipeline(MediaPipeline):
             checksum = self.image_downloaded(response, request, info)
         except ImageException, ex:
             log.msg(str(ex), level=log.WARNING, domain=info.domain)
-            raise ex
-        except Exception, ex:
-            log.msg(str(ex), level=log.WARNING, domain=info.domain)
-            raise ex
+            raise
+        except Exception:
+            log.err(domain=info.domain)
+            raise ImageException
 
         return {'url': request.url, 'path': key, 'checksum': checksum}
 
     def media_failed(self, failure, request, info):
-        referer = request.headers.get('Referer')
-        msg = 'Image (unknow-error): Error downloading %s from %s referred in <%s>: %s' \
-                % (self.MEDIA_NAME, request, referer, str(failure))
-        log.msg(msg, level=log.WARNING, domain=info.domain)
-        raise ImageException(msg)
+        if not isinstance(failure.value, IgnoreRequest):
+            referer = request.headers.get('Referer')
+            msg = 'Image (unknown-error): Error downloading %s from %s referred in <%s>: %s' \
+                    % (self.MEDIA_NAME, request, referer, str(failure))
+            log.msg(msg, level=log.WARNING, domain=info.domain)
+        raise ImageException
 
     def media_to_download(self, request, info):
         def _onsuccess(result):
