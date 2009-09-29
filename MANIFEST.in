@@ -9,5 +9,6 @@ recursive-include scrapy/tests/sample_data *
 recursive-include docs *
 prune docs/build
 recursive-include scripts *
+recursive-include examples *
 recursive-include extras *
 recursive-include bin *
