@@ -31,9 +31,8 @@ class ItemLoader(object):
         self._values[field_name] += arg_to_iter(processed_value)
 
     def replace_value(self, field_name, value):
-        value = arg_to_iter(value)
-        processed_value = self._process_input_value(field_name, value)
-        self._values[field_name] = arg_to_iter(processed_value)
+        self._values.pop(field_name, None)
+        self.add_value(field_name, value)
 
     def load_item(self):
         item = self.item

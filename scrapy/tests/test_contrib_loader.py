@@ -311,6 +311,7 @@ class TestXPathItemLoader(XPathItemLoader):
     name_in = MapCompose(lambda v: v.title())
 
 class XPathItemLoaderTest(unittest.TestCase):
+    response = HtmlResponse(url="", body='<html><body><div id="id">marta</div><p>paragraph</p></body></html>')
 
     def test_constructor_errors(self):
         self.assertRaises(RuntimeError, XPathItemLoader)
@@ -323,16 +324,30 @@ class XPathItemLoaderTest(unittest.TestCase):
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
 
     def test_constructor_with_response(self):
-        response = HtmlResponse(url="", body="<html><body><div>marta</div></body></html>")
-        l = TestXPathItemLoader(response=response)
+        l = TestXPathItemLoader(response=self.response)
         self.assert_(l.selector)
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
 
     def test_add_xpath_re(self):
-        response = HtmlResponse(url="", body="<html><body><div>marta</div></body></html>")
-        l = TestXPathItemLoader(response=response)
+        l = TestXPathItemLoader(response=self.response)
         l.add_xpath('name', '//div/text()', re='ma')
+        self.assertEqual(l.get_output_value('name'), [u'Ma'])
+
+    def test_replace_xpath(self):
+        l = TestXPathItemLoader(response=self.response)
+        self.assert_(l.selector)
+        l.add_xpath('name', '//div/text()')
+        self.assertEqual(l.get_output_value('name'), [u'Marta'])
+        l.replace_xpath('name', '//p/text()')
+        self.assertEqual(l.get_output_value('name'), [u'Paragraph'])
+
+    def test_replace_xpath_re(self):
+        l = TestXPathItemLoader(response=self.response)
+        self.assert_(l.selector)
+        l.add_xpath('name', '//div/text()')
+        self.assertEqual(l.get_output_value('name'), [u'Marta'])
+        l.replace_xpath('name', '//div/text()', re='ma')
         self.assertEqual(l.get_output_value('name'), [u'Ma'])
 
 
