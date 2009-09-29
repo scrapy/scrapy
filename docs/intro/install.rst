@@ -33,7 +33,6 @@ Optional:
 
 * `pyopenssl <http://pyopenssl.sourceforge.net>`_ (for HTTPS support, highly recommended)
 * `simplejson <http://undefined.org/python/#simplejson>`_ (for (de)serializing JSON)
-* `spidermonkey <http://www.mozilla.org/js/spidermonkey/>`_ (for parsing Javascript)
 
 .. _intro-install-step1:
 
@@ -61,7 +60,7 @@ If you're running Ubuntu/Debian Linux run the following command as root::
 
 To install optional libraries::
 
-   apt-get install python-pyopenssl python-simplejson spidermonkey-bin
+   apt-get install python-pyopenssl python-simplejson
 
 Arch Linux
 ----------
@@ -72,7 +71,7 @@ If you are running Arch Linux run the following command as root::
 
 To install optional libraries::
 
-   pacman -S pyopenssl spidermonkey python-simplejson
+   pacman -S pyopenssl python-simplejson
 
 Mac OS X
 --------
@@ -110,7 +109,7 @@ run:
    /usr/local/lib/python2.5/site-packages. Add it to your ``PYTHONPATH`` and
    you are done.
 
-4. Check the ``libxml2`` library was installed propertly with::
+4. Check the ``libxml2`` library was installed properly with::
 
        python -c 'import libxml2'
 
@@ -133,12 +132,18 @@ Step 3. Install Scrapy
 
 There are three ways to download and install Scrapy:
 
+1. :ref:`intro-install-release`
+2. :ref:`intro-install-easy`
+3. :ref:`intro-install-dev`
+
+.. _intro-install-release:
+
 Installing an official release
 ------------------------------
 
 Download Scrapy from the `Download page`_. Scrapy is distributed in two ways: a
 source code tarball (for Unix and Mac OS X systems) and a Windows installer
-(for Windows). If you downloaded the tar.gz you can install it as any Python
+(for Windows). If you downloaded the tarball you can install it as any Python
 package using ``setup.py``::
 
    tar zxf scrapy-X.X.X.tar.gz
@@ -148,19 +153,23 @@ package using ``setup.py``::
 If you downloaded the Windows installer, just run it.
 
 .. warning:: In Windows, you may need to add the ``C:\Python25\Scripts`` (or
-   ``C:\Python26\scripts``) folder to the system path by adding that directory
+   ``C:\Python26\Scripts``) folder to the system path by adding that directory
    to the ``PATH`` environment variable from the `Control Panel`_.
 
 .. _Download page: http://scrapy.org/download/
 
-Installng with `easy_install`_
-------------------------------
+.. _intro-install-easy:
+
+Installing with `easy_install`_
+-------------------------------
 
 You can install Scrapy running `easy_install`_ like this::
 
    easy_install -U scrapy
 
 .. _easy_install: http://peak.telecommunity.com/DevCenter/EasyInstall
+
+.. _intro-install-dev:
 
 Installing the development version
 -----------------------------------
@@ -202,7 +211,7 @@ Installing the development version
 
        set PYTHONPATH=C:\path\to\scrapy-trunk
 
-3. Make the scrapy-ctl.py script available
+3. Make the ``scrapy-ctl.py`` script available
 
    On Unix-like systems, create a symbolic link to the file
    ``scrapy-trunk/scrapy/bin/scrapy-ctl.py`` in a directory on your system path,
@@ -217,5 +226,5 @@ Installing the development version
    ``scrapy-trunk/scrapy/bin/scrapy-ctl.py`` to somewhere on your system path,
    for example ``C:\Python25\Scripts``, which is customary for Python scripts.
 
-   .. _Control Panel: http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
+.. _Control Panel: http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
 
