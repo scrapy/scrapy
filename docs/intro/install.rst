@@ -133,88 +133,89 @@ Step 3. Install Scrapy
 
 There are three ways to download and install Scrapy:
 
-1. Download Scrapy from the `Download page`_. Scrapy is distributed in two
-   ways: a source code tarball (for Unix and Mac OS X systems) and a Windows
-   installer (for Windows). If you downloaded the tar.gz you can install it as
-   any Python package using ``setup.py``::
+Installing an official release
+------------------------------
 
-        tar zxf scrapy-X.X.X.tar.gz
-        cd scrapy-X.X.X
-        python setup.py install
+Download Scrapy from the `Download page`_. Scrapy is distributed in two ways: a
+source code tarball (for Unix and Mac OS X systems) and a Windows installer
+(for Windows). If you downloaded the tar.gz you can install it as any Python
+package using ``setup.py``::
 
-   If you downloaded the Windows installer, just run it.
+   tar zxf scrapy-X.X.X.tar.gz
+   cd scrapy-X.X.X
+   python setup.py install
 
-2. Install Scrapy using `easy_install`_::
-
-        easy_install -U scrapy
-
-3. Check out the latest development code from the `Mercurial`_ repository (you
-   need to install Mercurial first)::
-
-        hg clone http://hg.scrapy.org/scrapy scrapy-trunk
-
-.. note:: If you use the development version of Scrapy, you should subscribe
-   to the mailing lists to get notified of any changes to the API.
-
-.. _Download page: http://scrapy.org/download/
-.. _Mercurial: http://www.selenic.com/mercurial/
-.. _easy_install: http://peak.telecommunity.com/DevCenter/EasyInstall
+If you downloaded the Windows installer, just run it.
 
 .. warning:: In Windows, you may need to add the ``C:\Python25\Scripts`` (or
    ``C:\Python26\scripts``) folder to the system path by adding that directory
    to the ``PATH`` environment variable from the `Control Panel`_.
 
-Use Scrapy without "installing" it
-==================================
+.. _Download page: http://scrapy.org/download/
 
-Another alternative is to use the Scrapy module without installing it which
-makes it easier to keep using the last development code without having to
-reinstall it every time you do a ``hg pull -u``.
-
-You can do this by following the next steps:
-
-Add Scrapy to your Python path
+Installng with `easy_install`_
 ------------------------------
 
-If you're on Linux, Mac or any Unix-like system, you can make a symbolic link
-to your system ``site-packages`` directory like this::
+You can install Scrapy running `easy_install`_ like this::
 
-    ln -s /path/to/scrapy-trunk/scrapy SITE-PACKAGES/scrapy
+   easy_install -U scrapy
 
-Where ``SITE-PACKAGES`` is the location of your system ``site-packages``
-directory. To find this out execute the following::
+.. _easy_install: http://peak.telecommunity.com/DevCenter/EasyInstall
 
-    python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"
+Installing the development version
+-----------------------------------
 
-Alternatively, you can define your ``PYTHONPATH`` environment variable so that
-it includes the ``scrapy-trunk`` directory. This solution also works on Windows
-systems, which don't support symbolic links.  (Environment variables can be
-defined on Windows systems from the `Control Panel`_).
+.. note:: If you use the development version of Scrapy, you should subscribe
+   to the mailing lists to get notified of any changes to the API.
 
-Unix-like example::
 
-    PYTHONPATH=/path/to/scrapy-trunk
+1. Check out the latest development code from the `Mercurial`_ repository (you
+   need to install `Mercurial_` first)::
 
-Windows example (from command line, but you should probably use the `Control
-Panel`_)::
+      hg clone http://hg.scrapy.org/scrapy scrapy-trunk
 
-    set PYTHONPATH=C:\path\to\scrapy-trunk
+.. _Mercurial: http://www.selenic.com/mercurial/
 
-Make the scrapy-ctl.py script available
----------------------------------------
+2. Add Scrapy to your Python path
 
-On Unix-like systems, create a symbolic link to the file
-``scrapy-trunk/scrapy/bin/scrapy-ctl.py`` in a directory on your system path,
-such as ``/usr/local/bin``. For example::
+   If you're on Linux, Mac or any Unix-like system, you can make a symbolic link
+   to your system ``site-packages`` directory like this::
 
-    ln -s `pwd`/scrapy-trunk/scrapy/bin/scrapy-ctl.py /usr/local/bin
+       ln -s /path/to/scrapy-trunk/scrapy SITE-PACKAGES/scrapy
 
-This simply lets you type ``scrapy-ctl.py`` from within any directory, rather
-than having to qualify the command with the full path to the file.
+   Where ``SITE-PACKAGES`` is the location of your system ``site-packages``
+   directory. To find this out execute the following::
 
-On Windows systems, the same result can be achieved by copying the file
-``scrapy-trunk/scrapy/bin/scrapy-ctl.py`` to somewhere on your system path,
-for example ``C:\Python25\Scripts``, which is customary for Python scripts.
+       python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"
 
-.. _Control Panel: http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
+   Alternatively, you can define your ``PYTHONPATH`` environment variable so that
+   it includes the ``scrapy-trunk`` directory. This solution also works on Windows
+   systems, which don't support symbolic links.  (Environment variables can be
+   defined on Windows systems from the `Control Panel`_).
+
+   Unix-like example::
+
+       PYTHONPATH=/path/to/scrapy-trunk
+
+   Windows example (from command line, but you should probably use the `Control
+   Panel`_)::
+
+       set PYTHONPATH=C:\path\to\scrapy-trunk
+
+3. Make the scrapy-ctl.py script available
+
+   On Unix-like systems, create a symbolic link to the file
+   ``scrapy-trunk/scrapy/bin/scrapy-ctl.py`` in a directory on your system path,
+   such as ``/usr/local/bin``. For example::
+
+       ln -s `pwd`/scrapy-trunk/scrapy/bin/scrapy-ctl.py /usr/local/bin
+
+   This simply lets you type ``scrapy-ctl.py`` from within any directory, rather
+   than having to qualify the command with the full path to the file.
+
+   On Windows systems, the same result can be achieved by copying the file
+   ``scrapy-trunk/scrapy/bin/scrapy-ctl.py`` to somewhere on your system path,
+   for example ``C:\Python25\Scripts``, which is customary for Python scripts.
+
+   .. _Control Panel: http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
 
