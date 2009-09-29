@@ -4,6 +4,7 @@ include INSTALL
 include LICENSE
 include MANIFEST.in
 include scrapy/core/downloader/responsetypes/mime.types
+include scrapy/xlib/pydispatch/license.txt
 recursive-include scrapy/templates *
 recursive-include scrapy/tests/sample_data *
 recursive-include docs *
