@@ -161,6 +161,10 @@ class ExecutionEngine(object):
         return self.downloader.sites.keys()
 
     def crawl(self, request, spider):
+        if not request.deferred.callbacks:
+            log.msg("Unable to crawl Request with no callback: %s" % request,
+                level=log.ERROR, domain=spider.domain_name)
+            return
         schd = mustbe_deferred(self.schedule, request, spider)
         # FIXME: we can't log errors because we would be preventing them from
         # propagating to the request errback. This should be fixed after the

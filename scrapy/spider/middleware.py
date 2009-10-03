@@ -85,23 +85,9 @@ class SpiderMiddlewareManager(object):
                 assert _isiterable(result), \
                     'Middleware %s must returns an iterable object, got %s ' % \
                     (fname(method), type(result))
-
-            return self._validate_output(request, result, spider)
+            return result
 
         dfd = mustbe_deferred(process_spider_input, response)
         dfd.addErrback(process_spider_exception)
         dfd.addCallback(process_spider_output)
         return dfd
-
-    def _validate_output(self, request, result, spider):
-        """Every request returned by spiders must be instanciate with a callback"""
-        for r in result:
-            if isinstance(r, Request) and not r.deferred.callbacks:
-                log.msg('Ignoring %s returned from spider while processing %s: ' \
-                        'Request has no callback, try adding callback=self.parse ' \
-                        'argument when instanciating Request objects inside your spiders' \
-                        % (r, request), level=log.WARNING, domain=spider.domain_name)
-                continue
-            yield r
-
-
