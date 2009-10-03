@@ -232,6 +232,9 @@ class ExecutionEngine(object):
             self.next_request(spider)
             return _
 
+        if spider not in self.downloader.sites:
+            return defer.fail(Failure(IgnoreRequest())).addBoth(_on_complete)
+
         dwld = mustbe_deferred(self.downloader.fetch, request, spider)
         dwld.addCallbacks(_on_success, _on_error)
         dwld.addBoth(_on_complete)
