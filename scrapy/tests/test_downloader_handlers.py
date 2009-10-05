@@ -103,3 +103,47 @@ class HttpTestCase(unittest.TestCase):
         request = Request(self.getURL('broken'))
         d = download_http(request, BaseSpider())
         return self.assertFailure(d, PartialDownloadError)
+
+
+class UriResource(resource.Resource):
+    """Return the full uri that was requested"""
+
+    def getChild(self, path, request):
+        return self
+
+    def render(self, request):
+        return request.uri
+
+
+class HttpProxyTestCase(unittest.TestCase):
+
+    def setUp(self):
+        site = server.Site(UriResource(), timeout=None)
+        wrapper = WrappingFactory(site)
+        self.port = reactor.listenTCP(0, wrapper, interface='127.0.0.1')
+        self.portno = self.port.getHost().port
+
+    def tearDown(self):
+        return self.port.stopListening()
+
+    def getURL(self, path):
+        return "http://127.0.0.1:%d/%s" % (self.portno, path)
+
+    def test_download_with_proxy(self):
+        def _test(response):
+            self.assertEquals(response.status, 200)
+            self.assertEquals(response.url, request.url)
+            self.assertEquals(response.body, 'https://example.com')
+
+        http_proxy = self.getURL('')
+        request = Request('https://example.com', meta={'proxy': http_proxy})
+        return download_http(request, BaseSpider()).addCallback(_test)
+
+    def test_download_without_proxy(self):
+        def _test(response):
+            self.assertEquals(response.status, 200)
+            self.assertEquals(response.url, request.url)
+            self.assertEquals(response.body, '/path/to/resource')
+
+        request = Request(self.getURL('path/to/resource'))
+        return download_http(request, BaseSpider()).addCallback(_test)
