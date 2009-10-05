@@ -124,6 +124,13 @@ REDIRECT_MAX_METAREFRESH_DELAY = 100
 REDIRECT_MAX_TIMES = 20 # uses Firefox default setting
 REDIRECT_PRIORITY_ADJUST = +2
 
+REQUEST_HANDLERS = {}
+REQUEST_HANDLERS_BASE = {
+    'file': 'scrapy.core.downloader.handlers.file.download_file',
+    'http': 'scrapy.core.downloader.handlers.http.download_http',
+    'https': 'scrapy.core.downloader.handlers.http.download_http',
+}
+
 REQUESTS_QUEUE_SIZE = 0
 REQUESTS_PER_DOMAIN = 8     # max simultaneous requests per domain
 
