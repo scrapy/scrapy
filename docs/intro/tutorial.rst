@@ -462,7 +462,7 @@ separated values) file using the standard library `csv module`_::
            self.csvwriter = csv.writer(open('items.csv', 'wb'))
         
        def process_item(self, domain, item):
-           self.csvwriter.writerow([item.title[0], item.link[0], item.desc[0]])
+           self.csvwriter.writerow([item['title'][0], item['link'][0], item['desc'][0]])
            return item
 
 .. _csv module: http://docs.python.org/library/csv.html
