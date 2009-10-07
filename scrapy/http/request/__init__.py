@@ -85,10 +85,7 @@ class Request(object_ref):
         return self._encoding
 
     def __str__(self):
-        if self.method == 'GET':
-            return "<%s>" % self.url
-        else:
-            return "<%s %s>" % (self.method, self.url)
+        return "<%s %s>" % (self.method, self.url)
 
     def __repr__(self):
         attrs = ['url', 'method', 'body', 'headers', 'cookies', 'meta']

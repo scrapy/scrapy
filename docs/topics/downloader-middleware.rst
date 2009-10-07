@@ -247,6 +247,18 @@ HttpCompressionMiddleware
    This middleware allows compressed (gzip, deflate) traffic to be
    sent/received from web sites.
 
+HttpProxyMiddleware
+-------------------
+
+.. module:: scrapy.contrib.downloadermiddleware.httpproxy
+   :synopsis: Http Proxy Middleware
+
+.. class:: HttpProxyMiddleware
+
+   This middleware sets proxy to use for requests, it obeys enviroment
+   variables 'http_proxy', 'https_proxy', and 'no_proxy'
+
+
 RedirectMiddleware
 -------------------
 
