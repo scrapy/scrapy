@@ -253,11 +253,22 @@ HttpProxyMiddleware
 .. module:: scrapy.contrib.downloadermiddleware.httpproxy
    :synopsis: Http Proxy Middleware
 
+.. versionadded:: 0.8
+
 .. class:: HttpProxyMiddleware
 
-   This middleware sets proxy to use for requests, it obeys enviroment
-   variables 'http_proxy', 'https_proxy', and 'no_proxy'
+   This middleware sets the HTTP proxy to use for requests, by setting the
+   ``proxy`` meta value to :class:`~scrapy.http.Request` objects.
 
+   Like the Python standard library modules `urllib`_ and `urllib2`_ it obeys
+   the following enviroment variables:
+
+   * ``http_proxy``
+   * ``https_proxy``
+   * ``no_proxy``
+
+.. _urllib: http://docs.python.org/library/urllib.html
+.. _urllib2: http://docs.python.org/library/urllib2.html
 
 RedirectMiddleware
 -------------------
