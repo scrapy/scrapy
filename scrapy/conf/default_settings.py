@@ -101,6 +101,7 @@ ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'
 ITEM_PIPELINES = []
 
 LOG_ENABLED = True
+LOG_FORMATTER_CRAWLED = 'scrapy.contrib.logformatter.crawled_logline'
 LOG_STDOUT = False
 LOG_LEVEL = 'DEBUG'
 LOG_FILE = None

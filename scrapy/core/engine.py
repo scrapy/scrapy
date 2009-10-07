@@ -34,6 +34,7 @@ class ExecutionEngine(object):
         self.paused = False
         self._next_request_pending = set()
         self._mainloop_task = task.LoopingCall(self._mainloop)
+        self._crawled_logline = load_object(settings['LOG_FORMATTER_CRAWLED'])
 
     def configure(self):
         """
@@ -198,15 +199,14 @@ class ExecutionEngine(object):
 
     def download(self, request, spider):
         domain = spider.domain_name
-        referer = request.headers.get('Referer')
 
         def _on_success(response):
             """handle the result of a page download"""
             assert isinstance(response, (Response, Request))
             if isinstance(response, Response):
                 response.request = request # tie request to response received
-                log.msg("Crawled %s (referer: <%s>)" % (request, referer), \
-                    level=log.DEBUG, domain=domain)
+                log.msg(self._crawled_logline(request, response), \
+                    level=log.DEBUG, domain=spider.domain_name)
                 return response
             elif isinstance(response, Request):
                 newrequest = response
@@ -224,8 +224,8 @@ class ExecutionEngine(object):
                 errmsg = str(_failure)
                 level = log.ERROR
             if errmsg:
-                log.msg("Downloading <%s> (referer: <%s>): %s" % (request.url, \
-                    referer, errmsg), level=level, domain=domain)
+                log.msg("Crawling <%s>: %s" % (request.url, errmsg), \
+                    level=level, domain=domain)
             return Failure(IgnoreRequest(str(exc)))
 
         def _on_complete(_):
