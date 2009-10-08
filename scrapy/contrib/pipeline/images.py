@@ -195,7 +195,10 @@ class ImagesPipeline(MediaPipeline):
         super(ImagesPipeline, self).__init__()
 
     def _get_store(self, uri):
-        scheme = urlparse.urlparse(uri).scheme
+        if os.path.isabs(uri): # to support win32 paths like: C:\\some\dir
+            scheme = 'file'
+        else:
+            scheme = urlparse.urlparse(uri).scheme
         store_cls = self.STORE_SCHEMES[scheme]
         return store_cls(uri)
 
