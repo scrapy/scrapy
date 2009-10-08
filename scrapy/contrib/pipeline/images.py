@@ -67,7 +67,8 @@ class FSImagesStore(object):
         return {'last_modified': last_modified, 'checksum': checksum}
 
     def _get_filesystem_path(self, key):
-        return os.path.join(self.basedir, key)
+        path_comps = key.split('/')
+        return os.path.join(self.basedir, *path_comps)
 
     def _mkdir(self, dirname, domain=None):
         seen = self.created_directories[domain] if domain else set()

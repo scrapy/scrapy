@@ -1,9 +1,9 @@
+import os
 from twisted.trial import unittest
 from scrapy.conf import settings
 from tempfile import mkdtemp
 from shutil import rmtree
 
-SETTINGS_DISABLED = settings.disabled
 
 class ImagesPipelineTestCase(unittest.TestCase):
     def setUp(self):
@@ -14,6 +14,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
 
         from scrapy.contrib.pipeline.images import ImagesPipeline
         self.tempdir = mkdtemp()
+        self.settings_disabled_before = settings.disabled
         settings.disabled = False
         settings.overrides['IMAGES_STORE'] = self.tempdir
         self.pipeline = ImagesPipeline()
@@ -21,7 +22,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
     def tearDown(self):
         del self.pipeline
         rmtree(self.tempdir)
-        settings.disabled = SETTINGS_DISABLED
+        settings.disabled = self.settings_disabled_before
 
     def test_image_path(self):
         image_path = self.pipeline.image_key
@@ -49,6 +50,17 @@ class ImagesPipelineTestCase(unittest.TestCase):
                          'thumbs/50/469150566bd728fc90b4adf6495202fd70ec3537.jpg')
         self.assertEqual(thumbnail_name("/tmp/some.name/foo", name),
                          'thumbs/50/92dac2a6a2072c5695a5dff1f865b3cb70c657bb.jpg')
+
+    def test_fs_store(self):
+        from scrapy.contrib.pipeline.images import FSImagesStore
+        assert isinstance(self.pipeline.store, FSImagesStore)
+        self.assertEqual(self.pipeline.store.basedir, self.tempdir)
+
+        key = 'some/image/key.jpg'
+        path = os.path.join(self.tempdir, 'some', 'image', 'key.jpg')
+        self.assertEqual(self.pipeline.store._get_filesystem_path(key),
+            path)
+
 
 if __name__ == "__main__":
     unittest.main()
