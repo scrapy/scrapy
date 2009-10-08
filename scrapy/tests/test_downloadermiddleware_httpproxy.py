@@ -1,5 +1,6 @@
 import os
-from unittest import TestCase
+import sys
+from twisted.trial.unittest import TestCase, SkipTest
 
 from scrapy.contrib.downloadermiddleware.httpproxy import HttpProxyMiddleware
 from scrapy.core.exceptions import NotConfigured
@@ -10,6 +11,8 @@ from scrapy.conf import settings
 spider = BaseSpider()
 
 class TestDefaultHeadersMiddleware(TestCase):
+
+    failureException = AssertionError
 
     def setUp(self):
         self._oldenv = os.environ.copy()
@@ -61,6 +64,8 @@ class TestDefaultHeadersMiddleware(TestCase):
 
 
     def test_no_proxy(self):
+        if sys.version_info < (2, 6):
+            raise SkipTest('no_proxy is not supported in python < 2.6')
         os.environ['http_proxy'] = http_proxy = 'https://proxy.for.http:3128'
         mw = HttpProxyMiddleware()
 
