@@ -242,6 +242,8 @@ Memory usage extension
 
 .. class:: scrapy.contrib.memusage.MemoryUsage
 
+.. note:: This extension does not work in Windows.
+
 Allows monitoring the memory used by a Scrapy process and:
 
 1, send a notification email when it exceeds a certain value
