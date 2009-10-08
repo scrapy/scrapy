@@ -402,6 +402,7 @@ Default::
         'scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware': 550,
         'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware': 600,
         'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware': 700,
+        'scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware': 750,
         'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 800,
         'scrapy.contrib.downloadermiddleware.stats.DownloaderStats': 850,
         'scrapy.contrib.downloadermiddleware.httpcache.HttpCacheMiddleware': 900,
@@ -724,6 +725,33 @@ Default: ``+2``
 
 Adjust redirect request priority relative to original request.
 A negative priority adjust means more priority.
+
+.. setting:: REQUEST_HANDLERS
+
+REQUEST_HANDLERS
+----------------
+
+Default: ``{}``
+
+A dict containing the request downloader handlers enabled in your project.
+See `REQUEST_HANDLERS_BASE` for example format.
+
+.. setting:: REQUEST_HANDLERS_BASE
+
+REQUEST_HANDLERS_BASE
+---------------------
+
+Default:: 
+
+    {
+        'file': 'scrapy.core.downloader.handlers.file.download_file',
+        'http': 'scrapy.core.downloader.handlers.http.download_http',
+        'https': 'scrapy.core.downloader.handlers.http.download_http',
+    }
+
+A dict containing the request download handlers enabled by default in Scrapy.
+You should never modify this setting in your project, modify
+:setting:`REQUEST_HANDLERS` instead. 
 
 .. setting:: REQUESTS_PER_DOMAIN
 

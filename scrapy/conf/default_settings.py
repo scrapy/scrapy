@@ -60,6 +60,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     'scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware': 550,
     'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware': 600,
     'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware': 700,
+    'scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware': 750,
     'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 800,
     'scrapy.contrib.downloadermiddleware.stats.DownloaderStats': 850,
     'scrapy.contrib.downloadermiddleware.httpcache.HttpCacheMiddleware': 900,
@@ -100,6 +101,7 @@ ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'
 ITEM_PIPELINES = []
 
 LOG_ENABLED = True
+LOG_FORMATTER_CRAWLED = 'scrapy.contrib.logformatter.crawled_logline'
 LOG_STDOUT = False
 LOG_LEVEL = 'DEBUG'
 LOG_FILE = None
@@ -123,6 +125,13 @@ NEWSPIDER_MODULE = ''
 REDIRECT_MAX_METAREFRESH_DELAY = 100
 REDIRECT_MAX_TIMES = 20 # uses Firefox default setting
 REDIRECT_PRIORITY_ADJUST = +2
+
+REQUEST_HANDLERS = {}
+REQUEST_HANDLERS_BASE = {
+    'file': 'scrapy.core.downloader.handlers.file.download_file',
+    'http': 'scrapy.core.downloader.handlers.http.download_http',
+    'https': 'scrapy.core.downloader.handlers.http.download_http',
+}
 
 REQUESTS_QUEUE_SIZE = 0
 REQUESTS_PER_DOMAIN = 8     # max simultaneous requests per domain
