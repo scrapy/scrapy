@@ -115,6 +115,7 @@ Solving specific problems
    topics/firefox
    topics/firebug
    topics/leaks
+   topics/images
 
 :doc:`faq`
     Get answers to most frequently asked questions.
@@ -128,6 +129,8 @@ Solving specific problems
 :doc:`topics/leaks`
     Learn how to find and get rid of memory leaks in your crawler.
 
+:doc:`topics/images`
+    Download static images associated with your scraped items.
 
 Extending Scrapy
 ================
