@@ -7,7 +7,7 @@ from scrapy.utils.python import re_rsearch, str_to_unicode
 from scrapy.utils.response import body_or_str
 
 
-def _xmliter_regex(obj, nodename):
+def xmliter_regex(obj, nodename):
     """Return a iterator of XPathSelector's over all nodes of a XML document,
        given tha name of the node to iterate. Useful for parsing XML feeds.
 
@@ -31,7 +31,7 @@ def _xmliter_regex(obj, nodename):
         yield XmlXPathSelector(text=nodetext).select('//' + nodename)[0]
 
 
-def _xmliter_lxml(obj, nodename, encoding='utf-8'):
+def xmliter_lxml(obj, nodename):
     reader = _StreamReader(obj)
     iterable = etree.iterparse(reader, tag=nodename, encoding=reader.encoding)
     for _, node in iterable:
@@ -66,9 +66,9 @@ class _StreamReader(object):
 
 try:
     from lxml import etree
-    xmliter = _xmliter_lxml
+    xmliter = xmliter_lxml
 except ImportError:
-    xmliter = _xmliter_regex
+    xmliter = xmliter_regex
 
 
 def csviter(obj, delimiter=None, headers=None, encoding=None):
