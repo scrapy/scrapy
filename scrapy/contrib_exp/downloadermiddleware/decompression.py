@@ -2,10 +2,10 @@
 and extract the potentially compressed responses that may arrive. 
 """
 
+import bz2
+import gzip
 import zipfile
 import tarfile
-import gzip
-import bz2
 from cStringIO import StringIO
 from tempfile import mktemp
 
@@ -13,79 +13,69 @@ from scrapy import log
 from scrapy.http import Response
 from scrapy.core.downloader.responsetypes import responsetypes
 
+
 class DecompressionMiddleware(object):
     """ This middleware tries to recognise and extract the possibly compressed
     responses that may arrive. """
 
     def __init__(self):
-        self.decompressors = {
-            'tar': self.is_tar,
-            'zip': self.is_zip,
-            'gz': self.is_gzip,
-            'bz2': self.is_bzip2
+        self._formats = {
+            'tar': self._is_tar,
+            'zip': self._is_zip,
+            'gz': self._is_gzip,
+            'bz2': self._is_bzip2
         }
 
-    def is_tar(self, response):
+    def _is_tar(self, response):
+        archive = StringIO(response.body)
         try:
-            tar_file = tarfile.open(name=mktemp(), fileobj=self.archive)
+            tar_file = tarfile.open(name=mktemp(), fileobj=archive)
         except tarfile.ReadError:
-            return False
-        if tar_file.members:
-            body = body=tar_file.extractfile(tar_file.members[0]).read()
-            respcls = responsetypes.from_args(filename=tar_file.members[0].name, body=body)
-            return response.replace(body=body, cls=respcls)
-        else:
-            raise self.ArchiveIsEmpty
+            return
 
-    def is_zip(self, response):
+        body = tar_file.extractfile(tar_file.members[0]).read()
+        respcls = responsetypes.from_args(filename=tar_file.members[0].name, body=body)
+        return response.replace(body=body, cls=respcls)
+
+    def _is_zip(self, response):
+        archive = StringIO(response.body)
         try:
-            zip_file = zipfile.ZipFile(self.archive)
+            zip_file = zipfile.ZipFile(archive)
         except zipfile.BadZipfile:
-            return False
+            return
+
         namelist = zip_file.namelist()
-        if namelist:
-            body = zip_file.read(namelist[0])
-            respcls = responsetypes.from_args(filename=namelist[0], body=body)
-            return response.replace(body=body, cls=respcls)
-        else:
-            raise self.ArchiveIsEmpty
+        body = zip_file.read(namelist[0])
+        respcls = responsetypes.from_args(filename=namelist[0], body=body)
+        return response.replace(body=body, cls=respcls)
 
-    def is_gzip(self, response):
+    def _is_gzip(self, response):
+        archive = StringIO(response.body)
         try:
-            gzip_file = gzip.GzipFile(fileobj=self.archive)
-            decompressed_body = gzip_file.read()
+            body = gzip.GzipFile(fileobj=archive).read()
         except IOError:
-            return False
-        respcls = responsetypes.from_args(body=decompressed_body)
-        return response.replace(body=decompressed_body, cls=respcls)
+            return
 
-    def is_bzip2(self, response):
+        respcls = responsetypes.from_args(body=body)
+        return response.replace(body=body, cls=respcls)
+
+    def _is_bzip2(self, response):
         try:
-            decompressed_body = bz2.decompress(self.body)
+            body = bz2.decompress(response.body)
         except IOError:
-            return False
-        respcls = responsetypes.from_args(body=decompressed_body)
-        return response.replace(body=decompressed_body, cls=respcls)
+            return
 
-    def extract(self, response):
-        """ This method tries to decompress the given response, if possible,
-        and returns a tuple containing the resulting response, and the name
-        of the used decompressor """
-
-        self.body = response.body
-        self.archive = StringIO()
-        self.archive.write(self.body)
-
-        for decompressor in self.decompressors.keys():
-            self.archive.seek(0)
-            new_response = self.decompressors[decompressor](response)
-            if new_response:
-                return (new_response, decompressor)
-        return (response, None)
+        respcls = responsetypes.from_args(body=body)
+        return response.replace(body=body, cls=respcls)
 
     def process_response(self, request, response, spider):
-        if isinstance(response, Response) and response.body:
-            response, format = self.extract(response)
-            if format:
-                log.msg('Decompressed response with format: %s' % format, log.DEBUG, domain=spider.domain_name)
+        if not response.body:
+            return response
+
+        for fmt, func in self._formats.iteritems():
+            new_response = func(response)
+            if new_response:
+                log.msg('Decompressed response with format: %s' % \
+                        fmt, log.DEBUG, domain=spider.domain_name)
+                return new_response
         return response
