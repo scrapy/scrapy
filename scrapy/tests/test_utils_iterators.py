@@ -2,7 +2,8 @@ import os
 import libxml2
 from twisted.trial import unittest
 
-from scrapy.utils.iterators import csviter, xmliter, _xmliter_lxml, _xmliter_regex
+from scrapy.utils.iterators import csviter, xmliter
+from scrapy.contrib_exp.iterators import xmliter_lxml
 from scrapy.http import XmlResponse, TextResponse
 from scrapy.tests import get_testdata
 
@@ -90,12 +91,8 @@ class XmliterTestCase(unittest.TestCase):
         )
 
 
-class RegexXmliterTestCase(XmliterTestCase):
-    xmliter = staticmethod(_xmliter_regex)
-
-
 class LxmlXmliterTestCase(XmliterTestCase):
-    xmliter = staticmethod(_xmliter_lxml)
+    xmliter = staticmethod(xmliter_lxml)
     try:
         import lxml
     except ImportError:

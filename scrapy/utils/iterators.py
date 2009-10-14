@@ -7,7 +7,7 @@ from scrapy.utils.python import re_rsearch, str_to_unicode
 from scrapy.utils.response import body_or_str
 
 
-def _xmliter_regex(obj, nodename):
+def xmliter(obj, nodename):
     """Return a iterator of XPathSelector's over all nodes of a XML document,
        given tha name of the node to iterate. Useful for parsing XML feeds.
 
@@ -29,46 +29,6 @@ def _xmliter_regex(obj, nodename):
     for match in r.finditer(text):
         nodetext = header_start + match.group() + header_end
         yield XmlXPathSelector(text=nodetext).select('//' + nodename)[0]
-
-
-def _xmliter_lxml(obj, nodename):
-    reader = _StreamReader(obj)
-    iterable = etree.iterparse(reader, tag=nodename, encoding=reader.encoding)
-    for _, node in iterable:
-        nodetext = etree.tostring(node)
-        node.clear()
-        yield XmlXPathSelector(text=nodetext).select('//' + nodename)[0]
-
-class _StreamReader(object):
-
-    def __init__(self, obj):
-        self._ptr = 0
-        if isinstance(obj, Response):
-            self._text, self.encoding = obj.body, obj.encoding
-        else:
-            self._text, self.encoding = obj, 'utf-8'
-        self._is_unicode = isinstance(self._text, unicode)
-
-    def read(self, n=65535):
-        self.read = self._read_unicode if self._is_unicode else self._read_string
-        return self.read(n).lstrip()
-
-    def _read_string(self, n=65535):
-        s, e = self._ptr, self._ptr + n
-        self._ptr = e
-        return self._text[s:e]
-
-    def _read_unicode(self, n=65535):
-        s, e = self._ptr, self._ptr + n
-        self._ptr = e
-        return self._text[s:e].encode('utf-8')
-
-
-try:
-    from lxml import etree
-    xmliter = _xmliter_lxml
-except ImportError:
-    xmliter = _xmliter_regex
 
 
 def csviter(obj, delimiter=None, headers=None, encoding=None):
