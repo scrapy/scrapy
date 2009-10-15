@@ -84,11 +84,25 @@ class HttpTestCase(unittest.TestCase):
         d = download_http(request, spider)
         return self.assertFailure(d, defer.TimeoutError)
 
-    def test_host_header(self):
+    def test_host_header_not_in_request_headers(self):
+        def _test(response):
+            self.assertEquals(response.body, '127.0.0.1:%d' % self.portno)
+            self.assertEquals(request.headers, {})
+
         request = Request(self.getURL('host'))
+        return download_http(request, BaseSpider()).addCallback(_test)
+
+    def test_host_header_seted_in_request_headers(self):
+        def _test(response):
+            self.assertEquals(response.body, 'example.com')
+            self.assertEquals(request.headers.get('Host'), 'example.com')
+
+        request = Request(self.getURL('host'), headers={'Host': 'example.com'})
+        return download_http(request, BaseSpider()).addCallback(_test)
+
         d = download_http(request, BaseSpider())
         d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, '127.0.0.1:%d' % self.portno)
+        d.addCallback(self.assertEquals, 'example.com')
         return d
 
     def test_payload(self):

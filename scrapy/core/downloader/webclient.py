@@ -87,7 +87,7 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
         self.url = urldefrag(request.url)[0]
         self.method = request.method
         self.body = request.body or None
-        self.headers = request.headers
+        self.headers = Headers(request.headers)
         self.response_headers = None
         self.timeout = timeout
         self.deferred = defer.Deferred().addCallback(self._build_response)
