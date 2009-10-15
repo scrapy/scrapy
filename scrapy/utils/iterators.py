@@ -1,4 +1,5 @@
 import re, csv
+from cStringIO import StringIO
 
 from scrapy.http import Response
 from scrapy.selector import XmlXPathSelector
@@ -48,7 +49,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None):
     def _getrow(csv_r):
         return [str_to_unicode(field, encoding) for field in csv_r.next()]
 
-    lines = body_or_str(obj, unicode=False).splitlines(True)
+    lines = StringIO(body_or_str(obj, unicode=False))
     if delimiter:
         csv_r = csv.reader(lines, delimiter=delimiter)
     else:
