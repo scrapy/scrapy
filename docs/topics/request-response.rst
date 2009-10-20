@@ -271,14 +271,13 @@ objects.
           overridden by the one passed in this parameter.
        :type formdata: dict
 
-       :param clickdata: The arguments in clickdata are passed directly to
-          ClientForm's click_request_data() method. See <ClientForm> for more
-          info.
+       :param clickdata: Arguments to be passed directly to ClientForm
+          ``click_request_data()`` method. See `ClientForm`_ homepage for
+          more info.
        :type clickdata: dict
 
        The other parameters of this class method are passed directly to the
        :class:`FormRequest` constructor.
-
 
 Request usage examples
 ----------------------
