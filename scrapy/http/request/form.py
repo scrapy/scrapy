@@ -37,7 +37,7 @@ class FormRequest(Request):
             self.headers['Content-Type'] = 'application/x-www-form-urlencoded'
 
     @classmethod
-    def from_response(cls, response, formnumber=0, formdata=None, **kwargs):
+    def from_response(cls, response, formnumber=0, formdata=None, clickdata=None, **kwargs):
         encoding = getattr(response, 'encoding', 'utf-8')
         forms = ParseFile(StringIO(response.body), response.url,
                           encoding=encoding, backwards_compat=False)
@@ -51,11 +51,10 @@ class FormRequest(Request):
             # remove all existing fields with the same name before, so that
             # formdata fields properly can properly override existing ones,
             # which is the desired behaviour
-            form.controls = [c for c in form.controls if c.name not in formdata.keys()]
+            form.controls = [c for c in form.controls if c.name not in formdata]
             for k, v in formdata.iteritems():
                 for v2 in v if hasattr(v, '__iter__') else [v]:
                     form.new_control('text', k, {'value': v2})
-                    
-        url, body, headers = form.click_request_data()       
-        request = cls(url, method=form.method, body=body, headers=headers, **kwargs)
-        return request
+
+        url, body, headers = form.click_request_data(**(clickdata or {}))
+        return cls(url, method=form.method, body=body, headers=headers, **kwargs)
