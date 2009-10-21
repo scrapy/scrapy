@@ -93,6 +93,12 @@ class ResponseUtilsTest(unittest.TestCase):
         response = Response(url='http://example.com', body=body)
         self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/thisTHAT'))
 
+        # responses without refresh tag should return None None
+        response = Response(url='http://example.org')
+        self.assertEqual(get_meta_refresh(response), (None, None))
+        response = TextResponse(url='http://example.org')
+        self.assertEqual(get_meta_refresh(response), (None, None))
+
     def test_response_httprepr(self):
         r1 = Response("http://www.example.com")
         self.assertEqual(response_httprepr(r1), 'HTTP/1.1 200 OK\r\n\r\n')

@@ -47,7 +47,7 @@ def get_meta_refresh(response):
     If no meta redirect is found, (None, None) is returned.
     """
     if response not in _metaref_cache:
-        encoding = getattr(response, 'encoding', 'utf-8')
+        encoding = getattr(response, 'encoding', None) or 'utf-8'
         body_chunk = remove_entities(unicode(response.body[0:4096], encoding, \
             errors='ignore'))
         match = META_REFRESH_RE.search(body_chunk)
