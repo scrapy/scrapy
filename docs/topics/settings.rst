@@ -339,6 +339,17 @@ Default::
 The default headers used for Scrapy HTTP Requests. They're populated in the
 :class:`~scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware`.
 
+.. setting:: DEFAULT_RESPONSE_ENCODING
+
+DEFAULT_RESPONSE_ENCODING
+-------------------------
+
+Default: ``'ascii'``
+
+The default encoding to use for :class:`~scrapy.http.TextResponse` objects (and
+subclasses) when no encoding is declared and no encoding could be inferred from
+the body.
+
 .. setting:: DEPTH_LIMIT
 
 DEPTH_LIMIT

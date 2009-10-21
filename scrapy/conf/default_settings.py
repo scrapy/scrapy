@@ -37,6 +37,8 @@ DEFAULT_REQUEST_HEADERS = {
     'Accept-Language': 'en',
 }
 
+DEFAULT_RESPONSE_ENCODING = 'ascii'
+
 DEPTH_LIMIT = 0
 DEPTH_STATS = True
 
