@@ -44,9 +44,9 @@ class Spiderctl(object):
         s += '<table border=1">\n'
         s += "<tr><th>Idle (%d)</th><th>Scheduled (%d)</th><th>Running (%d/%d)</th><th>Finished (%d)</th></tr>\n" % \
                 (len(self.idle),
+                 len(self.scheduled),
                  len(self.running),
                  settings['CONCURRENT_DOMAINS'],
-                 len(self.scheduled),
                  len(self.finished))
         s += "<tr>\n"
 
