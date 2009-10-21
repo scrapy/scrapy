@@ -28,7 +28,9 @@ class RedirectMiddleware(object):
 
         interval, url = get_meta_refresh(response)
         if url and interval < self.max_metarefresh_delay:
-            redirected = request.replace(url=url)
+            redirected = request.replace(url=url, method='GET', body='')
+            redirected.headers.pop('Content-Type', None)
+            redirected.headers.pop('Content-Length', None)
             return self._redirect(redirected, request, spider, 'meta refresh')
 
         return response
