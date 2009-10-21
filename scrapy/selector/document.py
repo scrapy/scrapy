@@ -26,12 +26,15 @@ class Libxml2Document(object_ref):
         # we must call both cleanup functions, so we try/except all exceptions
         # to make sure one doesn't prevent the other from being called
         # this call sometimes raises a "NoneType is not callable" TypeError
-        # also, these calls sometimes raise a "NoneType is not callable"
-        # TypeError, so the try/except block silences them
+        # so the try/except block silences them
         try:
             self.xmlDoc.freeDoc()
-        finally:
+        except:
+            pass
+        try:
             self.xpathContext.xpathFreeContext()
+        except:
+            pass
 
     def __str__(self):
         return "<Libxml2Document %s>" % self.xmlDoc.name
