@@ -13,6 +13,8 @@ from tempfile import NamedTemporaryFile
 from twisted.web import http
 from twisted.web.http import RESPONSES
 
+from scrapy.utils.markup import remove_entities
+from scrapy.utils.url import safe_url_string, urljoin_rfc
 from scrapy.xlib.BeautifulSoup import BeautifulSoup
 from scrapy.http import Response, HtmlResponse
 
@@ -34,16 +36,29 @@ def get_base_url(response):
         _baseurl_cache[response] = match.group(1) if match else response.url
     return _baseurl_cache[response]
 
-META_REFRESH_RE = re.compile(r'<meta[^>]*http-equiv[^>]*refresh[^>].*?(\d+);\s*url=([^"\']+)', re.DOTALL | re.IGNORECASE)
+META_REFRESH_RE = re.compile(ur'<meta[^>]*http-equiv[^>]*refresh[^>]*content\s*=\s*(?P<quote>["\'])(?P<int>\d+)\s*;\s*url=(?P<url>.*?)(?P=quote)', re.DOTALL | re.IGNORECASE)
 _metaref_cache = weakref.WeakKeyDictionary()
 def get_meta_refresh(response):
-    """ Return a tuple of two strings containing the interval and url included
-    in the http-equiv parameter of the HTML meta element. If no url is included
-    (None, None) is returned [instead of (interval, None)]
+    """Parse the http-equiv parameter of the HTML meta element from the given
+    response and return a tuple (interval, url) where interval is an integer
+    containing the delay in seconds (or zero if not present) and url is a
+    string with the absolute url to redirect.
+
+    If no meta redirect is found, (None, None) is returned.
     """
     if response not in _metaref_cache:
-        match = META_REFRESH_RE.search(response.body[0:4096])
-        _metaref_cache[response] = match.groups() if match else (None, None)
+        encoding = getattr(response, 'encoding', 'utf-8')
+        body_chunk = remove_entities(unicode(response.body[0:4096], encoding, \
+            errors='ignore'))
+        match = META_REFRESH_RE.search(body_chunk)
+        if match:
+            interval = int(match.group('int'))
+            url = safe_url_string(match.group('url').strip(' "\''))
+            url = urljoin_rfc(response.url, url)
+            _metaref_cache[response] = (interval, url)
+        else:
+            _metaref_cache[response] = (None, None)
+        #_metaref_cache[response] = match.groups() if match else (None, None)
     return _metaref_cache[response]
 
 _beautifulsoup_cache = weakref.WeakKeyDictionary()

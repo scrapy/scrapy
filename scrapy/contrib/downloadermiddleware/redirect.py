@@ -14,8 +14,6 @@ class RedirectMiddleware(object):
         self.priority_adjust = settings.getint('REDIRECT_PRIORITY_ADJUST')
 
     def process_response(self, request, response, spider):
-        domain = spider.domain_name
-
         if response.status in [302, 303] and 'Location' in response.headers:
             redirected_url = urljoin_rfc(request.url, response.headers['location'])
             redirected = request.replace(url=redirected_url, method='GET', body='')
@@ -29,8 +27,8 @@ class RedirectMiddleware(object):
             return self._redirect(redirected, request, spider, response.status)
 
         interval, url = get_meta_refresh(response)
-        if url and int(interval) < self.max_metarefresh_delay:
-            redirected = request.replace(url=urljoin_rfc(request.url, url))
+        if url and interval < self.max_metarefresh_delay:
+            redirected = request.replace(url=url)
             return self._redirect(redirected, request, spider, 'meta refresh')
 
         return response

@@ -42,7 +42,7 @@ class ResponseUtilsTest(unittest.TestCase):
             <body>blahablsdfsal&amp;</body>
             </html>"""
         response = Response(url='http://example.org', body=body)
-        self.assertEqual(get_meta_refresh(response), ('5', 'http://example.org/newpage'))
+        self.assertEqual(get_meta_refresh(response), (5, 'http://example.org/newpage'))
 
         # refresh without url should return (None, None)
         body = """<meta http-equiv="refresh" content="5" />"""
@@ -52,7 +52,7 @@ class ResponseUtilsTest(unittest.TestCase):
         body = """<meta http-equiv="refresh" content="5;
             url=http://example.org/newpage" /></head>"""
         response = Response(url='http://example.org', body=body)
-        self.assertEqual(get_meta_refresh(response), ('5', 'http://example.org/newpage'))
+        self.assertEqual(get_meta_refresh(response), (5, 'http://example.org/newpage'))
 
         # meta refresh in multiple lines
         body = """<html><head>
@@ -60,7 +60,38 @@ class ResponseUtilsTest(unittest.TestCase):
                HTTP-EQUIV="Refresh"
                CONTENT="1; URL=http://example.org/newpage">"""
         response = Response(url='http://example.org', body=body)
-        self.assertEqual(get_meta_refresh(response), ('1', 'http://example.org/newpage'))
+        self.assertEqual(get_meta_refresh(response), (1, 'http://example.org/newpage'))
+
+        # entities in the redirect url
+        body = """<meta http-equiv="refresh" content="3; url=&#39;http://www.example.com/other&#39;">"""
+        response = Response(url='http://example.com', body=body)
+        self.assertEqual(get_meta_refresh(response), (3, 'http://www.example.com/other'))
+
+        # relative redirects
+        body = """<meta http-equiv="refresh" content="3; url=other.html">"""
+        response = Response(url='http://example.com/page/this.html', body=body)
+        self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/page/other.html'))
+
+        # non-standard encodings (utf-16)
+        body = """<meta http-equiv="refresh" content="3; url=http://example.com/redirect">"""
+        body = body.decode('ascii').encode('utf-16')
+        response = TextResponse(url='http://example.com', body=body, encoding='utf-16')
+        self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/redirect'))
+
+        # non-ascii chars in the url (default encoding - utf8)
+        body = """<meta http-equiv="refresh" content="3; url=http://example.com/to\xc2\xa3">"""
+        response = Response(url='http://example.com', body=body)
+        self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/to%C2%A3'))
+
+        # non-ascii chars in the url (custom encoding - latin1)
+        body = """<meta http-equiv="refresh" content="3; url=http://example.com/to\xa3">"""
+        response = TextResponse(url='http://example.com', body=body, encoding='latin1')
+        self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/to%C2%A3'))
+
+        # wrong encodings (possibly caused by truncated chunks)
+        body = """<meta http-equiv="refresh" content="3; url=http://example.com/this\xc2_THAT">"""
+        response = Response(url='http://example.com', body=body)
+        self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/thisTHAT'))
 
     def test_response_httprepr(self):
         r1 = Response("http://www.example.com")
