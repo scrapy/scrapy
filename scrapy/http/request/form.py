@@ -57,9 +57,9 @@ class FormRequest(Request):
                 for v2 in v if hasattr(v, '__iter__') else [v]:
                     form.new_control('text', k, {'value': v2})
         
-        if not dont_click:
-            url, body, headers = form.click_request_data(**(clickdata or {}))
-        else:
+        if dont_click:
             url, body, headers = form._switch_click('request_data')
+        else:
+            url, body, headers = form.click_request_data(**(clickdata or {}))
 
         return cls(url, method=form.method, body=body, headers=headers, **kwargs)
