@@ -257,6 +257,17 @@ objects.
        in the given response. For an example see
        :ref:`topics-request-response-ref-request-userlogin`.
 
+       Keep in mind that this method is implemented using `ClientForm`_ whose
+       policy is to automatically simulate a click, by default, on any form
+       control that looks clickable, like a a ``<input type="submit">``.  Even
+       though this is quite convenient, and often the desired behaviour,
+       sometimes it can cause problems which could be hard to debug. For
+       example, when working with forms that are filled and/or submitted using
+       javascript, the default :meth:`from_response` (and `ClientForm`_)
+       behaviour may not be the most appropiate. To disable this behaviour you
+       can set the ``dont_click`` argument to ``True``. Also, if you want to
+       change the control clicked (instead of disabling it) you can also use
+       the ``clickdata`` argument.
 
        :param response: the response containing a HTML form which will be used
           to pre-populate the form fields
@@ -278,7 +289,7 @@ objects.
 
        :param dont_click: If True the form data will be sumbitted without
          clicking in any element.
-       :type clickdata: bool
+       :type clickdata: boolean
 
        The other parameters of this class method are passed directly to the
        :class:`FormRequest` constructor.
