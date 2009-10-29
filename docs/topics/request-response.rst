@@ -250,7 +250,7 @@ objects.
     The :class:`FormRequest` objects support the following class method in
     addition to the standard :class:`Request` methods:
 
-    .. classmethod:: FormRequest.from_response(response, [formnumber=0, formdata=None, clickdata=None, ...])
+    .. classmethod:: FormRequest.from_response(response, [formnumber=0, formdata=None, clickdata=None, dont_click=False, ...])
 
        Returns a new :class:`FormRequest` object with its form field values
        pre-populated with those found in the HTML ``<form>`` element contained
@@ -275,6 +275,10 @@ objects.
           ``click_request_data()`` method. See `ClientForm`_ homepage for
           more info.
        :type clickdata: dict
+
+       :param dont_click: If True the form data will be sumbitted without
+         clicking in any element.
+       :type clickdata: bool
 
        The other parameters of this class method are passed directly to the
        :class:`FormRequest` constructor.
