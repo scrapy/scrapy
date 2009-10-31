@@ -34,15 +34,24 @@ log_level = DEBUG
 
 started = False
 
+def _get_log_level(level_name_or_id=None):
+    if level_name_or_id is None:
+        lvlname = settings['LOG_LEVEL'] or settings['LOGLEVEL']
+        return globals()[lvlname]
+    elif isinstance(level_name_or_id, int) and 0 <= level_name_or_id <= 5:
+        return level_name_or_id
+    elif isinstance(level_name_or_id, basestring):
+        return globals()[level_name_or_id]
+    else:
+        raise ValueError("Unknown log level: %r" % level_name_or_id)
+
 def start(logfile=None, loglevel=None, logstdout=None):
     """Initialize and start logging facility"""
     global log_level, started
 
-    # set loglevel
-    loglevel = loglevel or settings['LOG_LEVEL'] or settings['LOGLEVEL']
-    log_level = globals()[loglevel] if loglevel else DEBUG
     if started or not settings.getbool('LOG_ENABLED'):
         return
+    log_level = _get_log_level(loglevel)
     started = True
 
     # set log observer
