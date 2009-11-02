@@ -78,7 +78,7 @@ class StatsCollectorTest(unittest.TestCase):
         assert stats_domain_closing in signals_catched
         assert stats_domain_closed in signals_catched
 
-        dispatcher.disconnect(domain_open, signal=stats_domain_opened)
+        dispatcher.disconnect(domain_opened, signal=stats_domain_opened)
         dispatcher.disconnect(domain_closing, signal=stats_domain_closing)
         dispatcher.disconnect(domain_closed, signal=stats_domain_closed)
 
