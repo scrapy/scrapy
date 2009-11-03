@@ -101,14 +101,14 @@ everytime a domain/spider is opened and closed::
     class SpiderOpenCloseLogging(object):
 
         def __init__(self):
-            dispatcher.connect(self.domain_opened, signal=signals.domain_opened)
-            dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
+            dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
+            dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
-        def domain_opened(self, domain, spider):
-            log.msg("opened domain %s" % domain)
+        def spider_opened(self, spider):
+            log.msg("opened spider %s" % spider.domain_name)
 
-        def domain_closed(self, domain, spider):
-            log.msg("closed domain %s" % domain)
+        def spider_closed(self, spider):
+            log.msg("closed spider %s" % spider.domain_name)
 
 
 .. _topics-extensions-ref-manager:

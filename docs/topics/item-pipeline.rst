@@ -85,15 +85,15 @@ spider returns multiples items with the same id::
 
     class DuplicatesPipeline(object):
         def __init__(self):
-            self.domaininfo = {}
-            dispatcher.connect(self.domain_opened, signals.domain_opened)
-            dispatcher.connect(self.domain_closed, signals.domain_closed)
+            self.duplicates = {}
+            dispatcher.connect(self.spider_opened, signals.spider_opened)
+            dispatcher.connect(self.spider_closed, signals.spider_closed)
 
-        def domain_opened(self, domain):
-            self.duplicates[domain] = set()
+        def spider_opened(self, spider):
+            self.duplicates[spider.domain_name] = set()
 
-        def domain_closed(self, domain):
-            del self.duplicates[domain]
+        def spider_closed(self, spider):
+            del self.duplicates[spider.domain_name]
 
         def process_item(self, domain, item):
             if item.id in self.duplicates[domain]:

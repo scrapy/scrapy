@@ -14,7 +14,7 @@ class CookiesMiddlewareTest(TestCase):
         self.mw = CookiesMiddleware()
 
     def tearDown(self):
-        self.mw.domain_closed('scrapytest.org')
+        self.mw.spider_closed('scrapytest.org')
         del self.mw
 
     def test_basic(self):

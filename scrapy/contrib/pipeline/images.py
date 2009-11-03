@@ -44,10 +44,10 @@ class FSImagesStore(object):
         self.basedir = basedir
         self._mkdir(self.basedir)
         self.created_directories = defaultdict(set)
-        dispatcher.connect(self.domain_closed, signals.domain_closed)
+        dispatcher.connect(self.spider_closed, signals.spider_closed)
 
-    def domain_closed(self, domain):
-        self.created_directories.pop(domain, None)
+    def spider_closed(self, spider):
+        self.created_directories.pop(spider.domain_name, None)
 
     def persist_image(self, key, image, buf, info):
         absolute_path = self._get_filesystem_path(key)

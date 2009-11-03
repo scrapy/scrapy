@@ -24,8 +24,8 @@ class ShoveItemPipeline(object):
         self.opts = settings['SHOVEITEM_STORE_OPT'] or {}
         self.stores = {}
 
-        dispatcher.connect(self.domain_opened, signal=signals.domain_opened)
-        dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
+        dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
+        dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
     def process_item(self, domain, item):
         guid = str(item.guid)
@@ -43,12 +43,13 @@ class ShoveItemPipeline(object):
         self.log(domain, item, status)
         return item
 
-    def domain_opened(self, domain):
+    def spider_opened(self, spider):
+        domain = spider.domain_name
         uri = Template(self.uritpl).substitute(domain=domain)
         self.stores[domain] = Shove(uri, **self.opts)
 
-    def domain_closed(self, domain):
-        self.stores[domain].sync()
+    def spider_closed(self, spider):
+        self.stores[spider.domain_name].sync()
 
     def log(self, domain, item, status):
         log.msg("Shove (%s): Item guid=%s" % (status, item.guid), level=log.DEBUG, domain=domain)

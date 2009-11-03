@@ -15,8 +15,8 @@ class OffsiteMiddleware(object):
 
     def __init__(self):
         self.host_regexes = {}
-        dispatcher.connect(self.domain_opened, signal=signals.domain_opened)
-        dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
+        dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
+        dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
     def process_spider_output(self, response, result, spider):
         return (x for x in result if not isinstance(x, Request) or \
@@ -34,9 +34,9 @@ class OffsiteMiddleware(object):
         regex = r'^(.*\.)?(%s)$' % '|'.join(domains)
         return re.compile(regex)
 
-    def domain_opened(self, spider):
+    def spider_opened(self, spider):
         domains = [spider.domain_name] + spider.extra_domain_names
         self.host_regexes[spider] = self.get_host_regex(domains)
 
-    def domain_closed(self, spider):
+    def spider_closed(self, spider):
         del self.host_regexes[spider]

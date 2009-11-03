@@ -29,68 +29,58 @@ Built-in signals reference
 Here's a list of signals used in Scrapy and their meaning, in alphabetical
 order.
 
-domain_closed
+spider_closed
 -------------
 
-.. signal:: domain_closed
-.. function:: domain_closed(domain, spider, reason)
+.. signal:: spider_closed
+.. function:: spider_closed(spider, reason)
 
-    Sent after a spider/domain has been closed. This can be used to release
-    per-spider resources reserved on :signal:`domain_opened`.
-
-    :param domain: a string which contains the domain of the spider which has
-        been closed
-    :type domain: str
+    Sent after a spider has been closed. This can be used to release per-spider
+    resources reserved on :signal:`spider_opened`.
 
     :param spider: the spider which has been closed
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
-    :param reason: a string which describes the reason why the domain was closed. If
-        it was closed because the domain has completed scraping, it the reason
-        is ``'finished'``. Otherwise, if the domain was manually closed by
-        calling the ``close_domain`` engine method, then the reason is the one
+    :param reason: a string which describes the reason why the spider was closed. If
+        it was closed because the spider has completed scraping, it the reason
+        is ``'finished'``. Otherwise, if the spider was manually closed by
+        calling the ``close_spider`` engine method, then the reason is the one
         passed in the ``reason`` argument of that method (which defaults to
         ``'cancelled'``). If the engine was shutdown (for example, by hitting
         Ctrl-C to stop it) the reason will be ``'shutdown'``.
     :type reason: str
 
-domain_opened
+spider_opened
 -------------
 
-.. signal:: domain_opened
-.. function:: domain_opened(domain, spider)
+.. signal:: spider_opened
+.. function:: spider_opened(spider)
 
-    Sent after a spider/domain has been opened for crawling. This is typically
-    used to reserve per-spider resources, but can be used for any task that
-    needs to be performed when a spider/domain is opened.
-
-    :param domain: a string with the domain of the spider which has been opened
-    :type domain: str
+    Sent after a spider has been opened for crawling. This is typically used to
+    reserve per-spider resources, but can be used for any task that needs to be
+    performed when a spider is opened.
 
     :param spider: the spider which has been opened
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
-domain_idle
+spider_idle
 -----------
 
-.. signal:: domain_idle
-.. function:: domain_idle(domain, spider)
+.. signal:: spider_idle
+.. function:: spider_idle(spider)
 
-    Sent when a domain has gone idle, which means the spider has no further:
+    Sent when a spider has gone idle, which means the spider has no further:
 
         * requests waiting to be downloaded
         * requests scheduled
         * items being processed in the item pipeline
 
     If the idle state persists after all handlers of this signal have finished,
-    the engine starts closing the domain. After the domain has finished
-    closing, the :signal:`domain_closed` signal is sent.
+    the engine starts closing the spider. After the spider has finished
+    closing, the :signal:`spider_closed` signal is sent.
 
-    You can, for example, schedule some requests in your :signal:`domain_idle`
-    handler to prevent the domain from being closed.
-
-    :param domain: is a string with the domain of the spider which has gone idle
-    :type domain: str
+    You can, for example, schedule some requests in your :signal:`spider_idle`
+    handler to prevent the spider from being closed.
 
     :param spider: the spider which has gone idle
     :type spider: :class:`~scrapy.spider.BaseSpider` object

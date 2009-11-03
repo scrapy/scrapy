@@ -176,7 +176,7 @@ class (which they all inherit from).
 
         Close the given domain. After this is called, no more specific stats
         for this domain can be accessed. This method is called automatically on
-        the :signal:`domain_closed` signal.
+        the :signal:`spider_closed` signal.
 
 Available Stats Collectors
 ==========================
@@ -302,7 +302,7 @@ functionality:
     :type domain: str
 
     :param reason: the reason why the domain is being closed. See
-        :signal:`domain_closed` signal for more info.
+        :signal:`spider_closed` signal for more info.
     :type reason: str
 
 .. signal:: stats_domain_closed
@@ -316,7 +316,7 @@ functionality:
     :type domain: str
 
     :param reason: the reason why the domain was closed. See
-        :signal:`domain_closed` signal for more info.
+        :signal:`spider_closed` signal for more info.
     :type reason: str
 
     :param domain_stats: the stats of the domain just closed.

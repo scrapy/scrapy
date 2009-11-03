@@ -21,19 +21,19 @@ class DelayedCloseDomain(object):
             raise NotConfigured
 
         self.opened_at = defaultdict(time)
-        dispatcher.connect(self.domain_idle, signal=signals.domain_idle)
-        dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
+        dispatcher.connect(self.spider_idle, signal=signals.spider_idle)
+        dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
-    def domain_idle(self, domain):
+    def spider_idle(self, spider):
         try:
-            lastseen = scrapyengine.downloader.sites[domain].lastseen
+            lastseen = scrapyengine.downloader.sites[spider].lastseen
         except KeyError:
             lastseen = None
         if not lastseen:
-            lastseen = self.opened_at[domain]
+            lastseen = self.opened_at[spider]
 
         if time() < lastseen + self.delay:
             raise DontCloseDomain
 
-    def domain_closed(self, domain):
-        self.opened_at.pop(domain, None)
+    def spider_closed(self, spider):
+        self.opened_at.pop(spider, None)

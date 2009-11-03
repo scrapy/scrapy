@@ -24,10 +24,10 @@ class HttpCacheMiddleware(object):
             raise NotConfigured
         self.cache = Cache(settings['HTTPCACHE_DIR'], sectorize=settings.getbool('HTTPCACHE_SECTORIZE'))
         self.ignore_missing = settings.getbool('HTTPCACHE_IGNORE_MISSING')
-        dispatcher.connect(self.open_domain, signal=signals.domain_opened)
+        dispatcher.connect(self.open_domain, signal=signals.spider_opened)
 
-    def open_domain(self, domain):
-        self.cache.open_domain(domain)
+    def open_domain(self, spider):
+        self.cache.open_domain(spider.domain_name)
 
     def process_request(self, request, spider):
         if not is_cacheable(request):

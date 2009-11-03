@@ -63,26 +63,27 @@ def start(logfile=None, loglevel=None, logstdout=None):
         file = open(logfile, 'a') if logfile else sys.stderr
         log.startLogging(file, setStdout=logstdout)
 
-def msg(message, level=INFO, component=BOT_NAME, domain=None):
+def msg(message, level=INFO, component=BOT_NAME, domain=None, spider=None):
     """Log message according to the level"""
     if level > log_level:
         return
     dispatcher.send(signal=logmessage_received, message=message, level=level, \
-        domain=domain)
-    system = domain if domain else component
+        domain=domain, spider=spider)
+    system = domain or spider.domain_name if spider else component
     msg_txt = unicode_to_str("%s: %s" % (level_names[level], message))
     log.msg(msg_txt, system=system)
 
-def exc(message, level=ERROR, component=BOT_NAME, domain=None):
+def exc(message, level=ERROR, component=BOT_NAME, domain=None, spider=None):
     message = message + '\n' + format_exc()
-    msg(message, level, component, domain)
+    msg(message, level, component, domain, spider)
 
 def err(_stuff=None, _why=None, **kwargs):
     if ERROR > log_level:
         return
     domain = kwargs.pop('domain', None)
+    spider = kwargs.pop('spider', None)
     component = kwargs.pop('component', BOT_NAME)
-    kwargs['system'] = domain if domain else component
+    kwargs['system'] = domain or spider.domain_name if spider else component
     if _why:
         _why = unicode_to_str("ERROR: %s" % _why)
     log.err(_stuff, _why, **kwargs)

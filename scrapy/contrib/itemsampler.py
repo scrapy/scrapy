@@ -49,7 +49,7 @@ class ItemSamplerPipeline(object):
         self.items = {}
         self.domains_count = 0
         self.empty_domains = set()
-        dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
+        dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
         dispatcher.connect(self.engine_stopped, signal=signals.engine_stopped)
 
     def process_item(self, item, spider):
@@ -70,7 +70,8 @@ class ItemSamplerPipeline(object):
         if self.empty_domains:
             log.msg("No products sampled for: %s" % " ".join(self.empty_domains), level=log.WARNING)
 
-    def domain_closed(self, domain, spider, reason):
+    def spider_closed(self, spider, reason):
+        domain = spider.domain_name
         if reason == 'finished' and not stats.get_value("items_sampled", domain=domain):
             self.empty_domains.add(domain)
         self.domains_count += 1
