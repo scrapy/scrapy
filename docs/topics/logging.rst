@@ -44,7 +44,7 @@ Logging from Spiders
 
 The recommended way to log from spiders is by using the Spider
 :meth:`~scrapy.spider.BaseSpider.log` method, which already populates the
-``domain`` argument of the :func:`scrapy.log.msg` function. The other arguments
+``spider`` argument of the :func:`scrapy.log.msg` function. The other arguments
 are passed directly to the :func:`~scrapy.log.msg` function.
 
 scrapy.log module
@@ -81,7 +81,7 @@ scrapy.log module
         setting will be used.
     :type logstdout: boolean
 
-.. function:: msg(message, level=INFO, component=BOT_NAME, domain=None)
+.. function:: msg(message, level=INFO, component=BOT_NAME, spider=None)
 
     Log a message
 
@@ -95,12 +95,12 @@ scrapy.log module
         :setting:`BOT_NAME`
     :type component: str
 
-    :param domain: the spider domain to use for logging this message. This
-        parameter should always be used when logging things related to a
-        particular spider.
-    :type domain: str
+    :param spider: the spider to use for logging this message. This parameter 
+        should always be used when logging things related to a particular
+        spider.
+    :type spider: :class:`~scrapy.spider.BaseSpider` object
 
-.. function:: exc(message, level=ERROR, component=BOT_NAME, domain=None)
+.. function:: exc(message, level=ERROR, component=BOT_NAME, spider=None)
 
     Log an exception. Similar to ``msg()`` but it also appends a stack trace
     report using `traceback.format_exc`.
