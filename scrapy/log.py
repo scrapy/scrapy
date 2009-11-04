@@ -69,7 +69,7 @@ def msg(message, level=INFO, component=BOT_NAME, domain=None, spider=None):
         return
     dispatcher.send(signal=logmessage_received, message=message, level=level, \
         domain=domain, spider=spider)
-    system = domain or spider.domain_name if spider else component
+    system = domain or (spider.domain_name if spider else component)
     msg_txt = unicode_to_str("%s: %s" % (level_names[level], message))
     log.msg(msg_txt, system=system)
 
