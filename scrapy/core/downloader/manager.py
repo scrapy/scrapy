@@ -135,7 +135,7 @@ class Downloader(object):
             # downloader middleware, to speed-up the closing process
             if site.closing:
                 log.msg("Crawled while closing spider: %s" % request, \
-                    level=log.DEBUG)
+                    level=log.DEBUG, spider=spider)
                 raise IgnoreRequest
             return _
         return dfd.addBoth(finish_transferring)
