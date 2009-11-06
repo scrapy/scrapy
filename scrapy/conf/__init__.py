@@ -6,13 +6,8 @@ See documentation in docs/topics/settings.rst
 
 import os
 import cPickle as pickle
-import warnings
 
 from scrapy.conf import default_settings
-
-if 'SCRAPYSETTINGS_MODULE' in os.environ:
-    warnings.warn("SCRAPYSETTINGS_MODULE environment variable is deprecated, " \
-        "use SCRAPY_SETTINGS_MODULE instead", DeprecationWarning, stacklevel=2)
 
 import_ = lambda x: __import__(x, {}, {}, [''])
 
@@ -23,7 +18,7 @@ class Settings(object):
         self.global_defaults = default_settings
         self.disabled = os.environ.get('SCRAPY_SETTINGS_DISABLED', False)
         settings_module_path = os.environ.get('SCRAPY_SETTINGS_MODULE', \
-            os.environ.get('SCRAPYSETTINGS_MODULE', 'scrapy_settings'))
+            'scrapy_settings')
         self.set_settings_module(settings_module_path)
 
         # XXX: find a better solution for this hack
