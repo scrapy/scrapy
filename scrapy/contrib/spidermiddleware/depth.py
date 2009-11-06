@@ -25,7 +25,7 @@ class DepthMiddleware(object):
                 request.meta['depth'] = depth
                 if self.maxdepth and depth > self.maxdepth:
                     log.msg("Ignoring link (depth > %d): %s " % (self.maxdepth, request.url), \
-                        level=log.DEBUG, domain=domain)
+                        level=log.DEBUG, spider=spider)
                     return False
                 elif self.stats:
                     stats.inc_value('request_depth_count/%s' % depth, domain=domain)

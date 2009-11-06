@@ -41,11 +41,11 @@ class RedirectMiddleware(object):
             redirected.dont_filter = request.dont_filter
             redirected.priority = request.priority + self.priority_adjust
             log.msg("Redirecting (%s) to %s from %s" % (reason, redirected, request),
-                    domain=spider.domain_name, level=log.DEBUG)
+                    spider=spider, level=log.DEBUG)
             return redirected
         else:
             log.msg("Discarding %s: max redirections reached" % request,
-                    domain=spider.domain_name, level=log.DEBUG)
+                    spider=spider, level=log.DEBUG)
             raise IgnoreRequest
 
     def _redirect_request_using_get(self, request, redirect_url):

@@ -66,7 +66,7 @@ class BaseSpider(object):
         """Log the given messages at the given log level. Always use this
         method to send log messages from your spider
         """
-        log.msg(message, domain=self.domain_name, level=level)
+        log.msg(message, spider=self, level=level)
 
     def start_requests(self):
         reqs = []

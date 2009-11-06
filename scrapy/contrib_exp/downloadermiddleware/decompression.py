@@ -76,6 +76,6 @@ class DecompressionMiddleware(object):
             new_response = func(response)
             if new_response:
                 log.msg('Decompressed response with format: %s' % \
-                        fmt, log.DEBUG, domain=spider.domain_name)
+                        fmt, log.DEBUG, spider=spider)
                 return new_response
         return response
