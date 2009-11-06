@@ -46,7 +46,7 @@ class Spiderctl(object):
                 (len(self.idle),
                  len(self.scheduled),
                  len(self.running),
-                 settings['CONCURRENT_DOMAINS'],
+                 settings['CONCURRENT_SPIDERS'],
                  len(self.finished))
         s += "<tr>\n"
 

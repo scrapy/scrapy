@@ -286,14 +286,14 @@ Example::
 
     COMMANDS_SETTINGS_MODULE = 'mybot.conf.commands'
 
-.. setting:: CONCURRENT_DOMAINS
+.. setting:: CONCURRENT_SPIDERS
 
-CONCURRENT_DOMAINS
+CONCURRENT_SPIDERS
 ------------------
 
 Default: ``8``
 
-Maximum number of domains to scrape in parallel.
+Maximum number of spiders to scrape in parallel.
 
 .. setting:: CONCURRENT_ITEMS
 
