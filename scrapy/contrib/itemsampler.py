@@ -15,8 +15,8 @@ Settings that affect this module:
 
 ITEMSAMPLER_FILE
   file where to store the pickled dict of scraped items
-ITEMSAMPLER_CLOSE_DOMAIN
-  wether to close the domain after enough products have been sampled
+ITEMSAMPLER_CLOSE_SPIDER
+  wether to close the spider after enough products have been sampled
 ITEMSAMPLER_MAX_RESPONSE_SIZE
   maximum response size to process
 """
