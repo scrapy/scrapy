@@ -1,4 +1,4 @@
-"""CloseDomain is an extension that forces spiders to be closed after certain
+"""CloseSpider is an extension that forces spiders to be closed after certain
 conditions are met.
 
 See documentation in docs/topics/extensions.rst
@@ -13,11 +13,11 @@ from scrapy.core import signals
 from scrapy.core.engine import scrapyengine
 from scrapy.conf import settings
 
-class CloseDomain(object):
+class CloseSpider(object):
 
     def __init__(self):
-        self.timeout = settings.getint('CLOSEDOMAIN_TIMEOUT')
-        self.itempassed = settings.getint('CLOSEDOMAIN_ITEMPASSED')
+        self.timeout = settings.getint('CLOSESPIDER_TIMEOUT')
+        self.itempassed = settings.getint('CLOSESPIDER_ITEMPASSED')
 
         self.counts = defaultdict(int)
         self.tasks = {}
@@ -30,12 +30,12 @@ class CloseDomain(object):
 
     def spider_opened(self, spider):
         self.tasks[spider] = reactor.callLater(self.timeout, scrapyengine.close_spider, \
-            spider=spider, reason='closedomain_timeout')
+            spider=spider, reason='closespider_timeout')
         
     def item_passed(self, item, spider):
         self.counts[spider] += 1
         if self.counts[spider] == self.itempassed:
-            scrapyengine.close_spider(spider, 'closedomain_itempassed')
+            scrapyengine.close_spider(spider, 'closespider_itempassed')
 
     def spider_closed(self, spider):
         self.counts.pop(spider, None)

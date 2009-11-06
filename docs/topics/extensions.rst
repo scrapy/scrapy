@@ -279,10 +279,10 @@ report will also be sent to those addresses.
 Close domain extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.contrib.closedomain
+.. module:: scrapy.contrib.closespider
    :synopsis: Close domain extension
 
-.. class:: scrapy.contrib.closedomain.CloseDomain
+.. class:: scrapy.contrib.closespider.CloseSpider
 
 Closes a domain/spider automatically when some conditions are met, using a
 specific closing reason for each condition.
@@ -290,28 +290,28 @@ specific closing reason for each condition.
 The conditions for closing a domain can be configured through the following
 settings. Other conditions will be supported in the future.
 
-.. setting:: CLOSEDOMAIN_TIMEOUT
+.. setting:: CLOSESPIDER_TIMEOUT
 
-CLOSEDOMAIN_TIMEOUT
+CLOSESPIDER_TIMEOUT
 """""""""""""""""""
 
 Default: ``0``
 
 An integer which specifies a number of seconds. If the domain remains open for
 more than that number of second, it will be automatically closed with the
-reason ``closedomain_timeout``. If zero (or non set) domains won't be closed by
+reason ``closespider_timeout``. If zero (or non set) domains won't be closed by
 timeout.
 
-.. setting:: CLOSEDOMAIN_ITEMPASSED
+.. setting:: CLOSESPIDER_ITEMPASSED
 
-CLOSEDOMAIN_ITEMPASSED
+CLOSESPIDER_ITEMPASSED
 """"""""""""""""""""""
 
 Default: ``0``
 
 An integer which specifies a number of items. If the spider scrapes more than
 that amount if items and those items are passed by the item pipeline, the
-domain will be closed with the reason ``closedomain_itempassed``. If zero (or
+domain will be closed with the reason ``closespider_itempassed``. If zero (or
 non set) domains won't be closed by number of passed items.
 
 StatsMailer extension

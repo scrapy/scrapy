@@ -18,8 +18,8 @@ from os.path import join, abspath, dirname
 BOT_NAME = 'scrapybot'
 BOT_VERSION = '1.0'
 
-CLOSEDOMAIN_TIMEOUT = 0
-CLOSEDOMAIN_ITEMPASSED = 0
+CLOSESPIDER_TIMEOUT = 0
+CLOSESPIDER_ITEMPASSED = 0
 
 COMMANDS_MODULE = ''
 COMMANDS_SETTINGS_MODULE = ''
@@ -86,7 +86,7 @@ EXTENSIONS_BASE = {
     'scrapy.contrib.webconsole.stats.StatsDump': 0,
     'scrapy.contrib.memusage.MemoryUsage': 0,
     'scrapy.contrib.memdebug.MemoryDebugger': 0,
-    'scrapy.contrib.closedomain.CloseDomain': 0,
+    'scrapy.contrib.closespider.CloseSpider': 0,
 }
 
 GROUPSETTINGS_ENABLED = False
