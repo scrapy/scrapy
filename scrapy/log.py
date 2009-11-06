@@ -26,7 +26,7 @@ level_names = {
 BOT_NAME = settings['BOT_NAME']
 
 # signal sent when log message is received
-# args: message, level, domain
+# args: message, level, spider
 logmessage_received = object()
 
 # default logging level
@@ -67,8 +67,12 @@ def msg(message, level=INFO, component=BOT_NAME, domain=None, spider=None):
     """Log message according to the level"""
     if level > log_level:
         return
+    if domain is not None:
+        import warnings
+        warnings.warn("'domain' argument of scrapy.log.msg() is deprecated, " \
+            "use 'spider' argument instead", DeprecationWarning, stacklevel=2)
     dispatcher.send(signal=logmessage_received, message=message, level=level, \
-        domain=domain, spider=spider)
+        spider=spider)
     system = domain or (spider.domain_name if spider else component)
     msg_txt = unicode_to_str("%s: %s" % (level_names[level], message))
     log.msg(msg_txt, system=system)
