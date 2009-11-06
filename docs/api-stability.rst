@@ -9,11 +9,14 @@ API stability is one of Scrapy major goals.
 Versioning
 ==========
 
-Each Scrapy release consists of three version numbers:
+When Scrapy reaches 1.0, each release will consist of three version numbers:
 
  * major - big, backwards-incompatible changes
  * minor - new features and backwards-compatible changes
  * micro - bug fixes only
+
+Until Scrapy reaches 1.0, minor releases (0.7, 0.8, etc) will follow the same
+policy as major release.
 
 Sometimes the micro version can be omitted, for brevity, when it's not
 relevant.
