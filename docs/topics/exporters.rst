@@ -51,19 +51,17 @@ Exporter to export scraped items to different files, one per spider::
            self.files = {}
 
        def spider_opened(self, spider):
-           domain = spider.domain_name
-           file = open('%s_products.xml' % domain, 'w+b')
-           self.files[domain] = file
+           file = open('%s_products.xml' % spider.domain_name, 'w+b')
+           self.files[spider] = file
            self.exporter = XmlItemExporter(file)
            self.exporter.start_exporting()
 
        def spider_closed(self, spider):
-           domain = spider.domain_name
            self.exporter.finish_exporting()
-           file = self.files.pop(domain)
+           file = self.files.pop(spider)
            file.close()
 
-       def process_item(self, domain, item):
+       def process_item(self, spider, item):
            self.exporter.export_item(item)
            return item
 

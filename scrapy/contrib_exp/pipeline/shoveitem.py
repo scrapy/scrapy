@@ -27,11 +27,11 @@ class ShoveItemPipeline(object):
         dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
         dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
-    def process_item(self, domain, item):
+    def process_item(self, spider, item):
         guid = str(item.guid)
 
-        if guid in self.stores[domain]:
-            if self.stores[domain][guid] == item:
+        if guid in self.stores[spider]:
+            if self.stores[spider][guid] == item:
                 status = 'old'
             else:
                 status = 'upd'
@@ -39,17 +39,17 @@ class ShoveItemPipeline(object):
             status = 'new'
 
         if not status == 'old':
-            self.stores[domain][guid] = item
-        self.log(domain, item, status)
+            self.stores[spider][guid] = item
+        self.log(spider, item, status)
         return item
 
     def spider_opened(self, spider):
-        domain = spider.domain_name
-        uri = Template(self.uritpl).substitute(domain=domain)
-        self.stores[domain] = Shove(uri, **self.opts)
+        uri = Template(self.uritpl).substitute(domain=spider.domain_name)
+        self.stores[spider] = Shove(uri, **self.opts)
 
     def spider_closed(self, spider):
-        self.stores[spider.domain_name].sync()
+        self.stores[spider].sync()
 
-    def log(self, domain, item, status):
-        log.msg("Shove (%s): Item guid=%s" % (status, item.guid), level=log.DEBUG, domain=domain)
+    def log(self, spider, item, status):
+        log.msg("Shove (%s): Item guid=%s" % (status, item.guid), level=log.DEBUG, \
+            spider=spider)

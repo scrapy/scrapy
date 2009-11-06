@@ -36,8 +36,8 @@ from scrapy.http import Request
 from scrapy import log
 from scrapy.conf import settings
 
-items_per_domain = settings.getint('ITEMSAMPLER_COUNT', 1)
-close_domain = settings.getbool('ITEMSAMPLER_CLOSE_DOMAIN', False)
+items_per_spider = settings.getint('ITEMSAMPLER_COUNT', 1)
+close_spider = settings.getbool('ITEMSAMPLER_CLOSE_SPIDER', False)
 max_response_size = settings.getbool('ITEMSAMPLER_MAX_RESPONSE_SIZE', )
 
 class ItemSamplerPipeline(object):
@@ -47,20 +47,19 @@ class ItemSamplerPipeline(object):
         if not self.filename:
             raise NotConfigured
         self.items = {}
-        self.domains_count = 0
+        self.spiders_count = 0
         self.empty_domains = set()
         dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
         dispatcher.connect(self.engine_stopped, signal=signals.engine_stopped)
 
-    def process_item(self, item, spider):
-        domain = spider.domain_name
-        sampled = stats.get_value("items_sampled", 0, domain=domain)
-        if sampled < items_per_domain:
+    def process_item(self, spider, item):
+        sampled = stats.get_value("items_sampled", 0, domain=spider.domain_name)
+        if sampled < items_per_spider:
             self.items[item.guid] = item
             sampled += 1
-            stats.set_value("items_sampled", sampled, domain=domain)
-            log.msg("Sampled %s" % item, domain=domain, level=log.INFO)
-            if close_domain and sampled == items_per_domain:
+            stats.set_value("items_sampled", sampled, domain=spider.domain_name)
+            log.msg("Sampled %s" % item, spider=spider, level=log.INFO)
+            if close_spider and sampled == items_per_spider:
                 scrapyengine.close_spider(spider)
         return item
 
@@ -68,14 +67,15 @@ class ItemSamplerPipeline(object):
         with open(self.filename, 'w') as f:
             pickle.dump(self.items, f)
         if self.empty_domains:
-            log.msg("No products sampled for: %s" % " ".join(self.empty_domains), level=log.WARNING)
+            log.msg("No products sampled for: %s" % " ".join(self.empty_domains), \
+                level=log.WARNING)
 
     def spider_closed(self, spider, reason):
-        domain = spider.domain_name
-        if reason == 'finished' and not stats.get_value("items_sampled", domain=domain):
-            self.empty_domains.add(domain)
-        self.domains_count += 1
-        log.msg("Sampled %d domains so far (%d empty)" % (self.domains_count, len(self.empty_domains)), level=log.INFO)
+        if reason == 'finished' and not stats.get_value("items_sampled", domain=spider.domain_name):
+            self.empty_domains.add(spider.domain_name)
+        self.spiders_count += 1
+        log.msg("Sampled %d domains so far (%d empty)" % (self.spiders_count, \
+            len(self.empty_domains)), level=log.INFO)
 
 
 class ItemSamplerMiddleware(object):
@@ -87,7 +87,7 @@ class ItemSamplerMiddleware(object):
             raise NotConfigured
 
     def process_spider_input(self, response, spider):
-        if stats.get_value("items_sampled", domain=spider.domain_name) >= items_per_domain:
+        if stats.get_value("items_sampled", domain=spider.domain_name) >= items_per_spider:
             return []
         elif max_response_size and max_response_size > len(response_httprepr(response)):  
             return []
@@ -100,7 +100,7 @@ class ItemSamplerMiddleware(object):
             else:
                 items.append(r)
 
-        if stats.get_value("items_sampled", domain=spider.domain_name) >= items_per_domain:
+        if stats.get_value("items_sampled", domain=spider.domain_name) >= items_per_spider:
             return []
         else:
             # TODO: this needs some revision, as keeping only the first item
