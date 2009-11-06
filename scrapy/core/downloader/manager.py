@@ -27,7 +27,7 @@ class SiteInfo(object):
         if download_delay:
             self.max_concurrent_requests = 1
         elif max_concurrent_requests is None:
-            self.max_concurrent_requests = settings.getint('REQUESTS_PER_DOMAIN')
+            self.max_concurrent_requests = settings.getint('REQUESTS_PER_SPIDER')
         else:
             self.max_concurrent_requests =  max_concurrent_requests
 
