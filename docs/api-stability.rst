@@ -16,7 +16,7 @@ When Scrapy reaches 1.0, each release will consist of three version numbers:
  * micro - bug fixes only
 
 Until Scrapy reaches 1.0, minor releases (0.7, 0.8, etc) will follow the same
-policy as major release.
+policy as major releases.
 
 Sometimes the micro version can be omitted, for brevity, when it's not
 relevant.
