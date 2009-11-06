@@ -52,7 +52,7 @@ class LiveStats(object):
         totdomains = totscraped = totcrawled = totscheduled = totactive = totdqueued = tottransf = 0
         s = banner(self)
         s += "<table border='1'>\n"
-        s += "<tr><th>Domain</th><th>Items<br>Scraped</th><th>Pages<br>Crawled</th><th>Scheduler<br>Pending</th><th>Downloader<br/>Queued</th><th>Downloader<br/>Active</th><th>Downloader<br/>Transferring</th><th>Start time</th><th>Finish time</th><th>Run time</th></tr>\n"
+        s += "<tr><th>Spider</th><th>Items<br>Scraped</th><th>Pages<br>Crawled</th><th>Scheduler<br>Pending</th><th>Downloader<br/>Queued</th><th>Downloader<br/>Active</th><th>Downloader<br/>Transferring</th><th>Start time</th><th>Finish time</th><th>Run time</th></tr>\n"
         for spider in sorted(self.domains.keys()):
             scheduled = len(sch.pending_requests[spider]) if spider in sch.pending_requests else 0
             active = len(dwl.sites[spider].active) if spider in dwl.sites else 0
