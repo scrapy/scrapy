@@ -260,7 +260,7 @@ class ExecutionEngine(object):
             dispatcher.send(signal=signals.spider_idle, sender=self.__class__, \
                 spider=spider)
         except DontCloseDomain:
-            self.next_request(spider)
+            reactor.callLater(5, self.next_request, spider)
             return
         except:
             log.err("Exception catched on spider_idle signal dispatch")
