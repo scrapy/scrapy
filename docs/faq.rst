@@ -118,3 +118,15 @@ written in a ``my_spider.py`` file you can run it with::
 
     scrapy-ctl.py runspider my_spider.py
 
+I get "Filtered offsite request" messages. How can I fix them?
+--------------------------------------------------------------
+
+Those messages (logged with ``DEBUG`` level) don't necesarilly mean there is a
+problem, so mat not need to fix them.
+
+Those message are thrown by the Offsite Spider Middleware, which is a spider
+middleware (enabled by default) whose purpose is to filter out requests to
+domains outside the ones covered by the spider.
+
+For more info see:
+:class:`~scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware`.
