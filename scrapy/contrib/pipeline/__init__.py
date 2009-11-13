@@ -57,7 +57,7 @@ class ItemPipelineManager(object):
             if not stages_left:
                 return item
             current_stage = stages_left.pop(0)
-            d = mustbe_deferred(current_stage.process_item, spider.domain_name, item)
+            d = mustbe_deferred(current_stage.process_item, spider, item)
             d.addCallback(next_stage, stages_left)
             return d
 

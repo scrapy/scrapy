@@ -2,6 +2,7 @@ import unittest
 import weakref
 
 from scrapy.http import Response, TextResponse, HtmlResponse, XmlResponse, Headers
+from scrapy.conf import settings
 
 
 class BaseResponseTest(unittest.TestCase):
@@ -138,8 +139,10 @@ class TextResponseTest(BaseResponseTest):
         self.assertEqual(r3.encoding, "latin1")
 
     def test_unicode_url(self):
-        # instantiate with unicode url without encoding
-        self.assertRaises(TypeError, self.response_class, u"http://www.example.com/")
+        # instantiate with unicode url without encoding (should set default encoding)
+        resp = self.response_class(u"http://www.example.com/")
+        self.assertEqual(resp.encoding, settings['DEFAULT_RESPONSE_ENCODING'])
+
         # make sure urls are converted to str
         resp = self.response_class(url=u"http://www.example.com/", encoding='utf-8')
         assert isinstance(resp.url, str)
@@ -187,7 +190,6 @@ class TextResponseTest(BaseResponseTest):
         # TextResponse (and subclasses) must be passed a encoding when instantiating with unicode bodies
         self.assertRaises(TypeError, self.response_class, "http://www.example.com", body=u"\xa3")
 
-
 class HtmlResponseTest(TextResponseTest):
 
     response_class = HtmlResponse
@@ -229,8 +231,7 @@ class XmlResponseTest(TextResponseTest):
 
         body = "<xml></xml>"
         r1 = self.response_class("http://www.example.com", body=body)
-        # XXX: we may want to swtich default XmlResponse encoding to utf-8
-        self._assert_response_values(r1, 'ascii', body)
+        self._assert_response_values(r1, settings['DEFAULT_RESPONSE_ENCODING'], body)
 
         body = """<?xml version="1.0" encoding="iso-8859-1"?><xml></xml>"""
         r2 = self.response_class("http://www.example.com", body=body)

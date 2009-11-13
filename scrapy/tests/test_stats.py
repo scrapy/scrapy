@@ -51,7 +51,7 @@ class StatsCollectorTest(unittest.TestCase):
     def test_signals(self):
         signals_catched = set()
 
-        def domain_open(domain):
+        def domain_opened(domain):
             assert domain == 'example.com'
             signals_catched.add(stats_domain_opened)
 
@@ -66,7 +66,7 @@ class StatsCollectorTest(unittest.TestCase):
             assert domain_stats == {'test': 1}
             signals_catched.add(stats_domain_closed)
 
-        dispatcher.connect(domain_open, signal=stats_domain_opened)
+        dispatcher.connect(domain_opened, signal=stats_domain_opened)
         dispatcher.connect(domain_closing, signal=stats_domain_closing)
         dispatcher.connect(domain_closed, signal=stats_domain_closed)
 
@@ -78,7 +78,7 @@ class StatsCollectorTest(unittest.TestCase):
         assert stats_domain_closing in signals_catched
         assert stats_domain_closed in signals_catched
 
-        dispatcher.disconnect(domain_open, signal=stats_domain_opened)
+        dispatcher.disconnect(domain_opened, signal=stats_domain_opened)
         dispatcher.disconnect(domain_closing, signal=stats_domain_closing)
         dispatcher.disconnect(domain_closed, signal=stats_domain_closed)
 

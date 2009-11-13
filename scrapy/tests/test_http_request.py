@@ -258,6 +258,55 @@ class FormRequestTest(RequestTest):
         self.assertEqual(fs['one'].value, '1')
         self.assertEqual(fs['two'].value, '2')
 
+    def test_from_response_submit_first_clickeable(self):
+        respbody = """
+<form action="get.php" method="GET">
+<input type="submit" name="clickeable1" value="clicked1">
+<input type="hidden" name="one" value="1">
+<input type="hidden" name="two" value="3">
+<input type="submit" name="clickeable2" value="clicked2">
+</form>
+        """
+        response = Response("http://www.example.com/this/list.html", body=respbody)
+        r1 = self.request_class.from_response(response, formdata={'two': '2'})
+        urlargs = cgi.parse_qs(urlparse(r1.url).query)
+        self.assertEqual(urlargs['clickeable1'], ['clicked1'])
+        self.assertFalse('clickeable2' in urlargs, urlargs)
+        self.assertEqual(urlargs['one'], ['1'])
+        self.assertEqual(urlargs['two'], ['2'])
+
+    def test_from_response_submit_not_first_clickeable(self):
+        respbody = """
+<form action="get.php" method="GET">
+<input type="submit" name="clickeable1" value="clicked1">
+<input type="hidden" name="one" value="1">
+<input type="hidden" name="two" value="3">
+<input type="submit" name="clickeable2" value="clicked2">
+</form>
+        """
+        response = Response("http://www.example.com/this/list.html", body=respbody)
+        r1 = self.request_class.from_response(response, formdata={'two': '2'}, clickdata={'name': 'clickeable2'})
+        urlargs = cgi.parse_qs(urlparse(r1.url).query)
+        self.assertEqual(urlargs['clickeable2'], ['clicked2'])
+        self.assertFalse('clickeable1' in urlargs, urlargs)
+        self.assertEqual(urlargs['one'], ['1'])
+        self.assertEqual(urlargs['two'], ['2'])
+
+    def test_from_response_dont_click(self):
+        respbody = """
+<form action="get.php" method="GET">
+<input type="submit" name="clickeable1" value="clicked1">
+<input type="hidden" name="one" value="1">
+<input type="hidden" name="two" value="3">
+<input type="submit" name="clickeable2" value="clicked2">
+</form>
+        """
+        response = Response("http://www.example.com/this/list.html", body=respbody)
+        r1 = self.request_class.from_response(response, dont_click=True)
+        urlargs = cgi.parse_qs(urlparse(r1.url).query)
+        self.assertFalse('clickeable1' in urlargs, urlargs)
+        self.assertFalse('clickeable2' in urlargs, urlargs)
+
     def test_from_response_errors_noform(self):
         respbody = """<html></html>"""
         response = Response("http://www.example.com/lala.html", body=respbody)

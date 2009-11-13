@@ -1,6 +1,6 @@
 import unittest
 
-from scrapy.item import Item, Field, ScrapedItem
+from scrapy.item import Item, Field
 
 
 class ItemTest(unittest.TestCase):
@@ -126,24 +126,6 @@ class ItemTest(unittest.TestCase):
         i['name'] = u'John'
         self.assertEqual(dict(i), {'name': u'John'})
 
-
-# NOTE: ScrapedItem is deprecated and will be removed in the next stable
-# release, and so will these tests.
-
-class ScrapedItemTestCase(unittest.TestCase):
-
-    def test_item(self):
-        
-        class MyItem(ScrapedItem):
-            pass
-
-        item = MyItem()
-        self.assertEqual(repr(item), 'MyItem({})')
-
-        item = ScrapedItem({'key': 'value'})
-        self.assertEqual(item.key, 'value')
-
-        self.assertRaises(TypeError, ScrapedItem, 10)
 
 if __name__ == "__main__":
     unittest.main()

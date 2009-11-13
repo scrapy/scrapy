@@ -1,10 +1,11 @@
 from unittest import TestCase, main
-from scrapy.http import Response, XmlResponse
+from scrapy.http import Response, XmlResponse, Request
 from scrapy.contrib_exp.downloadermiddleware.decompression import DecompressionMiddleware
+from scrapy.spider import BaseSpider
 from scrapy.tests import get_testdata
 
-def setUp():
-    formats = ['tar', 'xml.bz2', 'xml.gz', 'zip']
+
+def _test_data(formats):
     uncompressed_body = get_testdata('compressed', 'feed-sample1.xml')
     test_responses = {}
     for format in formats:
@@ -12,29 +13,40 @@ def setUp():
         test_responses[format] = Response('http://foo.com/bar', body=body)
     return uncompressed_body, test_responses
 
-class ScrapyDecompressionTest(TestCase):
-    uncompressed_body, test_responses = setUp()
-    middleware = DecompressionMiddleware()
 
-    def test_tar(self):
-        response, format = self.middleware.extract(self.test_responses['tar'])
-        assert isinstance(response, XmlResponse)
-        self.assertEqual(response.body, self.uncompressed_body)
+class DecompressionMiddlewareTest(TestCase):
+    
+    test_formats = ['tar', 'xml.bz2', 'xml.gz', 'zip']
+    uncompressed_body, test_responses = _test_data(test_formats)
 
-    def test_zip(self):
-        response, format = self.middleware.extract(self.test_responses['zip'])
-        assert isinstance(response, XmlResponse)
-        self.assertEqual(response.body, self.uncompressed_body)
+    def setUp(self):
+        self.mw = DecompressionMiddleware()
+        self.spider = BaseSpider()
 
-    def test_gz(self):
-        response, format = self.middleware.extract(self.test_responses['xml.gz'])
-        assert isinstance(response, XmlResponse)
-        self.assertEqual(response.body, self.uncompressed_body)
+    def test_known_compression_formats(self):
+        for fmt in self.test_formats:
+            rsp = self.test_responses[fmt]
+            new = self.mw.process_response(None, rsp, self.spider)
+            assert isinstance(new, XmlResponse), \
+                    'Failed %s, response type %s' % (fmt, type(new).__name__)
+            self.assertEqual(new.body, self.uncompressed_body, fmt)
 
-    def test_bz2(self):
-        response, format = self.middleware.extract(self.test_responses['xml.bz2'])
-        assert isinstance(response, XmlResponse)
-        self.assertEqual(response.body, self.uncompressed_body)
+    def test_plain_response(self):
+        rsp = Response(url='http://test.com', body=self.uncompressed_body)
+        new = self.mw.process_response(None, rsp, self.spider)
+        assert new is rsp
+        self.assertEqual(new.body, rsp.body)
+
+    def test_empty_response(self):
+        rsp = Response(url='http://test.com', body='')
+        new = self.mw.process_response(None, rsp, self.spider)
+        assert new is rsp
+        assert not rsp.body
+        assert not new.body
+
+    def tearDown(self):
+        del self.mw
+
 
 if __name__ == '__main__':
     main()
