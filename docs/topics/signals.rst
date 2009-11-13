@@ -175,7 +175,7 @@ request_received
 ----------------
 
 .. signal:: request_received
-.. function:: request_received(request, spider, response)
+.. function:: request_received(request, spider)
 
     Sent when the engine receives a :class:`~scrapy.http.Request` from a spider.
 
@@ -184,10 +184,6 @@ request_received
 
     :param spider: the spider which generated the request
     :type spider: :class:`~scrapy.spider.BaseSpider` object
-
-    :param response: the :class:`~scrapy.http.Response` fed to the spider which
-        generated the request later
-    :type response: :class:`~scrapy.http.Response` object
 
 request_uploaded
 ----------------
