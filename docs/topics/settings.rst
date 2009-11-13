@@ -725,10 +725,10 @@ A dict containing the request download handlers enabled by default in Scrapy.
 You should never modify this setting in your project, modify
 :setting:`REQUEST_HANDLERS` instead. 
 
-.. setting:: REQUESTS_PER_SPIDER
+.. setting:: CONCURRENT_REQUESTS_PER_SPIDER
 
-REQUESTS_PER_SPIDER
--------------------
+CONCURRENT_REQUESTS_PER_SPIDER
+------------------------------
 
 Default: ``8``
 

@@ -25,7 +25,7 @@ COMMANDS_MODULE = ''
 COMMANDS_SETTINGS_MODULE = ''
 
 CONCURRENT_ITEMS = 100
-
+CONCURRENT_REQUESTS_PER_SPIDER = 8
 CONCURRENT_SPIDERS = 8
 
 COOKIES_DEBUG = False
@@ -136,7 +136,6 @@ REQUEST_HANDLERS_BASE = {
 }
 
 REQUESTS_QUEUE_SIZE = 0
-REQUESTS_PER_SPIDER = 8     # max simultaneous requests per domain
 
 # contrib.middleware.retry.RetryMiddleware default settings
 RETRY_TIMES = 2 # initial response + 2 retries = 3 requests
