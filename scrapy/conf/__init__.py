@@ -13,7 +13,7 @@ import_ = lambda x: __import__(x, {}, {}, [''])
 
 class Settings(object):
 
-    def __init__(self):
+    def __init__(self, overrides=None):
         self.defaults = {}
         self.global_defaults = default_settings
         self.disabled = os.environ.get('SCRAPY_SETTINGS_DISABLED', False)
@@ -24,6 +24,8 @@ class Settings(object):
         # XXX: find a better solution for this hack
         pickled_settings = os.environ.get("SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE")
         self.overrides = pickle.loads(pickled_settings) if pickled_settings else {}
+        if overrides:
+            self.overrides.update(overrides)
 
     def __getitem__(self, opt_name):
         if not self.disabled:

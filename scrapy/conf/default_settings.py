@@ -94,7 +94,7 @@ GROUPSETTINGS_MODULE = ''
 
 HTTPCACHE_DIR = ''
 HTTPCACHE_IGNORE_MISSING = False
-HTTPCACHE_SECTORIZE = True
+HTTPCACHE_STORAGE = 'scrapy.contrib.downloadermiddleware.httpcache.FilesystemCacheStorage'
 HTTPCACHE_EXPIRATION_SECS = 0
 
 ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'

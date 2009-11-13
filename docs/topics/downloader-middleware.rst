@@ -214,25 +214,86 @@ HttpCacheMiddleware
 .. class:: HttpCacheMiddleware
 
     This middleware provides low-level cache to all HTTP requests and responses.
-    Every request and its corresponding response are cached and then, when that
-    same request is seen again, the response is returned without transferring
+    Every request and its corresponding response are cached. When the same
+    request is seen again, the response is returned without transferring
     anything from the Internet.
 
     The HTTP cache is useful for testing spiders faster (without having to wait for
     downloads every time) and for trying your spider off-line when you don't have
     an Internet connection.
 
-    The :class:`HttpCacheMiddleware` can be configured through the following
-    settings (see the settings documentation for more info):
+File system storage
+~~~~~~~~~~~~~~~~~~~
 
-    * :setting:`HTTPCACHE_DIR` - this one actually enables the cache besides
-      settings the cache dir
-    * :setting:`HTTPCACHE_IGNORE_MISSING` - ignoring missing requests instead
-      of downloading them
-    * :setting:`HTTPCACHE_SECTORIZE` - split HTTP cache in several directories
-      (for performance reasons)
-    * :setting:`HTTPCACHE_EXPIRATION_SECS` - how many secs until the cache is
-      considered out of date
+By default, the :class:`HttpCacheMiddleware` uses a file system storage  with the following structure:
+
+Each request/response pair is stored in a different directory containing with
+the following files:
+
+ * ``request_body`` - the plain request body
+ * ``request_headers`` - the request headers (in raw HTTP format)
+ * ``response_body`` - the plain response body
+ * ``response_headers`` - the request headers (in raw HTTP format)
+ * ``meta`` - some metadata of this cache resource in Python ``repr()`` format
+   (for easy grepeability)
+ * ``pickled_meta`` - the same metadata in ``meta`` but pickled for more
+   efficient deserialization
+
+The directory name is made from the request fingerprint (see
+``scrapy.utils.request.fingerprint``), and one level of subdirectories is
+used to avoid creating too many files into the same directory (which is
+inefficient in many file systems). An example directory could be::
+
+   /path/to/cache/dir/example.com/72/72811f648e718090f041317756c03adb0ada46c7
+
+The cache storage backend can be changed with the :setting:`HTTPCACHE_STORAGE`
+setting, but no other backend is provided with Scrapy yet.
+
+Settings
+~~~~~~~~
+
+The :class:`HttpCacheMiddleware` can be configured through the following
+settings:
+
+.. setting:: HTTPCACHE_DIR
+
+HTTPCACHE_DIR
+^^^^^^^^^^^^^
+
+Default: ``''`` (empty string)
+
+The directory to use for storing the (low-level) HTTP cache. If empty the HTTP
+cache will be disabled.
+
+.. setting:: HTTPCACHE_EXPIRATION_SECS
+
+HTTPCACHE_EXPIRATION_SECS
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``0``
+
+Number of seconds to use for HTTP cache expiration. Requests that were cached
+before this time will be re-downloaded. If zero, cached requests will always
+expire. Negative numbers means requests will never expire.
+
+.. setting:: HTTPCACHE_IGNORE_MISSING
+
+HTTPCACHE_IGNORE_MISSING
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``False``
+
+If enabled, requests not found in the cache will be ignored instead of downloaded. 
+
+.. setting:: HTTPCACHE_STORAGE
+
+HTTPCACHE_STORAGE
+^^^^^^^^^^^^^^^^^
+
+Default: ``'scrapy.contrib.downloadermiddleware.httpcache.FilesystemCacheStorage'``
+
+The class which implements the cache storage backend.
+
 
 .. _topics-dlmw-robots:
 

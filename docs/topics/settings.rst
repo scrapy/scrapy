@@ -220,45 +220,6 @@ Default: ``1.0``
 The version of the bot implemented by this Scrapy project. This will be used to
 construct the User-Agent by default.
 
-.. setting:: HTTPCACHE_DIR
-
-HTTPCACHE_DIR
--------------
-
-Default: ``''`` (empty string)
-
-The directory to use for storing the (low-level) HTTP cache. If empty the HTTP
-cache will be disabled.
-
-.. setting:: HTTPCACHE_EXPIRATION_SECS
-
-HTTPCACHE_EXPIRATION_SECS
--------------------------
-
-Default: ``0``
-
-Number of seconds to use for HTTP cache expiration. Requests that were cached
-before this time will be re-downloaded. If zero, cached requests will always
-expire. Negative numbers means requests will never expire.
-
-.. setting:: HTTPCACHE_IGNORE_MISSING
-
-HTTPCACHE_IGNORE_MISSING
-------------------------
-
-Default: ``False``
-
-If enabled, requests not found in the cache will be ignored instead of downloaded. 
-
-.. setting:: HTTPCACHE_SECTORIZE
-
-HTTPCACHE_SECTORIZE
--------------------
-
-Default: ``True``
-
-Whether to split HTTP cache storage in several dirs for performance.
-
 .. setting:: COMMANDS_MODULE
 
 COMMANDS_MODULE
