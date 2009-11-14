@@ -219,7 +219,7 @@ class ImagesPipeline(MediaPipeline):
         msg = 'Image (%s): Downloaded image from %s referred in <%s>' % \
                 (status, request, referer)
         log.msg(msg, level=log.DEBUG, spider=info.spider)
-        self.inc_stats(info.spider.domain_name, status)
+        self.inc_stats(info.spider, status)
 
         try:
             key = self.image_key(request.url)
@@ -258,7 +258,7 @@ class ImagesPipeline(MediaPipeline):
             referer = request.headers.get('Referer')
             log.msg('Image (uptodate): Downloaded %s from <%s> referred in <%s>' % \
                     (self.MEDIA_NAME, request.url, referer), level=log.DEBUG, spider=info.spider)
-            self.inc_stats(info.spider.domain_name, 'uptodate')
+            self.inc_stats(info.spider, 'uptodate')
 
             checksum = result.get('checksum', None)
             return {'url': request.url, 'path': key, 'checksum': checksum}
@@ -295,9 +295,9 @@ class ImagesPipeline(MediaPipeline):
             thumb_image, thumb_buf = self.convert_image(image, size)
             yield thumb_key, thumb_image, thumb_buf
 
-    def inc_stats(self, domain, status):
-        stats.inc_value('image_count', domain=domain)
-        stats.inc_value('image_status_count/%s' % status, domain=domain)
+    def inc_stats(self, spider, status):
+        stats.inc_value('image_count', spider=spider)
+        stats.inc_value('image_status_count/%s' % status, spider=spider)
 
     def convert_image(self, image, size=None):
         if image.mode != 'RGB':

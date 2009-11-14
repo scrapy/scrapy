@@ -18,7 +18,6 @@ class DepthMiddleware(object):
             stats.set_value('envinfo/request_depth_limit', self.maxdepth)
 
     def process_spider_output(self, response, result, spider):
-        domain = spider.domain_name
         def _filter(request):
             if isinstance(request, Request):
                 depth = response.request.meta['depth'] + 1
@@ -28,14 +27,14 @@ class DepthMiddleware(object):
                         level=log.DEBUG, spider=spider)
                     return False
                 elif self.stats:
-                    stats.inc_value('request_depth_count/%s' % depth, domain=domain)
-                    if depth > stats.get_value('request_depth_max', 0, domain=domain):
-                        stats.set_value('request_depth_max', depth, domain=domain)
+                    stats.inc_value('request_depth_count/%s' % depth, spider=spider)
+                    if depth > stats.get_value('request_depth_max', 0, spider=spider):
+                        stats.set_value('request_depth_max', depth, spider=spider)
             return True
 
         # base case (depth=0)
         if self.stats and 'depth' not in response.request.meta: 
             response.request.meta['depth'] = 0
-            stats.inc_value('request_depth_count/0', domain=domain)
+            stats.inc_value('request_depth_count/0', spider=spider)
 
         return (r for r in result or () if _filter(r))

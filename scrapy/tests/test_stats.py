@@ -1,11 +1,15 @@
 import unittest 
 
+from scrapy.spider import BaseSpider
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.stats.collector import StatsCollector, DummyStatsCollector
-from scrapy.stats.signals import stats_domain_opened, stats_domain_closing, \
-    stats_domain_closed
+from scrapy.stats.signals import stats_spider_opened, stats_spider_closing, \
+    stats_spider_closed
 
 class StatsCollectorTest(unittest.TestCase):
+
+    def setUp(self):
+        self.spider = BaseSpider()
 
     def test_collector(self):
         stats = StatsCollector()
@@ -43,44 +47,45 @@ class StatsCollectorTest(unittest.TestCase):
         stats.inc_value('v1')
         stats.max_value('v2', 100)
         stats.min_value('v3', 100)
-        stats.open_domain('a')
-        stats.set_value('test', 'value', domain='a')
+        stats.open_spider('a')
+        stats.set_value('test', 'value', spider=self.spider)
         self.assertEqual(stats.get_stats(), {})
         self.assertEqual(stats.get_stats('a'), {})
 
     def test_signals(self):
         signals_catched = set()
 
-        def domain_opened(domain):
-            assert domain == 'example.com'
-            signals_catched.add(stats_domain_opened)
+        def spider_opened(spider):
+            assert spider is self.spider
+            signals_catched.add(stats_spider_opened)
 
-        def domain_closing(domain, reason):
-            assert domain == 'example.com'
+        def spider_closing(spider, reason):
+            assert spider is self.spider
             assert reason == 'testing'
-            signals_catched.add(stats_domain_closing)
+            signals_catched.add(stats_spider_closing)
 
-        def domain_closed(domain, reason, domain_stats):
-            assert domain == 'example.com'
+        def spider_closed(spider, reason, spider_stats):
+            assert spider is self.spider
             assert reason == 'testing'
-            assert domain_stats == {'test': 1}
-            signals_catched.add(stats_domain_closed)
+            assert spider_stats == {'test': 1}
+            signals_catched.add(stats_spider_closed)
 
-        dispatcher.connect(domain_opened, signal=stats_domain_opened)
-        dispatcher.connect(domain_closing, signal=stats_domain_closing)
-        dispatcher.connect(domain_closed, signal=stats_domain_closed)
+        dispatcher.connect(spider_opened, signal=stats_spider_opened)
+        dispatcher.connect(spider_closing, signal=stats_spider_closing)
+        dispatcher.connect(spider_closed, signal=stats_spider_closed)
 
         stats = StatsCollector()
-        stats.open_domain('example.com')
-        stats.set_value('test', 1, domain='example.com')
-        stats.close_domain('example.com', 'testing')
-        assert stats_domain_opened in signals_catched
-        assert stats_domain_closing in signals_catched
-        assert stats_domain_closed in signals_catched
+        stats.open_spider(self.spider)
+        stats.set_value('test', 1, spider=self.spider)
+        self.assertEqual([(self.spider, {'test': 1})], list(stats.iter_spider_stats()))
+        stats.close_spider(self.spider, 'testing')
+        assert stats_spider_opened in signals_catched
+        assert stats_spider_closing in signals_catched
+        assert stats_spider_closed in signals_catched
 
-        dispatcher.disconnect(domain_opened, signal=stats_domain_opened)
-        dispatcher.disconnect(domain_closing, signal=stats_domain_closing)
-        dispatcher.disconnect(domain_closed, signal=stats_domain_closed)
+        dispatcher.disconnect(spider_opened, signal=stats_spider_opened)
+        dispatcher.disconnect(spider_closing, signal=stats_spider_closing)
+        dispatcher.disconnect(spider_closed, signal=stats_spider_closed)
 
 if __name__ == "__main__":
     unittest.main()

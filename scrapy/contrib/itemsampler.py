@@ -53,11 +53,11 @@ class ItemSamplerPipeline(object):
         dispatcher.connect(self.engine_stopped, signal=signals.engine_stopped)
 
     def process_item(self, spider, item):
-        sampled = stats.get_value("items_sampled", 0, domain=spider.domain_name)
+        sampled = stats.get_value("items_sampled", 0, spider=spider)
         if sampled < items_per_spider:
             self.items[item.guid] = item
             sampled += 1
-            stats.set_value("items_sampled", sampled, domain=spider.domain_name)
+            stats.set_value("items_sampled", sampled, spider=spider)
             log.msg("Sampled %s" % item, spider=spider, level=log.INFO)
             if close_spider and sampled == items_per_spider:
                 scrapyengine.close_spider(spider)
@@ -71,7 +71,7 @@ class ItemSamplerPipeline(object):
                 level=log.WARNING)
 
     def spider_closed(self, spider, reason):
-        if reason == 'finished' and not stats.get_value("items_sampled", domain=spider.domain_name):
+        if reason == 'finished' and not stats.get_value("items_sampled", spider=spider):
             self.empty_domains.add(spider.domain_name)
         self.spiders_count += 1
         log.msg("Sampled %d domains so far (%d empty)" % (self.spiders_count, \
@@ -87,7 +87,7 @@ class ItemSamplerMiddleware(object):
             raise NotConfigured
 
     def process_spider_input(self, response, spider):
-        if stats.get_value("items_sampled", domain=spider.domain_name) >= items_per_spider:
+        if stats.get_value("items_sampled", spider=spider) >= items_per_spider:
             return []
         elif max_response_size and max_response_size > len(response_httprepr(response)):  
             return []
@@ -100,7 +100,7 @@ class ItemSamplerMiddleware(object):
             else:
                 items.append(r)
 
-        if stats.get_value("items_sampled", domain=spider.domain_name) >= items_per_spider:
+        if stats.get_value("items_sampled", spider=spider) >= items_per_spider:
             return []
         else:
             # TODO: this needs some revision, as keeping only the first item

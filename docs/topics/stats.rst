@@ -8,9 +8,9 @@ Overview
 ========
 
 Scrapy provides a convenient service for collecting stats in the form of
-key/values, both globally and per spider/domain. It's called the Stats
-Collector, and it's a singleton which can be imported and used quickly, as
-illustrated by the examples in the :ref:`topics-stats-usecases` section below.
+key/values, both globally and per spider. It's called the Stats Collector, and
+it's a singleton which can be imported and used quickly, as illustrated by the
+examples in the :ref:`topics-stats-usecases` section below.
 
 The stats collection is enabled by default but can be disabled through the
 :setting:`STATS_ENABLED` setting.
@@ -26,10 +26,10 @@ using the Stats Collector from.
 Another feature of the Stats Collector is that it's very efficient (when
 enabled) and extremely efficient (almost unnoticeable) when disabled.
 
-The Stats Collector keeps one stats table per open spider/domain and one global
-stats table. You can't set or get stats from a closed domain, but the
-domain-specific stats table is automatically opened when the spider is opened,
-and closed when the spider is closed.
+The Stats Collector keeps one stats table per open spider and one global stats
+table. You can't set or get stats from a closed spider, but the spider-specific
+stats table is automatically opened when the spider is opened, and closed when
+the spider is closed.
 
 .. _topics-stats-usecases:
 
@@ -61,36 +61,38 @@ Get global stat value::
     >>> stats.get_value('spiders_crawled')
     8
 
-Get all global stats from a given domain::
+Get all global stats (ie. not particular to any spider)::
 
     >>> stats.get_stats()
     {'hostname': 'localhost', 'spiders_crawled': 8}
 
-Set domain/spider specific stat value (domains must be opened first, but this
+Set spider specific stat value (spider stats must be opened first, but this
 task is handled automatically by the Scrapy engine)::
 
-    stats.set_value('start_time', datetime.now(), domain='example.com')
+    stats.set_value('start_time', datetime.now(), spider=some_spider)
 
-Increment domain-specific stat value::
+Where ``some_spider`` is a :class:`~scrapy.spider.BaseSpider` object.
 
-    stats.inc_value('pages_crawled', domain='example.com')
+Increment spider-specific stat value::
 
-Set domain-specific stat value only if greater than previous::
+    stats.inc_value('pages_crawled', spider=some_spider)
 
-    stats.max_value('max_items_scraped', value, domain='example.com')
+Set spider-specific stat value only if greater than previous::
 
-Set domain-specific stat value only if lower than previous::
+    stats.max_value('max_items_scraped', value, spider=some_spider)
 
-    stats.min_value('min_free_memory_percent', value, domain='example.com')
+Set spider-specific stat value only if lower than previous::
 
-Get domain-specific stat value::
+    stats.min_value('min_free_memory_percent', value, spider=some_spider)
 
-    >>> stats.get_value('pages_crawled', domain='example.com')
+Get spider-specific stat value::
+
+    >>> stats.get_value('pages_crawled', spider=some_spider)
     1238
 
-Get all stats from a given domain::
+Get all stats from a given spider::
 
-    >>> stats.get_stats('pages_crawled', domain='example.com')
+    >>> stats.get_stats('pages_crawled', spider=some_spider)
     {'pages_crawled': 1238, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
 
 .. _topics-stats-ref:
@@ -108,74 +110,79 @@ class (which they all inherit from).
 
 .. class:: StatsCollector
     
-    .. method:: get_value(key, default=None, domain=None)
+    .. method:: get_value(key, default=None, spider=None)
  
         Return the value for the given stats key or default if it doesn't exist.
-        If domain is ``None`` the global stats table is consulted, other the
-        domain specific one is. If the domain is not yet opened a ``KeyError``
+        If spider is ``None`` the global stats table is consulted, otherwise the
+        spider specific one is. If the spider is not yet opened a ``KeyError``
         exception is raised.
 
-    .. method:: get_stats(domain=None)
+    .. method:: get_stats(spider=None)
 
-        Get all stats from the given domain/spider (if domain is given) or all
-        global stats otherwise, as a dict. If domain is not opened ``KeyError``
-        is raied.
+        Get all stats from the given spider (if spider is given) or all global
+        stats otherwise, as a dict. If spider is not opened ``KeyError`` is
+        raied.
 
-    .. method:: set_value(key, value, domain=None)
+    .. method:: set_value(key, value, spider=None)
 
         Set the given value for the given stats key on the global stats (if
-        domain is not given) or the domain-specific stats (if domain is given),
+        spider is not given) or the spider-specific stats (if spider is given),
         which must be opened or a ``KeyError`` will be raised.
 
-    .. method:: set_stats(stats, domain=None)
+    .. method:: set_stats(stats, spider=None)
 
-        Set the given stats (as a dict) for the given domain. If the domain is
+        Set the given stats (as a dict) for the given spider. If the spider is
         not opened a ``KeyError`` will be raised.
 
-    .. method:: inc_value(key, count=1, start=0, domain=None)
+    .. method:: inc_value(key, count=1, start=0, spider=None)
 
         Increment the value of the given stats key, by the given count,
-        assuming the start value given (when it's not set). If domain is not
-        given the global stats table is used, otherwise the domain-specific
+        assuming the start value given (when it's not set). If spider is not
+        given the global stats table is used, otherwise the spider-specific
         stats table is used, which must be opened or a ``KeyError`` will be
         raised.
 
-    .. method:: max_value(key, value, domain=None)
+    .. method:: max_value(key, value, spider=None)
 
         Set the given value for the given key only if current value for the
         same key is lower than value. If there is no current value for the
-        given key, the value is always set. If domain is not given the global
-        stats table is used, otherwise the domain-specific stats table is used,
+        given key, the value is always set. If spider is not given the global
+        stats table is used, otherwise the spider-specific stats table is used,
         which must be opened or a KeyError will be raised.
 
-    .. method:: min_value(key, value, domain=None)
+    .. method:: min_value(key, value, spider=None)
 
         Set the given value for the given key only if current value for the
         same key is greater than value. If there is no current value for the
-        given key, the value is always set. If domain is not given the global
-        stats table is used, otherwise the domain-specific stats table is used,
+        given key, the value is always set. If spider is not given the global
+        stats table is used, otherwise the spider-specific stats table is used,
         which must be opened or a KeyError will be raised.
 
-    .. method:: clear_stats(domain=None)
+    .. method:: clear_stats(spider=None)
 
-        Clear all global stats (if domain is not given) or all domain-specific
-        stats if domain is given, in which case it must be opened or a
+        Clear all global stats (if spider is not given) or all spider-specific
+        stats if spider is given, in which case it must be opened or a
         ``KeyError`` will be raised.
 
-    .. method:: list_domains()
+    .. method:: iter_spider_stats()
 
-        Return a list of all opened domains.
+        Return a iterator over ``(spider, spider_stats)`` for each open spider
+        currently tracked by the stats collector, where ``spider_stats`` is the
+        dict containing all spider-specific stats.
 
-    .. method:: open_domain(domain)
+        Global stats are not included in the iterator. If you want to get
+        those, use :meth:`get_stats` method.
 
-        Open the given domain for stats collection. This method must be called
-        prior to working with any stats specific to that domain, but this task
+    .. method:: open_spider(spider)
+
+        Open the given spider for stats collection. This method must be called
+        prior to working with any stats specific to that spider, but this task
         is handled automatically by the Scrapy engine.
 
-    .. method:: close_domain(domain)
+    .. method:: close_spider(spider)
 
-        Close the given domain. After this is called, no more specific stats
-        for this domain can be accessed. This method is called automatically on
+        Close the given spider. After this is called, no more specific stats
+        for this spider can be accessed. This method is called automatically on
         the :signal:`spider_closed` signal.
 
 Available Stats Collectors
@@ -196,15 +203,16 @@ MemoryStatsCollector
 .. class:: MemoryStatsCollector
 
     A simple stats collector that keeps the stats of the last scraping run (for
-    each domain) in memory, which can be accessed through the ``domain_stats``
-    attribute
+    each spider) in memory, after they're closed. The stats can be accessed
+    through the :attr:`domain_stats` attribute, which is a dict keyed by spider
+    domain name.
 
     This is the default Stats Collector used in Scrapy.
 
     .. attribute:: domain_stats
 
-       A dict of dicts (keyed by domain) containing the stats of the last
-       scraping run for each domain.
+       A dict of dicts (keyed by spider domain name) containing the stats of
+       the last scraping run for each domain.
 
 DummyStatsCollector
 -------------------
@@ -283,41 +291,41 @@ functionality:
 .. module:: scrapy.stats.signals
    :synopsis: Stats Collector signals
 
-.. signal:: stats_domain_opened
-.. function:: stats_domain_opened(domain)
+.. signal:: stats_spider_opened
+.. function:: stats_spider_opened(spider)
 
-    Sent right after the stats domain is opened. You can use this signal to add
-    startup stats for domain (example: start time).
+    Sent right after the stats spider is opened. You can use this signal to add
+    startup stats for spider (example: start time).
 
-    :param domain: the stats domain just opened
-    :type domain: str
+    :param spider: the stats spider just opened
+    :type spider: str
 
-.. signal:: stats_domain_closing
-.. function:: stats_domain_closing(domain, reason)
+.. signal:: stats_spider_closing
+.. function:: stats_spider_closing(spider, reason)
 
-    Sent just before the stats domain is closed. You can use this signal to add
+    Sent just before the stats spider is closed. You can use this signal to add
     some closing stats (example: finish time).
 
-    :param domain: the stats domain about to be closed
-    :type domain: str
+    :param spider: the stats spider about to be closed
+    :type spider: str
 
-    :param reason: the reason why the domain is being closed. See
+    :param reason: the reason why the spider is being closed. See
         :signal:`spider_closed` signal for more info.
     :type reason: str
 
-.. signal:: stats_domain_closed
-.. function:: stats_domain_closed(domain, reason, domain_stats)
+.. signal:: stats_spider_closed
+.. function:: stats_spider_closed(spider, reason, spider_stats)
 
-    Sent right after the stats domain is closed. You can use this signal to
-    collect resources, but not to add any more stats as the stats domain has
-    already been close (use :signal:`stats_domain_closing` for that instead).
+    Sent right after the stats spider is closed. You can use this signal to
+    collect resources, but not to add any more stats as the stats spider has
+    already been close (use :signal:`stats_spider_closing` for that instead).
 
-    :param domain: the stats domain just closed
-    :type domain: str
+    :param spider: the stats spider just closed
+    :type spider: str
 
-    :param reason: the reason why the domain was closed. See
+    :param reason: the reason why the spider was closed. See
         :signal:`spider_closed` signal for more info.
     :type reason: str
 
-    :param domain_stats: the stats of the domain just closed.
+    :param spider_stats: the stats of the spider just closed.
     :type reason: dict

@@ -244,7 +244,7 @@ class ExecutionEngine(object):
 
         self.downloader.open_spider(spider)
         self.scraper.open_spider(spider)
-        stats.open_domain(spider.domain_name)
+        stats.open_spider(spider)
 
         send_catch_log(signals.spider_opened, sender=self.__class__, spider=spider)
 
@@ -305,7 +305,7 @@ class ExecutionEngine(object):
         reason = self.closing.pop(spider, 'finished')
         send_catch_log(signal=signals.spider_closed, sender=self.__class__, \
             spider=spider, reason=reason)
-        stats.close_domain(spider.domain_name, reason=reason)
+        stats.close_spider(spider, reason=reason)
         dfd = defer.maybeDeferred(spiders.close_spider, spider)
         dfd.addBoth(log.msg, "Spider closed (%s)" % reason, spider=spider)
         reactor.callLater(0, self._mainloop)
