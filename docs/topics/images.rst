@@ -109,11 +109,11 @@ Here are the methods that you should override in your custom Images Pipeline:
 
           [(True,
             {'checksum': '2b00042f7481c7b056c4b410d28f33cf',
-             'path': '7d97e98f8af710c7e7fe703abc8f639e0ee507c4.jpg',
+             'path': 'full/7d97e98f8af710c7e7fe703abc8f639e0ee507c4.jpg',
              'url': 'http://www.example.com/images/product1.jpg'}),
            (True,
             {'checksum': 'b9628c4ab9b595f72f280b90c4fd093d',
-             'path': '1ca5879492b8fd606df1964ea3c1e2f4520f076f',
+             'path': 'full/1ca5879492b8fd606df1964ea3c1e2f4520f076f.jpg',
              'url': 'http://www.example.com/images/product2.jpg'}),
            (False,
             Failure(...))]
