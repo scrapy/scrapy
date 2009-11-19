@@ -54,12 +54,9 @@ to steal from us!
 Does Scrapy work with HTTP proxies?
 -----------------------------------
 
-No. Support for HTTP proxies is not currently implemented in Scrapy, but it
-will be in the future. For more information about this, follow `this ticket
-<http://dev.scrapy.org/ticket/71>`_. Setting the ``http_proxy`` environment
-variable won't work because Twisted (the library used by Scrapy to download
-pages) doesn't support it. See `this Twisted ticket
-<http://twistedmatrix.com/trac/ticket/2714>`_ for more info.
+Yes. Support for HTTP proxies is provided (since Scrapy 0.8) through the HTTP
+Proxy downloader middleware. See
+:class:`~scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware`.
 
 Scrapy crashes with: ImportError: No module named win32api
 ----------------------------------------------------------
@@ -121,3 +118,15 @@ written in a ``my_spider.py`` file you can run it with::
 
     scrapy-ctl.py runspider my_spider.py
 
+I get "Filtered offsite request" messages. How can I fix them?
+--------------------------------------------------------------
+
+Those messages (logged with ``DEBUG`` level) don't necesarilly mean there is a
+problem, so you may not need to fix them.
+
+Those message are thrown by the Offsite Spider Middleware, which is a spider
+middleware (enabled by default) whose purpose is to filter out requests to
+domains outside the ones covered by the spider.
+
+For more info see:
+:class:`~scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware`.

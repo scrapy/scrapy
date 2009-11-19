@@ -14,10 +14,9 @@ class TestDepthMiddleware(TestCase):
         settings.overrides['DEPTH_LIMIT'] = 1
         settings.overrides['DEPTH_STATS'] = True
 
-        self.spider = BaseSpider()
-        self.spider.domain_name = 'scrapytest.org'
+        self.spider = BaseSpider('scrapytest.org')
 
-        stats.open_domain(self.spider.domain_name)
+        stats.open_spider(self.spider)
 
         self.mw = DepthMiddleware()
         self.assertEquals(stats.get_value('envinfo/request_depth_limit'), 1)
@@ -31,8 +30,7 @@ class TestDepthMiddleware(TestCase):
         out = list(self.mw.process_spider_output(resp, result, self.spider))
         self.assertEquals(out, result)
 
-        rdc = stats.get_value('request_depth_count/1',
-                              domain=self.spider.domain_name)
+        rdc = stats.get_value('request_depth_count/1', spider=self.spider)
         self.assertEquals(rdc, 1)
 
         req.meta['depth'] = 1
@@ -40,8 +38,7 @@ class TestDepthMiddleware(TestCase):
         out2 = list(self.mw.process_spider_output(resp, result, self.spider))
         self.assertEquals(out2, [])
 
-        rdm = stats.get_value('request_depth_max',
-                              domain=self.spider.domain_name)
+        rdm = stats.get_value('request_depth_max', spider=self.spider)
         self.assertEquals(rdm, 1)
  
     def tearDown(self):
@@ -49,5 +46,5 @@ class TestDepthMiddleware(TestCase):
         del settings.overrides['DEPTH_STATS']
         settings.disabled = True
 
-        stats.close_domain(self.spider.domain_name, '')
+        stats.close_spider(self.spider, '')
 

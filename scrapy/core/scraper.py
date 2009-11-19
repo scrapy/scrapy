@@ -87,17 +87,17 @@ class Scraper(object):
     def enqueue_scrape(self, response, request, spider):
         site = self.sites[spider]
         dfd = site.add_response_request(response, request)
-        # FIXME: this can't be called here because the stats domain may be
+        # FIXME: this can't be called here because the stats spider may be
         # already closed
         #stats.max_value('scraper/max_active_size', site.active_size, \
-        #    domain=spider.domain_name)
+        #    spider=spider)
         def finish_scraping(_):
             site.finish_response(response)
             self._scrape_next(spider, site)
             return _
         dfd.addBoth(finish_scraping)
         dfd.addErrback(log.err, 'Scraper bug processing %s' % request, \
-            domain=spider.domain_name)
+            spider=spider)
         self._scrape_next(spider, site)
         return dfd
 
@@ -136,9 +136,9 @@ class Scraper(object):
         referer = request.headers.get('Referer', None)
         msg = "Spider exception caught while processing <%s> (referer: <%s>): %s" % \
             (request.url, referer, _failure)
-        log.msg(msg, log.ERROR, domain=spider.domain_name)
+        log.msg(msg, log.ERROR, spider=spider)
         stats.inc_value("spider_exceptions/%s" % _failure.value.__class__.__name__, \
-            domain=spider.domain_name)
+            spider=spider)
 
     def handle_spider_output(self, result, request, response, spider):
         if not result:
@@ -152,7 +152,6 @@ class Scraper(object):
         from the given spider
         """
         # TODO: keep closing state internally instead of checking engine
-        domain = spider.domain_name
         if spider in self.engine.closing:
             return
         elif isinstance(output, Request):
@@ -161,14 +160,14 @@ class Scraper(object):
             self.engine.crawl(request=output, spider=spider)
         elif isinstance(output, BaseItem):
             log.msg("Scraped %s in <%s>" % (output, request.url), level=log.DEBUG, \
-                domain=domain)
+                spider=spider)
             send_catch_log(signal=signals.item_scraped, sender=self.__class__, \
                 item=output, spider=spider, response=response)
             self.sites[spider].itemproc_size += 1
-            # FIXME: this can't be called here because the stats domain may be
+            # FIXME: this can't be called here because the stats spider may be
             # already closed
             #stats.max_value('scraper/max_itemproc_size', \
-            #        self.sites[domain].itemproc_size, domain=domain)
+            #        self.sites[spider].itemproc_size, spider=spider)
             dfd = self.itemproc.process_item(output, spider)
             dfd.addBoth(self._itemproc_finished, output, spider)
             return dfd
@@ -176,7 +175,7 @@ class Scraper(object):
             pass
         else:
             log.msg("Spider must return Request, BaseItem or None, got %r in %s" % \
-                (type(output).__name__, request), log.ERROR, domain=domain)
+                (type(output).__name__, request), log.ERROR, spider=spider)
 
     def _check_propagated_failure(self, spider_failure, propagated_failure, request, spider):
         """Log and silence the bugs raised outside of spiders, but still allow
@@ -195,19 +194,18 @@ class Scraper(object):
     def _itemproc_finished(self, output, item, spider):
         """ItemProcessor finished for the given ``item`` and returned ``output``
         """
-        domain = spider.domain_name
         self.sites[spider].itemproc_size -= 1
         if isinstance(output, Failure):
             ex = output.value
             if isinstance(ex, DropItem):
-                log.msg("Dropped %s - %s" % (item, str(ex)), level=log.WARNING, domain=domain)
+                log.msg("Dropped %s - %s" % (item, str(ex)), level=log.WARNING, spider=spider)
                 send_catch_log(signal=signals.item_dropped, sender=self.__class__, \
                     item=item, spider=spider, exception=output.value)
             else:
                 log.msg('Error processing %s - %s' % (item, output), \
-                    log.ERROR, domain=domain)
+                    log.ERROR, spider=spider)
         else:
-            log.msg("Passed %s" % item, log.INFO, domain=domain)
+            log.msg("Passed %s" % item, log.INFO, spider=spider)
             send_catch_log(signal=signals.item_passed, sender=self.__class__, \
                 item=item, spider=spider, output=output)
 

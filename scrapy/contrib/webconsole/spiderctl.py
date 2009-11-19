@@ -18,16 +18,16 @@ class Spiderctl(object):
     def __init__(self):
         self.running = {}
         self.finished = set()
-        dispatcher.connect(self.domain_opened, signal=signals.domain_opened)
-        dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
+        dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
+        dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
         from scrapy.management.web import webconsole_discover_module
         dispatcher.connect(self.webconsole_discover_module, signal=webconsole_discover_module)
 
-    def domain_opened(self, spider):
+    def spider_opened(self, spider):
         self.running[spider.domain_name] = spider
 
-    def domain_closed(self, spider):
+    def spider_closed(self, spider):
         del self.running[spider.domain_name]
         self.finished.add(spider.domain_name)
 
@@ -44,9 +44,9 @@ class Spiderctl(object):
         s += '<table border=1">\n'
         s += "<tr><th>Idle (%d)</th><th>Scheduled (%d)</th><th>Running (%d/%d)</th><th>Finished (%d)</th></tr>\n" % \
                 (len(self.idle),
-                 len(self.running),
-                 settings['CONCURRENT_DOMAINS'],
                  len(self.scheduled),
+                 len(self.running),
+                 settings['CONCURRENT_SPIDERS'],
                  len(self.finished))
         s += "<tr>\n"
 

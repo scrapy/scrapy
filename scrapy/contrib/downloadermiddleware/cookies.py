@@ -16,13 +16,13 @@ class CookiesMiddleware(object):
 
     def __init__(self):
         self.jars = defaultdict(CookieJar)
-        dispatcher.connect(self.domain_closed, signals.domain_closed)
+        dispatcher.connect(self.spider_closed, signals.spider_closed)
 
     def process_request(self, request, spider):
         if request.meta.get('dont_merge_cookies', False):
             return
 
-        jar = self.jars[spider.domain_name]
+        jar = self.jars[spider]
         cookies = self._get_request_cookies(jar, request)
         for cookie in cookies:
             jar.set_cookie_if_ok(cookie, request)
@@ -37,14 +37,14 @@ class CookiesMiddleware(object):
             return response
 
         # extract cookies from Set-Cookie and drop invalid/expired cookies
-        jar = self.jars[spider.domain_name]
+        jar = self.jars[spider]
         jar.extract_cookies(response, request)
         self._debug_set_cookie(response)
 
         return response
 
-    def domain_closed(self, domain):
-        self.jars.pop(domain, None)
+    def spider_closed(self, spider):
+        self.jars.pop(spider, None)
 
     def _debug_cookie(self, request):
         """log Cookie header for request"""

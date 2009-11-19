@@ -11,9 +11,11 @@ from scrapy.xlib.BeautifulSoup import UnicodeDammit
 
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs
+from scrapy.conf import settings
 
 class TextResponse(Response):
 
+    _DEFAULT_ENCODING = settings['DEFAULT_RESPONSE_ENCODING']
     _ENCODING_RE = re.compile(r'charset=([\w-]+)', re.I)
 
     __slots__ = ['_encoding', '_body_inferred_encoding']
@@ -71,6 +73,8 @@ class TextResponse(Response):
             self._body_declared_encoding())
         dammit = UnicodeDammit(self.body, possible_encodings)
         self._body_inferred_encoding = dammit.originalEncoding
+        if self._body_inferred_encoding in ('ascii', None):
+            self._body_inferred_encoding = self._DEFAULT_ENCODING
         return dammit.unicode
 
     def body_encoding(self):
