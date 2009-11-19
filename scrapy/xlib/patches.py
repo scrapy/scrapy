@@ -1,12 +1,8 @@
 """
 Monkey patches for supporting Twisted 2.5.0
+
+NOTE: This module must not fail if twisted module is not available.
 """
-
-import twisted
-
-def apply_patches():
-    if twisted.__version__ < '8.0.0':
-        add_missing_blockingCallFromThread()
 
 # This function comes bundled with Twisted 8.x and above
 def add_missing_blockingCallFromThread():
@@ -42,3 +38,11 @@ def add_missing_blockingCallFromThread():
 
     from twisted.internet import threads
     threads.blockingCallFromThread = blockingCallFromThread
+
+try:
+    import twisted
+    if twisted.__version__ < '8.0.0':
+        add_missing_blockingCallFromThread()
+except ImportError:
+    pass
+
