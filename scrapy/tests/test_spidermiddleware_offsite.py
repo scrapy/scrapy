@@ -13,7 +13,7 @@ class TestOffsiteMiddleware(TestCase):
         self.spider.extra_domain_names = ['scrapy.org']
 
         self.mw = OffsiteMiddleware()
-        self.mw.domain_opened(self.spider)
+        self.mw.spider_opened(self.spider)
 
     def test_process_spider_output(self):
         res = Response('http://scrapytest.org')
@@ -28,5 +28,5 @@ class TestOffsiteMiddleware(TestCase):
         self.assertEquals(out, onsite_reqs)
 
     def tearDown(self):
-        self.mw.domain_closed(self.spider)
+        self.mw.spider_closed(self.spider)
 

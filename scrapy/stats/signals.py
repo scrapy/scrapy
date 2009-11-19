@@ -1,3 +1,3 @@
-stats_domain_opened = object()
-stats_domain_closing = object()
-stats_domain_closed = object()
+stats_spider_opened = object()
+stats_spider_closing = object()
+stats_spider_closed = object()

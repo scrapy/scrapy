@@ -24,11 +24,13 @@ Writing your own item pipeline
 Writing your own item pipeline is easy. Each item pipeline component is a
 single Python class that must define the following method:
 
-.. method:: process_item(domain, item)
+.. method:: process_item(spider, item)
 
-``domain`` is a string with the domain of the spider which scraped the item
+:param spider: the spider which scraped the item
+:type spider: :class:`~scrapy.spider.BaseSpider` object
 
-``item`` is a :class:`~scrapy.item.Item` with the item scraped
+:param item: the item scraped
+:type item: :class:`~scrapy.item.Item` object
 
 This method is called for every item pipeline component and must either return
 a :class:`~scrapy.item.Item` (or any descendant class) object or raise a
@@ -49,7 +51,7 @@ attribute), and drops those items which don't contain a price::
 
         vat_factor = 1.15
 
-        def process_item(self, domain, item):
+        def process_item(self, spider, item):
             if item['price']:
                 if item['price_excludes_vat']:
                     item['price'] = item['price'] * self.vat_factor
@@ -68,11 +70,11 @@ To activate an Item Pipeline component you must add its class to the
        'myproject.pipeline.PricePipeline',
    ]
 
-Item pipeline example with resources per domain
+Item pipeline example with resources per spider
 ===============================================
 
 Sometimes you need to keep resources about the items processed grouped per
-domain, and delete those resource when a domain finish.
+spider, and delete those resource when a spider finish.
 
 An example is a filter that looks for duplicate items, and drops those items
 that were already processed. Let say that our items has an unique id, but our
@@ -85,21 +87,21 @@ spider returns multiples items with the same id::
 
     class DuplicatesPipeline(object):
         def __init__(self):
-            self.domaininfo = {}
-            dispatcher.connect(self.domain_opened, signals.domain_opened)
-            dispatcher.connect(self.domain_closed, signals.domain_closed)
+            self.duplicates = {}
+            dispatcher.connect(self.spider_opened, signals.spider_opened)
+            dispatcher.connect(self.spider_closed, signals.spider_closed)
 
-        def domain_opened(self, domain):
-            self.duplicates[domain] = set()
+        def spider_opened(self, spider):
+            self.duplicates[spider] = set()
 
-        def domain_closed(self, domain):
-            del self.duplicates[domain]
+        def spider_closed(self, spider):
+            del self.duplicates[spider]
 
-        def process_item(self, domain, item):
-            if item.id in self.duplicates[domain]:
+        def process_item(self, spider, item):
+            if item.id in self.duplicates[spider]:
                 raise DropItem("Duplicate item found: %s" % item)
             else:
-                self.duplicates[domain].add(item.id)
+                self.duplicates[spider].add(item.id)
                 return item
 
 Built-in Item Pipelines reference

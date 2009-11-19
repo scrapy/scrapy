@@ -64,6 +64,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
         assert isinstance(req2, Request)
         self.assertEqual(req2.url, 'http://example.org/newpage')
 
+    def test_meta_refresh_with_high_interval(self):
         # meta-refresh with high intervals don't trigger redirects
         body = """<html>
             <head><meta http-equiv="refresh" content="1000;url=http://example.org/newpage" /></head>
@@ -73,6 +74,25 @@ class RedirectMiddlewareTest(unittest.TestCase):
         rsp2 = self.mw.process_response(req, rsp, self.spider)
 
         assert rsp is rsp2
+
+    def test_meta_refresh_trough_posted_request(self):
+        body = """<html>
+            <head><meta http-equiv="refresh" content="5;url=http://example.org/newpage" /></head>
+            </html>"""
+        req = Request(url='http://example.org', method='POST', body='test',
+            headers={'Content-Type': 'text/plain', 'Content-length': '4'})
+        rsp = Response(url='http://example.org', body=body)
+        req2 = self.mw.process_response(req, rsp, self.spider)
+
+        assert isinstance(req2, Request)
+        self.assertEqual(req2.url, 'http://example.org/newpage')
+        self.assertEqual(req2.method, 'GET')
+        assert 'Content-Type' not in req2.headers, \
+            "Content-Type header must not be present in redirected request"
+        assert 'Content-Length' not in req2.headers, \
+            "Content-Length header must not be present in redirected request"
+        assert not req2.body, \
+            "Redirected body must be empty, not '%s'" % req2.body
 
     def test_max_redirect_times(self):
         self.mw.max_redirect_times = 1

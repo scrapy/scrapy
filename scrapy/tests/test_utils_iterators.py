@@ -1,15 +1,17 @@
 import os
-import unittest
 import libxml2
+from twisted.trial import unittest
 
 from scrapy.utils.iterators import csviter, xmliter
+from scrapy.contrib_exp.iterators import xmliter_lxml
 from scrapy.http import XmlResponse, TextResponse
 from scrapy.tests import get_testdata
 
-class UtilsIteratorsTestCase(unittest.TestCase):
-    ### NOTE: Encoding issues have been found with BeautifulSoup for utf-16 files, utf-16 test removed ###
-    # pablo: Tests shouldn't be removed, but commented with proper steps on how
-    # to reproduce the missing functionality
+
+class XmliterTestCase(unittest.TestCase):
+
+    xmliter = staticmethod(xmliter)
+
     def test_xmliter(self):
         body = """<?xml version="1.0" encoding="UTF-8"?>\
             <products xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="someschmea.xsd">\
@@ -25,7 +27,7 @@ class UtilsIteratorsTestCase(unittest.TestCase):
 
         response = XmlResponse(url="http://example.com", body=body)
         attrs = []
-        for x in xmliter(response, 'product'):
+        for x in self.xmliter(response, 'product'):
             attrs.append((x.select("@id").extract(), x.select("name/text()").extract(), x.select("./type/text()").extract()))
 
         self.assertEqual(attrs, 
@@ -34,7 +36,7 @@ class UtilsIteratorsTestCase(unittest.TestCase):
     def test_xmliter_text(self):
         body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""
         
-        self.assertEqual([x.select("text()").extract() for x in xmliter(body, 'product')],
+        self.assertEqual([x.select("text()").extract() for x in self.xmliter(body, 'product')],
                          [[u'one'], [u'two']])
 
     def test_xmliter_namespaces(self):
@@ -57,7 +59,7 @@ class UtilsIteratorsTestCase(unittest.TestCase):
             </rss>
         """
         response = XmlResponse(url='http://mydummycompany.com', body=body)
-        my_iter = xmliter(response, 'item')
+        my_iter = self.xmliter(response, 'item')
 
         node = my_iter.next()
         node.register_namespace('g', 'http://base.google.com/ns/1.0')
@@ -74,7 +76,7 @@ class UtilsIteratorsTestCase(unittest.TestCase):
     def test_xmliter_exception(self):
         body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""
         
-        iter = xmliter(body, 'product')
+        iter = self.xmliter(body, 'product')
         iter.next()
         iter.next()
 
@@ -84,9 +86,18 @@ class UtilsIteratorsTestCase(unittest.TestCase):
         body = '<?xml version="1.0" encoding="ISO-8859-9"?>\n<xml>\n    <item>Some Turkish Characters \xd6\xc7\xde\xdd\xd0\xdc \xfc\xf0\xfd\xfe\xe7\xf6</item>\n</xml>\n\n'
         response = XmlResponse('http://www.example.com', body=body)
         self.assertEqual(
-            xmliter(response, 'item').next().extract(),
+            self.xmliter(response, 'item').next().extract(),
             u'<item>Some Turkish Characters \xd6\xc7\u015e\u0130\u011e\xdc \xfc\u011f\u0131\u015f\xe7\xf6</item>'
         )
+
+
+class LxmlXmliterTestCase(XmliterTestCase):
+    xmliter = staticmethod(xmliter_lxml)
+    try:
+        import lxml
+    except ImportError:
+        skip = True
+
 
 class UtilsCsvTestCase(unittest.TestCase):
     sample_feeds_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data', 'feeds')

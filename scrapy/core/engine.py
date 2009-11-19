@@ -34,6 +34,7 @@ class ExecutionEngine(object):
         self.paused = False
         self._next_request_pending = set()
         self._mainloop_task = task.LoopingCall(self._mainloop)
+        self._crawled_logline = load_object(settings['LOG_FORMATTER_CRAWLED'])
 
     def configure(self):
         """
@@ -98,7 +99,7 @@ class ExecutionEngine(object):
             return True
 
     def next_request(self, spider, now=False):
-        """Scrape the next request for the domain passed.
+        """Scrape the next request for the spider passed.
 
         The next request to be scraped is retrieved from the scheduler and
         requested from the downloader.
@@ -163,7 +164,7 @@ class ExecutionEngine(object):
     def crawl(self, request, spider):
         if not request.deferred.callbacks:
             log.msg("Unable to crawl Request with no callback: %s" % request,
-                level=log.ERROR, domain=spider.domain_name)
+                level=log.ERROR, spider=spider)
             return
         schd = mustbe_deferred(self.schedule, request, spider)
         # FIXME: we can't log errors because we would be preventing them from
@@ -185,7 +186,7 @@ class ExecutionEngine(object):
         return self.scheduler.enqueue_request(spider, request)
 
     def _mainloop(self):
-        """Add more domains to be scraped if the downloader has the capacity.
+        """Add more spiders to be scraped if the downloader has the capacity.
 
         If there is nothing else scheduled then stop the execution engine.
         """
@@ -197,16 +198,13 @@ class ExecutionEngine(object):
                 return self._stop_if_idle()
 
     def download(self, request, spider):
-        domain = spider.domain_name
-        referer = request.headers.get('Referer')
-
         def _on_success(response):
             """handle the result of a page download"""
             assert isinstance(response, (Response, Request))
             if isinstance(response, Response):
                 response.request = request # tie request to response received
-                log.msg("Crawled %s (referer: <%s>)" % (request, referer), \
-                    level=log.DEBUG, domain=domain)
+                log.msg(self._crawled_logline(request, response), \
+                    level=log.DEBUG, spider=spider)
                 return response
             elif isinstance(response, Request):
                 newrequest = response
@@ -224,13 +222,16 @@ class ExecutionEngine(object):
                 errmsg = str(_failure)
                 level = log.ERROR
             if errmsg:
-                log.msg("Downloading <%s> (referer: <%s>): %s" % (request.url, \
-                    referer, errmsg), level=level, domain=domain)
+                log.msg("Crawling <%s>: %s" % (request.url, errmsg), \
+                    level=level, spider=spider)
             return Failure(IgnoreRequest(str(exc)))
 
         def _on_complete(_):
             self.next_request(spider)
             return _
+
+        if spider not in self.downloader.sites:
+            return defer.fail(Failure(IgnoreRequest())).addBoth(_on_complete)
 
         dwld = mustbe_deferred(self.downloader.fetch, request, spider)
         dwld.addCallbacks(_on_success, _on_error)
@@ -238,38 +239,31 @@ class ExecutionEngine(object):
         return dwld
 
     def open_spider(self, spider):
-        domain = spider.domain_name
-        log.msg("Domain opened", domain=domain)
+        log.msg("Spider opened", spider=spider)
         self.next_request(spider)
 
         self.downloader.open_spider(spider)
         self.scraper.open_spider(spider)
-        stats.open_domain(domain)
+        stats.open_spider(spider)
 
-        # XXX: sent for backwards compatibility (will be removed in Scrapy 0.8)
-        send_catch_log(signals.domain_open, sender=self.__class__, \
-            domain=domain, spider=spider)
-
-        send_catch_log(signals.domain_opened, sender=self.__class__, \
-            domain=domain, spider=spider)
+        send_catch_log(signals.spider_opened, sender=self.__class__, spider=spider)
 
     def _spider_idle(self, spider):
-        """Called when a domain gets idle. This function is called when there
+        """Called when a spider gets idle. This function is called when there
         are no remaining pages to download or schedule. It can be called
         multiple times. If some extension raises a DontCloseDomain exception
-        (in the domain_idle signal handler) the domain is not closed until the
+        (in the spider_idle signal handler) the spider is not closed until the
         next loop and this function is guaranteed to be called (at least) once
-        again for this domain.
+        again for this spider.
         """
-        domain = spider.domain_name
         try:
-            dispatcher.send(signal=signals.domain_idle, sender=self.__class__, \
-                domain=domain, spider=spider)
+            dispatcher.send(signal=signals.spider_idle, sender=self.__class__, \
+                spider=spider)
         except DontCloseDomain:
-            self.next_request(spider)
+            reactor.callLater(5, self.next_request, spider)
             return
         except:
-            log.err("Exception catched on domain_idle signal dispatch")
+            log.err("Exception catched on spider_idle signal dispatch")
         if self.spider_is_idle(spider):
             self.close_spider(spider, reason='finished')
 
@@ -280,9 +274,8 @@ class ExecutionEngine(object):
 
     def close_spider(self, spider, reason='cancelled'):
         """Close (cancel) spider and clear all its outstanding requests"""
-        domain = spider.domain_name
         if spider not in self.closing:
-            log.msg("Closing domain (%s)" % reason, domain=domain)
+            log.msg("Closing spider (%s)" % reason, spider=spider)
             self.closing[spider] = reason
             self.downloader.close_spider(spider)
             self.scheduler.clear_pending_requests(spider)
@@ -295,7 +288,7 @@ class ExecutionEngine(object):
         return dlist
 
     def _finish_closing_spider_if_idle(self, spider):
-        """Call _finish_closing_spider if domain is idle"""
+        """Call _finish_closing_spider if spider is idle"""
         if self.spider_is_idle(spider) or self.killed:
             return self._finish_closing_spider(spider)
         else:
@@ -307,15 +300,14 @@ class ExecutionEngine(object):
 
     def _finish_closing_spider(self, spider):
         """This function is called after the spider has been closed"""
-        domain = spider.domain_name
         self.scheduler.close_spider(spider)
         self.scraper.close_spider(spider)
         reason = self.closing.pop(spider, 'finished')
-        send_catch_log(signal=signals.domain_closed, sender=self.__class__, \
-            domain=domain, spider=spider, reason=reason)
-        stats.close_domain(domain, reason=reason)
+        send_catch_log(signal=signals.spider_closed, sender=self.__class__, \
+            spider=spider, reason=reason)
+        stats.close_spider(spider, reason=reason)
         dfd = defer.maybeDeferred(spiders.close_spider, spider)
-        dfd.addBoth(log.msg, "Domain closed (%s)" % reason, domain=domain)
+        dfd.addBoth(log.msg, "Spider closed (%s)" % reason, spider=spider)
         reactor.callLater(0, self._mainloop)
         return dfd
 

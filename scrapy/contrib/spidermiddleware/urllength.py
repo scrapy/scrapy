@@ -19,7 +19,7 @@ class UrlLengthMiddleware(object):
         def _filter(request):
             if isinstance(request, Request) and len(request.url) > self.maxlength:
                 log.msg("Ignoring link (url length > %d): %s " % (self.maxlength, request.url), \
-                    level=log.DEBUG, domain=spider.domain_name)
+                    level=log.DEBUG, spider=spider)
                 return False
             else:
                 return True

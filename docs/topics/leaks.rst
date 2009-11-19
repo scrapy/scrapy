@@ -45,7 +45,7 @@ which quite often consists in answer the question: *which spider is leaking?*.
 The leak could also come from a custom middleware, pipeline or extension that
 you have written, if you are not releasing the (previously allocated) resources
 properly. For example, if you're allocating resources on
-:signal:`domain_opened` but not releasing them on :signal:`domain_closed`.
+:signal:`spider_opened` but not releasing them on :signal:`spider_closed`.
 
 .. _topics-leaks-trackrefs:
 
