@@ -12,27 +12,26 @@ from scrapy.utils.misc import arg_to_iter
 class MediaPipeline(object):
     DOWNLOAD_PRIORITY = 1000
 
-    class DomainInfo(object):
+    class SpiderInfo(object):
         def __init__(self, spider):
-            self.domain = spider.domain_name
             self.spider = spider
             self.downloading = {}
             self.downloaded = {}
             self.waiting = {}
 
     def __init__(self):
-        self.domaininfo = {}
-        dispatcher.connect(self.domain_opened, signals.domain_opened)
-        dispatcher.connect(self.domain_closed, signals.domain_closed)
+        self.spiderinfo = {}
+        dispatcher.connect(self.spider_opened, signals.spider_opened)
+        dispatcher.connect(self.spider_closed, signals.spider_closed)
 
-    def domain_opened(self, spider):
-        self.domaininfo[spider.domain_name] = self.DomainInfo(spider)
+    def spider_opened(self, spider):
+        self.spiderinfo[spider] = self.SpiderInfo(spider)
 
-    def domain_closed(self, domain):
-        del self.domaininfo[domain]
+    def spider_closed(self, spider):
+        del self.spiderinfo[spider]
 
-    def process_item(self, domain, item):
-        info = self.domaininfo[domain]
+    def process_item(self, spider, item):
+        info = self.spiderinfo[spider]
         requests = arg_to_iter(self.get_media_requests(item, info))
         dlist = []
         for request in requests:
@@ -83,7 +82,7 @@ class MediaPipeline(object):
 
             info.downloading[fp] = (request, dwld) # fill downloading state data
             dwld.addBoth(_downloaded) # append post-download hook
-            dwld.addErrback(log.err, domain=info.domain)
+            dwld.addErrback(log.err, spider=info.spider)
 
         # declare request in downloading state (None is used as place holder)
         info.downloading[fp] = None

@@ -13,14 +13,27 @@ from twisted.python.filepath import FilePath
 from twisted.protocols.policies import WrappingFactory
 
 from scrapy.core.downloader import webclient as client
-from scrapy.http import Headers
+from scrapy.http import Request, Headers
+
+
+def getPage(url, contextFactory=None, *args, **kwargs):
+    """Adapted version of twisted.web.client.getPage"""
+    def _clientfactory(*args, **kwargs):
+        timeout = kwargs.pop('timeout', 0)
+        f = client.ScrapyHTTPClientFactory(Request(*args, **kwargs), timeout=timeout)
+        f.deferred.addCallback(lambda r: r.body)
+        return f
+
+    from twisted.web.client import _makeGetterFactory
+    return _makeGetterFactory(url, _clientfactory,
+        contextFactory=contextFactory, *args, **kwargs).deferred
 
 
 class ParseUrlTestCase(unittest.TestCase):
     """Test URL parsing facility and defaults values."""
 
     def _parse(self, url):
-        f = client.ScrapyHTTPClientFactory(url)
+        f = client.ScrapyHTTPClientFactory(Request(url))
         return (f.scheme, f.netloc, f.host, f.port, f.path)
 
     def testParse(self):
@@ -75,7 +88,7 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
 
     def test_earlyHeaders(self):
         # basic test stolen from twisted HTTPageGetter
-        factory = client.ScrapyHTTPClientFactory(
+        factory = client.ScrapyHTTPClientFactory(Request(
             url='http://foo/bar',
             body="some data",
             headers={
@@ -83,7 +96,7 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
                 'User-Agent': 'fooble',
                 'Cookie': 'blah blah',
                 'Content-Length': '12981',
-                'Useful': 'value'})
+                'Useful': 'value'}))
 
         self._test(factory,
             "GET /bar HTTP/1.0\r\n"
@@ -97,18 +110,18 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             "some data")
 
         # test minimal sent headers
-        factory = client.ScrapyHTTPClientFactory('http://foo/bar')
+        factory = client.ScrapyHTTPClientFactory(Request('http://foo/bar'))
         self._test(factory,
             "GET /bar HTTP/1.0\r\n"
             "Host: foo\r\n"
             "\r\n")
 
         # test a simple POST with body and content-type
-        factory = client.ScrapyHTTPClientFactory(
+        factory = client.ScrapyHTTPClientFactory(Request(
             method='POST',
             url='http://foo/bar',
             body='name=value',
-            headers={'Content-Type': 'application/x-www-form-urlencoded'})
+            headers={'Content-Type': 'application/x-www-form-urlencoded'}))
 
         self._test(factory,
             "POST /bar HTTP/1.0\r\n"
@@ -120,12 +133,12 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             "name=value")
 
         # test with single and multivalued headers
-        factory = client.ScrapyHTTPClientFactory(
+        factory = client.ScrapyHTTPClientFactory(Request(
             url='http://foo/bar',
             headers={
                 'X-Meta-Single': 'single',
                 'X-Meta-Multivalued': ['value1', 'value2'],
-                })
+                }))
 
         self._test(factory,
             "GET /bar HTTP/1.0\r\n"
@@ -136,12 +149,12 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             "\r\n")
 
         # same test with single and multivalued headers but using Headers class
-        factory = client.ScrapyHTTPClientFactory(
+        factory = client.ScrapyHTTPClientFactory(Request(
             url='http://foo/bar',
             headers=Headers({
                 'X-Meta-Single': 'single',
                 'X-Meta-Multivalued': ['value1', 'value2'],
-                }))
+                })))
 
         self._test(factory,
             "GET /bar HTTP/1.0\r\n"
@@ -193,11 +206,11 @@ class WebClientTestCase(unittest.TestCase):
 
     def testPayload(self):
         s = "0123456789" * 10
-        return client.getPage(self.getURL("payload"), body=s).addCallback(self.assertEquals, s)
+        return getPage(self.getURL("payload"), body=s).addCallback(self.assertEquals, s)
 
     def testBrokenDownload(self):
         # test what happens when download gets disconnected in the middle
-        d = client.getPage(self.getURL("broken"))
+        d = getPage(self.getURL("broken"))
         d = self.assertFailure(d, client.PartialDownloadError)
         d.addCallback(lambda exc: self.assertEquals(exc.response, "abc"))
         return d
@@ -206,8 +219,8 @@ class WebClientTestCase(unittest.TestCase):
         # if we pass Host header explicitly, it should be used, otherwise
         # it should extract from url
         return defer.gatherResults([
-            client.getPage(self.getURL("host")).addCallback(self.assertEquals, "127.0.0.1:%d" % self.portno),
-            client.getPage(self.getURL("host"), headers={"Host": "www.example.com"}).addCallback(self.assertEquals, "www.example.com")])
+            getPage(self.getURL("host")).addCallback(self.assertEquals, "127.0.0.1:%d" % self.portno),
+            getPage(self.getURL("host"), headers={"Host": "www.example.com"}).addCallback(self.assertEquals, "www.example.com")])
 
 
     def test_getPage(self):
@@ -215,7 +228,7 @@ class WebClientTestCase(unittest.TestCase):
         L{client.getPage} returns a L{Deferred} which is called back with
         the body of the response if the default method B{GET} is used.
         """
-        d = client.getPage(self.getURL("file"))
+        d = getPage(self.getURL("file"))
         d.addCallback(self.assertEquals, "0123456789")
         return d
 
@@ -226,11 +239,11 @@ class WebClientTestCase(unittest.TestCase):
         the empty string if the method is C{HEAD} and there is a successful
         response code.
         """
-        def getPage(method):
-            return client.getPage(self.getURL("file"), method=method)
+        def _getPage(method):
+            return getPage(self.getURL("file"), method=method)
         return defer.gatherResults([
-            getPage("head").addCallback(self.assertEqual, ""),
-            getPage("HEAD").addCallback(self.assertEqual, "")])
+            _getPage("head").addCallback(self.assertEqual, ""),
+            _getPage("HEAD").addCallback(self.assertEqual, "")])
 
 
     def test_timeoutNotTriggering(self):
@@ -239,7 +252,7 @@ class WebClientTestCase(unittest.TestCase):
         retrieved before the timeout period elapses, the L{Deferred} is
         called back with the contents of the page.
         """
-        d = client.getPage(self.getURL("host"), timeout=100)
+        d = getPage(self.getURL("host"), timeout=100)
         d.addCallback(self.assertEquals, "127.0.0.1:%d" % self.portno)
         return d
 
@@ -251,7 +264,7 @@ class WebClientTestCase(unittest.TestCase):
         L{Deferred} is errbacked with a L{error.TimeoutError}.
         """
         finished = self.assertFailure(
-            client.getPage(self.getURL("wait"), timeout=0.000001),
+            getPage(self.getURL("wait"), timeout=0.000001),
             defer.TimeoutError)
         def cleanup(passthrough):
             # Clean up the server which is hanging around not doing
@@ -266,7 +279,7 @@ class WebClientTestCase(unittest.TestCase):
         return finished
 
     def testNotFound(self):
-        return client.getPage(self.getURL('notsuchfile')).addCallback(self._cbNoSuchFile)
+        return getPage(self.getURL('notsuchfile')).addCallback(self._cbNoSuchFile)
 
     def _cbNoSuchFile(self, pageData):
         self.assert_('404 - No Such Resource' in pageData)
@@ -274,7 +287,7 @@ class WebClientTestCase(unittest.TestCase):
     def testFactoryInfo(self):
         url = self.getURL('file')
         scheme, netloc, host, port, path = client._parse(url)
-        factory = client.ScrapyHTTPClientFactory(url)
+        factory = client.ScrapyHTTPClientFactory(Request(url))
         reactor.connectTCP(host, port, factory)
         return factory.deferred.addCallback(self._cbFactoryInfo, factory)
 
@@ -285,7 +298,7 @@ class WebClientTestCase(unittest.TestCase):
         self.assertEquals(factory.response_headers['content-length'], '10')
 
     def testRedirect(self):
-        return client.getPage(self.getURL("redirect")).addCallback(self._cbRedirect)
+        return getPage(self.getURL("redirect")).addCallback(self._cbRedirect)
 
     def _cbRedirect(self, pageData):
         self.assertEquals(pageData,

@@ -27,7 +27,7 @@ class SiteInfo(object):
         if download_delay:
             self.max_concurrent_requests = 1
         elif max_concurrent_requests is None:
-            self.max_concurrent_requests = settings.getint('REQUESTS_PER_DOMAIN')
+            self.max_concurrent_requests = settings.getint('CONCURRENT_REQUESTS_PER_SPIDER')
         else:
             self.max_concurrent_requests =  max_concurrent_requests
 
@@ -54,7 +54,7 @@ class Downloader(object):
     def __init__(self):
         self.sites = {}
         self.middleware = DownloaderMiddlewareManager()
-        self.concurrent_domains = settings.getint('CONCURRENT_DOMAINS')
+        self.concurrent_domains = settings.getint('CONCURRENT_SPIDERS')
 
     def fetch(self, request, spider):
         """Main method to use to request a download
@@ -135,7 +135,7 @@ class Downloader(object):
             # downloader middleware, to speed-up the closing process
             if site.closing:
                 log.msg("Crawled while closing spider: %s" % request, \
-                    level=log.DEBUG)
+                    level=log.DEBUG, spider=spider)
                 raise IgnoreRequest
             return _
         return dfd.addBoth(finish_transferring)

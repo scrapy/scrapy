@@ -18,7 +18,7 @@ from scrapy.utils.response import open_in_browser
 from scrapy.conf import settings
 from scrapy.core.manager import scrapymanager
 from scrapy.core.engine import scrapyengine
-from scrapy.http import Request
+from scrapy.http import Request, TextResponse
 
 def relevant_var(varname):
     return varname not in ['shelp', 'fetch', 'view', '__builtins__', 'In', \
@@ -67,8 +67,9 @@ class Shell(object):
         item = self.item_class()
         self.vars['item'] = item
         if url:
-            self.vars['xxs'] = XmlXPathSelector(response)
-            self.vars['hxs'] = HtmlXPathSelector(response)
+            if isinstance(response, TextResponse):
+                self.vars['xxs'] = XmlXPathSelector(response)
+                self.vars['hxs'] = HtmlXPathSelector(response)
             self.vars['url'] = url
             self.vars['response'] = response
             self.vars['request'] = request

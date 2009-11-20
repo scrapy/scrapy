@@ -25,7 +25,7 @@ The :setting:`SCHEDULER_MIDDLEWARES` setting is merged with the
 :setting:`SCHEDULER_MIDDLEWARES_BASE` setting defined in Scrapy (and not meant
 to be overridden) and then sorted by order to get the final sorted list of
 enabled middlewares: the first middleware is the one closer to the engine and
-the last is the one closer to the spider.
+the last is the one closer to the scheduler.
 
 To decide which order to assign to your middleware see the
 :setting:`SCHEDULER_MIDDLEWARES_BASE` setting and pick a value according to
@@ -38,9 +38,9 @@ If you want to disable a builtin middleware (the ones defined in
 in your project :setting:`SCHEDULER_MIDDLEWARES` setting and assign `None` as its
 value.  For example, if you want to disable the duplicates filter middleware::
 
-    SPIDER_MIDDLEWARES = {
+    SCHEDULER_MIDDLEWARES = {
         'myproject.middlewares.CustomSchedulerMiddleware': 543,
-        'scrapy.contrib.spidermiddleware.duplicatesfilter.DuplicatesFilterMiddleware: None,
+        'scrapy.contrib.schedulermiddleware.duplicatesfilter.DuplicatesFilterMiddleware: None,
     }
 
 Finally, keep in mind that some middlewares may need to be enabled through a

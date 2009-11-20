@@ -10,17 +10,29 @@ from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core import signals
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy import log
 
 class OffsiteMiddleware(object):
 
     def __init__(self):
         self.host_regexes = {}
-        dispatcher.connect(self.domain_opened, signal=signals.domain_opened)
-        dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
+        self.domains_seen = {}
+        dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
+        dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
     def process_spider_output(self, response, result, spider):
-        return (x for x in result if not isinstance(x, Request) or \
-            self.should_follow(x, spider))
+        for x in result:
+            if isinstance(x, Request):
+                if self.should_follow(x, spider):
+                    yield x
+                else:
+                    domain = urlparse_cached(x).hostname
+                    if domain and domain not in self.domains_seen[spider]:
+                        log.msg("Filtered offsite request to %r: %s" % (domain, x),
+                            level=log.DEBUG, spider=spider)
+                        self.domains_seen[spider].add(domain)
+            else:
+                yield x
 
     def should_follow(self, request, spider):
         regex = self.host_regexes[spider]
@@ -34,9 +46,11 @@ class OffsiteMiddleware(object):
         regex = r'^(.*\.)?(%s)$' % '|'.join(domains)
         return re.compile(regex)
 
-    def domain_opened(self, spider):
+    def spider_opened(self, spider):
         domains = [spider.domain_name] + spider.extra_domain_names
         self.host_regexes[spider] = self.get_host_regex(domains)
+        self.domains_seen[spider] = set()
 
-    def domain_closed(self, spider):
+    def spider_closed(self, spider):
         del self.host_regexes[spider]
+        del self.domains_seen[spider]
