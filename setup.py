@@ -1,8 +1,7 @@
 # Scrapy setup.py script 
 #
-# Most of the code here was taken from Django setup.py
-
-from distutils.core import setup
+# It doesn't depend on setuptools, but if setuptools is available it'll use
+# some of its features, like package dependencies.
 from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
 import os
@@ -80,21 +79,21 @@ version = __import__('scrapy').__version__
 if u'SVN' in version:
     version = ' '.join(version.split(' ')[:-1])
 
-setup(
-    name = 'scrapy',
-    version = version,
-    url = 'http://scrapy.org',
-    description = 'A high-level Python Screen Scraping framework',
-    long_description = 'Scrapy is a high level scraping and web crawling framework for writing spiders to crawl and parse web pages for all kinds of purposes, from information retrieval to monitoring or testing web sites.',
-    author = 'Scrapy developers',
-    maintainer = 'Pablo Hoffman',
-    maintainer_email = 'pablo@pablohoffman.com',
-    license = 'BSD',
-    packages = packages,
-    cmdclass = cmdclasses,
-    data_files = data_files,
-    scripts = ['bin/scrapy-ctl.py'],
-    classifiers = [
+setup_args = {
+    'name': 'scrapy',
+    'version': version,
+    'url': 'http://scrapy.org',
+    'description': 'A high-level Python Screen Scraping framework',
+    'long_description': 'Scrapy is a high level scraping and web crawling framework for writing spiders to crawl and parse web pages for all kinds of purposes, from information retrieval to monitoring or testing web sites.',
+    'author': 'Scrapy developers',
+    'maintainer': 'Pablo Hoffman',
+    'maintainer_email': 'pablo@pablohoffman.com',
+    'license': 'BSD',
+    'packages': packages,
+    'cmdclass': cmdclasses,
+    'data_files': data_files,
+    'scripts': ['bin/scrapy-ctl.py'],
+    'classifiers': [
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.5',
         'Programming Language :: Python :: 2.6',
@@ -108,4 +107,12 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Internet :: WWW/HTTP',
     ]
-)
+}
+
+try:
+    from setuptools import setup
+    setup_args['install_requires'] = ['Twisted>=2.5']
+except ImportError:
+    from distutils.core import setup
+ 
+setup(**setup_args)
