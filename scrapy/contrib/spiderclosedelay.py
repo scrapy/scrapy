@@ -1,6 +1,6 @@
 """
-DelayedCloseDomain is an extension that keeps open a domain until a
-configurable amount of idle time is reached
+SpiderCloseDelay is an extension that keeps a idle spiders open until a
+configurable amount of idle time has elapsed
 """
 
 from time import time
@@ -14,9 +14,9 @@ from scrapy.core.exceptions import NotConfigured, DontCloseSpider
 from scrapy.conf import settings
 
 
-class DelayedCloseDomain(object):
+class SpiderCloseDelay(object):
     def __init__(self):
-        self.delay = settings.getint('DOMAIN_CLOSE_DELAY')
+        self.delay = settings.getint('SPIDER_CLOSE_DELAY')
         if not self.delay:
             raise NotConfigured
 
