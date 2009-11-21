@@ -16,7 +16,7 @@ from scrapy.conf import settings
 from scrapy.core import signals
 from scrapy.core.downloader import Downloader
 from scrapy.core.scraper import Scraper
-from scrapy.core.exceptions import IgnoreRequest, DontCloseDomain
+from scrapy.core.exceptions import IgnoreRequest, DontCloseSpider
 from scrapy.http import Response, Request
 from scrapy.spider import spiders
 from scrapy.utils.misc import load_object
@@ -251,7 +251,7 @@ class ExecutionEngine(object):
     def _spider_idle(self, spider):
         """Called when a spider gets idle. This function is called when there
         are no remaining pages to download or schedule. It can be called
-        multiple times. If some extension raises a DontCloseDomain exception
+        multiple times. If some extension raises a DontCloseSpider exception
         (in the spider_idle signal handler) the spider is not closed until the
         next loop and this function is guaranteed to be called (at least) once
         again for this spider.
@@ -259,11 +259,12 @@ class ExecutionEngine(object):
         try:
             dispatcher.send(signal=signals.spider_idle, sender=self.__class__, \
                 spider=spider)
-        except DontCloseDomain:
+        except DontCloseSpider:
             reactor.callLater(5, self.next_request, spider)
             return
-        except:
-            log.err("Exception catched on spider_idle signal dispatch")
+        except Exception, e:
+            log.msg("Exception caught on 'spider_idle' signal dispatch: %r" % e, \
+                level=log.ERROR)
         if self.spider_is_idle(spider):
             self.close_spider(spider, reason='finished')
 

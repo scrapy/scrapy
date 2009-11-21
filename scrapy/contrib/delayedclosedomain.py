@@ -10,7 +10,7 @@ from collections import defaultdict
 
 from scrapy.core import signals
 from scrapy.core.engine import scrapyengine
-from scrapy.core.exceptions import NotConfigured, DontCloseDomain
+from scrapy.core.exceptions import NotConfigured, DontCloseSpider
 from scrapy.conf import settings
 
 
@@ -33,7 +33,7 @@ class DelayedCloseDomain(object):
             lastseen = self.opened_at[spider]
 
         if time() < lastseen + self.delay:
-            raise DontCloseDomain
+            raise DontCloseSpider
 
     def spider_closed(self, spider):
         self.opened_at.pop(spider, None)
