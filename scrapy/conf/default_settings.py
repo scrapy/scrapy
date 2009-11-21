@@ -42,8 +42,6 @@ DEFAULT_RESPONSE_ENCODING = 'ascii'
 DEPTH_LIMIT = 0
 DEPTH_STATS = True
 
-SPIDER_SCHEDULER = 'scrapy.contrib.spiderscheduler.FifoSpiderScheduler'
-
 DOWNLOAD_DELAY = 0
 DOWNLOAD_TIMEOUT = 180      # 3mins
 
@@ -171,6 +169,8 @@ SPIDER_MIDDLEWARES_BASE = {
 }
 
 SPIDER_MODULES = []
+
+SPIDER_SCHEDULER = 'scrapy.contrib.spiderscheduler.FifoSpiderScheduler'
 
 SPIDERPROFILER_ENABLED = False
 
