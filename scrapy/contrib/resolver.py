@@ -25,6 +25,7 @@ class CachingResolver(object):
     def spider_closed(self, spider):
         for hostname in self.spider_hostnames[spider]:
             self.resolver._cache.pop(hostname, None)
+        self.spider_hostnames.pop(spider, None)
 
 
 class _CachingThreadedResolver(ThreadedResolver):
