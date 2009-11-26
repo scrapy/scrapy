@@ -312,7 +312,9 @@ class ExecutionEngine(object):
         if call and call.active():
             call.cancel()
         dfd = defer.maybeDeferred(spiders.close_spider, spider)
-        dfd.addBoth(log.msg, "Spider closed (%s)" % reason, spider=spider)
+        dfd.addErrback(log.err, "Unhandled error on SpiderManager.close_spider()",
+            spider=spider)
+        dfd.addBoth(lambda _: log.msg("Spider closed (%s)" % reason, spider=spider))
         reactor.callLater(0, self._mainloop)
         return dfd
 
