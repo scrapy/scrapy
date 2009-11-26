@@ -32,7 +32,7 @@ class ExecutionEngine(object):
         self.running = False
         self.killed = False
         self.paused = False
-        self._next_request_pending = set()
+        self._next_request_calls = {}
         self._mainloop_task = task.LoopingCall(self._mainloop)
         self._crawled_logline = load_object(settings['LOG_FORMATTER_CRAWLED'])
 
@@ -107,10 +107,11 @@ class ExecutionEngine(object):
         The spider is closed if there are no more pages to scrape.
         """
         if now:
-            self._next_request_pending.discard(spider)
-        elif spider not in self._next_request_pending:
-            self._next_request_pending.add(spider)
-            return reactor.callLater(0, self.next_request, spider, now=True)
+            self._next_request_calls.pop(spider, None)
+        elif spider not in self._next_request_calls:
+            call = reactor.callLater(0, self.next_request, spider, now=True)
+            self._next_request_calls[spider] = call
+            return call
         else:
             return
 
@@ -307,6 +308,9 @@ class ExecutionEngine(object):
         send_catch_log(signal=signals.spider_closed, sender=self.__class__, \
             spider=spider, reason=reason)
         stats.close_spider(spider, reason=reason)
+        call = self._next_request_calls.pop(spider, None)
+        if call and call.active():
+            call.cancel()
         dfd = defer.maybeDeferred(spiders.close_spider, spider)
         dfd.addBoth(log.msg, "Spider closed (%s)" % reason, spider=spider)
         reactor.callLater(0, self._mainloop)

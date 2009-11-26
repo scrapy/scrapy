@@ -36,6 +36,7 @@ class SiteInfo(object):
         self.transferring = set()
         self.closing = False
         self.lastseen = 0
+        self.next_request_calls = set()
 
     def free_transfer_slots(self):
         return self.max_concurrent_requests - len(self.transferring)
@@ -44,6 +45,10 @@ class SiteInfo(object):
         # use self.active to include requests in the downloader middleware
         return len(self.active) > 2 * self.max_concurrent_requests
 
+    def cancel_request_calls(self):
+        for call in self.next_request_calls:
+            call.cancel()
+        self.next_request_calls.clear()
 
 class Downloader(object):
     """Mantain many concurrent downloads and provide an HTTP abstraction.
@@ -97,7 +102,11 @@ class Downloader(object):
         if site.download_delay:
             penalty = site.download_delay - now + site.lastseen
             if penalty > 0:
-                reactor.callLater(penalty, self._process_queue, spider=spider)
+                d = defer.Deferred()
+                d.addCallback(self._process_queue)
+                call = reactor.callLater(penalty, d.callback, spider)
+                site.next_request_calls.add(call)
+                d.addBoth(lambda x: site.next_request_calls.remove(call))
                 return
         site.lastseen = now
 
@@ -153,12 +162,13 @@ class Downloader(object):
 
     def close_spider(self, spider):
         """Free any resources associated with the given spider"""
-        domain = spider.domain_name
         site = self.sites.get(spider)
         if not site or site.closing:
-            raise RuntimeError('Downloader spider already closed: %s' % domain)
+            raise RuntimeError('Downloader spider already closed: %s' % \
+                spider.domain_name)
 
         site.closing = True
+        site.cancel_request_calls()
         self._process_queue(spider)
 
     def has_capacity(self):
