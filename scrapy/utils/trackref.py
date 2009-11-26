@@ -34,6 +34,9 @@ if not settings.getbool('TRACK_REFS'):
     object_ref = object
 
 def print_live_refs():
+    if object_ref is object:
+        print "The trackref module is disabled. Use TRACK_REFS setting to enable it."
+        return
     print "Live References"
     print
     now = time()
