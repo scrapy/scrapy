@@ -5,6 +5,8 @@ Helper functions for dealing with Twisted deferreds
 from twisted.internet import defer, reactor, task
 from twisted.python import failure
 
+from scrapy.core.exceptions import IgnoreRequest
+
 def defer_fail(_failure):
     """Same as twisted.internet.defer.fail, but delay calling errback until
     next reactor loop
@@ -35,6 +37,11 @@ def mustbe_deferred(f, *args, **kw):
     """
     try:
         result = f(*args, **kw)
+    # FIXME: Hack to avoid introspecting tracebacks. This to speed up
+    # processing of IgnoreRequest errors which are, by far, the most common
+    # exception in Scrapy - see #125
+    except IgnoreRequest, e:
+        return defer_fail(failure.Failure(e))
     except:
         return defer_fail(failure.Failure())
     else:
