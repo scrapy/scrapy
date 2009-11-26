@@ -40,5 +40,5 @@ class CloseSpider(object):
     def spider_closed(self, spider):
         self.counts.pop(spider, None)
         tsk = self.tasks.pop(spider, None)
-        if tsk and not tsk.called:
+        if tsk and tsk.active():
             tsk.cancel()
