@@ -12,7 +12,6 @@ class SpiderStats(object):
         self.scraped = 0
         self.crawled = 0
         self.started = None
-        self.finished = None
 
 class LiveStats(object):
     webconsole_id = 'livestats'
@@ -31,10 +30,9 @@ class LiveStats(object):
         pstats = SpiderStats()
         self.domains[spider] = pstats
         pstats.started = datetime.now().replace(microsecond=0)
-        pstats.finished = None
 
     def spider_closed(self, spider):
-        self.domains[spider].finished = datetime.now().replace(microsecond=0)
+        del self.domains[spider]
 
     def item_scraped(self, item, spider):
         self.domains[spider].scraped += 1
@@ -52,17 +50,17 @@ class LiveStats(object):
         totdomains = totscraped = totcrawled = totscheduled = totactive = totdqueued = tottransf = 0
         s = banner(self)
         s += "<table border='1'>\n"
-        s += "<tr><th>Spider</th><th>Items<br>Scraped</th><th>Pages<br>Crawled</th><th>Scheduler<br>Pending</th><th>Downloader<br/>Queued</th><th>Downloader<br/>Active</th><th>Downloader<br/>Transferring</th><th>Start time</th><th>Finish time</th><th>Run time</th></tr>\n"
+        s += "<tr><th>Spider</th><th>Items<br>Scraped</th><th>Pages<br>Crawled</th><th>Scheduler<br>Pending</th><th>Downloader<br/>Queued</th><th>Downloader<br/>Active</th><th>Downloader<br/>Transferring</th><th>Start time</th><th>Run time</th></tr>\n"
         for spider in sorted(self.domains.keys()):
             scheduled = len(sch.pending_requests[spider]) if spider in sch.pending_requests else 0
             active = len(dwl.sites[spider].active) if spider in dwl.sites else 0
             dqueued = len(dwl.sites[spider].queue) if spider in dwl.sites else 0
             transf = len(dwl.sites[spider].transferring) if spider in dwl.sites else 0
             stats = self.domains[spider]
-            runtime = stats.finished - stats.started if stats.finished else datetime.now() - stats.started
+            runtime = datetime.now() - stats.started
 
-            s += '<tr><td>%s</td><td align="right">%d</td><td align="right">%d</td><td align="right">%d</td><td align="right">%d</td><td align="right">%d</td><td align="right">%d</td><td>%s</td><td>%s</td><td>%s</td></tr>\n' % \
-                 (spider.domain_name, stats.scraped, stats.crawled, scheduled, dqueued, active, transf, str(stats.started), str(stats.finished), str(runtime))
+            s += '<tr><td>%s</td><td align="right">%d</td><td align="right">%d</td><td align="right">%d</td><td align="right">%d</td><td align="right">%d</td><td align="right">%d</td><td>%s</td><td>%s</td></tr>\n' % \
+                 (spider.domain_name, stats.scraped, stats.crawled, scheduled, dqueued, active, transf, str(stats.started), str(runtime))
 
             totdomains += 1
             totscraped += stats.scraped
