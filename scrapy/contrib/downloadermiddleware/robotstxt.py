@@ -58,7 +58,7 @@ class RobotsTxtMiddleware(object):
             or settings['USER_AGENT']
 
     def spider_closed(self, spider):
-        for netloc in self._spider_netlocs[domain]:
+        for netloc in self._spider_netlocs[spider]:
             del self._parsers[netloc]
-        del self._spider_netlocs[domain]
+        del self._spider_netlocs[spider]
         del self._useragents[spider]
