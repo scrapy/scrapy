@@ -121,7 +121,7 @@ written in a ``my_spider.py`` file you can run it with::
 I get "Filtered offsite request" messages. How can I fix them?
 --------------------------------------------------------------
 
-Those messages (logged with ``DEBUG`` level) don't necesarilly mean there is a
+Those messages (logged with ``DEBUG`` level) don't necessarily mean there is a
 problem, so you may not need to fix them.
 
 Those message are thrown by the Offsite Spider Middleware, which is a spider
@@ -130,3 +130,12 @@ domains outside the ones covered by the spider.
 
 For more info see:
 :class:`~scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware`.
+
+How can I make Scrapy consume less memory?
+------------------------------------------
+
+There's a whole documentation section about this subject, please see:
+:ref:`topics-leaks`.
+
+Also, Python has a builtin memory leak issue which is described in
+:ref:`topics-leaks-without-leaks`.

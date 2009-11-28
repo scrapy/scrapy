@@ -56,9 +56,9 @@ Debugging memory leaks with ``trackref``
 memory leaks. It basically tracks the references to all live Requests,
 Responses, Item and Selector objects. 
 
-To active the ``trackref`` module, enable the :setting:`TRACK_REFS` setting. It
-only imposes a minor performance impact so it should be OK for use it in
-production environments.
+To activate the ``trackref`` module, enable the :setting:`TRACK_REFS` setting.
+It only imposes a minor performance impact so it should be OK for use it, even
+in production environments.
 
 Once you have ``trackref`` enabled you can enter the telnet console and inspect
 how many objects (of the classes mentioned above) are currently alive using the
@@ -70,6 +70,7 @@ how many objects (of the classes mentioned above) are currently alive using the
     >>> prefs()
     Live References
 
+    ExampleSpider                       1   oldest: 15s ago
     HtmlResponse                       10   oldest: 1s ago
     XPathSelector                       2   oldest: 0s ago
     FormRequest                       878   oldest: 7s ago
@@ -81,6 +82,19 @@ If you do have leaks, chances are you can figure out which spider is leaking by
 looking at the oldest request or response. You can get the oldest object of
 each class using the :func:`~scrapy.utils.trackref.get_oldest` function like
 this (from the telnet console).
+
+Which objects are tracked?
+--------------------------
+
+The objects tracked by ``trackrefs`` are all from these classes (and all its
+subclasses):
+
+* ``scrapy.http.Request``
+* ``scrapy.http.Response``
+* ``scrapy.item.Item``
+* ``scrapy.selector.XPathSelector``
+* ``scrapy.spider.BaseSpider``
+* ``scrapy.selector.document.Libxml2Document``
 
 A real example
 --------------
@@ -106,6 +120,7 @@ references::
     >>> prefs()
     Live References
 
+    SomenastySpider                     1   oldest: 15s ago
     HtmlResponse                     3890   oldest: 265s ago
     XPathSelector                       2   oldest: 0s ago
     Request                          3878   oldest: 250s ago
@@ -124,6 +139,28 @@ to the ``somenastyspider.com`` spider. We can now go and check the code of that
 spider to discover the nasty line that is generating the leaks (passing
 response references inside requests).
 
+If you want to iterate over all objects, instead of getting the oldest one, you
+can use the :func:`iter_all` function::
+
+    >>> from scrapy.utils.trackref import iter_all
+    >>> [r.url for r in iter_all('HtmlResponse')]
+    ['http://www.somenastyspider.com/product.php?pid=123',
+     'http://www.somenastyspider.com/product.php?pid=584',
+    ...
+
+Too many spiders?
+-----------------
+
+If your project has too many spiders, the output of ``prefs()`` can be
+difficult to read. For this reason, that function has a ``ignore`` argument
+which can be used to ignore a particular class (and all its subclases). For
+example, using::
+
+    >>> from scrapy.spider import BaseSpider
+    >>> prefs(ignore=BaseSpider)
+
+Won't show any live references to spiders.
+
 .. module:: scrapy.utils.trackref
    :synopsis: Track references of live objects
 
@@ -137,15 +174,25 @@ Here are the functions available in the :mod:`~scrapy.utils.trackref` module.
     Inherit from this class (instead of object) if you want to track live
     instances with the ``trackref`` module.
 
-.. function:: print_live_refs(class_name)
+.. function:: print_live_refs(class_name, ignore=NoneType)
 
     Print a report of live references, grouped by class name.
+
+    :param ignore: if given, all objects from the specified class (or tuple of
+        classes) will be ignored.
+    :type ignore: class or classes tuple
 
 .. function:: get_oldest(class_name)
 
     Return the oldest object alive with the given class name, or ``None`` if
     none is found. Use :func:`print_live_refs` first to get a list of all
-    tracked live objects.
+    tracked live objects per class name.
+
+.. function:: iter_all(class_name)
+
+    Return an iterator over all objects alive with the given class name, or
+    ``None`` if none is found. Use :func:`print_live_refs` first to get a list
+    of all tracked live objects per class name.
 
 .. _topics-leaks-guppy:
 
@@ -161,7 +208,7 @@ you still have another resource: the `Guppy library`_.
 
 .. _Guppy library: http://pypi.python.org/pypi/guppy
 
-If you use setuptools, you can install Guppy with the following command::
+If you use ``setuptools``, you can install Guppy with the following command::
 
     easy_install guppy
 
@@ -211,3 +258,34 @@ knowledge about Python internals. For more info about Guppy, refer to the
 
 .. _Guppy documentation: http://guppy-pe.sourceforge.net/
 
+.. _topics-leaks-without-leaks:
+
+Leaks without leaks
+===================
+
+Sometimes, you may notice that the memory usage of your Scrapy process will
+only increase, but never decrease. Unfortunately, this could happen even
+though neither Scrapy nor your project are leaking memory. This is due to a
+(not so well) known problem of Python, which may not return released memory to
+the operating system in some cases. For more information on this issue see:
+
+* `Python Memory Management <http://evanjones.ca/python-memory.html>`_
+* `Python Memory Management Part 2 <http://evanjones.ca/python-memory-part2.html>`_
+* `Python Memory Management Part 3 <http://evanjones.ca/python-memory-part3.html>`_
+
+The improvements proposed by Evan Jones, which are detailed in `this paper`_,
+got merged in Python 2.5, but the only reduce the problem, it doesn't fixes it
+completely. To quote the paper:
+
+    *Unfortunately, this patch can only free an arena if there are no more
+    objects allocated in it anymore. This means that fragmentation is a large
+    issue. An application could have many megabytes of free memory, scattered
+    throughout all the arenas, but it will be unable to free any of it. This is
+    a problem experienced by all memory allocators. The only way to solve it is
+    to move to a compacting garbage collector, which is able to move objects in
+    memory. This would require significant changes to the Python interpreter.*
+
+This problem will be fixed in future Scrapy releases, where we plan to adopt a
+new process model and run spiders in a pool of recyclable sub-processes.
+
+.. _this paper: http://evanjones.ca/memoryallocator/
