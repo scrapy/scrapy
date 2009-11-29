@@ -82,6 +82,8 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
     protocol = ScrapyHTTPPageGetter
     waiting = 1
     noisy = False
+    followRedirect = False
+    afterFoundGet = False
 
     def __init__(self, request, timeout=0):
         self.url = urldefrag(request.url)[0]
