@@ -29,63 +29,6 @@ Built-in signals reference
 Here's a list of signals used in Scrapy and their meaning, in alphabetical
 order.
 
-spider_closed
--------------
-
-.. signal:: spider_closed
-.. function:: spider_closed(spider, reason)
-
-    Sent after a spider has been closed. This can be used to release per-spider
-    resources reserved on :signal:`spider_opened`.
-
-    :param spider: the spider which has been closed
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
-
-    :param reason: a string which describes the reason why the spider was closed. If
-        it was closed because the spider has completed scraping, it the reason
-        is ``'finished'``. Otherwise, if the spider was manually closed by
-        calling the ``close_spider`` engine method, then the reason is the one
-        passed in the ``reason`` argument of that method (which defaults to
-        ``'cancelled'``). If the engine was shutdown (for example, by hitting
-        Ctrl-C to stop it) the reason will be ``'shutdown'``.
-    :type reason: str
-
-spider_opened
--------------
-
-.. signal:: spider_opened
-.. function:: spider_opened(spider)
-
-    Sent after a spider has been opened for crawling. This is typically used to
-    reserve per-spider resources, but can be used for any task that needs to be
-    performed when a spider is opened.
-
-    :param spider: the spider which has been opened
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
-
-spider_idle
------------
-
-.. signal:: spider_idle
-.. function:: spider_idle(spider)
-
-    Sent when a spider has gone idle, which means the spider has no further:
-
-        * requests waiting to be downloaded
-        * requests scheduled
-        * items being processed in the item pipeline
-
-    If the idle state persists after all handlers of this signal have finished,
-    the engine starts closing the spider. After the spider has finished
-    closing, the :signal:`spider_closed` signal is sent.
-
-    You can, for example, schedule some requests in your :signal:`spider_idle`
-    handler to prevent the spider from being closed.
-
-    :param spider: the spider which has gone idle
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
-
-
 engine_started
 --------------
 
@@ -160,6 +103,62 @@ item_dropped
         :exc:`~scrapy.core.exceptions.DropItem` subclass) which caused the item
         to be dropped
     :type exception: :exc:`~scrapy.core.exceptions.DropItem` exception
+
+spider_closed
+-------------
+
+.. signal:: spider_closed
+.. function:: spider_closed(spider, reason)
+
+    Sent after a spider has been closed. This can be used to release per-spider
+    resources reserved on :signal:`spider_opened`.
+
+    :param spider: the spider which has been closed
+    :type spider: :class:`~scrapy.spider.BaseSpider` object
+
+    :param reason: a string which describes the reason why the spider was closed. If
+        it was closed because the spider has completed scraping, it the reason
+        is ``'finished'``. Otherwise, if the spider was manually closed by
+        calling the ``close_spider`` engine method, then the reason is the one
+        passed in the ``reason`` argument of that method (which defaults to
+        ``'cancelled'``). If the engine was shutdown (for example, by hitting
+        Ctrl-C to stop it) the reason will be ``'shutdown'``.
+    :type reason: str
+
+spider_opened
+-------------
+
+.. signal:: spider_opened
+.. function:: spider_opened(spider)
+
+    Sent after a spider has been opened for crawling. This is typically used to
+    reserve per-spider resources, but can be used for any task that needs to be
+    performed when a spider is opened.
+
+    :param spider: the spider which has been opened
+    :type spider: :class:`~scrapy.spider.BaseSpider` object
+
+spider_idle
+-----------
+
+.. signal:: spider_idle
+.. function:: spider_idle(spider)
+
+    Sent when a spider has gone idle, which means the spider has no further:
+
+        * requests waiting to be downloaded
+        * requests scheduled
+        * items being processed in the item pipeline
+
+    If the idle state persists after all handlers of this signal have finished,
+    the engine starts closing the spider. After the spider has finished
+    closing, the :signal:`spider_closed` signal is sent.
+
+    You can, for example, schedule some requests in your :signal:`spider_idle`
+    handler to prevent the spider from being closed.
+
+    :param spider: the spider which has gone idle
+    :type spider: :class:`~scrapy.spider.BaseSpider` object
 
 request_received
 ----------------
