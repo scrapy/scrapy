@@ -284,10 +284,10 @@ Close spider extension
 
 .. class:: scrapy.contrib.closespider.CloseSpider
 
-Closes a domain/spider automatically when some conditions are met, using a
-specific closing reason for each condition.
+Closes a spider automatically when some conditions are met, using a specific
+closing reason for each condition.
 
-The conditions for closing a domain can be configured through the following
+The conditions for closing a spider can be configured through the following
 settings. Other conditions will be supported in the future.
 
 .. setting:: CLOSESPIDER_TIMEOUT
@@ -297,9 +297,9 @@ CLOSESPIDER_TIMEOUT
 
 Default: ``0``
 
-An integer which specifies a number of seconds. If the domain remains open for
+An integer which specifies a number of seconds. If the spider remains open for
 more than that number of second, it will be automatically closed with the
-reason ``closespider_timeout``. If zero (or non set) domains won't be closed by
+reason ``closespider_timeout``. If zero (or non set) spiders won't be closed by
 timeout.
 
 .. setting:: CLOSESPIDER_ITEMPASSED
@@ -311,8 +311,8 @@ Default: ``0``
 
 An integer which specifies a number of items. If the spider scrapes more than
 that amount if items and those items are passed by the item pipeline, the
-domain will be closed with the reason ``closespider_itempassed``. If zero (or
-non set) domains won't be closed by number of passed items.
+spider will be closed with the reason ``closespider_itempassed``. If zero (or
+non set) spiders won't be closed by number of passed items.
 
 StatsMailer extension
 ~~~~~~~~~~~~~~~~~~~~~
