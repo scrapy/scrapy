@@ -276,11 +276,11 @@ the :setting:`MEMDEBUG_ENABLED` setting. The report will be printed to standard
 output. If the :setting:`MEMDEBUG_NOTIFY` setting contains a list of emails the
 report will also be sent to those addresses.
 
-Close domain extension
+Close spider extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. module:: scrapy.contrib.closespider
-   :synopsis: Close domain extension
+   :synopsis: Close spider extension
 
 .. class:: scrapy.contrib.closespider.CloseSpider
 
