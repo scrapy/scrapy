@@ -26,11 +26,11 @@ single Python class that must define the following method:
 
 .. method:: process_item(spider, item)
 
-:param spider: the spider which scraped the item
-:type spider: :class:`~scrapy.spider.BaseSpider` object
+   :param spider: the spider which scraped the item
+   :type spider: :class:`~scrapy.spider.BaseSpider` object
 
-:param item: the item scraped
-:type item: :class:`~scrapy.item.Item` object
+   :param item: the item scraped
+   :type item: :class:`~scrapy.item.Item` object
 
 This method is called for every item pipeline component and must either return
 a :class:`~scrapy.item.Item` (or any descendant class) object or raise a
