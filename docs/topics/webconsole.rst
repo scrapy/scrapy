@@ -82,3 +82,61 @@ you access the URL:
 
 You will see a page containing a big "Hello World!" text.
 
+.. _topics-webconsole-extensions-ref:
+
+Available Web console extensions
+--------------------------------
+
+.. module:: scrapy.contrib.webconsole
+   :synopsis: Contains most built-in web console extensions
+
+Here is a list of built-in web console extensions.
+
+Scheduler queue extension
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.contrib.webconsole.scheduler
+   :synopsis: Scheduler queue web console extension
+
+.. class:: scrapy.contrib.webconsole.scheduler.SchedulerQueue
+
+Display a list of all pending Requests in the Scheduler queue, grouped by
+domain/spider.
+
+Spider live stats extension
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.contrib.webconsole.livestats
+   :synopsis: Spider live stats web console extension
+
+.. class:: scrapy.contrib.webconsole.livestats.LiveStats
+
+Display a table with stats of all spider crawled by the current Scrapy run,
+including:
+
+* Number of items scraped
+* Number of pages crawled
+* Number of pending requests in the scheduler
+* Number of pending requests in the downloader queue
+* Number of requests currently being downloaded
+
+Engine status extension
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.contrib.webconsole.enginestatus
+   :synopsis: Engine status web console extension
+
+.. class:: scrapy.contrib.webconsole.enginestatus.EngineStatus
+
+Display the current status of the Scrapy Engine, which is just the output of
+the Scrapy engine ``getstatus()`` method.
+
+Stats collector dump extension
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.contrib.webconsole.stats
+   :synopsis: Stats dump web console extension
+
+.. class:: scrapy.contrib.webconsole.stats.StatsDump
+
+Display the stats collected so far by the stats collector.
