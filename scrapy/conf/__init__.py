@@ -11,40 +11,17 @@ from scrapy.conf import default_settings
 
 import_ = lambda x: __import__(x, {}, {}, [''])
 
+
 class Settings(object):
 
-    def __init__(self, overrides=None):
-        self.defaults = {}
+    def __init__(self, values=None):
+        self.values = values.copy() if values else {}
         self.global_defaults = default_settings
-        self.disabled = os.environ.get('SCRAPY_SETTINGS_DISABLED', False)
-        settings_module_path = os.environ.get('SCRAPY_SETTINGS_MODULE', \
-            'scrapy_settings')
-        self.set_settings_module(settings_module_path)
-
-        # XXX: find a better solution for this hack
-        pickled_settings = os.environ.get("SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE")
-        self.overrides = pickle.loads(pickled_settings) if pickled_settings else {}
-        if overrides:
-            self.overrides.update(overrides)
 
     def __getitem__(self, opt_name):
-        if not self.disabled:
-            if opt_name in self.overrides:
-                return self.overrides[opt_name]
-            if 'SCRAPY_' + opt_name in os.environ:
-                return os.environ['SCRAPY_' + opt_name]
-            if hasattr(self.settings_module, opt_name):
-                return getattr(self.settings_module, opt_name)
-            if opt_name in self.defaults:
-                return self.defaults[opt_name]
+        if opt_name in self.values:
+            return self.values[opt_name]
         return getattr(self.global_defaults, opt_name, None)
-
-    def set_settings_module(self, settings_module_path):
-        self.settings_module_path = settings_module_path
-        try:
-            self.settings_module = import_(settings_module_path)
-        except ImportError:
-            self.settings_module = None
 
     def get(self, name, default=None):
         return self[name] if self[name] is not None else default
@@ -71,7 +48,42 @@ class Settings(object):
         else:
             return str(value).split(',')
 
+
+class EnvironmentSettings(Settings):
+
+    def __init__(self):
+        super(EnvironmentSettings, self).__init__()
+        self.defaults = {}
+        self.disabled = os.environ.get('SCRAPY_SETTINGS_DISABLED', False)
+        settings_module_path = os.environ.get('SCRAPY_SETTINGS_MODULE', \
+            'scrapy_settings')
+        self.set_settings_module(settings_module_path)
+
+        # XXX: find a better solution for this hack
+        pickled_settings = os.environ.get("SCRAPY_PICKLED_SETTINGS_TO_OVERRIDE")
+        self.overrides = pickle.loads(pickled_settings) if pickled_settings else {}
+
+    def set_settings_module(self, settings_module_path):
+        self.settings_module_path = settings_module_path
+        try:
+            self.settings_module = import_(settings_module_path)
+        except ImportError:
+            self.settings_module = None
+
+    def __getitem__(self, opt_name):
+        if not self.disabled:
+            if opt_name in self.overrides:
+                return self.overrides[opt_name]
+            if 'SCRAPY_' + opt_name in os.environ:
+                return os.environ['SCRAPY_' + opt_name]
+            if hasattr(self.settings_module, opt_name):
+                return getattr(self.settings_module, opt_name)
+            if opt_name in self.defaults:
+                return self.defaults[opt_name]
+        return super(EnvironmentSettings, self).__getitem__(opt_name)
+
     def __str__(self):
         return "<Settings %r>" % self.settings_module_path
 
-settings = Settings()
+
+settings = EnvironmentSettings()
