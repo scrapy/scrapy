@@ -7,10 +7,9 @@ class ScrapyUtilsTest(unittest.TestCase):
         except ImportError, ex:
             raise unittest.SkipTest("OpenSSL is not available")
 
-        required_version = '0.6'
         if hasattr(module, '__version__'):
-            for cur, req in zip(module.__version__.split('.'), required_version.split('.')):
-                self.assertFalse(cur < req, "module %s >= %s required" % ('OpenSSL', required_version))
+            installed_version = map(int, module.__version__.split('.')[:2])
+            assert installed_version >= [0, 6], "OpenSSL >= 0.6 required"
 
 if __name__ == "__main__":
     unittest.main()
