@@ -42,7 +42,7 @@ class Settings(object):
     def getlist(self, name, default=None):
         value = self.get(name)
         if value is None:
-            return []
+            return default or []
         elif hasattr(value, '__iter__'):
             return value
         else:
