@@ -234,8 +234,6 @@ HttpCacheMiddleware
     * :setting:`HTTPCACHE_EXPIRATION_SECS` - how many secs until the cache is
       considered out of date
 
-.. _topics-dlmw-robots:
-
 HttpCompressionMiddleware
 -------------------------
 
@@ -292,6 +290,8 @@ RetryMiddleware
    You may want to remove 400 from RETRY_HTTP_CODES, if you stick to the
    HTTP protocol. It's included by default because it's a common code used
    to indicate server overload, which would be something we want to retry.
+
+.. _topics-dlmw-robots:
 
 RobotsTxtMiddleware
 -------------------
