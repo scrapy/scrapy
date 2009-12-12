@@ -16,15 +16,16 @@ class CachingResolver(object):
         self.resolver = _CachingThreadedResolver(reactor)
         reactor.installResolver(self.resolver)
         dispatcher.connect(self.request_received, signals.request_received)
-        dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
+        dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
     def request_received(self, request, spider):
         url_hostname = urlparse_cached(request).hostname
-        self.spider_hostnames[spider.domain_name].add(url_hostname)
+        self.spider_hostnames[spider].add(url_hostname)
 
-    def domain_closed(self, spider):
-        for hostname in self.spider_hostnames:
+    def spider_closed(self, spider):
+        for hostname in self.spider_hostnames[spider]:
             self.resolver._cache.pop(hostname, None)
+        self.spider_hostnames.pop(spider, None)
 
 
 class _CachingThreadedResolver(ThreadedResolver):

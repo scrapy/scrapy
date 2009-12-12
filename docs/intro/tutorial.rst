@@ -156,17 +156,17 @@ will get an output similar to this::
    [dmoz] INFO: Enabled downloader middlewares: ...
    [dmoz] INFO: Enabled spider middlewares: ...
    [dmoz] INFO: Enabled item pipelines: ...
-   [dmoz.org] INFO: Domain opened
+   [dmoz.org] INFO: Spider opened
    [dmoz.org] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/> from <None>
    [dmoz.org] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> from <None>
-   [dmoz.org] INFO: Domain closed (finished)
+   [dmoz.org] INFO: Spider closed (finished)
    [-] Main loop terminated.
 
 Pay attention to the lines containing ``[dmoz.org]``, which corresponds to
-our spider (identified by the domain "dmoz.org"). You can see a log line for each
-URL defined in ``start_urls``. Because these URLs are the starting ones, they
-have no referrers, which is shown at the end of the log line, where it says
-``from <None>``.
+our spider (identified by the domain ``"dmoz.org"``). You can see a log line
+for each URL defined in ``start_urls``. Because these URLs are the starting
+ones, they have no referrers, which is shown at the end of the log line,
+where it says ``from <None>``.
 
 But more interesting, as our ``parse`` method instructs, two files have been
 created: *Books* and *Resources*, with the content of both URLs.
@@ -445,7 +445,7 @@ creation step, it's in ``dmoz/pipelines.py`` and looks like this::
    # Define your item pipelines here
 
    class DmozPipeline(object):
-       def process_item(self, domain, item):
+       def process_item(self, spider, item):
            return item
 
 We have to override the ``process_item`` method in order to store our Items
@@ -461,7 +461,7 @@ separated values) file using the standard library `csv module`_::
        def __init__(self):
            self.csvwriter = csv.writer(open('items.csv', 'wb'))
         
-       def process_item(self, domain, item):
+       def process_item(self, spider, item):
            self.csvwriter.writerow([item['title'][0], item['link'][0], item['desc'][0]])
            return item
 

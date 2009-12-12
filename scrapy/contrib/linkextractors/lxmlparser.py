@@ -9,7 +9,7 @@ from lxml import etree
 import lxml.html
 
 from scrapy.link import Link
-from scrapy.utils.python import unique as unique_list
+from scrapy.utils.python import unique as unique_list, str_to_unicode
 from scrapy.utils.url import safe_url_string, urljoin_rfc
 
 class LxmlLinkExtractor(object):
@@ -33,7 +33,7 @@ class LxmlLinkExtractor(object):
         for link in links:
             link.url = urljoin_rfc(base_url, link.url, response_encoding)
             link.url = safe_url_string(link.url, response_encoding)
-            link.text = link.text.decode(response_encoding)
+            link.text = str_to_unicode(link.text, response_encoding)
             ret.append(link)
 
         return ret
@@ -42,6 +42,10 @@ class LxmlLinkExtractor(object):
         # wrapper needed to allow to work directly with text
         return self._extract_links(response.body, response.url, 
                                    response.encoding)
+
+    def matches(self, url):
+        """This extractor matches with any url, since it doesn't contain any patterns"""
+        return True
 
 
 class LinkTarget(object):

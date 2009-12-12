@@ -65,9 +65,7 @@ class Response(object_ref):
         return "%s(%s)" % (self.__class__.__name__, args)
 
     def __str__(self):
-        flags = "(%s) " % ",".join(self.flags) if self.flags else ""
-        status = "%d " % self.status + " " if self.status != 200 else ""
-        return "%s<%s%s>" % (flags, status, self.url)
+        return "<%d %s>" % (self.status, self.url)
 
     def copy(self):
         """Return a copy of this Response"""

@@ -250,13 +250,24 @@ objects.
     The :class:`FormRequest` objects support the following class method in
     addition to the standard :class:`Request` methods:
 
-    .. classmethod:: FormRequest.from_response(response, [formnumber=0, formdata, ...])
+    .. classmethod:: FormRequest.from_response(response, [formnumber=0, formdata=None, clickdata=None, dont_click=False, ...])
 
        Returns a new :class:`FormRequest` object with its form field values
        pre-populated with those found in the HTML ``<form>`` element contained
        in the given response. For an example see
        :ref:`topics-request-response-ref-request-userlogin`.
 
+       Keep in mind that this method is implemented using `ClientForm`_ whose
+       policy is to automatically simulate a click, by default, on any form
+       control that looks clickable, like a a ``<input type="submit">``.  Even
+       though this is quite convenient, and often the desired behaviour,
+       sometimes it can cause problems which could be hard to debug. For
+       example, when working with forms that are filled and/or submitted using
+       javascript, the default :meth:`from_response` (and `ClientForm`_)
+       behaviour may not be the most appropiate. To disable this behaviour you
+       can set the ``dont_click`` argument to ``True``. Also, if you want to
+       change the control clicked (instead of disabling it) you can also use
+       the ``clickdata`` argument.
 
        :param response: the response containing a HTML form which will be used
           to pre-populate the form fields
@@ -271,9 +282,17 @@ objects.
           overridden by the one passed in this parameter.
        :type formdata: dict
 
+       :param clickdata: Arguments to be passed directly to ClientForm
+          ``click_request_data()`` method. See `ClientForm`_ homepage for
+          more info.
+       :type clickdata: dict
+
+       :param dont_click: If True the form data will be sumbitted without
+         clicking in any element.
+       :type clickdata: boolean
+
        The other parameters of this class method are passed directly to the
        :class:`FormRequest` constructor.
-
 
 Request usage examples
 ----------------------

@@ -1,5 +1,5 @@
 """
-StatsMailer extension sends an email when a domain finishes scraping.
+StatsMailer extension sends an email when a spider finishes scraping.
 
 Use STATSMAILER_RCPTS setting to enable and give the recipient mail address
 """
@@ -17,12 +17,12 @@ class StatsMailer(object):
         self.recipients = settings.getlist("STATSMAILER_RCPTS")
         if not self.recipients:
             raise NotConfigured
-        dispatcher.connect(self.stats_domain_closed, signal=signals.stats_domain_closed)
+        dispatcher.connect(self.stats_spider_closed, signal=signals.stats_spider_closed)
         
-    def stats_domain_closed(self, domain, domain_stats):
+    def stats_spider_closed(self, spider, spider_stats):
         mail = MailSender()
         body = "Global stats\n\n"
         body += "\n".join("%-50s : %s" % i for i in stats.get_stats().items())
-        body += "\n\n%s stats\n\n" % domain
-        body += "\n".join("%-50s : %s" % i for i in domain_stats.items())
-        mail.send(self.recipients, "Scrapy stats for: %s" % domain, body)
+        body += "\n\n%s stats\n\n" % spider.domain_name
+        body += "\n".join("%-50s : %s" % i for i in spider_stats.items())
+        mail.send(self.recipients, "Scrapy stats for: %s" % spider.domain_name, body)

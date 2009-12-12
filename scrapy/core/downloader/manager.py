@@ -15,10 +15,9 @@ from .middleware import DownloaderMiddlewareManager
 from .handlers import download_any
 
 
-class SiteInfo(object):
-    """This is a simple data record that encapsulates the details we hold on
-    each domain which we are scraping.
-    """
+class SpiderInfo(object):
+    """Simple class to keep information and state for each open spider"""
+
     def __init__(self, download_delay=None, max_concurrent_requests=None):
         if download_delay is None:
             self.download_delay = settings.getint('DOWNLOAD_DELAY')
@@ -27,7 +26,7 @@ class SiteInfo(object):
         if download_delay:
             self.max_concurrent_requests = 1
         elif max_concurrent_requests is None:
-            self.max_concurrent_requests = settings.getint('REQUESTS_PER_DOMAIN')
+            self.max_concurrent_requests = settings.getint('CONCURRENT_REQUESTS_PER_SPIDER')
         else:
             self.max_concurrent_requests =  max_concurrent_requests
 
@@ -36,6 +35,7 @@ class SiteInfo(object):
         self.transferring = set()
         self.closing = False
         self.lastseen = 0
+        self.next_request_calls = set()
 
     def free_transfer_slots(self):
         return self.max_concurrent_requests - len(self.transferring)
@@ -43,6 +43,11 @@ class SiteInfo(object):
     def needs_backout(self):
         # use self.active to include requests in the downloader middleware
         return len(self.active) > 2 * self.max_concurrent_requests
+
+    def cancel_request_calls(self):
+        for call in self.next_request_calls:
+            call.cancel()
+        self.next_request_calls.clear()
 
 
 class Downloader(object):
@@ -54,7 +59,7 @@ class Downloader(object):
     def __init__(self):
         self.sites = {}
         self.middleware = DownloaderMiddlewareManager()
-        self.concurrent_domains = settings.getint('CONCURRENT_DOMAINS')
+        self.concurrent_spiders = settings.getint('CONCURRENT_SPIDERS')
 
     def fetch(self, request, spider):
         """Main method to use to request a download
@@ -97,7 +102,11 @@ class Downloader(object):
         if site.download_delay:
             penalty = site.download_delay - now + site.lastseen
             if penalty > 0:
-                reactor.callLater(penalty, self._process_queue, spider=spider)
+                d = defer.Deferred()
+                d.addCallback(self._process_queue)
+                call = reactor.callLater(penalty, d.callback, spider)
+                site.next_request_calls.add(call)
+                d.addBoth(lambda x: site.next_request_calls.remove(call))
                 return
         site.lastseen = now
 
@@ -135,35 +144,34 @@ class Downloader(object):
             # downloader middleware, to speed-up the closing process
             if site.closing:
                 log.msg("Crawled while closing spider: %s" % request, \
-                    level=log.DEBUG)
+                    level=log.DEBUG, spider=spider)
                 raise IgnoreRequest
             return _
         return dfd.addBoth(finish_transferring)
 
     def open_spider(self, spider):
         """Allocate resources to begin processing a spider"""
-        domain = spider.domain_name
         if spider in self.sites:
-            raise RuntimeError('Downloader spider already opened: %s' % domain)
+            raise RuntimeError('Downloader spider already opened: %s' % spider)
 
-        self.sites[spider] = SiteInfo(
+        self.sites[spider] = SpiderInfo(
             download_delay=getattr(spider, 'download_delay', None),
             max_concurrent_requests=getattr(spider, 'max_concurrent_requests', None)
         )
 
     def close_spider(self, spider):
         """Free any resources associated with the given spider"""
-        domain = spider.domain_name
         site = self.sites.get(spider)
         if not site or site.closing:
-            raise RuntimeError('Downloader spider already closed: %s' % domain)
+            raise RuntimeError('Downloader spider already closed: %s' % spider)
 
         site.closing = True
+        site.cancel_request_calls()
         self._process_queue(spider)
 
     def has_capacity(self):
         """Does the downloader have capacity to handle more spiders"""
-        return len(self.sites) < self.concurrent_domains
+        return len(self.sites) < self.concurrent_spiders
 
     def is_idle(self):
         return not self.sites

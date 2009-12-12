@@ -153,7 +153,7 @@ extracted item into a file using `pickle`_::
     import pickle
 
     class StoreItemPipeline(object):
-        def process_item(self, domain, response, item):
+        def process_item(self, spider, item):
             torrent_id = item['url'].split('/')[-1]
             f = open("torrent-%s.pickle" % torrent_id, "w")
             pickle.dump(item, f)

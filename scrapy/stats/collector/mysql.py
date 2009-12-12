@@ -16,8 +16,8 @@ class MysqlStatsCollector(StatsCollector):
         mysqluri = settings['STATS_MYSQL_URI']
         self._mysql_conn = mysql_connect(mysqluri, use_unicode=False) if mysqluri else None
         
-    def _persist_stats(self, stats, domain=None):
-        if domain is None: # only store domain-specific stats
+    def _persist_stats(self, stats, spider=None):
+        if spider is None: # only store spider-specific stats
             return
         if self._mysql_conn is None:
             return
@@ -27,5 +27,5 @@ class MysqlStatsCollector(StatsCollector):
 
         c = self._mysql_conn.cursor()
         c.execute("INSERT INTO %s (domain,stored,data) VALUES (%%s,%%s,%%s)" % table, \
-            (domain, stored, datas))
+            (spider.domain_name, stored, datas))
         self._mysql_conn.commit()

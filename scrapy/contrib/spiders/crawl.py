@@ -90,7 +90,6 @@ class CrawlSpider(InitSpider):
         matching each case, filters them (if needed), and returns a list of unique
         requests per response.
         """
-        requests = []
         seen = set()
         for rule in self._rules:
             links = [l for l in rule.link_extractor.extract_links(response) if l not in seen]
@@ -101,8 +100,7 @@ class CrawlSpider(InitSpider):
                 r = Request(url=link.url)
                 r.meta['link_text'] = link.text
                 r.deferred.addCallback(self._response_downloaded, rule.callback, cb_kwargs=rule.cb_kwargs, follow=rule.follow)
-                requests.append(r)
-        return requests
+                yield r
 
     def _response_downloaded(self, response, callback, cb_kwargs, follow):
         """
@@ -110,15 +108,16 @@ class CrawlSpider(InitSpider):
         to extract links or not from it, and if it will be parsed or not.
         It returns a list of requests/items.
         """
-        res = []
-
-        if follow and settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True):
-            res.extend(self._requests_to_follow(response))
         if callback:
             cb_res = callback(response, **cb_kwargs) or ()
             cb_res = self.process_results(response, cb_res)
-            res.extend(iterate_spider_output(cb_res))
-        return res
+            for requests_or_item in iterate_spider_output(cb_res):
+                yield requests_or_item
+
+        if follow and settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True):
+            for request_or_item in self._requests_to_follow(response):
+                yield request_or_item
+                
 
     def _compile_rules(self):
         """Compile the crawling rules"""

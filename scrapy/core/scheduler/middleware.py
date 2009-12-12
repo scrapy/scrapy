@@ -9,7 +9,6 @@ from collections import defaultdict
 from twisted.internet.defer import Deferred
 
 from scrapy import log
-from scrapy.http import Response
 from scrapy.core.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.utils.defer import mustbe_deferred
@@ -55,8 +54,8 @@ class SchedulerMiddlewareManager(object):
         def _enqueue_request(request):
             for mwfunc in self.mw_cbs['enqueue_request']:
                 result = mwfunc(spider=spider, request=request)
-                assert result is None or isinstance(result, (Response, Deferred)), \
-                        'Middleware %s.enqueue_request must return None, Response or Deferred, got %s' % \
+                assert result is None or isinstance(result, Deferred), \
+                        'Middleware %s.enqueue_request must return None or Deferred, got %s' % \
                         (mwfunc.im_self.__class__.__name__, result.__class__.__name__)
                 if result:
                     return result

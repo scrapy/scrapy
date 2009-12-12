@@ -17,7 +17,7 @@ class FileExportPipeline(object):
         self.exporter.start_exporting()
         dispatcher.connect(self.engine_stopped, signals.engine_stopped)
 
-    def process_item(self, domain, item):
+    def process_item(self, spider, item):
         self.exporter.export_item(item)
         return item
 

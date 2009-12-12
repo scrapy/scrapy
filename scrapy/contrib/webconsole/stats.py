@@ -22,9 +22,9 @@ class StatsDump(object):
         s = banner(self)
         s += "<h3>Global stats</h3>\n"
         s += stats_html_table(stats.get_stats())
-        for domain in stats.list_domains():
-            s += "<h3>%s</h3>\n" % domain
-            s += stats_html_table(stats.get_stats(domain))
+        for spider, spider_stats in stats.iter_spider_stats():
+            s += "<h3>%s</h3>\n" % spider.domain_name
+            s += stats_html_table(spider_stats)
         s += "</body>\n"
         s += "</html>\n"
 

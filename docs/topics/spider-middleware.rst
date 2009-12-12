@@ -210,11 +210,23 @@ OffsiteMiddleware
 
    Filters out Requests for URLs outside the domains covered by the spider.
 
-   This middleware filters out every request whose host names doesn't match
+   This middleware filters out every request whose host names don't match
    :attr:`~scrapy.spider.BaseSpider.domain_name`, or the spider
    :attr:`~scrapy.spider.BaseSpider.domain_name` prefixed by "www.".  
    Spider can add more domains to exclude using 
    :attr:`~scrapy.spider.BaseSpider.extra_domain_names` attribute.
+
+   When your spider returns a request for a domain not belonging to those
+   covered by the spider, this middleware will log a debug message similar to
+   this one::
+
+      DEBUG: Filtered offsite request to 'www.othersite.com': <GET http://www.othersite.com/some/page.html>
+
+   To avoid filling the log with too much noise, it will only print one of
+   these messages for each new domain filtered. So, for example, if another
+   request for ``www.othersite.com`` is filtered, no log message will be
+   printed. But if a request for ``someothersite.com`` is filtered, a message
+   will be printed (but only for the first request filtred).
 
 RefererMiddleware
 -----------------
