@@ -80,7 +80,7 @@ if u'SVN' in version:
     version = ' '.join(version.split(' ')[:-1])
 
 setup_args = {
-    'name': 'scrapy',
+    'name': 'Scrapy',
     'version': version,
     'url': 'http://scrapy.org',
     'description': 'A high-level Python Screen Scraping framework',
