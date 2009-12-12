@@ -20,7 +20,7 @@ class FileTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tmpname = self.mktemp()
-        fd = open(self.tmpname + '<', 'w')
+        fd = open(self.tmpname + '^', 'w')
         fd.write('0123456789')
         fd.close()
 
@@ -30,8 +30,8 @@ class FileTestCase(unittest.TestCase):
             self.assertEquals(response.status, 200)
             self.assertEquals(response.body, '0123456789')
 
-        request = Request('file://%s' % self.tmpname + '<')
-        assert request.url.upper().endswith('%3C')
+        request = Request('file://%s' % self.tmpname + '^')
+        assert request.url.upper().endswith('%5E')
         return download_file(request, BaseSpider()).addCallback(_test)
 
     def test_non_existent(self):
