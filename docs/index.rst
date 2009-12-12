@@ -1,8 +1,8 @@
 .. _topics-index:
 
-====================
-Scrapy documentation
-====================
+==============================
+Scrapy |version| documentation
+==============================
 
 This documentation contains everything you need to know about Scrapy.
 
