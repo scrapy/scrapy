@@ -49,6 +49,7 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
         storage = self._get_storage(HTTPCACHE_EXPIRATION_SECS=0)
         assert storage.retrieve_response(self.spider, self.request) is None
         storage.store_response(self.spider, self.request, self.response)
+        time.sleep(0.1) # required for win32
         assert storage.retrieve_response(self.spider, self.request) is None
 
     def test_storage_never_expire(self):
