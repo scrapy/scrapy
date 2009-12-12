@@ -58,7 +58,7 @@ class RetryMiddleware(object):
 
         if retries <= self.max_retry_times:
             log.msg("Retrying %s (failed %d times): %s" % (request, retries, reason),
-                    domain=spider.domain_name, level=log.DEBUG)
+                    spider=spider, level=log.DEBUG)
             retryreq = request.copy()
             retryreq.meta['retry_times'] = retries
             retryreq.dont_filter = True
@@ -66,5 +66,5 @@ class RetryMiddleware(object):
             return retryreq
         else:
             log.msg("Discarding %s (failed %d times): %s" % (request, retries, reason),
-                    domain=spider.domain_name, level=log.DEBUG)
+                    spider=spider, level=log.DEBUG)
 

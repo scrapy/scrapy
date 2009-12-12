@@ -9,38 +9,21 @@ from twisted.plugin import IPlugin
 from scrapy import log
 from scrapy.http import Request
 from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.trackref import object_ref
 
 def _valid_domain_name(obj):
     """Check the domain name specified is valid"""
     if not obj.domain_name:
-        raise ValueError("A site domain name is required")
-
-def _valid_download_delay(obj):
-    """Check the download delay is valid, if specified"""
-    delay = getattr(obj, 'download_delay', 0)
-    if not type(delay) in (int, long, float):
-        raise ValueError("download_delay must be numeric")
-    if float(delay) < 0.0:
-        raise ValueError("download_delay must be positive")
+        raise ValueError("Spider 'domain_name' attribute is required")
 
 class ISpider(Interface, IPlugin) :
     """Interface to be implemented by site-specific web spiders"""
 
-    domain_name = Attribute(
-         """The domain name of the site to be scraped.""")
-
-    download_delay = Attribute(
-         """Optional delay in seconds to wait between web page downloads.
-         Note that this delay does not apply to image downloads.
-         A delay of less than a second can be specified.""")
-
-    user_agent = Attribute(
-         """Optional User-Agent to use for this domain""")
+    domain_name = Attribute("The domain name of the site to be scraped.")
 
     invariant(_valid_domain_name)
-    invariant(_valid_download_delay)
 
-class BaseSpider(object):
+class BaseSpider(object_ref):
     """Base class for scrapy spiders. All spiders must inherit from this
     class.
     """
@@ -66,7 +49,7 @@ class BaseSpider(object):
         """Log the given messages at the given log level. Always use this
         method to send log messages from your spider
         """
-        log.msg(message, domain=self.domain_name, level=level)
+        log.msg(message, spider=self, level=level)
 
     def start_requests(self):
         reqs = []

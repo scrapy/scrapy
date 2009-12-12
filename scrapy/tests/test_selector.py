@@ -242,6 +242,12 @@ class XPathSelectorTestCase(unittest.TestCase):
             u'\n  pff\n'])
 
     @libxml2debug
+    def test_empty_bodies(self):
+        r1 = TextResponse('http://www.example.com', body='')
+        hxs = HtmlXPathSelector(r1) # shouldn't raise error
+        xxs = XmlXPathSelector(r1) # shouldn't raise error
+
+    @libxml2debug
     def test_weakref_slots(self):
         """Check that classes are using slots and are weak-referenceable"""
         for cls in [XPathSelector, HtmlXPathSelector, XmlXPathSelector]:

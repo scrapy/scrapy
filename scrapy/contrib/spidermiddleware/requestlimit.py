@@ -23,44 +23,43 @@ class RequestLimitMiddleware(object):
         self.max_pending = {}
         self.dropped_count = {}
 
-        dispatcher.connect(self.domain_opened, signal=signals.domain_opened)
-        dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
+        dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
+        dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
-    def domain_opened(self, domain, spider):
-        self.max_pending[domain] = getattr(spider, 'requests_queue_size', self.max_queue_size)
-        self.dropped_count[domain] = 0
+    def spider_opened(self, spider):
+        self.max_pending[spider] = getattr(spider, 'requests_queue_size', self.max_queue_size)
+        self.dropped_count[spider] = 0
 
-    def domain_closed(self, domain):
-        dropped_count = self.dropped_count[domain]
+    def spider_closed(self, spider):
+        dropped_count = self.dropped_count[spider]
         if dropped_count:
-            max_pending = self.max_pending[domain]
+            max_pending = self.max_pending[spider]
             log.msg('Dropped %d request(s) because the scheduler queue size limit (%d requests) was exceeded' % \
-                    (dropped_count, max_pending), level=log.DEBUG, domain=domain)
-        del self.dropped_count[domain]
-        del self.max_pending[domain]
+                    (dropped_count, max_pending), level=log.DEBUG, spider=spider)
+        del self.dropped_count[spider]
+        del self.max_pending[spider]
 
     def process_spider_output(self, response, result, spider):
-        domain = spider.domain_name
-        max_pending = self.max_pending.get(domain, 0)
+        max_pending = self.max_pending.get(spider, 0)
         if max_pending:
-            return imap(lambda v: self._limit_requests(v, domain, max_pending), result)
+            return imap(lambda v: self._limit_requests(v, spider, max_pending), result)
         else:
             return result
 
-    def _limit_requests(self, request_or_other, domain, max_pending):
+    def _limit_requests(self, request_or_other, spider, max_pending):
         if isinstance(request_or_other, Request):
-            free_slots = max_pending - self._pending_count(domain)
+            free_slots = max_pending - self._pending_count(spider)
             if free_slots > 0:
                 # Scheduler isn't saturated and it is fine to schedule more requests.
                 return request_or_other
             else:
                 # Skip the request and give engine time to handle other tasks.
-                self.dropped_count[domain] += 1
+                self.dropped_count[spider] += 1
                 return None
         else:
             # Return others (non-requests) as is.
             return request_or_other
 
-    def _pending_count(self, domain):
-        pending = scrapyengine.scheduler.pending_requests.get(domain, [])
+    def _pending_count(self, spider):
+        pending = scrapyengine.scheduler.pending_requests.get(spider, [])
         return len(pending)

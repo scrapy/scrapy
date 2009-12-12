@@ -1,10 +1,12 @@
 import re, csv
+from cStringIO import StringIO
 
 from scrapy.http import Response
 from scrapy.selector import XmlXPathSelector
 from scrapy import log
 from scrapy.utils.python import re_rsearch, str_to_unicode
 from scrapy.utils.response import body_or_str
+
 
 def xmliter(obj, nodename):
     """Return a iterator of XPathSelector's over all nodes of a XML document,
@@ -29,6 +31,7 @@ def xmliter(obj, nodename):
         nodetext = header_start + match.group() + header_end
         yield XmlXPathSelector(text=nodetext).select('//' + nodename)[0]
 
+
 def csviter(obj, delimiter=None, headers=None, encoding=None):
     """ Returns an iterator of dictionaries from the given csv object
 
@@ -46,7 +49,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None):
     def _getrow(csv_r):
         return [str_to_unicode(field, encoding) for field in csv_r.next()]
 
-    lines = body_or_str(obj, unicode=False).splitlines(True)
+    lines = StringIO(body_or_str(obj, unicode=False))
     if delimiter:
         csv_r = csv.reader(lines, delimiter=delimiter)
     else:

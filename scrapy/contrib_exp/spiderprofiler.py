@@ -45,20 +45,18 @@ class SpiderProfiler(object):
             r = function(*args, **kwargs)
             mafter = self._memusage()
             ct = time() - tbefore
-            domain = spider.domain_name
-            tcc = stats.get_value('profiling/total_callback_time', 0, domain=domain)
-            sct = stats.get_value('profiling/slowest_callback_time', 0, domain=domain)
-            stats.set_value('profiling/total_callback_time' % spider.domain_name, \
-                tcc+ct, domain=domain)
+            tcc = stats.get_value('profiling/total_callback_time', 0, spider=spider)
+            sct = stats.get_value('profiling/slowest_callback_time', 0, spider=spider)
+            stats.set_value('profiling/total_callback_time', tcc+ct, spider=spider)
             if ct > sct:
-                stats.set_value('profiling/slowest_callback_time', ct, domain=domain)
+                stats.set_value('profiling/slowest_callback_time', ct, spider=spider)
                 stats.set_value('profiling/slowest_callback_name', function.__name__, \
-                    domain=domain)
+                    spider=spider)
                 stats.set_value('profiling/slowest_callback_url', args[0].url, \
-                    domain=domain)
+                    spider=spider)
             if self._memusage:
                 stats.inc_value('profiling/total_mem_allocated_in_callbacks', \
-                    count=mafter-mbefore, domain=domain)
+                    count=mafter-mbefore, spider=spider)
             return r
         return new_callback
 

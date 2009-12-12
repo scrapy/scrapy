@@ -89,9 +89,9 @@ class CrawlingSession(object):
 
             dispatcher.connect(self.record_signal, signals.engine_started)
             dispatcher.connect(self.record_signal, signals.engine_stopped)
-            dispatcher.connect(self.record_signal, signals.domain_opened)
-            dispatcher.connect(self.record_signal, signals.domain_idle)
-            dispatcher.connect(self.record_signal, signals.domain_closed)
+            dispatcher.connect(self.record_signal, signals.spider_opened)
+            dispatcher.connect(self.record_signal, signals.spider_idle)
+            dispatcher.connect(self.record_signal, signals.spider_closed)
             dispatcher.connect(self.item_scraped, signals.item_scraped)
             dispatcher.connect(self.request_received, signals.request_received)
             dispatcher.connect(self.response_downloaded, signals.response_downloaded)
@@ -201,16 +201,16 @@ class EngineTest(unittest.TestCase):
 
         assert signals.engine_started in session.signals_catched
         assert signals.engine_stopped in session.signals_catched
-        assert signals.domain_opened in session.signals_catched
-        assert signals.domain_idle in session.signals_catched
-        assert signals.domain_closed in session.signals_catched
+        assert signals.spider_opened in session.signals_catched
+        assert signals.spider_idle in session.signals_catched
+        assert signals.spider_closed in session.signals_catched
 
-        self.assertEqual({'domain': session.domain, 'spider': session.spider},
-                         session.signals_catched[signals.domain_opened])
-        self.assertEqual({'domain': session.domain, 'spider': session.spider},
-                         session.signals_catched[signals.domain_idle])
-        self.assertEqual({'domain': session.domain, 'spider': session.spider, 'reason': 'finished'},
-                         session.signals_catched[signals.domain_closed])
+        self.assertEqual({'spider': session.spider},
+                         session.signals_catched[signals.spider_opened])
+        self.assertEqual({'spider': session.spider},
+                         session.signals_catched[signals.spider_idle])
+        self.assertEqual({'spider': session.spider, 'reason': 'finished'},
+                         session.signals_catched[signals.spider_closed])
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == 'runserver':

@@ -101,14 +101,14 @@ everytime a domain/spider is opened and closed::
     class SpiderOpenCloseLogging(object):
 
         def __init__(self):
-            dispatcher.connect(self.domain_opened, signal=signals.domain_opened)
-            dispatcher.connect(self.domain_closed, signal=signals.domain_closed)
+            dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
+            dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
-        def domain_opened(self, domain, spider):
-            log.msg("opened domain %s" % domain)
+        def spider_opened(self, spider):
+            log.msg("opened spider %s" % spider.domain_name)
 
-        def domain_closed(self, domain, spider):
-            log.msg("closed domain %s" % domain)
+        def spider_closed(self, spider):
+            log.msg("closed spider %s" % spider.domain_name)
 
 
 .. _topics-extensions-ref-manager:
@@ -212,8 +212,8 @@ The web server is designed to be extended by other extensions which can add
 their own management web interfaces. 
 
 See also :ref:`topics-webconsole` for information on how to write your own web
-console extension, and "Web console extensions" below for a list of available
-built-in (web console) extensions.
+console extension, and :ref:`topics-webconsole-extensions-ref` for a list of
+available built-in (web console) extensions.
 
 .. _topics-extensions-ref-telnetconsole:
 
@@ -276,43 +276,43 @@ the :setting:`MEMDEBUG_ENABLED` setting. The report will be printed to standard
 output. If the :setting:`MEMDEBUG_NOTIFY` setting contains a list of emails the
 report will also be sent to those addresses.
 
-Close domain extension
+Close spider extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.contrib.closedomain
-   :synopsis: Close domain extension
+.. module:: scrapy.contrib.closespider
+   :synopsis: Close spider extension
 
-.. class:: scrapy.contrib.closedomain.CloseDomain
+.. class:: scrapy.contrib.closespider.CloseSpider
 
-Closes a domain/spider automatically when some conditions are met, using a
-specific closing reason for each condition.
+Closes a spider automatically when some conditions are met, using a specific
+closing reason for each condition.
 
-The conditions for closing a domain can be configured through the following
+The conditions for closing a spider can be configured through the following
 settings. Other conditions will be supported in the future.
 
-.. setting:: CLOSEDOMAIN_TIMEOUT
+.. setting:: CLOSESPIDER_TIMEOUT
 
-CLOSEDOMAIN_TIMEOUT
+CLOSESPIDER_TIMEOUT
 """""""""""""""""""
 
 Default: ``0``
 
-An integer which specifies a number of seconds. If the domain remains open for
+An integer which specifies a number of seconds. If the spider remains open for
 more than that number of second, it will be automatically closed with the
-reason ``closedomain_timeout``. If zero (or non set) domains won't be closed by
+reason ``closespider_timeout``. If zero (or non set) spiders won't be closed by
 timeout.
 
-.. setting:: CLOSEDOMAIN_ITEMPASSED
+.. setting:: CLOSESPIDER_ITEMPASSED
 
-CLOSEDOMAIN_ITEMPASSED
+CLOSESPIDER_ITEMPASSED
 """"""""""""""""""""""
 
 Default: ``0``
 
 An integer which specifies a number of items. If the spider scrapes more than
 that amount if items and those items are passed by the item pipeline, the
-domain will be closed with the reason ``closedomain_itempassed``. If zero (or
-non set) domains won't be closed by number of passed items.
+spider will be closed with the reason ``closespider_itempassed``. If zero (or
+non set) spiders won't be closed by number of passed items.
 
 StatsMailer extension
 ~~~~~~~~~~~~~~~~~~~~~
@@ -326,69 +326,6 @@ This simple extension can be used to send a notification email every time a
 domain has finished scraping, including the Scrapy stats collected. The email
 will be sent to all recipients specified in the :setting:`STATSMAILER_RCPTS`
 setting.
-
-
-Web console extensions
-----------------------
-
-.. module:: scrapy.contrib.webconsole
-   :synopsis: Contains most built-in web console extensions
-
-Here is a list of built-in web console extensions. For clarity "web console
-extension" is abbreviated as "WC extension".
-
-For more information see the see the :ref:`web console documentation
-<topics-webconsole>`.
-
-Scheduler queue WC extension
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. module:: scrapy.contrib.webconsole.scheduler
-   :synopsis: Scheduler queue web console extension
-
-.. class:: scrapy.contrib.webconsole.scheduler.SchedulerQueue
-
-Display a list of all pending Requests in the Scheduler queue, grouped by
-domain/spider.
-
-Spider live stats WC extension
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. module:: scrapy.contrib.webconsole.livestats
-   :synopsis: Spider live stats web console extension
-
-.. class:: scrapy.contrib.webconsole.livestats.LiveStats
-
-Display a table with stats of all spider crawled by the current Scrapy run,
-including:
-
-* Number of items scraped
-* Number of pages crawled
-* Number of pending requests in the scheduler
-* Number of pending requests in the downloader queue
-* Number of requests currently being downloaded
-
-Engine status WC extension
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. module:: scrapy.contrib.webconsole.enginestatus
-   :synopsis: Engine status web console extension
-
-.. class:: scrapy.contrib.webconsole.enginestatus.EngineStatus
-
-Display the current status of the Scrapy Engine, which is just the output of
-the Scrapy engine ``getstatus()`` method.
-
-Stats collector dump WC extension 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. module:: scrapy.contrib.webconsole.stats
-   :synopsis: Stats dump web console extension
-
-.. class:: scrapy.contrib.webconsole.stats.StatsDump
-
-Display the stats collected so far by the stats collector.
-
 
 .. module:: scrapy.contrib.debug
    :synopsis: Extensions for debugging Scrapy

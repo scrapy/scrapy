@@ -220,45 +220,6 @@ Default: ``1.0``
 The version of the bot implemented by this Scrapy project. This will be used to
 construct the User-Agent by default.
 
-.. setting:: HTTPCACHE_DIR
-
-HTTPCACHE_DIR
--------------
-
-Default: ``''`` (empty string)
-
-The directory to use for storing the (low-level) HTTP cache. If empty the HTTP
-cache will be disabled.
-
-.. setting:: HTTPCACHE_EXPIRATION_SECS
-
-HTTPCACHE_EXPIRATION_SECS
--------------------------
-
-Default: ``0``
-
-Number of seconds to use for HTTP cache expiration. Requests that were cached
-before this time will be re-downloaded. If zero, cached requests will always
-expire. Negative numbers means requests will never expire.
-
-.. setting:: HTTPCACHE_IGNORE_MISSING
-
-HTTPCACHE_IGNORE_MISSING
-------------------------
-
-Default: ``False``
-
-If enabled, requests not found in the cache will be ignored instead of downloaded. 
-
-.. setting:: HTTPCACHE_SECTORIZE
-
-HTTPCACHE_SECTORIZE
--------------------
-
-Default: ``True``
-
-Whether to split HTTP cache storage in several dirs for performance.
-
 .. setting:: COMMANDS_MODULE
 
 COMMANDS_MODULE
@@ -286,14 +247,14 @@ Example::
 
     COMMANDS_SETTINGS_MODULE = 'mybot.conf.commands'
 
-.. setting:: CONCURRENT_DOMAINS
+.. setting:: CONCURRENT_SPIDERS
 
-CONCURRENT_DOMAINS
+CONCURRENT_SPIDERS
 ------------------
 
 Default: ``8``
 
-Maximum number of domains to scrape in parallel.
+Maximum number of spiders to scrape in parallel.
 
 .. setting:: CONCURRENT_ITEMS
 
@@ -338,6 +299,17 @@ Default::
 
 The default headers used for Scrapy HTTP Requests. They're populated in the
 :class:`~scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware`.
+
+.. setting:: DEFAULT_RESPONSE_ENCODING
+
+DEFAULT_RESPONSE_ENCODING
+-------------------------
+
+Default: ``'ascii'``
+
+The default encoding to use for :class:`~scrapy.http.TextResponse` objects (and
+subclasses) when no encoding is declared and no encoding could be inferred from
+the body.
 
 .. setting:: DEPTH_LIMIT
 
@@ -402,6 +374,7 @@ Default::
         'scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware': 550,
         'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware': 600,
         'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware': 700,
+        'scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware': 750,
         'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 800,
         'scrapy.contrib.downloadermiddleware.stats.DownloaderStats': 850,
         'scrapy.contrib.downloadermiddleware.httpcache.HttpCacheMiddleware': 900,
@@ -725,10 +698,37 @@ Default: ``+2``
 Adjust redirect request priority relative to original request.
 A negative priority adjust means more priority.
 
-.. setting:: REQUESTS_PER_DOMAIN
+.. setting:: REQUEST_HANDLERS
 
-REQUESTS_PER_DOMAIN
--------------------
+REQUEST_HANDLERS
+----------------
+
+Default: ``{}``
+
+A dict containing the request downloader handlers enabled in your project.
+See `REQUEST_HANDLERS_BASE` for example format.
+
+.. setting:: REQUEST_HANDLERS_BASE
+
+REQUEST_HANDLERS_BASE
+---------------------
+
+Default:: 
+
+    {
+        'file': 'scrapy.core.downloader.handlers.file.download_file',
+        'http': 'scrapy.core.downloader.handlers.http.download_http',
+        'https': 'scrapy.core.downloader.handlers.http.download_http',
+    }
+
+A dict containing the request download handlers enabled by default in Scrapy.
+You should never modify this setting in your project, modify
+:setting:`REQUEST_HANDLERS` instead. 
+
+.. setting:: CONCURRENT_REQUESTS_PER_SPIDER
+
+CONCURRENT_REQUESTS_PER_SPIDER
+------------------------------
 
 Default: ``8``
 

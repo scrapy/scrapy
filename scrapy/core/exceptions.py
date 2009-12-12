@@ -25,8 +25,8 @@ class IgnoreRequest(Exception):
     def __str__(self):
         return self.msg
 
-class DontCloseDomain(Exception):
-    """Request the domain not to be closed yet"""
+class DontCloseSpider(Exception):
+    """Request the spider not to be closed yet"""
     pass
 
 # Items

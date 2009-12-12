@@ -14,6 +14,7 @@ import weakref
 from collections import defaultdict
 from time import time
 from operator import itemgetter
+from types import NoneType
 
 from scrapy.conf import settings
 
@@ -33,12 +34,17 @@ class object_ref(object):
 if not settings.getbool('TRACK_REFS'):
     object_ref = object
 
-def print_live_refs():
+def print_live_refs(ignore=NoneType):
+    if object_ref is object:
+        print "The trackref module is disabled. Use TRACK_REFS setting to enable it."
+        return
     print "Live References"
     print
     now = time()
     for cls, wdict in live_refs.iteritems():
         if not wdict:
+            continue
+        if issubclass(cls, ignore):
             continue
         oldest = min(wdict.itervalues())
         print "%-30s %6d   oldest: %ds ago" % (cls.__name__, len(wdict), \
@@ -49,3 +55,8 @@ def get_oldest(class_name):
         if cls.__name__ == class_name:
             if wdict:
                 return min(wdict.iteritems(), key=itemgetter(1))[0]
+
+def iter_all(class_name):
+    for cls, wdict in live_refs.iteritems():
+        if cls.__name__ == class_name:
+            return wdict.iterkeys()

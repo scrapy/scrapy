@@ -120,9 +120,6 @@ def replace_escape_chars(text, which_ones=('\n','\t','\r'), replace_by=u''):
         text = text.replace(ec, str_to_unicode(replace_by))
     return str_to_unicode(text)
 
-# FIXME: backwards compatibility - should be removed before 0.7 release
-remove_escape_chars = replace_escape_chars
-
 def unquote_markup(text, keep=(), remove_illegal=True):
     """
     This function receives markup as a text (always a unicode string or a utf-8 encoded string) and does the following:
