@@ -3,8 +3,8 @@
 # distribution.
 
 cd dist
-md5sum scrapy-$version* > MD5SUMS
-sha1sum scrapy-$version* > SHA1SUMS
+md5sum Scrapy-* > MD5SUMS
+sha1sum Scrapy-* > SHA1SUMS
 gpg -ba MD5SUMS
 gpg -ba SHA1SUMS
 

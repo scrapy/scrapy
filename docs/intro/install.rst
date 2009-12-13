@@ -165,7 +165,7 @@ Installing with `easy_install`_
 
 You can install Scrapy running `easy_install`_ like this::
 
-   easy_install -U scrapy
+   easy_install -U Scrapy
 
 .. _easy_install: http://peak.telecommunity.com/DevCenter/EasyInstall
 
