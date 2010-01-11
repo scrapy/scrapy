@@ -98,10 +98,10 @@ spider returns multiples items with the same id::
             del self.duplicates[spider]
 
         def process_item(self, spider, item):
-            if item.id in self.duplicates[spider]:
+            if item['id'] in self.duplicates[spider]:
                 raise DropItem("Duplicate item found: %s" % item)
             else:
-                self.duplicates[spider].add(item.id)
+                self.duplicates[spider].add(item['id'])
                 return item
 
 Built-in Item Pipelines reference
@@ -178,7 +178,7 @@ on the respective Item Exporter to get more info.
   the first line. This format requires you to specify the fields to export
   using the :setting:`EXPORT_FIELDS` setting.
 
-* ``jsonlines``: uses a :class:`~jsonlines.JsonLinesItemExporter`
+* ``json``: uses a :class:`~jsonlines.JsonLinesItemExporter`
 
 * ``pickle``: uses a :class:`PickleItemExporter`
 

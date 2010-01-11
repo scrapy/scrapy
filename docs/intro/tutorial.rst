@@ -420,8 +420,8 @@ scraped so far, the code for our Spider should be like this::
 
 Now doing a crawl on the dmoz.org domain yields ``DmozItem``'s::
 
-   [dmoz.org] DEBUG: Scraped DmozItem({'title': [u'Text Processing in Python'], 'link': [u'http://gnosis.cx/TPiP/'], 'desc': [u' - By David Mertz; Addison Wesley. Book in progress, full text, ASCII format. Asks for feedback. [author website, Gnosis Software, Inc.]\n']}) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
-   [dmoz.org] DEBUG: Scraped DmozItem({'title': [u'XML Processing with Python'], 'link': [u'http://www.informit.com/store/product.aspx?isbn=0130211192'], 'desc': [u' - By Sean McGrath; Prentice Hall PTR, 2000, ISBN 0130211192, has CD-ROM. Methods to build XML applications fast, Python tutorial, DOM and SAX, new Pyxie open source XML processing library. [Prentice Hall PTR]\n']}) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
+   [dmoz.org] DEBUG: Scraped DmozItem(desc=[u' - By David Mertz; Addison Wesley. Book in progress, full text, ASCII format. Asks for feedback. [author website, Gnosis Software, Inc.]\n'], link=[u'http://gnosis.cx/TPiP/'], title=[u'Text Processing in Python']) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
+   [dmoz.org] DEBUG: Scraped DmozItem(desc=[u' - By Sean McGrath; Prentice Hall PTR, 2000, ISBN 0130211192, has CD-ROM. Methods to build XML applications fast, Python tutorial, DOM and SAX, new Pyxie open source XML processing library. [Prentice Hall PTR]\n'], link=[u'http://www.informit.com/store/product.aspx?isbn=0130211192'], title=[u'XML Processing with Python']) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
 
 
 Storing the data (using an Item Pipeline)
