@@ -516,8 +516,7 @@ LOG_FILE
 
 Default: ``None``
 
-File name to use for logging output. If None, standard input (or error) will be
-used depending on the value of the LOG_STDOUT setting.
+File name to use for logging output. If None, standard error will be used.
 
 .. setting:: LOG_LEVEL
 
@@ -536,8 +535,9 @@ LOG_STDOUT
 
 Default: ``False``
 
-If enabled logging will be sent to standard output, otherwise standard error
-will be used.
+If ``True``, all standard output (and error) of your process will be redirected
+to the log. For example if you ``print 'hello'`` it will appear in the Scrapy
+log.
 
 .. setting:: MAIL_FROM
 
