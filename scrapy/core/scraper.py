@@ -186,7 +186,8 @@ class Scraper(object):
         if isinstance(spider_failure.value, IgnoreRequest):
             return
         elif spider_failure is propagated_failure:
-            log.err(spider_failure, 'Unhandled error propagated to spider and wasn\'t handled')
+            log.err(spider_failure, 'Unhandled error propagated to spider', \
+                spider=spider)
             return # stop propagating this error
         else:
             return spider_failure # exceptions raised in the spider code

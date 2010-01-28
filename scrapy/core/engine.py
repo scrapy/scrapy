@@ -137,7 +137,8 @@ class ExecutionEngine(object):
         if request:
             dwld = mustbe_deferred(self.download, request, spider)
             dwld.chainDeferred(deferred).addBoth(lambda _: deferred)
-            dwld.addErrback(log.err, "Unhandled error on engine._next_request")
+            dwld.addErrback(log.err, "Unhandled error on engine._next_request()",
+                spider=spider)
             return dwld
 
     def spider_is_idle(self, spider):
@@ -173,7 +174,7 @@ class ExecutionEngine(object):
         # next core refactoring.
         #schd.addErrback(log.err, "Error on engine.crawl()")
         schd.addBoth(self.scraper.enqueue_scrape, request, spider)
-        schd.addErrback(log.err, "Unhandled error on engine.crawl()")
+        schd.addErrback(log.err, "Unhandled error on engine.crawl()", spider=spider)
         schd.addBoth(lambda _: self.next_request(spider))
 
     def schedule(self, request, spider):
