@@ -247,15 +247,6 @@ Example::
 
     COMMANDS_SETTINGS_MODULE = 'mybot.conf.commands'
 
-.. setting:: CONCURRENT_SPIDERS
-
-CONCURRENT_SPIDERS
-------------------
-
-Default: ``8``
-
-Maximum number of spiders to scrape in parallel.
-
 .. setting:: CONCURRENT_ITEMS
 
 CONCURRENT_ITEMS
@@ -264,7 +255,26 @@ CONCURRENT_ITEMS
 Default: ``100``
 
 Maximum number of concurrent items (per response) to process in parallel in the
-Item Processor (also known as the Item Pipeline).
+Item Processor (also known as the :ref:`Item Pipeline <topics-item-pipeline>`).
+
+.. setting:: CONCURRENT_REQUESTS_PER_SPIDER
+
+CONCURRENT_REQUESTS_PER_SPIDER
+------------------------------
+
+Default: ``8``
+
+Specifies how many concurrent (ie. simultaneous) requests will be performed per
+open spider.
+
+.. setting:: CONCURRENT_SPIDERS
+
+CONCURRENT_SPIDERS
+------------------
+
+Default: ``8``
+
+Maximum number of spiders to scrape in parallel.
 
 .. setting:: COOKIES_DEBUG
 
@@ -724,16 +734,6 @@ Default::
 A dict containing the request download handlers enabled by default in Scrapy.
 You should never modify this setting in your project, modify
 :setting:`REQUEST_HANDLERS` instead. 
-
-.. setting:: CONCURRENT_REQUESTS_PER_SPIDER
-
-CONCURRENT_REQUESTS_PER_SPIDER
-------------------------------
-
-Default: ``8``
-
-Specifies how many concurrent (ie. simultaneous) requests will be performed per
-open spider.
 
 .. setting:: REQUESTS_QUEUE_SIZE
 
