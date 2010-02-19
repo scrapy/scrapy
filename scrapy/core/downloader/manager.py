@@ -23,7 +23,7 @@ class SpiderInfo(object):
             self.download_delay = settings.getfloat('DOWNLOAD_DELAY')
         else:
             self.download_delay = download_delay
-        if download_delay:
+        if self.download_delay:
             self.max_concurrent_requests = 1
         elif max_concurrent_requests is None:
             self.max_concurrent_requests = settings.getint('CONCURRENT_REQUESTS_PER_SPIDER')
