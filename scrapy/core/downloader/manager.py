@@ -20,7 +20,7 @@ class SpiderInfo(object):
 
     def __init__(self, download_delay=None, max_concurrent_requests=None):
         if download_delay is None:
-            self.download_delay = settings.getint('DOWNLOAD_DELAY')
+            self.download_delay = settings.getfloat('DOWNLOAD_DELAY')
         else:
             self.download_delay = download_delay
         if download_delay:
