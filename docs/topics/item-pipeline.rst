@@ -155,7 +155,7 @@ To export all scraped items into a CSV file (with specific fields in headers lin
 
     EXPORT_FORMAT = 'csv_headers'
     EXPORT_FILE = 'scraped_items_with_headers.csv'
-    EXPORT_FILEDS = ['name', 'price', 'description']
+    EXPORT_FIELDS = ['name', 'price', 'description']
 
 File Export Pipeline settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

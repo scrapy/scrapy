@@ -87,7 +87,11 @@ def err(_stuff=None, _why=None, **kwargs):
     domain = kwargs.pop('domain', None)
     spider = kwargs.pop('spider', None)
     component = kwargs.pop('component', BOT_NAME)
-    kwargs['system'] = domain or spider.domain_name if spider else component
+    if domain is not None:
+        import warnings
+        warnings.warn("'domain' argument of scrapy.log.err() is deprecated, " \
+            "use 'spider' argument instead", DeprecationWarning, stacklevel=2)
+    kwargs['system'] = domain or (spider.domain_name if spider else component)
     if _why:
         _why = unicode_to_str("ERROR: %s" % _why)
     log.err(_stuff, _why, **kwargs)

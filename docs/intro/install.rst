@@ -21,7 +21,7 @@ Requirements
 * `Twisted`_ 2.5.0, 8.0 or above (Windows users: you may need to install
   `pywin32`_ because of `this Twisted bug`_)
 
-* `libxml2`_ (2.6.28 or above is recommended)
+* `libxml2`_ (versions prior to 2.6.28 are known to have problems parsing certain malformed HTML, and have also been reported to contain leaks, so 2.6.28 or above is highly recommended)
 
 .. _Python: http://www.python.org
 .. _Twisted: http://twistedmatrix.com

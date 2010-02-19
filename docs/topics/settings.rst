@@ -247,15 +247,6 @@ Example::
 
     COMMANDS_SETTINGS_MODULE = 'mybot.conf.commands'
 
-.. setting:: CONCURRENT_SPIDERS
-
-CONCURRENT_SPIDERS
-------------------
-
-Default: ``8``
-
-Maximum number of spiders to scrape in parallel.
-
 .. setting:: CONCURRENT_ITEMS
 
 CONCURRENT_ITEMS
@@ -264,7 +255,26 @@ CONCURRENT_ITEMS
 Default: ``100``
 
 Maximum number of concurrent items (per response) to process in parallel in the
-Item Processor (also known as the Item Pipeline).
+Item Processor (also known as the :ref:`Item Pipeline <topics-item-pipeline>`).
+
+.. setting:: CONCURRENT_REQUESTS_PER_SPIDER
+
+CONCURRENT_REQUESTS_PER_SPIDER
+------------------------------
+
+Default: ``8``
+
+Specifies how many concurrent (ie. simultaneous) requests will be performed per
+open spider.
+
+.. setting:: CONCURRENT_SPIDERS
+
+CONCURRENT_SPIDERS
+------------------
+
+Default: ``8``
+
+Maximum number of spiders to scrape in parallel.
 
 .. setting:: COOKIES_DEBUG
 
@@ -516,8 +526,7 @@ LOG_FILE
 
 Default: ``None``
 
-File name to use for logging output. If None, standard input (or error) will be
-used depending on the value of the LOG_STDOUT setting.
+File name to use for logging output. If None, standard error will be used.
 
 .. setting:: LOG_LEVEL
 
@@ -536,8 +545,9 @@ LOG_STDOUT
 
 Default: ``False``
 
-If enabled logging will be sent to standard output, otherwise standard error
-will be used.
+If ``True``, all standard output (and error) of your process will be redirected
+to the log. For example if you ``print 'hello'`` it will appear in the Scrapy
+log.
 
 .. setting:: MAIL_FROM
 
@@ -724,16 +734,6 @@ Default::
 A dict containing the request download handlers enabled by default in Scrapy.
 You should never modify this setting in your project, modify
 :setting:`REQUEST_HANDLERS` instead. 
-
-.. setting:: CONCURRENT_REQUESTS_PER_SPIDER
-
-CONCURRENT_REQUESTS_PER_SPIDER
-------------------------------
-
-Default: ``8``
-
-Specifies how many concurrent (ie. simultaneous) requests will be performed per
-open spider.
 
 .. setting:: REQUESTS_QUEUE_SIZE
 
