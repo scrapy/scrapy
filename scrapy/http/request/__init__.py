@@ -96,8 +96,9 @@ class Request(object_ref):
         """Return a copy of this Request"""
         return self.replace()
 
-    def replace(self, url=None, callback=None, method=None, headers=None, body=None, 
-                cookies=None, meta=None, encoding=None, dont_filter=None):
+    def replace(self, url=None, callback=None, method=None, headers=None, body=None, \
+                cookies=None, meta=None, encoding=None, priority=None, \
+                dont_filter=None, errback=None):
         """Create a new Request with the same attributes except for those
         given new values.
         """
@@ -109,4 +110,6 @@ class Request(object_ref):
                               cookies=self.cookies if cookies is None else cookies,
                               meta=self.meta if meta is None else meta,
                               encoding=self.encoding if encoding is None else encoding,
-                              dont_filter=self.dont_filter if dont_filter is None else dont_filter)
+                              priority=self.priority if priority is None else priority,
+                              dont_filter=self.dont_filter if dont_filter is None else dont_filter,
+                              errback=errback)
