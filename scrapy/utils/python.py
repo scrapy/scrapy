@@ -216,3 +216,28 @@ def get_func_args(func):
     else:
         raise TypeError('%s is not callable' % type(func))
     return func_args
+
+
+def equal_attributes(obj1, obj2, attributes):
+    """Compare two objects attributes"""
+    # not attributes given return False by default
+    if not attributes:
+        return False
+
+    for attr in attributes:
+        # support callables like itemgetter
+        if callable(attr):
+            if not attr(obj1) == attr(obj2):
+                return False
+        else:
+            # check that objects has attribute
+            if not hasattr(obj1, attr):
+                return False
+            if not hasattr(obj2, attr):
+                return False
+            # compare object attributes
+            if not getattr(obj1, attr) == getattr(obj2, attr):
+                return False
+    # all attributes equal
+    return True
+

@@ -175,6 +175,8 @@ class TextResponseTest(BaseResponseTest):
         r2 = self.response_class("http://www.example.com", encoding='utf-8', body=u"\xa3")
         r3 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=iso-8859-1"]}, body="\xa3")
         r4 = self.response_class("http://www.example.com", body="\xa2\xa3")
+        r5 = self.response_class("http://www.example.com",
+        headers={"Content-type": ["text/html; charset=None"]}, body="\xc2\xa3")
 
         self.assertEqual(r1.headers_encoding(), "utf-8")
         self.assertEqual(r2.headers_encoding(), None)
@@ -182,6 +184,8 @@ class TextResponseTest(BaseResponseTest):
         self.assertEqual(r3.headers_encoding(), "iso-8859-1")
         self.assertEqual(r3.encoding, 'iso-8859-1')
         self.assertEqual(r4.headers_encoding(), None)
+        self.assertEqual(r5.headers_encoding(), None)
+        self.assertEqual(r5.encoding, "utf-8")
         assert r4.body_encoding() is not None and r4.body_encoding() != 'ascii'
         self._assert_response_values(r1, 'utf-8', u"\xa3")
         self._assert_response_values(r2, 'utf-8', u"\xa3")
