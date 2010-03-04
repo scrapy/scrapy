@@ -7,20 +7,14 @@ import cProfile
 
 import scrapy
 from scrapy import log
-from scrapy.spider import spiders
 from scrapy.xlib import lsprofcalltree
 from scrapy.conf import settings
 from scrapy.command.models import ScrapyCommand
+from scrapy.utils.signal import send_catch_log
 
-# This dict holds information about the executed command for later use
-command_executed = {}
-
-def _save_command_executed(cmdname, cmd, args, opts):
-    """Save command executed info for later reference"""
-    command_executed['name'] = cmdname
-    command_executed['class'] = cmd
-    command_executed['args'] = args[:]
-    command_executed['opts'] = opts.__dict__.copy()
+# Signal that carries information about the command which was executed
+# args: cmdname, cmdobj, args, opts
+command_executed = object()
 
 def _find_commands(dir):
     try:
@@ -127,7 +121,8 @@ def execute(argv=None):
         sys.exit(2)
 
     del args[0]  # remove command name from args
-    _save_command_executed(cmdname, cmd, args, opts)
+    send_catch_log(signal=command_executed, cmdname=cmdname, cmdobj=cmd, \
+        args=args, opts=opts)
     from scrapy.core.manager import scrapymanager
     scrapymanager.configure(control_reactor=True)
     ret = _run_command(cmd, args, opts)
