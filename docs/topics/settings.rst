@@ -803,7 +803,7 @@ The scheduler to use for crawling.
 SCHEDULER_ORDER
 ---------------
 
-Default: ``'BFO'``
+Default: ``'DFO'``
 
 Scope: ``scrapy.core.scheduler``
 

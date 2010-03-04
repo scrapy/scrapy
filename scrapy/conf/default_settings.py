@@ -152,7 +152,7 @@ SCHEDULER_MIDDLEWARES_BASE = {
     'scrapy.contrib.schedulermiddleware.duplicatesfilter.DuplicatesFilterMiddleware': 500,
 }
 
-SCHEDULER_ORDER = 'BFO'   # available orders: BFO (default), DFO
+SCHEDULER_ORDER = 'DFO'
 
 SPIDER_MANAGER_CLASS = 'scrapy.contrib.spidermanager.TwistedPluginSpiderManager'
 
