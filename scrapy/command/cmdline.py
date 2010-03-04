@@ -131,23 +131,25 @@ def execute(argv=None):
 
 def _run_command(cmd, args, opts):
     if opts.profile or opts.lsprof:
-        if opts.profile:
-            log.msg("writing cProfile stats to %r" % opts.profile)
-        if opts.lsprof:
-            log.msg("writing lsprof stats to %r" % opts.lsprof)
-        loc = locals()
-        p = cProfile.Profile()
-        p.runctx('ret = cmd.run(args, opts)', globals(), loc)
-        if opts.profile:
-            p.dump_stats(opts.profile)
-        k = lsprofcalltree.KCacheGrind(p)
-        if opts.lsprof:
-            with open(opts.lsprof, 'w') as f:
-                k.output(f)
-        ret = loc['ret']
+        return _run_command_profiled(cmd, args, opts)
     else:
-        ret = cmd.run(args, opts)
-    return ret
+        return cmd.run(args, opts)
+
+def _run_command_profiled(cmd, args, opts):
+    if opts.profile:
+        log.msg("writing cProfile stats to %r" % opts.profile)
+    if opts.lsprof:
+        log.msg("writing lsprof stats to %r" % opts.lsprof)
+    loc = locals()
+    p = cProfile.Profile()
+    p.runctx('ret = cmd.run(args, opts)', globals(), loc)
+    if opts.profile:
+        p.dump_stats(opts.profile)
+    k = lsprofcalltree.KCacheGrind(p)
+    if opts.lsprof:
+        with open(opts.lsprof, 'w') as f:
+            k.output(f)
+    return loc['ret']
 
 if __name__ == '__main__':
     execute()
