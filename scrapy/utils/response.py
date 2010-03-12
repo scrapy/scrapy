@@ -92,7 +92,7 @@ def response_httprepr(response):
     s += response.body
     return s
 
-def open_in_browser(response, debug=False):
+def open_in_browser(response, _openfunc=webbrowser.open):
     """Open the given response in a local web browser, populating the <base>
     tag for external links to work
     """
@@ -106,8 +106,4 @@ def open_in_browser(response, debug=False):
     fd, fname = tempfile.mkstemp('.html')
     os.write(fd, body)
     os.close(fd)
-    if debug: # for testing purposes only
-        body = open(fname).read()
-        os.remove(fname)
-        return body
-    webbrowser.open("file://%s" % fname)
+    return _openfunc("file://%s" % fname)

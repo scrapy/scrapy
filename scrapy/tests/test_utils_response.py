@@ -1,4 +1,5 @@
 import unittest
+import urlparse
 
 from scrapy.xlib.BeautifulSoup import BeautifulSoup
 from scrapy.http import Response, TextResponse, HtmlResponse
@@ -134,10 +135,13 @@ class ResponseUtilsTest(unittest.TestCase):
     def test_open_in_browser(self):
         url = "http:///www.example.com/some/page.html"
         body = "<html> <head> <title>test page</title> </head> <body>test body</body> </html>"
+        def browser_open(burl):
+            bbody = open(urlparse.urlparse(burl).path).read()
+            assert '<base href="%s">' % url in bbody, "<base> tag not added"
+            return True
         response = HtmlResponse(url, body=body)
-        newbody = open_in_browser(response, debug=True)
-        assert '<base href="%s">' % url in newbody
-
+        assert open_in_browser(response, _openfunc=browser_open), \
+            "Browser not called"
         self.assertRaises(TypeError, open_in_browser, Response(url, body=body), \
             debug=True)
 
