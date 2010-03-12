@@ -3,12 +3,11 @@ This module provides some useful functions for working with
 scrapy.http.Response objects
 """
 
-from __future__ import with_statement
-
+import os
 import re
 import weakref
 import webbrowser
-from tempfile import NamedTemporaryFile
+import tempfile
 
 from twisted.web import http
 from twisted.web.http import RESPONSES
@@ -104,6 +103,7 @@ def open_in_browser(response):
     body = response.body
     if '<base' not in body:
         body = body.replace('<head>', '<head><base href="%s">' % response.url)
-    with NamedTemporaryFile(suffix='.html', delete=False) as f:
-        f.write(body)
-        webbrowser.open("file://%s" % f.name)
+    fd, fname = tempfile.mkstemp('.html')
+    os.write(fd, body)
+    os.close(fd)
+    webbrowser.open("file://%s" % fname)
