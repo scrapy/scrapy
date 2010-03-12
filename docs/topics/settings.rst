@@ -418,6 +418,15 @@ supported.  Example::
 
     DOWNLOAD_DELAY = 0.25    # 250 ms of delay 
 
+This setting is also affected by the :setting:`RANDOMIZE_DOWNLOAD_DELAY`
+setting (which is enabled by default). By default, Scrapy doesn't wait a fixed
+amount of time between requests, but uses a random interval between 0.5 and 1.5
+* :setting:`DOWNLOAD_DELAY`.
+
+Another way to change the download delay (per spider, instead of globally) is
+by using the ``download_delay`` spider attribute, which takes more precedence
+than this setting.
+
 .. setting:: DOWNLOAD_TIMEOUT
 
 DOWNLOAD_TIMEOUT
@@ -677,6 +686,27 @@ Example::
 
     NEWSPIDER_MODULE = 'mybot.spiders_dev'
 
+.. setting:: RANDOMIZE_DOWNLOAD_DELAY
+
+RANDOMIZE_DOWNLOAD_DELAY
+------------------------
+
+Default: ``True``
+
+If enabled, Scrapy will wait a random amount of time (between 0.5 and 1.5
+* :setting:`DOWNLOAD_DELAY`) while fetching requests from the same
+spider.
+
+This randomization decreases the chance of the crawler being detected (and
+subsequently blocked) by sites which analyze requests looking for statistically
+significant similarities in the time between their times.
+
+The randomization policy is the same used by `wget`_ ``--random-wait`` option.
+
+If :setting:`DOWNLOAD_DELAY` is zero (default) this option has no effect.
+
+.. _wget: http://www.gnu.org/software/wget/manual/wget.html
+
 .. setting:: REDIRECT_MAX_TIMES
 
 REDIRECT_MAX_TIMES
@@ -773,7 +803,7 @@ The scheduler to use for crawling.
 SCHEDULER_ORDER
 ---------------
 
-Default: ``'BFO'``
+Default: ``'DFO'``
 
 Scope: ``scrapy.core.scheduler``
 
