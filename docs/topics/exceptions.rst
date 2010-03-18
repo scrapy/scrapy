@@ -22,14 +22,6 @@ DropItem
 The exception that must be raised by item pipeline stages to stop processing an
 Item. For more information see :ref:`topics-item-pipeline`.
 
-HttpException
--------------
-
-.. exception:: HttpException
-
-This exception is raised by the downloader when a non-200 response has been
-downloaded.
-
 IgnoreRequest
 -------------
 
