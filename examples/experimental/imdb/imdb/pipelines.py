@@ -3,6 +3,6 @@
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/topics/item-pipeline.html
 
-class ${ProjectName}Pipeline(object):
+class ImdbPipeline(object):
     def process_item(self, spider, item):
         return item

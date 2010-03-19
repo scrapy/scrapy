@@ -1,9 +1,10 @@
 import unittest
+import urlparse
 
 from scrapy.xlib.BeautifulSoup import BeautifulSoup
-from scrapy.http import Response, TextResponse
+from scrapy.http import Response, TextResponse, HtmlResponse
 from scrapy.utils.response import body_or_str, get_base_url, get_meta_refresh, \
-    response_httprepr, get_cached_beautifulsoup
+    response_httprepr, get_cached_beautifulsoup, open_in_browser
 
 class ResponseUtilsTest(unittest.TestCase):
     dummy_response = TextResponse(url='http://example.org/', body='dummy_response')
@@ -130,6 +131,19 @@ class ResponseUtilsTest(unittest.TestCase):
 
         assert soup1 is soup2
         assert soup1 is not soup3
+
+    def test_open_in_browser(self):
+        url = "http:///www.example.com/some/page.html"
+        body = "<html> <head> <title>test page</title> </head> <body>test body</body> </html>"
+        def browser_open(burl):
+            bbody = open(urlparse.urlparse(burl).path).read()
+            assert '<base href="%s">' % url in bbody, "<base> tag not added"
+            return True
+        response = HtmlResponse(url, body=body)
+        assert open_in_browser(response, _openfunc=browser_open), \
+            "Browser not called"
+        self.assertRaises(TypeError, open_in_browser, Response(url, body=body), \
+            debug=True)
 
 if __name__ == "__main__":
     unittest.main()

@@ -466,12 +466,14 @@ TextResponse objects
 
     .. attribute:: TextResponse.encoding
 
-       A string with the encoding of this response. The encoding is resolved in the
-       following order: 
+       A string with the encoding of this response. The encoding is resolved by
+       trying the following mechanisms, in order:
 
        1. the encoding passed in the constructor `encoding` argument
 
-       2. the encoding declared in the Content-Type HTTP header
+       2. the encoding declared in the Content-Type HTTP header. If this
+          encoding is not valid (ie. unknown), it is ignored and the next
+          resolution mechanism is tried.
 
        3. the encoding declared in the response body. The TextResponse class
           doesn't provide any special functionality for this. However, the

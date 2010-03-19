@@ -10,15 +10,15 @@ class $classname(CrawlSpider):
     start_urls = ['http://www.$site/']
 
     rules = (
-        Rule(SgmlLinkExtractor(allow=(r'Items/', )), 'parse_item', follow=True),
+        Rule(SgmlLinkExtractor(allow=r'Items/'), callback='parse_item', follow=True),
     )
 
     def parse_item(self, response):
-        xs = HtmlXPathSelector(response)
+        hxs = HtmlXPathSelector(response)
         i = ${ProjectName}Item()
-        #i['site_id'] = xs.select('//input[@id="sid"]/@value').extract()
-        #i['name'] = xs.select('//div[@id="name"]').extract()
-        #i['description'] = xs.select('//div[@id="description"]').extract()
+        #i['site_id'] = hxs.select('//input[@id="sid"]/@value').extract()
+        #i['name'] = hxs.select('//div[@id="name"]').extract()
+        #i['description'] = hxs.select('//div[@id="description"]').extract()
         return i
 
 SPIDER = $classname()
