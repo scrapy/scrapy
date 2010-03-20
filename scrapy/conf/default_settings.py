@@ -122,6 +122,8 @@ MYSQL_CONNECTION_SETTINGS = {}
 
 NEWSPIDER_MODULE = ''
 
+RANDOMIZE_DOWNLOAD_DELAY = True
+
 REDIRECT_MAX_METAREFRESH_DELAY = 100
 REDIRECT_MAX_TIMES = 20 # uses Firefox default setting
 REDIRECT_PRIORITY_ADJUST = +2
@@ -150,7 +152,7 @@ SCHEDULER_MIDDLEWARES_BASE = {
     'scrapy.contrib.schedulermiddleware.duplicatesfilter.DuplicatesFilterMiddleware': 500,
 }
 
-SCHEDULER_ORDER = 'BFO'   # available orders: BFO (default), DFO
+SCHEDULER_ORDER = 'DFO'
 
 SPIDER_MANAGER_CLASS = 'scrapy.contrib.spidermanager.TwistedPluginSpiderManager'
 

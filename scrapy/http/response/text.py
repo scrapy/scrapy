@@ -5,6 +5,7 @@ discovering (through HTTP headers) to base Response class.
 See documentation in docs/topics/request-response.rst
 """
 
+import codecs
 import re
 
 from scrapy.xlib.BeautifulSoup import UnicodeDammit
@@ -64,7 +65,12 @@ class TextResponse(Response):
         if content_type:
             encoding = self._ENCODING_RE.search(content_type)
             if encoding:
-                return encoding.group(1)
+                enc = encoding.group(1)
+                try:
+                    codecs.lookup(enc) # check if the encoding is valid
+                    return enc
+                except LookupError:
+                    pass
 
     @memoizemethod_noargs
     def body_as_unicode(self):
