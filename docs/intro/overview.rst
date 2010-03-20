@@ -8,11 +8,13 @@ Scrapy a is an application framework for crawling web sites and extracting
 structured data which can be used for a wide range of useful applications, like
 data mining, information processing or historical archival.
 
-Even though Scrapy was originally designed for `screen scraping`_, it can also
-be used to extract data using APIs (such as `Amazon Associates Web Services`_)
-or as a general purpose web crawler.
+Even though Scrapy was originally designed for `screen scraping`_ (more
+precisely, `web scraping`_), it can also be used to extract data using APIs
+(such as `Amazon Associates Web Services`_) or as a general purpose web
+crawler.
 
 .. _screen scraping: http://en.wikipedia.org/wiki/Screen_scraping
+.. _web scraping: http://en.wikipedia.org/wiki/Web_scraping
 .. _Amazon Associates Web Services: http://aws.amazon.com/associates/
 
 The purpose of this document is to introduce you to the concepts behind Scrapy
@@ -168,23 +170,34 @@ You've seen how to extract and store items from a website using Scrapy, but
 this is just the surface. Scrapy provides a lot of powerful features for making
 scraping easy and efficient, such as:
 
-* Built-in support for parsing HTML, XML, CSV, and Javascript 
+* Built-in support for :ref:`selecting and extracting <topics-selectors>` data
+  from HTML and XML sources
 
-* A media pipeline for scraping items with images (or any other media) and
-  download the image files as well
+* Built-in support for :ref:`exporting data <file-export-pipeline>` in multiple
+  formats, including XML, CSV and JSON
 
-* Support for extending Scrapy by plugging your own functionality using
-  middlewares, extensions, and pipelines
+* A media pipeline for :ref:`automatically downloading images <topics-images>`
+  (or any other media) associated with the scraped items
+
+* Support for :ref:`extending Scrapy <extending-scrapy>` by plugging
+  your own functionality using middlewares, extensions, and pipelines
 
 * Wide range of built-in middlewares and extensions for handling of
   compression, cache, cookies, authentication, user-agent spoofing, robots.txt
   handling, statistics, crawl depth restriction, etc
 
-* Interactive scraping shell console, very useful for developing and debugging
+* An :ref:`Interactive scraping shell console <topics-shell>`, very useful for
+  writing and debugging your spiders
 
-* Web management console for monitoring and controlling your bot
+* A :ref:`Web management console <topics-webconsole>` for monitoring and
+  controlling your bot
 
-* Telnet console for low-level access to the Scrapy process
+* A :ref:`Telnet console <topics-telnetconsole>` for full unrestricted access
+  to a Python console inside your Scrapy process, to introspect and debug your
+  crawler
+
+* Built-in facilities for :ref:`logging <topics-logging>`, :ref:`collecting
+  stats <topics-stats>`, and :ref:`sending email notifications <topics-email>`
 
 What's next?
 ============

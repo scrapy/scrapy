@@ -132,6 +132,8 @@ Solving specific problems
 :doc:`topics/images`
     Download static images associated with your scraped items.
 
+.. _extending-scrapy:
+
 Extending Scrapy
 ================
 
