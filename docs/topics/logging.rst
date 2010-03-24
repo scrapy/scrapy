@@ -129,3 +129,14 @@ scrapy.log module
 
     Log level for debugging messages (recommended level for development)
 
+Logging settings
+================
+
+These settings can be used to configure the logging:
+
+* :setting:`LOG_ENABLED`
+* :setting:`LOG_ENCODING`
+* :setting:`LOG_FILE`
+* :setting:`LOG_LEVEL`
+* :setting:`LOG_STDOUT`
+

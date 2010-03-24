@@ -526,7 +526,16 @@ LOG_ENABLED
 
 Default: ``True``
 
-Enable logging.
+Whether to enable logging.
+
+.. setting:: LOG_ENCODING
+
+LOG_ENCODING
+------------
+
+Default: ``'utf-8'``
+
+The encoding to use for logging.
 
 .. setting:: LOG_FILE
 
