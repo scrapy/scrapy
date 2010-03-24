@@ -60,10 +60,10 @@ def remove_entities(text, keep=(), remove_illegal=True, encoding='utf-8'):
 
     return _ent_re.sub(convert_entity, str_to_unicode(text, encoding))
 
-def has_entities(text):
-    return bool(_ent_re.search(str_to_unicode(text)))
+def has_entities(text, encoding=None):
+    return bool(_ent_re.search(str_to_unicode(text, encoding)))
 
-def replace_tags(text, token=''):
+def replace_tags(text, token='', encoding=None):
     """Replace all markup tags found in the given text by the given token. By
     default token is a null string so it just remove all tags.
 
@@ -71,43 +71,44 @@ def replace_tags(text, token=''):
 
     Always returns a unicode string.
     """
-    return _tag_re.sub(token, str_to_unicode(text))
+    return _tag_re.sub(token, str_to_unicode(text, encoding))
 
 
-def remove_comments(text):
+def remove_comments(text, encoding=None):
     """ Remove HTML Comments. """
-    return re.sub('<!--.*?-->', u'', str_to_unicode(text), re.DOTALL)
+    return re.sub('<!--.*?-->', u'', str_to_unicode(text, encoding), re.DOTALL)
       
-def remove_tags(text, which_ones=()):
+def remove_tags(text, which_ones=(), encoding=None):
     """ Remove HTML Tags only. 
 
         which_ones -- is a tuple of which tags we want to remove.
                       if is empty remove all tags.
     """
     if which_ones:
-        tags = ['<%s>|<%s .*?>|</%s>' % (tag,tag,tag) for tag in which_ones]
+        tags = ['<%s>|<%s .*?>|</%s>' % (tag, tag, tag) for tag in which_ones]
         regex = '|'.join(tags)
     else:
         regex = '<.*?>'
     retags = re.compile(regex, re.DOTALL | re.IGNORECASE)
 
-    return retags.sub(u'', str_to_unicode(text))
+    return retags.sub(u'', str_to_unicode(text, encoding))
 
-def remove_tags_with_content(text, which_ones=()):
+def remove_tags_with_content(text, which_ones=(), encoding=None):
     """ Remove tags and its content.
         
         which_ones -- is a tuple of which tags with its content we want to remove.
                       if is empty do nothing.
     """
-    text = str_to_unicode(text)
+    text = str_to_unicode(text, encoding)
     if which_ones:
-        tags = '|'.join(['<%s.*?</%s>' % (tag,tag) for tag in which_ones])
+        tags = '|'.join(['<%s.*?</%s>' % (tag, tag) for tag in which_ones])
         retags = re.compile(tags, re.DOTALL | re.IGNORECASE)
         text = retags.sub(u'', text)
     return text
     
 
-def replace_escape_chars(text, which_ones=('\n','\t','\r'), replace_by=u''):
+def replace_escape_chars(text, which_ones=('\n', '\t', '\r'), replace_by=u'', \
+        encoding=None):
     """ Remove escape chars. Default : \\n, \\t, \\r
 
         which_ones -- is a tuple of which escape chars we want to remove.
@@ -117,10 +118,10 @@ def replace_escape_chars(text, which_ones=('\n','\t','\r'), replace_by=u''):
                       It defaults to '', so the escape chars are removed.
     """
     for ec in which_ones:
-        text = text.replace(ec, str_to_unicode(replace_by))
-    return str_to_unicode(text)
+        text = text.replace(ec, str_to_unicode(replace_by, encoding))
+    return str_to_unicode(text, encoding)
 
-def unquote_markup(text, keep=(), remove_illegal=True):
+def unquote_markup(text, keep=(), remove_illegal=True, encoding=None):
     """
     This function receives markup as a text (always a unicode string or a utf-8 encoded string) and does the following:
      - removes entities (except the ones in 'keep') from any part of it that it's not inside a CDATA
@@ -138,7 +139,7 @@ def unquote_markup(text, keep=(), remove_illegal=True):
             offset = match_e
         yield txt[offset:]
 
-    text = str_to_unicode(text)
+    text = str_to_unicode(text, encoding)
     ret_text = u''
     for fragment in _get_fragments(text, _cdata_re):
         if isinstance(fragment, basestring):

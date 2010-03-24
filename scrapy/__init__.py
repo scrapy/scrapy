@@ -18,6 +18,7 @@ from scrapy.xlib import twisted_250_monkeypatches
 from scrapy.utils.encoding import add_encoding_alias
 add_encoding_alias('gb2312', 'zh-cn')
 add_encoding_alias('cp1251', 'win-1251')
+add_encoding_alias('cp1252', 'iso8859-1', overwrite=True)
 
 # optional_features is a set containing Scrapy optional features
 optional_features = set()
