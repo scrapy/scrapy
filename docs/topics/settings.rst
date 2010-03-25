@@ -340,16 +340,6 @@ Default: ``True``
 
 Whether to collect depth stats.
 
-.. setting:: DOMAIN_SCHEDULER
-
-SPIDER_SCHEDULER
-----------------
-
-Default: ``'scrapy.contrib.spiderscheduler.FifoSpiderScheduler'``
-
-The Spider Scheduler to use. The spider scheduler returns the next spider to
-scrape.
-
 .. setting:: DOWNLOADER_DEBUG
 
 DOWNLOADER_DEBUG
@@ -896,6 +886,16 @@ A list of modules where Scrapy will look for spiders.
 Example::
 
     SPIDER_MODULES = ['mybot.spiders_prod', 'mybot.spiders_dev']
+
+.. setting:: SPIDER_SCHEDULER
+
+SPIDER_SCHEDULER
+----------------
+
+Default: ``'scrapy.contrib.spiderscheduler.FifoSpiderScheduler'``
+
+The Spider Scheduler to use. The spider scheduler returns the next spider to
+scrape.
 
 .. setting:: STATS_CLASS
 
