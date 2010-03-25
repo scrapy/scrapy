@@ -33,7 +33,7 @@ def get_base_url(response):
     """ Return the base url of the given response used to resolve relative links. """
     if response not in _baseurl_cache:
         match = BASEURL_RE.search(response.body_as_unicode()[0:4096])
-        _baseurl_cache[response] = match.group(1) if match else response.url
+        _baseurl_cache[response] = urljoin_rfc(response.url, match.group(1)) if match else response.url
     return _baseurl_cache[response]
 
 META_REFRESH_RE = re.compile(ur'<meta[^>]*http-equiv[^>]*refresh[^>]*content\s*=\s*(?P<quote>["\'])(?P<int>\d+)\s*;\s*url=(?P<url>.*?)(?P=quote)', \

@@ -29,12 +29,28 @@ class ResponseUtilsTest(unittest.TestCase):
         self.assertTrue(isinstance(body_or_str(u'text', unicode=True), unicode))
 
     def test_get_base_url(self):
-        response = HtmlResponse(url='http://example.org', body="""\
+        response = HtmlResponse(url='https://example.org', body="""\
             <html>\
             <head><title>Dummy</title><base href='http://example.org/something' /></head>\
             <body>blahablsdfsal&amp;</body>\
             </html>""")
         self.assertEqual(get_base_url(response), 'http://example.org/something')
+
+        # relative url with absolute path
+        response = HtmlResponse(url='https://example.org', body="""\
+            <html>\
+            <head><title>Dummy</title><base href='/absolutepath' /></head>\
+            <body>blahablsdfsal&amp;</body>\
+            </html>""")
+        self.assertEqual(get_base_url(response), 'https://example.org/absolutepath')
+
+        # no scheme url
+        response = HtmlResponse(url='https://example.org', body="""\
+            <html>\
+            <head><title>Dummy</title><base href='//noscheme.com/path' /></head>\
+            <body>blahablsdfsal&amp;</body>\
+            </html>""")
+        self.assertEqual(get_base_url(response), 'https://noscheme.com/path')
 
     def test_get_meta_refresh(self):
         body = """
