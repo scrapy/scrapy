@@ -50,20 +50,39 @@ class RequestExtractorTest(AbstractRequestExtractorTest):
             )
 
     def test_base_url(self):
+        reqx = BaseSgmlRequestExtractor()
+
         html = """<html><head><title>Page title<title>
         <base href="http://otherdomain.com/base/" />
         <body><p><a href="item/12.html">Item 12</a></p>
         </body></html>"""
-        response = HtmlResponse("http://example.org/somepage/index.html",
-                    body=html)
-        reqx = BaseSgmlRequestExtractor()
+        response = HtmlResponse("https://example.org/p/index.html", body=html)
+        reqs = reqx.extract_requests(response)
+        self.failUnless(self._requests_equals( \
+            [Request('http://otherdomain.com/base/item/12.html', \
+                    meta={'link_text': 'Item 12'})], reqs), reqs)
 
-        self.failUnless(
-            self._requests_equals(reqx.extract_requests(response),
-                    [ Request('http://otherdomain.com/base/item/12.html',
-                             meta={'link_text': 'Item 12'}) ]
-                    )
-            )
+        # base url is an absolute path and relative to host
+        html = """<html><head><title>Page title<title>
+        <base href="/" />
+        <body><p><a href="item/12.html">Item 12</a></p>
+        </body></html>"""
+        response = HtmlResponse("https://example.org/p/index.html", body=html)
+        reqs = reqx.extract_requests(response)
+        self.failUnless(self._requests_equals( \
+            [Request('https://example.org/item/12.html', \
+                    meta={'link_text': 'Item 12'})], reqs), reqs)
+
+        # base url has no scheme
+        html = """<html><head><title>Page title<title>
+        <base href="//noscheme.com/base/" />
+        <body><p><a href="item/12.html">Item 12</a></p>
+        </body></html>"""
+        response = HtmlResponse("https://example.org/p/index.html", body=html)
+        reqs = reqx.extract_requests(response)
+        self.failUnless(self._requests_equals( \
+            [Request('https://noscheme.com/base/item/12.html', \
+                    meta={'link_text': 'Item 12'})], reqs), reqs)
 
     def test_extraction_encoding(self):
         #TODO: use own fixtures

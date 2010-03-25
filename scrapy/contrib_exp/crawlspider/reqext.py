@@ -30,7 +30,7 @@ class BaseSgmlRequestExtractor(FixedSGMLParser):
         self.feed(response_text)
         self.close()
 
-        base_url = self.base_url if self.base_url else response_url
+        base_url = urljoin_rfc(response_url, self.base_url) if self.base_url else response_url
         self._make_absolute_urls(base_url, response_encoding)
         self._fix_link_text_encoding(response_encoding)
 

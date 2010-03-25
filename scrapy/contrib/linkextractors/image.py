@@ -51,8 +51,7 @@ class HTMLImageLinkExtractor(object):
     def extract_links(self, response):
         xs = HtmlXPathSelector(response)
         base_url = xs.select('//base/@href').extract()
-        base_url = unicode_to_str(base_url[0], response.encoding) if base_url \
-            else unicode_to_str(response.url, response.encoding)
+        base_url = urljoin_rfc(response.url, base_url[0]) if base_url else response.url
 
         links = []
         for location in self.locations:

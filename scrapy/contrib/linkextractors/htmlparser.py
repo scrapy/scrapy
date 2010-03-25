@@ -26,7 +26,7 @@ class HtmlParserLinkExtractor(HTMLParser):
         links = unique_list(self.links, key=lambda link: link.url) if self.unique else self.links
 
         ret = []
-        base_url = self.base_url if self.base_url else response_url
+        base_url = urljoin_rfc(response_url, self.base_url) if self.base_url else response_url
         for link in links:
             link.url = urljoin_rfc(base_url, link.url, response_encoding)
             link.url = safe_url_string(link.url, response_encoding)
