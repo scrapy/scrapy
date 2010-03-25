@@ -438,6 +438,52 @@ The class used to detect and filter duplicate requests.
 The default (``RequestFingerprintDupeFilter``) filters based on request fingerprint
 (using ``scrapy.utils.request.request_fingerprint``) and grouping per domain.
 
+.. setting:: ENCODING_ALIASES
+
+ENCODING_ALIASES
+----------------
+
+Default: ``{}``
+
+A mapping of custom encoding aliases for your project, where the keys are the
+aliases (and must be lower case) and the values are the encodings they map to.
+
+This setting extends the :setting:`ENCODING_ALIASES_BASE` setting which
+contains some default mappings.
+
+.. setting:: ENCODING_ALIASES_BASE
+
+ENCODING_ALIASES_BASE
+---------------------
+
+Default::
+
+    {
+        'gb2312': 'zh-cn',
+        'cp1251': 'win-1251',
+        'macintosh' : 'mac-roman',
+        'x-sjis': 'shift-jis',
+        'iso-8859-1': 'cp1252',
+        'iso8859-1': 'cp1252',
+        '8859': 'cp1252',
+        'cp819': 'cp1252',
+        'latin': 'cp1252',
+        'latin1': 'cp1252',
+        'latin_1': 'cp1252',
+        'l1': 'cp1252',
+    }
+
+The default encoding aliases defined in Scrapy. Don't override this setting in
+your project, override :setting:`ENCODING_ALIASES` instead.
+
+The reason why `ISO-8859-1`_ (and all its aliases) are mapped to `CP1252`_ is
+due to a well known browser hack. For more information see: `Character
+encodings in HTML`_.
+
+.. _ISO-8859-1: http://en.wikipedia.org/wiki/ISO/IEC_8859-1
+.. _CP1252: http://en.wikipedia.org/wiki/Windows-1252
+.. _Character encodings in HTML: http://www.gnu.org/software/wget/manual/wget.html
+
 .. setting:: EXTENSIONS
 
 EXTENSIONS

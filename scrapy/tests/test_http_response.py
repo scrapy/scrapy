@@ -2,6 +2,7 @@ import unittest
 import weakref
 
 from scrapy.http import Response, TextResponse, HtmlResponse, XmlResponse, Headers
+from scrapy.utils.encoding import resolve_encoding
 from scrapy.conf import settings
 
 
@@ -112,9 +113,12 @@ class BaseResponseTest(unittest.TestCase):
             body_str = body
 
         assert isinstance(response.body, str)
-        self.assertEqual(response.encoding, encoding)
+        self._assert_response_encoding(response, encoding)
         self.assertEqual(response.body, body_str)
         self.assertEqual(response.body_as_unicode(), body_unicode)
+
+    def _assert_response_encoding(self, response, encoding):
+        self.assertEqual(response.encoding, resolve_encoding(encoding))
 
 class ResponseText(BaseResponseTest):
 
@@ -134,14 +138,14 @@ class TextResponseTest(BaseResponseTest):
 
         assert isinstance(r2, self.response_class)
         self.assertEqual(r2.url, "http://www.example.com/other")
-        self.assertEqual(r2.encoding, "cp852")
+        self._assert_response_encoding(r2, "cp852")
         self.assertEqual(r3.url, "http://www.example.com/other")
-        self.assertEqual(r3.encoding, "latin1")
+        self.assertEqual(r3._declared_encoding(), "latin1")
 
     def test_unicode_url(self):
         # instantiate with unicode url without encoding (should set default encoding)
         resp = self.response_class(u"http://www.example.com/")
-        self.assertEqual(resp.encoding, settings['DEFAULT_RESPONSE_ENCODING'])
+        self._assert_response_encoding(resp, settings['DEFAULT_RESPONSE_ENCODING'])
 
         # make sure urls are converted to str
         resp = self.response_class(url=u"http://www.example.com/", encoding='utf-8')
@@ -175,18 +179,18 @@ class TextResponseTest(BaseResponseTest):
         r2 = self.response_class("http://www.example.com", encoding='utf-8', body=u"\xa3")
         r3 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=iso-8859-1"]}, body="\xa3")
         r4 = self.response_class("http://www.example.com", body="\xa2\xa3")
-        r5 = self.response_class("http://www.example.com",
-        headers={"Content-type": ["text/html; charset=None"]}, body="\xc2\xa3")
+        r5 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=None"]}, body="\xc2\xa3")
 
-        self.assertEqual(r1.headers_encoding(), "utf-8")
-        self.assertEqual(r2.headers_encoding(), None)
-        self.assertEqual(r2.encoding, 'utf-8')
-        self.assertEqual(r3.headers_encoding(), "iso-8859-1")
-        self.assertEqual(r3.encoding, 'iso-8859-1')
-        self.assertEqual(r4.headers_encoding(), None)
-        self.assertEqual(r5.headers_encoding(), None)
-        self.assertEqual(r5.encoding, "utf-8")
-        assert r4.body_encoding() is not None and r4.body_encoding() != 'ascii'
+        self.assertEqual(r1._headers_encoding(), "utf-8")
+        self.assertEqual(r2._headers_encoding(), None)
+        self.assertEqual(r2._declared_encoding(), 'utf-8')
+        self._assert_response_encoding(r2, 'utf-8')
+        self.assertEqual(r3._headers_encoding(), "iso-8859-1")
+        self.assertEqual(r3._declared_encoding(), "iso-8859-1")
+        self.assertEqual(r4._headers_encoding(), None)
+        self.assertEqual(r5._headers_encoding(), None)
+        self._assert_response_encoding(r5, "utf-8")
+        assert r4._body_inferred_encoding() is not None and r4._body_inferred_encoding() != 'ascii'
         self._assert_response_values(r1, 'utf-8', u"\xa3")
         self._assert_response_values(r2, 'utf-8', u"\xa3")
         self._assert_response_values(r3, 'iso-8859-1', u"\xa3")

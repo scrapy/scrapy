@@ -18,9 +18,6 @@ class XmlResponse(TextResponse):
     _encoding_re  = _template % ('encoding', r'(?P<charset>[\w-]+)')
     XMLDECL_RE  = re.compile(r'<\?xml\s.*?%s' % _encoding_re, re.I)
 
-    def body_encoding(self):
-        return self._body_declared_encoding() or super(XmlResponse, self).body_encoding()
-
     @memoizemethod_noargs
     def _body_declared_encoding(self):
         chunk = self.body[:5000]

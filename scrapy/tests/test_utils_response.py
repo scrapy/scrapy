@@ -29,7 +29,7 @@ class ResponseUtilsTest(unittest.TestCase):
         self.assertTrue(isinstance(body_or_str(u'text', unicode=True), unicode))
 
     def test_get_base_url(self):
-        response = Response(url='http://example.org', body="""\
+        response = HtmlResponse(url='http://example.org', body="""\
             <html>\
             <head><title>Dummy</title><base href='http://example.org/something' /></head>\
             <body>blahablsdfsal&amp;</body>\
@@ -42,17 +42,17 @@ class ResponseUtilsTest(unittest.TestCase):
             <head><title>Dummy</title><meta http-equiv="refresh" content="5;url=http://example.org/newpage" /></head>
             <body>blahablsdfsal&amp;</body>
             </html>"""
-        response = Response(url='http://example.org', body=body)
+        response = TextResponse(url='http://example.org', body=body)
         self.assertEqual(get_meta_refresh(response), (5, 'http://example.org/newpage'))
 
         # refresh without url should return (None, None)
         body = """<meta http-equiv="refresh" content="5" />"""
-        response = Response(url='http://example.org', body=body)
+        response = TextResponse(url='http://example.org', body=body)
         self.assertEqual(get_meta_refresh(response), (None, None))
 
         body = """<meta http-equiv="refresh" content="5;
             url=http://example.org/newpage" /></head>"""
-        response = Response(url='http://example.org', body=body)
+        response = TextResponse(url='http://example.org', body=body)
         self.assertEqual(get_meta_refresh(response), (5, 'http://example.org/newpage'))
 
         # meta refresh in multiple lines
@@ -60,17 +60,17 @@ class ResponseUtilsTest(unittest.TestCase):
                <META
                HTTP-EQUIV="Refresh"
                CONTENT="1; URL=http://example.org/newpage">"""
-        response = Response(url='http://example.org', body=body)
+        response = TextResponse(url='http://example.org', body=body)
         self.assertEqual(get_meta_refresh(response), (1, 'http://example.org/newpage'))
 
         # entities in the redirect url
         body = """<meta http-equiv="refresh" content="3; url=&#39;http://www.example.com/other&#39;">"""
-        response = Response(url='http://example.com', body=body)
+        response = TextResponse(url='http://example.com', body=body)
         self.assertEqual(get_meta_refresh(response), (3, 'http://www.example.com/other'))
 
         # relative redirects
         body = """<meta http-equiv="refresh" content="3; url=other.html">"""
-        response = Response(url='http://example.com/page/this.html', body=body)
+        response = TextResponse(url='http://example.com/page/this.html', body=body)
         self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/page/other.html'))
 
         # non-standard encodings (utf-16)
@@ -81,7 +81,7 @@ class ResponseUtilsTest(unittest.TestCase):
 
         # non-ascii chars in the url (default encoding - utf8)
         body = """<meta http-equiv="refresh" content="3; url=http://example.com/to\xc2\xa3">"""
-        response = Response(url='http://example.com', body=body)
+        response = TextResponse(url='http://example.com', body=body)
         self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/to%C2%A3'))
 
         # non-ascii chars in the url (custom encoding - latin1)
@@ -89,13 +89,8 @@ class ResponseUtilsTest(unittest.TestCase):
         response = TextResponse(url='http://example.com', body=body, encoding='latin1')
         self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/to%C2%A3'))
 
-        # wrong encodings (possibly caused by truncated chunks)
-        body = """<meta http-equiv="refresh" content="3; url=http://example.com/this\xc2_THAT">"""
-        response = Response(url='http://example.com', body=body)
-        self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/thisTHAT'))
-
         # responses without refresh tag should return None None
-        response = Response(url='http://example.org')
+        response = TextResponse(url='http://example.org')
         self.assertEqual(get_meta_refresh(response), (None, None))
         response = TextResponse(url='http://example.org')
         self.assertEqual(get_meta_refresh(response), (None, None))

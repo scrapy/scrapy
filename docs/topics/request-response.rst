@@ -485,23 +485,11 @@ TextResponse objects
     :class:`TextResponse` objects support the following methods in addition to
     the standard :class:`Response` ones:
 
-    .. method:: TextResponse.headers_encoding()
-
-        Returns a string with the encoding declared in the headers (ie. the
-        Content-Type HTTP header).
-
-    .. method:: TextResponse.body_encoding()
- 
-        Returns a string with the encoding of the body, either declared or inferred
-        from its contents. The body encoding declaration is implemented in
-        :class:`TextResponse` subclasses such as: :class:`HtmlResponse` or
-        :class:`XmlResponse`.
- 
     .. method:: TextResponse.body_as_unicode()
  
         Returns the body of the response as unicode. This is equivalent to::
  
-            response.body.encode(response.encoding)
+            response.body.decode(response.encoding)
  
         But **not** equivalent to::
         

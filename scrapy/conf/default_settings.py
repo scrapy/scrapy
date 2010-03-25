@@ -71,6 +71,23 @@ DOWNLOADER_STATS = True
 
 DUPEFILTER_CLASS = 'scrapy.contrib.dupefilter.RequestFingerprintDupeFilter'
 
+ENCODING_ALIASES = {}
+
+ENCODING_ALIASES_BASE = {
+    'zh-cn': 'gb2312',
+    'win-1251': 'cp1251',
+    'macintosh' : 'mac-roman',
+    'x-sjis': 'shift-jis',
+    'iso-8859-1': 'cp1252',
+    'iso8859-1': 'cp1252',
+    '8859': 'cp1252',
+    'cp819': 'cp1252',
+    'latin': 'cp1252',
+    'latin1': 'cp1252',
+    'latin_1': 'cp1252',
+    'l1': 'cp1252',
+}
+
 EXTENSIONS = {}
 
 EXTENSIONS_BASE = {

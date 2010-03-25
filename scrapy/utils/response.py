@@ -18,7 +18,8 @@ from scrapy.xlib.BeautifulSoup import BeautifulSoup
 from scrapy.http import Response, HtmlResponse
 
 def body_or_str(obj, unicode=True):
-    assert isinstance(obj, (Response, basestring)), "obj must be Response or basestring, not %s" % type(obj).__name__
+    assert isinstance(obj, (Response, basestring)), \
+        "obj must be Response or basestring, not %s" % type(obj).__name__
     if isinstance(obj, Response):
         return obj.body_as_unicode() if unicode else obj.body
     elif isinstance(obj, str):
@@ -26,16 +27,17 @@ def body_or_str(obj, unicode=True):
     else:
         return obj if unicode else obj.encode('utf-8')
 
-BASEURL_RE = re.compile(r'<base\s+href\s*=\s*[\"\']\s*([^\"\'\s]+)\s*[\"\']', re.I)
+BASEURL_RE = re.compile(ur'<base\s+href\s*=\s*[\"\']\s*([^\"\'\s]+)\s*[\"\']', re.I)
 _baseurl_cache = weakref.WeakKeyDictionary()
 def get_base_url(response):
     """ Return the base url of the given response used to resolve relative links. """
     if response not in _baseurl_cache:
-        match = BASEURL_RE.search(response.body[0:4096])
+        match = BASEURL_RE.search(response.body_as_unicode()[0:4096])
         _baseurl_cache[response] = match.group(1) if match else response.url
     return _baseurl_cache[response]
 
-META_REFRESH_RE = re.compile(ur'<meta[^>]*http-equiv[^>]*refresh[^>]*content\s*=\s*(?P<quote>["\'])(?P<int>\d+)\s*;\s*url=(?P<url>.*?)(?P=quote)', re.DOTALL | re.IGNORECASE)
+META_REFRESH_RE = re.compile(ur'<meta[^>]*http-equiv[^>]*refresh[^>]*content\s*=\s*(?P<quote>["\'])(?P<int>\d+)\s*;\s*url=(?P<url>.*?)(?P=quote)', \
+    re.DOTALL | re.IGNORECASE)
 _metaref_cache = weakref.WeakKeyDictionary()
 def get_meta_refresh(response):
     """Parse the http-equiv parameter of the HTML meta element from the given
@@ -46,9 +48,7 @@ def get_meta_refresh(response):
     If no meta redirect is found, (None, None) is returned.
     """
     if response not in _metaref_cache:
-        encoding = getattr(response, 'encoding', None) or 'utf-8'
-        body_chunk = remove_entities(unicode(response.body[0:4096], encoding, \
-            errors='ignore'))
+        body_chunk = remove_entities(response.body_as_unicode()[0:4096])
         match = META_REFRESH_RE.search(body_chunk)
         if match:
             interval = int(match.group('int'))
