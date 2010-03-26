@@ -146,7 +146,7 @@ how you :ref:`configure the downloader middlewares
             >>> extensions.load()
             >>> print extensions.enabled
             {'CoreStats': <scrapy.contrib.corestats.CoreStats object at 0x9e272ac>,
-             'WebConsoke': <scrapy.management.telnet.TelnetConsole instance at 0xa05670c>,
+             'WebConsole': <scrapy.management.telnet.TelnetConsole instance at 0xa05670c>,
             ...
 
     .. attribute:: disabled
