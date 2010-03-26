@@ -64,13 +64,15 @@ def unique(list_, key=lambda x: x):
     return result
 
 
-def str_to_unicode(text, encoding='utf-8'):
+def str_to_unicode(text, encoding=None):
     """Return the unicode representation of text in the given encoding. Unlike
     .encode(encoding) this function can be applied directly to a unicode
     object without the risk of double-decoding problems (which can happen if
     you don't use the default 'ascii' encoding)
     """
     
+    if encoding is None:
+        encoding = 'utf-8'
     if isinstance(text, str):
         return text.decode(encoding)
     elif isinstance(text, unicode):
@@ -78,13 +80,15 @@ def str_to_unicode(text, encoding='utf-8'):
     else:
         raise TypeError('str_to_unicode must receive a str or unicode object, got %s' % type(text).__name__)
 
-def unicode_to_str(text, encoding='utf-8'):
+def unicode_to_str(text, encoding=None):
     """Return the str representation of text in the given encoding. Unlike
     .encode(encoding) this function can be applied directly to a str
     object without the risk of double-decoding problems (which can happen if
     you don't use the default 'ascii' encoding)
     """
 
+    if encoding is None:
+        encoding = 'utf-8'
     if isinstance(text, unicode):
         return text.encode(encoding)
     elif isinstance(text, str):
@@ -216,3 +220,28 @@ def get_func_args(func):
     else:
         raise TypeError('%s is not callable' % type(func))
     return func_args
+
+
+def equal_attributes(obj1, obj2, attributes):
+    """Compare two objects attributes"""
+    # not attributes given return False by default
+    if not attributes:
+        return False
+
+    for attr in attributes:
+        # support callables like itemgetter
+        if callable(attr):
+            if not attr(obj1) == attr(obj2):
+                return False
+        else:
+            # check that objects has attribute
+            if not hasattr(obj1, attr):
+                return False
+            if not hasattr(obj2, attr):
+                return False
+            # compare object attributes
+            if not getattr(obj1, attr) == getattr(obj2, attr):
+                return False
+    # all attributes equal
+    return True
+

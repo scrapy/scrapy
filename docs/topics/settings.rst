@@ -340,16 +340,6 @@ Default: ``True``
 
 Whether to collect depth stats.
 
-.. setting:: DOMAIN_SCHEDULER
-
-SPIDER_SCHEDULER
-----------------
-
-Default: ``'scrapy.contrib.spiderscheduler.FifoSpiderScheduler'``
-
-The Spider Scheduler to use. The spider scheduler returns the next spider to
-scrape.
-
 .. setting:: DOWNLOADER_DEBUG
 
 DOWNLOADER_DEBUG
@@ -418,6 +408,15 @@ supported.  Example::
 
     DOWNLOAD_DELAY = 0.25    # 250 ms of delay 
 
+This setting is also affected by the :setting:`RANDOMIZE_DOWNLOAD_DELAY`
+setting (which is enabled by default). By default, Scrapy doesn't wait a fixed
+amount of time between requests, but uses a random interval between 0.5 and 1.5
+* :setting:`DOWNLOAD_DELAY`.
+
+Another way to change the download delay (per spider, instead of globally) is
+by using the ``download_delay`` spider attribute, which takes more precedence
+than this setting.
+
 .. setting:: DOWNLOAD_TIMEOUT
 
 DOWNLOAD_TIMEOUT
@@ -438,6 +437,52 @@ The class used to detect and filter duplicate requests.
 
 The default (``RequestFingerprintDupeFilter``) filters based on request fingerprint
 (using ``scrapy.utils.request.request_fingerprint``) and grouping per domain.
+
+.. setting:: ENCODING_ALIASES
+
+ENCODING_ALIASES
+----------------
+
+Default: ``{}``
+
+A mapping of custom encoding aliases for your project, where the keys are the
+aliases (and must be lower case) and the values are the encodings they map to.
+
+This setting extends the :setting:`ENCODING_ALIASES_BASE` setting which
+contains some default mappings.
+
+.. setting:: ENCODING_ALIASES_BASE
+
+ENCODING_ALIASES_BASE
+---------------------
+
+Default::
+
+    {
+        'gb2312': 'zh-cn',
+        'cp1251': 'win-1251',
+        'macintosh' : 'mac-roman',
+        'x-sjis': 'shift-jis',
+        'iso-8859-1': 'cp1252',
+        'iso8859-1': 'cp1252',
+        '8859': 'cp1252',
+        'cp819': 'cp1252',
+        'latin': 'cp1252',
+        'latin1': 'cp1252',
+        'latin_1': 'cp1252',
+        'l1': 'cp1252',
+    }
+
+The default encoding aliases defined in Scrapy. Don't override this setting in
+your project, override :setting:`ENCODING_ALIASES` instead.
+
+The reason why `ISO-8859-1`_ (and all its aliases) are mapped to `CP1252`_ is
+due to a well known browser hack. For more information see: `Character
+encodings in HTML`_.
+
+.. _ISO-8859-1: http://en.wikipedia.org/wiki/ISO/IEC_8859-1
+.. _CP1252: http://en.wikipedia.org/wiki/Windows-1252
+.. _Character encodings in HTML: http://www.gnu.org/software/wget/manual/wget.html
 
 .. setting:: EXTENSIONS
 
@@ -517,7 +562,16 @@ LOG_ENABLED
 
 Default: ``True``
 
-Enable logging.
+Whether to enable logging.
+
+.. setting:: LOG_ENCODING
+
+LOG_ENCODING
+------------
+
+Default: ``'utf-8'``
+
+The encoding to use for logging.
 
 .. setting:: LOG_FILE
 
@@ -677,6 +731,27 @@ Example::
 
     NEWSPIDER_MODULE = 'mybot.spiders_dev'
 
+.. setting:: RANDOMIZE_DOWNLOAD_DELAY
+
+RANDOMIZE_DOWNLOAD_DELAY
+------------------------
+
+Default: ``True``
+
+If enabled, Scrapy will wait a random amount of time (between 0.5 and 1.5
+* :setting:`DOWNLOAD_DELAY`) while fetching requests from the same
+spider.
+
+This randomization decreases the chance of the crawler being detected (and
+subsequently blocked) by sites which analyze requests looking for statistically
+significant similarities in the time between their times.
+
+The randomization policy is the same used by `wget`_ ``--random-wait`` option.
+
+If :setting:`DOWNLOAD_DELAY` is zero (default) this option has no effect.
+
+.. _wget: http://www.gnu.org/software/wget/manual/wget.html
+
 .. setting:: REDIRECT_MAX_TIMES
 
 REDIRECT_MAX_TIMES
@@ -773,7 +848,7 @@ The scheduler to use for crawling.
 SCHEDULER_ORDER
 ---------------
 
-Default: ``'BFO'``
+Default: ``'DFO'``
 
 Scope: ``scrapy.core.scheduler``
 
@@ -857,6 +932,16 @@ A list of modules where Scrapy will look for spiders.
 Example::
 
     SPIDER_MODULES = ['mybot.spiders_prod', 'mybot.spiders_dev']
+
+.. setting:: SPIDER_SCHEDULER
+
+SPIDER_SCHEDULER
+----------------
+
+Default: ``'scrapy.contrib.spiderscheduler.FifoSpiderScheduler'``
+
+The Spider Scheduler to use. The spider scheduler returns the next spider to
+scrape.
 
 .. setting:: STATS_CLASS
 
