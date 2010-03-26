@@ -482,7 +482,7 @@ encodings in HTML`_.
 
 .. _ISO-8859-1: http://en.wikipedia.org/wiki/ISO/IEC_8859-1
 .. _CP1252: http://en.wikipedia.org/wiki/Windows-1252
-.. _Character encodings in HTML: http://www.gnu.org/software/wget/manual/wget.html
+.. _Character encodings in HTML: http://en.wikipedia.org/wiki/Character_encodings_in_HTML
 
 .. setting:: EXTENSIONS
 
