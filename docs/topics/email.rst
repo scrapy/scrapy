@@ -5,14 +5,17 @@ Sending email
 =============
 
 .. module:: scrapy.mail
-   :synopsis: Helpers to easily send e-mail.
+   :synopsis: Email sending facility
 
 Although Python makes sending e-mail relatively easy via the `smtplib`_
-library, Scrapy provides its own class for sending emails which is very easy to
-use and it's implemented using `Twisted non-blocking IO`_, to avoid affecting
-the crawling performance.
+library, Scrapy provides its own facility for sending emails which is very easy
+to use and it's implemented using `Twisted non-blocking IO`_, to avoid
+interfering with the non-blocking IO of the crawler.
+
+It's also very easy to configure by just configuring a few settings.
 
 .. _smtplib: http://docs.python.org/library/smtplib.html
+.. _Twisted non-blocking IO: http://twistedmatrix.com/projects/core/documentation/howto/async.html
 
 It also has built-in support for sending attachments.
 
@@ -34,30 +37,45 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
 
 .. class:: MailSender(smtphost, mailfrom)
 
-    ``smtphost`` is a string with the SMTP host to use for sending the emails.
-    If omitted, :setting:`MAIL_HOST` will be used.
+    :param smtphost: the SMTP host to use for sending the emails. If omitted,
+      :setting:`MAIL_HOST` setting will be used.
+    :type smtphost: str
 
-    ``mailfrom`` is a string with the email address to use for sending messages
-    (in the ``From:`` header). If omitted, :setting:`MAIL_FROM` will be used.
+    :param mailfrom: the address used to send emails (in the ``From:`` header).
+      If omitted, :setting:`MAIL_FROM` setting will be used.
+    :type mailfrom: str
 
-.. method:: MailSender.send(to, subject, body, cc=None, attachs=())
+    .. method:: send(to, subject, body, cc=None, attachs=())
 
-    Send mail to the given recipients
+        Send email to the given recipients
 
-    ``to`` is a list of email recipients
+        :param to: the email recipients
+        :type to: list
 
-    ``subject`` is a string with the subject of the message
+        :param subject: the subject of the email
+        :type subject: str
 
-    ``cc`` is a list of emails to CC 
+        :param cc: the emails to CC
+        :type cc: list
 
-    ``body`` is a string with the body of the message
+        :param body: the email body
+        :type body: str
 
-    ``attachs`` is an iterable of tuples (attach_name, mimetype, file_object)
-    where:
+        :param attachs: an iterable of tuples ``(attach_name, mimetype,
+          file_object)`` where  ``attach_name`` is a string with the name will
+          appear on the emails attachment, ``mimetype`` is the mimetype of the
+          attachment and ``file_object`` is a readable file object with the
+          contents of the attachment
+        :type attachs: iterable
 
-        ``attach_name`` is a string with the name will appear on the emails attachment
-        ``mimetype`` is the mimetype of the attachment
-        ``file_object`` is a readable file object
 
+MailSender settings
+===================
 
-.. _Twisted non-blocking IO: http://twistedmatrix.com/projects/core/documentation/howto/async.html
+These settings define the default constructor values of the :class:`MailSender`
+class, and can be used to configure email notifications in your project without
+writing any code (for those extensions that use the :class:`MailSender` class):
+
+* :setting:`MAIL_FROM`
+* :setting:`MAIL_HOST`
+

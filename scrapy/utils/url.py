@@ -130,7 +130,8 @@ def add_or_replace_parameter(url, name, new_value, sep='&', url_is_quoted=False)
                                name+'='+new_value)
     return next_url
 
-def canonicalize_url(url, keep_blank_values=True, keep_fragments=False):
+def canonicalize_url(url, keep_blank_values=True, keep_fragments=False, \
+        encoding=None):
     """Canonicalize the given url by applying the following procedures:
 
     - sort query arguments, first by key, then by value
@@ -147,7 +148,7 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False):
     For examples see the tests in scrapy.tests.test_utils_url
     """
 
-    url = unicode_to_str(url)
+    url = unicode_to_str(url, encoding)
     scheme, netloc, path, params, query, fragment = urlparse.urlparse(url)
     keyvals = cgi.parse_qsl(query, keep_blank_values)
     keyvals.sort()
