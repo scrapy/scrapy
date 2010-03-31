@@ -3,7 +3,6 @@ import weakref
 
 from scrapy.http import Response, TextResponse, HtmlResponse, XmlResponse, Headers
 from scrapy.utils.encoding import resolve_encoding
-from scrapy.conf import settings
 
 
 class BaseResponseTest(unittest.TestCase):
@@ -145,7 +144,7 @@ class TextResponseTest(BaseResponseTest):
     def test_unicode_url(self):
         # instantiate with unicode url without encoding (should set default encoding)
         resp = self.response_class(u"http://www.example.com/")
-        self._assert_response_encoding(resp, settings['DEFAULT_RESPONSE_ENCODING'])
+        self._assert_response_encoding(resp, self.response_class._DEFAULT_ENCODING)
 
         # make sure urls are converted to str
         resp = self.response_class(url=u"http://www.example.com/", encoding='utf-8')
@@ -198,6 +197,32 @@ class TextResponseTest(BaseResponseTest):
         # TextResponse (and subclasses) must be passed a encoding when instantiating with unicode bodies
         self.assertRaises(TypeError, self.response_class, "http://www.example.com", body=u"\xa3")
 
+    def test_declared_encoding_invalid(self):
+        """Check that unknown declared encodings are ignored"""
+        r = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=UKNOWN"]}, body="\xc2\xa3")
+        self.assertEqual(r._declared_encoding(), None)
+        self._assert_response_values(r, 'utf-8', u"\xa3")
+
+    def test_utf16(self):
+        """Test utf-16 because UnicodeDammit is known to have problems with"""
+        r = self.response_class("http://www.example.com", body='\xff\xfeh\x00i\x00', encoding='utf-16')
+        self._assert_response_values(r, 'utf-16', u"hi")
+
+    def test_invalid_utf8_encoded_body_with_valid_utf8_BOM(self):
+        r6 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=utf-8"]}, body="\xef\xbb\xbfWORD\xe3\xab")
+        self.assertEqual(r6.encoding, 'utf-8')
+        self.assertEqual(r6.body_as_unicode(), u'\ufeffWORD\ufffd')
+
+    def test_replace_wrong_encoding(self):
+        """Test invalid chars are replaced properly"""
+        # XXX: Policy for replacing invalid chars may change without prior notice
+        r = self.response_class("http://www.example.com", encoding='utf-8', body='PREFIX\xe3\xabSUFFIX')
+        assert u'\ufffd' in r.body_as_unicode(), repr(r.body_as_unicode())
+        # FIXME: This test should pass once we stop using BeautifulSoup's UnicodeDammit in TextResponse
+        #r = self.response_class("http://www.example.com", body='PREFIX\xe3\xabSUFFIX')
+        #assert u'\ufffd' in r.body_as_unicode(), repr(r.body_as_unicode())
+
+
 class HtmlResponseTest(TextResponseTest):
 
     response_class = HtmlResponse
@@ -239,7 +264,7 @@ class XmlResponseTest(TextResponseTest):
 
         body = "<xml></xml>"
         r1 = self.response_class("http://www.example.com", body=body)
-        self._assert_response_values(r1, settings['DEFAULT_RESPONSE_ENCODING'], body)
+        self._assert_response_values(r1, self.response_class._DEFAULT_ENCODING, body)
 
         body = """<?xml version="1.0" encoding="iso-8859-1"?><xml></xml>"""
         r2 = self.response_class("http://www.example.com", body=body)
