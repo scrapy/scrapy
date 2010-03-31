@@ -215,9 +215,11 @@ class TextResponseTest(BaseResponseTest):
 
     def test_replace_wrong_encoding(self):
         """Test invalid chars are replaced properly"""
-        # XXX: Policy for replacing invalid chars may change without prior notice
         r = self.response_class("http://www.example.com", encoding='utf-8', body='PREFIX\xe3\xabSUFFIX')
+        # XXX: Policy for replacing invalid chars may suffer minor variations
+        # but it should always contain the unicode replacement char (u'\ufffd')
         assert u'\ufffd' in r.body_as_unicode(), repr(r.body_as_unicode())
+
         # FIXME: This test should pass once we stop using BeautifulSoup's UnicodeDammit in TextResponse
         #r = self.response_class("http://www.example.com", body='PREFIX\xe3\xabSUFFIX')
         #assert u'\ufffd' in r.body_as_unicode(), repr(r.body_as_unicode())
