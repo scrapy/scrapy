@@ -22,8 +22,8 @@ class TestItem(Item):
     price = Field()
 
 class TestSpider(BaseSpider):
-    domain_name = "scrapytest.org"
-    extra_domain_names = ["localhost"]
+    name = "scrapytest.org"
+    allowed_domains = ["scrapytest.org", "localhost"]
     start_urls = ['http://localhost']
 
     itemurl_re = re.compile("item\d+.html")
@@ -68,7 +68,7 @@ def start_test_site():
 class CrawlingSession(object):
 
     def __init__(self):
-        self.domain = 'scrapytest.org'
+        self.name = 'scrapytest.org'
         self.spider = None
         self.respplug = []
         self.reqplug = []
@@ -139,7 +139,7 @@ class EngineTest(unittest.TestCase):
         Check the spider is loaded and located properly via the SpiderLocator
         """
         assert session.spider is not None
-        self.assertEqual(session.spider.domain_name, session.domain)
+        self.assertEqual(session.spider.name, session.name)
 
     def test_visited_urls(self):
         """

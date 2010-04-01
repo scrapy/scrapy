@@ -102,8 +102,8 @@ to parse the contents of those pages to extract :ref:`items <topics-items>`.
 To create a Spider, you must subclass :class:`scrapy.spider.BaseSpider`, and
 define the three main, mandatory, attributes:
 
-* :attr:`~scrapy.spider.BaseSpider.domain_name`: identifies the Spider. It must
-  be unique, that is, you can't set the same domain name for different Spiders.
+* :attr:`~scrapy.spider.BaseSpider.name`: identifies the Spider. It must be
+  unique, that is, you can't set the same name for different Spiders.
 
 * :attr:`~scrapy.spider.BaseSpider.start_urls`: is a list of URLs where the
   Spider will begin to crawl from.  So, the first pages downloaded will be those
@@ -128,7 +128,8 @@ This is the code for our first Spider, save it in a file named
    from scrapy.spider import BaseSpider
 
    class DmozSpider(BaseSpider):
-       domain_name = "dmoz.org"
+       name = "dmoz.org"
+       allowed_domains = ["dmoz.org"]
        start_urls = [
            "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
            "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
@@ -354,7 +355,8 @@ Let's add this code to our spider::
    from scrapy.selector import HtmlXPathSelector
 
    class DmozSpider(BaseSpider):
-      domain_name = "dmoz.org"
+      name = "dmoz.org"
+      allowed_domains = ["dmoz.org"]
       start_urls = [
           "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
           "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
@@ -398,7 +400,8 @@ scraped so far, the code for our Spider should be like this::
    from dmoz.items import DmozItem
 
    class DmozSpider(BaseSpider):
-      domain_name = "dmoz.org"
+      name = "dmoz.org"
+      allowed_domains = ["dmoz.org"]
       start_urls = [
           "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
           "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"

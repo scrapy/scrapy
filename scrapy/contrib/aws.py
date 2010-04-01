@@ -20,7 +20,7 @@ class AWSMiddleware(object):
 
     def process_request(self, request, spider):
         hostname = urlparse_cached(request).hostname
-        if spider.domain_name == 's3.amazonaws.com' \
+        if spider.name == 's3.amazonaws.com' \
                 or (hostname and hostname.endswith('s3.amazonaws.com')):
             request.headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", \
                 time.gmtime())

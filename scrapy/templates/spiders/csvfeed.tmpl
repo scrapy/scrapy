@@ -2,8 +2,9 @@ from scrapy.contrib.spiders import CSVFeedSpider
 from $project_name.items import ${ProjectName}Item
 
 class $classname(CSVFeedSpider):
-    domain_name = '$site'
-    start_urls = ['http://www.$site/feed.csv']
+    name = '$name'
+    allowed_domains = ['$domain']
+    start_urls = ['http://www.$domain/feed.csv']
     # headers = ['id', 'name', 'description', 'image_link']
     # delimiter = '\t'
 

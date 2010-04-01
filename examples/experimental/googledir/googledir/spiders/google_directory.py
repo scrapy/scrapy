@@ -6,7 +6,8 @@ from googledir.items import GoogledirItem
 
 class GoogleDirectorySpider(CrawlSpider):
 
-    domain_name = 'directory.google.com'
+    name = 'google_directory'
+    allowed_domains = ['directory.google.com']
     start_urls = ['http://directory.google.com/']
 
     rules = (

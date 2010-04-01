@@ -25,18 +25,18 @@ class Spiderctl(object):
         dispatcher.connect(self.webconsole_discover_module, signal=webconsole_discover_module)
 
     def spider_opened(self, spider):
-        self.running[spider.domain_name] = spider
+        self.running[spider.name] = spider
 
     def spider_closed(self, spider):
-        del self.running[spider.domain_name]
-        self.finished.add(spider.domain_name)
+        del self.running[spider.name]
+        self.finished.add(spider.name)
 
     def webconsole_render(self, wc_request):
         if wc_request.args:
             changes = self.webconsole_control(wc_request)
 
-        self.scheduled = [s.domain_name for s in scrapyengine.spider_scheduler._pending_spiders]
-        self.idle = [d for d in self.enabled_domains if d not in self.scheduled
+        self.scheduled = [s.name for s in scrapyengine.spider_scheduler._pending_spiders]
+        self.idle = [d for d in self.enabled_spiders if d not in self.scheduled
                                                         and d not in self.running
                                                         and d not in self.finished]
 
@@ -53,9 +53,9 @@ class Spiderctl(object):
         # idle
         s += "<td valign='top'>\n"
         s += '<form method="post" action=".">\n'
-        s += '<select name="add_pending_domains" multiple="multiple">\n'
-        for domain in sorted(self.idle):
-            s += "<option>%s</option>\n" % domain
+        s += '<select name="add_pending_spiders" multiple="multiple">\n'
+        for name in sorted(self.idle):
+            s += "<option>%s</option>\n" % name
         s += '</select><br>\n'
         s += '<br />'
         s += '<input type="submit" value="Schedule selected">\n'
@@ -65,9 +65,9 @@ class Spiderctl(object):
         # scheduled
         s += "<td valign='top'>\n"
         s += '<form method="post" action=".">\n'
-        s += '<select name="remove_pending_domains" multiple="multiple">\n'
-        for domain in self.scheduled:
-            s += "<option>%s</option>\n" % domain
+        s += '<select name="remove_pending_spiders" multiple="multiple">\n'
+        for name in self.scheduled:
+            s += "<option>%s</option>\n" % name
         s += '</select><br>\n'
         s += '<br />'
         s += '<input type="submit" value="Remove selected">\n'
@@ -78,9 +78,9 @@ class Spiderctl(object):
         # running
         s += "<td valign='top'>\n"
         s += '<form method="post" action=".">\n'
-        s += '<select name="stop_running_domains" multiple="multiple">\n'
-        for domain in sorted(self.running):
-            s += "<option>%s</option>\n" % domain
+        s += '<select name="stop_running_spiders" multiple="multiple">\n'
+        for name in sorted(self.running):
+            s += "<option>%s</option>\n" % name 
         s += '</select><br>\n'
         s += '<br />'
         s += '<input type="submit" value="Stop selected">\n'
@@ -90,9 +90,9 @@ class Spiderctl(object):
         # finished
         s += "<td valign='top'>\n"
         s += '<form method="post" action=".">\n'
-        s += '<select name="rerun_finished_domains" multiple="multiple">\n'
-        for domain in sorted(self.finished):
-            s += "<option>%s</option>\n" % domain
+        s += '<select name="rerun_finished_spiders" multiple="multiple">\n'
+        for name in sorted(self.finished):
+            s += "<option>%s</option>\n" % name
         s += '</select><br>\n'
         s += '<br />'
         s += '<input type="submit" value="Re-schedule selected">\n'
@@ -114,42 +114,42 @@ class Spiderctl(object):
         args = wc_request.args
         s = "<hr />\n"
 
-        if "stop_running_domains" in args:
+        if "stop_running_spiders" in args:
             s += "<p>"
-            stopped_domains = []
-            for domain in args["stop_running_domains"]:
-                if domain in self.running:
-                    scrapyengine.close_spider(self.running[domain])
-                    stopped_domains.append(domain)
-            s += "Stopped spiders: <ul><li>%s</li></ul>" % "</li><li>".join(stopped_domains)
+            stopped_spiders = []
+            for name in args["stop_running_spiders"]:
+                if name in self.running:
+                    scrapyengine.close_spider(self.running[name])
+                    stopped_spiders.append(name)
+            s += "Stopped spiders: <ul><li>%s</li></ul>" % "</li><li>".join(stopped_spiders)
             s += "</p>"
-        if "remove_pending_domains" in args:
+        if "remove_pending_spiders" in args:
             removed = []
-            for domain in args["remove_pending_domains"]:
-                if scrapyengine.spider_scheduler.remove_pending_domain(domain):
-                    removed.append(domain)
+            for name in args["remove_pending_spiders"]:
+                if scrapyengine.spider_scheduler.remove_pending_spider(name):
+                    removed.append(name)
             if removed:
                 s += "<p>"
-                s += "Removed scheduled spiders: <ul><li>%s</li></ul>" % "</li><li>".join(args["remove_pending_domains"])
+                s += "Removed scheduled spiders: <ul><li>%s</li></ul>" % "</li><li>".join(args["remove_pending_spiders"])
                 s += "</p>"
-        if "add_pending_domains" in args:
-            for domain in args["add_pending_domains"]:
-                if domain not in scrapyengine.scheduler.pending_requests:
-                    scrapymanager.crawl_domain(domain)
+        if "add_pending_spiders" in args:
+            for name in args["add_pending_spiders"]:
+                if name not in scrapyengine.scheduler.pending_requests:
+                    scrapymanager.crawl_spider_name(name)
             s += "<p>"
-            s += "Scheduled spiders: <ul><li>%s</li></ul>" % "</li><li>".join(args["add_pending_domains"])
+            s += "Scheduled spiders: <ul><li>%s</li></ul>" % "</li><li>".join(args["add_pending_spiders"])
             s += "</p>"
-        if "rerun_finished_domains" in args:
-            for domain in args["rerun_finished_domains"]:
-                if domain not in scrapyengine.scheduler.pending_requests:
-                    scrapymanager.crawl_domain(domain)
-                self.finished.remove(domain)
+        if "rerun_finished_spiders" in args:
+            for name in args["rerun_finished_spiders"]:
+                if name not in scrapyengine.scheduler.pending_requests:
+                    scrapymanager.crawl_spider_name(name)
+                self.finished.remove(name)
             s += "<p>"
-            s += "Re-scheduled finished spiders: <ul><li>%s</li></ul>" % "</li><li>".join(args["rerun_finished_domains"])
+            s += "Re-scheduled finished spiders: <ul><li>%s</li></ul>" % "</li><li>".join(args["rerun_finished_spiders"])
             s += "</p>"
 
         return s
         
     def webconsole_discover_module(self):
-        self.enabled_domains = spiders.list()
+        self.enabled_spiders = spiders.list()
         return self

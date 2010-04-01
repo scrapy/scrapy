@@ -76,11 +76,11 @@ class MemoryStatsCollector(StatsCollector):
 
     def __init__(self):
         super(MemoryStatsCollector, self).__init__()
-        self.domain_stats = {}
+        self.spider_stats = {}
 
     def _persist_stats(self, stats, spider=None):
         if spider is not None:
-            self.domain_stats[spider.domain_name] = stats
+            self.spider_stats[spider.name] = stats
 
 
 class DummyStatsCollector(StatsCollector):

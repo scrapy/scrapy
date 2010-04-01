@@ -108,7 +108,7 @@ class FilesystemCacheStorage(object):
 
     def _get_request_path(self, spider, request):
         key = request_fingerprint(request)
-        return join(self.cachedir, spider.domain_name, key[0:2], key)
+        return join(self.cachedir, spider.name, key[0:2], key)
 
     def _read_meta(self, spider, request):
         rpath = self._get_request_path(spider, request)

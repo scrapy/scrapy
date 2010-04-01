@@ -46,7 +46,7 @@ class Command(ScrapyCommand):
         if callback:
             callback_fcn = callback if callable(callback) else getattr(spider, callback, None)
             if not callback_fcn:
-                log.msg('Cannot find callback %s in %s spider' % (callback, spider.domain_name))
+                log.msg('Cannot find callback %s in %s spider' % (callback, spider.name))
                 return (), ()
 
             result = iterate_spider_output(callback_fcn(response))
@@ -130,7 +130,7 @@ class Command(ScrapyCommand):
             else:
                 log.msg('No rules found for spider "%s", ' \
                         'please specify a callback for parsing' \
-                        % spider.domain_name, log.ERROR)
+                        % spider.name, log.ERROR)
         else:
             # default callback 'parse'
             items, links = self.run_callback(spider, response,

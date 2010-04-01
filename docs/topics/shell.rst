@@ -163,7 +163,7 @@ This can be achieved by using the ``scrapy.shell.inspect_response`` function.
 Here's an example of how you would call it from your spider::
 
     class MySpider(BaseSpider):
-        domain_name = 'example.com'
+        ...
 
         def parse(self, response):
             if response.url == 'http://www.example.com/products.php':

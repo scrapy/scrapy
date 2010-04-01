@@ -3,6 +3,9 @@ Base class for Scrapy spiders
 
 See documentation in docs/topics/spiders.rst
 """
+
+import warnings
+
 from zope.interface import Interface, Attribute, invariant, implements
 from twisted.plugin import IPlugin
 
@@ -11,17 +14,9 @@ from scrapy.http import Request
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.trackref import object_ref
 
-def _valid_domain_name(obj):
-    """Check the domain name specified is valid"""
-    if not obj.domain_name:
-        raise ValueError("Spider 'domain_name' attribute is required")
-
 class ISpider(Interface, IPlugin) :
-    """Interface to be implemented by site-specific web spiders"""
-
-    domain_name = Attribute("The domain name of the site to be scraped.")
-
-    invariant(_valid_domain_name)
+    """Interface used by TwistedPluginSpiderManager to discover spiders"""
+    pass
 
 class BaseSpider(object_ref):
     """Base class for scrapy spiders. All spiders must inherit from this
@@ -31,19 +26,33 @@ class BaseSpider(object_ref):
     implements(ISpider)
 
     # XXX: class attributes kept for backwards compatibility
-    domain_name = None
+    name = None
     start_urls = []
-    extra_domain_names = []
+    allowed_domains = []
 
-    def __init__(self, domain_name=None):
-        if domain_name is not None:
-            self.domain_name = domain_name
+    def __init__(self, name=None):
+        # XXX: SEP-12 backward compatibility (remove for 0.10)
+        if hasattr(self, 'domain_name'):
+            warnings.warn("Spider.domain_name attribute is deprecated, use Spider.name instead", \
+                DeprecationWarning, stacklevel=4)
+            self.name = self.domain_name
+        if hasattr(self, 'extra_domain_names'):
+            warnings.warn("Spider.extra_domain_names attribute is deprecated - user Spider.allowed_domains instead", \
+                DeprecationWarning, stacklevel=4)
+            self.allowed_domains = [self.name] + list(self.extra_domain_names)
+
+        if name is not None:
+            self.name = name
         # XXX: create instance attributes (class attributes were kept for
         # backwards compatibility)
         if not self.start_urls:
             self.start_urls = []
-        if not self.extra_domain_names:
-            self.extra_domain_names = []
+        if not self.allowed_domains:
+            self.allowed_domains = []
+        if not getattr(self, 'domain_name', None):
+            self.domain_name = self.name
+        if not getattr(self, 'extra_domain_names', None):
+            self.extra_domain_names = self.allowed_domains
 
     def log(self, message, level=log.DEBUG):
         """Log the given messages at the given log level. Always use this
@@ -67,6 +76,6 @@ class BaseSpider(object_ref):
         pass
 
     def __str__(self):
-        return "<%s %r>" % (type(self).__name__, self.domain_name)
+        return "<%s %r>" % (type(self).__name__, self.name)
 
     __repr__ = __str__

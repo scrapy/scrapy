@@ -9,8 +9,8 @@ class TestOffsiteMiddleware(TestCase):
 
     def setUp(self):
         self.spider = BaseSpider()
-        self.spider.domain_name = 'scrapytest.org'
-        self.spider.extra_domain_names = ['scrapy.org']
+        self.spider.name = 'scrapytest.org'
+        self.spider.allowed_domains = ['scrapytest.org', 'scrapy.org']
 
         self.mw = OffsiteMiddleware()
         self.mw.spider_opened(self.spider)

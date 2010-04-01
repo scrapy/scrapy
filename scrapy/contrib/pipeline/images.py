@@ -47,7 +47,7 @@ class FSImagesStore(object):
         dispatcher.connect(self.spider_closed, signals.spider_closed)
 
     def spider_closed(self, spider):
-        self.created_directories.pop(spider.domain_name, None)
+        self.created_directories.pop(spider.name, None)
 
     def persist_image(self, key, image, buf, info):
         absolute_path = self._get_filesystem_path(key)
@@ -92,7 +92,7 @@ class _S3AmazonAWSSpider(BaseSpider):
     It means that a spider that uses download_delay or alike is not going to be
     delayed even more because it is uploading images to s3.
     """
-    domain_name = "s3.amazonaws.com"
+    name = "s3.amazonaws.com"
     start_urls = ['http://s3.amazonaws.com/']
     max_concurrent_requests = 100
 

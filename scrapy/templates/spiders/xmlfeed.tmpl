@@ -2,8 +2,9 @@ from scrapy.contrib.spiders import XMLFeedSpider
 from $project_name.items import ${ProjectName}Item
 
 class $classname(XMLFeedSpider):
-    domain_name = '$site'
-    start_urls = ['http://www.$site/feed.xml']
+    name = '$name'
+    allowed_domains = ['$domain']
+    start_urls = ['http://www.$domain/feed.xml']
 
     def parse_item(self, response, selector):
         i = ${ProjectName}Item()

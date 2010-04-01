@@ -53,7 +53,7 @@ class TwistedPluginSpiderManager(object):
         for module in modules:
             for spider in self._getspiders(ISpider, module):
                 ISpider.validateInvariants(spider)
-                self._spiders[spider.domain_name] = spider
+                self._spiders[spider.name] = spider
         self.loaded = True
 
     def _getspiders(self, interface, package):
@@ -76,14 +76,14 @@ class TwistedPluginSpiderManager(object):
         """Reload spider module to release any resources held on to by the
         spider
         """
-        domain = spider.domain_name
-        if domain not in self._spiders:
+        name = spider.name
+        if name not in self._spiders:
             return
-        spider = self._spiders[domain]
+        spider = self._spiders[name]
         module_name = spider.__module__
         module = sys.modules[module_name]
         if hasattr(module, 'SPIDER'):
             log.msg("Reloading module %s" % module_name, spider=spider, \
                 level=log.DEBUG)
             new_module = rebuild(module, doLog=0)
-            self._spiders[domain] = new_module.SPIDER
+            self._spiders[name] = new_module.SPIDER

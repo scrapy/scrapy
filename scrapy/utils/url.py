@@ -22,9 +22,7 @@ def url_is_from_any_domain(url, domains):
 
 def url_is_from_spider(url, spider):
     """Return True if the url belongs to the given spider"""
-    domains = [spider.domain_name]
-    domains.extend(spider.extra_domain_names)
-    return url_is_from_any_domain(url, domains)
+    return url_is_from_any_domain(url, spider.allowed_domains)
 
 def urljoin_rfc(base, ref, encoding='utf-8'):
     """Same as urlparse.urljoin but supports unicode values in base and ref

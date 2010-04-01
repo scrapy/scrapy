@@ -29,7 +29,8 @@ class MovieItem(ImdbItem):
 
 
 class ImdbSiteSpider(CrawlSpider):
-    domain_name = 'imdb.com'
+    name = 'imdb.com'
+    allowed_domains = ['imdb.com']
     start_urls = ['http://www.imdb.com/']
 
     # extract requests using this classes from urls matching 'follow' flag

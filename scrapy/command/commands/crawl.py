@@ -13,10 +13,10 @@ class Command(ScrapyCommand):
     requires_project = True
 
     def syntax(self):
-        return "[options] <domain|url> ..."
+        return "[options] <spider|url> ..."
 
     def short_desc(self):
-        return "Start crawling a domain or URL"
+        return "Start crawling from a spider or URL"
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
@@ -31,10 +31,9 @@ class Command(ScrapyCommand):
             settings.overrides['CRAWLSPIDER_FOLLOW_LINKS'] = False
 
     def run(self, args, opts):
-
-        urls, domains = self._split_urls_and_domains(args)
-        for dom in domains:
-            scrapymanager.crawl_domain(dom)
+        urls, names = self._split_urls_and_names(args)
+        for name in names:
+            scrapymanager.crawl_spider_name(name)
 
         if opts.spider:
             try:
@@ -65,12 +64,12 @@ class Command(ScrapyCommand):
                 spider_urls[spider_names[0]].append(url)
         return spider_urls.items()
 
-    def _split_urls_and_domains(self, args):
+    def _split_urls_and_names(self, args):
         urls = []
-        domains = []
+        names = []
         for arg in args:
             if is_url(arg):
                 urls.append(arg)
             else:
-                domains.append(arg)
-        return urls, domains
+                names.append(arg)
+        return urls, names

@@ -321,7 +321,7 @@ user name and password. You can use the :meth:`FormRequest.from_response`
 method for this job. Here's an example spider which uses it::
 
     class LoginSpider(BaseSpider):
-        domain_name = 'example.com'
+        name = 'example.com'
         start_urls = ['http://www.example.com/users/login.php']
 
         def parse(self, response):

@@ -15,10 +15,11 @@ SPIDER_TEMPLATES_PATH = join(scrapy.__path__[0], 'templates', 'spiders')
 
 
 def sanitize_module_name(module_name):
-    """Sanitize the given module name, by replacing dashes with underscores and
-    prefixing it with a letter if it doesn't start with one
+    """Sanitize the given module name, by replacing dashes and points
+    with underscores and prefixing it with a letter if it doesn't start
+    with one
     """
-    module_name = module_name.replace('-', '_')
+    module_name = module_name.replace('-', '_').replace('.', '_')
     if module_name[0] not in string.ascii_letters:
         module_name = "a" + module_name
     return module_name
@@ -28,7 +29,7 @@ class Command(ScrapyCommand):
     requires_project = True
 
     def syntax(self):
-        return "[options] <spider_module_name> <spider_domain_name>"
+        return "[options] <name> <domain>"
 
     def short_desc(self):
         return "Generate new spider based on template passed with -t or --template"
@@ -54,34 +55,37 @@ class Command(ScrapyCommand):
                 print template.read() 
             return
 
-        if len(args) < 2:
+        if len(args) != 2:
             return False
 
-        module = sanitize_module_name(args[0])
+        name = args[0]
         domain = args[1]
+
+        module = sanitize_module_name(name)
 
         # if spider already exists and not force option then halt
         try:
-            spider = spiders.create(domain)
+            spider = spiders.create(name)
         except KeyError:
             pass
         else:
             if not opts.force:
-                print "Spider '%s' already exists in module:" % domain
+                print "Spider '%s' already exists in module:" % name
                 print "  %s" % spider.__module__
                 sys.exit(1)
 
         template_file = self._find_template(opts.template)
         if template_file:
-            self._genspider(module, domain, opts.template, template_file)
+            self._genspider(module, name, domain, opts.template, template_file)
 
-    def _genspider(self, module, domain, template_name, template_file):
+    def _genspider(self, module, name, domain, template_name, template_file):
         """Generate the spider module, based on the given template"""
         tvars = {
             'project_name': settings.get('BOT_NAME'),
             'ProjectName': string_camelcase(settings.get('BOT_NAME')),
             'module': module,
-            'site': domain,
+            'name': name,
+            'domain': domain,
             'classname': '%sSpider' % ''.join([s.capitalize() \
                 for s in module.split('_')])
         }
@@ -92,7 +96,7 @@ class Command(ScrapyCommand):
 
         shutil.copyfile(template_file, spider_file)
         render_templatefile(spider_file, **tvars)
-        print "Created spider %r using template %r in module:" % (domain, \
+        print "Created spider %r using template %r in module:" % (name, \
             template_name)
         print "  %s.%s" % (spiders_module.__name__, module)
 

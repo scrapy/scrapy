@@ -54,12 +54,12 @@ class ExecutionManager(object):
         if spider:
             scrapyengine.crawl(request, spider)
 
-    def crawl_domain(self, domain):
-        """Schedule given domain for crawling."""
+    def crawl_spider_name(self, name):
+        """Schedule given spider by name for crawling."""
         try:
-            spider = spiders.create(domain)
+            spider = spiders.create(name)
         except KeyError:
-            log.msg('Could not find spider for domain: %s' % domain, log.ERROR)
+            log.msg('Could not find spider: %s' % name, log.ERROR)
         else:
             self.crawl_spider(spider)
 
