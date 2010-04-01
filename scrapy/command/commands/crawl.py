@@ -20,6 +20,8 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
+        parser.add_option("--spider", dest="spider", default=None, \
+            help="always use this spider when arguments are urls")
         parser.add_option("-n", "--nofollow", dest="nofollow", action="store_true", \
             help="don't follow links (for use with URLs only)")
 
@@ -29,12 +31,41 @@ class Command(ScrapyCommand):
             settings.overrides['CRAWLSPIDER_FOLLOW_LINKS'] = False
 
     def run(self, args, opts):
-        if opts.spider:
-            spider = spiders.create(opts.spider)
-        else:
-            spider = None
 
-        # aggregate urls and domains
+        urls, domains = self._split_urls_and_domains(args)
+        for dom in domains:
+            scrapymanager.crawl_domain(dom)
+
+        if opts.spider:
+            try:
+                spider = spiders.create(opts.spider)
+                for url in urls:
+                    scrapymanager.crawl_url(url, spider)
+            except KeyError:
+                log.msg('Could not find spider: %s' % opts.spider, log.ERROR)
+        else:
+            for name, urls in self._group_urls_by_spider(urls):
+                spider = spiders.create(name)
+                for url in urls:
+                    scrapymanager.crawl_url(url, spider)
+
+        scrapymanager.start()
+
+    def _group_urls_by_spider(self, urls):
+        spider_urls = defaultdict(list)
+        for url in urls:
+            spider_names = spiders.find_by_request(Request(url))
+            if not spider_names:
+                log.msg('Could not find spider for url: %s' % url,
+                        log.ERROR)
+            elif len(spider_names) > 1:
+                log.msg('More than one spider found for url: %s' % url,
+                        log.ERROR)
+            else:
+                spider_urls[spider_names[0]].append(url)
+        return spider_urls.items()
+
+    def _split_urls_and_domains(self, args):
         urls = []
         domains = []
         for arg in args:
@@ -42,36 +73,4 @@ class Command(ScrapyCommand):
                 urls.append(arg)
             else:
                 domains.append(arg)
-
-        # schedule first domains
-        for dom in domains:
-            scrapymanager.crawl_domain(dom)
-
-        # if forced spider schedule urls directly
-        if spider:
-            for url in urls:
-                scrapymanager.crawl_url(url, spider)
-        else:
-            # group urls by spider
-            spider_urls = defaultdict(list)
-            find_by_url = lambda url: spiders.find_by_request(Request(url))
-            for url in urls:
-                spider_names = find_by_url(url)
-                if not spider_names:
-                    log.msg('Could not find spider for url: %s' % url,
-                            log.ERROR)
-                elif len(spider_names) > 1:
-                    log.msg('More than one spider found for url: %s' % url,
-                            log.ERROR)
-                else:
-                    spider_urls[spider_names[0]].append(url)
-
-            # schedule grouped urls with same spider
-            for name, urls in spider_urls.iteritems():
-                # instance spider for each url-list
-                spider = spiders.create(name)
-                for url in urls:
-                    scrapymanager.crawl_url(url, spider)
-
-        # crawl just scheduled arguments without keeping idle
-        scrapymanager.start()
+        return urls, domains
