@@ -37,10 +37,17 @@ class Command(ScrapyCommand):
         return item
 
     def run_callback(self, spider, response, callback, args, opts):
-        spider = spiders.fromurl(response.url)
-        if not spider:
-            log.msg('Cannot find spider for url: %s' % response.url, level=log.ERROR)
+        spider_names = spiders.find_by_request(response.request)
+        if not spider_names:
+            log.msg('Cannot find spider for url: %s' % response.url,
+                    level=log.ERROR)
             return (), ()
+        elif len(spider_names) > 1:
+            log.msg('More than one spider found for url: %s' % response.url,
+                    level=log.ERROR)
+            return (), ()
+        else:
+            spider = spiders.create(spider_names[0])
 
         if callback:
             callback_fcn = callback if callable(callback) else getattr(spider, callback, None)

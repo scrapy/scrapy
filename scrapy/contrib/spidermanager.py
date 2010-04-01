@@ -19,35 +19,34 @@ class TwistedPluginSpiderManager(object):
 
     def __init__(self):
         self.loaded = False
-        self.force_domain = None
-        self._invaliddict = {}
         self._spiders = {}
 
-    def fromdomain(self, domain):
-        return self._spiders.get(domain)
+    def create(self, spider_id):
+        """
+        Returns Spider instance by given identifier.
+        If not exists raises KeyError.
+        """
+        #@@@ currently spider_id = domain
+        # if lookup fails let dict's KeyError exception propagate
+        return self._spiders[spider_id]
 
-    def fromurl(self, url):
-        if self.force_domain:
-            return self._spiders.get(self.force_domain)
-        domain = urlparse.urlparse(url).hostname
-        domain = str(domain).replace('www.', '')
-        if domain:
-            if domain in self._spiders:         # try first locating by domain
-                return self._spiders[domain]
-            else:                               # else search spider by spider
-                plist = self._spiders.values()
-                for p in plist:
-                    if url_is_from_spider(url, p):
-                        return p
+    def find_by_request(self, request):
+        """
+        Returns list of spiders ids that match given Request.
+        """
+        # just find by request.url
+        return [domain for domain, spider in self._spiders.iteritems()
+                if url_is_from_spider(request.url, spider)]
 
     def list(self):
+        """Returns list of spiders available."""
         return self._spiders.keys()
 
     def load(self, spider_modules=None):
+        """Load spiders from module directory."""
         if spider_modules is None:
             spider_modules = settings.getlist('SPIDER_MODULES')
         self.spider_modules = spider_modules
-        self._invaliddict = {}
         self._spiders = {}
 
         modules = [__import__(m, {}, {}, ['']) for m in self.spider_modules]

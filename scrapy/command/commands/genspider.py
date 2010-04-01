@@ -59,11 +59,17 @@ class Command(ScrapyCommand):
 
         module = sanitize_module_name(args[0])
         domain = args[1]
-        spider = spiders.fromdomain(domain)
-        if spider and not opts.force:
-            print "Spider '%s' already exists in module:" % domain
-            print "  %s" % spider.__module__
-            sys.exit(1)
+
+        # if spider already exists and not force option then halt
+        try:
+            spider = spiders.create(domain)
+        except KeyError:
+            pass
+        else:
+            if not opts.force:
+                print "Spider '%s' already exists in module:" % domain
+                print "  %s" % spider.__module__
+                sys.exit(1)
 
         template_file = self._find_template(opts.template)
         if template_file:

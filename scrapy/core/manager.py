@@ -6,20 +6,13 @@ from scrapy.extension import extensions
 from scrapy import log
 from scrapy.http import Request
 from scrapy.core.engine import scrapyengine
-from scrapy.spider import BaseSpider, spiders
+from scrapy.spider import spiders
 from scrapy.utils.misc import arg_to_iter
-from scrapy.utils.url import is_url
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 
 
 class ExecutionManager(object):
-    """Process a list of sites or urls.
 
-    This class should be used in a main for process a list of sites/urls.
-
-    It extracts products and could be used to store results in a database or
-    just for testing spiders.
-    """
     def __init__(self):
         self.interrupted = False
         self.configured = False
@@ -45,29 +38,30 @@ class ExecutionManager(object):
         
     def crawl_url(self, url, spider=None):
         """Schedule given url for crawling."""
-        spider = spider or spiders.fromurl(url)
+        if spider is None:
+            spider = self._create_spider_for_request(Request(url), log_none=True, \
+                log_multiple=True)
         if spider:
             requests = arg_to_iter(spider.make_requests_from_url(url))
             self._crawl_requests(requests, spider)
-        else:
-            log.msg('Could not find spider for url: %s' % url, log.ERROR)
 
     def crawl_request(self, request, spider=None):
         """Schedule request for crawling."""
         assert self.configured, "Scrapy Manager not yet configured"
-        spider = spider or spiders.fromurl(request.url)
+        if spider is None:
+            spider = self._create_spider_for_request(request, log_none=True, \
+                log_multiple=True)
         if spider:
             scrapyengine.crawl(request, spider)
-        else:
-            log.msg('Could not find spider for request: %s' % url, log.ERROR)
 
     def crawl_domain(self, domain):
         """Schedule given domain for crawling."""
-        spider = spiders.fromdomain(domain)
-        if spider:
-            self.crawl_spider(spider)
-        else:
+        try:
+            spider = spiders.create(domain)
+        except KeyError:
             log.msg('Could not find spider for domain: %s' % domain, log.ERROR)
+        else:
+            self.crawl_spider(spider)
 
     def crawl_spider(self, spider):
         """Schedule spider for crawling."""
@@ -75,6 +69,7 @@ class ExecutionManager(object):
         self._crawl_requests(requests, spider)
 
     def _crawl_requests(self, requests, spider):
+        """Shortcut to schedule a list of requests"""
         for req in requests:
             self.crawl_request(req, spider)
 
@@ -89,6 +84,17 @@ class ExecutionManager(object):
         """Stop the scrapy server, shutting down the execution engine"""
         self.interrupted = True
         scrapyengine.stop()
+
+    def _create_spider_for_request(self, request, default=None, log_none=False, \
+            log_multiple=False):
+        spider_names = spiders.find_by_request(request)
+        if len(spider_names) == 1:
+            return spiders.create(spider_names[0])
+        if len(spider_names) > 1 and log_multiple:
+            log.msg('More than one spider found for: %s' % request, log.ERROR)
+        if len(spider_names) == 0 and log_none:
+            log.msg('Could not find spider for: %s' % request, log.ERROR)
+        return default
 
     def _signal_shutdown(self, signum, _):
         signame = signal_names[signum]

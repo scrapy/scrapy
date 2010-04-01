@@ -99,10 +99,6 @@ class ScrapyCommand(object):
         if opts.nolog:
             settings.overrides['LOG_ENABLED'] = False
 
-        if opts.spider:
-            from scrapy.spider import spiders
-            spiders.force_domain = opts.spider
-
         if opts.pidfile:
             with open(opts.pidfile, "w") as f:
                 f.write(str(os.getpid()))
