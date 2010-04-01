@@ -10,8 +10,11 @@ def fetch(urls):
     commands or standalone scripts.
     """
     responses = []
-    requests = [Request(url, callback=responses.append, dont_filter=True) \
-        for url in urls]
-    scrapymanager.runonce(*requests)
+    for url in urls:
+        req = Request(url, callback=responses.append, dont_filter=True)
+        # @@@ request will require a suitable spider.
+        #     If not will not be schedule
+        scrapymanager.crawl_request(req)
+    scrapymanager.start()
     return responses
 

@@ -104,7 +104,7 @@ class Shell(object):
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
         reactor.callInThread(self._console_thread, url)
-        scrapymanager.start()
+        scrapymanager.start(keep_alive=True)
 
     def inspect_response(self, response):
         print

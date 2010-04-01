@@ -135,14 +135,14 @@ class Spiderctl(object):
         if "add_pending_domains" in args:
             for domain in args["add_pending_domains"]:
                 if domain not in scrapyengine.scheduler.pending_requests:
-                    scrapymanager.crawl(domain)
+                    scrapymanager.crawl_domain(domain)
             s += "<p>"
             s += "Scheduled spiders: <ul><li>%s</li></ul>" % "</li><li>".join(args["add_pending_domains"])
             s += "</p>"
         if "rerun_finished_domains" in args:
             for domain in args["rerun_finished_domains"]:
                 if domain not in scrapyengine.scheduler.pending_requests:
-                    scrapymanager.crawl(domain)
+                    scrapymanager.crawl_domain(domain)
                 self.finished.remove(domain)
             s += "<p>"
             s += "Re-scheduled finished spiders: <ul><li>%s</li></ul>" % "</li><li>".join(args["rerun_finished_domains"])

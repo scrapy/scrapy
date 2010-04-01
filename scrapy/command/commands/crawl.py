@@ -1,6 +1,7 @@
 from scrapy.command import ScrapyCommand
 from scrapy.core.manager import scrapymanager
 from scrapy.conf import settings
+from scrapy.utils.url import is_url
 
 
 class Command(ScrapyCommand):
@@ -24,4 +25,12 @@ class Command(ScrapyCommand):
             settings.overrides['CRAWLSPIDER_FOLLOW_LINKS'] = False
 
     def run(self, args, opts):
-        scrapymanager.runonce(*args)
+        for arg in args:
+            # schedule arg as url or domain
+            if is_url(arg):
+                scrapymanager.crawl_url(arg)
+            else:
+                scrapymanager.crawl_domain(arg)
+
+        # crawl just scheduled arguments without keeping idle
+        scrapymanager.start()

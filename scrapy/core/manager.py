@@ -1,5 +1,4 @@
 import signal
-from collections import defaultdict
 
 from twisted.internet import reactor
 
@@ -11,40 +10,6 @@ from scrapy.spider import BaseSpider, spiders
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.url import is_url
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
-
-def _get_spider_requests(*args):
-    """Collect requests and spiders from the given arguments. Returns a dict of
-    spider -> list of requests
-    """
-    spider_requests = defaultdict(list)
-    for arg in args:
-        if isinstance(arg, tuple):
-            request, spider = arg
-            spider_requests[spider] = request
-        elif isinstance(arg, Request):
-            spider = spiders.fromurl(arg.url) or BaseSpider('default')
-            if spider:
-                spider_requests[spider] += [arg]
-            else:
-                log.msg('Could not find spider for request: %s' % arg, log.ERROR)
-        elif isinstance(arg, BaseSpider):
-            spider_requests[arg] += arg.start_requests()
-        elif is_url(arg):
-            spider = spiders.fromurl(arg) or BaseSpider('default')
-            if spider:
-                for req in arg_to_iter(spider.make_requests_from_url(arg)):
-                    spider_requests[spider] += [req]
-            else:
-                log.msg('Could not find spider for url: %s' % arg, log.ERROR)
-        elif isinstance(arg, basestring):
-            spider = spiders.fromdomain(arg)
-            if spider:
-                spider_requests[spider] += spider.start_requests()
-            else:
-                log.msg('Could not find spider for domain: %s' % arg, log.ERROR)
-        else:
-            raise TypeError("Unsupported argument: %r" % arg)
-    return spider_requests
 
 
 class ExecutionManager(object):
@@ -78,24 +43,44 @@ class ExecutionManager(object):
         scrapyengine.configure()
         self.configured = True
         
-    def crawl(self, *args):
-        """Schedule the given args for crawling. args is a list of urls or domains"""
+    def crawl_url(self, url, spider=None):
+        """Schedule given url for crawling."""
+        spider = spider or spiders.fromurl(url)
+        if spider:
+            requests = arg_to_iter(spider.make_requests_from_url(url))
+            self._crawl_requests(requests, spider)
+        else:
+            log.msg('Could not find spider for url: %s' % url, log.ERROR)
+
+    def crawl_request(self, request, spider=None):
+        """Schedule request for crawling."""
         assert self.configured, "Scrapy Manager not yet configured"
-        spider_requests = _get_spider_requests(*args)
-        for spider, requests in spider_requests.iteritems():
-            for request in requests:
-                scrapyengine.crawl(request, spider)
+        spider = spider or spiders.fromurl(request.url)
+        if spider:
+            scrapyengine.crawl(request, spider)
+        else:
+            log.msg('Could not find spider for request: %s' % url, log.ERROR)
 
-    def runonce(self, *args):
-        """Run the engine until it finishes scraping all domains and then exit"""
-        self.crawl(*args)
-        scrapyengine.start()
-        if self.control_reactor:
-            reactor.run(installSignalHandlers=False)
+    def crawl_domain(self, domain):
+        """Schedule given domain for crawling."""
+        spider = spiders.fromdomain(domain)
+        if spider:
+            self.crawl_spider(spider)
+        else:
+            log.msg('Could not find spider for domain: %s' % domain, log.ERROR)
 
-    def start(self):
+    def crawl_spider(self, spider):
+        """Schedule spider for crawling."""
+        requests = spider.start_requests()
+        self._crawl_requests(requests, spider)
+
+    def _crawl_requests(self, requests, spider):
+        for req in requests:
+            self.crawl_request(req, spider)
+
+    def start(self, keep_alive=False):
         """Start the scrapy server, without scheduling any domains"""
-        scrapyengine.keep_alive = True
+        scrapyengine.keep_alive = keep_alive
         scrapyengine.start()
         if self.control_reactor:
             reactor.run(installSignalHandlers=False)
