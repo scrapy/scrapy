@@ -210,6 +210,8 @@ The name of the item fields that will be exported. This will be use for the
 EXPORT_EMPTY
 ^^^^^^^^^^^^
 
+Default: ``False``
+
 Whether to export empty (non populated) fields. This will be used for the
 :attr:`~BaseItemExporter.export_empty_fields` Item Exporter attribute.
 
@@ -217,6 +219,8 @@ Whether to export empty (non populated) fields. This will be used for the
 
 EXPORT_ENCODING
 ^^^^^^^^^^^^^^^
+
+Default: ``'utf-8'``
 
 The encoding to use for exporting. Ths will be used for the
 :attr:`~BaseItemExporter.encoding` Item Exporter attribute.
