@@ -25,15 +25,15 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
         self.feed(response_text)
         self.close()
 
-        links = unique_list(self.links, key=lambda link: link.url) if self.unique else self.links
-
         ret = []
         base_url = urljoin_rfc(response_url, self.base_url) if self.base_url else response_url
-        for link in links:
+        for link in self.links:
             link.url = urljoin_rfc(base_url, link.url, response_encoding)
             link.url = safe_url_string(link.url, response_encoding)
             link.text = str_to_unicode(link.text, response_encoding)
             ret.append(link)
+
+        ret = unique_list(ret, key=lambda link: link.url) if self.unique else ret
 
         return ret
 
