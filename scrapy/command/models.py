@@ -57,8 +57,6 @@ class ScrapyCommand(object):
             help="log level (default: %s)" % settings['LOGLEVEL'])
         group.add_option("--nolog", action="store_true", dest="nolog", \
             help="disable logging completely")
-        group.add_option("--spider", dest="spider", default=None, \
-            help="always use this spider when arguments are urls")
         group.add_option("--profile", dest="profile", metavar="FILE", default=None, \
             help="write python cProfile stats to FILE")
         group.add_option("--lsprof", dest="lsprof", metavar="FILE", default=None, \
@@ -98,10 +96,6 @@ class ScrapyCommand(object):
 
         if opts.nolog:
             settings.overrides['LOG_ENABLED'] = False
-
-        if opts.spider:
-            from scrapy.spider import spiders
-            spiders.force_domain = opts.spider
 
         if opts.pidfile:
             with open(opts.pidfile, "w") as f:

@@ -16,8 +16,9 @@ def clean_link(link_text):
 
 class RegexLinkExtractor(SgmlLinkExtractor):
     """High performant link extractor"""
+
     def _extract_links(self, response_text, response_url, response_encoding):
-        base_url = self.base_url if self.base_url else response_url
+        base_url = urljoin_rfc(response_url, self.base_url) if self.base_url else response_url
 
         clean_url = lambda u: urljoin_rfc(base_url, remove_entities(clean_link(u.decode(response_encoding))))
         clean_text = lambda t: replace_escape_chars(remove_tags(t.decode(response_encoding))).strip()

@@ -11,6 +11,7 @@ from scrapy.xlib.BeautifulSoup import UnicodeDammit
 
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs
+from scrapy.utils.encoding import encoding_exists, resolve_encoding
 from scrapy.conf import settings
 
 class TextResponse(Response):
@@ -18,12 +19,13 @@ class TextResponse(Response):
     _DEFAULT_ENCODING = settings['DEFAULT_RESPONSE_ENCODING']
     _ENCODING_RE = re.compile(r'charset=([\w-]+)', re.I)
 
-    __slots__ = ['_encoding', '_body_inferred_encoding']
+    __slots__ = ['_encoding', '_cached_benc', '_cached_ubody']
 
     def __init__(self, url, status=200, headers=None, body=None, meta=None, \
             flags=None, encoding=None):
         self._encoding = encoding
-        self._body_inferred_encoding = None
+        self._cached_benc = None
+        self._cached_ubody = None
         super(TextResponse, self).__init__(url, status, headers, body, meta, flags)
 
     def _get_url(self):
@@ -56,31 +58,48 @@ class TextResponse(Response):
 
     @property
     def encoding(self):
-        return self._encoding or self.headers_encoding() or self.body_encoding()
+        return self._get_encoding(infer=True)
 
-    @memoizemethod_noargs
-    def headers_encoding(self):
-        content_type = self.headers.get('Content-Type')
-        if content_type:
-            encoding = self._ENCODING_RE.search(content_type)
-            if encoding:
-                return encoding.group(1)
+    def _get_encoding(self, infer=False):
+        enc = self._declared_encoding()
+        if enc and not encoding_exists(enc):
+            enc = None
+        if not enc and infer:
+            enc = self._body_inferred_encoding()
+        if not enc:
+            enc = self._DEFAULT_ENCODING
+        return resolve_encoding(enc)
 
-    @memoizemethod_noargs
+    def _declared_encoding(self):
+        return self._encoding or self._headers_encoding() \
+            or self._body_declared_encoding()
+
     def body_as_unicode(self):
         """Return body as unicode"""
-        possible_encodings = (self._encoding, self.headers_encoding(), \
-            self._body_declared_encoding())
-        dammit = UnicodeDammit(self.body, possible_encodings)
-        self._body_inferred_encoding = dammit.originalEncoding
-        if self._body_inferred_encoding in ('ascii', None):
-            self._body_inferred_encoding = self._DEFAULT_ENCODING
-        return dammit.unicode
+        if self._cached_ubody is None:
+            self._cached_ubody = self.body.decode(self.encoding, 'replace')
+        return self._cached_ubody
 
-    def body_encoding(self):
-        if self._body_inferred_encoding is None:
-            self.body_as_unicode()
-        return self._body_inferred_encoding
+    @memoizemethod_noargs
+    def _headers_encoding(self):
+        content_type = self.headers.get('Content-Type')
+        if content_type:
+            m = self._ENCODING_RE.search(content_type)
+            if m:
+                encoding = m.group(1)
+                if encoding_exists(encoding):
+                    return encoding
+
+    def _body_inferred_encoding(self):
+        if self._cached_benc is None:
+            enc = self._get_encoding()
+            dammit = UnicodeDammit(self.body, [enc])
+            benc = dammit.originalEncoding
+            self._cached_benc = benc
+            # UnicodeDammit is buggy decoding utf-16
+            if self._cached_ubody is None and benc != 'utf-16':
+                self._cached_ubody = dammit.unicode
+        return self._cached_benc
 
     def _body_declared_encoding(self):
         # implemented in subclasses (XmlResponse, HtmlResponse)

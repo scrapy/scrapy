@@ -59,10 +59,18 @@ class CommandTest(ProjectTest):
 
 class GenspiderCommandTest(CommandTest):
 
+    def test_arguments(self):
+        # only pass one argument. spider script shouldn't be created
+        self.assertEqual(0, self.call('genspider', 'test_name'))
+        assert not exists(join(self.proj_mod_path, 'spiders', 'test_name.py'))
+        # pass two arguments <name> <domain>. spider script should be created
+        self.assertEqual(0, self.call('genspider', 'test_name', 'test.com'))
+        assert exists(join(self.proj_mod_path, 'spiders', 'test_name.py'))
+
     def test_template_default(self, *args):
-        self.assertEqual(0, self.call('genspider', 'testspider', 'test.com', *args))
-        assert exists(join(self.proj_mod_path, 'spiders', 'testspider.py'))
-        self.assertEqual(1, self.call('genspider', 'otherspider', 'test.com'))
+        self.assertEqual(0, self.call('genspider', 'test_spider', 'test.com', *args))
+        assert exists(join(self.proj_mod_path, 'spiders', 'test_spider.py'))
+        self.assertEqual(1, self.call('genspider', 'test_spider', 'test.com'))
 
     def test_template_basic(self):
         self.test_template_default('--template=basic')

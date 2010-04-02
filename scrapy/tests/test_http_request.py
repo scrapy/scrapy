@@ -171,13 +171,6 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r4.meta, {})
         assert r4.dont_filter is False
 
-        # __init__ and replace() signatures must be equal unles *args,**kwargs is used
-        i_args, i_varargs, i_varkwargs, _ = getargspec(self.request_class.__init__)
-        self.assertFalse(bool(i_varargs) ^ bool(i_varkwargs))
-        if not i_varargs:
-            r_args, _, _, _ = getargspec(self.request_class.replace)
-            self.assertEqual(i_args, r_args)
-
     def test_weakref_slots(self):
         """Check that classes are using slots and are weak-referenceable"""
         x = self.request_class('http://www.example.com')

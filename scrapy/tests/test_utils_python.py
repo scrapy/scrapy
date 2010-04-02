@@ -1,7 +1,8 @@
+import operator
 import unittest
 
 from scrapy.utils.python import str_to_unicode, unicode_to_str, \
-    memoizemethod_noargs, isbinarytext
+    memoizemethod_noargs, isbinarytext, equal_attributes
 
 class UtilsPythonTestCase(unittest.TestCase):
     def test_str_to_unicode(self):
@@ -60,6 +61,53 @@ class UtilsPythonTestCase(unittest.TestCase):
 
         # finally some real binary bytes
         assert isbinarytext("\x02\xa3")
+
+    def test_equal_attributes(self):
+        class Obj:
+            pass
+
+        a = Obj()
+        b = Obj()
+        # no attributes given return False
+        self.failIf(equal_attributes(a, b, []))
+        # not existent attributes
+        self.failIf(equal_attributes(a, b, ['x', 'y']))
+
+        a.x = 1
+        b.x = 1
+        # equal attribute
+        self.failUnless(equal_attributes(a, b, ['x']))
+
+        b.y = 2
+        # obj1 has no attribute y
+        self.failIf(equal_attributes(a, b, ['x', 'y']))
+
+        a.y = 2
+        # equal attributes
+        self.failUnless(equal_attributes(a, b, ['x', 'y']))
+
+        a.y = 1
+        # differente attributes
+        self.failIf(equal_attributes(a, b, ['x', 'y']))
+
+        # test callable
+        a.meta = {}
+        b.meta = {}
+        self.failUnless(equal_attributes(a, b, ['meta']))
+
+        # compare ['meta']['a']
+        a.meta['z'] = 1
+        b.meta['z'] = 1
+
+        get_z = operator.itemgetter('z')
+        get_meta = operator.attrgetter('meta')
+        compare_z = lambda obj: get_z(get_meta(obj))
+
+        self.failUnless(equal_attributes(a, b, [compare_z, 'x']))
+        # fail z equality
+        a.meta['z'] = 2
+        self.failIf(equal_attributes(a, b, [compare_z, 'x']))
+
 
 if __name__ == "__main__":
     unittest.main()
