@@ -55,7 +55,7 @@ class Shell(object):
             request = Request(url)
 
         spider = scrapymanager._create_spider_for_request(request, \
-            BaseSpider('default'), log_multiple=True)
+            BaseSpider(), log_multiple=True)
 
         print "Fetching %s..." % request
         response = threads.blockingCallFromThread(reactor, scrapyengine.schedule, \

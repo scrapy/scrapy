@@ -66,9 +66,10 @@ class BaseSpiderTest(unittest.TestCase):
 
     def test_spider_without_name(self):
         """Constructor arguments are assigned to spider attributes"""
-        spider = self.spider_class('example.com')
-        self.assertRaises(ValueError, self.spider_class)
-        self.assertRaises(ValueError, self.spider_class, somearg='foo')
+        spider = self.spider_class()
+        self.assertEqual(spider.name, 'default')
+        spider = self.spider_class(foo='bar')
+        self.assertEqual(spider.foo, 'bar')
 
 
 class InitSpiderTest(BaseSpiderTest):

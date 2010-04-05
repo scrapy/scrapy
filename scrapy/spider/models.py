@@ -55,7 +55,7 @@ class BaseSpider(object_ref):
         if not getattr(self, 'extra_domain_names', None):
             self.extra_domain_names = self.allowed_domains
         if not self.name:
-            raise ValueError("%s must have a name" % type(self).__name__)
+            self.name = 'default'
 
     def log(self, message, level=log.DEBUG):
         """Log the given messages at the given log level. Always use this
