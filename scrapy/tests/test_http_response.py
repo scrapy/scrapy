@@ -179,6 +179,8 @@ class TextResponseTest(BaseResponseTest):
         r3 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=iso-8859-1"]}, body="\xa3")
         r4 = self.response_class("http://www.example.com", body="\xa2\xa3")
         r5 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=None"]}, body="\xc2\xa3")
+        r6 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=gb2312"]}, body="\xa8D")
+        r7 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=gbk"]}, body="\xa8D")
 
         self.assertEqual(r1._headers_encoding(), "utf-8")
         self.assertEqual(r2._headers_encoding(), None)
@@ -193,6 +195,8 @@ class TextResponseTest(BaseResponseTest):
         self._assert_response_values(r1, 'utf-8', u"\xa3")
         self._assert_response_values(r2, 'utf-8', u"\xa3")
         self._assert_response_values(r3, 'iso-8859-1', u"\xa3")
+        self._assert_response_values(r6, 'gb18030', u"\u2015")
+        self._assert_response_values(r7, 'gb18030', u"\u2015")
 
         # TextResponse (and subclasses) must be passed a encoding when instantiating with unicode bodies
         self.assertRaises(TypeError, self.response_class, "http://www.example.com", body=u"\xa3")
