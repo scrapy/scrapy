@@ -60,7 +60,7 @@ class CrawlSpiderTest(unittest.TestCase):
         Spider.request_extractors = extractors
         Spider.request_processors = processors
 
-        return Spider()
+        return Spider('foo')
 
     def test_start_url_auto_rule(self):
         spider = self.spider_factory()

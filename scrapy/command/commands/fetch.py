@@ -41,7 +41,7 @@ class Command(ScrapyCommand):
                 log.msg("Could not find spider: %s" % opts.spider, log.ERROR)
         else:
             spider = scrapymanager._create_spider_for_request(request, \
-                BaseSpider())
+                BaseSpider('default'))
 
         scrapymanager.crawl_request(request, spider)
         scrapymanager.start()

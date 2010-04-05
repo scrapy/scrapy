@@ -9,7 +9,6 @@ from scrapy.spider import BaseSpider
 from scrapy.contrib.spiders.init import InitSpider
 from scrapy.contrib.spiders.crawl import CrawlSpider
 from scrapy.contrib.spiders.feed import XMLFeedSpider, CSVFeedSpider
-from scrapy.contrib.dupefilter import RequestFingerprintDupeFilter, NullDupeFilter
 
 
 class BaseSpiderTest(unittest.TestCase):
@@ -77,10 +76,8 @@ class BaseSpiderTest(unittest.TestCase):
 
     def test_spider_without_name(self):
         """Constructor arguments are assigned to spider attributes"""
-        spider = self.spider_class()
-        self.assertEqual(spider.name, 'default')
-        spider = self.spider_class(foo='bar')
-        self.assertEqual(spider.foo, 'bar')
+        self.assertRaises(ValueError, self.spider_class)
+        self.assertRaises(ValueError, self.spider_class, somearg='foo')
 
 
 class InitSpiderTest(BaseSpiderTest):

@@ -15,9 +15,9 @@ class CrawlSpider(BaseSpider):
     request_processors = None
     rules = []
 
-    def __init__(self):
+    def __init__(self, *a, **kw):
         """Initialize dispatcher"""
-        super(CrawlSpider, self).__init__()
+        super(CrawlSpider, self).__init__(*a, **kw)
 
         # auto follow start urls
         if self.start_urls:

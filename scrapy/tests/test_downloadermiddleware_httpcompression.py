@@ -20,7 +20,7 @@ FORMAT = {
 class HttpCompressionTest(TestCase):
 
     def setUp(self):
-        self.spider = BaseSpider()
+        self.spider = BaseSpider('foo')
         self.mw = HttpCompressionMiddleware()
 
     def _getresponse(self, coding):

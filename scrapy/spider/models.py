@@ -52,7 +52,7 @@ class BaseSpider(object_ref):
         if not self.allowed_domains:
             self.allowed_domains = []
         if not self.name:
-            self.name = 'default'
+            raise ValueError("%s must have a name" % type(self).__name__)
 
         # XXX: SEP-12 forward compatibility (remove for 0.10)
         self.domain_name = self.name

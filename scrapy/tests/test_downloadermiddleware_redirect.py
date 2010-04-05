@@ -8,7 +8,7 @@ from scrapy.http import Request, Response, HtmlResponse, Headers
 class RedirectMiddlewareTest(unittest.TestCase):
 
     def setUp(self):
-        self.spider = BaseSpider()
+        self.spider = BaseSpider('foo')
         self.mw = RedirectMiddleware()
 
     def test_priority_adjust(self):

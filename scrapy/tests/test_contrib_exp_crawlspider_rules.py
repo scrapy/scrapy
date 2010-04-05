@@ -109,7 +109,7 @@ class CompiledRuleInitializationTest(unittest.TestCase):
 
 class RulesTest(unittest.TestCase):
     def test_rules_manager_basic(self):
-        spider = BaseSpider()
+        spider = BaseSpider('foo')
         response1 = HtmlResponse('http://example.org')
         response2 = HtmlResponse('http://othersite.org')
         rulesman = RulesManager([], spider)
@@ -134,7 +134,7 @@ class RulesTest(unittest.TestCase):
         self.failUnlessEqual(rule1.follow, True)
 
     def test_rules_manager_empty_rule(self):
-        spider = BaseSpider()
+        spider = BaseSpider('foo')
         response = HtmlResponse('http://example.org')
 
         rulesman = RulesManager([Rule(follow=True)], spider)
@@ -144,7 +144,7 @@ class RulesTest(unittest.TestCase):
         self.failUnless(isinstance(rule.matcher, BaseMatcher))
 
     def test_rules_manager_default_matcher(self):
-        spider = BaseSpider()
+        spider = BaseSpider('foo')
         response = HtmlResponse('http://example.org')
         callback = lambda x: None
 
@@ -156,7 +156,7 @@ class RulesTest(unittest.TestCase):
         self.failUnless(isinstance(rule.matcher, UrlMatcher))
 
     def test_rules_manager_matchers(self):
-        spider = BaseSpider()
+        spider = BaseSpider('foo')
         response1 = HtmlResponse('http://example.org')
         response2 = HtmlResponse('http://othersite.org')
 
@@ -200,7 +200,7 @@ class RulesTest(unittest.TestCase):
     def test_rules_manager_callbacks(self):
         mycallback = lambda: True
 
-        spider = BaseSpider()
+        spider = BaseSpider('foo')
         spider.parse_item = lambda: True
 
         response1 = HtmlResponse('http://example.org')
@@ -229,7 +229,7 @@ class RulesTest(unittest.TestCase):
 
 
     def test_rules_manager_callback_with_arguments(self):
-        spider = BaseSpider()
+        spider = BaseSpider('foo')
         response = HtmlResponse('http://example.org')
 
         kwargs = {'a': 1}

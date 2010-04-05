@@ -8,7 +8,7 @@ from scrapy.contrib.spidermiddleware.offsite import OffsiteMiddleware
 class TestOffsiteMiddleware(TestCase):
 
     def setUp(self):
-        self.spider = BaseSpider()
+        self.spider = BaseSpider('foo')
         self.spider.name = 'scrapytest.org'
         self.spider.allowed_domains = ['scrapytest.org', 'scrapy.org']
 
