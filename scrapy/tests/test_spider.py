@@ -11,6 +11,7 @@ from scrapy.contrib.spiders.crawl import CrawlSpider
 from scrapy.contrib.spiders.feed import XMLFeedSpider, CSVFeedSpider
 from scrapy.contrib.dupefilter import RequestFingerprintDupeFilter, NullDupeFilter
 
+
 class BaseSpiderTest(unittest.TestCase):
 
     spider_class = BaseSpider
@@ -19,6 +20,12 @@ class BaseSpiderTest(unittest.TestCase):
 
         domain_name = 'example.com'
         extra_domain_names = ('example.org', 'example.net')
+
+
+    class OldSpiderWithoutExtradomains(spider_class):
+
+        domain_name = 'example.com'
+
 
     class NewSpider(spider_class):
 
@@ -47,6 +54,10 @@ class BaseSpiderTest(unittest.TestCase):
         self.assert_('example.com' in spider.allowed_domains, spider.allowed_domains)
         self.assert_('example.org' in spider.allowed_domains, spider.allowed_domains)
         self.assert_('example.net' in spider.allowed_domains, spider.allowed_domains)
+
+        spider = self.OldSpiderWithoutExtradomains()
+        self.assertEqual(spider.name, 'example.com')
+        self.assert_('example.com' in spider.allowed_domains, spider.allowed_domains)
 
         spider = self.NewSpider()
         self.assertEqual(spider.domain_name, 'example.com')

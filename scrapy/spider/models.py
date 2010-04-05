@@ -34,13 +34,14 @@ class BaseSpider(object_ref):
         self.__dict__.update(kwargs)
         # XXX: SEP-12 backward compatibility (remove for 0.10)
         if hasattr(self, 'domain_name'):
-            warnings.warn("Spider.domain_name attribute is deprecated, use Spider.name instead", \
+            warnings.warn("Spider.domain_name attribute is deprecated, use Spider.name instead and Spider.allowed_domains", \
                 DeprecationWarning, stacklevel=4)
             self.name = self.domain_name
-        if hasattr(self, 'extra_domain_names'):
-            warnings.warn("Spider.extra_domain_names attribute is deprecated - user Spider.allowed_domains instead", \
-                DeprecationWarning, stacklevel=4)
-            self.allowed_domains = [self.name] + list(self.extra_domain_names)
+            self.allowed_domains = [self.name]
+            if hasattr(self, 'extra_domain_names'):
+                warnings.warn("Spider.extra_domain_names attribute is deprecated - user Spider.allowed_domains instead", \
+                    DeprecationWarning, stacklevel=4)
+                self.allowed_domains += list(self.extra_domain_names)
 
         if name is not None:
             self.name = name
@@ -50,12 +51,12 @@ class BaseSpider(object_ref):
             self.start_urls = []
         if not self.allowed_domains:
             self.allowed_domains = []
-        if not getattr(self, 'domain_name', None):
-            self.domain_name = self.name
-        if not getattr(self, 'extra_domain_names', None):
-            self.extra_domain_names = self.allowed_domains
         if not self.name:
             self.name = 'default'
+
+        # XXX: SEP-12 forward compatibility (remove for 0.10)
+        self.domain_name = self.name
+        self.extra_domain_names = self.allowed_domains
 
     def log(self, message, level=log.DEBUG):
         """Log the given messages at the given log level. Always use this
