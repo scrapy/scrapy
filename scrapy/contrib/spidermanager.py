@@ -4,7 +4,6 @@ spiders
 """
 
 import sys
-import urlparse
 
 from twisted.plugin import getCache
 from twisted.python.rebuild import rebuild
@@ -21,21 +20,18 @@ class TwistedPluginSpiderManager(object):
         self.loaded = False
         self._spiders = {}
 
-    def create(self, spider_id):
+    def create(self, spider_name, **spider_kwargs):
+        """Returns a Spider instance for the given spider name, using the given
+        spider arguments. If the sipder name is not found, it raises a
+        KeyError.
         """
-        Returns Spider instance by given identifier.
-        If not exists raises KeyError.
-        """
-        #@@@ currently spider_id = domain
-        # if lookup fails let dict's KeyError exception propagate
-        return self._spiders[spider_id]
+        spider = self._spiders[spider_name]
+        spider.__dict__.update(spider_kwargs)
+        return spider
 
     def find_by_request(self, request):
-        """
-        Returns list of spiders ids that match given Request.
-        """
-        # just find by request.url
-        return [domain for domain, spider in self._spiders.iteritems()
+        """Returns list of spiders names that match the given Request"""
+        return [name for name, spider in self._spiders.iteritems()
                 if url_is_from_spider(request.url, spider)]
 
     def list(self):
