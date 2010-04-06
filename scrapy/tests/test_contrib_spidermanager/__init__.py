@@ -1,3 +1,4 @@
+import weakref
 import unittest
 
 # just a hack to avoid cyclic imports of scrapy.spider when running this test
@@ -25,6 +26,14 @@ class TwistedPluginSpiderManagerTest(unittest.TestCase):
         self.assertEqual(spider2.__class__.__name__, 'Spider2')
         self.assertEqual(spider2.foo, 'bar')
 
+    def test_create_uses_cache(self):
+        # TwistedPluginSpiderManager uses an internal cache which is
+        # invalidated in close_spider() but this isn't necessarily the best
+        # thing to do in all cases.
+        spider1 = self.spiderman.create("spider1")
+        spider2 = self.spiderman.create("spider1")
+        assert spider1 is spider2
+
     def test_find_by_request(self):
         self.assertEqual(self.spiderman.find_by_request(Request('http://scrapy1.org/test')),
             ['spider1'])
@@ -34,6 +43,20 @@ class TwistedPluginSpiderManagerTest(unittest.TestCase):
             set(['spider1', 'spider2']))
         self.assertEqual(self.spiderman.find_by_request(Request('http://scrapy999.org/test')),
             [])
+
+    def test_close_spider_remove_refs(self):
+        spider = self.spiderman.create("spider1")
+        wref = weakref.ref(spider)
+        assert wref()
+        self.spiderman.close_spider(spider)
+        del spider
+        assert not wref()
+
+    def test_close_spider_invalidates_cache(self):
+        spider1 = self.spiderman.create("spider1")
+        self.spiderman.close_spider(spider1)
+        spider2 = self.spiderman.create("spider1")
+        assert spider1 is not spider2
 
 if __name__ == '__main__':
     unittest.main()
