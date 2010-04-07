@@ -6,13 +6,18 @@ See documentation in docs/topics/request-response.rst
 """
 
 import re
-
+import codecs
 from scrapy.xlib.BeautifulSoup import UnicodeDammit
-
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs
 from scrapy.utils.encoding import encoding_exists, resolve_encoding
 from scrapy.conf import settings
+
+
+# Python decoder doesn't follow unicode standard when handling
+# bad utf-8 encoded strings. see http://bugs.python.org/issue8271
+codecs.register_error('scrapy_replace', lambda exc: (u'\ufffd', exc.start+1))
+
 
 class TextResponse(Response):
 
@@ -77,7 +82,7 @@ class TextResponse(Response):
     def body_as_unicode(self):
         """Return body as unicode"""
         if self._cached_ubody is None:
-            self._cached_ubody = self.body.decode(self.encoding, 'replace')
+            self._cached_ubody = self.body.decode(self.encoding, 'scrapy_replace')
         return self._cached_ubody
 
     @memoizemethod_noargs
