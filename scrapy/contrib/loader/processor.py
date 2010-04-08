@@ -33,6 +33,7 @@ class Compose(object):
 
     def __init__(self, *functions, **default_loader_context):
         self.functions = functions
+        self.stop_on_none = default_loader_context.get('stop_on_none', True)
         self.default_loader_context = default_loader_context
     
     def __call__(self, value, loader_context=None):
@@ -42,6 +43,8 @@ class Compose(object):
             context = self.default_loader_context
         wrapped_funcs = [wrap_loader_context(f, context) for f in self.functions]
         for func in wrapped_funcs:
+            if value is None and self.stop_on_none:
+                break
             value = func(value)
         return value
 

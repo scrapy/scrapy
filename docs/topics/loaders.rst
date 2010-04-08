@@ -548,6 +548,9 @@ Here is a list of all built-in processors:
     function, and so on, until the last function returns the output value of
     this processor.
 
+    By default, stop process on None value. This behaviour can be changed by
+    passing keyword argument stop_on_none=False.
+
     Example::
 
         >>> from scrapy.contrib.loader.processor import Compose

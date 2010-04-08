@@ -321,6 +321,10 @@ class ProcessorsTest(unittest.TestCase):
     def test_compose(self):
         proc = Compose(lambda v: v[0], str.upper)
         self.assertEqual(proc(['hello', 'world']), 'HELLO')
+        proc = Compose(str.upper)
+        self.assertEqual(proc(None), None)
+        proc = Compose(str.upper, stop_on_none=False)
+        self.assertRaises(TypeError, proc, None)
 
     def test_mapcompose(self):
         filter_world = lambda x: None if x == 'world' else x
