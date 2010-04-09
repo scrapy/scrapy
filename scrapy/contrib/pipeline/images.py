@@ -143,7 +143,7 @@ class S3ImagesStore(object):
     def _build_request(self, key, method, body=None, headers=None):
         url = 'http://%s.s3.amazonaws.com/%s%s' % (self.bucket, self.prefix, key)
         return Request(url, method=method, body=body, headers=headers, \
-                priority=self.request_priority)
+                meta={'sign_s3_request': True}, priority=self.request_priority)
 
     def _download_request(self, request, info):
         """This method is used for HEAD and PUT requests sent to amazon S3
