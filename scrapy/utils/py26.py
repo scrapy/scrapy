@@ -6,7 +6,7 @@ in Python 2.5. The Python 2.6 function is used when available.
 import sys
 import os
 import fnmatch
-from shutil import copytree, ignore_patterns, copy2, copystat
+from shutil import copy2, copystat
 
 __all__ = ['cpu_count', 'copytree', 'ignore_patterns']
 
@@ -39,7 +39,9 @@ except ImportError:
         else:
             raise NotImplementedError('cannot determine number of cpus')
 
-if sys.version_info < (2, 6):
+if sys.version_info >= (2, 6):
+    from shutil import copytree, ignore_patterns
+else:
     try:
         WindowsError
     except NameError:
