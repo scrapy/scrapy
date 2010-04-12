@@ -7,7 +7,7 @@ from os.path import join, exists
 import scrapy
 from scrapy.command import ScrapyCommand
 from scrapy.utils.template import render_templatefile, string_camelcase
-from scrapy.utils.python import ignore_patterns, copytree
+from scrapy.utils.py26 import ignore_patterns, copytree
 
 TEMPLATES_PATH = join(scrapy.__path__[0], 'templates', 'project')
 
