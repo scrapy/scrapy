@@ -1,9 +1,5 @@
 from scrapy.contrib.exporter import BaseItemExporter
-
-try:
-    import json
-except ImportError:
-    import simplejson as json
+from scrapy.utils.py26 import json
 
 class JsonLinesItemExporter(BaseItemExporter):
 

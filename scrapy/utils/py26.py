@@ -97,3 +97,11 @@ else:
                 errors.extend((src, dst, str(why)))
         if errors:
             raise Error, errors
+
+try:
+    import json
+except ImportError:
+    try:
+        import simplejson as json
+    except ImportError:
+        import scrapy.xlib.simplejson as json
