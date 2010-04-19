@@ -1,8 +1,8 @@
 .. _topics-email:
 
-=============
+==============
 Sending e-mail
-=============
+==============
 
 .. module:: scrapy.mail
    :synopsis: Email sending facility
