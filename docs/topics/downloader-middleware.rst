@@ -199,7 +199,7 @@ HttpAuthMiddleware
 
             http_user = 'someuser'
             http_pass = 'somepass'
-            domain_name = 'intranet.example.com'
+            name = 'intranet.example.com'
 
             # .. rest of the spider code omitted ...
 

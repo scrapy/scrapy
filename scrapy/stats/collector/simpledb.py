@@ -36,9 +36,9 @@ class SimpledbStatsCollector(StatsCollector):
 
     def _persist_to_sdb(self, spider, stats):
         ts = self._get_timestamp(spider).isoformat()
-        sdb_item_id = "%s_%s" % (spider.domain_name, ts)
+        sdb_item_id = "%s_%s" % (spider.name, ts)
         sdb_item = dict((k, self._to_sdb_value(v, k)) for k, v in stats.iteritems())
-        sdb_item['domain'] = spider.domain_name
+        sdb_item['spider'] = spider.name
         sdb_item['timestamp'] = self._to_sdb_value(ts)
         connect_sdb().put_attributes(self._sdbdomain, sdb_item_id, sdb_item)
 

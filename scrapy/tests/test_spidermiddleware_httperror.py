@@ -8,7 +8,7 @@ from scrapy.contrib.spidermiddleware.httperror import HttpErrorMiddleware
 class TestHttpErrorMiddleware(TestCase):
 
     def setUp(self):
-        self.spider = BaseSpider()
+        self.spider = BaseSpider('foo')
         self.mw = HttpErrorMiddleware()
         self.req = Request('http://scrapytest.org')
 

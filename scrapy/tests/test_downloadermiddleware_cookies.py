@@ -10,7 +10,7 @@ from scrapy.contrib.downloadermiddleware.cookies import CookiesMiddleware
 class CookiesMiddlewareTest(TestCase):
 
     def setUp(self):
-        self.spider = BaseSpider()
+        self.spider = BaseSpider('foo')
         self.mw = CookiesMiddleware()
 
     def tearDown(self):

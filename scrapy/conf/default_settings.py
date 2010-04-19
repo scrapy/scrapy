@@ -71,6 +71,40 @@ DOWNLOADER_STATS = True
 
 DUPEFILTER_CLASS = 'scrapy.contrib.dupefilter.RequestFingerprintDupeFilter'
 
+ENCODING_ALIASES = {}
+
+ENCODING_ALIASES_BASE = {
+    # gb2312 is superseded by gb18030
+    'gb2312': 'gb18030',
+    'chinese': 'gb18030',
+    'csiso58gb231280': 'gb18030',
+    'euc- cn': 'gb18030',
+    'euccn': 'gb18030',
+    'eucgb2312-cn': 'gb18030',
+    'gb2312-1980': 'gb18030',
+    'gb2312-80': 'gb18030',
+    'iso- ir-58': 'gb18030',
+    # gbk is superseded by gb18030
+    'gbk': 'gb18030',
+    '936': 'gb18030',
+    'cp936': 'gb18030',
+    'ms936': 'gb18030',
+    # latin_1 is a subset of cp1252
+    'latin_1': 'cp1252',
+    'iso-8859-1': 'cp1252',
+    'iso8859-1': 'cp1252',
+    '8859': 'cp1252',
+    'cp819': 'cp1252',
+    'latin': 'cp1252',
+    'latin1': 'cp1252',
+    'l1': 'cp1252',
+    # others
+    'zh-cn': 'gb18030',
+    'win-1251': 'cp1251',
+    'macintosh' : 'mac_roman',
+    'x-sjis': 'shift_jis',
+}
+
 EXTENSIONS = {}
 
 EXTENSIONS_BASE = {
@@ -101,6 +135,7 @@ ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'
 ITEM_PIPELINES = []
 
 LOG_ENABLED = True
+LOG_ENCODING = 'utf-8'
 LOG_FORMATTER_CRAWLED = 'scrapy.contrib.logformatter.crawled_logline'
 LOG_STDOUT = False
 LOG_LEVEL = 'DEBUG'
@@ -121,6 +156,8 @@ MEMUSAGE_WARNING_MB = 0
 MYSQL_CONNECTION_SETTINGS = {}
 
 NEWSPIDER_MODULE = ''
+
+RANDOMIZE_DOWNLOAD_DELAY = True
 
 REDIRECT_MAX_METAREFRESH_DELAY = 100
 REDIRECT_MAX_TIMES = 20 # uses Firefox default setting
@@ -150,7 +187,7 @@ SCHEDULER_MIDDLEWARES_BASE = {
     'scrapy.contrib.schedulermiddleware.duplicatesfilter.DuplicatesFilterMiddleware': 500,
 }
 
-SCHEDULER_ORDER = 'BFO'   # available orders: BFO (default), DFO
+SCHEDULER_ORDER = 'DFO'
 
 SPIDER_MANAGER_CLASS = 'scrapy.contrib.spidermanager.TwistedPluginSpiderManager'
 

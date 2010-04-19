@@ -8,7 +8,7 @@ from scrapy.http import Response, Request
 from scrapy.spider import BaseSpider
 from scrapy.conf import settings
 
-spider = BaseSpider()
+spider = BaseSpider('foo')
 
 class TestDefaultHeadersMiddleware(TestCase):
 
