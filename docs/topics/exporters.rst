@@ -20,10 +20,10 @@ Using Item Exporters
 If you are in a hurry, and just want to use an Item Exporter as an :doc:`Item
 Pipeline <item-pipeline>` see the :ref:`File Export Pipeline
 <file-export-pipeline>`. Otherwise, if you want to know how Item Exporters
-work, or need more custom functionality (not covered by the :ref:`File Export
-Pipeline <file-export-pipeline>`) continue reading below.
+work or need more custom functionality (not covered by the :ref:`File Export
+Pipeline <file-export-pipeline>`), continue reading below.
 
-In order to use a Item Exporter, you  must instantiate it with its required
+In order to use an Item Exporter, you  must instantiate it with its required
 args. Each Item Exporter requires different arguments, so check each exporter
 documentation to be sure, in :ref:`topics-exporters-reference`. After you have
 instantiated you exporter, you have to:
@@ -72,7 +72,7 @@ Exporter to export scraped items to different files, one per spider::
 Serialization of item fields
 ============================
 
-By default the field values are passed unmodified to the underlying
+By default, the field values are passed unmodified to the underlying
 serialization library, and the decision of how to serialize them is delegated
 to each particular serialization library.
 
@@ -119,7 +119,7 @@ Example::
       class ProductXmlExporter(XmlItemExporter):
 
           def serialize_field(self, field, name, value):
-              if filed == 'price':
+              if field == 'price':
                   return '$ %s' % str(value)
               return super(Product, self).serialize_field(field, name, value)
              
@@ -241,7 +241,7 @@ XmlItemExporter
         </item>
        </items>
 
-   Unless overriden in :meth:`serialize_field` method, multi-valued fields are
+   Unless overriden in the :meth:`serialize_field` method, multi-valued fields are
    exported by serializing each value inside a ``<value>`` element. This is for
    convenience, as multi-valued fields are very common.
 

@@ -27,7 +27,7 @@ IgnoreRequest
 
 .. exception:: IgnoreRequest
 
-This exception can be raised by the Scheduler or any downlaoder middleware to
+This exception can be raised by the Scheduler or any downloader middleware to
 indicate that the request should be ignored.
 
 NotConfigured
@@ -36,7 +36,7 @@ NotConfigured
 .. exception:: NotConfigured
 
 This exception can be raised by some components to indicate that they will
-remain disabled. Those component include:
+remain disabled. Those components include:
 
  * Extensions
  * Item pipelines

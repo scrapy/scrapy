@@ -4,7 +4,7 @@
 Architecture overview
 =====================
 
-This document describes the architecture of Scrapy and how their components
+This document describes the architecture of Scrapy and how its components
 interact.
 
 Overview
@@ -41,12 +41,12 @@ Downloader
 ----------
 
 The Downloader is responsible for fetching web pages and feeding them to the
-engine which, in turns, feeds them to the spiders.
+engine which, in turn, feeds them to the spiders.
 
 Spiders
 -------
 
-Spiders are custom classes written by Scrapy users to parse response and
+Spiders are custom classes written by Scrapy users to parse responses and
 extract items (aka scraped items) from them or additional URLs (requests) to
 follow. Each spider is able to handle a specific domain (or group of domains).
 For more information see :ref:`topics-spiders`.
@@ -64,7 +64,7 @@ Downloader middlewares
 
 Downloader middlewares are specific hooks that sit between the Engine and the
 Downloader and process requests when they pass from the Engine to the
-downloader, and responses that pass from Downloader to the Engine. They provide
+Downloader, and responses that pass from Downloader to the Engine. They provide
 a convenient mechanism for extending Scrapy functionality by plugging custom
 code. For more information see :ref:`topics-downloader-middleware`.
 
@@ -80,7 +80,7 @@ functionality by plugging custom code. For more information see
 Scheduler middlewares
 ---------------------
 
-Spider middlewares are specific hooks that sit between the Engine and the
+Scheduler middlewares are specific hooks that sit between the Engine and the
 Scheduler and process requests when they pass from the Engine to the Scheduler
 and vice-versa. They provide a convenient mechanism for extending Scrapy
 functionality by plugging custom code.

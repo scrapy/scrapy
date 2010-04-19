@@ -38,7 +38,7 @@ In the following screenshot you can see the `Inspect Element`_ tool in action.
 At first sight, we can see that the directory is divided in categories, which
 are also divided in subcategories.
 
-However, it seems as if there are more subcategories than the ones being shown
+However, it seems that there are more subcategories than the ones being shown
 in this page, so we'll keep looking:
 
 .. image:: _images/firebug2.png
@@ -46,7 +46,7 @@ in this page, so we'll keep looking:
    :height: 629
    :alt: Inspecting elements with Firebug
 
-As expected the subcategories contain links to other subcategories, and also
+As expected, the subcategories contain links to other subcategories, and also
 links to actual websites, which is the purpose of the directory.
 
 Getting links to follow
@@ -98,7 +98,7 @@ This is how the spider would look so far::
 Extracting the data
 ===================
 
-Now we're gonna write the code to extract data from those pages. 
+Now we're going to write the code to extract data from those pages. 
 
 With the help of Firebug, we'll take a look at some page containing links to
 websites (say http://directory.google.com/Top/Arts/Awards/) and find out how we can
@@ -154,8 +154,8 @@ Finally, we can write our ``parse_category()`` method::
             yield item
 
 
-make sure you you may find some elements which appear in Firebug but
-doesn't belong to the original HTML, such as the typical case of ``<tbody>``
+Be aware that you may find some elements which appear in Firebug but
+not in the original HTML, such as the typical case of ``<tbody>``
 elements.
 
 or tags which Therefer   in page HTML

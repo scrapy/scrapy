@@ -7,7 +7,7 @@ Downloading Item Images
 .. currentmodule:: scrapy.contrib.pipeline.images
 
 Scrapy provides an :doc:`item pipeline </topics/item-pipeline>` for downloading
-images attached to a particular item. For example, when you scrape products and
+images attached to a particular item, for example, when you scrape products and
 also want to download their images locally.
 
 This pipeline, called the Images Pipeline and implemented in the
@@ -44,16 +44,16 @@ this:
 3. When the item reaches the :class:`ImagesPipeline`, the URLs in the
    ``image_urls`` attribute are scheduled for download using the standard
    Scrapy scheduler and downloader (which means the scheduler and downloader
-   middlewares are reused), but higher priority to process them before other
-   pages to scrape. The item remains "locked" at that particular pipeline stage
+   middlewares are reused), but with a higher priority, processing them before other
+   pages are scraped. The item remains "locked" at that particular pipeline stage
    until the images have finish downloading (or fail for some reason).
 
-4. When the images finish downloading (or fail for some reason) the images gets
-   another field populated with the path of the images downloaded, for example,
+4. When the images finish downloading (or fail for some reason)
+   another field gets populated with their path, for example,
    ``image_paths``. This attribute is a list of dictionaries containing
-   information about the image downloaded, such as the downloaded path, and the
-   original scraped url. This images in the list of the ``image_paths`` field
-   would retain the same order of the original ``image_urls`` field, which is
+   information about the images downloaded, such as the downloaded path, and the
+   original scraped url. The images in the list of the ``image_paths`` field
+   will retain the same order of the original ``image_urls`` field, which is
    useful if you decide to use the first image in the list as the primary
    image.
 
@@ -83,7 +83,7 @@ Here are the methods that you should override in your custom Images Pipeline:
       :meth:`~item_completed` method, as a list of 2-element tuples.
       Each tuple will contain ``(success, image_info_or_failure)`` where:
 
-      * ``success`` is a boolean which is ``True`` if the image was downloading
+      * ``success`` is a boolean which is ``True`` if the image was downloaded
         successfully or ``False`` if it failed for some reason
 
       * ``image_info_or_error`` is a dict containing the following keys (if success
@@ -131,7 +131,7 @@ Here are the methods that you should override in your custom Images Pipeline:
       output that will be sent to subsequent item pipeline stages, so you must
       return (or drop) the item, as you would in any pipeline.
 
-      Here is an example of :meth:`~item_completed` method where we
+      Here is an example of the :meth:`~item_completed` method where we
       store the downloaded image paths (passed in results) in the ``image_paths``
       item field, and we drop the item if it doesn't contain any images::
 
@@ -246,7 +246,7 @@ images.
 
 .. setting:: IMAGES_THUMBS
 
-In order use this feature you must set :setting:`IMAGES_THUMBS` to a dictionary
+In order use this feature, you must set :setting:`IMAGES_THUMBS` to a dictionary
 where the keys are the thumbnail names and the values are their dimensions.
 
 For example::
@@ -293,7 +293,7 @@ For example::
    IMAGES_MIN_HEIGHT = 110
    IMAGES_MIN_WIDTH = 110
 
-Note: this size constraints only doesn't affect thumbnail generation at all.
+Note: these size constraints don't affect thumbnail generation at all.
 
-By default, there are no size constrains, so all images are precessed.
+By default, there are no size constraints, so all images are processed.
 

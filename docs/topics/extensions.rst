@@ -4,7 +4,7 @@
 Extensions
 ==========
 
-The extensions framework provide a mechanism for inserting your own
+The extensions framework provides a mechanism for inserting your own
 custom functionality into Scrapy. 
 
 Extensions are just regular classes that are instantiated at Scrapy startup,
@@ -50,8 +50,8 @@ orders though, and they are typically irrelevant, ie. it doesn't matter in
 which order the extensions are loaded because they don't depend on each other
 [1].
 
-However this feature can be exploited if you need to add an extension which
-depends on other extension already loaded.
+However, this feature can be exploited if you need to add an extension which
+depends on other extensions already loaded.
 
 [1] This is is why the :setting:`EXTENSIONS_BASE` setting in Scrapy (which
 contains all built-in extensions enabled by default) defines all the extensions
@@ -63,7 +63,7 @@ Available, enabled and disabled extensions
 Not all available extensions will be enabled. Some of them usually depend on a
 particular setting. For example, the HTTP Cache extension is available by default
 but disabled unless the :setting:`HTTPCACHE_DIR` setting is set.  Both enabled
-and disabled extension can be accessed through the
+and disabled extensions can be accessed through the
 :ref:`topics-extensions-ref-manager`.
 
 Accessing enabled extensions
@@ -76,9 +76,9 @@ loaded.  For example, to access the ``WebConsole`` extension::
     from scrapy.extension import extensions
     webconsole_extension = extensions.enabled['WebConsole']
 
-.. seealso::
+.. see also::
 
-    :ref:`topics-extensions-ref-manager`, for the complete Extension manager
+    :ref:`topics-extensions-ref-manager`, for the complete Extension Manager
     reference.
 
 Writing your own extension
@@ -93,7 +93,7 @@ All extension initialization code must be performed in the class constructor
 disabled. Otherwise, the extension will be enabled.
 
 Let's take a look at the following example extension which just logs a message
-everytime a domain/spider is opened and closed::
+every time a domain/spider is opened and closed::
 
     from scrapy.xlib.pydispatch import dispatcher
     from scrapy.core import signals
@@ -113,7 +113,7 @@ everytime a domain/spider is opened and closed::
 
 .. _topics-extensions-ref-manager:
 
-Extension manager
+Extension Manager
 =================
 
 .. module:: scrapy.extension
@@ -127,7 +127,7 @@ how you :ref:`configure the downloader middlewares
 
 .. class:: ExtensionManager
 
-    The extension manager is a singleton object, which is instantiated at module
+    The Extension Manager is a singleton object, which is instantiated at module
     loading time and can be accessed like this::
 
         from scrapy.extension import extensions
@@ -190,7 +190,7 @@ Core Stats extension
 
 .. class:: CoreStats
 
-Enable the collection of core statistics, provided the stats collection are
+Enable the collection of core statistics, provided the stats collection is
 enabled (see :ref:`topics-stats`).
 
 .. _topics-extensions-ref-webconsole:
@@ -246,10 +246,10 @@ Memory usage extension
 
 Allows monitoring the memory used by a Scrapy process and:
 
-1, send a notification email when it exceeds a certain value
+1, send a notification e-mail when it exceeds a certain value
 2. terminate the Scrapy process when it exceeds a certain value 
 
-The notification emails can be triggered when a certain warning value is
+The notification e-mails can be triggered when a certain warning value is
 reached (:setting:`MEMUSAGE_WARNING_MB`) and when the maximum value is reached
 (:setting:`MEMUSAGE_LIMIT_MB`) which will also cause the Scrapy process to be
 terminated.
@@ -271,9 +271,9 @@ Memory debugger extension
 .. class:: scrapy.contrib.memdebug.MemoryDebugger
 
 A memory debugger which collects some info about objects uncollected by the
-garbage collector and libxml2 memory leaks. To enable this extension turn on
+garbage collector and libxml2 memory leaks. To enable this extension, turn on
 the :setting:`MEMDEBUG_ENABLED` setting. The report will be printed to standard
-output. If the :setting:`MEMDEBUG_NOTIFY` setting contains a list of emails the
+output. If the :setting:`MEMDEBUG_NOTIFY` setting contains a list of e-mails the
 report will also be sent to those addresses.
 
 Close spider extension
@@ -299,7 +299,7 @@ Default: ``0``
 
 An integer which specifies a number of seconds. If the spider remains open for
 more than that number of second, it will be automatically closed with the
-reason ``closespider_timeout``. If zero (or non set) spiders won't be closed by
+reason ``closespider_timeout``. If zero (or non set), spiders won't be closed by
 timeout.
 
 .. setting:: CLOSESPIDER_ITEMPASSED
@@ -312,7 +312,7 @@ Default: ``0``
 An integer which specifies a number of items. If the spider scrapes more than
 that amount if items and those items are passed by the item pipeline, the
 spider will be closed with the reason ``closespider_itempassed``. If zero (or
-non set) spiders won't be closed by number of passed items.
+non set), spiders won't be closed by number of passed items.
 
 StatsMailer extension
 ~~~~~~~~~~~~~~~~~~~~~
@@ -322,7 +322,7 @@ StatsMailer extension
 
 .. class:: scrapy.contrib.statsmailer.StatsMailer
 
-This simple extension can be used to send a notification email every time a
+This simple extension can be used to send a notification e-mail every time a
 domain has finished scraping, including the Scrapy stats collected. The email
 will be sent to all recipients specified in the :setting:`STATSMAILER_RCPTS`
 setting.
