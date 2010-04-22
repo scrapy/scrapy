@@ -5,10 +5,12 @@ See documentation in docs/topics/loaders.rst
 """
 
 from collections import defaultdict
+import re
 
 from scrapy.item import Item
 from scrapy.selector import HtmlXPathSelector
-from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.misc import arg_to_iter, extract_regex
+from scrapy.utils.python import flatten
 from .common import wrap_loader_context
 from .processor import Identity
 
@@ -25,8 +27,8 @@ class ItemLoader(object):
         self.context = context
         self._values = defaultdict(list)
 
-    def add_value(self, field_name, value, *processors):
-        value = self.get_value(value, *processors)
+    def add_value(self, field_name, value, *processors, **kw):
+        value = self.get_value(value, *processors, **kw)
         if not value:
             return
         if not field_name:
@@ -35,8 +37,8 @@ class ItemLoader(object):
         else:
             self._add_value(field_name, value)
 
-    def replace_value(self, field_name, value, *processors):
-        value = self.get_value(value, *processors)
+    def replace_value(self, field_name, value, *processors, **kw):
+        value = self.get_value(value, *processors, **kw)
         if not value:
             return
         if not field_name:
@@ -55,7 +57,12 @@ class ItemLoader(object):
         self._values.pop(field_name, None)
         self._add_value(field_name, value)
 
-    def get_value(self, value, *processors):
+    def get_value(self, value, *processors, **kw):
+        regex = kw.get('re', None)
+        if regex:
+            value = arg_to_iter(value)
+            value = flatten([extract_regex(regex, x) for x in value])
+
         for proc in processors:
             if value is None:
                 break
