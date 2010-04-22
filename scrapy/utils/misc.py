@@ -42,7 +42,7 @@ def load_object(path):
 
     return obj
 
-def extract_regex(regex, text, encoding):
+def extract_regex(regex, text, encoding='utf-8'):
     """Extract a list of unicode strings from the given text/encoding using the following policies:
 
     * if the regex contains a named group called "extract" that will be returned
