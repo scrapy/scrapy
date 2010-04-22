@@ -61,6 +61,9 @@ class ItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.get_collected_values('name'), [u'Marta', u'Pepe'])
         self.assertEqual(il.get_output_value('name'), [u'Marta', u'Pepe'])
 
+        il.add_value(None, u'Jim', lambda x: {'name': x})
+        self.assertEqual(il.get_collected_values('name'), [u'Marta', u'Pepe', u'Jim'])
+
     def test_replace_value(self):
         il = TestItemLoader()
         il.replace_value('name', u'marta')
@@ -69,6 +72,21 @@ class ItemLoaderTest(unittest.TestCase):
         il.replace_value('name', u'pepe')
         self.assertEqual(il.get_collected_values('name'), [u'Pepe'])
         self.assertEqual(il.get_output_value('name'), [u'Pepe'])
+
+        il.replace_value(None, u'Jim', lambda x: {'name': x})
+        self.assertEqual(il.get_collected_values('name'), [u'Jim'])
+
+    def test_get_value(self):
+        il = NameItemLoader()
+        self.assertEqual(u'FOO', il.get_value([u'foo', u'bar'], TakeFirst(), unicode.upper))
+        self.assertEqual([u'foo', u'bar'], il.get_value([u'name:foo', u'name:bar'], re=u'name:(.*)$'))
+        self.assertEqual(u'foo', il.get_value([u'name:foo', u'name:bar'], TakeFirst(), re=u'name:(.*)$'))
+
+        il.add_value('name', [u'name:foo', u'name:bar'], TakeFirst(), re=u'name:(.*)$')
+        self.assertEqual([u'foo'], il.get_collected_values('name'))
+        il.replace_value('name', u'name:bar', re=u'name:(.*)$')
+        self.assertEqual([u'bar'], il.get_collected_values('name'))
+
 
     def test_iter_on_input_processor_input(self):
         class NameFirstItemLoader(NameItemLoader):
