@@ -25,14 +25,43 @@ class ItemLoader(object):
         self.context = context
         self._values = defaultdict(list)
 
-    def add_value(self, field_name, value):
+    def add_value(self, field_name, value, *processors):
+        value = self.get_value(value, *processors)
+        if not value:
+            return
+        if not field_name:
+            for k,v in value.iteritems():
+                self._add_value(k, v)
+        else:
+            self._add_value(field_name, value)
+
+    def replace_value(self, field_name, value, *processors):
+        value = self.get_value(value, *processors)
+        if not value:
+            return
+        if not field_name:
+            for k,v in value.iteritems():
+                self._replace_value(k, v)
+        else:
+            self._replace_value(field_name, value)
+
+    def _add_value(self, field_name, value):
         value = arg_to_iter(value)
         processed_value = self._process_input_value(field_name, value)
-        self._values[field_name] += arg_to_iter(processed_value)
+        if processed_value:
+            self._values[field_name] += arg_to_iter(processed_value)
 
-    def replace_value(self, field_name, value):
+    def _replace_value(self, field_name, value):
         self._values.pop(field_name, None)
-        self.add_value(field_name, value)
+        self._add_value(field_name, value)
+
+    def get_value(self, value, *processors):
+        for proc in processors:
+            if value is None:
+                break
+            proc = wrap_loader_context(proc, self.context)
+            value = proc(value)
+        return value
 
     def load_item(self):
         item = self.item
