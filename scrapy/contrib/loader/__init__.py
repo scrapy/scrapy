@@ -51,14 +51,14 @@ class ItemLoader(object):
     def get_input_processor(self, field_name):
         proc = getattr(self, '%s_in' % field_name, None)
         if not proc:
-            proc = self.item.fields[field_name].get('input_processor', \
+            proc = self._get_item_field_attr(field_name, 'input_processor', \
                 self.default_input_processor)
         return proc
 
     def get_output_processor(self, field_name):
         proc = getattr(self, '%s_out' % field_name, None)
         if not proc:
-            proc = self.item.fields[field_name].get('output_processor', \
+            proc = self._get_item_field_attr(field_name, 'output_processor', \
                 self.default_output_processor)
         return proc
 
@@ -67,6 +67,12 @@ class ItemLoader(object):
         proc = wrap_loader_context(proc, self.context)
         return proc(value)
 
+    def _get_item_field_attr(self, field_name, key, default=None):
+        if isinstance(self.item, Item):
+            value = self.item.fields[field_name].get(key, default)
+        else:
+            value = default
+        return value
 
 class XPathItemLoader(ItemLoader):
 
