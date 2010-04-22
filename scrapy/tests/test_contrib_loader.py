@@ -360,6 +360,24 @@ class XPathItemLoaderTest(unittest.TestCase):
         l.replace_xpath('name', '//p/text()')
         self.assertEqual(l.get_output_value('name'), [u'Paragraph'])
 
+        l.replace_xpath('name', ['//p/text()', '//div/text()'])
+        self.assertEqual(l.get_output_value('name'), [u'Paragraph', 'Marta'])
+
+    def test_get_xpath(self):
+        l = TestXPathItemLoader(response=self.response)
+        self.assertEqual(l.get_xpath('//p/text()'), [u'paragraph'])
+        self.assertEqual(l.get_xpath('//p/text()', TakeFirst()), u'paragraph')
+        self.assertEqual(l.get_xpath('//p/text()', TakeFirst(), re='pa'), u'pa')
+
+        self.assertEqual(l.get_xpath(['//p/text()', '//div/text()']), [u'paragraph', 'marta'])
+
+    def test_replace_xpath_multi_fields(self):
+        l = TestXPathItemLoader(response=self.response)
+        l.add_xpath(None, '//div/text()', TakeFirst(), lambda x: {'name': x})
+        self.assertEqual(l.get_output_value('name'), [u'Marta'])
+        l.replace_xpath(None, '//p/text()', TakeFirst(), lambda x: {'name': x})
+        self.assertEqual(l.get_output_value('name'), [u'Paragraph'])
+
     def test_replace_xpath_re(self):
         l = TestXPathItemLoader(response=self.response)
         self.assert_(l.selector)

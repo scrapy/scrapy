@@ -124,13 +124,19 @@ class XPathItemLoader(ItemLoader):
         context.update(selector=selector, response=response)
         super(XPathItemLoader, self).__init__(item, **context)
 
-    def add_xpath(self, field_name, xpath, re=None):
-        self.add_value(field_name, self._get_values(field_name, xpath, re))
+    def add_xpath(self, field_name, xpath, *processors, **kw):
+        values = self._get_values(xpath, **kw)
+        self.add_value(field_name, values, *processors, **kw)
 
-    def replace_xpath(self, field_name, xpath, re=None):
-        self.replace_value(field_name, self._get_values(field_name, xpath, re))
+    def replace_xpath(self, field_name, xpath, *processors, **kw):
+        values = self._get_values(xpath, **kw)
+        self.replace_value(field_name, values, *processors, **kw)
 
-    def _get_values(self, field_name, xpath, re):
-        x = self.selector.select(xpath)
-        return x.re(re) if re else x.extract()
+    def get_xpath(self, xpath, *processors, **kw):
+        values = self._get_values(xpath, **kw)
+        return self.get_value(values, *processors, **kw)
+
+    def _get_values(self, xpaths, **kw):
+        xpaths = arg_to_iter(xpaths)
+        return flatten([self.selector.select(xpath).extract() for xpath in xpaths])
 
