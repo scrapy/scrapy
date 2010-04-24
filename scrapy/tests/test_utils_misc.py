@@ -23,6 +23,7 @@ class UtilsMiscTestCase(unittest.TestCase):
         self.assertEqual(list(arg_to_iter(100)), [100])
         self.assertEqual(list(arg_to_iter(l for l in 'abc')), ['a', 'b', 'c'])
         self.assertEqual(list(arg_to_iter([1,2,3])), [1,2,3])
+        self.assertEqual(list(arg_to_iter({'a':1})), [{'a': 1}])
 
 if __name__ == "__main__":
     unittest.main()

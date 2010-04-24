@@ -9,10 +9,12 @@ from scrapy.utils.markup import remove_entities
 def arg_to_iter(arg):
     """Convert an argument to an iterable. The argument can be a None, single
     value, or an iterable.
+
+    Exception: if arg is a dict, [arg] will be returned
     """
     if arg is None:
         return []
-    elif hasattr(arg, '__iter__'):
+    elif not isinstance(arg, dict) and hasattr(arg, '__iter__'):
         return arg
     else:
         return [arg]
