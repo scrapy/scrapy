@@ -18,8 +18,8 @@ Requirements
 
 * `Python`_ 2.5 or 2.6 (3.x is not yet supported)
 
-* `Twisted`_ 2.5.0, 8.0 or above (Windows users: you may need to install
-  `pywin32`_ because of `this Twisted bug`_)
+* `Twisted`_ 2.5.0, 8.0 or above (Windows users: you'll need to install
+  `Zope.Interface`_ and maybe `pywin32`_ because of `this Twisted bug`_)
 
 * `libxml2`_ (versions prior to 2.6.28 are known to have problems parsing certain malformed HTML, and have also been reported to contain leaks, so 2.6.28 or above is highly recommended)
 
@@ -27,6 +27,7 @@ Requirements
 .. _Twisted: http://twistedmatrix.com
 .. _libxml2: http://xmlsoft.org
 .. _pywin32: http://sourceforge.net/projects/pywin32/
+.. _Zope.Interface: http://pypi.python.org/pypi/zope.interface#download
 .. _this Twisted bug: http://twistedmatrix.com/trac/ticket/3707
 
 Optional:
@@ -121,9 +122,11 @@ Download and install:
 1. `Twisted for Windows <http://twistedmatrix.com/trac/wiki/Downloads>`_ - you
    may need to install `pywin32`_ because of `this Twisted bug`_
 
-2. `libxml2 for Windows <http://users.skynet.be/sbi/libxml-python/>`_
+2. Install `Zope.Interface`_ (required by Twisted)
 
-3. `PyOpenSSL for Windows <http://sourceforge.net/project/showfiles.php?group_id=31249>`_
+3. `libxml2 for Windows <http://users.skynet.be/sbi/libxml-python/>`_
+
+4. `PyOpenSSL for Windows <http://sourceforge.net/project/showfiles.php?group_id=31249>`_
 
 .. _intro-install-step3:
 
