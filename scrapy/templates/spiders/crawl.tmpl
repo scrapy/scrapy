@@ -6,19 +6,20 @@ from scrapy.contrib.spiders import CrawlSpider, Rule
 from $project_name.items import ${ProjectName}Item
 
 class $classname(CrawlSpider):
-    domain_name = '$site'
-    start_urls = ['http://www.$site/']
+    name = '$name'
+    allowed_domains = ['$domain']
+    start_urls = ['http://www.$domain/']
 
     rules = (
-        Rule(SgmlLinkExtractor(allow=(r'Items/', )), 'parse_item', follow=True),
+        Rule(SgmlLinkExtractor(allow=r'Items/'), callback='parse_item', follow=True),
     )
 
     def parse_item(self, response):
-        xs = HtmlXPathSelector(response)
+        hxs = HtmlXPathSelector(response)
         i = ${ProjectName}Item()
-        #i['site_id'] = xs.select('//input[@id="sid"]/@value').extract()
-        #i['name'] = xs.select('//div[@id="name"]').extract()
-        #i['description'] = xs.select('//div[@id="description"]').extract()
+        #i['domain_id'] = hxs.select('//input[@id="sid"]/@value').extract()
+        #i['name'] = hxs.select('//div[@id="name"]').extract()
+        #i['description'] = hxs.select('//div[@id="description"]').extract()
         return i
 
 SPIDER = $classname()

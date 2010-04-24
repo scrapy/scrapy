@@ -10,7 +10,7 @@ class DuplicatesFilterMiddlewareTest(unittest.TestCase):
 
     def setUp(self):
         self.mw = DuplicatesFilterMiddleware()
-        self.spider = BaseSpider()
+        self.spider = BaseSpider('foo')
         self.mw.open_spider(self.spider)
 
     def tearDown(self):

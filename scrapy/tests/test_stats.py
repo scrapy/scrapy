@@ -9,7 +9,7 @@ from scrapy.stats.signals import stats_spider_opened, stats_spider_closing, \
 class StatsCollectorTest(unittest.TestCase):
 
     def setUp(self):
-        self.spider = BaseSpider()
+        self.spider = BaseSpider('foo')
 
     def test_collector(self):
         stats = StatsCollector()

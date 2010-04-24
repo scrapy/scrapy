@@ -52,6 +52,10 @@ class Command(ScrapyCommand):
             dispatcher.connect(exporter.export_item, signal=signals.item_passed)
             exporter.start_exporting()
         module = _import_file(args[0])
-        scrapymanager.runonce(module.SPIDER)
+
+        # schedule spider and start engine
+        scrapymanager.crawl_spider(module.SPIDER)
+        scrapymanager.start()
+
         if opts.output:
             exporter.finish_exporting()

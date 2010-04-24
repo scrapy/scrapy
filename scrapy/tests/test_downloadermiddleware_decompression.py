@@ -21,7 +21,7 @@ class DecompressionMiddlewareTest(TestCase):
 
     def setUp(self):
         self.mw = DecompressionMiddleware()
-        self.spider = BaseSpider()
+        self.spider = BaseSpider('foo')
 
     def test_known_compression_formats(self):
         for fmt in self.test_formats:

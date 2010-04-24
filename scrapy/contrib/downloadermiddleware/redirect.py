@@ -1,4 +1,5 @@
 from scrapy import log
+from scrapy.http import HtmlResponse
 from scrapy.utils.url import urljoin_rfc
 from scrapy.utils.response import get_meta_refresh
 from scrapy.core.exceptions import IgnoreRequest
@@ -24,10 +25,11 @@ class RedirectMiddleware(object):
             redirected = request.replace(url=redirected_url)
             return self._redirect(redirected, request, spider, response.status)
 
-        interval, url = get_meta_refresh(response)
-        if url and interval < self.max_metarefresh_delay:
-            redirected = self._redirect_request_using_get(request, url)
-            return self._redirect(redirected, request, spider, 'meta refresh')
+        if isinstance(response, HtmlResponse):
+            interval, url = get_meta_refresh(response)
+            if url and interval < self.max_metarefresh_delay:
+                redirected = self._redirect_request_using_get(request, url)
+                return self._redirect(redirected, request, spider, 'meta refresh')
 
         return response
 

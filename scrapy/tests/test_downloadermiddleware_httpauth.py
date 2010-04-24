@@ -18,7 +18,7 @@ class HttpAuthMiddlewareTest(unittest.TestCase):
 
     def test_auth(self):
         self.mw.default_useragent = 'default_useragent'
-        spider = TestSpider()
+        spider = TestSpider('foo')
         req = Request('http://scrapytest.org/')
         assert self.mw.process_request(req, spider) is None
         self.assertEquals(req.headers['Authorization'], 'Basic Zm9vOmJhcg==')

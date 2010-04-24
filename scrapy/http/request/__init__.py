@@ -96,20 +96,12 @@ class Request(object_ref):
         """Return a copy of this Request"""
         return self.replace()
 
-    def replace(self, url=None, callback=None, method=None, headers=None, body=None, \
-                cookies=None, meta=None, encoding=None, priority=None, \
-                dont_filter=None, errback=None):
+    def replace(self, *args, **kwargs):
         """Create a new Request with the same attributes except for those
         given new values.
         """
-        return self.__class__(url=self.url if url is None else url,
-                              callback=callback,
-                              method=self.method if method is None else method,
-                              headers=copy.deepcopy(self.headers) if headers is None else headers,
-                              body=self.body if body is None else body,
-                              cookies=self.cookies if cookies is None else cookies,
-                              meta=self.meta if meta is None else meta,
-                              encoding=self.encoding if encoding is None else encoding,
-                              priority=self.priority if priority is None else priority,
-                              dont_filter=self.dont_filter if dont_filter is None else dont_filter,
-                              errback=errback)
+        for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta', \
+                'encoding', 'priority', 'dont_filter']:
+            kwargs.setdefault(x, getattr(self, x))
+        cls = kwargs.pop('cls', self.__class__)
+        return cls(*args, **kwargs)

@@ -128,7 +128,8 @@ Finally, here's the spider code::
 
     class MininovaSpider(CrawlSpider):
 
-        domain_name = 'mininova.org'
+        name = 'mininova.org'
+        allowed_domains = ['mininova.org']
         start_urls = ['http://www.mininova.org/today']
         rules = [Rule(SgmlLinkExtractor(allow=['/tor/\d+']), 'parse_torrent')]
         

@@ -8,7 +8,7 @@ from scrapy.contrib.spidermiddleware.referer import RefererMiddleware
 class TestRefererMiddleware(TestCase):
 
     def setUp(self):
-        self.spider = BaseSpider()
+        self.spider = BaseSpider('foo')
         self.mw = RefererMiddleware()
 
     def test_process_spider_output(self):

@@ -2,6 +2,7 @@
 Download web pages using asynchronous IO
 """
 
+import random
 from time import time
 
 from twisted.internet import reactor, defer
@@ -20,15 +21,21 @@ class SpiderInfo(object):
 
     def __init__(self, download_delay=None, max_concurrent_requests=None):
         if download_delay is None:
-            self.download_delay = settings.getfloat('DOWNLOAD_DELAY')
+            self._download_delay = settings.getfloat('DOWNLOAD_DELAY')
         else:
-            self.download_delay = download_delay
-        if self.download_delay:
+            self._download_delay = float(download_delay)
+        if self._download_delay:
             self.max_concurrent_requests = 1
         elif max_concurrent_requests is None:
             self.max_concurrent_requests = settings.getint('CONCURRENT_REQUESTS_PER_SPIDER')
         else:
             self.max_concurrent_requests =  max_concurrent_requests
+        if self._download_delay and settings.getbool('RANDOMIZE_DOWNLOAD_DELAY'):
+            # same policy as wget --random-wait
+            self.random_delay_interval = (0.5*self._download_delay, \
+                1.5*self._download_delay)
+        else:
+            self.random_delay_interval = None
 
         self.active = set()
         self.queue = []
@@ -43,6 +50,12 @@ class SpiderInfo(object):
     def needs_backout(self):
         # use self.active to include requests in the downloader middleware
         return len(self.active) > 2 * self.max_concurrent_requests
+
+    def download_delay(self):
+        if self.random_delay_interval:
+            return random.uniform(*self.random_delay_interval)
+        else:
+            return self._download_delay
 
     def cancel_request_calls(self):
         for call in self.next_request_calls:
@@ -99,8 +112,9 @@ class Downloader(object):
 
         # Delay queue processing if a download_delay is configured
         now = time()
-        if site.download_delay:
-            penalty = site.download_delay - now + site.lastseen
+        delay = site.download_delay()
+        if delay:
+            penalty = delay - now + site.lastseen
             if penalty > 0:
                 d = defer.Deferred()
                 d.addCallback(self._process_queue)

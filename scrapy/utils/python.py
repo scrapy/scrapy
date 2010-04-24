@@ -6,12 +6,9 @@ higher than 2.5 which is the lowest version supported by Scrapy.
 
 """
 import re
-import os
-import fnmatch
 import inspect
 import weakref
 from functools import wraps
-from shutil import copy2, copystat
 from sgmllib import SGMLParser
 
 class FixedSGMLParser(SGMLParser):
@@ -64,13 +61,15 @@ def unique(list_, key=lambda x: x):
     return result
 
 
-def str_to_unicode(text, encoding='utf-8'):
+def str_to_unicode(text, encoding=None):
     """Return the unicode representation of text in the given encoding. Unlike
     .encode(encoding) this function can be applied directly to a unicode
     object without the risk of double-decoding problems (which can happen if
     you don't use the default 'ascii' encoding)
     """
     
+    if encoding is None:
+        encoding = 'utf-8'
     if isinstance(text, str):
         return text.decode(encoding)
     elif isinstance(text, unicode):
@@ -78,13 +77,15 @@ def str_to_unicode(text, encoding='utf-8'):
     else:
         raise TypeError('str_to_unicode must receive a str or unicode object, got %s' % type(text).__name__)
 
-def unicode_to_str(text, encoding='utf-8'):
+def unicode_to_str(text, encoding=None):
     """Return the str representation of text in the given encoding. Unlike
     .encode(encoding) this function can be applied directly to a str
     object without the risk of double-decoding problems (which can happen if
     you don't use the default 'ascii' encoding)
     """
 
+    if encoding is None:
+        encoding = 'utf-8'
     if isinstance(text, unicode):
         return text.encode(encoding)
     elif isinstance(text, str):
@@ -142,68 +143,6 @@ def isbinarytext(text):
     assert isinstance(text, str), "text must be str, got '%s'" % type(text).__name__
     return any(c in _BINARYCHARS for c in text)
 
-
-# ----- shutil.copytree function from Python 2.6 adds ignore argument ---- #
-
-try:
-    WindowsError
-except NameError:
-    WindowsError = None
-
-class Error(EnvironmentError):
-    pass
-
-def ignore_patterns(*patterns):
-    def _ignore_patterns(path, names):
-        ignored_names = []
-        for pattern in patterns:
-            ignored_names.extend(fnmatch.filter(names, pattern))
-        return set(ignored_names)
-    return _ignore_patterns
-
-def copytree(src, dst, symlinks=False, ignore=None):
-    names = os.listdir(src)
-    if ignore is not None:
-        ignored_names = ignore(src, names)
-    else:
-        ignored_names = set()
-
-    os.makedirs(dst)
-    errors = []
-    for name in names:
-        if name in ignored_names:
-            continue
-        srcname = os.path.join(src, name)
-        dstname = os.path.join(dst, name)
-        try:
-            if symlinks and os.path.islink(srcname):
-                linkto = os.readlink(srcname)
-                os.symlink(linkto, dstname)
-            elif os.path.isdir(srcname):
-                copytree(srcname, dstname, symlinks, ignore)
-            else:
-                copy2(srcname, dstname)
-            # XXX What about devices, sockets etc.?
-        except (IOError, os.error), why:
-            errors.append((srcname, dstname, str(why)))
-        # catch the Error from the recursive copytree so that we can
-        # continue with other files
-        except Error, err:
-            errors.extend(err.args[0])
-    try:
-        copystat(src, dst)
-    except OSError, why:
-        if WindowsError is not None and isinstance(why, WindowsError):
-            # Copying file access times may fail on Windows
-            pass
-        else:
-            errors.extend((src, dst, str(why)))
-    if errors:
-        raise Error, errors
-
-# ----- end of shutil.copytree function from Python 2.6 ---- #
-
-
 def get_func_args(func):
     """Return the argument name list of a callable"""
     if inspect.isfunction(func):
@@ -216,3 +155,27 @@ def get_func_args(func):
     else:
         raise TypeError('%s is not callable' % type(func))
     return func_args
+
+def equal_attributes(obj1, obj2, attributes):
+    """Compare two objects attributes"""
+    # not attributes given return False by default
+    if not attributes:
+        return False
+
+    for attr in attributes:
+        # support callables like itemgetter
+        if callable(attr):
+            if not attr(obj1) == attr(obj2):
+                return False
+        else:
+            # check that objects has attribute
+            if not hasattr(obj1, attr):
+                return False
+            if not hasattr(obj2, attr):
+                return False
+            # compare object attributes
+            if not getattr(obj1, attr) == getattr(obj2, attr):
+                return False
+    # all attributes equal
+    return True
+

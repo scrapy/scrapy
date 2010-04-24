@@ -71,18 +71,11 @@ class Response(object_ref):
         """Return a copy of this Response"""
         return self.replace()
 
-    def replace(self, url=None, status=None, headers=None, body=None, meta=None, \
-            flags=None, cls=None, **kwargs):
+    def replace(self, *args, **kwargs):
         """Create a new Response with the same attributes except for those
         given new values.
         """
-        if cls is None:
-            cls = self.__class__
-        new = cls(url=self.url if url is None else url,
-                  status=self.status if status is None else status,
-                  headers=copy.deepcopy(self.headers) if headers is None else headers,
-                  body=self.body if body is None else body,
-                  meta=self.meta if meta is None else meta,
-                  flags=self.flags if flags is None else flags,
-                  **kwargs)
-        return new
+        for x in ['url', 'status', 'headers', 'body', 'meta', 'flags']:
+            kwargs.setdefault(x, getattr(self, x))
+        cls = kwargs.pop('cls', self.__class__)
+        return cls(*args, **kwargs)

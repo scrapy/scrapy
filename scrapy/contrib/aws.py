@@ -5,13 +5,13 @@ because Amazon Web Service use timestamps for authentication.
 """
 
 import os
-import time
-
-from scrapy.utils.httpobj import urlparse_cached
+from time import strftime, gmtime
 from scrapy.utils.aws import sign_request
 from scrapy.conf import settings
 
+
 class AWSMiddleware(object):
+
     def __init__(self):
         self.access_key = settings['AWS_ACCESS_KEY_ID'] or \
             os.environ.get('AWS_ACCESS_KEY_ID')
@@ -19,9 +19,6 @@ class AWSMiddleware(object):
             os.environ.get('AWS_SECRET_ACCESS_KEY')
 
     def process_request(self, request, spider):
-        hostname = urlparse_cached(request).hostname
-        if spider.domain_name == 's3.amazonaws.com' \
-                or (hostname and hostname.endswith('s3.amazonaws.com')):
-            request.headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", \
-                time.gmtime())
+        if request.meta.get('sign_s3_request'):
+            request.headers['Date'] = strftime("%a, %d %b %Y %H:%M:%S GMT", gmtime())
             sign_request(request, self.access_key, self.secret_key)

@@ -105,10 +105,10 @@ every time a domain/spider is opened and closed::
             dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
         def spider_opened(self, spider):
-            log.msg("opened spider %s" % spider.domain_name)
+            log.msg("opened spider %s" % spider.name)
 
         def spider_closed(self, spider):
-            log.msg("closed spider %s" % spider.domain_name)
+            log.msg("closed spider %s" % spider.name)
 
 
 .. _topics-extensions-ref-manager:
