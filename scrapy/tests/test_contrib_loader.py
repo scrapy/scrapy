@@ -61,6 +61,10 @@ class ItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.get_collected_values('name'), [u'Marta', u'Pepe'])
         self.assertEqual(il.get_output_value('name'), [u'Marta', u'Pepe'])
 
+        # test add object value
+        il.add_value('summary', {'key': 1})
+        self.assertEqual(il.get_collected_values('summary'), [{'key': 1}])
+
         il.add_value(None, u'Jim', lambda x: {'name': x})
         self.assertEqual(il.get_collected_values('name'), [u'Marta', u'Pepe', u'Jim'])
 
