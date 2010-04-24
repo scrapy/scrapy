@@ -78,20 +78,34 @@ def remove_comments(text, encoding=None):
     """ Remove HTML Comments. """
     return re.sub('<!--.*?-->', u'', str_to_unicode(text, encoding), re.DOTALL)
       
-def remove_tags(text, which_ones=(), encoding=None):
+def remove_tags(text, which_ones=(), keep=(), encoding=None):
     """ Remove HTML Tags only. 
 
-        which_ones -- is a tuple of which tags we want to remove.
-                      if is empty remove all tags.
+        which_ones and keep are both tuples, there are four cases:
+
+        which_ones, keep (1 - not empty, 0 - empty)
+        1, 0 - remove all tags in which_ones
+        0, 1 - remove all tags except the ones in keep
+        0, 0 - remove all tags
+        1, 1 - not allowd
     """
-    if which_ones:
-        tags = ['<%s/?>|<%s .*?>|</%s>' % (tag, tag, tag) for tag in which_ones]
-        regex = '|'.join(tags)
-    else:
-        regex = '<.*?>'
+
+    assert not (which_ones and keep), 'which_ones and keep can not be given at the same time'
+
+    def will_remove(tag):
+        if which_ones:
+            return tag in which_ones
+        else:
+            return tag not in keep
+
+    def remove_tag(m):
+        tag = m.group(1)
+        return u'' if will_remove(tag) else m.group(0)
+
+    regex = '</?([^ >/]+).*?>'
     retags = re.compile(regex, re.DOTALL | re.IGNORECASE)
 
-    return retags.sub(u'', str_to_unicode(text, encoding))
+    return retags.sub(remove_tag, str_to_unicode(text, encoding))
 
 def remove_tags_with_content(text, which_ones=(), encoding=None):
     """ Remove tags and its content.

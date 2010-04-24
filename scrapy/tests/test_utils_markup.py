@@ -91,6 +91,11 @@ class UtilsMarkupTest(unittest.TestCase):
         self.assertEqual(remove_tags(u'a<br />b<br/>c'), u'abc')
         self.assertEqual(remove_tags(u'a<br />b<br/>c', which_ones=('br',)), u'abc')
 
+        # test keep arg
+        self.assertEqual(remove_tags(u'<p>a<br />b<br/>c</p>', keep=('br',)), u'a<br />b<br/>c')
+        self.assertEqual(remove_tags(u'<p>a<br />b<br/>c</p>', keep=('p',)), u'<p>abc</p>')
+        self.assertEqual(remove_tags(u'<p>a<br />b<br/>c</p>', keep=('p','br','div')), u'<p>a<br />b<br/>c</p>')
+
     def test_remove_tags_with_content(self):
         # make sure it always return unicode
         assert isinstance(remove_tags_with_content('no tags'), unicode)
