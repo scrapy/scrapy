@@ -9,4 +9,4 @@ class Command(ScrapyCommand):
         return "Start the Scrapy manager but don't run any spider (idle mode)"
 
     def run(self, args, opts):
-        scrapymanager.start(*args)
+        scrapymanager.start(keep_alive=True)

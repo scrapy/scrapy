@@ -9,7 +9,7 @@ from scrapy.spider import BaseSpider
 class TestDefaultHeadersMiddleware(TestCase):
 
     def setUp(self):
-        self.spider = BaseSpider()
+        self.spider = BaseSpider('foo')
         self.mw = DefaultHeadersMiddleware()
         self.default_headers = dict([(k, [v]) for k, v in \
             settings.get('DEFAULT_REQUEST_HEADERS').iteritems()])

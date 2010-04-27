@@ -1,10 +1,10 @@
-import cPickle as pickle
+import unittest, cPickle as pickle
 from cStringIO import StringIO
-
-from twisted.trial import unittest
 
 from scrapy.item import Item, Field
 from scrapy.utils.python import str_to_unicode
+from scrapy.utils.py26 import json
+from scrapy.contrib.exporter.jsonlines import JsonLinesItemExporter
 from scrapy.contrib.exporter import BaseItemExporter, PprintItemExporter, \
     PickleItemExporter, CsvItemExporter, XmlItemExporter
 
@@ -149,22 +149,10 @@ class XmlItemExporterTest(BaseItemExporterTest):
 
 class JsonLinesItemExporterTest(BaseItemExporterTest):
 
-    def setUp(self):
-        try:
-            import json
-        except ImportError:
-            try:
-                import simplejson
-            except ImportError:
-                raise unittest.SkipTest("simplejson module not available")
-        super(JsonLinesItemExporterTest, self).setUp()
-
     def _get_exporter(self, **kwargs):
-        from scrapy.contrib.exporter.jsonlines import JsonLinesItemExporter
         return JsonLinesItemExporter(self.output, **kwargs)
 
     def _check_output(self):
-        from scrapy.contrib.exporter.jsonlines import json
         exported = json.loads(self.output.getvalue().strip())
         self.assertEqual(exported, dict(self.i))
 

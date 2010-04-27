@@ -6,9 +6,6 @@ To run all Scrapy unittests go to Scrapy main dir and type:
     bin/runtests.sh
     
 If you're in windows use runtests.bat instead.
-
-Keep in mind that some tests may be skipped if you don't have some (optional)
-modules available like MySQLdb or simplejson, but that's not a problem.
 """
 
 import os

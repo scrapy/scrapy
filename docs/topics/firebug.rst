@@ -79,7 +79,8 @@ This is how the spider would look so far::
    from scrapy.contrib.spiders import CrawlSpider, Rule
 
    class GoogleDirectorySpider(CrawlSpider):
-       domain_name = 'directory.google.com'
+       name = 'directory.google.com'
+       allowed_domains = ['directory.google.com']
        start_urls = ['http://directory.google.com/']
 
        rules = (

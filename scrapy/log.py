@@ -29,8 +29,9 @@ BOT_NAME = settings['BOT_NAME']
 # args: message, level, spider
 logmessage_received = object()
 
-# default logging level
+# default values
 log_level = DEBUG
+log_encoding = 'utf-8'
 
 started = False
 
@@ -47,11 +48,12 @@ def _get_log_level(level_name_or_id=None):
 
 def start(logfile=None, loglevel=None, logstdout=None):
     """Initialize and start logging facility"""
-    global log_level, started
+    global log_level, log_encoding, started
 
     if started or not settings.getbool('LOG_ENABLED'):
         return
     log_level = _get_log_level(loglevel)
+    log_encoding = settings['LOG_ENCODING']
     started = True
 
     # set log observer
@@ -73,8 +75,8 @@ def msg(message, level=INFO, component=BOT_NAME, domain=None, spider=None):
             "use 'spider' argument instead", DeprecationWarning, stacklevel=2)
     dispatcher.send(signal=logmessage_received, message=message, level=level, \
         spider=spider)
-    system = domain or (spider.domain_name if spider else component)
-    msg_txt = unicode_to_str("%s: %s" % (level_names[level], message))
+    system = domain or (spider.name if spider else component)
+    msg_txt = unicode_to_str("%s: %s" % (level_names[level], message), log_encoding)
     log.msg(msg_txt, system=system)
 
 def exc(message, level=ERROR, component=BOT_NAME, domain=None, spider=None):
@@ -91,7 +93,7 @@ def err(_stuff=None, _why=None, **kwargs):
         import warnings
         warnings.warn("'domain' argument of scrapy.log.err() is deprecated, " \
             "use 'spider' argument instead", DeprecationWarning, stacklevel=2)
-    kwargs['system'] = domain or (spider.domain_name if spider else component)
+    kwargs['system'] = domain or (spider.name if spider else component)
     if _why:
-        _why = unicode_to_str("ERROR: %s" % _why)
+        _why = unicode_to_str("ERROR: %s" % _why, log_encoding)
     log.err(_stuff, _why, **kwargs)

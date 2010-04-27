@@ -1,10 +1,14 @@
 from scrapy.command import ScrapyCommand
-from scrapy.utils.fetch import fetch
+from scrapy.core.manager import scrapymanager
 from scrapy.http import Request
 from scrapy.item import BaseItem
 from scrapy.spider import spiders
 from scrapy.utils import display
+from scrapy.utils.spider import iterate_spider_output
+from scrapy.utils.url import is_url
 from scrapy import log
+
+from collections import defaultdict
 
 class Command(ScrapyCommand):
 
@@ -18,6 +22,8 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
+        parser.add_option("--spider", dest="spider", default=None, \
+            help="always use this spider")
         parser.add_option("--nolinks", dest="nolinks", action="store_true", \
             help="don't show extracted links")
         parser.add_option("--noitems", dest="noitems", action="store_true", \
@@ -37,18 +43,13 @@ class Command(ScrapyCommand):
         return item
 
     def run_callback(self, spider, response, callback, args, opts):
-        spider = spiders.fromurl(response.url)
-        if not spider:
-            log.msg('Cannot find spider for url: %s' % response.url, level=log.ERROR)
-            return (), ()
-
         if callback:
             callback_fcn = callback if callable(callback) else getattr(spider, callback, None)
             if not callback_fcn:
-                log.msg('Cannot find callback %s in %s spider' % (callback, spider.domain_name))
+                log.msg('Cannot find callback %s in %s spider' % (callback, spider.name))
                 return (), ()
 
-            result = callback_fcn(response)
+            result = iterate_spider_output(callback_fcn(response))
             links = [i for i in result if isinstance(i, Request)]
             items = [self.pipeline_process(i, spider, opts) for i in result if \
                      isinstance(i, BaseItem)]
@@ -71,36 +72,68 @@ class Command(ScrapyCommand):
             display.pprint(list(links))
 
     def run(self, args, opts):
-        if not args:
-            print "An URL is required"
+        if not len(args) == 1 or not is_url(args[0]):
+            return False
+
+        request = Request(args[0])
+
+        if opts.spider:
+            try:
+                spider = spiders.create(opts.spider)
+            except KeyError:
+                log.msg('Could not find spider: %s' % opts.spider, log.ERROR)
+                return
+        else:
+            spider = scrapymanager._create_spider_for_request(request, \
+                log_none=True, log_multiple=True)
+
+        if not spider:
             return
 
-        for response in fetch(args):
-            spider = spiders.fromurl(response.url)
-            if not spider:
-                log.msg('Cannot find spider for "%s"' % response.url)
-                continue
+        responses = [] # to collect downloaded responses
+        request = request.replace(callback=responses.append)
 
-            if self.callbacks:
-                for callback in self.callbacks:
-                    items, links = self.run_callback(spider, response, callback, args, opts)
-                    self.print_results(items, links, callback, opts)
+        scrapymanager.crawl_request(request, spider)
+        scrapymanager.start()
 
-            elif opts.rules:
-                rules = getattr(spider, 'rules', None)
-                if rules:
-                    items, links = [], []
-                    for rule in rules:
-                        if rule.callback and rule.link_extractor.matches(response.url):
-                            items, links = self.run_callback(spider, response, rule.callback, args, opts)
-                            self.print_results(items, links, rule.callback, opts)
-                            break
-                else:
-                    log.msg('No rules found for spider "%s", please specify a callback for parsing' \
-                        % spider.domain_name)
-                    continue
+        if not responses:
+            log.msg('No response returned', log.ERROR, spider=spider)
+            return
 
+        # now process response
+        #   - if callbacks defined then call each one print results
+        #   - if --rules option given search for matching spider's rule
+        #   - default print result using default 'parse' spider's callback
+        response = responses[0]
+
+        if self.callbacks:
+            # apply each callback
+            for callback in self.callbacks:
+                items, links = self.run_callback(spider, response,
+                                                    callback, args, opts)
+                self.print_results(items, links, callback, opts)
+        elif opts.rules:
+            # search for matching spider's rule
+            if hasattr(spider, 'rules') and spider.rules:
+                items, links = [], []
+                for rule in spider.rules:
+                    if rule.link_extractor.matches(response.url) \
+                        and rule.callback:
+                    
+                        items, links = self.run_callback(spider,
+                                            response, rule.callback,
+                                            args, opts)
+                        self.print_results(items, links,
+                                            rule.callback, opts)
+                        # first-match rule breaks rules loop
+                        break
             else:
-                items, links = self.run_callback(spider, response, 'parse', args, opts)
-                self.print_results(items, links, 'parse', opts)
+                log.msg('No rules found for spider "%s", ' \
+                        'please specify a callback for parsing' \
+                        % spider.name, log.ERROR)
+        else:
+            # default callback 'parse'
+            items, links = self.run_callback(spider, response,
+                                                'parse', args, opts)
+            self.print_results(items, links, 'parse', opts)
 

@@ -3,7 +3,6 @@ This module implements the HtmlImageLinkExtractor for extracting
 image links only.
 """
 
-import urlparse
 
 from scrapy.link import Link
 from scrapy.utils.url import canonicalize_url, urljoin_rfc
@@ -25,13 +24,13 @@ class HTMLImageLinkExtractor(object):
         self.unique = unique
         self.canonicalize = canonicalize
 
-    def extract_from_selector(self, selector, parent=None):
+    def extract_from_selector(self, selector, encoding, parent=None):
         ret = []
         def _add_link(url_sel, alt_sel=None):
             url = flatten([url_sel.extract()])
             alt = flatten([alt_sel.extract()]) if alt_sel else (u'', )
             if url:
-                ret.append(Link(unicode_to_str(url[0]), alt[0]))
+                ret.append(Link(unicode_to_str(url[0], encoding), alt[0]))
 
         if selector.xmlNode.type == 'element':
             if selector.xmlNode.name == 'img':
@@ -41,7 +40,7 @@ class HTMLImageLinkExtractor(object):
                 children = selector.select('child::*')
                 if len(children):
                     for child in children:
-                        ret.extend(self.extract_from_selector(child, parent=selector))
+                        ret.extend(self.extract_from_selector(child, encoding, parent=selector))
                 elif selector.xmlNode.name == 'a' and not parent:
                     _add_link(selector.select('@href'), selector.select('@title'))
         else:
@@ -52,7 +51,7 @@ class HTMLImageLinkExtractor(object):
     def extract_links(self, response):
         xs = HtmlXPathSelector(response)
         base_url = xs.select('//base/@href').extract()
-        base_url = unicode_to_str(base_url[0]) if base_url else unicode_to_str(response.url)
+        base_url = urljoin_rfc(response.url, base_url[0]) if base_url else response.url
 
         links = []
         for location in self.locations:
@@ -64,7 +63,7 @@ class HTMLImageLinkExtractor(object):
                 continue
 
             for selector in selectors:
-                links.extend(self.extract_from_selector(selector))
+                links.extend(self.extract_from_selector(selector, response.encoding))
 
         seen, ret = set(), []
         for link in links:

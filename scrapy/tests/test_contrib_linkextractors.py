@@ -35,6 +35,20 @@ class LinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.extract_links(response),
                          [Link(url='http://otherdomain.com/base/item/12.html', text='Item 12')])
 
+        # base url is an absolute path and relative to host
+        html = """<html><head><title>Page title<title><base href="/" />
+        <body><p><a href="item/12.html">Item 12</a></p></body></html>"""
+        response = HtmlResponse("https://example.org/somepage/index.html", body=html)
+        self.assertEqual(lx.extract_links(response),
+                         [Link(url='https://example.org/item/12.html', text='Item 12')])
+
+        # base url has no scheme
+        html = """<html><head><title>Page title<title><base href="//noschemedomain.com/path/to/" />
+        <body><p><a href="item/12.html">Item 12</a></p></body></html>"""
+        response = HtmlResponse("https://example.org/somepage/index.html", body=html)
+        self.assertEqual(lx.extract_links(response),
+                         [Link(url='https://noschemedomain.com/path/to/item/12.html', text='Item 12')])
+
     def test_extraction_encoding(self):
         body = get_testdata('link_extractor', 'linkextractor_noenc.html')
         response_utf8 = HtmlResponse(url='http://example.com/utf8', body=body, headers={'Content-Type': ['text/html; charset=utf-8']})
