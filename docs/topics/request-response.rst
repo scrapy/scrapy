@@ -289,7 +289,7 @@ objects.
 
        :param dont_click: If True the form data will be sumbitted without
          clicking in any element.
-       :type clickdata: boolean
+       :type dont_click: boolean
 
        The other parameters of this class method are passed directly to the
        :class:`FormRequest` constructor.
