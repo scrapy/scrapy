@@ -21,6 +21,7 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
         self.unique = unique
 
     def _extract_links(self, response_text, response_url, response_encoding):
+        """ Do the real extraction work """
         self.reset()
         self.feed(response_text)
         self.close()
@@ -33,13 +34,21 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
             link.text = str_to_unicode(link.text, response_encoding)
             ret.append(link)
 
-        ret = unique_list(ret, key=lambda link: link.url) if self.unique else ret
-
         return ret
+
+    def _process_links(self, links):
+        """ Normalize and filter extracted links
+
+        The subclass should override it if neccessary
+        """
+        links = unique_list(links, key=lambda link: link.url) if self.unique else links
+        return links
 
     def extract_links(self, response):
         # wrapper needed to allow to work directly with text
-        return self._extract_links(response.body, response.url, response.encoding)
+        links = self._extract_links(response.body, response.url, response.encoding)
+        links = self._process_links(links)
+        return links
 
     def reset(self):
         FixedSGMLParser.reset(self)
@@ -93,12 +102,16 @@ class SgmlLinkExtractor(BaseSgmlLinkExtractor):
     def extract_links(self, response):
         if self.restrict_xpaths:
             hxs = HtmlXPathSelector(response)
-            html_slice = ''.join(''.join(html_fragm for html_fragm in hxs.select(xpath_expr).extract()) \
+            html = ''.join(''.join(html_fragm for html_fragm in hxs.select(xpath_expr).extract()) \
                 for xpath_expr in self.restrict_xpaths)
-            links = self._extract_links(html_slice, response.url, response.encoding)
         else:
-            links = BaseSgmlLinkExtractor.extract_links(self, response)
+            html = response.body
 
+        links = self._extract_links(html, response.url, response.encoding)
+        links = self._process_links(links)
+        return links
+
+    def _process_links(self, links):
         links = [link for link in links if _is_valid_url(link.url)]
 
         if self.allow_res:
@@ -114,6 +127,7 @@ class SgmlLinkExtractor(BaseSgmlLinkExtractor):
             for link in links:
                 link.url = canonicalize_url(link.url)
 
+        links = BaseSgmlLinkExtractor._process_links(self, links)
         return links
 
     def matches(self, url):
