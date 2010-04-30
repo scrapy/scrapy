@@ -138,6 +138,8 @@ class UrlUtilsTest(unittest.TestCase):
     def test_url_query_cleaner(self):
         self.assertEqual('product.html?id=200',
                 url_query_cleaner("product.html?id=200&foo=bar&name=wired", ['id']))
+        self.assertEqual('product.html',
+                url_query_cleaner("product.html?foo=bar&name=wired", ['id']))
         self.assertEqual('product.html?id=200&name=wired',
                 url_query_cleaner("product.html?id=200&foo=bar&name=wired", ['id', 'name']))
         self.assertEqual('product.html?id',

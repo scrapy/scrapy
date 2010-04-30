@@ -108,7 +108,8 @@ def url_query_cleaner(url, parameterlist=(), sep='&', kvsep='=', remove=False, u
         else:
             querylist.append([k, s, v])
             seen.add(k)
-    return base + '?' + sep.join(''.join(ksv) for ksv in querylist)
+    query = '?' + sep.join(''.join(ksv) for ksv in querylist)
+    return urlparse.urljoin(base, query)
 
 def add_or_replace_parameter(url, name, new_value, sep='&', url_is_quoted=False):
     """Add or remove a parameter to a given url"""
