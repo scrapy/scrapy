@@ -85,29 +85,30 @@ def url_query_parameter(url, parameter, default=None, keep_blank_values=0):
         keep_blank_values=keep_blank_values)
     return queryparams.get(parameter, [default])[0]
 
-def url_query_cleaner(url, parameterlist=(), sep='&', kvsep='='):
-    """Clean url arguments leaving only those passed in the parameterlist"""
-    try:
-        url = urlparse.urldefrag(url)[0]
-        base, query = url.split('?', 1)
-        parameters = [pair.split(kvsep, 1) for pair in query.split(sep)]
-    except:
-        base = url
-        query = ""
-        parameters = []
+def url_query_cleaner(url, parameterlist=(), sep='&', kvsep='=', remove=False, unique=True):
+    """Clean url arguments leaving only those passed in the parameterlist.
+
+    If remove is True, leave only those not in parameterlist.
+    If unique is False, do not remove duplicated keys
+    """
+    url = urlparse.urldefrag(url)[0]
+    base, _, query = url.partition('?')
+    parameters = [ksv.partition(kvsep) for ksv in query.split(sep)]
 
     # unique parameters while keeping order
-    unique = {}
+    seen = set()
     querylist = []
-    for pair in parameters:
-        k = pair[0]
-        if not unique.get(k):
-            querylist += [pair]
-            unique[k] = 1
-
-    query = sep.join([kvsep.join(pair) for pair in querylist if pair[0] in \
-        parameterlist])
-    return '?'.join([base, query])
+    for k, s, v in parameters:
+        if unique and k in seen:
+            continue
+        elif remove and k in parameterlist:
+            continue
+        elif not remove and k not in parameterlist:
+            continue
+        else:
+            querylist.append([k, s, v])
+            seen.add(k)
+    return base + '?' + sep.join(''.join(ksv) for ksv in querylist)
 
 def add_or_replace_parameter(url, name, new_value, sep='&', url_is_quoted=False):
     """Add or remove a parameter to a given url"""
