@@ -71,8 +71,22 @@ class HttpTestCase(unittest.TestCase):
         d.addCallback(self.assertEquals, "0123456789")
         return d
 
+    def test_download_head(self):
+        request = Request(self.getURL('file'), method='HEAD')
+        d = download_http(request, BaseSpider('foo'))
+        d.addCallback(lambda r: r.body)
+        d.addCallback(self.assertEquals, '')
+        return d
+
     def test_redirect_status(self):
         request = Request(self.getURL('redirect'))
+        d = download_http(request, BaseSpider('foo'))
+        d.addCallback(lambda r: r.status)
+        d.addCallback(self.assertEquals, 302)
+        return d
+
+    def test_redirect_status_head(self):
+        request = Request(self.getURL('redirect'), method='HEAD')
         d = download_http(request, BaseSpider('foo'))
         d.addCallback(lambda r: r.status)
         d.addCallback(self.assertEquals, 302)
