@@ -18,18 +18,24 @@ class RedirectMiddlewareTest(unittest.TestCase):
         assert req2.priority > req.priority
 
     def test_redirect_301(self):
-        url = 'http://www.example.com/301'
-        url2 = 'http://www.example.com/redirected'
-        req = Request(url)
-        rsp = Response(url, headers={'Location': url2}, status=301)
+        def _test(method):
+            url = 'http://www.example.com/301'
+            url2 = 'http://www.example.com/redirected'
+            req = Request(url, method=method)
+            rsp = Response(url, headers={'Location': url2}, status=301)
 
-        req2 = self.mw.process_response(req, rsp, self.spider)
-        assert isinstance(req2, Request)
-        self.assertEqual(req2.url, url2)
+            req2 = self.mw.process_response(req, rsp, self.spider)
+            assert isinstance(req2, Request)
+            self.assertEqual(req2.url, url2)
+            self.assertEqual(req2.method, method)
 
-        # response without Location header but with status code is 3XX should be ignored
-        del rsp.headers['Location']
-        assert self.mw.process_response(req, rsp, self.spider) is rsp
+            # response without Location header but with status code is 3XX should be ignored
+            del rsp.headers['Location']
+            assert self.mw.process_response(req, rsp, self.spider) is rsp
+
+        _test('GET')
+        _test('POST')
+        _test('HEAD')
 
     def test_redirect_302(self):
         url = 'http://www.example.com/302'
@@ -48,6 +54,21 @@ class RedirectMiddlewareTest(unittest.TestCase):
             "Content-Length header must not be present in redirected request"
         assert not req2.body, \
             "Redirected body must be empty, not '%s'" % req2.body
+
+        # response without Location header but with status code is 3XX should be ignored
+        del rsp.headers['Location']
+        assert self.mw.process_response(req, rsp, self.spider) is rsp
+
+    def test_redirect_302_head(self):
+        url = 'http://www.example.com/302'
+        url2 = 'http://www.example.com/redirected2'
+        req = Request(url, method='HEAD')
+        rsp = Response(url, headers={'Location': url2}, status=302)
+
+        req2 = self.mw.process_response(req, rsp, self.spider)
+        assert isinstance(req2, Request)
+        self.assertEqual(req2.url, url2)
+        self.assertEqual(req2.method, 'HEAD')
 
         # response without Location header but with status code is 3XX should be ignored
         del rsp.headers['Location']

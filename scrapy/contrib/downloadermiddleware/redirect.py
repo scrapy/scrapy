@@ -15,6 +15,14 @@ class RedirectMiddleware(object):
         self.priority_adjust = settings.getint('REDIRECT_PRIORITY_ADJUST')
 
     def process_response(self, request, response, spider):
+        if request.method.upper() == 'HEAD':
+            if response.status in [301, 302, 303, 307] and 'Location' in response.headers:
+                redirected_url = urljoin_rfc(request.url, response.headers['location'])
+                redirected = request.replace(url=redirected_url)
+                return self._redirect(redirected, request, spider, response.status)
+            else:
+                return response
+
         if response.status in [302, 303] and 'Location' in response.headers:
             redirected_url = urljoin_rfc(request.url, response.headers['location'])
             redirected = self._redirect_request_using_get(request, redirected_url)
