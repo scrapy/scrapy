@@ -4,7 +4,6 @@ spiders
 """
 
 import sys
-import urlparse
 
 from twisted.plugin import getCache
 from twisted.python.rebuild import rebuild
@@ -19,42 +18,38 @@ class TwistedPluginSpiderManager(object):
 
     def __init__(self):
         self.loaded = False
-        self.force_domain = None
-        self._invaliddict = {}
         self._spiders = {}
 
-    def fromdomain(self, domain):
-        return self._spiders.get(domain)
+    def create(self, spider_name, **spider_kwargs):
+        """Returns a Spider instance for the given spider name, using the given
+        spider arguments. If the sipder name is not found, it raises a
+        KeyError.
+        """
+        spider = self._spiders[spider_name]
+        spider.__dict__.update(spider_kwargs)
+        return spider
 
-    def fromurl(self, url):
-        if self.force_domain:
-            return self._spiders.get(self.force_domain)
-        domain = urlparse.urlparse(url).hostname
-        domain = str(domain).replace('www.', '')
-        if domain:
-            if domain in self._spiders:         # try first locating by domain
-                return self._spiders[domain]
-            else:                               # else search spider by spider
-                plist = self._spiders.values()
-                for p in plist:
-                    if url_is_from_spider(url, p):
-                        return p
+    def find_by_request(self, request):
+        """Returns list of spiders names that match the given Request"""
+        return [name for name, spider in self._spiders.iteritems()
+                if url_is_from_spider(request.url, spider)]
 
     def list(self):
+        """Returns list of spiders available."""
         return self._spiders.keys()
 
     def load(self, spider_modules=None):
+        """Load spiders from module directory."""
         if spider_modules is None:
             spider_modules = settings.getlist('SPIDER_MODULES')
         self.spider_modules = spider_modules
-        self._invaliddict = {}
         self._spiders = {}
 
         modules = [__import__(m, {}, {}, ['']) for m in self.spider_modules]
         for module in modules:
             for spider in self._getspiders(ISpider, module):
                 ISpider.validateInvariants(spider)
-                self._spiders[spider.domain_name] = spider
+                self._spiders[spider.name] = spider
         self.loaded = True
 
     def _getspiders(self, interface, package):
@@ -77,14 +72,14 @@ class TwistedPluginSpiderManager(object):
         """Reload spider module to release any resources held on to by the
         spider
         """
-        domain = spider.domain_name
-        if domain not in self._spiders:
+        name = spider.name
+        if name not in self._spiders:
             return
-        spider = self._spiders[domain]
+        spider = self._spiders[name]
         module_name = spider.__module__
         module = sys.modules[module_name]
         if hasattr(module, 'SPIDER'):
             log.msg("Reloading module %s" % module_name, spider=spider, \
                 level=log.DEBUG)
             new_module = rebuild(module, doLog=0)
-            self._spiders[domain] = new_module.SPIDER
+            self._spiders[name] = new_module.SPIDER

@@ -23,6 +23,6 @@ class StatsMailer(object):
         mail = MailSender()
         body = "Global stats\n\n"
         body += "\n".join("%-50s : %s" % i for i in stats.get_stats().items())
-        body += "\n\n%s stats\n\n" % spider.domain_name
+        body += "\n\n%s stats\n\n" % spider.name
         body += "\n".join("%-50s : %s" % i for i in spider_stats.items())
-        mail.send(self.recipients, "Scrapy stats for: %s" % spider.domain_name, body)
+        mail.send(self.recipients, "Scrapy stats for: %s" % spider.name, body)

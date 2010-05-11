@@ -204,15 +204,15 @@ MemoryStatsCollector
 
     A simple stats collector that keeps the stats of the last scraping run (for
     each spider) in memory, after they're closed. The stats can be accessed
-    through the :attr:`domain_stats` attribute, which is a dict keyed by spider
+    through the :attr:`spider_stats` attribute, which is a dict keyed by spider
     domain name.
 
     This is the default Stats Collector used in Scrapy.
 
-    .. attribute:: domain_stats
+    .. attribute:: spider_stats
 
-       A dict of dicts (keyed by spider domain name) containing the stats of
-       the last scraping run for each domain.
+       A dict of dicts (keyed by spider name) containing the stats of the last
+       scraping run for each spider.
 
 DummyStatsCollector
 -------------------
@@ -240,11 +240,11 @@ SimpledbStatsCollector
     In addition to the existing stats keys the following keys are added at
     persitance time:
 
-        * ``domain``: the spider domain (so you can use it later for querying stats
-          for that domain) 
+        * ``spider``: the spider name (so you can use it later for querying stats
+          for that spider)
         * ``timestamp``: the timestamp when the stats were persisited
 
-    Both the ``domain`` and ``timestamp`` are used for generating the SimpleDB
+    Both the ``spider`` and ``timestamp`` are used for generating the SimpleDB
     item name in order to avoid overwriting stats of previous scraping runs.
 
     As `required by SimpleDB`_, datetime's are stored in ISO 8601 format and

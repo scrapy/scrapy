@@ -9,7 +9,7 @@ from scrapy.conf import settings
 class UserAgentMiddlewareTest(TestCase):
 
     def setUp(self):
-        self.spider = BaseSpider()
+        self.spider = BaseSpider('foo')
         self.mw = UserAgentMiddleware()
 
     def tearDown(self):

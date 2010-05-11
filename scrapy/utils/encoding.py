@@ -1,11 +1,20 @@
 import codecs
 
-def add_encoding_alias(encoding, alias, overwrite=False):
+from scrapy.conf import settings
+
+_ENCODING_ALIASES = dict(settings['ENCODING_ALIASES_BASE'])
+_ENCODING_ALIASES.update(settings['ENCODING_ALIASES'])
+
+def encoding_exists(encoding, _aliases=_ENCODING_ALIASES):
+    """Returns ``True`` if encoding is valid, otherwise returns ``False``"""
     try:
-        codecs.lookup(alias)
-        alias_exists = True
+        codecs.lookup(resolve_encoding(encoding, _aliases))
     except LookupError:
-        alias_exists = False
-    if overwrite or not alias_exists:
-        codec = codecs.lookup(encoding)
-        codecs.register(lambda x: codec if x == alias else None)
+        return False
+    return True
+
+def resolve_encoding(alias, _aliases=_ENCODING_ALIASES):
+    """Return the encoding the given alias maps to, or the alias as passed if
+    no mapping is found.
+    """
+    return _aliases.get(alias.lower(), alias)

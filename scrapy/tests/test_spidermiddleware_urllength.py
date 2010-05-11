@@ -12,7 +12,7 @@ class TestUrlLengthMiddleware(TestCase):
         settings.disabled = False
         settings.overrides['URLLENGTH_LIMIT'] = 25
 
-        self.spider = BaseSpider()
+        self.spider = BaseSpider('foo')
         self.mw = UrlLengthMiddleware()
 
     def test_process_spider_output(self):

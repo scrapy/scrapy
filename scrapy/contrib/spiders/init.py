@@ -3,8 +3,8 @@ from scrapy.spider import BaseSpider
 class InitSpider(BaseSpider):
     """Base Spider with initialization facilities"""
     
-    def __init__(self):
-        super(InitSpider, self).__init__()
+    def __init__(self, *a, **kw):
+        super(InitSpider, self).__init__(*a, **kw)
         self._postinit_reqs = []
         self._init_complete = False
         self._init_started = False

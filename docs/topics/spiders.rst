@@ -70,20 +70,22 @@ BaseSpider
    requests the given ``start_urls``/``start_requests``, and calls the spider's
    method ``parse`` for each of the resulting responses.
 
-   .. attribute:: domain_name
+   .. attribute:: name
       
-       A string which defines the domain name for this spider, which will also be
-       the unique identifier for this spider (which means you can't have two
-       spider with the same ``domain_name``). This is the most important spider
-       attribute and it's required, and it's the name by which Scrapy will known
-       the spider. 
+       A string which defines the name for this spider. The spider name is how
+       the spider is located (and instantiated) by Scrapy, so it must be
+       unique. However, nothing prevents you from instantiating more than one
+       instance of the same spider. This is the most important spider attribute
+       and it's required.
 
-   .. attribute:: extra_domain_names
+       Is recommended to name your spiders after the domain that their crawl.
 
-       An optional list of strings containing additional domains that this
-       spider is allowed to crawl. Requests for URLs not belonging to the
-       domain name specified in :attr:`domain_name` or this list won't be
-       followed.
+   .. attribute:: allowed_domains
+
+       An optional list of strings containing domains that this spider is
+       allowed to crawl. Requests for URLs not belonging to the domain names
+       specified in this list won't be followed if
+       :class:`~scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware` is enabled.
 
    .. attribute:: start_urls
 
@@ -144,7 +146,7 @@ BaseSpider
    .. method:: log(message, [level, component])
 
        Log a message using the :func:`scrapy.log.msg` function, automatically
-       populating the domain argument with the :attr:`domain_name` of this
+       populating the spider argument with the :attr:`name` of this
        spider. For more information see :ref:`topics-logging`.
 
 
@@ -157,7 +159,8 @@ Let's see an example::
     from scrapy.spider import BaseSpider
 
     class MySpider(BaseSpider):
-        domain_name = 'http://www.example.com'
+        name = 'example.com'
+        allowed_domains = ['example.com']
         start_urls = [
             'http://www.example.com/1.html',
             'http://www.example.com/2.html',
@@ -177,7 +180,8 @@ Another example returning multiples Requests and Items from a single callback::
     from myproject.items import MyItem
 
     class MySpider(BaseSpider):
-        domain_name = 'http://www.example.com'
+        name = 'example.com'
+        allowed_domains = ['example.com']
         start_urls = [
             'http://www.example.com/1.html',
             'http://www.example.com/2.html',
@@ -254,7 +258,8 @@ Let's now take a look at an example CrawlSpider with rules::
     from scrapy.item import Item
 
     class MySpider(CrawlSpider):
-        domain_name = 'example.com'
+        name = 'example.com'
+        allowed_domains = ['example.com']
         start_urls = ['http://www.example.com']
         
         rules = (
@@ -378,7 +383,8 @@ These spiders are pretty easy to use, let's have at one example::
     from myproject.items import TestItem
 
     class MySpider(XMLFeedSpider):
-        domain_name = 'example.com'
+        name = 'example.com'
+        allowed_domains = ['example.com']
         start_urls = ['http://www.example.com/feed.xml']
         iterator = 'iternodes' # This is actually unnecesary, since it's the default value
         itertag = 'item'
@@ -435,7 +441,8 @@ Let's see an example similar to the previous one, but using a
     from myproject.items import TestItem
 
     class MySpider(CSVFeedSpider):
-        domain_name = 'example.com'
+        name = 'example.com'
+        allowed_domains = ['example.com']
         start_urls = ['http://www.example.com/feed.csv']
         delimiter = ';'
         headers = ['id', 'name', 'description']

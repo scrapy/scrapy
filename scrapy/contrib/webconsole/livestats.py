@@ -60,7 +60,7 @@ class LiveStats(object):
             runtime = datetime.now() - stats.started
 
             s += '<tr><td>%s</td><td align="right">%d</td><td align="right">%d</td><td align="right">%d</td><td align="right">%d</td><td align="right">%d</td><td align="right">%d</td><td>%s</td><td>%s</td></tr>\n' % \
-                 (spider.domain_name, stats.scraped, stats.crawled, scheduled, dqueued, active, transf, str(stats.started), str(runtime))
+                 (spider.name, stats.scraped, stats.crawled, scheduled, dqueued, active, transf, str(stats.started), str(runtime))
 
             totdomains += 1
             totscraped += stats.scraped

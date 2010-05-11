@@ -1,9 +1,10 @@
 import unittest
+import urlparse
 
 from scrapy.xlib.BeautifulSoup import BeautifulSoup
-from scrapy.http import Response, TextResponse
+from scrapy.http import Response, TextResponse, HtmlResponse
 from scrapy.utils.response import body_or_str, get_base_url, get_meta_refresh, \
-    response_httprepr, get_cached_beautifulsoup
+    response_httprepr, get_cached_beautifulsoup, open_in_browser
 
 class ResponseUtilsTest(unittest.TestCase):
     dummy_response = TextResponse(url='http://example.org/', body='dummy_response')
@@ -28,12 +29,28 @@ class ResponseUtilsTest(unittest.TestCase):
         self.assertTrue(isinstance(body_or_str(u'text', unicode=True), unicode))
 
     def test_get_base_url(self):
-        response = Response(url='http://example.org', body="""\
+        response = HtmlResponse(url='https://example.org', body="""\
             <html>\
             <head><title>Dummy</title><base href='http://example.org/something' /></head>\
             <body>blahablsdfsal&amp;</body>\
             </html>""")
         self.assertEqual(get_base_url(response), 'http://example.org/something')
+
+        # relative url with absolute path
+        response = HtmlResponse(url='https://example.org', body="""\
+            <html>\
+            <head><title>Dummy</title><base href='/absolutepath' /></head>\
+            <body>blahablsdfsal&amp;</body>\
+            </html>""")
+        self.assertEqual(get_base_url(response), 'https://example.org/absolutepath')
+
+        # no scheme url
+        response = HtmlResponse(url='https://example.org', body="""\
+            <html>\
+            <head><title>Dummy</title><base href='//noscheme.com/path' /></head>\
+            <body>blahablsdfsal&amp;</body>\
+            </html>""")
+        self.assertEqual(get_base_url(response), 'https://noscheme.com/path')
 
     def test_get_meta_refresh(self):
         body = """
@@ -41,17 +58,17 @@ class ResponseUtilsTest(unittest.TestCase):
             <head><title>Dummy</title><meta http-equiv="refresh" content="5;url=http://example.org/newpage" /></head>
             <body>blahablsdfsal&amp;</body>
             </html>"""
-        response = Response(url='http://example.org', body=body)
+        response = TextResponse(url='http://example.org', body=body)
         self.assertEqual(get_meta_refresh(response), (5, 'http://example.org/newpage'))
 
         # refresh without url should return (None, None)
         body = """<meta http-equiv="refresh" content="5" />"""
-        response = Response(url='http://example.org', body=body)
+        response = TextResponse(url='http://example.org', body=body)
         self.assertEqual(get_meta_refresh(response), (None, None))
 
         body = """<meta http-equiv="refresh" content="5;
             url=http://example.org/newpage" /></head>"""
-        response = Response(url='http://example.org', body=body)
+        response = TextResponse(url='http://example.org', body=body)
         self.assertEqual(get_meta_refresh(response), (5, 'http://example.org/newpage'))
 
         # meta refresh in multiple lines
@@ -59,17 +76,17 @@ class ResponseUtilsTest(unittest.TestCase):
                <META
                HTTP-EQUIV="Refresh"
                CONTENT="1; URL=http://example.org/newpage">"""
-        response = Response(url='http://example.org', body=body)
+        response = TextResponse(url='http://example.org', body=body)
         self.assertEqual(get_meta_refresh(response), (1, 'http://example.org/newpage'))
 
         # entities in the redirect url
         body = """<meta http-equiv="refresh" content="3; url=&#39;http://www.example.com/other&#39;">"""
-        response = Response(url='http://example.com', body=body)
+        response = TextResponse(url='http://example.com', body=body)
         self.assertEqual(get_meta_refresh(response), (3, 'http://www.example.com/other'))
 
         # relative redirects
         body = """<meta http-equiv="refresh" content="3; url=other.html">"""
-        response = Response(url='http://example.com/page/this.html', body=body)
+        response = TextResponse(url='http://example.com/page/this.html', body=body)
         self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/page/other.html'))
 
         # non-standard encodings (utf-16)
@@ -80,7 +97,7 @@ class ResponseUtilsTest(unittest.TestCase):
 
         # non-ascii chars in the url (default encoding - utf8)
         body = """<meta http-equiv="refresh" content="3; url=http://example.com/to\xc2\xa3">"""
-        response = Response(url='http://example.com', body=body)
+        response = TextResponse(url='http://example.com', body=body)
         self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/to%C2%A3'))
 
         # non-ascii chars in the url (custom encoding - latin1)
@@ -88,13 +105,8 @@ class ResponseUtilsTest(unittest.TestCase):
         response = TextResponse(url='http://example.com', body=body, encoding='latin1')
         self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/to%C2%A3'))
 
-        # wrong encodings (possibly caused by truncated chunks)
-        body = """<meta http-equiv="refresh" content="3; url=http://example.com/this\xc2_THAT">"""
-        response = Response(url='http://example.com', body=body)
-        self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/thisTHAT'))
-
         # responses without refresh tag should return None None
-        response = Response(url='http://example.org')
+        response = TextResponse(url='http://example.org')
         self.assertEqual(get_meta_refresh(response), (None, None))
         response = TextResponse(url='http://example.org')
         self.assertEqual(get_meta_refresh(response), (None, None))
@@ -130,6 +142,19 @@ class ResponseUtilsTest(unittest.TestCase):
 
         assert soup1 is soup2
         assert soup1 is not soup3
+
+    def test_open_in_browser(self):
+        url = "http:///www.example.com/some/page.html"
+        body = "<html> <head> <title>test page</title> </head> <body>test body</body> </html>"
+        def browser_open(burl):
+            bbody = open(urlparse.urlparse(burl).path).read()
+            assert '<base href="%s">' % url in bbody, "<base> tag not added"
+            return True
+        response = HtmlResponse(url, body=body)
+        assert open_in_browser(response, _openfunc=browser_open), \
+            "Browser not called"
+        self.assertRaises(TypeError, open_in_browser, Response(url, body=body), \
+            debug=True)
 
 if __name__ == "__main__":
     unittest.main()
