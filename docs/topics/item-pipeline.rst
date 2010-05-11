@@ -178,7 +178,7 @@ on the respective Item Exporter to get more info.
   the first line. This format requires you to specify the fields to export
   using the :setting:`EXPORT_FIELDS` setting.
 
-* ``jsonlines``: uses a :class:`~jsonlines.JsonLinesItemExporter`
+* ``json``: uses a :class:`~jsonlines.JsonLinesItemExporter`
 
 * ``pickle``: uses a :class:`PickleItemExporter`
 
