@@ -64,19 +64,18 @@ single Python class that defines one or more of the following methods:
         This method is called for each response that goes through the spider
         middleware and into the spider, for processing.
 
-        :meth:`process_spider_input` should return either ``None`` or an
-        iterable of :class:`~scrapy.http.Request` or :class:`~scrapy.item.Item`
-        objects.
+        :meth:`process_spider_input` should return ``None`` or raise and
+        exception.
 
-        If returns ``None``, Scrapy will continue processing this response,
+        If it returns ``None``, Scrapy will continue processing this response,
         executing all other middlewares until, finally, the response is handled
         to the spider for processing.
 
-        If returns an iterable, Scrapy won't bother calling any other spider
-        middleware :meth:`process_spider_input` and will return the iterable
-        back in the other direction for the :meth:`process_spider_output` to
-        process it, or the :meth:`process_spider_exception` if it raised an
-        exception.
+        If it raises an exception, Scrapy won't bother calling any other spider
+        middleware :meth:`process_spider_input` and will call the request
+        errback.  The output of the errback is chained back in the other
+        direction for :meth:`process_spider_output` to process it, or
+        :meth:`process_spider_exception` if it raised an exception.
 
         :param reponse: the response being processed
         :type response: :class:`~scrapy.http.Response` object
@@ -89,7 +88,7 @@ single Python class that defines one or more of the following methods:
 
         This method is called with the results returned from the Spider, after
         it has processed the response.
-     
+
         :meth:`process_spider_output` must return an iterable of
         :class:`~scrapy.http.Request` or :class:`~scrapy.item.Item` objects.
 

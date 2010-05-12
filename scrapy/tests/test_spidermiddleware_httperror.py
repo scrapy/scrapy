@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from scrapy.http import Response, Request
 from scrapy.spider import BaseSpider
-from scrapy.contrib.spidermiddleware.httperror import HttpErrorMiddleware
+from scrapy.contrib.spidermiddleware.httperror import HttpErrorMiddleware, HttpErrorException
 
 
 class TestHttpErrorMiddleware(TestCase):
@@ -18,21 +18,19 @@ class TestHttpErrorMiddleware(TestCase):
         self.res404.request = self.req
 
     def test_process_spider_input(self):
-        self.assertEquals(self.mw.process_spider_input(self.res200, self.spider),
-                          None)
-
-        self.assertEquals(self.mw.process_spider_input(self.res404, self.spider),
-                          [])
+        self.assertEquals(None,
+                self.mw.process_spider_input(self.res200, self.spider))
+        self.assertRaises(HttpErrorException,
+                self.mw.process_spider_input, self.res404, self.spider)
 
     def test_handle_httpstatus_list(self):
         res = self.res404.copy()
         res.request = Request('http://scrapytest.org',
                               meta={'handle_httpstatus_list': [404]})
-
-        self.assertEquals(self.mw.process_spider_input(res, self.spider),
-                          None)
+        self.assertEquals(None,
+            self.mw.process_spider_input(res, self.spider))
 
         self.spider.handle_httpstatus_list = [404]
-        self.assertEquals(self.mw.process_spider_input(self.res404, self.spider),
-                          None)
+        self.assertEquals(None,
+            self.mw.process_spider_input(self.res404, self.spider))
 
