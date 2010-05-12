@@ -86,19 +86,17 @@ def url_query_parameter(url, parameter, default=None, keep_blank_values=0):
     return queryparams.get(parameter, [default])[0]
 
 def url_query_cleaner(url, parameterlist=(), sep='&', kvsep='=', remove=False, unique=True):
-    """Clean url arguments leaving only those passed in the parameterlist.
+    """Clean url arguments leaving only those passed in the parameterlist keeping order
 
     If remove is True, leave only those not in parameterlist.
     If unique is False, do not remove duplicated keys
     """
     url = urlparse.urldefrag(url)[0]
     base, _, query = url.partition('?')
-    parameters = [ksv.partition(kvsep) for ksv in query.split(sep)]
-
-    # unique parameters while keeping order
     seen = set()
     querylist = []
-    for k, s, v in parameters:
+    for ksv in query.split(sep):
+        k, _, _ = ksv.partition(kvsep)
         if unique and k in seen:
             continue
         elif remove and k in parameterlist:
@@ -106,10 +104,9 @@ def url_query_cleaner(url, parameterlist=(), sep='&', kvsep='=', remove=False, u
         elif not remove and k not in parameterlist:
             continue
         else:
-            querylist.append([k, s, v])
+            querylist.append(ksv)
             seen.add(k)
-    query = '?' + sep.join(''.join(ksv) for ksv in querylist)
-    return urlparse.urljoin(base, query)
+    return urlparse.urljoin(base, '?'+sep.join(querylist))
 
 def add_or_replace_parameter(url, name, new_value, sep='&', url_is_quoted=False):
     """Add or remove a parameter to a given url"""
