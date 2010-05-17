@@ -47,34 +47,26 @@ class MailSender(object):
                 part = MIMEBase(*mimetype.split('/'))
                 part.set_payload(f.read())
                 Encoders.encode_base64(part)
-                part.add_header('Content-Disposition', 'attachment; filename="%s"' % attach_name)
+                part.add_header('Content-Disposition', 'attachment; filename="%s"' \
+                    % attach_name)
                 msg.attach(part)
         else:
             msg.set_payload(body)
 
-        # FIXME ---------------------------------------------------------------------
-        # There seems to be a problem with sending emails using deferreds when
-        # the last thing left to do is sending the mail, cause the engine stops
-        # the reactor and the email don't get send. we need to fix this. until
-        # then, we'll revert to use Python standard (IO-blocking) smtplib.
-
-        #dfd = self._sendmail(self.smtphost, self.mailfrom, rcpts, msg.as_string())
-        #dfd.addCallbacks(self._sent_ok, self._sent_failed,
-        #    callbackArgs=[to, cc, subject, len(attachs)],
-        #    errbackArgs=[to, cc, subject, len(attachs)])
-        import smtplib
-        smtp = smtplib.SMTP(self.smtphost)
-        smtp.sendmail(self.mailfrom, rcpts, msg.as_string())
-        log.msg('Mail sent: To=%s Cc=%s Subject="%s"' % (to, cc, subject))
-        smtp.close()
-        # ---------------------------------------------------------------------------
+        dfd = self._sendmail(self.smtphost, self.mailfrom, rcpts, msg.as_string())
+        dfd.addCallbacks(self._sent_ok, self._sent_failed,
+            callbackArgs=[to, cc, subject, len(attachs)],
+            errbackArgs=[to, cc, subject, len(attachs)])
+        reactor.addSystemEventTrigger('before', 'shutdown', lambda: dfd)
 
     def _sent_ok(self, result, to, cc, subject, nattachs):
-        log.msg('Mail sent OK: To=%s Cc=%s Subject="%s" Attachs=%d' % (to, cc, subject, nattachs))
+        log.msg('Mail sent OK: To=%s Cc=%s Subject="%s" Attachs=%d' % \
+            (to, cc, subject, nattachs))
 
     def _sent_failed(self, failure, to, cc, subject, nattachs):
         errstr = str(failure.value)
-        log.msg('Unable to send mail: To=%s Cc=%s Subject="%s" Attachs=%d - %s' % (to, cc, subject, nattachs, errstr), level=log.ERROR)
+        log.msg('Unable to send mail: To=%s Cc=%s Subject="%s" Attachs=%d - %s' % \
+            (to, cc, subject, nattachs, errstr), level=log.ERROR)
 
     def _sendmail(self, smtphost, from_addr, to_addrs, msg, port=25):
         """ This is based on twisted.mail.smtp.sendmail except that it

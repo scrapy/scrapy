@@ -30,7 +30,7 @@ import types, weakref
 from scrapy.xlib.pydispatch import saferef, robustapply, errors
 
 __author__ = "Patrick K. O'Brien <pobrien@orbtech.com>"
-__cvsid__ = "$Id$"
+__cvsid__ = "$Id: dispatcher.py,v 1.1.1.1 2006/07/07 15:59:38 mcfletch Exp $"
 __version__ = "$Revision: 1.1.1.1 $"[11:-2]
 
 try:
@@ -377,28 +377,29 @@ def _removeReceiver(receiver):
 		# During module cleanup the mapping will be replaced with None
 		return False
 	backKey = id(receiver)
-	for senderkey in sendersBack.get(backKey,()):
-		try:
-			signals = connections[senderkey].keys()
-		except KeyError,err:
-			pass
-		else:
-			for signal in signals:
-				try:
-					receivers = connections[senderkey][signal]
-				except KeyError:
-					pass
-				else:
-					try:
-						receivers.remove( receiver )
-					except Exception, err:
-						pass
-				_cleanupConnections(senderkey, signal)
 	try:
-		del sendersBack[ backKey ]
-	except KeyError:
-		pass
-			
+		backSet = sendersBack.pop(backKey)
+	except KeyError, err:
+		return False 
+	else:
+		for senderkey in backSet:
+			try:
+				signals = connections[senderkey].keys()
+			except KeyError,err:
+				pass
+			else:
+				for signal in signals:
+					try:
+						receivers = connections[senderkey][signal]
+					except KeyError:
+						pass
+					else:
+						try:
+							receivers.remove( receiver )
+						except Exception, err:
+							pass
+					_cleanupConnections(senderkey, signal)
+
 def _cleanupConnections(senderkey, signal):
 	"""Delete any empty signals for senderkey. Delete senderkey if empty."""
 	try:

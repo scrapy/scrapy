@@ -1,6 +1,6 @@
 """
 This module provides a mechanism for collecting one (or more) sample items per
-domain.
+spider.
 
 The items are collected in a dict of guid->item and persisted by pickling that
 dict into a file.
@@ -8,7 +8,7 @@ dict into a file.
 This can be useful for testing changes made to the framework or other common
 code that affects several spiders.
 
-It uses the scrapy stats service to keep track of which domains are already
+It uses the scrapy stats service to keep track of which spiders are already
 sampled.
 
 Settings that affect this module:
@@ -48,7 +48,7 @@ class ItemSamplerPipeline(object):
             raise NotConfigured
         self.items = {}
         self.spiders_count = 0
-        self.empty_domains = set()
+        self.empty_spiders = set()
         dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
         dispatcher.connect(self.engine_stopped, signal=signals.engine_stopped)
 
@@ -66,21 +66,21 @@ class ItemSamplerPipeline(object):
     def engine_stopped(self):
         with open(self.filename, 'w') as f:
             pickle.dump(self.items, f)
-        if self.empty_domains:
-            log.msg("No products sampled for: %s" % " ".join(self.empty_domains), \
+        if self.empty_spiders:
+            log.msg("No products sampled for: %s" % " ".join(self.empty_spiders), \
                 level=log.WARNING)
 
     def spider_closed(self, spider, reason):
         if reason == 'finished' and not stats.get_value("items_sampled", spider=spider):
-            self.empty_domains.add(spider.domain_name)
+            self.empty_spiders.add(spider.name)
         self.spiders_count += 1
-        log.msg("Sampled %d domains so far (%d empty)" % (self.spiders_count, \
-            len(self.empty_domains)), level=log.INFO)
+        log.msg("Sampled %d spiders so far (%d empty)" % (self.spiders_count, \
+            len(self.empty_spiders)), level=log.INFO)
 
 
 class ItemSamplerMiddleware(object):
-    """This middleware drops items and requests (when domain sampling has been
-    completed) to accelerate the processing of remaining domains"""
+    """This middleware drops items and requests (when spider sampling has been
+    completed) to accelerate the processing of remaining spiders"""
 
     def __init__(self):
         if not settings['ITEMSAMPLER_FILE']:

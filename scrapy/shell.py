@@ -35,6 +35,7 @@ def parse_url(url):
             u = urlparse.urlparse(url)
     return url
 
+
 class Shell(object):
 
     requires_project = False
@@ -52,18 +53,21 @@ class Shell(object):
         else:
             url = parse_url(request_or_url)
             request = Request(url)
-        spider = spiders.fromurl(url) or BaseSpider('default')
+
+        spider = scrapymanager._create_spider_for_request(request, \
+            BaseSpider('default'), log_multiple=True)
+
         print "Fetching %s..." % request
         response = threads.blockingCallFromThread(reactor, scrapyengine.schedule, \
             request, spider)
         if response:
-            self.populate_vars(url, response, request)
+            self.populate_vars(url, response, request, spider)
             if print_help:
                 self.print_help()
             else:
                 print "Done - use shelp() to see available objects"
 
-    def populate_vars(self, url=None, response=None, request=None):
+    def populate_vars(self, url=None, response=None, request=None, spider=None):
         item = self.item_class()
         self.vars['item'] = item
         if url:
@@ -73,7 +77,7 @@ class Shell(object):
             self.vars['url'] = url
             self.vars['response'] = response
             self.vars['request'] = request
-            self.vars['spider'] = spiders.fromurl(url)
+            self.vars['spider'] = spider
         if not self.nofetch:
             self.vars['fetch'] = self.fetch
         self.vars['view'] = open_in_browser
@@ -104,7 +108,7 @@ class Shell(object):
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
         reactor.callInThread(self._console_thread, url)
-        scrapymanager.start()
+        scrapymanager.start(keep_alive=True)
 
     def inspect_response(self, response):
         print

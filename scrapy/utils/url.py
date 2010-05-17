@@ -22,9 +22,7 @@ def url_is_from_any_domain(url, domains):
 
 def url_is_from_spider(url, spider):
     """Return True if the url belongs to the given spider"""
-    domains = [spider.domain_name]
-    domains.extend(spider.extra_domain_names)
-    return url_is_from_any_domain(url, domains)
+    return url_is_from_any_domain(url, spider.allowed_domains)
 
 def urljoin_rfc(base, ref, encoding='utf-8'):
     """Same as urlparse.urljoin but supports unicode values in base and ref
@@ -87,29 +85,28 @@ def url_query_parameter(url, parameter, default=None, keep_blank_values=0):
         keep_blank_values=keep_blank_values)
     return queryparams.get(parameter, [default])[0]
 
-def url_query_cleaner(url, parameterlist=(), sep='&', kvsep='='):
-    """Clean url arguments leaving only those passed in the parameterlist"""
-    try:
-        url = urlparse.urldefrag(url)[0]
-        base, query = url.split('?', 1)
-        parameters = [pair.split(kvsep, 1) for pair in query.split(sep)]
-    except:
-        base = url
-        query = ""
-        parameters = []
+def url_query_cleaner(url, parameterlist=(), sep='&', kvsep='=', remove=False, unique=True):
+    """Clean url arguments leaving only those passed in the parameterlist keeping order
 
-    # unique parameters while keeping order
-    unique = {}
+    If remove is True, leave only those not in parameterlist.
+    If unique is False, do not remove duplicated keys
+    """
+    url = urlparse.urldefrag(url)[0]
+    base, _, query = url.partition('?')
+    seen = set()
     querylist = []
-    for pair in parameters:
-        k = pair[0]
-        if not unique.get(k):
-            querylist += [pair]
-            unique[k] = 1
-
-    query = sep.join([kvsep.join(pair) for pair in querylist if pair[0] in \
-        parameterlist])
-    return '?'.join([base, query])
+    for ksv in query.split(sep):
+        k, _, _ = ksv.partition(kvsep)
+        if unique and k in seen:
+            continue
+        elif remove and k in parameterlist:
+            continue
+        elif not remove and k not in parameterlist:
+            continue
+        else:
+            querylist.append(ksv)
+            seen.add(k)
+    return '?'.join([base, sep.join(querylist)]) if querylist else base
 
 def add_or_replace_parameter(url, name, new_value, sep='&', url_is_quoted=False):
     """Add or remove a parameter to a given url"""
@@ -130,7 +127,8 @@ def add_or_replace_parameter(url, name, new_value, sep='&', url_is_quoted=False)
                                name+'='+new_value)
     return next_url
 
-def canonicalize_url(url, keep_blank_values=True, keep_fragments=False):
+def canonicalize_url(url, keep_blank_values=True, keep_fragments=False, \
+        encoding=None):
     """Canonicalize the given url by applying the following procedures:
 
     - sort query arguments, first by key, then by value
@@ -147,7 +145,7 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False):
     For examples see the tests in scrapy.tests.test_utils_url
     """
 
-    url = unicode_to_str(url)
+    url = unicode_to_str(url, encoding)
     scheme, netloc, path, params, query, fragment = urlparse.urlparse(url)
     keyvals = cgi.parse_qsl(query, keep_blank_values)
     keyvals.sort()

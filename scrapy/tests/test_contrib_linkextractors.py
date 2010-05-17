@@ -35,6 +35,20 @@ class LinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.extract_links(response),
                          [Link(url='http://otherdomain.com/base/item/12.html', text='Item 12')])
 
+        # base url is an absolute path and relative to host
+        html = """<html><head><title>Page title<title><base href="/" />
+        <body><p><a href="item/12.html">Item 12</a></p></body></html>"""
+        response = HtmlResponse("https://example.org/somepage/index.html", body=html)
+        self.assertEqual(lx.extract_links(response),
+                         [Link(url='https://example.org/item/12.html', text='Item 12')])
+
+        # base url has no scheme
+        html = """<html><head><title>Page title<title><base href="//noschemedomain.com/path/to/" />
+        <body><p><a href="item/12.html">Item 12</a></p></body></html>"""
+        response = HtmlResponse("https://example.org/somepage/index.html", body=html)
+        self.assertEqual(lx.extract_links(response),
+                         [Link(url='https://noschemedomain.com/path/to/item/12.html', text='Item 12')])
+
     def test_extraction_encoding(self):
         body = get_testdata('link_extractor', 'linkextractor_noenc.html')
         response_utf8 = HtmlResponse(url='http://example.com/utf8', body=body, headers={'Content-Type': ['text/html; charset=utf-8']})
@@ -95,6 +109,13 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
               Link(url='http://example.com/sample2.html', text=u'sample 2'),
               Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
               Link(url='http://example.com/sample3.html', text=u'sample 3 repetition') ])
+
+        lx = SgmlLinkExtractor(allow=('sample', ))
+        self.assertEqual([link for link in lx.extract_links(self.response)],
+            [ Link(url='http://example.com/sample1.html', text=u''),
+              Link(url='http://example.com/sample2.html', text=u'sample 2'),
+              Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
+              ])
 
         lx = SgmlLinkExtractor(allow=('sample', ), deny=('3', ))
         self.assertEqual([link for link in lx.extract_links(self.response)],

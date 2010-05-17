@@ -47,7 +47,7 @@ class FSImagesStore(object):
         dispatcher.connect(self.spider_closed, signals.spider_closed)
 
     def spider_closed(self, spider):
-        self.created_directories.pop(spider.domain_name, None)
+        self.created_directories.pop(spider.name, None)
 
     def persist_image(self, key, image, buf, info):
         absolute_path = self._get_filesystem_path(key)
@@ -92,7 +92,7 @@ class _S3AmazonAWSSpider(BaseSpider):
     It means that a spider that uses download_delay or alike is not going to be
     delayed even more because it is uploading images to s3.
     """
-    domain_name = "s3.amazonaws.com"
+    name = "s3.amazonaws.com"
     start_urls = ['http://s3.amazonaws.com/']
     max_concurrent_requests = 100
 
@@ -143,7 +143,7 @@ class S3ImagesStore(object):
     def _build_request(self, key, method, body=None, headers=None):
         url = 'http://%s.s3.amazonaws.com/%s%s' % (self.bucket, self.prefix, key)
         return Request(url, method=method, body=body, headers=headers, \
-                priority=self.request_priority)
+                meta={'sign_s3_request': True}, priority=self.request_priority)
 
     def _download_request(self, request, info):
         """This method is used for HEAD and PUT requests sent to amazon S3
@@ -206,8 +206,8 @@ class ImagesPipeline(MediaPipeline):
         referer = request.headers.get('Referer')
 
         if response.status != 200:
-            log.msg('Image (http-error): Error downloading image from %s referred in <%s>' \
-                    % (request, referer), level=log.WARNING, spider=info.spider)
+            log.msg('Image (code: %s): Error downloading image from %s referred in <%s>' \
+                    % (response.status, request, referer), level=log.WARNING, spider=info.spider)
             raise ImageException
 
         if not response.body:

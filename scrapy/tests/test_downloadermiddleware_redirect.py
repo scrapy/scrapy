@@ -3,12 +3,12 @@ import unittest
 from scrapy.contrib.downloadermiddleware.redirect import RedirectMiddleware
 from scrapy.spider import BaseSpider
 from scrapy.core.exceptions import IgnoreRequest
-from scrapy.http import Request, Response, Headers
+from scrapy.http import Request, Response, HtmlResponse, Headers
 
 class RedirectMiddlewareTest(unittest.TestCase):
 
     def setUp(self):
-        self.spider = BaseSpider()
+        self.spider = BaseSpider('foo')
         self.mw = RedirectMiddleware()
 
     def test_priority_adjust(self):
@@ -58,7 +58,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
             <head><meta http-equiv="refresh" content="5;url=http://example.org/newpage" /></head>
             </html>"""
         req = Request(url='http://example.org')
-        rsp = Response(url='http://example.org', body=body)
+        rsp = HtmlResponse(url='http://example.org', body=body)
         req2 = self.mw.process_response(req, rsp, self.spider)
 
         assert isinstance(req2, Request)
@@ -70,7 +70,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
             <head><meta http-equiv="refresh" content="1000;url=http://example.org/newpage" /></head>
             </html>"""
         req = Request(url='http://example.org')
-        rsp = Response(url='http://example.org', body=body)
+        rsp = HtmlResponse(url='http://example.org', body=body)
         rsp2 = self.mw.process_response(req, rsp, self.spider)
 
         assert rsp is rsp2
@@ -81,7 +81,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
             </html>"""
         req = Request(url='http://example.org', method='POST', body='test',
             headers={'Content-Type': 'text/plain', 'Content-length': '4'})
-        rsp = Response(url='http://example.org', body=body)
+        rsp = HtmlResponse(url='http://example.org', body=body)
         req2 = self.mw.process_response(req, rsp, self.spider)
 
         assert isinstance(req2, Request)

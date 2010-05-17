@@ -47,8 +47,7 @@ class OffsiteMiddleware(object):
         return re.compile(regex)
 
     def spider_opened(self, spider):
-        domains = [spider.domain_name] + spider.extra_domain_names
-        self.host_regexes[spider] = self.get_host_regex(domains)
+        self.host_regexes[spider] = self.get_host_regex(spider.allowed_domains)
         self.domains_seen[spider] = set()
 
     def spider_closed(self, spider):

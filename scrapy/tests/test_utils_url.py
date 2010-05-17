@@ -136,12 +136,26 @@ class UrlUtilsTest(unittest.TestCase):
                          'http://rmc-offers.co.uk/productlist.asp?BCat=newvalue&CatID=60')
 
     def test_url_query_cleaner(self):
-        self.assertEqual(url_query_cleaner("product.html?id=200&foo=bar&name=wired", 'id'),
-                         'product.html?id=200')
-        self.assertEqual(url_query_cleaner("product.html?id=200&foo=bar&name=wired", ['id', 'name']),
-                         'product.html?id=200&name=wired')
-        self.assertEqual(url_query_cleaner("product.html?id=200&foo=bar&name=wired#id20", ['id', 'foo']),
-                         'product.html?id=200&foo=bar')
+        self.assertEqual('product.html?id=200',
+                url_query_cleaner("product.html?id=200&foo=bar&name=wired", ['id']))
+        self.assertEqual('product.html?id=200',
+                url_query_cleaner("product.html?&id=200&&foo=bar&name=wired", ['id']))
+        self.assertEqual('product.html',
+                url_query_cleaner("product.html?foo=bar&name=wired", ['id']))
+        self.assertEqual('product.html?id=200&name=wired',
+                url_query_cleaner("product.html?id=200&foo=bar&name=wired", ['id', 'name']))
+        self.assertEqual('product.html?id',
+                url_query_cleaner("product.html?id&other=3&novalue=", ['id']))
+        self.assertEqual('product.html?d=1&d=2&d=3',
+                url_query_cleaner("product.html?d=1&e=b&d=2&d=3&other=other", ['d'], unique=False))
+        self.assertEqual('product.html?id=200&foo=bar',
+                url_query_cleaner("product.html?id=200&foo=bar&name=wired#id20", ['id', 'foo']))
+        self.assertEqual('product.html?foo=bar&name=wired',
+                url_query_cleaner("product.html?id=200&foo=bar&name=wired", ['id'], remove=True))
+        self.assertEqual('product.html?name=wired',
+                url_query_cleaner("product.html?id=2&foo=bar&name=wired", ['id', 'foo'], remove=True))
+        self.assertEqual('product.html?foo=bar&name=wired',
+                url_query_cleaner("product.html?id=2&foo=bar&name=wired", ['id', 'footo'], remove=True))
 
     def test_canonicalize_url(self):
         # simplest case

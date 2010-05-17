@@ -23,9 +23,6 @@ class HtmlResponse(TextResponse):
     METATAG_RE  = re.compile(r'<meta\s+%s\s+%s' % (_httpequiv_re, _content_re), re.I)
     METATAG_RE2 = re.compile(r'<meta\s+%s\s+%s' % (_content_re, _httpequiv_re), re.I)
 
-    def body_encoding(self):
-        return self._body_declared_encoding() or super(HtmlResponse, self).body_encoding()
-
     @memoizemethod_noargs
     def _body_declared_encoding(self):
         chunk = self.body[:5000]

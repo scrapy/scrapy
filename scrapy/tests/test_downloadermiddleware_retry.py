@@ -10,7 +10,7 @@ from scrapy.http import Request, Response
 
 class RetryTest(unittest.TestCase):
     def setUp(self):
-        self.spider = BaseSpider()
+        self.spider = BaseSpider('foo')
         self.mw = RetryMiddleware()
         self.mw.max_retry_times = 2
 

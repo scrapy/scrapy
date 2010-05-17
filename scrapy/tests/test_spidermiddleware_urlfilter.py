@@ -9,7 +9,7 @@ from scrapy.utils.url import canonicalize_url
 class TestUrlFilterMiddleware(TestCase):
 
     def setUp(self):
-        self.spider = BaseSpider()
+        self.spider = BaseSpider('foo')
         self.mw = UrlFilterMiddleware()
 
     def test_process_spider_output(self):

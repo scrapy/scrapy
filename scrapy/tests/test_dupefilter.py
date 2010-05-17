@@ -8,7 +8,7 @@ from scrapy.contrib.dupefilter import RequestFingerprintDupeFilter, NullDupeFilt
 class RequestFingerprintDupeFilterTest(unittest.TestCase):
 
     def test_filter(self):
-        spider = BaseSpider()
+        spider = BaseSpider('foo')
         filter = RequestFingerprintDupeFilter()
         filter.open_spider(spider)
 
@@ -28,7 +28,7 @@ class RequestFingerprintDupeFilterTest(unittest.TestCase):
 class NullDupeFilterTest(unittest.TestCase):
 
     def test_filter(self):
-        spider = BaseSpider()
+        spider = BaseSpider('foo')
         filter = NullDupeFilter()
         filter.open_spider(spider)
 

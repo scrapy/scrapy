@@ -59,9 +59,9 @@ class CrawlSpider(InitSpider):
     """
     rules = ()
 
-    def __init__(self):
+    def __init__(self, *a, **kw):
         """Constructor takes care of compiling rules"""
-        super(CrawlSpider, self).__init__()
+        super(CrawlSpider, self).__init__(*a, **kw)
         self._compile_rules()
 
     def parse(self, response):

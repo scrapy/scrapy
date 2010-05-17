@@ -98,10 +98,10 @@ spider returns multiples items with the same id::
             del self.duplicates[spider]
 
         def process_item(self, spider, item):
-            if item.id in self.duplicates[spider]:
+            if item['id'] in self.duplicates[spider]:
                 raise DropItem("Duplicate item found: %s" % item)
             else:
-                self.duplicates[spider].add(item.id)
+                self.duplicates[spider].add(item['id'])
                 return item
 
 Built-in Item Pipelines reference

@@ -87,6 +87,15 @@ class UtilsMarkupTest(unittest.TestCase):
         self.assertEqual(remove_tags(u'<p align="center" class="one">texty</p>', which_ones=('b',)),
                          u'<p align="center" class="one">texty</p>')
 
+        # text with empty tags
+        self.assertEqual(remove_tags(u'a<br />b<br/>c'), u'abc')
+        self.assertEqual(remove_tags(u'a<br />b<br/>c', which_ones=('br',)), u'abc')
+
+        # test keep arg
+        self.assertEqual(remove_tags(u'<p>a<br />b<br/>c</p>', keep=('br',)), u'a<br />b<br/>c')
+        self.assertEqual(remove_tags(u'<p>a<br />b<br/>c</p>', keep=('p',)), u'<p>abc</p>')
+        self.assertEqual(remove_tags(u'<p>a<br />b<br/>c</p>', keep=('p','br','div')), u'<p>a<br />b<br/>c</p>')
+
     def test_remove_tags_with_content(self):
         # make sure it always return unicode
         assert isinstance(remove_tags_with_content('no tags'), unicode)
@@ -104,6 +113,9 @@ class UtilsMarkupTest(unittest.TestCase):
 
         self.assertEqual(remove_tags_with_content(u'<b>not will removed</b><i>i will removed</i>', which_ones=('i',)),
                          u'<b>not will removed</b>')
+
+        # text with empty tags
+        self.assertEqual(remove_tags_with_content(u'<br/>a<br />', which_ones=('br',)), u'a')
 
     def test_replace_escape_chars(self):
         # make sure it always return unicode
