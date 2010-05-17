@@ -197,8 +197,12 @@ All the rest
 .. toctree::
    :hidden:
 
+   contributing
    api-stability
    experimental/index
+
+:doc:`contributing`
+    Learn how to contribute to the Scrapy project.
 
 :doc:`api-stability`
     Understand Scrapy versioning and API stability.
