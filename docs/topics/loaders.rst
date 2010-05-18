@@ -25,9 +25,10 @@ Using Item Loaders to populate items
 ====================================
 
 To use an Item Loader, you must first instantiate it. You can either
-instantiate it with an Item object or without one, in which case an Item is
-automatically instantiated in the Item Loader constructor using the Item class
-specified in the :attr:`ItemLoader.default_item_class` attribute.
+instantiate it with an dict-like object (e.g. Item or dict) or without one, in
+which case an Item is automatically instantiated in the Item Loader constructor
+using the Item class specified in the :attr:`ItemLoader.default_item_class`
+attribute.
 
 Then, you start collecting values into the Item Loader, typically using
 :ref:`XPath Selectors <topics-selectors>`. You can add more than one value to
@@ -254,20 +255,45 @@ ItemLoader objects
     The item and the remaining keyword arguments are assigned to the Loader
     context (accesible through the :attr:`context` attribute).
 
-    .. method:: add_value(field_name, value)
+    .. method:: get_value(value, \*processors, \**kwargs)
 
-        Add the given ``value`` for the given field.
+        Process the given ``value`` by the given ``processors`` and keyword
+        arguments.
 
-        The value is passed through the :ref:`field input processor
-        <topics-loaders-processors>` and its result appened to the data
-        collected for that field. If the field already contains collected data,
-        the new data is added.
+        Available keyword arguments:
+
+        :param re: a regular expression to use for extracting data from the
+            given value using :meth:`~scrapy.utils.misc.extract_regex` method,
+            applied before processors
+        :type re: str or compiled regex
+
+        Examples::
+
+            >>> from scrapy.contrib.loader.processor import TakeFirst
+            >>> loader.get_value(u'name: foo', TakeFirst(), unicode.upper, re='name: (.+)')
+            'FOO`
+
+    .. method:: add_value(field_name, value, \*processors, \**kwargs)
+
+        Process and then add the given ``value`` for the given field.
+
+        The value is first passed through :meth:`get_value` by giving the
+        ``processors`` and ``kwargs``, and then passed through the
+        :ref:`field input processor <topics-loaders-processors>` and its result
+        appened to the data collected for that field. If the field already
+        contains collected data, the new data is added.
+
+        The given ``field_name`` can be ``None``, in which case values for
+        multiple fields may be added. And the processed value should be a dict
+        with field_name mapped to values.
 
         Examples::
 
             loader.add_value('name', u'Color TV')
             loader.add_value('colours', [u'white', u'blue'])
             loader.add_value('length', u'100')
+            loader.add_value('name', u'name: foo', TakeFirst(), re='name: (.+)')
+            loader.add_value(None, {'name': u'foo', 'sex': u'male'})
 
     .. method:: replace_value(field_name, value)
 
@@ -340,13 +366,11 @@ ItemLoader objects
         in which case this argument is ignored.
     :type response: :class:`~scrapy.http.Response` object
 
-    .. method:: add_xpath(field_name, xpath, re=None)
+    .. method:: get_xpath(xpath, \*processors, \**kwargs)
 
-        Similar to :meth:`ItemLoader.add_value` but receives an XPath instead of a
+        Similar to :meth:`ItemLoader.get_value` but receives an XPath instead of a
         value, which is used to extract a list of unicode strings from the
-        selector associated with this :class:`XPathItemLoader`. If the ``re``
-        argument is given, it's used for extrating data from the selector using
-        the :meth:`~scrapy.selector.XPathSelector.re` method.
+        selector associated with this :class:`XPathItemLoader`.
 
         :param xpath: the XPath to extract data from
         :type xpath: str
@@ -358,11 +382,29 @@ ItemLoader objects
         Examples::
 
             # HTML snippet: <p class="product-name">Color TV</p>
+            loader.get_xpath('//p[@class="product-name"]')
+            # HTML snippet: <p id="price">the price is $1200</p>
+            loader.get_xpath('//p[@id="price"]', TakeFirst(), re='the price is (.*)')
+
+    .. method:: add_xpath(field_name, xpath, \*processors, \**kwargs)
+
+        Similar to :meth:`ItemLoader.add_value` but receives an XPath instead of a
+        value, which is used to extract a list of unicode strings from the
+        selector associated with this :class:`XPathItemLoader`.
+
+        See :meth:`get_xpath` for ``kwargs``.
+
+        :param xpath: the XPath to extract data from
+        :type xpath: str
+
+        Examples::
+
+            # HTML snippet: <p class="product-name">Color TV</p>
             loader.add_xpath('name', '//p[@class="product-name"]')
             # HTML snippet: <p id="price">the price is $1200</p>
             loader.add_xpath('price', '//p[@id="price"]', re='the price is (.*)')
 
-    .. method:: replace_xpath(field_name, xpath, re=None)
+    .. method:: replace_xpath(field_name, xpath, \*processors, \**kwargs)
 
         Similar to :meth:`add_xpath` but replaces collected data instead of
         adding it.
