@@ -6,12 +6,12 @@ See documentation in docs/topics/spider-middleware.rst
 from scrapy.core.exceptions import IgnoreRequest
 
 
-class HttpErrorException(IgnoreRequest):
+class HttpError(IgnoreRequest):
     """A non-200 response was filtered"""
 
     def __init__(self, response, *args, **kwargs):
         self.response = response
-        super(HttpErrorException, self).__init__(*args, **kwargs)
+        super(HttpError, self).__init__(*args, **kwargs)
 
 
 class HttpErrorMiddleware(object):
@@ -25,5 +25,8 @@ class HttpErrorMiddleware(object):
             allowed_statuses = getattr(spider, 'handle_httpstatus_list', ())
         if response.status in allowed_statuses:
             return
-        raise HttpErrorException(response, 'Ignoring non-200 response')
+        raise HttpError(response, 'Ignoring non-200 response')
 
+    def process_spider_exception(self, response, exception, spider):
+        if isinstance(exception, HttpError):
+            return []
