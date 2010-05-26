@@ -18,6 +18,7 @@ from scrapy.utils.response import open_in_browser
 from scrapy.conf import settings
 from scrapy.core.manager import scrapymanager
 from scrapy.core.engine import scrapyengine
+from scrapy.core.queue import KeepAliveExecutionQueue
 from scrapy.http import Request, TextResponse
 
 def relevant_var(varname):
@@ -54,10 +55,11 @@ class Shell(object):
             url = parse_url(request_or_url)
             request = Request(url)
 
-        spider = scrapymanager._create_spider_for_request(request, \
-            BaseSpider('default'), log_multiple=True)
+        spider = spiders.create_for_request(request, BaseSpider('default'), \
+            log_multiple=True)
 
         print "Fetching %s..." % request
+        scrapyengine.open_spider(spider)
         response = threads.blockingCallFromThread(reactor, scrapyengine.schedule, \
             request, spider)
         if response:
@@ -108,7 +110,8 @@ class Shell(object):
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
         reactor.callInThread(self._console_thread, url)
-        scrapymanager.start(keep_alive=True)
+        scrapymanager.queue = KeepAliveExecutionQueue()
+        scrapymanager.start()
 
     def inspect_response(self, response):
         print

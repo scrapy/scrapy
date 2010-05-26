@@ -183,10 +183,6 @@ class Downloader(object):
         site.cancel_request_calls()
         self._process_queue(spider)
 
-    def has_capacity(self):
-        """Does the downloader have capacity to handle more spiders"""
-        return len(self.sites) < self.concurrent_spiders
-
     def is_idle(self):
         return not self.sites
 

@@ -12,11 +12,11 @@ def get_engine_status(engine=None):
     global_tests = [
         "time()-engine.start_time",
         "engine.is_idle()",
+        "engine.has_capacity()",
         "engine.scheduler.is_idle()",
         "len(engine.scheduler.pending_requests)",
         "engine.downloader.is_idle()",
         "len(engine.downloader.sites)",
-        "engine.downloader.has_capacity()",
         "engine.scraper.is_idle()",
         "len(engine.scraper.sites)",
     ]

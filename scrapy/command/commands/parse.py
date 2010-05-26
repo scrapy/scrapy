@@ -8,8 +8,6 @@ from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.url import is_url
 from scrapy import log
 
-from collections import defaultdict
-
 class Command(ScrapyCommand):
 
     requires_project = True
@@ -75,25 +73,20 @@ class Command(ScrapyCommand):
         if not len(args) == 1 or not is_url(args[0]):
             return False
 
-        request = Request(args[0])
+        responses = [] # to collect downloaded responses
+        request = Request(args[0], callback=responses.append)
 
         if opts.spider:
             try:
                 spider = spiders.create(opts.spider)
             except KeyError:
-                log.msg('Could not find spider: %s' % opts.spider, log.ERROR)
+                log.msg('Unable to find spider: %s' % opts.spider, log.ERROR)
                 return
         else:
-            spider = scrapymanager._create_spider_for_request(request, \
-                log_none=True, log_multiple=True)
+            spider = spiders.create_for_request(request)
 
-        if not spider:
-            return
-
-        responses = [] # to collect downloaded responses
-        request = request.replace(callback=responses.append)
-
-        scrapymanager.crawl_request(request, spider)
+        scrapymanager.configure()
+        scrapymanager.queue.append_request(request, spider)
         scrapymanager.start()
 
         if not responses:

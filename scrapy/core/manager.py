@@ -1,28 +1,26 @@
 import signal
 
-from twisted.internet import reactor
+from twisted.internet import reactor, defer
 
+from scrapy.core.engine import scrapyengine
+from scrapy.core.queue import ExecutionQueue
 from scrapy.extension import extensions
 from scrapy import log
-from scrapy.http import Request
-from scrapy.core.engine import scrapyengine
 from scrapy.spider import spiders
-from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 
 
 class ExecutionManager(object):
 
     def __init__(self):
-        self.interrupted = False
         self.configured = False
         self.control_reactor = True
+        self.engine = scrapyengine
 
-    def configure(self, control_reactor=True):
+    def configure(self, control_reactor=True, queue=None):
         self.control_reactor = control_reactor
         if control_reactor:
             install_shutdown_handlers(self._signal_shutdown)
-        reactor.addSystemEventTrigger('before', 'shutdown', scrapyengine.stop)
 
         if not log.started:
             log.start()
@@ -33,68 +31,54 @@ class ExecutionManager(object):
         log.msg("Enabled extensions: %s" % ", ".join(extensions.enabled.iterkeys()),
             level=log.DEBUG)
 
-        scrapyengine.configure()
+        self.queue = queue or ExecutionQueue()
+        self.engine.configure(self._spider_closed)
         self.configured = True
-        
-    def crawl_url(self, url, spider=None):
-        """Schedule given url for crawling."""
-        if spider is None:
-            spider = self._create_spider_for_request(Request(url), log_none=True, \
-                log_multiple=True)
+
+    @defer.inlineCallbacks
+    def _start_next_spider(self):
+        spider, requests = yield defer.maybeDeferred(self.queue.get_next)
         if spider:
-            requests = arg_to_iter(spider.make_requests_from_url(url))
-            self._crawl_requests(requests, spider)
+            self._start_spider(spider, requests)
+        if self.engine.has_capacity() and not self._nextcall.active():
+            self._nextcall = reactor.callLater(self.queue.polling_delay, \
+                self._start_next_spider)
 
-    def crawl_request(self, request, spider=None):
-        """Schedule request for crawling."""
-        assert self.configured, "Scrapy Manager not yet configured"
-        if spider is None:
-            spider = self._create_spider_for_request(request, log_none=True, \
-                log_multiple=True)
-        if spider:
-            scrapyengine.crawl(request, spider)
+    @defer.inlineCallbacks
+    def _start_spider(self, spider, requests):
+        """Don't call this method. Use self.queue to start new spiders"""
+        yield defer.maybeDeferred(self.engine.open_spider, spider)
+        for request in requests:
+            self.engine.crawl(request, spider)
 
-    def crawl_spider_name(self, name):
-        """Schedule given spider by name for crawling."""
-        try:
-            spider = spiders.create(name)
-        except KeyError:
-            log.msg('Could not find spider: %s' % name, log.ERROR)
-        else:
-            self.crawl_spider(spider)
+    @defer.inlineCallbacks
+    def _spider_closed(self):
+        if not self.engine.open_spiders:
+            is_finished = yield defer.maybeDeferred(self.queue.is_finished)
+            if is_finished:
+                self.stop()
+                return
+        if self.engine.has_capacity():
+            self._start_next_spider()
 
-    def crawl_spider(self, spider):
-        """Schedule spider for crawling."""
-        requests = spider.start_requests()
-        self._crawl_requests(requests, spider)
-
-    def _crawl_requests(self, requests, spider):
-        """Shortcut to schedule a list of requests"""
-        for req in requests:
-            self.crawl_request(req, spider)
-
-    def start(self, keep_alive=False):
-        """Start the scrapy server, without scheduling any domains"""
-        scrapyengine.keep_alive = keep_alive
-        scrapyengine.start()
+    @defer.inlineCallbacks
+    def start(self):
+        yield defer.maybeDeferred(self.engine.start)
+        self._nextcall = reactor.callLater(0, self._spider_closed)
+        reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
         if self.control_reactor:
             reactor.run(installSignalHandlers=False)
 
+    @defer.inlineCallbacks
     def stop(self):
-        """Stop the scrapy server, shutting down the execution engine"""
-        self.interrupted = True
-        scrapyengine.stop()
-
-    def _create_spider_for_request(self, request, default=None, log_none=False, \
-            log_multiple=False):
-        spider_names = spiders.find_by_request(request)
-        if len(spider_names) == 1:
-            return spiders.create(spider_names[0])
-        if len(spider_names) > 1 and log_multiple:
-            log.msg('More than one spider found for: %s' % request, log.ERROR)
-        if len(spider_names) == 0 and log_none:
-            log.msg('Could not find spider for: %s' % request, log.ERROR)
-        return default
+        if self._nextcall.active():
+            self._nextcall.cancel()
+        if self.engine.running:
+            yield defer.maybeDeferred(self.engine.stop)
+        try:
+            reactor.stop()
+        except RuntimeError: # raised if already stopped or in shutdown stage
+            pass
 
     def _signal_shutdown(self, signum, _):
         signame = signal_names[signum]
@@ -108,7 +92,7 @@ class ExecutionManager(object):
         log.msg('Received %s twice, forcing unclean shutdown' % signame, \
             level=log.INFO)
         log.log_level = log.SILENT # disable logging of confusing tracebacks
-        reactor.callFromThread(scrapyengine.kill)
+        reactor.callFromThread(self.engine.kill)
         install_shutdown_handlers(signal.SIG_IGN)
 
 scrapymanager = ExecutionManager()

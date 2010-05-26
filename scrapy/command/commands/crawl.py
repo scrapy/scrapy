@@ -1,5 +1,6 @@
 from scrapy import log
 from scrapy.command import ScrapyCommand
+from scrapy.core.queue import ExecutionQueue
 from scrapy.core.manager import scrapymanager
 from scrapy.conf import settings
 from scrapy.http import Request
@@ -31,23 +32,25 @@ class Command(ScrapyCommand):
             settings.overrides['CRAWLSPIDER_FOLLOW_LINKS'] = False
 
     def run(self, args, opts):
+        q = ExecutionQueue()
         urls, names = self._split_urls_and_names(args)
         for name in names:
-            scrapymanager.crawl_spider_name(name)
+            q.append_spider_name(name)
 
         if opts.spider:
             try:
                 spider = spiders.create(opts.spider)
                 for url in urls:
-                    scrapymanager.crawl_url(url, spider)
+                    q.append_url(url, spider)
             except KeyError:
-                log.msg('Could not find spider: %s' % opts.spider, log.ERROR)
+                log.msg('Unable to find spider: %s' % opts.spider, log.ERROR)
         else:
             for name, urls in self._group_urls_by_spider(urls):
                 spider = spiders.create(name)
                 for url in urls:
-                    scrapymanager.crawl_url(url, spider)
+                    q.append_url(url, spider)
 
+        scrapymanager.queue = q
         scrapymanager.start()
 
     def _group_urls_by_spider(self, urls):

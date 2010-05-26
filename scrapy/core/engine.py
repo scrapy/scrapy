@@ -6,7 +6,7 @@ For more information see docs/topics/architecture.rst
 """
 from time import time
 
-from twisted.internet import reactor, task, defer
+from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
 from scrapy.xlib.pydispatch import dispatcher
 
@@ -27,57 +27,42 @@ class ExecutionEngine(object):
 
     def __init__(self):
         self.configured = False
-        self.keep_alive = False
         self.closing = {} # dict (spider -> reason) of spiders being closed
         self.running = False
         self.killed = False
         self.paused = False
         self._next_request_calls = {}
-        self._mainloop_task = task.LoopingCall(self._mainloop)
         self._crawled_logline = load_object(settings['LOG_FORMATTER_CRAWLED'])
 
-    def configure(self):
+    def configure(self, spider_closed_callback):
         """
         Configure execution engine with the given scheduling policy and downloader.
         """
         self.scheduler = load_object(settings['SCHEDULER'])()
-        self.spider_scheduler = load_object(settings['SPIDER_SCHEDULER'])()
         self.downloader = Downloader()
         self.scraper = Scraper(self)
         self.configured = True
+        self._spider_closed_callback = spider_closed_callback
 
     def start(self):
         """Start the execution engine"""
-        if self.running:
-            return
+        assert not self.running, "Engine already running"
         self.start_time = time()
         send_catch_log(signal=signals.engine_started, sender=self.__class__)
-        self._mainloop_task.start(5.0, now=True)
-        reactor.callWhenRunning(self._mainloop)
         self.running = True
 
     def stop(self):
         """Stop the execution engine gracefully"""
-        if not self.running:
-            return
+        assert self.running, "Engine not running"
         self.running = False
-        def before_shutdown():
-            dfd = self._close_all_spiders()
-            return dfd.addBoth(lambda _: self._finish_stopping_engine())
-        reactor.addSystemEventTrigger('before', 'shutdown', before_shutdown)
-        if self._mainloop_task.running:
-            self._mainloop_task.stop()
-        try:
-            reactor.stop()
-        except RuntimeError: # raised if already stopped or in shutdown stage
-            pass
+        dfd = self._close_all_spiders()
+        return dfd.addBoth(lambda _: self._finish_stopping_engine())
 
     def kill(self):
         """Forces shutdown without waiting for pending transfers to finish.
         stop() must have been called first
         """
-        if self.running:
-            return
+        assert not self.running, "Call engine.stop() before engine.kill()"
         self.killed = True
 
     def pause(self):
@@ -91,12 +76,6 @@ class ExecutionEngine(object):
     def is_idle(self):
         return self.scheduler.is_idle() and self.downloader.is_idle() and \
             self.scraper.is_idle()
-
-    def next_spider(self):
-        spider = self.spider_scheduler.next_spider()
-        if spider:
-            self.open_spider(spider)
-            return True
 
     def next_request(self, spider, now=False):
         """Scrape the next request for the spider passed.
@@ -163,7 +142,13 @@ class ExecutionEngine(object):
     def open_spiders(self):
         return self.downloader.sites.keys()
 
+    def has_capacity(self):
+        """Does the engine have capacity to handle more spiders"""
+        return len(self.downloader.sites) < self.downloader.concurrent_spiders
+
     def crawl(self, request, spider):
+        assert spider in self.open_spiders, \
+            "Spider %r not opened when crawling: %s" % (spider.name, request)
         if not request.deferred.callbacks:
             log.msg("Unable to crawl Request with no callback: %s" % request,
                 level=log.ERROR, spider=spider)
@@ -180,24 +165,8 @@ class ExecutionEngine(object):
     def schedule(self, request, spider):
         if spider in self.closing:
             raise IgnoreRequest()
-        if not self.scheduler.spider_is_open(spider):
-            self.scheduler.open_spider(spider)
-            if self.spider_is_closed(spider): # scheduler auto-open
-                self.spider_scheduler.add_spider(spider)
         self.next_request(spider)
         return self.scheduler.enqueue_request(spider, request)
-
-    def _mainloop(self):
-        """Add more spiders to be scraped if the downloader has the capacity.
-
-        If there is nothing else scheduled then stop the execution engine.
-        """
-        if not self.running or self.paused:
-            return
-
-        while self.running and self.downloader.has_capacity():
-            if not self.next_spider():
-                return self._stop_if_idle()
 
     def download(self, request, spider):
         def _on_success(response):
@@ -241,14 +210,15 @@ class ExecutionEngine(object):
         return dwld
 
     def open_spider(self, spider):
+        assert self.has_capacity(), "No free spider slots when opening %r" % \
+            spider.name
         log.msg("Spider opened", spider=spider)
-        self.next_request(spider)
-
+        self.scheduler.open_spider(spider)
         self.downloader.open_spider(spider)
         self.scraper.open_spider(spider)
         stats.open_spider(spider)
-
         send_catch_log(signals.spider_opened, sender=self.__class__, spider=spider)
+        self.next_request(spider)
 
     def _spider_idle(self, spider):
         """Called when a spider gets idle. This function is called when there
@@ -269,11 +239,6 @@ class ExecutionEngine(object):
                 level=log.ERROR)
         if self.spider_is_idle(spider):
             self.close_spider(spider, reason='finished')
-
-    def _stop_if_idle(self):
-        """Call the stop method if the system has no outstanding tasks. """
-        if self.is_idle() and not self.keep_alive:
-            self.stop()
 
     def close_spider(self, spider, reason='cancelled'):
         """Close (cancel) spider and clear all its outstanding requests"""
@@ -316,7 +281,7 @@ class ExecutionEngine(object):
         dfd.addErrback(log.err, "Unhandled error on SpiderManager.close_spider()",
             spider=spider)
         dfd.addBoth(lambda _: log.msg("Spider closed (%s)" % reason, spider=spider))
-        reactor.callLater(0, self._mainloop)
+        reactor.callLater(0, self._spider_closed_callback)
         return dfd
 
     def _finish_stopping_engine(self):

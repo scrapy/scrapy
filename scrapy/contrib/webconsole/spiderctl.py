@@ -8,7 +8,7 @@ from scrapy.core import signals
 from scrapy.core.manager import scrapymanager
 from scrapy.core.engine import scrapyengine
 from scrapy.spider import spiders
-from scrapy.management.web import banner
+from scrapy.management.web import banner, webconsole_discover_module
 from scrapy.conf import settings
 
 class Spiderctl(object):
@@ -20,8 +20,6 @@ class Spiderctl(object):
         self.finished = set()
         dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
         dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
-
-        from scrapy.management.web import webconsole_discover_module
         dispatcher.connect(self.webconsole_discover_module, signal=webconsole_discover_module)
 
     def spider_opened(self, spider):
@@ -35,7 +33,7 @@ class Spiderctl(object):
         if wc_request.args:
             changes = self.webconsole_control(wc_request)
 
-        self.scheduled = [s.name for s in scrapyengine.spider_scheduler._pending_spiders]
+        self.scheduled = [s[0].name for s in scrapymanager.queue.spider_requests]
         self.idle = [d for d in self.enabled_spiders if d not in self.scheduled
                                                         and d not in self.running
                                                         and d not in self.finished]
@@ -126,8 +124,8 @@ class Spiderctl(object):
         if "remove_pending_spiders" in args:
             removed = []
             for name in args["remove_pending_spiders"]:
-                if scrapyengine.spider_scheduler.remove_pending_spider(name):
-                    removed.append(name)
+                q = scrapymanager.queue
+                q.spider_requests = [x for x in q.spider_requests if x[0].name != name]
             if removed:
                 s += "<p>"
                 s += "Removed scheduled spiders: <ul><li>%s</li></ul>" % "</li><li>".join(args["remove_pending_spiders"])
@@ -135,14 +133,14 @@ class Spiderctl(object):
         if "add_pending_spiders" in args:
             for name in args["add_pending_spiders"]:
                 if name not in scrapyengine.scheduler.pending_requests:
-                    scrapymanager.crawl_spider_name(name)
+                    scrapymanager.queue.append_spider_name(name)
             s += "<p>"
             s += "Scheduled spiders: <ul><li>%s</li></ul>" % "</li><li>".join(args["add_pending_spiders"])
             s += "</p>"
         if "rerun_finished_spiders" in args:
             for name in args["rerun_finished_spiders"]:
                 if name not in scrapyengine.scheduler.pending_requests:
-                    scrapymanager.crawl_spider_name(name)
+                    scrapymanager.queue.append_spider_name(name)
                 self.finished.remove(name)
             s += "<p>"
             s += "Re-scheduled finished spiders: <ul><li>%s</li></ul>" % "</li><li>".join(args["rerun_finished_spiders"])

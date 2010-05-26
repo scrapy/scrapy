@@ -54,7 +54,7 @@ class Command(ScrapyCommand):
         module = _import_file(args[0])
 
         # schedule spider and start engine
-        scrapymanager.crawl_spider(module.SPIDER)
+        scrapymanager.queue.append_spider(module.SPIDER)
         scrapymanager.start()
 
         if opts.output:
