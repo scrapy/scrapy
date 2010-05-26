@@ -1,19 +1,35 @@
+import sys
+import os
 import weakref
-import unittest
+import shutil
 
-# just a hack to avoid cyclic imports of scrapy.spider when running this test
+from twisted.trial import unittest
+
+# ugly hack to avoid cyclic imports of scrapy.spider when running this test
 # alone
 import scrapy.spider 
 from scrapy.contrib.spidermanager import TwistedPluginSpiderManager
 from scrapy.http import Request
 
+module_dir = os.path.dirname(os.path.abspath(__file__))
+
 class TwistedPluginSpiderManagerTest(unittest.TestCase):
 
     def setUp(self):
+        orig_spiders_dir = os.path.join(module_dir, 'test_spiders')
+        self.tmpdir = self.mktemp()
+        os.mkdir(self.tmpdir)
+        self.spiders_dir = os.path.join(self.tmpdir, 'test_spiders_xxx')
+        shutil.copytree(orig_spiders_dir, self.spiders_dir)
+        sys.path.append(self.tmpdir)
         self.spiderman = TwistedPluginSpiderManager()
         assert not self.spiderman.loaded
-        self.spiderman.load(['scrapy.tests.test_contrib_spidermanager'])
+        self.spiderman.load(['test_spiders_xxx'])
         assert self.spiderman.loaded
+
+    def tearDown(self):
+        del self.spiderman
+        sys.path.remove(self.tmpdir)
 
     def test_list(self):
         self.assertEqual(set(self.spiderman.list()), 
@@ -57,6 +73,3 @@ class TwistedPluginSpiderManagerTest(unittest.TestCase):
         self.spiderman.close_spider(spider1)
         spider2 = self.spiderman.create("spider1")
         assert spider1 is not spider2
-
-if __name__ == '__main__':
-    unittest.main()
