@@ -14,18 +14,15 @@ import Image
 from cStringIO import StringIO
 from collections import defaultdict
 
-from twisted.internet import defer
+from twisted.internet import defer, threads
 
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy import log
 from scrapy.stats import stats
 from scrapy.utils.misc import md5sum
 from scrapy.core import signals
-from scrapy.core.engine import scrapyengine
 from scrapy.core.exceptions import DropItem, NotConfigured, IgnoreRequest
-from scrapy.spider import BaseSpider
 from scrapy.contrib.pipeline.media import MediaPipeline
-from scrapy.http import Request
 from scrapy.conf import settings
 
 
@@ -78,83 +75,47 @@ class FSImagesStore(object):
             seen.add(dirname)
 
 
-class _S3AmazonAWSSpider(BaseSpider):
-    """This spider is used for uploading images to Amazon S3
-
-    It is basically not a crawling spider like a normal spider is, this spider is
-    a placeholder that allows us to open a different slot in downloader and use it
-    for uploads to S3.
-
-    The use of another downloader slot for S3 images avoid the effect of normal
-    spider downloader slot to be affected by requests to a complete different
-    domain (s3.amazonaws.com).
-
-    It means that a spider that uses download_delay or alike is not going to be
-    delayed even more because it is uploading images to s3.
-    """
-    name = "s3.amazonaws.com"
-    start_urls = ['http://s3.amazonaws.com/']
-    max_concurrent_requests = 100
-
-
 class S3ImagesStore(object):
 
-    request_priority = 1000
+    AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
+    AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
 
     def __init__(self, uri):
         assert uri.startswith('s3://')
         self.bucket, self.prefix = uri[5:].split('/', 1)
-        self._set_custom_spider()
-
-    def _set_custom_spider(self):
-        use_custom_spider = bool(settings['IMAGES_S3STORE_SPIDER'])
-        if use_custom_spider:
-            self.s3_spider = _S3AmazonAWSSpider()
-        else:
-            self.s3_spider = None
 
     def stat_image(self, key, info):
-        def _onsuccess(response):
-            if response.status == 200:
-                checksum = response.headers['Etag'].strip('"')
-                last_modified = response.headers['Last-Modified']
-                modified_tuple = rfc822.parsedate_tz(last_modified)
-                modified_stamp = int(rfc822.mktime_tz(modified_tuple))
-                return {'checksum': checksum, 'last_modified': modified_stamp}
+        def _onsuccess(boto_key):
+            checksum = boto_key.etag.strip('"')
+            last_modified = boto_key.last_modified
+            modified_tuple = rfc822.parsedate_tz(last_modified)
+            modified_stamp = int(rfc822.mktime_tz(modified_tuple))
+            return {'checksum': checksum, 'last_modified': modified_stamp}
 
-        req = self._build_request(key, method='HEAD')
-        return self._download_request(req, info).addCallback(_onsuccess)
+        return self._get_boto_key(key).addCallback(_onsuccess)
+
+    def _get_boto_bucket(self):
+        from boto.s3.connection import S3Connection
+        c = S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY)
+        return c.get_bucket(self.bucket, validate=False)
+
+    def _get_boto_key(self, key):
+        b = self._get_boto_bucket()
+        key_name = '%s%s' % (self.prefix, key)
+        return threads.deferToThread(b.get_key, key_name)
 
     def persist_image(self, key, image, buf, info):
         """Upload image to S3 storage"""
         width, height = image.size
-        headers = {
-                'Content-Type': 'image/jpeg',
-                'X-Amz-Acl': 'public-read',
-                'X-Amz-Meta-Width': str(width),
-                'X-Amz-Meta-Height': str(height),
-                'Cache-Control': 'max-age=172800',
-                }
-
+        headers = {'Cache-Control': 'max-age=172800'} # 2 days of cache
+        b = self._get_boto_bucket()
+        key_name = '%s%s' % (self.prefix, key)
+        k = b.new_key(key_name)
+        k.set_metadata('width', str(width))
+        k.set_metadata('height', str(height))
         buf.seek(0)
-        req = self._build_request(key, method='PUT', body=buf.read(), headers=headers)
-        return self._download_request(req, info)
-
-    def _build_request(self, key, method, body=None, headers=None):
-        url = 'http://%s.s3.amazonaws.com/%s%s' % (self.bucket, self.prefix, key)
-        return Request(url, method=method, body=body, headers=headers, \
-                meta={'sign_s3_request': True}, priority=self.request_priority)
-
-    def _download_request(self, request, info):
-        """This method is used for HEAD and PUT requests sent to amazon S3
-
-        It tries to use a specific spider domain for uploads, or defaults
-        to current domain spider.
-        """
-        if self.s3_spider:
-            # need to use schedule to auto-open domain
-            return scrapyengine.schedule(request, self.s3_spider)
-        return scrapyengine.download(request, info.spider)
+        return threads.deferToThread(k.set_contents_from_file, buf, headers, \
+            policy='public-read')
 
 
 class ImagesPipeline(MediaPipeline):
