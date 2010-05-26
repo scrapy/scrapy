@@ -27,7 +27,7 @@ import cPickle as pickle
 
 from scrapy.xlib.pydispatch import dispatcher
 
-from scrapy.core.engine import scrapyengine
+from scrapy.core.manager import scrapymanager
 from scrapy.core.exceptions import NotConfigured
 from scrapy.core import signals
 from scrapy.utils.response import response_httprepr
@@ -60,7 +60,7 @@ class ItemSamplerPipeline(object):
             stats.set_value("items_sampled", sampled, spider=spider)
             log.msg("Sampled %s" % item, spider=spider, level=log.INFO)
             if close_spider and sampled == items_per_spider:
-                scrapyengine.close_spider(spider)
+                scrapymanager.engine.close_spider(spider)
         return item
 
     def engine_stopped(self):

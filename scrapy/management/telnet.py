@@ -13,7 +13,6 @@ from twisted.internet import reactor, protocol
 from scrapy.extension import extensions
 from scrapy.core.exceptions import NotConfigured
 from scrapy.core.manager import scrapymanager
-from scrapy.core.engine import scrapyengine
 from scrapy.spider import spiders
 from scrapy.stats import stats
 from scrapy.utils.trackref import print_live_refs
@@ -28,7 +27,7 @@ except ImportError:
 
 # if you add entries here also update topics/telnetconsole.rst
 telnet_namespace = {
-    'engine': scrapyengine,
+    'engine': scrapymanager.engine,
     'manager': scrapymanager,
     'extensions': extensions,
     'stats': stats,

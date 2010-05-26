@@ -6,7 +6,6 @@ from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.core import signals
 from scrapy.core.manager import scrapymanager
-from scrapy.core.engine import scrapyengine
 from scrapy.spider import spiders
 from scrapy.management.web import banner, webconsole_discover_module
 from scrapy.conf import settings
@@ -117,7 +116,7 @@ class Spiderctl(object):
             stopped_spiders = []
             for name in args["stop_running_spiders"]:
                 if name in self.running:
-                    scrapyengine.close_spider(self.running[name])
+                    scrapymanager.engine.close_spider(self.running[name])
                     stopped_spiders.append(name)
             s += "Stopped spiders: <ul><li>%s</li></ul>" % "</li><li>".join(stopped_spiders)
             s += "</p>"
@@ -132,14 +131,14 @@ class Spiderctl(object):
                 s += "</p>"
         if "add_pending_spiders" in args:
             for name in args["add_pending_spiders"]:
-                if name not in scrapyengine.scheduler.pending_requests:
+                if name not in scrapymanager.engine.scheduler.pending_requests:
                     scrapymanager.queue.append_spider_name(name)
             s += "<p>"
             s += "Scheduled spiders: <ul><li>%s</li></ul>" % "</li><li>".join(args["add_pending_spiders"])
             s += "</p>"
         if "rerun_finished_spiders" in args:
             for name in args["rerun_finished_spiders"]:
-                if name not in scrapyengine.scheduler.pending_requests:
+                if name not in scrapymanager.engine.scheduler.pending_requests:
                     scrapymanager.queue.append_spider_name(name)
                 self.finished.remove(name)
             s += "<p>"

@@ -2,7 +2,7 @@ import signal
 
 from twisted.internet import reactor, defer
 
-from scrapy.core.engine import scrapyengine
+from scrapy.core.engine import ExecutionEngine
 from scrapy.core.queue import ExecutionQueue
 from scrapy.extension import extensions
 from scrapy import log
@@ -15,7 +15,7 @@ class ExecutionManager(object):
     def __init__(self):
         self.configured = False
         self.control_reactor = True
-        self.engine = scrapyengine
+        self.engine = ExecutionEngine()
 
     def configure(self, control_reactor=True, queue=None):
         self.control_reactor = control_reactor

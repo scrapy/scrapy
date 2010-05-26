@@ -4,7 +4,7 @@ Live statistics extension
 from datetime import datetime
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core import signals
-from scrapy.core.engine import scrapyengine
+from scrapy.core.manager import scrapymanager
 from scrapy.management.web import banner, webconsole_discover_module
 
 class SpiderStats(object):
@@ -44,8 +44,8 @@ class LiveStats(object):
             self.domains[spider].crawled += 1
             
     def webconsole_render(self, wc_request):
-        sch = scrapyengine.scheduler
-        dwl = scrapyengine.downloader
+        sch = scrapymanager.engine.scheduler
+        dwl = scrapymanager.engine.downloader
 
         totdomains = totscraped = totcrawled = totscheduled = totactive = totdqueued = tottransf = 0
         s = banner(self)

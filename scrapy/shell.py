@@ -17,7 +17,6 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
 from scrapy.conf import settings
 from scrapy.core.manager import scrapymanager
-from scrapy.core.engine import scrapyengine
 from scrapy.core.queue import KeepAliveExecutionQueue
 from scrapy.http import Request, TextResponse
 
@@ -59,8 +58,8 @@ class Shell(object):
             log_multiple=True)
 
         print "Fetching %s..." % request
-        scrapyengine.open_spider(spider)
-        response = threads.blockingCallFromThread(reactor, scrapyengine.schedule, \
+        scrapymanager.engine.open_spider(spider)
+        response = threads.blockingCallFromThread(reactor, scrapymanager.engine.schedule, \
             request, spider)
         if response:
             self.populate_vars(url, response, request, spider)

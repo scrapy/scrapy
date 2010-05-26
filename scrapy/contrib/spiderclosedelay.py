@@ -9,7 +9,7 @@ from scrapy.xlib.pydispatch import dispatcher
 from collections import defaultdict
 
 from scrapy.core import signals
-from scrapy.core.engine import scrapyengine
+from scrapy.core.manager import scrapymanager
 from scrapy.core.exceptions import NotConfigured, DontCloseSpider
 from scrapy.conf import settings
 
@@ -26,7 +26,7 @@ class SpiderCloseDelay(object):
 
     def spider_idle(self, spider):
         try:
-            lastseen = scrapyengine.downloader.sites[spider].lastseen
+            lastseen = scrapymanager.engine.downloader.sites[spider].lastseen
         except KeyError:
             lastseen = None
         if not lastseen:

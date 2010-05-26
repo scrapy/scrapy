@@ -5,7 +5,7 @@ See documentation in docs/topics/extensions.rst
 """
 
 from scrapy.xlib.pydispatch import dispatcher
-from scrapy.core.engine import scrapyengine
+from scrapy.core.manager import scrapymanager
 from scrapy.management.web import banner, webconsole_discover_module
 
 class SchedulerQueue(object):
@@ -21,7 +21,7 @@ class SchedulerQueue(object):
     def webconsole_render(self, wc_request):
         s = banner(self)
         s += "<ul>\n"
-        for domain, request_queue in scrapyengine.scheduler.pending_requests.iteritems():
+        for domain, request_queue in scrapymanager.engine.scheduler.pending_requests.iteritems():
             s += "<li>\n"
             s += "%s (<b>%s</b> requests)\n" % (domain, len(request_queue))
             s += "<ul>\n"

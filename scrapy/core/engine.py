@@ -286,5 +286,3 @@ class ExecutionEngine(object):
 
     def _finish_stopping_engine(self):
         send_catch_log(signal=signals.engine_stopped, sender=self.__class__)
-
-scrapyengine = ExecutionEngine()

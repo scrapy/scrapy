@@ -4,7 +4,7 @@ from twisted.internet.defer import Deferred, DeferredList
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy import log
 from scrapy.core import signals
-from scrapy.core.engine import scrapyengine
+from scrapy.core.manager import scrapymanager
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.misc import arg_to_iter
 
@@ -103,7 +103,7 @@ class MediaPipeline(object):
 
         """
         request.priority = self.DOWNLOAD_PRIORITY
-        return scrapyengine.download(request, info.spider)
+        return scrapymanager.engine.download(request, info.spider)
 
     def media_to_download(self, request, info):
         """ Ongoing request hook pre-cache

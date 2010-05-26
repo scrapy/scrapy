@@ -2,12 +2,12 @@
 
 from time import time
 
-from scrapy.core.engine import scrapyengine
+from scrapy.core.manager import scrapymanager
 
 def get_engine_status(engine=None):
     """Return a report of the current engine status"""
     if engine is None:
-        engine = scrapyengine
+        engine = scrapymanager.engine
 
     global_tests = [
         "time()-engine.start_time",

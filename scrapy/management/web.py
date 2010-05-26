@@ -13,7 +13,7 @@ from twisted.web import server, resource
 
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core.exceptions import NotConfigured
-from scrapy.core.engine import scrapyengine
+from scrapy.core.manager import scrapymanager
 from scrapy.conf import settings
 
 # web management signals
@@ -38,7 +38,7 @@ def banner(module=None):
     s += "<head><title>Scrapy</title></head>\n"
     s += "<body>\n"
     s += "<h1><a href='/'>Scrapy web console</a></h1>\n"
-    uptime = time() - scrapyengine.start_time
+    uptime = time() - scrapymanager.engine.start_time
     s += "<p>Bot: <b>%s</b> | Host: <b>%s</b> | Uptime: <b>%ds</b></p>\n" % \
         (settings['BOT_NAME'], socket.gethostname(), uptime)
     if module:

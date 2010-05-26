@@ -9,7 +9,7 @@ import robotparser
 from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.core import signals
-from scrapy.core.engine import scrapyengine
+from scrapy.core.manager import scrapymanager
 from scrapy.core.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
@@ -42,7 +42,7 @@ class RobotsTxtMiddleware(object):
             self._parsers[netloc] = None
             robotsurl = "%s://%s/robots.txt" % (url.scheme, url.netloc)
             robotsreq = Request(robotsurl, priority=self.DOWNLOAD_PRIORITY)
-            dfd = scrapyengine.download(robotsreq, spider)
+            dfd = scrapymanager.engine.download(robotsreq, spider)
             dfd.addCallback(self._parse_robots)
             self._spider_netlocs[spider].add(netloc)
         return self._parsers[netloc]
