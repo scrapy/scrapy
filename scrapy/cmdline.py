@@ -9,7 +9,7 @@ import scrapy
 from scrapy import log
 from scrapy.xlib import lsprofcalltree
 from scrapy.conf import settings
-from scrapy.command.models import ScrapyCommand
+from scrapy.command import ScrapyCommand
 from scrapy.utils.signal import send_catch_log
 
 # Signal that carries information about the command which was executed
