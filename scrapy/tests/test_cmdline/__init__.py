@@ -14,7 +14,7 @@ class CmdlineTest(unittest.TestCase):
         self.env['SCRAPY_SETTINGS_MODULE'] = 'scrapy.tests.test_cmdline.settings'
 
     def _execute(self, *new_args, **kwargs):
-        args = (sys.executable, '-m', 'scrapy.command.cmdline') + new_args
+        args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
         proc = Popen(args, stdout=PIPE, stderr=PIPE, env=self.env, **kwargs)
         comm = proc.communicate()
         return comm[0].strip()

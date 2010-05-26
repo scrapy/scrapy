@@ -1,4 +1,4 @@
 #!/usr/bin/env python
 
-from scrapy.command.cmdline import execute
+from scrapy.cmdline import execute
 execute()

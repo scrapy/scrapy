@@ -3,5 +3,5 @@
 import os
 os.environ.setdefault('SCRAPY_SETTINGS_MODULE', 'imdb.settings')
 
-from scrapy.command.cmdline import execute
+from scrapy.cmdline import execute
 execute()
