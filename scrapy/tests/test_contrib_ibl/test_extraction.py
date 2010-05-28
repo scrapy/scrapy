@@ -4,14 +4,26 @@ tests for page parsing
 Page parsing effectiveness is measured through the evaluation system. These
 tests should focus on specific bits of functionality work correctly.
 """
-from unittest import TestCase
+from twisted.trial.unittest import TestCase, SkipTest
 from scrapy.contrib.ibl.htmlpage import HtmlPage
-from scrapy.contrib.ibl.extraction import InstanceBasedLearningExtractor
 from scrapy.contrib.ibl.descriptor import (FieldDescriptor as A, 
         ItemDescriptor)
 from scrapy.contrib.ibl.extractors import (contains_any_numbers,
         image_url)
-        
+
+try:
+    import nltk
+except ImportError:
+    nltk = None
+
+try:
+    import numpy
+except ImportError:
+    numpy = None
+
+if nltk and numpy:
+    from scrapy.contrib.ibl.extraction import InstanceBasedLearningExtractor
+
 # simple page with all features
 
 ANNOTATED_PAGE1 = u"""
@@ -778,7 +790,13 @@ TEST_DATA = [
 
 class TestExtraction(TestCase):
 
-    def _run(self, name, templates, page, extractors, expected_output):
+    def setUp(self):
+        if not nltk:
+            raise SkipTest("nltk not available")
+        if not numpy:
+            raise SkipTest("numpy not available")
+
+    def _run_extraction(self, name, templates, page, extractors, expected_output):
         self.trace = None
         template_pages = [HtmlPage(None, {}, t) for t in templates]
         extractor = InstanceBasedLearningExtractor(template_pages, extractors, True)
@@ -810,7 +828,7 @@ class TestExtraction(TestCase):
     def test_expected_outputs(self):
         try:
             for data in TEST_DATA:
-                self._run(*data)
+                self._run_extraction(*data)
         except AssertionError:
             if self.trace:
                 print "Trace:"

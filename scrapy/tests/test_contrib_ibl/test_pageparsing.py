@@ -5,15 +5,28 @@ import os
 from cStringIO import StringIO                                                                                                    
 from gzip import GzipFile
 
-from unittest import TestCase
+from twisted.trial.unittest import TestCase, SkipTest
 from scrapy.utils.python import str_to_unicode
 from scrapy.utils.py26 import json
 
 from scrapy.contrib.ibl.htmlpage import HtmlPage
-from scrapy.contrib.ibl.extraction.pageparsing import (InstanceLearningParser, 
-        TemplatePageParser, ExtractionPageParser)
-from scrapy.contrib.ibl.extraction.pageobjects import TokenDict, TokenType
 from scrapy.tests.test_contrib_ibl import path
+
+try:
+    import nltk
+except ImportError:
+    nltk = None
+
+try:
+    import numpy
+except ImportError:
+    numpy = None
+
+if nltk and numpy:
+    from scrapy.contrib.ibl.extraction.pageparsing import (
+        InstanceLearningParser, TemplatePageParser, ExtractionPageParser)
+    from scrapy.contrib.ibl.extraction.pageobjects import TokenDict, TokenType
+
 
 SIMPLE_PAGE = u"""
 <html> <p some-attr="foo">this is a test</p> </html>
@@ -159,6 +172,12 @@ def _tags(pp, predicate):
             if predicate(s)]
 
 class TestPageParsing(TestCase):
+
+    def setUp(self):
+        if not nltk:
+            raise SkipTest("nltk not available")
+        if not numpy:
+            raise SkipTest("numpy not available")
 
     def test_instance_parsing(self):
         pp = _parse_page(InstanceLearningParser, SIMPLE_PAGE)
