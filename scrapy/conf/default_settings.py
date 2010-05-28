@@ -208,8 +208,6 @@ SPIDER_MIDDLEWARES_BASE = {
 
 SPIDER_MODULES = []
 
-SPIDER_SCHEDULER = 'scrapy.contrib.spiderscheduler.FifoSpiderScheduler'
-
 SPIDERPROFILER_ENABLED = False
 
 STATS_CLASS = 'scrapy.stats.collector.MemoryStatsCollector'

@@ -960,16 +960,6 @@ Example::
 
     SPIDER_MODULES = ['mybot.spiders_prod', 'mybot.spiders_dev']
 
-.. setting:: SPIDER_SCHEDULER
-
-SPIDER_SCHEDULER
-----------------
-
-Default: ``'scrapy.contrib.spiderscheduler.FifoSpiderScheduler'``
-
-The Spider Scheduler to use. The spider scheduler returns the next spider to
-scrape.
-
 .. setting:: STATS_CLASS
 
 STATS_CLASS
