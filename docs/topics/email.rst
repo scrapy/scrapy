@@ -47,7 +47,10 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
 
     .. method:: send(to, subject, body, cc=None, attachs=())
 
-        Send email to the given recipients
+        Send email to the given recipients. Emits the :signal:`mail_sent` signal.
+
+        If :setting:`MAIL_DEBUG` is enabled the :signal:`mail_sent` signal will
+        be emmited and no actual email will be sent.
 
         :param to: the e-mail recipients
         :type to: list
@@ -76,6 +79,37 @@ These settings define the default constructor values of the :class:`MailSender`
 class, and can be used to configure e-mail notifications in your project without
 writing any code (for those extensions that use the :class:`MailSender` class):
 
+* :setting:`MAIL_DEBUG`
 * :setting:`MAIL_FROM`
 * :setting:`MAIL_HOST`
 
+
+Mail signals
+============
+
+.. signal:: mail_sent
+.. function:: mail_sent(to, subject, body, cc, attachs, msg)
+
+  Emitted by :meth:`MailSender.send` after an email has been sent.
+
+  :param to: the e-mail recipients
+  :type to: list
+
+  :param subject: the subject of the e-mail
+  :type subject: str
+
+  :param cc: the e-mails to CC
+  :type cc: list
+
+  :param body: the e-mail body
+  :type body: str
+
+  :param attachs: an iterable of tuples ``(attach_name, mimetype,
+    file_object)`` where  ``attach_name`` is a string with the name that will
+    appear on the e-mail's attachment, ``mimetype`` is the mimetype of the
+    attachment and ``file_object`` is a readable file object with the
+    contents of the attachment
+  :type attachs: iterable
+
+  :param msg: the generated message
+  :type msg: ``MIMEMultipart`` or ``MIMENonMultipart``

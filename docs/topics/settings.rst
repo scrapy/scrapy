@@ -620,6 +620,16 @@ If ``True``, all standard output (and error) of your process will be redirected
 to the log. For example if you ``print 'hello'`` it will appear in the Scrapy
 log.
 
+.. setting:: MAIL_DEBUG
+
+MAIL_DEBUG
+----------
+
+Default: ``False``
+
+Whether to enable the debugging mode in the the :ref:`Scrapy e-mail sending
+facility <topics-email>`.
+
 .. setting:: MAIL_FROM
 
 MAIL_FROM

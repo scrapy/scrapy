@@ -141,6 +141,7 @@ LOG_STDOUT = False
 LOG_LEVEL = 'DEBUG'
 LOG_FILE = None
 
+MAIL_DEBUG = False
 MAIL_HOST = 'localhost'
 MAIL_FROM = 'scrapy@localhost'
 

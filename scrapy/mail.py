@@ -17,6 +17,13 @@ from twisted.mail.smtp import SMTPSenderFactory
 from scrapy import log
 from scrapy.core.exceptions import NotConfigured
 from scrapy.conf import settings
+from scrapy.utils.signal import send_catch_log
+
+
+# signal sent when message is sent
+# args: to, subject, body, cc, attach, msg
+mail_sent = object()
+
 
 class MailSender(object):
 
@@ -52,6 +59,14 @@ class MailSender(object):
                 msg.attach(part)
         else:
             msg.set_payload(body)
+
+        send_catch_log(signal=mail_sent, to=to, subject=subject, body=body,
+                       cc=cc, attach=attachs, msg=msg)
+
+        if settings.getbool('MAIL_DEBUG'):
+            log.msg('Debug mail sent OK: To=%s Cc=%s Subject="%s" Attachs=%d' % \
+                (to, cc, subject, len(attachs)), level=log.DEBUG)
+            return
 
         dfd = self._sendmail(self.smtphost, self.mailfrom, rcpts, msg.as_string())
         dfd.addCallbacks(self._sent_ok, self._sent_failed,
