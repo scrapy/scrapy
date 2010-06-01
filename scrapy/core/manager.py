@@ -52,7 +52,7 @@ class ExecutionManager(object):
             self.engine.crawl(request, spider)
 
     @defer.inlineCallbacks
-    def _spider_closed(self):
+    def _spider_closed(self, spider=None):
         if not self.engine.open_spiders:
             is_finished = yield defer.maybeDeferred(self.queue.is_finished)
             if is_finished:

@@ -281,7 +281,7 @@ class ExecutionEngine(object):
         dfd.addErrback(log.err, "Unhandled error on SpiderManager.close_spider()",
             spider=spider)
         dfd.addBoth(lambda _: log.msg("Spider closed (%s)" % reason, spider=spider))
-        reactor.callLater(0, self._spider_closed_callback)
+        dfd.addBoth(lambda _: self._spider_closed_callback(spider))
         return dfd
 
     def _finish_stopping_engine(self):
