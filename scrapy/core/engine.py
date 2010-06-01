@@ -153,6 +153,8 @@ class ExecutionEngine(object):
             log.msg("Unable to crawl Request with no callback: %s" % request,
                 level=log.ERROR, spider=spider)
             return
+        if spider in self.closing: # ignore requests for spiders being closed
+            return
         schd = mustbe_deferred(self.schedule, request, spider)
         # FIXME: we can't log errors because we would be preventing them from
         # propagating to the request errback. This should be fixed after the
@@ -242,43 +244,41 @@ class ExecutionEngine(object):
 
     def close_spider(self, spider, reason='cancelled'):
         """Close (cancel) spider and clear all its outstanding requests"""
-        if spider not in self.closing:
-            log.msg("Closing spider (%s)" % reason, spider=spider)
-            self.closing[spider] = reason
-            self.downloader.close_spider(spider)
-            self.scheduler.clear_pending_requests(spider)
-            return self._finish_closing_spider_if_idle(spider)
-        return defer.succeed(None)
+        if spider in self.closing:
+            return defer.succeed(None)
+        log.msg("Closing spider (%s)" % reason, spider=spider)
+        self.closing[spider] = reason
+        self.scheduler.clear_pending_requests(spider)
+        dfd = self.downloader.close_spider(spider)
+        dfd.addBoth(lambda _: self.scheduler.close_spider(spider))
+        dfd.addErrback(log.err, "Unhandled error in scheduler.close_spider()", \
+            spider=spider)
+        dfd.addBoth(lambda _: self.scraper.close_spider(spider))
+        dfd.addErrback(log.err, "Unhandled error in scraper.close_spider()", \
+            spider=spider)
+        dfd.addBoth(lambda _: self._finish_closing_spider(spider))
+        if self.killed:
+            return self._finish_closing_spider(spider)
+        return dfd
 
     def _close_all_spiders(self):
         dfds = [self.close_spider(s, reason='shutdown') for s in self.open_spiders]
         dlist = defer.DeferredList(dfds)
         return dlist
 
-    def _finish_closing_spider_if_idle(self, spider):
-        """Call _finish_closing_spider if spider is idle"""
-        if self.spider_is_idle(spider) or self.killed:
-            return self._finish_closing_spider(spider)
-        else:
-            dfd = defer.Deferred()
-            dfd.addCallback(self._finish_closing_spider_if_idle)
-            delay = 5 if self.running else 1
-            reactor.callLater(delay, dfd.callback, spider)
-            return dfd
-
     def _finish_closing_spider(self, spider):
         """This function is called after the spider has been closed"""
-        self.scheduler.close_spider(spider)
-        self.scraper.close_spider(spider)
         reason = self.closing.pop(spider, 'finished')
         send_catch_log(signal=signals.spider_closed, sender=self.__class__, \
             spider=spider, reason=reason)
-        stats.close_spider(spider, reason=reason)
         call = self._next_request_calls.pop(spider, None)
         if call and call.active():
             call.cancel()
-        dfd = defer.maybeDeferred(spiders.close_spider, spider)
-        dfd.addErrback(log.err, "Unhandled error on SpiderManager.close_spider()",
+        dfd = defer.maybeDeferred(stats.close_spider, spider, reason=reason)
+        dfd.addErrback(log.err, "Unhandled error in stats.close_spider()",
+            spider=spider)
+        dfd.addBoth(lambda _: spiders.close_spider(spider))
+        dfd.addErrback(log.err, "Unhandled error in spiders.close_spider()",
             spider=spider)
         dfd.addBoth(lambda _: log.msg("Spider closed (%s)" % reason, spider=spider))
         dfd.addBoth(lambda _: self._spider_closed_callback(spider))

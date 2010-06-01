@@ -139,6 +139,7 @@ class Downloader(object):
         site = self.sites.get(spider)
         if site and site.closing and not site.active:
             del self.sites[spider]
+            site.closing.callback(None)
 
     def _download(self, site, request, spider):
         # The order is very important for the following deferreds. Do not change!
@@ -165,9 +166,7 @@ class Downloader(object):
 
     def open_spider(self, spider):
         """Allocate resources to begin processing a spider"""
-        if spider in self.sites:
-            raise RuntimeError('Downloader spider already opened: %s' % spider)
-
+        assert spider not in self.sites, "Spider already opened: %s" % spider
         self.sites[spider] = SpiderInfo(
             download_delay=getattr(spider, 'download_delay', None),
             max_concurrent_requests=getattr(spider, 'max_concurrent_requests', None)
@@ -175,13 +174,12 @@ class Downloader(object):
 
     def close_spider(self, spider):
         """Free any resources associated with the given spider"""
+        assert spider in self.sites, "Spider not opened: %s" % spider
         site = self.sites.get(spider)
-        if not site or site.closing:
-            raise RuntimeError('Downloader spider already closed: %s' % spider)
-
-        site.closing = True
+        site.closing = defer.Deferred()
         site.cancel_request_calls()
         self._process_queue(spider)
+        return site.closing
 
     def is_idle(self):
         return not self.sites

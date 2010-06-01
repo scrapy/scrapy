@@ -29,6 +29,7 @@ class SpiderInfo(object):
         self.active = set()
         self.active_size = 0
         self.itemproc_size = 0
+        self.closing = None
 
     def add_response_request(self, response, request):
         deferred = defer.Deferred()
@@ -68,16 +69,15 @@ class Scraper(object):
 
     def open_spider(self, spider):
         """Open the given spider for scraping and allocate resources for it"""
-        if spider in self.sites:
-            raise RuntimeError('Scraper spider already opened: %s' % spider)
+        assert spider not in self.sites, "Spider already opened: %s" % spider
         self.sites[spider] = SpiderInfo()
         self.itemproc.open_spider(spider)
 
     def close_spider(self, spider):
         """Close a spider being scraped and release its resources"""
-        if spider not in self.sites:
-            raise RuntimeError('Scraper spider already closed: %s' % spider)
-        self.sites.pop(spider)
+        assert spider in self.sites, "Spider not opened: %s" % spider
+        site = self.sites[spider]
+        site.closing = defer.Deferred()
         self.itemproc.close_spider(spider)
 
     def is_idle(self):
@@ -93,6 +93,9 @@ class Scraper(object):
         #    spider=spider)
         def finish_scraping(_):
             site.finish_response(response)
+            if site.closing and site.is_idle():
+                del self.sites[spider]
+                site.closing.callback(None)
             self._scrape_next(spider, site)
             return _
         dfd.addBoth(finish_scraping)
