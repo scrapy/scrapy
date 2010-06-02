@@ -15,6 +15,7 @@ from scrapy.core.exceptions import NotConfigured
 from scrapy.core.manager import scrapymanager
 from scrapy.spider import spiders
 from scrapy.stats import stats
+from scrapy.utils.signal import send_catch_log
 from scrapy.utils.trackref import print_live_refs
 from scrapy.utils.engine import print_engine_status
 from scrapy.conf import settings
@@ -25,30 +26,38 @@ try:
 except ImportError:
     hpy = None
 
-# if you add entries here also update topics/telnetconsole.rst
-telnet_namespace = {
-    'engine': scrapymanager.engine,
-    'manager': scrapymanager,
-    'extensions': extensions,
-    'stats': stats,
-    'spiders': spiders,
-    'settings': settings,
-    'est': print_engine_status,
-    'p': pprint.pprint,
-    'prefs': print_live_refs,
-    'hpy': hpy,
-}
+# signal to update telnet variables
+# args: telnet_vars
+update_telnet_vars = object()
 
-def makeProtocol():
-    return telnet.TelnetTransport(telnet.TelnetBootstrapProtocol,
-        insults.ServerProtocol, manhole.Manhole, telnet_namespace)
 
 class TelnetConsole(protocol.ServerFactory):
 
     def __init__(self):
         if not settings.getbool('TELNETCONSOLE_ENABLED'):
             raise NotConfigured
-        self.protocol = makeProtocol
         self.noisy = False
         port = settings.getint('TELNETCONSOLE_PORT')
         reactor.callWhenRunning(reactor.listenTCP, port, self)
+
+    def protocol(self):
+        telnet_vars = self._get_telnet_vars()
+        return telnet.TelnetTransport(telnet.TelnetBootstrapProtocol,
+            insults.ServerProtocol, manhole.Manhole, telnet_vars)
+
+    def _get_telnet_vars(self):
+        # Note: if you add entries here also update topics/telnetconsole.rst
+        telnet_vars = {
+            'engine': scrapymanager.engine,
+            'manager': scrapymanager,
+            'extensions': extensions,
+            'stats': stats,
+            'spiders': spiders,
+            'settings': settings,
+            'est': print_engine_status,
+            'p': pprint.pprint,
+            'prefs': print_live_refs,
+            'hpy': hpy,
+        }
+        send_catch_log(update_telnet_vars, telnet_vars=telnet_vars)
+        return telnet_vars

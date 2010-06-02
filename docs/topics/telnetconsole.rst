@@ -31,13 +31,13 @@ the console you need to type::
 You need the telnet program which comes installed by default in Windows, and
 most Linux distros.
 
-Available aliases in the telnet console
-=======================================
+Available variables in the telnet console
+=========================================
 
 The telnet console is like a regular Python shell running inside the Scrapy
-process, so you can do anything from it including imports, etc. 
+process, so you can do anything from it including importing new modules, etc. 
 
-However, the telnet console comes with some default shortcuts defined for
+However, the telnet console comes with some default variables defined for
 convenience:
 
 +----------------+-------------------------------------------------------------------+
@@ -125,4 +125,18 @@ To stop::
     telnet localhost 6023
     >>> engine.stop()
     Connection closed by foreign host.
+
+Telnet Console signals
+======================
+
+.. signal:: update_telnet_vars
+.. function:: update_telnet_vars(telnet_vars)
+
+    Sent just before the telnet console is opened. You can hook up to this
+    signal to add, remove or update the variables that will be available in the
+    telnet local namespace. In order to do that, you need to update the
+    ``telnet_vars`` dict in your handler.
+
+    :param telnet_vars: the dict of telnet variables
+    :type telnet_vars: dict
 
