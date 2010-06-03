@@ -38,8 +38,6 @@ def parse_url(url):
 
 class Shell(object):
 
-    requires_project = False
-
     def __init__(self, update_vars=None, nofetch=False):
         self.vars = {}
         self.update_vars = update_vars
