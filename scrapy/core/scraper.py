@@ -12,7 +12,7 @@ from scrapy.core.exceptions import IgnoreRequest, DropItem
 from scrapy.core import signals
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
-from scrapy.spider.middleware import SpiderMiddlewareManager
+from scrapy.core.spidermw import SpiderMiddlewareManager
 from scrapy import log
 from scrapy.stats import stats
 from scrapy.conf import settings

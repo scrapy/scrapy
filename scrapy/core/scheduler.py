@@ -6,9 +6,9 @@ from twisted.internet import defer
 from twisted.python.failure import Failure
 
 from scrapy.utils.datatypes import PriorityQueue, PriorityStack
+from scrapy.core.schedulermw import SchedulerMiddlewareManager
 from scrapy.core.exceptions import IgnoreRequest
 from scrapy.conf import settings
-from .middleware import SchedulerMiddlewareManager
 
 class Scheduler(object):
     """The scheduler decides what to scrape next. In other words, it defines the
