@@ -6,6 +6,7 @@ See documentation in docs/topics/spiders.rst
 """
 
 import copy
+from functools import partial
 
 from scrapy.http import Request
 from scrapy.utils.spider import iterate_spider_output
@@ -97,9 +98,10 @@ class CrawlSpider(InitSpider):
                 links = rule.process_links(links)
             seen = seen.union(links)
             for link in links:
-                r = Request(url=link.url)
+                callback = partial(self._response_downloaded, callback=rule.callback, \
+                    cb_kwargs=rule.cb_kwargs, follow=rule.follow)
+                r = Request(url=link.url, callback=callback)
                 r.meta['link_text'] = link.text
-                r.deferred.addCallback(self._response_downloaded, rule.callback, cb_kwargs=rule.cb_kwargs, follow=rule.follow)
                 yield r
 
     def _response_downloaded(self, response, callback, cb_kwargs, follow):

@@ -132,8 +132,9 @@ class Scraper(object):
                 request_result, request, spider)
 
     def call_spider(self, result, request, spider):
-        defer_result(result).chainDeferred(request.deferred)
-        return request.deferred.addCallback(iterate_spider_output)
+        dfd = defer_result(result)
+        dfd.addCallbacks(request.callback or spider.parse, request.errback)
+        return dfd.addCallback(iterate_spider_output)
 
     def handle_spider_error(self, _failure, request, spider, propagated_failure=None):
         referer = request.headers.get('Referer', None)

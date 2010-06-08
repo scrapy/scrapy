@@ -46,7 +46,7 @@ class MediaPipeline(object):
         return DeferredList(dlist, consumeErrors=1).addCallback(self.item_completed, item, info)
 
     def _enqueue(self, request, info):
-        wad = request.deferred or Deferred()
+        wad = Deferred().addCallbacks(request.callback, request.errback)
         fp = request_fingerprint(request)
 
         # if already downloaded, return cached result.

@@ -7,8 +7,6 @@ See documentation in docs/topics/request-response.rst
 
 import copy
 
-from twisted.internet import defer
-
 from scrapy.http.headers import Headers
 from scrapy.utils.url import safe_url_string
 from scrapy.utils.trackref import object_ref
@@ -16,7 +14,7 @@ from scrapy.utils.trackref import object_ref
 class Request(object_ref):
 
     __slots__ = ['_encoding', 'method', '_url', '_body', '_meta', \
-        'dont_filter', 'headers', 'cookies', 'deferred', 'priority', \
+        'dont_filter', 'headers', 'cookies', 'callback', 'errback', 'priority', \
         '__weakref__']
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None, 
@@ -29,9 +27,9 @@ class Request(object_ref):
         self._set_body(body)
         self.priority = priority
 
-        if callable(callback):
-            callback = defer.Deferred().addCallbacks(callback, errback)
-        self.deferred = callback or defer.Deferred()
+        assert callback or not errback, "Cannot use errback without a callback"
+        self.callback = callback
+        self.errback = errback
 
         self.cookies = cookies or {}
         self.headers = Headers(headers or {}, encoding=encoding)

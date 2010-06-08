@@ -71,13 +71,10 @@ class BaseSpider(object_ref):
         return reqs
 
     def make_requests_from_url(self, url):
-        return Request(url, callback=self.parse, dont_filter=True)
+        return Request(url, dont_filter=True)
 
     def parse(self, response):
-        """This is the default callback function used to parse the start
-        requests, although it can be overrided in descendant spiders.
-        """
-        pass
+        raise NotImplementedError
 
     def __str__(self):
         return "<%s %r>" % (type(self).__name__, self.name)

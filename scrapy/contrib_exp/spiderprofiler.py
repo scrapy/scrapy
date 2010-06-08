@@ -33,10 +33,7 @@ class SpiderProfiler(object):
         dispatcher.connect(self._request_received, signals.request_received)
 
     def _request_received(self, request, spider):
-        old_cbs = request.deferred.callbacks[0]
-        new_cbs = ((self._profiled_callback(old_cbs[0][0], spider), old_cbs[0][1], \
-            old_cbs[0][2]), old_cbs[1])
-        request.deferred.callbacks[0] = new_cbs
+        request.callback = self._profiled_callback(request.callback, spider)
 
     def _profiled_callback(self, function, spider):
         def new_callback(*args, **kwargs):

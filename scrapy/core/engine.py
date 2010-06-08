@@ -149,10 +149,6 @@ class ExecutionEngine(object):
     def crawl(self, request, spider):
         assert spider in self.open_spiders, \
             "Spider %r not opened when crawling: %s" % (spider.name, request)
-        if not request.deferred.callbacks:
-            log.msg("Unable to crawl Request with no callback: %s" % request,
-                level=log.ERROR, spider=spider)
-            return
         if spider in self.closing: # ignore requests for spiders being closed
             return
         schd = mustbe_deferred(self.schedule, request, spider)
@@ -181,9 +177,11 @@ class ExecutionEngine(object):
                 return response
             elif isinstance(response, Request):
                 newrequest = response
-                schd = mustbe_deferred(self.schedule, newrequest, spider)
-                schd.chainDeferred(newrequest.deferred)
-                return newrequest.deferred
+                dfd = mustbe_deferred(self.schedule, newrequest, spider)
+                if newrequest.callback:
+                    # XXX: this is a bit hacky and should be removed
+                    dfd.addCallbacks(newrequest.callback, newrequest.errback)
+                return dfd
 
         def _on_error(_failure):
             """handle an error processing a page"""

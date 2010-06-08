@@ -136,12 +136,19 @@ BaseSpider
 
    .. method:: parse(response)
 
-       This is the default callback used by the :meth:`start_requests` method, and
-       will be used to parse the first pages crawled by the spider.
+       This is the default callback used by Scrapy to process downloaded
+       responses, when their requests don't specify a callback.
 
        The ``parse`` method is in charge of processing the response and returning
        scraped data and/or more URLs to follow. Other Requests callbacks have
-       the same requirements as the BaseSpider class.
+       the same requirements as the :class:`BaseSpider` class.
+
+       This method, as well as any other Request callback, must return an
+       iterable of :class:`~scrapy.http.Request~ and/or
+       :class:`~scrapy.item.Item` objects.
+
+       :param response: the response to parse
+       :type reponse: :class:~scrapy.http.Response`
 
    .. method:: log(message, [level, component])
 
