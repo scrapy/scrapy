@@ -63,10 +63,6 @@ class RequestGeneratorTest(unittest.TestCase):
         requests = reqgen.generate_requests(self.response)
         self.failUnless(self._equal_requests_list(requests, self.requests))
 
-        for req in requests:
-            # check callback
-            self.failUnlessEqual(req.deferred, self.deferred)
-
     def test_request_processor(self):
         extractors = [
             SgmlRequestExtractor()
