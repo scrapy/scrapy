@@ -124,11 +124,15 @@ class RequestTest(unittest.TestCase):
         def somecallback():
             pass
 
-        r1 = self.request_class("http://www.example.com", callback=somecallback)
+        r1 = self.request_class("http://www.example.com", callback=somecallback, errback=somecallback)
         r1.meta['foo'] = 'bar'
         r2 = r1.copy()
 
-        assert r1.deferred is not r2.deferred
+        # make sure copy does not propagate callbacks
+        assert r1.callback is somecallback
+        assert r1.errback is somecallback
+        assert r2.callback is None
+        assert r2.errback is None
 
         # make sure meta dict is shallow copied
         assert r1.meta is not r2.meta, "meta must be a shallow copy, not identical"
