@@ -1,8 +1,6 @@
-"""
-Scrapy Web Console extension
-
-See docs/topics/webconsole.rst
-"""
+import warnings
+warnings.warn("Scrapy web console is deprecated. Consider using web service instead.", \
+    DeprecationWarning, stacklevel=2)
 
 import re
 import socket

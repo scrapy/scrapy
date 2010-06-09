@@ -519,13 +519,8 @@ Default::
 
     {
         'scrapy.contrib.corestats.CoreStats': 0,
-        'scrapy.management.web.WebConsole': 0,
-        'scrapy.management.telnet.TelnetConsole': 0,
-        'scrapy.contrib.webconsole.scheduler.SchedulerQueue': 0,
-        'scrapy.contrib.webconsole.livestats.LiveStats': 0,
-        'scrapy.contrib.webconsole.spiderctl.Spiderctl': 0,
-        'scrapy.contrib.webconsole.enginestatus.EngineStatus': 0,
-        'scrapy.contrib.webconsole.stats.StatsDump': 0,
+        'scrapy.webservice.WebService': 0,
+        'scrapy.telnet.TelnetConsole': 0,
         'scrapy.contrib.memusage.MemoryUsage': 0,
         'scrapy.contrib.memdebug.MemoryDebugger': 0,
         'scrapy.contrib.closedomain.CloseDomain': 0,
@@ -1053,34 +1048,4 @@ USER_AGENT
 Default: ``"%s/%s" % (BOT_NAME, BOT_VERSION)``
 
 The default User-Agent to use when crawling, unless overrided. 
-
-.. setting:: WEBCONSOLE_ENABLED
-
-WEBCONSOLE_ENABLED
-------------------
-
-Default: True
-
-A boolean which specifies if the web management console will be enabled
-(provided its extension is also enabled).
-
-.. setting:: WEBCONSOLE_LOGFILE
-
-WEBCONSOLE_LOGFILE
-------------------
-
-Default: ``None``
-
-A file to use for logging HTTP requests made to the web console. If unset web
-the log is sent to standard scrapy log.
-
-.. setting:: WEBCONSOLE_PORT
-
-WEBCONSOLE_PORT
----------------
-
-Default: ``6080``
-
-The port to use for the web console. If set to ``None`` or ``0``, a dynamically
-assigned port is used. For more info see :ref:`topics-webconsole`.
 

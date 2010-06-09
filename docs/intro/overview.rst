@@ -190,7 +190,7 @@ scraping easy and efficient, such as:
 * An :ref:`Interactive scraping shell console <topics-shell>`, very useful for
   writing and debugging your spiders
 
-* A :ref:`Web management console <topics-webconsole>` for monitoring and
+* A builtin :ref:`Web service <topics-webservice>` for monitoring and
   controlling your bot
 
 * A :ref:`Telnet console <topics-telnetconsole>` for full unrestricted access

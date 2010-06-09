@@ -1,0 +1,114 @@
+#!/usr/bin/env python
+"""
+Example script to control and monitor Scrapy using its web service. It only
+provides a reduced functionality as its main purpose is to illustrate how to
+write a web service client. Feel free to improve or write you own.
+"""
+
+import sys, optparse, urllib
+from urlparse import urljoin
+
+from scrapy.utils.jsonrpc import jsonrpc_client_call, JsonRpcError
+from scrapy.utils.py26 import json
+
+def get_commands():
+    return {
+        'help': cmd_help,
+        'run': cmd_run,
+        'list-available': cmd_list_available,
+        'list-running': cmd_list_running,
+        'list-resources': cmd_list_resources,
+        'list-extensions': cmd_list_extensions,
+        'get-global-stats': cmd_get_global_stats,
+        'get-spider-stats': cmd_get_spider_stats,
+    }
+
+def cmd_help(args, opts):
+    """help - list available commands"""
+    print "Available commands:"
+    for _, func in sorted(get_commands().items()):
+        print "  ", func.__doc__
+
+def cmd_run(args, opts):
+    """run <spider_name> - schedule spider for running"""
+    jsonrpc_call(opts, 'manager/queue', 'append_spider_name', args[0])
+
+def cmd_list_running(args, opts):
+    """list-running - list running spiders"""
+    for x in json_get(opts, 'manager/engine/open_spiders'):
+        print x
+
+def cmd_list_available(args, opts):
+    """list-available - list name of available spiders"""
+    for x in jsonrpc_call(opts, 'spiders', 'list'):
+        print x
+
+def cmd_list_resources(args, opts):
+    """list-resources - list available web service resources"""
+    for x in json_get(opts, '')['resources']:
+        print x
+
+def cmd_list_extensions(args, opts):
+    """list-extensions - list enabled extensions"""
+    for x in jsonrpc_call(opts, 'extensions/enabled', 'keys'):
+        print x
+
+def cmd_get_spider_stats(args, opts):
+    """get-spider-stats <spider> - get stats of a running spider"""
+    stats = jsonrpc_call(opts, 'stats', 'get_stats', args[0])
+    for name, value in stats.items():
+        print "%-40s %s" % (name, value)
+
+def cmd_get_global_stats(args, opts):
+    """get-global-stats - get global stats"""
+    stats = jsonrpc_call(opts, 'stats', 'get_stats')
+    for name, value in stats.items():
+        print "%-40s %s" % (name, value)
+
+def get_wsurl(opts, path):
+    return urljoin("http://%s:%s/"% (opts.host, opts.port), path)
+
+def jsonrpc_call(opts, path, method, *args, **kwargs):
+    url = get_wsurl(opts, path)
+    return jsonrpc_client_call(url, method, *args, **kwargs)
+
+def json_get(opts, path):
+    url = get_wsurl(opts, path)
+    return json.loads(urllib.urlopen(url).read())
+
+def parse_opts():
+    usage = "%prog [options] <command> [arg] ..."
+    description = "Scrapy web service control script. Use '%prog help' " \
+        "to see the list of available commands."
+    op = optparse.OptionParser(usage=usage, description=description)
+    op.add_option("-H", dest="host", default="localhost", \
+        help="Scrapy host to connect to")
+    op.add_option("-P", dest="port", type="int", default=6080, \
+        help="Scrapy port to connect to")
+    opts, args = op.parse_args()
+    if not args:
+        op.print_help()
+        sys.exit(2)
+    cmdname, cmdargs, opts = args[0], args[1:], opts
+    commands = get_commands()
+    if cmdname not in commands:
+        sys.stderr.write("Unknown command: %s\n\n" % cmdname)
+        cmd_help(None, None)
+        sys.exit(1)
+    return commands[cmdname], cmdargs, opts
+
+def main():
+    cmd, args, opts = parse_opts()
+    try:
+        cmd(args, opts)
+    except IndexError:
+        print cmd.__doc__
+    except JsonRpcError, e:
+        print str(e)
+        if e.data:
+            print "Server Traceback below:"
+            print e.data
+
+
+if __name__ == '__main__':
+    main()

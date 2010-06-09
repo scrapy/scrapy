@@ -109,13 +109,8 @@ EXTENSIONS = {}
 
 EXTENSIONS_BASE = {
     'scrapy.contrib.corestats.CoreStats': 0,
-    'scrapy.management.web.WebConsole': 0,
+    'scrapy.webservice.WebService': 0,
     'scrapy.telnet.TelnetConsole': 0,
-    'scrapy.contrib.webconsole.scheduler.SchedulerQueue': 0,
-    'scrapy.contrib.webconsole.livestats.LiveStats': 0,
-    'scrapy.contrib.webconsole.spiderctl.Spiderctl': 0,
-    'scrapy.contrib.webconsole.enginestatus.EngineStatus': 0,
-    'scrapy.contrib.webconsole.stats.StatsDump': 0,
     'scrapy.contrib.memusage.MemoryUsage': 0,
     'scrapy.contrib.memdebug.MemoryDebugger': 0,
     'scrapy.contrib.closespider.CloseSpider': 0,
@@ -232,3 +227,14 @@ WEBCONSOLE_ENABLED = True
 WEBCONSOLE_PORT = 6080
 WEBCONSOLE_LOGFILE = None
 
+WEBSERVICE_ENABLED = True
+WEBSERVICE_LOGFILE = None
+WEBSERVICE_PORT = 6080
+WEBSERVICE_RESOURCES = {}
+WEBSERVICE_RESOURCES_BASE = {
+    'scrapy.contrib.webservice.manager.ManagerResource': 1,
+    'scrapy.contrib.webservice.enginestatus.EngineStatusResource': 1,
+    'scrapy.contrib.webservice.extensions.ExtensionsResource': 1,
+    'scrapy.contrib.webservice.spiders.SpidersResource': 1,
+    'scrapy.contrib.webservice.stats.StatsResource': 1,
+}

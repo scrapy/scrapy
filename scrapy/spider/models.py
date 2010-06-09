@@ -77,6 +77,6 @@ class BaseSpider(object_ref):
         raise NotImplementedError
 
     def __str__(self):
-        return "<%s %r>" % (type(self).__name__, self.name)
+        return "<%s %r at 0x%0x>" % (type(self).__name__, self.name, id(self))
 
     __repr__ = __str__

@@ -37,23 +37,34 @@ def get_engine_status(engine=None):
         "engine.scraper.sites[spider].needs_backout()",
     ]
 
-    s = "Execution engine status\n\n"
-
+    status = {'global': {}, 'spiders': {}}
     for test in global_tests:
         try:
-            s += "%-47s : %s\n" % (test, eval(test))
+            status['global'][test] = eval(test)
         except Exception, e:
-            s += "%-47s : %s (exception)\n" % (test, type(e).__name__)
-    s += "\n"
+            status['global'][test] = "%s (exception)" % type(e).__name__
     for spider in engine.downloader.sites:
-        s += "Spider: %s\n" % spider
+        x = {}
         for test in spider_tests:
             try:
-                s += "  %-50s : %s\n" % (test, eval(test))
+                x[test] = eval(test)
             except Exception, e:
-                s += "  %-50s : %s (exception)\n" % (test, type(e).__name__)
+                x[test] = "%s (exception)" % type(e).__name__
+            status['spiders'][spider] = x
+    return status
+
+def format_engine_status(engine=None):
+    status = get_engine_status(engine)
+    s = "Execution engine status\n\n"
+    for test, result in status['global'].items():
+        s += "%-47s : %s\n" % (test, result)
+    s += "\n"
+    for spider, tests in status['spiders'].items():
+        s += "Spider: %s\n" % spider
+        for test, result in tests.items():
+            s += "  %-50s : %s\n" % (test, result)
     return s
 
 def print_engine_status(engine=None):
-    print get_engine_status(engine)
+    print format_engine_status(engine)
 

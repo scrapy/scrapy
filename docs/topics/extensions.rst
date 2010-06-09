@@ -36,10 +36,8 @@ by a string: the full Python path to the extension's class name. For example::
 
     EXTENSIONS = {
         'scrapy.contrib.corestats.CoreStats': 500,
-        'scrapy.management.web.WebConsole': 500,
-        'scrapy.management.telnet.TelnetConsole': 500,
-        'scrapy.contrib.webconsole.enginestatus.EngineStatus': 500,
-        'scrapy.contrib.webconsole.stats.StatsDump': 500,
+        'scrapy.webservice.WebService': 500,
+        'scrapy.telnet.TelnetConsole': 500,
     }
 
 
@@ -71,10 +69,10 @@ Accessing enabled extensions
 
 Even though it's not usually needed, you can access extension objects through
 the :ref:`topics-extensions-ref-manager` which is populated when extensions are
-loaded.  For example, to access the ``WebConsole`` extension::
+loaded.  For example, to access the ``WebService`` extension::
 
     from scrapy.extension import extensions
-    webconsole_extension = extensions.enabled['WebConsole']
+    webservice_extension = extensions.enabled['WebService']
 
 .. see also::
 
@@ -146,7 +144,7 @@ how you :ref:`configure the downloader middlewares
             >>> extensions.load()
             >>> print extensions.enabled
             {'CoreStats': <scrapy.contrib.corestats.CoreStats object at 0x9e272ac>,
-             'WebConsole': <scrapy.management.telnet.TelnetConsole instance at 0xa05670c>,
+             'WebService': <scrapy.management.telnet.TelnetConsole instance at 0xa05670c>,
             ...
 
     .. attribute:: disabled
@@ -158,7 +156,7 @@ how you :ref:`configure the downloader middlewares
             >>> from scrapy.extension import extensions
             >>> extensions.load()
             >>> print extensions.disabled
-            {'MemoryDebugger': 'scrapy.contrib.webconsole.stats.MemoryDebugger',
+            {'MemoryDebugger': 'scrapy.contrib.memdebug.MemoryDebugger',
              'MyExtension': 'myproject.extensions.MyExtension',
             ...
 
@@ -193,44 +191,34 @@ Core Stats extension
 Enable the collection of core statistics, provided the stats collection is
 enabled (see :ref:`topics-stats`).
 
-.. _topics-extensions-ref-webconsole:
+.. _topics-extensions-ref-webservice:
 
-Web console extension
+Web service extension
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.management.web
-   :synopsis: Web management console 
+.. module:: scrapy.webservice
+   :synopsis: Web service
 
-.. class:: scrapy.management.web.WebConsole
+.. class:: scrapy.webservice.WebService
 
-Provides an extensible web server for managing a Scrapy process. It's enabled
-by the :setting:`WEBCONSOLE_ENABLED` setting. The server will listen in the
-port specified in :setting:`WEBCONSOLE_PORT`, and will log to the file
-specified in :setting:`WEBCONSOLE_LOGFILE`.
-
-The web server is designed to be extended by other extensions which can add
-their own management web interfaces. 
-
-See also :ref:`topics-webconsole` for information on how to write your own web
-console extension, and :ref:`topics-webconsole-extensions-ref` for a list of
-available built-in (web console) extensions.
+See `topics-webservice`.
 
 .. _topics-extensions-ref-telnetconsole:
 
 Telnet console extension
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.management.telnet
-   :synopsis: Telnet management console 
+.. module:: scrapy.telnet
+   :synopsis: Telnet console 
 
-.. class:: scrapy.management.telnet.TelnetConsole
+.. class:: scrapy.telnet.TelnetConsole
 
 Provides a telnet console for getting into a Python interpreter inside the
 currently running Scrapy process, which can be very useful for debugging. 
 
 The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
 setting, and the server will listen in the port specified in
-:setting:`WEBCONSOLE_PORT`.
+:setting:`TELNETCONSOLE_PORT`.
 
 .. _topics-extensions-ref-memusage:
 
