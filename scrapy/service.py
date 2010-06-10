@@ -25,13 +25,10 @@ class ScrapyService(Service):
         logfile = self.get_log_file(settings_module, position)
         env['SCRAPY_SETTINGS_MODULE'] = settings_module
         env['SCRAPY_LOG_FILE'] = logfile
-        pp = ScrapyProcessProtocol(self, botname, settings_module, logfile)
+        pp = ScrapyProcessProtocol(botname, settings_module, logfile)
+        pp.deferred.addCallback(lambda _: reactor.callLater(5, \
+            self.spawn_process, settings_module, position))
         reactor.spawnProcess(pp, sys.executable, args=args, env=env)
-        pp.deferred.addCallback(self.respawn_process, args, env)
-
-    def respawn_process(self, pp, args, env):
-        reactor.callLater(5, reactor.spawnProcess, pp, sys.executable, \
-            args=args, env=env)
 
     def get_log_file(self, settings_module, position):
         botname = self.get_bot_name(settings_module)
@@ -44,8 +41,7 @@ class ScrapyService(Service):
 
 class ScrapyProcessProtocol(protocol.ProcessProtocol):
 
-    def __init__(self, service, botname, settings_module, logfile):
-        self.service = service
+    def __init__(self, botname, settings_module, logfile):
         self.botname = botname
         self.settings_module = settings_module
         self.logfile = logfile
