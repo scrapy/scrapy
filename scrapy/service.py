@@ -75,13 +75,14 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.deferred.callback(self)
 
     def _log_ended(self, msg):
+        tolog = [msg]
         if self.outdata:
-            msg += "\n>>> stdout (last %d lines) <<<\n%s" % (self.TAIL_LINES, \
-                self.outdata)
+            tolog += [">>> stdout (last %d lines) <<<" % self.TAIL_LINES]
+            tolog += [self.outdata]
         if self.errdata:
-            msg += "\n>>> stderr (last %d lines) <<<\n%s" % (self.TAIL_LINES, \
-                self.errdata)
-        log.msg(msg)
+            tolog += [">>> stderr (last %d lines) <<<" % self.TAIL_LINES]
+            tolog += [self.errdata]
+        log.msg(os.linesep.join(tolog))
 
     def _tail(self, data, lines=TAIL_LINES):
-        return os.linesep.join(data.splitlines()[-lines:])
+        return os.linesep.join(data.split(os.linesep)[-lines:])
