@@ -41,12 +41,22 @@ class ScrapyService(Service):
 
 class ScrapyProcessProtocol(protocol.ProcessProtocol):
 
+    TAIL_LINES = 100
+
     def __init__(self, botname, settings_module, logfile):
         self.botname = botname
         self.settings_module = settings_module
         self.logfile = logfile
         self.pid = None
         self.deferred = defer.Deferred()
+        self.outdata = ''
+        self.errdata = ''
+
+    def outReceived(self, data):
+        self.outdata = self._tail(self.outdata + data)
+
+    def errReceived(self, data):
+        self.errdata = self._tail(self.errdata + data)
 
     def connectionMade(self):
         self.pid = self.transport.pid
@@ -55,10 +65,23 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
 
     def processEnded(self, status):
         if isinstance(status.value, error.ProcessDone):
-            log.msg("Crawler %r finished: pid=%r settings=%r log=%r" % \
-                (self.botname, self.pid, self.settings_module, self.logfile))
+            msg = "Crawler %r finished: pid=%r settings=%r log=%r" % \
+                (self.botname, self.pid, self.settings_module, self.logfile)
         else:
-            log.msg("Crawler %r died: exitstatus=%r pid=%r settings=%r log=%r" % \
+            msg = "Crawler %r died: exitstatus=%r pid=%r settings=%r log=%r" % \
                 (self.botname, status.value.exitCode, self.pid, self.settings_module, \
-                self.logfile))
+                self.logfile)
+        self._log_ended(msg)
         self.deferred.callback(self)
+
+    def _log_ended(self, msg):
+        if self.outdata:
+            msg += "\n>>> stdout (last %d lines) <<<\n%s" % (self.TAIL_LINES, \
+                self.outdata)
+        if self.errdata:
+            msg += "\n>>> stderr (last %d lines) <<<\n%s" % (self.TAIL_LINES, \
+                self.errdata)
+        log.msg(msg)
+
+    def _tail(self, data, lines=TAIL_LINES):
+        return os.linesep.join(data.splitlines()[-lines:])
