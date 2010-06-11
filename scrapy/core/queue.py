@@ -15,7 +15,7 @@ class ExecutionQueue(object):
         self._spiders = _spiders
 
     def _append_next(self):
-        """Called when there are no more itemsl left in self.spider_requests.
+        """Called when there are no more items left in self.spider_requests.
         This method is meant to be overriden in subclasses to add new (spider,
         requests) tuples to self.spider_requests. It can return a Deferred.
         """

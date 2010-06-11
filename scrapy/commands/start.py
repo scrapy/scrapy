@@ -1,6 +1,7 @@
-from scrapy.core.queue import KeepAliveExecutionQueue
 from scrapy.command import ScrapyCommand
 from scrapy.core.manager import scrapymanager
+from scrapy.utils.misc import load_object
+from scrapy.conf import settings
 
 class Command(ScrapyCommand):
 
@@ -10,6 +11,6 @@ class Command(ScrapyCommand):
         return "Start the Scrapy manager but don't run any spider (idle mode)"
 
     def run(self, args, opts):
-        q = KeepAliveExecutionQueue()
-        scrapymanager.queue = q
+        queue_class = load_object(settings['SERVICE_QUEUE'])
+        scrapymanager.queue = queue_class()
         scrapymanager.start()

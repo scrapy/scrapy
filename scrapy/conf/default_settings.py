@@ -185,6 +185,8 @@ SCHEDULER_MIDDLEWARES_BASE = {
 
 SCHEDULER_ORDER = 'DFO'
 
+SERVICE_QUEUE = 'scrapy.core.queue.KeepAliveExecutionQueue'
+
 SPIDER_MANAGER_CLASS = 'scrapy.contrib.spidermanager.TwistedPluginSpiderManager'
 
 SPIDER_MIDDLEWARES = {}
@@ -204,6 +206,11 @@ SPIDER_MIDDLEWARES_BASE = {
 SPIDER_MODULES = []
 
 SPIDERPROFILER_ENABLED = False
+
+SQS_QUEUE = 'scrapy'
+SQS_VISIBILITY_TIMEOUT = 7200
+SQS_POLLING_DELAY = 30
+SQS_REGION = 'us-east-1'
 
 STATS_CLASS = 'scrapy.stats.collector.MemoryStatsCollector'
 STATS_ENABLED = True
