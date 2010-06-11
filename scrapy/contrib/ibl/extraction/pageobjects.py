@@ -190,10 +190,11 @@ class AnnotationTag(object):
                          for each item to be extracted from a tag attribute
         annotation_text - text prefix and suffix for the attribute to be extracted
         match_common_prefix - use this annotation for calculating across-template prefixes
+        metadata - dict with annotation data not used by IBL extractor
     """
     __slots__ = ('surrounds_attribute', 'start_index', 'end_index',
             'tag_attributes', 'annotation_text', 'variant_id', 
-            'surrounds_variant','match_common_prefix')
+            'surrounds_variant','match_common_prefix', 'metadata')
     
     def __init__(self, start_index, end_index, surrounds_attribute=None, 
             annotation_text=None, tag_attributes=None, variant_id=None,
@@ -206,6 +207,7 @@ class AnnotationTag(object):
         self.variant_id = variant_id
         self.surrounds_variant = surrounds_variant
         self.match_common_prefix = match_common_prefix
+        self.metadata = {}
 
     def __str__(self):
         return "AnnotationTag(%s)" % ", ".join(

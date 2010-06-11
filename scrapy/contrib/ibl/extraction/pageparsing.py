@@ -125,7 +125,7 @@ class TemplatePageParser(InstanceLearningParser):
                 self._close_unpaired_tag()
                 
             annotation = AnnotationTag(self.next_tag_index, self.next_tag_index + 1)
-            attribute_annotations = jannotation.get('annotations', {}).items()
+            attribute_annotations = jannotation.pop('annotations', {}).items()
             for extract_attribute, tag_value in attribute_annotations:
                 if extract_attribute == 'content':
                     annotation.surrounds_attribute = tag_value
@@ -133,10 +133,11 @@ class TemplatePageParser(InstanceLearningParser):
                 else:
                     annotation.tag_attributes.append((extract_attribute, tag_value))
             self.annotations.append(annotation)
-            if jannotation.get('common_prefix', False):
+            if jannotation.pop('common_prefix', False):
                 annotation.match_common_prefix = True
 
-            self.extra_required_attrs.extend(jannotation.get('required', []))
+            self.extra_required_attrs.extend(jannotation.pop('required', []))
+            annotation.metadata = jannotation
 
         self.next_tag_index += 1
 
@@ -183,7 +184,7 @@ class TemplatePageParser(InstanceLearningParser):
             return
         
         annotation = AnnotationTag(self.next_tag_index, None)
-        if jannotation.get('generated', False):
+        if jannotation.pop('generated', False):
             self.token_list.pop()
             annotation.start_index -= 1
             if self.previous_element_class == HtmlTag:
@@ -195,22 +196,24 @@ class TemplatePageParser(InstanceLearningParser):
                 ignored = self.ignored_regions.pop()
                 self.ignored_regions.append((ignored[0]-1, ignored[1]))
                 
-        if jannotation.get('common_prefix', False):
+        if jannotation.pop('common_prefix', False):
             annotation.match_common_prefix = True
-            
-        self.extra_required_attrs.extend(jannotation.get('required', []))
+                
+        self.extra_required_attrs.extend(jannotation.pop('required', []))
         
-        variant_id = jannotation.get('variant', 0)
+        variant_id = jannotation.pop('variant', 0)
         if variant_id > 0:
             self.variant_stack.append(variant_id)
             annotation.surrounds_variant = variant_id
-        attribute_annotations = jannotation.get('annotations', {}).items()
+        attribute_annotations = jannotation.pop('annotations', {}).items()
         for extract_attribute, tag_value in attribute_annotations:
             if extract_attribute == 'content':
                 annotation.surrounds_attribute = tag_value
             else:
                 annotation.tag_attributes.append((extract_attribute, tag_value))
         
+        annotation.metadata = jannotation
+
         if annotation.annotation_text is None:
             self.next_tag_index += 1
         if self.variant_stack:

@@ -111,7 +111,7 @@ class InstanceBasedLearningExtractor(object):
             correctly_extracted = [c for c in correctly_extracted if \
                 extra_required.intersection(c.keys()) == extra_required ]
             if len(correctly_extracted) > 0:
-                return correctly_extracted, extraction_tree.template.id
+                return correctly_extracted, extraction_tree.template
         return None, None
 
     def __str__(self):
