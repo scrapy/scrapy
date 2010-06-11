@@ -15,6 +15,7 @@ def get_commands():
     return {
         'help': cmd_help,
         'run': cmd_run,
+        'stop': cmd_stop,
         'list-available': cmd_list_available,
         'list-running': cmd_list_running,
         'list-resources': cmd_list_resources,
@@ -32,6 +33,10 @@ def cmd_help(args, opts):
 def cmd_run(args, opts):
     """run <spider_name> - schedule spider for running"""
     jsonrpc_call(opts, 'manager/queue', 'append_spider_name', args[0])
+
+def cmd_stop(args, opts):
+    """stop <spider> - stop a running spider"""
+    jsonrpc_call(opts, 'manager/engine', 'close_spider', args[0])
 
 def cmd_list_running(args, opts):
     """list-running - list running spiders"""
