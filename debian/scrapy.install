@@ -1,0 +1,3 @@
+debian/conf/service_conf.py etc/scrapy
+debian/conf/environment etc/scrapy
+bin/scrapy.tac usr/share/scrapy

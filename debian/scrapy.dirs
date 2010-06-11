@@ -1,0 +1,4 @@
+usr/bin
+usr/share/scrapy
+var/lib/scrapy
+var/log/scrapy

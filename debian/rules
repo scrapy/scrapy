@@ -1,0 +1,11 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+export DH_ALWAYS_EXCLUDE=license.txt:_sources/:.buildinfo
+
+%:
+	dh $@
+
+override_dh_auto_install:
+	dh_auto_install
+	mv $(CURDIR)/debian/scrapy/usr/bin/scrapy-ctl.py $(CURDIR)/debian/scrapy/usr/bin/scrapy-ctl
