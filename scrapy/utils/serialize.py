@@ -2,6 +2,8 @@ import re
 import datetime
 import decimal
 
+from twisted.internet import defer
+
 from scrapy.core.manager import scrapymanager
 from scrapy.spider import BaseSpider
 from scrapy.http import Request, Response
@@ -16,7 +18,7 @@ class SpiderReferencer(object):
     ScrapyJSONEncoder.default() with a custom encoding mechanism.
     """
 
-    spider_ref_re = re.compile('^spider:([0-9a-f]+)(:.*)?$')
+    spider_ref_re = re.compile('^spider:([0-9a-f]+)?:?(.+)?$')
 
     def __init__(self, manager=None):
         self.manager = manager or scrapymanager
@@ -31,9 +33,9 @@ class SpiderReferencer(object):
         """
         m = self.spider_ref_re.search(ref)
         if m:
-            spid = int(m.group(1), 16)
+            spid, spname = m.groups()
             for spider in self.manager.engine.open_spiders:
-                if id(spider) == spid:
+                if "%x" % id(spider) == spid or spider.name == spname:
                     return spider
             raise RuntimeError("Spider not running: %s" % ref)
         return ref
@@ -93,6 +95,8 @@ class ScrapyJSONEncoder(json.JSONEncoder):
         elif isinstance(o, datetime.time):
             return o.strftime(self.TIME_FORMAT)
         elif isinstance(o, decimal.Decimal):
+            return str(o)
+        elif isinstance(o, defer.Deferred):
             return str(o)
         elif isinstance(o, Request):
             return "<%s %s %s>" % (type(o).__name__, o.method, o.url)

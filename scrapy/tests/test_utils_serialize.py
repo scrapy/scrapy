@@ -2,6 +2,8 @@ import unittest
 import datetime
 from decimal import Decimal
 
+from twisted.internet import defer
+
 from scrapy.utils.serialize import SpiderReferencer, ScrapyJSONEncoder, ScrapyJSONDecoder
 from scrapy.utils.py26 import json
 from scrapy.spider import BaseSpider
@@ -44,6 +46,10 @@ class SpiderReferencerTestCase(BaseTestCase):
         assert isinstance(sp1, BaseSpider)
         assert sp1 is not sp2
         assert sp1 is sp1_
+
+        # referring to spiders by name
+        assert sp1 is self.spref.get_spider_from_reference('spider::name1')
+        assert sp2 is self.spref.get_spider_from_reference('spider::name2')
 
         # must return string as-is if spider id not found
         assert 'lala' == self.spref.get_spider_from_reference('lala')
@@ -106,6 +112,8 @@ class JsonEncoderTestCase(BaseTestCase):
         ]
         for spiders, refs in examples_encode_only:
             self.assertEqual(self.encoder.encode(spiders), json.dumps(refs))
+
+        assert 'Deferred' in self.encoder.encode(defer.Deferred())
 
     def test_encode_request(self):
         r = Request("http://www.example.com/lala")
