@@ -29,6 +29,7 @@ deb-prepare:
 	mkdir -p $(BUILDBASE)
 	hg archive -t tgz -X .hgtags $(BUILDTAR)
 	tar zxf $(BUILDTAR) -C $(BUILDBASE)
+	rm -f $(BUILDDIR)/Makefile # to avoid confusing dh_auto_build
 	cp -r debian $(BUILDDIR)
 	cd $(BUILDDIR); debchange -m -D unstable --force-distribution -v $(FULL_VERSION)-$(DEBREV) "Automatic build"
 
