@@ -8,16 +8,14 @@ Sending e-mail
    :synopsis: Email sending facility
 
 Although Python makes sending e-mails relatively easy via the `smtplib`_
-library, Scrapy provides its own facility for sending e-mails which is very easy
-to use and it's implemented using `Twisted non-blocking IO`_, to avoid
-interfering with the non-blocking IO of the crawler.
-
-It's also very easy to configure, having only a few settings.
+library, Scrapy provides its own facility for sending e-mails which is very
+easy to use and it's implemented using `Twisted non-blocking IO`_, to avoid
+interfering with the non-blocking IO of the crawler. It also provides a
+simple API for sending attachments and it's very easy to configure, with a few
+:ref:`settings <topics-email-settings`.
 
 .. _smtplib: http://docs.python.org/library/smtplib.html
 .. _Twisted non-blocking IO: http://twistedmatrix.com/projects/core/documentation/howto/async.html
-
-It also has built-in support for sending attachments.
 
 Quick example
 =============
@@ -35,7 +33,7 @@ MailSender class reference
 MailSender is the preferred class to use for sending emails from Scrapy, as it
 uses `Twisted non-blocking IO`_, like the rest of the framework. 
 
-.. class:: MailSender(smtphost, mailfrom)
+.. class:: MailSender(smtphost=None, mailfrom=None, smtpuser=None, smtppass=None, smtpport=None):
 
     :param smtphost: the SMTP host to use for sending the emails. If omitted, the 
       :setting:`MAIL_HOST` setting will be used.
@@ -44,6 +42,17 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
     :param mailfrom: the address used to send emails (in the ``From:`` header).
       If omitted, the :setting:`MAIL_FROM` setting will be used.
     :type mailfrom: str
+
+    :param smtpuser: the SMTP user. If omitted, the :setting:`MAIL_USER`
+      setting will be used. If not given, no SMTP authentication will be
+      performed.
+    :type smtphost: str
+
+    :param smtppass: the SMTP pass for authetnication.
+    :type smtppass: str
+
+    :param smtpport: the SMTP port to connect to
+    :type smtpport: int
 
     .. method:: send(to, subject, body, cc=None, attachs=())
 
@@ -72,16 +81,69 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
         :type attachs: iterable
 
 
-MailSender settings
-===================
+.. _topics-email-settings:
+
+Mail settings
+=============
 
 These settings define the default constructor values of the :class:`MailSender`
 class, and can be used to configure e-mail notifications in your project without
-writing any code (for those extensions that use the :class:`MailSender` class):
+writing any code (for those extensions and code that uses :class:`MailSender`).
 
-* :setting:`MAIL_DEBUG`
-* :setting:`MAIL_FROM`
-* :setting:`MAIL_HOST`
+.. setting:: MAIL_FROM
+
+MAIL_FROM
+---------
+
+Default: ``'scrapy@localhost'``
+
+Sender email to use (``From:`` header) for sending emails.
+
+.. setting:: MAIL_HOST
+
+MAIL_HOST
+---------
+
+Default: ``'localhost'``
+
+SMTP host to use for sending emails.
+
+.. setting:: MAIL_PORT
+
+MAIL_PORT
+---------
+
+Default: ``25``
+
+SMTP port to use for sending emails.
+
+.. setting:: MAIL_USER
+
+MAIL_USER
+---------
+
+Default: ``None``
+
+User to use for SMTP authentication. If disabled no SMTP authentication will be
+performed.
+
+.. setting:: MAIL_PASS
+
+MAIL_PASS
+---------
+
+Default: ``None``
+
+Password to use for SMTP authentication, along with :setting:`MAIL_USER`.
+
+.. setting:: MAIL_DEBUG
+
+MAIL_DEBUG
+----------
+
+Default: ``False``
+
+Whether to enable the debugging mode.
 
 
 Mail signals

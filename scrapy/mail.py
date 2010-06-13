@@ -12,7 +12,7 @@ from email.Utils import COMMASPACE, formatdate
 from email import Encoders
 
 from twisted.internet import defer, reactor
-from twisted.mail.smtp import SMTPSenderFactory
+from twisted.mail.smtp import ESMTPSenderFactory
 
 from scrapy import log
 from scrapy.core.exceptions import NotConfigured
@@ -27,9 +27,13 @@ mail_sent = object()
 
 class MailSender(object):
 
-    def __init__(self, smtphost=None, mailfrom=None):
-        self.smtphost = smtphost if smtphost else settings['MAIL_HOST']
-        self.mailfrom = mailfrom if mailfrom else settings['MAIL_FROM']
+    def __init__(self, smtphost=None, mailfrom=None, smtpuser=None, smtppass=None, \
+            smtpport=None):
+        self.smtphost = smtphost or settings['MAIL_HOST']
+        self.smtpport = smtpport or settings.getint('MAIL_PORT')
+        self.smtpuser = smtpuser or settings['MAIL_USER']
+        self.smtppass = smtppass or settings['MAIL_PASS']
+        self.mailfrom = mailfrom or settings['MAIL_FROM']
 
         if not self.smtphost or not self.mailfrom:
             raise NotConfigured("MAIL_HOST and MAIL_FROM settings are required")
@@ -68,11 +72,12 @@ class MailSender(object):
                 (to, cc, subject, len(attachs)), level=log.DEBUG)
             return
 
-        dfd = self._sendmail(self.smtphost, self.mailfrom, rcpts, msg.as_string())
+        dfd = self._sendmail(rcpts, msg.as_string())
         dfd.addCallbacks(self._sent_ok, self._sent_failed,
             callbackArgs=[to, cc, subject, len(attachs)],
             errbackArgs=[to, cc, subject, len(attachs)])
         reactor.addSystemEventTrigger('before', 'shutdown', lambda: dfd)
+        return dfd
 
     def _sent_ok(self, result, to, cc, subject, nattachs):
         log.msg('Mail sent OK: To=%s Cc=%s Subject="%s" Attachs=%d' % \
@@ -83,13 +88,12 @@ class MailSender(object):
         log.msg('Unable to send mail: To=%s Cc=%s Subject="%s" Attachs=%d - %s' % \
             (to, cc, subject, nattachs, errstr), level=log.ERROR)
 
-    def _sendmail(self, smtphost, from_addr, to_addrs, msg, port=25):
-        """ This is based on twisted.mail.smtp.sendmail except that it
-        instantiates a quiet (noisy=False) SMTPSenderFactory """
+    def _sendmail(self, to_addrs, msg):
         msg = StringIO(msg)
         d = defer.Deferred()
-        factory = SMTPSenderFactory(from_addr, to_addrs, msg, d)
+        factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom, \
+            to_addrs, msg, d, heloFallback=True, requireAuthentication=False, \
+            requireTransportSecurity=False)
         factory.noisy = False
-        reactor.connectTCP(smtphost, port, factory)
+        reactor.connectTCP(self.smtphost, self.smtpport, factory)
         return d
-

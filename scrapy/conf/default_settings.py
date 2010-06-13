@@ -138,7 +138,10 @@ LOG_FILE = None
 
 MAIL_DEBUG = False
 MAIL_HOST = 'localhost'
+MAIL_PORT = 25
 MAIL_FROM = 'scrapy@localhost'
+MAIL_PASS = None
+MAIL_USER = None
 
 MEMDEBUG_ENABLED = False        # enable memory debugging
 MEMDEBUG_NOTIFY = []            # send memory debugging report by mail at engine shutdown

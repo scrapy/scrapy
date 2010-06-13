@@ -615,36 +615,6 @@ If ``True``, all standard output (and error) of your process will be redirected
 to the log. For example if you ``print 'hello'`` it will appear in the Scrapy
 log.
 
-.. setting:: MAIL_DEBUG
-
-MAIL_DEBUG
-----------
-
-Default: ``False``
-
-Whether to enable the debugging mode in the the :ref:`Scrapy e-mail sending
-facility <topics-email>`.
-
-.. setting:: MAIL_FROM
-
-MAIL_FROM
----------
-
-Default: ``'scrapy@localhost'``
-
-Email to use as sender address for sending emails using the :ref:`Scrapy e-mail
-sending facility <topics-email>`.
-
-.. setting:: MAIL_HOST
-
-MAIL_HOST
----------
-
-Default: ``'localhost'``
-
-Host to use for sending emails using the :ref:`Scrapy e-mail sending facility
-<topics-email>`.
-
 .. setting:: MEMDEBUG_ENABLED
 
 MEMDEBUG_ENABLED
