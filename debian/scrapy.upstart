@@ -10,7 +10,8 @@ script
     [ -r /etc/scrapy/environment ] && . /etc/scrapy/environment
     export PYTHONPATH=/etc/scrapy:$PYTHONPATH
     export SCRAPY_SETTINGS_MODULE=service_conf
-    twistd -ny /usr/share/scrapy/scrapy.tac \
-        -u scrapy -g nogroup \
-        -l /var/log/scrapy/service.log
+    exec twistd -ny /usr/share/scrapy/scrapy.tac \
+                -u scrapy -g nogroup \
+                -l /var/log/scrapy/service.log \
+                --pidfile /var/run/scrapy/scrapy.pid
 end script
