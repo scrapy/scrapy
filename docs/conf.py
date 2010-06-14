@@ -42,7 +42,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Scrapy'
-copyright = u'2008-2009, Insophia'
+copyright = u'2008-2010, Insophia'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

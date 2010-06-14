@@ -8,6 +8,6 @@ LOG_DIR = '/var/log/scrapy'
 # * Values are number of processes that should be started for each project, or
 #   zero if you want to use the number of cores available.
 PROJECTS = {
-#        'mybot.settings': 0,
+#    'mybot.settings': 0,
 }
 
