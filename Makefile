@@ -35,6 +35,7 @@ deb-prepare:
 	cd $(BUILDDIR); debchange -m -D unstable --force-distribution -v $(FULL_VERSION)-$(DEBREV) "Automatic build"
 
 tarball:
+	hg purge --all
 	python setup.py sdist
 
 sign:
