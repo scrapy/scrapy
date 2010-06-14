@@ -10,7 +10,9 @@ from scrapy.utils.misc import arg_to_iter
 
 
 class MediaPipeline(object):
+
     DOWNLOAD_PRIORITY = 1000
+    LOG_FAILED_RESULTS = True
 
     class SpiderInfo(object):
         def __init__(self, spider):
@@ -33,26 +35,20 @@ class MediaPipeline(object):
     def process_item(self, spider, item):
         info = self.spiderinfo[spider]
         requests = arg_to_iter(self.get_media_requests(item, info))
-        dlist = []
-        for request in requests:
-            dfd = self._enqueue(request, info)
-            dfd.addCallbacks(
-                    callback=self.item_media_downloaded,
-                    callbackArgs=(item, request, info),
-                    errback=self.item_media_failed,
-                    errbackArgs=(item, request, info),)
-            dlist.append(dfd)
-
-        return DeferredList(dlist, consumeErrors=1).addCallback(self.item_completed, item, info)
+        dlist = [self._enqueue(r, info) for r in requests]
+        dfd = DeferredList(dlist, consumeErrors=1)
+        return dfd.addCallback(self.item_completed, item, info)
 
     def _enqueue(self, request, info):
-        wad = Deferred().addCallbacks(request.callback, request.errback)
         fp = request_fingerprint(request)
+        cb = request.callback or (lambda _: _)
+        eb = request.errback
 
         # if already downloaded, return cached result.
         if fp in info.downloaded:
-            return defer_result(info.downloaded[fp]).chainDeferred(wad)
+            return defer_result(info.downloaded[fp]).addCallbacks(cb, eb)
 
+        wad = Deferred().addCallbacks(cb, eb)
         # add to pending list for this request, and wait for result like the others.
         info.waiting.setdefault(fp, []).append(wad)
 
@@ -93,73 +89,31 @@ class MediaPipeline(object):
 
     ### Overradiable Interface
     def download(self, request, info):
-        """ Defines how to request the download of media
-
-        Default gives high priority to media requests and use scheduler,
-        shouldn't be necessary to override.
-
-        This methods is called only if result for request isn't cached,
-        request fingerprint is used as cache key.
-
-        """
+        """Defines how to download the media request"""
         request.priority = self.DOWNLOAD_PRIORITY
         return scrapymanager.engine.download(request, info.spider)
 
     def media_to_download(self, request, info):
-        """ Ongoing request hook pre-cache
-
-        This method is called every time a media is requested for download, and
-        only once for the same request because return value is cached as media
-        result.
-
-        returning a non-None value implies:
-            - the return value is cached and piped into `item_media_downloaded` or `item_media_failed`
-            - prevents downloading, this means calling `download` method.
-            - `media_downloaded` or `media_failed` isn't called.
-
-        """
+        """Check request before starting download"""
+        pass
 
     def get_media_requests(self, item, info):
+        """Returns the media requests to download"""
         pass
 
     def media_downloaded(self, response, request, info):
-        """ Method called on success download of media request
-
-        Return value is cached and used as input for `item_media_downloaded` method.
-        Default implementation returns None.
-
-        WARNING: returning the response object can eat your memory.
-
-        """
+        """Handler for success downloads"""
+        return response
 
     def media_failed(self, failure, request, info):
-        """ Method called when media request failed due to any kind of download error.
-
-        Return value is cached and used as input for `item_media_failed` method.
-        Default implementation returns same Failure object.
-        """
-        return failure
-
-    def item_media_downloaded(self, result, item, request, info):
-        """ Method to handle result of requested media for item.
-
-        result is the return value of `media_downloaded` hook, or the non-Failure instance
-        returned by `media_failed` hook.
-
-        return value of this method is used for results parameter of item_completed hook
-        """
-        return result
-
-    def item_media_failed(self, failure, item, request, info):
-        """ Method to handle failed result of requested media for item.
-
-        result is the returned Failure instance of `media_failed` hook, or Failure instance
-        of an exception raised by `media_downloaded` hook.
-
-        return value of this method is used for results parameter of item_completed hook
-        """
+        """Handler for failed downloads"""
         return failure
 
     def item_completed(self, results, item, info):
+        """Called per item when all media requests has been processed"""
+        if self.LOG_FAILED_RESULTS:
+            for success, result in results:
+                if not success:
+                    log.err(result, '%s found errors proessing %s' % (self.__class__.__name__, item))
         return item
 
