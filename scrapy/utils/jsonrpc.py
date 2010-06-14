@@ -67,6 +67,7 @@ def jsonrpc_server_call(target, jsonrpc_request, json_decoder=None):
 
     params = req.get('params', [])
     a, kw = ([], params) if isinstance(params, dict) else (params, {})
+    kw = dict([(str(k), v) for k, v in kw.items()]) # convert kw keys to str
     try:
         return jsonrpc_result(id, method(*a, **kw))
     except Exception, e:

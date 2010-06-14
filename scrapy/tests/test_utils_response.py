@@ -1,3 +1,4 @@
+import os
 import unittest
 import urlparse
 
@@ -147,7 +148,10 @@ class ResponseUtilsTest(unittest.TestCase):
         url = "http:///www.example.com/some/page.html"
         body = "<html> <head> <title>test page</title> </head> <body>test body</body> </html>"
         def browser_open(burl):
-            bbody = open(urlparse.urlparse(burl).path).read()
+            path = urlparse.urlparse(burl).path
+            if not os.path.exists(path):
+                path = burl.replace('file://', '')
+            bbody = open(path).read()
             assert '<base href="%s">' % url in bbody, "<base> tag not added"
             return True
         response = HtmlResponse(url, body=body)
