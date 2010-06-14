@@ -139,3 +139,24 @@ There's a whole documentation section about this subject, please see:
 
 Also, Python has a builtin memory leak issue which is described in
 :ref:`topics-leaks-without-leaks`.
+
+What is the recommended way to deploy a Scrapy crawler in production?
+---------------------------------------------------------------------
+
+Scrapy comes with a built-in service based on `Twisted Application Framework`_
+which can be launched through the `twistd`_ command. The ``scrapy.tac`` file
+can be found in the ``extras/`` directory.
+
+If you're running Ubuntu 9.10 or above, you can just use the `official APT
+repos`_ for installing Scrapy in your servers. The Debian package automatically
+deploys the service in the right place and leaves it ready to be started,
+running as the ``scrapy`` user. It also provides an `upstart` script for
+controlling the service.
+
+For a practical example see this `guide on how to deploy a Scrapy crawler on
+Amazon EC2 <http://dev.scrapy.org/wiki/AmazonEC2>`_.
+
+.. _Twisted Application Framework: http://twistedmatrix.com/documents/current/core/howto/application.html
+.. _twistd: http://twistedmatrix.com/documents/current/core/howto/basics.html#auto1
+.. _official APT repos: http://dev.scrapy.org/wiki/AptRepos
+.. _upstart: http://upstart.ubuntu.com/
