@@ -76,8 +76,6 @@ if len(sys.argv) > 1 and sys.argv[1] == 'bdist_wininst':
 
 # Dynamically calculate the version based on scrapy.__version__
 version = __import__('scrapy').__version__
-if u'SVN' in version:
-    version = ' '.join(version.split(' ')[:-1])
 
 setup_args = {
     'name': 'Scrapy',
