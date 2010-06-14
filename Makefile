@@ -7,11 +7,12 @@ BUILDDIR ?= $(BUILDBASE)/scrapy_$(FULL_VERSION).orig
 BUILDTAR ?= $(BUILDBASE)/scrapy_$(FULL_VERSION).orig.tar.gz
 
 help:
-	@echo 'Commonly used make targets:'
+	@echo 'Available targets:'
 	@echo '  deb-binary   - build debian binary package'
 	@echo '  deb-source   - build debian source package'
 	@echo '  deb-all      - build source and binary debian packages'
 	@echo '  tarball      - build source tarball'
+	@echo '  sign         - sign release'
 
 deb-binary: deb-prepare
 	cd $(BUILDDIR); debuild -i -us -uc -b
@@ -35,3 +36,9 @@ deb-prepare:
 
 tarball:
 	python setup.py sdist
+
+sign:
+	md5sum dist/Scrapy-* > dist/MD5SUMS
+	sha1sum dist/Scrapy-* > dist/SHA1SUMS
+	gpg -ba dist/MD5SUMS
+	gpg -ba dist/SHA1SUMS
