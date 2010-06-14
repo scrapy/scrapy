@@ -76,6 +76,13 @@ if len(sys.argv) > 1 and sys.argv[1] == 'bdist_wininst':
 
 # Dynamically calculate the version based on scrapy.__version__
 version = __import__('scrapy').__version__
+if 'dev' in version:
+    try:
+        from subprocess import Popen, PIPE
+        hgrev = Popen(['hg', 'tip', '--template={rev}'], stdout=PIPE).communicate()[0]
+        version = version.replace('-dev', '-r%s' % hgrev)
+    except:
+        pass
 
 setup_args = {
     'name': 'Scrapy',
