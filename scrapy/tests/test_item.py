@@ -71,6 +71,20 @@ class ItemTest(unittest.TestCase):
         i._private = 'test'
         self.assertEqual(i._private, 'test')
 
+    def test_raise_getattr(self):
+        class TestItem(Item):
+            name = Field()
+
+        i = TestItem()
+        self.assertRaises(AttributeError, getattr, i, 'name')
+
+    def test_raise_setattr(self):
+        class TestItem(Item):
+            name = Field()
+
+        i = TestItem()
+        self.assertRaises(AttributeError, setattr, i, 'name', 'john')
+
     def test_custom_methods(self):
         class TestItem(Item):
             name = Field()

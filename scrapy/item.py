@@ -65,8 +65,14 @@ class DictItem(DictMixin, BaseItem):
 
     def __getattr__(self, name):
         if name in self.fields:
-            raise AttributeError("Use [%r] to access item field value" % name)
+            raise AttributeError("Use item[%r] to get field value" % name)
         raise AttributeError(name)
+
+    def __setattr__(self, name, value):
+        if not name.startswith('_'):
+            raise AttributeError("Use item[%r] = %r to set field value" % \
+                (name, value))
+        super(DictItem, self).__setattr__(name, value)
 
     def keys(self):
         return self._values.keys()
