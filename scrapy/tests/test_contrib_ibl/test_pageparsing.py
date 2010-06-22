@@ -13,16 +13,11 @@ from scrapy.contrib.ibl.htmlpage import HtmlPage
 from scrapy.tests.test_contrib_ibl import path
 
 try:
-    import nltk
-except ImportError:
-    nltk = None
-
-try:
     import numpy
 except ImportError:
     numpy = None
 
-if nltk and numpy:
+if numpy:
     from scrapy.contrib.ibl.extraction.pageparsing import (
         InstanceLearningParser, TemplatePageParser, ExtractionPageParser)
     from scrapy.contrib.ibl.extraction.pageobjects import TokenDict, TokenType
@@ -174,8 +169,6 @@ def _tags(pp, predicate):
 class TestPageParsing(TestCase):
 
     def setUp(self):
-        if not nltk:
-            raise SkipTest("nltk not available")
         if not numpy:
             raise SkipTest("numpy not available")
 

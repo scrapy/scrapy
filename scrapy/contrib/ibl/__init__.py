@@ -8,9 +8,5 @@ Based Learning (IBL) algorithm, as described in the following papers:
     Extracting web data using instance based learning
     http://portal.acm.org/citation.cfm?id=1265174 
 
-This code has some additional dependencies too:
-
-* numpy
-* nltk
-
+This code requires the numpy library.
 """

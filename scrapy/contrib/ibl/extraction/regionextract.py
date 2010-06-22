@@ -3,13 +3,13 @@ Region Extract
 
 Custom extraction for regions in a document
 """
+import re
 import operator
 import copy
 import pprint
 import cStringIO
 from itertools import groupby
 
-import nltk
 from numpy import array
 
 from scrapy.contrib.ibl.descriptor import FieldDescriptor
@@ -572,7 +572,8 @@ class TemplatePageExtractor(object):
     def __str__(self):
         return str(self.extractor)
 
-_tokenize = nltk.tokenize.WordPunctTokenizer().tokenize
+# Based on nltk's WordPunctTokenizer
+_tokenize = re.compile(r'\w+|[^\w\s]+', re.UNICODE | re.MULTILINE | re.DOTALL).findall
 
 class TextRegionDataExtractor(object):
     """Data Extractor for extracting text fragments from within a larger

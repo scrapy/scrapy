@@ -12,16 +12,11 @@ from scrapy.contrib.ibl.extractors import (contains_any_numbers,
         image_url)
 
 try:
-    import nltk
-except ImportError:
-    nltk = None
-
-try:
     import numpy
 except ImportError:
     numpy = None
 
-if nltk and numpy:
+if numpy:
     from scrapy.contrib.ibl.extraction import InstanceBasedLearningExtractor
 
 # simple page with all features
@@ -791,8 +786,6 @@ TEST_DATA = [
 class TestExtraction(TestCase):
 
     def setUp(self):
-        if not nltk:
-            raise SkipTest("nltk not available")
         if not numpy:
             raise SkipTest("numpy not available")
 
