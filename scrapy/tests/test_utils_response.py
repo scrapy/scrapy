@@ -112,6 +112,16 @@ class ResponseUtilsTest(unittest.TestCase):
         response = TextResponse(url='http://example.org')
         self.assertEqual(get_meta_refresh(response), (None, None))
 
+        # html commented meta refresh header must not directed
+        body = """<!--<meta http-equiv="refresh" content="3; url=http://example.com/">-->"""
+        response = TextResponse(url='http://example.com', body=body)
+        self.assertEqual(get_meta_refresh(response), (None, None))
+
+        # html comments must not interfere with uncommented meta refresh header
+        body = """<!-- commented --><meta http-equiv="refresh" content="3; url=http://example.com/">-->"""
+        response = TextResponse(url='http://example.com', body=body)
+        self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/'))
+
     def test_response_httprepr(self):
         r1 = Response("http://www.example.com")
         self.assertEqual(response_httprepr(r1), 'HTTP/1.1 200 OK\r\n\r\n')

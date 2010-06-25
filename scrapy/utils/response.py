@@ -12,7 +12,7 @@ import tempfile
 from twisted.web import http
 from twisted.web.http import RESPONSES
 
-from scrapy.utils.markup import remove_entities
+from scrapy.utils.markup import remove_entities, remove_comments
 from scrapy.utils.url import safe_url_string, urljoin_rfc
 from scrapy.xlib.BeautifulSoup import BeautifulSoup
 from scrapy.http import Response, HtmlResponse
@@ -48,7 +48,7 @@ def get_meta_refresh(response):
     If no meta redirect is found, (None, None) is returned.
     """
     if response not in _metaref_cache:
-        body_chunk = remove_entities(response.body_as_unicode()[0:4096])
+        body_chunk = remove_comments(remove_entities(response.body_as_unicode()[0:4096]))
         match = META_REFRESH_RE.search(body_chunk)
         if match:
             interval = int(match.group('int'))
