@@ -85,7 +85,7 @@ def response_httprepr(response):
     that was received (that's not exposed by Twisted).
     """
 
-    s  = "HTTP/1.1 %d %s\r\n" % (response.status, RESPONSES[response.status])
+    s = "HTTP/1.1 %d %s\r\n" % (response.status, RESPONSES.get(response.status, ''))
     if response.headers:
         s += response.headers.to_string() + "\r\n"
     s += "\r\n"

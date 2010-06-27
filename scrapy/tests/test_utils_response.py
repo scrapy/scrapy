@@ -129,6 +129,9 @@ class ResponseUtilsTest(unittest.TestCase):
         r1 = Response("http://www.example.com", status=404, headers={"Content-type": "text/html"}, body="Some body")
         self.assertEqual(response_httprepr(r1), 'HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\nSome body')
 
+        r1 = Response("http://www.example.com", status=6666, headers={"Content-type": "text/html"}, body="Some body")
+        self.assertEqual(response_httprepr(r1), 'HTTP/1.1 6666 \r\nContent-Type: text/html\r\n\r\nSome body')
+
     def test_get_cached_beautifulsoup(self):
         r1 = Response('http://www.example.com', body='')
 
