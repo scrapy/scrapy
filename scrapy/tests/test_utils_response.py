@@ -96,12 +96,12 @@ class ResponseUtilsTest(unittest.TestCase):
         response = TextResponse(url='http://example.com', body=body, encoding='utf-16')
         self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/redirect'))
 
-        # non-ascii chars in the url (default encoding - utf8)
+        # non-ascii chars in the url (utf8)
         body = """<meta http-equiv="refresh" content="3; url=http://example.com/to\xc2\xa3">"""
-        response = TextResponse(url='http://example.com', body=body)
+        response = TextResponse(url='http://example.com', body=body, encoding='utf-8')
         self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/to%C2%A3'))
 
-        # non-ascii chars in the url (custom encoding - latin1)
+        # non-ascii chars in the url (latin1)
         body = """<meta http-equiv="refresh" content="3; url=http://example.com/to\xa3">"""
         response = TextResponse(url='http://example.com', body=body, encoding='latin1')
         self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/to%C2%A3'))
