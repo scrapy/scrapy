@@ -1,22 +1,25 @@
 .. _topics-djangoitem:
 
+.. module:: scrapy.contrib_exp.djangoitem
+
 ==========
 DjangoItem
 ==========
 
-DjangoItems are a class of Item that gets its fields definition from a Django
-model, you simply create a DjangoItem and specify what Django model it relates
-to.
+:class:`DjangoItem` is a class of item that gets its fields definition from a
+Django model, you simply create a :class:`DjangoItem` and specify what Django
+model it relates to.
 
-Besides of getting the model fields defined on your Item, DjangoItem provides a
-mathod to create and populate a Django model instance with the Item data.
+Besides of getting the model fields defined on your item, :class:`DjangoItem`
+provides a method to create and populate a Django model instance with the item
+data.
 
 Using DjangoItem
 ================
 
-DjangoItem works much like ModelForms in Django, you create a subclass and
-define its ``django_model`` atribute to ve a valid Django model.  With this you
-will get an Item with a field for each Django model field. 
+:class:`DjangoItem` works much like ModelForms in Django, you create a subclass
+and define its ``django_model`` atribute to ve a valid Django model. With this
+you will get an item with a field for each Django model field.
 
 In addition, you can define fields that aren't present in the model and even
 override fields that are present in the model defining them in the item. 
@@ -29,19 +32,19 @@ Django model for the examples::
        name = models.CharField(max_length=255)
        age = models.IntegerField()
 
-Defining a basic DjangoItem:
+Defining a basic :class:`DjangoItem`::
     
    class PersonItem(DjangoItem):
        django_model = Person
        
-DjangoItem work just like :class:`scrapy.item.Item`::
+:class:`DjangoItem` work just like :class:`~scrapy.item.Item`::
 
    p = PersonItem()
    p['name'] = 'John'
    p['age'] = '22'
 
-To obtain the Django model from the item, we call the extra method save() of
-the DjangoItem::
+To obtain the Django model from the item, we call the extra method
+:meth:`~DjangoItem.save` of the :class:`DjangoItem`::
 
    >>> person = p.save()
    >>> person.name
@@ -51,19 +54,19 @@ the DjangoItem::
    >>> person.id
    1
 
-As you see the model is already saved when we call save, we can prevent this by
-calling it with ``commit=False``:: We can use commit=False in save method to
-obtain an unsaved model:
+As you see the model is already saved when we call :meth:`~DjangoItem.save`, we
+can prevent this by calling it with ``commit=False``. We can use
+``commit=False`` in :meth:`~DjangoItem.save` method to obtain an unsaved model::
 
-   person = p.save(commit=False)
-   person.name
+   >>> person = p.save(commit=False)
+   >>> person.name
    'John'
-   person.age
+   >>> person.age
    '22'
-   person.id
+   >>> person.id
    None
 
-As said before, we can add other fields to the Item::
+As said before, we can add other fields to the item::
 
    class PersonItem(DjangoItem):
        django_model = Person
@@ -74,14 +77,14 @@ As said before, we can add other fields to the Item::
    p['age'] = '22'
    p['sex'] = 'M'
 
-.. note:: fields added to the Item won't be taken into account when doing a save()
+.. note:: fields added to the item won't be taken into account when doing a
+   :meth:`~DjangoItem.save`
 
-And we can override the fields of the model with your own:
+And we can override the fields of the model with your own::
 
-class PersonItem(DjangoItem):
-    django_model = Person
-    name = Field(default='No Name')
+   class PersonItem(DjangoItem):
+       django_model = Person
+       name = Field(default='No Name')
 
 This is usefull to provide properties to the field, like a default or any other
 property that your project uses.
-
