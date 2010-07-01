@@ -122,6 +122,15 @@ class ResponseUtilsTest(unittest.TestCase):
         response = TextResponse(url='http://example.com', body=body)
         self.assertEqual(get_meta_refresh(response), (3, 'http://example.com/'))
 
+        # float refresh intervals
+        body = """<meta http-equiv="refresh" content=".1;URL=index.html" />"""
+        response = TextResponse(url='http://example.com', body=body)
+        self.assertEqual(get_meta_refresh(response), (0.1, 'http://example.com/index.html'))
+
+        body = """<meta http-equiv="refresh" content="3.1;URL=index.html" />"""
+        response = TextResponse(url='http://example.com', body=body)
+        self.assertEqual(get_meta_refresh(response), (3.1, 'http://example.com/index.html'))
+
     def test_response_httprepr(self):
         r1 = Response("http://www.example.com")
         self.assertEqual(response_httprepr(r1), 'HTTP/1.1 200 OK\r\n\r\n')
