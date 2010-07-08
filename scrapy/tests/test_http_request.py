@@ -231,6 +231,21 @@ class FormRequestTest(RequestTest):
         self.assertEqual(fs['test2'].value, 'xxx')
         self.assertEqual(fs['six'].value, 'seven')
 
+    def test_from_response_extra_headers(self):
+        respbody = """
+<form action="post.php" method="POST">
+<input type="hidden" name="test" value="val1">
+<input type="hidden" name="test" value="val2">
+<input type="hidden" name="test2" value="xxx">
+</form>
+        """
+        headers = {"Accept-Encoding": "gzip,deflate"}
+        response = Response("http://www.example.com/this/list.html", body=respbody)
+        r1 = self.request_class.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'}, headers=headers, callback=lambda x: x)
+        self.assertEqual(r1.method, 'POST')
+        self.assertEqual(r1.headers['Content-type'], 'application/x-www-form-urlencoded')
+        self.assertEqual(r1.headers['Accept-Encoding'], 'gzip,deflate')
+
     def test_from_response_get(self):
         respbody = """
 <form action="get.php" method="GET">
