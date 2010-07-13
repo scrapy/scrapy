@@ -214,7 +214,7 @@ XPath expression are indeed much more powerful. To learn more about XPath we
 recommend `this XPath tutorial <http://www.w3schools.com/XPath/default.asp>`_.
 
 For working with XPaths, Scrapy provides a :class:`~scrapy.selector.XPathSelector`
-class, which comes in two flavours, :class:`~scrapy.selector.HtmlXPatSelector`
+class, which comes in two flavours, :class:`~scrapy.selector.HtmlXPathSelector`
 (for HTML data) and :class:`~scrapy.selector.XmlXPathSelector` (for XML data). In
 order to use them you must instantiate the desired class with a
 :class:`~scrapy.http.Response` object.
