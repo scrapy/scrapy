@@ -1,0 +1,15 @@
+diff --git a/scrapy/xlib/ClientForm.py b/scrapy/xlib/ClientForm.py
+--- a/scrapy/xlib/ClientForm.py
++++ b/scrapy/xlib/ClientForm.py
+@@ -242,5 +242,10 @@ def unescape_charref(data, encoding):
+     if name.startswith("x"):
+         name, base= name[1:], 16
+-    uc = unichr(int(name, base))
++    try:
++        uc = unichr(int(name, base))
++    except ValueError:
++        # invalid literal for int()
++        # or integer not in unichr()'s range
++        uc = name
+     if encoding is None:
+         return uc

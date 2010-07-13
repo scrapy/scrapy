@@ -241,7 +241,12 @@ def unescape_charref(data, encoding):
     name, base = data, 10
     if name.startswith("x"):
         name, base= name[1:], 16
-    uc = unichr(int(name, base))
+    try:
+        uc = unichr(int(name, base))
+    except ValueError:
+        # invalid literal for int()
+        # or integer not in unichr()'s range
+        uc = name
     if encoding is None:
         return uc
     else:
