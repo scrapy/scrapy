@@ -6,6 +6,7 @@ See documentation in docs/topics/extensions.rst
 
 import os
 import socket
+from pprint import pformat
 
 from twisted.internet import task
 
@@ -97,6 +98,6 @@ class MemoryUsage(object):
 
         s += "ENGINE STATUS ------------------------------------------------------- \r\n"
         s += "\r\n"
-        s += get_engine_status()
+        s += pformat(get_engine_status())
         s += "\r\n"
         self.mail.send(rcpts, subject, s)
