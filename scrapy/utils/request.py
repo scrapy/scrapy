@@ -6,6 +6,7 @@ scrapy.http.Request objects
 import hashlib
 import weakref
 from base64 import urlsafe_b64encode
+from urlparse import urlunparse
 
 from scrapy.utils.url import canonicalize_url
 from scrapy.utils.httpobj import urlparse_cached
@@ -76,9 +77,10 @@ def request_httprepr(request):
     bytes that will be send when performing the request (that's controlled
     by Twisted).
     """
-    hostname = urlparse_cached(request).hostname
-    s  = "%s %s HTTP/1.1\r\n" % (request.method, request.url)
-    s += "Host: %s\r\n" % hostname
+    parsed = urlparse_cached(request)
+    path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
+    s  = "%s %s HTTP/1.1\r\n" % (request.method, path)
+    s += "Host: %s\r\n" % parsed.hostname
     if request.headers:
         s += request.headers.to_string() + "\r\n"
     s += "\r\n"

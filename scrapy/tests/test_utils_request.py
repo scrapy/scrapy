@@ -63,10 +63,13 @@ class UtilsRequestTest(unittest.TestCase):
 
     def test_request_httprepr(self):
         r1 = Request("http://www.example.com")
-        self.assertEqual(request_httprepr(r1), 'GET http://www.example.com HTTP/1.1\r\nHost: www.example.com\r\n\r\n')
+        self.assertEqual(request_httprepr(r1), 'GET / HTTP/1.1\r\nHost: www.example.com\r\n\r\n')
+
+        r1 = Request("http://www.example.com/some/page.html?arg=1")
+        self.assertEqual(request_httprepr(r1), 'GET /some/page.html?arg=1 HTTP/1.1\r\nHost: www.example.com\r\n\r\n')
 
         r1 = Request("http://www.example.com", method='POST', headers={"Content-type": "text/html"}, body="Some body")
-        self.assertEqual(request_httprepr(r1), 'POST http://www.example.com HTTP/1.1\r\nHost: www.example.com\r\nContent-Type: text/html\r\n\r\nSome body')
+        self.assertEqual(request_httprepr(r1), 'POST / HTTP/1.1\r\nHost: www.example.com\r\nContent-Type: text/html\r\n\r\nSome body')
 
 if __name__ == "__main__":
     unittest.main()
