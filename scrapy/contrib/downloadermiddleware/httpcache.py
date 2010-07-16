@@ -22,6 +22,7 @@ class HttpCacheMiddleware(object):
     def __init__(self, settings=conf.settings):
         self.storage = load_object(settings['HTTPCACHE_STORAGE'])(settings)
         self.ignore_missing = settings.getbool('HTTPCACHE_IGNORE_MISSING')
+        self.ignore_http_codes = map(int, settings.getlist('HTTPCACHE_IGNORE_HTTP_CODES'))
         dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
         dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
@@ -35,16 +36,19 @@ class HttpCacheMiddleware(object):
         if not self.is_cacheable(request):
             return
         response = self.storage.retrieve_response(spider, request)
-        if response:
+        if response and self.is_cacheable_response(response):
             response.flags.append('cached')
             return response
         elif self.ignore_missing:
             raise IgnoreRequest("Ignored request not in cache: %s" % request)
 
     def process_response(self, request, response, spider):
-        if self.is_cacheable(request):
+        if self.is_cacheable(request) and self.is_cacheable_response(response):
             self.storage.store_response(spider, request, response)
         return response
+
+    def is_cacheable_response(self, response):
+        return response.status not in self.ignore_http_codes
 
     def is_cacheable(self, request):
         return urlparse_cached(request).scheme in ['http', 'https']
