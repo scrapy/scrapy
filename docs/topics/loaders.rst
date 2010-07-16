@@ -511,9 +511,9 @@ Here is a list of all built-in processors:
 
 .. class:: TakeFirst
 
-    Return the first non null/empty value from the values to received, so it's
-    typically used as output processor of single-valued fields. It doesn't
-    receive any constructor arguments, nor accepts Loader contexts.
+    Return the first non-null/non-empty value from the values received,
+    so it's typically used as an output processor to single-valued fields.
+    It doesn't receive any constructor arguments, nor accept Loader contexts.
 
     Example::
 
