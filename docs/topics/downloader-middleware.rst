@@ -177,7 +177,9 @@ DefaultHeadersMiddleware
 .. class:: DefaultHeadersMiddleware
 
     This middleware sets all default requests headers specified in the
-    :setting:`DEFAULT_REQUEST_HEADERS` setting.
+    :setting:`DEFAULT_REQUEST_HEADERS` setting plus those found in spider
+    ``default_request_headers`` attribute. Spider headers has precedence over
+    global headers.
 
 HttpAuthMiddleware
 ------------------

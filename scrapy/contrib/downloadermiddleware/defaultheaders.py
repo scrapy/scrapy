@@ -23,7 +23,7 @@ class DefaultHeadersMiddleware(object):
 
     def spider_opened(self, spider):
         self._default_headers[spider] = dict(self.global_default_headers,
-                **getattr(spider, 'default_headers', {}))
+                **getattr(spider, 'default_request_headers', {}))
 
     def spider_closed(self, spider):
         self._default_headers.pop(spider)
