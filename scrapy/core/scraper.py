@@ -79,23 +79,24 @@ class Scraper(object):
         site = self.sites[spider]
         site.closing = defer.Deferred()
         self.itemproc.close_spider(spider)
+        self._check_if_closing(spider, site)
+        return site.closing
 
     def is_idle(self):
         """Return True if there isn't any more spiders to process"""
         return not self.sites
 
+    def _check_if_closing(self, spider, site):
+        if site.closing and site.is_idle():
+            del self.sites[spider]
+            site.closing.callback(None)
+
     def enqueue_scrape(self, response, request, spider):
         site = self.sites[spider]
         dfd = site.add_response_request(response, request)
-        # FIXME: this can't be called here because the stats spider may be
-        # already closed
-        #stats.max_value('scraper/max_active_size', site.active_size, \
-        #    spider=spider)
         def finish_scraping(_):
             site.finish_response(response)
-            if site.closing and site.is_idle():
-                del self.sites[spider]
-                site.closing.callback(None)
+            self._check_if_closing(spider, site)
             self._scrape_next(spider, site)
             return _
         dfd.addBoth(finish_scraping)
