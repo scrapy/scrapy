@@ -177,7 +177,9 @@ DefaultHeadersMiddleware
 .. class:: DefaultHeadersMiddleware
 
     This middleware sets all default requests headers specified in the
-    :setting:`DEFAULT_REQUEST_HEADERS` setting.
+    :setting:`DEFAULT_REQUEST_HEADERS` setting plus those found in spider
+    ``default_request_headers`` attribute. Spider headers has precedence over
+    global headers.
 
 HttpAuthMiddleware
 ------------------
@@ -275,6 +277,17 @@ Default: ``0``
 Number of seconds to use for HTTP cache expiration. Requests that were cached
 before this time will be re-downloaded. If zero, cached requests will always
 expire. A negative number means requests will never expire.
+
+.. setting:: HTTPCACHE_IGNORE_HTTP_CODES
+
+HTTPCACHE_IGNORE_HTTP_CODES
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 0.10
+
+Default: ``[]``
+
+Don't cache response with these HTTP codes.
 
 .. setting:: HTTPCACHE_IGNORE_MISSING
 
