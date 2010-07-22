@@ -230,7 +230,7 @@ CrawlSpider
        
 Crawling rules
 ~~~~~~~~~~~~~~
-.. class:: Rule(link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None)
+.. class:: Rule(link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=None)
 
    ``link_extractor`` is a :ref:`Link Extractor <topics-link-extractors>` object which
    defines how links will be extracted from each crawled page.
@@ -253,6 +253,10 @@ Crawling rules
    of links extracted from each response using the specified ``link_extractor``.
    This is mainly used for filtering purposes. 
 
+    ``process_request`` is a callable, or a string (in which case a method from
+    the spider object with that name will be used) which will be called with
+    every request extracted by this rule, and must return a request or None (to
+    filter out the request).
 
 CrawlSpider example
 -------------------
