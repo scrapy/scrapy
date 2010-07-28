@@ -117,7 +117,7 @@ class TemplatePageParser(InstanceLearningParser):
     def _handle_unpaired_tag(self, html_tag):
         if self._read_bool_template_attribute(html_tag, "ignore") and html_tag.tag == "img":
             self.ignored_regions.append((self.next_tag_index, self.next_tag_index + 1))
-        elif self._read_bool_template_attribute(html_tag, "ignore-beneath") and html_tag.tag == "img":
+        elif self._read_bool_template_attribute(html_tag, "ignore-beneath"):
             self.ignored_regions.append((self.next_tag_index, None))
         jannotation = self._read_template_annotation(html_tag)
         if jannotation:
