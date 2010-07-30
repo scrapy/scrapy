@@ -2,6 +2,7 @@
 
 import re
 import hashlib
+from pkgutil import walk_packages
 
 from scrapy.utils.python import flatten
 from scrapy.utils.markup import remove_entities
@@ -43,6 +44,18 @@ def load_object(path):
         raise NameError, "Module '%s' doesn't define any object named '%s'" % (module, name)
 
     return obj
+
+def walk_modules(path):
+    """Loads a module and all its submodules given its absolute path and
+    returns them.
+
+    path ie: 'scrapy.contrib.downloadermiddelware.redirect'
+    """
+    mod = __import__(path, {}, {}, [''])
+    if hasattr(mod, '__path__'):
+        for _, path, _ in walk_packages(mod.__path__, mod.__name__ + '.'):
+            yield __import__(path, {}, {}, [''])
+    yield mod
 
 def extract_regex(regex, text, encoding='utf-8'):
     """Extract a list of unicode strings from the given text/encoding using the following policies:
