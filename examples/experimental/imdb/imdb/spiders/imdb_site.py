@@ -137,5 +137,3 @@ class ImdbSiteSpider(CrawlSpider):
     def _urljoin(self, response, url):
         """Helper to convert relative urls to absolute"""
         return urljoin_rfc(response.url, url, response.encoding)
-
-SPIDER = ImdbSiteSpider()

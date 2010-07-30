@@ -3,18 +3,16 @@ SpiderManager is the class which locates and manages all website-specific
 spiders
 """
 
-import sys
+import inspect
 
-from twisted.plugin import getCache
-from twisted.python.rebuild import rebuild
-
-from scrapy.spider.models import ISpider
 from scrapy import log
 from scrapy.conf import settings
 from scrapy.utils.url import url_is_from_spider
+from scrapy.utils.misc import walk_modules
+from scrapy.spider import BaseSpider
 
-class TwistedPluginSpiderManager(object):
-    """Spider manager based in Twisted Plugin System"""
+
+class SpiderManager(object):
 
     def __init__(self):
         self.loaded = False
@@ -25,9 +23,7 @@ class TwistedPluginSpiderManager(object):
         spider arguments. If the sipder name is not found, it raises a
         KeyError.
         """
-        spider = self._spiders[spider_name]
-        spider.__dict__.update(spider_kwargs)
-        return spider
+        return self._spiders[spider_name](**spider_kwargs)
 
     def find_by_request(self, request):
         """Returns list of spiders names that match the given Request"""
@@ -60,47 +56,23 @@ class TwistedPluginSpiderManager(object):
         return self._spiders.keys()
 
     def load(self, spider_modules=None):
-        """Load spiders from module directory."""
+        """Load spiders from spider_modules or SPIDER_MODULES setting."""
         if spider_modules is None:
             spider_modules = settings.getlist('SPIDER_MODULES')
         self.spider_modules = spider_modules
-        self._spiders = {}
 
-        modules = [__import__(m, {}, {}, ['']) for m in self.spider_modules]
-        for module in modules:
-            for spider in self._getspiders(ISpider, module):
-                ISpider.validateInvariants(spider)
-                self._spiders[spider.name] = spider
+        self._spiders = {}
+        for name in self.spider_modules:
+            for module in walk_modules(name):
+                self._load_spiders(module)
         self.loaded = True
 
-    def _getspiders(self, interface, package):
-        """This is an override of twisted.plugin.getPlugin, because we're
-        interested in catching exceptions thrown when loading spiders such as
-        KeyboardInterrupt
-        """
-        try:
-            allDropins = getCache(package)
-            for dropin in allDropins.itervalues():
-                for plugin in dropin.plugins:
-                    adapted = interface(plugin, None)
-                    if adapted is not None:
-                        yield adapted
-        except KeyboardInterrupt:
-            sys.stderr.write("Interrupted while loading Scrapy spiders\n")
-            sys.exit(2)
+    def _load_spiders(self, module):
+        for obj in vars(module).itervalues():
+            if inspect.isclass(obj) and issubclass(obj, BaseSpider):
+                name = getattr(obj, 'name', None)
+                if name is not None:
+                    self._spiders[name] = obj
 
     def close_spider(self, spider):
-        """Reload spider module to release any resources held on to by the
-        spider
-        """
-        name = spider.name
-        if name not in self._spiders:
-            return
-        spider = self._spiders[name]
-        module_name = spider.__module__
-        module = sys.modules[module_name]
-        if hasattr(module, 'SPIDER'):
-            log.msg("Reloading module %s" % module_name, spider=spider, \
-                level=log.DEBUG)
-            new_module = rebuild(module, doLog=0)
-            self._spiders[name] = new_module.SPIDER
+        pass

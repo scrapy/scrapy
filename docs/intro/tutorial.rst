@@ -138,8 +138,6 @@ This is the code for our first Spider, save it in a file named
        def parse(self, response):
            filename = response.url.split("/")[-2]
            open(filename, 'wb').write(response.body)
-            
-   SPIDER = DmozSpider()
 
 Crawling
 --------
@@ -370,8 +368,6 @@ Let's add this code to our spider::
               link = site.select('a/@href').extract()
               desc = site.select('text()').extract()
               print title, link, desc
-           
-   SPIDER = DmozSpider()
 
 Now try crawling the dmoz.org domain again and you'll see sites being printed
 in your output, run::
@@ -418,8 +414,6 @@ scraped so far, the code for our Spider should be like this::
               item['desc'] = site.select('text()').extract()
               items.append(item)
           return items
-           
-   SPIDER = DmozSpider()
 
 Now doing a crawl on the dmoz.org domain yields ``DmozItem``'s::
 

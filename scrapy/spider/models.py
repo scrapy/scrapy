@@ -6,24 +6,16 @@ See documentation in docs/topics/spiders.rst
 
 import warnings
 
-from zope.interface import Interface, Attribute, invariant, implements
-from twisted.plugin import IPlugin
-
 from scrapy import log
 from scrapy.http import Request
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.trackref import object_ref
 
-class ISpider(Interface, IPlugin) :
-    """Interface used by TwistedPluginSpiderManager to discover spiders"""
-    pass
 
 class BaseSpider(object_ref):
     """Base class for scrapy spiders. All spiders must inherit from this
     class.
     """
-
-    implements(ISpider)
 
     # XXX: class attributes kept for backwards compatibility
     name = None

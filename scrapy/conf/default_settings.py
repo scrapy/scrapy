@@ -191,7 +191,7 @@ SCHEDULER_ORDER = 'DFO'
 
 SERVICE_QUEUE = 'scrapy.core.queue.KeepAliveExecutionQueue'
 
-SPIDER_MANAGER_CLASS = 'scrapy.contrib.spidermanager.TwistedPluginSpiderManager'
+SPIDER_MANAGER_CLASS = 'scrapy.contrib.spidermanager.SpiderManager'
 
 SPIDER_MIDDLEWARES = {}
 
