@@ -1,3 +1,5 @@
+import sys
+import os
 import unittest
 from cStringIO import StringIO
 
@@ -34,7 +36,22 @@ class UtilsMiscTestCase(unittest.TestCase):
         ]
         self.assertEquals(set([m.__name__ for m in mods]), set(expected))
 
-        self.assertRaises(ImportError, list, walk_modules('nomodule999'))
+        self.assertRaises(ImportError, walk_modules, 'nomodule999')
+
+    def test_walk_modules_egg(self):
+        egg = os.path.join(os.path.dirname(__file__), 'test.egg')
+        sys.path.append(egg)
+        try:
+            mods = walk_modules('testegg')
+            expected = [
+                'testegg.spiders',
+                'testegg.spiders.a',
+                'testegg.spiders.b',
+                'testegg'
+            ]
+            self.assertEquals(set([m.__name__ for m in mods]), set(expected))
+        finally:
+            sys.path.remove(egg)
 
     def test_arg_to_iter(self):
         assert hasattr(arg_to_iter(None), '__iter__')

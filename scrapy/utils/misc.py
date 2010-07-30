@@ -2,7 +2,7 @@
 
 import re
 import hashlib
-from pkgutil import walk_packages
+from pkgutil import iter_modules
 
 from scrapy.utils.python import flatten
 from scrapy.utils.markup import remove_entities
@@ -45,17 +45,26 @@ def load_object(path):
 
     return obj
 
-def walk_modules(path):
-    """Loads a module and all its submodules given its absolute path and
-    returns them.
+def walk_modules(path, load=False):
+    """Loads a module and all its submodules from a the given module path and
+    returns them. If *any* module throws an exception while importing, that
+    exception is thrown back.
 
-    path ie: 'scrapy.contrib.downloadermiddelware.redirect'
+    For example: walk_modules('scrapy.utils')
     """
+
+    mods = []
     mod = __import__(path, {}, {}, [''])
+    mods.append(mod)
     if hasattr(mod, '__path__'):
-        for _, path, _ in walk_packages(mod.__path__, mod.__name__ + '.'):
-            yield __import__(path, {}, {}, [''])
-    yield mod
+        for _, subpath, ispkg in iter_modules(mod.__path__):
+            fullpath = path + '.' + subpath
+            if ispkg:
+                mods += walk_modules(fullpath)
+            else:
+                submod = __import__(fullpath, {}, {}, [''])
+                mods.append(submod)
+    return mods
 
 def extract_regex(regex, text, encoding='utf-8'):
     """Extract a list of unicode strings from the given text/encoding using the following policies:
