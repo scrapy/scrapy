@@ -1,2 +1,0 @@
-version=3
-http://scrapy.org/releases/(\d\.\d)/Scrapy-([\d\.]+)\.tar\.gz
