@@ -4,7 +4,7 @@ set -e
 
 case "$1" in
     remove|upgrade|deconfigure)
-        rm -f /etc/scrapy-service/service_conf.pyc
+        rm -f /etc/scrapy/service_conf.pyc
     ;;
 
     failed-upgrade)
