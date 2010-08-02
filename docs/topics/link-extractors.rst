@@ -99,7 +99,7 @@ SgmlLinkExtractor
 BaseSgmlLinkExtractor
 ---------------------
 
-.. class:: BaseSgmlLinkExtractor(tag="a", href="href", unique=False, process_value=None)
+.. class:: BaseSgmlLinkExtractor(tag="a", attr="href", unique=False, process_value=None)
 
     The purpose of this Link Extractor is only to serve as a base class for the
     :class:`SgmlLinkExtractor`. You should use that one instead.
