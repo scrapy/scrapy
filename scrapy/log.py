@@ -4,42 +4,64 @@ Scrapy logging facility
 See documentation in docs/topics/logging.rst
 """
 import sys
-from traceback import format_exc
+import logging
 
 from twisted.python import log
-from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.conf import settings
 from scrapy.utils.python import unicode_to_str
  
 # Logging levels
-SILENT, CRITICAL, ERROR, WARNING, INFO, DEBUG = range(6)
+DEBUG = logging.DEBUG
+INFO = logging.INFO
+WARNING = logging.WARNING
+ERROR = logging.ERROR
+CRITICAL = logging.CRITICAL
+SILENT = CRITICAL + 1
+
 level_names = {
-    0: "SILENT",
-    1: "CRITICAL",
-    2: "ERROR",
-    3: "WARNING",
-    4: "INFO",
-    5: "DEBUG",
+    logging.DEBUG: "DEBUG",
+    logging.INFO: "INFO",
+    logging.WARNING: "WARNING",
+    logging.ERROR: "ERROR",
+    logging.CRITICAL: "CRITICAL",
+    SILENT: "SILENT",
 }
-
-BOT_NAME = settings['BOT_NAME']
-
-# signal sent when log message is received
-# args: message, level, spider
-logmessage_received = object()
-
-# default values
-log_level = DEBUG
-log_encoding = 'utf-8'
 
 started = False
 
+class ScrapyFileLogObserver(log.FileLogObserver):
+
+    def __init__(self, f, level=INFO, encoding='utf-8'):
+        self.level = level
+        self.encoding = encoding
+        log.FileLogObserver.__init__(self, f)
+
+    def emit(self, eventDict):
+        if eventDict.get('system') != 'scrapy':
+            return
+        level = eventDict.get('logLevel')
+        if level < self.level:
+            return
+        spider = eventDict.get('spider')
+        message = eventDict.get('message')
+        lvlname = level_names.get(level, 'NOLEVEL')
+        if message:
+            message = [unicode_to_str(x, self.encoding) for x in message]
+            message[0] = "%s: %s" % (lvlname, message[0])
+        why = eventDict.get('why')
+        if why:
+            why = "%s: %s" % (lvlname, unicode_to_str(why, self.encoding))
+        eventDict['message'] = message
+        eventDict['why'] = why
+        eventDict['system'] = spider.name if spider else '-'
+        log.FileLogObserver.emit(self, eventDict)
+
 def _get_log_level(level_name_or_id=None):
     if level_name_or_id is None:
-        lvlname = settings['LOG_LEVEL'] or settings['LOGLEVEL']
+        lvlname = settings['LOG_LEVEL']
         return globals()[lvlname]
-    elif isinstance(level_name_or_id, int) and 0 <= level_name_or_id <= 5:
+    elif isinstance(level_name_or_id, int):
         return level_name_or_id
     elif isinstance(level_name_or_id, basestring):
         return globals()[level_name_or_id]
@@ -47,53 +69,31 @@ def _get_log_level(level_name_or_id=None):
         raise ValueError("Unknown log level: %r" % level_name_or_id)
 
 def start(logfile=None, loglevel=None, logstdout=None):
-    """Initialize and start logging facility"""
-    global log_level, log_encoding, started
-
+    global started
     if started or not settings.getbool('LOG_ENABLED'):
         return
-    log_level = _get_log_level(loglevel)
-    log_encoding = settings['LOG_ENCODING']
     started = True
 
-    # set log observer
     if log.defaultObserver: # check twisted log not already started
-        logfile = logfile or settings['LOG_FILE'] or settings['LOGFILE']
+        loglevel = _get_log_level(loglevel)
+        logfile = logfile or settings['LOG_FILE']
+        file = open(logfile, 'a') if logfile else sys.stderr
         if logstdout is None:
             logstdout = settings.getbool('LOG_STDOUT')
+        sflo = ScrapyFileLogObserver(file, loglevel, settings['LOG_ENCODING'])
+        log.startLoggingWithObserver(sflo.emit, setStdout=logstdout)
+        msg("Started project: %s" % settings['BOT_NAME'])
 
-        file = open(logfile, 'a') if logfile else sys.stderr
-        log.startLogging(file, setStdout=logstdout)
-
-def msg(message, level=INFO, component=BOT_NAME, domain=None, spider=None):
-    """Log message according to the level"""
-    if level > log_level:
-        return
-    if domain is not None:
+def msg(message, level=INFO, **kw):
+    if 'component' in kw:
         import warnings
-        warnings.warn("'domain' argument of scrapy.log.msg() is deprecated, " \
-            "use 'spider' argument instead", DeprecationWarning, stacklevel=2)
-    dispatcher.send(signal=logmessage_received, message=message, level=level, \
-        spider=spider)
-    system = domain or (spider.name if spider else component)
-    msg_txt = unicode_to_str("%s: %s" % (level_names[level], message), log_encoding)
-    log.msg(msg_txt, system=system)
+        warnings.warn("Argument `component` of scrapy.log.msg() is deprecated", \
+            DeprecationWarning, stacklevel=2)
+    kw.setdefault('system', 'scrapy')
+    kw['logLevel'] = level
+    log.msg(message, **kw)
 
-def exc(message, level=ERROR, component=BOT_NAME, domain=None, spider=None):
-    message = message + '\n' + format_exc()
-    msg(message, level, component, domain, spider)
-
-def err(_stuff=None, _why=None, **kwargs):
-    if ERROR > log_level:
-        return
-    domain = kwargs.pop('domain', None)
-    spider = kwargs.pop('spider', None)
-    component = kwargs.pop('component', BOT_NAME)
-    if domain is not None:
-        import warnings
-        warnings.warn("'domain' argument of scrapy.log.err() is deprecated, " \
-            "use 'spider' argument instead", DeprecationWarning, stacklevel=2)
-    kwargs['system'] = domain or (spider.name if spider else component)
-    if _why:
-        _why = unicode_to_str("ERROR: %s" % _why, log_encoding)
-    log.err(_stuff, _why, **kwargs)
+def err(_stuff=None, _why=None, **kw):
+    kw.setdefault('system', 'scrapy')
+    kw['logLevel'] = kw.pop('level', ERROR)
+    log.err(_stuff, _why, **kw)

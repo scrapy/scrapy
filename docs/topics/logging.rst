@@ -53,10 +53,6 @@ scrapy.log module
 .. module:: scrapy.log
    :synopsis: Logging facility
 
-.. attribute:: log_level
-
-   The current log level being used
-
 .. attribute:: started
 
    A boolean which is ``True`` is logging has been started or ``False`` otherwise.
@@ -81,7 +77,7 @@ scrapy.log module
         setting will be used.
     :type logstdout: boolean
 
-.. function:: msg(message, level=INFO, component=BOT_NAME, spider=None)
+.. function:: msg(message, level=INFO, spider=None)
 
     Log a message
 
@@ -91,23 +87,10 @@ scrapy.log module
     :param level: the log level for this message. See
         :ref:`topics-logging-levels`.
 
-    :param component: the component to use for logging, it defaults to
-        :setting:`BOT_NAME`
-    :type component: str
-
     :param spider: the spider to use for logging this message. This parameter 
         should always be used when logging things related to a particular
         spider.
     :type spider: :class:`~scrapy.spider.BaseSpider` object
-
-.. function:: exc(message, level=ERROR, component=BOT_NAME, spider=None)
-
-    Log an exception. Similar to ``msg()`` but it also appends a stack trace
-    report using `traceback.format_exc`.
-
-    .. _traceback.format_exc: http://docs.python.org/library/traceback.html#traceback.format_exc
-
-    It accepts the same parameters as the :func:`msg` function.
 
 .. data:: CRITICAL
 
