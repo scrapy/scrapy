@@ -1,0 +1,34 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+    configure)
+        # Create user to run the service as
+        if [ -z "`id -u scrapy 2> /dev/null`" ]; then
+          adduser --system --home /var/lib/scrapy --gecos "scrapy" \
+                  --no-create-home --disabled-password \
+                  --quiet scrapy || true
+        fi
+        if [ ! -d /var/run/scrapy ]; then
+          mkdir /var/run/scrapy
+          chown scrapy:nogroup /var/run/scrapy
+        fi
+
+        chown scrapy:nogroup /var/log/scrapy /var/lib/scrapy /var/run/scrapy
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+#DEBHELPER#
+
+exit 0
+
+

@@ -177,8 +177,6 @@ Let's see an example::
         def parse(self, response):
             self.log('A response from %s just arrived!' % response.url)
 
-    SPIDER = MySpider()
-
 Another example returning multiples Requests and Items from a single callback::
 
     from scrapy.selector import HtmlXPathSelector
@@ -202,8 +200,6 @@ Another example returning multiples Requests and Items from a single callback::
 
             for url in hxs.select('//a/@href').extract():
                 yield Request(url, callback=self.parse)
-
-    SPIDER = MySpider()
 
 .. module:: scrapy.contrib.spiders
    :synopsis: Collection of generic spiders
@@ -230,7 +226,7 @@ CrawlSpider
        
 Crawling rules
 ~~~~~~~~~~~~~~
-.. class:: Rule(link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None)
+.. class:: Rule(link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=None)
 
    ``link_extractor`` is a :ref:`Link Extractor <topics-link-extractors>` object which
    defines how links will be extracted from each crawled page.
@@ -253,6 +249,10 @@ Crawling rules
    of links extracted from each response using the specified ``link_extractor``.
    This is mainly used for filtering purposes. 
 
+    ``process_request`` is a callable, or a string (in which case a method from
+    the spider object with that name will be used) which will be called with
+    every request extracted by this rule, and must return a request or None (to
+    filter out the request).
 
 CrawlSpider example
 -------------------
@@ -287,8 +287,6 @@ Let's now take a look at an example CrawlSpider with rules::
             item['name'] = hxs.select('//td[@id="item_name"]/text()').extract()
             item['description'] = hxs.select('//td[@id="item_description"]/text()').extract()
             return item
-
-    SPIDER = MySpider()
 
 
 This spider would start crawling example.com's home page, collecting category
@@ -405,8 +403,6 @@ These spiders are pretty easy to use, let's have at one example::
             item['description'] = node.select('description').extract()
             return item
 
-    SPIDER = MySpider()
-
 Basically what we did up there was creating a spider that downloads a feed from
 the given ``start_urls``, and then iterates through each of its ``item`` tags,
 prints them out, and stores some random data in an :class:`~scrapy.item.Item`.
@@ -462,6 +458,3 @@ Let's see an example similar to the previous one, but using a
             item['name'] = row['name']
             item['description'] = row['description']
             return item
-
-    SPIDER = MySpider()
-

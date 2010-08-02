@@ -123,6 +123,7 @@ HTTPCACHE_DIR = ''
 HTTPCACHE_IGNORE_MISSING = False
 HTTPCACHE_STORAGE = 'scrapy.contrib.downloadermiddleware.httpcache.FilesystemCacheStorage'
 HTTPCACHE_EXPIRATION_SECS = 0
+HTTPCACHE_IGNORE_HTTP_CODES = []
 
 ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'
 
@@ -190,7 +191,7 @@ SCHEDULER_ORDER = 'DFO'
 
 SERVICE_QUEUE = 'scrapy.core.queue.KeepAliveExecutionQueue'
 
-SPIDER_MANAGER_CLASS = 'scrapy.contrib.spidermanager.TwistedPluginSpiderManager'
+SPIDER_MANAGER_CLASS = 'scrapy.contrib.spidermanager.SpiderManager'
 
 SPIDER_MIDDLEWARES = {}
 
@@ -232,10 +233,6 @@ USER_AGENT = '%s/%s' % (BOT_NAME, BOT_VERSION)
 
 TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_PORT = 6023  # if None, uses a dynamic port
-
-WEBCONSOLE_ENABLED = True
-WEBCONSOLE_PORT = 6080
-WEBCONSOLE_LOGFILE = None
 
 WEBSERVICE_ENABLED = True
 WEBSERVICE_LOGFILE = None

@@ -93,8 +93,6 @@ This is how the spider would look so far::
            # write the category page data extraction code here
            pass
 
-   SPIDER = GoogleDirectorySpider()
-
 
 Extracting the data
 ===================

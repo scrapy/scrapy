@@ -1,8 +1,8 @@
 import unittest
+from scrapy.spider import BaseSpider
 from scrapy.utils.url import url_is_from_any_domain, safe_url_string, safe_download_url, \
     url_query_parameter, add_or_replace_parameter, url_query_cleaner, canonicalize_url, \
-    urljoin_rfc
-
+    urljoin_rfc, url_is_from_spider
 
 class UrlUtilsTest(unittest.TestCase):
 
@@ -18,6 +18,15 @@ class UrlUtilsTest(unittest.TestCase):
         url = 'javascript:%20document.orderform_2581_1190810811.mode.value=%27add%27;%20javascript:%20document.orderform_2581_1190810811.submit%28%29'
         self.assertFalse(url_is_from_any_domain(url, ['testdomain.com']))
         self.assertFalse(url_is_from_any_domain(url+'.testdomain.com', ['testdomain.com']))
+
+    def test_url_is_from_any_domain(self):
+        spider = BaseSpider(name='example.com', allowed_domains=['example.org', 'example.net'])
+        self.assertTrue(url_is_from_spider('http://www.example.com/some/page.html', spider))
+        self.assertTrue(url_is_from_spider('http://sub.example.com/some/page.html', spider))
+        self.assertTrue(url_is_from_spider('http://example.com/some/page.html', spider))
+        self.assertTrue(url_is_from_spider('http://www.example.org/some/page.html', spider))
+        self.assertTrue(url_is_from_spider('http://www.example.net/some/page.html', spider))
+        self.assertFalse(url_is_from_spider('http://www.example.us/some/page.html', spider))
 
     def test_urljoin_rfc(self):
         self.assertEqual(urljoin_rfc('http://example.com/some/path', 'newpath/test'),

@@ -24,6 +24,7 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
         settings = {
             'HTTPCACHE_DIR': self.tmpdir,
             'HTTPCACHE_EXPIRATION_SECS': 1,
+            'HTTPCACHE_IGNORE_HTTP_CODES': [],
         }
         settings.update(new_settings)
         return Settings(settings)
@@ -70,6 +71,22 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
     def test_middleware_ignore_missing(self):
         mw = self._get_middleware(HTTPCACHE_IGNORE_MISSING=True)
         self.assertRaises(IgnoreRequest, mw.process_request, self.request, self.spider)
+        mw.process_response(self.request, self.response, self.spider)
+        response = mw.process_request(self.request, self.spider)
+        assert isinstance(response, HtmlResponse)
+        self.assertEqualResponse(self.response, response)
+        assert 'cached' in response.flags
+
+    def test_middleware_ignore_http_codes(self):
+        # test response is not cached
+        mw = self._get_middleware(HTTPCACHE_IGNORE_HTTP_CODES=[202])
+        assert mw.process_request(self.request, self.spider) is None
+        mw.process_response(self.request, self.response, self.spider)
+        assert mw.storage.retrieve_response(self.spider, self.request) is None
+        assert mw.process_request(self.request, self.spider) is None
+
+        # test response is cached
+        mw = self._get_middleware(HTTPCACHE_IGNORE_HTTP_CODES=[203])
         mw.process_response(self.request, self.response, self.spider)
         response = mw.process_request(self.request, self.spider)
         assert isinstance(response, HtmlResponse)

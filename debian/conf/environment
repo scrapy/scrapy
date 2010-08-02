@@ -1,3 +1,0 @@
-# Environment variables to use in Scrapy service
-
-#export PYTHONPATH=/var/lib/scrapy/myproject

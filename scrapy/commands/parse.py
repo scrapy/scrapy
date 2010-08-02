@@ -84,6 +84,9 @@ class Command(ScrapyCommand):
                 return
         else:
             spider = spiders.create_for_request(request)
+            if spider is None:
+                log.msg('Unable to find spider for URL: %s' % args[0], log.ERROR)
+                return
 
         scrapymanager.configure()
         scrapymanager.queue.append_request(request, spider)
@@ -112,7 +115,7 @@ class Command(ScrapyCommand):
                 for rule in spider.rules:
                     if rule.link_extractor.matches(response.url) \
                         and rule.callback:
-                    
+
                         items, links = self.run_callback(spider,
                                             response, rule.callback,
                                             args, opts)

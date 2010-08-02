@@ -36,6 +36,3 @@ class GoogleDirectorySpider(CrawlSpider):
 
             # Here we populate the item and yield it
             yield l.load_item()
-
-SPIDER = GoogleDirectorySpider()
-
