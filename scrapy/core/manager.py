@@ -42,7 +42,7 @@ class ExecutionManager(object):
             self._start_spider(spider, requests)
         if self.engine.has_capacity() and not self._nextcall.active():
             self._nextcall = reactor.callLater(self.queue.polling_delay, \
-                self._start_next_spider)
+                self._spider_closed)
 
     @defer.inlineCallbacks
     def _start_spider(self, spider, requests):
@@ -64,7 +64,7 @@ class ExecutionManager(object):
     @defer.inlineCallbacks
     def start(self):
         yield defer.maybeDeferred(self.engine.start)
-        self._nextcall = reactor.callLater(0, self._spider_closed)
+        self._nextcall = reactor.callLater(0, self._start_next_spider)
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
         if self.control_reactor:
             reactor.run(installSignalHandlers=False)
