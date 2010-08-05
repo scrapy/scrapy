@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# look for twisted trial command in common known locations
-if [ -x /usr/bin/trial ]; then
-    trial="/usr/bin/trial"
+# look for twisted trial command
+if type trial >/dev/null 2>&1; then
+    trial="trial"
 elif [ -x /usr/lib/twisted/bin/trial ]; then
     trial="/usr/lib/twisted/bin/trial"
 elif [ -x /usr/lib64/twisted/bin/trial ]; then
