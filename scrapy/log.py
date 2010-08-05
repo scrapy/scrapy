@@ -38,24 +38,30 @@ class ScrapyFileLogObserver(log.FileLogObserver):
         log.FileLogObserver.__init__(self, f)
 
     def emit(self, eventDict):
-        if eventDict.get('system') != 'scrapy':
+        ev = eventDict.copy()
+        if ev['isError']:
+            ev.setdefault('logLevel', ERROR)
+        # ignore non-error messages from outside scrapy
+        if ev.get('system') != 'scrapy' and not ev['isError']:
             return
-        level = eventDict.get('logLevel')
+        level = ev.get('logLevel')
         if level < self.level:
             return
-        spider = eventDict.get('spider')
-        message = eventDict.get('message')
+        spider = ev.get('spider')
+        if spider:
+            ev['system'] = spider.name
+        message = ev.get('message')
         lvlname = level_names.get(level, 'NOLEVEL')
         if message:
             message = [unicode_to_str(x, self.encoding) for x in message]
             message[0] = "%s: %s" % (lvlname, message[0])
-        why = eventDict.get('why')
+        ev['message'] = message
+        why = ev.get('why')
         if why:
             why = "%s: %s" % (lvlname, unicode_to_str(why, self.encoding))
-        eventDict['message'] = message
-        eventDict['why'] = why
-        eventDict['system'] = spider.name if spider else '-'
-        log.FileLogObserver.emit(self, eventDict)
+        ev['why'] = why
+        log.FileLogObserver.emit(self, ev)
+
 
 def _get_log_level(level_name_or_id=None):
     if level_name_or_id is None:
