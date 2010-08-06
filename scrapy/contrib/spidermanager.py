@@ -7,7 +7,6 @@ import inspect
 
 from scrapy import log
 from scrapy.conf import settings
-from scrapy.utils.url import url_is_from_spider
 from scrapy.utils.misc import walk_modules
 from scrapy.spider import BaseSpider
 
@@ -28,7 +27,7 @@ class SpiderManager(object):
     def find_by_request(self, request):
         """Returns list of spiders names that match the given Request"""
         return [name for name, spider in self._spiders.iteritems()
-                if url_is_from_spider(request.url, spider)]
+                if spider.handles_request(request)]
 
     def create_for_request(self, request, default_spider=None, \
             log_none=False, log_multiple=False, **spider_kwargs):
@@ -46,9 +45,10 @@ class SpiderManager(object):
         if len(snames) == 1:
             return self.create(snames[0], **spider_kwargs)
         if len(snames) > 1 and log_multiple:
-            log.msg('More than one spider found for: %s' % request, log.ERROR)
+            log.msg('More than one spider can handle: %s - %s' % \
+                (request, ", ".join(snames)), log.ERROR)
         if len(snames) == 0 and log_none:
-            log.msg('Unable to find spider for: %s' % request, log.ERROR)
+            log.msg('Unable to find spider that handles: %s' % request, log.ERROR)
         return default_spider
 
     def list(self):

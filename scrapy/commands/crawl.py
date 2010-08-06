@@ -58,11 +58,11 @@ class Command(ScrapyCommand):
         for url in urls:
             spider_names = spiders.find_by_request(Request(url))
             if not spider_names:
-                log.msg('Could not find spider for url: %s' % url,
+                log.msg('Could not find spider that handles url: %s' % url,
                         log.ERROR)
             elif len(spider_names) > 1:
-                log.msg('More than one spider found for url: %s' % url,
-                        log.ERROR)
+                log.msg('More than one spider can handle url: %s - %s' % \
+                    (url, ", ".join(spider_names)), log.ERROR)
             else:
                 spider_urls[spider_names[0]].append(url)
         return spider_urls.items()

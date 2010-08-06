@@ -10,6 +10,7 @@ from scrapy import log
 from scrapy.http import Request
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.trackref import object_ref
+from scrapy.utils.url import url_is_from_spider
 
 
 class BaseSpider(object_ref):
@@ -67,6 +68,10 @@ class BaseSpider(object_ref):
 
     def parse(self, response):
         raise NotImplementedError
+
+    @classmethod
+    def handles_request(cls, request):
+        return url_is_from_spider(request.url, cls)
 
     def __str__(self):
         return "<%s %r at 0x%0x>" % (type(self).__name__, self.name, id(self))
