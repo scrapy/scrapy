@@ -26,8 +26,8 @@ class SpiderManager(object):
 
     def find_by_request(self, request):
         """Returns list of spiders names that match the given Request"""
-        return [name for name, spider in self._spiders.iteritems()
-                if spider.handles_request(request)]
+        return [name for name, cls in self._spiders.iteritems()
+                if cls.handles_request(request)]
 
     def create_for_request(self, request, default_spider=None, \
             log_none=False, log_multiple=False, **spider_kwargs):
