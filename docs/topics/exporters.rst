@@ -332,11 +332,38 @@ PprintItemExporter
 
    Longer lines (when present) are pretty-formatted.
 
-JsonLinesItemExporter
+JsonItemExporter
 ---------------------
 
-.. module:: scrapy.contrib.exporter.jsonlines
-   :synopsis: JsonLines Item Exporter
+.. class:: JsonItemExporter(file, \**kwargs)
+
+   Exports Items in JSON format to the specified file-like object, writing all
+   objects as a list of objects. The additional constructor arguments are
+   passed to the :class:`BaseItemExporter` constructor, and the leftover
+   arguments to the `JSONEncoder`_ constructor, so you can use any
+   `JSONEncoder`_ constructor argument to customize this exporter.
+
+   :param file: the file-like object to use for exporting the data.
+
+   A typical output of this exporter would be::
+
+        [{"name": "Color TV", "price": "1200"},
+        {"name": "DVD player", "price": "200"}]
+
+   .. _json-with-large-data:
+
+   .. warning:: JSON is very simple and flexible serialization format, but it
+      doesn't scale well for large amounts of data since incremental (aka.
+      stream-mode) parsing is not well supported (if at all) among JSON parsers
+      (on any language), and most of them just parse the entire object in
+      memory. If you want the power and simplicity of JSON with a more
+      stream-friendly format, consider using :class:`JsonLinesItemExporter`
+      instead, or splitting the output in multiple chunks.
+
+.. _JSONEncoder: http://docs.python.org/library/json.html#json.JSONEncoder
+
+JsonLinesItemExporter
+---------------------
 
 .. class:: JsonLinesItemExporter(file, \**kwargs)
 
@@ -352,5 +379,8 @@ JsonLinesItemExporter
 
         {"name": "Color TV", "price": "1200"}
         {"name": "DVD player", "price": "200"}
+
+   Unlike the one produced by :class:`JsonItemExporter`, the format produced by
+   this exporter is well suited for serializing large amounts of data.
 
 .. _JSONEncoder: http://docs.python.org/library/json.html#json.JSONEncoder

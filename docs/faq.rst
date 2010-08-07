@@ -160,3 +160,10 @@ Amazon EC2 <http://dev.scrapy.org/wiki/AmazonEC2>`_.
 .. _twistd: http://twistedmatrix.com/documents/current/core/howto/basics.html#auto1
 .. _official APT repos: http://dev.scrapy.org/wiki/AptRepos
 .. _upstart: http://upstart.ubuntu.com/
+
+Can I use JSON for large exports?
+---------------------------------
+
+It'll depend on how large your output is. See :ref:`this warning
+<json-with-large-data>` in :class:`~scrapy.contrib.exporter.JsonItemExporter`
+documentation.

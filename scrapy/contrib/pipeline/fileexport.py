@@ -8,7 +8,6 @@ from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core import signals
 from scrapy.core.exceptions import NotConfigured
 from scrapy.contrib import exporter
-from scrapy.contrib.exporter import jsonlines
 from scrapy.conf import settings
 
 class FileExportPipeline(object):
@@ -49,7 +48,9 @@ class FileExportPipeline(object):
         elif format == 'pickle':
             exp = exporter.PickleItemExporter(file, **exp_kwargs)
         elif format == 'json':
-            exp = jsonlines.JsonLinesItemExporter(file, **exp_kwargs)
+            exp = exporter.JsonLinesItemExporter(file, **exp_kwargs)
+        elif format == 'jsonlines':
+            exp = exporter.JsonItemExporter(file, **exp_kwargs)
         else:
             raise NotConfigured("Unsupported export format: %s" % format)
         return exp, file

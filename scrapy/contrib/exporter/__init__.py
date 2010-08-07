@@ -7,9 +7,12 @@ import pprint
 from cPickle import Pickler
 from xml.sax.saxutils import XMLGenerator
 
+from scrapy.utils.py26 import json
+
 
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter', \
-    'CsvItemExporter', 'XmlItemExporter']
+    'CsvItemExporter', 'XmlItemExporter', 'JsonLinesItemExporter', \
+    'JsonItemExporter']
 
 class BaseItemExporter(object):
 
@@ -69,6 +72,41 @@ class BaseItemExporter(object):
                 value = default_value
 
             yield field_name, value
+
+
+class JsonLinesItemExporter(BaseItemExporter):
+
+    def __init__(self, file, **kwargs):
+        self._configure(kwargs)
+        self.file = file
+        self.encoder = json.JSONEncoder(**kwargs)
+
+    def export_item(self, item):
+        itemdict = dict(self._get_serialized_fields(item))
+        self.file.write(self.encoder.encode(itemdict) + '\n')
+
+
+class JsonItemExporter(JsonLinesItemExporter):
+
+    def __init__(self, file, **kwargs):
+        self._configure(kwargs)
+        self.file = file
+        self.encoder = json.JSONEncoder(**kwargs)
+        self.first_item = True
+
+    def start_exporting(self):
+        self.file.write("[")
+
+    def finish_exporting(self):
+        self.file.write("]")
+
+    def export_item(self, item):
+        if self.first_item:
+            self.first_item = False
+        else:
+            self.file.write(',\n')
+        itemdict = dict(self._get_serialized_fields(item))
+        self.file.write(self.encoder.encode(itemdict))
 
 
 class XmlItemExporter(BaseItemExporter):

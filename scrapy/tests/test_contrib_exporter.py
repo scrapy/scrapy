@@ -4,9 +4,9 @@ from cStringIO import StringIO
 from scrapy.item import Item, Field
 from scrapy.utils.python import str_to_unicode
 from scrapy.utils.py26 import json
-from scrapy.contrib.exporter.jsonlines import JsonLinesItemExporter
 from scrapy.contrib.exporter import BaseItemExporter, PprintItemExporter, \
-    PickleItemExporter, CsvItemExporter, XmlItemExporter
+    PickleItemExporter, CsvItemExporter, XmlItemExporter, JsonLinesItemExporter, \
+    JsonItemExporter
 
 class TestItem(Item):
     name = Field()
@@ -156,6 +156,22 @@ class JsonLinesItemExporterTest(BaseItemExporterTest):
         exported = json.loads(self.output.getvalue().strip())
         self.assertEqual(exported, dict(self.i))
 
+class JsonItemExporterTest(JsonLinesItemExporterTest):
+
+    def _get_exporter(self, **kwargs):
+        return JsonItemExporter(self.output, **kwargs)
+
+    def _check_output(self):
+        exported = json.loads(self.output.getvalue().strip())
+        self.assertEqual(exported, [dict(self.i)])
+
+    def test_two_items(self):
+        self.ie.start_exporting()
+        self.ie.export_item(self.i)
+        self.ie.export_item(self.i)
+        self.ie.finish_exporting()
+        exported = json.loads(self.output.getvalue())
+        self.assertEqual(exported, [dict(self.i), dict(self.i)])
 
 class CustomItemExporterTest(unittest.TestCase):
 
