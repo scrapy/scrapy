@@ -2,8 +2,6 @@
 Base class for Scrapy commands
 """
 
-# TODO: move this module to scrapy/command.py for Scrapy 0.10
-
 from __future__ import with_statement
 
 import os
