@@ -47,7 +47,7 @@ class ExecutionEngine(object):
         """Start the execution engine"""
         assert not self.running, "Engine already running"
         self.start_time = time()
-        send_catch_log(signal=signals.engine_started, sender=self.__class__)
+        send_catch_log(signal=signals.engine_started)
         self.running = True
 
     def stop(self):
@@ -216,7 +216,7 @@ class ExecutionEngine(object):
         self.downloader.open_spider(spider)
         self.scraper.open_spider(spider)
         stats.open_spider(spider)
-        send_catch_log(signals.spider_opened, sender=self.__class__, spider=spider)
+        send_catch_log(signals.spider_opened, spider=spider)
         self.next_request(spider)
 
     def _spider_idle(self, spider):
@@ -227,7 +227,7 @@ class ExecutionEngine(object):
         next loop and this function is guaranteed to be called (at least) once
         again for this spider.
         """
-        res = send_catch_log(signal=signals.spider_idle, sender=self.__class__, \
+        res = send_catch_log(signal=signals.spider_idle, \
             spider=spider, dont_log=DontCloseSpider)
         if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) \
                 for _, x in res):
@@ -264,8 +264,7 @@ class ExecutionEngine(object):
     def _finish_closing_spider(self, spider):
         """This function is called after the spider has been closed"""
         reason = self.closing.pop(spider, 'finished')
-        send_catch_log(signal=signals.spider_closed, sender=self.__class__, \
-            spider=spider, reason=reason)
+        send_catch_log(signal=signals.spider_closed, spider=spider, reason=reason)
         call = self._next_request_calls.pop(spider, None)
         if call and call.active():
             call.cancel()
@@ -280,4 +279,4 @@ class ExecutionEngine(object):
         return dfd
 
     def _finish_stopping_engine(self):
-        send_catch_log(signal=signals.engine_stopped, sender=self.__class__)
+        send_catch_log(signal=signals.engine_stopped)

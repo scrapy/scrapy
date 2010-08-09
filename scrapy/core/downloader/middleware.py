@@ -78,9 +78,9 @@ class DownloaderMiddlewareManager(object):
                     (method.im_self.__class__.__name__, type(response))
                 if isinstance(response, Request):
                     send_catch_log(signal=signals.response_received, \
-                        sender=self.__class__, response=response, spider=spider)
+                        response=response, spider=spider)
                     return response
-            send_catch_log(signal=signals.response_received, sender=self.__class__, \
+            send_catch_log(signal=signals.response_received, \
                 response=response, spider=spider)
             return response
 

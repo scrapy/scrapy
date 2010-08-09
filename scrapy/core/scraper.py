@@ -168,7 +168,7 @@ class Scraper(object):
         elif isinstance(output, BaseItem):
             log.msg("Scraped %s in <%s>" % (output, request.url), level=log.DEBUG, \
                 spider=spider)
-            send_catch_log(signal=signals.item_scraped, sender=self.__class__, \
+            send_catch_log(signal=signals.item_scraped, \
                 item=output, spider=spider, response=response)
             self.sites[spider].itemproc_size += 1
             # FIXME: this can't be called here because the stats spider may be
@@ -207,13 +207,13 @@ class Scraper(object):
             ex = output.value
             if isinstance(ex, DropItem):
                 log.msg("Dropped %s - %s" % (item, str(ex)), level=log.WARNING, spider=spider)
-                send_catch_log(signal=signals.item_dropped, sender=self.__class__, \
+                send_catch_log(signal=signals.item_dropped, \
                     item=item, spider=spider, exception=output.value)
             else:
                 log.msg('Error processing %s - %s' % (item, output), \
                     log.ERROR, spider=spider)
         else:
             log.msg("Passed %s" % item, log.INFO, spider=spider)
-            send_catch_log(signal=signals.item_passed, sender=self.__class__, \
+            send_catch_log(signal=signals.item_passed, \
                 item=item, spider=spider, output=output)
 

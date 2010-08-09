@@ -19,10 +19,10 @@ default_timeout = settings.getint('DOWNLOAD_TIMEOUT')
 
 def _create_factory(request, spider):
     def _download_signals(response):
-        send_catch_log(signal=signals.request_uploaded, \
-                sender='download_http', request=request, spider=spider)
-        send_catch_log(signal=signals.response_downloaded, \
-                sender='download_http', response=response, spider=spider)
+        send_catch_log(signal=signals.request_uploaded, request=request, \
+            spider=spider)
+        send_catch_log(signal=signals.response_downloaded, response=response, \
+            spider=spider)
         return response
 
     timeout = getattr(spider, "download_timeout", None) or default_timeout
