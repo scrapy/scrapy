@@ -38,30 +38,41 @@ class ScrapyFileLogObserver(log.FileLogObserver):
         log.FileLogObserver.__init__(self, f)
 
     def emit(self, eventDict):
-        ev = eventDict.copy()
-        if ev['isError']:
-            ev.setdefault('logLevel', ERROR)
-        # ignore non-error messages from outside scrapy
-        if ev.get('system') != 'scrapy' and not ev['isError']:
-            return
-        level = ev.get('logLevel')
-        if level < self.level:
-            return
-        spider = ev.get('spider')
-        if spider:
-            ev['system'] = spider.name
-        message = ev.get('message')
-        lvlname = level_names.get(level, 'NOLEVEL')
-        if message:
-            message = [unicode_to_str(x, self.encoding) for x in message]
-            message[0] = "%s: %s" % (lvlname, message[0])
-        ev['message'] = message
-        why = ev.get('why')
-        if why:
-            why = "%s: %s" % (lvlname, unicode_to_str(why, self.encoding))
-        ev['why'] = why
-        log.FileLogObserver.emit(self, ev)
+        ev = _adapt_eventdict(eventDict, self.level, self.encoding)
+        if ev is not None:
+            log.FileLogObserver.emit(self, ev)
 
+def _adapt_eventdict(eventDict, log_level=INFO, encoding='utf-8'):
+    """Adapt Twisted log eventDict making it suitable for logging with a Scrapy
+    log observer. It may return None to indicate that the event should be
+    ignored by a Scrapy log observer.
+
+    `log_level` is the minimum level being logged, and `encoding` is the log
+    encoding.
+    """
+    ev = eventDict.copy()
+    if ev['isError']:
+        ev.setdefault('logLevel', ERROR)
+    # ignore non-error messages from outside scrapy
+    if ev.get('system') != 'scrapy' and not ev['isError']:
+        return
+    level = ev.get('logLevel')
+    if level < log_level:
+        return
+    spider = ev.get('spider')
+    if spider:
+        ev['system'] = spider.name
+    message = ev.get('message')
+    lvlname = level_names.get(level, 'NOLEVEL')
+    if message:
+        message = [unicode_to_str(x, encoding) for x in message]
+        message[0] = "%s: %s" % (lvlname, message[0])
+    ev['message'] = message
+    why = ev.get('why')
+    if why:
+        why = "%s: %s" % (lvlname, unicode_to_str(why, encoding))
+    ev['why'] = why
+    return ev
 
 def _get_log_level(level_name_or_id=None):
     if level_name_or_id is None:
