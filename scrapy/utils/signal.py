@@ -2,7 +2,8 @@
 
 from twisted.python.failure import Failure
 
-from scrapy.xlib.pydispatch.dispatcher import Any, Anonymous, liveReceivers, getAllReceivers
+from scrapy.xlib.pydispatch.dispatcher import Any, Anonymous, liveReceivers, \
+    getAllReceivers, disconnect
 from scrapy.xlib.pydispatch.robustapply import robustApply
 
 from scrapy import log
@@ -27,3 +28,10 @@ def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
             result = response
         responses.append((receiver, result))
     return responses
+
+def disconnect_all(signal=Any, sender=Any):
+    """Disconnect all signal handlers. Useful for cleaning up after running
+    tests
+    """
+    for receiver in liveReceivers(getAllReceivers(sender, signal)):
+        disconnect(receiver, signal=signal, sender=sender)
