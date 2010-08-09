@@ -1,16 +1,29 @@
 """Helper functinos for working with signals"""
 
-from scrapy.xlib.pydispatch import dispatcher
-from scrapy.xlib.pydispatch.robust import sendRobust
+from twisted.python.failure import Failure
+
+from scrapy.xlib.pydispatch.dispatcher import Any, Anonymous, liveReceivers, getAllReceivers
+from scrapy.xlib.pydispatch.robustapply import robustApply
+
 from scrapy import log
 
-def send_catch_log(*args, **kwargs):
-    """Same as dispatcher.robust.sendRobust but logs any exceptions raised by
-    the signal handlers
+def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
+    """Like pydispatcher.robust.sendRobust but it also logs errors and returns
+    Failures instead of exceptions.
     """
-    results = sendRobust(*args, **kwargs)
-    for receiver, response in results:
-        if isinstance(response, Exception):
-            log.msg("Exception caught on signal dispatch: receiver=%r, " \
-                " exception=%r" % (receiver, response), level=log.ERROR)
-    return results
+    dont_log = named.pop('dont_log', None)
+    spider = named.get('spider', None)
+    responses = []
+    for receiver in liveReceivers(getAllReceivers(sender, signal)):
+        try:
+            response = robustApply(receiver, signal=signal, sender=sender,
+                *arguments, **named)
+        except dont_log:
+            result = Failure()
+        except Exception:
+            result = Failure()
+            log.err(result, "Signal handler error", spider=spider)
+        else:
+            result = response
+        responses.append((receiver, result))
+    return responses

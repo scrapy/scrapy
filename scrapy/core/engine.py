@@ -8,7 +8,6 @@ from time import time
 
 from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
-from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy import log
 from scrapy.stats import stats
@@ -228,15 +227,13 @@ class ExecutionEngine(object):
         next loop and this function is guaranteed to be called (at least) once
         again for this spider.
         """
-        try:
-            dispatcher.send(signal=signals.spider_idle, sender=self.__class__, \
-                spider=spider)
-        except DontCloseSpider:
+        res = send_catch_log(signal=signals.spider_idle, sender=self.__class__, \
+            spider=spider, dont_log=DontCloseSpider)
+        if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) \
+                for _, x in res):
             reactor.callLater(5, self.next_request, spider)
             return
-        except Exception, e:
-            log.msg("Exception caught on 'spider_idle' signal dispatch: %r" % e, \
-                level=log.ERROR)
+
         if self.spider_is_idle(spider):
             self.close_spider(spider, reason='finished')
 
