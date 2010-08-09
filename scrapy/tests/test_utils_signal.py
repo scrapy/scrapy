@@ -1,6 +1,6 @@
-import unittest
-
+from twisted.trial import unittest
 from twisted.python import log as txlog
+from twisted.python.failure import Failure
 
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.utils.signal import send_catch_log
@@ -36,13 +36,10 @@ class SignalUtilsTest(unittest.TestCase):
         assert test_handler_check in handlers_called
         assert log_received in handlers_called
         self.assertEqual(result[0][0], test_handler_error)
-        self.assert_(isinstance(result[0][1], Exception))
+        self.assert_(isinstance(result[0][1], Failure))
         self.assertEqual(result[1], (test_handler_check, "OK"))
 
         txlog.removeObserver(log_received)
+        self.flushLoggedErrors()
         dispatcher.disconnect(test_handler_error, signal=test_signal)
         dispatcher.disconnect(test_handler_check, signal=test_signal)
-
-
-if __name__ == "__main__":
-    unittest.main()
