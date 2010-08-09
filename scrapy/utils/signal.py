@@ -23,7 +23,8 @@ def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
             result = Failure()
         except Exception:
             result = Failure()
-            log.err(result, "Signal handler error", spider=spider)
+            log.err(result, "Error caught on signal handler: %s" % receiver, \
+                spider=spider)
         else:
             result = response
         responses.append((receiver, result))
