@@ -92,7 +92,9 @@ class Scraper(object):
             site.closing.callback(None)
 
     def enqueue_scrape(self, response, request, spider):
-        site = self.sites[spider]
+        site = self.sites.get(spider, None)
+        if site is None:
+            return
         dfd = site.add_response_request(response, request)
         def finish_scraping(_):
             site.finish_response(response)
