@@ -1,9 +1,9 @@
-from itertools import imap
 from twisted.trial import unittest
+from twisted.internet import reactor, defer
+from twisted.python.failure import Failure
 
-from twisted.internet import reactor
-from twisted.internet.defer import Deferred
-from scrapy.utils.defer import mustbe_deferred
+from scrapy.utils.defer import mustbe_deferred, process_chain, \
+    process_chain_both, process_parallel
 
 
 class MustbeDeferredTest(unittest.TestCase):
@@ -22,7 +22,7 @@ class MustbeDeferredTest(unittest.TestCase):
         steps = []
         def _append(v):
             steps.append(v)
-            dfd = Deferred()
+            dfd = defer.Deferred()
             reactor.callLater(0, dfd.callback, steps)
             return dfd
 
@@ -31,3 +31,48 @@ class MustbeDeferredTest(unittest.TestCase):
         steps.append(2) # add another value, that should be catched by assertEqual
         return dfd
 
+def cb1(value, arg1, arg2):
+    return "(cb1 %s %s %s)" % (value, arg1, arg2)
+def cb2(value, arg1, arg2):
+    return defer.succeed("(cb2 %s %s %s)" % (value, arg1, arg2))
+def cb3(value, arg1, arg2):
+    return "(cb3 %s %s %s)" % (value, arg1, arg2)
+def cb_fail(value, arg1, arg2):
+    return Failure(TypeError())
+def eb1(failure, arg1, arg2):
+    return "(eb1 %s %s %s)" % (failure.value.__class__.__name__, arg1, arg2)
+
+
+class DeferUtilsTest(unittest.TestCase):
+
+    @defer.inlineCallbacks
+    def test_process_chain(self):
+        x = yield process_chain([cb1, cb2, cb3], 'res', 'v1', 'v2')
+        self.assertEqual(x, "(cb3 (cb2 (cb1 res v1 v2) v1 v2) v1 v2)")
+
+        gotexc = False
+        try:
+            yield process_chain([cb1, cb_fail, cb3], 'res', 'v1', 'v2')
+        except TypeError, e:
+            gotexc = True
+        self.failUnless(gotexc)
+
+    @defer.inlineCallbacks
+    def test_process_chain_both(self):
+        x = yield process_chain_both([cb_fail, cb2, cb3], [None, eb1, None], 'res', 'v1', 'v2')
+        self.assertEqual(x, "(cb3 (eb1 TypeError v1 v2) v1 v2)")
+
+        fail = Failure(ZeroDivisionError())
+        x = yield process_chain_both([eb1, cb2, cb3], [eb1, None, None], fail, 'v1', 'v2')
+        self.assertEqual(x, "(cb3 (cb2 (eb1 ZeroDivisionError v1 v2) v1 v2) v1 v2)")
+
+    @defer.inlineCallbacks
+    def test_process_parallel(self):
+        x = yield process_parallel([cb1, cb2, cb3], 'res', 'v1', 'v2')
+        self.assertEqual(x, ['(cb1 res v1 v2)', '(cb2 res v1 v2)', '(cb3 res v1 v2)'])
+
+    def test_process_parallel_failure(self):
+        d = process_parallel([cb1, cb_fail, cb3], 'res', 'v1', 'v2')
+        self.failUnlessFailure(d, TypeError)
+        self.flushLoggedErrors()
+        return d

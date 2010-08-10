@@ -56,3 +56,32 @@ def parallel(iterable, count, callable, *args, **named):
     coop = task.Cooperator()
     work = (callable(elem, *args, **named) for elem in iterable)
     return defer.DeferredList([coop.coiterate(work) for i in xrange(count)])
+
+def process_chain(callbacks, input, *a, **kw):
+    """Return a Deferred built by chaining the given callbacks"""
+    d = defer.Deferred()
+    for x in callbacks:
+        d.addCallback(x, *a, **kw)
+    d.callback(input)
+    return d
+
+def process_chain_both(callbacks, errbacks, input, *a, **kw):
+    """Return a Deferred built by chaining the given callbacks and errbacks"""
+    d = defer.Deferred()
+    for cb, eb in zip(callbacks, errbacks):
+        d.addCallbacks(cb, eb, callbackArgs=a, callbackKeywords=kw,
+            errbackArgs=a, errbackKeywords=kw)
+    if isinstance(input, failure.Failure):
+        d.errback(input)
+    else:
+        d.callback(input)
+    return d
+
+def process_parallel(callbacks, input, *a, **kw):
+    """Return a Deferred with the output of all successful calls to the given
+    callbacks
+    """
+    dfds = [defer.succeed(input).addCallback(x, *a, **kw) for x in callbacks]
+    d = defer.gatherResults(dfds)
+    d.addErrback(lambda _: _.value.subFailure)
+    return d
