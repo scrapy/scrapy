@@ -23,7 +23,7 @@ For more information about working when see the documentation of
 Built-in signals reference
 ==========================
 
-.. module:: scrapy.core.signals
+.. module:: scrapy.signals
    :synopsis: Signals definitions
 
 Here's a list of signals used in Scrapy and their meaning, in alphabetical
