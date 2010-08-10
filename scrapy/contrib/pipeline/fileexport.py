@@ -6,7 +6,7 @@ See documentation in docs/topics/item-pipeline.rst
 
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core import signals
-from scrapy.core.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured
 from scrapy.contrib import exporter
 from scrapy.conf import settings
 

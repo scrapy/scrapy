@@ -10,7 +10,7 @@ from collections import defaultdict
 
 from scrapy.core import signals
 from scrapy.core.manager import scrapymanager
-from scrapy.core.exceptions import NotConfigured, DontCloseSpider
+from scrapy.exceptions import NotConfigured, DontCloseSpider
 from scrapy.conf import settings
 
 

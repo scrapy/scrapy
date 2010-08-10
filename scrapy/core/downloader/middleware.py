@@ -10,7 +10,7 @@ from scrapy.core import signals
 from scrapy.utils.signal import send_catch_log
 from scrapy import log
 from scrapy.http import Request, Response
-from scrapy.core.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.conf import build_component_list

@@ -11,7 +11,7 @@ from twisted.conch.insults import insults
 from twisted.internet import reactor, protocol
 
 from scrapy.extension import extensions
-from scrapy.core.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured
 from scrapy.core.manager import scrapymanager
 from scrapy.spider import spiders
 from scrapy.stats import stats

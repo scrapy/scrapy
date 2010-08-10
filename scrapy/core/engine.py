@@ -15,7 +15,7 @@ from scrapy.conf import settings
 from scrapy.core import signals
 from scrapy.core.downloader import Downloader
 from scrapy.core.scraper import Scraper
-from scrapy.core.exceptions import IgnoreRequest, DontCloseSpider
+from scrapy.exceptions import IgnoreRequest, DontCloseSpider
 from scrapy.http import Response, Request
 from scrapy.spider import spiders
 from scrapy.utils.misc import load_object

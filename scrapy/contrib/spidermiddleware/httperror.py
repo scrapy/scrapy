@@ -3,7 +3,7 @@ HttpError Spider Middleware
 
 See documentation in docs/topics/spider-middleware.rst
 """
-from scrapy.core.exceptions import IgnoreRequest
+from scrapy.exceptions import IgnoreRequest
 
 
 class HttpError(IgnoreRequest):

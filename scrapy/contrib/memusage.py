@@ -14,7 +14,7 @@ from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core import signals
 from scrapy import log
 from scrapy.core.manager import scrapymanager
-from scrapy.core.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured
 from scrapy.mail import MailSender
 from scrapy.conf import settings
 from scrapy.stats import stats

@@ -4,8 +4,8 @@
 Exceptions
 ==========
 
-.. module:: scrapy.core.exceptions
-   :synopsis: Core exceptions
+.. module:: scrapy.exceptions
+   :synopsis: Scrapy exceptions
 
 .. _topics-exceptions-ref:
 

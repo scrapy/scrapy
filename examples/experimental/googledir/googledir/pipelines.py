@@ -3,7 +3,7 @@
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/topics/item-pipeline.html
 
-from scrapy.core.exceptions import DropItem
+from scrapy.exceptions import DropItem
 
 class FilterWordsPipeline(object):
     """

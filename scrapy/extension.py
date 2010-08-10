@@ -3,7 +3,7 @@ This module contains the ExtensionManager  which takes care of loading and
 keeping track of all enabled extensions. It also contains an instantiated
 ExtensionManager (extensions) to be used as singleton.
 """
-from scrapy.core.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.utils.conf import build_component_list
 from scrapy import log

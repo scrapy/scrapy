@@ -34,7 +34,7 @@ single Python class that must define the following method:
 
 This method is called for every item pipeline component and must either return
 a :class:`~scrapy.item.Item` (or any descendant class) object or raise a
-:exc:`~scrapy.core.exceptions.DropItem` exception. Dropped items are no longer
+:exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
 processed by further pipeline components.
 
 
@@ -45,7 +45,7 @@ Let's take a look at following hypothetic pipeline that adjusts the ``price``
 attribute for those items that do not include VAT (``price_excludes_vat``
 attribute), and drops those items which don't contain a price::
 
-    from scrapy.core.exceptions import DropItem
+    from scrapy.exceptions import DropItem
 
     class PricePipeline(object):
 
@@ -83,7 +83,7 @@ spider returns multiples items with the same id::
 
     from scrapy.xlib.pydispatch import dispatcher
     from scrapy.core import signals
-    from scrapy.core.exceptions import DropItem
+    from scrapy.exceptions import DropItem
 
     class DuplicatesPipeline(object):
         def __init__(self):

@@ -5,7 +5,7 @@ Helper functions for dealing with Twisted deferreds
 from twisted.internet import defer, reactor, task
 from twisted.python import failure
 
-from scrapy.core.exceptions import IgnoreRequest
+from scrapy.exceptions import IgnoreRequest
 
 def defer_fail(_failure):
     """Same as twisted.internet.defer.fail, but delay calling errback until

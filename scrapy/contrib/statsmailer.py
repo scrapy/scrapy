@@ -9,7 +9,7 @@ from scrapy.xlib.pydispatch import dispatcher
 from scrapy.stats import stats, signals
 from scrapy.mail import MailSender
 from scrapy.conf import settings
-from scrapy.core.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured
 
 class StatsMailer(object):
 

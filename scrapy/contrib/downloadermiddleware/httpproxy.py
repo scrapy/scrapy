@@ -4,7 +4,7 @@ from urllib2 import _parse_proxy
 from urlparse import urlunparse
 
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.core.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured
 
 
 class HttpProxyMiddleware(object):

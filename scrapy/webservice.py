@@ -7,7 +7,7 @@ See docs/topics/ws.rst
 from twisted.internet import reactor
 from twisted.web import server, resource, error
 
-from scrapy.core.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured
 from scrapy.utils.jsonrpc import jsonrpc_server_call
 from scrapy.utils.serialize import ScrapyJSONEncoder, ScrapyJSONDecoder
 from scrapy.utils.misc import load_object

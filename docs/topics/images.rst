@@ -135,7 +135,7 @@ Here are the methods that you should override in your custom Images Pipeline:
       store the downloaded image paths (passed in results) in the ``image_paths``
       item field, and we drop the item if it doesn't contain any images::
 
-          from scrapy.core.exceptions import DropItem
+          from scrapy.exceptions import DropItem
 
           def item_completed(self, results, item, info):
               image_paths = [info['path'] for success, info in results if success]
@@ -153,7 +153,7 @@ Here is a full example of the Images Pipeline whose methods are examplified
 above::
 
     from scrapy.contrib.pipeline.images import ImagesPipeline
-    from scrapy.core.exceptions import DropItem
+    from scrapy.exceptions import DropItem
     from scrapy.http import Request
 
     class MyImagesPipeline(ImagesPipeline):

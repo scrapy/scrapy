@@ -21,7 +21,7 @@ from scrapy import log
 from scrapy.stats import stats
 from scrapy.utils.misc import md5sum
 from scrapy.core import signals
-from scrapy.core.exceptions import DropItem, NotConfigured, IgnoreRequest
+from scrapy.exceptions import DropItem, NotConfigured, IgnoreRequest
 from scrapy.contrib.pipeline.media import MediaPipeline
 from scrapy.conf import settings
 

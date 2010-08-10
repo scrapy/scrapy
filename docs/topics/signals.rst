@@ -91,7 +91,7 @@ item_dropped
 .. function:: item_dropped(item, spider, exception)
 
     Sent after an item has been dropped from the :ref:`topics-item-pipeline`
-    when some stage raised a :exc:`~scrapy.core.exceptions.DropItem` exception.
+    when some stage raised a :exc:`~scrapy.exceptions.DropItem` exception.
 
     :param item: the item dropped from the :ref:`topics-item-pipeline`
     :type item: :class:`~scrapy.item.Item` object
@@ -100,9 +100,9 @@ item_dropped
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
     :param exception: the exception (which must be a
-        :exc:`~scrapy.core.exceptions.DropItem` subclass) which caused the item
+        :exc:`~scrapy.exceptions.DropItem` subclass) which caused the item
         to be dropped
-    :type exception: :exc:`~scrapy.core.exceptions.DropItem` exception
+    :type exception: :exc:`~scrapy.exceptions.DropItem` exception
 
 spider_closed
 -------------

@@ -7,7 +7,7 @@ from twisted.python.failure import Failure
 
 from scrapy.utils.datatypes import PriorityQueue, PriorityStack
 from scrapy.core.schedulermw import SchedulerMiddlewareManager
-from scrapy.core.exceptions import IgnoreRequest
+from scrapy.exceptions import IgnoreRequest
 from scrapy.conf import settings
 
 class Scheduler(object):

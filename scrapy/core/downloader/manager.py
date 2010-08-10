@@ -8,7 +8,7 @@ from time import time
 from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
 
-from scrapy.core.exceptions import IgnoreRequest
+from scrapy.exceptions import IgnoreRequest
 from scrapy.conf import settings
 from scrapy.utils.defer import mustbe_deferred
 from scrapy import log

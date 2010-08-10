@@ -5,7 +5,7 @@ See documentation in docs/item-pipeline.rst
 """
 
 from scrapy import log
-from scrapy.core.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured
 from scrapy.item import BaseItem
 from scrapy.utils.misc import load_object
 from scrapy.utils.defer import defer_succeed, mustbe_deferred

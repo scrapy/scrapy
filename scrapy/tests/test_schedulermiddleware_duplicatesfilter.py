@@ -2,7 +2,7 @@ import unittest
 
 from scrapy.http import Request
 from scrapy.spider import BaseSpider
-from scrapy.core.exceptions import IgnoreRequest
+from scrapy.exceptions import IgnoreRequest
 from scrapy.contrib.schedulermiddleware.duplicatesfilter import DuplicatesFilterMiddleware
 
 

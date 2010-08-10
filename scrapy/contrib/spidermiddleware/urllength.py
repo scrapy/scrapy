@@ -6,7 +6,7 @@ See documentation in docs/topics/spider-middleware.rst
 
 from scrapy import log
 from scrapy.http import Request
-from scrapy.core.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured
 from scrapy.conf import settings
 
 class UrlLengthMiddleware(object):

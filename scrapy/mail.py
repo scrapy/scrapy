@@ -15,7 +15,7 @@ from twisted.internet import defer, reactor
 from twisted.mail.smtp import ESMTPSenderFactory
 
 from scrapy import log
-from scrapy.core.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured
 from scrapy.conf import settings
 from scrapy.utils.signal import send_catch_log
 

@@ -10,7 +10,7 @@ from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.core import signals
 from scrapy.core.manager import scrapymanager
-from scrapy.core.exceptions import NotConfigured, IgnoreRequest
+from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.conf import settings

@@ -4,7 +4,7 @@ DuplicatesFilterMiddleware: Filter out already visited urls
 See documentation in docs/topics/scheduler-middleware.rst
 """
 
-from scrapy.core.exceptions import IgnoreRequest, NotConfigured
+from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.conf import settings
 

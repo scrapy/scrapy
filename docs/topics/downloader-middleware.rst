@@ -84,7 +84,7 @@ single Python class that defines one or more of the following methods:
       callback, the response downloaded will be just passed to the original request
       callback.
 
-      If it returns an :exc:`~scrapy.core.exceptions.IgnoreRequest` exception, the
+      If it returns an :exc:`~scrapy.exceptions.IgnoreRequest` exception, the
       entire request will be dropped completely and its callback never called.
 
       :param request: the request being processed
@@ -96,13 +96,13 @@ single Python class that defines one or more of the following methods:
    .. method:: process_response(request, response, spider)
 
       :meth:`process_response` should return a :class:`~scrapy.http.Response`
-      object or raise a :exc:`~scrapy.core.exceptions.IgnoreRequest` exception. 
+      object or raise a :exc:`~scrapy.exceptions.IgnoreRequest` exception. 
 
       If it returns a :class:`~scrapy.http.Response` (it could be the same given
       response, or a brand-new one), that response will continue to be processed
       with the :meth:`process_response` of the next middleware in the pipeline.
 
-      If it returns an :exc:`~scrapy.core.exceptions.IgnoreRequest` exception, the
+      If it returns an :exc:`~scrapy.exceptions.IgnoreRequest` exception, the
       response will be dropped completely and its callback never called.
 
       :param request: the request that originated the response

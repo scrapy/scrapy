@@ -87,7 +87,7 @@ which doesn't need to implement any particular method.
 
 All extension initialization code must be performed in the class constructor
 (``__init__`` method). If that method raises the
-:exc:`~scrapy.core.exceptions.NotConfigured` exception, the extension will be
+:exc:`~scrapy.exceptions.NotConfigured` exception, the extension will be
 disabled. Otherwise, the extension will be enabled.
 
 Let's take a look at the following example extension which just logs a message

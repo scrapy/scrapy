@@ -2,7 +2,7 @@ import unittest
 
 from scrapy.contrib.downloadermiddleware.redirect import RedirectMiddleware
 from scrapy.spider import BaseSpider
-from scrapy.core.exceptions import IgnoreRequest
+from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response, HtmlResponse, Headers
 
 class RedirectMiddlewareTest(unittest.TestCase):

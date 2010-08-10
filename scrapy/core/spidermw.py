@@ -8,7 +8,7 @@ docs/topics/spider-middleware.rst
 
 from scrapy import log
 from twisted.python.failure import Failure
-from scrapy.core.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import mustbe_deferred

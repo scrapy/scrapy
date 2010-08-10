@@ -3,7 +3,7 @@ import sys
 from twisted.trial.unittest import TestCase, SkipTest
 
 from scrapy.contrib.downloadermiddleware.httpproxy import HttpProxyMiddleware
-from scrapy.core.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, Request
 from scrapy.spider import BaseSpider
 from scrapy.conf import settings

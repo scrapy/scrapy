@@ -1,6 +1,6 @@
 """Download handlers for different schemes"""
 
-from scrapy.core.exceptions import NotSupported
+from scrapy.exceptions import NotSupported
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.conf import settings
 from scrapy.utils.misc import load_object

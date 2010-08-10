@@ -4,7 +4,7 @@ from scrapy.http import Response, HtmlResponse, Request
 from scrapy.spider import BaseSpider
 from scrapy.contrib.downloadermiddleware.httpcache import FilesystemCacheStorage, HttpCacheMiddleware
 from scrapy.conf import Settings
-from scrapy.core.exceptions import IgnoreRequest
+from scrapy.exceptions import IgnoreRequest
 
 
 class HttpCacheMiddlewareTest(unittest.TestCase):
