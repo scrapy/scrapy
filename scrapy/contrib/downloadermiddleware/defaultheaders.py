@@ -5,7 +5,7 @@ See documentation in docs/topics/downloader-middleware.rst
 """
 from scrapy.conf import settings
 from scrapy.xlib.pydispatch import dispatcher
-from scrapy.core import signals
+from scrapy import signals
 
 
 class DefaultHeadersMiddleware(object):

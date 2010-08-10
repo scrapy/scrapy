@@ -8,7 +8,7 @@ import robotparser
 
 from scrapy.xlib.pydispatch import dispatcher
 
-from scrapy.core import signals
+from scrapy import signals
 from scrapy.core.manager import scrapymanager
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request

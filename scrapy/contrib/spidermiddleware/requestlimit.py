@@ -6,7 +6,7 @@ See documentation in docs/topics/spider-middleware.rst
 from itertools import imap
 from scrapy.xlib.pydispatch import dispatcher
 
-from scrapy.core import signals
+from scrapy import signals
 from scrapy.core.manager import scrapymanager
 from scrapy.exceptions import NotConfigured
 from scrapy.conf import settings

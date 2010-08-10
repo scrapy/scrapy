@@ -8,7 +8,7 @@ from scrapy.xlib.pydispatch import dispatcher
 from scrapy.stats.signals import stats_spider_opened, stats_spider_closing, \
     stats_spider_closed
 from scrapy.utils.signal import send_catch_log
-from scrapy.core import signals
+from scrapy import signals
 from scrapy import log
 from scrapy.conf import settings
 

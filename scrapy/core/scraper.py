@@ -9,7 +9,7 @@ from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.misc import load_object
 from scrapy.utils.signal import send_catch_log
 from scrapy.exceptions import IgnoreRequest, DropItem
-from scrapy.core import signals
+from scrapy import signals
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
 from scrapy.core.spidermw import SpiderMiddlewareManager

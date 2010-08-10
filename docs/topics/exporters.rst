@@ -41,7 +41,7 @@ Here you can see an :doc:`Item Pipeline <item-pipeline>` which uses an Item
 Exporter to export scraped items to different files, one per spider::
 
    from scrapy.xlib.pydispatch import dispatcher
-   from scrapy.core import signals
+   from scrapy import signals
    from scrapy.contrib.exporter import XmlItemExporter
 
    class XmlExportPipeline(object):

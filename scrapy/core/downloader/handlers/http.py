@@ -2,7 +2,7 @@
 
 from twisted.internet import reactor
 
-from scrapy.core import signals
+from scrapy import signals
 from scrapy.exceptions import NotSupported
 from scrapy.utils.signal import send_catch_log
 from scrapy.utils.misc import load_object

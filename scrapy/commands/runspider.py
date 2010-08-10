@@ -5,7 +5,7 @@ from scrapy.xlib.pydispatch import dispatcher
 from scrapy.contrib.exporter import XmlItemExporter
 from scrapy.command import ScrapyCommand
 from scrapy.core.manager import scrapymanager
-from scrapy.core import signals
+from scrapy import signals
 
 def _import_file(filepath):
     abspath = os.path.abspath(filepath)

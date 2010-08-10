@@ -94,7 +94,7 @@ Let's take a look at the following example extension which just logs a message
 every time a domain/spider is opened and closed::
 
     from scrapy.xlib.pydispatch import dispatcher
-    from scrapy.core import signals
+    from scrapy import signals
 
     class SpiderOpenCloseLogging(object):
 

@@ -29,7 +29,7 @@ from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy.core.manager import scrapymanager
 from scrapy.exceptions import NotConfigured
-from scrapy.core import signals
+from scrapy import signals
 from scrapy.utils.response import response_httprepr
 from scrapy.stats import stats
 from scrapy.http import Request

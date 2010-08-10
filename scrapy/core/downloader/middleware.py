@@ -6,7 +6,7 @@ docs/topics/downloader-middleware.rst
 
 """
 
-from scrapy.core import signals
+from scrapy import signals
 from scrapy.utils.signal import send_catch_log
 from scrapy import log
 from scrapy.http import Request, Response

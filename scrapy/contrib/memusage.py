@@ -11,7 +11,7 @@ from pprint import pformat
 from twisted.internet import task
 
 from scrapy.xlib.pydispatch import dispatcher
-from scrapy.core import signals
+from scrapy import signals
 from scrapy import log
 from scrapy.core.manager import scrapymanager
 from scrapy.exceptions import NotConfigured

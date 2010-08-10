@@ -7,7 +7,7 @@ import sys, os, re, urlparse, unittest
 from twisted.internet import reactor
 from twisted.web import server, resource, static, util
 
-from scrapy.core import signals
+from scrapy import signals
 from scrapy.core.manager import scrapymanager
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.tests import tests_datadir
@@ -206,7 +206,7 @@ class EngineTest(unittest.TestCase):
         """
         Check signals were sent properly
         """
-        from scrapy.core import signals
+        from scrapy import signals
 
         assert signals.engine_started in session.signals_catched
         assert signals.engine_stopped in session.signals_catched

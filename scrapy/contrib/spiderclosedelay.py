@@ -8,7 +8,7 @@ from time import time
 from scrapy.xlib.pydispatch import dispatcher
 from collections import defaultdict
 
-from scrapy.core import signals
+from scrapy import signals
 from scrapy.core.manager import scrapymanager
 from scrapy.exceptions import NotConfigured, DontCloseSpider
 from scrapy.conf import settings

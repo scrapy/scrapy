@@ -6,7 +6,7 @@ from time import time
 import cPickle as pickle
 
 from scrapy.xlib.pydispatch import dispatcher
-from scrapy.core import signals
+from scrapy import signals
 from scrapy.http import Headers
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.core.downloader.responsetypes import responsetypes

@@ -9,7 +9,7 @@ from collections import defaultdict
 from twisted.internet import reactor
 from scrapy.xlib.pydispatch import dispatcher
 
-from scrapy.core import signals
+from scrapy import signals
 from scrapy.core.manager import scrapymanager
 from scrapy.conf import settings
 

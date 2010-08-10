@@ -5,7 +5,7 @@ from twisted.internet.base import ThreadedResolver
 
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.core import signals
+from scrapy import signals
 
 
 class CachingResolver(object):

@@ -7,7 +7,7 @@ See documentation in docs/topics/spider-middleware.rst
 import re
 
 from scrapy.xlib.pydispatch import dispatcher
-from scrapy.core import signals
+from scrapy import signals
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy import log

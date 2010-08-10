@@ -12,7 +12,7 @@ from twisted.python.failure import Failure
 from scrapy import log
 from scrapy.stats import stats
 from scrapy.conf import settings
-from scrapy.core import signals
+from scrapy import signals
 from scrapy.core.downloader import Downloader
 from scrapy.core.scraper import Scraper
 from scrapy.exceptions import IgnoreRequest, DontCloseSpider

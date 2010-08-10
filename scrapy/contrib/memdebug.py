@@ -10,7 +10,7 @@ import socket
 import libxml2
 from scrapy.xlib.pydispatch import dispatcher
 
-from scrapy.core import signals
+from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.mail import MailSender
 from scrapy.conf import settings

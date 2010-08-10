@@ -8,7 +8,7 @@ import datetime
 
 from scrapy.xlib.pydispatch import dispatcher
 
-from scrapy.core import signals
+from scrapy import signals
 from scrapy.stats import stats
 from scrapy.stats.signals import stats_spider_opened, stats_spider_closing
 from scrapy.conf import settings

@@ -82,7 +82,7 @@ spider returns multiples items with the same id::
 
 
     from scrapy.xlib.pydispatch import dispatcher
-    from scrapy.core import signals
+    from scrapy import signals
     from scrapy.exceptions import DropItem
 
     class DuplicatesPipeline(object):

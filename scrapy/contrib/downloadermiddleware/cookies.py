@@ -3,7 +3,7 @@ from itertools import groupby
 from collections import defaultdict
 from scrapy.xlib.pydispatch import dispatcher
 
-from scrapy.core import signals
+from scrapy import signals
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
 from scrapy.conf import settings
