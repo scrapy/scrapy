@@ -3,7 +3,6 @@ from unittest import TestCase
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
 from scrapy.contrib.downloadermiddleware.useragent import UserAgentMiddleware
-from scrapy.conf import settings
 
 
 class UserAgentMiddlewareTest(TestCase):
