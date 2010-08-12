@@ -1,9 +1,7 @@
-from scrapy.xlib.pydispatch import dispatcher
 from twisted.internet.defer import Deferred, DeferredList
 
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy import log
-from scrapy import signals
 from scrapy.core.manager import scrapymanager
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.misc import arg_to_iter
@@ -23,16 +21,14 @@ class MediaPipeline(object):
 
     def __init__(self):
         self.spiderinfo = {}
-        dispatcher.connect(self.spider_opened, signals.spider_opened)
-        dispatcher.connect(self.spider_closed, signals.spider_closed)
 
-    def spider_opened(self, spider):
+    def open_spider(self, spider):
         self.spiderinfo[spider] = self.SpiderInfo(spider)
 
-    def spider_closed(self, spider):
+    def close_spider(self, spider):
         del self.spiderinfo[spider]
 
-    def process_item(self, spider, item):
+    def process_item(self, item, spider):
         info = self.spiderinfo[spider]
         requests = arg_to_iter(self.get_media_requests(item, info))
         dlist = [self._enqueue(r, info) for r in requests]

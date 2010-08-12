@@ -62,7 +62,7 @@ Exporter to export scraped items to different files, one per spider::
            file = self.files.pop(spider)
            file.close()
 
-       def process_item(self, spider, item):
+       def process_item(self, item, spider):
            self.exporter.export_item(item)
            return item
 

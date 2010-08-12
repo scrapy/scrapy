@@ -4,5 +4,5 @@
 # See: http://doc.scrapy.org/topics/item-pipeline.html
 
 class ImdbPipeline(object):
-    def process_item(self, spider, item):
+    def process_item(self, item, spider):
         return item

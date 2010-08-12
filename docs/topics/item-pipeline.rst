@@ -4,9 +4,6 @@
 Item Pipeline
 =============
 
-.. module:: scrapy.contrib.pipeline
-   :synopsis: Item Pipeline manager and built-in pipelines
-
 After an item has been scraped by a spider it is sent to the Item Pipeline
 which process it through several components that are executed sequentially.
 
@@ -22,20 +19,36 @@ Writing your own item pipeline
 ==============================
 
 Writing your own item pipeline is easy. Each item pipeline component is a
-single Python class that must define the following method:
+single Python class that must implement the following method:
 
-.. method:: process_item(spider, item)
+.. method:: process_item(item, spider)
 
-   :param spider: the spider which scraped the item
-   :type spider: :class:`~scrapy.spider.BaseSpider` object
+   This method is called for every item pipeline component and must either return
+   a :class:`~scrapy.item.Item` (or any descendant class) object or raise a
+   :exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
+   processed by further pipeline components.
 
    :param item: the item scraped
    :type item: :class:`~scrapy.item.Item` object
 
-This method is called for every item pipeline component and must either return
-a :class:`~scrapy.item.Item` (or any descendant class) object or raise a
-:exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
-processed by further pipeline components.
+   :param spider: the spider which scraped the item
+   :type spider: :class:`~scrapy.spider.BaseSpider` object
+
+Additionally, they may also implement the following methods:
+
+.. method:: open_spider(spider)
+
+   This method is called when the spider is opened.
+
+   :param spider: the spider which was opened
+   :type spider: :class:`~scrapy.spider.BaseSpider` object
+
+.. method:: close_spider(spider)
+
+   This method is called when the spider is closed.
+
+   :param spider: the spider which was closed
+   :type spider: :class:`~scrapy.spider.BaseSpider` object
 
 
 Item pipeline example
@@ -51,7 +64,7 @@ attribute), and drops those items which don't contain a price::
 
         vat_factor = 1.15
 
-        def process_item(self, spider, item):
+        def process_item(self, item, spider):
             if item['price']:
                 if item['price_excludes_vat']:
                     item['price'] = item['price'] * self.vat_factor
@@ -97,7 +110,7 @@ spider returns multiples items with the same id::
         def spider_closed(self, spider):
             del self.duplicates[spider]
 
-        def process_item(self, spider, item):
+        def process_item(self, item, spider):
             if item['id'] in self.duplicates[spider]:
                 raise DropItem("Duplicate item found: %s" % item)
             else:
@@ -106,6 +119,9 @@ spider returns multiples items with the same id::
 
 Built-in Item Pipelines reference
 =================================
+
+.. module:: scrapy.contrib.pipeline
+   :synopsis: Item Pipeline manager and built-in pipelines
 
 Here is a list of item pipelines bundled with Scrapy.
 

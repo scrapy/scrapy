@@ -63,22 +63,24 @@ class Scraper(object):
     def __init__(self, engine):
         self.sites = {}
         self.spidermw = SpiderMiddlewareManager()
-        self.itemproc = load_object(settings['ITEM_PROCESSOR'])()
+        itemproc_cls = load_object(settings['ITEM_PROCESSOR'])
+        self.itemproc = itemproc_cls.from_settings(settings)
         self.concurrent_items = settings.getint('CONCURRENT_ITEMS')
         self.engine = engine
 
+    @defer.inlineCallbacks
     def open_spider(self, spider):
         """Open the given spider for scraping and allocate resources for it"""
         assert spider not in self.sites, "Spider already opened: %s" % spider
         self.sites[spider] = SpiderInfo()
-        self.itemproc.open_spider(spider)
+        yield self.itemproc.open_spider(spider)
 
     def close_spider(self, spider):
         """Close a spider being scraped and release its resources"""
         assert spider in self.sites, "Spider not opened: %s" % spider
         site = self.sites[spider]
         site.closing = defer.Deferred()
-        self.itemproc.close_spider(spider)
+        site.closing.addCallback(self.itemproc.close_spider)
         self._check_if_closing(spider, site)
         return site.closing
 
@@ -89,7 +91,7 @@ class Scraper(object):
     def _check_if_closing(self, spider, site):
         if site.closing and site.is_idle():
             del self.sites[spider]
-            site.closing.callback(None)
+            site.closing.callback(spider)
 
     def enqueue_scrape(self, response, request, spider):
         site = self.sites.get(spider, None)

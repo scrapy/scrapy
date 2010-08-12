@@ -442,7 +442,7 @@ creation step, it's in ``dmoz/pipelines.py`` and looks like this::
    # Define your item pipelines here
 
    class DmozPipeline(object):
-       def process_item(self, spider, item):
+       def process_item(self, item, spider):
            return item
 
 We have to override the ``process_item`` method in order to store our Items
@@ -458,7 +458,7 @@ separated values) file using the standard library `csv module`_::
        def __init__(self):
            self.csvwriter = csv.writer(open('items.csv', 'wb'))
         
-       def process_item(self, spider, item):
+       def process_item(self, item, spider):
            self.csvwriter.writerow([item['title'][0], item['link'][0], item['desc'][0]])
            return item
 

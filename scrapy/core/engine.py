@@ -27,6 +27,7 @@ class ExecutionEngine(object):
     def __init__(self):
         self.configured = False
         self.closing = {} # dict (spider -> reason) of spiders being closed
+        self.closing_dfds = {} # dict (spider -> deferred) of spiders being closed
         self.running = False
         self.killed = False
         self.paused = False
@@ -208,13 +209,14 @@ class ExecutionEngine(object):
         dwld.addBoth(_on_complete)
         return dwld
 
+    @defer.inlineCallbacks
     def open_spider(self, spider):
         assert self.has_capacity(), "No free spider slots when opening %r" % \
             spider.name
         log.msg("Spider opened", spider=spider)
         self.scheduler.open_spider(spider)
         self.downloader.open_spider(spider)
-        self.scraper.open_spider(spider)
+        yield self.scraper.open_spider(spider)
         stats.open_spider(spider)
         send_catch_log(signals.spider_opened, spider=spider)
         self.next_request(spider)
@@ -245,6 +247,7 @@ class ExecutionEngine(object):
         self.closing[spider] = reason
         self.scheduler.clear_pending_requests(spider)
         dfd = self.downloader.close_spider(spider)
+        self.closing_dfds[spider] = dfd
         dfd.addBoth(lambda _: self.scheduler.close_spider(spider))
         dfd.addErrback(log.err, "Unhandled error in scheduler.close_spider()", \
             spider=spider)
@@ -258,6 +261,7 @@ class ExecutionEngine(object):
 
     def _close_all_spiders(self):
         dfds = [self.close_spider(s, reason='shutdown') for s in self.open_spiders]
+        dfds += self.closing_dfds.values()
         dlist = defer.DeferredList(dfds)
         return dlist
 
@@ -275,6 +279,7 @@ class ExecutionEngine(object):
         dfd.addErrback(log.err, "Unhandled error in spiders.close_spider()",
             spider=spider)
         dfd.addBoth(lambda _: log.msg("Spider closed (%s)" % reason, spider=spider))
+        dfd.addBoth(lambda _: self.closing_dfds.pop(spider).callback(spider))
         dfd.addBoth(lambda _: self._spider_closed_callback(spider))
         return dfd
 
