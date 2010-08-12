@@ -141,9 +141,9 @@ class Scraper(object):
 
     def handle_spider_error(self, _failure, request, spider, propagated_failure=None):
         referer = request.headers.get('Referer', None)
-        msg = "Spider exception caught while processing <%s> (referer: <%s>): %s" % \
-            (request.url, referer, _failure)
-        log.msg(msg, log.ERROR, spider=spider)
+        msg = "Spider exception caught while processing <%s> (referer: <%s>)" % \
+            (request.url, referer)
+        log.err(_failure, msg, spider=spider)
         stats.inc_value("spider_exceptions/%s" % _failure.value.__class__.__name__, \
             spider=spider)
 
@@ -210,8 +210,7 @@ class Scraper(object):
                 send_catch_log(signal=signals.item_dropped, \
                     item=item, spider=spider, exception=output.value)
             else:
-                log.msg('Error processing %s - %s' % (item, output), \
-                    log.ERROR, spider=spider)
+                log.err(output, 'Error processing %s' % item, spider=spider)
         else:
             log.msg("Passed %s" % item, log.INFO, spider=spider)
             send_catch_log(signal=signals.item_passed, \
