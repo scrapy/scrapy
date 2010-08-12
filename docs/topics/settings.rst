@@ -972,10 +972,8 @@ TELNETCONSOLE_ENABLED
 
 Default: ``True``
 
-Scope: ``scrapy.management.telnet``
-
-A boolean which specifies if the telnet management console will be enabled
-(provided its extension is also enabled).
+A boolean which specifies if the :ref:`telnet console <topics-telnetconsole>`
+will be enabled (provided its extension is also enabled).
 
 .. setting:: TELNETCONSOLE_PORT
 
