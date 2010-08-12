@@ -18,7 +18,7 @@ class MiddlewareManager(object):
 
     @classmethod
     def _get_mwlist_from_settings(cls, settings):
-        return []
+        raise NotImplementedError
 
     @classmethod
     def from_settings(cls, settings):
@@ -36,7 +36,7 @@ class MiddlewareManager(object):
                 if e.args:
                     log.msg(e)
         enabled = [type(x).__name__ for x in middlewares]
-        log.msg("Enabled %ss: %s" % (cls.component_name, ",".join(enabled)), \
+        log.msg("Enabled %ss: %s" % (cls.component_name, ", ".join(enabled)), \
             level=log.DEBUG)
         return cls(*middlewares)
 
