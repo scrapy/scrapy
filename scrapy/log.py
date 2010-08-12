@@ -42,7 +42,7 @@ class ScrapyFileLogObserver(log.FileLogObserver):
         if ev is not None:
             log.FileLogObserver.emit(self, ev)
 
-def _adapt_eventdict(eventDict, log_level=INFO, encoding='utf-8'):
+def _adapt_eventdict(eventDict, log_level=INFO, encoding='utf-8', prepend_level=True):
     """Adapt Twisted log eventDict making it suitable for logging with a Scrapy
     log observer. It may return None to indicate that the event should be
     ignored by a Scrapy log observer.
@@ -66,11 +66,14 @@ def _adapt_eventdict(eventDict, log_level=INFO, encoding='utf-8'):
     lvlname = level_names.get(level, 'NOLEVEL')
     if message:
         message = [unicode_to_str(x, encoding) for x in message]
-        message[0] = "%s: %s" % (lvlname, message[0])
+        if prepend_level:
+            message[0] = "%s: %s" % (lvlname, message[0])
     ev['message'] = message
     why = ev.get('why')
     if why:
-        why = "%s: %s" % (lvlname, unicode_to_str(why, encoding))
+        why = unicode_to_str(why, encoding)
+        if prepend_level:
+            why = "%s: %s" % (lvlname, why)
     ev['why'] = why
     return ev
 
