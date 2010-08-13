@@ -85,3 +85,16 @@ def process_parallel(callbacks, input, *a, **kw):
     d = defer.gatherResults(dfds)
     d.addErrback(lambda _: _.value.subFailure)
     return d
+
+def iter_errback(iterable, errback, *a, **kw):
+    """Wraps an iterable calling an errback if an error is caught while
+    iterating it.
+    """
+    it = iter(iterable)
+    while 1:
+        try:
+            yield it.next()
+        except StopIteration:
+            break
+        except:
+            errback(failure.Failure(), *a, **kw)

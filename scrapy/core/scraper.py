@@ -4,7 +4,7 @@ extracts information from them"""
 from twisted.python.failure import Failure
 from twisted.internet import defer
 
-from scrapy.utils.defer import defer_result, defer_succeed, parallel
+from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errback
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.misc import load_object
 from scrapy.utils.signal import send_catch_log
@@ -143,7 +143,7 @@ class Scraper(object):
 
     def handle_spider_error(self, _failure, request, spider, propagated_failure=None):
         referer = request.headers.get('Referer', None)
-        msg = "Spider exception caught while processing <%s> (referer: <%s>)" % \
+        msg = "Spider error processing <%s> (referer: <%s>)" % \
             (request.url, referer)
         log.err(_failure, msg, spider=spider)
         stats.inc_value("spider_exceptions/%s" % _failure.value.__class__.__name__, \
@@ -152,7 +152,8 @@ class Scraper(object):
     def handle_spider_output(self, result, request, response, spider):
         if not result:
             return defer_succeed(None)
-        dfd = parallel(iter(result), self.concurrent_items,
+        it = iter_errback(result, self.handle_spider_error, request, spider)
+        dfd = parallel(it, self.concurrent_items,
             self._process_spidermw_output, request, response, spider)
         return dfd
 
