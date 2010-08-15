@@ -29,8 +29,8 @@ application framework).
 Does Scrapy work with Python 3.0?
 ---------------------------------
 
-No, and there are no plans to port Scrapy to Python 3.0 yet. At the moment
-Scrapy works with Python 2.5 or 2.6.
+No, and there are no plans to port Scrapy to Python 3.0 yet. At the moment,
+Scrapy works with Python 2.5, 2.6 and 2.7.
 
 Did Scrapy "steal" X from Django?
 ---------------------------------
@@ -167,3 +167,9 @@ Can I use JSON for large exports?
 It'll depend on how large your output is. See :ref:`this warning
 <json-with-large-data>` in :class:`~scrapy.contrib.exporter.JsonItemExporter`
 documentation.
+
+Can I return (Twisted) deferreds from signal handlers?
+------------------------------------------------------
+
+Some signals support returning deferreds form their handlers, others don't. See
+the :ref:`topics-signals-ref` to know which ones.

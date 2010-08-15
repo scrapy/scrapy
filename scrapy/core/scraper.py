@@ -7,7 +7,7 @@ from twisted.internet import defer
 from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errback
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.misc import load_object
-from scrapy.utils.signal import send_catch_log
+from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
 from scrapy.exceptions import IgnoreRequest, DropItem
 from scrapy import signals
 from scrapy.http import Request, Response
@@ -171,14 +171,10 @@ class Scraper(object):
         elif isinstance(output, BaseItem):
             log.msg("Scraped %s in <%s>" % (output, request.url), level=log.DEBUG, \
                 spider=spider)
-            send_catch_log(signal=signals.item_scraped, \
-                item=output, spider=spider, response=response)
             self.sites[spider].itemproc_size += 1
-            # FIXME: this can't be called here because the stats spider may be
-            # already closed
-            #stats.max_value('scraper/max_itemproc_size', \
-            #        self.sites[spider].itemproc_size, spider=spider)
-            dfd = self.itemproc.process_item(output, spider)
+            dfd = send_catch_log_deferred(signal=signals.item_scraped, \
+                item=output, spider=spider, response=response)
+            dfd.addBoth(lambda _: self.itemproc.process_item(output, spider))
             dfd.addBoth(self._itemproc_finished, output, spider)
             return dfd
         elif output is None:
@@ -210,12 +206,12 @@ class Scraper(object):
             ex = output.value
             if isinstance(ex, DropItem):
                 log.msg("Dropped %s - %s" % (item, str(ex)), level=log.WARNING, spider=spider)
-                send_catch_log(signal=signals.item_dropped, \
+                return send_catch_log_deferred(signal=signals.item_dropped, \
                     item=item, spider=spider, exception=output.value)
             else:
                 log.err(output, 'Error processing %s' % item, spider=spider)
         else:
             log.msg("Passed %s" % item, log.INFO, spider=spider)
-            send_catch_log(signal=signals.item_passed, \
+            return send_catch_log_deferred(signal=signals.item_passed, \
                 item=item, spider=spider, output=output)
 

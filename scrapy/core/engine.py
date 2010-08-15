@@ -19,7 +19,7 @@ from scrapy.exceptions import IgnoreRequest, DontCloseSpider
 from scrapy.http import Response, Request
 from scrapy.spider import spiders
 from scrapy.utils.misc import load_object
-from scrapy.utils.signal import send_catch_log
+from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
 from scrapy.utils.defer import mustbe_deferred
 
 class ExecutionEngine(object):
@@ -44,11 +44,12 @@ class ExecutionEngine(object):
         self.configured = True
         self._spider_closed_callback = spider_closed_callback
 
+    @defer.inlineCallbacks
     def start(self):
         """Start the execution engine"""
         assert not self.running, "Engine already running"
         self.start_time = time()
-        send_catch_log(signal=signals.engine_started)
+        yield send_catch_log_deferred(signal=signals.engine_started)
         self.running = True
 
     def stop(self):
@@ -218,7 +219,7 @@ class ExecutionEngine(object):
         self.downloader.open_spider(spider)
         yield self.scraper.open_spider(spider)
         stats.open_spider(spider)
-        send_catch_log(signals.spider_opened, spider=spider)
+        yield send_catch_log_deferred(signals.spider_opened, spider=spider)
         self.next_request(spider)
 
     def _spider_idle(self, spider):
@@ -268,11 +269,12 @@ class ExecutionEngine(object):
     def _finish_closing_spider(self, spider):
         """This function is called after the spider has been closed"""
         reason = self.closing.pop(spider, 'finished')
-        send_catch_log(signal=signals.spider_closed, spider=spider, reason=reason)
         call = self._next_request_calls.pop(spider, None)
         if call and call.active():
             call.cancel()
-        dfd = defer.maybeDeferred(stats.close_spider, spider, reason=reason)
+        dfd = send_catch_log_deferred(signal=signals.spider_closed, \
+            spider=spider, reason=reason)
+        dfd.addBoth(lambda _: stats.close_spider(spider, reason=reason))
         dfd.addErrback(log.err, "Unhandled error in stats.close_spider()",
             spider=spider)
         dfd.addBoth(lambda _: spiders.close_spider(spider))
@@ -283,5 +285,6 @@ class ExecutionEngine(object):
         dfd.addBoth(lambda _: self._spider_closed_callback(spider))
         return dfd
 
+    @defer.inlineCallbacks
     def _finish_stopping_engine(self):
-        send_catch_log(signal=signals.engine_stopped)
+        yield send_catch_log_deferred(signal=signals.engine_stopped)

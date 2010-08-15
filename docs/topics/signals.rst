@@ -4,19 +4,28 @@
 Signals
 =======
 
-Scrapy uses signals extensively to notify when certain actions occur. You can
-catch some of those signals in your Scrapy project or extension to perform
-additional tasks or extend Scrapy to add functionality not provided out of the
-box.
+Scrapy uses signals extensively to notify when certain events occur. You can
+catch some of those signals in your Scrapy project (using an :ref:`extension
+<topics-extensions>`, for example) to perform additional tasks or extend Scrapy
+to add functionality not provided out of the box.
 
-Even though signals provide several arguments, the handlers which catch them
-don't have to receive all of them.
+Even though signals provide several arguments, the handlers that catch them
+don't need to accept all of them - the signal dispatching mechanism will only
+deliver the arguments that the handler receives.
 
-For more information about working when see the documentation of
-`pydispatcher`_ (library used to implement signals).
+Finally, for more detailed information about signals internals see the
+documentation of `pydispatcher`_ (the which the signal dispatching mechanism is
+based on).
 
 .. _pydispatcher: http://pydispatcher.sourceforge.net/
 
+Deferred signal handlers
+========================
+
+Some signals support returning `Twisted deferreds`_ from their handlers, see
+the :ref:`topics-signals-ref` below to know which ones.
+
+.. _Twisted deferreds: http://twistedmatrix.com/documents/current/core/howto/defer.html
 
 .. _topics-signals-ref:
 
@@ -26,8 +35,7 @@ Built-in signals reference
 .. module:: scrapy.signals
    :synopsis: Signals definitions
 
-Here's a list of signals used in Scrapy and their meaning, in alphabetical
-order.
+Here's the list of Scrapy built-in signals and their meaning.
 
 engine_started
 --------------
@@ -38,6 +46,8 @@ engine_started
     Sent when the Scrapy engine is started (for example, when a crawling
     process has started).
 
+    This signal supports returning deferreds from their handlers.
+
 engine_stopped
 --------------
 
@@ -47,6 +57,8 @@ engine_stopped
     Sent when the Scrapy engine is stopped (for example, when a crawling
     process has finished).
 
+    This signal supports returning deferreds from their handlers.
+
 item_scraped
 ------------
 
@@ -55,6 +67,8 @@ item_scraped
 
     Sent when the engine receives a new scraped item from the spider, and right
     before the item is sent to the :ref:`topics-item-pipeline`.
+
+    This signal supports returning deferreds from their handlers.
 
     :param item: is the item scraped
     :type item: :class:`~scrapy.item.Item` object
@@ -73,6 +87,8 @@ item_passed
 
     Sent after an item has passed all the :ref:`topics-item-pipeline` stages without
     being dropped.
+
+    This signal supports returning deferreds from their handlers.
 
     :param item: the item which passed the pipeline
     :type item: :class:`~scrapy.item.Item` object
@@ -93,6 +109,8 @@ item_dropped
     Sent after an item has been dropped from the :ref:`topics-item-pipeline`
     when some stage raised a :exc:`~scrapy.exceptions.DropItem` exception.
 
+    This signal supports returning deferreds from their handlers.
+
     :param item: the item dropped from the :ref:`topics-item-pipeline`
     :type item: :class:`~scrapy.item.Item` object
 
@@ -112,6 +130,8 @@ spider_closed
 
     Sent after a spider has been closed. This can be used to release per-spider
     resources reserved on :signal:`spider_opened`.
+
+    This signal supports returning deferreds from their handlers.
 
     :param spider: the spider which has been closed
     :type spider: :class:`~scrapy.spider.BaseSpider` object
@@ -135,6 +155,8 @@ spider_opened
     reserve per-spider resources, but can be used for any task that needs to be
     performed when a spider is opened.
 
+    This signal supports returning deferreds from their handlers.
+
     :param spider: the spider which has been opened
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
@@ -157,6 +179,8 @@ spider_idle
     You can, for example, schedule some requests in your :signal:`spider_idle`
     handler to prevent the spider from being closed.
 
+    This signal does not support returning deferreds from their handlers.
+
     :param spider: the spider which has gone idle
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
@@ -167,6 +191,8 @@ request_received
 .. function:: request_received(request, spider)
 
     Sent when the engine receives a :class:`~scrapy.http.Request` from a spider.
+
+    This signal does not support returning deferreds from their handlers.
 
     :param request: the request received
     :type request: :class:`~scrapy.http.Request` object
@@ -182,6 +208,8 @@ request_uploaded
 
     Sent right after the download has sent a :class:`~scrapy.http.Request`.
 
+    This signal does not support returning deferreds from their handlers.
+
     :param request: the request uploaded/sent
     :type request: :class:`~scrapy.http.Request` object
 
@@ -194,14 +222,16 @@ response_received
 .. signal:: response_received
 .. function:: response_received(response, spider)
 
+    Sent when the engine receives a new :class:`~scrapy.http.Response` from the
+    downloader.
+
+    This signal does not support returning deferreds from their handlers.
+
     :param response: the response received
     :type response: :class:`~scrapy.http.Response` object
 
     :param spider: the spider for which the response is intended
     :type spider: :class:`~scrapy.spider.BaseSpider` object
-
-    Sent when the engine receives a new :class:`~scrapy.http.Response` from the
-    downloader.
 
 response_downloaded
 -------------------
@@ -210,6 +240,8 @@ response_downloaded
 .. function:: response_downloaded(response, spider)
 
     Sent by the downloader right after a ``HTTPResponse`` is downloaded.
+
+    This signal does not support returning deferreds from their handlers.
 
     :param response: the response downloaded
     :type response: :class:`~scrapy.http.Response` object
