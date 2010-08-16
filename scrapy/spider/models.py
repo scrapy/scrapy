@@ -4,8 +4,6 @@ Base class for Scrapy spiders
 See documentation in docs/topics/spiders.rst
 """
 
-import warnings
-
 from scrapy import log
 from scrapy.http import Request
 from scrapy.utils.misc import arg_to_iter
@@ -18,38 +16,18 @@ class BaseSpider(object_ref):
     class.
     """
 
-    # XXX: class attributes kept for backwards compatibility
     name = None
-    start_urls = []
-    allowed_domains = []
 
     def __init__(self, name=None, **kwargs):
-        self.__dict__.update(kwargs)
-        # XXX: SEP-12 backward compatibility (remove for 0.10)
-        if hasattr(self, 'domain_name'):
-            warnings.warn("Spider.domain_name attribute is deprecated, use Spider.name instead and Spider.allowed_domains", \
-                DeprecationWarning, stacklevel=4)
-            self.name = self.domain_name
-            self.allowed_domains = [self.name]
-            if hasattr(self, 'extra_domain_names'):
-                warnings.warn("Spider.extra_domain_names attribute is deprecated - user Spider.allowed_domains instead", \
-                    DeprecationWarning, stacklevel=4)
-                self.allowed_domains += list(self.extra_domain_names)
-
         if name is not None:
             self.name = name
-        # XXX: create instance attributes (class attributes were kept for
-        # backwards compatibility)
-        if not self.start_urls:
-            self.start_urls = []
-        if not self.allowed_domains:
-            self.allowed_domains = []
-        if not self.name:
+        elif not getattr(self, 'name', None):
             raise ValueError("%s must have a name" % type(self).__name__)
-
-        # XXX: SEP-12 forward compatibility (remove for 0.10)
-        self.domain_name = self.name
-        self.extra_domain_names = self.allowed_domains
+        self.__dict__.update(kwargs)
+        if not hasattr(self, 'start_urls'):
+            self.start_urls = []
+        if not hasattr(self, 'allowed_domains'):
+            self.allowed_domains = []
 
     def log(self, message, level=log.DEBUG):
         """Log the given messages at the given log level. Always use this
