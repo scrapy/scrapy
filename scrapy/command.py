@@ -15,6 +15,9 @@ class ScrapyCommand(object):
 
     requires_project = False
 
+    # default settings to be used for this command instead of global defaults
+    default_settings = {}
+
     def syntax(self):
         """
         Command syntax (preferably one-line). Do not include command name.

@@ -4,6 +4,7 @@ from scrapy.conf import settings as settings_
 class Command(ScrapyCommand):
 
     requires_project = False
+    default_settings = {'LOG_ENABLED': False}
 
     def syntax(self):
         return "[options]"

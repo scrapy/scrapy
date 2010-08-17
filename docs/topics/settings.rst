@@ -91,11 +91,8 @@ It's where most of your custom settings will be populated.
 -------------------------------
 
 Each :doc:`/topics/scrapy-ctl` command can have its own default settings, which
-override the global default settings. Those custom command settings are located
-inside the ``scrapy.conf.commands`` module, or you can specify custom settings
-to override per-comand inside your project, by writing them in the module
-referenced by the :setting:`COMMANDS_SETTINGS_MODULE` setting. Those settings
-will take more
+override the global default settings. Those custom command settings are
+specified in the ``default_settings`` attribute of the command class.
 
 5. Default global settings
 --------------------------
@@ -253,19 +250,6 @@ custom command for your Scrapy project.
 Example::
 
     COMMANDS_MODULE = 'mybot.commands'
-
-.. setting:: COMMANDS_SETTINGS_MODULE
-
-COMMANDS_SETTINGS_MODULE
-------------------------
-
-Default: ``''`` (empty string)
-
-A module to use for looking for custom Scrapy command settings.
-
-Example::
-
-    COMMANDS_SETTINGS_MODULE = 'mybot.conf.commands'
 
 .. setting:: CONCURRENT_ITEMS
 

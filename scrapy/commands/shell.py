@@ -10,6 +10,7 @@ from scrapy.shell import Shell
 class Command(ScrapyCommand):
 
     requires_project = False
+    default_settings = {'LOG_LEVEL': 'WARNING'}
 
     def syntax(self):
         return "[url|file]"

@@ -27,6 +27,7 @@ def sanitize_module_name(module_name):
 class Command(ScrapyCommand):
 
     requires_project = True
+    default_settings = {'LOG_ENABLED': False}
 
     def syntax(self):
         return "[options] <name> <domain>"

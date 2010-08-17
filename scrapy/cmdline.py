@@ -68,18 +68,6 @@ def _print_usage(inside_project):
             print "  %s" % cmdclass.short_desc()
     print
 
-def _update_default_settings(module, cmdname):
-    if not module:
-        return
-    try:
-        mod = __import__('%s.%s' % (module, cmdname), {}, {}, [''])
-    except ImportError:
-        return
-    settingsdict = vars(mod)
-    for k, v in settingsdict.iteritems():
-        if not k.startswith("_"):
-            settings.defaults[k] = v
-
 def execute(argv=None):
     if argv is None:
         argv = sys.argv
@@ -87,8 +75,6 @@ def execute(argv=None):
     cmds = _get_commands_dict()
 
     cmdname = _get_command_name(argv)
-    _update_default_settings('scrapy.conf.commands', cmdname)
-    _update_default_settings(settings['COMMANDS_SETTINGS_MODULE'], cmdname)
 
     parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(), \
         conflict_handler='resolve', add_help_option=False)
@@ -120,6 +106,7 @@ def execute(argv=None):
         print 'Use "scrapy-ctl.py -h" for help' 
         sys.exit(2)
 
+    settings.defaults.update(cmd.default_settings)
     del args[0]  # remove command name from args
     send_catch_log(signal=command_executed, cmdname=cmdname, cmdobj=cmd, \
         args=args, opts=opts)
