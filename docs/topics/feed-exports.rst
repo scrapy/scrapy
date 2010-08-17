@@ -101,8 +101,11 @@ attribute the moment the feed is being created.
 Here are some examples to illustrate:
 
  * Store in FTP using one directory per spider:
+
    * ``ftp://user:password@ftp.example.com/scraping/feeds/%(name)s/%(time)s.json``
+
  * Store in S3 using one directory per spider:
+
    * ``s3://mybucket/scraping/feeds/%(name)s/%(time)s.json``
 
 
