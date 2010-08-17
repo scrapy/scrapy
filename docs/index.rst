@@ -57,6 +57,7 @@ Scraping basics
    topics/loaders
    topics/shell
    topics/item-pipeline
+   topics/feed-exports
 
 :doc:`topics/items`
     Define the data you want to scrape.
@@ -75,6 +76,9 @@ Scraping basics
 
 :doc:`topics/item-pipeline`
     Post-process and store your scraped data.
+
+:doc:`topics/feed-exports`
+    Output your scraped data using different formats and storages.
 
 
 Built-in services

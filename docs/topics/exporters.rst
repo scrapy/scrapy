@@ -17,11 +17,10 @@ output formats, such as XML, CSV or JSON.
 Using Item Exporters
 ====================
 
-If you are in a hurry, and just want to use an Item Exporter as an :doc:`Item
-Pipeline <item-pipeline>` see the :ref:`File Export Pipeline
-<file-export-pipeline>`. Otherwise, if you want to know how Item Exporters
-work or need more custom functionality (not covered by the :ref:`File Export
-Pipeline <file-export-pipeline>`), continue reading below.
+If you are in a hurry, and just want to use an Item Exporter to output scraped
+data see the :ref:`topics-feed-exports`. Otherwise, if you want to know how
+Item Exporters work or need more custom functionality (not covered by the
+default exports), continue reading below.
 
 In order to use an Item Exporter, you  must instantiate it with its required
 args. Each Item Exporter requires different arguments, so check each exporter
@@ -333,7 +332,7 @@ PprintItemExporter
    Longer lines (when present) are pretty-formatted.
 
 JsonItemExporter
----------------------
+----------------
 
 .. class:: JsonItemExporter(file, \**kwargs)
 

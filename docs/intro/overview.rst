@@ -174,8 +174,9 @@ scraping easy and efficient, such as:
 * Built-in support for :ref:`selecting and extracting <topics-selectors>` data
   from HTML and XML sources
 
-* Built-in support for :ref:`exporting data <file-export-pipeline>` in multiple
-  formats, including XML, CSV and JSON
+* Built-in support for :ref:`generating feed exports <topics-feed-exports>` in
+  multiple formats (JSON, CSV, XML) and storing them in multiple backends (FTP,
+  S3, filesystem)
 
 * A media pipeline for :ref:`automatically downloading images <topics-images>`
   (or any other media) associated with the scraped items

@@ -195,12 +195,32 @@ to any particular component. In that case the module of that component will be
 shown, typically an extension, middleware or pipeline. It also means that the
 component must be enabled in order for the setting to have any effect.
 
+.. setting:: AWS_ACCESS_KEY_ID
+
+AWS_ACCESS_KEY_ID
+-----------------
+
+Default: ``None``
+
+The AWS access key used by code that requires access to `Amazon Web services`_,
+such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
+
+.. setting:: AWS_SECRET_ACCESS_KEY
+
+AWS_SECRET_ACCESS_KEY
+---------------------
+
+Default: ``None``
+
+The AWS secret key used by code that requires access to `Amazon Web services`_,
+such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`.
+
 .. setting:: BOT_NAME
 
 BOT_NAME
 --------
 
-Default: ``scrapybot``
+Default: ``'scrapybot'``
 
 The name of the bot implemented by this Scrapy project (also known as the
 project name). This will be used to construct the User-Agent by default, and
@@ -1017,3 +1037,4 @@ Default: ``"%s/%s" % (BOT_NAME, BOT_VERSION)``
 
 The default User-Agent to use when crawling, unless overrided. 
 
+.. _Amazon web services: http://aws.amazon.com/

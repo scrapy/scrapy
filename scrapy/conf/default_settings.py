@@ -114,6 +114,27 @@ EXTENSIONS_BASE = {
     'scrapy.contrib.memusage.MemoryUsage': 0,
     'scrapy.contrib.memdebug.MemoryDebugger': 0,
     'scrapy.contrib.closespider.CloseSpider': 0,
+    'scrapy.contrib.feedexport.FeedExporter': 0,
+}
+
+FEED_URI = None
+FEED_URI_ARGS = None # a function to extend uri arguments
+FEED_FORMAT = 'jsonlines'
+FEED_STORE_EMPTY = False
+FEED_STORAGES = {}
+FEED_STORAGES_BASE = {
+    '': 'scrapy.contrib.feedexport.FileFeedStorage',
+    'file': 'scrapy.contrib.feedexport.FileFeedStorage',
+    'stdout': 'scrapy.contrib.feedexport.StdoutFeedStorage',
+    's3': 'scrapy.contrib.feedexport.S3FeedStorage',
+    'ftp': 'scrapy.contrib.feedexport.FTPFeedStorage',
+}
+FEED_EXPORTERS = {}
+FEED_EXPORTERS_BASE = {
+    'json': 'scrapy.contrib.exporter.JsonItemExporter',
+    'jsonlines': 'scrapy.contrib.exporter.JsonLinesItemExporter',
+    'csv': 'scrapy.contrib.exporter.CsvItemExporter',
+    'xml': 'scrapy.contrib.exporter.XmlItemExporter',
 }
 
 GROUPSETTINGS_ENABLED = False

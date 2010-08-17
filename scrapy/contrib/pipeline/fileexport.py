@@ -1,8 +1,6 @@
-"""
-File Export Pipeline
-
-See documentation in docs/topics/item-pipeline.rst
-"""
+import warnings
+warnings.warn("File export pipeline is deprecated and will be removed in Scrapy 0.11, use Feed exports instead", \
+    DeprecationWarning, stacklevel=2)
 
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy import signals
