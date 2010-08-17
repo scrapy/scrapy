@@ -10,11 +10,6 @@ from scrapy import log
 from scrapy.xlib import lsprofcalltree
 from scrapy.conf import settings
 from scrapy.command import ScrapyCommand
-from scrapy.utils.signal import send_catch_log
-
-# Signal that carries information about the command which was executed
-# args: cmdname, cmdobj, args, opts
-command_executed = object()
 
 def _find_commands(dir):
     try:
@@ -108,8 +103,6 @@ def execute(argv=None):
 
     settings.defaults.update(cmd.default_settings)
     del args[0]  # remove command name from args
-    send_catch_log(signal=command_executed, cmdname=cmdname, cmdobj=cmd, \
-        args=args, opts=opts)
     from scrapy.core.manager import scrapymanager
     scrapymanager.configure(control_reactor=True)
     ret = _run_command(cmd, args, opts)
