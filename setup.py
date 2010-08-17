@@ -90,7 +90,7 @@ setup_args = {
     'packages': packages,
     'cmdclass': cmdclasses,
     'data_files': data_files,
-    'scripts': ['bin/scrapy-ctl.py', 'bin/scrapy-ws.py', 'bin/scrapy-sqs.py'],
+    'scripts': ['bin/scrapy', 'bin/scrapy-ctl.py', 'bin/scrapy-ws.py', 'bin/scrapy-sqs.py'],
     'classifiers': [
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.5',

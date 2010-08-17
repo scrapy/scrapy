@@ -12,6 +12,7 @@ from scrapy.utils.py26 import ignore_patterns, copytree
 TEMPLATES_PATH = join(scrapy.__path__[0], 'templates', 'project')
 
 TEMPLATES_TO_RENDER = (
+    ('scrapy.cfg',),
     ('scrapy-ctl.py',),
     ('${project_name}', 'settings.py.tmpl'),
     ('${project_name}', 'items.py.tmpl'),
@@ -44,6 +45,7 @@ class Command(ScrapyCommand):
 
         moduletpl = join(TEMPLATES_PATH, 'module')
         copytree(moduletpl, join(project_name, project_name), ignore=IGNORE)
+        shutil.copy(join(TEMPLATES_PATH, 'scrapy.cfg'), project_name)
         shutil.copy(join(TEMPLATES_PATH, 'scrapy-ctl.py'), project_name)
         for paths in TEMPLATES_TO_RENDER:
             path = join(*paths)
