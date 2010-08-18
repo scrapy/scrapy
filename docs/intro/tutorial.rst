@@ -36,12 +36,12 @@ Creating a project
 Before start scraping, you will have set up a new Scrapy project. Enter a
 directory where you'd like to store your code and then run::
 
-   python scrapy-ctl.py startproject dmoz
+   scrapy startproject dmoz
 
 This will create a ``dmoz`` directory with the following contents::
 
    dmoz/
-       scrapy-ctl.py
+       scrapy.cfg
        dmoz/
            __init__.py
            items.py
@@ -53,7 +53,7 @@ This will create a ``dmoz`` directory with the following contents::
 
 These are basically: 
 
-* ``scrapy-ctl.py``: the project's control script.
+* ``scrapy.cfg``: the project configuration file
 * ``dmoz/``: the project's python module, you'll later import your code from
   here.
 * ``dmoz/items.py``: the project's items file.
@@ -144,7 +144,7 @@ Crawling
 
 To put our spider to work, go to the project's top level directory and run::
 
-   python scrapy-ctl.py crawl dmoz.org
+   scrapy crawl dmoz.org
 
 The ``crawl dmoz.org`` command runs the spider for the ``dmoz.org`` domain. You
 will get an output similar to this::
@@ -244,7 +244,7 @@ installed on your system.
 
 To start a shell you must go to the project's top level directory and run::
 
-   python scrapy-ctl.py shell http://www.dmoz.org/Computers/Programming/Languages/Python/Books/
+   scrapy shell http://www.dmoz.org/Computers/Programming/Languages/Python/Books/
 
 This is what the shell looks like::
 
@@ -372,7 +372,7 @@ Let's add this code to our spider::
 Now try crawling the dmoz.org domain again and you'll see sites being printed
 in your output, run::
 
-   python scrapy-ctl.py crawl dmoz.org
+   scrapy crawl dmoz.org
 
 Using our item
 --------------

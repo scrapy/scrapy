@@ -116,7 +116,7 @@ Can I run a spider without creating a project?
 Yes. You can use the ``runspider`` command. For example, if you have a spider
 written in a ``my_spider.py`` file you can run it with::
 
-    scrapy-ctl.py runspider my_spider.py
+    scrapy runspider my_spider.py
 
 I get "Filtered offsite request" messages. How can I fix them?
 --------------------------------------------------------------

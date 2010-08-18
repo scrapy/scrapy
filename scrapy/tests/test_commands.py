@@ -35,7 +35,7 @@ class StartprojectTest(ProjectTest):
     def test_startproject(self):
         self.assertEqual(0, self.call('startproject', self.project_name))
 
-        assert exists(join(self.proj_path, 'scrapy-ctl.py'))
+        assert exists(join(self.proj_path, 'scrapy.cfg'))
         assert exists(join(self.proj_path, 'testproject'))
         assert exists(join(self.proj_mod_path, '__init__.py'))
         assert exists(join(self.proj_mod_path, 'items.py'))

@@ -214,19 +214,19 @@ Installing the development version
 
        set PYTHONPATH=C:\path\to\scrapy-trunk
 
-3. Make the ``scrapy-ctl.py`` script available
+3. Make the ``scrapy`` command available
 
    On Unix-like systems, create a symbolic link to the file
-   ``scrapy-trunk/bin/scrapy-ctl.py`` in a directory on your system path,
+   ``scrapy-trunk/bin/scrapy`` in a directory on your system path,
    such as ``/usr/local/bin``. For example::
 
-       ln -s `pwd`/scrapy-trunk/bin/scrapy-ctl.py /usr/local/bin
+       ln -s `pwd`/scrapy-trunk/bin/scrapy /usr/local/bin
 
-   This simply lets you type ``scrapy-ctl.py`` from within any directory, rather
+   This simply lets you type ``scrapy`` from within any directory, rather
    than having to qualify the command with the full path to the file.
 
    On Windows systems, the same result can be achieved by copying the file
-   ``scrapy-trunk/bin/scrapy-ctl.py`` to somewhere on your system path,
+   ``scrapy-trunk/bin/scrapy`` to somewhere on your system path,
    for example ``C:\Python25\Scripts``, which is customary for Python scripts.
 
 .. _Control Panel: http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx

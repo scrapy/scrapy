@@ -83,7 +83,7 @@ Here's its HTML code:
 
 First, let's open the shell::
 
-    scrapy-ctl.py shell http://doc.scrapy.org/_static/selectors-sample1.html
+    scrapy shell http://doc.scrapy.org/_static/selectors-sample1.html
 
 Then, after the shell loads, you'll have some selectors already instanced and
 ready to use.

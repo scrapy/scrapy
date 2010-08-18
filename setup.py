@@ -74,6 +74,10 @@ if len(sys.argv) > 1 and sys.argv[1] == 'bdist_wininst':
     for file_info in data_files:
         file_info[0] = '\\PURELIB\\%s' % file_info[0]
 
+scripts = ['bin/scrapy', 'bin/scrapy-ws.py', 'bin/scrapy-sqs.py']
+if os.name == 'nt':
+    scripts.append('extras/scrapy.bat')
+
 # Dynamically calculate the version based on scrapy.__version__
 version = ".".join(map(str, __import__('scrapy').version_info[:2]))
 
@@ -90,7 +94,7 @@ setup_args = {
     'packages': packages,
     'cmdclass': cmdclasses,
     'data_files': data_files,
-    'scripts': ['bin/scrapy', 'bin/scrapy-ctl.py', 'bin/scrapy-ws.py', 'bin/scrapy-sqs.py'],
+    'scripts': scripts,
     'classifiers': [
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.5',

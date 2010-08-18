@@ -51,9 +51,9 @@ def _print_usage(inside_project):
     print "Usage"
     print "=====\n"
     print "To run a command:"
-    print "  scrapy-ctl.py <command> [options] [args]\n"
+    print "  scrapy <command> [options] [args]\n"
     print "To get help:"
-    print "  scrapy-ctl.py <command> -h\n"
+    print "  scrapy <command> -h\n"
     print "Available commands"
     print "==================\n"
     cmds = _get_commands_dict()
@@ -66,6 +66,10 @@ def _print_usage(inside_project):
 def execute(argv=None):
     if argv is None:
         argv = sys.argv
+    if any('scrapy-ctl' in x for x in argv):
+        import warnings
+        warnings.warn("`scrapy-ctl.py` command-line tool is deprecated and will be removed in Scrapy 0.11, use `scrapy` instead",
+            DeprecationWarning, stacklevel=2)
 
     cmds = _get_commands_dict()
 
@@ -82,7 +86,7 @@ def execute(argv=None):
         parser.usage = "%%prog %s %s" % (cmdname, cmd.syntax())
         parser.description = cmd.long_desc()
         if cmd.requires_project and not settings.settings_module:
-            print "Error running: scrapy-ctl.py %s\n" % cmdname
+            print "Error running: scrapy %s\n" % cmdname
             print "Cannot find project settings module in python path: %s" % \
                 settings.settings_module_path
             sys.exit(1)
@@ -98,7 +102,7 @@ def execute(argv=None):
         sys.exit(2)
     else:
         print "Unknown command: %s\n" % cmdname
-        print 'Use "scrapy-ctl.py -h" for help' 
+        print 'Use "scrapy -h" for help' 
         sys.exit(2)
 
     settings.defaults.update(cmd.default_settings)

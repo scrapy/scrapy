@@ -169,15 +169,15 @@ Reference
 .. toctree::
    :hidden:
 
-   topics/scrapy-ctl
+   topics/cmdline
    topics/request-response
    topics/settings
    topics/signals
    topics/exceptions
    topics/exporters
 
-:doc:`topics/scrapy-ctl`
-    Understand the command used to control your Scrapy project.
+:doc:`topics/cmdline`
+    Understand the command-line tool used to control your Scrapy project.
 
 :doc:`topics/request-response`
     Understand the classes used to represent HTTP requests and responses.

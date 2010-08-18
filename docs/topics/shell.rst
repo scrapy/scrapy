@@ -33,7 +33,7 @@ Launch the shell
 
 To launch the shell type::
 
-    scrapy-ctl.py shell <url>
+    scrapy shell <url>
 
 Where the ``<url>`` is the URL you want to scrape.
 
@@ -106,7 +106,7 @@ shell works.
 
 First, we launch the shell::
 
-    python scrapy-ctl.py shell http://scrapy.org --nolog
+    scrapy shell http://scrapy.org --nolog
 
 Then, the shell fetches the url (using the Scrapy downloader) and prints the
 list of available objects and some help::
