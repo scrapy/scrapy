@@ -6,6 +6,7 @@ See documentation in docs/item-pipeline.rst
 
 from scrapy import log
 from scrapy.middleware import MiddlewareManager
+from scrapy.utils.python import get_func_args
 
 class ItemPipelineManager(MiddlewareManager):
 
@@ -23,14 +24,14 @@ class ItemPipelineManager(MiddlewareManager):
 
     def _add_middleware(self, pipe):
         super(ItemPipelineManager, self)._add_middleware(pipe)
-        if hasattr(pipe, 'process_item'):
+        func = getattr(pipe, 'process_item', None)
+        if func:
             # FIXME: remove in Scrapy 0.11
-            from scrapy.utils.python import get_func_args
-            if get_func_args(pipe.process_item.im_func)[1] == 'spider':
+            fargs = get_func_args(func.im_func)
+            if fargs and fargs[1] == 'spider':
                 log.msg("Update %s.process_item() method to receive (item, spider) instead of (spider, item) or they will stop working on Scrapy 0.11" % pipe.__class__.__name__, log.WARNING)
-                pipe.process_item = self._wrap_old_process_item(pipe.process_item)
-
-            self.methods['process_item'].append(pipe.process_item)
+                func = self._wrap_old_process_item(func)
+            self.methods['process_item'].append(func)
 
     def process_item(self, item, spider):
         return self._process_chain('process_item', item, spider)
