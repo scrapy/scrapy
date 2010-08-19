@@ -63,21 +63,32 @@ def _print_usage(inside_project):
             print "  %s" % cmdclass.short_desc()
     print
 
+def check_deprecated_scrapy_ctl(argv):
+    """Check if Scrapy was called using the deprecated scrapy-ctl command and
+    warn in that case, also creating a scrapy.cfg if it doesn't exist.
+    """
+    if not any('scrapy-ctl' in x for x in argv):
+        return
+    import warnings
+    warnings.warn("`scrapy-ctl.py` command-line tool is deprecated and will be removed in Scrapy 0.11, use `scrapy` instead",
+        DeprecationWarning, stacklevel=3)
+    if settings.settings_module:
+        projpath = os.path.abspath(os.path.dirname(os.path.dirname(settings.settings_module.__file__)))
+        cfg_path = os.path.join(projpath, 'scrapy.cfg')
+        if not os.path.exists(cfg_path):
+            with open(cfg_path, 'w') as f:
+                f.write("# generated automatically - feel free to edit" + os.linesep)
+                f.write("[default]" + os.linesep)
+                f.write("settings = %s" % settings.settings_module_path + os.linesep)
+
 def execute(argv=None):
     if argv is None:
         argv = sys.argv
-    if any('scrapy-ctl' in x for x in argv):
-        import warnings
-        warnings.warn("`scrapy-ctl.py` command-line tool is deprecated and will be removed in Scrapy 0.11, use `scrapy` instead",
-            DeprecationWarning, stacklevel=2)
-
+    check_deprecated_scrapy_ctl(argv) # TODO: remove for Scrapy 0.11
     cmds = _get_commands_dict()
-
     cmdname = _get_command_name(argv)
-
     parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(), \
         conflict_handler='resolve', add_help_option=False)
-
     if cmdname in cmds:
         cmd = cmds[cmdname]
         cmd.add_options(parser)
