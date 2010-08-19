@@ -9,3 +9,8 @@ def setup(app):
         rolename      = "signal",
         indextemplate = "pair: %s; signal",
     )
+    app.add_crossref_type(
+        directivename = "command",
+        rolename      = "command",
+        indextemplate = "pair: %s; command",
+    )

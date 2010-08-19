@@ -24,7 +24,8 @@ Designating the settings
 
 When you use Scrapy, you have to tell it which settings you're using. You can
 do this by using an environment variable, ``SCRAPY_SETTINGS_MODULE``, or the
-``--settings`` argument of the :doc:`scrapy command </topics/cmdline>`.
+``--settings`` argument of the :doc:`scrapy command-line tool
+</topics/commands>`.
 
 The value of ``SCRAPY_SETTINGS_MODULE`` should be in Python path syntax, e.g.
 ``myproject.settings``. Note that the settings module should be on the
@@ -89,9 +90,10 @@ It's where most of your custom settings will be populated.
 4. Default settings per-command
 -------------------------------
 
-Each :doc:`/topics/cmdline` command can have its own default settings, which
-override the global default settings. Those custom command settings are
-specified in the ``default_settings`` attribute of the command class.
+Each :doc:`Scrapy tool </topics/commands>` command can have its own default
+settings, which override the global default settings. Those custom command
+settings are specified in the ``default_settings`` attribute of the command
+class.
 
 5. Default global settings
 --------------------------
@@ -223,8 +225,7 @@ project name). This will be used to construct the User-Agent by default, and
 also for logging.
 
 It's automatically populated with your project name when you create your
-project with the :doc:`scrapy </topics/cmdline>` ``startproject``
-command.
+project with the :command:`startproject` command.
 
 .. setting:: BOT_VERSION
 
@@ -720,7 +721,7 @@ NEWSPIDER_MODULE
 
 Default: ``''``
 
-Module where to create new spiders using the ``genspider`` command.
+Module where to create new spiders using the :command:`genspider` command.
 
 Example::
 
@@ -996,8 +997,8 @@ TEMPLATES_DIR
 
 Default: ``templates`` dir inside scrapy module
 
-The directory where to look for template when creating new projects with
-:doc:`scrapy startproject </topics/cmdline>` command.
+The directory where to look for templates when creating new projects with
+:command:`startproject` command.
 
 .. setting:: URLLENGTH_LIMIT
 

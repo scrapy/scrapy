@@ -50,6 +50,7 @@ Scraping basics
 .. toctree::
    :hidden:
 
+   topics/commands
    topics/items
    topics/spiders
    topics/link-extractors
@@ -58,6 +59,9 @@ Scraping basics
    topics/shell
    topics/item-pipeline
    topics/feed-exports
+
+:doc:`topics/commands`
+    Learn about the command-line tool used to manage your Scrapy project.
 
 :doc:`topics/items`
     Define the data you want to scrape.
@@ -169,15 +173,14 @@ Reference
 .. toctree::
    :hidden:
 
-   topics/cmdline
    topics/request-response
    topics/settings
    topics/signals
    topics/exceptions
    topics/exporters
 
-:doc:`topics/cmdline`
-    Understand the command-line tool used to control your Scrapy project.
+:doc:`topics/commands`
+    Learn about the command-line tool and see all :ref:`available commands <topics-commands-ref>`.
 
 :doc:`topics/request-response`
     Understand the classes used to represent HTTP requests and responses.
