@@ -209,7 +209,8 @@ SCHEDULER_MIDDLEWARES_BASE = {
 
 SCHEDULER_ORDER = 'DFO'
 
-SERVICE_QUEUE = 'scrapy.core.queue.KeepAliveExecutionQueue'
+SERVICE_QUEUE = 'scrapy.contrib.queue.SqliteExecutionQueue'
+SERVICE_QUEUE_FILE = 'scrapy.db'
 
 SPIDER_MANAGER_CLASS = 'scrapy.contrib.spidermanager.SpiderManager'
 

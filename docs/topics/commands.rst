@@ -173,12 +173,16 @@ start
 | Requires project: | *yes*            |
 +-------------------+------------------+
 
-Start Scrapy in server mode.
+Start Scrapy in server mode, which can be controlled by the :command:`queue`
+command.
 
 Usage example::
 
     $ scrapy start
     [ ... scrapy starts and stays idle waiting for spiders to get scheduled ... ]
+
+You can now schedule spiders to run using the :command:`queue` command. If
+there were spiders already enqueued, it will start crawling them.
 
 .. command:: list
 
@@ -352,3 +356,35 @@ Example usage::
 
     $ scrapy runspider myspider.py
     [ ... spider starts crawling ... ]
+
+.. command:: queue
+
+queue
+-----
+
++-------------------+----------------------------------------------+
+| Syntax:           | ``scrapy queue <list|clear|add spider1 ..>`` |
++-------------------+----------------------------------------------+
+| Requires project: | *yes*                                        |
++-------------------+----------------------------------------------+
+
+Manage the execution queue of a Scrapy project.
+
+This command is meant to be used to control a Scrapy server started with the
+:command:`start` command.
+
+Example usage::
+
+    $ scrapy queue add example.com
+
+If there is a Scrapy server running (see :command:`start` command), it will
+start crawling the ``example.com`` spider. Otherwise, it will only get
+enqueued,, and it will start crawling once the Scrapy server is started.
+
+You can also view the spiders enqueued but not yet started::
+
+    $ scrapy queue list
+
+And clear the queue::
+
+    $ scrapy queue clear
