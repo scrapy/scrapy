@@ -173,3 +173,20 @@ Can I return (Twisted) deferreds from signal handlers?
 
 Some signals support returning deferreds form their handlers, others don't. See
 the :ref:`topics-signals-ref` to know which ones.
+
+What does the response status code 999 means?
+---------------------------------------------
+
+999 is a custom reponse status code used by Yahoo sites to throttle requests.
+Try slowing down the crawling speed by using a download delay in your spider::
+
+    class MySpider(CrawlSpider):
+
+        name = 'myspider'
+
+        download_delay = 1
+
+        # [ ... rest of the spider code ... ]
+
+Or by setting a global download delay in your project with the
+:setting:`DOWNLOAD_DELAY` setting.
