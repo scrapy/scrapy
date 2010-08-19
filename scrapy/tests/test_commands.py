@@ -1,10 +1,13 @@
+from __future__ import with_statement
+
 import sys
 import os
 import subprocess
-from os.path import exists, join, dirname
+from os.path import exists, join, dirname, abspath
 from shutil import rmtree
 from tempfile import mkdtemp
-import unittest
+
+from twisted.trial import unittest
 
 import scrapy
 
@@ -28,6 +31,12 @@ class ProjectTest(unittest.TestCase):
         args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
         return subprocess.call(args, stdout=out, stderr=out, cwd=self.cwd, \
             env=self.env, **kwargs)
+
+    def call_get_proc(self, *new_args, **kwargs):
+        out = os.tmpfile()
+        args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
+        return subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, \
+            cwd=self.cwd, env=self.env, **kwargs)
 
 
 class StartprojectTest(ProjectTest):
@@ -100,6 +109,56 @@ class MiscCommandsTest(CommandTest):
     def test_list(self):
         self.assertEqual(0, self.call('list'))
 
+class RunSpiderCommandTest(CommandTest):
 
-if __name__ == '__main__':
-    unittest.main()
+    def test_runspider(self):
+        tmpdir = self.mktemp()
+        os.mkdir(tmpdir)
+        fname = abspath(join(tmpdir, 'myspider.py'))
+        with open(fname, 'w') as f:
+            f.write("""
+from scrapy import log
+from scrapy.spider import BaseSpider
+
+class MySpider(BaseSpider):
+    name = 'myspider'
+
+    def start_requests(self):
+        self.log("It Works!")
+        return []
+""")
+        p = self.call_get_proc('runspider', fname)
+        log = p.stderr.read()
+        self.assert_("[myspider] DEBUG: It Works!" in log)
+        self.assert_("[myspider] INFO: Spider opened" in log)
+        self.assert_("[myspider] INFO: Closing spider (finished)" in log)
+        self.assert_("[myspider] INFO: Spider closed (finished)" in log)
+
+    def test_runspider_no_spider_found(self):
+        tmpdir = self.mktemp()
+        os.mkdir(tmpdir)
+        fname = abspath(join(tmpdir, 'myspider.py'))
+        with open(fname, 'w') as f:
+            f.write("""
+from scrapy import log
+from scrapy.spider import BaseSpider
+""")
+        p = self.call_get_proc('runspider', fname)
+        log = p.stderr.read()
+        self.assert_("ERROR: No spider found in file" in log)
+
+    def test_runspider_file_not_found(self):
+        p = self.call_get_proc('runspider', 'some_non_existent_file')
+        log = p.stderr.read()
+        self.assert_("ERROR: File not found: some_non_existent_file" in log)
+
+    def test_runspider_unable_to_load(self):
+        tmpdir = self.mktemp()
+        os.mkdir(tmpdir)
+        fname = abspath(join(tmpdir, 'myspider.txt'))
+        with open(fname, 'w') as f:
+            f.write("")
+        p = self.call_get_proc('runspider', fname)
+        log = p.stderr.read()
+        self.assert_("ERROR: Unable to load" in log)
+
