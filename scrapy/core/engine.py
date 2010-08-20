@@ -194,7 +194,7 @@ class ExecutionEngine(object):
                 errmsg = str(_failure)
                 level = log.ERROR
             if errmsg:
-                log.msg("Crawling <%s>: %s" % (request.url, errmsg), \
+                log.msg("Error downloading <%s>: %s" % (request.url, errmsg), \
                     level=level, spider=spider)
             return Failure(IgnoreRequest(str(exc)))
 
