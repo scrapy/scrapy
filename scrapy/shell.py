@@ -17,6 +17,7 @@ from scrapy.spider import BaseSpider, spiders
 from scrapy.selector import XmlXPathSelector, HtmlXPathSelector
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
+from scrapy.utils.console import start_python_console
 from scrapy.conf import settings
 from scrapy.core.manager import scrapymanager
 from scrapy.core.queue import KeepAliveExecutionQueue
@@ -24,7 +25,7 @@ from scrapy.http import Request, TextResponse
 
 def relevant_var(varname):
     return varname not in ['shelp', 'fetch', 'view', '__builtins__', 'In', \
-        'Out', 'help'] and not varname.startswith('_')
+        'Out', 'help', 'namespace'] and not varname.startswith('_')
 
 def parse_url(url):
     """Parse url which can be a direct path to a direct file"""
@@ -120,27 +121,7 @@ class Shell(object):
         request = response.request
         url = request.url
         self.populate_vars(url, response, request)
-        self._run_console()
-
-    def _run_console(self):
-        try:
-            try: # use IPython if available
-                import IPython
-                shell = IPython.Shell.IPShell(argv=[], user_ns=self.vars)
-                ip = shell.IP.getapi()
-                shell.mainloop()
-            except ImportError:
-                import code
-                try: # readline module is only available on unix systems
-                    import readline
-                except ImportError:
-                    pass
-                else:
-                    import rlcompleter
-                    readline.parse_and_bind("tab:complete")
-                code.interact(local=self.vars)
-        except SystemExit: # raised when using exit() in python code.interact
-            pass
+        start_python_console(self.vars)
 
     def _console_thread(self, url=None):
         self.populate_vars()
@@ -148,7 +129,7 @@ class Shell(object):
             result = self.fetch(url, print_help=True)
         else:
             self.print_help()
-        self._run_console()
+        start_python_console(self.vars)
         reactor.callFromThread(scrapymanager.stop)
 
 def inspect_response(response):

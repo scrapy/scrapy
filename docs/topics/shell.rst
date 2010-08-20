@@ -113,25 +113,18 @@ list of available objects and some help::
 
     Fetching <http://scrapy.org>...
     Available objects
-    =================
-
-      xxs       : <XmlXPathSelector (http://scrapy.org) xpath=None>
-      url       : http://scrapy.org
-      request   : <http://scrapy.org>
-      spider    : <scrapy.spider.models.BaseSpider object at 0x2bed9d0>
-      hxs       : <HtmlXPathSelector (http://scrapy.org) xpath=None>
-      item      : Item()
-      response  : <http://scrapy.org>
+      xxs       <XmlXPathSelector (http://scrapy.org) xpath=None>
+      url       http://scrapy.org
+      request   <http://scrapy.org>
+      spider    <scrapy.spider.models.BaseSpider object at 0x2bed9d0>
+      hxs       <HtmlXPathSelector (http://scrapy.org) xpath=None>
+      item      Item()
+      response  <http://scrapy.org>
 
     Available shortcuts
-    ===================
-
-      shelp()           : Prints this help.
-      fetch(req_or_url) : Fetch a new request or URL and update objects
-      view(response)    : View response in a browser
-
-    Python 2.6.2 (release26-maint, Apr 19 2009, 01:58:18) 
-    Type "help", "copyright", "credits" or "license" for more information.
+      shelp()           Prints this help.
+      fetch(req_or_url) Fetch a new request or URL and update objects
+      view(response)    View response in a browser
 
     >>>
 
@@ -177,16 +170,9 @@ When you the spider you will get something similar to this::
     2009-08-27 19:15:25-0300 [example.com] DEBUG: Crawled <http://www.example.com/> (referer: <None>)
     2009-08-27 19:15:26-0300 [example.com] DEBUG: Crawled <http://www.example.com/products.php> (referer: <http://www.example.com/>)
 
-    Scrapy Shell
-    ============
-
-    Inspecting: <http://www.example.com/products.php
+    Scrapy Shell - inspecting response: <http://www.example.com/products.php
     Use shelp() to see available objects
 
-    Python 2.6.2 (release26-maint, Apr 19 2009, 01:58:18) 
-    [GCC 4.3.3] on linux2
-    Type "help", "copyright", "credits" or "license" for more information.
-    (InteractiveConsole)
     >>> response.url
     'http://www.example.com/products.php'
 

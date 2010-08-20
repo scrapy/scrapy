@@ -248,32 +248,24 @@ To start a shell you must go to the project's top level directory and run::
 
 This is what the shell looks like::
 
-   [-] Log opened.
-   Welcome to Scrapy shell!
-   Fetching <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>...
+    [ ... Scrapy log here ... ]
 
-   ------------------------------------------------------------------------------
-   Available Scrapy variables:
-      xxs: <class 'scrapy.selector.XmlXPathSelector'>
-      url: http://www.dmoz.org/Computers/Programming/Languages/Python/Books/
-      spider: <class 'dmoz.spiders.dmoz.OpenDirectorySpider'>
-      hxs: <class 'scrapy.selector.HtmlXPathSelector'>
-      item: <class 'scrapy.item.Item'>
-      response: <class 'scrapy.http.response.html.HtmlResponse'>
-   Available commands:
-      get [url]: Fetch a new URL or re-fetch current Request
-      shelp: Prints this help.
-   ------------------------------------------------------------------------------
-   Python 2.6.1 (r261:67515, Dec  7 2008, 08:27:41) 
-   Type "copyright", "credits" or "license" for more information.
+    Available objects:
+    2010-08-19 21:45:59-0300 [default] INFO: Spider closed (finished)
+      xxs        <XmlXPathSelector (http://www.dmoz.org/Computers/Programming/Languages/Python/Books/) xpath=None>
+      url        http://www.dmoz.org/Computers/Programming/Languages/Python/Books/
+      request    <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
+      spider     <BaseSpider 'default' at 0x1b6c2d0>
+      response   <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
+      hxs        <HtmlXPathSelector (http://www.dmoz.org/Computers/Programming/Languages/Python/Books/) xpath=None>
+      item       Item()
 
-   IPython 0.9.1 -- An enhanced Interactive Python.
-   ?         -> Introduction and overview of IPython's features.
-   %quickref -> Quick reference.
-   help      -> Python's own help system.
-   object?   -> Details about 'object'. ?object also works, ?? prints more.
+    Convenient shortcuts:
+      shelp()           Print this help
+      fetch(req_or_url) Fetch a new request or URL and update shell objects
+      view(response)    View response in a browser
 
-   In [1]: 
+    In [1]: 
 
 After the shell loads, you will have the response fetched in a local
 ``response`` variable, so if you type ``response.body`` you will see the body
