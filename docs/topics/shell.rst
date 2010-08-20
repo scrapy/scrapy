@@ -31,7 +31,8 @@ for more info.
 Launch the shell
 ================
 
-To launch the shell type::
+To launch the Scrapy shell you can use the :command:`shell` command like
+this::
 
     scrapy shell <url>
 
@@ -40,12 +41,12 @@ Where the ``<url>`` is the URL you want to scrape.
 Using the shell
 ===============
 
-The Scrapy shell is just a regular Python console (or `IPython` shell if you
-have it available) which provides some additional functions available by
-default (as shortcuts):
+The Scrapy shell is just a regular Python console (or `IPython` console if you
+have it available) which provides some additional shortcut functions for
+convenience.
 
-Built-in Shortcuts
-------------------
+Available Shortcuts
+-------------------
 
  * ``shelp()`` - print a help with the list of available objects and shortcuts
 
@@ -60,8 +61,8 @@ Built-in Shortcuts
 
 .. _<base> tag: http://www.w3schools.com/TAGS/tag_base.asp
 
-Built-in Objects
-----------------
+Available Scrapy objects
+-------------------------
 
 The Scrapy shell automatically creates some convenient objects from the
 downloaded page, like the :class:`~scrapy.http.Response` object and the
@@ -69,8 +70,6 @@ downloaded page, like the :class:`~scrapy.http.Response` object and the
 content).
 
 Those objects are:
-
- * ``url`` - the URL being analyzed
 
  * ``spider`` - the Spider which is known to handle the URL, or a
    :class:`~scrapy.spider.BaseSpider` object if there is no spider is found for
@@ -108,23 +107,21 @@ First, we launch the shell::
 
     scrapy shell http://scrapy.org --nolog
 
-Then, the shell fetches the url (using the Scrapy downloader) and prints the
-list of available objects and some help::
+Then, the shell fetches the URL (using the Scrapy downloader) and prints the
+list of available objects and useful shortcuts (you'll notice that these lines
+all start with the ``[s]`` prefix)::
 
-    Fetching <http://scrapy.org>...
-    Available objects
-      xxs       <XmlXPathSelector (http://scrapy.org) xpath=None>
-      url       http://scrapy.org
-      request   <http://scrapy.org>
-      spider    <scrapy.spider.models.BaseSpider object at 0x2bed9d0>
-      hxs       <HtmlXPathSelector (http://scrapy.org) xpath=None>
-      item      Item()
-      response  <http://scrapy.org>
-
-    Available shortcuts
-      shelp()           Prints this help.
-      fetch(req_or_url) Fetch a new request or URL and update objects
-      view(response)    View response in a browser
+    [s] Available objects
+    [s]   hxs       <HtmlXPathSelector (http://scrapy.org) xpath=None>
+    [s]   item      Item()
+    [s]   request   <http://scrapy.org>
+    [s]   response  <http://scrapy.org>
+    [s]   spider    <scrapy.spider.models.BaseSpider object at 0x2bed9d0>
+    [s]   xxs       <XmlXPathSelector (http://scrapy.org) xpath=None>
+    [s] Useful shortcuts:
+    [s]   shelp()           Prints this help.
+    [s]   fetch(req_or_url) Fetch a new request or URL and update objects
+    [s]   view(response)    View response in a browser
 
     >>>
 
@@ -143,6 +140,8 @@ After that, we can stary playing with the objects::
     2009-04-03 00:57:39-0300 [scrapybot] ERROR: Downloading <http://slashdot.org> from <None>: 405 Method Not Allowed
     >>> 
 
+
+.. _topics-shell-inspect-response:
 
 Invoking the shell from spiders to inspect responses
 ====================================================

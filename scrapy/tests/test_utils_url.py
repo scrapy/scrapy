@@ -1,8 +1,9 @@
+import os
 import unittest
 from scrapy.spider import BaseSpider
 from scrapy.utils.url import url_is_from_any_domain, safe_url_string, safe_download_url, \
     url_query_parameter, add_or_replace_parameter, url_query_cleaner, canonicalize_url, \
-    urljoin_rfc, url_is_from_spider
+    urljoin_rfc, url_is_from_spider, file_uri_to_path, path_to_file_uri, any_to_uri
 
 class UrlUtilsTest(unittest.TestCase):
 
@@ -272,6 +273,51 @@ class UrlUtilsTest(unittest.TestCase):
         # functionality.
         self.assertEqual(canonicalize_url(u'http://www.example.com/caf%E9-con-leche.htm'),
                                            'http://www.example.com/caf%E9-con-leche.htm')
+
+    def test_path_to_file_uri(self):
+        if os.name == 'nt':
+            self.assertEqual(path_to_file_uri("C:\\windows\clock.avi"),
+                             "file:///C|/windows/clock.avi")
+        else:
+            self.assertEqual(path_to_file_uri("/some/path.txt"),
+                             "file:///some/path.txt")
+
+        fn = "test.txt"
+        x = path_to_file_uri(fn)
+        self.assert_(x.startswith('file:///'))
+        self.assertEqual(file_uri_to_path(x), os.path.abspath(fn))
+
+    def test_file_uri_to_path(self):
+        if os.name == 'nt':
+            self.assertEqual(file_uri_to_path("file:///C|/windows/clock.avi"),
+                             "C:\\windows\clock.avi")
+            uri = "file:///C|/windows/clock.avi"
+            uri2 = path_to_file_uri(file_uri_to_path(uri))
+            self.assertEqual(uri, uri2)
+        else:
+            self.assertEqual(file_uri_to_path("file:///path/to/test.txt"),
+                             "/path/to/test.txt")
+            self.assertEqual(file_uri_to_path("/path/to/test.txt"),
+                             "/path/to/test.txt")
+            uri = "file:///path/to/test.txt"
+            uri2 = path_to_file_uri(file_uri_to_path(uri))
+            self.assertEqual(uri, uri2)
+
+        self.assertEqual(file_uri_to_path("test.txt"),
+                         "test.txt")
+
+    def test_any_to_uri(self):
+        if os.name == 'nt':
+            self.assertEqual(any_to_uri("C:\\windows\clock.avi"),
+                             "file:///C|/windows/clock.avi")
+        else:
+            self.assertEqual(any_to_uri("/some/path.txt"),
+                             "file:///some/path.txt")
+        self.assertEqual(any_to_uri("file:///some/path.txt"),
+                         "file:///some/path.txt")
+        self.assertEqual(any_to_uri("http://www.example.com/some/path.txt"),
+                         "http://www.example.com/some/path.txt")
+
 
 if __name__ == "__main__":
     unittest.main()

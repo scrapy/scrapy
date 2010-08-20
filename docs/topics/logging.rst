@@ -106,7 +106,8 @@ scrapy.log module
 
 .. data:: INFO
 
-    Log level for informational messages (recommended level for production)
+    Log level for informational messages (recommended level for production
+    deployments)
 
 .. data:: DEBUG
 

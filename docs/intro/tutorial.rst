@@ -149,17 +149,16 @@ To put our spider to work, go to the project's top level directory and run::
 The ``crawl dmoz.org`` command runs the spider for the ``dmoz.org`` domain. You
 will get an output similar to this::
 
-   [-] Log opened.
-   [dmoz] INFO: Enabled extensions: ...
-   [dmoz] INFO: Enabled scheduler middlewares: ...
-   [dmoz] INFO: Enabled downloader middlewares: ...
-   [dmoz] INFO: Enabled spider middlewares: ...
-   [dmoz] INFO: Enabled item pipelines: ...
-   [dmoz.org] INFO: Spider opened
-   [dmoz.org] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/> from <None>
-   [dmoz.org] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> from <None>
-   [dmoz.org] INFO: Spider closed (finished)
-   [-] Main loop terminated.
+   2008-08-20 03:51:13-0300 [scrapy] INFO: Started project: dmoz
+   2008-08-20 03:51:13-0300 [dmoz] INFO: Enabled extensions: ...
+   2008-08-20 03:51:13-0300 [dmoz] INFO: Enabled scheduler middlewares: ...
+   2008-08-20 03:51:13-0300 [dmoz] INFO: Enabled downloader middlewares: ...
+   2008-08-20 03:51:13-0300 [dmoz] INFO: Enabled spider middlewares: ...
+   2008-08-20 03:51:13-0300 [dmoz] INFO: Enabled item pipelines: ...
+   2008-08-20 03:51:14-0300 [dmoz.org] INFO: Spider opened
+   2008-08-20 03:51:14-0300 [dmoz.org] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/> from <None>
+   2008-08-20 03:51:14-0300 [dmoz.org] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> from <None>
+   2008-08-20 03:51:14-0300 [dmoz.org] INFO: Spider closed (finished)
 
 Pay attention to the lines containing ``[dmoz.org]``, which corresponds to
 our spider (identified by the domain ``"dmoz.org"``). You can see a log line
@@ -250,20 +249,18 @@ This is what the shell looks like::
 
     [ ... Scrapy log here ... ]
 
-    Available objects:
-    2010-08-19 21:45:59-0300 [default] INFO: Spider closed (finished)
-      xxs        <XmlXPathSelector (http://www.dmoz.org/Computers/Programming/Languages/Python/Books/) xpath=None>
-      url        http://www.dmoz.org/Computers/Programming/Languages/Python/Books/
-      request    <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
-      spider     <BaseSpider 'default' at 0x1b6c2d0>
-      response   <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
-      hxs        <HtmlXPathSelector (http://www.dmoz.org/Computers/Programming/Languages/Python/Books/) xpath=None>
-      item       Item()
-
-    Convenient shortcuts:
-      shelp()           Print this help
-      fetch(req_or_url) Fetch a new request or URL and update shell objects
-      view(response)    View response in a browser
+    [s] Available Scrapy objects:
+    [s] 2010-08-19 21:45:59-0300 [default] INFO: Spider closed (finished)
+    [s]   hxs        <HtmlXPathSelector (http://www.dmoz.org/Computers/Programming/Languages/Python/Books/) xpath=None>
+    [s]   item       Item()
+    [s]   request    <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
+    [s]   response   <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
+    [s]   spider     <BaseSpider 'default' at 0x1b6c2d0>
+    [s]   xxs        <XmlXPathSelector (http://www.dmoz.org/Computers/Programming/Languages/Python/Books/) xpath=None>
+    [s] Useful shortcuts:
+    [s]   shelp()           Print this help
+    [s]   fetch(req_or_url) Fetch a new request or URL and update shell objects
+    [s]   view(response)    View response in a browser
 
     In [1]: 
 

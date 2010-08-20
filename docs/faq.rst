@@ -16,14 +16,12 @@ Scrapy provides a built-in mechanism for extracting data (called
 all, they're just parsing libraries which can be imported and used from any
 Python code.
 
-In other words, comparing `BeautifulSoup`_ or `lxml`_ to Scrapy is like
-comparing `urllib`_ or `urlparse`_ to `Django`_ (a popular Python web
-application framework).
+In other words, comparing `BeautifulSoup`_ (or `lxml`_) to Scrapy is like
+comparing `jinja2`_ to `Django`_.
 
 .. _BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/
 .. _lxml: http://codespeak.net/lxml/
-.. _urllib: http://docs.python.org/library/urllib.html
-.. _urlparse: http://docs.python.org/library/urlparse.html
+.. _jinja2: http://jinja.pocoo.org/2/
 .. _Django: http://www.djangoproject.com
 
 Does Scrapy work with Python 3.0?
@@ -81,6 +79,14 @@ My Scrapy crawler has memory leaks. What can I do?
 
 See :ref:`topics-leaks`.
 
+Also, Python has a builtin memory leak issue which is described in
+:ref:`topics-leaks-without-leaks`.
+
+How can I make Scrapy consume less memory?
+------------------------------------------
+
+See previous question.
+
 Can I use Basic HTTP Authentication in my spiders?
 --------------------------------------------------
 
@@ -101,7 +107,8 @@ Scrapy comes with a built-in, fully functional project to scrape the `Google
 Directory`_. You can find it in the ``examples/googledir`` directory of the
 Scrapy distribution.
 
-Also, there is a public repository of spiders called `Community Spiders`_.
+Also, there's a site for sharing code snippets (spiders, middlewares,
+extensions) called `Scrapy snippets`_.
 
 Finally, you can find some example code for performing not-so-trivial tasks in
 the `Scrapy Recipes`_ page.
@@ -109,12 +116,13 @@ the `Scrapy Recipes`_ page.
 .. _Google Directory: http://www.google.com/dirhp
 .. _Community Spiders: http://dev.scrapy.org/wiki/CommunitySpiders
 .. _Scrapy Recipes: http://dev.scrapy.org/wiki/ScrapyRecipes
+.. _Scrapy snippets: http://snippets.scrapy.org/
 
 Can I run a spider without creating a project?
 ----------------------------------------------
 
-Yes. You can use the ``runspider`` command. For example, if you have a spider
-written in a ``my_spider.py`` file you can run it with::
+Yes. You can use the :command:`runspider` command. For example, if you have a
+spider written in a ``my_spider.py`` file you can run it with::
 
     scrapy runspider my_spider.py
 
@@ -130,15 +138,6 @@ domains outside the ones covered by the spider.
 
 For more info see:
 :class:`~scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware`.
-
-How can I make Scrapy consume less memory?
-------------------------------------------
-
-There's a whole documentation section about this subject, please see:
-:ref:`topics-leaks`.
-
-Also, Python has a builtin memory leak issue which is described in
-:ref:`topics-leaks-without-leaks`.
 
 What is the recommended way to deploy a Scrapy crawler in production?
 ---------------------------------------------------------------------
@@ -191,3 +190,12 @@ higher) in your spider::
 
 Or by setting a global download delay in your project with the
 :setting:`DOWNLOAD_DELAY` setting.
+
+Can I call ``pdb.set_trace()`` from my spiders to debug them?
+-------------------------------------------------------------
+
+Yes, but you can also use the Scrapy shell which allows you too quickly analyze
+(and even modify) the response being processed by your spider, which is, quite
+often, more useful than plain old ``pdb.set_trace()``.
+
+For more info see :ref:`topics-shell-inspect-response`.

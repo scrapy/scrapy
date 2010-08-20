@@ -3,6 +3,7 @@ This module contains general purpose URL functions not found in the standard
 library.
 """
 
+import os
 import re
 import urlparse
 import urllib
@@ -154,3 +155,23 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False, \
     path = urllib.quote(urllib.unquote(path))
     fragment = '' if not keep_fragments else fragment
     return urlparse.urlunparse((scheme, netloc, path, params, query, fragment))
+
+def path_to_file_uri(path):
+    """Convert local filesystem path to legal File URIs as described in:
+    http://en.wikipedia.org/wiki/File_URI_scheme
+    """
+    x = urllib.pathname2url(os.path.abspath(path))
+    return 'file:///%s' % x.lstrip('/')
+
+def file_uri_to_path(uri):
+    """Convert File URI to local filesystem path according to:
+    http://en.wikipedia.org/wiki/File_URI_scheme
+    """
+    return urllib.url2pathname(urlparse.urlparse(uri).path)
+
+def any_to_uri(uri_or_path):
+    """If given a path name, return its File URI, otherwise return it
+    unmodified
+    """
+    u = urlparse.urlparse(uri_or_path)
+    return uri_or_path if u.scheme else path_to_file_uri(uri_or_path)
