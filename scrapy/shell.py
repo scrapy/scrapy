@@ -10,7 +10,9 @@ import urlparse
 import signal
 
 from twisted.internet import reactor, threads
+from twisted.python.failure import Failure
 
+from scrapy import log
 from scrapy.spider import BaseSpider, spiders
 from scrapy.selector import XmlXPathSelector, HtmlXPathSelector
 from scrapy.utils.misc import load_object
@@ -50,21 +52,24 @@ class Shell(object):
             url = request.url
         else:
             url = parse_url(request_or_url)
-            request = Request(url)
+            request = Request(url, dont_filter=True)
 
         spider = spiders.create_for_request(request, BaseSpider('default'), \
             log_multiple=True)
 
         print "Fetching %s..." % request
         scrapymanager.engine.open_spider(spider)
-        response = threads.blockingCallFromThread(reactor, scrapymanager.engine.schedule, \
-            request, spider)
-        if response:
-            self.populate_vars(url, response, request, spider)
-            if print_help:
-                self.print_help()
-            else:
-                print "Done - use shelp() to see available objects"
+        response = None
+        try:
+            response = threads.blockingCallFromThread(reactor, \
+                scrapymanager.engine.schedule, request, spider)
+        except:
+            log.err(Failure(), "Error fetching response", spider=spider)
+        self.populate_vars(url, response, request, spider)
+        if print_help:
+            self.print_help()
+        else:
+            print "Done - use shelp() to see available objects"
 
     def populate_vars(self, url=None, response=None, request=None, spider=None):
         item = self.item_class()
@@ -86,20 +91,17 @@ class Shell(object):
             self.update_vars(self.vars)
 
     def print_help(self):
-        print "Available objects"
-        print "================="
         print
+        print "Available objects:"
         for k, v in self.vars.iteritems():
             if relevant_var(k):
-                print "  %-10s: %s" % (k, v)
+                print "  %-10s %s" % (k, v)
         print
-        print "Available shortcuts"
-        print "==================="
-        print
-        print "  shelp()           : Prints this help."
+        print "Convenient shortcuts:"
+        print "  shelp()           Print this help"
         if not self.nofetch:
-            print "  fetch(req_or_url) : Fetch a new request or URL and update objects"
-        print "  view(response)    : View response in a browser"
+            print "  fetch(req_or_url) Fetch a new request or URL and update shell objects"
+        print "  view(response)    View response in a browser"
         print
 
     def start(self, url):
@@ -112,10 +114,7 @@ class Shell(object):
 
     def inspect_response(self, response):
         print
-        print "Scrapy Shell"
-        print "============"
-        print
-        print "Inspecting: %s" % response
+        print "Scrapy Shell - inspecting response: %s" % response
         print "Use shelp() to see available objects"
         print
         request = response.request
