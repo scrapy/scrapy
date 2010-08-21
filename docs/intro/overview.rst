@@ -4,7 +4,7 @@
 Scrapy at a glance
 ==================
 
-Scrapy a is an application framework for crawling web sites and extracting
+Scrapy is an application framework for crawling web sites and extracting
 structured data which can be used for a wide range of useful applications, like
 data mining, information processing or historical archival.
 
@@ -49,15 +49,15 @@ If we take a look at that page content we'll see that all torrent URLs are like
 http://www.mininova.org/tor/NUMBER where ``NUMBER`` is an integer. We'll use
 that to construct the regular expression for the links to follow: ``/tor/\d+``.
 
-For extracting data we'll use `XPath`_ to select the part of the document where
-the data is to be extracted. Let's take one of those torrent pages:
+To extracting data, we'll use `XPath`_ to select the part of the document where
+the data is to be extracted from. Let's take one of those torrent pages:
 
     http://www.mininova.org/tor/2657665
 
 .. _XPath: http://www.w3.org/TR/xpath
   
 And look at the page HTML source to construct the XPath to select the data we
-want to extract which is: torrent name, description and size.
+want which is: torrent name, description and size.
 
 .. highlight:: html
 
@@ -144,7 +144,7 @@ Finally, here's the spider code::
             return torrent
 
 
-For brevity sake, we intentionally left out the import statements and the
+For brevity's sake, we intentionally left out the import statements and the
 Torrent class definition (which is included some paragraphs above).
 
 Write a pipeline to store the items extracted

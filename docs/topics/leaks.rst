@@ -7,12 +7,12 @@ Debugging memory leaks
 In Scrapy, objects such as Requests, Responses and Items have a finite
 lifetime: they are created, used for a while, and finally destroyed.
 
-From all those objects the Request is probably the one with the longest
+From all those objects, the Request is probably the one with the longest
 lifetime, as it stays waiting in the Scheduler queue until it's time to process
 it. For more info see :ref:`topics-architecture`.
 
-As these Scrapy objects have a (rather long) lifetime there is always the risk
-accumulated them in memory without releasing them properly and thus causing
+As these Scrapy objects have a (rather long) lifetime, there is always the risk
+of accumulating them in memory without releasing them properly and thus causing
 what is known as a "memory leak".
 
 To help debugging memory leaks, Scrapy provides a built-in mechanism for
@@ -34,13 +34,13 @@ in Scrapy projects, and a quite difficult one to debug for newcomers.
 
 In big projects, the spiders are typically written by different people and some
 of those spiders could be "leaking" and thus affecting the rest of the other
-(well-written) spiders when they get to run concurrently which, in turn,
+(well-written) spiders when they get to run concurrently, which, in turn,
 affects the whole crawling process. 
 
-At the same time, it's hard to avoid the reasons that causes these leaks
+At the same time, it's hard to avoid the reasons that cause these leaks
 without restricting the power of the framework, so we have decided not to
 restrict the functionally but provide useful tools for debugging these leaks,
-which quite often consists in answer the question: *which spider is leaking?*.
+which quite often consist in an answer to the question: *which spider is leaking?*.
 
 The leak could also come from a custom middleware, pipeline or extension that
 you have written, if you are not releasing the (previously allocated) resources
@@ -57,10 +57,10 @@ memory leaks. It basically tracks the references to all live Requests,
 Responses, Item and Selector objects. 
 
 To activate the ``trackref`` module, enable the :setting:`TRACK_REFS` setting.
-It only imposes a minor performance impact so it should be OK for use it, even
+It only imposes a minor performance impact, so it should be OK to use it, even
 in production environments.
 
-Once you have ``trackref`` enabled you can enter the telnet console and inspect
+Once you have ``trackref`` enabled, you can enter the telnet console and inspect
 how many objects (of the classes mentioned above) are currently alive using the
 ``prefs()`` function which is an alias to the
 :func:`~scrapy.utils.trackref.print_live_refs` function::
@@ -107,7 +107,7 @@ Suppose we have some spider with a line similar to this one::
         callback=self.parse, meta={referer: response}")
 
 That line is passing a response reference inside a request which effectively
-ties the response lifetime to the requests one, and that's would definitely
+ties the response lifetime to the requests' one, and that would definitely
 cause memory leaks.
 
 Let's see how we can discover which one is the nasty spider (without knowing it
@@ -203,7 +203,7 @@ Debugging memory leaks with Guppy
 leaks, but it only keeps track of the objects that are more likely to cause
 memory leaks (Requests, Responses, Items, and Selectors). However, there are
 other cases where the memory leaks could come from other (more or less obscure)
-objects. If this is your case, and you can't find your leaks using ``trackref``
+objects. If this is your case, and you can't find your leaks using ``trackref``,
 you still have another resource: the `Guppy library`_. 
 
 .. _Guppy library: http://pypi.python.org/pypi/guppy
@@ -235,7 +235,7 @@ the heap using Guppy::
     <1676 more rows. Type e.g. '_.more' to view.>
 
 You can see that most space is used by dicts. Then, if you want to see from
-which attribute those dicts are referenced you could do::
+which attribute those dicts are referenced, you could do::
 
     >>> x.bytype[0].byvia
     Partition of a set of 22307 objects. Total size = 16423880 bytes.
@@ -252,7 +252,7 @@ which attribute those dicts are referenced you could do::
          9     27   0   155016   1  14841328  90 '[1]'
     <333 more rows. Type e.g. '_.more' to view.>
 
-As you can see, the Guppy module is very powerful, but also requires some deep
+As you can see, the Guppy module is very powerful but also requires some deep
 knowledge about Python internals. For more info about Guppy, refer to the
 `Guppy documentation`_.
 
@@ -274,7 +274,7 @@ the operating system in some cases. For more information on this issue see:
 * `Python Memory Management Part 3 <http://evanjones.ca/python-memory-part3.html>`_
 
 The improvements proposed by Evan Jones, which are detailed in `this paper`_,
-got merged in Python 2.5, but the only reduce the problem, it doesn't fixes it
+got merged in Python 2.5, but this only reduces the problem, it doesn't fix it
 completely. To quote the paper:
 
     *Unfortunately, this patch can only free an arena if there are no more

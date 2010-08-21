@@ -56,7 +56,7 @@ defined in :class:`Field` objects could be used by a different components, and
 only those components know about it. You can also define and use any other
 :class:`Field` key in your project too, for your own needs. The main goal of
 :class:`Field` objects is to provide a way to define all field metadata in one
-place. Typically, those components whose behaviour depends on each field, use
+place. Typically, those components whose behaviour depends on each field use
 certain field keys to configure that behaviour. You must refer to their
 documentation to see which metadata keys are used by each component.
 
@@ -143,7 +143,7 @@ Setting field values
 Accesing all populated values
 -----------------------------
 
-To access all populated values just use the typical `dict API`_::
+To access all populated values, just use the typical `dict API`_::
 
     >>> product.keys()
     ['price', 'name']

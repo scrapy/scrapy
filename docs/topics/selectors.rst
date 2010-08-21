@@ -10,7 +10,7 @@ achieve this:
 
  * `BeautifulSoup`_ is a very popular screen scraping library among Python
    programmers which constructs a Python object based on the
-   structure of the HTML code and also deals with bad markup reasonable well,
+   structure of the HTML code and also deals with bad markup reasonably well,
    but it has one drawback: it's slow.
 
  * `lxml`_ is a XML parsing library (which also parses HTML) with a pythonic
@@ -21,15 +21,14 @@ Scrapy comes with its own mechanism for extracting data. They're called XPath
 selectors (or just "selectors", for short) because they "select" certain parts
 of the HTML document specified by `XPath`_ expressions.
 
-`XPath`_ is a language for selecting nodes in XML documents, which can be used
-to with HTML.
+`XPath`_ is a language for selecting nodes in XML documents, which can also be used with HTML.
 
 Both `lxml`_ and Scrapy Selectors are built over the `libxml2`_ library, which
 means they're very similar in speed and parsing accuracy.
 
 This page explains how selectors work and describes their API which is very
 small and simple, unlike the `lxml`_ API which is much bigger because the
-`lxml`_ library can be use for many other tasks, besides selecting markup
+`lxml`_ library can be used for many other tasks, besides selecting markup
 documents.
 
 For a complete reference of the selectors API see the :ref:`XPath selector
@@ -56,7 +55,7 @@ There are two types of selectors bundled with Scrapy. Those are:
 .. highlight:: python
 
 Both share the same selector API, and are constructed with a Response object as
-its first parameter. This is the Response they're gonna be "selecting".
+their first parameter. This is the Response they're going to be "selecting".
 
 Example::
 
@@ -67,7 +66,7 @@ Using selectors with XPaths
 ---------------------------
 
 To explain how to use the selectors we'll use the `Scrapy shell` (which
-provides interactive testing) and an example page located in Scrapy
+provides interactive testing) and an example page located in the Scrapy
 documentation server:
 
     http://doc.scrapy.org/_static/selectors-sample1.html
@@ -85,26 +84,26 @@ First, let's open the shell::
 
     scrapy shell http://doc.scrapy.org/_static/selectors-sample1.html
 
-Then, after the shell loads, you'll have some selectors already instanced and
+Then, after the shell loads, you'll have some selectors already instantiated and
 ready to use.
 
-Since we're dealing with HTML we'll be using the
+Since we're dealing with HTML, we'll be using the
 :class:`~scrapy.selector.HtmlXPathSelector` object which is found, by default, in
 the ``hxs`` shell variable.
 
 .. highlight:: python
 
-So, by looking at the :ref:`HTML code <topics-selectors-htmlcode>` of that page
+So, by looking at the :ref:`HTML code <topics-selectors-htmlcode>` of that page,
 let's construct an XPath (using an HTML selector) for selecting the text inside
 the title tag::
 
     >>> hxs.select('//title/text()')
     [<HtmlXPathSelector (text) xpath=//title/text()>]
 
-As you can see, the select() method returns a XPathSelectorList, which is a list of
+As you can see, the select() method returns an XPathSelectorList, which is a list of
 new selectors. This API can be used quickly for extracting nested data. 
 
-To actually extract the textual data you must call the selector ``extract()``
+To actually extract the textual data, you must call the selector ``extract()``
 method, as follows::
 
     >>> hxs.select('//title/text()').extract()
@@ -184,7 +183,7 @@ starts with ``/``, that XPath will be absolute to the document and not relative
 to the ``XPathSelector`` you're calling it from.
 
 For example, suppose you want to extract all ``<p>`` elements inside ``<div>``
-elements. First you get would get all ``<div>`` elements::
+elements. First, you would get all ``<div>`` elements::
 
     >>> divs = hxs.select('//div')
 
@@ -235,7 +234,7 @@ XPathSelector objects
    ``response`` is a :class:`~scrapy.http.Response` object that will be used
    for selecting and extracting data 
 
-   .. method:: XPathSelector.select(xpath)
+   .. method:: select(xpath)
 
        Apply the given XPath relative to this XPathSelector and return a list
        of :class:`XPathSelector` objects (ie. a :class:`XPathSelectorList`) with
@@ -243,7 +242,7 @@ XPathSelector objects
 
        ``xpath`` is a string containing the XPath to apply
 
-   .. method:: XPathSelector.re(regex)
+   .. method:: re(regex)
 
        Apply the given regex and return a list of unicode strings with the
        matches.
@@ -251,12 +250,12 @@ XPathSelector objects
        ``regex`` can be either a compiled regular expression or a string which
        will be compiled to a regular expression using ``re.compile(regex)``
 
-   .. method:: XPathSelector.extract()
+   .. method:: extract()
 
        Return a unicode string with the content of this :class:`XPathSelector`
        object.
 
-   .. method:: XPathSelector.extract_unquoted()
+   .. method:: extract_unquoted()
 
        Return a unicode string with the content of this :class:`XPathSelector`
        without entities or CDATA. This method is intended to be use for text-only
@@ -264,13 +263,13 @@ XPathSelector objects
        :class:`XPathSelector` objects which don't select a textual content (ie. if
        they contain tags), the output of this method is undefined.
 
-   .. method:: XPathSelector.register_namespace(prefix, uri)
+   .. method:: register_namespace(prefix, uri)
 
        Register the given namespace to be used in this :class:`XPathSelector`.
        Without registering namespaces you can't select or extract data from
        non-standard namespaces. See examples below.
 
-   .. method:: XPathSelector.__nonzero__()
+   .. method:: __nonzero__()
 
        Returns ``True`` if there is any real content selected by this
        :class:`XPathSelector` or ``False`` otherwise.  In other words, the boolean
@@ -284,15 +283,15 @@ XPathSelectorList objects
    The :class:`XPathSelectorList` class is subclass of the builtin ``list``
    class, which provides a few additional methods.
 
-   .. method:: XPathSelectorList.select(xpath)
+   .. method:: select(xpath)
 
-       Call the :meth:`XPathSelector.re` method for all :class:`XPathSelector`
-       objects in this list and return their results flattened, as new
+       Call the :meth:`XPathSelector.select` method for all :class:`XPathSelector`
+       objects in this list and return their results flattened, as a new
        :class:`XPathSelectorList`.
 
-       ``xpath`` is the same argument as the one in :meth:`XPathSelector.x`
+       ``xpath`` is the same argument as the one in :meth:`XPathSelector.select`
 
-   .. method:: XPathSelector.re(regex)
+   .. method:: re(regex)
 
        Call the :meth:`XPathSelector.re` method for all :class:`XPathSelector`
        objects in this list and return their results flattened, as a list of
@@ -300,13 +299,13 @@ XPathSelectorList objects
 
        ``regex`` is the same argument as the one in :meth:`XPathSelector.re`
 
-   .. method:: XPathSelector.extract()
+   .. method:: extract()
 
-       Call the :meth:`XPathSelector.re` method for all :class:`XPathSelector`
+       Call the :meth:`XPathSelector.extract` method for all :class:`XPathSelector`
        objects in this list and return their results flattened, as a list of
        unicode strings.
 
-   .. method:: XPathSelector.extract_unquoted()
+   .. method:: extract_unquoted()
 
        Call the :meth:`XPathSelector.extract_unoquoted` method for all
        :class:`XPathSelector` objects in this list and return their results
@@ -328,8 +327,8 @@ HtmlXPathSelector examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Here's a couple of :class:`HtmlXPathSelector` examples to illustrate several
-concepts.  In all cases we assume there is already a :class:`HtmlPathSelector`
-instanced with a :class:`~scrapy.http.Response` object like this::
+concepts.  In all cases, we assume there is already an :class:`HtmlPathSelector`
+instantiated with a :class:`~scrapy.http.Response` object like this::
 
       x = HtmlXPathSelector(html_response)
 
@@ -371,7 +370,7 @@ XmlXPathSelector examples
 
 Here's a couple of :class:`XmlXPathSelector` examples to illustrate several
 concepts.  In all cases we assume there is already a :class:`XmlPathSelector`
-instanced with a :class:`~scrapy.http.Response` object like this::
+instantiated with a :class:`~scrapy.http.Response` object like this::
 
       x = HtmlXPathSelector(xml_response)
 

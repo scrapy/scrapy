@@ -10,11 +10,11 @@ Settings
 The Scrapy settings allows you to customize the behaviour of all Scrapy
 components, including the core, extensions, pipelines and spiders themselves.
 
-The infrastructure of setting provides a global namespace of key-value mappings
+The infrastructure of the settings provides a global namespace of key-value mappings
 that the code can use to pull configuration values from. The settings can be
 populated through different mechanisms, which are described below.
 
-The settings is also the mechanism for selecting the currently active Scrapy
+The settings are also the mechanism for selecting the currently active Scrapy
 project (in case you have many).
 
 For a list of available built-in settings see: :ref:`topics-settings-ref`.
@@ -46,13 +46,13 @@ precedence:
  4. Default settings per-command
  5. Default global settings (less precedence)
 
-This mechanisms are described with more detail below.
+These mechanisms are described in more detail below.
 
 1. Global overrides
 -------------------
 
-Global overrides are the ones that takes most precedence, and are usually
-populated by command line options.
+Global overrides are the ones that take most precedence, and are usually
+populated by command-line options.
 
 Example::
    >>> from scrapy.conf import settings
@@ -163,7 +163,7 @@ to do that you'll have to use one of the following methods:
 .. method:: Settings.getlist(name, default=None)
 
    Get a setting value as a list. If the setting original type is a list it
-   will be returned verbatim. If it's a string it will be splitted by ",".
+   will be returned verbatim. If it's a string it will be split by ",".
 
    For example, settings populated through environment variables set to
    ``'one,two'`` will return a list ['one', 'two'] when using this method.
@@ -245,7 +245,7 @@ COMMANDS_MODULE
 Default: ``''`` (empty string)
 
 A module to use for looking for custom Scrapy commands. This is used to add
-custom command for your Scrapy project.
+custom commands for your Scrapy project.
 
 Example::
 
@@ -530,7 +530,7 @@ Default::
         'scrapy.contrib.closedomain.CloseDomain': 0,
     }
 
-The list of available extensions. Keep in mind that some of them need need to
+The list of available extensions. Keep in mind that some of them need to
 be enabled through a setting. By default, this setting contains all stable
 built-in extensions. 
 
@@ -553,7 +553,7 @@ GROUPSETTINGS_MODULE
 
 Default: ``''`` (empty string)
 
-The module to use for pulling settings from, if the group settings is enabled. 
+The module to use for pulling settings from, if group settings are enabled. 
 
 .. setting:: ITEM_PIPELINES
 
@@ -740,7 +740,7 @@ spider.
 
 This randomization decreases the chance of the crawler being detected (and
 subsequently blocked) by sites which analyze requests looking for statistically
-significant similarities in the time between their times.
+significant similarities in the time between their requests.
 
 The randomization policy is the same used by `wget`_ ``--random-wait`` option.
 
@@ -966,7 +966,7 @@ STATSMAILER_RCPTS
 
 Default: ``[]`` (empty list)
 
-Send Scrapy stats after domains finish scrapy. See
+Send Scrapy stats after domains finish scraping. See
 :class:`~scrapy.contrib.statsmailer.StatsMailer` for more info.
 
 .. setting:: TELNETCONSOLE_ENABLED
@@ -1019,6 +1019,6 @@ USER_AGENT
 
 Default: ``"%s/%s" % (BOT_NAME, BOT_VERSION)``
 
-The default User-Agent to use when crawling, unless overrided. 
+The default User-Agent to use when crawling, unless overridden. 
 
 .. _Amazon web services: http://aws.amazon.com/

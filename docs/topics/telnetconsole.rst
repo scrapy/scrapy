@@ -64,15 +64,15 @@ convenience:
 
 .. _pprint.pprint: http://docs.python.org/library/pprint.html#pprint.pprint
 
-Some example of using the telnet console
-========================================
+Telnet console usage examples
+=============================
 
 Here are some example tasks you can do with the telnet console:
 
 View engine status
 ------------------
 
-You can use the ``st()`` method of the Scrapy engine to quickly show its state
+You can use the ``est()`` method of the Scrapy engine to quickly show its state
 using the telnet console::
 
     telnet localhost 6023
@@ -105,8 +105,8 @@ using the telnet console::
       len(self._scraping[domain])                        : 0
 
 
-Pause, resume and stop Scrapy engine
-------------------------------------
+Pause, resume and stop the Scrapy engine
+----------------------------------------
 
 To pause::
 

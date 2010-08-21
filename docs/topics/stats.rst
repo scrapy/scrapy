@@ -121,7 +121,7 @@ class (which they all inherit from).
 
         Get all stats from the given spider (if spider is given) or all global
         stats otherwise, as a dict. If spider is not opened ``KeyError`` is
-        raied.
+        raised.
 
     .. method:: set_value(key, value, spider=None)
 
@@ -146,7 +146,7 @@ class (which they all inherit from).
 
         Set the given value for the given key only if current value for the
         same key is lower than value. If there is no current value for the
-        given key, the value is always set. If spider is not given the global
+        given key, the value is always set. If spider is not given, the global
         stats table is used, otherwise the spider-specific stats table is used,
         which must be opened or a KeyError will be raised.
 
@@ -154,7 +154,7 @@ class (which they all inherit from).
 
         Set the given value for the given key only if current value for the
         same key is greater than value. If there is no current value for the
-        given key, the value is always set. If spider is not given the global
+        given key, the value is always set. If spider is not given, the global
         stats table is used, otherwise the spider-specific stats table is used,
         which must be opened or a KeyError will be raised.
 
@@ -191,7 +191,7 @@ Available Stats Collectors
 Besides the basic :class:`StatsCollector` there are other Stats Collectors
 available in Scrapy which extend the basic Stats Collector. You can select
 which Stats Collector to use through the :setting:`STATS_CLASS` setting. The
-default Stats Collector is the :class:`MemoryStatsCollector` is used. 
+default Stats Collector used is the :class:`MemoryStatsCollector`. 
 
 When stats are disabled (through the :setting:`STATS_ENABLED` setting) the
 :setting:`STATS_CLASS` setting is ignored and the :class:`DummyStatsCollector`
@@ -220,7 +220,7 @@ DummyStatsCollector
 .. class:: DummyStatsCollector
 
     A Stats collector which does nothing but is very efficient. This is the
-    Stats Collector used when stats are diabled (through the
+    Stats Collector used when stats are disabled (through the
     :setting:`STATS_ENABLED` setting).
 
 SimpledbStatsCollector
@@ -237,17 +237,17 @@ SimpledbStatsCollector
     :setting:`STATS_SDB_DOMAIN` setting. The domain will be created if it
     doesn't exist.
     
-    In addition to the existing stats keys the following keys are added at
+    In addition to the existing stats keys, the following keys are added at
     persitance time:
 
         * ``spider``: the spider name (so you can use it later for querying stats
           for that spider)
-        * ``timestamp``: the timestamp when the stats were persisited
+        * ``timestamp``: the timestamp when the stats were persisted
 
-    Both the ``spider`` and ``timestamp`` are used for generating the SimpleDB
+    Both the ``spider`` and ``timestamp`` are used to generate the SimpleDB
     item name in order to avoid overwriting stats of previous scraping runs.
 
-    As `required by SimpleDB`_, datetime's are stored in ISO 8601 format and
+    As `required by SimpleDB`_, datetimes are stored in ISO 8601 format and
     numbers are zero-padded to 16 digits. Negative numbers are not currently
     supported.
 
@@ -276,7 +276,7 @@ STATS_SDB_ASYNC
 
 Default: ``False``
 
-If ``True`` communication with SimpleDB will be performed asynchronously. If
+If ``True``, communication with SimpleDB will be performed asynchronously. If
 ``False`` blocking IO will be used instead. This is the default as using
 asynchronous communication can result in the stats not being persisted if the
 Scrapy engine is shut down in the middle (for example, when you run only one
@@ -295,7 +295,7 @@ functionality:
 .. function:: stats_spider_opened(spider)
 
     Sent right after the stats spider is opened. You can use this signal to add
-    startup stats for spider (example: start time).
+    startup stats for the spider (example: start time).
 
     :param spider: the stats spider just opened
     :type spider: str
@@ -318,7 +318,7 @@ functionality:
 
     Sent right after the stats spider is closed. You can use this signal to
     collect resources, but not to add any more stats as the stats spider has
-    already been close (use :signal:`stats_spider_closing` for that instead).
+    already been closed (use :signal:`stats_spider_closing` for that instead).
 
     :param spider: the stats spider just closed
     :type spider: str

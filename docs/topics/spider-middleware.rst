@@ -7,7 +7,7 @@ Spider Middleware
 The spider middleware is a framework of hooks into Scrapy's spider processing
 mechanism where you can plug custom functionality to process the requests that
 are sent to :ref:`topics-spiders` for processing and to process the responses
-and item that are generated from spiders. 
+and items that are generated from spiders. 
 
 .. _topics-spider-middleware-setting:
 

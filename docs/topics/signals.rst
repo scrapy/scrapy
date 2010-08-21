@@ -137,7 +137,7 @@ spider_closed
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
     :param reason: a string which describes the reason why the spider was closed. If
-        it was closed because the spider has completed scraping, it the reason
+        it was closed because the spider has completed scraping, the reason
         is ``'finished'``. Otherwise, if the spider was manually closed by
         calling the ``close_spider`` engine method, then the reason is the one
         passed in the ``reason`` argument of that method (which defaults to

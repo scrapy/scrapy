@@ -4,11 +4,11 @@
 Item Pipeline
 =============
 
-After an item has been scraped by a spider it is sent to the Item Pipeline
+After an item has been scraped by a spider, it is sent to the Item Pipeline
 which process it through several components that are executed sequentially.
 
-Item pipeline are usually implemented on each project. Typical usage for item
-pipelines are:
+Item pipelines are usually implemented on each project. Typical usage for item
+pipelines consists of:
 
 * HTML cleansing
 * validation
@@ -54,7 +54,7 @@ Additionally, they may also implement the following methods:
 Item pipeline example
 =====================
 
-Let's take a look at following hypothetic pipeline that adjusts the ``price``
+Let's take a look at the following hypothetic pipeline that adjusts the ``price``
 attribute for those items that do not include VAT (``price_excludes_vat``
 attribute), and drops those items which don't contain a price::
 
@@ -73,8 +73,8 @@ attribute), and drops those items which don't contain a price::
                 raise DropItem("Missing price in %s" % item)
 
 
-Activating a Item Pipeline component
-====================================
+Activating an Item Pipeline component
+=====================================
 
 To activate an Item Pipeline component you must add its class to the
 :setting:`ITEM_PIPELINES` list, like in the following example::
@@ -87,10 +87,10 @@ Item pipeline example with resources per spider
 ===============================================
 
 Sometimes you need to keep resources about the items processed grouped per
-spider, and delete those resource when a spider finish.
+spider, and delete those resource when a spider finishes.
 
 An example is a filter that looks for duplicate items, and drops those items
-that were already processed. Let say that our items has an unique id, but our
+that were already processed. Let say that our items have an unique id, but our
 spider returns multiples items with the same id::
 
 

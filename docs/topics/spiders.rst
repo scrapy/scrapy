@@ -22,21 +22,21 @@ For spiders, the scraping cycle goes through something like this:
    :attr:`~scrapy.spider.BaseSpider.parse` method as callback function for the
    Requests.
 
-2. In the callback function you parse the response (web page) and return either
+2. In the callback function, you parse the response (web page) and return either
    :class:`~scrapy.item.Item` objects, :class:`~scrapy.http.Request` objects,
    or an iterable of both. Those Requests will also contain a callback (maybe
-   the same) and will then be followed by downloaded by Scrapy and then their
-   response handled to the specified callback.
+   the same) and will then be downloaded by Scrapy and then their
+   response handled by the specified callback.
 
-3. In callback functions you parse the page contants, typically using
+3. In callback functions, you parse the page contents, typically using
    :ref:`topics-selectors` (but you can also use BeautifuSoup, lxml or whatever
    mechanism you prefer) and generate items with the parsed data.
 
-4. Finally the items returned from the spider will be typically persisted in
+4. Finally, the items returned from the spider will be typically persisted in
    some Item pipeline.
 
-Even though this cycles applies (more or less) to any kind of spider, there are
-different kind of default spiders bundled into Scrapy for different purposes.
+Even though this cycle applies (more or less) to any kind of spider, there are
+different kinds of default spiders bundled into Scrapy for different purposes.
 We will talk about those types here.
 
 
@@ -45,7 +45,7 @@ We will talk about those types here.
 Built-in spiders reference
 ==========================
 
-For the examples used in the following spiders reference we'll assume we have a
+For the examples used in the following spiders reference, we'll assume we have a
 ``TestItem`` declared in a ``myproject.items`` module, in your project::
 
     from scrapy.item import Item
@@ -89,7 +89,7 @@ BaseSpider
 
    .. attribute:: start_urls
 
-       Is a list of URLs where the spider will begin to crawl from, when no
+       A list of URLs where the spider will begin to crawl from, when no
        particular URLs are specified. So, the first pages downloaded will be those
        listed here. The subsequent URLs will be generated successively from data
        contained in the start URLs.
@@ -109,7 +109,7 @@ BaseSpider
        generate Requests for each url in :attr:`start_urls`.
 
        If you want to change the Requests used to start scraping a domain, this is
-       the method to override. For example, if you need to start by login in using
+       the method to override. For example, if you need to start by logging in using
        a POST request, you could do::
 
            def start_requests(self):
@@ -213,7 +213,7 @@ CrawlSpider
    provides a convenient mechanism for following links by defining a set of rules.
    It may not be the best suited for your particular web sites or project, but
    it's generic enough for several cases, so you can start from it and override it
-   as need more custom functionality, or just implement your own spider.
+   as needed for more custom functionality, or just implement your own spider.
 
    Apart from the attributes inherited from BaseSpider (that you must
    specify), this class supports a new attribute: 
@@ -222,7 +222,7 @@ CrawlSpider
 
        Which is a list of one (or more) :class:`Rule` objects.  Each :class:`Rule`
        defines a certain behaviour for crawling the site. Rules objects are
-       described below .
+       described below.
        
 Crawling rules
 ~~~~~~~~~~~~~~
@@ -240,7 +240,7 @@ Crawling rules
    ``cb_kwargs`` is a dict containing the keyword arguments to be passed to the
    callback function
 
-   ``follow`` is a boolean which specified if links should be followed from each
+   ``follow`` is a boolean which specifies if links should be followed from each
    response extracted with this rule. If ``callback`` is None ``follow`` defaults
    to ``True``, otherwise it default to ``False``.
 
@@ -306,7 +306,7 @@ XMLFeedSpider
     whole DOM at once in order to parse it.  However, using ``html`` as the
     iterator may be useful when parsing XML with bad markup.
 
-    For setting the iterator and the tag name, you must define the following class
+    To set the iterator and the tag name, you must define the following class
     attributes:  
 
     .. attribute:: iterator
@@ -356,9 +356,9 @@ XMLFeedSpider
     .. method:: adapt_response(response)
 
         A method that receives the response as soon as it arrives from the spider
-        middleware and before start parsing it. It can be used used for modifying
+        middleware, before the spider starts parsing it. It can be used to modify
         the response body before parsing it. This method receives a response and
-        returns response (it could be the same or another one).
+        also returns a response (it could be the same or another one).
 
     .. method:: parse_node(response, selector)
        
@@ -375,13 +375,13 @@ XMLFeedSpider
         spider, and it's intended to perform any last time processing required
         before returning the results to the framework core, for example setting the
         item IDs. It receives a list of results and the response which originated
-        that results. It must return a list of results (Items or Requests)."""
+        those results. It must return a list of results (Items or Requests).
 
 
 XMLFeedSpider example
 ~~~~~~~~~~~~~~~~~~~~~
 
-These spiders are pretty easy to use, let's have at one example::
+These spiders are pretty easy to use, let's have a look at one example::
 
     from scrapy import log
     from scrapy.contrib.spiders import XMLFeedSpider
@@ -403,7 +403,7 @@ These spiders are pretty easy to use, let's have at one example::
             item['description'] = node.select('description').extract()
             return item
 
-Basically what we did up there was creating a spider that downloads a feed from
+Basically what we did up there was to create a spider that downloads a feed from
 the given ``start_urls``, and then iterates through each of its ``item`` tags,
 prints them out, and stores some random data in an :class:`~scrapy.item.Item`.
 
@@ -416,22 +416,22 @@ CSVFeedSpider
    over rows, instead of nodes. The method that gets called in each iteration
    is :meth:`parse_row`.
 
-   .. attribute:: CSVFeedSpider.delimiter
+   .. attribute:: delimiter
 
        A string with the separator character for each field in the CSV file
        Defaults to ``','`` (comma).
 
-   .. attribute:: CSVFeedSpider.headers
+   .. attribute:: headers
       
-       A list of the rows contained in the file CSV feed which will be used for
-       extracting fields from it.
+       A list of the rows contained in the file CSV feed which will be used to
+       extract fields from it.
 
-   .. method:: CSVFeedSpider.parse_row(response, row)
+   .. method:: parse_row(response, row)
       
        Receives a response and a dict (representing each row) with a key for each
        provided (or detected) header of the CSV file.  This spider also gives the
        opportunity to override ``adapt_response`` and ``process_results`` methods
-       for pre and post-processing purposes.
+       for pre- and post-processing purposes.
 
 CSVFeedSpider example
 ~~~~~~~~~~~~~~~~~~~~~

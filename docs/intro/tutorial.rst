@@ -4,13 +4,13 @@
 Scrapy Tutorial
 ===============
 
-In this tutorial, we'll assume that Scrapy is already installed in your system.
-If that's not the case see :ref:`intro-install`.
+In this tutorial, we'll assume that Scrapy is already installed on your system.
+If that's not the case, see :ref:`intro-install`.
 
 We are going to use `Open directory project (dmoz) <http://www.dmoz.org/>`_ as
 our example domain to scrape.
 
-This tutorial will walk you through through these tasks:
+This tutorial will walk you through these tasks:
 
 1. Creating a new Scrapy project
 2. Defining the Items you will extract
@@ -33,7 +33,7 @@ for non-programmers`_.
 Creating a project
 ==================
 
-Before start scraping, you will have set up a new Scrapy project. Enter a
+Before you start scraping, you will have set up a new Scrapy project. Enter a
 directory where you'd like to store your code and then run::
 
    scrapy startproject dmoz
@@ -64,19 +64,19 @@ These are basically:
 Defining our Item
 =================
 
-`Items` are containers that will be loaded with the scraped data, they work
+`Items` are containers that will be loaded with the scraped data; they work
 like simple python dicts but they offer some additional features like providing
 default values.
 
 They are declared by creating an :class:`scrapy.item.Item` class an defining
 its attributes as :class:`scrapy.item.Field` objects, like you will in an ORM
-(don't worry if you're not familiar with ORM's, you will see that this is an
+(don't worry if you're not familiar with ORMs, you will see that this is an
 easy task).
 
 We begin by modeling the item that we will use to hold the sites data obtained
 from dmoz.org, as we want to capture the name, url and description of the
 sites, we define fields for each of these three attributes. To do that, we edit
-items.py, found in the dmoz directory. Our Item class looks like::
+items.py, found in the dmoz directory. Our Item class looks like this::
 
     # Define here the models for your scraped items
 
@@ -93,7 +93,7 @@ components of Scrapy that need to know how your item looks like.
 Our first Spider
 ================
 
-Spiders are user written classes to scrape information from a domain (or group
+Spiders are user-written classes used to scrape information from a domain (or group
 of domains). 
 
 They define an initial list of URLs to download, how to follow links, and how
@@ -122,7 +122,7 @@ define the three main, mandatory, attributes:
   the response and returning scraped data (as :class:`~scrapy.item.Item`
   objects) and more URLs to follow (as :class:`~scrapy.http.Request` objects).
 
-This is the code for our first Spider, save it in a file named
+This is the code for our first Spider; save it in a file named
 ``dmoz_spider.py`` under the ``dmoz/spiders`` directory::
 
    from scrapy.spider import BaseSpider
@@ -176,7 +176,7 @@ Scrapy creates :class:`scrapy.http.Request` objects for each URL in the
 ``start_urls`` attribute of the Spider, and assigns them the ``parse`` method of
 the spider as their callback function.
 
-These Requests are scheduled, then executed, and a
+These Requests are scheduled, then executed, and
 :class:`scrapy.http.Response` objects are returned and then fed back to the
 spider, through the :meth:`~scrapy.spider.BaseSpider.parse` method.
 
@@ -186,7 +186,7 @@ Extracting Items
 Introduction to Selectors
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-There are several ways to extract data from web pages, Scrapy uses a mechanism
+There are several ways to extract data from web pages. Scrapy uses a mechanism
 based on `XPath`_ expressions called :ref:`XPath selectors <topics-selectors>`.
 For more information about selectors and other extraction mechanisms see the
 :ref:`XPath selectors documentation <topics-selectors>`.
@@ -207,7 +207,7 @@ Here are some examples of XPath expressions and their meanings:
   attribute ``class="mine"``
 
 These are just a couple of simple examples of what you can do with XPath, but
-XPath expression are indeed much more powerful. To learn more about XPath we
+XPath expressions are indeed much more powerful. To learn more about XPath we
 recommend `this XPath tutorial <http://www.w3schools.com/XPath/default.asp>`_.
 
 For working with XPaths, Scrapy provides a :class:`~scrapy.selector.XPathSelector`
@@ -216,21 +216,21 @@ class, which comes in two flavours, :class:`~scrapy.selector.HtmlXPathSelector`
 order to use them you must instantiate the desired class with a
 :class:`~scrapy.http.Response` object.
 
-You can see selectors as objects that represents nodes in the document
+You can see selectors as objects that represent nodes in the document
 structure. So, the first instantiated selectors are associated to the root
 node, or the entire document.
 
 Selectors have three methods (click on the method to see the complete API
 documentation).
 
-* :meth:`~scrapy.selector.XPathSelector.x`: returns a list of selectors, each of
+* :meth:`~scrapy.selector.XPathSelector.select`: returns a list of selectors, each of
   them representing the nodes selected by the xpath expression given as
   argument. 
 
 * :meth:`~scrapy.selector.XPathSelector.extract`: returns a unicode string with
    the data selected by the XPath selector.
 
-* :meth:`~scrapy.selector.XPathSelector.re`: returns a list unicode strings
+* :meth:`~scrapy.selector.XPathSelector.re`: returns a list of unicode strings
   extracted by applying the regular expression given as argument.
 
 
@@ -241,7 +241,7 @@ To illustrate the use of Selectors we're going to use the built-in :ref:`Scrapy
 shell <topics-shell>`, which also requires IPython (an extended Python console)
 installed on your system.
 
-To start a shell you must go to the project's top level directory and run::
+To start a shell, you must go to the project's top level directory and run::
 
    scrapy shell http://www.dmoz.org/Computers/Programming/Languages/Python/Books/
 
@@ -266,10 +266,10 @@ This is what the shell looks like::
 
 After the shell loads, you will have the response fetched in a local
 ``response`` variable, so if you type ``response.body`` you will see the body
-of the response, or you can ``response.headers`` to see its headers.
+of the response, or you can type ``response.headers`` to see its headers.
 
 The shell also instantiates two selectors, one for HTML (in the ``hxs``
-variable) and one for XML (in the ``xxs`` variable)with this response. So let's
+variable) and one for XML (in the ``xxs`` variable) with this response. So let's
 try them::
 
    In [1]: hxs.select('/html/head/title')
@@ -298,7 +298,7 @@ there could become a very tedious task. To make this an easier task, you can
 use some Firefox extensions like Firebug. For more information see
 :ref:`topics-firebug` and :ref:`topics-firefox`.
 
-After inspecting the page source you'll find that the web sites information
+After inspecting the page source, you'll find that the web sites information
 is inside a ``<ul>`` element, in fact the *second* ``<ul>`` element.
 
 So we can select each ``<li>`` element belonging to the sites list with this
@@ -331,9 +331,9 @@ that property here, so::
 
 .. note::
 
-   For a more detailed description of using nested selectors see
+   For a more detailed description of using nested selectors, see
    :ref:`topics-selectors-nesting-selectors` and
-   :ref:`topics-selectors-relative-xpaths` in :ref:`topics-selectors`
+   :ref:`topics-selectors-relative-xpaths` in the :ref:`topics-selectors`
    documentation
 
 Let's add this code to our spider::
@@ -366,8 +366,8 @@ in your output, run::
 Using our item
 --------------
 
-:class:`~scrapy.item.Item` objects are custom python dict, you can access the
-values oftheir fields (attributes of the class we defined earlier) using the
+:class:`~scrapy.item.Item` objects are custom python dicts; you can access the
+values of their fields (attributes of the class we defined earlier) using the
 standard dict syntax like::
 
    >>> item = DmozItem()
@@ -422,7 +422,7 @@ validation, checking for duplicates, or storing it in a database), and then
 decide if the Item continues through the Pipeline or it's dropped and no longer
 processed.
 
-In small projects (like the one on this tutorial) we will use only one Item
+In small projects (like the one on this tutorial), we will use only one Item
 Pipeline that just stores our Items.
 
 As with Items, a Pipeline placeholder has been set up for you in the project

@@ -32,7 +32,7 @@ attribute.
 
 Then, you start collecting values into the Item Loader, typically using
 :ref:`XPath Selectors <topics-selectors>`. You can add more than one value to
-the same item field, the Item Loader will know how to "join" those values later
+the same item field; the Item Loader will know how to "join" those values later
 using a proper processing function.
 
 Here is a typical Item Loader usage in a :ref:`Spider <topics-spiders>`, using
@@ -51,7 +51,7 @@ chapter <topics-items>`::
         l.add_value('last_updated', 'today') # you can also use literal values
         return l.load_item()
 
-By quickly looking at that code we can see the ``name`` field is being
+By quickly looking at that code, we can see the ``name`` field is being
 extracted from two different XPath locations in the page:
 
 1. ``//div[@class="product_name"]``
@@ -86,7 +86,7 @@ called with the data previously collected (and processed using the input
 processor). The result of the output processor is the final value that gets
 assigned to the item.
 
-Let's see an example to illustrate how this input and output processors are
+Let's see an example to illustrate how the input and output processors are
 called for a particular field (the same applies for any other field)::
 
     l = XPathItemLoader(Product(), some_xpath_selector)
@@ -105,7 +105,7 @@ So what happens is:
    processor* used in (1). The result of the input processor is appended to the
    data collected in (1) (if any).
 
-3. This case is similar to the previous ones, except that the values to be
+3. This case is similar to the previous ones, except that the value to be
    collected is assigned directly, instead of being extracted from a XPath.
    However, the value is still passed through the input processors. In this
    case, since the value is not iterable it is converted to an iterable of a
@@ -118,7 +118,7 @@ So what happens is:
 
 It's worth noticing that processors are just callable objects, which are called
 with the data to be parsed, and return a parsed value. So you can use any
-function as input or output processor. They only requirement is that they must
+function as input or output processor. The only requirement is that they must
 accept one (and only one) positional argument, which will be an iterator.
 
 .. note:: Both input and output processors must receive an iterator as their
@@ -435,10 +435,10 @@ different parsing rules for each spider, having a lot of exceptions, but also
 wanting to reuse the common processors.
 
 Item Loaders are designed to ease the maintenance burden of parsing rules,
-without loosing flexibility and, at the same time, providing a convenient
+without losing flexibility and, at the same time, providing a convenient
 mechanism for extending and overriding them. For this reason Item Loaders
 support traditional Python class inheritance for dealing with differences of
-specific spiders (or group of spiders).
+specific spiders (or groups of spiders).
 
 Suppose, for example, that some particular site encloses their product names in
 three dashes (ie. ``---Plasma TV---``) and you don't want to end up scraping
@@ -454,7 +454,7 @@ Product Item Loader (``ProductLoader``)::
         return x.strip('-')
 
     class SiteSpecificLoader(ProductLoader):
-        name_in = MapCompose(ProductLoader.name_in, strip_dashes)
+        name_in = MapCompose(strip_dashes, ProductLoader.name_in)
 
 Another case where extending Item Loaders can be very helpful is when you have
 multiple source formats, for example XML and HTML. In the XML version you may
@@ -476,8 +476,8 @@ rule (as input processors do). See also:
 
 There are many other possible ways to extend, inherit and override your Item
 Loaders, and different Item Loaders hierarchies may fit better for different
-projects. Scrapy only provides the mechanism, it doesn't impose any specific
-organization of your Loaders collection - that's up to you and your project
+projects. Scrapy only provides the mechanism; it doesn't impose any specific
+organization of your Loaders collection - that's up to you and your project's
 needs.
 
 .. _topics-loaders-available-processors:
@@ -491,7 +491,7 @@ Available built-in processors
 Even though you can use any callable function as input and output processors,
 Scrapy provides some commonly used processors, which are described below. Some
 of them, like the :class:`MapCompose` (which is typically used as input
-processor) composes the output of several functions executed in order, to
+processor) compose the output of several functions executed in order, to
 produce the final parsed value.
 
 Here is a list of all built-in processors:
@@ -524,7 +524,7 @@ Here is a list of all built-in processors:
 
 .. class:: Join(separator=u' ')
 
-    Return the values joined with the separator given in the constructor, which
+    Returns the values joined with the separator given in the constructor, which
     defaults to ``u' '``. It doesn't accept Loader contexts.
 
     When using the default separator, this processor is equivalent to the
@@ -559,7 +559,7 @@ Here is a list of all built-in processors:
         'HELLO'
 
     Each function can optionally receive a ``loader_context`` parameter. For
-    those which does this processor will pass the currently active :ref:`Loader
+    those which do, this processor will pass the currently active :ref:`Loader
     context <topics-loaders-context>` through that parameter.
 
     The keyword arguments passed in the constructor are used as the default

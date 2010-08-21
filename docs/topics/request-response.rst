@@ -15,8 +15,8 @@ across the system until they reach the Downloader, which executes the request
 and returns a :class:`Response` object which travels back to the spider that
 issued the request.
 
-Both :class:`Request` and :class:`Response` classes have subclasses which adds
-additional functionality not required in the base classes. These are described
+Both :class:`Request` and :class:`Response` classes have subclasses which add
+functionality not required in the base classes. These are described
 below in :ref:`topics-request-response-ref-request-subclasses` and
 :ref:`topics-request-response-ref-response-subclasses`.
 
@@ -261,7 +261,7 @@ objects.
 
        Keep in mind that this method is implemented using `ClientForm`_ whose
        policy is to automatically simulate a click, by default, on any form
-       control that looks clickable, like a a ``<input type="submit">``.  Even
+       control that looks clickable, like a ``<input type="submit">``.  Even
        though this is quite convenient, and often the desired behaviour,
        sometimes it can cause problems which could be hard to debug. For
        example, when working with forms that are filled and/or submitted using
@@ -284,12 +284,12 @@ objects.
           overridden by the one passed in this parameter.
        :type formdata: dict
 
-       :param clickdata: Arguments to be passed directly to ClientForm
+       :param clickdata: Arguments to be passed directly to the ClientForm
           ``click_request_data()`` method. See `ClientForm`_ homepage for
           more info.
        :type clickdata: dict
 
-       :param dont_click: If True the form data will be sumbitted without
+       :param dont_click: If True, the form data will be sumbitted without
          clicking in any element.
        :type dont_click: boolean
 
@@ -302,8 +302,8 @@ Request usage examples
 Using FormRequest to send data via HTTP POST
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you want to simulate a HTML Form POST in your spider, and send a couple of
-key-value fields you could return a :class:`FormRequest` object (from your
+If you want to simulate a HTML Form POST in your spider and send a couple of
+key-value fields, you can return a :class:`FormRequest` object (from your
 spider) like this::
 
    return [FormRequest(url="http://www.example.com/post/action", 
@@ -396,7 +396,7 @@ Response objects
     .. attribute:: Response.request
 
         The :class:`Request` object that generated this response. This attribute is
-        assigned in the Scrapy engine, after the response and request has passed
+        assigned in the Scrapy engine, after the response and the request have passed
         through all :ref:`Downloader Middlewares <topics-downloader-middleware>`.
         In particular, this means that:
 
@@ -404,7 +404,7 @@ Response objects
           redirection) to be assigned to the redirected response (with the final
           URL after redirection).
 
-        - Response.request.url doesn't always equals Response.url
+        - Response.request.url doesn't always equal Response.url
 
         - This attribute is only available in the spider code, and in the 
           :ref:`Spider Middlewares <topics-spider-middleware>`, but not in
@@ -426,11 +426,11 @@ Response objects
 
     .. method:: Response.copy()
 
-       Return a new Response which is a copy of this Response.
+       Returns a new Response which is a copy of this Response.
 
     .. method:: Response.replace([url, status, headers, body, meta, flags, cls])
 
-       Return a Response object with the same members, except for those members
+       Returns a Response object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The
        attribute :attr:`Response.meta` is copied by default (unless a new value
        is given in the ``meta`` argument).
@@ -452,15 +452,15 @@ TextResponse objects
     :class:`Response` class, which is meant to be used only for binary data,
     such as images, sounds or any media file.
 
-    :class:`TextResponse` objects support a new constructor arguments, in
+    :class:`TextResponse` objects support a new constructor argument, in
     addition to the base :class:`Response` objects. The remaining functionality
     is the same as for the :class:`Response` class and is not documented here.
 
     :param encoding: is a string which contains the encoding to use for this
        response. If you create a :class:`TextResponse` object with a unicode
-       body it will be encoded using this encoding (remember the body attribute
+       body, it will be encoded using this encoding (remember the body attribute
        is always a string). If ``encoding`` is ``None`` (default value), the
-       encoding will be looked up in the response headers anb body instead.
+       encoding will be looked up in the response headers and body instead.
     :type encoding: string
 
     :class:`TextResponse` objects support the following attributes in addition

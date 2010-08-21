@@ -4,8 +4,8 @@
 Installation guide
 ==================
 
-This document describes how to install Scrapy in Linux, Windows and Mac OS X
-systems and it consists on the following 3 steps:
+This document describes how to install Scrapy on Linux, Windows and Mac OS X
+systems and it consists of the following 3 steps:
 
 * :ref:`intro-install-step1`
 * :ref:`intro-install-step2`
@@ -16,7 +16,7 @@ systems and it consists on the following 3 steps:
 Requirements
 ============
 
-* `Python`_ 2.5 or 2.6 (3.x is not yet supported)
+* `Python`_ 2.5, 2.6, 2.7 (3.x is not yet supported)
 
 * `Twisted`_ 2.5.0, 8.0 or above (Windows users: you'll need to install
   `Zope.Interface`_ and maybe `pywin32`_ because of `this Twisted bug`_)
@@ -40,7 +40,7 @@ Optional:
 Step 1. Install Python
 ======================
 
-Scrapy works with Python 2.5 or 2.6, you can get it at http://www.python.org/download/
+Scrapy works with Python 2.5, 2.6 or 2.7, which you can get at http://www.python.org/download/
 
 .. highlight:: sh
 
@@ -55,7 +55,7 @@ platform and operating system you use.
 Ubuntu/Debian
 -------------
 
-If you're running Ubuntu/Debian Linux run the following command as root::
+If you're running Ubuntu/Debian Linux, run the following command as root::
 
    apt-get install python-twisted python-libxml2
 
@@ -66,7 +66,7 @@ To install optional libraries::
 Arch Linux
 ----------
 
-If you are running Arch Linux run the following command as root::
+If you are running Arch Linux, run the following command as root::
 
    pacman -S twisted libxml2
 
@@ -146,7 +146,7 @@ Installing an official release
 
 Download Scrapy from the `Download page`_. Scrapy is distributed in two ways: a
 source code tarball (for Unix and Mac OS X systems) and a Windows installer
-(for Windows). If you downloaded the tarball you can install it as any Python
+(for Windows). If you downloaded the tarball, you can install it as any Python
 package using ``setup.py``::
 
    tar zxf scrapy-X.X.X.tar.gz

@@ -5,12 +5,12 @@ Logging
 =======
 
 Scrapy provides a logging facility which can be used through the
-:mod:`scrapy.log` module. The current underling implementation uses `Twisted
+:mod:`scrapy.log` module. The current underlying implementation uses `Twisted
 logging`_ but this may change in the future.
 
 .. _Twisted logging: http://twistedmatrix.com/projects/core/documentation/howto/logging.html
 
-Logging service must be explicitly started through the :func:`scrapy.log.start` function.
+The logging service must be explicitly started through the :func:`scrapy.log.start` function.
 
 .. _topics-logging-levels:
 
@@ -55,7 +55,7 @@ scrapy.log module
 
 .. attribute:: started
 
-   A boolean which is ``True`` is logging has been started or ``False`` otherwise.
+   A boolean which is ``True`` if logging has been started or ``False`` otherwise.
 
 .. function:: start(logfile=None, loglevel=None, logstdout=None)
 

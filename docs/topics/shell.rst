@@ -14,14 +14,14 @@ data they extract from the web pages you're trying to scrape. It allows you to
 interactively test your XPaths while you're writing your spider, without having
 to run the spider to test every change.
 
-Once you get familiarized with the Scrapy shell you'll see that it's an
+Once you get familiarized with the Scrapy shell, you'll see that it's an
 invaluable tool for developing and debugging your spiders.
 
 If you have `IPython`_ installed, the Scrapy shell will use it (instead of the
-standard Python console). The `IPython`_ console is a much more powerful and
+standard Python console). The `IPython`_ console is much more powerful and
 provides smart auto-completion and colorized output, among other things.
 
-We highly recommend you to install `IPython`_, specially if you're working on
+We highly recommend you install `IPython`_, specially if you're working on
 Unix systems (where `IPython`_ excels). See the `IPython installation guide`_
 for more info.
 
@@ -72,11 +72,11 @@ content).
 Those objects are:
 
  * ``spider`` - the Spider which is known to handle the URL, or a
-   :class:`~scrapy.spider.BaseSpider` object if there is no spider is found for
+   :class:`~scrapy.spider.BaseSpider` object if there is no spider found for
    the current URL
 
  * ``request`` - a :class:`~scrapy.http.Request` object of the last fetched
-   page. You can modify this request using :meth:`~scrapy.http.Request.replace`
+   page. You can modify this request using :meth:`~scrapy.http.Request.replace` or
    fetch a new request (without leaving the shell) using the ``fetch``
    shortcut.
 
@@ -125,7 +125,7 @@ all start with the ``[s]`` prefix)::
 
     >>>
 
-After that, we can stary playing with the objects::
+After that, we can star playing with the objects::
 
     >>> hxs.select("//h2/text()").extract()[0]
     u'Welcome to Scrapy'
@@ -164,7 +164,7 @@ Here's an example of how you would call it from your spider::
 
             # ... your parsing code ..
 
-When you the spider you will get something similar to this::
+When you run the spider, you will get something similar to this::
 
     2009-08-27 19:15:25-0300 [example.com] DEBUG: Crawled <http://www.example.com/> (referer: <None>)
     2009-08-27 19:15:26-0300 [example.com] DEBUG: Crawled <http://www.example.com/products.php> (referer: <http://www.example.com/>)

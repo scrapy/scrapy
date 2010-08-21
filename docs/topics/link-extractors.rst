@@ -9,10 +9,10 @@ pages (:class:`scrapy.http.Response` objects) which will be eventually
 followed.
 
 There are two Link Extractors available in Scrapy by default, but you create
-your own custom Link Extractors to suit your needs by implanting a simple
+your own custom Link Extractors to suit your needs by implementing a simple
 interface.
 
-The only public method that every LinkExtractor have is ``extract_links``,
+The only public method that every LinkExtractor has is ``extract_links``,
 which receives a :class:`~scrapy.http.Response` object and returns a list
 of links. Link Extractors are meant to be instantiated once and their
 ``extract_links`` method called several times with different responses, to
@@ -20,7 +20,7 @@ extract links to follow.
 
 Link extractors are used in the :class:`~scrapy.contrib.spiders.CrawlSpider`
 class (available in Scrapy), through a set of rules, but you can also use it in
-your spiders even if you don't subclass from
+your spiders, even if you don't subclass from
 :class:`~scrapy.contrib.spiders.CrawlSpider`, as its purpose is very simple: to
 extract links.
 
@@ -61,12 +61,12 @@ SgmlLinkExtractor
         given (or empty) it won't exclude any links.
     :type allow: a regular expression (or list of)
 
-    :param allow_domains: is single value or a list of string containing
+    :param allow_domains: a single value or a list of string containing
         domains which will be considered for extracting the links
     :type allow: str or list
 
-    :param deny_domains: is single value or a list of strings containing
-        domains which which won't be considered for extracting the links
+    :param deny_domains: a single value or a list of strings containing
+        domains which won't be considered for extracting the links
     :type allow: str or list
 
     :param restrict_xpaths: is a XPath (or list of XPath's) which defines
@@ -108,14 +108,14 @@ BaseSgmlLinkExtractor
 
     :param tag: either a string (with the name of a tag) or a function that
        receives a tag name and returns ``True`` if links should be extracted from
-       those tag, or ``False`` if they shouldn't. Defaults to ``'a'``.  request
-       (once its downloaded) as its first parameter. For more information see
+       that tag, or ``False`` if they shouldn't. Defaults to ``'a'``.  request
+       (once it's downloaded) as its first parameter. For more information, see
        :ref:`topics-request-response-ref-request-callback-arguments`.
     :type tag: str or callable
 
     :param attr:  either string (with the name of a tag attribute), or a
-        function that receives a an attribute name and returns ``True`` if
-        links should be extracted from it, or ``False`` if the shouldn't.
+        function that receives an attribute name and returns ``True`` if
+        links should be extracted from it, or ``False`` if they shouldn't.
         Defaults to ``href``.
     :type attr: str or callable
 
