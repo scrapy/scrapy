@@ -48,20 +48,15 @@ def _print_usage(inside_project):
             settings['BOT_NAME'])
     else:
         print "Scrapy %s - no active project\n" % scrapy.__version__
-    print "Usage"
-    print "=====\n"
-    print "To run a command:"
+    print "Usage:"
     print "  scrapy <command> [options] [args]\n"
-    print "To get help:"
-    print "  scrapy <command> -h\n"
-    print "Available commands"
-    print "==================\n"
+    print "Available commands:"
     cmds = _get_commands_dict()
     for cmdname, cmdclass in sorted(cmds.iteritems()):
         if inside_project or not cmdclass.requires_project:
-            print "%s %s" % (cmdname, cmdclass.syntax())
-            print "  %s" % cmdclass.short_desc()
+            print "  %-13s %s" % (cmdname, cmdclass.short_desc())
     print
+    print 'Use "scrapy <command> -h" for more info about a command'
 
 def check_deprecated_scrapy_ctl(argv):
     """Check if Scrapy was called using the deprecated scrapy-ctl command and

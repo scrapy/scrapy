@@ -19,18 +19,12 @@ some usage help and the available commands::
 
     Scrapy X.Y - no active project
 
-    Usage
-    =====
-
-    To run a command:
+    Usage:
       scrapy <command> [options] [args]
 
-    To get help:
-      scrapy <command> -h
-
-    Available commands
-    ==================
-
+    Available commands:
+      crawl         Start crawling a spider or URL
+      fetch         Fetch a URL using the Scrapy downloader
     [...]
 
 The first line will print the currently active project, if you're inside a
@@ -39,8 +33,8 @@ a project it would have printed something like this::
 
     Scrapy X.Y - project: myproject
 
-    Usage
-    =====
+    Usage:
+      scrapy <command> [options] [args]
 
     [...]
 
