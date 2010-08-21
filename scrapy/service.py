@@ -19,7 +19,7 @@ class ScrapyService(Service):
                 self.spawn_process(settings_module, i)
 
     def spawn_process(self, settings_module, position):
-        args = [sys.executable, '-m', 'scrapy.cmdline', 'start']
+        args = [sys.executable, '-m', 'scrapy.cmdline', 'runserver']
         env = os.environ.copy()
         botname = self.get_bot_name(settings_module)
         logfile = self.get_log_file(settings_module, position)
