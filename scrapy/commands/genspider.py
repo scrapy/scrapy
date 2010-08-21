@@ -1,18 +1,13 @@
-import sys
 import shutil
 import string
 from os import listdir
-from os.path import join, dirname, abspath, exists
+from os.path import join, dirname, abspath, exists, splitext
 
 import scrapy
 from scrapy.spider import spiders
 from scrapy.command import ScrapyCommand
 from scrapy.conf import settings
 from scrapy.utils.template import render_templatefile, string_camelcase
-
-
-SPIDER_TEMPLATES_PATH = join(scrapy.__path__[0], 'templates', 'spiders')
-
 
 def sanitize_module_name(module_name):
     """Sanitize the given module name, by replacing dashes and points
@@ -24,10 +19,14 @@ def sanitize_module_name(module_name):
         module_name = "a" + module_name
     return module_name
 
+_templates_base_dir = settings['TEMPLATES_DIR'] or join(scrapy.__path__[0], \
+    'templates')
+
 class Command(ScrapyCommand):
 
     requires_project = True
     default_settings = {'LOG_ENABLED': False}
+    templates_dir = join(_templates_base_dir, 'spiders')
 
     def syntax(self):
         return "[options] <name> <domain>"
@@ -37,8 +36,10 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("--list", dest="list", action="store_true")
-        parser.add_option("--dump", dest="dump", action="store_true")
+        parser.add_option("-l", "--list", dest="list", action="store_true",
+            help="List available templates")
+        parser.add_option("-d", "--dump", dest="dump", metavar="TEMPLATE",
+            help="Dump template to standard output")
         parser.add_option("-t", "--template", dest="template", default="crawl",
             help="Uses a custom template.")
         parser.add_option("--force", dest="force", action="store_true",
@@ -48,33 +49,26 @@ class Command(ScrapyCommand):
         if opts.list:
             self._list_templates()
             return
-
         if opts.dump:
-            template_file = self._find_template(opts.template)
+            template_file = self._find_template(opts.dump)
             if template_file:
-                template = open(template_file, 'r')
-                print template.read() 
+                print open(template_file, 'r').read()
             return
-
         if len(args) != 2:
             return False
 
-        name = args[0]
-        domain = args[1]
-
+        name, domain = args[0:2]
         module = sanitize_module_name(name)
-
-        # if spider already exists and not force option then halt
         try:
             spider = spiders.create(name)
         except KeyError:
             pass
         else:
+            # if spider already exists and not --force then halt
             if not opts.force:
-                print "Spider '%s' already exists in module:" % name
+                print "Spider %r already exists in module:" % name
                 print "  %s" % spider.__module__
-                sys.exit(1)
-
+                return
         template_file = self._find_template(opts.template)
         if template_file:
             self._genspider(module, name, domain, opts.template, template_file)
@@ -90,11 +84,9 @@ class Command(ScrapyCommand):
             'classname': '%sSpider' % ''.join([s.capitalize() \
                 for s in module.split('_')])
         }
-
         spiders_module = __import__(settings['NEWSPIDER_MODULE'], {}, {}, [''])
         spiders_dir = abspath(dirname(spiders_module.__file__))
         spider_file = "%s.py" % join(spiders_dir, module)
-
         shutil.copyfile(template_file, spider_file)
         render_templatefile(spider_file, **tvars)
         print "Created spider %r using template %r in module:" % (name, \
@@ -102,22 +94,15 @@ class Command(ScrapyCommand):
         print "  %s.%s" % (spiders_module.__name__, module)
 
     def _find_template(self, template):
-        template_file = join(settings['TEMPLATES_DIR'], 'spiders', '%s.tmpl' % template)
-        if not exists(template_file):
-            template_file = join(SPIDER_TEMPLATES_PATH, '%s.tmpl' % template)
-            if not exists(template_file):
-                print "Unable to find template %r." \
-                        % template
-                print "Use genspider --list to see all available templates."
-                return None
-        return template_file
+        template_file = join(self.templates_dir, '%s.tmpl' % template)
+        if exists(template_file):
+            return template_file
+        print "Unable to find template: %s\n" % template
+        print 'Use "scrapy genspider --list" to see all available templates.'
 
     def _list_templates(self):
-        files = set(listdir(SPIDER_TEMPLATES_PATH))
-        if exists(settings['TEMPLATES_DIR']):
-            files.update(listdir(join(settings['TEMPLATES_DIR'], 'spiders')))
-
-        for filename in sorted(files):
+        print "Available templates:"
+        for filename in sorted(listdir(self.templates_dir)):
             if filename.endswith('.tmpl'):
-                print filename
+                print "  %s" % splitext(filename)[0]
 

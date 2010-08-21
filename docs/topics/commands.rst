@@ -113,23 +113,44 @@ Usage example::
 genspider
 ---------
 
-+-------------------+--------------------------------------+
-| Syntax:           | ``scrapy genspider <name> <domain>`` |
-+-------------------+--------------------------------------+
-| Requires project: | *yes*                                |
-+-------------------+--------------------------------------+
++-------------------+----------------------------------------------------+
+| Syntax:           | ``scrapy genspider [-t template] <name> <domain>`` |
++-------------------+----------------------------------------------------+
+| Requires project: | *yes*                                              |
++-------------------+----------------------------------------------------+
 
 Create a new spider in the current project.
 
 This is just a convenient shortcut command for creating spiders based on
 pre-defined templates, but certainly not the only way to create spiders. You
-can just create the spider source code files yourself.
+can just create the spider source code files yourself, instead of using this
+command.
 
 Usage example::
 
-    $ scrapy genspider example example.com
-    Created spider 'example' using template 'crawl' in module:
-      jobsbot.spiders.example
+    $ scrapy genspider -l
+    Available templates:
+      basic
+      crawl
+      csvfeed
+      xmlfeed
+
+    $ scrapy genspider -d basic
+    from scrapy.spider import BaseSpider
+
+    class $classname(BaseSpider):
+        name = "$name"
+        allowed_domains = ["$domain"]
+        start_urls = (
+            'http://www.$domain/',
+            )
+
+        def parse(self, response):
+            pass
+
+    $ scrapy genspider -t basic example example.com
+    Created spider 'example' using template 'basic' in module:
+      mybot.spiders.example
 
 .. command:: crawl
 

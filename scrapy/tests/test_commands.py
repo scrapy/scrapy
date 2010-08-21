@@ -32,8 +32,7 @@ class ProjectTest(unittest.TestCase):
         return subprocess.call(args, stdout=out, stderr=out, cwd=self.cwd, \
             env=self.env, **kwargs)
 
-    def call_get_proc(self, *new_args, **kwargs):
-        out = os.tmpfile()
+    def proc(self, *new_args, **kwargs):
         args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
         return subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, \
             cwd=self.cwd, env=self.env, **kwargs)
@@ -76,29 +75,32 @@ class GenspiderCommandTest(CommandTest):
         self.assertEqual(0, self.call('genspider', 'test_name', 'test.com'))
         assert exists(join(self.proj_mod_path, 'spiders', 'test_name.py'))
 
-    def test_template_default(self, *args):
-        self.assertEqual(0, self.call('genspider', 'test_spider', 'test.com', *args))
-        assert exists(join(self.proj_mod_path, 'spiders', 'test_spider.py'))
-        self.assertEqual(1, self.call('genspider', 'test_spider', 'test.com'))
+    def test_template(self, tplname='crawl'):
+        args = ['--template=%s' % tplname] if tplname else []
+        spname = 'test_spider'
+        p = self.proc('genspider', spname, 'test.com', *args)
+        out = p.stdout.read()
+        self.assert_("Created spider %r using template %r in module" % (spname, tplname) in out)
+        self.assert_(exists(join(self.proj_mod_path, 'spiders', 'test_spider.py')))
+        p = self.proc('genspider', spname, 'test.com', *args)
+        out = p.stdout.read()
+        self.assert_("Spider %r already exists in module" % spname in out)
 
     def test_template_basic(self):
-        self.test_template_default('--template=basic')
+        self.test_template('basic')
 
     def test_template_csvfeed(self):
-        self.test_template_default('--template=csvfeed')
+        self.test_template('csvfeed')
 
     def test_template_xmlfeed(self):
-        self.test_template_default('--template=xmlfeed')
-
-    def test_template_crawl(self):
-        self.test_template_default('--template=crawl')
+        self.test_template('xmlfeed')
 
     def test_list(self):
         self.assertEqual(0, self.call('genspider', '--list'))
 
     def test_dump(self):
-        self.assertEqual(0, self.call('genspider', '--dump'))
-        self.assertEqual(0, self.call('genspider', '--dump', '--template=basic'))
+        self.assertEqual(0, self.call('genspider', '--dump=basic'))
+        self.assertEqual(0, self.call('genspider', '-d', 'basic'))
 
 
 class MiscCommandsTest(CommandTest):
@@ -127,7 +129,7 @@ class MySpider(BaseSpider):
         self.log("It Works!")
         return []
 """)
-        p = self.call_get_proc('runspider', fname)
+        p = self.proc('runspider', fname)
         log = p.stderr.read()
         self.assert_("[myspider] DEBUG: It Works!" in log)
         self.assert_("[myspider] INFO: Spider opened" in log)
@@ -143,12 +145,12 @@ class MySpider(BaseSpider):
 from scrapy import log
 from scrapy.spider import BaseSpider
 """)
-        p = self.call_get_proc('runspider', fname)
+        p = self.proc('runspider', fname)
         log = p.stderr.read()
         self.assert_("ERROR: No spider found in file" in log)
 
     def test_runspider_file_not_found(self):
-        p = self.call_get_proc('runspider', 'some_non_existent_file')
+        p = self.proc('runspider', 'some_non_existent_file')
         log = p.stderr.read()
         self.assert_("ERROR: File not found: some_non_existent_file" in log)
 
@@ -158,7 +160,7 @@ from scrapy.spider import BaseSpider
         fname = abspath(join(tmpdir, 'myspider.txt'))
         with open(fname, 'w') as f:
             f.write("")
-        p = self.call_get_proc('runspider', fname)
+        p = self.proc('runspider', fname)
         log = p.stderr.read()
         self.assert_("ERROR: Unable to load" in log)
 
