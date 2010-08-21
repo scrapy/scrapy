@@ -1,0 +1,18 @@
+# bash completion for the Scrapy command-line tool
+
+_scrapy_completion() {
+    local cmd cur commands spiders
+    cmd=${COMP_WORDS[1]}
+    cur=${COMP_WORDS[2]}
+    case "$cmd" in
+        crawl)
+            spiders=$(scrapy list 2>/dev/null) || spiders=""
+            COMPREPLY=(${COMPREPLY[@]:-} $(compgen -W "$spiders" -- "$cur"))
+        ;;
+        *)
+            commands="crawl fetch genspider list parse queue runserver runspider settings shell startproject view"
+            COMPREPLY=(${COMPREPLY[@]:-} $(compgen -W "$commands" -- "$cmd"))
+        ;;
+    esac
+}
+complete -F _scrapy_completion -o default scrapy
