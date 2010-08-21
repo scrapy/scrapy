@@ -17,12 +17,13 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
 from scrapy.utils.url import any_to_uri
 from scrapy.utils.console import start_python_console
-from scrapy.conf import settings
+from scrapy.conf import settings, Settings
 from scrapy.http import Request, Response, TextResponse
 
 class Shell(object):
 
-    relevant_classes = (BaseSpider, Request, Response, BaseItem, XPathSelector)
+    relevant_classes = (BaseSpider, Request, Response, BaseItem, \
+        XPathSelector, Settings)
 
     def __init__(self, crawler, update_vars=None, inthread=False):
         self.crawler = crawler
@@ -71,6 +72,7 @@ class Shell(object):
     def populate_vars(self, url=None, response=None, request=None, spider=None):
         item = self.item_class()
         self.vars['item'] = item
+        self.vars['settings'] = settings
         if url:
             if isinstance(response, TextResponse):
                 self.vars['xxs'] = XmlXPathSelector(response)

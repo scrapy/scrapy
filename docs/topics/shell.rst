@@ -89,6 +89,8 @@ Those objects are:
  * ``xxs`` - a :class:`~scrapy.selector.XmlXPathSelector` object constructed
    with the last response fetched
 
+ * ``settings`` - the current :ref:`Scrapy settings <topics-settings>`
+
 Example of shell session
 ========================
 
@@ -116,6 +118,7 @@ all start with the ``[s]`` prefix)::
     [s]   item      Item()
     [s]   request   <http://scrapy.org>
     [s]   response  <http://scrapy.org>
+    [s]   settings  <Settings 'mybot.settings'>
     [s]   spider    <scrapy.spider.models.BaseSpider object at 0x2bed9d0>
     [s]   xxs       <XmlXPathSelector (http://scrapy.org) xpath=None>
     [s] Useful shortcuts:
