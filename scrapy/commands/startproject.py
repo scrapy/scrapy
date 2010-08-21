@@ -29,7 +29,7 @@ class Command(ScrapyCommand):
         return "<project_name>"
 
     def short_desc(self):
-        return "Create new project with an initial project template"
+        return "Create new project"
 
     def run(self, args, opts):
         if len(args) != 1:

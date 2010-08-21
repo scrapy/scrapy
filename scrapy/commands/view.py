@@ -5,7 +5,7 @@ from scrapy.utils.response import open_in_browser
 class Command(fetch.Command):
 
     def short_desc(self):
-        return "Open a URL in browser, as seen by Scrapy"
+        return "Open URL in browser, as seen by Scrapy"
 
     def long_desc(self):
         return "Fetch a URL using the Scrapy downloader and show its " \

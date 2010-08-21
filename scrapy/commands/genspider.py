@@ -32,7 +32,7 @@ class Command(ScrapyCommand):
         return "[options] <name> <domain>"
 
     def short_desc(self):
-        return "Generate new spider based on template passed with -t or --template"
+        return "Generate new spider using pre-defined templates"
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)

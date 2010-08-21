@@ -29,7 +29,7 @@ class Command(ScrapyCommand):
         return "[options] <spider_file>"
 
     def short_desc(self):
-        return "Run a spider"
+        return "Run a self-contained spider (without creating a project)"
 
     def long_desc(self):
         return "Run the spider defined in the given file"

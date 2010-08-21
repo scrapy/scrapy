@@ -10,7 +10,7 @@ class Command(ScrapyCommand):
         return "[options]"
 
     def short_desc(self):
-        return "Query Scrapy settings"
+        return "Get settings values"
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
