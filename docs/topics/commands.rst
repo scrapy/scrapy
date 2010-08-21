@@ -162,23 +162,23 @@ Usage examples::
     $ scrapy crawl http://example.com/some/page.html
     [ ... spider that handles example.com starts crawling from that url ... ]
 
-.. command:: start
+.. command:: runserver
 
-start
------
+runserver
+---------
 
-+-------------------+------------------+
-| Syntax:           | ``scrapy start`` |
-+-------------------+------------------+
-| Requires project: | *yes*            |
-+-------------------+------------------+
++-------------------+----------------------+
+| Syntax:           | ``scrapy runserver`` |
++-------------------+----------------------+
+| Requires project: | *yes*                |
++-------------------+----------------------+
 
 Start Scrapy in server mode, which can be controlled by the :command:`queue`
 command.
 
 Usage example::
 
-    $ scrapy start
+    $ scrapy runserver
     [ ... scrapy starts and stays idle waiting for spiders to get scheduled ... ]
 
 You can now schedule spiders to run using the :command:`queue` command. If
@@ -371,13 +371,13 @@ queue
 Manage the execution queue of a Scrapy project.
 
 This command is meant to be used to control a Scrapy server started with the
-:command:`start` command.
+:command:`runserver` command.
 
 Example usage::
 
     $ scrapy queue add example.com
 
-If there is a Scrapy server running (see :command:`start` command), it will
+If there is a Scrapy server running (see :command:`runserver` command), it will
 start crawling the ``example.com`` spider. Otherwise, it will only get
 enqueued,, and it will start crawling once the Scrapy server is started.
 
