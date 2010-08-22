@@ -101,11 +101,11 @@ Stats Collector API
 ===================
 
 There are several Stats Collectors available under the
-:mod:`scrapy.stats.collector` module and they all implement the Stats
-Collector API defined by the :class:`~scrapy.stats.collector.StatsCollector`
+:mod:`scrapy.statscol` module and they all implement the Stats
+Collector API defined by the :class:`~scrapy.statscol.StatsCollector`
 class (which they all inherit from).
 
-.. module:: scrapy.stats.collector
+.. module:: scrapy.statscol
    :synopsis: Basic Stats Collectors
 
 .. class:: StatsCollector
@@ -226,8 +226,8 @@ DummyStatsCollector
 SimpledbStatsCollector
 ----------------------
 
-.. module:: scrapy.stats.collector.simpledb
-   :synopsis: Simpledb Stats Collector
+.. module:: scrapy.contrib.statscol
+   :synopsis: Additional Stats Collectors
 
 .. class:: SimpledbStatsCollector
 
@@ -288,8 +288,7 @@ Stats signals
 The Stats Collector provides some signals for extending the stats collection
 functionality:
 
-.. module:: scrapy.stats.signals
-   :synopsis: Stats Collector signals
+.. currentmodule:: scrapy.signals
 
 .. signal:: stats_spider_opened
 .. function:: stats_spider_opened(spider)

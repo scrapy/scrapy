@@ -1,4 +1,4 @@
-from scrapy.stats.collector import DummyStatsCollector
+from scrapy.statscol import DummyStatsCollector
 from scrapy.conf import settings
 from scrapy.utils.misc import load_object
 

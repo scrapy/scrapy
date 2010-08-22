@@ -2,8 +2,8 @@ import unittest
 
 from scrapy.spider import BaseSpider
 from scrapy.xlib.pydispatch import dispatcher
-from scrapy.stats.collector import StatsCollector, DummyStatsCollector
-from scrapy.stats.signals import stats_spider_opened, stats_spider_closing, \
+from scrapy.statscol import StatsCollector, DummyStatsCollector
+from scrapy.signals import stats_spider_opened, stats_spider_closing, \
     stats_spider_closed
 
 class StatsCollectorTest(unittest.TestCase):

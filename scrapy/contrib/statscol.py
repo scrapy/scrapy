@@ -6,11 +6,10 @@ Requires the boto library: http://code.google.com/p/boto/
 
 from datetime import datetime
 
-from boto import connect_sdb
 from twisted.internet import threads
 
 from scrapy.utils.simpledb import to_sdb_value
-from scrapy.stats.collector import StatsCollector
+from scrapy.statscol import StatsCollector
 from scrapy import log
 from scrapy.conf import settings
 
@@ -20,7 +19,9 @@ class SimpledbStatsCollector(StatsCollector):
         super(SimpledbStatsCollector, self).__init__()
         self._sdbdomain = settings['STATS_SDB_DOMAIN']
         self._async = settings.getbool('STATS_SDB_ASYNC')
-        connect_sdb().create_domain(self._sdbdomain)
+        import boto
+        self.connect_sdb = boto.connect_sdb
+        self.connect_sdb().create_domain(self._sdbdomain)
 
     def _persist_stats(self, stats, spider=None):
         if spider is None: # only store spider-specific stats
@@ -40,7 +41,7 @@ class SimpledbStatsCollector(StatsCollector):
         sdb_item = dict((k, self._to_sdb_value(v, k)) for k, v in stats.iteritems())
         sdb_item['spider'] = spider.name
         sdb_item['timestamp'] = self._to_sdb_value(ts)
-        connect_sdb().put_attributes(self._sdbdomain, sdb_item_id, sdb_item)
+        self.connect_sdb().put_attributes(self._sdbdomain, sdb_item_id, sdb_item)
 
     def _get_timestamp(self, spider):
         return datetime.utcnow()

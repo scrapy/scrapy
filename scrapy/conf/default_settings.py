@@ -234,7 +234,7 @@ SQS_VISIBILITY_TIMEOUT = 7200
 SQS_POLLING_DELAY = 30
 SQS_REGION = 'us-east-1'
 
-STATS_CLASS = 'scrapy.stats.collector.MemoryStatsCollector'
+STATS_CLASS = 'scrapy.statscol.MemoryStatsCollector'
 STATS_ENABLED = True
 STATS_DUMP = False
 

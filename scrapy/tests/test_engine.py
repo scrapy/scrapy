@@ -105,10 +105,9 @@ class CrawlingSession(object):
             # stats because of living signals. This whole test_engine.py should
             # be rewritten from scratch actually.
             from scrapy.utils.signal import disconnect_all
-            from scrapy.stats import signals as stats_signals
-            disconnect_all(stats_signals.stats_spider_opened)
-            disconnect_all(stats_signals.stats_spider_closing)
-            disconnect_all(stats_signals.stats_spider_closed)
+            disconnect_all(signals.stats_spider_opened)
+            disconnect_all(signals.stats_spider_closing)
+            disconnect_all(signals.stats_spider_closed)
 
     def geturl(self, path):
         return "http://localhost:%s%s" % (self.portno, path)

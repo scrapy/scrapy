@@ -5,7 +5,7 @@ import pprint
 
 from scrapy.xlib.pydispatch import dispatcher
 
-from scrapy.stats.signals import stats_spider_opened, stats_spider_closing, \
+from scrapy.signals import stats_spider_opened, stats_spider_closing, \
     stats_spider_closed
 from scrapy.utils.signal import send_catch_log
 from scrapy import signals

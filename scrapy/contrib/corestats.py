@@ -10,7 +10,6 @@ from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy import signals
 from scrapy.stats import stats
-from scrapy.stats.signals import stats_spider_opened, stats_spider_closing
 from scrapy.conf import settings
 
 class CoreStats(object):
@@ -22,8 +21,8 @@ class CoreStats(object):
         stats.set_value('envinfo/logfile', settings['LOG_FILE'])
         stats.set_value('envinfo/pid', os.getpid())
 
-        dispatcher.connect(self.stats_spider_opened, signal=stats_spider_opened)
-        dispatcher.connect(self.stats_spider_closing, signal=stats_spider_closing)
+        dispatcher.connect(self.stats_spider_opened, signal=signals.stats_spider_opened)
+        dispatcher.connect(self.stats_spider_closing, signal=signals.stats_spider_closing)
         dispatcher.connect(self.item_scraped, signal=signals.item_scraped)
         dispatcher.connect(self.item_passed, signal=signals.item_passed)
         dispatcher.connect(self.item_dropped, signal=signals.item_dropped)

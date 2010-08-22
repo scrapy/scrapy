@@ -934,7 +934,7 @@ Example::
 STATS_CLASS
 -----------
 
-Default: ``'scrapy.stats.collector.MemoryStatsCollector'``
+Default: ``'scrapy.statscol.MemoryStatsCollector'``
 
 The class to use for collecting stats (must implement the Stats Collector API,
 or subclass the StatsCollector class).
