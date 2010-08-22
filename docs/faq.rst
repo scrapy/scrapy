@@ -69,7 +69,7 @@ How can I simulate a user login in my spider?
 
 See :ref:`topics-request-response-ref-request-userlogin`.
 
-Can I crawl in depth-first order instead of breadth-first order?
+Can I crawl in breadth-first order instead of depth-first order?
 ----------------------------------------------------------------
 
 Yes, there's a setting for that: :setting:`SCHEDULER_ORDER`.
@@ -104,16 +104,17 @@ Where can I find some example code using Scrapy?
 ------------------------------------------------
 
 Scrapy comes with a built-in, fully functional project to scrape the `Google
-Directory`_. You can find it in the ``examples/googledir`` directory of the
+Directory`_. You can find it in the `examples/googledir`_ directory of the
 Scrapy distribution.
 
 Also, there's a site for sharing code snippets (spiders, middlewares,
 extensions) called `Scrapy snippets`_.
 
 Finally, you can find some example code for performing not-so-trivial tasks in
-the `Scrapy Recipes`_ page.
+the `Scrapy Recipes`_ wiki page.
 
 .. _Google Directory: http://www.google.com/dirhp
+.. _examples/googledir: http://dev.scrapy.org/browser/examples/googledir
 .. _Community Spiders: http://dev.scrapy.org/wiki/CommunitySpiders
 .. _Scrapy Recipes: http://dev.scrapy.org/wiki/ScrapyRecipes
 .. _Scrapy snippets: http://snippets.scrapy.org/
@@ -125,6 +126,8 @@ Yes. You can use the :command:`runspider` command. For example, if you have a
 spider written in a ``my_spider.py`` file you can run it with::
 
     scrapy runspider my_spider.py
+
+See :command:`runspider` command for more info.
 
 I get "Filtered offsite request" messages. How can I fix them?
 --------------------------------------------------------------
@@ -170,7 +173,7 @@ documentation.
 Can I return (Twisted) deferreds from signal handlers?
 ------------------------------------------------------
 
-Some signals support returning deferreds form their handlers, others don't. See
+Some signals support returning deferreds from their handlers, others don't. See
 the :ref:`topics-signals-ref` to know which ones.
 
 What does the response status code 999 means?
