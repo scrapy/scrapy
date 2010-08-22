@@ -259,7 +259,5 @@ WEBSERVICE_RESOURCES = {}
 WEBSERVICE_RESOURCES_BASE = {
     'scrapy.contrib.webservice.manager.ManagerResource': 1,
     'scrapy.contrib.webservice.enginestatus.EngineStatusResource': 1,
-    'scrapy.contrib.webservice.extensions.ExtensionsResource': 1,
-    'scrapy.contrib.webservice.spiders.SpidersResource': 1,
     'scrapy.contrib.webservice.stats.StatsResource': 1,
 }

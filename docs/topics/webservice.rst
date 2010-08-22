@@ -72,26 +72,14 @@ Stats Collector JSON-RPC resource
 Spider Manager JSON-RPC resource
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.contrib.webservice.spiders
-   :synopsis: Spider Manager JSON-RPC resource
-
-.. class:: SpidersResource
-
-    Provides access to the Spider Manager used by the crawler.
-
-    Available by default at: http://localhost:6080/spiders
+You can access the spider manager JSON-RPC resource through the Execution
+Manager resource at: http://localhost:6080/manager/spiders
 
 Extension Manager JSON-RPC resource
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.contrib.webservice.extensions
-   :synopsis: Extension Manager JSON-RPC resource
-
-.. class:: ExtensionsResource
-
-    Provides access to the Extension Manager used by the crawler.
-
-    Available by default at: http://localhost:6080/extensions
+You can access the extension manager JSON-RPC resource through the Execution
+Manager resource at: http://localhost:6080/manager/extensions
 
 Available JSON resources
 ------------------------
@@ -162,8 +150,6 @@ Default::
     {
         'scrapy.contrib.webservice.manager.ManagerResource': 1,
         'scrapy.contrib.webservice.enginestatus.EngineStatusResource': 1,
-        'scrapy.contrib.webservice.extensions.ExtensionsResource': 1,
-        'scrapy.contrib.webservice.spiders.SpidersResource': 1,
         'scrapy.contrib.webservice.stats.StatsResource': 1,
     }
 
