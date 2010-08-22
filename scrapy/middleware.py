@@ -35,7 +35,7 @@ class MiddlewareManager(object):
             except NotConfigured, e:
                 if e.args:
                     log.msg(e)
-        enabled = [type(x).__name__ for x in middlewares]
+        enabled = [x.__class__.__name__ for x in middlewares]
         log.msg("Enabled %ss: %s" % (cls.component_name, ", ".join(enabled)), \
             level=log.DEBUG)
         return cls(*middlewares)

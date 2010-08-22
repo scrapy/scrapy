@@ -1,40 +1,16 @@
 """
-This module contains the ExtensionManager  which takes care of loading and
-keeping track of all enabled extensions. It also contains an instantiated
-ExtensionManager (extensions) to be used as singleton.
+The Extension Manager
+
+See documentation in docs/topics/extensions.rst
 """
-from scrapy.exceptions import NotConfigured
-from scrapy.utils.misc import load_object
+from scrapy.middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list
-from scrapy import log
-from scrapy.conf import settings
 
-class ExtensionManager(object):
+class ExtensionManager(MiddlewareManager):
 
-    def __init__(self):
-        self.loaded = False
-        self.enabled = {}
-        self.disabled = {}
+    component_name = 'extension'
 
-    def load(self):
-        """
-        Load enabled extensions in settings module
-        """
-
-        self.loaded = False
-        self.enabled.clear()
-        self.disabled.clear()
-        extlist = build_component_list(settings['EXTENSIONS_BASE'], \
+    @classmethod
+    def _get_mwlist_from_settings(cls, settings):
+        return build_component_list(settings['EXTENSIONS_BASE'], \
             settings['EXTENSIONS'])
-        for extension_path in extlist:
-            try:
-                cls = load_object(extension_path)
-                self.enabled[cls.__name__] = cls()
-            except NotConfigured, e:
-                self.disabled[cls.__name__] = extension_path
-                if e.args:
-                    log.msg(e)
-        self.loaded = True
-
-    def reload(self):
-        self.load()

@@ -4,16 +4,17 @@ from twisted.internet import reactor, defer
 
 from scrapy.core.engine import ExecutionEngine
 from scrapy.core.queue import ExecutionQueue
+from scrapy.extension import ExtensionManager
 from scrapy import log
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 
 
 class Crawler(object):
 
-    def __init__(self, spiders, extensions):
+    def __init__(self, settings, spiders):
         self.configured = False
         self.control_reactor = True
-        self.extensions = extensions
+        self.settings = settings
         self.spiders = spiders
         self.engine = ExecutionEngine(self)
 
@@ -24,12 +25,9 @@ class Crawler(object):
 
         if not log.started:
             log.start()
-        if not self.extensions.loaded:
-            self.extensions.load()
+        self.extensions = ExtensionManager.from_settings(self.settings)
         if not self.spiders.loaded:
             self.spiders.load()
-        log.msg("Enabled extensions: %s" % ", ".join(self.extensions.enabled.iterkeys()),
-            level=log.DEBUG)
 
         self.queue = queue or ExecutionQueue()
         self.engine.configure(self._spider_closed)
