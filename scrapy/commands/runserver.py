@@ -1,5 +1,5 @@
 from scrapy.command import ScrapyCommand
-from scrapy.core.manager import scrapymanager
+from scrapy.project import crawler
 from scrapy.utils.misc import load_object
 from scrapy.conf import settings
 
@@ -12,5 +12,5 @@ class Command(ScrapyCommand):
 
     def run(self, args, opts):
         queue_class = load_object(settings['SERVICE_QUEUE'])
-        scrapymanager.queue = queue_class()
-        scrapymanager.start()
+        crawler.queue = queue_class()
+        crawler.start()

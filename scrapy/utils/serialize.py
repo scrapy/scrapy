@@ -4,7 +4,7 @@ import decimal
 
 from twisted.internet import defer
 
-from scrapy.core.manager import scrapymanager
+from scrapy.project import crawler
 from scrapy.spider import BaseSpider
 from scrapy.http import Request, Response
 from scrapy.utils.py26 import json
@@ -21,7 +21,7 @@ class SpiderReferencer(object):
     spider_ref_re = re.compile('^spider:([0-9a-f]+)?:?(.+)?$')
 
     def __init__(self, manager=None):
-        self.manager = manager or scrapymanager
+        self.manager = manager or crawler
 
     def get_reference_from_spider(self, spider):
         return 'spider:%x:%s' % (id(spider), spider.name)

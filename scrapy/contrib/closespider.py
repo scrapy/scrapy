@@ -10,7 +10,7 @@ from twisted.internet import reactor
 from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy import signals
-from scrapy.core.manager import scrapymanager
+from scrapy.project import crawler
 from scrapy.conf import settings
 
 class CloseSpider(object):
@@ -30,13 +30,13 @@ class CloseSpider(object):
 
     def spider_opened(self, spider):
         self.tasks[spider] = reactor.callLater(self.timeout, \
-            scrapymanager.engine.close_spider, spider=spider, \
+            crawler.engine.close_spider, spider=spider, \
             reason='closespider_timeout')
         
     def item_passed(self, item, spider):
         self.counts[spider] += 1
         if self.counts[spider] == self.itempassed:
-            scrapymanager.engine.close_spider(spider, 'closespider_itempassed')
+            crawler.engine.close_spider(spider, 'closespider_itempassed')
 
     def spider_closed(self, spider):
         self.counts.pop(spider, None)

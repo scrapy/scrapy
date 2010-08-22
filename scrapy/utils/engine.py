@@ -1,13 +1,11 @@
 """Some debugging functions for working with the Scrapy engine"""
 
-from time import time
-
-from scrapy.core.manager import scrapymanager
+from scrapy.project import crawler
 
 def get_engine_status(engine=None):
     """Return a report of the current engine status"""
     if engine is None:
-        engine = scrapymanager.engine
+        engine = crawler.engine
 
     global_tests = [
         "time()-engine.start_time",

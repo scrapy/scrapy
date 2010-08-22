@@ -45,7 +45,7 @@ convenience:
 +================+===================================================================+
 | ``engine``     | the Scrapy engine object (``scrapy.core.engine.scrapyengine``)    |
 +----------------+-------------------------------------------------------------------+
-| ``manager``    | the Scrapy manager object (``scrapy.core.manager.scrapymanager``) |
+| ``manager``    | the Project Crawler object (``scrapy.project.crawler``)           |
 +----------------+-------------------------------------------------------------------+
 | ``extensions`` | the extensions object (``scrapy.extension.extensions``)           |
 +----------------+-------------------------------------------------------------------+

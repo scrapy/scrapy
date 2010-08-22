@@ -12,7 +12,7 @@ from twisted.internet import reactor, protocol
 
 from scrapy.extension import extensions
 from scrapy.exceptions import NotConfigured
-from scrapy.core.manager import scrapymanager
+from scrapy.project import crawler
 from scrapy.spider import spiders
 from scrapy.stats import stats
 from scrapy.utils.signal import send_catch_log
@@ -48,8 +48,8 @@ class TelnetConsole(protocol.ServerFactory):
     def _get_telnet_vars(self):
         # Note: if you add entries here also update topics/telnetconsole.rst
         telnet_vars = {
-            'engine': scrapymanager.engine,
-            'manager': scrapymanager,
+            'engine': crawler.engine,
+            'manager': crawler,
             'extensions': extensions,
             'stats': stats,
             'spiders': spiders,

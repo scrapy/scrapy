@@ -2,7 +2,7 @@ from twisted.internet.defer import Deferred, DeferredList
 
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy import log
-from scrapy.core.manager import scrapymanager
+from scrapy.project import crawler
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.misc import arg_to_iter
 
@@ -87,7 +87,7 @@ class MediaPipeline(object):
     def download(self, request, info):
         """Defines how to download the media request"""
         request.priority = self.DOWNLOAD_PRIORITY
-        return scrapymanager.engine.download(request, info.spider)
+        return crawler.engine.download(request, info.spider)
 
     def media_to_download(self, request, info):
         """Check request before starting download"""

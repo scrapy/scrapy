@@ -113,8 +113,8 @@ def execute(argv=None):
 
     settings.defaults.update(cmd.default_settings)
     del args[0]  # remove command name from args
-    from scrapy.core.manager import scrapymanager
-    scrapymanager.configure(control_reactor=True)
+    from scrapy.project import crawler
+    crawler.configure(control_reactor=True)
     ret = _run_command(cmd, args, opts)
     if ret is False:
         parser.print_help()

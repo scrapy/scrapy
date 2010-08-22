@@ -107,5 +107,5 @@ class Shell(object):
 
 def inspect_response(response, spider=None):
     """Open a shell to inspect the given response"""
-    from scrapy.core.manager import scrapymanager
-    Shell(scrapymanager).start(response=response, spider=spider)
+    from scrapy.project import crawler
+    Shell(crawler).start(response=response, spider=spider)

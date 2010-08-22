@@ -1,5 +1,5 @@
 from scrapy.command import ScrapyCommand
-from scrapy.core.manager import scrapymanager
+from scrapy.project import crawler
 from scrapy.http import Request
 from scrapy.item import BaseItem
 from scrapy.spider import spiders
@@ -88,9 +88,9 @@ class Command(ScrapyCommand):
                 log.msg('Unable to find spider for URL: %s' % args[0], log.ERROR)
                 return
 
-        scrapymanager.configure()
-        scrapymanager.queue.append_request(request, spider)
-        scrapymanager.start()
+        crawler.configure()
+        crawler.queue.append_request(request, spider)
+        crawler.start()
 
         if not responses:
             log.msg('No response returned', log.ERROR, spider=spider)

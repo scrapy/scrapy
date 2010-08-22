@@ -2,7 +2,7 @@ import pprint
 
 from scrapy import log
 from scrapy.command import ScrapyCommand
-from scrapy.core.manager import scrapymanager
+from scrapy.project import crawler
 from scrapy.http import Request
 from scrapy.spider import BaseSpider, spiders
 from scrapy.utils.url import is_url
@@ -47,8 +47,8 @@ class Command(ScrapyCommand):
             except KeyError:
                 log.msg("Could not find spider: %s" % opts.spider, log.ERROR)
 
-        scrapymanager.configure()
-        scrapymanager.queue.append_request(request, spider, \
+        crawler.configure()
+        crawler.queue.append_request(request, spider, \
             default_spider=BaseSpider('default'))
-        scrapymanager.start()
+        crawler.start()
 

@@ -7,7 +7,7 @@ from itertools import imap
 from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy import signals
-from scrapy.core.manager import scrapymanager
+from scrapy.project import crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.conf import settings
 from scrapy.http import Request
@@ -61,5 +61,5 @@ class RequestLimitMiddleware(object):
             return request_or_other
 
     def _pending_count(self, spider):
-        pending = scrapymanager.engine.scheduler.pending_requests.get(spider, [])
+        pending = crawler.engine.scheduler.pending_requests.get(spider, [])
         return len(pending)

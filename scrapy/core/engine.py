@@ -24,7 +24,8 @@ from scrapy.utils.defer import mustbe_deferred
 
 class ExecutionEngine(object):
 
-    def __init__(self):
+    def __init__(self, crawler):
+        self.crawler = crawler
         self.configured = False
         self.closing = {} # dict (spider -> reason) of spiders being closed
         self.closing_dfds = {} # dict (spider -> deferred) of spiders being closed

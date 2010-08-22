@@ -8,7 +8,7 @@ from twisted.internet import reactor
 from twisted.web import server, resource, static, util
 
 from scrapy import signals
-from scrapy.core.manager import scrapymanager
+from scrapy.project import crawler
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.tests import tests_datadir
 from scrapy.spider import BaseSpider
@@ -96,9 +96,9 @@ class CrawlingSession(object):
             dispatcher.connect(self.request_received, signals.request_received)
             dispatcher.connect(self.response_downloaded, signals.response_downloaded)
 
-            scrapymanager.configure()
-            scrapymanager.queue.append_spider(self.spider)
-            scrapymanager.start()
+            crawler.configure()
+            crawler.queue.append_spider(self.spider)
+            crawler.start()
             self.port.stopListening()
             self.wasrun = True
             # FIXME: extremly ugly hack to avoid propagating errors to other

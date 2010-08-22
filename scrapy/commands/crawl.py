@@ -1,7 +1,7 @@
 from scrapy import log
 from scrapy.command import ScrapyCommand
 from scrapy.core.queue import ExecutionQueue
-from scrapy.core.manager import scrapymanager
+from scrapy.project import crawler
 from scrapy.conf import settings
 from scrapy.http import Request
 from scrapy.spider import spiders
@@ -50,8 +50,8 @@ class Command(ScrapyCommand):
                 for url in urls:
                     q.append_url(url, spider)
 
-        scrapymanager.queue = q
-        scrapymanager.start()
+        crawler.queue = q
+        crawler.start()
 
     def _group_urls_by_spider(self, urls):
         spider_urls = defaultdict(list)

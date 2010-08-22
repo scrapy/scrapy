@@ -4,7 +4,7 @@ Scrapy Shell
 See documentation in docs/topics/shell.rst
 """
 
-from scrapy.core.manager import scrapymanager
+from scrapy.project import crawler
 from scrapy.core.queue import KeepAliveExecutionQueue
 from scrapy.command import ScrapyCommand
 from scrapy.shell import Shell
@@ -30,7 +30,7 @@ class Command(ScrapyCommand):
 
     def run(self, args, opts):
         url = args[0] if args else None
-        shell = Shell(scrapymanager, update_vars=self.update_vars, inthread=True)
-        shell.start(url=url).addBoth(lambda _: scrapymanager.stop())
-        scrapymanager.queue = KeepAliveExecutionQueue()
-        scrapymanager.start()
+        shell = Shell(crawler, update_vars=self.update_vars, inthread=True)
+        shell.start(url=url).addBoth(lambda _: crawler.stop())
+        crawler.queue = KeepAliveExecutionQueue()
+        crawler.start()

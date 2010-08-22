@@ -13,7 +13,7 @@ from twisted.internet import task
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy import signals
 from scrapy import log
-from scrapy.core.manager import scrapymanager
+from scrapy.project import crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.mail import MailSender
 from scrapy.conf import settings
@@ -74,7 +74,7 @@ class MemoryUsage(object):
                         (settings['BOT_NAME'], mem, socket.gethostname())
                 self._send_report(self.notify_mails, subj)
                 stats.set_value('memusage/limit_notified', 1)
-            scrapymanager.stop()
+            crawler.stop()
 
     def _check_warning(self):
         if self.warned: # warn only once
