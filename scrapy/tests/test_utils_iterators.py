@@ -96,7 +96,7 @@ class LxmlXmliterTestCase(XmliterTestCase):
     try:
         import lxml
     except ImportError:
-        skip = True
+        skip = "lxml not available"
 
 
 class UtilsCsvTestCase(unittest.TestCase):
