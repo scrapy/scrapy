@@ -45,17 +45,20 @@ Available JSON-RPC resources
 
 These are the JSON-RPC resources available by default in Scrapy:
 
-Execution Manager JSON-RPC resource
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. _topics-webservice-crawler:
 
-.. module:: scrapy.contrib.webservice.manager
-   :synopsis: Execution Manager JSON-RPC resource
+Crawler JSON-RPC resource
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. class:: ManagerResource
+.. module:: scrapy.contrib.webservice.crawler
+   :synopsis: Crawler JSON-RPC resource
 
-    Provides access to the Execution Manager that controls the crawler.
+.. class:: CrawlerResource
 
-    Available by default at: http://localhost:6080/manager
+    Provides access to the main Crawler object that controls the Scrapy
+    process.
+
+    Available by default at: http://localhost:6080/crawler
 
 Stats Collector JSON-RPC resource
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -72,29 +75,29 @@ Stats Collector JSON-RPC resource
 Spider Manager JSON-RPC resource
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can access the spider manager JSON-RPC resource through the Execution
-Manager resource at: http://localhost:6080/manager/spiders
+You can access the spider manager JSON-RPC resource through the
+:ref:`topics-webservice-crawler` at: http://localhost:6080/crawler/spiders
 
 Extension Manager JSON-RPC resource
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can access the extension manager JSON-RPC resource through the Execution
-Manager resource at: http://localhost:6080/manager/extensions
+You can access the extension manager JSON-RPC resource through the
+:ref:`topics-webservice-crawler` at: http://localhost:6080/crawler/spiders
 
 Available JSON resources
 ------------------------
 
 These are the JSON resources available by default:
 
-Extension Manager JSON-RPC resource
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Engine status JSON resource
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. module:: scrapy.contrib.webservice.enginestatus
    :synopsis: Engine Status JSON resource
 
 .. class:: EngineStatusResource
 
-    Provides access to the Extension Manager used by the crawler.
+    Provides access to engine status metrics.
 
     Available by default at: http://localhost:6080/enginestatus
 
@@ -148,7 +151,7 @@ WEBSERVICE_RESOURCES_BASE
 Default::
 
     {
-        'scrapy.contrib.webservice.manager.ManagerResource': 1,
+        'scrapy.contrib.webservice.crawler.CrawlerResource': 1,
         'scrapy.contrib.webservice.enginestatus.EngineStatusResource': 1,
         'scrapy.contrib.webservice.stats.StatsResource': 1,
     }
