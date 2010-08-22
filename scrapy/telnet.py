@@ -10,7 +10,6 @@ from twisted.conch import manhole, telnet
 from twisted.conch.insults import insults
 from twisted.internet import reactor, protocol
 
-from scrapy.extension import extensions
 from scrapy.exceptions import NotConfigured
 from scrapy.project import crawler
 from scrapy.stats import stats
@@ -49,7 +48,7 @@ class TelnetConsole(protocol.ServerFactory):
         telnet_vars = {
             'engine': crawler.engine,
             'manager': crawler,
-            'extensions': extensions,
+            'extensions': crawler.extensions,
             'stats': stats,
             'spiders': crawler.spiders,
             'settings': settings,

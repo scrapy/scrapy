@@ -71,7 +71,7 @@ Even though it's not usually needed, you can access extension objects through
 the :ref:`topics-extensions-ref-manager` which is populated when extensions are
 loaded.  For example, to access the ``WebService`` extension::
 
-    from scrapy.extension import extensions
+    from scrapy.project import extensions
     webservice_extension = extensions.enabled['WebService']
 
 .. see also::
@@ -128,7 +128,7 @@ how you :ref:`configure the downloader middlewares
     The Extension Manager is a singleton object, which is instantiated at module
     loading time and can be accessed like this::
 
-        from scrapy.extension import extensions
+        from scrapy.project import extensions
 
     .. attribute:: loaded
 
@@ -140,7 +140,7 @@ how you :ref:`configure the downloader middlewares
         A dict with the enabled extensions. The keys are the extension class names,
         and the values are the extension objects. Example::
 
-            >>> from scrapy.extension import extensions
+            >>> from scrapy.project import extensions
             >>> extensions.load()
             >>> print extensions.enabled
             {'CoreStats': <scrapy.contrib.corestats.CoreStats object at 0x9e272ac>,
@@ -153,7 +153,7 @@ how you :ref:`configure the downloader middlewares
         and the values are the extension class paths (because objects are never
         instantiated for disabled extensions). Example::
 
-            >>> from scrapy.extension import extensions
+            >>> from scrapy.project import extensions
             >>> extensions.load()
             >>> print extensions.disabled
             {'MemoryDebugger': 'scrapy.contrib.memdebug.MemoryDebugger',

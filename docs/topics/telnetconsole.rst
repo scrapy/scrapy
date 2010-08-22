@@ -43,13 +43,13 @@ convenience:
 +----------------+-------------------------------------------------------------------+
 | Shortcut       | Description                                                       |
 +================+===================================================================+
-| ``engine``     | the Scrapy engine object (``scrapy.core.engine.scrapyengine``)    |
-+----------------+-------------------------------------------------------------------+
 | ``manager``    | the Project Crawler object (``scrapy.project.crawler``)           |
 +----------------+-------------------------------------------------------------------+
-| ``extensions`` | the extensions object (``scrapy.extension.extensions``)           |
+| ``engine``     | the Scrapy engine object (``scrapy.project.crawler.engine``)      |
 +----------------+-------------------------------------------------------------------+
-| ``stats``      | the Scrapy stats object (``scrapy.stats.stats``)                  |
+| ``extensions`` | the Extension Manager (``scrapy.project.crawler.extensions``)     |
++----------------+-------------------------------------------------------------------+
+| ``stats``      | the Stats Collector (``scrapy.stats.stats``)                      |
 +----------------+-------------------------------------------------------------------+
 | ``settings``   | the Scrapy settings object (``scrapy.conf.settings``)             |
 +----------------+-------------------------------------------------------------------+

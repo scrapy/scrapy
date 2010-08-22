@@ -38,5 +38,3 @@ class ExtensionManager(object):
 
     def reload(self):
         self.load()
-
-extensions = ExtensionManager()
