@@ -316,6 +316,9 @@ Supported options:
  * ``--callback`` or ``-c``: spider method to use as callback for parsing the
    response
 
+ * ``--rules`` or ``-r``: use :class:`~scrapy.contrib.spiders.CrawlSpider`
+   rules to discover the callback (ie. spider method) for parsing the response
+
  * ``--noitems``: don't show extracted links
 
  * ``--nolinks``: don't show scraped items

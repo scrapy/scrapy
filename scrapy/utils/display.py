@@ -1,15 +1,12 @@
 """
-Helper functions for formatting and pretty printing some objects
+pprint and pformat wrappers with colorization support
 """
+
 import sys
-import pprint as pypprint
+from pprint import pformat as pformat_
 
-from scrapy.item import BaseItem
-
-nocolour = False
-
-def colorize(text):
-    if nocolour or not sys.stdout.isatty():
+def _colorize(text, colorize=True):
+    if not colorize or not sys.stdout.isatty():
         return text
     try:
         from pygments import highlight
@@ -19,25 +16,8 @@ def colorize(text):
     except ImportError:
         return text
 
-def _pformat_dictobj(obj):
-    clsname = obj.__class__.__name__
-    return "%s(%s)\n" % (clsname, colorize(pypprint.pformat(obj.__dict__)))
-
 def pformat(obj, *args, **kwargs):
-    """
-    Wrapper which autodetects the object type and uses the proper formatting
-    function
-    """
-    if isinstance(obj, BaseItem):
-        return _pformat_dictobj(obj)
-    elif hasattr(obj, '__iter__'):
-        return "".join(map(pformat, obj))
-    else:
-        return colorize(pypprint.pformat(repr(obj)))
+    return _colorize(pformat_(obj), kwargs.pop('colorize', True))
 
 def pprint(obj, *args, **kwargs):
-    """
-    Wrapper which autodetects the object type and uses the proper printing
-    function
-    """
     print pformat(obj, *args, **kwargs)

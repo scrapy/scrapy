@@ -2,7 +2,6 @@ from scrapy.command import ScrapyCommand
 from scrapy.project import crawler
 from scrapy.http import Request
 from scrapy.item import BaseItem
-from scrapy.project import crawler
 from scrapy.utils import display
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.url import is_url
@@ -21,115 +20,90 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--spider", dest="spider", default=None, \
-            help="always use this spider")
+            help="use this spider without looking for one")
         parser.add_option("--nolinks", dest="nolinks", action="store_true", \
-            help="don't show extracted links")
+            help="don't show links to follow (extracted requests)")
         parser.add_option("--noitems", dest="noitems", action="store_true", \
             help="don't show scraped items")
         parser.add_option("--nocolour", dest="nocolour", action="store_true", \
             help="avoid using pygments to colorize the output")
         parser.add_option("-r", "--rules", dest="rules", action="store_true", \
-            help="try to match and parse the url with the defined rules (if any)")
-        parser.add_option("-c", "--callbacks", dest="callbacks", action="store", \
-            help="use the provided callback(s) for parsing the url (separated with commas)")
-
-    def process_options(self, args, opts):
-        super(Command, self).process_options(args, opts)
-        self.callbacks = opts.callbacks.split(',') if opts.callbacks else []
+            help="use CrawlSpider rules to discover the callback")
+        parser.add_option("-c", "--callback", dest="callback", \
+            help="use this callback for parsing, instead looking for a callback")
 
     def pipeline_process(self, item, spider, opts):
         return item
 
-    def run_callback(self, spider, response, callback, args, opts):
-        if callback:
-            callback_fcn = callback if callable(callback) else getattr(spider, callback, None)
-            if not callback_fcn:
-                log.msg('Cannot find callback %s in %s spider' % (callback, spider.name))
-                return (), ()
+    def run_callback(self, spider, response, callback, opts):
+        cb = callback if callable(callback) else getattr(spider, callback, None)
+        if not cb:
+            log.msg('Cannot find callback %r in spider: %s' % (callback, spider.name))
+            return (), ()
 
-            result = iterate_spider_output(callback_fcn(response))
-            links = [i for i in result if isinstance(i, Request)]
-            items = [self.pipeline_process(i, spider, opts) for i in result if \
-                     isinstance(i, BaseItem)]
-            return items, links
+        items, requests = [], []
+        for x in iterate_spider_output(cb(response)):
+            if isinstance(x, BaseItem):
+                items.append(x)
+            elif isinstance(x, Request):
+                requests.append(x)
+        return items, requests
 
-        return (), ()
+    def get_callback_from_rules(self, spider, response):
+        if getattr(spider, 'rules', None):
+            for rule in spider.rules:
+                if rule.link_extractor.matches(response.url) and rule.callback:
+                    return rule.callback
+        else:
+            log.msg("No CrawlSpider rules found in spider %r, please specify "
+                "a callback to use for parsing" % spider.name, log.ERROR)
 
-    def print_results(self, items, links, cb_name, opts):
-        display.nocolour = opts.nocolour
+    def print_results(self, items, requests, cb_name, opts):
         if not opts.noitems:
-            for item in items:
-                for key in item.__dict__.keys():
-                    if key.startswith('_'):
-                        item.__dict__.pop(key, None)
             print "# Scraped Items - callback: %s" % cb_name, "-"*60
-            display.pprint(list(items))
-
+            display.pprint([dict(x) for x in items], colorize=not opts.nocolour)
         if not opts.nolinks:
-            print "# Links - callback: %s" % cb_name, "-"*68
-            display.pprint(list(links))
+            print "# Requests - callback: %s" % cb_name, "-"*68
+            display.pprint(requests, colorize=not opts.nocolour)
+
+    def get_spider(self, request, opts):
+        if opts.spider:
+            try:
+                return crawler.spiders.create(opts.spider)
+            except KeyError:
+                log.msg('Unable to find spider: %s' % opts.spider, log.ERROR)
+        else:
+            spider = crawler.spiders.create_for_request(request)
+            if spider:
+                return spider
+            log.msg('Unable to find spider for: %s' % request, log.ERROR)
+
+    def get_response_and_spider(self, url, opts):
+        responses = [] # to collect downloaded responses
+        request = Request(url, callback=responses.append)
+        spider = self.get_spider(request, opts)
+        if not spider:
+            return None, None
+        crawler.queue.append_request(request, spider)
+        crawler.start()
+        if not responses:
+            log.msg('No response downloaded for: %s' % request, log.ERROR, \
+                spider=spider)
+            return None, None
+        return responses[0], spider
 
     def run(self, args, opts):
         if not len(args) == 1 or not is_url(args[0]):
             return False
-
-        responses = [] # to collect downloaded responses
-        request = Request(args[0], callback=responses.append)
-
-        if opts.spider:
-            try:
-                spider = crawler.spiders.create(opts.spider)
-            except KeyError:
-                log.msg('Unable to find spider: %s' % opts.spider, log.ERROR)
-                return
-        else:
-            spider = crawler.spiders.create_for_request(request)
-            if spider is None:
-                log.msg('Unable to find spider for URL: %s' % args[0], log.ERROR)
-                return
-
-        crawler.configure()
-        crawler.queue.append_request(request, spider)
-        crawler.start()
-
-        if not responses:
-            log.msg('No response returned', log.ERROR, spider=spider)
+        response, spider = self.get_response_and_spider(args[0], opts)
+        if not response:
             return
-
-        # now process response
-        #   - if callbacks defined then call each one print results
-        #   - if --rules option given search for matching spider's rule
-        #   - default print result using default 'parse' spider's callback
-        response = responses[0]
-
-        if self.callbacks:
-            # apply each callback
-            for callback in self.callbacks:
-                items, links = self.run_callback(spider, response,
-                                                    callback, args, opts)
-                self.print_results(items, links, callback, opts)
+        callback = None
+        if opts.callback:
+            callback = opts.callback
         elif opts.rules:
-            # search for matching spider's rule
-            if hasattr(spider, 'rules') and spider.rules:
-                items, links = [], []
-                for rule in spider.rules:
-                    if rule.link_extractor.matches(response.url) \
-                        and rule.callback:
-
-                        items, links = self.run_callback(spider,
-                                            response, rule.callback,
-                                            args, opts)
-                        self.print_results(items, links,
-                                            rule.callback, opts)
-                        # first-match rule breaks rules loop
-                        break
-            else:
-                log.msg('No rules found for spider "%s", ' \
-                        'please specify a callback for parsing' \
-                        % spider.name, log.ERROR)
-        else:
-            # default callback 'parse'
-            items, links = self.run_callback(spider, response,
-                                                'parse', args, opts)
-            self.print_results(items, links, 'parse', opts)
+            callback = self.get_callback_from_rules(spider, response)
+        items, requests = self.run_callback(spider, response, callback or 'parse', \
+            opts)
+        self.print_results(items, requests, callback, opts)
 
