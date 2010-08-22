@@ -6,6 +6,7 @@ from cStringIO import StringIO
 
 from scrapy.spider import BaseSpider
 from scrapy.contrib.feedexport import FileFeedStorage, FTPFeedStorage, S3FeedStorage
+from scrapy.utils.url import path_to_file_uri
 
 class FeedStorageTest(unittest.TestCase):
 
@@ -23,13 +24,13 @@ class FileFeedStorageTest(FeedStorageTest):
 
     def test_store_file_uri(self):
         path = os.path.abspath(self.mktemp())
-        uri = "file://%s" % path
+        uri = path_to_file_uri(path)
         return self._assert_stores(FileFeedStorage(uri), path)
 
     def test_store_file_uri_makedirs(self):
         path = os.path.abspath(self.mktemp())
         path = os.path.join(path, 'more', 'paths', 'file.txt')
-        uri = "file://%s" % path
+        uri = path_to_file_uri(path)
         return self._assert_stores(FileFeedStorage(uri), path)
 
     def test_store_direct_path(self):

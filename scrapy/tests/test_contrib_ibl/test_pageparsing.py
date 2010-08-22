@@ -274,7 +274,7 @@ class TestPageParsing(TestCase):
         """
         Tests from real pages. More reliable and easy to build for more complicated structures
         """
-        samples_file = open(os.path.join(path, "samples_pageparsing.json.gz"), "r")
+        samples_file = open(os.path.join(path, "samples_pageparsing.json.gz"), "rb")
         samples = []
         for line in GzipFile(fileobj=StringIO(samples_file.read())).readlines():
             samples.append(json.loads(line))

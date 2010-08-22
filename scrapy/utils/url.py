@@ -173,5 +173,7 @@ def any_to_uri(uri_or_path):
     """If given a path name, return its File URI, otherwise return it
     unmodified
     """
+    if os.path.splitdrive(uri_or_path)[0]:
+        return path_to_file_uri(uri_or_path)
     u = urlparse.urlparse(uri_or_path)
     return uri_or_path if u.scheme else path_to_file_uri(uri_or_path)

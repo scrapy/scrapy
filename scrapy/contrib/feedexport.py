@@ -17,6 +17,7 @@ from scrapy.xlib.pydispatch import dispatcher
 from scrapy.utils.ftp import ftp_makedirs_cwd
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
+from scrapy.utils.url import file_uri_to_path
 from scrapy.conf import settings
 
 class BlockingFeedStorage(object):
@@ -40,8 +41,7 @@ class StdoutFeedStorage(object):
 class FileFeedStorage(BlockingFeedStorage):
 
     def __init__(self, uri):
-        u = urlparse(uri)
-        self.path = u.path
+        self.path = file_uri_to_path(uri)
 
     def _store_in_thread(self, file, spider):
         dirname = os.path.dirname(self.path)
