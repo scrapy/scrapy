@@ -13,7 +13,6 @@ from twisted.internet import reactor, protocol
 from scrapy.extension import extensions
 from scrapy.exceptions import NotConfigured
 from scrapy.project import crawler
-from scrapy.spider import spiders
 from scrapy.stats import stats
 from scrapy.utils.signal import send_catch_log
 from scrapy.utils.trackref import print_live_refs
@@ -52,7 +51,7 @@ class TelnetConsole(protocol.ServerFactory):
             'manager': crawler,
             'extensions': extensions,
             'stats': stats,
-            'spiders': spiders,
+            'spiders': crawler.spiders,
             'settings': settings,
             'est': print_engine_status,
             'p': pprint.pprint,

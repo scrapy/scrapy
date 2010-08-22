@@ -17,7 +17,6 @@ from scrapy.core.downloader import Downloader
 from scrapy.core.scraper import Scraper
 from scrapy.exceptions import IgnoreRequest, DontCloseSpider
 from scrapy.http import Response, Request
-from scrapy.spider import spiders
 from scrapy.utils.misc import load_object
 from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
 from scrapy.utils.defer import mustbe_deferred
@@ -278,7 +277,7 @@ class ExecutionEngine(object):
         dfd.addBoth(lambda _: stats.close_spider(spider, reason=reason))
         dfd.addErrback(log.err, "Unhandled error in stats.close_spider()",
             spider=spider)
-        dfd.addBoth(lambda _: spiders.close_spider(spider))
+        dfd.addBoth(lambda _: self.crawler.spiders.close_spider(spider))
         dfd.addErrback(log.err, "Unhandled error in spiders.close_spider()",
             spider=spider)
         dfd.addBoth(lambda _: log.msg("Spider closed (%s)" % reason, spider=spider))

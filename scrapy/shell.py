@@ -11,7 +11,7 @@ from twisted.python.failure import Failure
 
 from scrapy import log
 from scrapy.item import BaseItem
-from scrapy.spider import BaseSpider, spiders
+from scrapy.spider import BaseSpider
 from scrapy.selector import XPathSelector, XmlXPathSelector, HtmlXPathSelector
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
@@ -58,8 +58,8 @@ class Shell(object):
             url = any_to_uri(request_or_url)
             request = Request(url, dont_filter=True)
         if spider is None:
-            spider = spiders.create_for_request(request, BaseSpider('default'), \
-                log_multiple=True)
+            spider = self.crawler.spiders.create_for_request(request, \
+                BaseSpider('default'), log_multiple=True)
         self.crawler.engine.open_spider(spider)
         response = None
         try:

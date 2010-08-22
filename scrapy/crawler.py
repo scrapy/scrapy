@@ -6,15 +6,15 @@ from scrapy.core.engine import ExecutionEngine
 from scrapy.core.queue import ExecutionQueue
 from scrapy.extension import extensions
 from scrapy import log
-from scrapy.spider import spiders
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 
 
 class Crawler(object):
 
-    def __init__(self):
+    def __init__(self, spiders):
         self.configured = False
         self.control_reactor = True
+        self.spiders = spiders
         self.engine = ExecutionEngine(self)
 
     def configure(self, control_reactor=True, queue=None):
@@ -26,8 +26,8 @@ class Crawler(object):
             log.start()
         if not extensions.loaded:
             extensions.load()
-        if not spiders.loaded:
-            spiders.load()
+        if not self.spiders.loaded:
+            self.spiders.load()
         log.msg("Enabled extensions: %s" % ", ".join(extensions.enabled.iterkeys()),
             level=log.DEBUG)
 

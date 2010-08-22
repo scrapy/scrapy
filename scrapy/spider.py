@@ -55,3 +55,16 @@ class BaseSpider(object_ref):
         return "<%s %r at 0x%0x>" % (type(self).__name__, self.name, id(self))
 
     __repr__ = __str__
+
+
+class ObsoleteClass(object):
+    def __init__(self, message):
+        self.message = message
+
+    def __getattr__(self, name):
+        raise AttributeError(self.message)
+
+spiders = ObsoleteClass("""
+"from scrapy.spider import spiders" no longer works - use "from scrapy.project import crawler" and then access crawler.spiders attribute"
+""")
+

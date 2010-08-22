@@ -4,7 +4,7 @@ from scrapy.core.queue import ExecutionQueue
 from scrapy.project import crawler
 from scrapy.conf import settings
 from scrapy.http import Request
-from scrapy.spider import spiders
+from scrapy.project import crawler
 from scrapy.utils.url import is_url
 
 from collections import defaultdict
@@ -39,14 +39,14 @@ class Command(ScrapyCommand):
 
         if opts.spider:
             try:
-                spider = spiders.create(opts.spider)
+                spider = crawler.spiders.create(opts.spider)
                 for url in urls:
                     q.append_url(url, spider)
             except KeyError:
                 log.msg('Unable to find spider: %s' % opts.spider, log.ERROR)
         else:
             for name, urls in self._group_urls_by_spider(urls):
-                spider = spiders.create(name)
+                spider = crawler.spiders.create(name)
                 for url in urls:
                     q.append_url(url, spider)
 
@@ -56,7 +56,7 @@ class Command(ScrapyCommand):
     def _group_urls_by_spider(self, urls):
         spider_urls = defaultdict(list)
         for url in urls:
-            spider_names = spiders.find_by_request(Request(url))
+            spider_names = crawler.spiders.find_by_request(Request(url))
             if not spider_names:
                 log.msg('Could not find spider that handles url: %s' % url,
                         log.ERROR)

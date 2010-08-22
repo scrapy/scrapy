@@ -2,7 +2,7 @@ from scrapy.command import ScrapyCommand
 from scrapy.project import crawler
 from scrapy.http import Request
 from scrapy.item import BaseItem
-from scrapy.spider import spiders
+from scrapy.project import crawler
 from scrapy.utils import display
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.url import is_url
@@ -78,12 +78,12 @@ class Command(ScrapyCommand):
 
         if opts.spider:
             try:
-                spider = spiders.create(opts.spider)
+                spider = crawler.spiders.create(opts.spider)
             except KeyError:
                 log.msg('Unable to find spider: %s' % opts.spider, log.ERROR)
                 return
         else:
-            spider = spiders.create_for_request(request)
+            spider = crawler.spiders.create_for_request(request)
             if spider is None:
                 log.msg('Unable to find spider for URL: %s' % args[0], log.ERROR)
                 return
