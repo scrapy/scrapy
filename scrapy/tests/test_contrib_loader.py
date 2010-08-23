@@ -68,6 +68,11 @@ class ItemLoaderTest(unittest.TestCase):
         il.add_value(None, u'Jim', lambda x: {'name': x})
         self.assertEqual(il.get_collected_values('name'), [u'Marta', u'Pepe', u'Jim'])
 
+    def test_add_zero(self):
+        il = NameItemLoader()
+        il.add_value('name', 0)
+        self.assertEqual(il.get_collected_values('name'), [0])
+
     def test_replace_value(self):
         il = TestItemLoader()
         il.replace_value('name', u'marta')

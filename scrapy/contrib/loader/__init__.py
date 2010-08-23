@@ -29,7 +29,7 @@ class ItemLoader(object):
 
     def add_value(self, field_name, value, *processors, **kw):
         value = self.get_value(value, *processors, **kw)
-        if not value:
+        if value is None:
             return
         if not field_name:
             for k,v in value.iteritems():
@@ -39,7 +39,7 @@ class ItemLoader(object):
 
     def replace_value(self, field_name, value, *processors, **kw):
         value = self.get_value(value, *processors, **kw)
-        if not value:
+        if value is None:
             return
         if not field_name:
             for k,v in value.iteritems():
