@@ -8,7 +8,7 @@ from twisted.trial import unittest
 # ugly hack to avoid cyclic imports of scrapy.spider when running this test
 # alone
 import scrapy.spider
-from scrapy.contrib.spidermanager import SpiderManager
+from scrapy.spidermanager import SpiderManager
 from scrapy.http import Request
 
 module_dir = os.path.dirname(os.path.abspath(__file__))
