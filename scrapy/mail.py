@@ -28,12 +28,13 @@ mail_sent = object()
 class MailSender(object):
 
     def __init__(self, smtphost=None, mailfrom=None, smtpuser=None, smtppass=None, \
-            smtpport=None):
+            smtpport=None, debug=False):
         self.smtphost = smtphost or settings['MAIL_HOST']
         self.smtpport = smtpport or settings.getint('MAIL_PORT')
         self.smtpuser = smtpuser or settings['MAIL_USER']
         self.smtppass = smtppass or settings['MAIL_PASS']
         self.mailfrom = mailfrom or settings['MAIL_FROM']
+        self.debug = debug
 
         if not self.smtphost or not self.mailfrom:
             raise NotConfigured("MAIL_HOST and MAIL_FROM settings are required")
@@ -67,7 +68,7 @@ class MailSender(object):
         send_catch_log(signal=mail_sent, to=to, subject=subject, body=body,
                        cc=cc, attach=attachs, msg=msg)
 
-        if settings.getbool('MAIL_DEBUG'):
+        if self.debug:
             log.msg('Debug mail sent OK: To=%s Cc=%s Subject="%s" Attachs=%d' % \
                 (to, cc, subject, len(attachs)), level=log.DEBUG)
             return

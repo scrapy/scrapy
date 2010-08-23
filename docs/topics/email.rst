@@ -58,9 +58,6 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
 
         Send email to the given recipients. Emits the :signal:`mail_sent` signal.
 
-        If :setting:`MAIL_DEBUG` is enabled the :signal:`mail_sent` signal will
-        be emmited and no actual email will be sent.
-
         :param to: the e-mail recipients
         :type to: list
 
@@ -135,15 +132,6 @@ MAIL_PASS
 Default: ``None``
 
 Password to use for SMTP authentication, along with :setting:`MAIL_USER`.
-
-.. setting:: MAIL_DEBUG
-
-MAIL_DEBUG
-----------
-
-Default: ``False``
-
-Whether to enable the debugging mode.
 
 
 Mail signals
