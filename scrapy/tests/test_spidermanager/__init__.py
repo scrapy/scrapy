@@ -57,9 +57,9 @@ class SpiderManagerTest(unittest.TestCase):
             ['spider3'])
 
     def test_load_spider_module(self):
-        self.spiderman.load(['scrapy.tests.test_contrib_spidermanager.test_spiders.spider1'])
+        self.spiderman.load(['scrapy.tests.test_spidermanager.test_spiders.spider1'])
         assert len(self.spiderman._spiders) == 1
 
     def test_load_base_spider(self):
-        self.spiderman.load(['scrapy.tests.test_contrib_spidermanager.test_spiders.spider0'])
+        self.spiderman.load(['scrapy.tests.test_spidermanager.test_spiders.spider0'])
         assert len(self.spiderman._spiders) == 0
