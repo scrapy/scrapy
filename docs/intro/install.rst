@@ -11,6 +11,10 @@ systems and it consists of the following 3 steps:
 * :ref:`intro-install-step2`
 * :ref:`intro-install-step3`
 
+If you use Ubuntu (9.10 or above), you can use the :ref:`Ubuntu packages
+<topics-ubuntu>` to install Scrapy more easily, skipping these steps. The
+Ubuntu packages are also kept updated with latest bug fixes.
+
 .. _intro-install-requirements:
 
 Requirements

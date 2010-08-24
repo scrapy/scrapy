@@ -124,6 +124,7 @@ Solving specific problems
    topics/firebug
    topics/leaks
    topics/images
+   topics/ubuntu
 
 :doc:`faq`
     Get answers to most frequently asked questions.
@@ -139,6 +140,9 @@ Solving specific problems
 
 :doc:`topics/images`
     Download static images associated with your scraped items.
+
+:doc:`topics/ubuntu`
+    Install latest Scrapy packages easily on Ubuntu
 
 .. _extending-scrapy:
 
