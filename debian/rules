@@ -8,4 +8,3 @@ override_dh_auto_install:
 	dh_auto_install
 	mkdir -p $(CURDIR)/debian/scrapy/usr/bin
 	mv $(CURDIR)/debian/tmp/usr/bin/scrapy-ws.py $(CURDIR)/debian/scrapy/usr/bin/scrapy-ws
-	mv $(CURDIR)/debian/tmp/usr/bin/scrapy-sqs.py $(CURDIR)/debian/scrapy/usr/bin/scrapy-sqs
