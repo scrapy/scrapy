@@ -48,7 +48,6 @@ class Command(ScrapyCommand):
             except KeyError:
                 log.msg("Could not find spider: %s" % opts.spider, log.ERROR)
 
-        crawler.configure()
         crawler.queue.append_request(request, spider, \
             default_spider=BaseSpider('default'))
         crawler.start()
