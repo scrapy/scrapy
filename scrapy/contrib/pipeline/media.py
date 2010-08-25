@@ -88,7 +88,7 @@ class MediaPipeline(object):
     def download(self, request, info):
         """Defines how to download the media request"""
         request.priority = self.DOWNLOAD_PRIORITY
-        return crawler.engine.download(request, info.spider)
+        return self.crawler.engine.download(request, info.spider)
 
     def media_to_download(self, request, info):
         """Check request before starting download"""
