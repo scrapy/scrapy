@@ -4,10 +4,10 @@ from cStringIO import StringIO
 from scrapy.utils.jsonrpc import jsonrpc_client_call, jsonrpc_server_call, \
     JsonRpcError, jsonrpc_errors
 from scrapy.utils.serialize import ScrapyJSONDecoder
-from scrapy.tests.test_utils_serialize import ExecutionMangerStub
+from scrapy.tests.test_utils_serialize import CrawlerMock
 from scrapy.utils.py26 import json
 
-class urllib_stub(object):
+class urllib_mock(object):
     def __init__(self, result=None, error=None):
         response = {}
         if result:
@@ -33,11 +33,11 @@ class TestTarget(object):
 class JsonRpcUtilsTestCase(unittest.TestCase):
 
     def setUp(self):
-        crawler = ExecutionMangerStub([])
+        crawler = CrawlerMock([])
         self.json_decoder = ScrapyJSONDecoder(crawler=crawler)
 
     def test_jsonrpc_client_call_request(self):
-        ul = urllib_stub(1)
+        ul = urllib_mock(1)
         jsonrpc_client_call('url', 'test', 'one', 2, _urllib=ul)
         req = json.loads(ul.request)
         assert 'id' in req
@@ -47,12 +47,12 @@ class JsonRpcUtilsTestCase(unittest.TestCase):
         self.assertEqual(req['params'], ['one', 2])
 
     def test_jsonrpc_client_call_response(self):
-        ul = urllib_stub()
+        ul = urllib_mock()
         # must return result or error
         self.assertRaises(ValueError, jsonrpc_client_call, 'url', 'test', _urllib=ul)
-        ul = urllib_stub(result={'one': 1})
+        ul = urllib_mock(result={'one': 1})
         self.assertEquals(jsonrpc_client_call('url', 'test', _urllib=ul), {'one': 1})
-        ul = urllib_stub(error={'code': 123, 'message': 'hello', 'data': 'some data'})
+        ul = urllib_mock(error={'code': 123, 'message': 'hello', 'data': 'some data'})
 
         raised = False
         try:

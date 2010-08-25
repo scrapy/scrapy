@@ -22,7 +22,7 @@ class SpiderReferencer(object):
     def __init__(self, crawler=None):
         if crawler is None:
             from scrapy.project import crawler
-        self.manager = crawler
+        self.crawler = crawler
 
     def get_reference_from_spider(self, spider):
         return 'spider:%x:%s' % (id(spider), spider.name)
@@ -35,7 +35,7 @@ class SpiderReferencer(object):
         m = self.spider_ref_re.search(ref)
         if m:
             spid, spname = m.groups()
-            for spider in self.manager.engine.open_spiders:
+            for spider in self.crawler.engine.open_spiders:
                 if "%x" % id(spider) == spid or spider.name == spname:
                     return spider
             raise RuntimeError("Spider not running: %s" % ref)

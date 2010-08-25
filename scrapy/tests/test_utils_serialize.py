@@ -10,13 +10,13 @@ from scrapy.spider import BaseSpider
 from scrapy.http import Request, Response
 
 
-class ExecutionEngineStub(object):
+class _EngineMock(object):
     def __init__(self, open_spiders):
         self.open_spiders = open_spiders
 
-class ExecutionMangerStub(object):
+class CrawlerMock(object):
     def __init__(self, open_spiders):
-        self.engine = ExecutionEngineStub(open_spiders)
+        self.engine = _EngineMock(open_spiders)
 
 class BaseTestCase(unittest.TestCase):
 
@@ -24,8 +24,8 @@ class BaseTestCase(unittest.TestCase):
         self.spider1 = BaseSpider('name1')
         self.spider2 = BaseSpider('name2')
         open_spiders = set([self.spider1, self.spider2])
-        manager = ExecutionMangerStub(open_spiders)
-        self.spref = SpiderReferencer(manager)
+        crawler = CrawlerMock(open_spiders)
+        self.spref = SpiderReferencer(crawler)
         self.encoder = ScrapyJSONEncoder(spref=self.spref)
         self.decoder = ScrapyJSONDecoder(spref=self.spref)
 

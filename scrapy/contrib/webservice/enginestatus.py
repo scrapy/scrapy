@@ -6,14 +6,14 @@ class EngineStatusResource(JsonResource):
 
     ws_name = 'enginestatus'
 
-    def __init__(self, spider_name=None, _manager=crawler):
+    def __init__(self, spider_name=None, _crawler=crawler):
         JsonResource.__init__(self)
         self._spider_name = spider_name
         self.isLeaf = spider_name is not None
-        self._manager = _manager
+        self._crawler = _crawler
 
     def render_GET(self, txrequest):
-        status = get_engine_status(self._manager.engine)
+        status = get_engine_status(self._crawler.engine)
         if self._spider_name is None:
             return status
         for sp, st in status['spiders'].items():
@@ -21,4 +21,4 @@ class EngineStatusResource(JsonResource):
                 return st
 
     def getChild(self, name, txrequest):
-        return EngineStatusResource(name, self._manager)
+        return EngineStatusResource(name, self._crawler)
