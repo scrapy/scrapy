@@ -1,4 +1,11 @@
-from scrapy.crawler import CrawlerProcess
-from scrapy.conf import settings
+"""
+This module contains the Scrapy Crawler once installed by calling the crawler
+``install`` method, like this::
 
-crawler = CrawlerProcess(settings)
+    crawler.install()
+
+After that, you can import the (singleton) crawler like this::
+
+    from scrapy.project import crawler
+
+"""

@@ -1,5 +1,4 @@
 from scrapy.command import ScrapyCommand
-from scrapy.conf import settings as settings_
 
 class Command(ScrapyCommand):
 
@@ -24,26 +23,16 @@ class Command(ScrapyCommand):
             help="print setting value, intepreted as an float")
         parser.add_option("--getlist", dest="getlist", metavar="SETTING", \
             help="print setting value, intepreted as an float")
-        parser.add_option("--init", dest="init", action="store_true", \
-            help="print initial setting value (before loading extensions and spiders)")
-
-    def process_options(self, args, opts):
-        super(Command, self).process_options(args, opts)
-        if opts.init:
-            self._print_setting(opts)
 
     def run(self, args, opts):
-        if not opts.init:
-            self._print_setting(opts)
-
-    def _print_setting(self, opts):
+        settings = self.crawler.settings
         if opts.get:
-            print settings_.get(opts.get)
+            print settings.get(opts.get)
         elif opts.getbool:
-            print settings_.getbool(opts.getbool)
+            print settings.getbool(opts.getbool)
         elif opts.getint:
-            print settings_.getint(opts.getint)
+            print settings.getint(opts.getint)
         elif opts.getfloat:
-            print settings_.getfloat(opts.getfloat)
+            print settings.getfloat(opts.getfloat)
         elif opts.getlist:
-            print settings_.getlist(opts.getlist)
+            print settings.getlist(opts.getlist)

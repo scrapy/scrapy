@@ -4,7 +4,6 @@ from twisted.internet import reactor, defer
 
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core.engine import ExecutionEngine
-from scrapy.core.queue import ExecutionQueue
 from scrapy.extension import ExtensionManager
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.misc import load_object
@@ -16,17 +15,28 @@ class Crawler(object):
     def __init__(self, settings):
         self.configured = False
         self.settings = settings
-        self.spiders = load_object(settings['SPIDER_MANAGER_CLASS'])()
-        self.engine = ExecutionEngine(self)
 
-    def configure(self, queue=None):
-        self.extensions = ExtensionManager.from_settings(self.settings)
-        if not self.spiders.loaded:
-            self.spiders.load()
+    def install(self):
+        import scrapy.project
+        assert not hasattr(scrapy.project, 'crawler'), "crawler already installed"
+        scrapy.project.crawler = self
 
-        self.queue = queue or ExecutionQueue()
-        self.engine.configure(self._spider_closed)
+    def uninstall(self):
+        import scrapy.project
+        assert hasattr(scrapy.project, 'crawler'), "crawler not installed"
+        del scrapy.project.crawler
+
+    def configure(self):
+        if self.configured:
+            return
         self.configured = True
+        self.engine = ExecutionEngine(self)
+        self.extensions = ExtensionManager.from_settings(self.settings)
+        spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
+        self.spiders = spman_cls.from_settings(self.settings)
+        queue_cls = load_object(self.settings['QUEUE_CLASS'])
+        self.queue = queue_cls(self.spiders)
+        self.engine.configure(self._spider_closed)
 
     @defer.inlineCallbacks
     def _start_next_spider(self):
@@ -56,6 +66,7 @@ class Crawler(object):
 
     @defer.inlineCallbacks
     def start(self):
+        yield defer.maybeDeferred(self.configure)
         yield defer.maybeDeferred(self.engine.start)
         self._nextcall = reactor.callLater(0, self._start_next_spider)
 

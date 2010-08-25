@@ -20,29 +20,20 @@ class CmdlineTest(unittest.TestCase):
         return comm[0].strip()
 
     def test_default_settings(self):
-        self.assertEqual(self._execute('settings', '--get', 'TEST1', '--init'), \
-            'default')
         self.assertEqual(self._execute('settings', '--get', 'TEST1'), \
             'default + loaded + started')
 
     def test_override_settings_using_settings_arg(self):
-        self.assertEqual(self._execute('settings', '--get', 'TEST1', '--init', \
-            '--settings', 'scrapy.tests.test_cmdline.settings2'), \
-            'override')
         self.assertEqual(self._execute('settings', '--get', 'TEST1', \
             '--settings', 'scrapy.tests.test_cmdline.settings2'), \
             'override + loaded + started')
 
     def test_override_settings_using_set_arg(self):
-        self.assertEqual(self._execute('settings', '--get', 'TEST1', '--init', '--set', 'TEST1=override'), \
-            'override')
         self.assertEqual(self._execute('settings', '--get', 'TEST1', '--set', 'TEST1=override'), \
             'override + loaded + started')
 
     def test_override_settings_using_envvar(self):
         self.env['SCRAPY_TEST1'] = 'override'
-        self.assertEqual(self._execute('settings', '--get', 'TEST1', '--init'), \
-            'override')
         self.assertEqual(self._execute('settings', '--get', 'TEST1'), \
             'override + loaded + started')
 

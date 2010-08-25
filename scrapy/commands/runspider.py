@@ -4,7 +4,6 @@ import os
 from scrapy import log
 from scrapy.utils.spider import iter_spider_classes
 from scrapy.command import ScrapyCommand
-from scrapy.project import crawler
 
 def _import_file(filepath):
     abspath = os.path.abspath(filepath)
@@ -52,5 +51,5 @@ class Command(ScrapyCommand):
             return
         spider = spclasses.pop()()
         # schedule spider and start engine
-        crawler.queue.append_spider(spider)
-        crawler.start()
+        self.crawler.queue.append_spider(spider)
+        self.crawler.start()

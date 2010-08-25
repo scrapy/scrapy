@@ -22,10 +22,7 @@ class SpiderManagerTest(unittest.TestCase):
         self.spiders_dir = os.path.join(self.tmpdir, 'test_spiders_xxx')
         shutil.copytree(orig_spiders_dir, self.spiders_dir)
         sys.path.append(self.tmpdir)
-        self.spiderman = SpiderManager()
-        assert not self.spiderman.loaded
-        self.spiderman.load(['test_spiders_xxx'])
-        assert self.spiderman.loaded
+        self.spiderman = SpiderManager(['test_spiders_xxx'])
 
     def tearDown(self):
         del self.spiderman
@@ -57,9 +54,9 @@ class SpiderManagerTest(unittest.TestCase):
             ['spider3'])
 
     def test_load_spider_module(self):
-        self.spiderman.load(['scrapy.tests.test_spidermanager.test_spiders.spider1'])
+        self.spiderman = SpiderManager(['scrapy.tests.test_spidermanager.test_spiders.spider1'])
         assert len(self.spiderman._spiders) == 1
 
     def test_load_base_spider(self):
-        self.spiderman.load(['scrapy.tests.test_spidermanager.test_spiders.spider0'])
+        self.spiderman = SpiderManager(['scrapy.tests.test_spidermanager.test_spiders.spider0'])
         assert len(self.spiderman._spiders) == 0

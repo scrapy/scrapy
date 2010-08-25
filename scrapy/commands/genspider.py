@@ -4,7 +4,6 @@ from os import listdir
 from os.path import join, dirname, abspath, exists, splitext
 
 import scrapy
-from scrapy.project import crawler
 from scrapy.command import ScrapyCommand
 from scrapy.conf import settings
 from scrapy.utils.template import render_templatefile, string_camelcase
@@ -60,7 +59,7 @@ class Command(ScrapyCommand):
         name, domain = args[0:2]
         module = sanitize_module_name(name)
         try:
-            spider = crawler.spiders.create(name)
+            spider = self.crawler.spiders.create(name)
         except KeyError:
             pass
         else:

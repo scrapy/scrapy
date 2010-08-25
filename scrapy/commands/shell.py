@@ -4,14 +4,13 @@ Scrapy Shell
 See documentation in docs/topics/shell.rst
 """
 
-from scrapy.project import crawler
-from scrapy.core.queue import KeepAliveExecutionQueue
 from scrapy.command import ScrapyCommand
 from scrapy.shell import Shell
 
 class Command(ScrapyCommand):
 
     requires_project = False
+    default_settings = {'QUEUE_CLASS': 'scrapy.core.queue.KeepAliveExecutionQueue'}
 
     def syntax(self):
         return "[url|file]"
@@ -30,7 +29,6 @@ class Command(ScrapyCommand):
 
     def run(self, args, opts):
         url = args[0] if args else None
-        shell = Shell(crawler, update_vars=self.update_vars, inthread=True)
-        shell.start(url=url).addBoth(lambda _: crawler.stop())
-        crawler.queue = KeepAliveExecutionQueue()
-        crawler.start()
+        shell = Shell(self.crawler, update_vars=self.update_vars, inthread=True)
+        shell.start(url=url).addBoth(lambda _: self.crawler.stop())
+        self.crawler.start()

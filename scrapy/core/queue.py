@@ -9,10 +9,7 @@ class ExecutionQueue(object):
 
     polling_delay = 5
 
-    def __init__(self, _spiders=None):
-        if _spiders is None:
-            from scrapy.project import crawler
-            _spiders = crawler.spiders
+    def __init__(self, _spiders):
         self.spider_requests = []
         self._spiders = _spiders
 

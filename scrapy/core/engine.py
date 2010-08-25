@@ -40,7 +40,7 @@ class ExecutionEngine(object):
         """
         self.scheduler = load_object(settings['SCHEDULER'])()
         self.downloader = Downloader()
-        self.scraper = Scraper(self)
+        self.scraper = Scraper(self, self.crawler.settings)
         self.configured = True
         self._spider_closed_callback = spider_closed_callback
 

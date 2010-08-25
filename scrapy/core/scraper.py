@@ -15,7 +15,6 @@ from scrapy.item import BaseItem
 from scrapy.core.spidermw import SpiderMiddlewareManager
 from scrapy import log
 from scrapy.stats import stats
-from scrapy.conf import settings
 
 
 class SpiderInfo(object):
@@ -60,7 +59,7 @@ class SpiderInfo(object):
 
 class Scraper(object):
 
-    def __init__(self, engine):
+    def __init__(self, engine, settings):
         self.sites = {}
         self.spidermw = SpiderMiddlewareManager()
         itemproc_cls = load_object(settings['ITEM_PROCESSOR'])

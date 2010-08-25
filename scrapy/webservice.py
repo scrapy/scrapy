@@ -7,7 +7,9 @@ See docs/topics/ws.rst
 from twisted.internet import reactor
 from twisted.web import server, resource, error
 
+from scrapy.xlib.pydispatch import dispatcher
 from scrapy.exceptions import NotConfigured
+from scrapy import signals
 from scrapy.utils.jsonrpc import jsonrpc_server_call
 from scrapy.utils.serialize import ScrapyJSONEncoder, ScrapyJSONDecoder
 from scrapy.utils.misc import load_object
@@ -73,7 +75,7 @@ class WebService(server.Site):
         if not settings.getbool('WEBSERVICE_ENABLED'):
             raise NotConfigured
         logfile = settings['WEBSERVICE_LOGFILE']
-        port = settings.getint('WEBSERVICE_PORT')
+        self.portnum = settings.getint('WEBSERVICE_PORT')
         root = RootResource()
         reslist = build_component_list(settings['WEBSERVICE_RESOURCES_BASE'], \
             settings['WEBSERVICE_RESOURCES'])
@@ -82,5 +84,12 @@ class WebService(server.Site):
             root.putChild(res.ws_name, res)
         server.Site.__init__(self, root, logPath=logfile)
         self.noisy = False
-        reactor.callWhenRunning(reactor.listenTCP, port, self)
+        dispatcher.connect(self.start_listening, signals.engine_started)
+        dispatcher.connect(self.stop_listening, signals.engine_stopped)
+
+    def start_listening(self):
+        self.port = reactor.listenTCP(self.portnum, self)
+
+    def stop_listening(self):
+        self.port.stopListening()
 

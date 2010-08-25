@@ -1,5 +1,4 @@
 from scrapy.command import ScrapyCommand
-from scrapy.project import crawler
 from scrapy.http import Request
 from scrapy.item import BaseItem
 from scrapy.utils import display
@@ -69,11 +68,11 @@ class Command(ScrapyCommand):
     def get_spider(self, request, opts):
         if opts.spider:
             try:
-                return crawler.spiders.create(opts.spider)
+                return self.crawler.spiders.create(opts.spider)
             except KeyError:
                 log.msg('Unable to find spider: %s' % opts.spider, log.ERROR)
         else:
-            spider = crawler.spiders.create_for_request(request)
+            spider = self.crawler.spiders.create_for_request(request)
             if spider:
                 return spider
             log.msg('Unable to find spider for: %s' % request, log.ERROR)
@@ -84,8 +83,8 @@ class Command(ScrapyCommand):
         spider = self.get_spider(request, opts)
         if not spider:
             return None, None
-        crawler.queue.append_request(request, spider)
-        crawler.start()
+        self.crawler.queue.append_request(request, spider)
+        self.crawler.start()
         if not responses:
             log.msg('No response downloaded for: %s' % request, log.ERROR, \
                 spider=spider)

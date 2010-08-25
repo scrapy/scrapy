@@ -4,16 +4,26 @@ spiders
 """
 
 from scrapy import log
-from scrapy.conf import settings
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.spider import iter_spider_classes
 
 
 class SpiderManager(object):
 
-    def __init__(self):
-        self.loaded = False
+    def __init__(self, spider_modules):
+        self.spider_modules = spider_modules
         self._spiders = {}
+        for name in self.spider_modules:
+            for module in walk_modules(name):
+                self._load_spiders(module)
+
+    def _load_spiders(self, module):
+        for spcls in iter_spider_classes(module):
+            self._spiders[spcls.name] = spcls
+
+    @classmethod
+    def from_settings(cls, settings):
+        return cls(settings.getlist('SPIDER_MODULES'))
 
     def create(self, spider_name, **spider_kwargs):
         """Returns a Spider instance for the given spider name, using the given
@@ -52,22 +62,6 @@ class SpiderManager(object):
     def list(self):
         """Returns list of spiders available."""
         return self._spiders.keys()
-
-    def load(self, spider_modules=None):
-        """Load spiders from spider_modules or SPIDER_MODULES setting."""
-        if spider_modules is None:
-            spider_modules = settings.getlist('SPIDER_MODULES')
-        self.spider_modules = spider_modules
-
-        self._spiders = {}
-        for name in self.spider_modules:
-            for module in walk_modules(name):
-                self._load_spiders(module)
-        self.loaded = True
-
-    def _load_spiders(self, module):
-        for spcls in iter_spider_classes(module):
-            self._spiders[spcls.name] = spcls
 
     def close_spider(self, spider):
         pass

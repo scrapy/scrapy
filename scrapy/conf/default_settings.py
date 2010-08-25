@@ -175,6 +175,8 @@ MEMUSAGE_WARNING_MB = 0
 
 NEWSPIDER_MODULE = ''
 
+QUEUE_CLASS = 'scrapy.core.queue.ExecutionQueue'
+
 RANDOMIZE_DOWNLOAD_DELAY = True
 
 REDIRECT_MAX_METAREFRESH_DELAY = 100
@@ -207,8 +209,7 @@ SCHEDULER_MIDDLEWARES_BASE = {
 
 SCHEDULER_ORDER = 'DFO'
 
-SERVICE_QUEUE = 'scrapy.contrib.queue.SqliteExecutionQueue'
-SERVICE_QUEUE_FILE = 'scrapy.db'
+SERVER_QUEUE_CLASS = 'scrapy.contrib.queue.SqliteExecutionQueue'
 
 SPIDER_MANAGER_CLASS = 'scrapy.spidermanager.SpiderManager'
 
@@ -226,6 +227,8 @@ SPIDER_MIDDLEWARES_BASE = {
 }
 
 SPIDER_MODULES = []
+
+SQLITE_DB = 'scrapy.db'
 
 SQS_QUEUE = 'scrapy'
 SQS_VISIBILITY_TIMEOUT = 7200

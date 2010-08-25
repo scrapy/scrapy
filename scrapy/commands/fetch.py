@@ -2,10 +2,8 @@ import pprint
 
 from scrapy import log
 from scrapy.command import ScrapyCommand
-from scrapy.project import crawler
 from scrapy.http import Request
 from scrapy.spider import BaseSpider
-from scrapy.project import crawler
 from scrapy.utils.url import is_url
 
 class Command(ScrapyCommand):
@@ -44,11 +42,11 @@ class Command(ScrapyCommand):
         spider = None
         if opts.spider:
             try:
-                spider = crawler.spiders.create(opts.spider)
+                spider = self.crawler.spiders.create(opts.spider)
             except KeyError:
                 log.msg("Could not find spider: %s" % opts.spider, log.ERROR)
 
-        crawler.queue.append_request(request, spider, \
+        self.crawler.queue.append_request(request, spider, \
             default_spider=BaseSpider('default'))
-        crawler.start()
+        self.crawler.start()
 

@@ -1,10 +1,7 @@
 from scrapy import log
 from scrapy.command import ScrapyCommand
-from scrapy.core.queue import ExecutionQueue
-from scrapy.project import crawler
 from scrapy.conf import settings
 from scrapy.http import Request
-from scrapy.project import crawler
 from scrapy.utils.url import is_url
 
 from collections import defaultdict
@@ -32,31 +29,29 @@ class Command(ScrapyCommand):
             settings.overrides['CRAWLSPIDER_FOLLOW_LINKS'] = False
 
     def run(self, args, opts):
-        q = ExecutionQueue()
+        q = self.crawler.queue
         urls, names = self._split_urls_and_names(args)
         for name in names:
             q.append_spider_name(name)
 
         if opts.spider:
             try:
-                spider = crawler.spiders.create(opts.spider)
+                spider = self.crawler.spiders.create(opts.spider)
                 for url in urls:
                     q.append_url(url, spider)
             except KeyError:
                 log.msg('Unable to find spider: %s' % opts.spider, log.ERROR)
         else:
             for name, urls in self._group_urls_by_spider(urls):
-                spider = crawler.spiders.create(name)
+                spider = self.crawler.spiders.create(name)
                 for url in urls:
                     q.append_url(url, spider)
-
-        crawler.queue = q
-        crawler.start()
+        self.crawler.start()
 
     def _group_urls_by_spider(self, urls):
         spider_urls = defaultdict(list)
         for url in urls:
-            spider_names = crawler.spiders.find_by_request(Request(url))
+            spider_names = self.crawler.spiders.find_by_request(Request(url))
             if not spider_names:
                 log.msg('Could not find spider that handles url: %s' % url,
                         log.ERROR)

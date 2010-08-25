@@ -1,20 +1,19 @@
-"""
-Scrapy engine tests
-"""
+import sys, os, re, urlparse
 
-import sys, os, re, urlparse, unittest
-
-from twisted.internet import reactor
-from twisted.web import server, resource, static, util
+from twisted.internet import reactor, defer
+from twisted.web import server, static, util
+from twisted.trial import unittest
 
 from scrapy import signals
-from scrapy.project import crawler
+from scrapy.conf import Settings
+from scrapy.crawler import Crawler
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.tests import tests_datadir
 from scrapy.spider import BaseSpider
 from scrapy.item import Item, Field
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 from scrapy.http import Request
+from scrapy.utils.signal import disconnect_all
 
 class TestItem(Item):
     name = Field()
@@ -24,7 +23,6 @@ class TestItem(Item):
 class TestSpider(BaseSpider):
     name = "scrapytest.org"
     allowed_domains = ["scrapytest.org", "localhost"]
-    start_urls = ['http://localhost']
 
     itemurl_re = re.compile("item\d+.html")
     name_re = re.compile("<h1>(.*?)</h1>", re.M)
@@ -48,66 +46,61 @@ class TestSpider(BaseSpider):
             item['price'] = m.group(1)
         return item
 
-#class TestResource(resource.Resource):
-#    isLeaf = True
-#
-#    def render_GET(self, request):
-#        return "hello world!"
-
-def start_test_site():
+def start_test_site(debug=False):
     root_dir = os.path.join(tests_datadir, "test_site")
     r = static.File(root_dir)
-#    r.putChild("test", TestResource())
     r.putChild("redirect", util.Redirect("/redirected"))
     r.putChild("redirected", static.Data("Redirected here", "text/plain"))
 
     port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
+    if debug:
+        print "Test server running at http://localhost:%d/ - hit Ctrl-C to finish." \
+            % port.getHost().port
     return port
 
 
-class CrawlingSession(object):
+class CrawlerRun(object):
+    """A class to run the crawler and keep track of events occurred"""
 
     def __init__(self):
-        self.name = 'scrapytest.org'
         self.spider = None
         self.respplug = []
         self.reqplug = []
         self.itemresp = []
         self.signals_catched = {}
-        self.wasrun = False
 
     def run(self):
         self.port = start_test_site()
         self.portno = self.port.getHost().port
 
-        self.spider = TestSpider()
-        if self.spider:
-            self.spider.start_urls = [
-                self.geturl("/"),
-                self.geturl("/redirect"),
-                ]
+        start_urls = [self.geturl("/"), self.geturl("/redirect")]
+        self.spider = TestSpider(start_urls=start_urls)
 
-            dispatcher.connect(self.record_signal, signals.engine_started)
-            dispatcher.connect(self.record_signal, signals.engine_stopped)
-            dispatcher.connect(self.record_signal, signals.spider_opened)
-            dispatcher.connect(self.record_signal, signals.spider_idle)
-            dispatcher.connect(self.record_signal, signals.spider_closed)
-            dispatcher.connect(self.item_scraped, signals.item_scraped)
-            dispatcher.connect(self.request_received, signals.request_received)
-            dispatcher.connect(self.response_downloaded, signals.response_downloaded)
+        for name, signal in vars(signals).items():
+            if not name.startswith('_'):
+                dispatcher.connect(self.record_signal, signal)
+        dispatcher.connect(self.item_scraped, signals.item_scraped)
+        dispatcher.connect(self.request_received, signals.request_received)
+        dispatcher.connect(self.response_downloaded, signals.response_downloaded)
 
-            crawler.configure()
-            crawler.queue.append_spider(self.spider)
-            crawler.start()
-            self.port.stopListening()
-            self.wasrun = True
-            # FIXME: extremly ugly hack to avoid propagating errors to other
-            # stats because of living signals. This whole test_engine.py should
-            # be rewritten from scratch actually.
-            from scrapy.utils.signal import disconnect_all
-            disconnect_all(signals.stats_spider_opened)
-            disconnect_all(signals.stats_spider_closing)
-            disconnect_all(signals.stats_spider_closed)
+        settings = Settings()
+        self.crawler = Crawler(settings)
+        self.crawler.install()
+        self.crawler.configure()
+        self.crawler.queue.append_spider(self.spider)
+        self.crawler.start()
+
+        self.deferred = defer.Deferred()
+        dispatcher.connect(self.stop, signals.engine_stopped)
+        return self.deferred
+
+    def stop(self):
+        self.port.stopListening()
+        for name, signal in vars(signals).items():
+            if not name.startswith('_'):
+                disconnect_all(signal)
+        self.crawler.uninstall()
+        self.deferred.callback(None)
 
     def geturl(self, path):
         return "http://localhost:%s%s" % (self.portno, path)
@@ -132,67 +125,49 @@ class CrawlingSession(object):
         signalargs.pop('sender', None)
         self.signals_catched[sig] = signalargs
 
-session = CrawlingSession()
-
 
 class EngineTest(unittest.TestCase):
 
-    def setUp(self):
-        if not session.wasrun:
-            session.run()
+    @defer.inlineCallbacks
+    def test_crawler(self):
+        self.run = CrawlerRun()
+        yield self.run.run()
+        self._assert_visited_urls()
+        self._assert_received_requests()
+        self._assert_downloaded_responses()
+        self._assert_scraped_items()
+        self._assert_signals_catched()
 
-    def test_spider_locator(self):
-        """
-        Check the spider is loaded and located properly via the SpiderLocator
-        """
-        assert session.spider is not None
-        self.assertEqual(session.spider.name, session.name)
-
-    def test_visited_urls(self):
-        """
-        Make sure certain URls were actually visited
-        """
-        # expected urls that should be visited
+    def _assert_visited_urls(self):
         must_be_visited = ["/", "/redirect", "/redirected", 
                            "/item1.html", "/item2.html", "/item999.html"]
-
-        urls_visited = set([rp[0].url for rp in session.respplug])
-        urls_expected = set([session.geturl(p) for p in must_be_visited])
+        urls_visited = set([rp[0].url for rp in self.run.respplug])
+        urls_expected = set([self.run.geturl(p) for p in must_be_visited])
         assert urls_expected <= urls_visited, "URLs not visited: %s" % list(urls_expected - urls_visited)
 
-    def test_requests_received(self):
-        """
-        Check requests received
-        """
+    def _assert_received_requests(self):
         # 3 requests should be received from the spider. start_urls and redirects don't count
-        self.assertEqual(3, len(session.reqplug))
+        self.assertEqual(3, len(self.run.reqplug))
 
         paths_expected = ['/item999.html', '/item2.html', '/item1.html']
 
-        urls_requested = set([rq[0].url for rq in session.reqplug])
-        urls_expected = set([session.geturl(p) for p in paths_expected])
+        urls_requested = set([rq[0].url for rq in self.run.reqplug])
+        urls_expected = set([self.run.geturl(p) for p in paths_expected])
         assert urls_expected <= urls_requested
 
-    def test_responses_downloaded(self):
-        """
-        Check responses downloaded
-        """
+    def _assert_downloaded_responses(self):
         # response tests
-        self.assertEqual(6, len(session.respplug))
+        self.assertEqual(6, len(self.run.respplug))
 
-        for response, spider in session.respplug:
-            if session.getpath(response.url) == '/item999.html':
+        for response, _ in self.run.respplug:
+            if self.run.getpath(response.url) == '/item999.html':
                 self.assertEqual(404, response.status)
-            if session.getpath(response.url) == '/redirect':
+            if self.run.getpath(response.url) == '/redirect':
                 self.assertEqual(302, response.status)
 
-    def test_item_data(self):
-        """
-        Check item data
-        """
-        # item tests
-        self.assertEqual(2, len(session.itemresp))
-        for item, response in session.itemresp:
+    def _assert_scraped_items(self):
+        self.assertEqual(2, len(self.run.itemresp))
+        for item, response in self.run.itemresp:
             self.assertEqual(item['url'], response.url)
             if 'item1.html' in item['url']:
                 self.assertEqual('Item 1 name', item['name'])
@@ -201,29 +176,22 @@ class EngineTest(unittest.TestCase):
                 self.assertEqual('Item 2 name', item['name'])
                 self.assertEqual('200', item['price'])
 
-    def test_signals(self):
-        """
-        Check signals were sent properly
-        """
-        from scrapy import signals
+    def _assert_signals_catched(self):
+        assert signals.engine_started in self.run.signals_catched
+        assert signals.engine_stopped in self.run.signals_catched
+        assert signals.spider_opened in self.run.signals_catched
+        assert signals.spider_idle in self.run.signals_catched
+        assert signals.spider_closed in self.run.signals_catched
 
-        assert signals.engine_started in session.signals_catched
-        assert signals.engine_stopped in session.signals_catched
-        assert signals.spider_opened in session.signals_catched
-        assert signals.spider_idle in session.signals_catched
-        assert signals.spider_closed in session.signals_catched
+        self.assertEqual({'spider': self.run.spider},
+                         self.run.signals_catched[signals.spider_opened])
+        self.assertEqual({'spider': self.run.spider},
+                         self.run.signals_catched[signals.spider_idle])
+        self.assertEqual({'spider': self.run.spider, 'reason': 'finished'},
+                         self.run.signals_catched[signals.spider_closed])
 
-        self.assertEqual({'spider': session.spider},
-                         session.signals_catched[signals.spider_opened])
-        self.assertEqual({'spider': session.spider},
-                         session.signals_catched[signals.spider_idle])
-        self.assertEqual({'spider': session.spider, 'reason': 'finished'},
-                         session.signals_catched[signals.spider_closed])
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == 'runserver':
-        port = start_test_site()
-        print "Test server running at http://localhost:%d/ - hit Ctrl-C to finish." % port.getHost().port
+        start_test_site(debug=True)
         reactor.run()
-    else:
-        unittest.main()

@@ -4,7 +4,6 @@ import decimal
 
 from twisted.internet import defer
 
-from scrapy.project import crawler
 from scrapy.spider import BaseSpider
 from scrapy.http import Request, Response
 from scrapy.utils.py26 import json
@@ -20,8 +19,10 @@ class SpiderReferencer(object):
 
     spider_ref_re = re.compile('^spider:([0-9a-f]+)?:?(.+)?$')
 
-    def __init__(self, manager=None):
-        self.manager = manager or crawler
+    def __init__(self, crawler=None):
+        if crawler is None:
+            from scrapy.project import crawler
+        self.manager = crawler
 
     def get_reference_from_spider(self, spider):
         return 'spider:%x:%s' % (id(spider), spider.name)
@@ -109,7 +110,8 @@ class ScrapyJSONEncoder(json.JSONEncoder):
 class ScrapyJSONDecoder(json.JSONDecoder):
 
     def __init__(self, *a, **kw):
-        self.spref = kw.pop('spref', None) or SpiderReferencer()
+        crawler = kw.pop('crawler', None)
+        self.spref = kw.pop('spref', None) or SpiderReferencer(crawler)
         super(ScrapyJSONDecoder, self).__init__(*a, **kw)
 
     def decode(self, s):

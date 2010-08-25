@@ -18,6 +18,14 @@ class ScrapyCommand(object):
     # default settings to be used for this command instead of global defaults
     default_settings = {}
 
+    def set_crawler(self, crawler):
+        self._crawler = crawler
+
+    @property
+    def crawler(self):
+        self._crawler.configure()
+        return self._crawler
+
     def syntax(self):
         """
         Command syntax (preferably one-line). Do not include command name.

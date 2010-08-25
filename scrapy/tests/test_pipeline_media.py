@@ -2,6 +2,8 @@ from twisted.trial import unittest
 from twisted.python import failure
 from twisted.internet import defer, reactor
 
+from scrapy.conf import Settings
+from scrapy.crawler import Crawler
 from scrapy.http import Request, Response
 from scrapy.spider import BaseSpider
 from scrapy.utils.request import request_fingerprint
@@ -29,12 +31,15 @@ class MediaPipelineTestCase(unittest.TestCase):
     pipeline_class = _MockedMediaPipeline
 
     def setUp(self):
+        self.crawler = Crawler(Settings())
+        self.crawler.install()
         self.spider = BaseSpider('media.com')
         self.pipe = self.pipeline_class()
         self.pipe.open_spider(self.spider)
 
     def tearDown(self):
         self.pipe.close_spider(self.spider)
+        self.crawler.uninstall()
 
     @defer.inlineCallbacks
     def test_return_item_by_default(self):

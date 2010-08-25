@@ -7,6 +7,7 @@ import cProfile
 
 import scrapy
 from scrapy import log
+from scrapy.crawler import CrawlerProcess
 from scrapy.xlib import lsprofcalltree
 from scrapy.conf import settings
 from scrapy.command import ScrapyCommand
@@ -79,6 +80,8 @@ def check_deprecated_scrapy_ctl(argv):
 def execute(argv=None):
     if argv is None:
         argv = sys.argv
+    crawler = CrawlerProcess(settings)
+    crawler.install()
     check_deprecated_scrapy_ctl(argv) # TODO: remove for Scrapy 0.11
     cmds = _get_commands_dict()
     cmdname = _get_command_name(argv)
@@ -113,9 +116,8 @@ def execute(argv=None):
 
     settings.defaults.update(cmd.default_settings)
     del args[0]  # remove command name from args
-    from scrapy.project import crawler
     log.start()
-    crawler.configure()
+    cmd.set_crawler(crawler)
     ret = _run_command(cmd, args, opts)
     if ret is False:
         parser.print_help()

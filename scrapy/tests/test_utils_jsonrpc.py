@@ -3,6 +3,8 @@ from cStringIO import StringIO
 
 from scrapy.utils.jsonrpc import jsonrpc_client_call, jsonrpc_server_call, \
     JsonRpcError, jsonrpc_errors
+from scrapy.utils.serialize import ScrapyJSONDecoder
+from scrapy.tests.test_utils_serialize import ExecutionMangerStub
 from scrapy.utils.py26 import json
 
 class urllib_stub(object):
@@ -29,6 +31,10 @@ class TestTarget(object):
         raise Exception("testing-errors")
 
 class JsonRpcUtilsTestCase(unittest.TestCase):
+
+    def setUp(self):
+        crawler = ExecutionMangerStub([])
+        self.json_decoder = ScrapyJSONDecoder(crawler=crawler)
 
     def test_jsonrpc_client_call_request(self):
         ul = urllib_stub(1)
@@ -62,26 +68,26 @@ class JsonRpcUtilsTestCase(unittest.TestCase):
 
     def test_jsonrpc_server_call(self):
         t = TestTarget()
-        r = jsonrpc_server_call(t, 'invalid json data')
+        r = jsonrpc_server_call(t, 'invalid json data', self.json_decoder)
         assert 'error' in r
         assert r['jsonrpc'] == '2.0'
         assert r['id'] is None
         self.assertEqual(r['error']['code'], jsonrpc_errors.PARSE_ERROR)
         assert 'Traceback' in r['error']['data']
 
-        r = jsonrpc_server_call(t, '{"test": "test"}')
+        r = jsonrpc_server_call(t, '{"test": "test"}', self.json_decoder)
         assert 'error' in r
         assert r['jsonrpc'] == '2.0'
         assert r['id'] is None
         self.assertEqual(r['error']['code'], jsonrpc_errors.INVALID_REQUEST)
 
-        r = jsonrpc_server_call(t, '{"method": "notfound", "id": 1}')
+        r = jsonrpc_server_call(t, '{"method": "notfound", "id": 1}', self.json_decoder)
         assert 'error' in r
         assert r['jsonrpc'] == '2.0'
         assert r['id'] == 1
         self.assertEqual(r['error']['code'], jsonrpc_errors.METHOD_NOT_FOUND)
 
-        r = jsonrpc_server_call(t, '{"method": "exception", "id": 1}')
+        r = jsonrpc_server_call(t, '{"method": "exception", "id": 1}', self.json_decoder)
         assert 'error' in r
         assert r['jsonrpc'] == '2.0'
         assert r['id'] == 1
@@ -89,19 +95,21 @@ class JsonRpcUtilsTestCase(unittest.TestCase):
         assert 'testing-errors' in r['error']['message']
         assert 'Traceback' in r['error']['data']
 
-        r = jsonrpc_server_call(t, '{"method": "call", "id": 2}')
+        r = jsonrpc_server_call(t, '{"method": "call", "id": 2}', self.json_decoder)
         assert 'result' in r
         assert r['jsonrpc'] == '2.0'
         assert r['id'] == 2
         self.assertEqual(r['result'], ([], {}))
 
-        r = jsonrpc_server_call(t, '{"method": "call", "params": [456, 123], "id": 3}')
+        r = jsonrpc_server_call(t, '{"method": "call", "params": [456, 123], "id": 3}', \
+            self.json_decoder)
         assert 'result' in r
         assert r['jsonrpc'] == '2.0'
         assert r['id'] == 3
         self.assertEqual(r['result'], ([456, 123], {}))
 
-        r = jsonrpc_server_call(t, '{"method": "call", "params": {"data": 789}, "id": 3}')
+        r = jsonrpc_server_call(t, '{"method": "call", "params": {"data": 789}, "id": 3}', \
+            self.json_decoder)
         assert 'result' in r
         assert r['jsonrpc'] == '2.0'
         assert r['id'] == 3

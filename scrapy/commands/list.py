@@ -1,5 +1,4 @@
 from scrapy.command import ScrapyCommand
-from scrapy.project import crawler
 
 class Command(ScrapyCommand):
 
@@ -10,4 +9,4 @@ class Command(ScrapyCommand):
         return "List available spiders"
 
     def run(self, args, opts):
-        print "\n".join(crawler.spiders.list())
+        print "\n".join(self.crawler.spiders.list())

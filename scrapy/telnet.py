@@ -10,9 +10,11 @@ from twisted.conch import manhole, telnet
 from twisted.conch.insults import insults
 from twisted.internet import reactor, protocol
 
+from scrapy.xlib.pydispatch import dispatcher
 from scrapy.exceptions import NotConfigured
 from scrapy.project import crawler
 from scrapy.stats import stats
+from scrapy import signals
 from scrapy.utils.signal import send_catch_log
 from scrapy.utils.trackref import print_live_refs
 from scrapy.utils.engine import print_engine_status
@@ -35,8 +37,15 @@ class TelnetConsole(protocol.ServerFactory):
         if not settings.getbool('TELNETCONSOLE_ENABLED'):
             raise NotConfigured
         self.noisy = False
-        port = settings.getint('TELNETCONSOLE_PORT')
-        reactor.callWhenRunning(reactor.listenTCP, port, self)
+        self.portnum = settings.getint('TELNETCONSOLE_PORT')
+        dispatcher.connect(self.start_listening, signals.engine_started)
+        dispatcher.connect(self.stop_listening, signals.engine_stopped)
+
+    def start_listening(self):
+        self.port = reactor.listenTCP(self.portnum, self)
+
+    def stop_listening(self):
+        self.port.stopListening()
 
     def protocol(self):
         telnet_vars = self._get_telnet_vars()

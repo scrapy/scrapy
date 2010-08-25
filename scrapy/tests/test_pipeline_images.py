@@ -1,5 +1,6 @@
 import os
 from twisted.trial import unittest
+from scrapy.crawler import Crawler
 from scrapy.conf import settings
 from tempfile import mkdtemp
 from shutil import rmtree
@@ -7,6 +8,8 @@ from shutil import rmtree
 
 class ImagesPipelineTestCase(unittest.TestCase):
     def setUp(self):
+        self.crawler = Crawler(settings)
+        self.crawler.install()
         try:
             import Image
         except ImportError, e:
@@ -23,6 +26,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
         del self.pipeline
         rmtree(self.tempdir)
         settings.disabled = self.settings_disabled_before
+        self.crawler.uninstall()
 
     def test_image_path(self):
         image_path = self.pipeline.image_key

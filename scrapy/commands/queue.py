@@ -1,8 +1,9 @@
 from scrapy.command import ScrapyCommand
+from scrapy.commands import runserver
 from scrapy.utils.misc import load_object
 from scrapy.conf import settings
 
-class Command(ScrapyCommand):
+class Command(runserver.Command):
 
     requires_project = True
     default_settings = {'LOG_ENABLED': False}
@@ -26,7 +27,7 @@ class Command(ScrapyCommand):
         cmd = args[0]
 
         botname = settings['BOT_NAME']
-        queue = load_object(settings['SERVICE_QUEUE'])().queue
+        queue = self.crawler.queue.queue
 
         if cmd == 'add':
             if len(args) < 2:
