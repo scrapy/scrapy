@@ -7,15 +7,16 @@ from scrapy.core.engine import ExecutionEngine
 from scrapy.core.queue import ExecutionQueue
 from scrapy.extension import ExtensionManager
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
+from scrapy.utils.misc import load_object
 from scrapy import log, signals
 
 
 class Crawler(object):
 
-    def __init__(self, settings, spiders):
+    def __init__(self, settings):
         self.configured = False
         self.settings = settings
-        self.spiders = spiders
+        self.spiders = load_object(settings['SPIDER_MANAGER_CLASS'])()
         self.engine = ExecutionEngine(self)
 
     def configure(self, queue=None):
