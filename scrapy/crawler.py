@@ -2,29 +2,23 @@ import signal
 
 from twisted.internet import reactor, defer
 
+from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core.engine import ExecutionEngine
 from scrapy.core.queue import ExecutionQueue
 from scrapy.extension import ExtensionManager
-from scrapy import log
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
+from scrapy import log, signals
 
 
 class Crawler(object):
 
     def __init__(self, settings, spiders):
         self.configured = False
-        self.control_reactor = True
         self.settings = settings
         self.spiders = spiders
         self.engine = ExecutionEngine(self)
 
-    def configure(self, control_reactor=True, queue=None):
-        self.control_reactor = control_reactor
-        if control_reactor:
-            install_shutdown_handlers(self._signal_shutdown)
-
-        if not log.started:
-            log.start()
+    def configure(self, queue=None):
         self.extensions = ExtensionManager.from_settings(self.settings)
         if not self.spiders.loaded:
             self.spiders.load()
@@ -63,9 +57,6 @@ class Crawler(object):
     def start(self):
         yield defer.maybeDeferred(self.engine.start)
         self._nextcall = reactor.callLater(0, self._start_next_spider)
-        reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
-        if self.control_reactor:
-            reactor.run(installSignalHandlers=False)
 
     @defer.inlineCallbacks
     def stop(self):
@@ -73,22 +64,45 @@ class Crawler(object):
             self._nextcall.cancel()
         if self.engine.running:
             yield defer.maybeDeferred(self.engine.stop)
+
+
+class CrawlerProcess(Crawler):
+    """A class to run a single Scrapy crawler in a process. It provides
+    automatic control of the Twisted reactor and installs some convenient
+    signals for shutting down the crawl.
+    """
+
+    def __init__(self, *a, **kw):
+        super(CrawlerProcess, self).__init__(*a, **kw)
+        dispatcher.connect(self.stop, signals.engine_stopped)
+        install_shutdown_handlers(self._signal_shutdown)
+
+    def start(self):
+        super(CrawlerProcess, self).start()
+        reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
+        reactor.run(installSignalHandlers=False) # blocking call
+
+    def stop(self):
+        d = super(CrawlerProcess, self).stop()
+        d.addBoth(self._stop_reactor)
+        return d
+
+    def _stop_reactor(self, _=None):
         try:
             reactor.stop()
         except RuntimeError: # raised if already stopped or in shutdown stage
             pass
 
     def _signal_shutdown(self, signum, _):
+        install_shutdown_handlers(self._signal_kill)
         signame = signal_names[signum]
         log.msg("Received %s, shutting down gracefully. Send again to force " \
             "unclean shutdown" % signame, level=log.INFO)
         reactor.callFromThread(self.stop)
-        install_shutdown_handlers(self._signal_kill)
 
     def _signal_kill(self, signum, _):
+        install_shutdown_handlers(signal.SIG_IGN)
         signame = signal_names[signum]
         log.msg('Received %s twice, forcing unclean shutdown' % signame, \
             level=log.INFO)
-        log.log_level = log.SILENT # disable logging of confusing tracebacks
-        reactor.callFromThread(self.engine.kill)
-        install_shutdown_handlers(signal.SIG_IGN)
+        reactor.callFromThread(self._stop_reactor)
