@@ -4,8 +4,8 @@ Scrapy engine tests
 This starts a testing web server (using twisted.server.Site) and then crawls it
 with the Scrapy crawler.
 
-To view the testing web server in a brwoser you can run start it by running
-this module with the ``runserver`` argument::
+To view the testing web server in a brwoser you can start it by running this
+module with the ``runserver`` argument::
 
     python test_engine.py runserver
 """
