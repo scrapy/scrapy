@@ -41,7 +41,8 @@ def add_missing_blockingCallFromThread():
 
 try:
     import twisted
-    if twisted.__version__ < '8.0.0':
+    from twisted.python.versions import Version
+    if twisted.version < Version("twisted", 8, 0, 0):
         add_missing_blockingCallFromThread()
 except ImportError:
     pass
