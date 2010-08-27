@@ -217,7 +217,7 @@ Example of web service client
 scrapy-ws.py script
 -------------------
 
-.. literalinclude:: ../../bin/scrapy-ws.py
+.. literalinclude:: ../../extras/scrapy-ws.py
 
 .. _Twisted Web guide: http://jcalderone.livejournal.com/50562.html 
 .. _JSON-RPC 2.0: http://www.jsonrpc.org/
