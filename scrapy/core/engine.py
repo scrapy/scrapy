@@ -9,10 +9,8 @@ from time import time
 from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
 
-from scrapy import log
+from scrapy import log, signals
 from scrapy.stats import stats
-from scrapy.conf import settings
-from scrapy import signals
 from scrapy.core.downloader import Downloader
 from scrapy.core.scraper import Scraper
 from scrapy.exceptions import IgnoreRequest, DontCloseSpider
@@ -23,25 +21,17 @@ from scrapy.utils.defer import mustbe_deferred
 
 class ExecutionEngine(object):
 
-    def __init__(self, crawler):
-        self.crawler = crawler
-        self.configured = False
+    def __init__(self, settings, spider_closed_callback):
+        self.settings = settings
         self.closing = {} # dict (spider -> reason) of spiders being closed
         self.closing_dfds = {} # dict (spider -> deferred) of spiders being closed
         self.running = False
-        self.killed = False
         self.paused = False
         self._next_request_calls = {}
         self._crawled_logline = load_object(settings['LOG_FORMATTER_CRAWLED'])
-
-    def configure(self, spider_closed_callback):
-        """
-        Configure execution engine with the given scheduling policy and downloader.
-        """
         self.scheduler = load_object(settings['SCHEDULER'])()
         self.downloader = Downloader()
-        self.scraper = Scraper(self, self.crawler.settings)
-        self.configured = True
+        self.scraper = Scraper(self, self.settings)
         self._spider_closed_callback = spider_closed_callback
 
     @defer.inlineCallbacks
@@ -58,13 +48,6 @@ class ExecutionEngine(object):
         self.running = False
         dfd = self._close_all_spiders()
         return dfd.addBoth(lambda _: self._finish_stopping_engine())
-
-    def kill(self):
-        """Forces shutdown without waiting for pending transfers to finish.
-        stop() must have been called first
-        """
-        assert not self.running, "Call engine.stop() before engine.kill()"
-        self.killed = True
 
     def pause(self):
         """Pause the execution engine"""
@@ -256,8 +239,6 @@ class ExecutionEngine(object):
         dfd.addErrback(log.err, "Unhandled error in scraper.close_spider()", \
             spider=spider)
         dfd.addBoth(lambda _: self._finish_closing_spider(spider))
-        if self.killed:
-            return self._finish_closing_spider(spider)
         return dfd
 
     def _close_all_spiders(self):
@@ -276,9 +257,6 @@ class ExecutionEngine(object):
             spider=spider, reason=reason)
         dfd.addBoth(lambda _: stats.close_spider(spider, reason=reason))
         dfd.addErrback(log.err, "Unhandled error in stats.close_spider()",
-            spider=spider)
-        dfd.addBoth(lambda _: self.crawler.spiders.close_spider(spider))
-        dfd.addErrback(log.err, "Unhandled error in spiders.close_spider()",
             spider=spider)
         dfd.addBoth(lambda _: log.msg("Spider closed (%s)" % reason, spider=spider))
         dfd.addBoth(lambda _: self.closing_dfds.pop(spider).callback(spider))

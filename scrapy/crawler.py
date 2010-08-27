@@ -30,13 +30,12 @@ class Crawler(object):
         if self.configured:
             return
         self.configured = True
-        self.engine = ExecutionEngine(self)
         self.extensions = ExtensionManager.from_settings(self.settings)
         spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
         self.spiders = spman_cls.from_settings(self.settings)
         queue_cls = load_object(self.settings['QUEUE_CLASS'])
         self.queue = queue_cls(self.spiders)
-        self.engine.configure(self._spider_closed)
+        self.engine = ExecutionEngine(self.settings, self._spider_closed)
 
     @defer.inlineCallbacks
     def _start_next_spider(self):

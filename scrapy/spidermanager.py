@@ -62,6 +62,3 @@ class SpiderManager(object):
     def list(self):
         """Returns list of spiders available."""
         return self._spiders.keys()
-
-    def close_spider(self, spider):
-        pass
