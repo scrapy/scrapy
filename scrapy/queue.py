@@ -57,25 +57,29 @@ class ExecutionQueue(object):
         if spider:
             self.spider_requests.append((spider, [request]))
 
-    def append_url(self, url, spider=None, **kwargs):
+    def append_url(self, url=None, spider=None, **kwargs):
         """Append a URL to crawl with the given spider. If the spider is not
         given, a spider will be looked up based on the URL
         """
+        if url is None:
+            raise ValueError("A url is required")
         if spider is None:
             spider = self._spiders.create_for_request(Request(url), **kwargs)
         if spider:
             requests = arg_to_iter(spider.make_requests_from_url(url))
             self.spider_requests.append((spider, requests))
 
-    def append_spider_name(self, spider_name, **spider_kwargs):
+    def append_spider_name(self, name=None, **spider_kwargs):
         """Append a spider to crawl given its name and optional arguments,
         which are used to instantiate it. The SpiderManager is used to lookup
         the spider
         """
+        if name is None:
+            raise ValueError("A spider name is required")
         try:
-            spider = self._spiders.create(spider_name, **spider_kwargs)
+            spider = self._spiders.create(name, **spider_kwargs)
         except KeyError:
-            log.msg('Unable to find spider: %s' % spider_name, log.ERROR)
+            log.msg('Unable to find spider: %s' % name, log.ERROR)
         else:
             self.append_spider(spider)
 

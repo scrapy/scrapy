@@ -71,6 +71,14 @@ class ExecutionQueueTest(unittest.TestCase):
         self._assert_request_urls(self.queue.spider_requests[0][1], \
             ['http://www.example.com/asd/make1', 'http://www.example.com/asd/make2'])
 
+    def test_append_url_kwarg(self):
+        spider = TestSpider()
+        url = 'http://www.example.com/asd'
+        self.queue.append_url(url=url, spider=spider)
+        self.assert_(self.queue.spider_requests[0][0] is spider)
+        self._assert_request_urls(self.queue.spider_requests[0][1], \
+            ['http://www.example.com/asd/make1', 'http://www.example.com/asd/make2'])
+
     def test_append_url2(self):
         url = 'http://www.example.com/asd'
         self.queue.append_url(url, arg='123')
@@ -82,6 +90,12 @@ class ExecutionQueueTest(unittest.TestCase):
 
     def test_append_spider_name(self):
         self.queue.append_spider_name('test123', arg='123')
+        spider = self.queue.spider_requests[0][0]
+        self.assert_(spider.name == 'test123')
+        self.assert_(spider.arg == '123')
+
+    def test_append_spider_name_kwarg(self):
+        self.queue.append_spider_name(name='test123', arg='123')
         spider = self.queue.spider_requests[0][0]
         self.assert_(spider.name == 'test123')
         self.assert_(spider.arg == '123')
