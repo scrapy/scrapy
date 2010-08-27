@@ -36,6 +36,9 @@ class JsonRpcUtilsTestCase(unittest.TestCase):
         crawler = CrawlerMock([])
         self.json_decoder = ScrapyJSONDecoder(crawler=crawler)
 
+    def test_jsonrpc_client_call_args_kwargs_raises(self):
+        self.assertRaises(ValueError, jsonrpc_client_call, 'url', 'test', 'one', kw=123)
+
     def test_jsonrpc_client_call_request(self):
         ul = urllib_mock(1)
         jsonrpc_client_call('url', 'test', 'one', 2, _urllib=ul)

@@ -31,6 +31,8 @@ class JsonRpcError(Exception):
 def jsonrpc_client_call(url, method, *args, **kwargs):
     """Execute a JSON-RPC call on the given url"""
     _urllib = kwargs.pop('_urllib', urllib)
+    if args and kwargs:
+        raise ValueError("Pass *args or **kwargs but not both to jsonrpc_client_call")
     req = {'jsonrpc': '2.0', 'method': method, 'params': args or kwargs, 'id': 1}
     res = json.loads(_urllib.urlopen(url, json.dumps(req)).read())
     if 'result' in res:
