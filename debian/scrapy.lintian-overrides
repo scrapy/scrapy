@@ -1,3 +1,2 @@
 new-package-should-close-itp-bug
-binary-without-manpage usr/bin/scrapy-ws
 extra-license-file usr/share/pyshared/scrapy/xlib/pydispatch/license.txt
