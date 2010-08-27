@@ -29,7 +29,7 @@ class SpiderManager(object):
 
     def create(self, spider_name, **spider_kwargs):
         """Returns a Spider instance for the given spider name, using the given
-        spider arguments. If the sipder name is not found, it raises a
+        spider arguments. If the spider name is not found, it raises a
         KeyError.
         """
         return self._spiders[spider_name](**spider_kwargs)
