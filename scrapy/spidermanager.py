@@ -66,4 +66,6 @@ class SpiderManager(object):
         return self._spiders.keys()
 
     def close_spider(self, spider, reason):
-        pass
+        closed = getattr(spider, 'closed', None)
+        if callable(closed):
+            return closed(reason)
