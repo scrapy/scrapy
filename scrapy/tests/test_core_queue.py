@@ -1,6 +1,6 @@
 import unittest
 
-from scrapy.core.queue import ExecutionQueue, KeepAliveExecutionQueue
+from scrapy.queue import ExecutionQueue, KeepAliveExecutionQueue
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
 

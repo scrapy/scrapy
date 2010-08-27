@@ -10,7 +10,7 @@ from scrapy.shell import Shell
 class Command(ScrapyCommand):
 
     requires_project = False
-    default_settings = {'QUEUE_CLASS': 'scrapy.core.queue.KeepAliveExecutionQueue'}
+    default_settings = {'QUEUE_CLASS': 'scrapy.queue.KeepAliveExecutionQueue'}
 
     def syntax(self):
         return "[url|file]"

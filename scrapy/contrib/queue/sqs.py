@@ -4,7 +4,7 @@ from twisted.internet import threads
 from boto.sqs.connection import SQSConnection
 from boto.sqs import regions
 
-from scrapy.core.queue import ExecutionQueue
+from scrapy.queue import ExecutionQueue
 from scrapy.utils.py26 import json
 from scrapy.conf import settings
 

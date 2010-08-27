@@ -175,7 +175,7 @@ MEMUSAGE_WARNING_MB = 0
 
 NEWSPIDER_MODULE = ''
 
-QUEUE_CLASS = 'scrapy.core.queue.ExecutionQueue'
+QUEUE_CLASS = 'scrapy.queue.ExecutionQueue'
 
 RANDOMIZE_DOWNLOAD_DELAY = True
 

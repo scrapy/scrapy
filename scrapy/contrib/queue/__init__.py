@@ -1,4 +1,4 @@
-from scrapy.core.queue import ExecutionQueue
+from scrapy.queue import ExecutionQueue
 from scrapy.utils.sqlite import JsonSqlitePriorityQueue
 from scrapy.conf import settings
 
