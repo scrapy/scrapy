@@ -3,9 +3,10 @@ SpiderManager is the class which locates and manages all website-specific
 spiders
 """
 
-from scrapy import log
+from scrapy import log, signals
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.spider import iter_spider_classes
+from scrapy.xlib.pydispatch import dispatcher
 
 
 class SpiderManager(object):
@@ -16,6 +17,7 @@ class SpiderManager(object):
         for name in self.spider_modules:
             for module in walk_modules(name):
                 self._load_spiders(module)
+        dispatcher.connect(self.close_spider, signals.spider_closed)
 
     def _load_spiders(self, module):
         for spcls in iter_spider_classes(module):
@@ -62,3 +64,6 @@ class SpiderManager(object):
     def list(self):
         """Returns list of spiders available."""
         return self._spiders.keys()
+
+    def close_spider(self, spider, reason):
+        pass
