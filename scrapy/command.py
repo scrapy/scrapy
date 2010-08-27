@@ -94,7 +94,7 @@ class ScrapyCommand(object):
                 sys.exit(2)
 
         if opts.version:
-            print scrapy.__version__
+            print "Scrapy %s" % scrapy.__version__
             sys.exit()
 
         if opts.logfile:
