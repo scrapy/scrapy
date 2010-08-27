@@ -28,7 +28,6 @@ class ExecutionEngine(object):
         self.running = False
         self.paused = False
         self._next_request_calls = {}
-        self._crawled_logline = load_object(settings['LOG_FORMATTER_CRAWLED'])
         self.scheduler = load_object(settings['SCHEDULER'])()
         self.downloader = Downloader()
         self.scraper = Scraper(self, self.settings)
@@ -156,7 +155,7 @@ class ExecutionEngine(object):
             assert isinstance(response, (Response, Request))
             if isinstance(response, Response):
                 response.request = request # tie request to response received
-                log.msg(self._crawled_logline(request, response), \
+                log.msg(log.formatter.crawled(request, response, spider), \
                     level=log.DEBUG, spider=spider)
                 return response
             elif isinstance(response, Request):

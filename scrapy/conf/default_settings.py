@@ -152,7 +152,7 @@ ITEM_PIPELINES = []
 
 LOG_ENABLED = True
 LOG_ENCODING = 'utf-8'
-LOG_FORMATTER_CRAWLED = 'scrapy.contrib.logformatter.crawled_logline'
+LOG_FORMATTER = 'scrapy.logformatter.LogFormatter'
 LOG_STDOUT = False
 LOG_LEVEL = 'DEBUG'
 LOG_FILE = None

@@ -10,6 +10,7 @@ from twisted.python import log
 
 from scrapy.conf import settings
 from scrapy.utils.python import unicode_to_str
+from scrapy.utils.misc import load_object
  
 # Logging levels
 DEBUG = logging.DEBUG
@@ -117,3 +118,5 @@ def err(_stuff=None, _why=None, **kw):
     kw.setdefault('system', 'scrapy')
     kw['logLevel'] = kw.pop('level', ERROR)
     log.err(_stuff, _why, **kw)
+
+formatter = load_object(settings['LOG_FORMATTER'])()
