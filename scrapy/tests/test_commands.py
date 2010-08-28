@@ -69,7 +69,7 @@ class GenspiderCommandTest(CommandTest):
 
     def test_arguments(self):
         # only pass one argument. spider script shouldn't be created
-        self.assertEqual(0, self.call('genspider', 'test_name'))
+        self.assertEqual(2, self.call('genspider', 'test_name'))
         assert not exists(join(self.proj_mod_path, 'spiders', 'test_name.py'))
         # pass two arguments <name> <domain>. spider script should be created
         self.assertEqual(0, self.call('genspider', 'test_name', 'test.com'))
@@ -147,12 +147,12 @@ from scrapy.spider import BaseSpider
 """)
         p = self.proc('runspider', fname)
         log = p.stderr.read()
-        self.assert_("ERROR: No spider found in file" in log)
+        self.assert_("No spider found in file" in log)
 
     def test_runspider_file_not_found(self):
         p = self.proc('runspider', 'some_non_existent_file')
         log = p.stderr.read()
-        self.assert_("ERROR: File not found: some_non_existent_file" in log)
+        self.assert_("File not found: some_non_existent_file" in log)
 
     def test_runspider_unable_to_load(self):
         tmpdir = self.mktemp()
@@ -162,5 +162,5 @@ from scrapy.spider import BaseSpider
             f.write("")
         p = self.proc('runspider', fname)
         log = p.stderr.read()
-        self.assert_("ERROR: Unable to load" in log)
+        self.assert_("Unable to load" in log)
 

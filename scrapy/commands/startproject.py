@@ -8,6 +8,7 @@ import scrapy
 from scrapy.command import ScrapyCommand
 from scrapy.utils.template import render_templatefile, string_camelcase
 from scrapy.utils.py26 import ignore_patterns, copytree
+from scrapy.exceptions import UsageError
 
 TEMPLATES_PATH = join(scrapy.__path__[0], 'templates', 'project')
 
@@ -33,7 +34,7 @@ class Command(ScrapyCommand):
 
     def run(self, args, opts):
         if len(args) != 1:
-            return False
+            raise UsageError()
         project_name = args[0]
         if not re.search(r'^[_a-zA-Z]\w*$', project_name):
             print 'Error: Project names must begin with a letter and contain only\n' \

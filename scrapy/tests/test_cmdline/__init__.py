@@ -23,11 +23,6 @@ class CmdlineTest(unittest.TestCase):
         self.assertEqual(self._execute('settings', '--get', 'TEST1'), \
             'default + loaded + started')
 
-    def test_override_settings_using_settings_arg(self):
-        self.assertEqual(self._execute('settings', '--get', 'TEST1', \
-            '--settings', 'scrapy.tests.test_cmdline.settings2'), \
-            'override + loaded + started')
-
     def test_override_settings_using_set_arg(self):
         self.assertEqual(self._execute('settings', '--get', 'TEST1', '--set', 'TEST1=override'), \
             'override + loaded + started')

@@ -6,11 +6,10 @@ import optparse
 import cProfile
 
 import scrapy
-from scrapy import log
 from scrapy.crawler import CrawlerProcess
 from scrapy.xlib import lsprofcalltree
 from scrapy.conf import settings
-from scrapy.command import ScrapyCommand
+from scrapy.exceptions import UsageError
 
 def _find_commands(dir):
     try:
@@ -19,47 +18,61 @@ def _find_commands(dir):
     except OSError:
         return []
 
-def _get_commands_from_module(module):
+def _get_commands_from_module(module, inproject):
     d = {}
     mod = __import__(module, {}, {}, [''])
     for cmdname in _find_commands(mod.__path__[0]):
         modname = '%s.%s' % (module, cmdname)
         command = getattr(__import__(modname, {}, {}, [cmdname]), 'Command', None)
         if callable(command):
-            d[cmdname] = command()
+            if inproject or not command.requires_project:
+                d[cmdname] = command()
         else:
-            print 'WARNING: Module %r does not define a Command class' % modname
+            raise RuntimeError("Module %r does not define a Command class" % modname)
     return d
 
-def _get_commands_dict():
-    cmds = _get_commands_from_module('scrapy.commands')
+def _get_commands_dict(inproject):
+    cmds = _get_commands_from_module('scrapy.commands', inproject)
     cmds_module = settings['COMMANDS_MODULE']
     if cmds_module:
-        cmds.update(_get_commands_from_module(cmds_module))
+        cmds.update(_get_commands_from_module(cmds_module, inproject))
     return cmds
 
-def _get_command_name(argv):
+def _pop_command_name(argv):
+    i = 0
     for arg in argv[1:]:
         if not arg.startswith('-'):
+            del argv[i]
             return arg
+        i += 1
 
-def _print_usage(inside_project):
-    if inside_project:
+def _print_header(inproject):
+    if inproject:
         print "Scrapy %s - project: %s\n" % (scrapy.__version__, \
             settings['BOT_NAME'])
     else:
         print "Scrapy %s - no active project\n" % scrapy.__version__
+
+def _print_commands(inproject):
+    _print_header(inproject)
     print "Usage:"
     print "  scrapy <command> [options] [args]\n"
     print "Available commands:"
-    cmds = _get_commands_dict()
+    cmds = _get_commands_dict(inproject)
     for cmdname, cmdclass in sorted(cmds.iteritems()):
-        if inside_project or not cmdclass.requires_project:
-            print "  %-13s %s" % (cmdname, cmdclass.short_desc())
+        print "  %-13s %s" % (cmdname, cmdclass.short_desc())
     print
-    print 'Use "scrapy <command> -h" for more info about a command'
+    print 'Use "scrapy <command> -h" to see more info about a command'
 
-def check_deprecated_scrapy_ctl(argv):
+def _print_unknown_command(cmdname, inproject):
+    _print_header(inproject)
+    print "Unknown command: %s\n" % cmdname
+    print 'Use "scrapy" to see available commands' 
+    if not inproject:
+        print
+        print "More commands are available in project mode"
+
+def _check_deprecated_scrapy_ctl(argv, inproject):
     """Check if Scrapy was called using the deprecated scrapy-ctl command and
     warn in that case, also creating a scrapy.cfg if it doesn't exist.
     """
@@ -68,7 +81,7 @@ def check_deprecated_scrapy_ctl(argv):
     import warnings
     warnings.warn("`scrapy-ctl.py` command-line tool is deprecated and will be removed in Scrapy 0.11, use `scrapy` instead",
         DeprecationWarning, stacklevel=3)
-    if settings.settings_module:
+    if inproject:
         projpath = os.path.abspath(os.path.dirname(os.path.dirname(settings.settings_module.__file__)))
         cfg_path = os.path.join(projpath, 'scrapy.cfg')
         if not os.path.exists(cfg_path):
@@ -77,72 +90,64 @@ def check_deprecated_scrapy_ctl(argv):
                 f.write("[default]" + os.linesep)
                 f.write("settings = %s" % settings.settings_module_path + os.linesep)
 
+def _run_print_help(parser, func, *a, **kw):
+    try:
+        func(*a, **kw)
+    except UsageError, e:
+        if str(e):
+            parser.error(str(e))
+        if e.print_help:
+            parser.print_help()
+        sys.exit(2)
+
 def execute(argv=None):
     if argv is None:
         argv = sys.argv
     crawler = CrawlerProcess(settings)
     crawler.install()
-    check_deprecated_scrapy_ctl(argv) # TODO: remove for Scrapy 0.11
-    cmds = _get_commands_dict()
-    cmdname = _get_command_name(argv)
+    inproject = bool(settings.settings_module)
+    _check_deprecated_scrapy_ctl(argv, inproject) # TODO: remove for Scrapy 0.11
+    cmds = _get_commands_dict(inproject)
+    cmdname = _pop_command_name(argv)
     parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(), \
-        conflict_handler='resolve', add_help_option=False)
-    if cmdname in cmds:
-        cmd = cmds[cmdname]
-        cmd.add_options(parser)
-        opts, args = parser.parse_args(args=argv[1:])
-        cmd.process_options(args, opts)
-        parser.usage = "%%prog %s %s" % (cmdname, cmd.syntax())
-        parser.description = cmd.long_desc()
-        if cmd.requires_project and not settings.settings_module:
-            print "Error running: scrapy %s\n" % cmdname
-            print "Cannot find project settings module in python path: %s" % \
-                settings.settings_module_path
-            sys.exit(1)
-        if opts.help:
-            parser.print_help()
-            sys.exit()
-    elif not cmdname:
-        cmd = ScrapyCommand()
-        cmd.add_options(parser)
-        opts, args = parser.parse_args(args=argv)
-        cmd.process_options(args, opts)
-        _print_usage(settings.settings_module)
-        sys.exit(2)
-    else:
-        print "Unknown command: %s\n" % cmdname
-        print 'Use "scrapy -h" for help' 
+        conflict_handler='resolve')
+    if not cmdname:
+        _print_commands(inproject)
+        sys.exit(0)
+    elif cmdname not in cmds:
+        _print_unknown_command(cmdname, inproject)
         sys.exit(2)
 
+    cmd = cmds[cmdname]
+    parser.usage = "scrapy %s %s" % (cmdname, cmd.syntax())
+    parser.description = cmd.long_desc()
     settings.defaults.update(cmd.default_settings)
-    del args[0]  # remove command name from args
-    log.start()
     cmd.set_crawler(crawler)
-    ret = _run_command(cmd, args, opts)
-    if ret is False:
-        parser.print_help()
+    cmd.add_options(parser)
+    opts, args = parser.parse_args(args=argv[1:])
+    _run_print_help(parser, cmd.process_options, args, opts)
+    _run_print_help(parser, _run_command, cmd, args, opts)
 
 def _run_command(cmd, args, opts):
     if opts.profile or opts.lsprof:
-        return _run_command_profiled(cmd, args, opts)
+        _run_command_profiled(cmd, args, opts)
     else:
-        return cmd.run(args, opts)
+        cmd.run(args, opts)
 
 def _run_command_profiled(cmd, args, opts):
     if opts.profile:
-        log.msg("writing cProfile stats to %r" % opts.profile)
+        sys.stderr.write("scrapy: writing cProfile stats to %r\n" % opts.profile)
     if opts.lsprof:
-        log.msg("writing lsprof stats to %r" % opts.lsprof)
+        sys.stderr.write("scrapy: writing lsprof stats to %r\n" % opts.lsprof)
     loc = locals()
     p = cProfile.Profile()
-    p.runctx('ret = cmd.run(args, opts)', globals(), loc)
+    p.runctx('cmd.run(args, opts)', globals(), loc)
     if opts.profile:
         p.dump_stats(opts.profile)
     k = lsprofcalltree.KCacheGrind(p)
     if opts.lsprof:
         with open(opts.lsprof, 'w') as f:
             k.output(f)
-    return loc['ret']
 
 if __name__ == '__main__':
     execute()

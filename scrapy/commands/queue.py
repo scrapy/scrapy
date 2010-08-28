@@ -1,6 +1,6 @@
 from scrapy.command import ScrapyCommand
 from scrapy.commands import runserver
-from scrapy.utils.misc import load_object
+from scrapy.exceptions import UsageError
 from scrapy.conf import settings
 
 class Command(runserver.Command):
@@ -23,7 +23,7 @@ class Command(runserver.Command):
 
     def run(self, args, opts):
         if len(args) < 1:
-            return False
+            raise UsageError()
         cmd = args[0]
 
         botname = settings['BOT_NAME']
@@ -31,7 +31,7 @@ class Command(runserver.Command):
 
         if cmd == 'add':
             if len(args) < 2:
-                return False
+                raise UsageError()
             msg = dict(x for x in [x.split('=', 1) for x in opts.spargs])
             for x in args[1:]:
                 msg.update(name=x)
@@ -44,4 +44,4 @@ class Command(runserver.Command):
             queue.clear()
             print "Cleared %s queue" % botname
         else:
-            return False
+            raise UsageError()

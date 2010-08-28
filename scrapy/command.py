@@ -9,8 +9,10 @@ import sys
 from optparse import OptionGroup
 
 import scrapy
+from scrapy import log
 from scrapy.conf import settings
 from scrapy.utils.conf import arglist_to_dict
+from scrapy.exceptions import UsageError
 
 class ScrapyCommand(object):
 
@@ -24,6 +26,8 @@ class ScrapyCommand(object):
 
     @property
     def crawler(self):
+        if not log.started:
+            log.start()
         self._crawler.configure()
         return self._crawler
 
@@ -58,10 +62,6 @@ class ScrapyCommand(object):
         Populate option parse with options available for this command
         """
         group = OptionGroup(parser, "Global Options")
-        group.add_option("-h", "--help", action="store_true", dest="help", \
-            help="print command help and options")
-        group.add_option("--version", action="store_true", dest="version", \
-            help="print Scrapy version and exit")
         group.add_option("--logfile", dest="logfile", metavar="FILE", \
             help="log file. if omitted stderr will be used")
         group.add_option("-L", "--loglevel", dest="loglevel", metavar="LEVEL", \
@@ -77,23 +77,13 @@ class ScrapyCommand(object):
             help="write process ID to FILE")
         group.add_option("--set", dest="set", action="append", default=[], metavar="NAME=VALUE", \
             help="set/override setting (may be repeated)")
-        group.add_option("--settings", dest="settings", metavar="MODULE",
-            help="python path to the Scrapy project settings")
         parser.add_option_group(group)
         
     def process_options(self, args, opts):
-        if opts.settings:
-            settings.set_settings_module(opts.settings)
-
         try:
             settings.overrides.update(arglist_to_dict(opts.set))
         except ValueError:
-            sys.stderr.write("Invalid --set value, use --set NAME=VALUE\n")
-            sys.exit(2)
-
-        if opts.version:
-            print "Scrapy %s" % scrapy.__version__
-            sys.exit()
+            raise UsageError("Invalid --set value, use --set NAME=VALUE", print_help=False)
 
         if opts.logfile:
             settings.overrides['LOG_ENABLED'] = True
@@ -115,4 +105,3 @@ class ScrapyCommand(object):
         Entry point for running commands
         """
         raise NotImplementedError
-

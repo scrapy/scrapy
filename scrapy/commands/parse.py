@@ -4,6 +4,7 @@ from scrapy.item import BaseItem
 from scrapy.utils import display
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.url import is_url
+from scrapy.exceptions import UsageError
 from scrapy import log
 
 class Command(ScrapyCommand):
@@ -93,7 +94,7 @@ class Command(ScrapyCommand):
 
     def run(self, args, opts):
         if not len(args) == 1 or not is_url(args[0]):
-            return False
+            raise UsageError()
         response, spider = self.get_response_and_spider(args[0], opts)
         if not response:
             return

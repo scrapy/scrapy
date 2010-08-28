@@ -5,6 +5,7 @@ from scrapy.command import ScrapyCommand
 from scrapy.http import Request
 from scrapy.spider import BaseSpider
 from scrapy.utils.url import is_url
+from scrapy.exceptions import UsageError
 
 class Command(ScrapyCommand):
 
@@ -35,7 +36,7 @@ class Command(ScrapyCommand):
 
     def run(self, args, opts):
         if len(args) != 1 or not is_url(args[0]):
-            return False
+            raise UsageError()
         cb = lambda x: self._print_response(x, opts)
         request = Request(args[0], callback=cb, dont_filter=True)
 

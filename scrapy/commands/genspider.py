@@ -7,6 +7,7 @@ import scrapy
 from scrapy.command import ScrapyCommand
 from scrapy.conf import settings
 from scrapy.utils.template import render_templatefile, string_camelcase
+from scrapy.exceptions import UsageError
 
 def sanitize_module_name(module_name):
     """Sanitize the given module name, by replacing dashes and points
@@ -54,7 +55,7 @@ class Command(ScrapyCommand):
                 print open(template_file, 'r').read()
             return
         if len(args) != 2:
-            return False
+            raise UsageError()
 
         name, domain = args[0:2]
         module = sanitize_module_name(name)

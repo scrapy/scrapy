@@ -6,6 +6,7 @@ from scrapy.conf import settings
 from scrapy.http import Request
 from scrapy.utils.url import is_url
 from scrapy.utils.conf import arglist_to_dict
+from scrapy.exceptions import UsageError
 
 from collections import defaultdict
 
@@ -33,8 +34,7 @@ class Command(ScrapyCommand):
         try:
             opts.spargs = arglist_to_dict(opts.spargs)
         except ValueError:
-            sys.stderr.write("Invalid -a value, use -a NAME=VALUE\n")
-            sys.exit(2)
+            raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
         if opts.nofollow:
             settings.overrides['CRAWLSPIDER_FOLLOW_LINKS'] = False
 
