@@ -33,7 +33,7 @@ class Command(ScrapyCommand):
         try:
             opts.spargs = arglist_to_dict(opts.spargs)
         except ValueError:
-            sys.stderr.write("Invalid --arg value, use --arg NAME=VALUE\n")
+            sys.stderr.write("Invalid -a value, use -a NAME=VALUE\n")
             sys.exit(2)
         if opts.nofollow:
             settings.overrides['CRAWLSPIDER_FOLLOW_LINKS'] = False
