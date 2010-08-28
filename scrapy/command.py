@@ -110,7 +110,7 @@ class ScrapyCommand(object):
 
         if opts.pidfile:
             with open(opts.pidfile, "w") as f:
-                f.write(str(os.getpid()))
+                f.write(str(os.getpid()) + os.linesep)
 
     def run(self, args, opts):
         """
