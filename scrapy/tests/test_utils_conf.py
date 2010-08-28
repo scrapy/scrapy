@@ -1,6 +1,6 @@
 import unittest
 
-from scrapy.utils.conf import build_component_list
+from scrapy.utils.conf import build_component_list, arglist_to_dict
 
 class UtilsConfTestCase(unittest.TestCase):
 
@@ -12,6 +12,11 @@ class UtilsConfTestCase(unittest.TestCase):
 
         custom = ['a', 'b', 'c']
         self.assertEqual(build_component_list(base, custom), custom)
+
+    def test_arglist_to_dict(self):
+        self.assertEqual(arglist_to_dict(['arg1=val1', 'arg2=val2']),
+            {'arg1': 'val1', 'arg2': 'val2'})
+
 
 if __name__ == "__main__":
     unittest.main()

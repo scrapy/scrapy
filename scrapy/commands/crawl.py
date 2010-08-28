@@ -1,8 +1,11 @@
+import sys
+
 from scrapy import log
 from scrapy.command import ScrapyCommand
 from scrapy.conf import settings
 from scrapy.http import Request
 from scrapy.utils.url import is_url
+from scrapy.utils.conf import arglist_to_dict
 
 from collections import defaultdict
 
@@ -20,11 +23,18 @@ class Command(ScrapyCommand):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--spider", dest="spider", default=None, \
             help="always use this spider when arguments are urls")
+        parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE", \
+            help="set spider argument (may be repeated)")
         parser.add_option("-n", "--nofollow", dest="nofollow", action="store_true", \
             help="don't follow links (for use with URLs only)")
 
     def process_options(self, args, opts):
         ScrapyCommand.process_options(self, args, opts)
+        try:
+            opts.spargs = arglist_to_dict(opts.spargs)
+        except ValueError:
+            sys.stderr.write("Invalid --arg value, use --arg NAME=VALUE\n")
+            sys.exit(2)
         if opts.nofollow:
             settings.overrides['CRAWLSPIDER_FOLLOW_LINKS'] = False
 
@@ -32,18 +42,18 @@ class Command(ScrapyCommand):
         q = self.crawler.queue
         urls, names = self._split_urls_and_names(args)
         for name in names:
-            q.append_spider_name(name)
+            q.append_spider_name(name, **opts.spargs)
 
         if opts.spider:
             try:
-                spider = self.crawler.spiders.create(opts.spider)
+                spider = self.crawler.spiders.create(opts.spider, **opts.spargs)
                 for url in urls:
                     q.append_url(url, spider)
             except KeyError:
                 log.msg('Unable to find spider: %s' % opts.spider, log.ERROR)
         else:
             for name, urls in self._group_urls_by_spider(urls):
-                spider = self.crawler.spiders.create(name)
+                spider = self.crawler.spiders.create(name, **opts.spargs)
                 for url in urls:
                     q.append_url(url, spider)
         self.crawler.start()

@@ -15,6 +15,11 @@ def build_component_list(base, custom):
     return [k for k, v in sorted(compdict.items(), key=itemgetter(1)) \
         if v is not None]
 
+def arglist_to_dict(arglist):
+    """Convert a list of arguments like ['arg1=val1', 'arg2=val2', ...] to a
+    dict"""
+    return dict(x.split('=', 1) for x in arglist)
+
 def closest_scrapy_cfg(path='.', prevpath=None):
     if path == prevpath:
         return ''
