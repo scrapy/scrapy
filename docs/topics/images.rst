@@ -37,138 +37,45 @@ The typical workflow, when using the :class:`ImagesPipeline` goes like
 this:
 
 1. In a Spider, you scrape an item and put the URLs of its images into a
-   pre-defined field, for example ``image_urls``.
+   ``image_urls`` field.
 
 2. The item is returned from the spider and goes to the item pipeline.
 
 3. When the item reaches the :class:`ImagesPipeline`, the URLs in the
-   ``image_urls`` attribute are scheduled for download using the standard
+   ``image_urls`` field are scheduled for download using the standard
    Scrapy scheduler and downloader (which means the scheduler and downloader
    middlewares are reused), but with a higher priority, processing them before other
    pages are scraped. The item remains "locked" at that particular pipeline stage
    until the images have finish downloading (or fail for some reason).
 
-4. When the images finish downloading (or fail for some reason)
-   another field gets populated with their path, for example,
-   ``image_paths``. This attribute is a list of dictionaries containing
-   information about the images downloaded, such as the downloaded path, and the
-   original scraped url. The images in the list of the ``image_paths`` field
-   will retain the same order of the original ``image_urls`` field, which is
-   useful if you decide to use the first image in the list as the primary
-   image.
+4. When the images are downloaded another field (``images``) will be populated
+   with the results. This field will contain a list of dicts with information
+   about the images downloaded, such as the downloaded path, the original
+   scraped url (taken from the ``image_urls`` field) , and the image checksum.
+   The images in the list of the ``images`` field will retain the same order of
+   the original ``image_urls`` field. If some image failed downloading, an
+   error will be logged and the image won't be present in the ``images`` field.
 
-Implementing your Images Pipeline
-=================================
 
-.. module:: scrapy.contrib.pipeline.images
-   :synopsis: Images Pipeline
+Usage example
+=============
 
-Here are the methods that you should override in your custom Images Pipeline:
+In order to use the image pipeline you just need to :ref:`enable it
+<topics-images-enabling>` and define an item with the ``image_urls`` and
+``images`` fields::
 
-.. class:: ImagesPipeline
+    from scrapy.item import Item
 
-   .. method:: get_media_requests(item, info)
+    class MyItem(Item):
 
-      As seen on the workflow, the pipeline will get the URLs of the images to
-      download from the item. In order to do this, you must override the
-      :meth:`~get_media_requests` method and return a Request for each
-      image URL::
+        # ... other item fields ...
+        image_urls = Field()
+        images = Field()
 
-         def get_media_requests(self, item, info):
-             for image_url in item['image_urls']:
-                 yield Request(image_url)
+If you need something more complex and want to override the custom images
+pipeline behaviour, see :ref:`topics-images-override`.
 
-      Those requests will be processed by the pipeline and, when they have finished
-      downloading, the results will be sent to the
-      :meth:`~item_completed` method, as a list of 2-element tuples.
-      Each tuple will contain ``(success, image_info_or_failure)`` where:
-
-      * ``success`` is a boolean which is ``True`` if the image was downloaded
-        successfully or ``False`` if it failed for some reason
-
-      * ``image_info_or_error`` is a dict containing the following keys (if success
-        is ``True``) or a `Twisted Failure`_ if there was a problem.
-
-        * ``url`` - the url where the image was downloaded from. This is the url of
-          the request returned from the :meth:`~get_media_requests`
-          method.
-
-        * ``path`` - the path (relative to :setting:`IMAGES_STORE`) where the image
-          was stored
-
-        * ``checksum`` - a `MD5 hash`_ of the image contents
-
-      .. _Twisted Failure: http://twistedmatrix.com/documents/8.2.0/api/twisted.python.failure.Failure.html
-      .. _MD5 hash: http://en.wikipedia.org/wiki/MD5
-
-      The list of tuples received by :meth:`~item_completed` is
-      guaranteed to retain the same order of the requests returned from the
-      :meth:`~get_media_requests` method.
-        
-      Here's a typical value of the ``results`` argument::
-
-          [(True,
-            {'checksum': '2b00042f7481c7b056c4b410d28f33cf',
-             'path': 'full/7d97e98f8af710c7e7fe703abc8f639e0ee507c4.jpg',
-             'url': 'http://www.example.com/images/product1.jpg'}),
-           (True,
-            {'checksum': 'b9628c4ab9b595f72f280b90c4fd093d',
-             'path': 'full/1ca5879492b8fd606df1964ea3c1e2f4520f076f.jpg',
-             'url': 'http://www.example.com/images/product2.jpg'}),
-           (False,
-            Failure(...))]
-
-      By default the :meth:`get_media_requests` method returns ``None`` which
-      means there are no images to download for the item.
-
-   .. method:: item_completed(results, items, info)
-
-      The :meth:`ImagesPipeline.item_completed` method called when all image
-      requests for a single item have completed (either finshed downloading, or
-      failed for some reason).
-
-      The :meth:`~item_completed` method must return the
-      output that will be sent to subsequent item pipeline stages, so you must
-      return (or drop) the item, as you would in any pipeline.
-
-      Here is an example of the :meth:`~item_completed` method where we
-      store the downloaded image paths (passed in results) in the ``image_paths``
-      item field, and we drop the item if it doesn't contain any images::
-
-          from scrapy.exceptions import DropItem
-
-          def item_completed(self, results, item, info):
-              image_paths = [info['path'] for success, info in results if success]
-              if not image_paths:
-                  raise DropItem("Item contains no images")
-              item['image_paths'] = image_paths
-              return item
-
-      By default, the :meth:`item_completed` method returns the item.
-
-Full Example
-============
-
-Here is a full example of the Images Pipeline whose methods are examplified
-above::
-
-    from scrapy.contrib.pipeline.images import ImagesPipeline
-    from scrapy.exceptions import DropItem
-    from scrapy.http import Request
-
-    class MyImagesPipeline(ImagesPipeline):
-
-        def get_media_requests(self, item, info):
-            for image_url in item['image_urls']:
-                yield Request(image_url)
-
-        def item_completed(self, results, item, info):
-            image_paths = [info['path'] for success, info in results if success]
-            if not image_paths:
-                raise DropItem("Item contains no images")
-            item['image_paths'] = image_paths
-            return item
-
+.. _topics-images-enabling:
 
 Enabling your Images Pipeline
 =============================
@@ -178,7 +85,7 @@ Enabling your Images Pipeline
 To enable your images pipeline you must first add it to your project
 :setting:`ITEM_PIPELINES` setting::
 
-    ITEM_PIPELINES = ['myproject.pipelines.MyImagesPipeline']
+    ITEM_PIPELINES = ['scrapy.contrib.pipeline.images.ImagesPipeline']
 
 And set the :setting:`IMAGES_STORE` setting to a valid directory that will be
 used for storing the downloaded images. Otherwise the pipeline will remain
@@ -296,4 +203,119 @@ For example::
 Note: these size constraints don't affect thumbnail generation at all.
 
 By default, there are no size constraints, so all images are processed.
+
+.. _topics-images-override:
+
+Implementing your custom Images Pipeline
+========================================
+
+.. module:: scrapy.contrib.pipeline.images
+   :synopsis: Images Pipeline
+
+Here are the methods that you should override in your custom Images Pipeline:
+
+.. class:: ImagesPipeline
+
+   .. method:: get_media_requests(item, info)
+
+      As seen on the workflow, the pipeline will get the URLs of the images to
+      download from the item. In order to do this, you must override the
+      :meth:`~get_media_requests` method and return a Request for each
+      image URL::
+
+         def get_media_requests(self, item, info):
+             for image_url in item['image_urls']:
+                 yield Request(image_url)
+
+      Those requests will be processed by the pipeline and, when they have finished
+      downloading, the results will be sent to the
+      :meth:`~item_completed` method, as a list of 2-element tuples.
+      Each tuple will contain ``(success, image_info_or_failure)`` where:
+
+      * ``success`` is a boolean which is ``True`` if the image was downloaded
+        successfully or ``False`` if it failed for some reason
+
+      * ``image_info_or_error`` is a dict containing the following keys (if success
+        is ``True``) or a `Twisted Failure`_ if there was a problem.
+
+        * ``url`` - the url where the image was downloaded from. This is the url of
+          the request returned from the :meth:`~get_media_requests`
+          method.
+
+        * ``path`` - the path (relative to :setting:`IMAGES_STORE`) where the image
+          was stored
+
+        * ``checksum`` - a `MD5 hash`_ of the image contents
+
+      .. _Twisted Failure: http://twistedmatrix.com/documents/8.2.0/api/twisted.python.failure.Failure.html
+      .. _MD5 hash: http://en.wikipedia.org/wiki/MD5
+
+      The list of tuples received by :meth:`~item_completed` is
+      guaranteed to retain the same order of the requests returned from the
+      :meth:`~get_media_requests` method.
+
+      Here's a typical value of the ``results`` argument::
+
+          [(True,
+            {'checksum': '2b00042f7481c7b056c4b410d28f33cf',
+             'path': 'full/7d97e98f8af710c7e7fe703abc8f639e0ee507c4.jpg',
+             'url': 'http://www.example.com/images/product1.jpg'}),
+           (True,
+            {'checksum': 'b9628c4ab9b595f72f280b90c4fd093d',
+             'path': 'full/1ca5879492b8fd606df1964ea3c1e2f4520f076f.jpg',
+             'url': 'http://www.example.com/images/product2.jpg'}),
+           (False,
+            Failure(...))]
+
+      By default the :meth:`get_media_requests` method returns ``None`` which
+      means there are no images to download for the item.
+
+   .. method:: item_completed(results, items, info)
+
+      The :meth:`ImagesPipeline.item_completed` method called when all image
+      requests for a single item have completed (either finshed downloading, or
+      failed for some reason).
+
+      The :meth:`~item_completed` method must return the
+      output that will be sent to subsequent item pipeline stages, so you must
+      return (or drop) the item, as you would in any pipeline.
+
+      Here is an example of the :meth:`~item_completed` method where we
+      store the downloaded image paths (passed in results) in the ``image_paths``
+      item field, and we drop the item if it doesn't contain any images::
+
+          from scrapy.exceptions import DropItem
+
+          def item_completed(self, results, item, info):
+              image_paths = [x['path'] for ok, x in results if ok]
+              if not image_paths:
+                  raise DropItem("Item contains no images")
+              item['image_paths'] = image_paths
+              return item
+
+      By default, the :meth:`item_completed` method returns the item.
+
+
+Custom Images pipeline example
+==============================
+
+Here is a full example of the Images Pipeline whose methods are examplified
+above::
+
+    from scrapy.contrib.pipeline.images import ImagesPipeline
+    from scrapy.exceptions import DropItem
+    from scrapy.http import Request
+
+    class MyImagesPipeline(ImagesPipeline):
+
+        def get_media_requests(self, item, info):
+            for image_url in item['image_urls']:
+                yield Request(image_url)
+
+        def item_completed(self, results, item, info):
+            image_paths = [x['path'] for ok, x in results if ok]
+            if not image_paths:
+                raise DropItem("Item contains no images")
+            item['image_paths'] = image_paths
+            return item
 

@@ -20,6 +20,7 @@ from scrapy.xlib.pydispatch import dispatcher
 from scrapy import log
 from scrapy.stats import stats
 from scrapy.utils.misc import md5sum
+from scrapy.http import Request
 from scrapy import signals
 from scrapy.exceptions import DropItem, NotConfigured, IgnoreRequest
 from scrapy.contrib.pipeline.media import MediaPipeline
@@ -283,3 +284,10 @@ class ImagesPipeline(MediaPipeline):
     def thumb_key(self, url, thumb_id):
         image_guid = hashlib.sha1(url).hexdigest()
         return 'thumbs/%s/%s.jpg' % (thumb_id, image_guid)
+
+    def get_media_requests(self, item, info):
+        return [Request(x) for x in item.get('image_urls', [])]
+
+    def item_completed(self, results, item, info):
+        item['images'] = [x for ok, x in results if ok]
+        return item
