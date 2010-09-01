@@ -1,5 +1,3 @@
-import operator
-from itertools import groupby
 from collections import defaultdict
 from scrapy.xlib.pydispatch import dispatcher
 
