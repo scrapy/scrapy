@@ -3,6 +3,7 @@ import signal
 from twisted.internet import reactor, defer
 
 from scrapy.xlib.pydispatch import dispatcher
+from scrapy.queue import ExecutionQueue
 from scrapy.core.engine import ExecutionEngine
 from scrapy.extension import ExtensionManager
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
@@ -33,8 +34,10 @@ class Crawler(object):
         self.extensions = ExtensionManager.from_settings(self.settings)
         spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
         self.spiders = spman_cls.from_settings(self.settings)
-        queue_cls = load_object(self.settings['QUEUE_CLASS'])
-        self.queue = queue_cls(self.spiders)
+        spq_cls = load_object(self.settings['SPIDER_QUEUE_CLASS'])
+        spq = spq_cls.from_settings(self.settings)
+        keepalive = self.settings.getbool('KEEP_ALIVE')
+        self.queue = ExecutionQueue(self.spiders, spq, keepalive)
         self.engine = ExecutionEngine(self.settings, self._spider_closed)
 
     @defer.inlineCallbacks

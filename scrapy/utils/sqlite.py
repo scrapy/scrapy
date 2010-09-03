@@ -8,10 +8,10 @@ from scrapy.utils.py26 import json
 class SqliteDict(DictMixin):
     """SQLite-backed dictionary"""
 
-    def __init__(self, database=':memory:', table="dict"):
-        self.database = database
+    def __init__(self, database=None, table="dict"):
+        self.database = database or ':memory:'
         self.table = table
-        self.conn = sqlite3.connect(database)
+        self.conn = sqlite3.connect(self.database)
         q = "create table if not exists %s (key text primary key, value blob)" \
             % table
         self.conn.execute(q)
@@ -86,10 +86,10 @@ class SqlitePriorityQueue(object):
     providing atomic inter-process operations.
     """
 
-    def __init__(self, database=':memory:', table="queue"):
-        self.database = database
+    def __init__(self, database=None, table="queue"):
+        self.database = database or ':memory:'
         self.table = table
-        self.conn = sqlite3.connect(database)
+        self.conn = sqlite3.connect(self.database)
         q = "create table if not exists %s (id integer primary key, " \
             "priority real key, message blob)" % table
         self.conn.execute(q)

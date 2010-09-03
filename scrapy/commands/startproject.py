@@ -24,7 +24,6 @@ IGNORE = ignore_patterns('*.pyc', '.svn')
 class Command(ScrapyCommand):
 
     requires_project = False
-    default_settings = {'LOG_ENABLED': False}
 
     def syntax(self):
         return "<project_name>"

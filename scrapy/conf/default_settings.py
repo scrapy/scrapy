@@ -150,6 +150,8 @@ ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'
 # Item pipelines are typically set in specific commands settings
 ITEM_PIPELINES = []
 
+KEEP_ALIVE = False
+
 LOG_ENABLED = True
 LOG_ENCODING = 'utf-8'
 LOG_FORMATTER = 'scrapy.logformatter.LogFormatter'
@@ -174,8 +176,6 @@ MEMUSAGE_REPORT = False
 MEMUSAGE_WARNING_MB = 0
 
 NEWSPIDER_MODULE = ''
-
-QUEUE_CLASS = 'scrapy.queue.ExecutionQueue'
 
 RANDOMIZE_DOWNLOAD_DELAY = True
 
@@ -209,8 +209,6 @@ SCHEDULER_MIDDLEWARES_BASE = {
 
 SCHEDULER_ORDER = 'DFO'
 
-SERVER_QUEUE_CLASS = 'scrapy.contrib.queue.SqliteExecutionQueue'
-
 SPIDER_MANAGER_CLASS = 'scrapy.spidermanager.SpiderManager'
 
 SPIDER_MIDDLEWARES = {}
@@ -227,6 +225,8 @@ SPIDER_MIDDLEWARES_BASE = {
 }
 
 SPIDER_MODULES = []
+
+SPIDER_QUEUE_CLASS = 'scrapy.spiderqueue.SqliteSpiderQueue'
 
 SQLITE_DB = 'scrapy.db'
 

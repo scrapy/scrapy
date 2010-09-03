@@ -1,6 +1,6 @@
 import unittest
 
-from scrapy.queue import ExecutionQueue, KeepAliveExecutionQueue
+from scrapy.queue import ExecutionQueue
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
 
@@ -27,10 +27,10 @@ class TestSpiderManager(object):
 
 class ExecutionQueueTest(unittest.TestCase):
 
-    queue_class = ExecutionQueue
+    keep_alive = False
 
     def setUp(self):
-        self.queue = self.queue_class(_spiders=TestSpiderManager())
+        self.queue = ExecutionQueue(TestSpiderManager(), None, self.keep_alive)
         self.spider = TestSpider()
         self.request = Request('about:none')
 
@@ -106,7 +106,7 @@ class ExecutionQueueTest(unittest.TestCase):
 
 class KeepAliveExecutionQueueTest(ExecutionQueueTest):
 
-    queue_class = KeepAliveExecutionQueue
+    keep_alive = True
 
     def test_is_finished(self):
         self.assert_(not self.queue.is_finished())

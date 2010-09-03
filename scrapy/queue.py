@@ -9,16 +9,21 @@ class ExecutionQueue(object):
 
     polling_delay = 5
 
-    def __init__(self, _spiders):
+    def __init__(self, spiders, queue, keepalive=False):
         self.spider_requests = []
-        self._spiders = _spiders
+        self._spiders = spiders
+        self._queue = queue
+        self._keepalive = keepalive
 
     def _append_next(self):
         """Called when there are no more items left in self.spider_requests.
         This method is meant to be overriden in subclasses to add new (spider,
         requests) tuples to self.spider_requests. It can return a Deferred.
         """
-        pass
+        msg = self._queue.pop()
+        if msg:
+            name = msg.pop('name')
+            self.append_spider_name(name, **msg)
 
     def get_next(self):
         """Return a tuple (spider, requests) containing a list of Requests and
@@ -44,7 +49,7 @@ class ExecutionQueue(object):
         spiders to crawl (this is for one-shot runs). If it returns ``False``
         Scrapy will keep polling this queue for new requests to scrape
         """
-        return not bool(self.spider_requests)
+        return not self._keepalive and not bool(self.spider_requests)
 
     def append_spider(self, spider):
         """Append a Spider to crawl"""
@@ -82,9 +87,3 @@ class ExecutionQueue(object):
             log.msg('Unable to find spider: %s' % name, log.ERROR)
         else:
             self.append_spider(spider)
-
-
-class KeepAliveExecutionQueue(ExecutionQueue):
-
-    def is_finished(self):
-        return False
