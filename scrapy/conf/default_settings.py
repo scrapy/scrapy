@@ -185,9 +185,9 @@ REDIRECT_PRIORITY_ADJUST = +2
 
 REQUEST_HANDLERS = {}
 REQUEST_HANDLERS_BASE = {
-    'file': 'scrapy.core.downloader.handlers.file.download_file',
-    'http': 'scrapy.core.downloader.handlers.http.download_http',
-    'https': 'scrapy.core.downloader.handlers.http.download_http',
+    'file': 'scrapy.core.downloader.handlers.file.FileRequestHandler',
+    'http': 'scrapy.core.downloader.handlers.http.HttpRequestHandler',
+    'https': 'scrapy.core.downloader.handlers.http.HttpRequestHandler',
 }
 
 REQUESTS_QUEUE_SIZE = 0

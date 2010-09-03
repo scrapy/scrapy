@@ -7,14 +7,15 @@ from twisted.internet import defer
 from scrapy.core.downloader.responsetypes import responsetypes
 
 
-def download_file(request, spider):
-    """Return a deferred for a file download."""
-    return defer.maybeDeferred(_all_in_one_read_download_file, request, spider)
+class FileRequestHandler(object):
+    """file download"""
 
-def _all_in_one_read_download_file(request, spider):
-    filepath = url2pathname(request.url.split("file://")[1])
-    with open(filepath) as f:
-        body = f.read()
-    respcls = responsetypes.from_args(filename=filepath, body=body)
-    return respcls(url=request.url, body=body)
+    def download_request(self, request, spider):
+        return defer.maybeDeferred(self._one_pass_read, request)
 
+    def _one_pass_read(self, request):
+        filepath = url2pathname(request.url.split("file://")[1])
+        with open(filepath) as f:
+            body = f.read()
+        respcls = responsetypes.from_args(filename=filepath, body=body)
+        return respcls(url=request.url, body=body)

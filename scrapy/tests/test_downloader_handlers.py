@@ -10,8 +10,8 @@ from twisted.web.test.test_webclient import ForeverTakingResource, \
         PayloadResource, BrokenDownloadResource
 
 from scrapy.core.downloader.webclient import PartialDownloadError
-from scrapy.core.downloader.handlers.file import download_file
-from scrapy.core.downloader.handlers.http import download_http
+from scrapy.core.downloader.handlers.file import FileRequestHandler
+from scrapy.core.downloader.handlers.http import HttpRequestHandler
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
 
@@ -23,6 +23,7 @@ class FileTestCase(unittest.TestCase):
         fd = open(self.tmpname + '^', 'w')
         fd.write('0123456789')
         fd.close()
+        self.download_request = FileRequestHandler().download_request
 
     def test_download(self):
         def _test(response):
@@ -32,11 +33,11 @@ class FileTestCase(unittest.TestCase):
 
         request = Request('file://%s' % self.tmpname + '^')
         assert request.url.upper().endswith('%5E')
-        return download_file(request, BaseSpider('foo')).addCallback(_test)
+        return self.download_request(request, BaseSpider('foo')).addCallback(_test)
 
     def test_non_existent(self):
         request = Request('file://%s' % self.mktemp())
-        d = download_file(request, BaseSpider('foo'))
+        d = self.download_request(request, BaseSpider('foo'))
         return self.assertFailure(d, IOError)
 
 
@@ -57,6 +58,7 @@ class HttpTestCase(unittest.TestCase):
         self.wrapper = WrappingFactory(self.site)
         self.port = reactor.listenTCP(0, self.wrapper, interface='127.0.0.1')
         self.portno = self.port.getHost().port
+        self.download_request = HttpRequestHandler().download_request
 
     def tearDown(self):
         return self.port.stopListening()
@@ -66,28 +68,28 @@ class HttpTestCase(unittest.TestCase):
 
     def test_download(self):
         request = Request(self.getURL('file'))
-        d = download_http(request, BaseSpider('foo'))
+        d = self.download_request(request, BaseSpider('foo'))
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEquals, "0123456789")
         return d
 
     def test_download_head(self):
         request = Request(self.getURL('file'), method='HEAD')
-        d = download_http(request, BaseSpider('foo'))
+        d = self.download_request(request, BaseSpider('foo'))
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEquals, '')
         return d
 
     def test_redirect_status(self):
         request = Request(self.getURL('redirect'))
-        d = download_http(request, BaseSpider('foo'))
+        d = self.download_request(request, BaseSpider('foo'))
         d.addCallback(lambda r: r.status)
         d.addCallback(self.assertEquals, 302)
         return d
 
     def test_redirect_status_head(self):
         request = Request(self.getURL('redirect'), method='HEAD')
-        d = download_http(request, BaseSpider('foo'))
+        d = self.download_request(request, BaseSpider('foo'))
         d.addCallback(lambda r: r.status)
         d.addCallback(self.assertEquals, 302)
         return d
@@ -96,7 +98,7 @@ class HttpTestCase(unittest.TestCase):
         spider = BaseSpider('foo')
         spider.download_timeout = 0.000001
         request = Request(self.getURL('wait'))
-        d = download_http(request, spider)
+        d = self.download_request(request, spider)
         return self.assertFailure(d, defer.TimeoutError)
 
     def test_host_header_not_in_request_headers(self):
@@ -105,7 +107,7 @@ class HttpTestCase(unittest.TestCase):
             self.assertEquals(request.headers, {})
 
         request = Request(self.getURL('host'))
-        return download_http(request, BaseSpider('foo')).addCallback(_test)
+        return self.download_request(request, BaseSpider('foo')).addCallback(_test)
 
     def test_host_header_seted_in_request_headers(self):
         def _test(response):
@@ -113,9 +115,9 @@ class HttpTestCase(unittest.TestCase):
             self.assertEquals(request.headers.get('Host'), 'example.com')
 
         request = Request(self.getURL('host'), headers={'Host': 'example.com'})
-        return download_http(request, BaseSpider('foo')).addCallback(_test)
+        return self.download_request(request, BaseSpider('foo')).addCallback(_test)
 
-        d = download_http(request, BaseSpider('foo'))
+        d = self.download_request(request, BaseSpider('foo'))
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEquals, 'example.com')
         return d
@@ -123,14 +125,14 @@ class HttpTestCase(unittest.TestCase):
     def test_payload(self):
         body = '1'*100 # PayloadResource requires body length to be 100
         request = Request(self.getURL('payload'), method='POST', body=body)
-        d = download_http(request, BaseSpider('foo'))
+        d = self.download_request(request, BaseSpider('foo'))
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEquals, body)
         return d
 
     def test_broken_download(self):
         request = Request(self.getURL('broken'))
-        d = download_http(request, BaseSpider('foo'))
+        d = self.download_request(request, BaseSpider('foo'))
         return self.assertFailure(d, PartialDownloadError)
 
 
@@ -151,6 +153,7 @@ class HttpProxyTestCase(unittest.TestCase):
         wrapper = WrappingFactory(site)
         self.port = reactor.listenTCP(0, wrapper, interface='127.0.0.1')
         self.portno = self.port.getHost().port
+        self.download_request = HttpRequestHandler().download_request
 
     def tearDown(self):
         return self.port.stopListening()
@@ -166,7 +169,7 @@ class HttpProxyTestCase(unittest.TestCase):
 
         http_proxy = self.getURL('')
         request = Request('https://example.com', meta={'proxy': http_proxy})
-        return download_http(request, BaseSpider('foo')).addCallback(_test)
+        return self.download_request(request, BaseSpider('foo')).addCallback(_test)
 
     def test_download_without_proxy(self):
         def _test(response):
@@ -175,4 +178,4 @@ class HttpProxyTestCase(unittest.TestCase):
             self.assertEquals(response.body, '/path/to/resource')
 
         request = Request(self.getURL('path/to/resource'))
-        return download_http(request, BaseSpider('foo')).addCallback(_test)
+        return self.download_request(request, BaseSpider('foo')).addCallback(_test)
