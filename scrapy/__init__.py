@@ -31,3 +31,10 @@ except ImportError:
     pass
 else:
     optional_features.add('ssl')
+
+try:
+    import boto
+except ImportError:
+    pass
+else:
+    optional_features.add('boto')
