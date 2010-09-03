@@ -8,7 +8,7 @@ import os
 import cPickle as pickle
 
 from scrapy.conf import default_settings
-from scrapy.utils.conf import set_scrapy_settings_envvar
+from scrapy.utils.conf import init_env
 
 import_ = lambda x: __import__(x, {}, {}, [''])
 
@@ -60,7 +60,7 @@ class EnvironmentSettings(Settings):
         self.disabled = os.environ.get('SCRAPY_SETTINGS_DISABLED', False)
         if self.ENVVAR not in os.environ:
             project = os.environ.get('SCRAPY_PROJECT', 'default')
-            set_scrapy_settings_envvar(project)
+            init_env(project)
         settings_module_path = os.environ.get(self.ENVVAR, 'scrapy_settings')
         self.set_settings_module(settings_module_path)
 

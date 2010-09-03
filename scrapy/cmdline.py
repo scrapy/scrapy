@@ -87,8 +87,8 @@ def _check_deprecated_scrapy_ctl(argv, inproject):
         if not os.path.exists(cfg_path):
             with open(cfg_path, 'w') as f:
                 f.write("# generated automatically - feel free to edit" + os.linesep)
-                f.write("[default]" + os.linesep)
-                f.write("settings = %s" % settings.settings_module_path + os.linesep)
+                f.write("[settings]" + os.linesep)
+                f.write("default = %s" % settings.settings_module_path + os.linesep)
 
 def _run_print_help(parser, func, *a, **kw):
     try:
