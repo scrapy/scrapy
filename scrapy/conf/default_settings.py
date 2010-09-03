@@ -188,6 +188,7 @@ REQUEST_HANDLERS_BASE = {
     'file': 'scrapy.core.downloader.handlers.file.FileRequestHandler',
     'http': 'scrapy.core.downloader.handlers.http.HttpRequestHandler',
     'https': 'scrapy.core.downloader.handlers.http.HttpRequestHandler',
+    's3': 'scrapy.core.downloader.handlers.s3.S3RequestHandler',
 }
 
 REQUESTS_QUEUE_SIZE = 0
