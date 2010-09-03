@@ -2,6 +2,7 @@ from twisted.internet import defer
 
 from scrapy.http import Request
 from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.spider import create_spider_for_request
 from scrapy import log
 
 
@@ -58,7 +59,7 @@ class ExecutionQueue(object):
 
     def append_request(self, request, spider=None, **kwargs):
         if spider is None:
-            spider = self._spiders.create_for_request(request, **kwargs)
+            spider = create_spider_for_request(self._spiders, request, **kwargs)
         if spider:
             self.spider_requests.append((spider, [request]))
 
@@ -69,7 +70,8 @@ class ExecutionQueue(object):
         if url is None:
             raise ValueError("A url is required")
         if spider is None:
-            spider = self._spiders.create_for_request(Request(url), **kwargs)
+            spider = create_spider_for_request(self._spiders, Request(url), \
+                **kwargs)
         if spider:
             requests = arg_to_iter(spider.make_requests_from_url(url))
             self.spider_requests.append((spider, requests))

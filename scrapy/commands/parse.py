@@ -2,7 +2,7 @@ from scrapy.command import ScrapyCommand
 from scrapy.http import Request
 from scrapy.item import BaseItem
 from scrapy.utils import display
-from scrapy.utils.spider import iterate_spider_output
+from scrapy.utils.spider import iterate_spider_output, create_spider_for_request
 from scrapy.utils.url import is_url
 from scrapy.exceptions import UsageError
 from scrapy import log
@@ -73,7 +73,7 @@ class Command(ScrapyCommand):
             except KeyError:
                 log.msg('Unable to find spider: %s' % opts.spider, log.ERROR)
         else:
-            spider = self.crawler.spiders.create_for_request(request)
+            spider = create_spider_for_request(self.crawler.spiders, request)
             if spider:
                 return spider
             log.msg('Unable to find spider for: %s' % request, log.ERROR)

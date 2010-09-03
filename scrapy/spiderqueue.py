@@ -1,5 +1,4 @@
 from zope.interface import implements
-from zope.interface.verify import verifyObject
 
 from scrapy.interfaces import ISpiderQueue
 from scrapy.utils.sqlite import JsonSqlitePriorityQueue

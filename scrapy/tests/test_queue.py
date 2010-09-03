@@ -18,8 +18,8 @@ class TestSpider(BaseSpider):
 
 class TestSpiderManager(object):
 
-    def create_for_request(self, request, **kwargs):
-        return TestSpider('create_for_request', **kwargs)
+    def find_by_request(self, request):
+        return ['create_for_request']
 
     def create(self, spider_name, **spider_kwargs):
         return TestSpider(spider_name, **spider_kwargs)
