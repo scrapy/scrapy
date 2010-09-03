@@ -5,7 +5,7 @@ See docs/topics/ws.rst
 """
 
 from twisted.internet import reactor
-from twisted.web import server, resource, error
+from twisted.web import server, error
 
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.exceptions import NotConfigured
@@ -13,22 +13,14 @@ from scrapy import signals
 from scrapy.utils.jsonrpc import jsonrpc_server_call
 from scrapy.utils.serialize import ScrapyJSONEncoder, ScrapyJSONDecoder
 from scrapy.utils.misc import load_object
+from scrapy.utils.txweb import JsonResource as JsonResource_
 from scrapy.utils.conf import build_component_list
 from scrapy.conf import settings
 
 
-class JsonResource(resource.Resource):
+class JsonResource(JsonResource_):
 
-    ws_name = None
     json_encoder = ScrapyJSONEncoder()
-
-    def render(self, txrequest):
-        r = resource.Resource.render(self, txrequest)
-        r = self.json_encoder.encode(r)
-        txrequest.setHeader('Content-Type', 'application/json')
-        txrequest.setHeader('Content-Length', len(r))
-        return r
-
 
 class JsonRpcResource(JsonResource):
 

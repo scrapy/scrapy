@@ -51,22 +51,22 @@ packages, data_files = [], []
 root_dir = os.path.dirname(__file__)
 if root_dir != '':
     os.chdir(root_dir)
-scrapy_dir = 'scrapy'
 
 def is_not_module(filename):
     return os.path.splitext(f)[1] not in ['.py', '.pyc', '.pyo']
 
-for dirpath, dirnames, filenames in os.walk(scrapy_dir):
-    # Ignore dirnames that start with '.'
-    for i, dirname in enumerate(dirnames):
-        if dirname.startswith('.'): del dirnames[i]
-    if '__init__.py' in filenames:
-        packages.append('.'.join(fullsplit(dirpath)))
-        data = [f for f in filenames if is_not_module(f)]
-        if data:
-            data_files.append([dirpath, [os.path.join(dirpath, f) for f in data]])
-    elif filenames:
-        data_files.append([dirpath, [os.path.join(dirpath, f) for f in filenames]])
+for scrapy_dir in ['scrapy', 'scrapyd']:
+    for dirpath, dirnames, filenames in os.walk(scrapy_dir):
+        # Ignore dirnames that start with '.'
+        for i, dirname in enumerate(dirnames):
+            if dirname.startswith('.'): del dirnames[i]
+        if '__init__.py' in filenames:
+            packages.append('.'.join(fullsplit(dirpath)))
+            data = [f for f in filenames if is_not_module(f)]
+            if data:
+                data_files.append([dirpath, [os.path.join(dirpath, f) for f in data]])
+        elif filenames:
+            data_files.append([dirpath, [os.path.join(dirpath, f) for f in filenames]])
 
 # Small hack for working with bdist_wininst.
 # See http://mail.python.org/pipermail/distutils-sig/2004-August/004134.html

@@ -125,6 +125,7 @@ Solving specific problems
    topics/leaks
    topics/images
    topics/ubuntu
+   topics/scrapyd
 
 :doc:`faq`
     Get answers to most frequently asked questions.
@@ -143,6 +144,9 @@ Solving specific problems
 
 :doc:`topics/ubuntu`
     Install latest Scrapy packages easily on Ubuntu
+
+:doc:`topics/scrapyd`
+    Deploying your Scrapy project in production.
 
 .. _extending-scrapy:
 

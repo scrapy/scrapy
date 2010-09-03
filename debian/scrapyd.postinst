@@ -6,16 +6,19 @@ case "$1" in
     configure)
         # Create user to run the service as
         if [ -z "`id -u scrapy 2> /dev/null`" ]; then
-          adduser --system --home /var/lib/scrapy --gecos "scrapy" \
+          adduser --system --home /var/lib/scrapyd --gecos "scrapy" \
                   --no-create-home --disabled-password \
                   --quiet scrapy || true
         fi
-        if [ ! -d /var/run/scrapy ]; then
-          mkdir /var/run/scrapy
-          chown scrapy:nogroup /var/run/scrapy
+        if [ ! -d /var/run/scrapyd ]; then
+          mkdir /var/run/scrapyd
+          chown scrapy:nogroup /var/run/scrapyd
         fi
 
-        chown scrapy:nogroup /var/log/scrapy /var/lib/scrapy /var/run/scrapy
+        chown scrapy:nogroup /var/log/scrapyd /var/run/scrapyd \
+            /var/lib/scrapyd /var/lib/scrapyd/eggs /var/lib/scrapyd/dbs
+
+        update-python-modules -p # so upstart restart uses the new code
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

@@ -49,9 +49,13 @@ def init_env(project='default', set_syspath=True):
 
 def get_config(use_closest=True):
     """Get Scrapy config file as a SafeConfigParser"""
-    sources = [os.path.expanduser('~/.scrapy.cfg'), '/etc/scrapy.cfg']
-    if use_closest:
-        sources.insert(0, closest_scrapy_cfg())
+    sources = get_sources(use_closest)
     cfg = SafeConfigParser()
     cfg.read(sources)
     return cfg
+
+def get_sources(use_closest=True):
+    sources = [os.path.expanduser('~/.scrapy.cfg'), '/etc/scrapy.cfg']
+    if use_closest:
+        sources.insert(0, closest_scrapy_cfg())
+    return sources

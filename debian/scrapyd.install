@@ -1,0 +1,3 @@
+usr/lib/python*/*-packages/scrapyd
+debian/scrapyd.cfg etc
+extras/scrapyd.tac usr/share/scrapyd

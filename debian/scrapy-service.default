@@ -1,4 +1,0 @@
-# Defaults for Scrapy service
-
-export PYTHONPATH=/etc/scrapy
-export SCRAPY_SETTINGS_MODULE=service_conf
