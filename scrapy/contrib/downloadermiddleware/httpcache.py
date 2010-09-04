@@ -79,7 +79,7 @@ class FilesystemCacheStorage(object):
             body = f.read()
         with open(join(rpath, 'response_headers'), 'rb') as f:
             rawheaders = f.read()
-        # We failback to metadata['url'] to support old generated caches ' should be removed for Scrapy 0.11
+        # We failback to metadata['url'] to support old generated caches. TODO: remove for Scrapy 0.11
         url = metadata.get('response_url') or metadata['url']
         status = metadata['status']
         headers = Headers(headers_raw_to_dict(rawheaders))
