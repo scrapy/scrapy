@@ -40,14 +40,17 @@ class OffsiteMiddleware(object):
         host = urlparse_cached(request).hostname or ''
         return bool(regex.search(host))
 
-    def get_host_regex(self, domains):
+    def get_host_regex(self, spider):
         """Override this method to implement a different offsite policy"""
-        domains = [d.replace('.', r'\.') for d in domains]
+        allowed_domains = getattr(spider, 'allowed_domains', None)
+        if not allowed_domains:
+            return re.compile('') # allow all by default
+        domains = [d.replace('.', r'\.') for d in allowed_domains]
         regex = r'^(.*\.)?(%s)$' % '|'.join(domains)
         return re.compile(regex)
 
     def spider_opened(self, spider):
-        self.host_regexes[spider] = self.get_host_regex(spider.allowed_domains)
+        self.host_regexes[spider] = self.get_host_regex(spider)
         self.domains_seen[spider] = set()
 
     def spider_closed(self, spider):

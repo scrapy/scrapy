@@ -8,12 +8,12 @@ from scrapy.contrib.spidermiddleware.offsite import OffsiteMiddleware
 class TestOffsiteMiddleware(TestCase):
 
     def setUp(self):
-        self.spider = BaseSpider('foo')
-        self.spider.name = 'scrapytest.org'
-        self.spider.allowed_domains = ['scrapytest.org', 'scrapy.org']
-
+        self.spider = self._get_spider()
         self.mw = OffsiteMiddleware()
         self.mw.spider_opened(self.spider)
+
+    def _get_spider(self):
+        return BaseSpider('foo', allowed_domains=['scrapytest.org', 'scrapy.org'])
 
     def test_process_spider_output(self):
         res = Response('http://scrapytest.org')
@@ -29,4 +29,21 @@ class TestOffsiteMiddleware(TestCase):
 
     def tearDown(self):
         self.mw.spider_closed(self.spider)
+
+
+class TestOffsiteMiddleware2(TestOffsiteMiddleware):
+
+    def _get_spider(self):
+        return BaseSpider('foo', allowed_domains=None)
+
+    def test_process_spider_output(self):
+        res = Response('http://scrapytest.org')
+        reqs = [Request('http://a.com/b.html'), Request('http://b.com/1')]
+        out = list(self.mw.process_spider_output(res, reqs, self.spider))
+        self.assertEquals(out, reqs)
+
+class TestOffsiteMiddleware3(TestOffsiteMiddleware2):
+
+    def _get_spider(self):
+        return BaseSpider('foo')
 

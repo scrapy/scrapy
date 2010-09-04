@@ -224,6 +224,11 @@ OffsiteMiddleware
    printed. But if a request for ``someothersite.com`` is filtered, a message
    will be printed (but only for the first request filtred).
 
+   If the spider doesn't define an
+   :attr:`~scrapy.spider.BaseSpider.allowed_domains` attribute, or the
+   attribute is empty, the offsite middleware will allow all requests.
+
+
 RefererMiddleware
 -----------------
 
