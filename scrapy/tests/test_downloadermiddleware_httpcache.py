@@ -88,6 +88,43 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
         self.assertEqualResponse(self.response, response)
         assert 'cached' in response.flags
 
+    def test_middleware_ignore_schemes(self):
+        # http responses are cached by default
+        req, res = Request('http://test.com/'), Response('http://test.com/')
+        mw = self._get_middleware()
+        assert mw.process_request(req, self.spider) is None
+        mw.process_response(req, res, self.spider)
+        cached = mw.process_request(req, self.spider)
+        assert isinstance(cached, Response), type(cached)
+        self.assertEqualResponse(res, cached)
+        assert 'cached' in cached.flags
+
+        # file response is not cached by default
+        req, res = Request('file:///tmp/t.txt'), Response('file:///tmp/t.txt')
+        mw = self._get_middleware()
+        assert mw.process_request(req, self.spider) is None
+        mw.process_response(req, res, self.spider)
+        assert mw.storage.retrieve_response(self.spider, req) is None
+        assert mw.process_request(req, self.spider) is None
+
+        # s3 scheme response is cached by default
+        req, res = Request('s3://bucket/key'), Response('http://bucket/key')
+        mw = self._get_middleware()
+        assert mw.process_request(req, self.spider) is None
+        mw.process_response(req, res, self.spider)
+        cached = mw.process_request(req, self.spider)
+        assert isinstance(cached, Response), type(cached)
+        self.assertEqualResponse(res, cached)
+        assert 'cached' in cached.flags
+
+        # ignore s3 scheme
+        req, res = Request('s3://bucket/key2'), Response('http://bucket/key2')
+        mw = self._get_middleware(HTTPCACHE_IGNORE_SCHEMES=['s3'])
+        assert mw.process_request(req, self.spider) is None
+        mw.process_response(req, res, self.spider)
+        assert mw.storage.retrieve_response(self.spider, req) is None
+        assert mw.process_request(req, self.spider) is None
+
     def test_middleware_ignore_http_codes(self):
         # test response is not cached
         mw = self._get_middleware(HTTPCACHE_IGNORE_HTTP_CODES=[202])

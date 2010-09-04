@@ -300,6 +300,17 @@ If enabled, requests not found in the cache will be ignored instead of downloade
 
 .. setting:: HTTPCACHE_STORAGE
 
+HTTPCACHE_IGNORE_SCHEMES
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 0.10
+
+Default: ``['file']``
+
+Don't cache responses with these URI schemes.
+
+.. setting:: HTTPCACHE_IGNORE_MISSING
+
 HTTPCACHE_STORAGE
 ^^^^^^^^^^^^^^^^^
 
