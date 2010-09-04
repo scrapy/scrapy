@@ -4,6 +4,8 @@
 Ubuntu packages
 ===============
 
+.. versionadded:: 0.10
+
 `Insophia`_ publishes apt-gettable packages which are generally fresher than
 those in Ubuntu, and more stable too since they're built periodically from
 `Scrapy Mercurial repositories`_ (stable & development) and so they contain the

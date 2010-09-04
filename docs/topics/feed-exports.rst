@@ -4,6 +4,8 @@
 Feed exports
 ============
 
+.. versionadded:: 0.10
+
 One of the most frequently required features when implementing scrapers is
 being able to store the scraped data properly and, quite often, that means
 generating a "export file" with the scraped data (commonly called "export

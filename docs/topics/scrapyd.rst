@@ -4,6 +4,8 @@
 Scrapy Service (scrapyd)
 ========================
 
+.. versionadded:: 0.10
+
 Scrapy comes with a built-in service, called "Scrapyd", which allows you to
 deploy (aka. upload) your projects and control their spiders using a JSON web
 service.

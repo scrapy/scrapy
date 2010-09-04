@@ -4,6 +4,8 @@
 Command line tool
 =================
 
+.. versionadded:: 0.10
+
 Scrapy is controlled through the ``scrapy`` command-line tool, to be referred
 here as the "Scrapy tool" to differentiate it from their sub-commands which we
 just call "commands", or "Scrapy commands".
