@@ -20,7 +20,7 @@ from twisted.python.zippath import ZipPath
 ZipPath.setContent = lambda x, y: None
 
 # monkey patches to fix external library issues
-from scrapy.xlib import twisted_250_monkeypatches
+from scrapy.xlib import twisted_250_monkeypatches, urlparse_monkeypatches
 
 # optional_features is a set containing Scrapy optional features
 optional_features = set()
