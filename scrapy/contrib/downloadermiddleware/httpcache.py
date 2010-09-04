@@ -79,7 +79,8 @@ class FilesystemCacheStorage(object):
             body = f.read()
         with open(join(rpath, 'response_headers'), 'rb') as f:
             rawheaders = f.read()
-        url = metadata['url']
+        # We failback to metadata['url'] to support old generated caches ' should be removed for Scrapy 0.11
+        url = metadata.get('response_url') or metadata['url']
         status = metadata['status']
         headers = Headers(headers_raw_to_dict(rawheaders))
         respcls = responsetypes.from_args(headers=headers, url=url)
@@ -95,6 +96,7 @@ class FilesystemCacheStorage(object):
             'url': request.url,
             'method': request.method,
             'status': response.status,
+            'response_url': response.url,
             'timestamp': time(),
         }
         with open(join(rpath, 'meta'), 'wb') as f:

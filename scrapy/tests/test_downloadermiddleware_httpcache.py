@@ -68,6 +68,17 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
         self.assertEqualResponse(self.response, response)
         assert 'cached' in response.flags
 
+    def test_different_request_response_urls(self):
+        mw = HttpCacheMiddleware(self._get_settings())
+        req = Request('http://host.com/path')
+        res = Response('http://host2.net/test.html')
+        assert mw.process_request(req, self.spider) is None
+        mw.process_response(req, res, self.spider)
+        cached = mw.process_request(req, self.spider)
+        assert isinstance(cached, Response)
+        self.assertEqualResponse(res, cached)
+        assert 'cached' in cached.flags
+
     def test_middleware_ignore_missing(self):
         mw = self._get_middleware(HTTPCACHE_IGNORE_MISSING=True)
         self.assertRaises(IgnoreRequest, mw.process_request, self.request, self.spider)
