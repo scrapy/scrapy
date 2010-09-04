@@ -298,7 +298,7 @@ Default: ``False``
 
 If enabled, requests not found in the cache will be ignored instead of downloaded. 
 
-.. setting:: HTTPCACHE_STORAGE
+.. setting:: HTTPCACHE_IGNORE_SCHEMES
 
 HTTPCACHE_IGNORE_SCHEMES
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -309,7 +309,7 @@ Default: ``['file']``
 
 Don't cache responses with these URI schemes.
 
-.. setting:: HTTPCACHE_IGNORE_SCHEMES
+.. setting:: HTTPCACHE_STORAGE
 
 HTTPCACHE_STORAGE
 ^^^^^^^^^^^^^^^^^
