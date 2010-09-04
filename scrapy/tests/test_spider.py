@@ -24,7 +24,6 @@ class BaseSpiderTest(unittest.TestCase):
         spider = self.spider_class("example.com")
         self.assertEqual(spider.name, 'example.com')
         self.assertEqual(spider.start_urls, [])
-        self.assertEqual(spider.allowed_domains, [])
 
     def test_spider_args(self):
         """Constructor arguments are assigned to spider attributes"""

@@ -26,8 +26,6 @@ class BaseSpider(object_ref):
         self.__dict__.update(kwargs)
         if not hasattr(self, 'start_urls'):
             self.start_urls = []
-        if not hasattr(self, 'allowed_domains'):
-            self.allowed_domains = []
 
     def log(self, message, level=log.DEBUG):
         """Log the given messages at the given log level. Always use this
