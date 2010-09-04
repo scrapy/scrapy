@@ -309,7 +309,7 @@ Default: ``['file']``
 
 Don't cache responses with these URI schemes.
 
-.. setting:: HTTPCACHE_IGNORE_MISSING
+.. setting:: HTTPCACHE_IGNORE_SCHEMES
 
 HTTPCACHE_STORAGE
 ^^^^^^^^^^^^^^^^^
