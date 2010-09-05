@@ -15,6 +15,7 @@ from scrapy.core.downloader.handlers.http import HttpRequestHandler
 from scrapy.core.downloader.handlers.s3 import S3RequestHandler
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
+from scrapy.utils.url import path_to_file_uri
 from scrapy import optional_features
 
 
@@ -33,7 +34,7 @@ class FileTestCase(unittest.TestCase):
             self.assertEquals(response.status, 200)
             self.assertEquals(response.body, '0123456789')
 
-        request = Request('file://%s' % self.tmpname + '^')
+        request = Request(path_to_file_uri(self.tmpname + '^'))
         assert request.url.upper().endswith('%5E')
         return self.download_request(request, BaseSpider('foo')).addCallback(_test)
 
