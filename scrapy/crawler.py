@@ -37,7 +37,9 @@ class Crawler(object):
         spq_cls = load_object(self.settings['SPIDER_QUEUE_CLASS'])
         spq = spq_cls.from_settings(self.settings)
         keepalive = self.settings.getbool('KEEP_ALIVE')
-        self.queue = ExecutionQueue(self.spiders, spq, keepalive)
+        pollint = self.settings.getfloat('QUEUE_POLL_INTERVAL')
+        self.queue = ExecutionQueue(self.spiders, spq, poll_interval=pollint,
+            keep_alive=keepalive)
         self.engine = ExecutionEngine(self.settings, self._spider_closed)
 
     @defer.inlineCallbacks
@@ -46,7 +48,7 @@ class Crawler(object):
         if spider:
             self._start_spider(spider, requests)
         if self.engine.has_capacity() and not self._nextcall.active():
-            self._nextcall = reactor.callLater(self.queue.polling_delay, \
+            self._nextcall = reactor.callLater(self.queue.poll_interval, \
                 self._spider_closed)
 
     @defer.inlineCallbacks

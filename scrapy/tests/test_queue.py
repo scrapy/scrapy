@@ -30,7 +30,7 @@ class ExecutionQueueTest(unittest.TestCase):
     keep_alive = False
 
     def setUp(self):
-        self.queue = ExecutionQueue(TestSpiderManager(), None, self.keep_alive)
+        self.queue = ExecutionQueue(TestSpiderManager(), None, keep_alive=self.keep_alive)
         self.spider = TestSpider()
         self.request = Request('about:none')
 

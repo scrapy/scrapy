@@ -8,13 +8,12 @@ from scrapy import log
 
 class ExecutionQueue(object):
 
-    polling_delay = 5
-
-    def __init__(self, spiders, queue, keepalive=False):
+    def __init__(self, spiders, queue, poll_interval=5, keep_alive=False):
         self.spider_requests = []
+        self.poll_interval = poll_interval
         self._spiders = spiders
         self._queue = queue
-        self._keepalive = keepalive
+        self._keepalive = keep_alive
 
     def _append_next(self):
         """Called when there are no more items left in self.spider_requests.

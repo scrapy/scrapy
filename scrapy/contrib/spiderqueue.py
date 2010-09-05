@@ -13,7 +13,6 @@ class SQSSpiderQueue(object):
     implements(ISpiderQueue)
 
     def __init__(self, *a, **kw):
-        self.polling_delay = kw.pop('polling_delay', 30)
         self.queue_name = kw.pop('queue_name', 'scrapy')
         self.region_name = kw.pop('region_name', 'us-east-1')
         self.visibility_timeout = kw.pop('visibility_timeout', 7200)
@@ -26,7 +25,6 @@ class SQSSpiderQueue(object):
     @classmethod
     def from_settings(cls, settings):
         return cls(
-            polling_delay=settings.getint('SQS_POLLING_DELAY'),
             queue_name=settings['SQS_QUEUE'],
             region_name=settings['SQS_REGION'],
             visibility_timeout=settings.getint('SQS_VISIBILITY_TIMEOUT'),
