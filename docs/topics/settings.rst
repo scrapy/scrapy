@@ -962,9 +962,9 @@ will be enabled (provided its extension is also enabled).
 TELNETCONSOLE_PORT
 ------------------
 
-Default: ``6023``
+Default: ``[6023, 6073]``
 
-The port to use for the telnet console. If set to ``None`` or ``0``, a
+The port range to use for the telnet console. If set to ``None`` or ``0``, a
 dynamically assigned port is used. For more info see
 :ref:`topics-telnetconsole`.
 

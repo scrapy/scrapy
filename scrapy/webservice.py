@@ -1,19 +1,19 @@
 """
 Scrapy web services extension
 
-See docs/topics/ws.rst
+See docs/topics/webservice.rst
 """
 
-from twisted.internet import reactor
 from twisted.web import server, error
 
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.exceptions import NotConfigured
-from scrapy import signals
+from scrapy import log, signals
 from scrapy.utils.jsonrpc import jsonrpc_server_call
 from scrapy.utils.serialize import ScrapyJSONEncoder, ScrapyJSONDecoder
 from scrapy.utils.misc import load_object
 from scrapy.utils.txweb import JsonResource as JsonResource_
+from scrapy.utils.reactor import listen_tcp
 from scrapy.utils.conf import build_component_list
 from scrapy.conf import settings
 
@@ -67,7 +67,7 @@ class WebService(server.Site):
         if not settings.getbool('WEBSERVICE_ENABLED'):
             raise NotConfigured
         logfile = settings['WEBSERVICE_LOGFILE']
-        self.portnum = settings.getint('WEBSERVICE_PORT')
+        self.portrange = map(int, settings.getlist('WEBSERVICE_PORT'))
         root = RootResource()
         reslist = build_component_list(settings['WEBSERVICE_RESOURCES_BASE'], \
             settings['WEBSERVICE_RESOURCES'])
@@ -80,7 +80,9 @@ class WebService(server.Site):
         dispatcher.connect(self.stop_listening, signals.engine_stopped)
 
     def start_listening(self):
-        self.port = reactor.listenTCP(self.portnum, self)
+        self.port = listen_tcp(self.portrange, self)
+        log.msg("Web service listening on port %d" % self.port.getHost().port,
+            log.DEBUG)
 
     def stop_listening(self):
         self.port.stopListening()

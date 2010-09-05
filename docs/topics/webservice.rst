@@ -131,10 +131,10 @@ the log is sent to standard scrapy log.
 WEBSERVICE_PORT
 ---------------
 
-Default: ``6080``
+Default: ``[6080, 7030]``
 
-The port to use for the web service. If set to ``None`` or ``0``, a dynamically
-assigned port is used.
+The port range to use for the web service. If set to ``None`` or ``0``, a
+dynamically assigned port is used.
 
 WEBSERVICE_RESOURCES
 --------------------

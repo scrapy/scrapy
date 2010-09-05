@@ -8,16 +8,17 @@ import pprint
 
 from twisted.conch import manhole, telnet
 from twisted.conch.insults import insults
-from twisted.internet import reactor, protocol
+from twisted.internet import protocol
 
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.exceptions import NotConfigured
 from scrapy.project import crawler
 from scrapy.stats import stats
-from scrapy import signals
+from scrapy import log, signals
 from scrapy.utils.signal import send_catch_log
 from scrapy.utils.trackref import print_live_refs
 from scrapy.utils.engine import print_engine_status
+from scrapy.utils.reactor import listen_tcp
 from scrapy.conf import settings
 
 try:
@@ -37,12 +38,14 @@ class TelnetConsole(protocol.ServerFactory):
         if not settings.getbool('TELNETCONSOLE_ENABLED'):
             raise NotConfigured
         self.noisy = False
-        self.portnum = settings.getint('TELNETCONSOLE_PORT')
+        self.portrange = map(int, settings.getlist('TELNETCONSOLE_PORT'))
         dispatcher.connect(self.start_listening, signals.engine_started)
         dispatcher.connect(self.stop_listening, signals.engine_stopped)
 
     def start_listening(self):
-        self.port = reactor.listenTCP(self.portnum, self)
+        self.port = listen_tcp(self.portrange, self)
+        log.msg("Telnet console listening on port %d" % self.port.getHost().port,
+            log.DEBUG)
 
     def stop_listening(self):
         self.port.stopListening()
