@@ -40,8 +40,8 @@ a project it would have printed something like this::
 
     [...]
 
-Using the ``scrapy`` tool to create projects
-============================================
+Creating projects
+-----------------
 
 The first thing you typically do with the ``scrapy`` tool is create your Scrapy
 project::
@@ -57,8 +57,8 @@ Next, you go inside the new project directory::
 And you're ready to use use the ``scrapy`` command to manage and control your
 project from there.
 
-Using the ``scrapy`` tool to control projects
-=============================================
+Controlling projects
+--------------------
 
 You use the ``scrapy`` tool from inside your projects to control and manage
 them.
@@ -83,25 +83,47 @@ downloading pages.
 Available tool commands
 =======================
 
-Here's a list of available built-in commands with a description and some usage
-examples. Remember you can always get more info about each command by running::
+This section contains a list of the available built-in commands with a
+description and some usage examples. Remember you can always get more info
+about each command by running::
 
     scrapy <command> -h
 
-And you can check all available commands with::
+And you can see all available commands with::
 
     scrapy -h
+
+There are two kinds of commands, those that only work from inside a Scrapy
+project (Project-specific commands) and those that also work without an active
+Scrapy project (Global commands), though they may behave slightly different
+when running from inside a project (as they would use the project overriden
+settings).
+
+Global commands:
+
+* :command:`startproject`
+* :command:`settings`
+* :command:`runspider`
+* :command:`shell`
+* :command:`fetch`
+* :command:`view`
+
+Project-only commands:
+
+* :command:`crawl`
+* :command:`list`
+* :command:`parse`
+* :command:`genspider`
+* :command:`runserver`
+* :command:`queue`
 
 .. command:: startproject
 
 startproject
 ------------
 
-+-------------------+----------------------------------------+
-| Syntax:           | ``scrapy startproject <project_name>`` |
-+-------------------+----------------------------------------+
-| Requires project: | *no*                                   |
-+-------------------+----------------------------------------+
+* Syntax: ``scrapy startproject <project_name>``
+* Requires project: *no*
 
 Creates a new Scrapy project named ``project_name``, under the ``project_name``
 directory.
@@ -115,11 +137,8 @@ Usage example::
 genspider
 ---------
 
-+-------------------+----------------------------------------------------+
-| Syntax:           | ``scrapy genspider [-t template] <name> <domain>`` |
-+-------------------+----------------------------------------------------+
-| Requires project: | *yes*                                              |
-+-------------------+----------------------------------------------------+
+* Syntax: ``scrapy genspider [-t template] <name> <domain>``
+* Requires project: *yes*
 
 Create a new spider in the current project.
 
@@ -159,11 +178,8 @@ Usage example::
 crawl
 -----
 
-+-------------------+-------------------------------+
-| Syntax:           | ``scrapy crawl <spider|url>`` |
-+-------------------+-------------------------------+
-| Requires project: | *yes*                         |
-+-------------------+-------------------------------+
+* Syntax: ``scrapy crawl <spider|url>``
+* Requires project: *yes*
 
 Start crawling a spider. If a URL is passed instead of a spider, it will start
 from that URL instead of the spider start urls.
@@ -184,11 +200,8 @@ Usage examples::
 runserver
 ---------
 
-+-------------------+----------------------+
-| Syntax:           | ``scrapy runserver`` |
-+-------------------+----------------------+
-| Requires project: | *yes*                |
-+-------------------+----------------------+
+* Syntax: ``scrapy runserver``
+* Requires project: *yes*
 
 Start Scrapy in server mode, which can be controlled by the :command:`queue`
 command.
@@ -206,11 +219,8 @@ there were spiders already enqueued, it will start crawling them.
 list
 ----
 
-+-------------------+-----------------+
-| Syntax:           | ``scrapy list`` |
-+-------------------+-----------------+
-| Requires project: | *yes*           |
-+-------------------+-----------------+
+* Syntax: ``scrapy list``
+* Requires project: *yes*
 
 List all available spiders in the current project. The output is one spider per
 line.
@@ -226,11 +236,8 @@ Usage example::
 fetch
 -----
 
-+-------------------+------------------------+
-| Syntax:           | ``scrapy fetch <url>`` |
-+-------------------+------------------------+
-| Requires project: | *no*                   |
-+-------------------+------------------------+
+* Syntax: ``scrapy fetch <url>``
+* Requires project: *no*
 
 Downloads the given URL using the Scrapy downloader and writes the contents to
 standard output.
@@ -265,11 +272,8 @@ Usage examples::
 view
 ----
 
-+-------------------+-----------------------+
-| Syntax:           | ``scrapy view <url>`` |
-+-------------------+-----------------------+
-| Requires project: | *no*                  |
-+-------------------+-----------------------+
+* Syntax: ``scrapy view <url>``
+* Requires project: *no*
 
 Opens the given URL in a browser, as your Scrapy spider would "see" it.
 Sometimes spiders see pages differently from regular users, so this can be used
@@ -285,11 +289,8 @@ Usage example::
 shell
 -----
 
-+-------------------+------------------------+
-| Syntax:           | ``scrapy shell [url]`` |
-+-------------------+------------------------+
-| Requires project: | *no*                   |
-+-------------------+------------------------+
+* Syntax: ``scrapy shell [url]``
+* Requires project: *no*
 
 Starts the Scrapy shell for the given URL (if given) or empty if not URL is
 given. See :ref:`topics-shell` for more info.
@@ -304,26 +305,24 @@ Usage example::
 parse
 -----
 
-+-------------------+----------------------------------+
-| Syntax:           | ``scrapy parse <url> [options]`` |
-+-------------------+----------------------------------+
-| Requires project: | *yes*                            |
-+-------------------+----------------------------------+
+* Syntax: ``scrapy parse <url> [options]``
+* Requires project: *yes*
 
 Fetches the given URL and parses with the spider that handles it, using the
 method passed with the ``--callback`` option, or ``parse`` if not given.
 
 Supported options:
 
- * ``--callback`` or ``-c``: spider method to use as callback for parsing the
-   response
+* ``--callback`` or ``-c``: spider method to use as callback for parsing the
+  response
 
- * ``--rules`` or ``-r``: use :class:`~scrapy.contrib.spiders.CrawlSpider`
-   rules to discover the callback (ie. spider method) for parsing the response
+* ``--rules`` or ``-r``: use :class:`~scrapy.contrib.spiders.CrawlSpider`
+  rules to discover the callback (ie. spider method) to use for parsing the
+  response
 
- * ``--noitems``: don't show extracted links
+* ``--noitems``: don't show extracted links
 
- * ``--nolinks``: don't show scraped items
+* ``--nolinks``: don't show scraped items
 
 Usage example::
 
@@ -340,11 +339,8 @@ Usage example::
 settings
 --------
 
-+-------------------+-------------------------------+
-| Syntax:           | ``scrapy settings [options]`` |
-+-------------------+-------------------------------+
-| Requires project: | *no*                          |
-+-------------------+-------------------------------+
+* Syntax: ``scrapy settings [options]``
+* Requires project: *no*
 
 Get the value of a Scrapy setting.
 
@@ -363,11 +359,8 @@ Example usage::
 runspider
 ---------
 
-+-------------------+---------------------------------------+
-| Syntax:           | ``scrapy runspider <spider_file.py>`` |
-+-------------------+---------------------------------------+
-| Requires project: | *no*                                  |
-+-------------------+---------------------------------------+
+* Syntax: ``scrapy runspider <spider_file.py>``
+* Requires project: *no*
 
 Run a spider self-contained in a Python file, without having to create a
 project.
@@ -382,11 +375,8 @@ Example usage::
 queue
 -----
 
-+-------------------+----------------------------------------------+
-| Syntax:           | ``scrapy queue <list|clear|add spider1 ..>`` |
-+-------------------+----------------------------------------------+
-| Requires project: | *yes*                                        |
-+-------------------+----------------------------------------------+
+* Syntax: ``scrapy queue <list|clear|count|add spider1 ..>``
+* Requires project: *yes*
 
 Manage the execution queue of a Scrapy project.
 
@@ -408,3 +398,34 @@ You can also view the spiders enqueued but not yet started::
 And clear the queue::
 
     $ scrapy queue clear
+
+version
+-------
+
+* Syntax: ``scrapy version``
+* Requires project: *no*
+
+Prints the Scrapy version.
+
+
+Custom project commands
+=======================
+
+You can also add your custom project commands by using the
+:setting:`COMMANDS_MODULE` setting. See the Scrapy commands in
+`scrapy/commands`_ for examples on how to implement your commands.
+
+.. _scrapy/commands: http://dev.scrapy.org/browser/scrapy/commands
+.. setting:: COMMANDS_MODULE
+
+COMMANDS_MODULE
+---------------
+
+Default: ``''`` (empty string)
+
+A module to use for looking custom Scrapy commands. This is used to add custom
+commands for your Scrapy project.
+
+Example::
+
+    COMMANDS_MODULE = 'mybot.commands'

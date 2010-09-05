@@ -246,20 +246,6 @@ Default: ``1.0``
 The version of the bot implemented by this Scrapy project. This will be used to
 construct the User-Agent by default.
 
-.. setting:: COMMANDS_MODULE
-
-COMMANDS_MODULE
----------------
-
-Default: ``''`` (empty string)
-
-A module to use for looking for custom Scrapy commands. This is used to add
-custom commands for your Scrapy project.
-
-Example::
-
-    COMMANDS_MODULE = 'mybot.commands'
-
 .. setting:: CONCURRENT_ITEMS
 
 CONCURRENT_ITEMS
