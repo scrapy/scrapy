@@ -23,9 +23,7 @@ Designating the settings
 ========================
 
 When you use Scrapy, you have to tell it which settings you're using. You can
-do this by using an environment variable, ``SCRAPY_SETTINGS_MODULE``, or the
-``--settings`` argument of the :doc:`scrapy command-line tool
-</topics/commands>`.
+do this by using an environment variable, ``SCRAPY_SETTINGS_MODULE``.
 
 The value of ``SCRAPY_SETTINGS_MODULE`` should be in Python path syntax, e.g.
 ``myproject.settings``. Note that the settings module should be on the
@@ -118,59 +116,70 @@ to do that you'll have to use one of the following methods:
 
 .. class:: Settings()
 
-   The Settings object is automatically instantiated when the
+   There is a (singleton) Settings object automatically instantiated when the
    :mod:`scrapy.conf` module is loaded, and it's usually accessed like this::
 
    >>> from scrapy.conf import settings
 
-.. method:: Settings.get(name, default=None)
+    .. method:: get(name, default=None)
 
-   Get a setting value without affecting its original type.
+       Get a setting value without affecting its original type.
 
-   ``name`` is a string with the setting name
+       :param name: the setting name
+       :type name: string
 
-   ``default`` is the value to return if no setting is found
+       :param default: the value to return if no setting is found
+       :type default: any
 
-.. method:: Settings.getbool(name, default=False)
+    .. method:: getbool(name, default=False)
 
-   Get a setting value as a boolean. For example, both ``1`` and ``'1'``, and
-   ``True`` return ``True``, while ``0``, ``'0'``, ``False`` and ``None``
-   return ``False````
+       Get a setting value as a boolean. For example, both ``1`` and ``'1'``, and
+       ``True`` return ``True``, while ``0``, ``'0'``, ``False`` and ``None``
+       return ``False````
 
-   For example, settings populated through environment variables set to ``'0'``
-   will return ``False`` when using this method.
+       For example, settings populated through environment variables set to ``'0'``
+       will return ``False`` when using this method.
 
-   ``name`` is a string with the setting name
+       :param name: the setting name
+       :type name: string
 
-   ``default`` is the value to return if no setting is found
+       :param default: the value to return if no setting is found
+       :type default: any
 
-.. method:: Settings.getint(name, default=0)
+    .. method:: getint(name, default=0)
 
-   Get a setting value as an int
+       Get a setting value as an int
 
-   ``name`` is a string with the setting name
+       :param name: the setting name
+       :type name: string
 
-   ``default`` is the value to return if no setting is found
+       :param default: the value to return if no setting is found
+       :type default: any
 
-.. method:: Settings.getfloat(name, default=0.0)
+    .. method:: getfloat(name, default=0.0)
 
-   Get a setting value as a float
+       Get a setting value as a float
 
-   ``name`` is a string with the setting name
+       :param name: the setting name
+       :type name: string
 
-   ``default`` is the value to return if no setting is found
+       :param default: the value to return if no setting is found
+       :type default: any
 
-.. method:: Settings.getlist(name, default=None)
+    .. method:: getlist(name, default=None)
 
-   Get a setting value as a list. If the setting original type is a list it
-   will be returned verbatim. If it's a string it will be split by ",".
+       Get a setting value as a list. If the setting original type is a list it
+       will be returned verbatim. If it's a string it will be split by ",".
 
-   For example, settings populated through environment variables set to
-   ``'one,two'`` will return a list ['one', 'two'] when using this method.
+       For example, settings populated through environment variables set to
+       ``'one,two'`` will return a list ['one', 'two'] when using this method.
 
-   ``name`` is a string with the setting name
+       :param name: the setting name
+       :type name: string
 
-   ``default`` is the value to return if no setting is found
+       :param default: the value to return if no setting is found
+       :type default: any
+
 
 Rationale for setting names
 ===========================
@@ -537,24 +546,6 @@ built-in extensions.
 For more information See the :ref:`extensions user guide  <topics-extensions>`
 and the :ref:`list of available extensions <topics-extensions-ref>`.
 
-.. setting:: GROUPSETTINGS_ENABLED
-
-GROUPSETTINGS_ENABLED
----------------------
-
-Default: ``False``
-
-Whether to enable group settings where spiders pull their settings from.
-
-.. setting:: GROUPSETTINGS_MODULE
-
-GROUPSETTINGS_MODULE
---------------------
-
-Default: ``''`` (empty string)
-
-The module to use for pulling settings from, if group settings are enabled. 
-
 .. setting:: ITEM_PIPELINES
 
 ITEM_PIPELINES
@@ -772,7 +763,7 @@ restrict automatic redirection to a maximum delay (in seconds)
 .. setting:: REDIRECT_PRIORITY_ADJUST
 
 REDIRECT_PRIORITY_ADJUST
-------------------------------
+------------------------
 
 Default: ``+2``
 
@@ -800,6 +791,7 @@ Default::
         'file': 'scrapy.core.downloader.handlers.file.download_file',
         'http': 'scrapy.core.downloader.handlers.http.download_http',
         'https': 'scrapy.core.downloader.handlers.http.download_http',
+        's3': 'scrapy.core.downloader.handlers.s3.S3RequestHandler',
     }
 
 A dict containing the request download handlers enabled by default in Scrapy.

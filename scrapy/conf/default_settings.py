@@ -136,9 +136,6 @@ FEED_EXPORTERS_BASE = {
     'xml': 'scrapy.contrib.exporter.XmlItemExporter',
 }
 
-GROUPSETTINGS_ENABLED = False
-GROUPSETTINGS_MODULE = ''
-
 HTTPCACHE_DIR = ''
 HTTPCACHE_IGNORE_MISSING = False
 HTTPCACHE_STORAGE = 'scrapy.contrib.downloadermiddleware.httpcache.FilesystemCacheStorage'
