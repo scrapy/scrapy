@@ -42,6 +42,15 @@ DEPTH_LIMIT = 0
 DEPTH_STATS = True
 
 DOWNLOAD_DELAY = 0
+
+DOWNLOAD_HANDLERS = {}
+DOWNLOAD_HANDLERS_BASE = {
+    'file': 'scrapy.core.downloader.handlers.file.FileDownloadHandler',
+    'http': 'scrapy.core.downloader.handlers.http.HttpDownloadHandler',
+    'https': 'scrapy.core.downloader.handlers.http.HttpDownloadHandler',
+    's3': 'scrapy.core.downloader.handlers.s3.S3DownloadHandler',
+}
+
 DOWNLOAD_TIMEOUT = 180      # 3mins
 
 DOWNLOADER_DEBUG = False
@@ -182,14 +191,6 @@ RANDOMIZE_DOWNLOAD_DELAY = True
 REDIRECT_MAX_METAREFRESH_DELAY = 100
 REDIRECT_MAX_TIMES = 20 # uses Firefox default setting
 REDIRECT_PRIORITY_ADJUST = +2
-
-REQUEST_HANDLERS = {}
-REQUEST_HANDLERS_BASE = {
-    'file': 'scrapy.core.downloader.handlers.file.FileRequestHandler',
-    'http': 'scrapy.core.downloader.handlers.http.HttpRequestHandler',
-    'https': 'scrapy.core.downloader.handlers.http.HttpRequestHandler',
-    's3': 'scrapy.core.downloader.handlers.s3.S3RequestHandler',
-}
 
 REQUESTS_QUEUE_SIZE = 0
 

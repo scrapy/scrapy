@@ -416,6 +416,34 @@ Another way to change the download delay (per spider, instead of globally) is
 by using the ``download_delay`` spider attribute, which takes more precedence
 than this setting.
 
+.. setting:: DOWNLOAD_HANDLERS
+
+DOWNLOAD_HANDLERS
+-----------------
+
+Default: ``{}``
+
+A dict containing the request downloader handlers enabled in your project.
+See `DOWNLOAD_HANDLERS_BASE` for example format.
+
+.. setting:: DOWNLOAD_HANDLERS_BASE
+
+DOWNLOAD_HANDLERS_BASE
+----------------------
+
+Default:: 
+
+    {
+        'file': 'scrapy.core.downloader.handlers.file.FileDownloadHandler',
+        'http': 'scrapy.core.downloader.handlers.http.HttpDownloadHandler',
+        'https': 'scrapy.core.downloader.handlers.http.HttpDownloadHandler',
+        's3': 'scrapy.core.downloader.handlers.s3.S3DownloadHandler',
+    }
+
+A dict containing the request download handlers enabled by default in Scrapy.
+You should never modify this setting in your project, modify
+:setting:`DOWNLOAD_HANDLERS` instead. 
+
 .. setting:: DOWNLOAD_TIMEOUT
 
 DOWNLOAD_TIMEOUT
@@ -755,34 +783,6 @@ Default: ``+2``
 
 Adjust redirect request priority relative to original request.
 A negative priority adjust means more priority.
-
-.. setting:: REQUEST_HANDLERS
-
-REQUEST_HANDLERS
-----------------
-
-Default: ``{}``
-
-A dict containing the request downloader handlers enabled in your project.
-See `REQUEST_HANDLERS_BASE` for example format.
-
-.. setting:: REQUEST_HANDLERS_BASE
-
-REQUEST_HANDLERS_BASE
----------------------
-
-Default:: 
-
-    {
-        'file': 'scrapy.core.downloader.handlers.file.download_file',
-        'http': 'scrapy.core.downloader.handlers.http.download_http',
-        'https': 'scrapy.core.downloader.handlers.http.download_http',
-        's3': 'scrapy.core.downloader.handlers.s3.S3RequestHandler',
-    }
-
-A dict containing the request download handlers enabled by default in Scrapy.
-You should never modify this setting in your project, modify
-:setting:`REQUEST_HANDLERS` instead. 
 
 .. setting:: REQUESTS_QUEUE_SIZE
 

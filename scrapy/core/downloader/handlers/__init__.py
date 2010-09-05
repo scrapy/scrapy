@@ -6,13 +6,13 @@ from scrapy.conf import settings
 from scrapy.utils.misc import load_object
 
 
-class RequestHandlers(object):
+class DownloadHandlers(object):
 
     def __init__(self):
         self._handlers = {}
         self._notconfigured = {}
-        handlers = settings.get('REQUEST_HANDLERS_BASE')
-        handlers.update(settings.get('REQUEST_HANDLERS', {}))
+        handlers = settings.get('DOWNLOAD_HANDLERS_BASE')
+        handlers.update(settings.get('DOWNLOAD_HANDLERS', {}))
         for scheme, clspath in handlers.iteritems():
             cls = load_object(clspath)
             try:

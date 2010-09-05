@@ -17,7 +17,7 @@ HTTPClientFactory = load_object(settings['DOWNLOADER_HTTPCLIENTFACTORY'])
 DOWNLOAD_TIMEOUT = settings.getint('DOWNLOAD_TIMEOUT')
 
 
-class HttpRequestHandler(object):
+class HttpDownloadHandler(object):
 
     def __init__(self, httpclientfactory=HTTPClientFactory, \
             download_timeout=DOWNLOAD_TIMEOUT):

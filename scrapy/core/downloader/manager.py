@@ -13,7 +13,7 @@ from scrapy.conf import settings
 from scrapy.utils.defer import mustbe_deferred
 from scrapy import log
 from .middleware import DownloaderMiddlewareManager
-from .handlers import RequestHandlers
+from .handlers import DownloadHandlers
 
 
 class SpiderInfo(object):
@@ -71,7 +71,7 @@ class Downloader(object):
 
     def __init__(self):
         self.sites = {}
-        self.handlers = RequestHandlers()
+        self.handlers = DownloadHandlers()
         self.middleware = DownloaderMiddlewareManager()
         self.concurrent_spiders = settings.getint('CONCURRENT_SPIDERS')
 
