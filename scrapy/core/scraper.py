@@ -160,10 +160,7 @@ class Scraper(object):
         """Process each Request/Item (given in the output parameter) returned
         from the given spider
         """
-        # TODO: keep closing state internally instead of checking engine
-        if spider in self.engine.closing:
-            return
-        elif isinstance(output, Request):
+        if isinstance(output, Request):
             send_catch_log(signal=signals.request_received, request=output, \
                 spider=spider)
             self.engine.crawl(request=output, spider=spider)
