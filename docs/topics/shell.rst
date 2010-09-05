@@ -132,17 +132,30 @@ After that, we can star playing with the objects::
 
     >>> hxs.select("//h2/text()").extract()[0]
     u'Welcome to Scrapy'
+
     >>> fetch("http://slashdot.org")
-    Fetching <http://slashdot.org>...
-    Done - use shelp() to see available objects
+    [s] Available Scrapy objects:
+    [s]   hxs        <HtmlXPathSelector (http://slashdot.org) xpath=None>
+    [s]   item       JobItem()
+    [s]   request    <GET http://slashdot.org>
+    [s]   response   <200 http://slashdot.org>
+    [s]   settings   <Settings 'jobsbot.settings'>
+    [s]   spider     <BaseSpider 'default' at 0x3c44a10>
+    [s]   xxs        <XmlXPathSelector (http://slashdot.org) xpath=None>
+    [s] Useful shortcuts:
+    [s]   shelp()           Shell help (print this help)
+    [s]   fetch(req_or_url) Fetch request (or URL) and update local objects
+    [s]   view(response)    View response in a browser
+
     >>> hxs.select("//h2/text()").extract()
     [u'News for nerds, stuff that matters']
-    >>> request = request.replace(method="POST")
-    >>> fetch(request)
-    Fetching <POST http://slashdot.org>...
-    2009-04-03 00:57:39-0300 [scrapybot] ERROR: Downloading <http://slashdot.org> from <None>: 405 Method Not Allowed
-    >>> 
 
+    >>> request = request.replace(method="POST")
+
+    >>> fetch(request)
+    2009-04-03 00:57:39-0300 [default] ERROR: Downloading <http://slashdot.org> from <None>: 405 Method Not Allowed
+
+    >>> 
 
 .. _topics-shell-inspect-response:
 
@@ -171,9 +184,9 @@ When you run the spider, you will get something similar to this::
 
     2009-08-27 19:15:25-0300 [example.com] DEBUG: Crawled <http://www.example.com/> (referer: <None>)
     2009-08-27 19:15:26-0300 [example.com] DEBUG: Crawled <http://www.example.com/products.php> (referer: <http://www.example.com/>)
-
-    Scrapy Shell - inspecting response: <http://www.example.com/products.php
-    Use shelp() to see available objects
+    [s] Available objects
+    [s]   hxs       <HtmlXPathSelector (http://www.example.com/products.php) xpath=None>
+    ...
 
     >>> response.url
     'http://www.example.com/products.php'
