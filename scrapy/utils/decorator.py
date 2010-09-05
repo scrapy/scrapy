@@ -1,6 +1,8 @@
 import warnings
 from functools import wraps
 
+from twisted.internet.defer import maybeDeferred
+
 
 def deprecated(use_instead=None):
     """This is a decorator which can be used to mark functions
@@ -16,4 +18,11 @@ def deprecated(use_instead=None):
             warnings.warn(message, category=DeprecationWarning, stacklevel=2)
             return func(*args, **kwargs)
         return new_func
+    return wrapped
+
+def defers(func):
+    """Decorator to make sure a function always returns a deferred"""
+    @wraps(func)
+    def wrapped(*a, **kw):
+        return maybeDeferred(func, *a, **kw)
     return wrapped
