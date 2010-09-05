@@ -25,7 +25,7 @@ For Ubuntu Lucid (10.04) and Ubuntu Karmic (9.10)::
 The public GPG key used to sign these packages can be imported into you APT
 keyring as follows::
 
-    curl -s http://archive.scrapy.org/debian/archive.key | sudo apt-key add -
+    curl -s http://archive.scrapy.org/ubuntu/archive.key | sudo apt-key add -
 
 .. _Insophia: http://insophia.com/
 .. _Scrapy Mercurial repositories: http://hg.scrapy.org/
