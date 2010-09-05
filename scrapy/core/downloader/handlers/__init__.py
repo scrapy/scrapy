@@ -31,6 +31,3 @@ class RequestHandlers(object):
                     'no handler available for that scheme')
             raise NotSupported("Unsupported URL scheme '%s': %s" % (scheme, msg))
         return handler(request, spider)
-
-
-download_any = RequestHandlers().download_request

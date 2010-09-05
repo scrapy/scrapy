@@ -13,7 +13,7 @@ from scrapy.conf import settings
 from scrapy.utils.defer import mustbe_deferred
 from scrapy import log
 from .middleware import DownloaderMiddlewareManager
-from .handlers import download_any
+from .handlers import RequestHandlers
 
 
 class SpiderInfo(object):
@@ -71,6 +71,7 @@ class Downloader(object):
 
     def __init__(self):
         self.sites = {}
+        self.handlers = RequestHandlers()
         self.middleware = DownloaderMiddlewareManager()
         self.concurrent_spiders = settings.getint('CONCURRENT_SPIDERS')
 
@@ -145,7 +146,7 @@ class Downloader(object):
         # The order is very important for the following deferreds. Do not change!
 
         # 1. Create the download deferred
-        dfd = mustbe_deferred(download_any, request, spider)
+        dfd = mustbe_deferred(self.handlers.download_request, request, spider)
 
         # 2. After response arrives,  remove the request from transferring
         # state to free up the transferring slot so it can be used by the
