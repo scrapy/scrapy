@@ -11,6 +11,8 @@ from urlparse import urlparse
 from ftplib import FTP
 from shutil import copyfileobj
 
+from zope.interface import Interface, implements
+
 from twisted.internet import defer, threads
 from scrapy import log, signals
 from scrapy.xlib.pydispatch import dispatcher
@@ -20,7 +22,20 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.url import file_uri_to_path
 from scrapy.conf import settings
 
+
+class IFeedStorage(Interface):
+    """Interface that all Feed Storages must implement"""
+
+    def __init__(uri):
+        """Initialize the storage with the parameters given in the URI"""
+
+    def store(file, spider):
+        """Store the given file stream"""
+
+
 class BlockingFeedStorage(object):
+
+    implements(IFeedStorage)
 
     def store(self, file, spider):
         return threads.deferToThread(self._store_in_thread, file, spider)
@@ -31,11 +46,13 @@ class BlockingFeedStorage(object):
 
 class StdoutFeedStorage(object):
 
-    def __init__(self, uri):
-        pass
+    implements(IFeedStorage)
+
+    def __init__(self, uri, _stdout=sys.stdout):
+        self._stdout = _stdout
 
     def store(self, file, spider):
-        copyfileobj(file, sys.stdout)
+        copyfileobj(file, self._stdout)
 
 
 class FileFeedStorage(BlockingFeedStorage):

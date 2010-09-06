@@ -1,11 +1,12 @@
 import os, urlparse
 
+from zope.interface.verify import verifyObject
 from twisted.trial import unittest
 from twisted.internet import defer
 from cStringIO import StringIO
 
 from scrapy.spider import BaseSpider
-from scrapy.contrib.feedexport import FileFeedStorage, FTPFeedStorage, S3FeedStorage
+from scrapy.contrib.feedexport import IFeedStorage, FileFeedStorage, FTPFeedStorage, S3FeedStorage, StdoutFeedStorage
 from scrapy.utils.url import path_to_file_uri
 from scrapy.utils.test import assert_aws_environ
 
@@ -19,7 +20,6 @@ class FeedStorageTest(unittest.TestCase):
         # again, to check files are overwritten properly
         yield storage.store(StringIO("new content"), BaseSpider("default"))
         self.failUnlessEqual(open(path).read(), "new content")
-
 
 class FileFeedStorageTest(FeedStorageTest):
 
@@ -42,6 +42,11 @@ class FileFeedStorageTest(FeedStorageTest):
         path = self.mktemp()
         return self._assert_stores(FileFeedStorage(path), path)
 
+    def test_interface(self):
+        path = self.mktemp()
+        st = FileFeedStorage(path)
+        verifyObject(IFeedStorage, st)
+
 
 class FTPFeedStorageTest(FeedStorageTest):
 
@@ -50,7 +55,9 @@ class FTPFeedStorageTest(FeedStorageTest):
         path = os.environ.get('FEEDTEST_FTP_PATH')
         if not (uri and path):
             raise unittest.SkipTest("No FTP server available for testing")
-        return self._assert_stores(FTPFeedStorage(uri), path)
+        st = FTPFeedStorage(uri)
+        verifyObject(IFeedStorage, st)
+        return self._assert_stores(st, path)
 
 
 class S3FeedStorageTest(unittest.TestCase):
@@ -63,8 +70,17 @@ class S3FeedStorageTest(unittest.TestCase):
             raise unittest.SkipTest("No S3 URI available for testing")
         from boto import connect_s3
         storage = S3FeedStorage(uri)
+        verifyObject(IFeedStorage, storage)
         yield storage.store(StringIO("content"), BaseSpider("default"))
         u = urlparse.urlparse(uri)
         key = connect_s3().get_bucket(u.hostname, validate=False).get_key(u.path)
         self.failUnlessEqual(key.get_contents_as_string(), "content")
 
+class StdoutFeedStorageTest(FeedStorageTest):
+
+    @defer.inlineCallbacks
+    def test_store(self):
+        out = StringIO()
+        storage = StdoutFeedStorage('stdout:', _stdout=out)
+        yield storage.store(StringIO("content"), BaseSpider("default"))
+        self.assertEqual(out.getvalue(), "content")
