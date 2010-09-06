@@ -1,3 +1,4 @@
+from base64 import urlsafe_b64encode
 
 def headers_raw_to_dict(headers_raw):
     """
@@ -55,4 +56,6 @@ def headers_dict_to_raw(headers_dict):
     return '\r\n'.join(raw_lines)
 
 
-
+def basic_auth_header(username, password):
+    """Return `Authorization` header for HTTP Basic Access Authentication (RFC 2617)"""
+    return 'Basic ' + urlsafe_b64encode("%s:%s" % (username, password))

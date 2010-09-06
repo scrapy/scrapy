@@ -16,9 +16,7 @@ class TestDefaultHeadersMiddleware(TestCase):
 
     def test_process_request(self):
         req = Request('http://www.scrapytest.org')
-        self.mw.spider_opened(self.spider)
         self.mw.process_request(req, self.spider)
-        self.mw.spider_closed(self.spider)
         self.assertEquals(req.headers, self.default_request_headers)
 
     def test_spider_default_request_headers(self):
@@ -30,9 +28,7 @@ class TestDefaultHeadersMiddleware(TestCase):
         self.spider.default_request_headers = spider_headers
 
         req = Request('http://www.scrapytest.org')
-        self.mw.spider_opened(self.spider)
         self.mw.process_request(req, self.spider)
-        self.mw.spider_closed(self.spider)
         self.assertEquals(req.headers, dict(self.default_request_headers, **spider_headers))
 
     def test_update_headers(self):
@@ -40,9 +36,7 @@ class TestDefaultHeadersMiddleware(TestCase):
         req = Request('http://www.scrapytest.org', headers=headers)
         self.assertEquals(req.headers, headers)
 
-        self.mw.spider_opened(self.spider)
         self.mw.process_request(req, self.spider)
-        self.mw.spider_closed(self.spider)
         self.default_request_headers.update(headers)
         self.assertEquals(req.headers, self.default_request_headers)
 

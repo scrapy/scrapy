@@ -3,27 +3,26 @@ DefaultHeaders downloader middleware
 
 See documentation in docs/topics/downloader-middleware.rst
 """
-from scrapy.conf import settings
-from scrapy.xlib.pydispatch import dispatcher
-from scrapy import signals
+from scrapy import conf
+from scrapy.utils.python import WeakKeyCache
 
 
 class DefaultHeadersMiddleware(object):
 
-    def __init__(self):
+    def __init__(self, settings=conf.settings):
         self.global_default_headers = settings.get('DEFAULT_REQUEST_HEADERS')
-        self._default_headers = {}
-        dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
-        dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
+        self._headers = WeakKeyCache(self._default_headers)
+
+    def _default_headers(self, spider):
+        headers = dict(self.global_default_headers)
+        spider_headers = getattr(spider, 'default_request_headers', None) or {}
+        for k, v in spider_headers.iteritems():
+            if v:
+                headers[k] = v
+            else:
+                headers.pop(k, None)
+        return headers.items()
 
     def process_request(self, request, spider):
-        for k, v in self._default_headers[spider].iteritems():
-            if v:
-                request.headers.setdefault(k, v)
-
-    def spider_opened(self, spider):
-        self._default_headers[spider] = dict(self.global_default_headers,
-                **getattr(spider, 'default_request_headers', {}))
-
-    def spider_closed(self, spider):
-        self._default_headers.pop(spider)
+        for k, v in self._headers[spider]:
+            request.headers.setdefault(k, v)

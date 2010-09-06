@@ -11,6 +11,7 @@ import weakref
 from functools import wraps
 from sgmllib import SGMLParser
 
+
 class FixedSGMLParser(SGMLParser):
     """The SGMLParser that comes with Python has a bug in the convert_charref()
     method. This is the same class with the bug fixed"""
@@ -179,3 +180,14 @@ def equal_attributes(obj1, obj2, attributes):
     # all attributes equal
     return True
 
+
+class WeakKeyCache(object):
+
+    def __init__(self, default_factory):
+        self.default_factory = default_factory
+        self._weakdict = weakref.WeakKeyDictionary()
+
+    def __getitem__(self, key):
+        if key not in self._weakdict:
+            self._weakdict[key] = self.default_factory(key)
+        return self._weakdict[key]

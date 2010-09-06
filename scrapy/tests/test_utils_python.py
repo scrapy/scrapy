@@ -1,8 +1,10 @@
 import operator
 import unittest
+from itertools import count
 
 from scrapy.utils.python import str_to_unicode, unicode_to_str, \
-    memoizemethod_noargs, isbinarytext, equal_attributes
+    memoizemethod_noargs, isbinarytext, equal_attributes, \
+    WeakKeyCache
 
 class UtilsPythonTestCase(unittest.TestCase):
     def test_str_to_unicode(self):
@@ -107,6 +109,19 @@ class UtilsPythonTestCase(unittest.TestCase):
         # fail z equality
         a.meta['z'] = 2
         self.failIf(equal_attributes(a, b, [compare_z, 'x']))
+
+    def test_weakkeycache(self):
+        class _Weakme(object): pass
+        _values = count()
+        wk = WeakKeyCache(lambda k: _values.next())
+        k = _Weakme()
+        v = wk[k]
+        self.assertEqual(v, wk[k])
+        self.assertNotEqual(v, wk[_Weakme()])
+        self.assertEqual(v, wk[k])
+        del k
+        self.assertFalse(len(wk._weakdict))
+
 
 
 if __name__ == "__main__":

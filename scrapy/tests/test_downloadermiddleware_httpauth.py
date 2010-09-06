@@ -12,16 +12,20 @@ class HttpAuthMiddlewareTest(unittest.TestCase):
 
     def setUp(self):
         self.mw = HttpAuthMiddleware()
+        self.spider = TestSpider('foo')
 
     def tearDown(self):
         del self.mw
 
     def test_auth(self):
-        self.mw.default_useragent = 'default_useragent'
-        spider = TestSpider('foo')
         req = Request('http://scrapytest.org/')
-        assert self.mw.process_request(req, spider) is None
+        assert self.mw.process_request(req, self.spider) is None
         self.assertEquals(req.headers['Authorization'], 'Basic Zm9vOmJhcg==')
+
+    def test_auth_already_set(self):
+        req = Request('http://scrapytest.org/', headers=dict(Authorization='Digest 123'))
+        assert self.mw.process_request(req, self.spider) is None
+        self.assertEquals(req.headers['Authorization'], 'Digest 123')
 
 
 if __name__ == '__main__':

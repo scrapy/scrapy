@@ -4,14 +4,24 @@ HTTP basic auth downloader middleware
 See documentation in docs/topics/downloader-middleware.rst
 """
 
-from scrapy.utils.request import request_authenticate
+from scrapy.utils.http import basic_auth_header
+from scrapy.utils.python import WeakKeyCache
+
 
 class HttpAuthMiddleware(object):
-    """This middleware allows spiders to use HTTP auth in a cleaner way
+    """Set Basic HTTP Authorization header
     (http_user and http_pass spider class attributes)"""
 
+    def __init__(self):
+        self._cache = WeakKeyCache(self._authorization)
+
+    def _authorization(self, spider):
+        usr = getattr(spider, 'http_user', '')
+        pwd = getattr(spider, 'http_pass', '')
+        if usr or pwd:
+            return basic_auth_header(usr, pwd)
+
     def process_request(self, request, spider):
-        http_user = getattr(spider, 'http_user', '')
-        http_pass = getattr(spider, 'http_pass', '')
-        if http_user or http_pass:
-            request_authenticate(request, http_user, http_pass)
+        auth = self._cache[spider]
+        if auth and 'Authorization' not in request.headers:
+            request.headers['Authorization'] = auth
