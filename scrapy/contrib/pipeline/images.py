@@ -24,7 +24,6 @@ from scrapy.http import Request
 from scrapy import signals
 from scrapy.exceptions import DropItem, NotConfigured, IgnoreRequest
 from scrapy.contrib.pipeline.media import MediaPipeline
-from scrapy.conf import settings
 
 
 class NoimagesDrop(DropItem):
@@ -78,8 +77,8 @@ class FSImagesStore(object):
 
 class S3ImagesStore(object):
 
-    AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
-    AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
+    AWS_ACCESS_KEY_ID = None
+    AWS_SECRET_ACCESS_KEY = None
 
     def __init__(self, uri):
         assert uri.startswith('s3://')
@@ -139,22 +138,33 @@ class ImagesPipeline(MediaPipeline):
     """
 
     MEDIA_NAME = 'image'
-    MIN_WIDTH = settings.getint('IMAGES_MIN_WIDTH', 0)
-    MIN_HEIGHT = settings.getint('IMAGES_MIN_HEIGHT', 0)
-    EXPIRES = settings.getint('IMAGES_EXPIRES', 90)
-    THUMBS = settings.get('IMAGES_THUMBS', {})
+    MIN_WIDTH = 0
+    MIN_HEIGHT = 0
+    EXPIRES = 90
+    THUMBS = {}
     STORE_SCHEMES = {
             '': FSImagesStore,
             'file': FSImagesStore,
             's3': S3ImagesStore,
             }
 
-    def __init__(self):
+    def __init__(self, store_uri):
+        self.store = self._get_store(store_uri)
+        super(ImagesPipeline, self).__init__()
+
+    @classmethod
+    def from_settings(cls, settings):
+        cls.MIN_WIDTH = settings.getint('IMAGES_MIN_WIDTH', 0)
+        cls.MIN_HEIGHT = settings.getint('IMAGES_MIN_HEIGHT', 0)
+        cls.EXPIRES = settings.getint('IMAGES_EXPIRES', 90)
+        cls.THUMBS = settings.get('IMAGES_THUMBS', {})
+        s3store = cls.STORE_SCHEMES['s3']
+        s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
+        s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
         store_uri = settings['IMAGES_STORE']
         if not store_uri:
             raise NotConfigured
-        self.store = self._get_store(store_uri)
-        super(ImagesPipeline, self).__init__()
+        return cls(store_uri)
 
     def _get_store(self, uri):
         if os.path.isabs(uri): # to support win32 paths like: C:\\some\dir

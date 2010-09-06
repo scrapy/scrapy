@@ -7,13 +7,18 @@ See documentation in docs/topics/spider-middleware.rst
 from scrapy import log
 from scrapy.http import Request
 from scrapy.exceptions import NotConfigured
-from scrapy.conf import settings
 
 class UrlLengthMiddleware(object):
-    def __init__(self):
-        self.maxlength = settings.getint('URLLENGTH_LIMIT')
-        if not self.maxlength:
+
+    def __init__(self, maxlength):
+        self.maxlength = maxlength
+
+    @classmethod
+    def from_settings(cls, settings):
+        maxlength = settings.getint('URLLENGTH_LIMIT')
+        if not maxlength:
             raise NotConfigured
+        return cls(maxlength)
 
     def process_spider_output(self, response, result, spider):
         def _filter(request):
