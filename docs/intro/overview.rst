@@ -170,6 +170,22 @@ storage backend (FTP or `Amazon S3`_, for example).
 You can also write an :ref:`item pipeline <topics-item-pipeline>` to store the
 items in a database very easily.
 
+Review scraped data
+===================
+
+If you check the ``scraped_data.json`` file after the process finishes, you'll
+see the scraped items there::
+
+    [{"url": "http://www.mininova.org/tor/2657665", "name": ["Home[2009][Eng]XviD-ovd"], "description": ["HOME - a documentary film by ..."], "size": ["699.69 megabyte"]},
+    # ... other items ...
+    ]
+
+You'll notice that all field values (except for the ``url`` which was assigned
+directly) are actually lists. This is because the :ref:`selectors
+<topics-selectors>` return lists. You may want to store single values, or
+perform some additional parsing/cleansing to the values. That's what
+:ref:`Item Loaders <topics-loaders>` are for.
+
 What else?
 ==========
 
@@ -181,7 +197,7 @@ scraping easy and efficient, such as:
   from HTML and XML sources
 
 * Built-in support for cleaning and sanitizing the scraped data using a
-  collection of reusable filters (called :ref:`loaders <topics-loaders>`)
+  collection of reusable filters (called :ref:`Item Loaders <topics-loaders>`)
   shared between all the spiders.
 
 * Built-in support for :ref:`generating feed exports <topics-feed-exports>` in
