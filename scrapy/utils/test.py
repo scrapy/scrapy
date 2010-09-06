@@ -5,8 +5,7 @@ This module contains some assorted functions used in tests
 import os
 
 import libxml2
-
-from scrapy.selector.document import Libxml2Document
+from twisted.trial.unittest import SkipTest
 
 def libxml2debug(testfunction):
     """Decorator for debugging libxml2 memory leaks inside a function.
@@ -28,3 +27,15 @@ def libxml2debug(testfunction):
         return newfunc
     else:
         return testfunction
+
+def assert_aws_environ():
+    """Asserts the current environment is suitable for running AWS testsi.
+    Raises SkipTest with the reason if it's not.
+    """
+    try:
+        import boto
+    except ImportError, e:
+        raise SkipTest(str(e))
+
+    if 'AWS_ACCESS_KEY_ID' not in os.environ:
+        raise SkipTest("AWS keys not found")

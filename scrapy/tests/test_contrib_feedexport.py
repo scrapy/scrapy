@@ -7,6 +7,7 @@ from cStringIO import StringIO
 from scrapy.spider import BaseSpider
 from scrapy.contrib.feedexport import FileFeedStorage, FTPFeedStorage, S3FeedStorage
 from scrapy.utils.url import path_to_file_uri
+from scrapy.utils.test import assert_aws_environ
 
 class FeedStorageTest(unittest.TestCase):
 
@@ -56,13 +57,11 @@ class S3FeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_store(self):
+        assert_aws_environ()
         uri = os.environ.get('FEEDTEST_S3_URI')
         if not uri:
-            raise unittest.SkipTest("No S3 bucket available for testing")
-        try:
-            from boto import connect_s3
-        except ImportError:
-            raise unittest.SkipTest("Missing library: boto")
+            raise unittest.SkipTest("No S3 URI available for testing")
+        from boto import connect_s3
         storage = S3FeedStorage(uri)
         yield storage.store(StringIO("content"), BaseSpider("default"))
         u = urlparse.urlparse(uri)
