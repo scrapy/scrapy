@@ -61,7 +61,7 @@ class Scraper(object):
 
     def __init__(self, engine, settings):
         self.sites = {}
-        self.spidermw = SpiderMiddlewareManager()
+        self.spidermw = SpiderMiddlewareManager.from_settings(settings)
         itemproc_cls = load_object(settings['ITEM_PROCESSOR'])
         self.itemproc = itemproc_cls.from_settings(settings)
         self.concurrent_items = settings.getint('CONCURRENT_ITEMS')
