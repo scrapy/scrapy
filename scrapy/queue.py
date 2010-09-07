@@ -86,5 +86,8 @@ class ExecutionQueue(object):
             spider = self._spiders.create(name, **spider_kwargs)
         except KeyError:
             log.msg('Unable to find spider: %s' % name, log.ERROR)
+        except:
+            log.err(None, 'Error creating spider %r with arguments: %r' % \
+                (name, spider_kwargs))
         else:
             self.append_spider(spider)
