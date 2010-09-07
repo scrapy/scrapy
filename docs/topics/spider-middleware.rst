@@ -258,16 +258,6 @@ RequestLimitMiddleware
         upper limit for the amount of requests that can be scheduled per
         domain. Can be set per spider using ``requests_queue_size`` attribute.
 
-UrlFilterMiddleware
--------------------
-
-.. module:: scrapy.contrib.spidermiddleware.urlfilter
-   :synopsis: URL Filter Spider Middleware
-
-.. class:: UrlFilterMiddleware 
-
-   Canonicalizes URLs to filter out duplicated ones
-
 UrlLengthMiddleware
 -------------------
 
