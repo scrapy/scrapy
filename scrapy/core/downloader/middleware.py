@@ -1,61 +1,34 @@
 """
-This module implements the Downloader Middleware manager. For more information
-see the Downloader Middleware doc in:
+Downloader Middleware manager
 
-docs/topics/downloader-middleware.rst
-
+See documentation in docs/topics/downloader-middleware.rst
 """
 
-from scrapy import log
 from scrapy.http import Request, Response
-from scrapy.exceptions import NotConfigured
-from scrapy.utils.misc import load_object
+from scrapy.middleware import MiddlewareManager
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.conf import build_component_list
-from scrapy.conf import settings
 
-class DownloaderMiddlewareManager(object):
+class DownloaderMiddlewareManager(MiddlewareManager):
 
-    def __init__(self):
-        self.loaded = False
-        self.enabled = {}
-        self.disabled = {}
-        self.request_middleware = []
-        self.response_middleware = []
-        self.exception_middleware = []
-        self.load()
+    component_name = 'downloader middleware'
+
+    @classmethod
+    def _get_mwlist_from_settings(cls, settings):
+        return build_component_list(settings['DOWNLOADER_MIDDLEWARES_BASE'], \
+            settings['DOWNLOADER_MIDDLEWARES'])
 
     def _add_middleware(self, mw):
         if hasattr(mw, 'process_request'):
-            self.request_middleware.append(mw.process_request)
+            self.methods['process_request'].append(mw.process_request)
         if hasattr(mw, 'process_response'):
-            self.response_middleware.insert(0, mw.process_response)
+            self.methods['process_response'].insert(0, mw.process_response)
         if hasattr(mw, 'process_exception'):
-            self.exception_middleware.insert(0, mw.process_exception)
-
-    def load(self):
-        """Load middleware defined in settings module"""
-        mwlist = build_component_list(settings['DOWNLOADER_MIDDLEWARES_BASE'], \
-            settings['DOWNLOADER_MIDDLEWARES'])
-        self.enabled.clear()
-        self.disabled.clear()
-        for mwpath in mwlist:
-            try:
-                cls = load_object(mwpath)
-                mw = cls()
-                self.enabled[cls.__name__] = mw
-                self._add_middleware(mw)
-            except NotConfigured, e:
-                self.disabled[cls.__name__] = mwpath
-                if e.args:
-                    log.msg(e)
-        log.msg("Enabled downloader middlewares: %s" % ", ".join(self.enabled.keys()), \
-            level=log.DEBUG)
-        self.loaded = True
+            self.methods['process_exception'].insert(0, mw.process_exception)
 
     def download(self, download_func, request, spider):
         def process_request(request):
-            for method in self.request_middleware:
+            for method in self.methods['process_request']:
                 response = method(request=request, spider=spider)
                 assert response is None or isinstance(response, (Response, Request)), \
                         'Middleware %s.process_request must return None, Response or Request, got %s' % \
@@ -69,7 +42,7 @@ class DownloaderMiddlewareManager(object):
             if isinstance(response, Request):
                 return response
 
-            for method in self.response_middleware:
+            for method in self.methods['process_response']:
                 response = method(request=request, response=response, spider=spider)
                 assert isinstance(response, (Response, Request)), \
                     'Middleware %s.process_response must return Response or Request, got %s' % \
@@ -80,7 +53,7 @@ class DownloaderMiddlewareManager(object):
 
         def process_exception(_failure):
             exception = _failure.value
-            for method in self.exception_middleware:
+            for method in self.methods['process_exception']:
                 response = method(request=request, exception=exception, spider=spider)
                 assert response is None or isinstance(response, (Response, Request)), \
                     'Middleware %s.process_exception must return None, Response or Request, got %s' % \

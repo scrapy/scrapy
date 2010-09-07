@@ -74,7 +74,7 @@ class Downloader(object):
     def __init__(self):
         self.sites = {}
         self.handlers = DownloadHandlers()
-        self.middleware = DownloaderMiddlewareManager()
+        self.middleware = DownloaderMiddlewareManager.from_settings(settings)
         self.concurrent_spiders = settings.getint('CONCURRENT_SPIDERS')
 
     def fetch(self, request, spider):
