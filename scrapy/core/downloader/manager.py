@@ -11,6 +11,8 @@ from twisted.python.failure import Failure
 from scrapy.exceptions import IgnoreRequest
 from scrapy.conf import settings
 from scrapy.utils.defer import mustbe_deferred
+from scrapy.utils.signal import send_catch_log
+from scrapy import signals
 from scrapy import log
 from .middleware import DownloaderMiddlewareManager
 from .handlers import DownloadHandlers
@@ -87,10 +89,12 @@ class Downloader(object):
             raise IgnoreRequest('Cannot fetch on a closing spider')
 
         site.active.add(request)
-        def _deactivate(_):
+        def _deactivate(response):
+            send_catch_log(signal=signals.response_received, \
+                response=response, request=request, spider=spider)
             site.active.remove(request)
             self._close_if_idle(spider)
-            return _
+            return response
 
         dfd = self.middleware.download(self.enqueue, request, spider)
         return dfd.addBoth(_deactivate)
@@ -100,7 +104,13 @@ class Downloader(object):
         site = self.sites[spider]
         if site.closing:
             raise IgnoreRequest
-        deferred = defer.Deferred()
+
+        def _downloaded(response):
+            send_catch_log(signal=signals.response_downloaded, \
+                    response=response, request=request, spider=spider)
+            return response
+
+        deferred = defer.Deferred().addCallback(_downloaded)
         site.queue.append((request, deferred))
         self._process_queue(spider)
         return deferred

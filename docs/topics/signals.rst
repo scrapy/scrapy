@@ -200,27 +200,11 @@ request_received
     :param spider: the spider which generated the request
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
-request_uploaded
-----------------
-
-.. signal:: request_uploaded
-.. function:: request_uploaded(request, spider)
-
-    Sent right after the download has sent a :class:`~scrapy.http.Request`.
-
-    This signal does not support returning deferreds from their handlers.
-
-    :param request: the request uploaded/sent
-    :type request: :class:`~scrapy.http.Request` object
-
-    :param spider: the spider which generated the request
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
-
 response_received
 -----------------
 
 .. signal:: response_received
-.. function:: response_received(response, spider)
+.. function:: response_received(response, request, spider)
 
     Sent when the engine receives a new :class:`~scrapy.http.Response` from the
     downloader.
@@ -230,6 +214,9 @@ response_received
     :param response: the response received
     :type response: :class:`~scrapy.http.Response` object
 
+    :param request: the request that generated the response
+    :type request: :class:`~scrapy.http.Request` object
+
     :param spider: the spider for which the response is intended
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
@@ -237,7 +224,7 @@ response_downloaded
 -------------------
 
 .. signal:: response_downloaded
-.. function:: response_downloaded(response, spider)
+.. function:: response_downloaded(response, request, spider)
 
     Sent by the downloader right after a ``HTTPResponse`` is downloaded.
 
@@ -245,6 +232,9 @@ response_downloaded
 
     :param response: the response downloaded
     :type response: :class:`~scrapy.http.Response` object
+
+    :param request: the request that generated the response
+    :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider for which the response is intended
     :type spider: :class:`~scrapy.spider.BaseSpider` object

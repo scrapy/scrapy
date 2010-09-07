@@ -2,9 +2,7 @@
 
 from twisted.internet import reactor
 
-from scrapy import signals
 from scrapy.exceptions import NotSupported
-from scrapy.utils.signal import send_catch_log
 from scrapy.utils.misc import load_object
 from scrapy.conf import settings
 from scrapy import optional_features
@@ -31,17 +29,8 @@ class HttpDownloadHandler(object):
         return factory.deferred
 
     def _create_factory(self, request, spider):
-        def _download_signals(response):
-            send_catch_log(signal=signals.request_uploaded, request=request, \
-                spider=spider)
-            send_catch_log(signal=signals.response_downloaded, response=response, \
-                spider=spider)
-            return response
-
         timeout = getattr(spider, "download_timeout", None) or self.download_timeout
-        factory = self.httpclientfactory(request, timeout)
-        factory.deferred.addCallbacks(_download_signals)
-        return factory
+        return self.httpclientfactory(request, timeout)
 
     def _connect(self, factory):
         host, port = factory.host, factory.port
