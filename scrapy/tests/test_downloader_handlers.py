@@ -98,10 +98,8 @@ class HttpTestCase(unittest.TestCase):
         return d
 
     def test_timeout_download_from_spider(self):
-        spider = BaseSpider('foo')
-        spider.download_timeout = 0.000001
-        request = Request(self.getURL('wait'))
-        d = self.download_request(request, spider)
+        request = Request(self.getURL('wait'), meta=dict(download_timeout=0.000001))
+        d = self.download_request(request, BaseSpider('foo'))
         return self.assertFailure(d, defer.TimeoutError)
 
     def test_host_header_not_in_request_headers(self):

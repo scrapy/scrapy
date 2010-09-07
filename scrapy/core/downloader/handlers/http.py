@@ -12,25 +12,18 @@ if ssl_supported:
     from twisted.internet.ssl import ClientContextFactory
 
 HTTPClientFactory = load_object(settings['DOWNLOADER_HTTPCLIENTFACTORY'])
-DOWNLOAD_TIMEOUT = settings.getint('DOWNLOAD_TIMEOUT')
 
 
 class HttpDownloadHandler(object):
 
-    def __init__(self, httpclientfactory=HTTPClientFactory, \
-            download_timeout=DOWNLOAD_TIMEOUT):
+    def __init__(self, httpclientfactory=HTTPClientFactory):
         self.httpclientfactory = httpclientfactory
-        self.download_timeout = download_timeout
 
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
-        factory = self._create_factory(request, spider)
+        factory = self.httpclientfactory(request)
         self._connect(factory)
         return factory.deferred
-
-    def _create_factory(self, request, spider):
-        timeout = getattr(spider, "download_timeout", None) or self.download_timeout
-        return self.httpclientfactory(request, timeout)
 
     def _connect(self, factory):
         host, port = factory.host, factory.port

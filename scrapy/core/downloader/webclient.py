@@ -8,6 +8,10 @@ from twisted.internet import defer
 from scrapy.http import Headers
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.core.downloader.responsetypes import responsetypes
+from scrapy.conf import settings
+
+
+DOWNLOAD_TIMEOUT = settings.getint('DOWNLOAD_TIMEOUT')
 
 
 def _parsed_url_args(parsed):
@@ -85,13 +89,13 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
     followRedirect = False
     afterFoundGet = False
 
-    def __init__(self, request, timeout=0):
+    def __init__(self, request, timeout=DOWNLOAD_TIMEOUT):
         self.url = urldefrag(request.url)[0]
         self.method = request.method
         self.body = request.body or None
         self.headers = Headers(request.headers)
         self.response_headers = None
-        self.timeout = timeout
+        self.timeout = request.meta.get('download_timeout') or timeout
         self.deferred = defer.Deferred().addCallback(self._build_response)
 
         self._set_connection_attributes(request)

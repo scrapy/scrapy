@@ -181,6 +181,19 @@ DefaultHeadersMiddleware
     ``default_request_headers`` attribute. Spider headers has precedence over
     global headers.
 
+DownloadTimeoutMiddleware
+-------------------------
+
+.. module:: scrapy.contrib.downloadermiddleware.downloadtimeout
+   :synopsis: Download timeout middleware
+
+.. class:: DownloadTimeoutMiddleware
+
+    This middleware sets download timeout for requests based on
+    `download_timeout` spider attribute. It doesn't override timeout if
+    `download_timeout` is already set in request meta. Otherwise,
+    :setting:`DOWNLOAD_TIMEOUT` setting is used as default download timeout.
+
 HttpAuthMiddleware
 ------------------
 
