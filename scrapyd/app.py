@@ -1,7 +1,4 @@
-import sys, os
-
-from twisted.internet import reactor
-from twisted.application.service import Application, Service
+from twisted.application.service import Application
 from twisted.application.internet import TimerService, TCPServer
 from twisted.web import server
 
@@ -14,8 +11,8 @@ from .environ import Environment
 from .webservice import Root
 from .config import Config
 
-def get_application():
-    app = Application("Scrapy")
+def application():
+    app = Application("Scrapyd")
     config = Config()
     http_port = config.getint('http_port', 6800)
 

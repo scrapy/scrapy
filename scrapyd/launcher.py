@@ -19,8 +19,8 @@ class Launcher(Service):
     def startService(self):
         for slot in range(self.max_proc):
             self._wait_for_project(slot)
-        log.msg("Launcher started: max_proc=%r, egg_runner=%r" % \
-            (self.max_proc, self.egg_runner), system="Launcher")
+        log.msg("%s started: max_proc=%r, egg_runner=%r" % (self.parent.name, \
+            self.max_proc, self.egg_runner), system="Launcher")
 
     def _wait_for_project(self, slot):
         poller = self.app.getComponent(IPoller)

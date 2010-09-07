@@ -85,10 +85,10 @@ This will install Scrapyd in your Ubuntu server creating a ``scrapy`` user
 which Scrapyd will run as. It will also create some directories and files that
 are listed below:
 
-/etc/scrapyd.cfg
-~~~~~~~~~~~~~~~~
+/etc/scrapyd
+~~~~~~~~~~~~
 
-Scrapyd configuration file. See :ref:`topics-scrapyd-config`.
+Scrapyd configuration files. See :ref:`topics-scrapyd-config`.
 
 /var/log/scrapyd/scrapyd.log
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -124,7 +124,16 @@ Directory used to store data files (uploaded eggs and spider queues).
 Scrapyd Configuration file
 ==========================
 
-The Scrapyd configuration file supports the following options:
+Scrapyd searches for configuration files in the following locations, and parses
+them in order with the latest ones taking more priority:
+
+* ``/etc/scrapyd/scrapyd.conf`` (Unix)
+* ``c:\scrapyd\scrapyd.conf`` (Windows)
+* ``/etc/scrapyd/conf.d/*`` (in alphabetical order, Unix)
+* ``scrapyd.conf``
+
+The configuration file supports the following options (see default values in
+the :ref:`example <topics-scrapyd-config-example>`).
 
 http_port
 ---------
@@ -160,12 +169,29 @@ logs_dir
 
 The directory where the Scrapy processes logs (``slotN.log``) will be stored.
 
+egg_runner
+----------
+
+The module that will be used for launching sub-processes. You can customize the
+Scrapy processes launched from Scrapyd by using your own module.
+
+application
+-----------
+
+A function that returns the (Twisted) Application object to use. This can be
+used if you want to extend Scrapyd by adding and removing your own components
+and services.
+
+For more info see `Twisted Application Framework`_
+
+.. _topics-scrapyd-config-example:
+
 Example configuration file
 --------------------------
 
 Here is an example configuration file with all the defaults:
 
-.. literalinclude:: ../../scrapyd/default_scrapyd.cfg
+.. literalinclude:: ../../scrapyd/default_scrapyd.conf
 
 Eggifying your project
 ======================
