@@ -197,7 +197,7 @@ class ExecutionEngine(object):
         assert self.has_capacity(), "No free spider slots when opening %r" % \
             spider.name
         log.msg("Spider opened", spider=spider)
-        self.scheduler.open_spider(spider)
+        yield self.scheduler.open_spider(spider)
         self.downloader.open_spider(spider)
         yield self.scraper.open_spider(spider)
         stats.open_spider(spider)

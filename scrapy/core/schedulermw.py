@@ -16,10 +16,11 @@ class SchedulerMiddlewareManager(MiddlewareManager):
 
     @classmethod
     def _get_mwlist_from_settings(cls, settings):
-        return build_component_list(settings['DOWNLOADER_MIDDLEWARES_BASE'], \
-            settings['DOWNLOADER_MIDDLEWARES'])
+        return build_component_list(settings['SCHEDULER_MIDDLEWARES_BASE'], \
+            settings['SCHEDULER_MIDDLEWARES'])
 
     def _add_middleware(self, mw):
+        super(SchedulerMiddlewareManager, self)._add_middleware(mw)
         if hasattr(mw, 'enqueue_request'):
             self.methods['enqueue_request'].append(mw.enqueue_request)
 

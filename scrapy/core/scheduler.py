@@ -21,7 +21,7 @@ class Scheduler(object):
     def __init__(self):
         self.pending_requests = {}
         self.dfo = settings['SCHEDULER_ORDER'].upper() == 'DFO'
-        self.middleware = SchedulerMiddlewareManager()
+        self.middleware = SchedulerMiddlewareManager.from_settings(settings)
 
     def spider_is_open(self, spider):
         """Check if scheduler's resources were allocated for a spider"""
@@ -39,7 +39,7 @@ class Scheduler(object):
 
         Priority = PriorityStack if self.dfo else PriorityQueue
         self.pending_requests[spider] = Priority()
-        self.middleware.open_spider(spider)
+        return self.middleware.open_spider(spider)
 
     def close_spider(self, spider):
         """Called when a spider has finished scraping to free any resources
@@ -47,8 +47,8 @@ class Scheduler(object):
         """
         if spider not in self.pending_requests:
             raise RuntimeError('Scheduler spider is not open: %s' % spider)
-        self.middleware.close_spider(spider)
         self.pending_requests.pop(spider, None)
+        return self.middleware.close_spider(spider)
 
     def enqueue_request(self, spider, request):
         """Enqueue a request to be downloaded for a spider that is currently being scraped."""
