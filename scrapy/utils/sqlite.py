@@ -19,12 +19,14 @@ class SqliteDict(DictMixin):
     def __getitem__(self, key):
         key = self.encode(key)
         q = "select value from %s where key=?" % self.table
-        value = self.conn.execute(q, (key,)).fetchone()[0]
-        return self.decode(value)
+        value = self.conn.execute(q, (key,)).fetchone()
+        if value:
+            return self.decode(value[0])
+        raise KeyError(key)
 
     def __setitem__(self, key, value):
         key, value = self.encode(key), self.encode(value)
-        q = "insert into %s (key, value) values (?,?)" % self.table
+        q = "insert or replace into %s (key, value) values (?,?)" % self.table
         self.conn.execute(q, (key, value))
         self.conn.commit()
 

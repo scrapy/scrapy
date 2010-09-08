@@ -20,6 +20,24 @@ class SqliteDictTest(unittest.TestCase):
         d.clear()
         self.failIf(d.items())
 
+    def test_in(self):
+        d = self.dict_class()
+        self.assertFalse('test' in d)
+        d['test'] = 123
+        self.assertTrue('test' in d)
+
+    def test_keyerror(self):
+        d = self.dict_class()
+        self.assertRaises(KeyError, d.__getitem__, 'test')
+
+    def test_replace(self):
+        d = self.dict_class()
+        self.assertEqual(d.get('test'), None)
+        d['test'] = 123
+        self.assertEqual(d.get('test'), 123)
+        d['test'] = 456
+        self.assertEqual(d.get('test'), 456)
+
 
 class JsonSqliteDictTest(SqliteDictTest):
 
