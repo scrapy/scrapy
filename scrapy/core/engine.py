@@ -159,12 +159,7 @@ class ExecutionEngine(object):
                     level=log.DEBUG, spider=spider)
                 return response
             elif isinstance(response, Request):
-                newrequest = response
-                dfd = mustbe_deferred(self.schedule, newrequest, spider)
-                if newrequest.callback:
-                    # XXX: this is a bit hacky and should be removed
-                    dfd.addCallbacks(newrequest.callback, newrequest.errback)
-                return dfd
+                return mustbe_deferred(self.schedule, response, spider)
 
         def _on_error(_failure):
             """handle an error processing a page"""

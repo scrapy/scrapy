@@ -131,8 +131,8 @@ class RequestTest(unittest.TestCase):
         # make sure copy does not propagate callbacks
         assert r1.callback is somecallback
         assert r1.errback is somecallback
-        assert r2.callback is None
-        assert r2.errback is None
+        assert r2.callback is r1.callback
+        assert r2.errback is r2.errback
 
         # make sure meta dict is shallow copied
         assert r1.meta is not r2.meta, "meta must be a shallow copy, not identical"

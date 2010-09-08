@@ -99,7 +99,7 @@ class Request(object_ref):
         given new values.
         """
         for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta', \
-                'encoding', 'priority', 'dont_filter']:
+                'encoding', 'priority', 'dont_filter', 'callback', 'errback']:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)

@@ -138,35 +138,13 @@ Request objects
        Return a new Request which is a copy of this Request. See also:
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
-    .. method:: Request.replace([url, callback, method, headers, body, cookies, meta, encoding, dont_filter])
+    .. method:: Request.replace([url, callback, method, headers, body, cookies, meta, encoding, dont_filter, callback, errback])
 
        Return a Request object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The
        attribute :attr:`Request.meta` is copied by default (unless a new value
        is given in the ``meta`` argument). See also
        :ref:`topics-request-response-ref-request-callback-arguments`.
-
-.. _topics-request-response-ref-callback-copy:
-
-Caveats with copying Requests and callbacks
--------------------------------------------
-
-When you copy a request using the :meth:`Request.copy` or
-:meth:`Request.replace` methods the callback of the request is not copied by
-default. This is because of legacy reasons along with limitations in the
-underlying network library, which doesn't allow sharing `Twisted deferreds`_.
-
-.. _Twisted deferreds: http://twistedmatrix.com/projects/core/documentation/howto/defer.html
-
-For example::
-
-    request = Request("http://www.example.com", callback=myfunc)
-    request2 = request.copy() # doesn't copy the callback
-    request3 = request.replace(callback=request.callback)
-
-In the above example, ``request2`` is a copy of ``request`` but it has no
-callback, while ``request3`` is a copy of ``request`` and also contains the
-callback.
 
 .. _topics-request-response-ref-request-callback-arguments:
 
