@@ -10,6 +10,8 @@ import copy
 from scrapy.http.headers import Headers
 from scrapy.utils.url import safe_url_string
 from scrapy.utils.trackref import object_ref
+from scrapy.utils.decorator import deprecated
+from scrapy.http.common import deprecated_setter
 
 class Request(object_ref):
 
@@ -58,7 +60,7 @@ class Request(object_ref):
         else:
             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
 
-    url = property(_get_url, _set_url)
+    url = property(_get_url, deprecated_setter(_set_url, 'url'))
 
     def _get_body(self):
         return self._body
@@ -76,7 +78,7 @@ class Request(object_ref):
         else:
             raise TypeError("Request body must either str or unicode. Got: '%s'" % type(body).__name__)
 
-    body = property(_get_body, _set_body)
+    body = property(_get_body, deprecated_setter(_set_body, 'body'))
 
     @property
     def encoding(self):

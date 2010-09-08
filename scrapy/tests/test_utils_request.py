@@ -51,8 +51,7 @@ class UtilsRequestTest(unittest.TestCase):
         # cached fingerprint must be cleared on request copy
         r1 = Request("http://www.example.com")
         fp1 = request_fingerprint(r1)
-        r2 = r1.copy()
-        r2.url = "http://www.example.com/other"
+        r2 = r1.replace(url = "http://www.example.com/other")
         fp2 = request_fingerprint(r2)
         self.assertNotEqual(fp1, fp2)
 

@@ -2,20 +2,16 @@
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.url import canonicalize_url, url_is_from_any_domain
 
-from itertools import ifilter, imap
+from itertools import ifilter
 
 import re
 
 class Canonicalize(object):
     """Canonicalize Request Processor"""
-    def _replace_url(self, req):
-        # replace in-place
-        req.url = canonicalize_url(req.url)
-        return req
 
     def __call__(self, requests):
         """Canonicalize all requests' urls"""
-        return imap(self._replace_url, requests)
+        return (x.replace(url=canonicalize_url(x.url)) for x in requests)
         
 
 class FilterDupes(object):

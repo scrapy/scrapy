@@ -33,9 +33,6 @@ class TextResponse(Response):
         self._cached_ubody = None
         super(TextResponse, self).__init__(url, status, headers, body, meta, flags)
 
-    def _get_url(self):
-        return self._url
-
     def _set_url(self, url):
         if isinstance(url, unicode):
             if self.encoding is None:
@@ -44,8 +41,6 @@ class TextResponse(Response):
             self._url = url.encode(self.encoding)
         else:
             super(TextResponse, self)._set_url(url)
-
-    url = property(_get_url, _set_url)
 
     def _set_body(self, body):
         self._body = ''

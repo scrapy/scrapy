@@ -29,9 +29,6 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r.url, "http://www.example.com")
         self.assertEqual(r.method, self.default_method)
 
-        r.url = "http://www.example.com/other"
-        assert isinstance(r.url, str)
-
         assert isinstance(r.headers, Headers)
         self.assertEqual(r.headers, self.default_headers)
         self.assertEqual(r.meta, self.default_meta)
@@ -80,21 +77,11 @@ class RequestTest(unittest.TestCase):
         r = self.request_class(url="http://www.scrapy.org/path")
         self.assertEqual(r.url, "http://www.scrapy.org/path")
 
-        # url quoting on attribute assign
-        r.url = "http://www.scrapy.org/blank%20space"
-        self.assertEqual(r.url, "http://www.scrapy.org/blank%20space")
-        r.url = "http://www.scrapy.org/blank space"
-        self.assertEqual(r.url, "http://www.scrapy.org/blank%20space")
-
         # url quoting on creation
         r = self.request_class(url="http://www.scrapy.org/blank%20space")
         self.assertEqual(r.url, "http://www.scrapy.org/blank%20space")
         r = self.request_class(url="http://www.scrapy.org/blank space")
         self.assertEqual(r.url, "http://www.scrapy.org/blank%20space")
-
-        # url coercion to string
-        r.url = u"http://www.scrapy.org/test"
-        self.assert_(isinstance(r.url, str))
 
         # url encoding
         r1 = self.request_class(url=u"http://www.scrapy.org/price/\xa3", encoding="utf-8")

@@ -154,9 +154,6 @@ class TextResponseTest(BaseResponseTest):
         self.assertEqual(resp.url, 'http://www.example.com/price/\xc2\xa3')
         resp = self.response_class(url=u"http://www.example.com/price/\xa3", encoding='latin-1')
         self.assertEqual(resp.url, 'http://www.example.com/price/\xa3')
-        resp = self.response_class(url="http://www.example.com/price/", encoding='utf-8')
-        resp.url = u'http://www.example.com/price/\xa3'
-        self.assertEqual(resp.url, 'http://www.example.com/price/\xc2\xa3')
         resp = self.response_class(u"http://www.example.com/price/\xa3", headers={"Content-type": ["text/html; charset=utf-8"]})
         self.assertEqual(resp.url, 'http://www.example.com/price/\xc2\xa3')
         resp = self.response_class(u"http://www.example.com/price/\xa3", headers={"Content-type": ["text/html; charset=iso-8859-1"]})

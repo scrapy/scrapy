@@ -38,13 +38,8 @@ class BaseSgmlRequestExtractor(FixedSGMLParser):
 
     def _make_absolute_urls(self, base_url, encoding):
         """Makes all request's urls absolute"""
-        for req in self.requests:
-            url = req.url
-            # make absolute url
-            url = urljoin_rfc(base_url, url, encoding)
-            url = safe_url_string(url, encoding)
-            # replace in-place request's url
-            req.url = url
+        self.requests = [x.replace(url=safe_url_string(urljoin_rfc(base_url, \
+            x.url, encoding), encoding)) for x in self.requests]
 
     def _fix_link_text_encoding(self, encoding):
         """Convert link_text to unicode for each request"""

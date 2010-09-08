@@ -108,6 +108,9 @@ Request objects
         attribute contains the escaped URL, so it can differ from the URL passed in
         the constructor.
 
+        This attribute is read-only. To change the URL of a Request use
+        :meth:`replace`.
+
     .. attribute:: Request.method
 
         A string representing the HTTP method in the request. This is guaranteed to
@@ -119,7 +122,10 @@ Request objects
 
     .. attribute:: Request.body
 
-        A str that contains the request body
+        A str that contains the request body.
+
+        This attribute is read-only. To change the body of a Request use
+        :meth:`replace`.
 
     .. attribute:: Request.meta
 
@@ -355,6 +361,9 @@ Response objects
 
         A string containing the URL of the response. 
 
+        This attribute is read-only. To change the URL of a Response use
+        :meth:`replace`.
+
     .. attribute:: Response.status
 
         An integer representing the HTTP status of the response. Example: ``200``,
@@ -370,6 +379,9 @@ Response objects
         is always a str. If you want the unicode version use
         :meth:`TextResponse.body_as_unicode` (only available in
         :class:`TextResponse` and subclasses).
+
+        This attribute is read-only. To change the body of a Response use
+        :meth:`replace`.
 
     .. attribute:: Response.request
 
