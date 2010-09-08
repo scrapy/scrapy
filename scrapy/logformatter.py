@@ -15,7 +15,7 @@ class LogFormatter(object):
         return "Scraped %s in <%s>" % (item, request.url)
 
     def dropped(self, item, exception, spider):
-        return "Dropped %s - %s" % (item, str(exception))
+        return "Dropped %s - %s" % (item, unicode(exception))
 
     def passed(self, item, spider):
         return "Passed %s" % item
