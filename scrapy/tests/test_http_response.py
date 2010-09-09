@@ -287,13 +287,16 @@ class XmlResponseTest(TextResponseTest):
         r4 = r3.replace(body=body2)
         self._assert_response_values(r4, 'utf-8', body2)
 
-        # make sure replace() rediscovers the encoding (if not given explicitly) when changing the body
+    def test_replace_encoding(self):
+        # make sure replace() keeps the previous encoding unless overridden explicitly
         body = """<?xml version="1.0" encoding="iso-8859-1"?><xml></xml>"""
-        r5 = self.response_class("http://www.example.com", body=body)
         body2 = """<?xml version="1.0" encoding="utf-8"?><xml></xml>"""
+        r5 = self.response_class("http://www.example.com", body=body)
         r6 = r5.replace(body=body2)
+        r7 = r5.replace(body=body2, encoding='utf-8')
         self._assert_response_values(r5, 'iso-8859-1', body)
-        self._assert_response_values(r6, 'utf-8', body2)
+        self._assert_response_values(r6, 'iso-8859-1', body2)
+        self._assert_response_values(r7, 'utf-8', body2)
 
 
 if __name__ == "__main__":

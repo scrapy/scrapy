@@ -53,7 +53,7 @@ class TextResponse(Response):
             super(TextResponse, self)._set_body(body)
 
     def replace(self, *args, **kwargs):
-        kwargs.setdefault('encoding', getattr(self, '_encoding', None))
+        kwargs.setdefault('encoding', self.encoding)
         return Response.replace(self, *args, **kwargs)
 
     @property
