@@ -1,5 +1,7 @@
 """Some debugging functions for working with the Scrapy engine"""
 
+from time import time # used in global tests code
+
 from scrapy.project import crawler
 
 def get_engine_status(engine=None):
