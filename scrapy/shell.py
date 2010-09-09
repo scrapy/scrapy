@@ -51,6 +51,13 @@ class Shell(object):
             self.populate_vars(request.url, response, request, spider)
         start_python_console(self.vars)
 
+    def _schedule(self, request, spider):
+        if spider is None:
+            spider = create_spider_for_request(self.crawler.spiders, request, \
+                BaseSpider('default'), log_multiple=True)
+        self.crawler.engine.open_spider(spider)
+        return self.crawler.engine.schedule(request, spider)
+
     def fetch(self, request_or_url, spider=None):
         if isinstance(request_or_url, Request):
             request = request_or_url
@@ -58,14 +65,10 @@ class Shell(object):
         else:
             url = any_to_uri(request_or_url)
             request = Request(url, dont_filter=True)
-        if spider is None:
-            spider = create_spider_for_request(self.crawler.spiders, request, \
-                BaseSpider('default'), log_multiple=True)
-        self.crawler.engine.open_spider(spider)
         response = None
         try:
             response = threads.blockingCallFromThread(reactor, \
-                self.crawler.engine.schedule, request, spider)
+                self._schedule, request, spider)
         except:
             log.err(Failure(), "Error fetching response", spider=spider)
         self.populate_vars(url, response, request, spider)
