@@ -400,22 +400,27 @@ RetryMiddleware
    A middlware to retry failed requests that are potentially caused by
    temporary problems such as a connection timeout or HTTP 500 error.
 
-   Failed pages are collected on the scraping process and rescheduled at the
-   end, once the spider has finished crawling all regular (non failed) pages.
-   Once there are no more failed pages to retry, this middleware sends a signal
-   (retry_complete), so other extensions could connect to that signal.
+Failed pages are collected on the scraping process and rescheduled at the
+end, once the spider has finished crawling all regular (non failed) pages.
+Once there are no more failed pages to retry, this middleware sends a signal
+(retry_complete), so other extensions could connect to that signal.
 
-   The :class:`RetryMiddleware` can be configured through the following
-   settings (see the settings documentation for more info):
+The :class:`RetryMiddleware` can be configured through the following
+settings (see the settings documentation for more info):
 
-   * :setting:`RETRY_TIMES` - how many times to retry a failed page
-   * :setting:`RETRY_HTTP_CODES` - which HTTP response codes to retry
+* :setting:`RETRY_TIMES` - how many times to retry a failed page
+* :setting:`RETRY_HTTP_CODES` - which HTTP response codes to retry
 
-   About HTTP errors to consider:
+About HTTP errors to consider:
 
-   You may want to remove 400 from RETRY_HTTP_CODES, if you stick to the
-   HTTP protocol. It's included by default because it's a common code used
-   to indicate server overload, which would be something we want to retry.
+You may want to remove 400 from RETRY_HTTP_CODES, if you stick to the
+HTTP protocol. It's included by default because it's a common code used
+to indicate server overload, which would be something we want to retry.
+
+.. reqmeta:: dont_retry
+
+If :attr:`Request.meta <scrapy.http.Request.meta>` contains the ``dont_retry``
+key, the request will be ignored by this middleware.
 
 .. _topics-dlmw-robots:
 

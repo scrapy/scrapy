@@ -209,8 +209,8 @@ Using Request.meta::
 
 .. _topics-request-meta:
 
-Request.meta values
-===================
+Request.meta special keys
+=========================
 
 The :attr:`Request.meta` attribute can contain any arbitrary data, but there
 are some special keys recognized by Scrapy and its built-in extensions.
@@ -218,6 +218,7 @@ are some special keys recognized by Scrapy and its built-in extensions.
 Those are:
 
 * :reqmeta:`dont_redirect`
+* :reqmeta:`dont_retry`
 
 .. _topics-request-response-ref-request-subclasses:
 

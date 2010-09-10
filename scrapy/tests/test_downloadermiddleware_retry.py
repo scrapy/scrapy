@@ -27,6 +27,14 @@ class RetryTest(unittest.TestCase):
         # dont retry 404s
         assert self.mw.process_response(req, rsp, self.spider) is rsp
 
+    def test_dont_retry(self):
+        req = Request('http://www.scrapytest.org/503', meta={'dont_retry': True})
+        rsp = Response('http://www.scrapytest.org/503', body='', status=503)
+
+        # first retry
+        r = self.mw.process_response(req, rsp, self.spider)
+        assert r is rsp
+
     def test_503(self):
         req = Request('http://www.scrapytest.org/503')
         rsp = Response('http://www.scrapytest.org/503', body='', status=503)
