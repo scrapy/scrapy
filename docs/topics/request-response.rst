@@ -219,6 +219,7 @@ Those are:
 
 * :reqmeta:`dont_redirect`
 * :reqmeta:`dont_retry`
+* :reqmeta:`handle_httpstatus_list`
 
 .. _topics-request-response-ref-request-subclasses:
 

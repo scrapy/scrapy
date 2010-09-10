@@ -174,28 +174,34 @@ HttpErrorMiddleware
 .. class:: HttpErrorMiddleware
 
     Filter out unsuccessful (erroneous) HTTP responses so that spiders don't
-    have to deal with them, which (most of the times) imposes an overhead,
+    have to deal with them, which (most of the time) imposes an overhead,
     consumes more resources, and makes the spider logic more complex.
 
-    According to the `HTTP standard`_, successful responses are those whose
-    status codes are in the 200-300 range.
+According to the `HTTP standard`_, successful responses are those whose
+status codes are in the 200-300 range.
 
 .. _HTTP standard: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 
-    If you still want to process response codes outside that range, you can
-    specify which response codes the spider is able to handle using the
-    ``handle_httpstatus_list`` spider attribute.
+If you still want to process response codes outside that range, you can
+specify which response codes the spider is able to handle using the
+``handle_httpstatus_list`` spider attribute.
 
-    For example, if you want your spider to handle 404 responses you can do
-    this::
+For example, if you want your spider to handle 404 responses you can do
+this::
 
-        class MySpider(CrawlSpider):
-            handle_httpstatus_list = [404]
+    class MySpider(CrawlSpider):
+        handle_httpstatus_list = [404]
 
-    Keep in mind, however, that it's usually a bad idea to handle non-200
-    responses, unless you really know what you're doing.
+.. reqmeta:: handle_httpstatus_list
 
-    For more information see: `HTTP Status Code Definitions`_.
+The ``handle_httpstatus_list`` key of :attr:`Request.meta
+<scrapy.http.Request.meta>` can also be used to specify which response codes to
+allow on a per-request basis.
+
+Keep in mind, however, that it's usually a bad idea to handle non-200
+responses, unless you really know what you're doing.
+
+For more information see: `HTTP Status Code Definitions`_.
 
 .. _HTTP Status Code Definitions: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 
