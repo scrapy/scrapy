@@ -78,12 +78,9 @@ scripts = ['bin/scrapy']
 if os.name == 'nt':
     scripts.append('extras/scrapy.bat')
 
-# Dynamically calculate the version based on scrapy.__version__
-version = ".".join(map(str, __import__('scrapy').version_info[:2]))
-
 setup_args = {
     'name': 'Scrapy',
-    'version': version,
+    'version': __import__('scrapy').__version__,
     'url': 'http://scrapy.org',
     'description': 'A high-level Python Screen Scraping framework',
     'long_description': 'Scrapy is a high level scraping and web crawling framework for writing spiders to crawl and parse web pages for all kinds of purposes, from information retrieval to monitoring or testing web sites.',
