@@ -28,7 +28,6 @@ from twisted.internet.defer import TimeoutError as UserTimeoutError
 from twisted.web.client import PartialDownloadError
 
 from scrapy import log
-from scrapy.utils.request import request_fingerprint
 from scrapy.utils.response import response_status_message
 from scrapy.conf import settings
 
