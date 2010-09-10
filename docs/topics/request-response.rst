@@ -134,6 +134,9 @@ Request objects
         components (extensions, middlewares, etc). So the data contained in this
         dict depends on the extensions you have enabled.
 
+        See :ref:`topics-request-meta` for a list of special meta keys
+        recognized by Scrapy.
+
         This dict is `shallow copied`_ when the request is cloned using the
         ``copy()`` or ``replace()`` methods.
 
@@ -203,6 +206,18 @@ Using Request.meta::
     def parse_page2(self, response):
         referer_url = response.request.meta['referer_url']
         self.log("Visited page %s from %s" % (response.url, referer_url))
+
+.. _topics-request-meta:
+
+Request.meta values
+===================
+
+The :attr:`Request.meta` attribute can contain any arbitrary data, but there
+are some special keys recognized by Scrapy and its built-in extensions.
+
+Those are:
+
+* :reqmeta:`dont_redirect`
 
 .. _topics-request-response-ref-request-subclasses:
 

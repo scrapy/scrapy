@@ -377,12 +377,17 @@ RedirectMiddleware
    This middlware handles redirection of requests based on response status and
    meta-refresh html tag.
 
-   The :class:`RedirectMiddleware` can be configured through the following
-   settings (see the settings documentation for more info):
+The :class:`RedirectMiddleware` can be configured through the following
+settings (see the settings documentation for more info):
 
-   * :setting:`REDIRECT_MAX_METAREFRESH_DELAY` - Maximum meta-refresh delay that a page is allowed to have for redirection.
-   * :setting:`REDIRECT_MAX_TIMES` - Maximum number of redirects to perform on a request.
-   * :setting:`REDIRECT_PRIORITY_ADJUST` - Adjusts the redirected request priority by this amount.
+* :setting:`REDIRECT_MAX_METAREFRESH_DELAY` - Maximum meta-refresh delay that a page is allowed to have for redirection.
+* :setting:`REDIRECT_MAX_TIMES` - Maximum number of redirects to perform on a request.
+* :setting:`REDIRECT_PRIORITY_ADJUST` - Adjusts the redirected request priority by this amount.
+
+.. reqmeta:: dont_redirect
+
+If :attr:`Request.meta <scrapy.http.Request.meta>` contains the
+``dont_redirect`` key, the request will be ignored by this middleware.
 
 RetryMiddleware
 ---------------

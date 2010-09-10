@@ -14,3 +14,8 @@ def setup(app):
         rolename      = "command",
         indextemplate = "pair: %s; command",
     )
+    app.add_crossref_type(
+        directivename = "reqmeta",
+        rolename      = "reqmeta",
+        indextemplate = "pair: %s; reqmeta",
+    )

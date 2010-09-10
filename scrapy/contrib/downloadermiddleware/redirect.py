@@ -15,6 +15,8 @@ class RedirectMiddleware(object):
         self.priority_adjust = settings.getint('REDIRECT_PRIORITY_ADJUST')
 
     def process_response(self, request, response, spider):
+        if 'dont_redirect' in request.meta:
+            return response
         if request.method.upper() == 'HEAD':
             if response.status in [301, 302, 303, 307] and 'Location' in response.headers:
                 redirected_url = urljoin_rfc(request.url, response.headers['location'])

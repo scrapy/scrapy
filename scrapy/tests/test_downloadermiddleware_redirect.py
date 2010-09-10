@@ -37,6 +37,16 @@ class RedirectMiddlewareTest(unittest.TestCase):
         _test('POST')
         _test('HEAD')
 
+    def test_dont_redirect(self):
+        url = 'http://www.example.com/301'
+        url2 = 'http://www.example.com/redirected'
+        req = Request(url, meta={'dont_redirect': True})
+        rsp = Response(url, headers={'Location': url2}, status=301)
+
+        r = self.mw.process_response(req, rsp, self.spider)
+        assert isinstance(r, Response)
+        assert r is rsp
+
     def test_redirect_302(self):
         url = 'http://www.example.com/302'
         url2 = 'http://www.example.com/redirected2'
