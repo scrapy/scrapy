@@ -17,7 +17,7 @@ class CookiesMiddleware(object):
         dispatcher.connect(self.spider_closed, signals.spider_closed)
 
     def process_request(self, request, spider):
-        if request.meta.get('dont_merge_cookies', False):
+        if 'dont_merge_cookies' in request.meta:
             return
 
         jar = self.jars[spider]
@@ -31,7 +31,7 @@ class CookiesMiddleware(object):
         self._debug_cookie(request)
 
     def process_response(self, request, response, spider):
-        if request.meta.get('dont_merge_cookies', False):
+        if 'dont_merge_cookies' in request.meta:
             return response
 
         # extract cookies from Set-Cookie and drop invalid/expired cookies
