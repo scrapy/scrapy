@@ -4,7 +4,6 @@ MemoryUsage extension
 See documentation in docs/topics/extensions.rst
 """
 
-import os
 import socket
 from pprint import pformat
 
@@ -18,7 +17,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.mail import MailSender
 from scrapy.conf import settings
 from scrapy.stats import stats
-from scrapy.utils.memory import get_vmvalue_from_procfs
+from scrapy.utils.memory import get_vmvalue_from_procfs, procfs_supported
 from scrapy.utils.engine import get_engine_status
 
 class MemoryUsage(object):
@@ -26,7 +25,7 @@ class MemoryUsage(object):
     def __init__(self):
         if not settings.getbool('MEMUSAGE_ENABLED'):
             raise NotConfigured
-        if not os.path.exists('/proc'):
+        if not procfs_supported():
             raise NotConfigured
 
         self.warned = False

@@ -1,13 +1,11 @@
-import os
-
 from twisted.trial import unittest
 
-from scrapy.utils.memory import get_vmvalue_from_procfs
+from scrapy.utils.memory import get_vmvalue_from_procfs, procfs_supported
 
 class UtilsMemoryTestCase(unittest.TestCase):
 
     def test_get_vmvalue_from_procfs(self):
-        if not os.path.exists('/proc'):
+        if not procfs_supported():
             raise unittest.SkipTest('/proc filesystem not supported')
         vmsize = get_vmvalue_from_procfs('VmSize')
         vmrss = get_vmvalue_from_procfs('VmRSS')

@@ -23,3 +23,10 @@ def get_vmvalue_from_procfs(vmkey='VmSize', pid=None):
     # convert Vm value to bytes
     return int(v[1]) * _vmvalue_scale[v[2]]
 
+def procfs_supported():
+    try:
+        open('/proc/%d/status' % os.getpid())
+    except IOError:
+        return False
+    else:
+        return True
