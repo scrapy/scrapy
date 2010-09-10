@@ -220,6 +220,7 @@ Those are:
 * :reqmeta:`dont_redirect`
 * :reqmeta:`dont_retry`
 * :reqmeta:`handle_httpstatus_list`
+* ``dont_merge_cookies`` (see ``cookies`` parameter of :class:`Request` constructor)
 
 .. _topics-request-response-ref-request-subclasses:
 
