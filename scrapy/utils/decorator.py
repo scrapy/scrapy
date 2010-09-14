@@ -1,7 +1,7 @@
 import warnings
 from functools import wraps
 
-from twisted.internet.defer import maybeDeferred
+from twisted.internet import defer, threads
 
 
 def deprecated(use_instead=None):
@@ -24,5 +24,14 @@ def defers(func):
     """Decorator to make sure a function always returns a deferred"""
     @wraps(func)
     def wrapped(*a, **kw):
-        return maybeDeferred(func, *a, **kw)
+        return defer.maybeDeferred(func, *a, **kw)
+    return wrapped
+
+def inthread(func):
+    """Decorator to call a function in a thread and return a deferred with the
+    result
+    """
+    @wraps(func)
+    def wrapped(*a, **kw):
+        return threads.deferToThread(func, *a, **kw)
     return wrapped
