@@ -12,9 +12,10 @@ def get_spider_list_from_eggfile(eggfile, project):
             shutil.copyfileobj(eggfile, f)
             f.flush()
             eggfile.seek(0)
-            pargs = [sys.executable, '-m', 'scrapyd.eggrunner', f.name, 'list']
+            pargs = [sys.executable, '-m', 'scrapyd.eggrunner', 'list']
             env = os.environ.copy()
             env['SCRAPY_PROJECT'] = project
+            env['SCRAPY_EGGFILE'] = f.name
             proc = Popen(pargs, stdout=PIPE, cwd=tmpdir, env=env)
             out = proc.communicate()[0]
             return out.splitlines()
