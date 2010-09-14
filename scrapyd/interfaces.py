@@ -12,11 +12,11 @@ class IEggStorage(Interface):
         project and version. If version is None, the latest version is
         returned."""
 
-    def list(self, project):
+    def list(project):
         """Return the list of versions which have eggs stored (for the given
         project) in order (the latest version is the currently used)."""
 
-    def delete(self, project, version=None):
+    def delete(project, version=None):
         """Delete the egg stored for the given project and version. If should
         also delete the project if no versions are left"""
 

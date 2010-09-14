@@ -6,11 +6,10 @@ from shutil import copyfileobj, rmtree
 from distutils.version import LooseVersion
 
 from zope.interface import implements
-from twisted.application.service import Service
 
 from .interfaces import IEggStorage
 
-class FilesystemEggStorage(Service):
+class FilesystemEggStorage(object):
 
     implements(IEggStorage)
 
