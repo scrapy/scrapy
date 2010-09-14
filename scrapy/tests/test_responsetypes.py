@@ -54,6 +54,7 @@ class ResponseTypesTest(unittest.TestCase):
         mappings = [
             ({'Content-Type': ['text/html; charset=utf-8']}, HtmlResponse),
             ({'Content-Type': ['application/octet-stream'], 'Content-Disposition': ['attachment; filename=data.txt']}, TextResponse),
+            ({'Content-Type': ['text/html; charset=utf-8'], 'Content-Encoding': ['gzip']}, Response),
         ]
         for source, cls in mappings:
             source = Headers(source)

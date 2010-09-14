@@ -46,9 +46,11 @@ class ResponseTypes(object):
             basetype = "%s/*" % mimetype.split('/')[0]
             return self.classes.get(basetype, Response)
 
-    def from_content_type(self, content_type):
+    def from_content_type(self, content_type, content_encoding=None):
         """Return the most appropiate Response class from an HTTP Content-Type
         header """
+        if content_encoding:
+            return Response
         mimetype = content_type.split(';')[0].strip().lower()
         return self.from_mimetype(mimetype)
 
@@ -65,7 +67,8 @@ class ResponseTypes(object):
         headers"""
         cls = Response
         if 'Content-Type' in headers:
-            cls = self.from_content_type(headers['Content-type'])
+            cls = self.from_content_type(headers['Content-type'], \
+                headers.get('Content-Encoding'))
         if cls is Response and 'Content-Disposition' in headers:
             cls = self.from_content_disposition(headers['Content-Disposition'])
         return cls
