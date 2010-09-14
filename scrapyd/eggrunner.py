@@ -1,4 +1,4 @@
-import sys, os
+import os
 
 from scrapyd.eggutils import activate_egg
 
