@@ -2,7 +2,7 @@ import zlib
 from gzip import GzipFile
 from cStringIO import StringIO
 
-from scrapy.http import Response
+from scrapy.http import Response, TextResponse
 from scrapy.core.downloader.responsetypes import responsetypes
 
 
@@ -21,7 +21,12 @@ class HttpCompressionMiddleware(object):
                 decoded_body = self._decode(response.body, encoding.lower())
                 respcls = responsetypes.from_args(headers=response.headers, \
                     url=response.url)
-                response = response.replace(cls=respcls, body=decoded_body)
+                kwargs = dict(cls=respcls, body=decoded_body)
+                if issubclass(respcls, TextResponse):
+                    # force recalculating the encoding until we make sure the
+                    # responsetypes guessing is reliable
+                    kwargs['encoding'] = None
+                response = response.replace(**kwargs)
                 if not content_encoding:
                     del response.headers['Content-Encoding']
 

@@ -118,3 +118,21 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(newresponse.body, plainbody)
         self.assertEqual(newresponse.encoding, resolve_encoding('gb2312'))
 
+    def test_process_response_force_recalculate_encoding(self):
+        headers = {
+            'Content-Type': 'text/html',
+            'Content-Encoding': 'gzip',
+        }
+        f = StringIO()
+        plainbody = """<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=gb2312">"""
+        zf = GzipFile(fileobj=f, mode='wb')
+        zf.write(plainbody)
+        zf.close()
+        response = HtmlResponse("http;//www.example.com/page.html", headers=headers, body=f.getvalue())
+        request = Request("http://www.example.com/")
+
+        newresponse = self.mw.process_response(request, response, self.spider)
+        assert isinstance(newresponse, HtmlResponse)
+        self.assertEqual(newresponse.body, plainbody)
+        self.assertEqual(newresponse.encoding, resolve_encoding('gb2312'))
+
