@@ -10,13 +10,14 @@ class IEggStorage(Interface):
     def get(project, version=None):
         """Return a tuple (version, file) with the the egg for the specified
         project and version. If version is None, the latest version is
-        returned."""
+        returned. If no egg is found for the given project/version (None, None)
+        should be returned."""
 
-    def list(self, project):
+    def list(project):
         """Return the list of versions which have eggs stored (for the given
         project) in order (the latest version is the currently used)."""
 
-    def delete(self, project, version=None):
+    def delete(project, version=None):
         """Delete the egg stored for the given project and version. If should
         also delete the project if no versions are left"""
 
@@ -61,9 +62,13 @@ class ISpiderScheduler(Interface):
 class IEnvironment(Interface):
     """A component to generate the environment of crawler processes"""
 
-    def get_environment(message, slot):
+    def get_environment(message, slot, eggpath):
         """Return the environment variables to use for running the process.
 
         `message` is the message received from the IPoller.next()
         `slot` is the Launcher slot where the process will be running.
+        `eggpath` is the path to an eggfile that contains the project code. The
+           `eggpath` may be `None` if no egg was found for the project, in
+           which case the project must be on the python path and its settings
+           defined in scrapyd.conf [settings] section
         """

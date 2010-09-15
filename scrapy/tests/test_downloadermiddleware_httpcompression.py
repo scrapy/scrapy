@@ -2,11 +2,14 @@ from __future__ import with_statement
 
 from unittest import TestCase
 from os.path import join, abspath, dirname
+from cStringIO import StringIO
+from gzip import GzipFile
 
 from scrapy.spider import BaseSpider
-from scrapy.http import Response, Request
+from scrapy.http import Response, Request, HtmlResponse
 from scrapy.contrib.downloadermiddleware.httpcompression import HttpCompressionMiddleware
 from scrapy.tests import tests_datadir
+from scrapy.utils.encoding import resolve_encoding
 
 
 SAMPLEDIR = join(tests_datadir, 'compressed')
@@ -96,3 +99,22 @@ class HttpCompressionTest(TestCase):
         newresponse = self.mw.process_response(request, response, self.spider)
         assert newresponse is not response
         self.assertEqual(newresponse.headers.getlist('Content-Encoding'), ['uuencode'])
+
+    def test_process_response_encoding_inside_body(self):
+        headers = {
+            'Content-Type': 'text/html',
+            'Content-Encoding': 'gzip',
+        }
+        f = StringIO()
+        plainbody = """<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=gb2312">"""
+        zf = GzipFile(fileobj=f, mode='wb')
+        zf.write(plainbody)
+        zf.close()
+        response = Response("http;//www.example.com/", headers=headers, body=f.getvalue())
+        request = Request("http://www.example.com/")
+
+        newresponse = self.mw.process_response(request, response, self.spider)
+        assert isinstance(newresponse, HtmlResponse)
+        self.assertEqual(newresponse.body, plainbody)
+        self.assertEqual(newresponse.encoding, resolve_encoding('gb2312'))
+

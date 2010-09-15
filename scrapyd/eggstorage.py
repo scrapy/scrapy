@@ -6,11 +6,10 @@ from shutil import copyfileobj, rmtree
 from distutils.version import LooseVersion
 
 from zope.interface import implements
-from twisted.application.service import Service
 
 from .interfaces import IEggStorage
 
-class FilesystemEggStorage(Service):
+class FilesystemEggStorage(object):
 
     implements(IEggStorage)
 
@@ -27,7 +26,10 @@ class FilesystemEggStorage(Service):
 
     def get(self, project, version=None):
         if version is None:
-            version = self.list(project)[-1]
+            try:
+                version = self.list(project)[-1]
+            except IndexError:
+                return None, None
         return version, open(self._eggpath(project, version), 'rb')
 
     def list(self, project):

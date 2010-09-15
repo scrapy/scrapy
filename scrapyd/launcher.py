@@ -39,15 +39,16 @@ class Launcher(Service):
     def _spawn_process(self, message, slot):
         project = message['project']
         eggpath = self._get_eggpath(project)
-        args = [sys.executable, '-m', self.egg_runner, eggpath, 'crawl']
+        args = [sys.executable, '-m', self.egg_runner, 'crawl']
         e = self.app.getComponent(IEnvironment)
-        env = e.get_environment(message, slot)
+        env = e.get_environment(message, slot, eggpath)
         pp = ScrapyProcessProtocol(eggpath, slot)
         pp.deferred.addBoth(self._process_finished, eggpath, slot)
         reactor.spawnProcess(pp, sys.executable, args=args, env=env)
 
     def _process_finished(self, _, eggpath, slot):
-        os.remove(eggpath)
+        if eggpath:
+            os.remove(eggpath)
         self._wait_for_project(slot)
 
 

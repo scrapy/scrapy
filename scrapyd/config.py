@@ -9,12 +9,16 @@ class Config(object):
 
     SECTION = 'scrapyd'
 
-    def __init__(self):
-        sources = self._getsources()
-        default_config = pkgutil.get_data(__package__, 'default_scrapyd.conf')
-        self.cp = SafeConfigParser()
-        self.cp.readfp(StringIO(default_config))
-        self.cp.read(sources)
+    def __init__(self, values=None):
+        if values is None:
+            sources = self._getsources()
+            default_config = pkgutil.get_data(__package__, 'default_scrapyd.conf')
+            self.cp = SafeConfigParser()
+            self.cp.readfp(StringIO(default_config))
+            self.cp.read(sources)
+        else:
+            self.cp = SafeConfigParser(values)
+            self.cp.add_section(self.SECTION)
 
     def _getsources(self):
         sources = ['/etc/scrapyd/scrapyd.conf', r'c:\scrapyd\scrapyd.conf']

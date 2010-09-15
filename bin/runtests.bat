@@ -1,6 +1,6 @@
 @ECHO off
 
-SET test="scrapy"
+SET test="scrapy scrapyd"
 IF NOT "%1" == "" SET test="%1"
 
 IF EXIST c:\python26\scripts\trial.py GOTO py26
