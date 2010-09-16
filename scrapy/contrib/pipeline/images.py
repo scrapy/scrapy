@@ -272,7 +272,11 @@ class ImagesPipeline(MediaPipeline):
         stats.inc_value('image_status_count/%s' % status, spider=spider)
 
     def convert_image(self, image, size=None):
-        if image.mode != 'RGB':
+        if image.format == 'PNG' and image.mode == 'RGBA':
+            background = Image.new('RGBA', image.size, (255, 255, 255))
+            background.paste(image, image)
+            image = background.convert('RGB')
+        elif image.mode != 'RGB':
             image = image.convert('RGB')
 
         if size:

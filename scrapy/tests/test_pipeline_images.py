@@ -1,4 +1,5 @@
 import os
+from cStringIO import StringIO
 from tempfile import mkdtemp
 from shutil import rmtree
 
@@ -7,13 +8,18 @@ from twisted.trial import unittest
 from scrapy.crawler import Crawler
 from scrapy.conf import settings
 
+try:
+    import Image
+    skip = False
+except ImportError, e:
+    skip = True
+
 
 class ImagesPipelineTestCase(unittest.TestCase):
+
+    skip = skip
+
     def setUp(self):
-        try:
-            import Image
-        except ImportError, e:
-            raise unittest.SkipTest(e)
         from scrapy.contrib.pipeline.images import ImagesPipeline
 
         self.crawler = Crawler(settings)
@@ -59,8 +65,36 @@ class ImagesPipelineTestCase(unittest.TestCase):
 
         key = 'some/image/key.jpg'
         path = os.path.join(self.tempdir, 'some', 'image', 'key.jpg')
-        self.assertEqual(self.pipeline.store._get_filesystem_path(key),
-            path)
+        self.assertEqual(self.pipeline.store._get_filesystem_path(key), path)
+
+    def test_convert_image(self):
+        SIZE = (100, 100)
+        # straigh forward case: RGB and JPEG
+        COLOUR = (0, 127, 255)
+        im = _create_image('JPEG', 'RGB', SIZE, COLOUR)
+        converted, _ = self.pipeline.convert_image(im)
+        self.assertEquals(converted.mode, 'RGB')
+        self.assertEquals(converted.getcolors(), [(10000, COLOUR)])
+
+        # check that thumbnail keep image ratio
+        thumbnail, _ = self.pipeline.convert_image(converted, size=(10, 25))
+        self.assertEquals(thumbnail.mode, 'RGB')
+        self.assertEquals(thumbnail.size, (10, 10))
+
+        # transparency case: RGBA and PNG
+        COLOUR = (0, 127, 255, 50)
+        im = _create_image('PNG', 'RGBA', SIZE, COLOUR)
+        converted, _ = self.pipeline.convert_image(im)
+        self.assertEquals(converted.mode, 'RGB')
+        self.assertEquals(converted.getcolors(), [(10000, (205, 230, 255))])
+
+
+
+def _create_image(format, *a, **kw):
+    buf = StringIO()
+    Image.new(*a, **kw).save(buf, format)
+    buf.seek(0)
+    return Image.open(buf)
 
 
 if __name__ == "__main__":
