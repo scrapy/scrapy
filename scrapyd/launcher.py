@@ -29,6 +29,8 @@ class Launcher(Service):
     def _get_eggpath(self, project):
         eggstorage = self.app.getComponent(IEggStorage)
         version, eggf = eggstorage.get(project)
+        if eggf is None:
+            return
         prefix = '%s-%s-' % (project, version)
         fd, eggpath = mkstemp(prefix=prefix, suffix='.egg')
         lf = os.fdopen(fd, 'wb')
