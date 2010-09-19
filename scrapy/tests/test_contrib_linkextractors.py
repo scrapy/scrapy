@@ -14,6 +14,7 @@ class LinkExtractorTestCase(unittest.TestCase):
         <p><a href="/about.html">About us</a></p>
         <img src="/logo.png" alt="Company logo (not a link)" />
         <p><a href="../othercat.html">Other category</a></p>
+        <p><a href="/">&gt;&gt;</a></p>
         <p><a href="/" /></p>
         </body></html>"""
         response = HtmlResponse("http://example.org/somepage/index.html", body=html)
@@ -23,6 +24,7 @@ class LinkExtractorTestCase(unittest.TestCase):
                          [Link(url='http://example.org/somepage/item/12.html', text='Item 12'), 
                           Link(url='http://example.org/about.html', text='About us'),
                           Link(url='http://example.org/othercat.html', text='Other category'), 
+                          Link(url='http://example.org/', text='>>'),
                           Link(url='http://example.org/', text='')])
 
     def test_base_url(self):
