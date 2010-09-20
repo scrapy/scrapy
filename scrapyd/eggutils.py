@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import os, sys, shutil, pkg_resources
 from subprocess import Popen, PIPE
 from tempfile import NamedTemporaryFile, mkdtemp
