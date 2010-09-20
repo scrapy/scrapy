@@ -330,6 +330,67 @@ class FormRequestTest(RequestTest):
         response = Response("http://www.example.com/lala.html", body=respbody)
         self.assertRaises(IndexError, self.request_class.from_response, response, formnumber=1)
 
+    def test_from_response_noformname(self):
+        respbody = """
+<form action="post.php" method="POST">
+<input type="hidden" name="one" value="1">
+<input type="hidden" name="two" value="2">
+</form>
+        """
+        response = Response("http://www.example.com/formname.html", body=respbody)
+        r1 = self.request_class.from_response(response, formdata={'two':'3'}, callback=lambda x: x)
+        self.assertEqual(r1.method, 'POST')
+        self.assertEqual(r1.headers['Content-type'], 'application/x-www-form-urlencoded')
+        fs = cgi.FieldStorage(StringIO(r1.body), r1.headers, environ={"REQUEST_METHOD": "POST"})
+        self.assertEqual(fs['one'].value, '1')
+        self.assertEqual(fs['two'].value, '3')
+
+
+    def test_from_response_formname_exists(self):
+        respbody = """
+<form action="post.php" method="POST">
+<input type="hidden" name="one" value="1">
+<input type="hidden" name="two" value="2">
+</form>
+<form name="form2" action="post.php" method="POST">
+<input type="hidden" name="three" value="3">
+<input type="hidden" name="four" value="4">
+</form>
+        """
+        response = Response("http://www.example.com/formname.html", body=respbody)
+        r1 = self.request_class.from_response(response, formname="form2", callback=lambda x: x)
+        self.assertEqual(r1.method, 'POST')
+        fs = cgi.FieldStorage(StringIO(r1.body), r1.headers, environ={"REQUEST_METHOD": "POST"})
+        self.assertEqual(fs['three'].value, "3")
+        self.assertEqual(fs['four'].value, "4")
+
+    def test_from_response_formname_notexist(self):
+        respbody = """
+<form name="form1" action="post.php" method="POST">
+<input type="hidden" name="one" value="1">
+</form>
+<form name="form2" action="post.php" method="POST">
+<input type="hidden" name="two" value="2">
+</form>
+        """
+        response = Response("http://www.example.com/formname.html", body=respbody)
+        r1 = self.request_class.from_response(response, formname="form3", callback=lambda x: x)
+        self.assertEqual(r1.method, 'POST')
+        fs = cgi.FieldStorage(StringIO(r1.body), r1.headers, environ={"REQUEST_METHOD": "POST"})
+        self.assertEqual(fs['one'].value, "1")
+
+    def test_from_response_formname_errors_formnumber(self):
+        respbody = """
+<form name="form1" action="post.php" method="POST">
+<input type="hidden" name="one" value="1">
+</form>
+<form name="form2" action="post.php" method="POST">
+<input type="hidden" name="two" value="2">
+</form>
+        """
+        response = Response("http://www.example.com/formname.html", body=respbody)
+        self.assertRaises(IndexError, self.request_class.from_response, response, formname="form3", formnumber=2)
+
 
 class XmlRpcRequestTest(RequestTest):
 

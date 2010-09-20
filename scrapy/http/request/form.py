@@ -37,17 +37,27 @@ class FormRequest(Request):
             self.headers['Content-Type'] = 'application/x-www-form-urlencoded'
 
     @classmethod
-    def from_response(cls, response, formnumber=0, formdata=None, 
+    def from_response(cls, response, formname=None, formnumber=0, formdata=None, 
                       clickdata=None, dont_click=False, **kwargs):
         encoding = getattr(response, 'encoding', 'utf-8')
         forms = ParseFile(StringIO(response.body), response.url,
                           encoding=encoding, backwards_compat=False)
         if not forms:
             raise ValueError("No <form> element found in %s" % response)
-        try:
-            form = forms[formnumber]
-        except IndexError:
-            raise IndexError("Form number %d not found in %s" % (formnumber, response))
+        
+        form = None
+
+        if formname:
+            for f in forms:
+                if f.name == formname:
+                    form = f
+                    break
+
+        if not form:
+            try:
+                form = forms[formnumber]
+            except IndexError:
+                raise IndexError("Form number %d not found in %s" % (formnumber, response))
         if formdata:
             # remove all existing fields with the same name before, so that
             # formdata fields properly can properly override existing ones,

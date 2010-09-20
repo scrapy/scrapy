@@ -254,7 +254,7 @@ objects.
     The :class:`FormRequest` objects support the following class method in
     addition to the standard :class:`Request` methods:
 
-    .. classmethod:: FormRequest.from_response(response, [formnumber=0, formdata=None, clickdata=None, dont_click=False, ...])
+    .. classmethod:: FormRequest.from_response(response, [formname=None, formnumber=0, formdata=None, clickdata=None, dont_click=False, ...])
 
        Returns a new :class:`FormRequest` object with its form field values
        pre-populated with those found in the HTML ``<form>`` element contained
@@ -277,6 +277,11 @@ objects.
           to pre-populate the form fields
        :type response: :class:`Response` object
 
+       :param formname: if given, the form with name attribute set to this value
+          will be used. Otherwise, ``formnumber`` will be used for selecting
+          the form.
+       :type formname: string
+
        :param formnumber: the number of form to use, when the response contains
           multiple forms. The first one (and also the default) is ``0``.
        :type formnumber: integer
@@ -297,6 +302,9 @@ objects.
 
        The other parameters of this class method are passed directly to the
        :class:`FormRequest` constructor.
+
+       .. versionadded:: 0.10.3
+          The ``formname`` parameter.
 
 Request usage examples
 ----------------------
