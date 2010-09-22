@@ -1,6 +1,8 @@
 import unittest
 
-from scrapy.settings import Settings
+from scrapy.settings import Settings, SpiderSettings
+from scrapy.utils.test import get_crawler
+from scrapy.spider import BaseSpider
 
 class SettingsTest(unittest.TestCase):
 
@@ -45,6 +47,56 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings['TEST_STRx'], None)
         self.assertEqual(settings.get('TEST_STRx'), None)
         self.assertEqual(settings.get('TEST_STRx', 'default'), 'default')
+
+class CrawlerSettingsTest(unittest.TestCase):
+
+    def test_global_defaults(self):
+        crawler = get_crawler()
+        self.assertEqual(crawler.settings.getint('DOWNLOAD_TIMEOUT'), 180)
+
+    def test_defaults(self):
+        crawler = get_crawler()
+        crawler.settings.defaults['DOWNLOAD_TIMEOUT'] = '99'
+        self.assertEqual(crawler.settings.getint('DOWNLOAD_TIMEOUT'), 99)
+
+    def test_settings_module(self):
+        crawler = get_crawler({'DOWNLOAD_TIMEOUT': '3'})
+        self.assertEqual(crawler.settings.getint('DOWNLOAD_TIMEOUT'), 3)
+
+    def test_overrides(self):
+        crawler = get_crawler({'DOWNLOAD_TIMEOUT': '3'})
+        crawler.settings.overrides['DOWNLOAD_TIMEOUT'] = '15'
+        self.assertEqual(crawler.settings.getint('DOWNLOAD_TIMEOUT'), 15)
+
+class SpiderSettingsTest(unittest.TestCase):
+
+    def test_global_defaults(self):
+        crawler = get_crawler()
+        settings = SpiderSettings(BaseSpider('name'), crawler.settings)
+        self.assertEqual(settings.getint('DOWNLOAD_TIMEOUT'), 180)
+
+    def test_defaults(self):
+        crawler = get_crawler()
+        crawler.settings.defaults['DOWNLOAD_TIMEOUT'] = '99'
+        settings = SpiderSettings(BaseSpider('name'), crawler.settings)
+        self.assertEqual(settings.getint('DOWNLOAD_TIMEOUT'), 99)
+
+    def test_crawler_defaults(self):
+        crawler = get_crawler({'DOWNLOAD_TIMEOUT': '3'})
+        settings = SpiderSettings(BaseSpider('name'), crawler.settings)
+        self.assertEqual(settings.getint('DOWNLOAD_TIMEOUT'), 3)
+
+    def test_spider_overrides_crawler(self):
+        crawler = get_crawler({'DOWNLOAD_TIMEOUT': '3'})
+        crawler.settings.defaults['DOWNLOAD_TIMEOUT'] = '99'
+        settings = SpiderSettings(BaseSpider('name', DOWNLOAD_TIMEOUT='12'), crawler.settings)
+        self.assertEqual(settings.getint('DOWNLOAD_TIMEOUT'), 12)
+
+    def test_overrides_most_precedence(self):
+        crawler = get_crawler({'DOWNLOAD_TIMEOUT': '3'})
+        crawler.settings.overrides['DOWNLOAD_TIMEOUT'] = '15'
+        settings = SpiderSettings(BaseSpider('name', DOWNLOAD_TIMEOUT='12'), crawler.settings)
+        self.assertEqual(settings.getint('DOWNLOAD_TIMEOUT'), 15)
 
 if __name__ == "__main__":
     unittest.main()
