@@ -398,9 +398,7 @@ setting (which is enabled by default). By default, Scrapy doesn't wait a fixed
 amount of time between requests, but uses a random interval between 0.5 and 1.5
 * :setting:`DOWNLOAD_DELAY`.
 
-Another way to change the download delay (per spider, instead of globally) is
-by using the ``download_delay`` spider attribute, which takes more precedence
-than this setting.
+You can also change this setting per spider.
 
 .. setting:: DOWNLOAD_HANDLERS
 

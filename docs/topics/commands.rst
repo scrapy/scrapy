@@ -73,10 +73,10 @@ information on which commands must be run from inside projects, and which not.
 
 Also keep in mind that some commands may have slightly different behaviours
 when running them from inside projects. For example, the fetch command will use
-spider-overridden behaviours (such as custom ``user_agent`` attribute) if the
-url being fetched is associated with some specific spider. This is intentional,
-as the ``fetch`` command is meant to be used to check how spiders are
-downloading pages.
+spider-overridden behaviours (such as custom :settings:`USER_AGENT` per-spider
+setting) if the url being fetched is associated with some specific spider. This
+is intentional, as the ``fetch`` command is meant to be used to check how
+spiders are downloading pages.
 
 .. _topics-commands-ref:
 
@@ -243,7 +243,7 @@ Downloads the given URL using the Scrapy downloader and writes the contents to
 standard output.
 
 The interesting thing about this command is that it fetches the page how the
-the spider would download it. For example, if the spider has an ``user_agent``
+the spider would download it. For example, if the spider has an ``USER_AGENT``
 attribute which overrides the User Agent, it will use that one.
 
 So this command can be used to "see" how your spider would fetch certain page.

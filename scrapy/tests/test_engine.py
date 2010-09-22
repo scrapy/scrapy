@@ -17,8 +17,7 @@ from twisted.web import server, static, util
 from twisted.trial import unittest
 
 from scrapy import signals
-from scrapy.settings import Settings
-from scrapy.crawler import Crawler
+from scrapy.utils.test import get_crawler
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.tests import tests_datadir
 from scrapy.spider import BaseSpider
@@ -95,8 +94,7 @@ class CrawlerRun(object):
         dispatcher.connect(self.request_received, signals.request_received)
         dispatcher.connect(self.response_downloaded, signals.response_downloaded)
 
-        settings = Settings()
-        self.crawler = Crawler(settings)
+        self.crawler = get_crawler()
         self.crawler.install()
         self.crawler.configure()
         self.crawler.queue.append_spider(self.spider)
