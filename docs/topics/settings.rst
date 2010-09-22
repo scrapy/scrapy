@@ -768,18 +768,6 @@ Default: ``+2``
 Adjust redirect request priority relative to original request.
 A negative priority adjust means more priority.
 
-.. setting:: REQUESTS_QUEUE_SIZE
-
-REQUESTS_QUEUE_SIZE
--------------------
-
-Default: ``0``
-
-Scope: ``scrapy.contrib.spidermiddleware.limit``
-
-If non zero, it will be used as an upper limit for the amount of requests that
-can be scheduled per domain.
-
 .. setting:: ROBOTSTXT_OBEY
 
 ROBOTSTXT_OBEY
@@ -866,7 +854,6 @@ Default::
     {
         'scrapy.contrib.spidermiddleware.httperror.HttpErrorMiddleware': 50,
         'scrapy.contrib.itemsampler.ItemSamplerMiddleware': 100,
-        'scrapy.contrib.spidermiddleware.requestlimit.RequestLimitMiddleware': 200,
         'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware': 500,
         'scrapy.contrib.spidermiddleware.referer.RefererMiddleware': 700,
         'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware': 800,
