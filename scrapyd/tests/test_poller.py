@@ -21,7 +21,7 @@ class QueuePollerTest(unittest.TestCase):
         os.makedirs(os.path.join(eggs_dir, 'mybot1'))
         os.makedirs(os.path.join(eggs_dir, 'mybot2'))
         config = Config(values={'eggs_dir': eggs_dir, 'dbs_dir': dbs_dir})
-        self.queues = get_spider_queues(eggs_dir, dbs_dir)
+        self.queues = get_spider_queues(config)
         self.poller = QueuePoller(config)
 
     def test_interface(self):

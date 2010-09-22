@@ -9,8 +9,7 @@ class QueuePoller(object):
     implements(IPoller)
 
     def __init__(self, config):
-        self.eggs_dir = config.get('eggs_dir', 'eggs')
-        self.dbs_dir = config.get('dbs_dir', 'dbs')
+        self.config = config
         self.update_projects()
         self.dq = DeferredQueue(size=1)
 
@@ -25,7 +24,7 @@ class QueuePoller(object):
         return self.dq.get()
 
     def update_projects(self):
-        self.queues = get_spider_queues(self.eggs_dir, self.dbs_dir)
+        self.queues = get_spider_queues(self.config)
 
     def _message(self, project):
         return {'project': str(project)}
