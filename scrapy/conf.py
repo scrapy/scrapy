@@ -34,7 +34,4 @@ def get_project_settings():
 
     return settings
 
-if os.environ.get('SCRAPY_SETTINGS_DISABLED'):
-    settings = CrawlerSettings()
-else:
-    settings = get_project_settings()
+settings = get_project_settings()
