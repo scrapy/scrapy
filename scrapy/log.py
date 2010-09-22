@@ -5,6 +5,7 @@ See documentation in docs/topics/logging.rst
 """
 import sys
 import logging
+import warnings
 
 from twisted.python import log
 
@@ -103,13 +104,15 @@ def start(logfile=None, loglevel=None, logstdout=None):
         if logstdout is None:
             logstdout = settings.getbool('LOG_STDOUT')
         sflo = ScrapyFileLogObserver(file, loglevel, settings['LOG_ENCODING'])
+        _oldshowwarning = warnings.showwarning
         log.startLoggingWithObserver(sflo.emit, setStdout=logstdout)
+        # restore warnings, wrongly silenced by Twisted
+        warnings.showwarning = _oldshowwarning
         msg("Scrapy %s started (bot: %s)" % (scrapy.__version__, \
             settings['BOT_NAME']))
 
 def msg(message, level=INFO, **kw):
     if 'component' in kw:
-        import warnings
         warnings.warn("Argument `component` of scrapy.log.msg() is deprecated", \
             DeprecationWarning, stacklevel=2)
     kw.setdefault('system', 'scrapy')
