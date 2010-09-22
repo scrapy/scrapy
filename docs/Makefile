@@ -3,9 +3,6 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 
-# Required for autodoc
-export SCRAPY_SETTINGS_DISABLED = 1
-
 # You can set these variables from the command line.
 PYTHON       = python
 SPHINXOPTS   =

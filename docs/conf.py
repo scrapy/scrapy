@@ -26,7 +26,7 @@ sys.path.append(path.join(path.dirname(path.dirname(__file__)), "scrapy"))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['scrapydocs', 'sphinx.ext.autodoc']
+extensions = ['scrapydocs']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
