@@ -57,3 +57,25 @@ class CrawlerSettings(Settings):
 
     def __str__(self):
         return "<CrawlerSettings module=%r>" % self.settings_module.__name__
+
+
+class SpiderSettings(Settings):
+
+    def __init__(self, spider, crawler_settings, **kw):
+        super(SpiderSettings, self).__init__(**kw)
+        self.spider = spider
+        self.cset = crawler_settings
+
+    def __getitem__(self, opt_name):
+        if opt_name in self.cset.overrides:
+            return self.cset.overrides[opt_name]
+        if hasattr(self.spider, opt_name):
+            return getattr(self.spider, opt_name)
+        if self.cset.settings_module and hasattr(self.cset.settings_module, opt_name):
+            return getattr(self.cset.settings_module, opt_name)
+        if opt_name in self.cset.defaults:
+            return self.cset.defaults[opt_name]
+        return super(SpiderSettings, self).__getitem__(opt_name)
+
+    def __str__(self):
+        return "<SpiderSettings spider=%r>" % self.spider.name
