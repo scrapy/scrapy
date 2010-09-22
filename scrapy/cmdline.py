@@ -4,31 +4,32 @@ import sys
 import os
 import optparse
 import cProfile
+import inspect
 
 import scrapy
 from scrapy.crawler import CrawlerProcess
 from scrapy.xlib import lsprofcalltree
 from scrapy.conf import settings
+from scrapy.command import ScrapyCommand
 from scrapy.exceptions import UsageError
+from scrapy.utils.misc import walk_modules
 
-def _find_commands(dir):
-    try:
-        return [f[:-3] for f in os.listdir(dir) if not f.startswith('_') and \
-            f.endswith('.py')]
-    except OSError:
-        return []
+def _iter_command_classes(module_name):
+    # TODO: add `name` attribute to commands and and merge this function with
+    # scrapy.utils.spider.iter_spider_classes
+    for module in walk_modules(module_name):
+        for obj in vars(module).itervalues():
+            if inspect.isclass(obj) and \
+               issubclass(obj, ScrapyCommand) and \
+               obj.__module__ == module.__name__:
+                yield obj
 
 def _get_commands_from_module(module, inproject):
     d = {}
-    mod = __import__(module, {}, {}, [''])
-    for cmdname in _find_commands(mod.__path__[0]):
-        modname = '%s.%s' % (module, cmdname)
-        command = getattr(__import__(modname, {}, {}, [cmdname]), 'Command', None)
-        if callable(command):
-            if inproject or not command.requires_project:
-                d[cmdname] = command()
-        else:
-            raise RuntimeError("Module %r does not define a Command class" % modname)
+    for cmd in _iter_command_classes(module):
+        if inproject or not cmd.requires_project:
+            cmdname = cmd.__module__.split('.')[-1]
+            d[cmdname] = cmd()
     return d
 
 def _get_commands_dict(inproject):
