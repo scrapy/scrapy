@@ -1,6 +1,6 @@
 import unittest
 
-from scrapy.conf import Settings
+from scrapy.settings import Settings
 
 class SettingsTest(unittest.TestCase):
 

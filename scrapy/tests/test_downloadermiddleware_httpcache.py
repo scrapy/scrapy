@@ -3,7 +3,7 @@ import unittest, tempfile, shutil, time
 from scrapy.http import Response, HtmlResponse, Request
 from scrapy.spider import BaseSpider
 from scrapy.contrib.downloadermiddleware.httpcache import FilesystemCacheStorage, HttpCacheMiddleware
-from scrapy.conf import Settings
+from scrapy.settings import Settings
 from scrapy.exceptions import IgnoreRequest
 
 

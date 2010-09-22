@@ -17,7 +17,7 @@ from twisted.web import server, static, util
 from twisted.trial import unittest
 
 from scrapy import signals
-from scrapy.conf import Settings
+from scrapy.settings import Settings
 from scrapy.crawler import Crawler
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.tests import tests_datadir

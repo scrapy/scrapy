@@ -39,10 +39,9 @@ different precedence. Here is the list of them in decreasing order of
 precedence:
 
  1. Global overrides (most precedence)
- 2. Environment variables
- 3. scrapy_settings
- 4. Default settings per-command
- 5. Default global settings (less precedence)
+ 2. Project settings module
+ 3. Default settings per-command
+ 4. Default global settings (less precedence)
 
 These mechanisms are described in more detail below.
 
@@ -65,27 +64,14 @@ Example::
 
     scrapy crawl domain.com --set LOG_FILE=scrapy.log
 
-2. Environment variables
-------------------------
+2. Project settings module
+--------------------------
 
-You can populate settings using environment variables prefixed with
-``SCRAPY_``. For example, to change the log file location un Unix systems::
+The project settings module is the standard configuration file for your Scrapy
+project.  It's where most of your custom settings will be populated. For
+example:: ``myproject.settings``.
 
-    $ export SCRAPY_LOG_FILE=scrapy.log
-    $ scrapy crawl example.com
-
-In Windows systems, you can change the environment variables from the Control
-Panel following `these guidelines`_.
-
-.. _these guidelines: http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
-
-3. scrapy_settings
-------------------
-
-scrapy_settings is the standard configuration file for your Scrapy project.
-It's where most of your custom settings will be populated.
-
-4. Default settings per-command
+3. Default settings per-command
 -------------------------------
 
 Each :doc:`Scrapy tool </topics/commands>` command can have its own default
@@ -93,11 +79,11 @@ settings, which override the global default settings. Those custom command
 settings are specified in the ``default_settings`` attribute of the command
 class.
 
-5. Default global settings
+4. Default global settings
 --------------------------
 
-The global defaults are located in scrapy.conf.default_settings and documented
-in the :ref:`topics-settings-ref` section.
+The global defaults are located in the ``scrapy.settings.default_settings``
+module and documented in the :ref:`topics-settings-ref` section.
 
 How to access settings
 ======================

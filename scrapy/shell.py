@@ -18,7 +18,8 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
 from scrapy.utils.url import any_to_uri
 from scrapy.utils.console import start_python_console
-from scrapy.conf import settings, Settings
+from scrapy.conf import settings
+from scrapy.settings import Settings
 from scrapy.http import Request, Response, TextResponse
 
 class Shell(object):
