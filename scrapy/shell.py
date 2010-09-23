@@ -56,23 +56,26 @@ class Shell(object):
         if spider is None:
             spider = create_spider_for_request(self.crawler.spiders, request, \
                 BaseSpider('default'), log_multiple=True)
+        spider.set_crawler(self.crawler)
         self.crawler.engine.open_spider(spider)
         return self.crawler.engine.schedule(request, spider)
 
     def fetch(self, request_or_url, spider=None):
-        if isinstance(request_or_url, Request):
-            request = request_or_url
-            url = request.url
-        else:
-            url = any_to_uri(request_or_url)
-            request = Request(url, dont_filter=True)
-        response = None
+        # we enclose all this code in a try/except block to see errors when
+        # they happen in a thread
         try:
+            if isinstance(request_or_url, Request):
+                request = request_or_url
+                url = request.url
+            else:
+                url = any_to_uri(request_or_url)
+                request = Request(url, dont_filter=True)
+            response = None
             response = threads.blockingCallFromThread(reactor, \
                 self._schedule, request, spider)
+            self.populate_vars(url, response, request, spider)
         except:
-            log.err(Failure(), "Error fetching response", spider=spider)
-        self.populate_vars(url, response, request, spider)
+            log.err(Failure(), "Error fetching: %s" % request_or_url, spider=spider)
 
     def populate_vars(self, url=None, response=None, request=None, spider=None):
         item = self.item_class()
