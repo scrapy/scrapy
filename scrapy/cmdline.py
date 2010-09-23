@@ -128,6 +128,7 @@ def execute(argv=None):
     opts, args = parser.parse_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
     _run_print_help(parser, _run_command, cmd, args, opts)
+    sys.exit(cmd.exitcode)
 
 def _run_command(cmd, args, opts):
     if opts.profile or opts.lsprof:
