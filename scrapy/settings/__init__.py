@@ -56,7 +56,11 @@ class CrawlerSettings(Settings):
         return super(CrawlerSettings, self).__getitem__(opt_name)
 
     def __str__(self):
-        return "<CrawlerSettings module=%r>" % self.settings_module.__name__
+        if self.settings_module:
+            return "<CrawlerSettings module=%r path=%r>" % \
+                (self.settings_module.__name__, self.settings_module.__file__)
+        else:
+            return "<CrawlerSettings module=None>"
 
 
 class SpiderSettings(Settings):
