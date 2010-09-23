@@ -7,9 +7,7 @@ See documentation in docs/topics/shell.rst
 import signal
 
 from twisted.internet import reactor, threads
-from twisted.python.failure import Failure
 
-from scrapy import log
 from scrapy.item import BaseItem
 from scrapy.spider import BaseSpider
 from scrapy.selector import XPathSelector, XmlXPathSelector, HtmlXPathSelector
@@ -18,7 +16,6 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
 from scrapy.utils.url import any_to_uri
 from scrapy.utils.console import start_python_console
-from scrapy.conf import settings
 from scrapy.settings import Settings
 from scrapy.http import Request, Response, TextResponse
 
@@ -31,7 +28,7 @@ class Shell(object):
         self.crawler = crawler
         self.vars = {}
         self.update_vars = update_vars or (lambda x: None)
-        self.item_class = load_object(settings['DEFAULT_ITEM_CLASS'])
+        self.item_class = load_object(crawler.settings['DEFAULT_ITEM_CLASS'])
         self.inthread = inthread
         self.code = code
 
@@ -81,7 +78,7 @@ class Shell(object):
     def populate_vars(self, url=None, response=None, request=None, spider=None):
         item = self.item_class()
         self.vars['item'] = item
-        self.vars['settings'] = settings
+        self.vars['settings'] = self.crawler.settings
         if url:
             if isinstance(response, TextResponse):
                 self.vars['xxs'] = XmlXPathSelector(response)
