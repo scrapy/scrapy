@@ -62,7 +62,9 @@ class Shell(object):
                 BaseSpider('default'), log_multiple=True)
         spider.set_crawler(self.crawler)
         self.crawler.engine.open_spider(spider)
-        return self.crawler.engine.schedule(request, spider)
+        d = self.crawler.engine.schedule(request, spider)
+        d.addCallback(lambda x: (x, spider))
+        return d
 
     def fetch(self, request_or_url, spider=None):
         if isinstance(request_or_url, Request):
@@ -72,7 +74,7 @@ class Shell(object):
             url = any_to_uri(request_or_url)
             request = Request(url, dont_filter=True)
         response = None
-        response = threads.blockingCallFromThread(reactor, \
+        response, spider = threads.blockingCallFromThread(reactor, \
             self._schedule, request, spider)
         self.populate_vars(url, response, request, spider)
 
