@@ -27,12 +27,13 @@ class Shell(object):
     relevant_classes = (BaseSpider, Request, Response, BaseItem, \
         XPathSelector, Settings)
 
-    def __init__(self, crawler, update_vars=None, inthread=False):
+    def __init__(self, crawler, update_vars=None, inthread=False, code=None):
         self.crawler = crawler
         self.vars = {}
         self.update_vars = update_vars or (lambda x: None)
         self.item_class = load_object(settings['DEFAULT_ITEM_CLASS'])
         self.inthread = inthread
+        self.code = code
 
     def start(self, *a, **kw):
         # disable accidental Ctrl-C key press from shutting down the engine
@@ -50,7 +51,10 @@ class Shell(object):
         elif response:
             request = response.request
             self.populate_vars(request.url, response, request, spider)
-        start_python_console(self.vars)
+        if self.code:
+            print eval(self.code, globals(), self.vars)
+        else:
+            start_python_console(self.vars)
 
     def _schedule(self, request, spider):
         if spider is None:
@@ -61,21 +65,16 @@ class Shell(object):
         return self.crawler.engine.schedule(request, spider)
 
     def fetch(self, request_or_url, spider=None):
-        # we enclose all this code in a try/except block to see errors when
-        # they happen in a thread
-        try:
-            if isinstance(request_or_url, Request):
-                request = request_or_url
-                url = request.url
-            else:
-                url = any_to_uri(request_or_url)
-                request = Request(url, dont_filter=True)
-            response = None
-            response = threads.blockingCallFromThread(reactor, \
-                self._schedule, request, spider)
-            self.populate_vars(url, response, request, spider)
-        except:
-            log.err(Failure(), "Error fetching: %s" % request_or_url, spider=spider)
+        if isinstance(request_or_url, Request):
+            request = request_or_url
+            url = request.url
+        else:
+            url = any_to_uri(request_or_url)
+            request = Request(url, dont_filter=True)
+        response = None
+        response = threads.blockingCallFromThread(reactor, \
+            self._schedule, request, spider)
+        self.populate_vars(url, response, request, spider)
 
     def populate_vars(self, url=None, response=None, request=None, spider=None):
         item = self.item_class()
@@ -93,7 +92,8 @@ class Shell(object):
         self.vars['view'] = open_in_browser
         self.vars['shelp'] = self.print_help
         self.update_vars(self.vars)
-        self.print_help()
+        if not self.code:
+            self.print_help()
 
     def print_help(self):
         self.p("Available Scrapy objects:")
