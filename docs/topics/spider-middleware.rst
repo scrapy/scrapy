@@ -245,25 +245,6 @@ RefererMiddleware
 
    Populates Request referer field, based on the Response which originated it.
 
-RequestLimitMiddleware
-----------------------
-
-.. module:: scrapy.contrib.spidermiddleware.requestlimit
-   :synopsis: Request limit Spider Middleware
-
-.. class:: RequestLimitMiddleware
-
-   Limits the maximum number of requests in the scheduler for each spider. When
-   a spider tries to schedule more than the allowed amount of requests, the new
-   requests (returned by the spider) will be dropped.
-
-   The :class:`RequestLimitMiddleware` can be configured through the following
-   settings (see the settings documentation for more info):
-
-      * :setting:`REQUESTS_QUEUE_SIZE` - If non zero, it will be used as an
-        upper limit for the amount of requests that can be scheduled per
-        domain. Can be set per spider using ``requests_queue_size`` attribute.
-
 UrlLengthMiddleware
 -------------------
 
