@@ -277,7 +277,7 @@ class UrlUtilsTest(unittest.TestCase):
     def test_path_to_file_uri(self):
         if os.name == 'nt':
             self.assertEqual(path_to_file_uri("C:\\windows\clock.avi"),
-                             "file:///C|/windows/clock.avi")
+                             "file:///C:/windows/clock.avi")
         else:
             self.assertEqual(path_to_file_uri("/some/path.txt"),
                              "file:///some/path.txt")
@@ -289,9 +289,9 @@ class UrlUtilsTest(unittest.TestCase):
 
     def test_file_uri_to_path(self):
         if os.name == 'nt':
-            self.assertEqual(file_uri_to_path("file:///C|/windows/clock.avi"),
+            self.assertEqual(file_uri_to_path("file:///C:/windows/clock.avi"),
                              "C:\\windows\clock.avi")
-            uri = "file:///C|/windows/clock.avi"
+            uri = "file:///C:/windows/clock.avi"
             uri2 = path_to_file_uri(file_uri_to_path(uri))
             self.assertEqual(uri, uri2)
         else:
@@ -309,7 +309,7 @@ class UrlUtilsTest(unittest.TestCase):
     def test_any_to_uri(self):
         if os.name == 'nt':
             self.assertEqual(any_to_uri("C:\\windows\clock.avi"),
-                             "file:///C|/windows/clock.avi")
+                             "file:///C:/windows/clock.avi")
         else:
             self.assertEqual(any_to_uri("/some/path.txt"),
                              "file:///some/path.txt")
