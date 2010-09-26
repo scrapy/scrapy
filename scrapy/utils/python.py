@@ -191,3 +191,17 @@ class WeakKeyCache(object):
         if key not in self._weakdict:
             self._weakdict[key] = self.default_factory(key)
         return self._weakdict[key]
+
+
+def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
+    """Return a (new) dict with the unicode keys (and values if, keys_only is
+    False) of the given dict converted to strings. `dct_or_tuples` can be a
+    dict or a list of tuples, like any dict constructor supports.
+    """
+    d = {}
+    for k, v in dict(dct_or_tuples).iteritems():
+        k = k.encode(encoding) if isinstance(k, unicode) else k
+        if not keys_only:
+            v = v.encode(encoding) if isinstance(v, unicode) else v
+        d[k] = v
+    return d

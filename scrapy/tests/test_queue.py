@@ -100,6 +100,17 @@ class ExecutionQueueTest(unittest.TestCase):
         self.assert_(spider.name == 'test123')
         self.assert_(spider.arg == '123')
 
+    def test_append_next(self):
+        # the reason for this test: http://dev.scrapy.org/ticket/250
+        class MockQueue(object):
+            def pop(self):
+                return {u'name': u'test123', u'test': u'hello'}
+        self.queue._queue = MockQueue()
+        self.queue._append_next()
+        spider = self.queue.spider_requests[0][0]
+        self.assert_(spider.name == 'test123')
+        self.assert_(spider.test == 'hello')
+
     def _assert_request_urls(self, requests, urls):
         assert all(isinstance(x, Request) for x in requests)
         self.assertEqual([x.url for x in requests], urls)

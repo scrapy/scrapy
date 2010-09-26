@@ -3,6 +3,7 @@ from twisted.internet import defer
 from scrapy.http import Request
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.spider import create_spider_for_request
+from scrapy.utils.python import stringify_dict
 from scrapy import log
 
 
@@ -23,6 +24,7 @@ class ExecutionQueue(object):
         msg = self._queue.pop()
         if msg:
             name = msg.pop('name')
+            msg = stringify_dict(msg) # see #250
             self.append_spider_name(name, **msg)
 
     def get_next(self):

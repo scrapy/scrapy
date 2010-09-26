@@ -4,7 +4,7 @@ from itertools import count
 
 from scrapy.utils.python import str_to_unicode, unicode_to_str, \
     memoizemethod_noargs, isbinarytext, equal_attributes, \
-    WeakKeyCache
+    WeakKeyCache, stringify_dict
 
 class UtilsPythonTestCase(unittest.TestCase):
     def test_str_to_unicode(self):
@@ -122,7 +122,29 @@ class UtilsPythonTestCase(unittest.TestCase):
         del k
         self.assertFalse(len(wk._weakdict))
 
+    def test_stringify_dict(self):
+        d = {'a': 123, u'b': 'c', u'd': u'e', object(): u'e'}
+        d2 = stringify_dict(d, keys_only=False)
+        self.failUnlessEqual(d, d2)
+        self.failIf(d is d2) # shouldn't modify in place
+        self.failIf(any(isinstance(x, unicode) for x in d2.keys()))
+        self.failIf(any(isinstance(x, unicode) for x in d2.values()))
 
+    def test_stringify_dict_tuples(self):
+        tuples = [('a', 123), (u'b', 'c'), (u'd', u'e'), (object(), u'e')]
+        d = dict(tuples)
+        d2 = stringify_dict(tuples, keys_only=False)
+        self.failUnlessEqual(d, d2)
+        self.failIf(d is d2) # shouldn't modify in place
+        self.failIf(any(isinstance(x, unicode) for x in d2.keys()), d2.keys())
+        self.failIf(any(isinstance(x, unicode) for x in d2.values()))
+
+    def test_stringify_dict_keys_only(self):
+        d = {'a': 123, u'b': 'c', u'd': u'e', object(): u'e'}
+        d2 = stringify_dict(d)
+        self.failUnlessEqual(d, d2)
+        self.failIf(d is d2) # shouldn't modify in place
+        self.failIf(any(isinstance(x, unicode) for x in d2.keys()))
 
 if __name__ == "__main__":
     unittest.main()
