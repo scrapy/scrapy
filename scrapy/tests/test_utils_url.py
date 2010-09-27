@@ -285,7 +285,7 @@ class UrlUtilsTest(unittest.TestCase):
         fn = "test.txt"
         x = path_to_file_uri(fn)
         self.assert_(x.startswith('file:///'))
-        self.assertEqual(file_uri_to_path(x), os.path.abspath(fn))
+        self.assertEqual(file_uri_to_path(x).lower(), os.path.abspath(fn).lower())
 
     def test_file_uri_to_path(self):
         if os.name == 'nt':
