@@ -4,6 +4,7 @@
 # some of its features, like package dependencies.
 from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
+from subprocess import Popen, PIPE
 import os
 import sys
 
@@ -78,9 +79,14 @@ scripts = ['bin/scrapy']
 if os.name == 'nt':
     scripts.append('extras/scrapy.bat')
 
+version = __import__('scrapy').__version__
+if os.environ.get('SCRAPY_VERSION_FROM_HG'):
+    rev = Popen(["hg", "tip", "--template", "{rev}"], stdout=PIPE).communicate()[0]
+    version = "%s.r%s" % (version, rev)
+
 setup_args = {
     'name': 'Scrapy',
-    'version': __import__('scrapy').__version__,
+    'version': version,
     'url': 'http://scrapy.org',
     'description': 'A high-level Python Screen Scraping framework',
     'long_description': 'Scrapy is a high level scraping and web crawling framework for writing spiders to crawl and parse web pages for all kinds of purposes, from information retrieval to monitoring or testing web sites.',
