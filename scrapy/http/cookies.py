@@ -84,7 +84,7 @@ class WrappedRequest(object):
         return self.request.meta.get('is_unverifiable', False)
 
     def get_origin_req_host(self):
-        return self.request.hostname
+        return urlparse_cached(self.request).hostname
 
     def has_header(self, name):
         return name in self.request.headers
