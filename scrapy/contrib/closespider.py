@@ -18,21 +18,30 @@ class CloseSpider(object):
     def __init__(self):
         self.timeout = settings.getint('CLOSESPIDER_TIMEOUT')
         self.itempassed = settings.getint('CLOSESPIDER_ITEMPASSED')
+        self.pagecount = settings.getint('CLOSESPIDER_PAGECOUNT')
 
+        self.pagecounts = defaultdict(int)
         self.counts = defaultdict(int)
         self.tasks = {}
 
+        if self.pagecount:
+            dispatcher.connect(self.page_count, signal=signals.response_received)
         if self.timeout:
             dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
         if self.itempassed:
             dispatcher.connect(self.item_passed, signal=signals.item_passed)
         dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
+    def page_count(self, response, request, spider):
+        self.pagecounts[spider] += 1
+        if self.pagecounts[spider] == self.pagecount:
+            crawler.engine.close_spider(spider, 'closespider_pagecount')
+
     def spider_opened(self, spider):
         self.tasks[spider] = reactor.callLater(self.timeout, \
             crawler.engine.close_spider, spider=spider, \
             reason='closespider_timeout')
-        
+
     def item_passed(self, item, spider):
         self.counts[spider] += 1
         if self.counts[spider] == self.itempassed:

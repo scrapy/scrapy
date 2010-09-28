@@ -302,6 +302,20 @@ that amount if items and those items are passed by the item pipeline, the
 spider will be closed with the reason ``closespider_itempassed``. If zero (or
 non set), spiders won't be closed by number of passed items.
 
+.. setting:: CLOSESPIDER_PAGECOUNT
+
+CLOSESPIDER_PAGECOUNT
+""""""""""""""""""""""
+
+Default: ``0``
+
+.. versionadded: 0.11
+
+An integer which specifies the maximum number of responses to crawl. If the spider
+crawls more than that, the spider will be closed with the reason
+``closespider_pagecount``. If zero (or non set), spiders won't be closed by
+number of crawled responses.
+
 StatsMailer extension
 ~~~~~~~~~~~~~~~~~~~~~
 
