@@ -3,7 +3,6 @@ Unit tests for pageparsing
 """
 import os
 from cStringIO import StringIO                                                                                                    
-from gzip import GzipFile
 
 from twisted.trial.unittest import TestCase, SkipTest
 from scrapy.utils.python import str_to_unicode
@@ -274,14 +273,13 @@ class TestPageParsing(TestCase):
         """
         Tests from real pages. More reliable and easy to build for more complicated structures
         """
-        samples_file = open(os.path.join(path, "samples_pageparsing.json.gz"), "rb")
-        samples = []
-        for line in GzipFile(fileobj=StringIO(samples_file.read())).readlines():
-            samples.append(json.loads(line))
-        for sample in samples:
-            source = sample["annotated"]
-            annotations = sample["annotations"]
-            template = HtmlPage(body=str_to_unicode(source))
+        SAMPLES_FILE_PREFIX = os.path.join(path, "samples/samples_pageparsing")
+        count = 0
+        fname = "%s_%d.json" % (SAMPLES_FILE_PREFIX, count)
+        while os.path.exists(fname):
+            source = str_to_unicode(open("%s_%d.html" % (SAMPLES_FILE_PREFIX, count), "r").read())
+            annotations = json.loads(str_to_unicode(open(fname, "r").read()))
+            template = HtmlPage(body=source)
             parser = TemplatePageParser(TokenDict())
             parser.feed(template)
             for annotation in parser.annotations:
@@ -293,3 +291,5 @@ class TestPageParsing(TestCase):
                     else:
                         self.assertEqual(getattr(annotation, s), test_annotation[s])
             self.assertEqual(annotations, [])
+            count += 1
+            fname = "%s_%d.json" % (SAMPLES_FILE_PREFIX, count)
