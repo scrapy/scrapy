@@ -137,7 +137,7 @@ PARSED2 = [
  {'end': 8, 'start': 7},
  {'attributes': {}, 'end': 14, 'start': 8, 'tag': u'body', 'tag_type': 1},
  {'end': 15, 'start': 14},
- {'attributes': {u'style': u'&#34;margin:', u'0pt&#34;': None, u'class': u'&#34;MsoNormal&#34;', u'0cm': None}, 'end': 80, 'start': 15, 'tag': u'p', 'tag_type': 2},
+ {'attributes': {u'style': u'&#34;margin:', u'0pt&#34;': None, u'class': u'&#34;MsoNormal&#34;', u'0cm': None}, 'end': 80, 'start': 15, 'tag': u'p', 'tag_type': 1},
  {'attributes': {u'lang': u'&#34;EN-GB&#34;'}, 'end': 107, 'start': 80, 'tag': u'span', 'tag_type': 1},
  {'end': 121, 'start': 107},
  {'attributes': {}, 'end': 128, 'start': 121, 'tag': u'span', 'tag_type': 2},
