@@ -208,11 +208,19 @@
                 "end": 1073, 
                 "start": 1043, 
                 "tag_type": 1
-        }, 
+        },
+        {       
+                "start": 1073,
+                "end": 1074
+        },
         {
-                "start": 1073, 
+                "start": 1074, 
+                "end": 2052
+        },
+        {
+                "start": 2052,
                 "end": 2053
-        }, 
+        },
         {
                 "attributes": {}, 
                 "tag": "script", 

@@ -208,8 +208,16 @@
         }, 
         {
                 "start": 1954, 
+                "end": 1956
+        },
+        {
+                "start": 1956,
+                "end": 1979
+        },
+        {
+                "start": 1979,
                 "end": 1980
-        }, 
+        },
         {
                 "attributes": {
                         "src": "http://images.play.com/sitetrak/cmdatatagutilsA.js", 
@@ -266,6 +274,14 @@
         }, 
         {
                 "start": 2282, 
+                "end": 2283
+        },
+        {
+                "start": 2283,
+                "end": 2437
+        },
+        {
+                "start": 2437,
                 "end": 2438
         }, 
         {
@@ -325,6 +341,14 @@
         }, 
         {
                 "start": 2860, 
+                "end": 2861
+        },
+        {
+                "start": 2861,
+                "end": 2882
+        },
+        {
+                "start": 2882,
                 "end": 2884
         }, 
         {
