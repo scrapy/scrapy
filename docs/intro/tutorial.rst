@@ -304,25 +304,25 @@ is inside a ``<ul>`` element, in fact the *second* ``<ul>`` element.
 So we can select each ``<li>`` element belonging to the sites list with this
 code::
 
-   hxs.select('//ul[2]/li')
+   hxs.select('//ul/li')
 
 And from them, the sites descriptions::
 
-   hxs.select('//ul[2]/li/text()').extract()
+   hxs.select('//ul/li/text()').extract()
 
 The sites titles::
 
-   hxs.select('//ul[2]/li/a/text()').extract()
+   hxs.select('//ul/li/a/text()').extract()
 
 And the sites links::
 
-   hxs.select('//ul[2]/li/a/@href').extract()
+   hxs.select('//ul/li/a/@href').extract()
 
 As we said before, each ``select()`` call returns a list of selectors, so we can
 concatenate further ``select()`` calls to dig deeper into a node. We are going to use
 that property here, so::
 
-   sites = hxs.select('//ul[2]/li')
+   sites = hxs.select('//ul/li')
    for site in sites:
        title = site.select('a/text()').extract()
        link = site.select('a/@href').extract()
@@ -351,7 +351,7 @@ Let's add this code to our spider::
        
       def parse(self, response):
           hxs = HtmlXPathSelector(response)
-          sites = hxs.select('//ul[2]/li')
+          sites = hxs.select('//ul/li')
           for site in sites:
               title = site.select('a/text()').extract()
               link = site.select('a/@href').extract()
@@ -394,7 +394,7 @@ scraped so far, the code for our Spider should be like this::
        
       def parse(self, response):
           hxs = HtmlXPathSelector(response)
-          sites = hxs.select('//ul[2]/li')
+          sites = hxs.select('//ul/li')
           items = []
           for site in sites:
               item = DmozItem()
