@@ -43,9 +43,9 @@ def add_sample(source):
     while os.path.exists("%s_%d.json" % (SAMPLES_FILE_PREFIX, count)):
         count += 1
     
-    open("%s_%d.html" % (SAMPLES_FILE_PREFIX, count), "w").write(unicode_to_str(source))
+    open("%s_%d.html" % (SAMPLES_FILE_PREFIX, count), "wb").write(unicode_to_str(source))
     parsed = list(parse_html(source))
-    open("%s_%d.json" % (SAMPLES_FILE_PREFIX, count), "w")\
+    open("%s_%d.json" % (SAMPLES_FILE_PREFIX, count), "wb")\
         .write(json.dumps(parsed, default=_encode_element, indent=8))
 
 class TestParseHtml(TestCase):
@@ -96,8 +96,8 @@ class TestParseHtml(TestCase):
         count = 0
         fname = "%s_%d.json" % (SAMPLES_FILE_PREFIX, count)
         while os.path.exists(fname):
-            source = str_to_unicode(open("%s_%d.html" % (SAMPLES_FILE_PREFIX, count), "r").read())
-            parsed = json.loads(str_to_unicode(open(fname, "r").read()),\
+            source = str_to_unicode(open("%s_%d.html" % (SAMPLES_FILE_PREFIX, count), "rb").read())
+            parsed = json.loads(str_to_unicode(open(fname, "rb").read()),\
                     object_hook=_decode_element)
             self._test_sample(source, parsed, count)
             count += 1

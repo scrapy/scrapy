@@ -277,8 +277,8 @@ class TestPageParsing(TestCase):
         count = 0
         fname = "%s_%d.json" % (SAMPLES_FILE_PREFIX, count)
         while os.path.exists(fname):
-            source = str_to_unicode(open("%s_%d.html" % (SAMPLES_FILE_PREFIX, count), "r").read())
-            annotations = json.loads(str_to_unicode(open(fname, "r").read()))
+            source = str_to_unicode(open("%s_%d.html" % (SAMPLES_FILE_PREFIX, count), "rb").read())
+            annotations = json.loads(str_to_unicode(open(fname, "rb").read()))
             template = HtmlPage(body=source)
             parser = TemplatePageParser(TokenDict())
             parser.feed(template)
