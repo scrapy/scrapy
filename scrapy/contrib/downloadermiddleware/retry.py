@@ -11,9 +11,6 @@ once the spider has finished crawling all regular (non failed) pages. Once
 there is no more failed pages to retry this middleware sends a signal
 (retry_complete), so other extensions could connect to that signal.
 
-Default values are located in scrapy.conf.default_settings, like any other
-setting
-
 About HTTP errors to consider:
 
 - You may want to remove 400 from RETRY_HTTP_CODES, if you stick to the HTTP

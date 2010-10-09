@@ -7,9 +7,7 @@ See documentation in docs/topics/shell.rst
 import signal
 
 from twisted.internet import reactor, threads
-from twisted.python.failure import Failure
 
-from scrapy import log
 from scrapy.item import BaseItem
 from scrapy.spider import BaseSpider
 from scrapy.selector import XPathSelector, XmlXPathSelector, HtmlXPathSelector
@@ -18,7 +16,7 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
 from scrapy.utils.url import any_to_uri
 from scrapy.utils.console import start_python_console
-from scrapy.conf import settings, Settings
+from scrapy.settings import Settings
 from scrapy.http import Request, Response, TextResponse
 
 class Shell(object):
@@ -26,12 +24,13 @@ class Shell(object):
     relevant_classes = (BaseSpider, Request, Response, BaseItem, \
         XPathSelector, Settings)
 
-    def __init__(self, crawler, update_vars=None, inthread=False):
+    def __init__(self, crawler, update_vars=None, inthread=False, code=None):
         self.crawler = crawler
         self.vars = {}
         self.update_vars = update_vars or (lambda x: None)
-        self.item_class = load_object(settings['DEFAULT_ITEM_CLASS'])
+        self.item_class = load_object(crawler.settings['DEFAULT_ITEM_CLASS'])
         self.inthread = inthread
+        self.code = code
 
     def start(self, *a, **kw):
         # disable accidental Ctrl-C key press from shutting down the engine
@@ -49,14 +48,20 @@ class Shell(object):
         elif response:
             request = response.request
             self.populate_vars(request.url, response, request, spider)
-        start_python_console(self.vars)
+        if self.code:
+            print eval(self.code, globals(), self.vars)
+        else:
+            start_python_console(self.vars)
 
     def _schedule(self, request, spider):
         if spider is None:
             spider = create_spider_for_request(self.crawler.spiders, request, \
                 BaseSpider('default'), log_multiple=True)
+        spider.set_crawler(self.crawler)
         self.crawler.engine.open_spider(spider)
-        return self.crawler.engine.schedule(request, spider)
+        d = self.crawler.engine.schedule(request, spider)
+        d.addCallback(lambda x: (x, spider))
+        return d
 
     def fetch(self, request_or_url, spider=None):
         if isinstance(request_or_url, Request):
@@ -66,17 +71,14 @@ class Shell(object):
             url = any_to_uri(request_or_url)
             request = Request(url, dont_filter=True)
         response = None
-        try:
-            response = threads.blockingCallFromThread(reactor, \
-                self._schedule, request, spider)
-        except:
-            log.err(Failure(), "Error fetching response", spider=spider)
+        response, spider = threads.blockingCallFromThread(reactor, \
+            self._schedule, request, spider)
         self.populate_vars(url, response, request, spider)
 
     def populate_vars(self, url=None, response=None, request=None, spider=None):
         item = self.item_class()
         self.vars['item'] = item
-        self.vars['settings'] = settings
+        self.vars['settings'] = self.crawler.settings
         if url:
             if isinstance(response, TextResponse):
                 self.vars['xxs'] = XmlXPathSelector(response)
@@ -89,7 +91,8 @@ class Shell(object):
         self.vars['view'] = open_in_browser
         self.vars['shelp'] = self.print_help
         self.update_vars(self.vars)
-        self.print_help()
+        if not self.code:
+            self.print_help()
 
     def print_help(self):
         self.p("Available Scrapy objects:")

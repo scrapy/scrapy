@@ -61,7 +61,6 @@ class CommandTest(ProjectTest):
         super(CommandTest, self).setUp()
         self.call('startproject', self.project_name)
         self.cwd = join(self.temp_path, self.project_name)
-        self.env.pop('SCRAPY_SETTINGS_DISABLED', None)
         self.env['SCRAPY_SETTINGS_MODULE'] = '%s.settings' % self.project_name
 
 
