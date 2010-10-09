@@ -172,6 +172,20 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
         self.assertEqual(transport.value(), testvalue)
         return testvalue
 
+    def test_non_standard_line_endings(self):
+        # regression test for: http://dev.scrapy.org/ticket/258
+        factory = client.ScrapyHTTPClientFactory(Request(
+            url='http://foo/bar'))
+        protocol = client.ScrapyHTTPPageGetter()
+        protocol.factory = factory
+        protocol.headers = Headers()
+        protocol.dataReceived("HTTP/1.0 200 OK\n")
+        protocol.dataReceived("Hello: World\n")
+        protocol.dataReceived("Foo: Bar\n")
+        protocol.dataReceived("\n")
+        self.assertEqual(protocol.headers,
+            Headers({'Hello': ['World'], 'Foo': ['Bar']}))
+
 
 from twisted.web.test.test_webclient import ForeverTakingResource, \
         ErrorResource, NoLengthResource, HostHeaderResource, \

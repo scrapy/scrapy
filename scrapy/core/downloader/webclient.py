@@ -33,6 +33,8 @@ def _parse(url):
 
 class ScrapyHTTPPageGetter(HTTPClient):
 
+    delimiter = '\n'
+
     def connectionMade(self):
         self.headers = Headers() # bucket for response headers
 
@@ -46,6 +48,9 @@ class ScrapyHTTPPageGetter(HTTPClient):
         # Body
         if self.factory.body is not None:
             self.transport.write(self.factory.body)
+
+    def lineReceived(self, line):
+        return HTTPClient.lineReceived(self, line.rstrip())
 
     def handleHeader(self, key, value):
         self.headers.appendlist(key, value)
