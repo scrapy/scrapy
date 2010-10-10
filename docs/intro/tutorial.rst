@@ -409,55 +409,23 @@ Now doing a crawl on the dmoz.org domain yields ``DmozItem``'s::
    [dmoz.org] DEBUG: Scraped DmozItem(desc=[u' - By David Mertz; Addison Wesley. Book in progress, full text, ASCII format. Asks for feedback. [author website, Gnosis Software, Inc.]\n'], link=[u'http://gnosis.cx/TPiP/'], title=[u'Text Processing in Python']) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
    [dmoz.org] DEBUG: Scraped DmozItem(desc=[u' - By Sean McGrath; Prentice Hall PTR, 2000, ISBN 0130211192, has CD-ROM. Methods to build XML applications fast, Python tutorial, DOM and SAX, new Pyxie open source XML processing library. [Prentice Hall PTR]\n'], link=[u'http://www.informit.com/store/product.aspx?isbn=0130211192'], title=[u'XML Processing with Python']) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
 
+Storing the scraped data
+========================
 
-Storing the data (using an Item Pipeline)
-=========================================
+The simplest way to store the scraped data is by using the :ref:`Feed exports
+<topics-feed-exports>`, with the following command::
 
-After an item has been scraped by a Spider, it is sent to the :ref:`Item
-Pipeline <topics-item-pipeline>`.
+    scrapy crawl dmoz.org --set FEED_URI=items.json --set FEED_FORMAT=json
 
-The Item Pipeline is a group of user written Python classes that implement a
-simple method. They receive an Item and perform an action over it (for example:
-validation, checking for duplicates, or storing it in a database), and then
-decide if the Item continues through the Pipeline or it's dropped and no longer
-processed.
+That will generate a ``items.json`` file containing all scraped items,
+serialized in `JSON`_.
 
-In small projects (like the one on this tutorial), we will use only one Item
-Pipeline that just stores our Items.
-
-As with Items, a Pipeline placeholder has been set up for you in the project
-creation step, it's in ``dmoz/pipelines.py`` and looks like this::
-
-   # Define your item pipelines here
-
-   class DmozPipeline(object):
-       def process_item(self, item, spider):
-           return item
-
-We have to override the ``process_item`` method in order to store our Items
-somewhere. 
-
-Here's a simple pipeline for storing the scraped items into a CSV (comma
-separated values) file using the standard library `csv module`_::
-
-   import csv
-
-   class CsvWriterPipeline(object):
-
-       def __init__(self):
-           self.csvwriter = csv.writer(open('items.csv', 'wb'))
-        
-       def process_item(self, item, spider):
-           self.csvwriter.writerow([item['title'][0], item['link'][0], item['desc'][0]])
-           return item
-
-.. _csv module: http://docs.python.org/library/csv.html
-
-
-Don't forget to enable the pipeline by adding it to the
-:setting:`ITEM_PIPELINES` setting in your settings.py, like this::
-
-    ITEM_PIPELINES = ['dmoz.pipelines.CsvWriterPipeline']
+In small projects (like the one in this tutorial), that should be enough.
+However, if you want to perform more complex things with the scraped items, you
+can write an :ref:`Item Pipeline <topics-item-pipeline>`. As with Items, a
+placeholder file for Item Pipelines has been set up for you when the project is
+created, in ``dmoz/pipelines.py``. Though you don't need to implement any item
+pipeline if you just want to store the scraped items.
 
 Finale
 ======
@@ -465,3 +433,5 @@ Finale
 This tutorial covers only the basics of Scrapy, but there's a lot of other
 features not mentioned here. We recommend you continue reading the section
 :ref:`topics-index`.
+
+.. _JSON: http://en.wikipedia.org/wiki/JSON

@@ -7,12 +7,17 @@ Item Pipeline
 After an item has been scraped by a spider, it is sent to the Item Pipeline
 which process it through several components that are executed sequentially.
 
-Item pipelines are usually implemented on each project. Typical usage for item
-pipelines consists of:
+Each item pipeline component (sometimes referred as just "Item Pipeline") is a
+Python class that implements a simple method. They receive an Item and perform
+an action over it, also deciding if the Item should continue through the
+pipeline or be dropped and no longer processed.
 
-* HTML cleansing
-* validation
-* persistence (storing the scraped item)
+Typical use for item pipelines are:
+
+* cleansing HTML data
+* validating scraped data (checking that the items contain certain fields)
+* checking for duplicates (and dropping them)
+* storing the scraped item in a database
 
 
 Writing your own item pipeline
@@ -54,6 +59,9 @@ Additionally, they may also implement the following methods:
 Item pipeline example
 =====================
 
+Price validation and dropping items with no prices
+--------------------------------------------------
+
 Let's take a look at the following hypothetic pipeline that adjusts the ``price``
 attribute for those items that do not include VAT (``price_excludes_vat``
 attribute), and drops those items which don't contain a price::
@@ -73,6 +81,29 @@ attribute), and drops those items which don't contain a price::
                 raise DropItem("Missing price in %s" % item)
 
 
+Write items to a JSON file
+--------------------------
+
+The following pipeline stores all scraped items (from all spiders) into a a
+single ``items.jl`` file, containing one item per line serialized in JSON
+format::
+
+   import json
+
+   class JsonWriterPipeline(object):
+
+       def __init__(self):
+           self.file = open('items.jl', 'wb')
+
+       def process_item(self, item, spider):
+           line = json.dumps(dict(item)) + "\n"
+           self.file.write(line)
+           return item
+
+.. note:: The purpose of JsonWriterPipeline is just to introduce how to write
+   item pipelines. If you really want to store all scraped items into a JSON
+   file you should use the :ref:`Feed exports <topics-feed-exports>`.
+
 Activating an Item Pipeline component
 =====================================
 
@@ -81,6 +112,7 @@ To activate an Item Pipeline component you must add its class to the
 
    ITEM_PIPELINES = [
        'myproject.pipeline.PricePipeline',
+       'myproject.pipeline.JsonWriterPipeline',
    ]
 
 Item pipeline example with resources per spider
