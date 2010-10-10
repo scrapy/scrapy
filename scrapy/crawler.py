@@ -54,6 +54,7 @@ class Crawler(object):
     @defer.inlineCallbacks
     def _start_spider(self, spider, requests):
         """Don't call this method. Use self.queue to start new spiders"""
+        spider.set_crawler(self)
         yield defer.maybeDeferred(self.engine.open_spider, spider)
         for request in requests:
             self.engine.crawl(request, spider)
