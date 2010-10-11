@@ -35,6 +35,13 @@ class RetryTest(unittest.TestCase):
         r = self.mw.process_response(req, rsp, self.spider)
         assert r is rsp
 
+    def test_dont_retry_exc(self):
+        req = Request('http://www.scrapytest.org/503', meta={'dont_retry': True})
+        rsp = Response('http://www.scrapytest.org/503', body='', status=503)
+
+        r = self.mw.process_exception(req, DNSLookupError(), self.spider)
+        assert r is None
+
     def test_503(self):
         req = Request('http://www.scrapytest.org/503')
         rsp = Response('http://www.scrapytest.org/503', body='', status=503)
