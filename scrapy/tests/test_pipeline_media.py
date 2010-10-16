@@ -2,7 +2,7 @@ from twisted.trial import unittest
 from twisted.python import failure
 from twisted.internet import defer, reactor
 
-from scrapy.conf import Settings
+from scrapy.settings import Settings
 from scrapy.crawler import Crawler
 from scrapy.http import Request, Response
 from scrapy.spider import BaseSpider
