@@ -212,9 +212,19 @@ scraping easy and efficient, such as:
   well-defined API (middlewares, :ref:`extensions <topics-extensions>`, and
   :ref:`pipelines <topics-item-pipeline>`).
 
-* Wide range of built-in middlewares and extensions for handling of
-  compression, cache, cookies, authentication, user-agent spoofing, robots.txt
-  handling, statistics, crawl depth restriction, etc
+* Wide range of built-in middlewares and extensions for:
+
+  * cookies and session handling
+  * HTTP compression
+  * HTTP authentication
+  * HTTP cache
+  * user-agent spoofing
+  * robots.txt
+  * crawl depth restriction
+  * and more
+
+* Robust encoding support and auto-detection, for dealing with foreign,
+  non-standard and broken encoding declarations.
 
 * Extensible :ref:`stats collection <topics-stats>` for multiple spider
   metrics, useful for monitoring the performance of your spiders and detecting
@@ -233,8 +243,8 @@ scraping easy and efficient, such as:
   console running inside your Scrapy process, to introspect and debug your
   crawler
 
-* Built-in :ref:`logging <topics-logging>` facility that you can hook to for
-  catching errors during the scraping process.
+* :ref:`Logging <topics-logging>` facility that you can hook on to for catching
+  errors during the scraping process.
 
 What's next?
 ============
