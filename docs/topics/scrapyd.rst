@@ -279,6 +279,7 @@ Add a version to a project, creating the project if it doesn't exist.
 
 * Supported Request Methods: ``POST``
 * Parameters:
+
   * ``project`` (string, required) - the project name
   * ``version`` (string, required) - the project version
   * ``egg`` (file, required) - a Python egg containing the project's code
