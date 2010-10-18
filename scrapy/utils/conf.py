@@ -55,7 +55,8 @@ def get_config(use_closest=True):
     return cfg
 
 def get_sources(use_closest=True):
-    sources = [os.path.expanduser('~/.scrapy.cfg'), '/etc/scrapy.cfg']
+    sources = ['/etc/scrapy.cfg', r'c:\scrapy\scrapy.cfg', \
+        os.path.expanduser('~/.scrapy.cfg')]
     if use_closest:
-        sources.insert(0, closest_scrapy_cfg())
+        sources.append(closest_scrapy_cfg())
     return sources
