@@ -107,6 +107,7 @@ Global commands:
 * :command:`shell`
 * :command:`fetch`
 * :command:`view`
+* :command:`version`
 
 Project-only commands:
 
@@ -116,6 +117,7 @@ Project-only commands:
 * :command:`genspider`
 * :command:`runserver`
 * :command:`queue`
+* :command:`deploy`
 
 .. command:: startproject
 
@@ -399,6 +401,8 @@ And clear the queue::
 
     $ scrapy queue clear
 
+.. command:: version
+
 version
 -------
 
@@ -407,6 +411,17 @@ version
 
 Prints the Scrapy version.
 
+.. command:: deploy
+
+deploy
+------
+
+.. versionadded:: 0.11
+
+* Syntax: ``scrapy deploy [ <target:project> | -l <target> | -L ]``
+* Requires project: *yes*
+
+Deploy the project into a Scrapyd server. See :ref:`topics-deploying`.
 
 Custom project commands
 =======================
