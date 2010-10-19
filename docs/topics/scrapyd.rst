@@ -272,9 +272,30 @@ response returned from the Scrapyd server. If you have a ``setup.py`` file in
 your project, that one will be used. Otherwise a ``setup.py`` file will be
 created automatically (based on a simple template) that you can edit later.
 
-If you don't want to specify the target and project every time you run ``scrapy
-deploy`` you can define the default target and project in the ``scrapy.cfg``
-file, like this::
+After running that command you will see something like this meaning your
+project was uploaded successfully::
+
+    Deploying myproject-1287453519 to http://localhost:6800/addversion.json
+    Server response (200):
+    {"status": "ok", "spiders": ["spider1", "spider2"]}
+
+By default ``scrapy deploy`` uses the current timestamp for generating the
+project version, as you can see in the output above. However, you can pass a
+custom version with the ``--version`` option::
+
+    scrapy deploy scrapyd:project1 --version 54
+
+Also, if you use Mercurial for tracking your project source code, you can use
+``HG`` for the version which will be replaced by the current Mercurial
+revision, for example ``r382``::
+
+    scrapy deploy scrapyd:project1 --version HG
+
+Support for other version discovery sources may be added in the future.
+
+Finally, if you don't want to specify the target and project every time you run
+``scrapy deploy`` you can define the default ones in the ``scrapy.cfg`` file,
+like this::
 
     [deploy]
     target = scrapyd
