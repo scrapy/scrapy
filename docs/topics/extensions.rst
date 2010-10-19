@@ -276,7 +276,12 @@ Closes a spider automatically when some conditions are met, using a specific
 closing reason for each condition.
 
 The conditions for closing a spider can be configured through the following
-settings. Other conditions will be supported in the future.
+settings:
+
+* :setting:`CLOSESPIDER_TIMEOUT`
+* :setting:`CLOSESPIDER_ITEMPASSED`
+* :setting:`CLOSESPIDER_PAGECOUNT`
+* :setting:`CLOSESPIDER_ERRORCOUNT`
 
 .. setting:: CLOSESPIDER_TIMEOUT
 
@@ -305,7 +310,9 @@ non set), spiders won't be closed by number of passed items.
 .. setting:: CLOSESPIDER_PAGECOUNT
 
 CLOSESPIDER_PAGECOUNT
-""""""""""""""""""""""
+"""""""""""""""""""""
+
+.. versionadded:: 0.11
 
 Default: ``0``
 
@@ -314,7 +321,19 @@ crawls more than that, the spider will be closed with the reason
 ``closespider_pagecount``. If zero (or non set), spiders won't be closed by
 number of crawled responses.
 
+.. setting:: CLOSESPIDER_ERRORCOUNT
+
+CLOSESPIDER_ERRORCOUNT
+""""""""""""""""""""""
+
 .. versionadded:: 0.11
+
+Default: ``0``
+
+An integer which specifies the maximum number of errors to receive before
+closing the spider. If the spider generates more than that number of errors,
+it will be closed with the reason ``closespider_errorcount``. If zero (or non
+set), spiders won't be closed by number of errors.
 
 StatsMailer extension
 ~~~~~~~~~~~~~~~~~~~~~
