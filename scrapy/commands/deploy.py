@@ -39,6 +39,8 @@ setup(
 
 class Command(ScrapyCommand):
 
+    requires_project = True
+
     def syntax(self):
         return "[options] [ <target:project> | -l <target> | -L ]"
 
