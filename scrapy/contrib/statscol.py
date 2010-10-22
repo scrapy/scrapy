@@ -18,10 +18,13 @@ class SimpledbStatsCollector(StatsCollector):
     def __init__(self):
         super(SimpledbStatsCollector, self).__init__()
         self._sdbdomain = settings['STATS_SDB_DOMAIN']
+        self._access_key = settings['AWS_ACCESS_KEY_ID']
+        self._secret_key = settings['AWS_SECRET_ACCESS_KEY']
+
         self._async = settings.getbool('STATS_SDB_ASYNC')
         import boto
         self.connect_sdb = boto.connect_sdb
-        self.connect_sdb().create_domain(self._sdbdomain)
+        self.connect_sdb(aws_access_key_id=self._access_key, aws_secret_access_key=self._secret_key).create_domain(self._sdbdomain)
 
     def _persist_stats(self, stats, spider=None):
         if spider is None: # only store spider-specific stats
@@ -41,7 +44,7 @@ class SimpledbStatsCollector(StatsCollector):
         sdb_item = dict((k, self._to_sdb_value(v, k)) for k, v in stats.iteritems())
         sdb_item['spider'] = spider.name
         sdb_item['timestamp'] = self._to_sdb_value(ts)
-        self.connect_sdb().put_attributes(self._sdbdomain, sdb_item_id, sdb_item)
+        self.connect_sdb(aws_access_key_id=self._access_key, aws_secret_access_key=self._secret_key).put_attributes(self._sdbdomain, sdb_item_id, sdb_item)
 
     def _get_timestamp(self, spider):
         return datetime.utcnow()
