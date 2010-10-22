@@ -607,6 +607,32 @@ EXTRACT_PAGE19b = u"""
 </body></html>
 """
 
+ANNOTATED_PAGE20 = u"""
+<html><body>
+<h1>Product Name</h1>
+<img src="product.jpg">
+<br/>
+<span><ins data-scrapy-annotate="{&quot;variant&quot;: 1, &quot;generated&quot;: true,                                              
+&quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">Twin</ins>:</span> $<ins data-scrapy-annotate="{&quot;variant&quot;: 1, &quot;generated&quot;: true,
+&quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}">270</ins> - November 2010<br/>
+<span><ins data-scrapy-annotate="{&quot;variant&quot;: 2, &quot;generated&quot;: true,
+&quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">Queen</ins>:</span> $<ins data-scrapy-annotate="{&quot;variant&quot;: 2, &quot;generated&quot;: true,
+&quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}">330</ins> - In stock<br/>
+<br/>
+</body></html>
+"""
+
+EXTRACT_PAGE20 = u"""
+<html><body>
+<h1>Product Name</h1>
+<img src="product.jpg">
+<br/>
+<span>Twin:</span> $270 - November 2010<br/>
+<span>Queen:</span> $330 - Movember 2010<br/>
+<br/>
+</body></html>
+"""
+
 SAMPLE_DESCRIPTOR1 = ItemDescriptor('test', 'product test', [
     A('name', "Product name", required=True),
     A('price', "Product price, including any discounts and tax or vat", 
@@ -780,6 +806,12 @@ TEST_DATA = [
     ('extra required attribute no product', [ANNOTATED_PAGE19], EXTRACT_PAGE19b,
          SAMPLE_DESCRIPTOR1,
          None,
+    ),
+    ('repeated partial annotations with variants', [ANNOTATED_PAGE20], EXTRACT_PAGE20, None,
+            {u'variants': [
+                {'price': ['270'], 'name': ['Twin']},
+                {'price': ['330'], 'name': ['Queen']},
+            ]},
     ),
 ]
 

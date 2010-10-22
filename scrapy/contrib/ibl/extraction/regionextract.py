@@ -409,16 +409,16 @@ class RecordExtractor(object):
                 _, _, nested_data = self._doextract(page, nested_regions, pindex, sindex)
                 extracted_data += nested_data
             if following_regions:
-                _, _, following_data = self._doextract(page, following_regions, sindex or start_index, end_region)
+                _, _, following_data = self._doextract(page, following_regions, sindex or start_index, end_index)
                 extracted_data += following_data
         
         elif following_regions:
-            end_index, _, following_data = self._doextract(page, following_regions, start_index, end_region)
+            end_index, _, following_data = self._doextract(page, following_regions, start_index, end_index)
             if end_index is not None:
                 pindex, sindex, extracted_data = self._doextract(page, [first_region], start_index, end_index - 1, nested_regions, ignored_regions)
                 extracted_data += following_data
         elif nested_regions:
-            _, _, nested_data = self._doextract(page, nested_regions, start_index, end_region)
+            _, _, nested_data = self._doextract(page, nested_regions, start_index, end_index)
             extracted_data += nested_data
         return pindex, sindex, extracted_data
                 
