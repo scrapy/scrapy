@@ -137,7 +137,7 @@ PARSED2 = [
  {'end': 8, 'start': 7},
  {'attributes': {}, 'end': 14, 'start': 8, 'tag': u'body', 'tag_type': 1},
  {'end': 15, 'start': 14},
- {'attributes': {u'style': u'&#34;margin:', u'0pt&#34;': None, u'class': u'&#34;MsoNormal&#34;', u'0cm': None}, 'end': 80, 'start': 15, 'tag': u'p', 'tag_type': 2},
+ {'attributes': {u'style': u'&#34;margin:', u'0pt&#34;': None, u'class': u'&#34;MsoNormal&#34;', u'0cm': None}, 'end': 80, 'start': 15, 'tag': u'p', 'tag_type': 1},
  {'attributes': {u'lang': u'&#34;EN-GB&#34;'}, 'end': 107, 'start': 80, 'tag': u'span', 'tag_type': 1},
  {'end': 121, 'start': 107},
  {'attributes': {}, 'end': 128, 'start': 121, 'tag': u'span', 'tag_type': 2},
@@ -165,7 +165,9 @@ PARSED3 = [
  {'attributes': {}, 'end': 55, 'start': 51, 'tag': u'p', 'tag_type': 2},
  {'end': 70, 'start': 55},
  {'attributes': {u'type': u'text/javascript'}, 'end': 101, 'start': 70, 'tag': u'script', 'tag_type': 1},
- {'end': 124, 'start': 101},
+ {'end': 104, 'start': 101},
+ {'end': 118, 'start': 104},
+ {'end': 124, 'start': 118},
  {'attributes': {}, 'end': 133, 'start': 124, 'tag': u'script', 'tag_type': 2},
  {'attributes': {}, 'end': 140, 'start': 133, 'tag': u'body', 'tag_type': 2},
  {'attributes': {}, 'end': 147, 'start': 140, 'tag': u'html', 'tag_type': 2}
@@ -204,7 +206,8 @@ PARSED5 = [
  {'end': 45, 'start': 42},
  {'attributes': {}, 'end': 54, 'start': 45, 'tag': u'script', 'tag_type': 2},
  {'attributes': {}, 'end': 61, 'start': 54, 'tag': u'body', 'tag_type': 2},
- {'end': 91, 'start': 61},
+ {'end': 76, 'start': 61},
+ {'end': 91, 'start': 76},
  {'attributes': {}, 'end': 98, 'start': 91, 'tag': u'html', 'tag_type': 2},
 ]
  
@@ -215,7 +218,9 @@ PARSED6 = [
  {'attributes': {}, 'end': 6, 'start': 0, 'tag': u'html', 'tag_type': 1},
  {'attributes': {}, 'end': 12, 'start': 6, 'tag': u'body', 'tag_type': 1},
  {'attributes': {}, 'end': 20, 'start': 12, 'tag': u'script', 'tag_type': 1},
- {'end': 40, 'start': 20},
+ {'end': 23, 'start': 20},
+ {'end': 37, 'start': 23},
+ {'end': 40, 'start': 37},
  {'attributes': {}, 'end': 49, 'start': 40, 'tag': u'script', 'tag_type': 2},
  {'end': 52, 'start': 49},
  {'attributes': {}, 'end': 60, 'start': 52, 'tag': u'script', 'tag_type': 1},
@@ -225,3 +230,19 @@ PARSED6 = [
  {'attributes': {}, 'end': 81, 'start': 74, 'tag': u'body', 'tag_type': 2},
  {'attributes': {}, 'end': 88, 'start': 81, 'tag': u'html', 'tag_type': 2},
 ]
+
+# Test source without ending body nor html
+PAGE7 = u"""<html><body><p>veris in temporibus sub aprilis idibus</p><script>script code</script><!--comment-->"""
+
+PARSED7 = [
+    {'attributes' : {}, 'end': 6, 'start': 0, 'tag': u'html', 'tag_type': 1},
+    {'attributes': {}, 'end': 12, 'start': 6, 'tag': u'body', 'tag_type': 1},
+    {'attributes': {}, 'end': 15, 'start': 12, 'tag': u'p', 'tag_type': 1},
+    {'end': 53, 'start': 15},
+    {'attributes': {}, 'end': 57, 'start': 53, 'tag': u'p', 'tag_type': 2},
+    {'attributes' : {}, 'end': 65, 'start': 57, 'tag': u'script', 'tag_type': 1},
+    {'end': 76, 'start': 65},
+    {'attributes' : {}, 'end': 85, 'start': 76, 'tag': u'script', 'tag_type': 2},
+    {'end': 99, 'start': 85},
+]
+
