@@ -9,6 +9,8 @@ from scrapy.spider import BaseSpider
 from scrapy.utils.request import request_fingerprint
 from scrapy.contrib.pipeline.media import MediaPipeline
 from scrapy.utils.test import get_crawler
+from scrapy.utils.signal import disconnect_all
+from scrapy import signals
 from scrapy import log
 
 
@@ -28,6 +30,9 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         self.info = self.pipe.spiderinfo[self.spider]
 
     def tearDown(self):
+        for name, signal in vars(signals).items():
+            if not name.startswith('_'):
+                disconnect_all(signal)
         self.pipe.close_spider(self.spider)
 
     def test_default_media_to_download(self):
