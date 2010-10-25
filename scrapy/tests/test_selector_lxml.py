@@ -1,15 +1,24 @@
 # TODO: we should merge these tests with test_selector_libxml2.py
 
 import re
-import unittest
 import weakref
 
+from twisted.trial import unittest
+
 from scrapy.http import TextResponse, HtmlResponse, XmlResponse
-from scrapy.selector.lxmlsel import XmlXPathSelector, HtmlXPathSelector, \
-    XPathSelector
+nolxml = False
+try:
+    from scrapy.selector.lxmlsel import XmlXPathSelector, HtmlXPathSelector, \
+        XPathSelector
+except ImportError:
+    nolxml = True
+
 from scrapy.utils.test import libxml2debug
 
 class XPathSelectorTestCase(unittest.TestCase):
+
+    if nolxml:
+        skip = "lxml not available"
 
     @libxml2debug
     def test_selector_simple(self):
