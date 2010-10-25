@@ -80,6 +80,12 @@ class S3ImagesStore(object):
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
 
+    POLICY = 'public-read'
+    HEADERS = {
+            'Cache-Control': 'max-age=172800',
+            'Content-Type': 'image/jpeg',
+            }
+
     def __init__(self, uri):
         assert uri.startswith('s3://')
         self.bucket, self.prefix = uri[5:].split('/', 1)
@@ -107,15 +113,14 @@ class S3ImagesStore(object):
     def persist_image(self, key, image, buf, info):
         """Upload image to S3 storage"""
         width, height = image.size
-        headers = {'Cache-Control': 'max-age=172800'} # 2 days of cache
         b = self._get_boto_bucket()
         key_name = '%s%s' % (self.prefix, key)
         k = b.new_key(key_name)
         k.set_metadata('width', str(width))
         k.set_metadata('height', str(height))
         buf.seek(0)
-        return threads.deferToThread(k.set_contents_from_file, buf, headers, \
-            policy='public-read')
+        return threads.deferToThread(k.set_contents_from_file, buf, \
+                headers=self.HEADERS, policy=self.POLICY)
 
 
 class ImagesPipeline(MediaPipeline):
