@@ -212,6 +212,8 @@ SCHEDULER_MIDDLEWARES_BASE = {
 
 SCHEDULER_ORDER = 'DFO'
 
+SELECTORS_BACKEND = None # possible values: libxml2, lxml
+
 SPIDER_MANAGER_CLASS = 'scrapy.spidermanager.SpiderManager'
 
 SPIDER_MIDDLEWARES = {}

@@ -1,5 +1,4 @@
 import os
-import libxml2
 from twisted.trial import unittest
 
 from scrapy.utils.iterators import csviter, xmliter

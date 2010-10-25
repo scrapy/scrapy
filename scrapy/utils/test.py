@@ -4,7 +4,6 @@ This module contains some assorted functions used in tests
 
 import os
 
-import libxml2
 from twisted.trial.unittest import SkipTest
 
 from scrapy.crawler import Crawler
@@ -19,6 +18,10 @@ def libxml2debug(testfunction):
     LIBXML2_DEBUGLEAKS is set.
 
     """
+    try:
+        import libxml2
+    except ImportError:
+        return testfunction
     def newfunc(*args, **kwargs):
         libxml2.debugMemory(1)
         testfunction(*args, **kwargs)
