@@ -111,6 +111,8 @@ class MockedMediaPipeline(MediaPipeline):
 
     def media_to_download(self, request, info):
         self._mockcalled.append('media_to_download')
+        if 'result' in request.meta:
+            return request.meta.get('result')
         return super(MockedMediaPipeline, self).media_to_download(request, info)
 
     def get_media_requests(self, item, info):
@@ -235,10 +237,10 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
     def test_wait_if_request_is_downloading(self):
         def _check_downloading(response):
             fp = request_fingerprint(req1)
-            assert fp in self.info.downloading, self.info.downloading
-            assert fp in self.info.waiting, self.info.waiting
-            assert len(self.info.waiting[fp]) == 2, self.info.waiting
-            assert fp not in self.info.downloaded, self.info.downloaded
+            self.assertTrue(fp in self.info.downloading)
+            self.assertTrue(fp in self.info.waiting)
+            self.assertTrue(fp not in self.info.downloaded)
+            self.assertEqual(len(self.info.waiting[fp]), 2)
             return response
 
         rsp1 = Response('url')
@@ -248,10 +250,19 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
             return dfd
 
         def rsp2_func():
-            assert False, 'This can not be called'
+            self.fail('it must cache rsp1 result and must not try to redownload')
 
         req1 = Request('url', meta=dict(response=rsp1_func))
         req2 = Request(req1.url, meta=dict(response=rsp2_func))
         item = dict(requests=[req1, req2])
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(True, rsp1), (True, rsp1)])
+
+    @inlineCallbacks
+    def test_use_media_to_download_result(self):
+        req = Request('url', meta=dict(result='ITSME', response=self.fail))
+        item = dict(requests=req)
+        new_item = yield self.pipe.process_item(item, self.spider)
+        self.assertEqual(new_item['results'], [(True, 'ITSME')])
+        self.assertEqual(self.pipe._mockcalled, \
+                ['get_media_requests', 'media_to_download', 'item_completed'])
