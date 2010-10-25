@@ -1,16 +1,24 @@
+# TODO: we should merge these tests with test_selector_libxml2.py
+
 import re
-import unittest
 import weakref
 
-import libxml2
+from twisted.trial import unittest
 
 from scrapy.http import TextResponse, HtmlResponse, XmlResponse
-from scrapy.selector import XmlXPathSelector, HtmlXPathSelector, \
-    XPathSelector
-from scrapy.selector.document import Libxml2Document
+nolxml = False
+try:
+    from scrapy.selector.lxmlsel import XmlXPathSelector, HtmlXPathSelector, \
+        XPathSelector
+except ImportError:
+    nolxml = True
+
 from scrapy.utils.test import libxml2debug
 
 class XPathSelectorTestCase(unittest.TestCase):
+
+    if nolxml:
+        skip = "lxml not available"
 
     @libxml2debug
     def test_selector_simple(self):
@@ -129,7 +137,7 @@ class XPathSelectorTestCase(unittest.TestCase):
     def test_selector_namespaces_simple(self):
         body = """
         <test xmlns:somens="http://scrapy.org">
-           <somens:a id="foo"/>
+           <somens:a id="foo">take this</a>
            <a id="bar">found</a>
         </test>
         """
@@ -138,8 +146,8 @@ class XPathSelectorTestCase(unittest.TestCase):
         x = XmlXPathSelector(response)
         
         x.register_namespace("somens", "http://scrapy.org")
-        self.assertEqual(x.select("//somens:a").extract(), 
-                         ['<somens:a id="foo"/>'])
+        self.assertEqual(x.select("//somens:a/text()").extract(),
+                         [u'take this'])
 
 
     @libxml2debug
@@ -150,7 +158,7 @@ class XPathSelectorTestCase(unittest.TestCase):
             xmlns:p="http://www.scrapy.org/product" >
     <b:Operation>hello</b:Operation>
     <TestTag b:att="value"><Other>value</Other></TestTag>
-    <p:SecondTestTag><material/><price>90</price><p:name>Dried Rose</p:name></p:SecondTestTag>
+    <p:SecondTestTag><material>iron</material><price>90</price><p:name>Dried Rose</p:name></p:SecondTestTag>
 </BrowseNode>
         """
         response = XmlResponse(url="http://example.com", body=body)
@@ -164,7 +172,7 @@ class XPathSelectorTestCase(unittest.TestCase):
         self.assertEqual(x.select("//xmlns:TestTag/@b:att").extract()[0], 'value')
         self.assertEqual(x.select("//p:SecondTestTag/xmlns:price/text()").extract()[0], '90')
         self.assertEqual(x.select("//p:SecondTestTag").select("./xmlns:price/text()")[0].extract(), '90')
-        self.assertEqual(x.select("//p:SecondTestTag/xmlns:material").extract()[0], '<material/>')
+        self.assertEqual(x.select("//p:SecondTestTag/xmlns:material/text()").extract()[0], 'iron')
 
     @libxml2debug
     def test_selector_invalid_xpath(self):
@@ -204,11 +212,11 @@ class XPathSelectorTestCase(unittest.TestCase):
     def test_null_bytes(self):
         hxs = HtmlXPathSelector(text='<root>la\x00la</root>')
         self.assertEqual(hxs.extract(),
-                         u'<html><body><root>lala</root></body></html>')
+                         u'<html><body><root>la la</root></body></html>')
 
         xxs = XmlXPathSelector(text='<root>la\x00la</root>')
         self.assertEqual(xxs.extract(),
-                         u'<root>lala</root>')
+                         u'<root>la</root>')
 
     @libxml2debug
     def test_unquote(self):
@@ -223,23 +231,22 @@ class XPathSelectorTestCase(unittest.TestCase):
             '</root>'))
         xxs = XmlXPathSelector(text=xmldoc)
 
-        self.assertEqual(xxs.extract_unquoted(), u'')
+        # this tests were commented out because they make no sense (pablo)
+        #self.assertEqual(xxs.extract_unquoted(), u'')
+        #self.assertEqual(xxs.select('/root').extract_unquoted(), [u''])
+        #self.assertEqual(xxs.select('//*').extract_unquoted(), [u'', u'', u''])
 
-        self.assertEqual(xxs.select('/root').extract_unquoted(), [u''])
         self.assertEqual(xxs.select('/root/text()').extract_unquoted(), [
-            u'\n  lala\n  ',
-            u'\n  pff\n'])
+            u'lala',
+            u'pff'])
 
-        self.assertEqual(xxs.select('//*').extract_unquoted(), [u'', u'', u''])
         self.assertEqual(xxs.select('//text()').extract_unquoted(), [
-            u'\n  lala\n  ',
-            u'\n    blabla&more',
+            u'lala',
+            u'blabla&more',
             u'a',
             u'test',
-            u'oh\n    ',
-            u'lalalal&ppppp<b>PPPP</b>ppp&amp;la',
-            u'\n  ',
-            u'\n  pff\n'])
+            u'oh\n    lalalal&ppppp<b>PPPP</b>ppp&amp;la',
+            u'pff'])
 
     @libxml2debug
     def test_empty_bodies(self):
@@ -255,45 +262,6 @@ class XPathSelectorTestCase(unittest.TestCase):
             weakref.ref(x)
             assert not hasattr(x, '__dict__'), "%s does not use __slots__" % \
                 x.__class__.__name__
-
-class Libxml2DocumentTest(unittest.TestCase):
-
-    @libxml2debug
-    def test_response_libxml2_caching(self):
-        r1 = HtmlResponse('http://www.example.com', body='<html><head></head><body></body></html>')
-        r2 = r1.copy()
-
-        doc1 = Libxml2Document(r1)
-        doc2 = Libxml2Document(r1)
-        doc3 = Libxml2Document(r2)
-
-        # make sure it's cached
-        assert doc1 is doc2
-        assert doc1.xmlDoc is doc2.xmlDoc
-        assert doc1 is not doc3
-        assert doc1.xmlDoc is not doc3.xmlDoc
-
-        # don't leave libxml2 documents in memory to avoid wrong libxml2 leaks reports
-        del doc1, doc2, doc3
-
-    @libxml2debug
-    def test_null_char(self):
-        # make sure bodies with null char ('\x00') don't raise a TypeError exception
-        self.body_content = 'test problematic \x00 body'
-        response = TextResponse('http://example.com/catalog/product/blabla-123',
-                            headers={'Content-Type': 'text/plain; charset=utf-8'}, body=self.body_content)
-        Libxml2Document(response)
-
-class Libxml2Test(unittest.TestCase):
-
-    @libxml2debug
-    def test_libxml2_bug_2_6_27(self):
-        # this test will fail in version 2.6.27 but passes on 2.6.29+
-        html = "<td>1<b>2</b>3</td>"
-        node = libxml2.htmlParseDoc(html, 'utf-8')
-        result = [str(r) for r in node.xpathEval('//text()')]
-        self.assertEquals(result, ['1', '2', '3'])
-        node.freeDoc()
 
 if __name__ == "__main__":
     unittest.main()
