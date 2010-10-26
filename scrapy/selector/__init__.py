@@ -11,11 +11,11 @@ lxml will be used.
 from scrapy.conf import settings
 
 if settings['SELECTORS_BACKEND'] == 'lxml':
-    from .lxmlsel import *
+    from scrapy.selector.lxmlsel import *
 elif settings['SELECTORS_BACKEND'] == 'libxml2':
-    from .libxml2sel import *
+    from scrapy.selector.libxml2sel import *
 elif settings['SELECTORS_BACKEND'] == 'dummy':
-    from .dummysel import *
+    from scrapy.selector.dummysel import *
 else:
     try:
         import libxml2
@@ -23,8 +23,8 @@ else:
         try:
             import lxml
         except ImportError:
-            from .dummysel import *
+            from scrapy.selector.dummysel import *
         else:
-            from .lxmlsel import *
+            from scrapy.selector.lxmlsel import *
     else:
-        from .libxml2sel import *
+        from scrapy.selector.libxml2sel import *
