@@ -13,6 +13,8 @@ from scrapy.contrib.ibl.extractors import (contains_any_numbers,
 
 try:
     import numpy
+    __doctests__ = ['scrapy.contrib.ibl.extraction.%s' % x for x in \
+        ['regionextract', 'similarity', 'pageobjects']]
 except ImportError:
     numpy = None
 
