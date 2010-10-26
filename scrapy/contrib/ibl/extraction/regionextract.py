@@ -25,7 +25,7 @@ def build_extraction_tree(template, type_descriptor, trace=True):
     extractors = BasicTypeExtractor.create(template.annotations, attribute_map)
     if trace:
         extractors = TraceExtractor.apply(template, extractors)
-    for cls in (RepeatedDataExtractor, AdjacentVariantExtractor, RepeatedDataExtractor,
+    for cls in (AdjacentVariantExtractor, RepeatedDataExtractor, AdjacentVariantExtractor, RepeatedDataExtractor,
             RecordExtractor):
         extractors = cls.apply(template, extractors)
         if trace:
@@ -465,9 +465,8 @@ class AdjacentVariantExtractor(RecordExtractor):
                 continue
             if vid in adjacent_variants:
                 adjacent_variants.remove(vid)
-            elif len(list(egroup)) > 1:
+            else:
                 adjacent_variants.add(vid)
-        
         new_extractors = []
         for variant, group_seq in groupby(extractors, variantf):
             group_seq = list(group_seq)

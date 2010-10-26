@@ -155,6 +155,32 @@ Description
 </body></html>
 """
 
+LABELLED_PAGE9 = u"""
+<html><body>
+<img src="image.jpg" data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 0, &quot;annotations&quot;: {&quot;src&quot;: &quot;image_urls&quot;}}">
+<p data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 1, &quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">product 1</p>
+<b data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 1, &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}">$67</b>
+<p data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 2, &quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">product 2</p>
+<b data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 2, &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}">$70</b>
+<div data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 0, &quot;annotations&quot;: {&quot;content&quot;: &quot;category&quot;}}">tables</div>
+</body></html>
+"""
+
+LABELLED_PAGE10 = u"""
+<html><body>
+<img src="image.jpg" data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 0, &quot;annotations&quot;: {&quot;src&quot;: &quot;image_urls&quot;}}">
+<p data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 1, &quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">product 1</p>
+<b data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 1, &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}">$67</b>
+<img src="swatch1.jpg" data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 1, &quot;annotations&quot;: {&quot;src&quot;: &quot;swatches&quot;}}">
+
+<p data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 2, &quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">product 2</p>
+<b data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 2, &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}">$70</b>
+<img src="swatch2.jpg" data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 2, &quot;annotations&quot;: {&quot;src&quot;: &quot;swatches&quot;}}">
+
+<div data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 0, &quot;annotations&quot;: {&quot;content&quot;: &quot;category&quot;}}">tables</div>
+</body></html>
+"""
+
 def _parse_page(parser_class, pagetext):
     htmlpage = HtmlPage(None, {}, pagetext)
     parser = parser_class(TokenDict())
@@ -268,7 +294,29 @@ class TestPageParsing(TestCase):
         """Test parsing of extra required attributes"""
         p = _parse_page(TemplatePageParser, LABELLED_PAGE8)
         self.assertEqual(p.extra_required_attrs, ["description"])
-        
+    
+    def test_variants(self):
+        """Test parsing of variant annotations"""
+        annotations = _parse_page(TemplatePageParser, LABELLED_PAGE9).annotations
+        self.assertEqual(annotations[0].variant_id, None)
+        self.assertEqual(annotations[1].variant_id, 1)
+        self.assertEqual(annotations[2].variant_id, 1)
+        self.assertEqual(annotations[3].variant_id, 2)
+        self.assertEqual(annotations[4].variant_id, 2)
+        self.assertEqual(annotations[5].variant_id, None)
+
+    def test_variants_in_attributes(self):
+        """Test parsing of variant annotations in attributes"""
+        annotations = _parse_page(TemplatePageParser, LABELLED_PAGE10).annotations
+        self.assertEqual(annotations[0].variant_id, None)
+        self.assertEqual(annotations[1].variant_id, 1)
+        self.assertEqual(annotations[2].variant_id, 1)
+        self.assertEqual(annotations[3].variant_id, 1)
+        self.assertEqual(annotations[4].variant_id, 2)
+        self.assertEqual(annotations[5].variant_id, 2)
+        self.assertEqual(annotations[6].variant_id, 2)
+        self.assertEqual(annotations[7].variant_id, None)
+
     def test_site_pages(self):
         """
         Tests from real pages. More reliable and easy to build for more complicated structures
