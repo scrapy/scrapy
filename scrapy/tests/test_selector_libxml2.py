@@ -9,54 +9,13 @@ from scrapy.selector.libxml2sel import XmlXPathSelector, HtmlXPathSelector, \
     XPathSelector
 from scrapy.selector.document import Libxml2Document
 from scrapy.utils.test import libxml2debug
-from scrapy.tests.test_selector import XPathSelectorTestCase
+from scrapy.tests import test_selector
 
-class XPathSelectorTestCase(XPathSelectorTestCase):
+class Libxml2XPathSelectorTestCase(test_selector.XPathSelectorTestCase):
 
     xs_cls = XPathSelector
     hxs_cls = HtmlXPathSelector
     xxs_cls = XmlXPathSelector
-
-    @libxml2debug
-    def test_selector_namespaces_simple(self):
-        body = """
-        <test xmlns:somens="http://scrapy.org">
-           <somens:a id="foo"/>
-           <a id="bar">found</a>
-        </test>
-        """
-
-        response = XmlResponse(url="http://example.com", body=body)
-        x = XmlXPathSelector(response)
-        
-        x.register_namespace("somens", "http://scrapy.org")
-        self.assertEqual(x.select("//somens:a").extract(), 
-                         ['<somens:a id="foo"/>'])
-
-
-    @libxml2debug
-    def test_selector_namespaces_multiple(self):
-        body = """<?xml version="1.0" encoding="UTF-8"?>
-<BrowseNode xmlns="http://webservices.amazon.com/AWSECommerceService/2005-10-05"
-            xmlns:b="http://somens.com"
-            xmlns:p="http://www.scrapy.org/product" >
-    <b:Operation>hello</b:Operation>
-    <TestTag b:att="value"><Other>value</Other></TestTag>
-    <p:SecondTestTag><material/><price>90</price><p:name>Dried Rose</p:name></p:SecondTestTag>
-</BrowseNode>
-        """
-        response = XmlResponse(url="http://example.com", body=body)
-        x = XmlXPathSelector(response)
-
-        x.register_namespace("xmlns", "http://webservices.amazon.com/AWSECommerceService/2005-10-05")
-        x.register_namespace("p", "http://www.scrapy.org/product")
-        x.register_namespace("b", "http://somens.com")
-        self.assertEqual(len(x.select("//xmlns:TestTag")), 1)
-        self.assertEqual(x.select("//b:Operation/text()").extract()[0], 'hello')
-        self.assertEqual(x.select("//xmlns:TestTag/@b:att").extract()[0], 'value')
-        self.assertEqual(x.select("//p:SecondTestTag/xmlns:price/text()").extract()[0], '90')
-        self.assertEqual(x.select("//p:SecondTestTag").select("./xmlns:price/text()")[0].extract(), '90')
-        self.assertEqual(x.select("//p:SecondTestTag/xmlns:material").extract()[0], '<material/>')
 
     @libxml2debug
     def test_null_bytes(self):
