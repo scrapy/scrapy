@@ -10,6 +10,7 @@ from scrapy.utils.trackref import object_ref
 from scrapy.utils.python import unicode_to_str
 from scrapy.utils.decorator import deprecated
 from scrapy.http import TextResponse
+from .list import XPathSelectorList
 
 __all__ = ['HtmlXPathSelector', 'XmlXPathSelector', 'XPathSelector', \
     'XPathSelectorList']
@@ -88,34 +89,13 @@ class XPathSelector(object_ref):
         return self.extract()
 
 
-class XPathSelectorList(list):
-
-    def __getslice__(self, i, j):
-        return XPathSelectorList(list.__getslice__(self, i, j))
-
-    def select(self, xpath):
-        return XPathSelectorList(flatten([x.select(xpath) for x in self]))
-
-    def re(self, regex):
-        return flatten([x.re(regex) for x in self])
-
-    def extract(self):
-        return [x.extract() if isinstance(x, XPathSelector) else x for x in self]
-
-    @deprecated(use_instead='XPathSelectorList.extract_unquoted')
-    def extract_unquoted(self):
-        return [x.extract_unquoted() if isinstance(x, XPathSelector) else x for x in self]
-
-
 class XmlXPathSelector(XPathSelector):
-    """XPathSelector for XML content"""
     __slots__ = ()
     _parser = etree.XMLParser
     _tostring_method = 'xml'
 
 
 class HtmlXPathSelector(XPathSelector):
-    """XPathSelector for HTML content"""
     __slots__ = ()
     _parser = etree.HTMLParser
     _tostring_method = 'html'
