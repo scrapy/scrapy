@@ -46,6 +46,14 @@ class XPathSelectorTestCase(unittest.TestCase):
                          [u'12'])
 
     @libxml2debug
+    def test_selector_boolean_result(self):
+        body = "<p><input name='a'value='1'/><input name='b'value='2'/></p>"
+        response = TextResponse(url="http://example.com", body=body)
+        xs = HtmlXPathSelector(response)
+        self.assertEqual(xs.select("//input[@name='a']/@name='a'").extract(), [u'True'])
+        self.assertEqual(xs.select("//input[@name='a']/@name='n'").extract(), [u'False'])
+
+    @libxml2debug
     def test_selector_same_type(self):
         """Test XPathSelector returning the same type in x() method"""
         text = '<p>test<p>'

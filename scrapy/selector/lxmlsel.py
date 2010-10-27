@@ -55,7 +55,7 @@ class XPathSelector(object_ref):
         if hasattr(result, '__iter__'):
             result = [self.__class__(root=x, expr=xpath, namespaces=self.namespaces) \
                 for x in result]
-        elif result:
+        else:
             result = [self.__class__(root=result, expr=xpath, namespaces=self.namespaces)]
         return XPathSelectorList(result)
 
