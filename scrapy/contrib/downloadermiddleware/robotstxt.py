@@ -1,5 +1,5 @@
 """
-This is a middleware to respect robots.txt policies. To active it you must
+This is a middleware to respect robots.txt policies. To activate it you must
 enable this middleware and enable the ROBOTSTXT_OBEY setting.
 
 """
@@ -8,7 +8,7 @@ import robotparser
 
 from scrapy.xlib.pydispatch import dispatcher
 
-from scrapy import signals
+from scrapy import signals, log
 from scrapy.project import crawler
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
@@ -25,7 +25,6 @@ class RobotsTxtMiddleware(object):
         self._parsers = {}
         self._spider_netlocs = {}
         self._useragents = {}
-        self._pending = {}
         dispatcher.connect(self.spider_opened, signals.spider_opened)
         dispatcher.connect(self.spider_closed, signals.spider_closed)
 
@@ -33,7 +32,8 @@ class RobotsTxtMiddleware(object):
         useragent = self._useragents[spider]
         rp = self.robot_parser(request, spider)
         if rp and not rp.can_fetch(useragent, request.url):
-            raise IgnoreRequest("URL forbidden by robots.txt: %s" % request.url)
+            log.msg("Forbidden by robots.txt: %s" % request, log.DEBUG)
+            raise IgnoreRequest
 
     def robot_parser(self, request, spider):
         url = urlparse_cached(request)
