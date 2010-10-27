@@ -20,7 +20,13 @@ class MediaPipeline(object):
 
     def __init__(self, download_func=None):
         self.spiderinfo = {}
-        self._download_func = download_func or self._default_download_func()
+        self._cached_download_func = download_func
+
+    @property
+    def _download_func(self):
+        if self._cached_download_func is None:
+            self._cached_download_func = self._default_download_func()
+        return self._cached_download_func
 
     def _default_download_func(self):
         from scrapy.project import crawler
