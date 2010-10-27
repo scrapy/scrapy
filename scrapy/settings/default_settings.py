@@ -19,6 +19,7 @@ BOT_NAME = 'scrapybot'
 BOT_VERSION = '1.0'
 
 CLOSESPIDER_TIMEOUT = 0
+CLOSESPIDER_PAGECOUNT = 0
 CLOSESPIDER_ITEMPASSED = 0
 
 COMMANDS_MODULE = ''
@@ -194,8 +195,6 @@ REDIRECT_MAX_METAREFRESH_DELAY = 100
 REDIRECT_MAX_TIMES = 20 # uses Firefox default setting
 REDIRECT_PRIORITY_ADJUST = +2
 
-REQUESTS_QUEUE_SIZE = 0
-
 # contrib.middleware.retry.RetryMiddleware default settings
 RETRY_TIMES = 2 # initial response + 2 retries = 3 requests
 RETRY_HTTP_CODES = ['500', '503', '504', '400', '408']
@@ -213,6 +212,8 @@ SCHEDULER_MIDDLEWARES_BASE = {
 
 SCHEDULER_ORDER = 'DFO'
 
+SELECTORS_BACKEND = None # possible values: libxml2, lxml
+
 SPIDER_MANAGER_CLASS = 'scrapy.spidermanager.SpiderManager'
 
 SPIDER_MIDDLEWARES = {}
@@ -220,7 +221,6 @@ SPIDER_MIDDLEWARES = {}
 SPIDER_MIDDLEWARES_BASE = {
     # Engine side
     'scrapy.contrib.spidermiddleware.httperror.HttpErrorMiddleware': 50,
-    'scrapy.contrib.spidermiddleware.requestlimit.RequestLimitMiddleware': 200,
     'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware': 500,
     'scrapy.contrib.spidermiddleware.referer.RefererMiddleware': 700,
     'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware': 800,

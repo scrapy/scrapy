@@ -4,8 +4,10 @@ This module contains some assorted functions used in tests
 
 import os
 
-import libxml2
 from twisted.trial.unittest import SkipTest
+
+from scrapy.crawler import Crawler
+from scrapy.settings import CrawlerSettings
 
 def libxml2debug(testfunction):
     """Decorator for debugging libxml2 memory leaks inside a function.
@@ -16,6 +18,10 @@ def libxml2debug(testfunction):
     LIBXML2_DEBUGLEAKS is set.
 
     """
+    try:
+        import libxml2
+    except ImportError:
+        return testfunction
     def newfunc(*args, **kwargs):
         libxml2.debugMemory(1)
         testfunction(*args, **kwargs)
@@ -39,3 +45,17 @@ def assert_aws_environ():
 
     if 'AWS_ACCESS_KEY_ID' not in os.environ:
         raise SkipTest("AWS keys not found")
+
+def get_crawler(settings_dict=None):
+    """Return an unconfigured Crawler object. If settings_dict is given, it
+    will be used as the settings present in the settings module of the
+    CrawlerSettings.
+    """
+    class SettingsModuleMock(object):
+        pass
+    settings_module = SettingsModuleMock()
+    if settings_dict:
+        for k, v in settings_dict.items():
+            setattr(settings_module, k, v)
+    settings = CrawlerSettings(settings_module)
+    return Crawler(settings)
