@@ -59,7 +59,7 @@ class XPathSelector(object_ref):
         return XPathSelectorList(result)
 
     def re(self, regex):
-        return extract_regex(regex, self.extract(), 'utf-8')
+        return extract_regex(regex, self.extract())
 
     def extract(self):
         try:

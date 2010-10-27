@@ -54,7 +54,7 @@ class XPathSelector(object_ref):
     def re(self, regex):
         """Return a list of unicode strings by applying the regex over all
         current XPath selections, and flattening the results"""
-        return extract_regex(regex, self.extract(), 'utf-8')
+        return extract_regex(regex, self.extract())
 
     def extract(self):
         """Return a unicode string of the content referenced by the XPathSelector"""
