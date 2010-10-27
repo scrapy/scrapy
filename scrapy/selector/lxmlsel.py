@@ -16,7 +16,8 @@ __all__ = ['HtmlXPathSelector', 'XmlXPathSelector', 'XPathSelector', \
 
 class XPathSelector(object_ref):
 
-    __slots__ = ['response', 'text', 'expr', 'namespaces', '_root', '__weakref__']
+    __slots__ = ['response', 'text', 'expr', 'namespaces', '_root', '_xpathev', \
+        '__weakref__']
     _parser = etree.HTMLParser
     _tostring_method = 'html'
 
@@ -27,6 +28,7 @@ class XPathSelector(object_ref):
         else:
             self.response = response
         self._root = root
+        self._xpathev = None
         self.namespaces = namespaces
         self.expr = expr
 
@@ -38,10 +40,15 @@ class XPathSelector(object_ref):
                 base_url=self.response.url)
         return self._root
 
+    @property
+    def xpathev(self):
+        if self._xpathev is None:
+            self._xpathev = etree.XPathEvaluator(self.root, namespaces=self.namespaces)
+        return self._xpathev
+
     def select(self, xpath):
-        xpatheval = etree.XPathEvaluator(self.root, namespaces=self.namespaces)
         try:
-            result = xpatheval(xpath)
+            result = self.xpathev(xpath)
         except etree.XPathError:
             raise ValueError("Invalid XPath: %s" % xpath)
         if hasattr(result, '__iter__'):
