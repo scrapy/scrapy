@@ -8,6 +8,6 @@ script
     logdir=/var/log/scrapyd
     exec twistd -ny /usr/share/scrapyd/scrapyd.tac \
                 -u scrapy -g nogroup \
-                --pidfile /var/run/scrapyd/scrapy.pid \
+                --pidfile /var/run/scrapy.pid \
                 -l $logdir/scrapyd.log >$logdir/scrapyd.out 2>$logdir/scrapyd.err
 end script

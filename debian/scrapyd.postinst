@@ -10,12 +10,8 @@ case "$1" in
                   --no-create-home --disabled-password \
                   --quiet scrapy || true
         fi
-        if [ ! -d /var/run/scrapyd ]; then
-          mkdir /var/run/scrapyd
-          chown scrapy:nogroup /var/run/scrapyd
-        fi
 
-        chown scrapy:nogroup /var/log/scrapyd /var/run/scrapyd \
+        chown scrapy:nogroup /var/log/scrapyd \
             /var/lib/scrapyd /var/lib/scrapyd/eggs /var/lib/scrapyd/dbs
 
         update-python-modules -p # so upstart restart uses the new code

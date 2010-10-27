@@ -8,7 +8,6 @@ if [ purge = "$1" ]; then
   else
      echo >&2 "not removing scrapy system account because deluser command was not found"
   fi
-  rm -rf /var/run/scrapyd
 fi
 
 #DEBHELPER#
