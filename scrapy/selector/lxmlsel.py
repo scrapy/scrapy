@@ -4,7 +4,6 @@ XPath selectors based on lxml
 
 from lxml import etree
 
-from scrapy.utils.python import flatten
 from scrapy.utils.misc import extract_regex
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.python import unicode_to_str
@@ -65,9 +64,9 @@ class XPathSelector(object_ref):
     def extract(self):
         try:
             return etree.tostring(self.root, method=self._tostring_method, \
-                encoding=unicode).strip()
+                encoding=unicode)
         except (AttributeError, TypeError):
-            return unicode(self.root).strip()
+            return unicode(self.root)
 
     def register_namespace(self, prefix, uri):
         if self.namespaces is None:

@@ -97,14 +97,20 @@ class XPathSelectorTestCase(unittest.TestCase):
         x = self.hxs_cls(response)
 
         divtwo = x.select('//div[@class="two"]')
-        self.assertEqual(divtwo.select("//li").extract(),
+        self.assertEqual(map(unicode.strip, divtwo.select("//li").extract()),
                          ["<li>one</li>", "<li>two</li>", "<li>four</li>", "<li>five</li>", "<li>six</li>"])
-        self.assertEqual(divtwo.select("./ul/li").extract(),
+        self.assertEqual(map(unicode.strip, divtwo.select("./ul/li").extract()),
                          ["<li>four</li>", "<li>five</li>", "<li>six</li>"])
-        self.assertEqual(divtwo.select(".//li").extract(),
+        self.assertEqual(map(unicode.strip, divtwo.select(".//li").extract()),
                          ["<li>four</li>", "<li>five</li>", "<li>six</li>"])
         self.assertEqual(divtwo.select("./li").extract(),
                          [])
+
+    @libxml2debug
+    def test_dont_strip(self):
+        hxs = self.hxs_cls(text='<div>fff: <a href="#">zzz</a></div>')
+        self.assertEqual(hxs.select("//text()").extract(),
+            [u'fff: ', u'zzz'])
 
     @libxml2debug
     def test_selector_namespaces_simple(self):
