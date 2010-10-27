@@ -201,29 +201,32 @@ class TemplatePageParser(InstanceLearningParser):
                 
         self.extra_required_attrs.extend(jannotation.pop('required', []))
         
-        variant_id = jannotation.pop('variant', 0)
-        if variant_id > 0:
-            self.variant_stack.append(variant_id)
-            annotation.surrounds_variant = variant_id
         attribute_annotations = jannotation.pop('annotations', {}).items()
         for extract_attribute, tag_value in attribute_annotations:
             if extract_attribute == 'content':
                 annotation.surrounds_attribute = tag_value
             else:
                 annotation.tag_attributes.append((extract_attribute, tag_value))
-        
+ 
+        variant_id = jannotation.pop('variant', 0)
+        if variant_id > 0:
+            if annotation.surrounds_attribute is not None:
+                self.variant_stack.append(variant_id)
+            else:
+                annotation.variant_id = variant_id
+       
         annotation.metadata = jannotation
 
         if annotation.annotation_text is None:
             self.next_tag_index += 1
-        if self.variant_stack:
+        if self.variant_stack and annotation.variant_id is None:
             variant_id = self.variant_stack[-1]
             if variant_id == '0':
                 variant_id = None
             annotation.variant_id = variant_id
         
         # look for a closing tag if the content is important
-        if annotation.surrounds_attribute or annotation.surrounds_variant:
+        if annotation.surrounds_attribute:
             self.labelled_tag_stacks[html_tag.tag].append(annotation)
         else:
             annotation.end_index = annotation.start_index + 1
@@ -272,9 +275,9 @@ class TemplatePageParser(InstanceLearningParser):
                 self.next_tag_index += 1
             if len(labelled_tags) == 0:
                 del self.labelled_tag_stacks[html_tag.tag]
-            if annotation.surrounds_variant and self.variant_stack:
+            if annotation.variant_id and self.variant_stack:
                 prev = self.variant_stack.pop()
-                if prev != annotation.surrounds_variant:
+                if prev != annotation.variant_id:
                     raise ValueError("unbalanced variant annotation tags")
                     
     def handle_data(self, html_data_fragment):
