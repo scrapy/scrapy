@@ -3,7 +3,6 @@ Unit tests for pageparsing
 """
 import os
 from cStringIO import StringIO                                                                                                    
-from gzip import GzipFile
 
 from twisted.trial.unittest import TestCase, SkipTest
 from scrapy.utils.python import str_to_unicode
@@ -156,6 +155,32 @@ Description
 </body></html>
 """
 
+LABELLED_PAGE9 = u"""
+<html><body>
+<img src="image.jpg" data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 0, &quot;annotations&quot;: {&quot;src&quot;: &quot;image_urls&quot;}}">
+<p data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 1, &quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">product 1</p>
+<b data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 1, &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}">$67</b>
+<p data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 2, &quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">product 2</p>
+<b data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 2, &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}">$70</b>
+<div data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 0, &quot;annotations&quot;: {&quot;content&quot;: &quot;category&quot;}}">tables</div>
+</body></html>
+"""
+
+LABELLED_PAGE10 = u"""
+<html><body>
+<img src="image.jpg" data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 0, &quot;annotations&quot;: {&quot;src&quot;: &quot;image_urls&quot;}}">
+<p data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 1, &quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">product 1</p>
+<b data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 1, &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}">$67</b>
+<img src="swatch1.jpg" data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 1, &quot;annotations&quot;: {&quot;src&quot;: &quot;swatches&quot;}}">
+
+<p data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 2, &quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">product 2</p>
+<b data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 2, &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}">$70</b>
+<img src="swatch2.jpg" data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 2, &quot;annotations&quot;: {&quot;src&quot;: &quot;swatches&quot;}}">
+
+<div data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 0, &quot;annotations&quot;: {&quot;content&quot;: &quot;category&quot;}}">tables</div>
+</body></html>
+"""
+
 def _parse_page(parser_class, pagetext):
     htmlpage = HtmlPage(None, {}, pagetext)
     parser = parser_class(TokenDict())
@@ -269,19 +294,40 @@ class TestPageParsing(TestCase):
         """Test parsing of extra required attributes"""
         p = _parse_page(TemplatePageParser, LABELLED_PAGE8)
         self.assertEqual(p.extra_required_attrs, ["description"])
-        
+    
+    def test_variants(self):
+        """Test parsing of variant annotations"""
+        annotations = _parse_page(TemplatePageParser, LABELLED_PAGE9).annotations
+        self.assertEqual(annotations[0].variant_id, None)
+        self.assertEqual(annotations[1].variant_id, 1)
+        self.assertEqual(annotations[2].variant_id, 1)
+        self.assertEqual(annotations[3].variant_id, 2)
+        self.assertEqual(annotations[4].variant_id, 2)
+        self.assertEqual(annotations[5].variant_id, None)
+
+    def test_variants_in_attributes(self):
+        """Test parsing of variant annotations in attributes"""
+        annotations = _parse_page(TemplatePageParser, LABELLED_PAGE10).annotations
+        self.assertEqual(annotations[0].variant_id, None)
+        self.assertEqual(annotations[1].variant_id, 1)
+        self.assertEqual(annotations[2].variant_id, 1)
+        self.assertEqual(annotations[3].variant_id, 1)
+        self.assertEqual(annotations[4].variant_id, 2)
+        self.assertEqual(annotations[5].variant_id, 2)
+        self.assertEqual(annotations[6].variant_id, 2)
+        self.assertEqual(annotations[7].variant_id, None)
+
     def test_site_pages(self):
         """
         Tests from real pages. More reliable and easy to build for more complicated structures
         """
-        samples_file = open(os.path.join(path, "samples_pageparsing.json.gz"), "rb")
-        samples = []
-        for line in GzipFile(fileobj=StringIO(samples_file.read())).readlines():
-            samples.append(json.loads(line))
-        for sample in samples:
-            source = sample["annotated"]
-            annotations = sample["annotations"]
-            template = HtmlPage(body=str_to_unicode(source))
+        SAMPLES_FILE_PREFIX = os.path.join(path, "samples/samples_pageparsing")
+        count = 0
+        fname = "%s_%d.json" % (SAMPLES_FILE_PREFIX, count)
+        while os.path.exists(fname):
+            source = str_to_unicode(open("%s_%d.html" % (SAMPLES_FILE_PREFIX, count), "rb").read())
+            annotations = json.loads(str_to_unicode(open(fname, "rb").read()))
+            template = HtmlPage(body=source)
             parser = TemplatePageParser(TokenDict())
             parser.feed(template)
             for annotation in parser.annotations:
@@ -293,3 +339,5 @@ class TestPageParsing(TestCase):
                     else:
                         self.assertEqual(getattr(annotation, s), test_annotation[s])
             self.assertEqual(annotations, [])
+            count += 1
+            fname = "%s_%d.json" % (SAMPLES_FILE_PREFIX, count)

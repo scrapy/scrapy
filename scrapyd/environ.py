@@ -8,17 +8,18 @@ class Environment(object):
 
     implements(IEnvironment)
 
-    def __init__(self, config):
+    def __init__(self, config, initenv=os.environ):
         self.dbs_dir = config.get('dbs_dir', 'dbs')
         self.logs_dir = config.get('logs_dir', 'logs')
         if config.cp.has_section('settings'):
             self.settings = dict(config.cp.items('settings'))
         else:
             self.settings = {}
+        self.initenv = initenv
 
     def get_environment(self, message, slot, eggpath):
         project = message['project']
-        env = os.environ.copy()
+        env = self.initenv.copy()
         env['SCRAPY_PROJECT'] = project
         if eggpath:
             env['SCRAPY_EGGFILE'] = eggpath

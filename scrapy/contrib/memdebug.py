@@ -7,7 +7,6 @@ See documentation in docs/topics/extensions.rst
 import gc
 import socket
 
-import libxml2
 from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy import signals
@@ -19,6 +18,11 @@ from scrapy import log
 class MemoryDebugger(object):
 
     def __init__(self):
+        try:
+            import libxml2
+            self.libxml2 = libxml2
+        except ImportError:
+            raise NotConfigured
         if not settings.getbool('MEMDEBUG_ENABLED'):
             raise NotConfigured
 
@@ -29,7 +33,7 @@ class MemoryDebugger(object):
         dispatcher.connect(self.engine_stopped, signals.engine_stopped)
 
     def engine_started(self):
-        libxml2.debugMemory(1)
+        self.libxml2.debugMemory(1)
 
     def engine_stopped(self):
         figures = self.collect_figures()
@@ -37,12 +41,12 @@ class MemoryDebugger(object):
         self.log_or_send_report(report)
 
     def collect_figures(self):
-        libxml2.cleanupParser()
+        self.libxml2.cleanupParser()
         gc.collect()
 
         figures = []
         figures.append(("Objects in gc.garbage", len(gc.garbage), ""))
-        figures.append(("libxml2 memory leak", libxml2.debugMemory(1), "bytes"))
+        figures.append(("libxml2 memory leak", self.libxml2.debugMemory(1), "bytes"))
         return figures
 
     def create_report(self, figures):
