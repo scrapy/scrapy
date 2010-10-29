@@ -161,10 +161,10 @@ def _add_auth_header(request, target):
 def _http_post(request):
     try:
         f = urllib2.urlopen(request)
-        _log("Server response (%s):" % f.getcode())
+        _log("Server response (%s):" % f.code)
         print f.read()
     except urllib2.HTTPError, e:
-        _log("Deploy failed (%s):" % e.getcode())
+        _log("Deploy failed (%s):" % e.code)
         print e.read()
     except urllib2.URLError, e:
         _log("Deploy failed: %s" % e)
