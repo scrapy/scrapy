@@ -208,7 +208,7 @@ class Scraper(object):
             else:
                 log.err(output, 'Error processing %s' % item, spider=spider)
         else:
-            log.msg(log.formatter.passed(item, spider), log.INFO, spider=spider)
+            log.msg(log.formatter.passed(output, spider), log.INFO, spider=spider)
             return send_catch_log_deferred(signal=signals.item_passed, \
                 item=item, spider=spider, output=output)
 
