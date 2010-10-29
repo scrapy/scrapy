@@ -59,6 +59,8 @@ class Command(ScrapyCommand):
             help="list available targets")
         parser.add_option("-l", "--list-projects", metavar="TARGET", \
             help="list available projects on TARGET")
+        parser.add_option("--egg", metavar="FILE",
+            help="use the given egg, instead of building it")
 
     def run(self, args, opts):
         try:
@@ -79,7 +81,11 @@ class Command(ScrapyCommand):
             return
         target, project = _get_target_project(args)
         version = _get_version(opts)
-        egg = _build_egg()
+        if opts.egg:
+            egg = open(opts.egg, 'rb')
+        else:
+            _log("Bulding egg of %s-%s" % (project, version))
+            egg = _build_egg()
         _upload_egg(target, egg, project, version)
 
 def _log(message):
