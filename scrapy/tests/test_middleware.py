@@ -1,6 +1,6 @@
 from twisted.trial import unittest
 
-from scrapy.conf import Settings
+from scrapy.settings import Settings
 from scrapy.exceptions import NotConfigured
 from scrapy.middleware import MiddlewareManager
 

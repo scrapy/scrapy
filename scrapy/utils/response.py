@@ -72,10 +72,10 @@ def response_status_message(status):
     """Return status code plus status text descriptive message
 
     >>> response_status_message(200)
-    200 OK
+    '200 OK'
 
     >>> response_status_message(404)
-    404 Not Found
+    '404 Not Found'
     """
     return '%s %s' % (status, http.responses.get(int(status)))
 

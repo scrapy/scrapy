@@ -18,7 +18,6 @@ def get_spider_list_from_eggfile(eggfile, project):
             env = os.environ.copy()
             env['SCRAPY_PROJECT'] = project
             env['SCRAPY_EGGFILE'] = f.name
-            env.pop('SCRAPY_SETTINGS_DISABLED', None)
             proc = Popen(pargs, stdout=PIPE, cwd=tmpdir, env=env)
             out = proc.communicate()[0]
             return out.splitlines()
