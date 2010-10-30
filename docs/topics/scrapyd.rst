@@ -392,7 +392,7 @@ Delete a project and all its uploaded versions.
 
 Example request::
 
-    $ curl http://localhost:6800/delproject.json?project=myproject
+    $ curl http://localhost:6800/delproject.json -d project=myproject
 
 Example response::
 
