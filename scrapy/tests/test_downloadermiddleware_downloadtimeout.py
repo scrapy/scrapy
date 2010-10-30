@@ -3,31 +3,32 @@ import unittest
 from scrapy.contrib.downloadermiddleware.downloadtimeout import DownloadTimeoutMiddleware
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
+from scrapy.utils.test import get_crawler
 
 
 class DownloadTimeoutMiddlewareTest(unittest.TestCase):
 
-    def setUp(self):
-        self.mw = DownloadTimeoutMiddleware()
-        self.spider = BaseSpider('foo')
-        self.req = Request('http://scrapytest.org/')
+    def get_request_spider_mw(self):
+        crawler = get_crawler()
+        spider = BaseSpider('foo')
+        spider.set_crawler(crawler)
+        request = Request('http://scrapytest.org/')
+        return request, spider, DownloadTimeoutMiddleware()
 
-    def tearDown(self):
-        del self.mw
-        del self.spider
-        del self.req
-
-    def test_spider_has_no_download_timeout(self):
-        assert self.mw.process_request(self.req, self.spider) is None
-        assert 'download_timeout' not in self.req.meta
+    def test_default_download_timeout(self):
+        req, spider, mw = self.get_request_spider_mw()
+        assert mw.process_request(req, spider) is None
+        self.assertEquals(req.meta.get('download_timeout'), 180)
 
     def test_spider_has_download_timeout(self):
-        self.spider.download_timeout = 2
-        assert self.mw.process_request(self.req, self.spider) is None
-        self.assertEquals(self.req.meta.get('download_timeout'), 2)
+        req, spider, mw = self.get_request_spider_mw()
+        spider.DOWNLOAD_TIMEOUT = 2
+        assert mw.process_request(req, spider) is None
+        self.assertEquals(req.meta.get('download_timeout'), 2)
 
     def test_request_has_download_timeout(self):
-        self.spider.download_timeout = 2
-        self.req.meta['download_timeout'] = 1
-        assert self.mw.process_request(self.req, self.spider) is None
-        self.assertEquals(self.req.meta.get('download_timeout'), 1)
+        req, spider, mw = self.get_request_spider_mw()
+        spider.DOWNLOAD_TIMEOUT = 2
+        req.meta['download_timeout'] = 1
+        assert mw.process_request(req, spider) is None
+        self.assertEquals(req.meta.get('download_timeout'), 1)

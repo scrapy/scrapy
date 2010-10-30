@@ -12,6 +12,7 @@ from scrapy.exceptions import IgnoreRequest
 from scrapy.conf import settings
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.signal import send_catch_log
+from scrapy.utils import deprecate
 from scrapy import signals
 from scrapy import log
 from .middleware import DownloaderMiddlewareManager
@@ -21,18 +22,21 @@ from .handlers import DownloadHandlers
 class SpiderInfo(object):
     """Simple class to keep information and state for each open spider"""
 
-    def __init__(self, download_delay=None, max_concurrent_requests=None):
-        if download_delay is None:
-            self._download_delay = settings.getfloat('DOWNLOAD_DELAY')
+    def __init__(self, spider):
+        if hasattr(spider, 'download_delay'):
+            deprecate.attribute(spider, 'download_delay', 'DOWNLOAD_DELAY')
+            self._download_delay = spider.download_delay
         else:
-            self._download_delay = float(download_delay)
+            self._download_delay = spider.settings.getfloat('DOWNLOAD_DELAY')
         if self._download_delay:
             self.max_concurrent_requests = 1
-        elif max_concurrent_requests is None:
-            self.max_concurrent_requests = settings.getint('CONCURRENT_REQUESTS_PER_SPIDER')
         else:
-            self.max_concurrent_requests =  max_concurrent_requests
-        if self._download_delay and settings.getbool('RANDOMIZE_DOWNLOAD_DELAY'):
+            if hasattr(spider, 'max_concurrent_requests'):
+                deprecate.attribute(spider, 'max_concurrent_requests', 'CONCURRENT_REQUESTS_PER_SPIDER')
+                self.max_concurrent_requests = spider.max_concurrent_requests
+            else:
+                self.max_concurrent_requests = spider.settings.getint('CONCURRENT_REQUESTS_PER_SPIDER')
+        if self._download_delay and spider.settings.getbool('RANDOMIZE_DOWNLOAD_DELAY'):
             # same policy as wget --random-wait
             self.random_delay_interval = (0.5*self._download_delay, \
                 1.5*self._download_delay)
@@ -178,10 +182,7 @@ class Downloader(object):
     def open_spider(self, spider):
         """Allocate resources to begin processing a spider"""
         assert spider not in self.sites, "Spider already opened: %s" % spider
-        self.sites[spider] = SpiderInfo(
-            download_delay=getattr(spider, 'download_delay', None),
-            max_concurrent_requests=getattr(spider, 'max_concurrent_requests', None)
-        )
+        self.sites[spider] = SpiderInfo(spider)
 
     def close_spider(self, spider):
         """Free any resources associated with the given spider"""

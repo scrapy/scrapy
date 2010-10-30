@@ -5,14 +5,16 @@ from shutil import rmtree
 
 from twisted.trial import unittest
 
-from scrapy.crawler import Crawler
-from scrapy.conf import settings
 
 try:
     import Image
     skip = False
 except ImportError, e:
     skip = True
+
+def _mocked_download_func(request, info):
+    response = request.meta.get('response')
+    return response() if callable(response) else response
 
 
 class ImagesPipelineTestCase(unittest.TestCase):
@@ -21,14 +23,10 @@ class ImagesPipelineTestCase(unittest.TestCase):
 
     def setUp(self):
         from scrapy.contrib.pipeline.images import ImagesPipeline
-
-        self.crawler = Crawler(settings)
-        self.crawler.install()
         self.tempdir = mkdtemp()
-        self.pipeline = ImagesPipeline(self.tempdir)
+        self.pipeline = ImagesPipeline(self.tempdir, download_func=_mocked_download_func)
 
     def tearDown(self):
-        self.crawler.uninstall()
         rmtree(self.tempdir)
 
     def test_image_path(self):

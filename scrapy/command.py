@@ -21,6 +21,8 @@ class ScrapyCommand(object):
     # default settings to be used for this command instead of global defaults
     default_settings = {}
 
+    exitcode = 0
+
     def set_crawler(self, crawler):
         self._crawler = crawler
 
