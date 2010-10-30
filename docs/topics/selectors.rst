@@ -255,14 +255,6 @@ XPathSelector objects
        Return a unicode string with the content of this :class:`XPathSelector`
        object.
 
-   .. method:: extract_unquoted()
-
-       Return a unicode string with the content of this :class:`XPathSelector`
-       without entities or CDATA. This method is intended to be use for text-only
-       selectors, like ``//h1/text()`` (but not ``//h1``). If it's used for
-       :class:`XPathSelector` objects which don't select a textual content (ie. if
-       they contain tags), the output of this method is undefined.
-
    .. method:: register_namespace(prefix, uri)
 
        Register the given namespace to be used in this :class:`XPathSelector`.

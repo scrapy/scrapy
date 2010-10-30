@@ -16,7 +16,7 @@ class EggStorageTest(unittest.TestCase):
         config = Config(values={'eggs_dir': d, 'logs_dir': d})
         config.cp.add_section('settings')
         config.cp.set('settings', 'newbot', 'newbot.settings')
-        self.environ = Environment(config)
+        self.environ = Environment(config, initenv={})
 
     def test_interface(self):
         verifyObject(IEnvironment, self.environ)
