@@ -145,7 +145,7 @@ Telnet settings
 
 These are the settings that control the telnet console's behaviour:
 
-.. setting:: TELNETCONSOLE_HOST
+.. setting:: TELNETCONSOLE_PORT
 
 TELNETCONSOLE_PORT
 ------------------
