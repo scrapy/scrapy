@@ -81,10 +81,6 @@ class ResponseTypes(object):
         else:
             return Response
 
-    def from_url(self, url):
-        """Return the most appropiate Response class from a URL"""
-        return self.from_mimetype(self.mimetypes.guess_type(url)[0])
-
     def from_body(self, body):
         """Try to guess the appropiate response based on the body content.
         This method is a bit magic and could be improved in the future, but
@@ -106,7 +102,7 @@ class ResponseTypes(object):
         if headers is not None:
             cls = self.from_headers(headers)
         if cls is Response and url is not None:
-            cls = self.from_url(url)
+            cls = self.from_filename(url)
         if cls is Response and filename is not None:
             cls = self.from_filename(filename)
         if cls is Response and body is not None:
