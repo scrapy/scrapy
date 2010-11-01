@@ -3,6 +3,8 @@ import unittest
 
 from scrapy.utils.datatypes import PriorityQueue, PriorityStack, CaselessDict
 
+__doctests__ = ['scrapy.utils.datatypes']
+
 # (ITEM, PRIORITY)
 INPUT = [(1, -5), (30, -1), (80, -3), (4, 1), (6, 3), (20, 0), (50, -1)]
 

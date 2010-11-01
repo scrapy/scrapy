@@ -153,9 +153,9 @@ class ImagesPipeline(MediaPipeline):
             's3': S3ImagesStore,
             }
 
-    def __init__(self, store_uri):
+    def __init__(self, store_uri, download_func=None):
         self.store = self._get_store(store_uri)
-        super(ImagesPipeline, self).__init__()
+        super(ImagesPipeline, self).__init__(download_func=download_func)
 
     @classmethod
     def from_settings(cls, settings):

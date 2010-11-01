@@ -68,6 +68,7 @@ class WebService(server.Site):
             raise NotConfigured
         logfile = settings['WEBSERVICE_LOGFILE']
         self.portrange = map(int, settings.getlist('WEBSERVICE_PORT'))
+        self.host = settings['WEBSERVICE_HOST']
         root = RootResource()
         reslist = build_component_list(settings['WEBSERVICE_RESOURCES_BASE'], \
             settings['WEBSERVICE_RESOURCES'])
@@ -80,9 +81,9 @@ class WebService(server.Site):
         dispatcher.connect(self.stop_listening, signals.engine_stopped)
 
     def start_listening(self):
-        self.port = listen_tcp(self.portrange, self)
-        log.msg("Web service listening on port %d" % self.port.getHost().port,
-            log.DEBUG)
+        self.port = listen_tcp(self.portrange, self.host, self)
+        h = self.port.getHost()
+        log.msg("Web service listening on %s:%d" % (h.host, h.port), log.DEBUG)
 
     def stop_listening(self):
         self.port.stopListening()

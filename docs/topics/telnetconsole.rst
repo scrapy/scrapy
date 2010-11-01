@@ -140,3 +140,28 @@ Telnet Console signals
     :param telnet_vars: the dict of telnet variables
     :type telnet_vars: dict
 
+Telnet settings
+===============
+
+These are the settings that control the telnet console's behaviour:
+
+.. setting:: TELNETCONSOLE_PORT
+
+TELNETCONSOLE_PORT
+------------------
+
+Default: ``[6023, 6073]``
+
+The port range to use for the etlnet console. If set to ``None`` or ``0``, a
+dynamically assigned port is used.
+
+
+.. setting:: TELNETCONSOLE_HOST
+
+TELNETCONSOLE_HOST
+------------------
+
+Default: ``'0.0.0.0'``
+
+The interface the telnet console should listen on
+

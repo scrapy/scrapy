@@ -116,7 +116,7 @@ setup_args = {
 
 try:
     from setuptools import setup
-    setup_args['install_requires'] = ['Twisted>=2.5']
+    setup_args['install_requires'] = ['Twisted>=2.5', 'lxml']
 except ImportError:
     from distutils.core import setup
  

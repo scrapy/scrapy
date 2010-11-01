@@ -194,18 +194,17 @@ class AnnotationTag(object):
     """
     __slots__ = ('surrounds_attribute', 'start_index', 'end_index',
             'tag_attributes', 'annotation_text', 'variant_id', 
-            'surrounds_variant','match_common_prefix', 'metadata')
+            'match_common_prefix', 'metadata')
     
     def __init__(self, start_index, end_index, surrounds_attribute=None, 
             annotation_text=None, tag_attributes=None, variant_id=None,
-            surrounds_variant=None, match_common_prefix=False):
+            match_common_prefix=False):
         self.start_index = start_index
         self.end_index = end_index
         self.surrounds_attribute = surrounds_attribute
         self.annotation_text = annotation_text
         self.tag_attributes = tag_attributes or []
         self.variant_id = variant_id
-        self.surrounds_variant = surrounds_variant
         self.match_common_prefix = match_common_prefix
         self.metadata = {}
 
