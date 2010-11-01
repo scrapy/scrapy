@@ -148,7 +148,8 @@ FEED_EXPORTERS_BASE = {
     'xml': 'scrapy.contrib.exporter.XmlItemExporter',
 }
 
-HTTPCACHE_DIR = ''
+HTTPCACHE_ENABLED = False
+HTTPCACHE_DIR = 'httpcache'
 HTTPCACHE_IGNORE_MISSING = False
 HTTPCACHE_STORAGE = 'scrapy.contrib.downloadermiddleware.httpcache.FilesystemCacheStorage'
 HTTPCACHE_EXPIRATION_SECS = 0

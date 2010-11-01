@@ -22,13 +22,11 @@ def project_data_dir(project='default'):
         makedirs(d)
     return d
 
-def expand_data_path(path):
+def data_path(path):
     """If path is relative, return the given path inside the project data dir,
     otherwise return the path unmodified
     """
-    if isabs(path):
-        return path
-    return join(project_data_dir(), path)
+    return path if isabs(path) else join(project_data_dir(), path)
 
 def sqlite_db(path, nonwritable_fallback=True):
     """Get the SQLite database to use. If path is relative, returns the given
@@ -41,7 +39,7 @@ def sqlite_db(path, nonwritable_fallback=True):
     if not inside_project() or path == ':memory:':
         db = ':memory:'
     else:
-        db = expand_data_path(path)
+        db = data_path(path)
         if not is_writable(db) and nonwritable_fallback:
             warnings.warn("%r is not writable - using in-memory SQLite instead" % db)
             db = ':memory:'

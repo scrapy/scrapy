@@ -22,6 +22,7 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
 
     def _get_settings(self, **new_settings):
         settings = {
+            'HTTPCACHE_ENABLED': True,
             'HTTPCACHE_DIR': self.tmpdir,
             'HTTPCACHE_EXPIRATION_SECS': 1,
             'HTTPCACHE_IGNORE_HTTP_CODES': [],
@@ -46,17 +47,11 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
         time.sleep(2) # wait for cache to expire
         assert storage.retrieve_response(self.spider, request2) is None
 
-    def test_storage_expire_immediately(self):
+    def test_storage_never_expire(self):
         storage = self._get_storage(HTTPCACHE_EXPIRATION_SECS=0)
         assert storage.retrieve_response(self.spider, self.request) is None
         storage.store_response(self.spider, self.request, self.response)
-        time.sleep(0.1) # required for win32
-        assert storage.retrieve_response(self.spider, self.request) is None
-
-    def test_storage_never_expire(self):
-        storage = self._get_storage(HTTPCACHE_EXPIRATION_SECS=-1)
-        assert storage.retrieve_response(self.spider, self.request) is None
-        storage.store_response(self.spider, self.request, self.response)
+        time.sleep(0.5) # give the chance to expire
         assert storage.retrieve_response(self.spider, self.request)
 
     def test_middleware(self):
