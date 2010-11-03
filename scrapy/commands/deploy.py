@@ -81,12 +81,16 @@ class Command(ScrapyCommand):
             return
         target, project = _get_target_project(args)
         version = _get_version(opts)
+        tmpdir = None
         if opts.egg:
             egg = open(opts.egg, 'rb')
         else:
             _log("Bulding egg of %s-%s" % (project, version))
-            egg = _build_egg()
+            egg, tmpdir = _build_egg()
         _upload_egg(target, egg, project, version)
+        egg.close()
+        if tmpdir:
+            shutil.rmtree(tmpdir)
 
 def _log(message):
     sys.stderr.write("%s\n" % message)
@@ -182,13 +186,10 @@ def _build_egg():
         settings = get_config().get('settings', 'default')
         _create_default_setup_py(settings=settings)
     d = tempfile.mkdtemp()
-    try:
-        f = tempfile.TemporaryFile(dir=d)
-        check_call([sys.executable, 'setup.py', 'bdist_egg', '-d', d], stdout=f)
-        egg = glob.glob(os.path.join(d, '*.egg'))[0]
-        return open(egg, 'rb')
-    finally:
-        shutil.rmtree(d)
+    f = tempfile.TemporaryFile(dir=d)
+    check_call([sys.executable, 'setup.py', 'bdist_egg', '-d', d], stdout=f)
+    egg = glob.glob(os.path.join(d, '*.egg'))[0]
+    return open(egg, 'rb'), d
 
 def _create_default_setup_py(**kwargs):
     with open('setup.py', 'w') as f:
