@@ -18,8 +18,11 @@ def get_spider_list_from_eggfile(eggfile, project):
             env = os.environ.copy()
             env['SCRAPY_PROJECT'] = project
             env['SCRAPY_EGGFILE'] = f.name
-            proc = Popen(pargs, stdout=PIPE, cwd=tmpdir, env=env)
-            out = proc.communicate()[0]
+            proc = Popen(pargs, stdout=PIPE, stderr=PIPE, cwd=tmpdir, env=env)
+            out, err = proc.communicate()
+            if proc.returncode:
+                msg = err.splitlines()[-1] if err else "unknown error"
+                raise RuntimeError(msg)
             return out.splitlines()
     finally:
         shutil.rmtree(tmpdir)
