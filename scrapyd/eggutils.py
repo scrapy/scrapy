@@ -4,7 +4,7 @@ import os, sys, shutil, pkg_resources
 from subprocess import Popen, PIPE
 from tempfile import NamedTemporaryFile, mkdtemp
 
-def get_spider_list_from_eggfile(eggfile, project):
+def get_spider_list_from_eggfile(eggfile, project, eggrunner='scrapyd.eggrunner'):
     # FIXME: we use a temporary directory here to avoid permissions problems
     # when running as system service, as "scrapy list" command tries to write
     # the scrapy.db sqlite database in current directory
@@ -14,15 +14,15 @@ def get_spider_list_from_eggfile(eggfile, project):
             shutil.copyfileobj(eggfile, f)
             f.flush()
             eggfile.seek(0)
-            pargs = [sys.executable, '-m', 'scrapyd.eggrunner', 'list']
+            pargs = [sys.executable, '-m', eggrunner, 'list']
             env = os.environ.copy()
             env['SCRAPY_PROJECT'] = project
             env['SCRAPY_EGGFILE'] = f.name
             proc = Popen(pargs, stdout=PIPE, stderr=PIPE, cwd=tmpdir, env=env)
             out, err = proc.communicate()
             if proc.returncode:
-                msg = err.splitlines()[-1] if err else "unknown error"
-                raise RuntimeError(msg)
+                msg = err or out or 'unknown error'
+                raise RuntimeError(msg.splitlines()[-1])
             return out.splitlines()
     finally:
         shutil.rmtree(tmpdir)
