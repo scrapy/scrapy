@@ -8,7 +8,7 @@ def get_spider_list_from_eggfile(eggfile, project, eggrunner='scrapyd.eggrunner'
     # FIXME: we use a temporary directory here to avoid permissions problems
     # when running as system service, as "scrapy list" command tries to write
     # the scrapy.db sqlite database in current directory
-    tmpdir = mkdtemp()
+    tmpdir = mkdtemp(prefix='eggs-%s-' % project)
     try:
         with NamedTemporaryFile(suffix='.egg', dir=tmpdir) as f:
             shutil.copyfileobj(eggfile, f)
@@ -32,7 +32,10 @@ def activate_egg(eggpath):
     to activate a Scrapy egg file. Don't use it from other code as it may
     leave unwanted side effects.
     """
-    d = pkg_resources.find_distributions(eggpath).next()
+    try:
+        d = pkg_resources.find_distributions(eggpath).next()
+    except StopIteration:
+        raise ValueError("Unknown or corrupt egg")
     d.activate()
     settings_module = d.get_entry_info('scrapy', 'settings').module_name
     os.environ['SCRAPY_SETTINGS_MODULE'] = settings_module
