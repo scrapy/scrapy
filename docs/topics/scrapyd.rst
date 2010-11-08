@@ -221,39 +221,38 @@ Show and define targets
 
 To see all available targets type::
 
-    scrapy deploy -L
+    scrapy deploy -l
 
-This will return a list of available targets and their URLs::
+This will return a list of available targets and their URLs. For example::
 
     scrapyd              http://localhost:6800/
 
-The ``scrapyd`` target is available by default. You can define more targets by
-adding them to the ``scrapy.cfg`` file in your project or any other supported
-location like ``~/.scrapy.cfg``, ``/etc/scrapy.cfg``, or
-``c:\scrapy\scrapy.cfg``.
+You can define targets by adding them to your project's ``scrapy.cfg`` file,
+or any other supported location like ``~/.scrapy.cfg``, ``/etc/scrapy.cfg``,
+or ``c:\scrapy\scrapy.cfg`` (in Windows).
 
 Here's an example of defining a new target ``scrapyd2`` with restricted access
 through HTTP basic authentication::
 
-    [deploy_scrapyd2]
-    url = http://scrapyd.mydomain.com/api/scrapy/
+    [deploy:scrapyd2]
+    url = http://scrapyd.mydomain.com/api/scrapyd/
     username = john
     password = secret
 
 .. note:: The :command:`deploy` command also supports netrc for getting the
    credentials.
 
-Now, if you type ``scrapy deploy -L`` you'd see::
+Now, if you type ``scrapy deploy -l`` you'll see::
 
     scrapyd              http://localhost:6800/
-    scrapyd2             http://scrapyd.mydomain.com/api/scrapy/
+    scrapyd2             http://scrapyd.mydomain.com/api/scrapyd/
 
 See available projects
 ----------------------
 
-To see all available projets in certain target use::
+To see all available projets in a specific target use::
 
-    scrapy deploy -l scrapyd
+    scrapy deploy -L scrapyd
 
 It would return something like this::
 
@@ -265,14 +264,14 @@ Deploying a project
 
 Finally, to deploy your project use::
 
-    scrapy deploy scrapyd:project1
+    scrapy deploy scrapyd -p project1
 
 This will eggify your project and upload it to the target, printing the JSON
 response returned from the Scrapyd server. If you have a ``setup.py`` file in
 your project, that one will be used. Otherwise a ``setup.py`` file will be
 created automatically (based on a simple template) that you can edit later.
 
-After running that command you will see something like this meaning your
+After running that command you will see something like this, meaning your
 project was uploaded successfully::
 
     Deploying myproject-1287453519 to http://localhost:6800/addversion.json
@@ -283,23 +282,30 @@ By default ``scrapy deploy`` uses the current timestamp for generating the
 project version, as you can see in the output above. However, you can pass a
 custom version with the ``--version`` option::
 
-    scrapy deploy scrapyd:project1 --version 54
+    scrapy deploy scrapyd -p project1 --version 54
 
 Also, if you use Mercurial for tracking your project source code, you can use
 ``HG`` for the version which will be replaced by the current Mercurial
 revision, for example ``r382``::
 
-    scrapy deploy scrapyd:project1 --version HG
+    scrapy deploy scrapyd -p project1 --version HG
 
 Support for other version discovery sources may be added in the future.
 
-Finally, if you don't want to specify the target and project every time you run
-``scrapy deploy`` you can define the default ones in the ``scrapy.cfg`` file,
-like this::
+Finally, if you don't want to specify the target, project and version every
+time you run ``scrapy deploy`` you can define the defaults in the
+``scrapy.cfg`` file. For example::
 
     [deploy]
-    target = scrapyd
+    url = http://scrapyd.mydomain.com/api/scrapyd/
+    username = john
+    password = secret
     project = project1
+    version = HG
+
+This way, you can deploy your project just by using::
+
+    scrapy deploy
 
 .. _topics-egg-caveats:
 
