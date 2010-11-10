@@ -193,35 +193,121 @@ Here is an example configuration file with all the defaults:
 
 .. literalinclude:: ../../scrapyd/default_scrapyd.conf
 
-Eggifying your project
+.. _topics-deploying:
+
+Deploying your project
 ======================
 
-In order to upload your project to Scrapyd, you must first build a `Python
-egg`_ of it. This is called "eggifying" your project. You'll need to install
-`setuptools`_ for this.
+Deploying your project into a Scrapyd server typically involves two steps:
 
-To eggify your project add a `setup.py`_ file to the root directory of your
-project (where the ``scrapy.cfg`` resides) with the following contents::
+1. building a `Python egg`_ of your project. This is called "eggifying" your
+   project. You'll need to install `setuptools`_ for this. See
+   :ref:`topics-egg-caveats` below.
 
-    #!/usr/bin/env python
+2. uploading the egg to the Scrapyd server
 
-    from setuptools import setup, find_packages
+The simplest way to deploy your project is by using the :command:`deploy`
+command, which automates the process of building the egg uploading it using the
+Scrapyd HTTP JSON API.
 
-    setup(
-        name =          'myproject',
-        version =       '1.0',
-        packages =      find_packages(),
-        entry_points =  {'scrapy': ['settings = myproject.settings']},
-    )
+The :command:`deploy` command supports multiple targets (Scrapyd servers that
+can host your project) and each target supports multiple projects.
 
-And then the run the following command::
+Each time you deploy a new version of a project, you can name it for later
+reference.
 
-    python setup.py bdist_egg
+Show and define targets
+-----------------------
 
-This will generate an egg file and leave it in the ``dist`` directory, for
-example::
+To see all available targets type::
 
-    dist/myproject-1.0-py2.6.egg
+    scrapy deploy -l
+
+This will return a list of available targets and their URLs. For example::
+
+    scrapyd              http://localhost:6800/
+
+You can define targets by adding them to your project's ``scrapy.cfg`` file,
+or any other supported location like ``~/.scrapy.cfg``, ``/etc/scrapy.cfg``,
+or ``c:\scrapy\scrapy.cfg`` (in Windows).
+
+Here's an example of defining a new target ``scrapyd2`` with restricted access
+through HTTP basic authentication::
+
+    [deploy:scrapyd2]
+    url = http://scrapyd.mydomain.com/api/scrapyd/
+    username = john
+    password = secret
+
+.. note:: The :command:`deploy` command also supports netrc for getting the
+   credentials.
+
+Now, if you type ``scrapy deploy -l`` you'll see::
+
+    scrapyd              http://localhost:6800/
+    scrapyd2             http://scrapyd.mydomain.com/api/scrapyd/
+
+See available projects
+----------------------
+
+To see all available projets in a specific target use::
+
+    scrapy deploy -L scrapyd
+
+It would return something like this::
+
+    project1
+    project2
+
+Deploying a project
+-------------------
+
+Finally, to deploy your project use::
+
+    scrapy deploy scrapyd -p project1
+
+This will eggify your project and upload it to the target, printing the JSON
+response returned from the Scrapyd server. If you have a ``setup.py`` file in
+your project, that one will be used. Otherwise a ``setup.py`` file will be
+created automatically (based on a simple template) that you can edit later.
+
+After running that command you will see something like this, meaning your
+project was uploaded successfully::
+
+    Deploying myproject-1287453519 to http://localhost:6800/addversion.json
+    Server response (200):
+    {"status": "ok", "spiders": ["spider1", "spider2"]}
+
+By default ``scrapy deploy`` uses the current timestamp for generating the
+project version, as you can see in the output above. However, you can pass a
+custom version with the ``--version`` option::
+
+    scrapy deploy scrapyd -p project1 --version 54
+
+Also, if you use Mercurial for tracking your project source code, you can use
+``HG`` for the version which will be replaced by the current Mercurial
+revision, for example ``r382``::
+
+    scrapy deploy scrapyd -p project1 --version HG
+
+Support for other version discovery sources may be added in the future.
+
+Finally, if you don't want to specify the target, project and version every
+time you run ``scrapy deploy`` you can define the defaults in the
+``scrapy.cfg`` file. For example::
+
+    [deploy]
+    url = http://scrapyd.mydomain.com/api/scrapyd/
+    username = john
+    password = secret
+    project = project1
+    version = HG
+
+This way, you can deploy your project just by using::
+
+    scrapy deploy
+
+.. _topics-egg-caveats:
 
 Egg caveats
 -----------
@@ -241,19 +327,6 @@ project:
   middleware) as Scrapyd will probably run with a different user which may not
   have write access to certain directories. If you can, avoid writing to disk
   and always use `tempfile`_ for temporary files.
-
-Uploading your project
-======================
-
-In these examples we'll be using `curl`_ for the web service interaction
-examples, but you can use any command or library that speaks HTTP.
-
-Once you've built the egg, you can upload your project to Scrapyd, like this::
-
-    $ curl http://localhost:6800/addversion.json -F project=myproject -F version=r23 -F egg=@dist/myproject-1.0-py2.6.egg
-    {"status": "ok", "spiders": ["spider1", "spider2", "spider3"]}
-
-You'll see that the JSON response contains the spiders found in your project.
 
 Scheduling a spider run
 =======================

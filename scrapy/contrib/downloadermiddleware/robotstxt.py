@@ -54,8 +54,7 @@ class RobotsTxtMiddleware(object):
 
     def spider_opened(self, spider):
         self._spider_netlocs[spider] = set()
-        self._useragents[spider] = getattr(spider, 'user_agent', None) \
-            or settings['USER_AGENT']
+        self._useragents[spider] = spider.settings['USER_AGENT']
 
     def spider_closed(self, spider):
         for netloc in self._spider_netlocs[spider]:

@@ -68,7 +68,8 @@ class ListSpiders(WsResource):
         project = txrequest.args['project'][0]
         eggstorage = self.root.app.getComponent(IEggStorage)
         _, eggf = eggstorage.get(project)
-        spiders = get_spider_list_from_eggfile(eggf, project)
+        spiders = get_spider_list_from_eggfile(eggf, project, \
+            eggrunner=self.root.egg_runner)
         return {"status": "ok", "spiders": spiders}
 
 class DeleteProject(WsResource):
@@ -96,6 +97,7 @@ class Root(Resource):
     def __init__(self, config, app):
         Resource.__init__(self)
         self.debug = config.getboolean('debug', False)
+        self.eggrunner = config.get('egg_runner')
         self.app = app
         self.putChild('schedule.json', Schedule(self))
         self.putChild('addversion.json', AddVersion(self))

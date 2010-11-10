@@ -1,6 +1,7 @@
 import unittest
 from scrapy.utils.http import basic_auth_header
 
+__doctests__ = ['scrapy.utils.http']
 
 class UtilsHttpTestCase(unittest.TestCase):
 

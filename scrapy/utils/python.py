@@ -5,6 +5,7 @@ It also contains functions (or functionality) which is in Python versions
 higher than 2.5 which is the lowest version supported by Scrapy.
 
 """
+import os
 import re
 import inspect
 import weakref
@@ -205,3 +206,12 @@ def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
             v = v.encode(encoding) if isinstance(v, unicode) else v
         d[k] = v
     return d
+
+def is_writable(path):
+    """Return True if the given path can be written (if it exists) or created
+    (if it doesn't exist)
+    """
+    if os.path.exists(path):
+        return os.access(path, os.W_OK)
+    else:
+        return os.access(os.path.dirname(path), os.W_OK)

@@ -136,6 +136,15 @@ Default: ``[6080, 7030]``
 The port range to use for the web service. If set to ``None`` or ``0``, a
 dynamically assigned port is used.
 
+.. setting:: WEBSERVICE_HOST
+
+WEBSERVICE_HOST
+---------------
+
+Default: ``'0.0.0.0'``
+
+The interface the web service should listen on
+
 WEBSERVICE_RESOURCES
 --------------------
 

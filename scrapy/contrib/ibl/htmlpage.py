@@ -83,92 +83,17 @@ class HtmlTag(HtmlDataFragment):
 _ATTR = "((?:[^=/>\s]|/(?!>))+)(?:\s*=(?:\s*\"(.*?)\"|\s*'(.*?)'|([^>\s]+))?)?"
 _TAG = "<(\/?)(\w+(?::\w+)?)((?:\s+" + _ATTR + ")+\s*|\s*)(\/?)>"
 _DOCTYPE = r"<!DOCTYPE.*?>"
+_SCRIPT = "(<script.*?>)(.*?)(</script.*?>)"
+_COMMENT = "(<!--.*?-->)"
 
 _ATTR_REGEXP = re.compile(_ATTR, re.I | re.DOTALL)
-_HTML_REGEXP = re.compile(_TAG, re.I | re.DOTALL)
+_HTML_REGEXP = re.compile("%s|%s|%s" % (_COMMENT, _SCRIPT, _TAG), re.I | re.DOTALL)
 _DOCTYPE_REGEXP = re.compile("(?:%s)" % _DOCTYPE)
-_COMMENT_RE = re.compile("(<!--.*?-->)", re.DOTALL)
-_SCRIPT_RE = re.compile("(<script.*?>).*?(</script.*?>)", re.DOTALL | re.I)
+_COMMENT_REGEXP = re.compile(_COMMENT, re.DOTALL)
 
 def parse_html(text):
     """Higher level html parser. Calls lower level parsers and joins sucesive
     HtmlDataFragment elements in a single one.
-    """
-    script_layer = lambda x: _parse_clean_html(x, _SCRIPT_RE, HtmlTag, _simple_parse_html)
-    comment_layer = lambda x: _parse_clean_html(x, _COMMENT_RE, HtmlDataFragment, script_layer)
-    delayed_element = None
-    for element in comment_layer(text):
-        if isinstance(element, HtmlTag):
-            if delayed_element is not None:
-                yield delayed_element
-                delayed_element = None
-            yield element
-        else:# element is HtmlDataFragment
-            if delayed_element is not None:
-                delayed_element.start = min(element.start, delayed_element.start)
-                delayed_element.end = max(element.end, delayed_element.end)
-            else:
-                delayed_element = element
-    if delayed_element is not None:
-        yield delayed_element
-
-def _parse_clean_html(text, regex, htype, func):
-    """
-    Removes regions from text, passes the cleaned text to the lower parse layer,
-    and reinserts removed regions.
-    regex - regular expression that defines regions to be removed/re inserted
-    htype - the html parser type of the removed elements
-    func - function that performs the lower parse layer
-    """
-    removed = [[m.start(), m.end(), m.groups()] for m in regex.finditer(text)]
-    
-    cleaned = regex.sub("", text)
-    shift = 0
-    for element in func(cleaned):
-        element.start += shift
-        element.end += shift
-        while removed:
-            if element.end <= removed[0][0]:
-                yield element
-                break
-            else:
-                start, end, groups = removed.pop(0)
-                add = end - start
-                element.end += add
-                shift += add
-                if element.start >= start:
-                    element.start += add
-                elif isinstance(element, HtmlTag):
-                    yield element
-                    break
-                
-                if element.start < start:
-                    yield HtmlDataFragment(element.start, start)
-                    element.start = end
-                
-                if htype == HtmlTag:
-                    begintag = _parse_tag(_HTML_REGEXP.match(groups[0]))
-                    endtag = _parse_tag(_HTML_REGEXP.match(groups[1]))
-                    begintag.start = start
-                    begintag.end += start
-                    
-                    endtag.start = end - endtag.end
-                    endtag.end = end
-                    content = None
-                    if begintag.end < endtag.start:
-                        content = HtmlDataFragment(begintag.end, endtag.start)
-                    yield begintag
-                    if content is not None:
-                        yield content
-                    yield endtag
-                else:
-                    yield htype(start, end)
-        else:
-            yield element
-
-def _simple_parse_html(text):
-    """Simple html parse. It returns a sequence of HtmlTag and HtmlDataFragment
-    objects. Does not ignore any region.
     """
     # If have doctype remove it.
     start_pos = 0
@@ -182,19 +107,49 @@ def _simple_parse_html(text):
             
         if start > prev_end:
             yield HtmlDataFragment(prev_end, start)
-        
-        yield _parse_tag(match)
+
+        if match.groups()[0] is not None: # comment
+            yield HtmlDataFragment(start, end)
+        elif match.groups()[1] is not None: # <script>...</script>
+            for e in _parse_script(match):
+                yield e
+        else: # tag
+            yield _parse_tag(match)
         prev_end = end
     textlen = len(text)
     if prev_end < textlen:
         yield HtmlDataFragment(prev_end, textlen)
+
+def _parse_script(match):
+    """parse a <script>...</script> region matched by _HTML_REGEXP"""
+    open_text, content, close_text = match.groups()[1:4]
+
+    open_tag = _parse_tag(_HTML_REGEXP.match(open_text))
+    open_tag.start = match.start()
+    open_tag.end = match.start() + len(open_text)
+
+    close_tag = _parse_tag(_HTML_REGEXP.match(close_text))
+    close_tag.start = match.end() - len(close_text)
+    close_tag.end = match.end()
+    
+    yield open_tag
+    if open_tag.end < close_tag.start:
+        start_pos = 0
+        for m in _COMMENT_REGEXP.finditer(content):
+            if m.start() > start_pos:
+                yield HtmlDataFragment(open_tag.end + start_pos, open_tag.end + m.start())
+            yield HtmlDataFragment(open_tag.end + m.start(), open_tag.end + m.end())
+            start_pos = m.end()
+        if open_tag.end + start_pos < close_tag.start:
+            yield HtmlDataFragment(open_tag.end + start_pos, close_tag.start)
+    yield close_tag
 
 def _parse_tag(match):
     """
     parse a tag matched by _HTML_REGEXP
     """
     data = match.groups()
-    closing, tag, attr_text = data[:3]
+    closing, tag, attr_text = data[4:7]
     # if tag is None then the match is a comment
     if tag is not None:
         unpaired = data[-1]

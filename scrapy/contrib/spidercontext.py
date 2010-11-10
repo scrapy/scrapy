@@ -1,12 +1,11 @@
-import sqlite3
-
 from zope.interface import Interface, implements
 
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.utils.sqlite import JsonSqliteDict
-from scrapy import log, signals
+from scrapy.utils.project import sqlite_db
+from scrapy import signals
 
 class ISpiderContextStorage(Interface):
 
@@ -24,16 +23,11 @@ class SqliteSpiderContextStorage(object):
     sqlite_dict_class = JsonSqliteDict
 
     def __init__(self, database=None, table='contexts'):
-        try:
-            self.d = self.sqlite_dict_class(database, table)
-        except sqlite3.Error, e:
-            self.d = self.sqlite_dict_class(':memory:', table)
-            log.msg("Cannot open SQLite %r - using in-memory context storage " \
-                "instead. Error was: %r" % (database, str(e)), log.WARNING)
+        self.d = self.sqlite_dict_class(database, table)
 
     @classmethod
     def from_settings(cls, settings):
-        return cls(settings['SQLITE_DB'])
+        return cls(sqlite_db(settings['SQLITE_DB']))
 
     def get(self, spider):
         if spider.name in self.d:
