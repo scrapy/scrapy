@@ -26,7 +26,6 @@ class Shell(object):
 
     def __init__(self, crawler, update_vars=None, inthread=False, code=None):
         self.crawler = crawler
-        self.vars = {}
         self.update_vars = update_vars or (lambda x: None)
         self.item_class = load_object(crawler.settings['DEFAULT_ITEM_CLASS'])
         self.inthread = inthread
@@ -77,6 +76,7 @@ class Shell(object):
 
     def populate_vars(self, url=None, response=None, request=None, spider=None):
         item = self.item_class()
+        self.vars = {}
         self.vars['item'] = item
         self.vars['settings'] = self.crawler.settings
         if url:
