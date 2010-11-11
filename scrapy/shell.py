@@ -17,7 +17,7 @@ from scrapy.utils.response import open_in_browser
 from scrapy.utils.url import any_to_uri
 from scrapy.utils.console import start_python_console
 from scrapy.settings import Settings
-from scrapy.http import Request, Response, TextResponse
+from scrapy.http import Request, Response, HtmlResponse, XmlResponse
 
 class Shell(object):
 
@@ -80,8 +80,9 @@ class Shell(object):
         self.vars['item'] = item
         self.vars['settings'] = self.crawler.settings
         if url:
-            if isinstance(response, TextResponse):
+            if isinstance(response, XmlResponse):
                 self.vars['xxs'] = XmlXPathSelector(response)
+            if isinstance(response, HtmlResponse):
                 self.vars['hxs'] = HtmlXPathSelector(response)
             self.vars['response'] = response
             self.vars['request'] = request
