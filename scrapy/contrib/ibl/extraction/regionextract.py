@@ -343,7 +343,7 @@ class RecordExtractor(object):
         The region in the page to be extracted from may be specified using
         start_index and end_index
         """
-        ignored_regions = [LabelledRegion(*i) for i in (ignored_regions or [])]
+        ignored_regions = [i if isinstance(i, LabelledRegion) else LabelledRegion(*i) for i in (ignored_regions or [])]
         region_elements = sorted(self.extractors + ignored_regions, key=lambda x: _labelled(x).start_index)
         _, _, attributes = self._doextract(page, region_elements, start_index, 
                 end_index)

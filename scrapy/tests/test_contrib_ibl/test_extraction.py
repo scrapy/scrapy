@@ -749,6 +749,39 @@ EXTRACT_PAGE22 = u"""
 </body></html>
 """
 
+ANNOTATED_PAGE23 = u"""
+<html><body>
+<h4>Product</h4>
+<table>
+<tr><td>
+<p data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 1, &quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">Variant 1<b data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 1, &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}" data-scrapy-ignore="true">560</b></p>
+</td></tr>
+<tr><td>
+<p>Variant 2<b>570</b></p>
+</td></tr>
+<tr><td>
+<p data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 2, &quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">Variant 3<b data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 2, &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}" data-scrapy-ignore="true">580</b></p>
+</td></tr>
+</table>
+</body></html>
+"""
+
+EXTRACT_PAGE23 = u"""
+<html><body>
+<h4>Product</h4>
+<table>
+<tr><td>
+<p>Variant 1<b>300</b></p>
+</td></tr>
+<tr><td>
+<p>Variant 2<b>320</b></p>
+</td></tr>
+<tr><td>
+<p>Variant 3<b>340</b></p>
+</td></tr>
+</table>
+</body></html>
+"""
 
 SAMPLE_DESCRIPTOR1 = ItemDescriptor('test', 'product test', [
     A('name', "Product name", required=True),
@@ -958,6 +991,13 @@ TEST_DATA = [
                   u'name': [u'product 4']}
              ],
              u'image_urls': [u'image.jpg']},
+    ),
+    ('repeated (variants) with ignore annotations', [ANNOTATED_PAGE23], EXTRACT_PAGE23, None,
+        {'variants': [
+            {u'price': [u'300'], u'name': [u'Variant 1']},
+            {u'price': [u'320'], u'name': [u'Variant 2']},
+            {u'price': [u'340'], u'name': [u'Variant 3']}
+            ]},
     ),
 ]
 
