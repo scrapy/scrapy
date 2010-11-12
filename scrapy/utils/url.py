@@ -154,7 +154,7 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False, \
     query = urllib.urlencode(keyvals)
     path = urllib.quote(urllib.unquote(path))
     fragment = '' if not keep_fragments else fragment
-    return urlparse.urlunparse((scheme, netloc, path, params, query, fragment))
+    return urlparse.urlunparse((scheme, netloc.lower(), path, params, query, fragment))
 
 def path_to_file_uri(path):
     """Convert local filesystem path to legal File URIs as described in:
