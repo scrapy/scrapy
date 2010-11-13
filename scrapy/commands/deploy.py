@@ -171,7 +171,7 @@ def _add_auth_header(request, target):
             host = urlparse(target['url']).hostname
             a = netrc.netrc().authenticators(host)
             request.add_header('Authorization', basic_auth_header(a[0], a[2]))
-        except (netrc.NetrcParseError, TypeError):
+        except (netrc.NetrcParseError, IOError, TypeError):
             pass
 
 def _http_post(request):
