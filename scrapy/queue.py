@@ -16,12 +16,13 @@ class ExecutionQueue(object):
         self._queue = queue
         self._keepalive = keep_alive
 
+    @defer.inlineCallbacks
     def _append_next(self):
         """Called when there are no more items left in self.spider_requests.
         This method is meant to be overriden in subclasses to add new (spider,
         requests) tuples to self.spider_requests. It can return a Deferred.
         """
-        msg = self._queue.pop()
+        msg = yield self._queue.pop()
         if msg:
             name = msg.pop('name')
             msg = stringify_dict(msg) # see #250
