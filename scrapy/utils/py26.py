@@ -102,10 +102,7 @@ else:
 try:
     import json
 except ImportError:
-    try:
-        import simplejson as json
-    except ImportError:
-        import scrapy.xlib.simplejson as json
+    import simplejson as json
 
 
 def _get_data(package, resource):
