@@ -27,17 +27,19 @@ Requirements
 
 * `libxml2`_ (versions prior to 2.6.28 are known to have problems parsing certain malformed HTML, and have also been reported to contain leaks, so 2.6.28 or above is highly recommended)
 
+* `simplejson`_ (not required if using Python 2.6 or above)
+
 .. _Python: http://www.python.org
 .. _Twisted: http://twistedmatrix.com
 .. _libxml2: http://xmlsoft.org
 .. _pywin32: http://sourceforge.net/projects/pywin32/
+.. _simplejson: http://pypi.python.org/pypi/simplejson/
 .. _Zope.Interface: http://pypi.python.org/pypi/zope.interface#download
 .. _this Twisted bug: http://twistedmatrix.com/trac/ticket/3707
 
 Optional:
 
 * `pyopenssl <http://pyopenssl.sourceforge.net>`_ (for HTTPS support, highly recommended)
-* `simplejson <http://undefined.org/python/#simplejson>`_ (for (de)serializing JSON)
 
 .. _intro-install-step1:
 
