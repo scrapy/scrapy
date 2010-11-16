@@ -7,6 +7,8 @@ from scrapy.http import Response, TextResponse, HtmlResponse
 from scrapy.utils.response import body_or_str, get_base_url, get_meta_refresh, \
     response_httprepr, get_cached_beautifulsoup, open_in_browser
 
+__doctests__ = ['scrapy.utils.response']
+
 class ResponseUtilsTest(unittest.TestCase):
     dummy_response = TextResponse(url='http://example.org/', body='dummy_response')
 

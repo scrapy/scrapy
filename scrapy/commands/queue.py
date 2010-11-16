@@ -14,7 +14,7 @@ class Command(runserver.Command):
         return "[options] <list|clear|count|add spider1 ..>"
 
     def short_desc(self):
-        return "Control execution queue"
+        return "Control the spider queue"
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)

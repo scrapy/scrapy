@@ -274,6 +274,10 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertEqual(canonicalize_url(u'http://www.example.com/caf%E9-con-leche.htm'),
                                            'http://www.example.com/caf%E9-con-leche.htm')
 
+        # domains are case insensitive
+        self.assertEqual(canonicalize_url("http://www.EXAMPLE.com"),
+                                          "http://www.example.com")
+
     def test_path_to_file_uri(self):
         if os.name == 'nt':
             self.assertEqual(path_to_file_uri("C:\\windows\clock.avi"),

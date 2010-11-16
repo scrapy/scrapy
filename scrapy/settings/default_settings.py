@@ -19,6 +19,7 @@ BOT_NAME = 'scrapybot'
 BOT_VERSION = '1.0'
 
 CLOSESPIDER_TIMEOUT = 0
+CLOSESPIDER_PAGECOUNT = 0
 CLOSESPIDER_ITEMPASSED = 0
 
 COMMANDS_MODULE = ''
@@ -147,7 +148,8 @@ FEED_EXPORTERS_BASE = {
     'xml': 'scrapy.contrib.exporter.XmlItemExporter',
 }
 
-HTTPCACHE_DIR = ''
+HTTPCACHE_ENABLED = False
+HTTPCACHE_DIR = 'httpcache'
 HTTPCACHE_IGNORE_MISSING = False
 HTTPCACHE_STORAGE = 'scrapy.contrib.downloadermiddleware.httpcache.FilesystemCacheStorage'
 HTTPCACHE_EXPIRATION_SECS = 0
@@ -194,8 +196,6 @@ REDIRECT_MAX_METAREFRESH_DELAY = 100
 REDIRECT_MAX_TIMES = 20 # uses Firefox default setting
 REDIRECT_PRIORITY_ADJUST = +2
 
-REQUESTS_QUEUE_SIZE = 0
-
 # contrib.middleware.retry.RetryMiddleware default settings
 RETRY_TIMES = 2 # initial response + 2 retries = 3 requests
 RETRY_HTTP_CODES = ['500', '503', '504', '400', '408']
@@ -213,6 +213,8 @@ SCHEDULER_MIDDLEWARES_BASE = {
 
 SCHEDULER_ORDER = 'DFO'
 
+SELECTORS_BACKEND = None # possible values: libxml2, lxml
+
 SPIDER_MANAGER_CLASS = 'scrapy.spidermanager.SpiderManager'
 
 SPIDER_MIDDLEWARES = {}
@@ -220,7 +222,6 @@ SPIDER_MIDDLEWARES = {}
 SPIDER_MIDDLEWARES_BASE = {
     # Engine side
     'scrapy.contrib.spidermiddleware.httperror.HttpErrorMiddleware': 50,
-    'scrapy.contrib.spidermiddleware.requestlimit.RequestLimitMiddleware': 200,
     'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware': 500,
     'scrapy.contrib.spidermiddleware.referer.RefererMiddleware': 700,
     'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware': 800,
@@ -259,10 +260,12 @@ USER_AGENT = '%s/%s' % (BOT_NAME, BOT_VERSION)
 
 TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_PORT = [6023, 6073]
+TELNETCONSOLE_HOST = '0.0.0.0'
 
 WEBSERVICE_ENABLED = True
 WEBSERVICE_LOGFILE = None
 WEBSERVICE_PORT = [6080, 7030]
+WEBSERVICE_HOST = '0.0.0.0'
 WEBSERVICE_RESOURCES = {}
 WEBSERVICE_RESOURCES_BASE = {
     'scrapy.contrib.webservice.crawler.CrawlerResource': 1,

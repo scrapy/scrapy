@@ -1,7 +1,10 @@
 import glob
-import pkgutil
 from cStringIO import StringIO
 from ConfigParser import SafeConfigParser, NoSectionError, NoOptionError
+
+from scrapy.utils.py26 import get_data
+
+__package__ = 'scrapyd' # required for compatibility with python 2.5
 
 class Config(object):
     """A ConfigParser wrapper to support defaults when calling instance
@@ -12,7 +15,7 @@ class Config(object):
     def __init__(self, values=None):
         if values is None:
             sources = self._getsources()
-            default_config = pkgutil.get_data(__package__, 'default_scrapyd.conf')
+            default_config = get_data(__package__, 'default_scrapyd.conf')
             self.cp = SafeConfigParser()
             self.cp.readfp(StringIO(default_config))
             self.cp.read(sources)

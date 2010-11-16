@@ -6,6 +6,7 @@ in Python 2.5. The Python 2.6 function is used when available.
 import sys
 import os
 import fnmatch
+import pkgutil
 from shutil import copy2, copystat
 
 __all__ = ['cpu_count', 'copytree', 'ignore_patterns']
@@ -105,3 +106,27 @@ except ImportError:
         import simplejson as json
     except ImportError:
         import scrapy.xlib.simplejson as json
+
+
+def _get_data(package, resource):
+    loader = pkgutil.get_loader(package)
+    if loader is None or not hasattr(loader, 'get_data'):
+        return None
+    mod = sys.modules.get(package) or loader.load_module(package)
+    if mod is None or not hasattr(mod, '__file__'):
+        return None
+
+    # Modify the resource name to be compatible with the loader.get_data
+    # signature - an os.path format "filename" starting with the dirname of
+    # the package's __file__
+    parts = resource.split('/')
+    parts.insert(0, os.path.dirname(mod.__file__))
+    resource_name = os.path.join(*parts)
+    return loader.get_data(resource_name)
+
+# pkgutil.get_data() not available in python 2.5
+# see http://docs.python.org/release/2.5/lib/module-pkgutil.html
+try:
+    get_data = pkgutil.get_data
+except AttributeError:
+    get_data = _get_data

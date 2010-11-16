@@ -1,10 +1,8 @@
-import sqlite3
-
 from zope.interface import implements
 
-from scrapy import log
 from scrapy.interfaces import ISpiderQueue
 from scrapy.utils.sqlite import JsonSqlitePriorityQueue
+from scrapy.utils.project import sqlite_db
 
 
 class SqliteSpiderQueue(object):
@@ -12,16 +10,11 @@ class SqliteSpiderQueue(object):
     implements(ISpiderQueue)
 
     def __init__(self, database=None, table='spider_queue'):
-        try:
-            self.q = JsonSqlitePriorityQueue(database, table)
-        except sqlite3.Error, e:
-            self.q = JsonSqlitePriorityQueue(':memory:', table)
-            log.msg("Cannot open SQLite %r - using in-memory spider queue " \
-                "instead. Error was: %r" % (database, str(e)), log.WARNING)
+        self.q = JsonSqlitePriorityQueue(database, table)
 
     @classmethod
     def from_settings(cls, settings):
-        return cls(settings['SQLITE_DB'])
+        return cls(sqlite_db(settings['SQLITE_DB']))
 
     def add(self, name, **spider_args):
         d = spider_args.copy()

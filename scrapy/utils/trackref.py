@@ -10,7 +10,7 @@ and no performance penalty at all when disabled (as object_ref becomes just an
 alias to object in that case).
 """
 
-import weakref
+import weakref, os
 from collections import defaultdict
 from time import time
 from operator import itemgetter
@@ -34,12 +34,10 @@ class object_ref(object):
 if not settings.getbool('TRACK_REFS'):
     object_ref = object
 
-def print_live_refs(ignore=NoneType):
+def format_live_refs(ignore=NoneType):
     if object_ref is object:
-        print "The trackref module is disabled. Use TRACK_REFS setting to enable it."
-        return
-    print "Live References"
-    print
+        return "The trackref module is disabled. Use TRACK_REFS setting to enable it."
+    s = "Live References" + os.linesep + os.linesep
     now = time()
     for cls, wdict in live_refs.iteritems():
         if not wdict:
@@ -47,8 +45,12 @@ def print_live_refs(ignore=NoneType):
         if issubclass(cls, ignore):
             continue
         oldest = min(wdict.itervalues())
-        print "%-30s %6d   oldest: %ds ago" % (cls.__name__, len(wdict), \
-            now-oldest)
+        s += "%-30s %6d   oldest: %ds ago" % (cls.__name__, len(wdict), \
+            now-oldest) + os.linesep
+    return s
+
+def print_live_refs(*a, **kw):
+    print format_live_refs(*a, **kw)
 
 def get_oldest(class_name):
     for cls, wdict in live_refs.iteritems():

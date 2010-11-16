@@ -89,7 +89,7 @@ def _check_deprecated_scrapy_ctl(argv, inproject):
             with open(cfg_path, 'w') as f:
                 f.write("# generated automatically - feel free to edit" + os.linesep)
                 f.write("[settings]" + os.linesep)
-                f.write("default = %s" % settings.settings_module_path + os.linesep)
+                f.write("default = %s" % settings.settings_module.__name__ + os.linesep)
 
 def _run_print_help(parser, func, *a, **kw):
     try:
@@ -128,6 +128,7 @@ def execute(argv=None):
     opts, args = parser.parse_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
     _run_print_help(parser, _run_command, cmd, args, opts)
+    sys.exit(cmd.exitcode)
 
 def _run_command(cmd, args, opts):
     if opts.profile or opts.lsprof:

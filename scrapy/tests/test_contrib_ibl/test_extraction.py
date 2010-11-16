@@ -13,6 +13,8 @@ from scrapy.contrib.ibl.extractors import (contains_any_numbers,
 
 try:
     import numpy
+    __doctests__ = ['scrapy.contrib.ibl.extraction.%s' % x for x in \
+        ['regionextract', 'similarity', 'pageobjects']]
 except ImportError:
     numpy = None
 
@@ -607,6 +609,180 @@ EXTRACT_PAGE19b = u"""
 </body></html>
 """
 
+ANNOTATED_PAGE20 = u"""
+<html><body>
+<h1>Product Name</h1>
+<img src="product.jpg">
+<br/>
+<span><ins data-scrapy-annotate="{&quot;variant&quot;: 1, &quot;generated&quot;: true,                                              
+&quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">Twin</ins>:</span> $<ins data-scrapy-annotate="{&quot;variant&quot;: 1, &quot;generated&quot;: true,
+&quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}">270</ins> - November 2010<br/>
+<span><ins data-scrapy-annotate="{&quot;variant&quot;: 2, &quot;generated&quot;: true,
+&quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">Queen</ins>:</span> $<ins data-scrapy-annotate="{&quot;variant&quot;: 2, &quot;generated&quot;: true,
+&quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}">330</ins> - In stock<br/>
+<br/>
+</body></html>
+"""
+
+EXTRACT_PAGE20 = u"""
+<html><body>
+<h1>Product Name</h1>
+<img src="product.jpg">
+<br/>
+<span>Twin:</span> $270 - November 2010<br/>
+<span>Queen:</span> $330 - Movember 2010<br/>
+<br/>
+</body></html>
+"""
+
+ANNOTATED_PAGE21 = u"""
+<html><body>                                                                                                                                                                       
+<img src="image.jpg" data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 0, &quot;annotations&quot;: {&quot;src&quot;: &quot;image_urls&quot;}}">
+<p>
+<table>
+
+<tr><td><img src="swatch1.jpg" data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 1, &quot;annotations&quot;: {&quot;src&quot;: &quot;swatches&quot;}}"></td></tr>
+
+<tr><td><img src="swatch2.jpg"></td></tr>
+
+<tr><td><img src="swatch3.jpg"></td></tr>
+
+<tr><td><img src="swatch4.jpg" data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 2, &quot;annotations&quot;: {&quot;src&quot;: &quot;swatches&quot;}}"></td></tr>
+
+</table>
+
+<div data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 0, &quot;annotations&quot;: {&quot;content&quot;: &quot;category&quot;}}">tables</div>
+
+</body></html>
+"""
+
+EXTRACT_PAGE21 = u"""
+<html><body>
+<img src="image.jpg">
+<p>
+<table>
+
+<tr><td><img src="swatch1.jpg"></td></tr>
+
+<tr><td><img src="swatch2.jpg"></td></tr>
+
+<tr><td><img src="swatch3.jpg"></td></tr>
+
+<tr><td><img src="swatch4.jpg"></td></tr>
+
+</table>
+
+<div>chairs</div>
+</body></html>
+"""
+
+ANNOTATED_PAGE22 = u"""
+<html><body>                                                                                                                                                                       
+<img src="image.jpg" data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 0, &quot;annotations&quot;: {&quot;src&quot;: &quot;image_urls&quot;}}">
+<p>
+<table>
+
+<tr><td>
+<p data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 1, &quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">product 1</p>
+<b data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 1, &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}">$67</b>
+<img src="swatch1.jpg" data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 1, &quot;annotations&quot;: {&quot;src&quot;: &quot;swatches&quot;}}">
+</td></tr>
+
+<tr><td>
+<p>product 2</p>
+<b>$70</b>
+<img src="swatch2.jpg">
+</td></tr>
+
+<tr><td>
+<p>product 3</p>
+<b>$73</b>
+<img src="swatch3.jpg">
+</td></tr>
+
+<tr><td>
+<p data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 2, &quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">product 4</p>
+<b data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 2, &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}">$80</b>
+<img src="swatch4.jpg" data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 2, &quot;annotations&quot;: {&quot;src&quot;: &quot;swatches&quot;}}">
+</td></tr>
+
+</table>
+
+<div data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 0, &quot;annotations&quot;: {&quot;content&quot;: &quot;category&quot;}}">tables</div>
+
+</body></html>
+"""
+
+EXTRACT_PAGE22 = u"""
+<html><body>
+<img src="image.jpg">
+<p>
+<table>
+
+<tr><td>
+<p>product 1</p>
+<b>$70</b>
+<img src="swatch1.jpg">
+</td></tr>
+
+<tr><td>
+<p>product 2</p>
+<b>$80</b>
+<img src="swatch2.jpg">
+</td></tr>
+
+<tr><td>
+<p>product 3</p>
+<b>$90</b>
+<img src="swatch3.jpg">
+</td></tr>
+
+<tr><td>
+<p>product 4</p>
+<b>$100</b>
+<img src="swatch4.jpg">
+</td></tr>
+
+</table>
+
+<div>chairs</div>
+</body></html>
+"""
+
+ANNOTATED_PAGE23 = u"""
+<html><body>
+<h4>Product</h4>
+<table>
+<tr><td>
+<p data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 1, &quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">Variant 1<b data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 1, &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}" data-scrapy-ignore="true">560</b></p>
+</td></tr>
+<tr><td>
+<p>Variant 2<b>570</b></p>
+</td></tr>
+<tr><td>
+<p data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 2, &quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">Variant 3<b data-scrapy-annotate="{&quot;required&quot;: [], &quot;variant&quot;: 2, &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}" data-scrapy-ignore="true">580</b></p>
+</td></tr>
+</table>
+</body></html>
+"""
+
+EXTRACT_PAGE23 = u"""
+<html><body>
+<h4>Product</h4>
+<table>
+<tr><td>
+<p>Variant 1<b>300</b></p>
+</td></tr>
+<tr><td>
+<p>Variant 2<b>320</b></p>
+</td></tr>
+<tr><td>
+<p>Variant 3<b>340</b></p>
+</td></tr>
+</table>
+</body></html>
+"""
+
 SAMPLE_DESCRIPTOR1 = ItemDescriptor('test', 'product test', [
     A('name', "Product name", required=True),
     A('price', "Product price, including any discounts and tax or vat", 
@@ -780,6 +956,48 @@ TEST_DATA = [
     ('extra required attribute no product', [ANNOTATED_PAGE19], EXTRACT_PAGE19b,
          SAMPLE_DESCRIPTOR1,
          None,
+    ),
+    ('repeated partial annotations with variants', [ANNOTATED_PAGE20], EXTRACT_PAGE20, None,
+            {u'variants': [
+                {'price': ['270'], 'name': ['Twin']},
+                {'price': ['330'], 'name': ['Queen']},
+            ]},
+    ),
+    ('variants with swatches', [ANNOTATED_PAGE21], EXTRACT_PAGE21, None,
+            {u'category': [u'chairs'],
+             u'image_urls': [u'image.jpg'],
+             u'variants': [
+                {'swatches': ['swatch1.jpg']},
+                {'swatches': ['swatch2.jpg']},
+                {'swatches': ['swatch3.jpg']},
+                {'swatches': ['swatch4.jpg']},
+             ]
+            },
+    ),
+    ('variants with swatches complete', [ANNOTATED_PAGE22], EXTRACT_PAGE22, None,
+            {u'category': [u'chairs'],
+             u'variants': [
+                 {u'swatches': [u'swatch1.jpg'],
+                  u'price': [u'$70'],
+                  u'name': [u'product 1']},
+                 {u'swatches': [u'swatch2.jpg'],\
+                  u'price': [u'$80'],
+                  u'name': [u'product 2']},
+                 {u'swatches': [u'swatch3.jpg'],
+                  u'price': [u'$90'],
+                  u'name': [u'product 3']},
+                 {u'swatches': [u'swatch4.jpg'],
+                  u'price': [u'$100'],
+                  u'name': [u'product 4']}
+             ],
+             u'image_urls': [u'image.jpg']},
+    ),
+    ('repeated (variants) with ignore annotations', [ANNOTATED_PAGE23], EXTRACT_PAGE23, None,
+        {'variants': [
+            {u'price': [u'300'], u'name': [u'Variant 1']},
+            {u'price': [u'320'], u'name': [u'Variant 2']},
+            {u'price': [u'340'], u'name': [u'Variant 3']}
+            ]},
     ),
 ]
 

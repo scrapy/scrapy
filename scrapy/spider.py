@@ -5,6 +5,7 @@ See documentation in docs/topics/spiders.rst
 """
 
 from scrapy import log
+from scrapy.settings import SpiderSettings
 from scrapy.http import Request
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.trackref import object_ref
@@ -32,6 +33,21 @@ class BaseSpider(object_ref):
         method to send log messages from your spider
         """
         log.msg(message, spider=self, level=level)
+
+    def set_crawler(self, crawler):
+        assert not hasattr(self, '_crawler'), "Spider already bounded to %s" % crawler
+        self._crawler = crawler
+
+    @property
+    def crawler(self):
+        assert hasattr(self, '_crawler'), "Spider not bounded to any crawler"
+        return self._crawler
+
+    @property
+    def settings(self):
+        if not hasattr(self, '_settings'):
+            self._settings = SpiderSettings(self, self.crawler.settings)
+        return self._settings
 
     def start_requests(self):
         reqs = []

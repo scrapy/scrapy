@@ -13,6 +13,44 @@ just call "commands", or "Scrapy commands".
 The Scrapy tool provides several commands, for multiple purposes, and each one
 accepts a different set of arguments and options.
 
+.. _topics-project-structure:
+
+Default structure of Scrapy projects
+====================================
+
+Before delving into the command-line tool and its sub-commands, let's first
+understand the directory structure of a Scrapy project.
+
+Even thought it can be modified, all Scrapy projects have the same file
+structure by default, similar to this::
+
+   scrapy.cfg
+   myproject/
+       __init__.py
+       items.py
+       pipelines.py
+       settings.py
+       spiders/
+           __init__.py
+           spider1.py
+           spider2.py
+           ...
+   .scrapy/
+       scrapy.db
+
+The directory where the ``scrapy.cfg`` file resides is known as the *project
+root directory*. That file contains the name of the python module that defines
+the project settings. Here is an example::
+
+    [settings]
+    default = myproject.settings
+
+By default, Scrapy projects use a SQLite_ database to store persistent runtime
+data of the project, such as the spider queue (the list of spiders that are
+scheduled to run).  By default, this SQLite database is stored in the *project
+data directory* which, by default, is the ``.scrapy`` directory inside the
+project root directory mentioned above.
+
 Using the ``scrapy`` tool
 =========================
 
@@ -73,10 +111,10 @@ information on which commands must be run from inside projects, and which not.
 
 Also keep in mind that some commands may have slightly different behaviours
 when running them from inside projects. For example, the fetch command will use
-spider-overridden behaviours (such as custom ``user_agent`` attribute) if the
-url being fetched is associated with some specific spider. This is intentional,
-as the ``fetch`` command is meant to be used to check how spiders are
-downloading pages.
+spider-overridden behaviours (such as custom :setting:`USER_AGENT` per-spider
+setting) if the url being fetched is associated with some specific spider. This
+is intentional, as the ``fetch`` command is meant to be used to check how
+spiders are downloading pages.
 
 .. _topics-commands-ref:
 
@@ -107,6 +145,7 @@ Global commands:
 * :command:`shell`
 * :command:`fetch`
 * :command:`view`
+* :command:`version`
 
 Project-only commands:
 
@@ -116,6 +155,7 @@ Project-only commands:
 * :command:`genspider`
 * :command:`runserver`
 * :command:`queue`
+* :command:`deploy`
 
 .. command:: startproject
 
@@ -243,7 +283,7 @@ Downloads the given URL using the Scrapy downloader and writes the contents to
 standard output.
 
 The interesting thing about this command is that it fetches the page how the
-the spider would download it. For example, if the spider has an ``user_agent``
+the spider would download it. For example, if the spider has an ``USER_AGENT``
 attribute which overrides the User Agent, it will use that one.
 
 So this command can be used to "see" how your spider would fetch certain page.
@@ -399,6 +439,8 @@ And clear the queue::
 
     $ scrapy queue clear
 
+.. command:: version
+
 version
 -------
 
@@ -407,6 +449,17 @@ version
 
 Prints the Scrapy version.
 
+.. command:: deploy
+
+deploy
+------
+
+.. versionadded:: 0.11
+
+* Syntax: ``scrapy deploy [ <target:project> | -l <target> | -L ]``
+* Requires project: *yes*
+
+Deploy the project into a Scrapyd server. See :ref:`topics-deploying`.
 
 Custom project commands
 =======================
@@ -429,3 +482,5 @@ commands for your Scrapy project.
 Example::
 
     COMMANDS_MODULE = 'mybot.commands'
+
+.. _SQLite: http://en.wikipedia.org/wiki/SQLite

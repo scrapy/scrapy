@@ -12,9 +12,6 @@ else
     exit 1
 fi
 
-# disable custom settings for running tests in a neutral environment
-export SCRAPY_SETTINGS_DISABLED=1
-
 # use vsftpd (if available) for testing ftp feed storage
 if type vsftpd >/dev/null 2>&1; then
     vsftpd_conf=$(mktemp /tmp/vsftpd-XXXX)
@@ -40,7 +37,7 @@ fi
 
 find -name '*.py[co]' -delete
 if [ $# -eq 0 ]; then
-    $trial scrapy scrapyd
+    $trial --reporter=text scrapy scrapyd
 else
     $trial "$@"
 fi

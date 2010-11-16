@@ -14,12 +14,15 @@ from scrapy.utils.request import request_fingerprint
 from scrapy.utils.http import headers_dict_to_raw, headers_raw_to_dict
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
+from scrapy.utils.project import data_path
 from scrapy import conf
 
 
 class HttpCacheMiddleware(object):
 
     def __init__(self, settings=conf.settings):
+        if not settings.getbool('HTTPCACHE_ENABLED'):
+            raise NotConfigured
         self.storage = load_object(settings['HTTPCACHE_STORAGE'])(settings)
         self.ignore_missing = settings.getbool('HTTPCACHE_IGNORE_MISSING')
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
@@ -58,10 +61,7 @@ class HttpCacheMiddleware(object):
 class FilesystemCacheStorage(object):
 
     def __init__(self, settings=conf.settings):
-        cachedir = settings['HTTPCACHE_DIR']
-        if not cachedir:
-            raise NotConfigured
-        self.cachedir = cachedir
+        self.cachedir = data_path(settings['HTTPCACHE_DIR'])
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
 
     def open_spider(self, spider):
@@ -123,7 +123,7 @@ class FilesystemCacheStorage(object):
         if not exists(metapath):
             return # not found
         mtime = os.stat(rpath).st_mtime
-        if 0 <= self.expiration_secs < time() - mtime:
+        if 0 < self.expiration_secs < time() - mtime:
             return # expired
         with open(metapath, 'rb') as f:
             return pickle.load(f)

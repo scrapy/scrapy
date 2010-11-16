@@ -4,10 +4,10 @@ import re
 import sys
 import struct
 
-from simplejson.scanner import make_scanner
+from scrapy.xlib.simplejson.scanner import make_scanner
 def _import_c_scanstring():
     try:
-        from simplejson._speedups import scanstring
+        from scrapy.xlib.simplejson._speedups import scanstring
         return scanstring
     except ImportError:
         return None

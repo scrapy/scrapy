@@ -177,9 +177,7 @@ DefaultHeadersMiddleware
 .. class:: DefaultHeadersMiddleware
 
     This middleware sets all default requests headers specified in the
-    :setting:`DEFAULT_REQUEST_HEADERS` setting plus those found in spider
-    ``default_request_headers`` attribute. Spider headers has precedence over
-    global headers.
+    :setting:`DEFAULT_REQUEST_HEADERS` setting.
 
 DownloadTimeoutMiddleware
 -------------------------
@@ -189,10 +187,8 @@ DownloadTimeoutMiddleware
 
 .. class:: DownloadTimeoutMiddleware
 
-    This middleware sets download timeout for requests based on
-    `download_timeout` spider attribute. It doesn't override timeout if
-    `download_timeout` is already set in request meta. Otherwise,
-    :setting:`DOWNLOAD_TIMEOUT` setting is used as default download timeout.
+    This middleware sets the download timeout for requests specified in the 
+    :setting:`DOWNLOAD_TIMEOUT` setting.
 
 HttpAuthMiddleware
 ------------------
@@ -234,8 +230,8 @@ HttpCacheMiddleware
     anything from the Internet.
 
     The HTTP cache is useful for testing spiders faster (without having to wait for
-    downloads every time) and for trying your spider offline, when you don't have
-    an Internet connection.
+    downloads every time) and for trying your spider offline, when an Internet
+    connection is not available.
 
 File system storage
 ~~~~~~~~~~~~~~~~~~~
@@ -270,15 +266,19 @@ Settings
 The :class:`HttpCacheMiddleware` can be configured through the following
 settings:
 
-.. setting:: HTTPCACHE_DIR
+.. setting:: HTTPCACHE_ENABLED
 
-HTTPCACHE_DIR
-^^^^^^^^^^^^^
+HTTPCACHE_ENABLED
+^^^^^^^^^^^^^^^^^
 
-Default: ``''`` (empty string)
+.. versionadded:: 0.11
 
-The directory to use for storing the (low-level) HTTP cache. If empty, the HTTP
-cache will be disabled.
+Default: ``False``
+
+Whether the HTTP cache will be enabled.
+
+.. versionchanged:: 0.11
+   Before 0.11, :setting:`HTTPCACHE_DIR` was used to enable cache.
 
 .. setting:: HTTPCACHE_EXPIRATION_SECS
 
@@ -287,9 +287,24 @@ HTTPCACHE_EXPIRATION_SECS
 
 Default: ``0``
 
-Number of seconds to use for HTTP cache expiration. Requests that were cached
-before this time will be re-downloaded. If zero, cached requests will always
-expire. A negative number means requests will never expire.
+Expiration time for cached requests, in seconds.
+
+Cached requests older than this time will be re-downloaded. If zero, cached
+requests will never expire.
+
+.. versionchanged:: 0.11
+   Before 0.11, zero meant cached requests always expire.
+
+.. setting:: HTTPCACHE_DIR
+
+HTTPCACHE_DIR
+^^^^^^^^^^^^^
+
+Default: ``'httpcache'``
+
+The directory to use for storing the (low-level) HTTP cache. If empty, the HTTP
+cache will be disabled. If a relative path is given, is taken relative to the
+project data dir. For more info see: :ref:`topics-project-structure`.
 
 .. setting:: HTTPCACHE_IGNORE_HTTP_CODES
 
