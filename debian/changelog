@@ -1,4 +1,4 @@
-scrapy (0.11) unstable; urgency=low
+scrapy-SUFFIX (0.11) unstable; urgency=low
 
   * Initial release.
 

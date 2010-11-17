@@ -1,0 +1,6 @@
+deb:
+	python extras/makedeb.py build
+
+deb-clean:
+	debclean
+	python extras/makedeb.py clean
