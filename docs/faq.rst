@@ -41,8 +41,9 @@ Does Scrapy work with Python 3.0?
 ---------------------------------
 
 No, and there are no plans to port Scrapy to Python 3.0 yet. At the moment,
-Scrapy works with Python 2.5, 2.6 and 2.7. See also:
-:ref:`faq-python-versions`.
+Scrapy works with Python 2.5, 2.6 and 2.7.
+
+.. seealso:: :ref:`faq-python-versions`.
 
 Did Scrapy "steal" X from Django?
 ---------------------------------
