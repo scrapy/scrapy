@@ -13,23 +13,24 @@ from scrapy.http.common import deprecated_setter
 
 class Response(object_ref):
 
-    __slots__ = ['_url', 'headers', 'status', '_body', 'request', '_meta', \
+    __slots__ = ['_url', 'headers', 'status', '_body', 'request', \
         'flags', '__weakref__']
 
-    def __init__(self, url, status=200, headers=None, body='', meta=None, flags=None):
+    def __init__(self, url, status=200, headers=None, body='', flags=None, request=None):
         self.headers = Headers(headers or {})
         self.status = int(status)
         self._set_body(body)
         self._set_url(url)
-        self.request = None
+        self.request = request
         self.flags = [] if flags is None else list(flags)
-        self._meta = dict(meta) if meta else None
 
     @property
     def meta(self):
-        if self._meta is None:
-            self._meta = {}
-        return self._meta
+        try:
+            return self.request.meta
+        except AttributeError:
+            raise AttributeError("Response.meta not available, this response " \
+                "is not tied to any request")
 
     def _get_url(self):
         return self._url
@@ -61,7 +62,7 @@ class Response(object_ref):
     body = property(_get_body, deprecated_setter(_set_body, 'body'))
 
     def __repr__(self):
-        attrs = ['url', 'status', 'body', 'headers', 'meta', 'flags']
+        attrs = ['url', 'status', 'body', 'headers', 'request', 'flags']
         args = ", ".join(["%s=%r" % (a, getattr(self, a)) for a in attrs])
         return "%s(%s)" % (self.__class__.__name__, args)
 
@@ -76,7 +77,7 @@ class Response(object_ref):
         """Create a new Response with the same attributes except for those
         given new values.
         """
-        for x in ['url', 'status', 'headers', 'body', 'meta', 'flags']:
+        for x in ['url', 'status', 'headers', 'body', 'request', 'flags']:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)

@@ -1,7 +1,7 @@
 import unittest
 import weakref
 
-from scrapy.http import Response, TextResponse, HtmlResponse, XmlResponse, Headers
+from scrapy.http import Request, Response, TextResponse, HtmlResponse, XmlResponse, Headers
 from scrapy.utils.encoding import resolve_encoding
 
 
@@ -26,15 +26,11 @@ class BaseResponseTest(unittest.TestCase):
 
         assert isinstance(r.headers, Headers)
         self.assertEqual(r.headers, {})
-        self.assertEqual(r.meta, {})
 
-        meta = {"lala": "lolo"}
         headers = {"caca": "coco"}
         body = "a body"
-        r = self.response_class("http://www.example.com", meta=meta, headers=headers, body=body)
+        r = self.response_class("http://www.example.com", headers=headers, body=body)
 
-        assert r.meta is not meta
-        self.assertEqual(r.meta, meta)
         assert r.headers is not headers
         self.assertEqual(r.headers["caca"], "coco")
 
@@ -48,16 +44,11 @@ class BaseResponseTest(unittest.TestCase):
         """Test Response copy"""
 
         r1 = self.response_class("http://www.example.com", body="Some body")
-        r1.meta['foo'] = 'bar'
         r1.flags.append('cached')
         r2 = r1.copy()
 
         self.assertEqual(r1.status, r2.status)
         self.assertEqual(r1.body, r2.body)
-
-        # make sure meta dict is shallow copied
-        assert r1.meta is not r2.meta, "meta must be a shallow copy, not identical"
-        self.assertEqual(r1.meta, r2.meta)
 
         # make sure flags list is shallow copied
         assert r1.flags is not r2.flags, "flags must be a shallow copy, not identical"
@@ -66,6 +57,12 @@ class BaseResponseTest(unittest.TestCase):
         # make sure headers attribute is shallow copied
         assert r1.headers is not r2.headers, "headers must be a shallow copy, not identical"
         self.assertEqual(r1.headers, r2.headers)
+
+    def test_copy_meta(self):
+        req = Request("http://www.example.com")
+        req.meta['foo'] = 'bar'
+        r1 = self.response_class("http://www.example.com", body="Some body", request=req)
+        assert r1.meta is req.meta
 
     def test_copy_inherited_classes(self):
         """Test Response children copies preserve their class"""
@@ -90,10 +87,9 @@ class BaseResponseTest(unittest.TestCase):
         self.assertEqual((r1.headers, r2.headers), ({}, hdrs))
 
         # Empty attributes (which may fail if not compared properly)
-        r3 = self.response_class("http://www.example.com", meta={'a': 1}, flags=['cached'])
-        r4 = r3.replace(body='', meta={}, flags=[])
+        r3 = self.response_class("http://www.example.com", flags=['cached'])
+        r4 = r3.replace(body='', flags=[])
         self.assertEqual(r4.body, '')
-        self.assertEqual(r4.meta, {})
         self.assertEqual(r4.flags, [])
 
     def test_weakref_slots(self):

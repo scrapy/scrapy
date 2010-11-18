@@ -26,12 +26,11 @@ class TextResponse(Response):
 
     __slots__ = ['_encoding', '_cached_benc', '_cached_ubody']
 
-    def __init__(self, url, status=200, headers=None, body=None, meta=None, \
-            flags=None, encoding=None):
-        self._encoding = encoding
+    def __init__(self, *args, **kwargs):
+        self._encoding = kwargs.pop('encoding', None)
         self._cached_benc = None
         self._cached_ubody = None
-        super(TextResponse, self).__init__(url, status, headers, body, meta, flags)
+        super(TextResponse, self).__init__(*args, **kwargs)
 
     def _set_url(self, url):
         if isinstance(url, unicode):

@@ -145,5 +145,17 @@ class RedirectMiddlewareTest(unittest.TestCase):
         assert isinstance(req, Request)
         self.assertRaises(IgnoreRequest, self.mw.process_response, req, rsp, self.spider)
 
+    def test_redirect_urls(self):
+        req1 = Request('http://scrapytest.org/first')
+        rsp1 = Response('http://scrapytest.org/first', headers={'Location': '/redirected'}, status=302)
+        req2 = self.mw.process_response(req1, rsp1, self.spider)
+        rsp2 = Response('http://scrapytest.org/redirected', headers={'Location': '/redirected2'}, status=302)
+        req3 = self.mw.process_response(req2, rsp2, self.spider)
+
+        self.assertEqual(req2.url, 'http://scrapytest.org/redirected')
+        self.assertEqual(req2.meta['redirect_urls'], ['http://scrapytest.org/first'])
+        self.assertEqual(req3.url, 'http://scrapytest.org/redirected2')
+        self.assertEqual(req3.meta['redirect_urls'], ['http://scrapytest.org/first', 'http://scrapytest.org/redirected'])
+
 if __name__ == "__main__":
     unittest.main()

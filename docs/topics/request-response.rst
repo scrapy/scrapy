@@ -138,7 +138,8 @@ Request objects
         recognized by Scrapy.
 
         This dict is `shallow copied`_ when the request is cloned using the
-        ``copy()`` or ``replace()`` methods.
+        ``copy()`` or ``replace()`` methods, and can also be accesed, in your
+        spider, from the ``response.meta`` attribute.
 
     .. _shallow copied: http://docs.python.org/library/copy.html
 
@@ -221,6 +222,7 @@ Those are:
 * :reqmeta:`dont_retry`
 * :reqmeta:`handle_httpstatus_list`
 * ``dont_merge_cookies`` (see ``cookies`` parameter of :class:`Request` constructor)
+* :reqmeta:`redirect_urls`
 
 .. _topics-request-response-ref-request-subclasses:
 
@@ -353,7 +355,7 @@ method for this job. Here's an example spider which uses it::
 Response objects
 ================
 
-.. class:: Response(url, [status=200, headers, body, meta, flags])
+.. class:: Response(url, [status=200, headers, body, flags])
 
     A :class:`Response` object represents an HTTP response, which is usually
     downloaded (by the Downloader) and fed to the Spiders for processing.
@@ -429,9 +431,14 @@ Response objects
 
     .. attribute:: Response.meta
 
-        A dict that contains arbitrary metadata for this response, similar to the
-        :attr:`Request.meta` attribute. See the :attr:`Request.meta` attribute for
-        more info.
+        A shortcut to the :attr:`Request.meta` attribute of the
+        :attr:`Response.request` object (ie. ``self.request.meta``).
+
+        Unlike the :attr:`Response.request` attribute, the :attr:`Response.meta`
+        attribute is propagated along redirects and retries, so you will get
+        the original :attr:`Request.meta` sent from your spider.
+
+        .. seealso:: :attr:`Request.meta` attribute
 
     .. attribute:: Response.flags
 

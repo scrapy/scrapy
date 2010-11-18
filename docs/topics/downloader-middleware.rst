@@ -382,15 +382,20 @@ HttpProxyMiddleware
 .. _urllib2: http://docs.python.org/library/urllib2.html
 
 RedirectMiddleware
--------------------
+------------------
 
 .. module:: scrapy.contrib.downloadermiddleware.redirect
    :synopsis: Redirection Middleware
 
 .. class:: RedirectMiddleware
 
-   This middlware handles redirection of requests based on response status and
+   This middleware handles redirection of requests based on response status and
    meta-refresh html tag.
+
+.. reqmeta:: redirect_urls
+
+The urls which the request goes through (while being redirected) can be found
+in the ``redirect_urls`` :attr:`Request.meta <scrapy.http.Request.meta>` key.
 
 The :class:`RedirectMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
