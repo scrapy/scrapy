@@ -78,7 +78,7 @@ Installing with ``easy_install``
 
 You can install Scrapy using setuptools_'s ``easy_install`` with::
 
-   easy_install Scrapy
+   easy_install -U Scrapy
 
 .. _intro-install-pip:
 
