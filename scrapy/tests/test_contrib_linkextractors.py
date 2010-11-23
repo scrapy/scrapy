@@ -221,6 +221,16 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.extract_links(response),
                          [Link(url='http://example.org/other/page.html', text='Link text')])
 
+    def test_base_url_with_restrict_xpaths(self):
+        html = """<html><head><title>Page title<title><base href="http://otherdomain.com/base/" />
+        <body><p><a href="item/12.html">Item 12</a></p>
+        </body></html>"""
+        response = HtmlResponse("http://example.org/somepage/index.html", body=html)
+        lx = SgmlLinkExtractor(restrict_xpaths="//p") 
+        self.assertEqual(lx.extract_links(response),
+                         [Link(url='http://otherdomain.com/base/item/12.html', text='Item 12')])
+
+
 class HTMLImageLinkExtractorTestCase(unittest.TestCase):
     def setUp(self):
         body = get_testdata('link_extractor', 'image_linkextractor.html')

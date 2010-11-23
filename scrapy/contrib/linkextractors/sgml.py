@@ -9,6 +9,7 @@ from scrapy.link import Link
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import FixedSGMLParser, unique as unique_list, str_to_unicode
 from scrapy.utils.url import safe_url_string, urljoin_rfc, canonicalize_url, url_is_from_any_domain
+from scrapy.utils.response import get_base_url
 
 class BaseSgmlLinkExtractor(FixedSGMLParser):
 
@@ -20,14 +21,15 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
         self.current_link = None
         self.unique = unique
 
-    def _extract_links(self, response_text, response_url, response_encoding):
+    def _extract_links(self, response_text, response_url, response_encoding, base_url=None):
         """ Do the real extraction work """
         self.reset()
         self.feed(response_text)
         self.close()
 
         ret = []
-        base_url = urljoin_rfc(response_url, self.base_url) if self.base_url else response_url
+        if base_url is None:
+            base_url = urljoin_rfc(response_url, self.base_url) if self.base_url else response_url
         for link in self.links:
             link.url = urljoin_rfc(base_url, link.url, response_encoding)
             link.url = safe_url_string(link.url, response_encoding)
@@ -100,14 +102,16 @@ class SgmlLinkExtractor(BaseSgmlLinkExtractor):
             unique=unique, process_value=process_value)
 
     def extract_links(self, response):
+        base_url = None
         if self.restrict_xpaths:
             hxs = HtmlXPathSelector(response)
             html = ''.join(''.join(html_fragm for html_fragm in hxs.select(xpath_expr).extract()) \
                 for xpath_expr in self.restrict_xpaths)
+            base_url = get_base_url(response)
         else:
             html = response.body
 
-        links = self._extract_links(html, response.url, response.encoding)
+        links = self._extract_links(html, response.url, response.encoding, base_url)
         links = self._process_links(links)
         return links
 
