@@ -60,9 +60,7 @@ Available, enabled and disabled extensions
 
 Not all available extensions will be enabled. Some of them usually depend on a
 particular setting. For example, the HTTP Cache extension is available by default
-but disabled unless the :setting:`HTTPCACHE_DIR` setting is set.  Both enabled
-and disabled extensions can be accessed through the
-:ref:`topics-extensions-ref-manager`.
+but disabled unless the :setting:`HTTPCACHE_ENABLED` setting is set.
 
 Accessing enabled extensions
 ============================
