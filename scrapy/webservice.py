@@ -34,7 +34,7 @@ class JsonRpcResource(JsonResource):
         return self.get_target()
 
     def render_POST(self, txrequest):
-        reqstr = txrequest.content.read()
+        reqstr = txrequest.content.getvalue()
         target = self.get_target()
         return jsonrpc_server_call(target, reqstr, self.json_decoder)
 
