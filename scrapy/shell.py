@@ -47,6 +47,8 @@ class Shell(object):
         elif response:
             request = response.request
             self.populate_vars(request.url, response, request, spider)
+        else:
+            self.populate_vars()
         if self.code:
             print eval(self.code, globals(), self.vars)
         else:
