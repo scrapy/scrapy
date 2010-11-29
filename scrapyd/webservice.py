@@ -46,7 +46,8 @@ class AddVersion(WsResource):
         eggstorage = self.root.app.getComponent(IEggStorage)
         eggstorage.put(eggf, project, version)
         self.root.update_projects()
-        return {"status": "ok", "spiders": len(spiders)}
+        return {"status": "ok", "project": project, "version": version, \
+            "spiders": len(spiders)}
 
 class ListProjects(WsResource):
 
