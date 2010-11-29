@@ -2,6 +2,7 @@ import os
 from ConfigParser import NoSectionError
 
 from scrapy.spiderqueue import SqliteSpiderQueue
+from scrapy.utils.python import stringify_dict, unicode_to_str
 
 def get_spider_queues(config):
     """Return a dict of Spider Quees keyed by project name"""
@@ -28,3 +29,15 @@ def get_project_list(config):
     except NoSectionError:
         pass
     return projects
+
+def get_crawl_args(message):
+    """Return the command-line arguments to use for the scrapy crawl process
+    that will be started for this message
+    """
+    msg = message.copy()
+    args = [unicode_to_str(msg['spider'])]
+    del msg['project'], msg['spider']
+    for k, v in stringify_dict(msg).items():
+        args += ['-a']
+        args += ['%s=%s' % (k, v)]
+    return args

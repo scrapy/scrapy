@@ -18,7 +18,8 @@ class QueuePoller(object):
             return
         for p, q in self.queues.iteritems():
             if q.count():
-                return self.dq.put(self._message(p))
+                msg = q.pop()
+                return self.dq.put(self._message(msg, p))
 
     def next(self):
         return self.dq.get()
@@ -26,5 +27,8 @@ class QueuePoller(object):
     def update_projects(self):
         self.queues = get_spider_queues(self.config)
 
-    def _message(self, project):
-        return {'project': str(project)}
+    def _message(self, queue_msg, project):
+        d = queue_msg.copy()
+        d['project'] = project
+        d['spider'] = d.pop('name')
+        return d

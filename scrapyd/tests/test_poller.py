@@ -37,5 +37,5 @@ class QueuePollerTest(unittest.TestCase):
         self.poller.poll()
         self.queues['mybot1'].pop()
         self.poller.poll()
-        self.failUnlessEqual(d1.result, {'project': 'mybot1'})
-        self.failUnlessEqual(d2.result, {'project': 'mybot2'})
+        self.failUnlessEqual(d1.result, {'project': 'mybot1', 'spider': 'spider1'})
+        self.failUnlessEqual(d2.result, {'project': 'mybot2', 'spider': 'spider2'})

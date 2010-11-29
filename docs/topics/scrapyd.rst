@@ -27,16 +27,17 @@ How Scrapyd works
 =================
 
 Scrapyd is an application (typically run as a daemon) that continually polls
-for projects that need to run (ie. those projects that have spiders enqueued).
+for spiders that need to run (ie. those projects that have spiders enqueued).
 
-When a project needs to run, a Scrapy process is started for that project using
-something similar to the typical ``scrapy crawl``` command, and it continues to
-run until it finishes processing all spiders form the spider queue.
+When a spider needs to run, a process is started to crawl the spider::
+
+    scrapy crawl my spider
 
 Scrapyd also runs multiple processes in parallel, allocating them in a fixed
 number of "slots", which defaults to the number of cpu processors available in
-the system, but this can be changed with the ``max_proc`` option.  It also
-starts as many processes as possible to handle the load.
+the system, but this can be changed with the ``max_proc`` and
+``max_proc_per_cpu`` options. It also starts as many processes as possible to
+handle the load.
 
 In addition to dispatching and managing processes, Scrapyd provides a
 :ref:`JSON web service <topics-scrapyd-jsonapi>` to upload new project versions
@@ -144,7 +145,14 @@ max_proc
 --------
 
 The maximum number of concurrent Scrapy process that will be started. If unset
-or ``0`` it will use the number of cpus available in the system.
+or ``0`` it will use the number of cpus available in the system mulitplied by
+the value in ``max_proc_per_cpu`` option. Defaults to ``0``.
+
+max_proc_per_cpu
+----------------
+
+The maximum number of concurrent Scrapy process that will be started per cpu.
+Defaults to ``4``.
 
 debug
 -----
@@ -363,7 +371,7 @@ Example request::
 
 Example reponse::
 
-    {"status": "ok", "spiders": ["spider1", "spider2", "spider3"]}
+    {"status": "ok", "spiders": 3}
 
 schedule.json
 -------------

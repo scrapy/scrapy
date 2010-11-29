@@ -7,12 +7,16 @@ from twisted.application.service import Service
 from twisted.python import log
 
 from scrapy.utils.py26 import cpu_count
+from scrapy.utils.python import unicode_to_str
+from scrapyd.utils import get_crawl_args
 from .interfaces import IPoller, IEggStorage, IEnvironment
 
 class Launcher(Service):
 
     def __init__(self, config, app):
-        self.max_proc = config.getint('max_proc', 0) or cpu_count()
+        self.max_proc = config.getint('max_proc', 0)
+        if not self.max_proc:
+            self.max_proc = cpu_count() * config.getint('max_proc_per_cpu')
         self.egg_runner = config.get('egg_runner', 'scrapyd.eggrunner')
         self.app = app
 
@@ -39,12 +43,14 @@ class Launcher(Service):
         return eggpath
 
     def _spawn_process(self, message, slot):
-        project = message['project']
+        project = unicode_to_str(message['project'])
+        spider = unicode_to_str(message['spider'])
         eggpath = self._get_eggpath(project)
         args = [sys.executable, '-m', self.egg_runner, 'crawl']
+        args += get_crawl_args(message)
         e = self.app.getComponent(IEnvironment)
         env = e.get_environment(message, slot, eggpath)
-        pp = ScrapyProcessProtocol(eggpath, slot)
+        pp = ScrapyProcessProtocol(eggpath, slot, project, spider)
         pp.deferred.addBoth(self._process_finished, eggpath, slot)
         reactor.spawnProcess(pp, sys.executable, args=args, env=env)
 
@@ -56,10 +62,12 @@ class Launcher(Service):
 
 class ScrapyProcessProtocol(protocol.ProcessProtocol):
 
-    def __init__(self, eggfile, slot):
+    def __init__(self, eggfile, slot, project, spider):
         self.eggfile = eggfile
         self.slot = slot
         self.pid = None
+        self.project = project
+        self.spider = spider
         self.deferred = defer.Deferred()
 
     def outReceived(self, data):
@@ -80,5 +88,6 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.deferred.callback(self)
 
     def log(self, msg):
-        msg += "slot=%r pid=%r egg=%r" % (self.slot, self.pid, self.eggfile)
+        msg += "project=%r spider=%r slot=%r pid=%r egg=%r" % (self.project, \
+            self.spider, self.slot, self.pid, self.eggfile)
         log.msg(msg, system="Launcher")
