@@ -7,6 +7,7 @@ class ProcessTest(object):
 
     command = None
     prefix = [sys.executable, '-m', 'scrapy.cmdline']
+    cwd = os.getcwd() # trial chdirs to temp dir
 
     def execute(self, args, check_code=True, settings='missing'):
         env = os.environ.copy()
@@ -14,7 +15,7 @@ class ProcessTest(object):
         cmd = self.prefix + [self.command] + list(args)
         pp = TestProcessProtocol()
         pp.deferred.addBoth(self._process_finished, cmd, check_code)
-        reactor.spawnProcess(pp, cmd[0], cmd, env=env)
+        reactor.spawnProcess(pp, cmd[0], cmd, env=env, path=self.cwd)
         return pp.deferred
 
     def _process_finished(self, pp, cmd, check_code):
