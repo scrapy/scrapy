@@ -1,6 +1,7 @@
 from twisted.application.service import Application
 from twisted.application.internet import TimerService, TCPServer
 from twisted.web import server
+from twisted.python import log
 
 from .interfaces import IEggStorage, IPoller, ISpiderScheduler, IEnvironment
 from .launcher import Launcher
@@ -28,6 +29,7 @@ def application(config):
     launcher = Launcher(config, app)
     timer = TimerService(5, poller.poll)
     webservice = TCPServer(http_port, server.Site(Root(config, app)))
+    log.msg("Scrapyd web console available at http://localhost:%s/" % http_port)
 
     launcher.setServiceParent(app)
     timer.setServiceParent(app)
