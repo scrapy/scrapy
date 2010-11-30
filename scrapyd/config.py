@@ -30,7 +30,9 @@ class Config(object):
         sources = ['/etc/scrapyd/scrapyd.conf', r'c:\scrapyd\scrapyd.conf']
         sources += sorted(glob.glob('/etc/scrapyd/conf.d/*'))
         sources += ['scrapyd.conf']
-        sources += closest_scrapy_cfg()
+        scrapy_cfg = closest_scrapy_cfg()
+        if scrapy_cfg:
+            sources.append(scrapy_cfg)
         return sources
 
     def _getany(self, method, option, default):
