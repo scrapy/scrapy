@@ -31,7 +31,7 @@ for spiders that need to run.
 
 When a spider needs to run, a process is started to crawl the spider::
 
-    scrapy crawl my spider
+    scrapy crawl myspider
 
 Scrapyd also runs multiple processes in parallel, allocating them in a fixed
 number of slots given by the `max_proc`_ and `max_proc_per_cpu`_ options,
@@ -57,6 +57,11 @@ distribution, like this::
     twistd -ny extras/scrapyd.tac
 
 That should get your Scrapyd started.
+
+Or, if you want to start Scrapyd from inside a Scrapy project you can use the
+:command:`server` command, like this::
+
+    scrapy server
 
 Installing Scrapyd
 ==================

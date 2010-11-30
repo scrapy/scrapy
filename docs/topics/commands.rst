@@ -153,8 +153,7 @@ Project-only commands:
 * :command:`list`
 * :command:`parse`
 * :command:`genspider`
-* :command:`runserver`
-* :command:`queue`
+* :command:`server`
 * :command:`deploy`
 
 .. command:: startproject
@@ -235,24 +234,23 @@ Usage examples::
     $ scrapy crawl http://example.com/some/page.html
     [ ... spider that handles example.com starts crawling from that url ... ]
 
-.. command:: runserver
+.. command:: server
 
-runserver
----------
+server
+------
 
-* Syntax: ``scrapy runserver``
+* Syntax: ``scrapy server``
 * Requires project: *yes*
 
-Start Scrapy in server mode, which can be controlled by the :command:`queue`
-command.
+Start Scrapyd server for this project, which can be referred from the JSON API
+with the project name ``default``. For more info see: :ref:`topics-scrapyd`.
 
 Usage example::
 
-    $ scrapy runserver
-    [ ... scrapy starts and stays idle waiting for spiders to get scheduled ... ]
+    $ scrapy server
+    [ ... scrapyd starts and stays idle waiting for spiders to get scheduled ... ]
 
-You can now schedule spiders to run using the :command:`queue` command. If
-there were spiders already enqueued, it will start crawling them.
+To schedule spiders, use the Scrapyd JSON API.
 
 .. command:: list
 
@@ -409,35 +407,6 @@ Example usage::
 
     $ scrapy runspider myspider.py
     [ ... spider starts crawling ... ]
-
-.. command:: queue
-
-queue
------
-
-* Syntax: ``scrapy queue <list|clear|count|add spider1 ..>``
-* Requires project: *yes*
-
-Manage the execution queue of a Scrapy project.
-
-This command is meant to be used to control a Scrapy server started with the
-:command:`runserver` command.
-
-Example usage::
-
-    $ scrapy queue add example.com
-
-If there is a Scrapy server running (see :command:`runserver` command), it will
-start crawling the ``example.com`` spider. Otherwise, it will only get
-enqueued,, and it will start crawling once the Scrapy server is started.
-
-You can also view the spiders enqueued but not yet started::
-
-    $ scrapy queue list
-
-And clear the queue::
-
-    $ scrapy queue clear
 
 .. command:: version
 

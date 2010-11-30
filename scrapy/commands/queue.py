@@ -14,7 +14,7 @@ class Command(runserver.Command):
         return "[options] <list|clear|count|add spider1 ..>"
 
     def short_desc(self):
-        return "Control the spider queue"
+        return "Deprecated command. See Scrapyd documentation."
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)

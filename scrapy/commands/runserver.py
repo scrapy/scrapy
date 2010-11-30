@@ -7,7 +7,7 @@ class Command(ScrapyCommand):
     default_settings = {'KEEP_ALIVE': True}
 
     def short_desc(self):
-        return "Start Scrapy in server mode"
+        return "Deprecated command. Use 'server' command instead"
 
     def run(self, args, opts):
         self.crawler.start()
