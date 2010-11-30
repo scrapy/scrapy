@@ -100,6 +100,6 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.deferred.callback(self)
 
     def log(self, msg):
-        msg += "project=%r spider=%r job=%r pid=%r egg=%r" % (self.project, \
-            self.spider, self.job, self.pid, self.eggfile)
+        msg += "project=%r spider=%r job=%r pid=%r egg=%r log=%r" % (self.project, \
+            self.spider, self.job, self.pid, self.eggfile, self.logfile)
         log.msg(msg, system="Launcher")
