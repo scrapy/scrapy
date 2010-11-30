@@ -2,6 +2,7 @@ import glob
 from cStringIO import StringIO
 from ConfigParser import SafeConfigParser, NoSectionError, NoOptionError
 
+from scrapy.utils.conf import closest_scrapy_cfg
 from scrapy.utils.py26 import get_data
 
 __package__ = 'scrapyd' # required for compatibility with python 2.5
@@ -12,13 +13,15 @@ class Config(object):
 
     SECTION = 'scrapyd'
 
-    def __init__(self, values=None):
+    def __init__(self, values=None, extra_sources=()):
         if values is None:
             sources = self._getsources()
             default_config = get_data(__package__, 'default_scrapyd.conf')
             self.cp = SafeConfigParser()
             self.cp.readfp(StringIO(default_config))
             self.cp.read(sources)
+            for fp in extra_sources:
+                self.cp.readfp(fp)
         else:
             self.cp = SafeConfigParser(values)
             self.cp.add_section(self.SECTION)
@@ -27,6 +30,7 @@ class Config(object):
         sources = ['/etc/scrapyd/scrapyd.conf', r'c:\scrapyd\scrapyd.conf']
         sources += sorted(glob.glob('/etc/scrapyd/conf.d/*'))
         sources += ['scrapyd.conf']
+        sources += closest_scrapy_cfg()
         return sources
 
     def _getany(self, method, option, default):
