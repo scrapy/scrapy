@@ -35,9 +35,11 @@ class IPoller(Interface):
         project that needs to run, or already fired if there was a project
         waiting to run already.
 
-        The message is a dict containing (at least) the name of the project to
-        be run in the 'project' key. This message will be passed later to
-        IEnvironment.get_environment().
+        The message is a dict containing (at least):
+        * the name of the project to be run in the '_project' key
+        * the name of the spider to be run in the '_spider' key
+        * a unique identifier for this run in the `_job` key
+        This message will be passed later to IEnvironment.get_environment().
         """
 
     def update_projects():
@@ -65,9 +67,7 @@ class IEnvironment(Interface):
     def get_environment(message, slot, eggpath):
         """Return the environment variables to use for running the process.
 
-        `message` is the message received from the IPoller.next() augmented to
-           contain (at least) the following keys: project, spider, _id (where
-           _id is a unique identifier for this run)
+        `message` is the message received from the IPoller.next() method
         `slot` is the Launcher slot where the process will be running.
         `eggpath` is the path to an eggfile that contains the project code. The
            `eggpath` may be `None` if no egg was found for the project, in

@@ -22,7 +22,7 @@ class EggStorageTest(unittest.TestCase):
         verifyObject(IEnvironment, self.environ)
 
     def test_get_environment_with_eggfile(self):
-        msg = {'project': 'mybot', 'spider': 'myspider', '_id': 'ID'}
+        msg = {'_project': 'mybot', '_spider': 'myspider', '_job': 'ID'}
         slot = 3
         env = self.environ.get_environment(msg, slot, '/path/to/file.egg')
         self.assertEqual(env['SCRAPY_PROJECT'], 'mybot')
@@ -32,7 +32,7 @@ class EggStorageTest(unittest.TestCase):
         self.failIf('SCRAPY_SETTINGS_MODULE' in env)
 
     def test_get_environment_without_eggfile(self):
-        msg = {'project': 'newbot', 'spider': 'myspider', '_id': 'ID'}
+        msg = {'_project': 'newbot', '_spider': 'myspider', '_job': 'ID'}
         slot = 3
         env = self.environ.get_environment(msg, slot, None)
         self.assertEqual(env['SCRAPY_PROJECT'], 'newbot')

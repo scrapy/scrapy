@@ -19,7 +19,7 @@ class Environment(object):
         self.initenv = initenv
 
     def get_environment(self, message, slot, eggpath):
-        project = message['project']
+        project = message['_project']
         env = self.initenv.copy()
         env['SCRAPY_PROJECT'] = project
         if eggpath:
@@ -32,11 +32,11 @@ class Environment(object):
         return env
 
     def _get_log_file(self, message):
-        logsdir = os.path.join(self.logs_dir, message['project'], \
-            message['spider'])
+        logsdir = os.path.join(self.logs_dir, message['_project'], \
+            message['_spider'])
         if not os.path.exists(logsdir):
             os.makedirs(logsdir)
         to_delete = sorted(os.listdir(logsdir), reverse=True)[:-self.logs_to_keep]
         for x in to_delete:
             os.remove(os.path.join(logsdir, x))
-        return os.path.join(logsdir, "%s.log" % message['_id'])
+        return os.path.join(logsdir, "%s.log" % message['_job'])

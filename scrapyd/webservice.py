@@ -28,7 +28,7 @@ class Schedule(WsResource):
         project = args.pop('project')
         spider = args.pop('spider')
         jobid = uuid.uuid1().hex
-        args['_id'] = jobid
+        args['_job'] = jobid
         self.root.scheduler.schedule(project, spider, **args)
         jobids = {spider: jobid}
         return {"status": "ok", "jobs": jobids}

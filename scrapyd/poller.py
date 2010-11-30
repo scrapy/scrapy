@@ -29,6 +29,6 @@ class QueuePoller(object):
 
     def _message(self, queue_msg, project):
         d = queue_msg.copy()
-        d['project'] = project
-        d['spider'] = d.pop('name')
+        d['_project'] = project
+        d['_spider'] = d.pop('name')
         return d

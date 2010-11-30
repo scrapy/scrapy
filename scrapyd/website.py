@@ -57,8 +57,8 @@ class Home(resource.Resource):
 <body>
 <h1>Scrapyd</h1>
 <ul>
-<li><a href="procmon">Process monitor</a></li>
-<li><a href="logs/">Logs</li>
+<li><a href="/procmon">Process monitor</a></li>
+<li><a href="/logs/">Logs</li>
 <li><a href="http://doc.scrapy.org/topics/scrapyd.html">Documentation</a></li>
 </ul>
 </body>
@@ -79,13 +79,14 @@ class ProcessMonitor(resource.Resource):
         s += "<p><a href='..'>Go back</a></p>"
         s += "<table border='1'>"
         s += "<tr>"
-        s += "<th>Project</th><th>Spider</th><th>Job</th><th>PID</th><th>Runtime</th>"
+        s += "<th>Project</th><th>Spider</th><th>Job</th><th>PID</th><th>Runtime</th><th>Log</th>"
         s += "</tr>"
         for p in self.root.launcher.processes.values():
             s += "<tr>"
             for a in ['project', 'spider', 'job', 'pid']:
                 s += "<td>%s</td>" % getattr(p, a)
             s += "<td>%s</td>" % (datetime.now() - p.start_time)
+            s += "<td><a href='/logs/%s/%s/%s.log'>Log</a></td>" % (p.project, p.spider, p.job)
             s += "</tr>"
         s += "</table>"
         s += "</body>"

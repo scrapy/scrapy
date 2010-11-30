@@ -35,8 +35,8 @@ def get_crawl_args(message):
     that will be started for this message
     """
     msg = message.copy()
-    args = [unicode_to_str(msg['spider'])]
-    del msg['project'], msg['spider']
+    args = [unicode_to_str(msg['_spider'])]
+    del msg['_project'], msg['_spider']
     for k, v in stringify_dict(msg, keys_only=False).items():
         args += ['-a']
         args += ['%s=%s' % (k, v)]

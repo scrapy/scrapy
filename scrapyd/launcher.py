@@ -48,13 +48,15 @@ class Launcher(Service):
 
     def _spawn_process(self, message, slot):
         msg = stringify_dict(message, keys_only=False)
-        project = msg['project']
+        project = msg['_project']
         eggpath = self._get_eggpath(project)
         args = [sys.executable, '-m', self.egg_runner, 'crawl']
         args += get_crawl_args(msg)
         e = self.app.getComponent(IEnvironment)
         env = e.get_environment(msg, slot, eggpath)
-        pp = ScrapyProcessProtocol(eggpath, slot, project, msg['spider'], msg['_id'])
+        env = stringify_dict(env, keys_only=False)
+        pp = ScrapyProcessProtocol(eggpath, slot, project, msg['_spider'], \
+            msg['_job'], env)
         pp.deferred.addBoth(self._process_finished, eggpath, slot)
         reactor.spawnProcess(pp, sys.executable, args=args, env=env)
         self.processes[slot] = pp
@@ -68,7 +70,7 @@ class Launcher(Service):
 
 class ScrapyProcessProtocol(protocol.ProcessProtocol):
 
-    def __init__(self, eggfile, slot, project, spider, job):
+    def __init__(self, eggfile, slot, project, spider, job, env):
         self.eggfile = eggfile
         self.slot = slot
         self.pid = None
@@ -76,6 +78,8 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.spider = spider
         self.job = job
         self.start_time = datetime.now()
+        self.env = env
+        self.logfile = env['SCRAPY_LOG_FILE']
         self.deferred = defer.Deferred()
 
     def outReceived(self, data):
