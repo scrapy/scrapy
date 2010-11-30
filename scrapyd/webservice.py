@@ -1,11 +1,9 @@
 import cgi
 import traceback
+import uuid
 from cStringIO import StringIO
 
-from twisted.web.resource import Resource
-
 from scrapy.utils.txweb import JsonResource
-from .interfaces import IPoller, IEggStorage, ISpiderScheduler
 from .eggutils import get_spider_list_from_eggfile
 
 class WsResource(JsonResource):
@@ -29,9 +27,11 @@ class Schedule(WsResource):
         args = dict((k, v[0]) for k, v in txrequest.args.items())
         project = args.pop('project')
         spider = args.pop('spider')
-        sched = self.root.app.getComponent(ISpiderScheduler)
-        sched.schedule(project, spider, **args)
-        return {"status": "ok"}
+        jobid = uuid.uuid1().hex
+        args['_id'] = jobid
+        self.root.scheduler.schedule(project, spider, **args)
+        jobids = {spider: jobid}
+        return {"status": "ok", "jobs": jobids}
 
 class AddVersion(WsResource):
 
@@ -43,8 +43,7 @@ class AddVersion(WsResource):
         version = d['version'][0]
         eggf = StringIO(d['egg'][0])
         spiders = get_spider_list_from_eggfile(eggf, project)
-        eggstorage = self.root.app.getComponent(IEggStorage)
-        eggstorage.put(eggf, project, version)
+        self.root.eggstorage.put(eggf, project, version)
         self.root.update_projects()
         return {"status": "ok", "project": project, "version": version, \
             "spiders": len(spiders)}
@@ -52,23 +51,21 @@ class AddVersion(WsResource):
 class ListProjects(WsResource):
 
     def render_GET(self, txrequest):
-        projects = self.root.app.getComponent(ISpiderScheduler).list_projects()
+        projects = self.root.scheduler.list_projects()
         return {"status": "ok", "projects": projects}
 
 class ListVersions(WsResource):
 
     def render_GET(self, txrequest):
         project = txrequest.args['project'][0]
-        eggstorage = self.root.app.getComponent(IEggStorage)
-        versions = eggstorage.list(project)
+        versions = self.root.eggstorage.list(project)
         return {"status": "ok", "versions": versions}
 
 class ListSpiders(WsResource):
 
     def render_GET(self, txrequest):
         project = txrequest.args['project'][0]
-        eggstorage = self.root.app.getComponent(IEggStorage)
-        _, eggf = eggstorage.get(project)
+        _, eggf = self.root.eggstorage.get(project)
         spiders = get_spider_list_from_eggfile(eggf, project, \
             eggrunner=self.root.egg_runner)
         return {"status": "ok", "spiders": spiders}
@@ -81,8 +78,7 @@ class DeleteProject(WsResource):
         return {"status": "ok"}
 
     def _delete_version(self, project, version=None):
-        eggstorage = self.root.app.getComponent(IEggStorage)
-        eggstorage.delete(project, version)
+        self.root.eggstorage.delete(project, version)
         self.root.update_projects()
 
 class DeleteVersion(DeleteProject):
@@ -93,22 +89,3 @@ class DeleteVersion(DeleteProject):
         self._delete_version(project, version)
         return {"status": "ok"}
 
-class Root(Resource):
-
-    def __init__(self, config, app):
-        Resource.__init__(self)
-        self.debug = config.getboolean('debug', False)
-        self.eggrunner = config.get('egg_runner')
-        self.app = app
-        self.putChild('schedule.json', Schedule(self))
-        self.putChild('addversion.json', AddVersion(self))
-        self.putChild('listprojects.json', ListProjects(self))
-        self.putChild('listversions.json', ListVersions(self))
-        self.putChild('listspiders.json', ListSpiders(self))
-        self.putChild('delproject.json', DeleteProject(self))
-        self.putChild('delversion.json', DeleteVersion(self))
-        self.update_projects()
-
-    def update_projects(self):
-        self.app.getComponent(IPoller).update_projects()
-        self.app.getComponent(ISpiderScheduler).update_projects()

@@ -22,21 +22,21 @@ class EggStorageTest(unittest.TestCase):
         verifyObject(IEnvironment, self.environ)
 
     def test_get_environment_with_eggfile(self):
-        msg = {'project': 'mybot'}
+        msg = {'project': 'mybot', 'spider': 'myspider', '_id': 'ID'}
         slot = 3
         env = self.environ.get_environment(msg, slot, '/path/to/file.egg')
         self.assertEqual(env['SCRAPY_PROJECT'], 'mybot')
         self.assert_(env['SCRAPY_SQLITE_DB'].endswith('mybot.db'))
-        self.assert_(env['SCRAPY_LOG_FILE'].endswith('slot3.log'))
+        self.assert_(env['SCRAPY_LOG_FILE'].endswith('/mybot/myspider/ID.log'))
         self.assert_(env['SCRAPY_EGGFILE'].endswith('/path/to/file.egg'))
         self.failIf('SCRAPY_SETTINGS_MODULE' in env)
 
     def test_get_environment_without_eggfile(self):
-        msg = {'project': 'newbot'}
+        msg = {'project': 'newbot', 'spider': 'myspider', '_id': 'ID'}
         slot = 3
         env = self.environ.get_environment(msg, slot, None)
         self.assertEqual(env['SCRAPY_PROJECT'], 'newbot')
         self.assert_(env['SCRAPY_SQLITE_DB'].endswith('newbot.db'))
-        self.assert_(env['SCRAPY_LOG_FILE'].endswith('slot3.log'))
+        self.assert_(env['SCRAPY_LOG_FILE'].endswith('/newbot/myspider/ID.log'))
         self.assertEqual(env['SCRAPY_SETTINGS_MODULE'], 'newbot.settings')
         self.failIf('SCRAPY_EGGFILE' in env)

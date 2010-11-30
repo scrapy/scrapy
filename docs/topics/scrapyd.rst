@@ -27,17 +27,15 @@ How Scrapyd works
 =================
 
 Scrapyd is an application (typically run as a daemon) that continually polls
-for spiders that need to run (ie. those projects that have spiders enqueued).
+for spiders that need to run.
 
 When a spider needs to run, a process is started to crawl the spider::
 
     scrapy crawl my spider
 
 Scrapyd also runs multiple processes in parallel, allocating them in a fixed
-number of "slots", which defaults to the number of cpu processors available in
-the system, but this can be changed with the ``max_proc`` and
-``max_proc_per_cpu`` options. It also starts as many processes as possible to
-handle the load.
+number of slots given by the `max_proc`_ and `max_proc_per_cpu`_ options,
+starting as many processes as possible to handle the load.
 
 In addition to dispatching and managing processes, Scrapyd provides a
 :ref:`JSON web service <topics-scrapyd-jsonapi>` to upload new project versions
@@ -45,6 +43,9 @@ In addition to dispatching and managing processes, Scrapyd provides a
 you want to implement your own custom Scrapyd. The components are pluggable and
 can be changed, if you're familiar with the `Twisted Application Framework`_
 which Scrapyd is implemented in.
+
+Starting from 0.11, Scrapyd also provides a minimal :ref:`web interface
+<topics-scrapyd-webui>`.
 
 Starting Scrapyd
 ================
@@ -109,11 +110,15 @@ The standard error captured from Scrapyd and any sub-process spawned
 from it. Remember to check this file if you're having problems, as the errors
 may not get logged to the ``scrapyd.log`` file.
 
-/var/log/scrapyd/slotN.log
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+/var/log/scrapyd/project
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-The log files of Scrapy processes started from Scrapyd, one per slot. These are
-standard :ref:`Scrapy log files <topics-logging>`.
+Besides the main service log file, Scrapyd stores one log file per crawling
+process in::
+
+    /var/log/scrapyd/PROJECT/SPIDER/ID.log
+
+Where ``ID`` is a unique id for the run.
 
 /var/lib/scrapyd/
 ~~~~~~~~~~~~~~~~~
@@ -175,7 +180,12 @@ spider queues).
 logs_dir
 --------
 
-The directory where the Scrapy processes logs (``slotN.log``) will be stored.
+The directory where the Scrapy processes logs will be stored.
+
+logs_to_keep
+------------
+
+The number of logs to keep per spider. Defaults to ``5``.
 
 egg_runner
 ----------
@@ -345,6 +355,16 @@ To schedule a spider run::
     {"status": "ok"}
 
 For more resources see: :ref:`topics-scrapyd-jsonapi` for more available resources.
+
+.. _topics-scrapyd-webui:
+
+Web Interface
+=============
+
+.. versionadded:: 0.11
+
+Scrapyd comes with a minimal web interface (for monitoring running processes
+and accessing logs) which can be accessed at http://localhost:6800/
 
 .. _topics-scrapyd-jsonapi:
 

@@ -65,7 +65,9 @@ class IEnvironment(Interface):
     def get_environment(message, slot, eggpath):
         """Return the environment variables to use for running the process.
 
-        `message` is the message received from the IPoller.next()
+        `message` is the message received from the IPoller.next() augmented to
+           contain (at least) the following keys: project, spider, _id (where
+           _id is a unique identifier for this run)
         `slot` is the Launcher slot where the process will be running.
         `eggpath` is the path to an eggfile that contains the project code. The
            `eggpath` may be `None` if no egg was found for the project, in

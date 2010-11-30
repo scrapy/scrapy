@@ -8,7 +8,7 @@ from .eggstorage import FilesystemEggStorage
 from .scheduler import SpiderScheduler
 from .poller import QueuePoller
 from .environ import Environment
-from .webservice import Root
+from .website import Root
 from .config import Config
 
 def application():
