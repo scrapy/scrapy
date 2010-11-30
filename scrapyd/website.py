@@ -14,7 +14,7 @@ class Root(resource.Resource):
         self.eggrunner = config.get('egg_runner')
         logsdir = config.get('logs_dir')
         self.app = app
-        self.putChild('', Home())
+        self.putChild('', Home(self))
         self.putChild('schedule.json', webservice.Schedule(self))
         self.putChild('addversion.json', webservice.AddVersion(self))
         self.putChild('listprojects.json', webservice.ListProjects(self))
@@ -50,20 +50,38 @@ class Root(resource.Resource):
 
 class Home(resource.Resource):
 
+    def __init__(self, root):
+        resource.Resource.__init__(self)
+        self.root = root
+
     def render_GET(self, txrequest):
+        vars = {
+            'projects': ', '.join(self.root.scheduler.list_projects()),
+        }
         return """
 <html>
 <head><title>Scrapyd</title></head>
 <body>
 <h1>Scrapyd</h1>
+<p>Available projects: <b>%(projects)s</b></p>
 <ul>
 <li><a href="/procmon">Process monitor</a></li>
 <li><a href="/logs/">Logs</li>
 <li><a href="http://doc.scrapy.org/topics/scrapyd.html">Documentation</a></li>
 </ul>
+
+<h2>How to schedule a spider?</h2>
+
+<p>To schedule a spider you need to use the API (this web UI is only for
+monitoring)</p>
+
+<p>Example using <a href="http://curl.haxx.se/">curl</a>:</p>
+<p><code>curl http://localhost:6800/schedule.json -d project=default -d spider=somespider</code></p>
+
+<p>For more information about the API, see the <a href="http://doc.scrapy.org/topics/scrapyd.html">Scrapyd documentation</a></p>
 </body>
 </html>
-"""
+""" % vars
 
 
 class ProcessMonitor(resource.Resource):
