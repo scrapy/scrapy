@@ -152,7 +152,7 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False, \
     keyvals = cgi.parse_qsl(query, keep_blank_values)
     keyvals.sort()
     query = urllib.urlencode(keyvals)
-    path = urllib.quote(urllib.unquote(path))
+    path = safe_url_string(urllib.unquote(path))
     fragment = '' if not keep_fragments else fragment
     return urlparse.urlunparse((scheme, netloc.lower(), path, params, query, fragment))
 

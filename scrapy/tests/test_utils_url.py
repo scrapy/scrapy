@@ -266,6 +266,11 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertEqual(canonicalize_url(u"http://user:pass@www.example.com/do?a=1#frag", keep_fragments=True),
                                           u"http://user:pass@www.example.com/do?a=1#frag")
 
+        # dont convert safe characters to percent encoding representation
+        self.assertEqual(canonicalize_url(
+            "http://www.simplybedrooms.com/White-Bedroom-Furniture/Bedroom-Mirror:-Josephine-Cheval-Mirror.html"),
+            "http://www.simplybedrooms.com/White-Bedroom-Furniture/Bedroom-Mirror:-Josephine-Cheval-Mirror.html")
+
         # urllib.quote uses a mapping cache of encoded characters. when parsing
         # an already percent-encoded url, it will fail if that url was not
         # percent-encoded as utf-8, that's why canonicalize_url must always
