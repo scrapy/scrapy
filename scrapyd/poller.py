@@ -1,5 +1,5 @@
 from zope.interface import implements
-from twisted.internet.defer import DeferredQueue
+from twisted.internet.defer import DeferredQueue, inlineCallbacks, maybeDeferred, returnValue
 
 from .utils import get_spider_queues
 from .interfaces import IPoller
@@ -13,13 +13,15 @@ class QueuePoller(object):
         self.update_projects()
         self.dq = DeferredQueue(size=1)
 
+    @inlineCallbacks
     def poll(self):
         if self.dq.pending:
             return
         for p, q in self.queues.iteritems():
-            if q.count():
-                msg = q.pop()
-                return self.dq.put(self._message(msg, p))
+            c = yield maybeDeferred(q.count)
+            if c:
+                msg = yield maybeDeferred(q.pop)
+                returnValue(self.dq.put(self._message(msg, p)))
 
     def next(self):
         return self.dq.get()
