@@ -10,4 +10,7 @@ class Command(ScrapyCommand):
         return "Deprecated command. Use 'server' command instead"
 
     def run(self, args, opts):
+        import warnings
+        warnings.warn("Scrapy queue command is deprecated - use 'server' command instead.", \
+            DeprecationWarning)
         self.crawler.start()

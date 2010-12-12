@@ -33,6 +33,10 @@ class Command(runserver.Command):
             raise UsageError()
         cmd = args[0]
 
+        import warnings
+        warnings.warn("Scrapy queue command is deprecated - use Scrapyd instead.", \
+            DeprecationWarning)
+
         q = self.crawler.queue._queue
 
         if cmd == 'add' and len(args) < 2:
