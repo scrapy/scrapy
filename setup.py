@@ -2,6 +2,9 @@
 #
 # It doesn't depend on setuptools, but if setuptools is available it'll use
 # some of its features, like package dependencies.
+
+from __future__ import with_statement
+
 from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
 from subprocess import Popen, PIPE
@@ -79,10 +82,11 @@ scripts = ['bin/scrapy']
 if os.name == 'nt':
     scripts.append('extras/scrapy.bat')
 
-version = __import__('scrapy').__version__
 if os.environ.get('SCRAPY_VERSION_FROM_HG'):
     rev = Popen(["hg", "tip", "--template", "{rev}"], stdout=PIPE).communicate()[0]
-    version = "%s.r%s" % (version, rev)
+    with open('scrapy/__init__.py', 'a') as f:
+        f.write("\n__version__ = '.'.join(map(str, version_info)) + '.%s'" % rev)
+version = __import__('scrapy').__version__
 
 setup_args = {
     'name': 'Scrapy',
