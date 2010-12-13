@@ -14,14 +14,6 @@ if sys.version_info < (2,5):
 # ignore noisy twisted deprecation warnings
 warnings.filterwarnings('ignore', category=DeprecationWarning, module='twisted')
 
-# prevents noisy (and innocent) dropin.cache errors when loading spiders from
-# egg files using the old Spider Manager. TODO: Remove for Scrapy 0.11
-try:
-    from twisted.python.zippath import ZipPath
-    ZipPath.setContent = lambda x, y: None
-except ImportError: # to avoid making setup.py depend on Twisted
-    pass
-
 # monkey patches to fix external library issues
 from scrapy.xlib import twisted_250_monkeypatches, urlparse_monkeypatches
 
