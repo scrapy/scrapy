@@ -41,6 +41,10 @@ guidelines when reporting a new bug.
   reproduce the bug, so please include all relevant files required to reproduce
   it.
 
+* include the output of ``scrapy version -v`` so developers working on your bug
+  know exactly which version and platform it occurred on, which is often very
+  helpful for reproducing it, or knowing if it was already fixed.
+
 Writing patches
 ===============
 

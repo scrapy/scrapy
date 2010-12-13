@@ -413,10 +413,11 @@ Example usage::
 version
 -------
 
-* Syntax: ``scrapy version``
+* Syntax: ``scrapy version [-v]``
 * Requires project: *no*
 
-Prints the Scrapy version.
+Prints the Scrapy version. If used with ``-v`` it also prints Python, Twisted
+and Platform info, which is useful for bug reports.
 
 .. command:: deploy
 
