@@ -209,6 +209,7 @@ class Scraper(object):
                 log.err(output, 'Error processing %s' % item, spider=spider)
         else:
             log.msg(log.formatter.passed(output, spider), log.INFO, spider=spider)
+            # TODO: remove item_passed 'output' parameter for Scrapy 0.12
             return send_catch_log_deferred(signal=signals.item_passed, \
-                item=item, spider=spider, output=output)
+                item=output, spider=spider, output=output, original_item=item)
 

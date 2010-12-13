@@ -83,10 +83,11 @@ item_passed
 -----------
 
 .. signal:: item_passed
-.. function:: item_passed(item, spider, output)
+.. function:: item_passed(item, spider, original_item)
 
-    Sent after an item has passed all the :ref:`topics-item-pipeline` stages without
-    being dropped.
+    Sent after an item has passed all the :ref:`topics-item-pipeline` stages
+    without being dropped. Same as :func:`item_scraped` if there are no
+    pipelines enabled.
 
     This signal supports returning deferreds from their handlers.
 
@@ -96,9 +97,10 @@ item_passed
     :param spider: the spider which scraped the item
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
-    :param output: the output of the item pipeline. This is typically the
+    :param original_item: the input of the item pipeline. This is typically the
         same :class:`~scrapy.item.Item` object received in the ``item``
         parameter, unless some pipeline stage created a new item.
+    :type spider: :class:`~scrapy.spider.BaseSpider` object
 
 item_dropped
 ------------
