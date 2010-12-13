@@ -12,7 +12,7 @@ those in Ubuntu, and more stable too since they're built periodically from
 latest bug fixes.
 
 To use the packages, add a line to your ``/etc/apt/sources.list``, then run
-``aptitude update`` and ``aptitude install scrapy``.
+``aptitude update`` and ``aptitude install scrapy-0.11``.
 
 .. warning:: Please note that these packages are updated frequently, and so if
    you find you can't download the packages, try updating your apt package
