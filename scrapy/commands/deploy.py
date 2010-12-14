@@ -82,12 +82,11 @@ class Command(ScrapyCommand):
         tmpdir = None
         if opts.egg:
             _log("Using egg: %s" % opts.egg)
-            egg = open(opts.egg, 'rb')
+            egg = opts.egg
         else:
             _log("Building egg of %s-%s" % (project, version))
             egg, tmpdir = _build_egg()
         _upload_egg(target, egg, project, version)
-        egg.close()
         if tmpdir:
             shutil.rmtree(tmpdir)
 
@@ -145,11 +144,13 @@ def _get_version(target, opts):
     else:
         return str(int(time.time()))
 
-def _upload_egg(target, eggfile, project, version):
+def _upload_egg(target, eggpath, project, version):
+    with open(eggpath, 'rb') as f:
+        eggdata = f.read()
     data = {
         'project': project,
         'version': version,
-        'egg': ('project.egg', eggfile.read()),
+        'egg': ('project.egg', eggdata),
     }
     body, boundary = encode_multipart(data)
     url = _url(target, 'addversion.json')
@@ -193,9 +194,9 @@ def _build_egg():
         _create_default_setup_py(settings=settings)
     d = tempfile.mkdtemp()
     f = tempfile.TemporaryFile(dir=d)
-    check_call([sys.executable, 'setup.py', 'bdist_egg', '-d', d], stdout=f)
+    check_call([sys.executable, 'setup.py', 'clean', '-a', 'bdist_egg', '-d', d], stdout=f)
     egg = glob.glob(os.path.join(d, '*.egg'))[0]
-    return open(egg, 'rb'), d
+    return egg, d
 
 def _create_default_setup_py(**kwargs):
     with open('setup.py', 'w') as f:
