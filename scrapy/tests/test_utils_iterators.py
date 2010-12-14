@@ -3,7 +3,7 @@ from twisted.trial import unittest
 
 from scrapy.utils.iterators import csviter, xmliter
 from scrapy.contrib_exp.iterators import xmliter_lxml
-from scrapy.http import XmlResponse, TextResponse
+from scrapy.http import XmlResponse, TextResponse, Response
 from scrapy.tests import get_testdata
 
 
@@ -131,6 +131,18 @@ class UtilsCsvTestCase(unittest.TestCase):
                           {u'id': u'2', u'name': u'unicode', u'value': u'\xfan\xedc\xf3d\xe9\u203d'},
                           {u'id': u'3', u'name': u'multi',   u'value': u'foo\nbar'},
                           {u'id': u'4', u'name': u'empty',   u'value': u''}])
+
+    def test_csviter_delimiter_binary_response_assume_utf8_encoding(self):
+        body = get_testdata('feeds', 'feed-sample3.csv').replace(',', '\t')
+        response = Response(url="http://example.com/", body=body)
+        csv = csviter(response, delimiter='\t')
+
+        self.assertEqual([row for row in csv],
+                         [{u'id': u'1', u'name': u'alpha',   u'value': u'foobar'},
+                          {u'id': u'2', u'name': u'unicode', u'value': u'\xfan\xedc\xf3d\xe9\u203d'},
+                          {u'id': u'3', u'name': u'multi',   u'value': u'foo\nbar'},
+                          {u'id': u'4', u'name': u'empty',   u'value': u''}])
+
 
     def test_csviter_headers(self):
         sample = get_testdata('feeds', 'feed-sample3.csv').splitlines()

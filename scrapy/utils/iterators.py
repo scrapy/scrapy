@@ -1,7 +1,7 @@
 import re, csv
 from cStringIO import StringIO
 
-from scrapy.http import Response
+from scrapy.http import TextResponse
 from scrapy.selector import XmlXPathSelector
 from scrapy import log
 from scrapy.utils.python import re_rsearch, str_to_unicode
@@ -45,7 +45,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None):
     headers is an iterable that when provided offers the keys
     for the returned dictionaries, if not the first row is used.
     """
-    encoding = obj.encoding if isinstance(obj, Response) else encoding or 'utf-8'
+    encoding = obj.encoding if isinstance(obj, TextResponse) else encoding or 'utf-8'
     def _getrow(csv_r):
         return [str_to_unicode(field, encoding) for field in csv_r.next()]
 
