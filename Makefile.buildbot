@@ -1,5 +1,4 @@
 TRIAL := $(shell which trial)
-COVERAGE_DIR ?= "htmlcov"
 
 deb:
 	python extras/makedeb.py build
@@ -7,15 +6,3 @@ deb:
 deb-clean:
 	debclean
 	python extras/makedeb.py clean
-
-# Generate coverage reports
-# Requires: coverage 3.3 or above from http://pypi.python.org/pypi/coverage
-coverage-report:
-	coverage run --branch ${TRIAL} --reporter=text scrapy.tests
-	coverage html -i -d "${COVERAGE_DIR}"
-
-coverage-view: coverage-report
-	python -m webbrowser "${COVERAGE_DIR}"
-
-coverage-clean:
-	rm -rf .coverage "${COVERAGE_DIR}"
