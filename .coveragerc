@@ -1,0 +1,3 @@
+[run]
+include = scrapy/*
+omit = scrapy/xlib*,scrapy/tests*
