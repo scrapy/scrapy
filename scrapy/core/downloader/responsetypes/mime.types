@@ -746,3 +746,5 @@ x-conference/x-cooltalk				ice
 
 x-epoc/x-sisx-app				sisx
 x-world/x-vrml					vrm vrml wrl
+
+x-scrapy/test                                   scrapytest

@@ -75,5 +75,9 @@ class ResponseTypesTest(unittest.TestCase):
             retcls = responsetypes.from_args(**source)
             assert retcls is cls, "%s ==> %s != %s" % (source, retcls, cls)
 
+    def test_custom_mime_types_loaded(self):
+        # check that mime.types files shipped with scrapy are loaded
+        self.assertEqual(responsetypes.mimetypes.guess_type('x.scrapytest')[0], 'x-scrapy/test')
+
 if __name__ == "__main__":
     unittest.main()
