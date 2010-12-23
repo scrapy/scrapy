@@ -19,8 +19,7 @@ Main departures from the original algorithm:
 from operator import itemgetter
 from .regionextract import build_extraction_tree
 from .pageparsing import parse_template, parse_extraction_page
-from .pageobjects import TokenDict, AnnotationText
-from .similarity import common_prefix
+from .pageobjects import TokenDict
 
 class InstanceBasedLearningExtractor(object):
     """Implementation of the instance based learning algorithm to 
@@ -49,35 +48,6 @@ class InstanceBasedLearningExtractor(object):
         parsed_plus_epages = [(p, parse_extraction_page(self.token_dict, t)) for p, t \
                in parsed_plus_templates if _annotation_count(p)]
         parsed_templates = map(itemgetter(0), parsed_plus_epages)
-        
-        # calculate common text prefixes for annotations of same field across all templates
-        extracted_text = {}
-        extraction_pages = map(itemgetter(1), parsed_plus_epages)
-        for i, parsed in enumerate(parsed_templates):
-            for annot in parsed.annotations:
-                if annot.match_common_prefix:
-                    field = annot.surrounds_attribute
-                    if field is not None:
-                        descriptor = type_descriptor.attribute_map.get(field) if type_descriptor else None
-                        allow_markup = descriptor.allow_markup if descriptor else False
-                        start, end = annot.start_index, annot.end_index
-                        if allow_markup:
-                            text = extraction_pages[i].html_between_tokens(start, end)
-                        else:
-                            text = extraction_pages[i].text_between_tokens(start, end)
-                        extracted_text.setdefault(field, []).append(text)
-        common_prefixes = {}
-        for field, data in extracted_text.iteritems():
-            if len(data) > 1:
-                cprefix = common_prefix(*data)
-                if cprefix:
-                    common_prefixes[field] = "".join(cprefix).strip()
-        # now apply common prefixes to annotations
-        for i, parsed in enumerate(parsed_templates):
-            for annot in parsed.annotations:
-                for field, prefix in common_prefixes.iteritems():
-                    if annot.surrounds_attribute == field and not annot.annotation_text:
-                        annot.annotation_text = AnnotationText(prefix)
         
         # templates with more attributes are considered first
         sorted_templates = sorted(parsed_templates, key=_annotation_count, reverse=True)

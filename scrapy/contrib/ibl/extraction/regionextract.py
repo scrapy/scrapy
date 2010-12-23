@@ -156,11 +156,8 @@ class BasicTypeExtractor(object):
         """Create a basic type extractor for the annotation"""
         text_region = annotation.annotation_text
         if text_region is not None:
-            if annotation.match_common_prefix:
-                region_extract = TextPrefixRegionDataExtractor(text_region.start_text).extract
-            else:
-                region_extract = TextRegionDataExtractor(text_region.start_text, 
-                    text_region.follow_text).extract
+            region_extract = TextRegionDataExtractor(text_region.start_text, 
+                text_region.follow_text).extract
             # copy attribute_descriptors and add the text extractor
             descriptor_copy = dict(attribute_descriptors)
             attr_descr = descriptor_copy.get(annotation.surrounds_attribute, 
@@ -627,25 +624,4 @@ class TextRegionDataExtractor(object):
             return None
         return text[pref_index:pref_index + sidx]
 
-class TextPrefixRegionDataExtractor(object):
-    """
-    Data extractor for extracting text fragment from within a
-    larger body of text, based on a fixed prefix.
-    >>> extractor = TextPrefixRegionDataExtractor("&pounds;")
-    >>> extractor.extract("&pounds; 17.00")
-    ' 17.00'
-    >>> extractor.extract("&euro; 17.00") is None
-    True
-    >>> extractor.extract("$ 17.00") is None
-    True
-    >>> extractor.extract(" &pounds; 17.00 ")
-    ' 17.00 '
-    """
-    def __init__(self, prefix):
-        self.prefix = prefix
-    def extract(self, text):
-        text = text.lstrip()
-        # attempt to extract a substring from the text
-        if text.startswith(self.prefix):
-            return text.replace(self.prefix, '')
-    
+   

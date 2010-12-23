@@ -34,7 +34,7 @@ LABELLED_PAGE1 = u"""
 This is such a nice item<br/>
 Everybody likes it.
 </p>
-<p data-scrapy-annotate="{&quot;variant&quot;: 0, &quot;common_prefix&quot;: true, &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}"/>
+<p data-scrapy-annotate="{&quot;variant&quot;: 0, &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}"/>
 \xa310.00
 <br/>
 <p data-scrapy-annotate="{&quot;variant&quot;: 0, &quot;annotations&quot;: {&quot;content&quot;: &quot;short_description&quot;}}">
@@ -220,19 +220,6 @@ class TestPageParsing(TestCase):
         self.assertEqual(len(lp.annotations), 5)
         self._validate_annotation(lp, lp.annotations[0], 
                 'name', '<h1>', '</h1>')
-        self.assertEqual(lp.annotations[0].match_common_prefix, False)
-        self._validate_annotation(lp, lp.annotations[1], 
-                'description', '<p>', '</p>')
-        self.assertEqual(lp.annotations[1].match_common_prefix, False)
-        self._validate_annotation(lp, lp.annotations[2],
-                'price', '<p/>', '<p>')
-        self.assertEqual(lp.annotations[2].match_common_prefix, True)
-        self._validate_annotation(lp, lp.annotations[3],
-                'short_description', '<p>', '<p>')
-        self.assertEqual(lp.annotations[3].match_common_prefix, False)
-        self._validate_annotation(lp, lp.annotations[4],
-                'short_description', '<p>', '<p>')
-        self.assertEqual(lp.annotations[4].match_common_prefix, False)
         
         # all tags were closed
         self.assertEqual(len(lp.labelled_tag_stacks), 0)

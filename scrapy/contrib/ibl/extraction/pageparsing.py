@@ -133,8 +133,6 @@ class TemplatePageParser(InstanceLearningParser):
                 else:
                     annotation.tag_attributes.append((extract_attribute, tag_value))
             self.annotations.append(annotation)
-            if jannotation.pop('common_prefix', False):
-                annotation.match_common_prefix = True
 
             self.extra_required_attrs.extend(jannotation.pop('required', []))
             annotation.metadata = jannotation
@@ -195,9 +193,6 @@ class TemplatePageParser(InstanceLearningParser):
                     or self._read_bool_template_attribute(html_tag, "ignore-beneath"):
                 ignored = self.ignored_regions.pop()
                 self.ignored_regions.append((ignored[0]-1, ignored[1]))
-                
-        if jannotation.pop('common_prefix', False):
-            annotation.match_common_prefix = True
                 
         self.extra_required_attrs.extend(jannotation.pop('required', []))
         

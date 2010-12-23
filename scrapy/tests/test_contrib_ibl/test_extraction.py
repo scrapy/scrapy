@@ -238,70 +238,6 @@ EXTRACT_PAGE9 = u"""
 </body></html>
 """
 
-ANNOTATED_PAGE10a = u"""
-<html><body>
-<table><tbody>
-<tr data-scrapy-annotate="{&quot;variant&quot;: 0, &quot;common_prefix&quot;: true, &quot;annotations&quot;: {&quot;content&quot;: &quot;site_id&quot;}}">
-<td>SKU</td><td>L345</td>
-</tr>
-<tr data-scrapy-annotate="{&quot;variant&quot;: 0, &quot;common_prefix&quot;: true, &quot;annotations&quot;: {&quot;content&quot;: &quot;dimensions&quot;}}">
-<td>Size</td><td>10cmx20cm</td>
-</tr>
-<tr data-scrapy-annotate="{&quot;variant&quot;: 0, &quot;common_prefix&quot;: true, &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}">
-<td>Price</td><td>&pounds;99.00</td>
-</tr>
-</tbody></table>
-</body></html>
-"""
-
-ANNOTATED_PAGE10b = u"""
-<html><body>
-<table><tbody>
-<tr data-scrapy-annotate="{&quot;variant&quot;: 0, &quot;common_prefix&quot;: true, &quot;annotations&quot;: {&quot;content&quot;: &quot;site_id&quot;}}">
-<td>SKU</td><td>S220</td>
-</tr>
-<tr data-scrapy-annotate="{&quot;variant&quot;: 0, &quot;common_prefix&quot;: true, &quot;annotations&quot;: {&quot;content&quot;: &quot;dimensions&quot;}}">
-<td>Size</td><td>20cmx20cm</td>
-</tr>
-<tr data-scrapy-annotate="{&quot;variant&quot;: 0, &quot;common_prefix&quot;: true, &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}">
-<td>Price</td><td>&pounds;85.00</td>
-</tr>
-</tbody></table>
-</body></html>
-"""
-
-EXTRACT_PAGE10a = u"""
-<html><body>
-<table><tbody>
-<tr>
-<td>Offer</td><td>From $2500.00</td>
-</tr>
-<tr>
-<td>Description</td><td>Electrorheological Cyborgs</td>
-</tr>
-<tr>
-<td>Series:</td><td>T2000</td>
-</tr>
-</tbody></table>
-</body></html>
-"""
-
-EXTRACT_PAGE10b = u"""
-<html><body>
-<table><tbody>
-<tr>
-<td>SKU</td><td>K80</td>
-</tr>
-<tr>
-<td>Size</td><td>50cm</td>
-</tr>
-<tr>
-<td>Price</td><td>&euros;85.00</td>
-</tr>
-</tbody></table>
-</body></html>
-"""
-
 ANNOTATED_PAGE11 = u"""
 <html><body>
 <p data-scrapy-annotate="{&quot;variant&quot;: 0, &quot;annotations&quot;: {&quot;content&quot;: &quot;description&quot;}}">
@@ -866,35 +802,6 @@ TEST_DATA = [
           {
              'description': [u'\n A very nice product for all intelligent people \n\n'],
              'price': [u'\n12.00\n(VAT exc.)'],
-          }
-    ),
-    # detection of common prefixes across templates, all templates marked
-    (# wrong extraction
-    'without_match_common_prefix', [ANNOTATED_PAGE10a], EXTRACT_PAGE10a, None,
-          {
-             'price': [u'\n Series:  T2000 \n'],
-             'dimensions': [u'\n Description  Electrorheological Cyborgs \n'],
-             'site_id': [u'\n Offer  From $2500.00 \n'],
-          }
-    ),
-    (# right extraction
-    'with_match_common_prefix', [ANNOTATED_PAGE10a, ANNOTATED_PAGE10b], EXTRACT_PAGE10a, None,
-          {}
-    ),
-    (# another example
-    'match_common_prefix', [ANNOTATED_PAGE10a, ANNOTATED_PAGE10b], EXTRACT_PAGE10b, None,
-          {
-             'dimensions': [u'50cm'],
-             'site_id': [u'K80'],
-          }
-    ),
-    (# common_prefix with allow_markup attribute
-    'common_prefix_allow_markup', [ANNOTATED_PAGE10a, ANNOTATED_PAGE10b], EXTRACT_PAGE10b,
-        ItemDescriptor('test', 'product test',
-            [A('dimensions', "something about dimensions", allow_markup=True)]),
-          {
-             'dimensions': [u'50cm</td>'],
-             'site_id': [u'K80'],
           }
     ),
     (# special case with partial annotations
