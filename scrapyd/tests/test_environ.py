@@ -26,6 +26,7 @@ class EggStorageTest(unittest.TestCase):
         slot = 3
         env = self.environ.get_environment(msg, slot, '/path/to/file.egg')
         self.assertEqual(env['SCRAPY_PROJECT'], 'mybot')
+        self.assertEqual(env['SCRAPY_SLOT'], '3')
         self.assert_(env['SCRAPY_SQLITE_DB'].endswith('mybot.db'))
         self.assert_(env['SCRAPY_LOG_FILE'].endswith('/mybot/myspider/ID.log'))
         self.assert_(env['SCRAPY_EGGFILE'].endswith('/path/to/file.egg'))
@@ -36,6 +37,7 @@ class EggStorageTest(unittest.TestCase):
         slot = 3
         env = self.environ.get_environment(msg, slot, None)
         self.assertEqual(env['SCRAPY_PROJECT'], 'newbot')
+        self.assertEqual(env['SCRAPY_SLOT'], '3')
         self.assert_(env['SCRAPY_SQLITE_DB'].endswith('newbot.db'))
         self.assert_(env['SCRAPY_LOG_FILE'].endswith('/newbot/myspider/ID.log'))
         self.assertEqual(env['SCRAPY_SETTINGS_MODULE'], 'newbot.settings')

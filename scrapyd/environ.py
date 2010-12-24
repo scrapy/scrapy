@@ -21,6 +21,7 @@ class Environment(object):
     def get_environment(self, message, slot, eggpath):
         project = message['_project']
         env = self.initenv.copy()
+        env['SCRAPY_SLOT'] = str(slot)
         env['SCRAPY_PROJECT'] = project
         if eggpath:
             env['SCRAPY_EGGFILE'] = eggpath
