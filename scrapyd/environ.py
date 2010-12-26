@@ -23,6 +23,8 @@ class Environment(object):
         env = self.initenv.copy()
         env['SCRAPY_SLOT'] = str(slot)
         env['SCRAPY_PROJECT'] = project
+        env['SCRAPY_SPIDER'] = message['_spider']
+        env['SCRAPY_JOB'] = message['_job']
         if eggpath:
             env['SCRAPY_EGGFILE'] = eggpath
         elif project in self.settings:
