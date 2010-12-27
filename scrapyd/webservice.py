@@ -4,7 +4,7 @@ import uuid
 from cStringIO import StringIO
 
 from scrapy.utils.txweb import JsonResource
-from .eggutils import get_spider_list_from_eggfile
+from .utils import get_spider_list
 
 class WsResource(JsonResource):
 
@@ -42,8 +42,8 @@ class AddVersion(WsResource):
         project = d['project'][0]
         version = d['version'][0]
         eggf = StringIO(d['egg'][0])
-        spiders = get_spider_list_from_eggfile(eggf, project)
         self.root.eggstorage.put(eggf, project, version)
+        spiders = get_spider_list(project)
         self.root.update_projects()
         return {"status": "ok", "project": project, "version": version, \
             "spiders": len(spiders)}
@@ -65,9 +65,7 @@ class ListSpiders(WsResource):
 
     def render_GET(self, txrequest):
         project = txrequest.args['project'][0]
-        _, eggf = self.root.eggstorage.get(project)
-        spiders = get_spider_list_from_eggfile(eggf, project, \
-            eggrunner=self.root.egg_runner)
+        spiders = get_spider_list(project, runner=self.root.runner)
         return {"status": "ok", "spiders": spiders}
 
 class DeleteProject(WsResource):

@@ -1,4 +1,6 @@
+import sys
 import os
+from subprocess import Popen, PIPE
 from ConfigParser import NoSectionError
 
 from scrapy.spiderqueue import SqliteSpiderQueue
@@ -41,3 +43,16 @@ def get_crawl_args(message):
         args += ['-a']
         args += ['%s=%s' % (k, v)]
     return args
+
+def get_spider_list(project, runner='scrapyd.runner'):
+    """Return the spider list from the given project, using the given runner"""
+    env = os.environ.copy()
+    env['SCRAPY_PROJECT'] = project
+    pargs = [sys.executable, '-m', runner, 'list']
+    proc = Popen(pargs, stdout=PIPE, stderr=PIPE, env=env)
+    out, err = proc.communicate()
+    if proc.returncode:
+        msg = err or out or 'unknown error'
+        raise RuntimeError(msg.splitlines()[-1])
+    return out.splitlines()
+

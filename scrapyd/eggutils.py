@@ -1,24 +1,4 @@
-from __future__ import with_statement
-
-import os, sys, shutil, pkg_resources
-from subprocess import Popen, PIPE
-from tempfile import NamedTemporaryFile
-
-def get_spider_list_from_eggfile(eggfile, project, eggrunner='scrapyd.eggrunner'):
-    with NamedTemporaryFile(suffix='.egg') as f:
-        shutil.copyfileobj(eggfile, f)
-        f.flush()
-        eggfile.seek(0)
-        pargs = [sys.executable, '-m', eggrunner, 'list']
-        env = os.environ.copy()
-        env['SCRAPY_PROJECT'] = project
-        env['SCRAPY_EGGFILE'] = f.name
-        proc = Popen(pargs, stdout=PIPE, stderr=PIPE, env=env)
-        out, err = proc.communicate()
-        if proc.returncode:
-            msg = err or out or 'unknown error'
-            raise RuntimeError(msg.splitlines()[-1])
-        return out.splitlines()
+import os, pkg_resources
 
 def activate_egg(eggpath):
     """Activate a Scrapy egg file. This is meant to be used from egg runners

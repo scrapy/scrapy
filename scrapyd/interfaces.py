@@ -64,13 +64,9 @@ class ISpiderScheduler(Interface):
 class IEnvironment(Interface):
     """A component to generate the environment of crawler processes"""
 
-    def get_environment(message, slot, eggpath):
+    def get_environment(message, slot):
         """Return the environment variables to use for running the process.
 
         `message` is the message received from the IPoller.next() method
         `slot` is the Launcher slot where the process will be running.
-        `eggpath` is the path to an eggfile that contains the project code. The
-           `eggpath` may be `None` if no egg was found for the project, in
-           which case the project must be on the python path and its settings
-           defined in scrapyd.conf [settings] section
         """

@@ -18,16 +18,14 @@ class Environment(object):
             self.settings = {}
         self.initenv = initenv
 
-    def get_environment(self, message, slot, eggpath):
+    def get_environment(self, message, slot):
         project = message['_project']
         env = self.initenv.copy()
         env['SCRAPY_SLOT'] = str(slot)
         env['SCRAPY_PROJECT'] = project
         env['SCRAPY_SPIDER'] = message['_spider']
         env['SCRAPY_JOB'] = message['_job']
-        if eggpath:
-            env['SCRAPY_EGGFILE'] = eggpath
-        elif project in self.settings:
+        if project in self.settings:
             env['SCRAPY_SETTINGS_MODULE'] = self.settings[project]
         dbpath = os.path.join(self.dbs_dir, '%s.db' % project)
         env['SCRAPY_SQLITE_DB'] = dbpath

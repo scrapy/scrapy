@@ -192,8 +192,8 @@ logs_to_keep
 
 The number of logs to keep per spider. Defaults to ``5``.
 
-egg_runner
-----------
+runner
+------
 
 The module that will be used for launching sub-processes. You can customize the
 Scrapy processes launched from Scrapyd by using your own module.
