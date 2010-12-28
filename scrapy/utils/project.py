@@ -1,5 +1,5 @@
 from os.path import join, dirname, abspath, isabs, exists
-from os import makedirs
+from os import makedirs, environ
 import warnings
 
 from scrapy.utils.conf import closest_scrapy_cfg, get_config
@@ -8,6 +8,14 @@ from scrapy.utils.python import is_writable
 DATADIR_CFG_SECTION = 'datadir'
 
 def inside_project():
+    scrapy_module = environ.get('SCRAPY_SETTINGS_MODULE')
+    if scrapy_module is not None:
+        try:
+            __import__(scrapy_module)
+        except ImportError:
+            warnings.warn("Cannot import scrapy settings module %s" % scrapy_module)
+        else:
+            return True
     return bool(closest_scrapy_cfg())
 
 def project_data_dir(project='default'):
