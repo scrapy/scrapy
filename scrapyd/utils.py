@@ -5,6 +5,7 @@ from ConfigParser import NoSectionError
 
 from scrapy.spiderqueue import SqliteSpiderQueue
 from scrapy.utils.python import stringify_dict, unicode_to_str
+from scrapyd.config import Config
 
 def get_spider_queues(config):
     """Return a dict of Spider Quees keyed by project name"""
@@ -44,8 +45,10 @@ def get_crawl_args(message):
         args += ['%s=%s' % (k, v)]
     return args
 
-def get_spider_list(project, runner='scrapyd.runner'):
+def get_spider_list(project, runner=None):
     """Return the spider list from the given project, using the given runner"""
+    if runner is None:
+        runner = Config().get('runner')
     env = os.environ.copy()
     env['SCRAPY_PROJECT'] = project
     pargs = [sys.executable, '-m', runner, 'list']
