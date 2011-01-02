@@ -13,7 +13,7 @@ latest bug fixes.
 
 To use the packages, just add the following line to your
 ``/etc/apt/sources.list``, and then run ``aptitude update`` and ``aptitude
-install scrapy-0.11``::
+install scrapy-0.12``::
 
     deb http://archive.scrapy.org/ubuntu DISTRO main
 
