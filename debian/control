@@ -9,7 +9,7 @@ Homepage: http://scrapy.org/
 Package: scrapy-SUFFIX
 Architecture: all
 Depends: ${python:Depends}, python-libxml2, python-twisted, python-openssl
-Conflicts: python-scrapy, scrapy
+Conflicts: python-scrapy, scrapy, scrapy-0.11
 Provides: python-scrapy, scrapy
 Description: Python web crawling and scraping framework
  Scrapy is a fast high-level screen scraping and web crawling framework, 
@@ -20,7 +20,7 @@ Description: Python web crawling and scraping framework
 Package: scrapyd-SUFFIX
 Architecture: all
 Depends: scrapy, python-setuptools
-Conflicts: scrapyd
+Conflicts: scrapyd, scrapyd-0.11
 Provides: scrapyd
 Description: Scrapy Service
  The Scrapy service allows you to deploy your Scrapy projects by building
