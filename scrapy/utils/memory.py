@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import os
 import sys
 import struct
@@ -63,8 +65,5 @@ def _vmvalue_solaris(vmkey, pid):
     }
 
     vm_in_kB = parts[vmkey_index[vmkey]]
-
-    def kB_to_Bytes(kB):
-        return kB * 1024
 
     return vm_in_kB * 1024
