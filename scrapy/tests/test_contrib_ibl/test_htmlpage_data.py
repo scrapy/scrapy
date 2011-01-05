@@ -246,3 +246,12 @@ PARSED7 = [
     {'end': 99, 'start': 85},
 ]
 
+PAGE8 = u"""<a href="/overview.asp?id=277"><img border="0" src="/img/5200814311.jpg" title=\'Vinyl Cornice\'</a></td><table width=\'5\'>"""
+
+PARSED8 = [
+   {'attributes' : {u'href' : u"/overview.asp?id=277"}, 'end': 31, 'start': 0, 'tag': u'a', 'tag_type': 1},
+   {'attributes' : {u'src' : u"/img/5200814311.jpg", u'border' : u"0", u'title': u'Vinyl Cornice'}, 'end': 94, 'start': 31, 'tag': u'img', 'tag_type': 1},
+   {'attributes' : {}, 'end': 98, 'start': 94, 'tag': u'a', 'tag_type': 2},
+   {'attributes' : {}, 'end': 103, 'start': 98, 'tag': u'td', 'tag_type': 2},
+   {'attributes' : {u'width': u'5'}, 'end': 120, 'start': 103, 'tag': u'table', 'tag_type': 1}
+]
