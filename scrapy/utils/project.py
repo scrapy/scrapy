@@ -4,6 +4,7 @@ import warnings
 
 from scrapy.utils.conf import closest_scrapy_cfg, get_config
 from scrapy.utils.python import is_writable
+from scrapy.exceptions import NotConfigured
 
 DATADIR_CFG_SECTION = 'datadir'
 
@@ -20,12 +21,16 @@ def inside_project():
 
 def project_data_dir(project='default'):
     """Return the current project data dir, creating it if it doesn't exist"""
-    assert inside_project(), "Not inside project"
-    scrapy_cfg = closest_scrapy_cfg()
-    d = abspath(join(dirname(scrapy_cfg), '.scrapy'))
+    if not inside_project():
+        raise NotConfigured("Not inside a project")
     cfg = get_config()
     if cfg.has_option(DATADIR_CFG_SECTION, project):
         d = cfg.get(DATADIR_CFG_SECTION, project)
+    else:
+        scrapy_cfg = closest_scrapy_cfg()
+        if not scrapy_cfg:
+            raise NotConfigured("Unable to find scrapy.cfg file to infer project data dir")
+        d = abspath(join(dirname(scrapy_cfg), '.scrapy'))
     if not exists(d):
         makedirs(d)
     return d
@@ -47,8 +52,12 @@ def sqlite_db(path, nonwritable_fallback=True):
     if not inside_project() or path == ':memory:':
         db = ':memory:'
     else:
-        db = data_path(path)
-        if not is_writable(db) and nonwritable_fallback:
-            warnings.warn("%r is not writable - using in-memory SQLite instead" % db)
+        try:
+            db = data_path(path)
+        except NotConfigured:
             db = ':memory:'
+        else:
+            if not is_writable(db) and nonwritable_fallback:
+                warnings.warn("%r is not writable - using in-memory SQLite instead" % db)
+                db = ':memory:'
     return db

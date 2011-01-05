@@ -25,7 +25,7 @@ class UtilsTest(unittest.TestCase):
 class GetSpiderListTest(unittest.TestCase):
 
     def test_get_spider_list(self):
-        path = self.mktemp()
+        path = os.path.abspath(self.mktemp())
         j = os.path.join
         eggs_dir = j(path, 'eggs')
         os.makedirs(eggs_dir)

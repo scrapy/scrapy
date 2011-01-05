@@ -13,6 +13,7 @@ from scrapy.conf import settings
 from scrapy.command import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules
+from scrapy.utils.project import inside_project
 
 def _iter_command_classes(module_name):
     # TODO: add `name` attribute to commands and and merge this function with
@@ -106,7 +107,7 @@ def execute(argv=None):
         argv = sys.argv
     crawler = CrawlerProcess(settings)
     crawler.install()
-    inproject = bool(settings.settings_module)
+    inproject = inside_project()
     _check_deprecated_scrapy_ctl(argv, inproject) # TODO: remove for Scrapy 0.11
     cmds = _get_commands_dict(inproject)
     cmdname = _pop_command_name(argv)

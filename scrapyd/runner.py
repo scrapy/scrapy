@@ -1,3 +1,6 @@
+from __future__ import with_statement
+
+import sys
 import os
 import shutil
 import tempfile
@@ -22,6 +25,7 @@ def project_environment(project):
     else:
         eggpath = None
     try:
+        assert 'scrapy.conf' not in sys.modules, "Scrapy settings already loaded"
         yield
     finally:
         if eggpath:

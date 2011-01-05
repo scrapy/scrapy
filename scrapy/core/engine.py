@@ -166,13 +166,11 @@ class ExecutionEngine(object):
             exc = _failure.value
             if isinstance(exc, IgnoreRequest):
                 errmsg = _failure.getErrorMessage()
-                level = exc.level
             else:
                 errmsg = str(_failure)
-                level = log.ERROR
             if errmsg:
                 log.msg("Error downloading <%s>: %s" % (request.url, errmsg), \
-                    level=level, spider=spider)
+                    level=log.ERROR, spider=spider)
             return Failure(IgnoreRequest(str(exc)))
 
         def _on_complete(_):
