@@ -81,7 +81,7 @@ class HtmlTag(HtmlDataFragment):
         return str(self)
 
 _ATTR = "((?:[^=/>\s]|/(?!>))+)(?:\s*=(?:\s*\"(.*?)\"|\s*'(.*?)'|([^>\s]+))?)?"
-_TAG = "<(\/?)(\w+(?::\w+)?)((?:\s+" + _ATTR + ")+\s*|\s*)(\/?)>"
+_TAG = "<(\/?)(\w+(?::\w+)?)((?:\s+" + _ATTR + ")+\s*|\s*)(\/?)>?"
 _DOCTYPE = r"<!DOCTYPE.*?>"
 _SCRIPT = "(<script.*?>)(.*?)(</script.*?>)"
 _COMMENT = "(<!--.*?-->)"
