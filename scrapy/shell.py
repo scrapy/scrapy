@@ -30,6 +30,7 @@ class Shell(object):
         self.item_class = load_object(crawler.settings['DEFAULT_ITEM_CLASS'])
         self.inthread = inthread
         self.code = code
+        self.vars = {}
 
     def start(self, *a, **kw):
         # disable accidental Ctrl-C key press from shutting down the engine
@@ -77,18 +78,15 @@ class Shell(object):
         self.populate_vars(url, response, request, spider)
 
     def populate_vars(self, url=None, response=None, request=None, spider=None):
-        item = self.item_class()
-        self.vars = {}
-        self.vars['item'] = item
+        self.vars['item'] = self.item_class()
         self.vars['settings'] = self.crawler.settings
-        if url:
-            if isinstance(response, XmlResponse):
-                self.vars['xxs'] = XmlXPathSelector(response)
-            if isinstance(response, HtmlResponse):
-                self.vars['hxs'] = HtmlXPathSelector(response)
-            self.vars['response'] = response
-            self.vars['request'] = request
-            self.vars['spider'] = spider
+        self.vars['spider'] = spider
+        self.vars['request'] = request
+        self.vars['response'] = response
+        self.vars['xxs'] = XmlXPathSelector(response) \
+            if isinstance(response, XmlResponse) else None
+        self.vars['hxs'] = HtmlXPathSelector(response) \
+            if isinstance(response, HtmlResponse) else None
         if self.inthread:
             self.vars['fetch'] = self.fetch
         self.vars['view'] = open_in_browser
