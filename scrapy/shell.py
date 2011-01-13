@@ -47,7 +47,7 @@ class Shell(object):
             self.fetch(request, spider)
         elif response:
             request = response.request
-            self.populate_vars(request.url, response, request, spider)
+            self.populate_vars(response, request, spider)
         else:
             self.populate_vars()
         if self.code:
@@ -75,9 +75,9 @@ class Shell(object):
         response = None
         response, spider = threads.blockingCallFromThread(reactor, \
             self._schedule, request, spider)
-        self.populate_vars(url, response, request, spider)
+        self.populate_vars(response, request, spider)
 
-    def populate_vars(self, url=None, response=None, request=None, spider=None):
+    def populate_vars(self, response=None, request=None, spider=None):
         self.vars['item'] = self.item_class()
         self.vars['settings'] = self.crawler.settings
         self.vars['spider'] = spider
