@@ -147,3 +147,9 @@ class TestParseHtml(TestCase):
         """Test parsing of some malformed cases"""
         parsed = [_decode_element(d) for d in PARSED8]
         self._test_sample(PAGE8, parsed)
+
+    def test_malformed2(self):
+        """Test case when attributes are not separated by space (still recognizable because of quotes)"""
+        parsed = [_decode_element(d) for d in PARSED9]
+        self._test_sample(PAGE9, parsed)
+

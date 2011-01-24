@@ -255,3 +255,23 @@ PARSED8 = [
    {'attributes' : {}, 'end': 103, 'start': 98, 'tag': u'td', 'tag_type': 2},
    {'attributes' : {u'width': u'5'}, 'end': 120, 'start': 103, 'tag': u'table', 'tag_type': 1}
 ]
+
+PAGE9 = u"""\
+<html>\
+<body>\
+<img width='230' height='150'src='/images/9589.jpg' >\
+<a href="/product/9589">Click here</a>\
+</body>\
+</html>\
+"""
+
+PARSED9 = [
+    {'attributes' : {}, 'end': 6, 'start': 0, 'tag': 'html', 'tag_type': 1},
+    {'attributes' : {}, 'end': 12, 'start': 6, 'tag': 'body', 'tag_type': 1},
+    {'attributes' : {'width': '230', 'height': '150', 'src': '/images/9589.jpg'}, 'end': 65, 'start': 12, 'tag': 'img', 'tag_type': 1},
+    {'attributes' : {'href': '/product/9589'}, 'end': 89, 'start': 65, 'tag': 'a', 'tag_type': 1},
+    {'end': 99, 'start': 89},
+    {'attributes' : {}, 'end': 103, 'start': 99, 'tag': 'a', 'tag_type': 2},
+    {'attributes' : {}, 'end': 110, 'start': 103, 'tag': 'body', 'tag_type': 2},
+    {'attributes' : {}, 'end': 117, 'start': 110, 'tag': 'html', 'tag_type': 2},
+]
