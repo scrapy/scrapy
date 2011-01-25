@@ -14,6 +14,8 @@ if settings['SELECTORS_BACKEND'] == 'lxml':
     from scrapy.selector.lxmlsel import *
 elif settings['SELECTORS_BACKEND'] == 'libxml2':
     from scrapy.selector.libxml2sel import *
+elif settings['SELECTORS_BACKEND'] == 'pyquery':
+    from scrapy.selector.pyquerysel import *
 elif settings['SELECTORS_BACKEND'] == 'dummy':
     from scrapy.selector.dummysel import *
 else:
