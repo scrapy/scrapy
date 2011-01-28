@@ -1,4 +1,4 @@
-Source: scrapy-0.12
+Source: scrapy-SUFFIX
 Section: python
 Priority: optional
 Maintainer: Insophia Team <info@insophia.com> 
@@ -6,7 +6,7 @@ Build-Depends: debhelper (>= 7.0.50), python (>=2.5), python-twisted
 Standards-Version: 3.8.4
 Homepage: http://scrapy.org/
 
-Package: scrapy-0.12
+Package: scrapy-SUFFIX
 Architecture: all
 Depends: ${python:Depends}, python-libxml2, python-twisted, python-openssl
 Conflicts: python-scrapy, scrapy, scrapy-0.11
@@ -17,9 +17,9 @@ Description: Python web crawling and scraping framework
  It can be used for a wide range of purposes, from data mining to 
  monitoring and automated testing.
 
-Package: scrapyd-0.12
+Package: scrapyd-SUFFIX
 Architecture: all
-Depends: scrapy-0.12, python-setuptools
+Depends: scrapy-SUFFIX, python-setuptools
 Conflicts: scrapyd, scrapyd-0.11
 Provides: scrapyd
 Description: Scrapy Service
