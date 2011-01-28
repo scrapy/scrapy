@@ -1,4 +1,10 @@
-scrapy-SUFFIX (0.11) unstable; urgency=low
+scrapy-0.12 (0.12.0-r2528+1296238425) unstable; urgency=low
+
+  * Automatic build
+
+ -- Insophia Team <info@insophia.com>  Fri, 28 Jan 2011 16:13:46 -0200
+
+scrapy-0.12 (0.11) unstable; urgency=low
 
   * Initial release.
 
