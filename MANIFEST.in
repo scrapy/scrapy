@@ -4,6 +4,7 @@ include INSTALL
 include LICENSE
 include MANIFEST.in
 include scrapy/core/downloader/responsetypes/mime.types
+include scrapyd/default_scrapyd.conf
 recursive-include scrapy/templates *
 recursive-include scrapy/tests/sample_data *
 recursive-include docs *
