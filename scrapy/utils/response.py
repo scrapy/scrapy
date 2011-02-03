@@ -36,8 +36,9 @@ def get_base_url(response):
         _baseurl_cache[response] = urljoin_rfc(response.url, match.group(1)) if match else response.url
     return _baseurl_cache[response]
 
-META_REFRESH_RE = re.compile(ur'<meta[^>]*http-equiv[^>]*refresh[^>]*content\s*=\s*(?P<quote>["\'])(?P<int>(\d*\.)?\d+)\s*;\s*url=(?P<url>.*?)(?P=quote)', \
-    re.DOTALL | re.IGNORECASE)
+META_TAG_RE        = re.compile(ur'<meta([^>]*?)>', re.DOTALL | re.IGNORECASE)
+META_TAG_ATTRS_RE  = re.compile(ur'(?P<key>\S*)=(?P<quote>"|\')(?P<value>.*?)(?P=quote)', re.DOTALL | re.IGNORECASE)
+META_CONTENT_RE    = re.compile(ur'(?P<int>(\d*\.)?\d)\s*(;\s*url=(?P<url>.*))?', re.DOTALL | re.IGNORECASE)
 _metaref_cache = weakref.WeakKeyDictionary()
 def get_meta_refresh(response):
     """Parse the http-equiv parameter of the HTML meta element from the given
@@ -49,15 +50,18 @@ def get_meta_refresh(response):
     """
     if response not in _metaref_cache:
         body_chunk = remove_comments(remove_entities(response.body_as_unicode()[0:4096]))
-        match = META_REFRESH_RE.search(body_chunk)
-        if match:
-            interval = float(match.group('int'))
-            url = safe_url_string(match.group('url').strip(' "\''))
-            url = urljoin_rfc(response.url, url)
-            _metaref_cache[response] = (interval, url)
-        else:
-            _metaref_cache[response] = (None, None)
-        #_metaref_cache[response] = match.groups() if match else (None, None)
+        for match1 in META_TAG_RE.finditer(body_chunk):
+            params = {}
+            for match2 in META_TAG_ATTRS_RE.finditer(match1.group(1)):
+                params[match2.group("key")] = match2.group("value")
+            if params.get("http-equiv") == "refresh":
+                match = META_CONTENT_RE.search(params.get("content", ""))
+                if match:
+                    interval = float(match.group("int"))
+                    url = urljoin_rfc(response.url, safe_url_string((match.group("url") or "").strip(' "\'')))
+                    _metaref_cache[response] = (interval, url)
+                    return (interval, url)
+        _metaref_cache[response] = (None, None)
     return _metaref_cache[response]
 
 _beautifulsoup_cache = weakref.WeakKeyDictionary()
