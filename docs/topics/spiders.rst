@@ -222,7 +222,9 @@ CrawlSpider
 
        Which is a list of one (or more) :class:`Rule` objects.  Each :class:`Rule`
        defines a certain behaviour for crawling the site. Rules objects are
-       described below.
+       described below. If multiple rules match the same link, the first one
+       will be used, according to the order they're defined in this attribute.
+
        
 Crawling rules
 ~~~~~~~~~~~~~~
