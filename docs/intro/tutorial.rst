@@ -156,15 +156,15 @@ will get an output similar to this::
    2008-08-20 03:51:13-0300 [dmoz] INFO: Enabled spider middlewares: ...
    2008-08-20 03:51:13-0300 [dmoz] INFO: Enabled item pipelines: ...
    2008-08-20 03:51:14-0300 [dmoz.org] INFO: Spider opened
-   2008-08-20 03:51:14-0300 [dmoz.org] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/> from <None>
-   2008-08-20 03:51:14-0300 [dmoz.org] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> from <None>
+   2008-08-20 03:51:14-0300 [dmoz.org] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/> (referer: <None>)
+   2008-08-20 03:51:14-0300 [dmoz.org] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> (referer: <None>)
    2008-08-20 03:51:14-0300 [dmoz.org] INFO: Spider closed (finished)
 
 Pay attention to the lines containing ``[dmoz.org]``, which corresponds to
 our spider (identified by the domain ``"dmoz.org"``). You can see a log line
 for each URL defined in ``start_urls``. Because these URLs are the starting
 ones, they have no referrers, which is shown at the end of the log line,
-where it says ``from <None>``.
+where it says ``(referer: <None>)``.
 
 But more interesting, as our ``parse`` method instructs, two files have been
 created: *Books* and *Resources*, with the content of both URLs.
@@ -342,21 +342,21 @@ Let's add this code to our spider::
    from scrapy.selector import HtmlXPathSelector
 
    class DmozSpider(BaseSpider):
-      name = "dmoz.org"
-      allowed_domains = ["dmoz.org"]
-      start_urls = [
-          "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
-          "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
-      ]
+       name = "dmoz.org"
+       allowed_domains = ["dmoz.org"]
+       start_urls = [
+           "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
+           "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
+       ]
        
-      def parse(self, response):
-          hxs = HtmlXPathSelector(response)
-          sites = hxs.select('//ul/li')
-          for site in sites:
-              title = site.select('a/text()').extract()
-              link = site.select('a/@href').extract()
-              desc = site.select('text()').extract()
-              print title, link, desc
+       def parse(self, response):
+           hxs = HtmlXPathSelector(response)
+           sites = hxs.select('//ul/li')
+           for site in sites:
+               title = site.select('a/text()').extract()
+               link = site.select('a/@href').extract()
+               desc = site.select('text()').extract()
+               print title, link, desc
 
 Now try crawling the dmoz.org domain again and you'll see sites being printed
 in your output, run::
