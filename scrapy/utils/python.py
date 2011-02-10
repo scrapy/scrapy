@@ -63,7 +63,7 @@ def unique(list_, key=lambda x: x):
     return result
 
 
-def str_to_unicode(text, encoding=None):
+def str_to_unicode(text, encoding=None, errors='strict'):
     """Return the unicode representation of text in the given encoding. Unlike
     .encode(encoding) this function can be applied directly to a unicode
     object without the risk of double-decoding problems (which can happen if
@@ -73,13 +73,13 @@ def str_to_unicode(text, encoding=None):
     if encoding is None:
         encoding = 'utf-8'
     if isinstance(text, str):
-        return text.decode(encoding)
+        return text.decode(encoding, errors)
     elif isinstance(text, unicode):
         return text
     else:
         raise TypeError('str_to_unicode must receive a str or unicode object, got %s' % type(text).__name__)
 
-def unicode_to_str(text, encoding=None):
+def unicode_to_str(text, encoding=None, errors='strict'):
     """Return the str representation of text in the given encoding. Unlike
     .encode(encoding) this function can be applied directly to a str
     object without the risk of double-decoding problems (which can happen if
@@ -89,7 +89,7 @@ def unicode_to_str(text, encoding=None):
     if encoding is None:
         encoding = 'utf-8'
     if isinstance(text, unicode):
-        return text.encode(encoding)
+        return text.encode(encoding, errors)
     elif isinstance(text, str):
         return text
     else:

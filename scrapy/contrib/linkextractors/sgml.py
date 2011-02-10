@@ -33,7 +33,7 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
         for link in self.links:
             link.url = urljoin_rfc(base_url, link.url, response_encoding)
             link.url = safe_url_string(link.url, response_encoding)
-            link.text = str_to_unicode(link.text, response_encoding)
+            link.text = str_to_unicode(link.text, response_encoding, errors='replace')
             ret.append(link)
 
         return ret

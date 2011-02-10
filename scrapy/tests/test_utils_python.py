@@ -22,6 +22,9 @@ class UtilsPythonTestCase(unittest.TestCase):
         # converting a strange object should raise TypeError
         self.assertRaises(TypeError, str_to_unicode, 423)
 
+        # check errors argument works
+        self.assertEqual(str_to_unicode('a\xedb', 'utf-8', errors='replace'), u'a\ufffdb')
+
     def test_unicode_to_str(self):
         # converting a unicode object to an utf-8 encoded string
         self.assertEqual(unicode_to_str(u'\xa3 49'), '\xc2\xa3 49')
@@ -34,6 +37,9 @@ class UtilsPythonTestCase(unittest.TestCase):
 
         # converting a strange object should raise TypeError
         self.assertRaises(TypeError, unicode_to_str, unittest)
+
+        # check errors argument works
+        (str_to_unicode('a\xedb', 'latin-', errors='replace'), u'a?b')
 
     def test_memoizemethod_noargs(self):
         class A(object):

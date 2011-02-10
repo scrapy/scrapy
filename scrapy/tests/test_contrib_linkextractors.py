@@ -51,6 +51,13 @@ class LinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.extract_links(response),
                          [Link(url='https://noschemedomain.com/path/to/item/12.html', text='Item 12')])
 
+    def test_link_text_wrong_encoding(self):
+        html = """<body><p><a href="item/12.html">Wrong: \xed</a></p></body></html>"""
+        response = HtmlResponse("http://www.example.com", body=html, encoding='utf-8')
+        lx = BaseSgmlLinkExtractor()
+        self.assertEqual(lx.extract_links(response),
+             [Link(url='http://www.example.com/item/12.html', text=u'Wrong: \ufffd')])
+
     def test_extraction_encoding(self):
         body = get_testdata('link_extractor', 'linkextractor_noenc.html')
         response_utf8 = HtmlResponse(url='http://example.com/utf8', body=body, headers={'Content-Type': ['text/html; charset=utf-8']})
