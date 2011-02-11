@@ -110,6 +110,7 @@ class LxmlXmliterTestCase(XmliterTestCase):
                     <description>This is item 1</description>
                     <link>http://www.mydummycompany.com/items/1</link>
                     <image_link>http://www.mydummycompany.com/images/item1.jpg</image_link>
+                    <image_link>http://www.mydummycompany.com/images/item2.jpg</image_link>
                 </item>
                 </channel>
             </rss>
@@ -122,6 +123,8 @@ class LxmlXmliterTestCase(XmliterTestCase):
         namespace_iter = self.xmliter(response, 'image_link', 'http://base.google.com/ns/1.0')
         node = namespace_iter.next()
         self.assertEqual(node.select('text()').extract(), ['http://www.mydummycompany.com/images/item1.jpg'])
+        node = namespace_iter.next()
+        self.assertEqual(node.select('text()').extract(), ['http://www.mydummycompany.com/images/item2.jpg'])
 
 
 class UtilsCsvTestCase(unittest.TestCase):
