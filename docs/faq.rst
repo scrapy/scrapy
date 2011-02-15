@@ -228,3 +228,15 @@ which scrapes one of these sites.
 
 .. _this page: http://search.cpan.org/~ecarroll/HTML-TreeBuilderX-ASP_NET-0.09/lib/HTML/TreeBuilderX/ASP_NET.pm
 .. _example spider: http://github.com/AmbientLighter/rpn-fas/blob/master/fas/spiders/rnp.py
+
+What's the best way to parse big XML/CSV data feeds?
+----------------------------------------------------
+
+Parsing big feeds with XPath selectors can be problematic since they need to
+build the DOM of the entire feed in memory, and this can be quite slow and
+consume a lot of memory.
+
+In order to avoid parsing all the entire feed at once in memory, you can use
+the functions ``xmliter`` and ``csviter`` from ``scrapy.utils.iterators``
+module. In fact, this is what the feed spiders (see :ref:`topics-spiders`) use
+under the cover.
