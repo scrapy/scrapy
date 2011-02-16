@@ -130,10 +130,10 @@ class ExecutionEngine(object):
         return len(self.downloader.sites) < self.downloader.concurrent_spiders
 
     def crawl(self, request, spider):
-        assert spider in self.open_spiders, \
-            "Spider %r not opened when crawling: %s" % (spider.name, request)
         if spider in self.closing: # ignore requests for spiders being closed
             return
+        assert spider in self.open_spiders, \
+            "Spider %r not opened when crawling: %s" % (spider.name, request)
         schd = mustbe_deferred(self.schedule, request, spider)
         # FIXME: we can't log errors because we would be preventing them from
         # propagating to the request errback. This should be fixed after the
