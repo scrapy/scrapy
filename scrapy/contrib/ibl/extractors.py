@@ -132,6 +132,10 @@ def image_url(txt):
         ['http://s7d5.scene7.com/is/image/wasserstrom/165133?wid=227&hei=227&defaultImage=noimage_wasserstrom']
 
     """
+    imgurl = extract_image_url(txt)
+    return [safe_url_string(remove_entities(url(imgurl)))] if imgurl else None
+
+def extract_image_url(txt):
     txt = url(txt)
     imgurl = None
     if txt:
@@ -153,4 +157,4 @@ def image_url(txt):
             imgurl = urlparse.urlunparse(parsed)
         if not imgurl:
             imgurl = txt
-    return [safe_url_string(remove_entities(url(imgurl)))] if imgurl else None
+    return imgurl
