@@ -114,13 +114,13 @@ single Python class that defines one or more of the following methods:
       :param spider: the spider for which this response is intended
       :type spider: :class:`~scrapy.spider.BaseSpider` object
 
-   .. method:: process_download_exception(request, exception, spider)
+   .. method:: process_exception(request, exception, spider)
 
-      Scrapy calls :meth:`process_download_exception` when a download handler
+      Scrapy calls :meth:`process_exception` when a download handler
       or a :meth:`process_request` (from a downloader middleware) raises an
       exception.
 
-      :meth:`process_download_exception` should return either ``None``,
+      :meth:`process_exception` should return either ``None``,
       :class:`~scrapy.http.Response` or :class:`~scrapy.http.Request` object.
 
       If it returns ``None``, Scrapy will continue processing this exception,
@@ -133,7 +133,7 @@ single Python class that defines one or more of the following methods:
       If it returns a :class:`~scrapy.http.Request` object, the returned request is
       used to instruct an immediate redirection. 
       The original request won't finish until the redirected
-      request is completed. This stops the :meth:`process_download_exception`
+      request is completed. This stops the :meth:`process_exception`
       middleware the same as returning Response would do.
 
       :param request: the request that generated the exception
