@@ -75,7 +75,7 @@ class BasicTypeExtractor(object):
         u'<div data-scrapy-annotate="{&quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">x<b> xx</b></div>',\
         u'<div>a name<b> id-9</b></div>')
     >>> ex = BasicTypeExtractor(template.annotations[0])
-    >>> ex.extract(page, 0, 3, [LabelledRegion(*(1,2))])
+    >>> ex.extract(page, 0, 3, [LabelledRegion(1, 2)])
     [(u'name', u'a name')]
     """
 
@@ -395,7 +395,7 @@ class RecordExtractor(object):
                     s, p, e = similar_region(page.page_tokens, self.template_tokens, \
                               i, start, sindex)
                     if s > 0:
-                        similar_ignored_regions.append(LabelledRegion(*(p, e)))
+                        similar_ignored_regions.append(LabelledRegion(p, e))
                         start = e or start
                 extracted_data = first_region.extract(page, pindex, sindex, similar_ignored_regions)
                 if extracted_data:
