@@ -137,3 +137,19 @@ class TestParseHtml(TestCase):
         parsed = list(parse_html("<IMG SRC='http://images.play.com/banners/SAM550a.jpg' align='left' / hspace=5>"))
         self.assertEqual(parsed[0].attributes, {'src': 'http://images.play.com/banners/SAM550a.jpg', \
                                                 'align': 'left', 'hspace': '5', '/': None})
+
+    def test_no_ending_body(self):
+        """Test case when no ending body nor html elements are present"""
+        parsed = [_decode_element(d) for d in PARSED7]
+        self._test_sample(PAGE7, parsed)
+
+    def test_malformed(self):
+        """Test parsing of some malformed cases"""
+        parsed = [_decode_element(d) for d in PARSED8]
+        self._test_sample(PAGE8, parsed)
+
+    def test_malformed2(self):
+        """Test case when attributes are not separated by space (still recognizable because of quotes)"""
+        parsed = [_decode_element(d) for d in PARSED9]
+        self._test_sample(PAGE9, parsed)
+

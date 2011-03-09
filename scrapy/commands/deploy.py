@@ -57,6 +57,8 @@ class Command(ScrapyCommand):
             help="list available projects on TARGET")
         parser.add_option("--egg", metavar="FILE",
             help="use the given egg, instead of building it")
+        parser.add_option("--build-egg", metavar="FILE",
+            help="only build the egg, don't deploy it")
 
     def run(self, args, opts):
         try:
@@ -75,18 +77,26 @@ class Command(ScrapyCommand):
             projects = json.loads(f.read())['projects']
             print os.linesep.join(projects)
             return
-        target_name = _get_target_name(args)
-        target = _get_target(target_name)
-        project = _get_project(target, opts)
-        version = _get_version(target, opts)
+
         tmpdir = None
-        if opts.egg:
-            _log("Using egg: %s" % opts.egg)
-            egg = opts.egg
-        else:
-            _log("Building egg of %s-%s" % (project, version))
+
+        if opts.build_egg: # build egg only
             egg, tmpdir = _build_egg()
-        _upload_egg(target, egg, project, version)
+            _log("Writing egg to %s" % opts.build_egg)
+            shutil.copyfile(egg, opts.build_egg)
+        else: # buld egg and deploy
+            target_name = _get_target_name(args)
+            target = _get_target(target_name)
+            project = _get_project(target, opts)
+            version = _get_version(target, opts)
+            if opts.egg:
+                _log("Using egg: %s" % opts.egg)
+                egg = opts.egg
+            else:
+                _log("Building egg of %s-%s" % (project, version))
+                egg, tmpdir = _build_egg()
+            _upload_egg(target, egg, project, version)
+
         if tmpdir:
             shutil.rmtree(tmpdir)
 
