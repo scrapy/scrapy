@@ -11,7 +11,8 @@ class SqliteDict(DictMixin):
     def __init__(self, database=None, table="dict"):
         self.database = database or ':memory:'
         self.table = table
-        self.conn = sqlite3.connect(self.database)
+        # about check_same_thread: http://twistedmatrix.com/trac/ticket/4040
+        self.conn = sqlite3.connect(self.database, check_same_thread=False)
         q = "create table if not exists %s (key text primary key, value blob)" \
             % table
         self.conn.execute(q)
@@ -91,7 +92,8 @@ class SqlitePriorityQueue(object):
     def __init__(self, database=None, table="queue"):
         self.database = database or ':memory:'
         self.table = table
-        self.conn = sqlite3.connect(self.database)
+        # about check_same_thread: http://twistedmatrix.com/trac/ticket/4040
+        self.conn = sqlite3.connect(self.database, check_same_thread=False)
         q = "create table if not exists %s (id integer primary key, " \
             "priority real key, message blob)" % table
         self.conn.execute(q)
