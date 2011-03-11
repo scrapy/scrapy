@@ -163,7 +163,7 @@ def safehtml(region, allowed_tags=_TAGS_TO_KEEP, replace_tags=_TAGS_TO_REPLACE):
 def _process_markup(region, textf, tagf):
     fragments = getattr(region, 'parsed_fragments', None)
     if fragments is None:
-        textf(region)
+        yield textf(region)
         return
     fiter = iter(fragments)
     for fragment in fiter:

@@ -249,12 +249,12 @@ SL342
 Nice product for ladies
 <br/><ins data-scrapy-annotate="{&quot;variant&quot;: 0, &quot;generated&quot;: true,
      &quot;annotations&quot;: {&quot;content&quot;: &quot;price&quot;}}">
-&pounds;85.00
+&pound;85.00
 </ins>
 </p>
 <ins data-scrapy-annotate="{&quot;variant&quot;: 0, &quot;generated&quot;: true,
      &quot;annotations&quot;: {&quot;content&quot;: &quot;price_before_discount&quot;}}">
-&pounds;100.00
+&pound;100.00
 </ins>
 </body></html>
 """
@@ -266,9 +266,9 @@ SL342
 <br/>
 Nice product for ladies
 <br/>
-&pounds;85.00
+&pound;85.00
 </p>
-&pounds;100.00
+&pound;100.00
 </body></html>
 """
 
@@ -812,9 +812,9 @@ TEST_DATA = [
     'special_partial_annotation', [ANNOTATED_PAGE11], EXTRACT_PAGE11, DEFAULT_DESCRIPTOR,
           {
             'name': [u'SL342'],
-            'description': ['\nSL342\n \nNice product for ladies\n \n&pounds;85.00\n'],
-            'price': [u'&pounds;85.00'],
-            'price_before_discount': [u'&pounds;100.00'],
+            'description': ['\nSL342\n \nNice product for ladies\n \n&pound;85.00\n'],
+            'price': [u'\xa385.00'],
+            'price_before_discount': [u'\xa3100.00'],
           }
     ),
     (# with ignore-beneath feature
