@@ -228,11 +228,11 @@ class TestPageParsing(TestCase):
         epp = _parse_page(ExtractionPageParser, SIMPLE_PAGE)
         ep = epp.to_extraction_page()
         assert len(ep.page_tokens) == 4
-        assert ep.token_html(0) == '<html>'
-        assert ep.token_html(1) == '<p some-attr="foo">'
+        assert ep.htmlpage.fragment_data(ep.htmlpage_tag(0)) == '<html>'
+        assert ep.htmlpage.fragment_data(ep.htmlpage_tag(1)) == '<p some-attr="foo">'
         
-        assert ep.html_between_tokens(1, 2) == 'this is a test'
-        assert ep.html_between_tokens(1, 3) == 'this is a test</p> '
+        assert ep.htmlpage_region_inside(1, 2) == 'this is a test'
+        assert ep.htmlpage_region_inside(1, 3) == 'this is a test</p> '
 
     def test_invalid_html(self):
         p = _parse_page(InstanceLearningParser, BROKEN_PAGE)

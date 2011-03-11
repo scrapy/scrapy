@@ -3,25 +3,22 @@ Extended types for IBL extraction
 """
 from itertools import chain 
 
-from scrapy.contrib.ibl.extractors import text
+from scrapy.contrib.ibl.extractors import text, html
 
 class FieldDescriptor(object):
     """description of a scraped attribute"""
-    __slots__ = ('name', 'description', 'extractor', 'required', 'allow_markup')
+    __slots__ = ('name', 'description', 'extractor', 'required')
 
-    def __init__(self, name, description, extractor=text, required=False,
-            allow_markup=False):
+    def __init__(self, name, description, extractor=text, required=False):
         self.name = name
         self.description = description
         self.extractor = extractor
         self.required = required
-        self.allow_markup = allow_markup
     
     @classmethod
     def from_field(cls, name, field):
         return cls(name, field.get('description'), \
-            field.get('ibl_extractor', text), field.get('required', False), \
-            field.get('allow_markup', False))
+            field.get('ibl_extractor', text), field.get('required', False))
 
     def __str__(self):
         return "FieldDescriptor(%s)" % self.name

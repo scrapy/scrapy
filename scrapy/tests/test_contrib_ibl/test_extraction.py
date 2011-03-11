@@ -9,7 +9,7 @@ from scrapy.contrib.ibl.htmlpage import HtmlPage
 from scrapy.contrib.ibl.descriptor import (FieldDescriptor as A, 
         ItemDescriptor)
 from scrapy.contrib.ibl.extractors import (contains_any_numbers,
-        image_url)
+        image_url, html, notags)
 
 try:
     import numpy
@@ -719,19 +719,23 @@ EXTRACT_PAGE23 = u"""
 </body></html>
 """
 
+DEFAULT_DESCRIPTOR = ItemDescriptor('test', 
+    'item test, removes tags from description attribute',
+    [A('description', 'description field without tags', notags)])
+
 SAMPLE_DESCRIPTOR1 = ItemDescriptor('test', 'product test', [
     A('name', "Product name", required=True),
     A('price', "Product price, including any discounts and tax or vat", 
         contains_any_numbers, True),    
     A('image_urls', "URLs for one or more images", image_url, True),
-    A('description', "The full description of the product", allow_markup=True),
+    A('description', "The full description of the product", html),
     ]
 )
 
 # A list of (test name, [templates], page, extractors, expected_result)
 TEST_DATA = [
     # extract from a similar page
-    ('similar page extraction', [ANNOTATED_PAGE1], EXTRACT_PAGE1, None,
+    ('similar page extraction', [ANNOTATED_PAGE1], EXTRACT_PAGE1, DEFAULT_DESCRIPTOR,
         {u'title': [u'Nice Product'], u'description': [u'wonderful product'], 
             u'image_url': [u'nice_product.jpg']}
     ),
@@ -743,20 +747,20 @@ TEST_DATA = [
             u'image_url': [u'nice_product.jpg']}
     ),
     # compilicated tag (multiple attributes and annotation)
-    ('multiple attributes and annotation', [ANNOTATED_PAGE2], EXTRACT_PAGE2, None,
+    ('multiple attributes and annotation', [ANNOTATED_PAGE2], EXTRACT_PAGE2, DEFAULT_DESCRIPTOR,
         {'name': [u'product 1'], 'image_url': [u'http://example.com/product1.jpg'],
             'description': [u'product 1 is great']}
     ),
     # can only work out correct placement by matching the second attribute first
-    ('ambiguous description', [ANNOTATED_PAGE3], EXTRACT_PAGE3, None,
+    ('ambiguous description', [ANNOTATED_PAGE3], EXTRACT_PAGE3, DEFAULT_DESCRIPTOR,
         {'description': [u'description'], 'delivery': [u'delivery']}
     ),
     # infer a repeated structure
-    ('repeated elements', [ANNOTATED_PAGE4], EXTRACT_PAGE4, None,
+    ('repeated elements', [ANNOTATED_PAGE4], EXTRACT_PAGE4, DEFAULT_DESCRIPTOR,
         {'features': [u'feature1', u'feature2', u'feature3']}
     ),
     # identical variants with a repeated structure
-    ('repeated identical variants', [ANNOTATED_PAGE5], EXTRACT_PAGE5, None,
+    ('repeated identical variants', [ANNOTATED_PAGE5], EXTRACT_PAGE5, DEFAULT_DESCRIPTOR,
          {
              'description': [u'description'],
              'variants': [
@@ -767,7 +771,7 @@ TEST_DATA = [
          }
     ),
     # variants with an irregular structure
-    ('irregular variants', [ANNOTATED_PAGE6], EXTRACT_PAGE6, None,
+    ('irregular variants', [ANNOTATED_PAGE6], EXTRACT_PAGE6, DEFAULT_DESCRIPTOR,
          {
              'description': [u'description'],
              'variants': [
@@ -779,7 +783,7 @@ TEST_DATA = [
     ),
 
     # discovering repeated variants in table columns
-#    ('variants in table columns', [ANNOTATED_PAGE7], EXTRACT_PAGE7, None,
+#    ('variants in table columns', [ANNOTATED_PAGE7], EXTRACT_PAGE7, DEFAULT_DESCRIPTOR,
 #         {'variants': [
 #             {u'colour': [u'colour 1'], u'price': [u'price 1']}, 
 #             {u'colour': [u'colour 2'], u'price': [u'price 2']}, 
@@ -790,66 +794,66 @@ TEST_DATA = [
     
     # ignored regions
     (
-    'ignored_regions', [ANNOTATED_PAGE8], EXTRACT_PAGE8, None,
+    'ignored_regions', [ANNOTATED_PAGE8], EXTRACT_PAGE8, DEFAULT_DESCRIPTOR,
           {
-             'description': [u'\n A very nice product for all intelligent people \n\n'],
+             'description': [u'\n A very nice product for all intelligent people \n \n'],
              'price': [u'\n12.00\n(VAT exc.)'],
           }
     ),
     # shifted ignored regions (detected by region similarity)
     (
-    'shifted_ignored_regions', [ANNOTATED_PAGE9], EXTRACT_PAGE9, None,
+    'shifted_ignored_regions', [ANNOTATED_PAGE9], EXTRACT_PAGE9, DEFAULT_DESCRIPTOR,
           {
-             'description': [u'\n A very nice product for all intelligent people \n\n'],
+             'description': [u'\n A very nice product for all intelligent people \n \n'],
              'price': [u'\n12.00\n(VAT exc.)'],
           }
     ),
     (# special case with partial annotations
-    'special_partial_annotation', [ANNOTATED_PAGE11], EXTRACT_PAGE11, None,
+    'special_partial_annotation', [ANNOTATED_PAGE11], EXTRACT_PAGE11, DEFAULT_DESCRIPTOR,
           {
             'name': [u'SL342'],
-            'description': [u'\nSL342\n \nNice product for ladies\n \n&pounds;85.00\n'],
+            'description': ['\nSL342\n \nNice product for ladies\n \n&pounds;85.00\n'],
             'price': [u'&pounds;85.00'],
             'price_before_discount': [u'&pounds;100.00'],
           }
     ),
     (# with ignore-beneath feature
-    'ignore-beneath', [ANNOTATED_PAGE12], EXTRACT_PAGE12a, None,
+    'ignore-beneath', [ANNOTATED_PAGE12], EXTRACT_PAGE12a, DEFAULT_DESCRIPTOR,
           {
             'description': [u'\n A very nice product for all intelligent people \n'],
           }
     ),
     (# ignore-beneath with extra tags
-    'ignore-beneath with extra tags', [ANNOTATED_PAGE12], EXTRACT_PAGE12b, None,
+    'ignore-beneath with extra tags', [ANNOTATED_PAGE12], EXTRACT_PAGE12b, DEFAULT_DESCRIPTOR,
           {
             'description': [u'\n A very nice product for all intelligent people \n'],
           }
     ),
-    ('nested annotation with replica outside', [ANNOTATED_PAGE13a], EXTRACT_PAGE13a, None,
+    ('nested annotation with replica outside', [ANNOTATED_PAGE13a], EXTRACT_PAGE13a, DEFAULT_DESCRIPTOR,
           {'description': [u'\n A product \n $50.00 \nThis product is excelent. Buy it!\n \n'],
            'price': ["$50.00"],
            'name': [u'A product']}
     ),
-    ('outside annotation with nested replica', [ANNOTATED_PAGE13b], EXTRACT_PAGE13b, None,
+    ('outside annotation with nested replica', [ANNOTATED_PAGE13b], EXTRACT_PAGE13b, DEFAULT_DESCRIPTOR,
           {'description': [u'\n A product \n $50.00 \nThis product is excelent. Buy it!\n'],
            'price': ["$45.00"],
            'name': [u'A product']}
     ),
-    ('consistency check', [ANNOTATED_PAGE14], EXTRACT_PAGE14, None,
+    ('consistency check', [ANNOTATED_PAGE14], EXTRACT_PAGE14, DEFAULT_DESCRIPTOR,
           {},
     ),
-    ('consecutive nesting', [ANNOTATED_PAGE15], EXTRACT_PAGE15, None,
-          {'description': [u'Description\n\n'],
+    ('consecutive nesting', [ANNOTATED_PAGE15], EXTRACT_PAGE15, DEFAULT_DESCRIPTOR,
+          {'description': [u'Description\n \n'],
            'price': [u'80.00']},
     ),
-    ('nested inside not found', [ANNOTATED_PAGE16], EXTRACT_PAGE16, None,
+    ('nested inside not found', [ANNOTATED_PAGE16], EXTRACT_PAGE16, DEFAULT_DESCRIPTOR,
           {'price': [u'90.00'],
            'name': [u'product name']},
     ),
-    ('ignored region helps to find attributes', [ANNOTATED_PAGE17], EXTRACT_PAGE17, None,
+    ('ignored region helps to find attributes', [ANNOTATED_PAGE17], EXTRACT_PAGE17, DEFAULT_DESCRIPTOR,
           {'description': [u'\nThis product is excelent. Buy it!\n']},
     ),
-    ('ignored region in partial annotation', [ANNOTATED_PAGE18], EXTRACT_PAGE18, None,
+    ('ignored region in partial annotation', [ANNOTATED_PAGE18], EXTRACT_PAGE18, DEFAULT_DESCRIPTOR,
           {u'site_id': [u'Item Id'],
            u'description': [u'\nDescription\n']},
     ),
@@ -864,13 +868,13 @@ TEST_DATA = [
          SAMPLE_DESCRIPTOR1,
          None,
     ),
-    ('repeated partial annotations with variants', [ANNOTATED_PAGE20], EXTRACT_PAGE20, None,
+    ('repeated partial annotations with variants', [ANNOTATED_PAGE20], EXTRACT_PAGE20, DEFAULT_DESCRIPTOR,
             {u'variants': [
                 {'price': ['270'], 'name': ['Twin']},
                 {'price': ['330'], 'name': ['Queen']},
             ]},
     ),
-    ('variants with swatches', [ANNOTATED_PAGE21], EXTRACT_PAGE21, None,
+    ('variants with swatches', [ANNOTATED_PAGE21], EXTRACT_PAGE21, DEFAULT_DESCRIPTOR,
             {u'category': [u'chairs'],
              u'image_urls': [u'image.jpg'],
              u'variants': [
@@ -881,7 +885,7 @@ TEST_DATA = [
              ]
             },
     ),
-    ('variants with swatches complete', [ANNOTATED_PAGE22], EXTRACT_PAGE22, None,
+    ('variants with swatches complete', [ANNOTATED_PAGE22], EXTRACT_PAGE22, DEFAULT_DESCRIPTOR,
             {u'category': [u'chairs'],
              u'variants': [
                  {u'swatches': [u'swatch1.jpg'],
@@ -899,7 +903,7 @@ TEST_DATA = [
              ],
              u'image_urls': [u'image.jpg']},
     ),
-    ('repeated (variants) with ignore annotations', [ANNOTATED_PAGE23], EXTRACT_PAGE23, None,
+    ('repeated (variants) with ignore annotations', [ANNOTATED_PAGE23], EXTRACT_PAGE23, DEFAULT_DESCRIPTOR,
         {'variants': [
             {u'price': [u'300'], u'name': [u'Variant 1']},
             {u'price': [u'320'], u'name': [u'Variant 2']},

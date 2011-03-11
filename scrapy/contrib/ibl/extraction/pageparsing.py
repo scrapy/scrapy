@@ -9,8 +9,8 @@ from numpy import array
 from scrapy.utils.py26 import json
 
 from scrapy.contrib.ibl.htmlpage import HtmlTagType, HtmlTag, HtmlPage
-from scrapy.contrib.ibl.extraction.pageobjects import (AnnotationTag, 
-        TemplatePage, ExtractionPage, AnnotationText, TokenDict)
+from scrapy.contrib.ibl.extraction.pageobjects import (AnnotationTag,
+    TemplatePage, ExtractionPage, AnnotationText, TokenDict, FragmentedHtmlPageRegion)
 
 def parse_strings(template_html, extraction_html):
     """Create a template and extraction page from raw strings
@@ -52,18 +52,18 @@ class InstanceLearningParser(object):
     def feed(self, html_page):
         self.html_page = html_page
         self.previous_element_class = None
-        for data in html_page.parsed_body:
+        for index, data in enumerate(html_page.parsed_body):
             if isinstance(data, HtmlTag):
                 self._add_token(data.tag, data.tag_type, data.start, data.end)
-                self.handle_tag(data)
+                self.handle_tag(data, index)
             else:
-                self.handle_data(data)
+                self.handle_data(data, index)
             self.previous_element_class = data.__class__
 
-    def handle_data(self, html_data_fragment):
+    def handle_data(self, html_data_fragment, index):
         pass
 
-    def handle_tag(self, html_tag):
+    def handle_tag(self, html_tag, index):
         pass
 
 _END_UNPAIREDTAG_TAGS = ["form", "div", "p", "table", "tr", "td"]
@@ -86,7 +86,7 @@ class TemplatePageParser(InstanceLearningParser):
         self.last_text_region = None
         self.next_tag_index = 0
 
-    def handle_tag(self, html_tag):
+    def handle_tag(self, html_tag, index):
         if self.last_text_region:
             self._process_text('')
         
@@ -275,7 +275,7 @@ class TemplatePageParser(InstanceLearningParser):
                 if prev != annotation.variant_id:
                     raise ValueError("unbalanced variant annotation tags")
                     
-    def handle_data(self, html_data_fragment):
+    def handle_data(self, html_data_fragment, index):
         fragment_text = self.html_page.fragment_data(html_data_fragment)
         self._process_text(fragment_text)
 
@@ -300,20 +300,11 @@ class ExtractionPageParser(InstanceLearningParser):
     """
     def __init__(self, token_dict):
         InstanceLearningParser.__init__(self, token_dict)
-        self.page_data = []
-        self.token_start_index = []
-        self.token_follow_index = []
-        self.tag_attrs = {}
+        self._page_token_indexes = []
 
-    def _add_token(self, token, token_type, start, end):
-        InstanceLearningParser._add_token(self, token, token_type, start, end)
-        self.token_start_index.append(start)
-        self.token_follow_index.append(end)
-
-    def handle_tag(self, html_tag):
-        if html_tag.attributes:
-            self.tag_attrs[len(self.token_list) - 1] = html_tag.attributes
+    def handle_tag(self, html_tag, index):
+        self._page_token_indexes.append(index)
     
     def to_extraction_page(self):
-        return ExtractionPage(self.html_page.body, self.token_dict, array(self.token_list), 
-                self.token_start_index, self.token_follow_index, self.tag_attrs)
+        return ExtractionPage(self.html_page, self.token_dict, array(self.token_list), 
+                self._page_token_indexes)
