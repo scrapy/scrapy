@@ -233,8 +233,18 @@ HttpCacheMiddleware
     downloads every time) and for trying your spider offline, when an Internet
     connection is not available.
 
-File system storage
-~~~~~~~~~~~~~~~~~~~
+    Scrapy ships with two storage backends for the HTTP cache middleware:
+
+    * :ref:`httpcache-fs-backend`
+    * :ref:`httpcache-dbm-backend`
+
+    You can change the storage backend with the :setting:`HTTPCACHE_STORAGE`
+    setting. Or you can also implement your own backend.
+
+.. _httpcache-fs-backend:
+
+File system backend (default)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 By default, the :class:`HttpCacheMiddleware` uses a file system storage  with the following structure:
 
@@ -257,8 +267,19 @@ inefficient in many file systems). An example directory could be::
 
    /path/to/cache/dir/example.com/72/72811f648e718090f041317756c03adb0ada46c7
 
-The cache storage backend can be changed with the :setting:`HTTPCACHE_STORAGE`
-setting, but no other backend is provided with Scrapy yet.
+.. _httpcache-dbm-backend:
+
+DBM storage backend
+~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: 0.13
+
+A DBM_ storage backend is also available for the HTTP cache middleware. To use
+it (instead of the default filesystem backend) set :setting:`HTTPCACHE_STORAGE`
+to ``scrapy.contrib.httpcache.DbmCacheStorage``.
+
+By default, it uses the anydbm_ module, but you can change it with the
+:setting:`HTTPCACHE_DBM_MODULE` setting.
 
 Settings
 ~~~~~~~~
@@ -345,6 +366,18 @@ HTTPCACHE_STORAGE
 Default: ``'scrapy.contrib.downloadermiddleware.httpcache.FilesystemCacheStorage'``
 
 The class which implements the cache storage backend.
+
+.. setting:: HTTPCACHE_DBM_MODULE
+
+HTTPCACHE_DBM_MODULE
+^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 0.13
+
+Default: ``'anydbm'``
+
+The database module to use in the :ref:`DBM storage backend
+<httpcache-dbm-backend>`. This setting is specific to the DBM backend.
 
 
 HttpCompressionMiddleware
@@ -491,3 +524,6 @@ UserAgentMiddleware
    In order for a spider to override the default user agent, its `user_agent`
    attribute must be set.
 
+
+.. _DBM: http://en.wikipedia.org/wiki/Dbm
+.. _anydbm: http://docs.python.org/library/anydbm.html
