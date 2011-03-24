@@ -64,13 +64,6 @@ def request_authenticate(request, username, password):
     """
     request.headers['Authorization'] = basic_auth_header(username, password)
 
-def request_info(request):
-    """Return a short string with request info including method, url and
-    fingeprint. Mainly used for debugging
-    """
-    fp = request_fingerprint(request)
-    return "<Request: %s %s (%s..)>" % (request.method, request.url, fp[:8])
-
 def request_httprepr(request):
     """Return the raw HTTP representation (as string) of the given request.
     This is provided only for reference since it's not the actual stream of
