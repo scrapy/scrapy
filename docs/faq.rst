@@ -240,3 +240,17 @@ In order to avoid parsing all the entire feed at once in memory, you can use
 the functions ``xmliter`` and ``csviter`` from ``scrapy.utils.iterators``
 module. In fact, this is what the feed spiders (see :ref:`topics-spiders`) use
 under the cover.
+
+Does Scrapy manage cookies automatically?
+-----------------------------------------
+
+Yes, Scrapy receives and keeps track of cookies sent by servers, and sends them
+back on subsequent requests, like any regular web browser does.
+
+For more info see :ref:`topics-request-response` and :ref:`cookies-mw`.
+
+How can I see the cookies being sent and received from Scrapy?
+--------------------------------------------------------------
+
+Enable the :setting:`COOKIES_DEBUG` setting.
+
