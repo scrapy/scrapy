@@ -30,9 +30,11 @@ from scrapy.conf import settings
 
 class RetryMiddleware(object):
 
+    # IOError is raised by the HttpCompression middleware when trying to
+    # decompress an empty response
     EXCEPTIONS_TO_RETRY = (ServerTimeoutError, UserTimeoutError, DNSLookupError,
                            ConnectionRefusedError, ConnectionDone, ConnectError,
-                           ConnectionLost, PartialDownloadError)
+                           ConnectionLost, PartialDownloadError, IOError)
 
     def __init__(self):
         self.max_retry_times = settings.getint('RETRY_TIMES')
