@@ -330,6 +330,35 @@ This way, you can deploy your project just by using::
 
     scrapy deploy
 
+Local settings
+--------------
+
+Sometimes, while your working on your projects, you may want to override your
+certain settings with certain local settings that shouldn't be deployed to
+Scrapyd, but only used locally to develop and debug your spiders.
+
+One way to deal with this is to have a ``local_settings.py`` at the root of
+your project (where the ``scrapy.cfg`` file resides) and add these lines to the
+end of your project settings::
+
+    try:
+        from local_settings import *
+    except ImportError:
+        pass
+
+``scrapy deploy`` won't deploy anything outside the project module so the
+``local_settings.py`` file won't be deployed.
+
+Here's the directory structure, to illustrate::
+
+    scrapy.cfg
+    local_settings.py
+    myproject/
+        __init__.py
+        settings.py
+        spiders/
+            ...
+
 .. _topics-egg-caveats:
 
 Egg caveats
