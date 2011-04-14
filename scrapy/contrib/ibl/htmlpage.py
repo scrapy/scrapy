@@ -1,8 +1,9 @@
 """
 htmlpage
 
-Container object for representing html pages in the IBL system. This
-encapsulates page related information and prevents parsing multiple times.
+Container objects for representing html pages and their parts in the IBL
+system. This encapsulates page related information and prevents parsing
+multiple times.
 """
 import re
 import hashlib
@@ -26,26 +27,82 @@ def create_page_from_jsonpage(jsonpage, body_key):
     return HtmlPage(url, headers, body, page_id)
 
 class HtmlPage(object):
-    def __init__(self, url=None, headers=None, body=None, page_id=None):
+    """HtmlPage
+
+    This is a parsed HTML page. It contains the page headers, url, raw body and parsed 
+    body.
+
+    The parsed body is a list of HtmlDataFragment objects.
+    """
+    def __init__(self, url=None, headers=None, body=None, page_id=None, encoding='utf-8'):
         assert isinstance(body, unicode), "unicode expected, got: %s" % type(body).__name__
         self.headers = headers or {}
         self.body = body
         self.url = url or u''
+        self.encoding = encoding
         if page_id is None and url:
             self.page_id = hashlib.sha1(url).hexdigest()
         else:
             self.page_id = page_id 
     
+    @classmethod
+    def from_response(cls, response, page_id=None):
+        """Create an HtmlPage from a scrapy response"""
+        return HtmlPage(response.url, response.headers,
+            response.body_as_unicode(), page_id, response.encoding)
 
     def _set_body(self, body):
         self._body = body
         self.parsed_body = list(parse_html(body))
         
-    body = property(lambda x: x._body, _set_body)
+    body = property(lambda x: x._body, _set_body, doc="raw html for the page")
     
+    def subregion(self, start=0, end=None):
+        """HtmlPageRegion constructed from the start and end index (inclusive)
+        into the parsed page
+        """
+        return HtmlPageParsedRegion(self, start, end)
+
     def fragment_data(self, data_fragment):
+        """portion of the body corresponding to the HtmlDataFragment"""
         return self.body[data_fragment.start:data_fragment.end]
+
+class HtmlPageRegion(unicode):
+    """A Region of an HtmlPage that has been extracted
+    """
+    def __new__(cls, htmlpage, data):
+        return unicode.__new__(cls, data)
+
+    def __init__(self, htmlpage, data):
+        """Construct a new HtmlPageRegion object.
+
+        htmlpage is the original page and data is the raw html
+        """
+        self.htmlpage = htmlpage
     
+class HtmlPageParsedRegion(HtmlPageRegion):
+    """A region of an HtmlPage that has been extracted
+
+    This has a parsed_fragments property that contains the parsed html 
+    fragments contained within this region
+    """
+    def __new__(cls, htmlpage, start_index, end_index):
+        text_start = htmlpage.parsed_body[start_index].start
+        text_end = htmlpage.parsed_body[end_index or -1].end
+        text = htmlpage.body[text_start:text_end]
+        return HtmlPageRegion.__new__(cls, htmlpage, text)
+
+    def __init__(self, htmlpage, start_index, end_index):
+        self.htmlpage = htmlpage
+        self.start_index = start_index
+        self.end_index = end_index
+
+    @property
+    def parsed_fragments(self):
+        """HtmlDataFragment or HtmlTag objects for this parsed region"""
+        end = self.end_index + 1 if self.end_index is not None else None
+        return self.htmlpage.parsed_body[self.start_index:end]
+
 class HtmlTagType(object):
     OPEN_TAG = 1
     CLOSE_TAG = 2 
@@ -80,8 +137,8 @@ class HtmlTag(HtmlDataFragment):
     def __repr__(self):
         return str(self)
 
-_ATTR = "((?:[^=/>\s]|/(?!>))+)(?:\s*=(?:\s*\"(.*?)\"|\s*'(.*?)'|([^>\s]+))?)?"
-_TAG = "<(\/?)(\w+(?::\w+)?)((?:\s+" + _ATTR + ")+\s*|\s*)(\/?)>"
+_ATTR = "((?:[^=/<>\s]|/(?!>))+)(?:\s*=(?:\s*\"(.*?)\"|\s*'(.*?)'|([^>\s]+))?)?"
+_TAG = "<(\/?)(\w+(?::\w+)?)((?:\s*" + _ATTR + ")+\s*|\s*)(\/?)>?"
 _DOCTYPE = r"<!DOCTYPE.*?>"
 _SCRIPT = "(<script.*?>)(.*?)(</script.*?>)"
 _COMMENT = "(<!--.*?-->)"

@@ -4,8 +4,9 @@ Extractors for attributes
 import re
 import urlparse
 
-from scrapy.utils.markup import remove_entities
+from scrapy.utils.markup import remove_entities, remove_comments
 from scrapy.utils.url import safe_url_string
+from scrapy.contrib.ibl.htmlpage import HtmlTag, HtmlTagType
 
 #FIXME: the use of "." needs to be localized
 _NUMERIC_ENTITIES = re.compile("&#([0-9]+)(?:;|\s)", re.U)
@@ -22,11 +23,175 @@ _CSS_IMAGERE = re.compile("background(?:-image)?\s*:\s*url\((.*?)\)", re.I)
 _BASE_PATH_RE = "/?(?:[^/]+/)*(?:.+%s)"
 _IMAGE_PATH_RE = re.compile(_BASE_PATH_RE % '\.(?:%s)' % _IMAGES_TYPES, re.I)
 _GENERIC_PATH_RE = re.compile(_BASE_PATH_RE % '', re.I)
+_WS = re.compile("\s+", re.U)
 
-def text(txt):
-    stripped = txt.strip() if txt else None
-    if stripped:
-        return stripped
+# tags to keep (only for attributes with markup)
+_TAGS_TO_KEEP = frozenset(['br', 'p', 'big', 'em', 'small', 'strong', 'sub', 
+    'sup', 'ins', 'del', 'code', 'kbd', 'samp', 'tt', 'var', 'pre', 'listing',
+    'plaintext', 'abbr', 'acronym', 'address', 'bdo', 'blockquote', 'q', 
+    'cite', 'dfn', 'table', 'tr', 'th', 'td', 'tbody', 'ul', 'ol', 'li', 'dl',
+    'dd', 'dt'])
+
+# tag names to be replaced by other tag names (overrides tags_to_keep)
+_TAGS_TO_REPLACE = {
+    'h1': 'strong',
+    'h2': 'strong',
+    'h3': 'strong',
+    'h4': 'strong',
+    'h5': 'strong',
+    'h6': 'strong',
+    'b' : 'strong',
+    'i' : 'em',
+}
+
+# tags whoose content will be completely removed (recursively)
+# (overrides tags_to_keep and tags_to_replace)
+_TAGS_TO_PURGE = ('script', 'img', 'input')
+
+def htmlregion(text):
+    """convenience function to make an html region from text.
+    This is useful for testing
+    """
+    from scrapy.contrib.ibl.htmlpage import HtmlPage
+    return HtmlPage(body=text).subregion()
+
+def notags(region, tag_replace=u' '):
+    """Removes all html tags"""
+    fragments = getattr(region, 'parsed_fragments', None)
+    if fragments is None:
+        return region
+    page = region.htmlpage
+    data = [page.fragment_data(f) for f in fragments if not isinstance(f, HtmlTag)]
+    return tag_replace.join(data)
+
+def text(region):
+    """Converts HTML to text. There is no attempt at formatting other than
+    removing excessive whitespace,
+    
+    For example:
+    >>> t = lambda s: text(htmlregion(s))
+    >>> t(u'<h1>test</h1>')
+    u'test'
+    
+    Leading and trailing whitespace are removed
+    >>> t(u'<h1> test</h1> ')
+    u'test'
+    
+    Comments are removed
+    >>> t(u'test <!-- this is a comment --> me')
+    u'test me'
+    
+    Text between script tags is ignored
+    >>> t(u"scripts are<script>n't</script> ignored")
+    u'scripts are ignored'
+    
+    HTML entities are converted to text
+    >>> t(u"only &pound;42")
+    u'only \\xa342'
+    """
+    chunks = _process_markup(region, 
+        lambda text: remove_entities(text, encoding=region.htmlpage.encoding),
+        lambda tag: u' '
+    )
+    text = u''.join(chunks)
+    return _WS.sub(u' ', text).strip()
+
+def safehtml(region, allowed_tags=_TAGS_TO_KEEP, replace_tags=_TAGS_TO_REPLACE):
+    """Creates an HTML subset, using a whitelist of HTML tags.
+
+    The HTML generated is safe for display on a website,without escaping and
+    should not cause formatting problems.
+    
+    Allowed_tags is a set of tags that are allowed and replace_tags is a mapping of 
+    tags to alternative tags to substitute.
+
+    For example:
+    >>> t = lambda s: safehtml(htmlregion(s))
+    >>> t(u'<strong>test <blink>test</blink></strong>')
+    u'<strong>test test</strong>'
+    
+    Some tags, like script, are completely removed
+    >>> t(u'<script>test </script>test')
+    u'test'
+
+    replace_tags define tags that are converted. By default all headers, bold and indenting
+    are converted to strong and em.
+    >>> t(u'<h2>header</h2> test <b>bold</b> <i>indent</i>')
+    u'<strong>header</strong> test <strong>bold</strong> <em>indent</em>'
+
+    Comments are stripped, but entities are not converted
+    >>> t(u'<!-- comment --> only &pound;42')
+    u'only &pound;42'
+    
+    Paired tags are closed
+    >>> t(u'<p>test')
+    u'<p>test</p>'
+
+    >>> t(u'<p>test <i><br/><b>test</p>')
+    u'<p>test <em><br/><strong>test</strong></em></p>'
+
+    """
+    tagstack = []
+    def _process_tag(tag):
+        tagstr = replace_tags.get(tag.tag, tag.tag)
+        if tagstr not in allowed_tags:
+            return
+        if tag.tag_type == HtmlTagType.OPEN_TAG:
+            tagstack.append(tagstr)
+            return u"<%s>" % tagstr
+        elif tag.tag_type == HtmlTagType.CLOSE_TAG:
+            try:
+                last = tagstack.pop()
+                # common case of matching tag
+                if last == tagstr:
+                    return u"</%s>" % last
+                # output all preceeding tags (if present)
+                revtags = tagstack[::-1]
+                tindex = revtags.index(tagstr)
+                del tagstack[-tindex-1:]
+                return u"</%s></%s>" % (last, u"></".join(revtags[:tindex+1]))
+            except (ValueError, IndexError):
+                # popped from empty stack or failed to find the tag
+                pass 
+        else:
+            assert tag.tag_type == HtmlTagType.UNPAIRED_TAG, "unrecognised tag type"
+            return u"<%s/>" % tag.tag
+    chunks = list(_process_markup(region, lambda text: text, _process_tag)) + \
+        ["</%s>" % t for t in reversed(tagstack)]
+    return u''.join(chunks).strip()
+
+def _process_markup(region, textf, tagf):
+    fragments = getattr(region, 'parsed_fragments', None)
+    if fragments is None:
+        yield textf(region)
+        return
+    fiter = iter(fragments)
+    for fragment in fiter:
+        if isinstance(fragment, HtmlTag):
+            # skip forward to closing script tags
+            tag = fragment.tag
+            if tag in _TAGS_TO_PURGE:
+                # if opening, keep going until closed
+                if fragment.tag_type == HtmlTagType.OPEN_TAG:
+                    for probe in fiter:
+                        if isinstance(probe, HtmlTag) and \
+                            probe.tag == tag and \
+                            probe.tag_type == HtmlTagType.CLOSE_TAG:
+                            break
+            else:
+                output = tagf(fragment)
+                if output:
+                    yield output
+        else:
+            text = region.htmlpage.fragment_data(fragment)
+            text = remove_comments(text)
+            text = textf(text)
+            if text:
+                yield text
+
+def html(pageregion):
+    """A page region is already html, so this is the identity function"""
+    return pageregion
 
 def contains_any_numbers(txt):
     """text that must contain at least one number
@@ -132,6 +297,10 @@ def image_url(txt):
         ['http://s7d5.scene7.com/is/image/wasserstrom/165133?wid=227&hei=227&defaultImage=noimage_wasserstrom']
 
     """
+    imgurl = extract_image_url(txt)
+    return [safe_url_string(remove_entities(url(imgurl)))] if imgurl else None
+
+def extract_image_url(txt):
     txt = url(txt)
     imgurl = None
     if txt:
@@ -153,4 +322,4 @@ def image_url(txt):
             imgurl = urlparse.urlunparse(parsed)
         if not imgurl:
             imgurl = txt
-    return [safe_url_string(remove_entities(url(imgurl)))] if imgurl else None
+    return imgurl

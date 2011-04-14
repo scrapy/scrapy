@@ -8,14 +8,16 @@ import operator
 import copy
 import pprint
 import cStringIO
-from itertools import groupby
+from itertools import groupby, izip, starmap
 
 from numpy import array
 
 from scrapy.contrib.ibl.descriptor import FieldDescriptor
+from scrapy.contrib.ibl.htmlpage import HtmlPageRegion
 from scrapy.contrib.ibl.extraction.similarity import (similar_region,
     longest_unique_subsequence, common_prefix)
-from scrapy.contrib.ibl.extraction.pageobjects import AnnotationTag, LabelledRegion
+from scrapy.contrib.ibl.extraction.pageobjects import (AnnotationTag,
+    PageRegion, FragmentedHtmlPageRegion)
 
 def build_extraction_tree(template, type_descriptor, trace=True):
     """Build a tree of region extractors corresponding to the 
@@ -33,16 +35,14 @@ def build_extraction_tree(template, type_descriptor, trace=True):
 
     return TemplatePageExtractor(template, extractors)
 
-_ID = lambda x: x
+_EXTRACT_HTML = lambda x: x
 _DEFAULT_DESCRIPTOR = FieldDescriptor('none', None)
 
 def _labelled(obj):
     """
     Returns labelled element of the object (extractor or labelled region)
     """
-    if hasattr(obj, "annotation"):
-        return obj.annotation
-    return obj
+    return getattr(obj, 'annotation', obj)
 
 def _compose(f, g):
     """given unary functions f and g, return a function that computes f(g(x))
@@ -75,7 +75,7 @@ class BasicTypeExtractor(object):
         u'<div data-scrapy-annotate="{&quot;annotations&quot;: {&quot;content&quot;: &quot;name&quot;}}">x<b> xx</b></div>',\
         u'<div>a name<b> id-9</b></div>')
     >>> ex = BasicTypeExtractor(template.annotations[0])
-    >>> ex.extract(page, 0, 3, [LabelledRegion(*(1,2))])
+    >>> ex.extract(page, 0, 3, [PageRegion(1, 2)])
     [(u'name', u'a name')]
     """
 
@@ -88,17 +88,15 @@ class BasicTypeExtractor(object):
             descriptor = attribute_descriptors.get(annotation.surrounds_attribute)
             if descriptor:
                 self.content_validate = descriptor.extractor
-                self.allow_markup = descriptor.allow_markup
             else:
-                self.content_validate = _ID
-                self.allow_markup = False
+                self.content_validate = _EXTRACT_HTML
             self.extract = self._extract_content
 
         if annotation.tag_attributes:
             self.tag_data = []
             for (tag_attr, extraction_attr) in annotation.tag_attributes:
                 descriptor = attribute_descriptors.get(extraction_attr)
-                extractf = descriptor.extractor if descriptor else _ID
+                extractf = descriptor.extractor if descriptor else _EXTRACT_HTML
                 self.tag_data.append((extractf, tag_attr, extraction_attr))
 
             self.extract = self._extract_both if \
@@ -109,33 +107,32 @@ class BasicTypeExtractor(object):
             self._extract_attribute(page, start_index, end_index, ignored_regions)
 
     def _extract_content(self, extraction_page, start_index, end_index, ignored_regions=None):
-        # we might want to add opening/closing ul/ol/table if we have the
-        # middle of a region. This would require support in the scrapy
-        # cleansing.
-        complete_data = ""
-        start = start_index
-        end = ignored_regions[0].start_index if ignored_regions else end_index
-        while start is not None:
-            if self.allow_markup:
-                data = extraction_page.html_between_tokens(start, end)
-            else:
-                data = extraction_page.text_between_tokens(start, end)
-            complete_data += data
-            if ignored_regions:
-                start = ignored_regions[0].end_index
-                ignored_regions.pop(0)
-                end = ignored_regions[0].start_index if ignored_regions else end_index
-            else:
-                start = None
-        complete_data = self.content_validate(complete_data)
-        return [(self.annotation.surrounds_attribute, complete_data)] if complete_data else []
+        # extract content between annotation indexes
+        if not ignored_regions:
+            region = extraction_page.htmlpage_region_inside(start_index, end_index)
+        else:
+            # assumes ignored_regions are completely contained within start and end index
+            assert (start_index <= ignored_regions[0].start_index and 
+                end_index >= ignored_regions[-1].end_index)
+            starts = [start_index] + [i.end_index for i in ignored_regions]
+            ends = [i.start_index for i in ignored_regions]
+            if starts[-1] is not None:
+                ends.append(end_index)
+            included_regions = izip(starts, ends)
+            if ends[0] is None:
+                included_regions.next()
+            regions = starmap(extraction_page.htmlpage_region_inside, included_regions)
+            region = FragmentedHtmlPageRegion(extraction_page.htmlpage, list(regions))
+        validated = self.content_validate(region)
+        return [(self.annotation.surrounds_attribute, validated)] if validated else []
     
     def _extract_attribute(self, extraction_page, start_index, end_index, ignored_regions=None):
         data = []
         for (f, ta, ea) in self.tag_data:
-            tag_value = extraction_page.tag_attribute(start_index, ta)
+            tag_value = extraction_page.htmlpage_tag(start_index).attributes.get(ta)
             if tag_value:
-                extracted = f(tag_value)
+                region = HtmlPageRegion(extraction_page.htmlpage, tag_value)
+                extracted = f(region)
                 if extracted is not None:
                     data.append((ea, extracted))
         return data
@@ -178,10 +175,8 @@ class BasicTypeExtractor(object):
     def __str__(self):
         messages = ['BasicTypeExtractor(']
         if self.annotation.surrounds_attribute:
-            messages += [self.annotation.surrounds_attribute, ': ', 
-                    'html content' if self.allow_markup else 'text content',
-            ]
-            if self.content_validate != _ID:
+            messages.append(self.annotation.surrounds_attribute)
+            if self.content_validate != _EXTRACT_HTML:
                 messages += [', extracted with \'', 
                         self.content_validate.__name__, '\'']
         
@@ -190,7 +185,7 @@ class BasicTypeExtractor(object):
                 messages.append(';')
             for (f, ta, ea) in self.tag_data:
                 messages += [ea, ': tag attribute "', ta, '"']
-                if f != _ID:
+                if f != _EXTRACT_HTML:
                     messages += [', validated by ', str(f)]
         messages.append(", template[%s:%s])" % \
                 (self.annotation.start_index, self.annotation.end_index))
@@ -340,7 +335,8 @@ class RecordExtractor(object):
         The region in the page to be extracted from may be specified using
         start_index and end_index
         """
-        ignored_regions = [i if isinstance(i, LabelledRegion) else LabelledRegion(*i) for i in (ignored_regions or [])]
+        if ignored_regions is None:
+            ignored_regions = []
         region_elements = sorted(self.extractors + ignored_regions, key=lambda x: _labelled(x).start_index)
         _, _, attributes = self._doextract(page, region_elements, start_index, 
                 end_index)
@@ -395,7 +391,7 @@ class RecordExtractor(object):
                     s, p, e = similar_region(page.page_tokens, self.template_tokens, \
                               i, start, sindex)
                     if s > 0:
-                        similar_ignored_regions.append(LabelledRegion(*(p, e)))
+                        similar_ignored_regions.append(PageRegion(p, e))
                         start = e or start
                 extracted_data = first_region.extract(page, pindex, sindex, similar_ignored_regions)
                 if extracted_data:
@@ -493,12 +489,12 @@ class TraceExtractor(object):
             for t in template.page_tokens[tend:tend+5]])
     
     def summarize_trace(self, page, start, end, ret):
-        text_start = page.token_follow_indexes[start]
-        text_end = page.token_start_indexes[end or -1]
+        text_start = page.htmlpage.parsed_body[page.token_page_indexes[start]].start
+        text_end = page.htmlpage.parsed_body[page.token_page_indexes[end or -1]].end
         page_snippet = "(...%s)%s(%s...)" % (
-                page.text[text_start-50:text_start].replace('\n', ' '), 
-                page.text[text_start:text_end], 
-                page.text[text_end:text_end+50].replace('\n', ' '))
+                page.htmlpage.body[text_start-50:text_start].replace('\n', ' '), 
+                page.htmlpage.body[text_start:text_end], 
+                page.htmlpage.body[text_end:text_end+50].replace('\n', ' '))
         pre_summary = "\nstart %s page[%s:%s]\n" % (self.traced.__class__.__name__, start, end)
         post_summary = """
 %s page[%s:%s] 
@@ -572,25 +568,26 @@ class TemplatePageExtractor(object):
 _tokenize = re.compile(r'\w+|[^\w\s]+', re.UNICODE | re.MULTILINE | re.DOTALL).findall
 
 class TextRegionDataExtractor(object):
-    """Data Extractor for extracting text fragments from within a larger
-    body of text. It extracts based on the longest unique prefix and suffix.
+    """Data Extractor for extracting text fragments from an annotation page
+    fragment or string. It extracts based on the longest unique prefix and
+    suffix.
 
     for example:
     >>> extractor = TextRegionDataExtractor('designed by ', '.')
-    >>> extractor.extract("by Marc Newson.")
+    >>> extractor.extract_text("by Marc Newson.")
     'Marc Newson'
 
     Both prefix and suffix are optional:
     >>> extractor = TextRegionDataExtractor('designed by ')
-    >>> extractor.extract("by Marc Newson.")
+    >>> extractor.extract_text("by Marc Newson.")
     'Marc Newson.'
     >>> extractor = TextRegionDataExtractor(suffix='.')
-    >>> extractor.extract("by Marc Newson.")
+    >>> extractor.extract_text("by Marc Newson.")
     'by Marc Newson'
 
     It requires a minimum match of at least one word or punctuation character:
     >>> extractor = TextRegionDataExtractor('designed by')
-    >>> extractor.extract("y Marc Newson.") is None
+    >>> extractor.extract_text("y Marc Newson.") is None
     True
     """
     def __init__(self, prefix=None, suffix=None):
@@ -609,8 +606,13 @@ class TextRegionDataExtractor(object):
         tokens = _tokenize(matchstring or '')
         return len(tokens[0]) if tokens else 0
 
-    def extract(self, text):
-        """attempt to extract a substring from the text"""
+    def extract(self, region):
+        """Extract a region from the region passed"""
+        text = self.extract_text(region)
+        return HtmlPageRegion(region.htmlpage, text) if text else None
+
+    def extract_text(self, text):
+        """Extract a substring from the text"""
         pref_index = 0
         if self.minprefix > 0:
             rev_idx, plen = longest_unique_subsequence(text[::-1], self.prefix)
@@ -623,5 +625,3 @@ class TextRegionDataExtractor(object):
         if slen < self.minsuffix:
             return None
         return text[pref_index:pref_index + sidx]
-
-   

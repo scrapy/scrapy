@@ -4,16 +4,14 @@ Page objects
 This module contains objects representing pages and parts of pages (e.g. tokens
 and annotations) used in the instance based learning algorithm.
 """
+from itertools import chain
 from numpy import array, ndarray
 
-from scrapy.contrib.ibl.htmlpage import HtmlTagType
+from scrapy.contrib.ibl.htmlpage import HtmlTagType, HtmlPageRegion
 
-class TokenType(object):
+class TokenType(HtmlTagType):
     """constants for token types"""
     WORD = 0
-    OPEN_TAG = HtmlTagType.OPEN_TAG
-    CLOSE_TAG = HtmlTagType.CLOSE_TAG
-    NON_PAIRED_TAG = HtmlTagType.UNPAIRED_TAG
 
 class TokenDict(object):
     """Mapping from parse tokens to integers
@@ -68,6 +66,36 @@ class TokenDict(object):
         templates = ["%s", "<%s>", "</%s>", "<%s/>"]
         return templates[tid >> 24] % self.find_token(tid)
 
+class PageRegion(object):
+    """A region in a page, defined by a start and end index"""
+
+    __slots__ = ('start_index', 'end_index')
+    
+    def __init__(self, start, end):
+        self.start_index = start
+        self.end_index = end
+        
+    def __str__(self):
+        return "%s(%s, %s)" % (self.__class__.__name__, self.start_index,
+                self.end_index)
+    
+    def __repr__(self):
+        return str(self)
+
+class FragmentedHtmlPageRegion(HtmlPageRegion):
+    """An HtmlPageRegion consisting of possibly non-contiguous sub-regions"""
+    def __new__(cls, htmlpage, regions):
+        text = u''.join(regions)
+        return HtmlPageRegion.__new__(cls, htmlpage, text)
+
+    def __init__(self, htmlpage, regions):
+        self.htmlpage = htmlpage
+        self.regions = regions
+    
+    @property
+    def parsed_fragments(self):
+        return chain(*(r.parsed_fragments for r in self.regions))
+
 class Page(object):
     """Basic representation of a page. This consists of a reference to a
     dictionary of tokens and an array of raw token ids
@@ -92,7 +120,8 @@ class TemplatePage(Page):
         annotations = sorted(annotations, key=lambda x: x.end_index, reverse=True)
         self.annotations = sorted(annotations, key=lambda x: x.start_index)
         self.id = template_id
-        self.ignored_regions = ignored_regions or []
+        self.ignored_regions = [i if isinstance(i, PageRegion) else PageRegion(*i) \
+            for i in (ignored_regions or [])]
         self.extra_required_attrs = set(extra_required or [])
 
     def __str__(self):
@@ -107,66 +136,53 @@ class ExtractionPage(Page):
     """Parsed data belonging to a web page upon which we wish to perform
     extraction.
     """
-    __slots__ = ('text', 
-            'token_start_indexes', # index in text of the start of a token
-            'token_follow_indexes', # index in text of data following token
-            'tag_attributes'        # a map from token index to tag attributes
-        )
+    __slots__ = ('htmlpage', 'token_page_indexes')
 
-    def __init__(self, text, token_dict, page_tokens, token_start_indexes, 
-            token_follow_indexes, tag_attributes):
+    def __init__(self, htmlpage, token_dict, page_tokens, token_page_indexes):
+        """Construct a new ExtractionPage
+
+        Arguments:
+            `htmlpage`: The source HtmlPage
+            `token_dict`: Token Dictionary used for tokenization
+            `page_tokens': array of page tokens for matching
+            `token_page_indexes`: indexes of each token in the parsed htmlpage
+        """
         Page.__init__(self, token_dict, page_tokens)
-        self.text = text
-        self.token_start_indexes = token_start_indexes
-        self.token_follow_indexes = token_follow_indexes
-        self.tag_attributes = tag_attributes
-
-    def token_html(self, token_index):
-        """The raw html for a page token at the given index in the page_tokens
-        list
-        """
-        text_start = self.token_start_indexes[token_index]
-        text_end = self.token_follow_indexes[token_index]
-        return self.text[text_start:text_end]
-
-    def html_between_tokens(self, start_token_index, end_token_index):
-        """The raw html between the tokens at the specified indexes in the 
-        page_tokens list
-
-        This assumes start_token_index <= end_token_index
-        """
-        text_start = self.token_follow_indexes[start_token_index]
-        text_end = self.token_start_indexes[end_token_index]
-        return self.text[text_start:text_end]
+        self.htmlpage = htmlpage
+        self.token_page_indexes = token_page_indexes
     
-    def text_between_tokens(self, start_token_index, end_token_index, 
-            tag_replacement=u' '):
-        """The text between the  the tokens at the specified indexes in the 
-        page_tokens list. Tags are replaced by tag_replacement (default one space 
-        character)
-        """
-        return tag_replacement.join([self.text[
-            self.token_follow_indexes[i]:self.token_start_indexes[i+1]] \
-            for i in xrange(start_token_index, end_token_index)])
+    def htmlpage_region(self, start_token_index, end_token_index):
+        """The region in the HtmlPage corresonding to the area defined by
+        the start_token_index and the end_token_index
 
-    def tag_attribute(self, token_index, attribute):
-        """The value of a tag attribute. The tag is identified by its 
-        corresponding token index.
-
-        If the tag or attribute is not present, None is returned
+        This includes the tokens at the specified indexes
         """
-        return self.tag_attributes.get(token_index, {}).get(attribute) 
+        start = self.token_page_indexes[start_token_index]
+        end = self.token_page_indexes[end_token_index]
+        return self.htmlpage.subregion(start, end)
+
+    def htmlpage_region_inside(self, start_token_index, end_token_index):
+        """The region in the HtmlPage corresonding to the area between 
+        the start_token_index and the end_token_index. 
+
+        This excludes the tokens at the specified indexes
+        """
+        start = self.token_page_indexes[start_token_index] + 1
+        end = self.token_page_indexes[end_token_index] - 1
+        return self.htmlpage.subregion(start, end)
     
+    def htmlpage_tag(self, token_index):
+        """The HtmlPage tag at corresponding to the token at token_index"""
+        return self.htmlpage.parsed_body[self.token_page_indexes[token_index]]
+
     def __str__(self):
         summary = []
-        for (token, start, follow) in zip(self.page_tokens, self.token_start_indexes, 
-                self.token_follow_indexes):
-            text = "%s %s-%s (%s)" % (self.token_dict.find_token(token), start, follow, 
-                    self.text[start:follow])
+        for token, tindex in zip(self.page_tokens, self.token_page_indexes):
+            text = "%s page[%s]: %s" % (self.token_dict.find_token(token), 
+                tindex, self.htmlpage.parsed_body[tindex])
             summary.append(text)
         return "ExtractionPage\n==============\nTokens: %s\n\nRaw text: %s\n\n" \
-                "Tag attributes: %s\n" % ('\n'.join(summary), self.text, 
-                        self.tag_attributes)
+                % ('\n'.join(summary), self.htmlpage.body)
 
 class AnnotationText(object):
     __slots__ = ('start_text', 'follow_text')
@@ -179,7 +195,8 @@ class AnnotationText(object):
         return "AnnotationText(%s..%s)" % \
                 (repr(self.start_text), repr(self.follow_text))
 
-class AnnotationTag(object):
+
+class AnnotationTag(PageRegion):
     """A tag that annotates part of the document
 
     It has the following properties:
@@ -197,8 +214,7 @@ class AnnotationTag(object):
     
     def __init__(self, start_index, end_index, surrounds_attribute=None, 
             annotation_text=None, tag_attributes=None, variant_id=None):
-        self.start_index = start_index
-        self.end_index = end_index
+        PageRegion.__init__(self, start_index, end_index)
         self.surrounds_attribute = surrounds_attribute
         self.annotation_text = annotation_text
         self.tag_attributes = tag_attributes or []
@@ -210,19 +226,6 @@ class AnnotationTag(object):
                 ["%s=%s" % (s, getattr(self, s)) \
                 for s in self.__slots__ if getattr(self, s)])
 
-    def __repr__(self):
-        return str(self)
-
-class LabelledRegion(object):
-    __slots__ = ('start_index', 'end_index')
-    
-    def __init__(self, start, end):
-        self.start_index = start
-        self.end_index = end
-        
-    def __str__(self):
-        return "LabelledRegion (%s, %s)" % (self.start_index, self.end_index)
-    
     def __repr__(self):
         return str(self)
 
