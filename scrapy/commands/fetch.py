@@ -1,10 +1,11 @@
 import pprint
 
+from w3lib.url import is_url
+
 from scrapy import log
 from scrapy.command import ScrapyCommand
 from scrapy.http import Request
 from scrapy.spider import BaseSpider
-from scrapy.utils.url import is_url
 from scrapy.exceptions import UsageError
 
 class Command(ScrapyCommand):

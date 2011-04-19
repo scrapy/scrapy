@@ -4,11 +4,13 @@ SGMLParser-based Link extractors
 
 import re
 
+from w3lib.url import safe_url_string, urljoin_rfc
+
 from scrapy.selector import HtmlXPathSelector
 from scrapy.link import Link
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import FixedSGMLParser, unique as unique_list, str_to_unicode
-from scrapy.utils.url import safe_url_string, urljoin_rfc, canonicalize_url, url_is_from_any_domain
+from scrapy.utils.url import canonicalize_url, url_is_from_any_domain
 from scrapy.utils.response import get_base_url
 
 class BaseSgmlLinkExtractor(FixedSGMLParser):

@@ -8,9 +8,10 @@ import weakref
 from base64 import urlsafe_b64encode
 from urlparse import urlunparse
 
+from w3lib.http import basic_auth_header
+
 from scrapy.utils.url import canonicalize_url
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.http import basic_auth_header
 
 
 _fingerprint_cache = weakref.WeakKeyDictionary()

@@ -12,14 +12,14 @@ from ftplib import FTP
 from shutil import copyfileobj
 
 from zope.interface import Interface, implements
-
 from twisted.internet import defer, threads
+from w3lib.url import file_uri_to_path
+
 from scrapy import log, signals
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.utils.ftp import ftp_makedirs_cwd
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
-from scrapy.utils.url import file_uri_to_path
 from scrapy.conf import settings
 
 

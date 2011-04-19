@@ -3,9 +3,9 @@ This module implements the HtmlImageLinkExtractor for extracting
 image links only.
 """
 
-
+from w3lib.url import urljoin_rfc
 from scrapy.link import Link
-from scrapy.utils.url import canonicalize_url, urljoin_rfc
+from scrapy.utils.url import canonicalize_url
 from scrapy.utils.python import unicode_to_str, flatten
 from scrapy.selector.libxml2sel import XPathSelectorList, HtmlXPathSelector
 
