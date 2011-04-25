@@ -8,9 +8,10 @@ import weakref
 from base64 import urlsafe_b64encode
 from urlparse import urlunparse
 
+from w3lib.http import basic_auth_header
+
 from scrapy.utils.url import canonicalize_url
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.http import basic_auth_header
 
 
 _fingerprint_cache = weakref.WeakKeyDictionary()
@@ -63,13 +64,6 @@ def request_authenticate(request, username, password):
     authentication mechanism (RFC 2617) and the given username and password
     """
     request.headers['Authorization'] = basic_auth_header(username, password)
-
-def request_info(request):
-    """Return a short string with request info including method, url and
-    fingeprint. Mainly used for debugging
-    """
-    fp = request_fingerprint(request)
-    return "<Request: %s %s (%s..)>" % (request.method, request.url, fp[:8])
 
 def request_httprepr(request):
     """Return the raw HTTP representation (as string) of the given request.

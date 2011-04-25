@@ -143,11 +143,20 @@ class XmlItemExporter(BaseItemExporter):
 
 class CsvItemExporter(BaseItemExporter):
 
-    def __init__(self, file, include_headers_line=True, **kwargs):
+    def __init__(self, file, include_headers_line=True, join_multivalued=',', **kwargs):
         self._configure(kwargs, dont_fail=True)
         self.include_headers_line = include_headers_line
         self.csv_writer = csv.writer(file, **kwargs)
         self._headers_not_written = True
+        self._join_multivalued = join_multivalued
+
+    def _to_str_if_unicode(self, value):
+        if isinstance(value, (list, tuple)):
+            try:
+                value = self._join_multivalued.join(value)
+            except TypeError: # list in value may not contain strings
+                pass
+        return super(CsvItemExporter, self)._to_str_if_unicode(value)
 
     def export_item(self, item):
         if self._headers_not_written:

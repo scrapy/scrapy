@@ -1,3 +1,4 @@
+import os
 from collections import defaultdict
 from scrapy.xlib.pydispatch import dispatcher
 
@@ -28,7 +29,7 @@ class CookiesMiddleware(object):
         # set Cookie header
         request.headers.pop('Cookie', None)
         jar.add_cookie_header(request)
-        self._debug_cookie(request)
+        self._debug_cookie(request, spider)
 
     def process_response(self, request, response, spider):
         if 'dont_merge_cookies' in request.meta:
@@ -37,31 +38,28 @@ class CookiesMiddleware(object):
         # extract cookies from Set-Cookie and drop invalid/expired cookies
         jar = self.jars[spider]
         jar.extract_cookies(response, request)
-        self._debug_set_cookie(response)
+        self._debug_set_cookie(response, spider)
 
         return response
 
     def spider_closed(self, spider):
         self.jars.pop(spider, None)
 
-    def _debug_cookie(self, request):
-        """log Cookie header for request"""
+    def _debug_cookie(self, request, spider):
         if self.debug:
-            c = request.headers.get('Cookie')
-            c = c and [p.split('=')[0] for p in c.split(';')]
-            log.msg('Cookie: %s for %s' % (c, request.url), level=log.DEBUG)
+            cl = request.headers.getlist('Cookie')
+            if cl:
+                msg = "Sending cookies to: %s" % request + os.linesep
+                msg += os.linesep.join("Cookie: %s" % c for c in cl)
+                log.msg(msg, spider=spider, level=log.DEBUG)
 
-    def _debug_set_cookie(self, response):
-        """log Set-Cookies headers but exclude cookie values"""
+    def _debug_set_cookie(self, response, spider):
         if self.debug:
             cl = response.headers.getlist('Set-Cookie')
-            res = []
-            for c in cl:
-                kv, tail = c.split(';', 1)
-                k = kv.split('=', 1)[0]
-                res.append('%s %s' % (k, tail))
-            log.msg('Set-Cookie: %s from %s' % (res, response.url))
-
+            if cl:
+                msg = "Received cookies from: %s" % response + os.linesep
+                msg += os.linesep.join("Set-Cookie: %s" % c for c in cl)
+                log.msg(msg, spider=spider, level=log.DEBUG)
 
     def _get_request_cookies(self, jar, request):
         headers = {'Set-Cookie': ['%s=%s;' % (k, v) for k, v in request.cookies.iteritems()]}

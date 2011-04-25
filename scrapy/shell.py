@@ -7,6 +7,7 @@ See documentation in docs/topics/shell.rst
 import signal
 
 from twisted.internet import reactor, threads
+from w3lib.url import any_to_uri
 
 from scrapy.item import BaseItem
 from scrapy.spider import BaseSpider
@@ -14,7 +15,6 @@ from scrapy.selector import XPathSelector, XmlXPathSelector, HtmlXPathSelector
 from scrapy.utils.spider import create_spider_for_request
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
-from scrapy.utils.url import any_to_uri
 from scrapy.utils.console import start_python_console
 from scrapy.settings import Settings
 from scrapy.http import Request, Response, HtmlResponse, XmlResponse

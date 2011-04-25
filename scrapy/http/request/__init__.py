@@ -7,8 +7,9 @@ See documentation in docs/topics/request-response.rst
 
 import copy
 
+from w3lib.url import safe_url_string
+
 from scrapy.http.headers import Headers
-from scrapy.utils.url import safe_url_string
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.decorator import deprecated
 from scrapy.http.common import deprecated_setter

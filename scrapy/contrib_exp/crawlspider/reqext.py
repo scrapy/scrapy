@@ -1,9 +1,10 @@
 """Request Extractors"""
+from w3lib.url import safe_url_string, urljoin_rfc
+
 from scrapy.http import Request
 from scrapy.selector import HtmlXPathSelector
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import FixedSGMLParser, str_to_unicode
-from scrapy.utils.url import safe_url_string, urljoin_rfc
 
 from itertools import ifilter
 

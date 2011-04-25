@@ -1,10 +1,9 @@
-import sys
+from w3lib.url import is_url
 
 from scrapy import log
 from scrapy.command import ScrapyCommand
 from scrapy.conf import settings
 from scrapy.http import Request
-from scrapy.utils.url import is_url
 from scrapy.utils.conf import arglist_to_dict
 from scrapy.exceptions import UsageError
 
