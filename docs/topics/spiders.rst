@@ -239,6 +239,11 @@ Crawling rules
    argument and must return a list containing :class:`~scrapy.item.Item` and/or
    :class:`~scrapy.http.Request` objects (or any subclass of them).
 
+   .. warning:: When writing crawl spider rules, avoid using ``parse`` as
+       callback, since the :class:`CrawlSpider` uses the ``parse`` method
+       itself to implement its logic. So if you override the ``parse`` method,
+       the crawl spider will no longer work.
+
    ``cb_kwargs`` is a dict containing the keyword arguments to be passed to the
    callback function
 
