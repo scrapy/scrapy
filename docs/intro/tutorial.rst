@@ -36,13 +36,13 @@ Creating a project
 Before you start scraping, you will have set up a new Scrapy project. Enter a
 directory where you'd like to store your code and then run::
 
-   scrapy startproject dmoz
+   scrapy startproject tutorial
 
-This will create a ``dmoz`` directory with the following contents::
+This will create a ``tutorial`` directory with the following contents::
 
-   dmoz/
+   tutorial/
        scrapy.cfg
-       dmoz/
+       tutorial/
            __init__.py
            items.py
            pipelines.py
@@ -54,12 +54,12 @@ This will create a ``dmoz`` directory with the following contents::
 These are basically: 
 
 * ``scrapy.cfg``: the project configuration file
-* ``dmoz/``: the project's python module, you'll later import your code from
+* ``tutorial/``: the project's python module, you'll later import your code from
   here.
-* ``dmoz/items.py``: the project's items file.
-* ``dmoz/pipelines.py``: the project's pipelines file.
-* ``dmoz/settings.py``: the project's settings file.
-* ``dmoz/spiders/``: a directory where you'll later put your spiders.
+* ``tutorial/items.py``: the project's items file.
+* ``tutorial/pipelines.py``: the project's pipelines file.
+* ``tutorial/settings.py``: the project's settings file.
+* ``tutorial/spiders/``: a directory where you'll later put your spiders.
 
 Defining our Item
 =================
@@ -77,8 +77,6 @@ We begin by modeling the item that we will use to hold the sites data obtained
 from dmoz.org, as we want to capture the name, url and description of the
 sites, we define fields for each of these three attributes. To do that, we edit
 items.py, found in the dmoz directory. Our Item class looks like this::
-
-    # Define here the models for your scraped items
 
     from scrapy.item import Item, Field
 
@@ -128,7 +126,7 @@ This is the code for our first Spider; save it in a file named
    from scrapy.spider import BaseSpider
 
    class DmozSpider(BaseSpider):
-       name = "dmoz.org"
+       name = "dmoz"
        allowed_domains = ["dmoz.org"]
        start_urls = [
            "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
@@ -144,27 +142,26 @@ Crawling
 
 To put our spider to work, go to the project's top level directory and run::
 
-   scrapy crawl dmoz.org
+   scrapy crawl dmoz
 
-The ``crawl dmoz.org`` command runs the spider for the ``dmoz.org`` domain. You
+The ``crawl dmoz`` command runs the spider for the ``dmoz.org`` domain. You
 will get an output similar to this::
 
    2008-08-20 03:51:13-0300 [scrapy] INFO: Started project: dmoz
-   2008-08-20 03:51:13-0300 [dmoz] INFO: Enabled extensions: ...
-   2008-08-20 03:51:13-0300 [dmoz] INFO: Enabled scheduler middlewares: ...
-   2008-08-20 03:51:13-0300 [dmoz] INFO: Enabled downloader middlewares: ...
-   2008-08-20 03:51:13-0300 [dmoz] INFO: Enabled spider middlewares: ...
-   2008-08-20 03:51:13-0300 [dmoz] INFO: Enabled item pipelines: ...
-   2008-08-20 03:51:14-0300 [dmoz.org] INFO: Spider opened
-   2008-08-20 03:51:14-0300 [dmoz.org] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/> (referer: <None>)
-   2008-08-20 03:51:14-0300 [dmoz.org] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> (referer: <None>)
-   2008-08-20 03:51:14-0300 [dmoz.org] INFO: Spider closed (finished)
+   2008-08-20 03:51:13-0300 [tutorial] INFO: Enabled extensions: ...
+   2008-08-20 03:51:13-0300 [tutorial] INFO: Enabled scheduler middlewares: ...
+   2008-08-20 03:51:13-0300 [tutorial] INFO: Enabled downloader middlewares: ...
+   2008-08-20 03:51:13-0300 [tutorial] INFO: Enabled spider middlewares: ...
+   2008-08-20 03:51:13-0300 [tutorial] INFO: Enabled item pipelines: ...
+   2008-08-20 03:51:14-0300 [dmoz] INFO: Spider opened
+   2008-08-20 03:51:14-0300 [dmoz] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/> (referer: <None>)
+   2008-08-20 03:51:14-0300 [dmoz] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> (referer: <None>)
+   2008-08-20 03:51:14-0300 [dmoz] INFO: Spider closed (finished)
 
-Pay attention to the lines containing ``[dmoz.org]``, which corresponds to
-our spider (identified by the domain ``"dmoz.org"``). You can see a log line
-for each URL defined in ``start_urls``. Because these URLs are the starting
-ones, they have no referrers, which is shown at the end of the log line,
-where it says ``(referer: <None>)``.
+Pay attention to the lines containing ``[dmoz]``, which corresponds to our
+spider. You can see a log line for each URL defined in ``start_urls``. Because
+these URLs are the starting ones, they have no referrers, which is shown at the
+end of the log line, where it says ``(referer: <None>)``.
 
 But more interesting, as our ``parse`` method instructs, two files have been
 created: *Books* and *Resources*, with the content of both URLs.
@@ -342,7 +339,7 @@ Let's add this code to our spider::
    from scrapy.selector import HtmlXPathSelector
 
    class DmozSpider(BaseSpider):
-       name = "dmoz.org"
+       name = "dmoz"
        allowed_domains = ["dmoz.org"]
        start_urls = [
            "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
@@ -361,7 +358,7 @@ Let's add this code to our spider::
 Now try crawling the dmoz.org domain again and you'll see sites being printed
 in your output, run::
 
-   scrapy crawl dmoz.org
+   scrapy crawl dmoz
 
 Using our item
 --------------
@@ -382,10 +379,10 @@ scraped so far, the final code for our Spider would be like this::
    from scrapy.spider import BaseSpider
    from scrapy.selector import HtmlXPathSelector
 
-   from dmoz.items import DmozItem
+   from tutorial.items import DmozItem
 
    class DmozSpider(BaseSpider):
-      name = "dmoz.org"
+      name = "dmoz"
       allowed_domains = ["dmoz.org"]
       start_urls = [
           "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
@@ -409,8 +406,8 @@ scraped so far, the final code for our Spider would be like this::
 
 Now doing a crawl on the dmoz.org domain yields ``DmozItem``'s::
 
-   [dmoz.org] DEBUG: Scraped DmozItem(desc=[u' - By David Mertz; Addison Wesley. Book in progress, full text, ASCII format. Asks for feedback. [author website, Gnosis Software, Inc.]\n'], link=[u'http://gnosis.cx/TPiP/'], title=[u'Text Processing in Python']) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
-   [dmoz.org] DEBUG: Scraped DmozItem(desc=[u' - By Sean McGrath; Prentice Hall PTR, 2000, ISBN 0130211192, has CD-ROM. Methods to build XML applications fast, Python tutorial, DOM and SAX, new Pyxie open source XML processing library. [Prentice Hall PTR]\n'], link=[u'http://www.informit.com/store/product.aspx?isbn=0130211192'], title=[u'XML Processing with Python']) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
+   [dmoz] DEBUG: Scraped DmozItem(desc=[u' - By David Mertz; Addison Wesley. Book in progress, full text, ASCII format. Asks for feedback. [author website, Gnosis Software, Inc.]\n'], link=[u'http://gnosis.cx/TPiP/'], title=[u'Text Processing in Python']) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
+   [dmoz] DEBUG: Scraped DmozItem(desc=[u' - By Sean McGrath; Prentice Hall PTR, 2000, ISBN 0130211192, has CD-ROM. Methods to build XML applications fast, Python tutorial, DOM and SAX, new Pyxie open source XML processing library. [Prentice Hall PTR]\n'], link=[u'http://www.informit.com/store/product.aspx?isbn=0130211192'], title=[u'XML Processing with Python']) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
 
 Storing the scraped data
 ========================
@@ -418,7 +415,7 @@ Storing the scraped data
 The simplest way to store the scraped data is by using the :ref:`Feed exports
 <topics-feed-exports>`, with the following command::
 
-    scrapy crawl dmoz.org --set FEED_URI=items.json --set FEED_FORMAT=json
+    scrapy crawl dmoz --set FEED_URI=items.json --set FEED_FORMAT=json
 
 That will generate a ``items.json`` file containing all scraped items,
 serialized in `JSON`_.
@@ -427,7 +424,7 @@ In small projects (like the one in this tutorial), that should be enough.
 However, if you want to perform more complex things with the scraped items, you
 can write an :ref:`Item Pipeline <topics-item-pipeline>`. As with Items, a
 placeholder file for Item Pipelines has been set up for you when the project is
-created, in ``dmoz/pipelines.py``. Though you don't need to implement any item
+created, in ``tutorial/pipelines.py``. Though you don't need to implement any item
 pipeline if you just want to store the scraped items.
 
 Next steps
