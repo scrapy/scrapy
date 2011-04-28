@@ -376,8 +376,8 @@ standard dict syntax like::
    'Example title'
 
 Spiders are expected to return their scraped data inside
-:class:`~scrapy.item.Item` objects, so to actually return the data we've
-scraped so far, the code for our Spider should be like this::
+:class:`~scrapy.item.Item` objects. So, in order to returnthe data we've
+scraped so far, the final code for our Spider would be like this::
 
    from scrapy.spider import BaseSpider
    from scrapy.selector import HtmlXPathSelector
@@ -404,6 +404,9 @@ scraped so far, the code for our Spider should be like this::
               items.append(item)
           return items
 
+.. note:: You can find a fully-functional variant of this spider in the dirbot_
+   project available at https://github.com/scrapy/dirbot
+
 Now doing a crawl on the dmoz.org domain yields ``DmozItem``'s::
 
    [dmoz.org] DEBUG: Scraped DmozItem(desc=[u' - By David Mertz; Addison Wesley. Book in progress, full text, ASCII format. Asks for feedback. [author website, Gnosis Software, Inc.]\n'], link=[u'http://gnosis.cx/TPiP/'], title=[u'Text Processing in Python']) in <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
@@ -427,11 +430,13 @@ placeholder file for Item Pipelines has been set up for you when the project is
 created, in ``dmoz/pipelines.py``. Though you don't need to implement any item
 pipeline if you just want to store the scraped items.
 
-Finale
-======
+Next steps
+==========
            
 This tutorial covers only the basics of Scrapy, but there's a lot of other
-features not mentioned here. We recommend you continue reading the section
-:ref:`topics-index`.
+features not mentioned here. We recommend you continue by playing with an
+example project (see :ref:`intro-examples`), and then continue with the section
+:ref:`section-basics`.
 
 .. _JSON: http://en.wikipedia.org/wiki/JSON
+.. _dirbot: https://github.com/scrapy/dirbot

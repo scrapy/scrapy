@@ -33,6 +33,7 @@ First steps
    intro/overview
    intro/install
    intro/tutorial
+   intro/examples
 
 :doc:`intro/overview`
     Understand what Scrapy is and how it can help you.
@@ -43,9 +44,13 @@ First steps
 :doc:`intro/tutorial`
     Write your first Scrapy project.
 
+:doc:`intro/examples`
+    Learn more by playing with a pre-made Scrapy project.
 
-Scraping basics
-===============
+.. _section-basics:
+
+Basic concepts
+==============
 
 .. toctree::
    :hidden:
