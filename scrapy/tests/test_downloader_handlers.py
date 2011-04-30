@@ -8,6 +8,7 @@ from twisted.web import server, static, util, resource
 from twisted.web.test.test_webclient import ForeverTakingResource, \
         NoLengthResource, HostHeaderResource, \
         PayloadResource, BrokenDownloadResource
+from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.webclient import PartialDownloadError
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
@@ -15,7 +16,6 @@ from scrapy.core.downloader.handlers.http import HttpDownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
-from scrapy.utils.url import path_to_file_uri
 from scrapy import optional_features
 
 

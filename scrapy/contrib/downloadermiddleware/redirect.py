@@ -1,6 +1,7 @@
+from w3lib.url import urljoin_rfc
+
 from scrapy import log
 from scrapy.http import HtmlResponse
-from scrapy.utils.url import urljoin_rfc
 from scrapy.utils.response import get_meta_refresh
 from scrapy.exceptions import IgnoreRequest
 from scrapy.conf import settings

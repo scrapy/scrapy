@@ -5,13 +5,14 @@ from os.path import join, exists
 from time import time
 import cPickle as pickle
 
+from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
+
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy import signals
 from scrapy.http import Headers
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.core.downloader.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
-from scrapy.utils.http import headers_dict_to_raw, headers_raw_to_dict
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.project import data_path

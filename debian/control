@@ -2,13 +2,13 @@ Source: scrapy-SUFFIX
 Section: python
 Priority: optional
 Maintainer: Insophia Team <info@insophia.com> 
-Build-Depends: debhelper (>= 7.0.50), python (>=2.5), python-twisted
+Build-Depends: debhelper (>= 7.0.50), python (>=2.6), python-twisted, python-w3lib
 Standards-Version: 3.8.4
 Homepage: http://scrapy.org/
 
 Package: scrapy-SUFFIX
 Architecture: all
-Depends: ${python:Depends}, python-libxml2, python-twisted, python-openssl
+Depends: ${python:Depends}, python-libxml2, python-twisted, python-openssl, python-w3lib
 Conflicts: python-scrapy, scrapy, scrapy-0.11
 Provides: python-scrapy, scrapy
 Description: Python web crawling and scraping framework

@@ -155,6 +155,7 @@ HTTPCACHE_STORAGE = 'scrapy.contrib.downloadermiddleware.httpcache.FilesystemCac
 HTTPCACHE_EXPIRATION_SECS = 0
 HTTPCACHE_IGNORE_HTTP_CODES = []
 HTTPCACHE_IGNORE_SCHEMES = ['file']
+HTTPCACHE_DBM_MODULE = 'anydbm'
 
 ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'
 

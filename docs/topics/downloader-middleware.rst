@@ -158,6 +158,8 @@ middleware, see the :ref:`downloader middleware usage guide
 For a list of the components enabled by default (and their orders) see the
 :setting:`DOWNLOADER_MIDDLEWARES_BASE` setting.
 
+.. _cookies-mw:
+
 CookiesMiddleware
 -----------------
 
@@ -166,7 +168,36 @@ CookiesMiddleware
 
 .. class:: CookiesMiddleware
 
-   This middleware enables working with sites that need cookies.
+   This middleware enables working with sites that need cookies. It keeps track
+   of merging cookies sent by servers, so that they're send in future requests
+   for that spider, just like a web browser would do.
+
+The following settings can be used to configure the cookie middleware:
+
+* :setting:`COOKIES_DEBUG`
+
+.. setting:: COOKIES_DEBUG
+
+COOKIES_DEBUG
+~~~~~~~~~~~~~
+
+Default: ``False``
+
+If enabled, Scrapy will log all cookies sent in requests (ie. ``Cookie``
+header) and all cookies received in responses (ie. ``Set-Cookie`` header).
+
+Here's an example of a log with :setting:`COOKIES_DEBUG` enabled::
+
+    2011-04-06 14:35:10-0300 [diningcity] INFO: Spider opened
+    2011-04-06 14:35:10-0300 [diningcity] DEBUG: Sending cookies to: <GET http://www.diningcity.com/netherlands/index.html>
+            Cookie: clientlanguage_nl=en_EN
+    2011-04-06 14:35:14-0300 [diningcity] DEBUG: Received cookies from: <200 http://www.diningcity.com/netherlands/index.html>
+            Set-Cookie: JSESSIONID=B~FA4DC0C496C8762AE4F1A620EAB34F38; Path=/
+            Set-Cookie: ip_isocode=US
+            Set-Cookie: clientlanguage_nl=en_EN; Expires=Thu, 07-Apr-2011 21:21:34 GMT; Path=/
+    2011-04-06 14:49:50-0300 [diningcity] DEBUG: Crawled (200) <GET http://www.diningcity.com/netherlands/index.html> (referer: None)
+    [...]
+
    
 DefaultHeadersMiddleware
 ------------------------
@@ -233,8 +264,18 @@ HttpCacheMiddleware
     downloads every time) and for trying your spider offline, when an Internet
     connection is not available.
 
-File system storage
-~~~~~~~~~~~~~~~~~~~
+    Scrapy ships with two storage backends for the HTTP cache middleware:
+
+    * :ref:`httpcache-fs-backend`
+    * :ref:`httpcache-dbm-backend`
+
+    You can change the storage backend with the :setting:`HTTPCACHE_STORAGE`
+    setting. Or you can also implement your own backend.
+
+.. _httpcache-fs-backend:
+
+File system backend (default)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 By default, the :class:`HttpCacheMiddleware` uses a file system storage  with the following structure:
 
@@ -257,8 +298,19 @@ inefficient in many file systems). An example directory could be::
 
    /path/to/cache/dir/example.com/72/72811f648e718090f041317756c03adb0ada46c7
 
-The cache storage backend can be changed with the :setting:`HTTPCACHE_STORAGE`
-setting, but no other backend is provided with Scrapy yet.
+.. _httpcache-dbm-backend:
+
+DBM storage backend
+~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: 0.13
+
+A DBM_ storage backend is also available for the HTTP cache middleware. To use
+it (instead of the default filesystem backend) set :setting:`HTTPCACHE_STORAGE`
+to ``scrapy.contrib.httpcache.DbmCacheStorage``.
+
+By default, it uses the anydbm_ module, but you can change it with the
+:setting:`HTTPCACHE_DBM_MODULE` setting.
 
 Settings
 ~~~~~~~~
@@ -345,6 +397,18 @@ HTTPCACHE_STORAGE
 Default: ``'scrapy.contrib.downloadermiddleware.httpcache.FilesystemCacheStorage'``
 
 The class which implements the cache storage backend.
+
+.. setting:: HTTPCACHE_DBM_MODULE
+
+HTTPCACHE_DBM_MODULE
+^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 0.13
+
+Default: ``'anydbm'``
+
+The database module to use in the :ref:`DBM storage backend
+<httpcache-dbm-backend>`. This setting is specific to the DBM backend.
 
 
 HttpCompressionMiddleware
@@ -491,3 +555,6 @@ UserAgentMiddleware
    In order for a spider to override the default user agent, its `user_agent`
    attribute must be set.
 
+
+.. _DBM: http://en.wikipedia.org/wiki/Dbm
+.. _anydbm: http://docs.python.org/library/anydbm.html
