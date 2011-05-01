@@ -9,6 +9,7 @@ Homepage: http://scrapy.org/
 Package: scrapy-SUFFIX
 Architecture: all
 Depends: ${python:Depends}, python-libxml2, python-twisted, python-openssl, python-w3lib
+Recommends: python-setuptools
 Conflicts: python-scrapy, scrapy, scrapy-0.11
 Provides: python-scrapy, scrapy
 Description: Python web crawling and scraping framework
