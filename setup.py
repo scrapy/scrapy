@@ -120,7 +120,7 @@ setup_args = {
 
 try:
     from setuptools import setup
-    setup_args['install_requires'] = ['Twisted>=2.5', 'lxml', 'w3lib']
+    setup_args['install_requires'] = ['Twisted>=2.5', 'lxml', 'w3lib', 'pyOpenSSL']
     if sys.version_info < (2, 6):
         setup_args['install_requires'] += ['simplejson']
 except ImportError:
