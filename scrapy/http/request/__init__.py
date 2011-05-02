@@ -25,7 +25,7 @@ class Request(object_ref):
                  dont_filter=False, errback=None):
 
         self._encoding = encoding  # this one has to be set first
-        self.method = method.upper()
+        self.method = str(method).upper()
         self._set_url(url)
         self._set_body(body)
         self.priority = priority

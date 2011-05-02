@@ -162,6 +162,10 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r4.meta, {})
         assert r4.dont_filter is False
 
+    def test_method_always_str(self):
+        r = self.request_class("http://www.example.com", method=u"POST")
+        assert isinstance(r.method, str)
+
     def test_weakref_slots(self):
         """Check that classes are using slots and are weak-referenceable"""
         x = self.request_class('http://www.example.com')
