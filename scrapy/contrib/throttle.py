@@ -3,8 +3,15 @@ from scrapy import signals
 
 class AutoThrottle(object):
     """
+    ============
+    AutoThrottle
+    ============
+
     This is an extension for automatically throttling crawling speed based on
-    load. It has the following design goals:
+    load.
+
+    Design goals
+    ============
 
     1. be nicer to sites instead of using default download delay of zero
 
@@ -13,16 +20,28 @@ class AutoThrottle(object):
     the optimum one. the user only needs to specify the maximum concurrent
     requests it allows, and the extension does the rest.
 
+    Download latencies
+    ==================
 
-    It adjusts download delays and concurrency based on the following rules:
+    In Scrapy, the download latency is the (real) time elapsed between
+    establishing the TCP connection and receiving the HTTP headers.
+
+    Note that these latencies are very hard to measure accurately in a
+    cooperative multitasking environment because Scrapy may be busy processing
+    a spider callback, for example, and unable to attend downloads. However,
+    the latencies should give a reasonable estimate of how busy Scrapy (and
+    ultimately, the server) is. This extension builds on that premise.
+
+    Throttling rules
+    ================
+
+    This adjusts download delays and concurrency based on the following rules:
 
     1. spiders always start with one concurrent request and a download delay of
     START_DELAY
 
     2. when a response is received, the download delay is adjusted to the
-    average of previous download delay and the latency of the response. The
-    latency is the time elapsed since establishing the connection to receiving
-    the HTTP headers.
+    average of previous download delay and the latency of the response.
 
     3. after CONCURRENCY_CHECK_PERIOD responses have passed, the average
     latency of this period is checked against the previous one and:
