@@ -82,8 +82,6 @@ class Downloader(object):
 
         site.active.add(request)
         def _deactivate(response):
-            send_catch_log(signal=signals.response_received, \
-                response=response, request=request, spider=spider)
             site.active.remove(request)
             self._close_if_idle(spider)
             return response

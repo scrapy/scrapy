@@ -157,6 +157,8 @@ class ExecutionEngine(object):
                 response.request = request # tie request to response received
                 log.msg(log.formatter.crawled(request, response, spider), \
                     level=log.DEBUG, spider=spider)
+                send_catch_log(signal=signals.response_received, \
+                    response=response, request=request, spider=spider)
                 return response
             elif isinstance(response, Request):
                 return mustbe_deferred(self.schedule, response, spider)
