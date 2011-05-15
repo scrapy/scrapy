@@ -10,39 +10,26 @@ from twisted.python.failure import Failure
 
 from scrapy.exceptions import IgnoreRequest
 from scrapy.conf import settings
+from scrapy.utils.python import setattr_default
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.signal import send_catch_log
-from scrapy.utils import deprecate
 from scrapy import signals
 from scrapy import log
 from .middleware import DownloaderMiddlewareManager
 from .handlers import DownloadHandlers
 
-
 class SpiderInfo(object):
     """Simple class to keep information and state for each open spider"""
 
     def __init__(self, spider):
-        if hasattr(spider, 'download_delay'):
-            deprecate.attribute(spider, 'download_delay', 'DOWNLOAD_DELAY')
-            self._download_delay = spider.download_delay
-        else:
-            self._download_delay = spider.settings.getfloat('DOWNLOAD_DELAY')
-        if self._download_delay:
-            self.max_concurrent_requests = 1
-        else:
-            if hasattr(spider, 'max_concurrent_requests'):
-                deprecate.attribute(spider, 'max_concurrent_requests', 'CONCURRENT_REQUESTS_PER_SPIDER')
-                self.max_concurrent_requests = spider.max_concurrent_requests
-            else:
-                self.max_concurrent_requests = spider.settings.getint('CONCURRENT_REQUESTS_PER_SPIDER')
-        if self._download_delay and spider.settings.getbool('RANDOMIZE_DOWNLOAD_DELAY'):
-            # same policy as wget --random-wait
-            self.random_delay_interval = (0.5*self._download_delay, \
-                1.5*self._download_delay)
-        else:
-            self.random_delay_interval = None
-
+        setattr_default(spider, 'download_delay', spider.settings.getfloat('DOWNLOAD_DELAY'))
+        setattr_default(spider, 'randomize_download_delay', spider.settings.getbool('RANDOMIZE_DOWNLOAD_DELAY'))
+        setattr_default(spider, 'max_concurrent_requests', spider.settings.getint('CONCURRENT_REQUESTS_PER_SPIDER'))
+        if spider.download_delay > 0 and spider.max_concurrent_requests > 1:
+            spider.max_concurrent_requests = 1
+            msg = "Setting max_concurrent_requests=1 because of download_delay=%s" % spider.download_delay
+            log.msg(msg, spider=spider)
+        self.spider = spider
         self.active = set()
         self.queue = []
         self.transferring = set()
@@ -51,17 +38,17 @@ class SpiderInfo(object):
         self.next_request_calls = set()
 
     def free_transfer_slots(self):
-        return self.max_concurrent_requests - len(self.transferring)
+        return self.spider.max_concurrent_requests - len(self.transferring)
 
     def needs_backout(self):
         # use self.active to include requests in the downloader middleware
-        return len(self.active) > 2 * self.max_concurrent_requests
+        return len(self.active) > 2 * self.spider.max_concurrent_requests
 
     def download_delay(self):
-        if self.random_delay_interval:
-            return random.uniform(*self.random_delay_interval)
-        else:
-            return self._download_delay
+        delay = self.spider.download_delay
+        if self.spider.randomize_download_delay:
+            delay = random.uniform(0.5*delay, 1.5*delay)
+        return delay
 
     def cancel_request_calls(self):
         for call in self.next_request_calls:
@@ -130,7 +117,7 @@ class Downloader(object):
         delay = site.download_delay()
         if delay:
             penalty = delay - now + site.lastseen
-            if penalty > 0:
+            if penalty > 0 and site.free_transfer_slots():
                 d = defer.Deferred()
                 d.addCallback(self._process_queue)
                 call = reactor.callLater(penalty, d.callback, spider)
