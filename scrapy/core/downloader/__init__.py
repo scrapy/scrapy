@@ -4,6 +4,7 @@ Download web pages using asynchronous IO
 
 import random
 from time import time
+from collections import deque
 
 from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
@@ -31,7 +32,7 @@ class SpiderInfo(object):
             log.msg(msg, spider=spider)
         self.spider = spider
         self.active = set()
-        self.queue = []
+        self.queue = deque()
         self.transferring = set()
         self.closing = False
         self.lastseen = 0
@@ -128,7 +129,7 @@ class Downloader(object):
 
         # Process enqueued requests if there are free slots to transfer for this site
         while site.queue and site.free_transfer_slots() > 0:
-            request, deferred = site.queue.pop(0)
+            request, deferred = site.queue.popleft()
             if site.closing:
                 dfd = defer.fail(Failure(IgnoreRequest()))
             else:
