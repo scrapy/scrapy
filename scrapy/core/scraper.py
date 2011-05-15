@@ -1,6 +1,8 @@
 """This module implements the Scraper component which parses responses and
 extracts information from them"""
 
+from collections import deque
+
 from twisted.python.failure import Failure
 from twisted.internet import defer
 
@@ -24,7 +26,7 @@ class SpiderInfo(object):
 
     def __init__(self, max_active_size=5000000):
         self.max_active_size = max_active_size
-        self.queue = []
+        self.queue = deque()
         self.active = set()
         self.active_size = 0
         self.itemproc_size = 0
@@ -40,7 +42,7 @@ class SpiderInfo(object):
         return deferred
 
     def next_response_request_deferred(self):
-        response, request, deferred = self.queue.pop(0)
+        response, request, deferred = self.queue.popleft()
         self.active.add(response)
         return response, request, deferred
 
