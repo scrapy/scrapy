@@ -97,7 +97,7 @@ class AutoThrottle(object):
             curavg, curdev = avg_stdev(latencies)
             preavg, predev = self.last_lat[spider]
             self.last_lat[spider] = curavg, curdev
-            latencies[:] = []
+            del latencies[:]
             if curavg > preavg + predev:
                 if spider.max_concurrent_requests > 1:
                     spider.max_concurrent_requests -= 1
