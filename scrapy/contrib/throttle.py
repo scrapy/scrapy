@@ -64,6 +64,7 @@ class AutoThrottle(object):
 
     def __init__(self):
         dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
+        dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
         dispatcher.connect(self.response_received, signal=signals.response_received)
         self.last_latencies = {}
         self.last_lat = {}
