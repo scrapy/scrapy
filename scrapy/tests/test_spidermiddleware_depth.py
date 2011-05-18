@@ -14,7 +14,7 @@ class TestDepthMiddleware(TestCase):
         self.stats = StatsCollector()
         self.stats.open_spider(self.spider)
 
-        self.mw = DepthMiddleware(1, self.stats)
+        self.mw = DepthMiddleware(1, self.stats, True)
         self.assertEquals(self.stats.get_value('envinfo/request_depth_limit'), 1)
 
     def test_process_spider_output(self):

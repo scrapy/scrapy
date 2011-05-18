@@ -323,7 +323,17 @@ DEPTH_STATS
 
 Default: ``True``
 
-Whether to collect depth stats.
+Whether to collect maximum depth stats.
+
+.. setting:: DEPTH_STATS_VERBOSE
+
+DEPTH_STATS_VERBOSE
+-------------------
+
+Default: ``False``
+
+Whether to collect verbose depth stats. If this is enabled, the number of
+requests for each depth is collected in the stats.
 
 .. setting:: DOWNLOADER_DEBUG
 
