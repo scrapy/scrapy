@@ -246,7 +246,7 @@ SQS_REGION = 'us-east-1'
 
 STATS_CLASS = 'scrapy.statscol.MemoryStatsCollector'
 STATS_ENABLED = True
-STATS_DUMP = False
+STATS_DUMP = True
 
 STATS_SDB_DOMAIN = 'scrapy_stats'
 STATS_SDB_ASYNC = False

@@ -905,11 +905,13 @@ or subclass the StatsCollector class).
 STATS_DUMP
 ----------
 
-Default: ``False``
+Default: ``True``
 
-Dump (to log) domain-specific stats collected when a domain is closed, and all
-global stats when the Scrapy process finishes (ie. when the engine is
-shutdown).
+Dump (to the Scrapy log) the :ref:`Scrapy stats <topics-stats>` collected
+during the crawl. The spider-specific stats are logged when the spider is
+closed, while the global stats are dumped when the Scrapy process finishes.
+
+For more info see: :ref:`topics-stats`.
 
 .. setting:: STATS_ENABLED
 
