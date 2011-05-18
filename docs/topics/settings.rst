@@ -364,6 +364,7 @@ Default::
     {
         'scrapy.contrib.downloadermiddleware.robotstxt.RobotsTxtMiddleware': 100,
         'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware': 300,
+        'scrapy.contrib.downloadermiddleware.downloadtimeout.DownloadTimeoutMiddleware': 350,
         'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': 400,
         'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware': 500,
         'scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware': 550,
@@ -536,7 +537,7 @@ A dict containing the extensions enabled in your project, and their orders.
 EXTENSIONS_BASE
 ---------------
 
-Default:: 
+Default::
 
     {
         'scrapy.contrib.corestats.CoreStats': 0,
@@ -544,7 +545,9 @@ Default::
         'scrapy.telnet.TelnetConsole': 0,
         'scrapy.contrib.memusage.MemoryUsage': 0,
         'scrapy.contrib.memdebug.MemoryDebugger': 0,
-        'scrapy.contrib.closedomain.CloseDomain': 0,
+        'scrapy.contrib.closespider.CloseSpider': 0,
+        'scrapy.contrib.feedexport.FeedExporter': 0,
+        'scrapy.contrib.spidercontext.SpiderContext': 0,
     }
 
 The list of available extensions. Keep in mind that some of them need to
@@ -697,7 +700,7 @@ Default: ``False``
 
 Scope: ``scrapy.contrib.memusage``
 
-Whether to send a memory usage report after each domain has been closed.
+Whether to send a memory usage report after each spider has been closed.
 
 See :ref:`topics-extensions-ref-memusage`.
 
@@ -863,7 +866,6 @@ Default::
 
     {
         'scrapy.contrib.spidermiddleware.httperror.HttpErrorMiddleware': 50,
-        'scrapy.contrib.itemsampler.ItemSamplerMiddleware': 100,
         'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware': 500,
         'scrapy.contrib.spidermiddleware.referer.RefererMiddleware': 700,
         'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware': 800,
@@ -939,7 +941,7 @@ STATSMAILER_RCPTS
 
 Default: ``[]`` (empty list)
 
-Send Scrapy stats after domains finish scraping. See
+Send Scrapy stats after spiders finish scraping. See
 :class:`~scrapy.contrib.statsmailer.StatsMailer` for more info.
 
 .. setting:: TELNETCONSOLE_ENABLED
