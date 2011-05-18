@@ -822,31 +822,6 @@ The order to use for the crawling scheduler. Available orders are:
 .. _Breadth-first order: http://en.wikipedia.org/wiki/Breadth-first_search
 .. _Depth-first order: http://en.wikipedia.org/wiki/Depth-first_search
 
-.. setting:: SCHEDULER_MIDDLEWARES
-
-SCHEDULER_MIDDLEWARES
----------------------
-
-Default:: ``{}``
-
-A dict containing the scheduler middlewares enabled in your project, and their
-orders. 
-
-.. setting:: SCHEDULER_MIDDLEWARES_BASE
-
-SCHEDULER_MIDDLEWARES_BASE
---------------------------
-
-Default:: 
-
-    SCHEDULER_MIDDLEWARES_BASE = {
-        'scrapy.contrib.schedulermiddleware.duplicatesfilter.DuplicatesFilterMiddleware': 500,
-    }
-
-A dict containing the scheduler middlewares enabled by default in Scrapy. You
-should never modify this setting in your project, modify
-:setting:`SCHEDULER_MIDDLEWARES` instead. 
-
 .. setting:: SPIDER_MIDDLEWARES
 
 SPIDER_MIDDLEWARES
