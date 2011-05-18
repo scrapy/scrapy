@@ -30,12 +30,11 @@ class CoreStats(object):
     def stats_spider_opened(self, spider):
         stats.set_value('start_time', datetime.datetime.utcnow(), spider=spider)
         stats.set_value('envinfo/host', stats.get_value('envinfo/host'), spider=spider)
-        stats.inc_value('spider_count/opened')
 
     def stats_spider_closing(self, spider, reason):
         stats.set_value('finish_time', datetime.datetime.utcnow(), spider=spider)
         stats.set_value('finish_status', 'OK' if reason == 'finished' else reason, spider=spider)
-        stats.inc_value('spider_count/%s' % reason, spider=spider)
+        stats.inc_value('spiders_closed_count/%s' % reason)
 
     def item_scraped(self, item, spider):
         stats.inc_value('item_scraped_count', spider=spider)
