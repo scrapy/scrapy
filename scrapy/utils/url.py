@@ -6,11 +6,8 @@ Some of the functions that used to be imported from this module have been moved
 to the w3lib.url module. Always import those from there instead.
 """
 
-import os
-import re
 import urlparse
 import urllib
-import posixpath
 import cgi
 
 from w3lib.url import *
@@ -18,7 +15,7 @@ from scrapy.utils.python import unicode_to_str
 
 def url_is_from_any_domain(url, domains):
     """Return True if the url belongs to any of the given domains"""
-    host = urlparse.urlparse(url).hostname
+    host = parse_url(url).hostname
 
     if host:
         return any(((host == d) or (host.endswith('.%s' % d)) for d in domains))
@@ -29,6 +26,9 @@ def url_is_from_spider(url, spider):
     """Return True if the url belongs to the given spider"""
     return url_is_from_any_domain(url, [spider.name] + \
         getattr(spider, 'allowed_domains', []))
+
+def url_has_any_extension(url, extensions):
+    return posixpath.splitext(parse_url(url).path)[1].lower() in extensions
 
 def canonicalize_url(url, keep_blank_values=True, keep_fragments=False, \
         encoding=None):
@@ -48,11 +48,17 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False, \
     For examples see the tests in scrapy.tests.test_utils_url
     """
 
-    url = unicode_to_str(url, encoding)
-    scheme, netloc, path, params, query, fragment = urlparse.urlparse(url)
+    scheme, netloc, path, params, query, fragment = parse_url(url)
     keyvals = cgi.parse_qsl(query, keep_blank_values)
     keyvals.sort()
     query = urllib.urlencode(keyvals)
     path = safe_url_string(urllib.unquote(path))
     fragment = '' if not keep_fragments else fragment
     return urlparse.urlunparse((scheme, netloc.lower(), path, params, query, fragment))
+
+def parse_url(url, encoding=None):
+    """Return urlparsed url from the given argument (which could be an already
+    parsed url)
+    """
+    return url if isinstance(url, urlparse.ParseResult) else \
+        urlparse.urlparse(unicode_to_str(url, encoding))

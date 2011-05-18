@@ -64,6 +64,7 @@ Basic concepts
    topics/shell
    topics/item-pipeline
    topics/feed-exports
+   topics/link-extractors
 
 :doc:`topics/commands`
     Learn about the command-line tool used to manage your Scrapy project.
@@ -89,6 +90,8 @@ Basic concepts
 :doc:`topics/feed-exports`
     Output your scraped data using different formats and storages.
 
+:doc:`topics/link-extractors`
+    Convenient classes to extract links to follow from pages.
 
 Built-in services
 =================
