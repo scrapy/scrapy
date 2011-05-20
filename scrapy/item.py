@@ -45,13 +45,7 @@ class DictItem(DictMixin, BaseItem):
                 self[k] = v
 
     def __getitem__(self, key):
-        try:
-            return self._values[key]
-        except KeyError:
-            field = self.fields[key]
-            if 'default' in field:
-                return field['default']
-            raise
+        return self._values[key]
 
     def __setitem__(self, key, value):
         if key in self.fields:

@@ -30,8 +30,8 @@ objects. Here is an example::
     class Product(Item):
         name = Field()
         price = Field()
-        stock = Field(default=0)
-        last_updated = Field()
+        stock = Field()
+        last_updated = Field(serializer=str)
 
 .. note:: Those familiar with `Django`_ will notice that Scrapy Items are
    declared similar to `Django Models`_, except that Scrapy Items are much
@@ -46,8 +46,8 @@ Item Fields
 ===========
 
 :class:`Field` objects are used to specify metadata for each field. For
-example, the default value for the ``stock`` field illustrated in the example
-above. 
+example, the serializer function for the ``last_updated`` field illustrated in
+the example above. 
 
 You can specify any kind of metadata for each field. There is no restriction on
 the values accepted by :class:`Field` objects. For this same
@@ -95,10 +95,7 @@ Getting field values
     >>> product['price']
     1000
 
-    >>> product['stock'] # getting field with default value
-    0
-
-    >>> product['last_updated'] # getting field with no default value
+    >>> product['last_updated']
     Traceback (most recent call last):
         ...
     KeyError: 'last_updated'
@@ -175,28 +172,6 @@ Creating items from dicts::
         ...
     KeyError: 'Product does not support field: lala'
 
-Default values
-==============
-
-The only field metadata key supported by Items themselves is ``default``, which
-specifies the default value to return when trying to access a field which
-wasn't populated before. 
-
-So, for the ``Product`` item declared above::
-
-    >>> product = Product()
-
-    >>> product['stock'] # field with default value
-    0
-
-    >>> product['name'] # field with no default value
-    Traceback (most recent call last):
-    ...
-    KeyError: 'name'
-
-    >>> product.get('name') is None
-    True
-
 Extending Items
 ===============
 
@@ -206,16 +181,16 @@ fields) by declaring a subclass of your original Item.
 For example::
 
     class DiscountedProduct(Product):
-        discount_percent = Field(default=0)
+        discount_percent = Field(serializer=str)
         discount_expiration_date = Field()
 
 You can also extend field metadata by using the previous field metadata and
 appending more values, or changing existing values, like this::
 
     class SpecificProduct(Product):
-        name = Field(Product.fields['name'], default='product')
+        name = Field(Product.fields['name'], serializer=my_serializer)
 
-That adds (or replaces) the ``default`` metadata key for the ``name`` field,
+That adds (or replaces) the ``serializer`` metadata key for the ``name`` field,
 keeping all the previously existing metadata values.
 
 Item objects

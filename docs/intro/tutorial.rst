@@ -65,8 +65,8 @@ Defining our Item
 =================
 
 `Items` are containers that will be loaded with the scraped data; they work
-like simple python dicts but they offer some additional features like providing
-default values.
+like simple python dicts but provide additional protecting against populating
+undeclared fields, to prevent typos.
 
 They are declared by creating an :class:`scrapy.item.Item` class an defining
 its attributes as :class:`scrapy.item.Field` objects, like you will in an ORM
