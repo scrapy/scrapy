@@ -3,11 +3,9 @@ The Scrapy Scheduler
 """
 
 from twisted.internet import defer
-from twisted.python.failure import Failure
 
 from scrapy.utils.datatypes import PriorityQueue, PriorityStack
 from scrapy.core.schedulermw import SchedulerMiddlewareManager
-from scrapy.exceptions import IgnoreRequest
 from scrapy.conf import settings
 
 class Scheduler(object):
