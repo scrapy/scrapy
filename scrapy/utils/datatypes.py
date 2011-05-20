@@ -305,6 +305,11 @@ class PriorityQueue(object):
                         del self.positems[priority]
                     return t
         raise IndexError("pop from an empty queue")
+    
+    def clear(self):
+        self.negitems.clear()
+        self.pzero.clear()
+        self.positems.clear()
 
     def __len__(self):
         total = sum(len(v) for v in self.negitems.values()) + \

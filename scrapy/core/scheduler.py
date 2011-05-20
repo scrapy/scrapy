@@ -58,7 +58,7 @@ class Scheduler(object):
         return dfd
 
     def clear_pending_requests(self, spider):
-        pass
+        self.pending_requests[spider].clear()
 
     def next_request(self, spider):
         """Return the next available request to be downloaded for a spider.
