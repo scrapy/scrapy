@@ -62,9 +62,7 @@ class Scheduler(object):
     def clear_pending_requests(self, spider):
         """Remove all pending requests for the given spider"""
         q = self.pending_requests[spider]
-        while q:
-            _, dfd = q.pop()[0]
-            dfd.errback(Failure(IgnoreRequest()))
+        q.clear()
 
     def next_request(self, spider):
         """Return the next available request to be downloaded for a spider.
