@@ -1,5 +1,7 @@
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.utils.python import setattr_default
+from scrapy.conf import settings
+from scrapy.exceptions import NotConfigured
 from scrapy import signals
 
 class AutoThrottle(object):
@@ -64,6 +66,8 @@ class AutoThrottle(object):
     DEBUG = 0
 
     def __init__(self):
+        if not settings.getbool('AUTOTHROTTLE_ENABLED', True):
+            raise NotConfigured
         dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
         dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
         dispatcher.connect(self.response_received, signal=signals.response_received)
