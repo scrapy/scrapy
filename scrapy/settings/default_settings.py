@@ -126,6 +126,7 @@ EXTENSIONS_BASE = {
     'scrapy.contrib.closespider.CloseSpider': 0,
     'scrapy.contrib.feedexport.FeedExporter': 0,
     'scrapy.contrib.spidercontext.SpiderContext': 0,
+    'scrapy.contrib.throttle.AutoThrottle': 0,
 }
 
 FEED_URI = None

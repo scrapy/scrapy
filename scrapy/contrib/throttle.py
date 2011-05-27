@@ -66,7 +66,7 @@ class AutoThrottle(object):
     DEBUG = 0
 
     def __init__(self):
-        if not settings.getbool('AUTOTHROTTLE_ENABLED', True):
+        if not settings.getbool('AUTOTHROTTLE_ENABLED'):
             raise NotConfigured
         dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
         dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
