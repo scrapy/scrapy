@@ -168,13 +168,25 @@ CookiesMiddleware
 
 .. class:: CookiesMiddleware
 
-   This middleware enables working with sites that need cookies. It keeps track
-   of merging cookies sent by servers, so that they're send in future requests
-   for that spider, just like a web browser would do.
+   This middleware enables working with sites that require cookies, such as
+   those that use sessions. It keeps track of cookies sent by web servers, and
+   send them back on subsequent requests (from that spider), just like web
+   browsers do.
 
 The following settings can be used to configure the cookie middleware:
 
+* :setting:`COOKIES_ENABLED`
 * :setting:`COOKIES_DEBUG`
+
+.. setting:: COOKIES_ENABLED
+
+COOKIES_ENABLED
+~~~~~~~~~~~~~~~
+
+Default: ``True``
+
+Whether to enable the cookies middleware. If disabled, no cookies will be sent
+to web servers.
 
 .. setting:: COOKIES_DEBUG
 

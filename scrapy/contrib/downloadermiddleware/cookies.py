@@ -3,6 +3,7 @@ from collections import defaultdict
 from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy import signals
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
 from scrapy.conf import settings
@@ -14,6 +15,8 @@ class CookiesMiddleware(object):
     debug = settings.getbool('COOKIES_DEBUG')
 
     def __init__(self):
+        if not settings.getbool('COOKIES_ENABLED'):
+            raise NotConfigured
         self.jars = defaultdict(CookieJar)
         dispatcher.connect(self.spider_closed, signals.spider_closed)
 

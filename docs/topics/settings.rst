@@ -261,15 +261,6 @@ Default: ``8``
 
 Maximum number of spiders to scrape in parallel.
 
-.. setting:: COOKIES_DEBUG
-
-COOKIES_DEBUG
--------------
-
-Default: ``False``
-
-Enable debugging message of Cookies Downloader Middleware.
-
 .. setting:: DEFAULT_ITEM_CLASS
 
 DEFAULT_ITEM_CLASS
