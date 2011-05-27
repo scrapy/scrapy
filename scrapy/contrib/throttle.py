@@ -75,23 +75,16 @@ class AutoThrottle(object):
         self.last_lat = {}
 
     def spider_opened(self, spider):
-        setattr_default(spider, 'dont_throttle', False)
-        if spider.dont_throttle:
-            return
         spider.download_delay = self.START_DELAY
         spider.max_concurrent_requests = 1
         self.last_latencies[spider] = [self.START_DELAY]
         self.last_lat[spider] = self.START_DELAY, 0.0
 
     def spider_closed(self, spider):
-        if spider.dont_throttle:
-            return
         del self.last_latencies[spider]
         del self.last_lat[spider]
 
     def response_received(self, response, spider):
-        if spider.dont_throttle:
-            return
         latency = response.meta.get('download_latency')
         if not latency:
             return
