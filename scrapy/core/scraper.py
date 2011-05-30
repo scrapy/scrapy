@@ -121,7 +121,7 @@ class Scraper(object):
         assert isinstance(response, (Response, Failure))
 
         dfd = self._scrape2(response, request, spider) # returns spiders processed output
-        dfd.addErrback(self.handle_spider_error, request, spider)
+        dfd.addErrback(self.handle_spider_error, request, response, spider)
         dfd.addCallback(self.handle_spider_output, request, response, spider)
         return dfd
 
@@ -142,18 +142,20 @@ class Scraper(object):
         dfd.addCallbacks(request.callback or spider.parse, request.errback)
         return dfd.addCallback(iterate_spider_output)
 
-    def handle_spider_error(self, _failure, request, spider, propagated_failure=None):
+    def handle_spider_error(self, _failure, request, response, spider, propagated_failure=None):
         referer = request.headers.get('Referer', None)
         msg = "Spider error processing <%s> (referer: <%s>)" % \
             (request.url, referer)
         log.err(_failure, msg, spider=spider)
+        send_catch_log(signal=signals.spider_error, failure=_failure, response=response, \
+            spider=spider)
         stats.inc_value("spider_exceptions/%s" % _failure.value.__class__.__name__, \
             spider=spider)
 
     def handle_spider_output(self, result, request, response, spider):
         if not result:
             return defer_succeed(None)
-        it = iter_errback(result, self.handle_spider_error, request, spider)
+        it = iter_errback(result, self.handle_spider_error, request, response, spider)
         dfd = parallel(it, self.concurrent_items,
             self._process_spidermw_output, request, response, spider)
         return dfd

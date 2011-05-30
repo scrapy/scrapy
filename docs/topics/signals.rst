@@ -186,6 +186,24 @@ spider_idle
     :param spider: the spider which has gone idle
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
+spider_error
+------------
+
+.. signal:: spider_error
+.. function:: spider_error(failure, response, spider)
+
+    Sent when a spider callback generates an error (ie. raises an exception).
+
+    :param failure: the exception raised as a Twisted `Failure`_ object
+    :type failure: `Failure`_ object
+
+    :param response: the response being processed when the exception was raised
+    :type response: :class:`~scrapy.http.Response` object
+
+    :param spider: the spider which raised the exception
+    :type spider: :class:`~scrapy.spider.BaseSpider` object
+
+
 request_received
 ----------------
 
@@ -241,3 +259,4 @@ response_downloaded
     :param spider: the spider for which the response is intended
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
+.. _Failure: http://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
