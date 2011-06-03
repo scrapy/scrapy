@@ -11,11 +11,8 @@ class LogFormatter(object):
         return "Crawled (%d) %s (referer: %s)%s" % (response.status, \
             request, referer, flags)
 
-    def scraped(self, item, request, response, spider):
-        return "Scraped %s in <%s>" % (item, request.url)
+    def scraped(self, item, response, spider):
+        return "Scraped %s in <%s>" % (item, response.url)
 
-    def dropped(self, item, exception, spider):
+    def dropped(self, item, exception, response, spider):
         return "Dropped %s - %s" % (item, unicode(exception))
-
-    def passed(self, item, spider):
-        return "Passed %s" % item

@@ -24,7 +24,6 @@ class CoreStats(object):
         dispatcher.connect(self.stats_spider_opened, signal=signals.stats_spider_opened)
         dispatcher.connect(self.stats_spider_closing, signal=signals.stats_spider_closing)
         dispatcher.connect(self.item_scraped, signal=signals.item_scraped)
-        dispatcher.connect(self.item_passed, signal=signals.item_passed)
         dispatcher.connect(self.item_dropped, signal=signals.item_dropped)
 
     def stats_spider_opened(self, spider):
@@ -39,10 +38,6 @@ class CoreStats(object):
     def item_scraped(self, item, spider):
         stats.inc_value('item_scraped_count', spider=spider)
         stats.inc_value('item_scraped_count')
-
-    def item_passed(self, item, spider):
-        stats.inc_value('item_passed_count', spider=spider)
-        stats.inc_value('item_passed_count')
 
     def item_dropped(self, item, spider, exception):
         reason = exception.__class__.__name__

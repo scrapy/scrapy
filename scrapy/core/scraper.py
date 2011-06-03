@@ -169,13 +169,9 @@ class Scraper(object):
                 spider=spider)
             self.engine.crawl(request=output, spider=spider)
         elif isinstance(output, BaseItem):
-            log.msg(log.formatter.scraped(output, request, response, spider), \
-                level=log.DEBUG, spider=spider)
             self.sites[spider].itemproc_size += 1
-            dfd = send_catch_log_deferred(signal=signals.item_scraped, \
-                item=output, spider=spider, response=response)
-            dfd.addBoth(lambda _: self.itemproc.process_item(output, spider))
-            dfd.addBoth(self._itemproc_finished, output, spider)
+            dfd = self.itemproc.process_item(output, spider)
+            dfd.addBoth(self._itemproc_finished, output, response, spider)
             return dfd
         elif output is None:
             pass
@@ -198,22 +194,22 @@ class Scraper(object):
         else:
             return spider_failure # exceptions raised in the spider code
 
-    def _itemproc_finished(self, output, item, spider):
+    def _itemproc_finished(self, output, item, response, spider):
         """ItemProcessor finished for the given ``item`` and returned ``output``
         """
         self.sites[spider].itemproc_size -= 1
         if isinstance(output, Failure):
             ex = output.value
             if isinstance(ex, DropItem):
-                log.msg(log.formatter.dropped(item, ex, spider), \
+                log.msg(log.formatter.dropped(item, ex, response, spider), \
                     level=log.WARNING, spider=spider)
                 return send_catch_log_deferred(signal=signals.item_dropped, \
                     item=item, spider=spider, exception=output.value)
             else:
                 log.err(output, 'Error processing %s' % item, spider=spider)
         else:
-            log.msg(log.formatter.passed(output, spider), log.INFO, spider=spider)
-            # TODO: remove item_passed 'output' parameter for Scrapy 0.12
-            return send_catch_log_deferred(signal=signals.item_passed, \
-                item=output, spider=spider, output=output, original_item=item)
+            log.msg(log.formatter.scraped(output, response, spider), \
+                log.DEBUG, spider=spider)
+            return send_catch_log_deferred(signal=signals.item_scraped, \
+                item=output, response=response, spider=spider)
 

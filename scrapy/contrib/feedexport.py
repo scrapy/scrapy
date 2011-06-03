@@ -136,7 +136,7 @@ class FeedExporter(object):
         self.slots = {}
         dispatcher.connect(self.open_spider, signals.spider_opened)
         dispatcher.connect(self.close_spider, signals.spider_closed)
-        dispatcher.connect(self.item_passed, signals.item_passed)
+        dispatcher.connect(self.item_scraped, signals.item_scraped)
 
     def open_spider(self, spider):
         file = TemporaryFile(prefix='feed-')
@@ -163,7 +163,7 @@ class FeedExporter(object):
         d.addBoth(lambda _: slot.file.close())
         return d
 
-    def item_passed(self, item, spider):
+    def item_scraped(self, item, spider):
         slot = self.slots[spider]
         slot.exporter.export_item(item)
         slot.itemcount += 1

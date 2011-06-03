@@ -63,43 +63,20 @@ item_scraped
 ------------
 
 .. signal:: item_scraped
-.. function:: item_scraped(item, spider, response)
+.. function:: item_scraped(item, response, spider)
 
-    Sent when the engine receives a new scraped item from the spider, and right
-    before the item is sent to the :ref:`topics-item-pipeline`.
+    Sent when an item has been scraped, after it has passed all the
+    :ref:`topics-item-pipeline` stages (without being dropped).
 
     This signal supports returning deferreds from their handlers.
 
-    :param item: is the item scraped
+    :param item: the item scraped
     :type item: :class:`~scrapy.item.Item` object
 
-    :param spider: the spider which scraped the item
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
-
-    :param response: the response from which the item was scraped
+    :param response: the response from where the item was scraped
     :type response: :class:`~scrapy.http.Response` object
 
-item_passed
------------
-
-.. signal:: item_passed
-.. function:: item_passed(item, spider, original_item)
-
-    Sent after an item has passed all the :ref:`topics-item-pipeline` stages
-    without being dropped. Same as :func:`item_scraped` if there are no
-    pipelines enabled.
-
-    This signal supports returning deferreds from their handlers.
-
-    :param item: the item which passed the pipeline
-    :type item: :class:`~scrapy.item.Item` object
-
     :param spider: the spider which scraped the item
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
-
-    :param original_item: the input of the item pipeline. This is typically the
-        same :class:`~scrapy.item.Item` object received in the ``item``
-        parameter, unless some pipeline stage created a new item.
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
 item_dropped

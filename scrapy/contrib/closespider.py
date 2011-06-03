@@ -34,7 +34,7 @@ class CloseSpider(object):
         if self.timeout:
             dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
         if self.itempassed:
-            dispatcher.connect(self.item_passed, signal=signals.item_passed)
+            dispatcher.connect(self.item_scraped, signal=signals.item_scraped)
         dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
     def catch_log(self, event):
@@ -55,7 +55,7 @@ class CloseSpider(object):
             crawler.engine.close_spider, spider=spider, \
             reason='closespider_timeout')
 
-    def item_passed(self, item, spider):
+    def item_scraped(self, item, spider):
         self.counts[spider] += 1
         if self.counts[spider] == self.itempassed:
             crawler.engine.close_spider(spider, 'closespider_itempassed')

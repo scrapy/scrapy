@@ -25,7 +25,8 @@ class LoggingContribTest(unittest.TestCase):
     def test_dropped(self):
         item = {}
         exception = Exception(u"\u2018")
-        self.assertEqual(self.formatter.dropped(item, exception, self.spider),
+        response = Response("http://www.example.com")
+        self.assertEqual(self.formatter.dropped(item, exception, response, self.spider),
             u"Dropped {} - \u2018")
 
 if __name__ == "__main__":
