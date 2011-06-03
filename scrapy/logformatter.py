@@ -1,3 +1,4 @@
+import os
 
 class LogFormatter(object):
     """Class for generating log messages for different actions. All methods
@@ -12,7 +13,7 @@ class LogFormatter(object):
             request, referer, flags)
 
     def scraped(self, item, response, spider):
-        return "Scraped %s in <%s>" % (item, response.url)
+        return "Scraped from %s" % response + os.linesep + str(item)
 
     def dropped(self, item, exception, response, spider):
-        return "Dropped %s - %s" % (item, unicode(exception))
+        return "Dropped: %s" % unicode(exception) + os.linesep + str(item)

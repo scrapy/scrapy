@@ -4,6 +4,7 @@ Scrapy Item
 See documentation in docs/topics/item.rst
 """
 
+from pprint import pformat
 from UserDict import DictMixin
 
 from scrapy.utils.trackref import object_ref
@@ -72,11 +73,7 @@ class DictItem(DictMixin, BaseItem):
         return self._values.keys()
 
     def __repr__(self):
-        """Generate a representation of this item that can be used to
-        reconstruct the item by evaluating it
-        """
-        values = ', '.join('%s=%r' % field for field in self.iteritems())
-        return "%s(%s)" % (self.__class__.__name__, values)
+        return pformat(dict(self))
 
 
 class Item(DictItem):

@@ -50,7 +50,7 @@ class ItemTest(unittest.TestCase):
         i['number'] = 123
         itemrepr = repr(i)
         self.assertEqual(itemrepr,
-                         "TestItem(name=u'John Doe', number=123)")
+                         "{'name': u'John Doe', 'number': 123}")
 
         i2 = eval(itemrepr)
         self.assertEqual(i2['name'], 'John Doe')

@@ -12,7 +12,7 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
     @defer.inlineCallbacks
     def test_empty(self):
         _, out, _ = yield self.execute(['-c', 'item'])
-        assert 'Item' in out
+        assert '{}' in out
 
     @defer.inlineCallbacks
     def test_response_body(self):
