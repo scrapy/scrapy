@@ -185,6 +185,10 @@ class (which they all inherit from).
         for this spider can be accessed. This method is called automatically on
         the :signal:`spider_closed` signal.
 
+    .. method:: engine_stopped()
+
+        Called after the engine is stopped, to dump or persist global stats.
+
 Available Stats Collectors
 ==========================
 

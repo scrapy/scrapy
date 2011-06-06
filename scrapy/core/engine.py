@@ -260,3 +260,4 @@ class ExecutionEngine(object):
     @defer.inlineCallbacks
     def _finish_stopping_engine(self):
         yield send_catch_log_deferred(signal=signals.engine_stopped)
+        yield stats.engine_stopped()
