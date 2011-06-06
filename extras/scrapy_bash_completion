@@ -5,7 +5,7 @@ _scrapy_completion() {
     cmd=${COMP_WORDS[1]}
     cur=${COMP_WORDS[2]}
     case "$cmd" in
-        crawl)
+        crawl|edit)
             spiders=$(scrapy list 2>/dev/null) || spiders=""
             COMPREPLY=(${COMPREPLY[@]:-} $(compgen -W "$spiders" -- "$cur"))
         ;;

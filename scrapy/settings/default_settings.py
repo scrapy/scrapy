@@ -13,6 +13,7 @@ Scrapy developers, if you add a setting here remember to:
 
 """
 
+import sys, os
 from os.path import join, abspath, dirname
 
 BOT_NAME = 'scrapybot'
@@ -81,6 +82,14 @@ DOWNLOADER_MIDDLEWARES_BASE = {
 DOWNLOADER_STATS = True
 
 DUPEFILTER_CLASS = 'scrapy.contrib.dupefilter.RequestFingerprintDupeFilter'
+
+try:
+    EDITOR = os.environ['EDITOR']
+except KeyError:
+    if sys.platform == 'win32':
+        EDITOR = '%s -m idlelib.idle'
+    else:
+        EDITOR = 'vi'
 
 ENCODING_ALIASES = {}
 

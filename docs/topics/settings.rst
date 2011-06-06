@@ -451,6 +451,15 @@ The class used to detect and filter duplicate requests.
 The default (``RequestFingerprintDupeFilter``) filters based on request fingerprint
 (using ``scrapy.utils.request.request_fingerprint``) and grouping per domain.
 
+.. setting:: EDITOR
+
+EDITOR
+------
+
+The editor to use for editing spiders with the :command:`edit` command. It
+defaults to the ``EDITOR`` environment variable, if set. Otherwise, it defaults
+to ``vi`` (on Unix systems) or the IDLE editor (on Windows).
+
 .. setting:: ENCODING_ALIASES
 
 ENCODING_ALIASES
