@@ -256,11 +256,14 @@ Memory debugger extension
 
 .. class:: scrapy.contrib.memdebug.MemoryDebugger
 
-A memory debugger which collects some info about objects uncollected by the
-garbage collector and libxml2 memory leaks. To enable this extension, turn on
-the :setting:`MEMDEBUG_ENABLED` setting. The report will be printed to standard
-output. If the :setting:`MEMDEBUG_NOTIFY` setting contains a list of e-mails the
-report will also be sent to those addresses.
+An extension for debugging memory usage. It collects information about:
+
+* objects uncollected by the Python garbage collector
+* libxml2 memory leaks
+* objects left alive that shouldn't. For more info, see :ref:`topics-leaks-trackrefs`
+
+To enable this extension, turn on the :setting:`MEMDEBUG_ENABLED` setting. The
+info will be stored in the stats.
 
 Close spider extension
 ~~~~~~~~~~~~~~~~~~~~~~
