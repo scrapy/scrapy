@@ -1,5 +1,3 @@
-import pprint
-
 from w3lib.url import is_url
 
 from scrapy import log
@@ -29,9 +27,16 @@ class Command(ScrapyCommand):
         parser.add_option("--headers", dest="headers", action="store_true", \
             help="print response HTTP headers instead of body")
 
+    def _print_headers(self, headers, prefix):
+        for key, values in headers.items():
+            for value in values:
+                print '%s %s: %s' % (prefix, key, value)
+
     def _print_response(self, response, opts):
         if opts.headers:
-            pprint.pprint(response.headers)
+            self._print_headers(response.request.headers, '>')
+            print '>'
+            self._print_headers(response.headers, '<')
         else:
             print response.body
 
@@ -40,6 +45,7 @@ class Command(ScrapyCommand):
             raise UsageError()
         cb = lambda x: self._print_response(x, opts)
         request = Request(args[0], callback=cb, dont_filter=True)
+        request.meta['handle_httpstatus_all'] = True
 
         spider = None
         if opts.spider:
