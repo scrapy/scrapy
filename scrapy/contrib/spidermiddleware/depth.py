@@ -13,8 +13,6 @@ class DepthMiddleware(object):
         self.maxdepth = maxdepth
         self.stats = stats
         self.verbose_stats = verbose_stats
-        if self.stats and self.maxdepth:
-            stats.set_value('envinfo/request_depth_limit', maxdepth)
 
     @classmethod
     def from_settings(cls, settings):
