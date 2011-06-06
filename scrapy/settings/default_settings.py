@@ -217,12 +217,6 @@ ROBOTSTXT_OBEY = False
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 
-SCHEDULER_MIDDLEWARES = {}
-
-SCHEDULER_MIDDLEWARES_BASE = {
-    'scrapy.contrib.schedulermiddleware.duplicatesfilter.DuplicatesFilterMiddleware': 500,
-}
-
 SCHEDULER_ORDER = 'DFO'
 
 SELECTORS_BACKEND = None # possible values: libxml2, lxml

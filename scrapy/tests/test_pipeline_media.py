@@ -88,16 +88,6 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         new_item = yield self.pipe.process_item(item, self.spider)
         assert new_item is item
 
-    def test_default_download_func(self):
-        crawler = get_crawler()
-        crawler.install()
-        crawler.configure()
-        try:
-            pipe = MediaPipeline()
-            assert pipe._download_func == crawler.engine.download
-        finally:
-            crawler.uninstall()
-
 
 class MockedMediaPipeline(MediaPipeline):
 
@@ -148,7 +138,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(True, rsp)])
         self.assertEqual(self.pipe._mockcalled,
-                ['get_media_requests', 'media_to_download', 'download',
+                ['get_media_requests', 'media_to_download',
                     'media_downloaded', 'request_callback', 'item_completed'])
 
     @inlineCallbacks
@@ -162,7 +152,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(False, fail)])
         self.assertEqual(self.pipe._mockcalled,
-                ['get_media_requests', 'media_to_download', 'download',
+                ['get_media_requests', 'media_to_download',
                     'media_failed', 'request_errback', 'item_completed'])
 
     @inlineCallbacks
@@ -183,7 +173,6 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         self.assertEqual(m[-1], 'item_completed') # last hook called
         # twice, one per request
         self.assertEqual(m.count('media_to_download'), 2)
-        self.assertEqual(m.count('download'), 2)
         # one to handle success and other for failure
         self.assertEqual(m.count('media_downloaded'), 1)
         self.assertEqual(m.count('media_failed'), 1)

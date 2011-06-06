@@ -5,9 +5,9 @@ scrapy.http.Request objects
 
 import hashlib
 import weakref
-from base64 import urlsafe_b64encode
 from urlparse import urlunparse
 
+from twisted.internet.defer import Deferred
 from w3lib.http import basic_auth_header
 
 from scrapy.utils.url import canonicalize_url
@@ -80,3 +80,16 @@ def request_httprepr(request):
     s += "\r\n"
     s += request.body
     return s
+
+def request_deferred(request):
+    """Wrap a request inside a Deferred.
+
+    This returns a Deferred whose first pair of callbacks are the request
+    callback and errback. The Deferred also triggers when the request
+    callback/errback is executed (ie. when the request is downloaded)
+    """
+    d = Deferred()
+    if request.callback:
+        d.addCallbacks(request.callback, request.errback)
+    request.callback, request.errback = d.callback, d.errback
+    return d

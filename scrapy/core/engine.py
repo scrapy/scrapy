@@ -94,14 +94,29 @@ class ExecutionEngine(object):
             or self.scraper.sites[spider].needs_backout()
 
     def _next_request(self, spider):
-        # Next pending request from scheduler
-        request, deferred = self.scheduler.next_request(spider)
-        if request:
-            dwld = mustbe_deferred(self.download, request, spider)
-            dwld.chainDeferred(deferred).addBoth(lambda _: deferred)
-            dwld.addErrback(log.err, "Unhandled error on engine._next_request()",
-                spider=spider)
-            return dwld
+        request = self.scheduler.next_request(spider)
+        if not request:
+            return
+        d = self.download(request, spider)
+        d.addBoth(self._handle_downloader_output, request, spider)
+        d.addBoth(lambda _: self.next_request(spider))
+        return d
+
+    def _handle_downloader_output(self, response, request, spider):
+        assert isinstance(response, (Request, Response, Failure)), response
+        # downloader middleware can return requests (for example, redirects)
+        if isinstance(response, Request):
+            self.crawl(response, spider)
+            return
+        # response is a Response or Failure
+        d = defer.Deferred()
+        d.addBoth(self.scraper.enqueue_scrape, request, spider)
+        d.addErrback(log.err, "Unhandled error on engine.crawl()", spider=spider)
+        if isinstance(response, Failure):
+            d.errback(response)
+        else:
+            d.callback(response)
+        return d
 
     def spider_is_idle(self, spider):
         scraper_idle = spider in self.scraper.sites \
@@ -134,19 +149,14 @@ class ExecutionEngine(object):
             return
         assert spider in self.open_spiders, \
             "Spider %r not opened when crawling: %s" % (spider.name, request)
-        schd = mustbe_deferred(self.schedule, request, spider)
+        self.schedule(request, spider)
+        self.next_request(spider)
         # FIXME: we can't log errors because we would be preventing them from
         # propagating to the request errback. This should be fixed after the
         # next core refactoring.
         #schd.addErrback(log.err, "Error on engine.crawl()")
-        schd.addBoth(self.scraper.enqueue_scrape, request, spider)
-        schd.addErrback(log.err, "Unhandled error on engine.crawl()", spider=spider)
-        schd.addBoth(lambda _: self.next_request(spider))
 
     def schedule(self, request, spider):
-        if spider in self.closing:
-            raise IgnoreRequest()
-        self.next_request(spider)
         return self.scheduler.enqueue_request(spider, request)
 
     def download(self, request, spider):
@@ -159,9 +169,7 @@ class ExecutionEngine(object):
                     level=log.DEBUG, spider=spider)
                 send_catch_log(signal=signals.response_received, \
                     response=response, request=request, spider=spider)
-                return response
-            elif isinstance(response, Request):
-                return mustbe_deferred(self.schedule, response, spider)
+            return response
 
         def _on_error(_failure):
             """handle an error processing a page"""
