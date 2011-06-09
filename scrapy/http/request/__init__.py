@@ -88,10 +88,7 @@ class Request(object_ref):
     def __str__(self):
         return "<%s %s>" % (self.method, self.url)
 
-    def __repr__(self):
-        attrs = ['url', 'method', 'body', 'headers', 'cookies', 'meta']
-        args = ", ".join(["%s=%r" % (a, getattr(self, a)) for a in attrs])
-        return "%s(%s)" % (self.__class__.__name__, args)
+    __repr__ = __str__
 
     def copy(self):
         """Return a copy of this Request"""
