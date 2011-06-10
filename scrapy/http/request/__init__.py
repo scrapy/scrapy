@@ -60,6 +60,8 @@ class Request(object_ref):
             self._url = safe_url_string(unicode_url, self.encoding)
         else:
             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
+        if ':' not in self._url:
+            raise ValueError('Missing scheme in request url: %s' % self._url)
 
     url = property(_get_url, deprecated_setter(_set_url, 'url'))
 

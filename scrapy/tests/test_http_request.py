@@ -42,6 +42,9 @@ class RequestTest(unittest.TestCase):
         assert r.headers is not headers
         self.assertEqual(r.headers["caca"], "coco")
 
+    def test_url_no_scheme(self):
+        self.assertRaises(ValueError, self.request_class, 'foo')
+
     def test_headers(self):
         # Different ways of setting headers attribute
         url = 'http://www.scrapy.org'
