@@ -142,7 +142,7 @@ class RequestTest(unittest.TestCase):
         class CustomRequest(self.request_class):
             pass
 
-        r1 = CustomRequest('example.com', 'http://www.example.com')
+        r1 = CustomRequest('http://www.example.com')
         r2 = r1.copy()
 
         assert type(r2) is CustomRequest
