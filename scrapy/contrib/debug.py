@@ -4,11 +4,13 @@ Extensions for debugging Scrapy
 See documentation in docs/topics/extensions.rst
 """
 
+import os
 import signal
 import traceback
 from pdb import Pdb
 
-from scrapy.utils.engine import print_engine_status
+from scrapy.utils.engine import format_engine_status
+from scrapy import log
 
 
 class StackTraceDump(object):
@@ -21,8 +23,11 @@ class StackTraceDump(object):
             pass
 
     def dump_stacktrace(self, signum, frame):
-        traceback.print_stack(frame)
-        print_engine_status()
+        msg = "Dumping stack trace and engine status" + os.linesep
+        msg += "".join(traceback.format_stack(frame))
+        msg += os.linesep
+        msg += format_engine_status()
+        log.msg(msg)
 
 
 class Debugger(object):
