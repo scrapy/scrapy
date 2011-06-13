@@ -280,7 +280,7 @@ The conditions for closing a spider can be configured through the following
 settings:
 
 * :setting:`CLOSESPIDER_TIMEOUT`
-* :setting:`CLOSESPIDER_ITEMPASSED`
+* :setting:`CLOSESPIDER_ITEMCOUNT`
 * :setting:`CLOSESPIDER_PAGECOUNT`
 * :setting:`CLOSESPIDER_ERRORCOUNT`
 
@@ -296,16 +296,16 @@ more than that number of second, it will be automatically closed with the
 reason ``closespider_timeout``. If zero (or non set), spiders won't be closed by
 timeout.
 
-.. setting:: CLOSESPIDER_ITEMPASSED
+.. setting:: CLOSESPIDER_ITEMCOUNT
 
-CLOSESPIDER_ITEMPASSED
-""""""""""""""""""""""
+CLOSESPIDER_ITEMCOUNT
+"""""""""""""""""""""
 
 Default: ``0``
 
 An integer which specifies a number of items. If the spider scrapes more than
 that amount if items and those items are passed by the item pipeline, the
-spider will be closed with the reason ``closespider_itempassed``. If zero (or
+spider will be closed with the reason ``closespider_itemcount``. If zero (or
 non set), spiders won't be closed by number of passed items.
 
 .. setting:: CLOSESPIDER_PAGECOUNT

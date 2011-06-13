@@ -18,7 +18,8 @@ class CloseSpider(object):
 
     def __init__(self):
         self.timeout = settings.getint('CLOSESPIDER_TIMEOUT')
-        self.itempassed = settings.getint('CLOSESPIDER_ITEMPASSED')
+        self.itemcount = settings.getint('CLOSESPIDER_ITEMCOUNT') or \
+            settings.getint('CLOSESPIDER_ITEMPASSED') # XXX: legacy support
         self.pagecount = settings.getint('CLOSESPIDER_PAGECOUNT')
         self.errorcount = settings.getint('CLOSESPIDER_ERRORCOUNT')
 
@@ -33,7 +34,7 @@ class CloseSpider(object):
             dispatcher.connect(self.page_count, signal=signals.response_received)
         if self.timeout:
             dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
-        if self.itempassed:
+        if self.itemcount:
             dispatcher.connect(self.item_scraped, signal=signals.item_scraped)
         dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
@@ -57,8 +58,8 @@ class CloseSpider(object):
 
     def item_scraped(self, item, spider):
         self.counts[spider] += 1
-        if self.counts[spider] == self.itempassed:
-            crawler.engine.close_spider(spider, 'closespider_itempassed')
+        if self.counts[spider] == self.itemcount:
+            crawler.engine.close_spider(spider, 'closespider_itemcount')
 
     def spider_closed(self, spider):
         self.counts.pop(spider, None)
