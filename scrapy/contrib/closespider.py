@@ -4,6 +4,7 @@ conditions are met.
 See documentation in docs/topics/extensions.rst
 """
 
+import warnings
 from collections import defaultdict
 
 from twisted.internet import reactor
@@ -18,8 +19,11 @@ class CloseSpider(object):
 
     def __init__(self):
         self.timeout = settings.getint('CLOSESPIDER_TIMEOUT')
-        self.itemcount = settings.getint('CLOSESPIDER_ITEMCOUNT') or \
-            settings.getint('CLOSESPIDER_ITEMPASSED') # XXX: legacy support
+        self.itemcount = settings.getint('CLOSESPIDER_ITEMCOUNT')
+        # XXX: legacy support - remove for future releases
+        if settings.getint('CLOSESPIDER_ITEMPASSED'):
+            warnings.warn("CLOSESPIDER_ITEMPASSED setting is deprecated, use CLOSESPIDER_ITEMCOUNT instead", DeprecationWarning)
+            self.pagecount = settings.getint('CLOSESPIDER_ITEMPASSED')
         self.pagecount = settings.getint('CLOSESPIDER_PAGECOUNT')
         self.errorcount = settings.getint('CLOSESPIDER_ERRORCOUNT')
 
