@@ -178,10 +178,20 @@ Built-in extensions reference
 General purpose extensions
 --------------------------
 
+Log Stats extension
+~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.contrib.logstats
+   :synopsis: Basic stats logging
+
+.. class:: LogStats
+
+Log basic stats like crawled pages and scraped items.
+
 Core Stats extension
 ~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.contrib.corestats.corestats
+.. module:: scrapy.contrib.corestats
    :synopsis: Core stats collection
 
 .. class:: CoreStats

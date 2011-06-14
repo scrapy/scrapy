@@ -137,6 +137,7 @@ EXTENSIONS_BASE = {
     'scrapy.contrib.feedexport.FeedExporter': 0,
     'scrapy.contrib.spidercontext.SpiderContext': 0,
     'scrapy.contrib.throttle.AutoThrottle': 0,
+    'scrapy.contrib.logstats.LogStats': 0,
 }
 
 FEED_URI = None
@@ -181,6 +182,8 @@ LOG_FORMATTER = 'scrapy.logformatter.LogFormatter'
 LOG_STDOUT = False
 LOG_LEVEL = 'DEBUG'
 LOG_FILE = None
+
+LOGSTATS_INTERVAL = 60.0
 
 MAIL_DEBUG = False
 MAIL_HOST = 'localhost'
