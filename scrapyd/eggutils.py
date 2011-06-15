@@ -11,4 +11,4 @@ def activate_egg(eggpath):
         raise ValueError("Unknown or corrupt egg")
     d.activate()
     settings_module = d.get_entry_info('scrapy', 'settings').module_name
-    os.environ['SCRAPY_SETTINGS_MODULE'] = settings_module
+    os.environ.setdefault('SCRAPY_SETTINGS_MODULE', settings_module)
