@@ -18,7 +18,6 @@ class SitemapSpider(BaseSpider):
             if isinstance(c, basestring):
                 c = getattr(self, c)
             self._cbs.append((r, c))
-            print self._cbs
 
     def start_requests(self):
         return [Request(x, callback=self._parse_sitemap) for x in self.sitemap_urls]
