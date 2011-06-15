@@ -45,8 +45,13 @@ We will talk about those types here.
 Built-in spiders reference
 ==========================
 
-For the examples used in the following spiders reference, we'll assume we have a
-``TestItem`` declared in a ``myproject.items`` module, in your project::
+Scrapy comes with some useful generic spiders that you can use, to subclass
+your spiders from. Their aim is to provide convenient functionality for a few
+common scraping cases, like following all links on a site based on certain
+rules, crawling from `Sitemaps`_, or parsing a XML/CSV feed.
+
+For the examples used in the following spiders, we'll assume you have a project
+with a ``TestItem`` declared in a ``myproject.items`` module::
 
     from scrapy.item import Item
 
@@ -228,6 +233,7 @@ CrawlSpider
        
 Crawling rules
 ~~~~~~~~~~~~~~
+
 .. class:: Rule(link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=None)
 
    ``link_extractor`` is a :ref:`Link Extractor <topics-link-extractors>` object which
@@ -262,7 +268,7 @@ Crawling rules
     filter out the request).
 
 CrawlSpider example
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 Let's now take a look at an example CrawlSpider with rules::
 
@@ -465,3 +471,115 @@ Let's see an example similar to the previous one, but using a
             item['name'] = row['name']
             item['description'] = row['description']
             return item
+
+
+SitemapSpider
+-------------
+
+.. class:: SitemapSpider
+
+    SitemapSpider allows you to crawl a site by discovering the URLs using
+    `Sitemaps`_.
+
+    It supports nested sitemaps and discovering sitemap urls from
+    `robots.txt`_.
+
+    .. attribute:: sitemap_urls
+
+        A list of urls pointing to the sitemaps whose urls you want to crawl.
+
+        You can also point to a `robots.txt`_ and it will be parsed to extract
+        sitemap urls from it.
+
+    .. attribute:: sitemap_rules
+
+        A list of tuples ``(regex, callback)`` where:
+
+        * ``regex`` is a regular expression to match urls extracted from sitemaps.
+          ``regex`` can be either a str or a compiled regex object.
+
+        * callback is the callback to use for processing the urls that match
+          the regular expression. ``callback`` can be a string (indicating the
+          name of a spider method) or a callable.
+
+        For example::
+
+            sitemap_rules = [('/product/', 'parse_product')]
+
+        Rules are applied in order, and only the first one that matches will be
+        used.
+
+        If you omit this attribute, all urls found in sitemaps will be
+        processed with the ``parse`` callback.
+
+SitemapSpider examples
+~~~~~~~~~~~~~~~~~~~~~~
+
+Simplest example: process all urls discovered through sitemaps using the
+``parse`` callback::
+
+    from scrapy.contrib.spiders import SitemapSpider
+
+    class MySpider(SitemapSpider):
+        sitemap_urls = ['http://www.example.com/sitemap.xml']
+
+        def parse(self, response):
+            pass # ... scrape item here ...
+
+Process some urls with certain callback and other urls with a different
+callback::
+
+    from scrapy.contrib.spiders import SitemapSpider
+
+    class MySpider(SitemapSpider):
+        sitemap_urls = ['http://www.example.com/sitemap.xml']
+        sitemap_rules = [
+            ('/product/', 'parse_product'),
+            ('/category/', 'parse_category'),
+        ]
+
+        def parse_product(self, response):
+            pass # ... scrape product ...
+
+        def parse_category(self, response):
+            pass # ... scrape category ...
+
+Follow sitemaps defined in the `robots.txt`_ file::
+
+    from scrapy.contrib.spiders import SitemapSpider
+
+    class MySpider(SitemapSpider):
+        sitemap_urls = ['http://www.example.com/robots.txt']
+        sitemap_rules = [
+            ('/shop/', 'parse_shop'),
+        ]
+
+        def parse_shop(self, response):
+            pass # ... scrape shop here ...
+
+Combine SitemapSpider with other sources of urls::
+
+    from scrapy.contrib.spiders import SitemapSpider
+
+    class MySpider(SitemapSpider):
+        sitemap_urls = ['http://www.example.com/robots.txt']
+        sitemap_rules = [
+            ('/shop/', 'parse_shop'),
+        ]
+
+        other_urls = ['http://www.example.com/about']
+
+        def start_requests(self):
+            requests = list(super(MySpider, self).start_requests())
+            requests += [Request(x, callback=self.parse_other) for x in self.other_urls]
+            return requests
+
+        def parse_shop(self, response):
+            pass # ... scrape shop here ...
+
+        def parse_other(self, response):
+            pass # ... scrape other here ...
+
+.. _Sitemaps: http://www.sitemaps.org
+.. _robots.txt: http://www.robotstxt.org/
+
