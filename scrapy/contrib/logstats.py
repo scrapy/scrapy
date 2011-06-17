@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 from twisted.internet import task
 
 from scrapy.xlib.pydispatch import dispatcher
@@ -22,10 +20,11 @@ class LogStats(object):
         self.interval = settings.getfloat('LOGSTATS_INTERVAL')
         if not self.interval:
             raise NotConfigured
-        self.slots = defaultdict(Slot)
+        self.slots = {}
         self.multiplier = 60.0 / self.interval
         dispatcher.connect(self.item_scraped, signal=signals.item_scraped)
         dispatcher.connect(self.response_received, signal=signals.response_received)
+        dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
         dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
         dispatcher.connect(self.engine_started, signal=signals.engine_started)
         dispatcher.connect(self.engine_stopped, signal=signals.engine_stopped)
@@ -35,6 +34,9 @@ class LogStats(object):
 
     def response_received(self, spider):
         self.slots[spider].pages += 1
+
+    def spider_opened(self, spider):
+        self.slots[spider] = Slot()
 
     def spider_closed(self, spider):
         del self.slots[spider]
