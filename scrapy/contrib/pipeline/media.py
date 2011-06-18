@@ -3,7 +3,7 @@ from twisted.internet.defer import Deferred, DeferredList
 
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy import log
-from scrapy.utils.request import request_fingerprint, request_deferred
+from scrapy.utils.request import request_fingerprint
 from scrapy.utils.misc import arg_to_iter
 
 class MediaPipeline(object):
@@ -75,11 +75,10 @@ class MediaPipeline(object):
                 errback=self.media_failed, errbackArgs=(request, info))
         else:
             request.meta['handle_httpstatus_all'] = True
-            dfd = request_deferred(request)
+            dfd = self.crawler.engine.download(request, info.spider)
             dfd.addCallbacks(
                 callback=self.media_downloaded, callbackArgs=(request, info),
                 errback=self.media_failed, errbackArgs=(request, info))
-            self.crawler.engine.crawl(request, info.spider)
         return dfd
 
     def _cache_result_and_execute_waiters(self, result, fp, info):

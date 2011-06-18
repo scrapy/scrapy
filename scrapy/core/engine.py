@@ -97,7 +97,7 @@ class ExecutionEngine(object):
         request = self.scheduler.next_request(spider)
         if not request:
             return
-        d = self.download(request, spider)
+        d = self._download(request, spider)
         d.addBoth(self._handle_downloader_output, request, spider)
         d.addBoth(lambda _: self.next_request(spider))
         return d
@@ -160,6 +160,13 @@ class ExecutionEngine(object):
         return self.scheduler.enqueue_request(spider, request)
 
     def download(self, request, spider):
+        if isinstance(request, Response):
+            return request
+        d = self._download(request, spider)
+        d.addCallback(self.download, spider)
+        return d
+
+    def _download(self, request, spider):
         def _on_success(response):
             """handle the result of a page download"""
             assert isinstance(response, (Response, Request))
