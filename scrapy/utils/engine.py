@@ -43,7 +43,7 @@ def get_engine_status(engine=None):
             status['global'][test] = eval(test)
         except Exception, e:
             status['global'][test] = "%s (exception)" % type(e).__name__
-    for spider in engine.downloader.sites + engine.scraper.sites:
+    for spider in set(engine.downloader.sites.keys() + engine.scraper.sites.keys()):
         x = {}
         for test in spider_tests:
             try:
