@@ -1,6 +1,6 @@
 #!/bin/sh
 
-repotac="$(dirname $0)/../extras/scrapyd.tac"
+repotac=$(cd $(dirname $0)/../extras; pwd)/scrapyd.tac
 
 if [ -f "$repotac" ]; then
     tacfile="$repotac"
