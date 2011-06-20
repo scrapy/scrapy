@@ -1,0 +1,14 @@
+#!/bin/sh
+
+repotac="$(dirname $0)/../extras/scrapyd.tac"
+
+if [ -f "$repotac" ]; then
+    tacfile="$repotac"
+elif [ -f "/usr/share/scrapyd/scrapyd.tac" ]; then
+    tacfile="/usr/share/scrapyd/scrapyd.tac"
+else
+    echo "Unable to find scrapy.tac file"
+    exit 1
+fi
+
+twistd -ny "$tacfile"
