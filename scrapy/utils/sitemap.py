@@ -23,7 +23,7 @@ class Sitemap(object):
             d = {}
             for el in elem.getchildren():
                 _, name = el.tag.split('}', 1)
-                d[name] = el.text
+                d[name] = el.text.strip()
             yield d
 
 def sitemap_urls_from_robots(robots_text):

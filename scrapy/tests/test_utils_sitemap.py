@@ -39,7 +39,22 @@ class SitemapTest(unittest.TestCase):
         assert s.type == 'sitemapindex'
         self.assertEqual(list(s), [{'loc': 'http://www.example.com/sitemap1.xml.gz', 'lastmod': '2004-10-01T18:23:17+00:00'}, {'loc': 'http://www.example.com/sitemap2.xml.gz', 'lastmod': '2005-01-01'}])
 
-class RobotsTest(unittest.TestCase):
+    def test_sitemap_strip(self):
+        """Assert we can deal with trailing spaces inside <loc> tags - we've
+        seen those
+        """
+        s = Sitemap("""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.google.com/schemas/sitemap/0.84">
+  <url>
+    <loc> http://www.example.com/</loc>
+    <lastmod>2009-08-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1</priority>
+  </url>
+</urlset>
+""")
+        self.assertEqual(list(s),
+            [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'}])
 
     def test_sitemap_urls_from_robots(self):
         robots = """User-agent: *
