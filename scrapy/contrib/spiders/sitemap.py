@@ -8,16 +8,16 @@ class SitemapSpider(BaseSpider):
 
     sitemap_urls = ()
     sitemap_rules = [('', 'parse')]
+    sitemap_follow = ['']
 
     def __init__(self, *a, **kw):
         super(SitemapSpider, self).__init__(*a, **kw)
         self._cbs = []
         for r, c in self.sitemap_rules:
-            if isinstance(r, basestring):
-                r = re.compile(r)
             if isinstance(c, basestring):
                 c = getattr(self, c)
-            self._cbs.append((r, c))
+            self._cbs.append((regex(r), c))
+        self._follow = [regex(x) for x in self.sitemap_follow]
 
     def start_requests(self):
         return [Request(x, callback=self._parse_sitemap) for x in self.sitemap_urls]
@@ -29,12 +29,22 @@ class SitemapSpider(BaseSpider):
         else:
             s = Sitemap(response.body)
             if s.type == 'sitemapindex':
-                for sitemap in s:
-                    yield Request(sitemap['loc'], callback=self._parse_sitemap)
+                for loc in iterloc(s):
+                    if any(x.search(loc) for x in self._follow):
+                        yield Request(loc, callback=self._parse_sitemap)
             elif s.type == 'urlset':
-                for url in s:
-                    loc = url['loc']
+                for loc in iterloc(s):
                     for r, c in self._cbs:
                         if r.search(loc):
                             yield Request(loc, callback=c)
                             break
+
+
+def regex(x):
+    if isinstance(x, basestring):
+        return re.compile(x)
+    return x
+
+def iterloc(it):
+    for d in it:
+        yield d['loc']

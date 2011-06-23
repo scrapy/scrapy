@@ -512,6 +512,15 @@ SitemapSpider
         If you omit this attribute, all urls found in sitemaps will be
         processed with the ``parse`` callback.
 
+    .. attribute:: sitemap_follow
+
+        A list of regexes of sitemap that should be followed. This is is only
+        for sites that use `Sitemap index files`_ that point to other sitemap
+        files.
+
+        By default, all sitemaps are followed.
+
+
 SitemapSpider examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -544,7 +553,8 @@ callback::
         def parse_category(self, response):
             pass # ... scrape category ...
 
-Follow sitemaps defined in the `robots.txt`_ file::
+Follow sitemaps defined in the `robots.txt`_ file and only follow sitemaps
+whose url contains ``/sitemap_shop``::
 
     from scrapy.contrib.spiders import SitemapSpider
 
@@ -553,6 +563,7 @@ Follow sitemaps defined in the `robots.txt`_ file::
         sitemap_rules = [
             ('/shop/', 'parse_shop'),
         ]
+        sitemap_follow = ['/sitemap_shops']
 
         def parse_shop(self, response):
             pass # ... scrape shop here ...
@@ -581,5 +592,5 @@ Combine SitemapSpider with other sources of urls::
             pass # ... scrape other here ...
 
 .. _Sitemaps: http://www.sitemaps.org
+.. _Sitemap index files: http://www.sitemaps.org/protocol.php#index
 .. _robots.txt: http://www.robotstxt.org/
-
