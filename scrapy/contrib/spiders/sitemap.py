@@ -1,8 +1,9 @@
 import re
 
 from scrapy.spider import BaseSpider
-from scrapy.http import Request
+from scrapy.http import Request, XmlResponse
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
+from scrapy import log
 
 class SitemapSpider(BaseSpider):
 
@@ -27,6 +28,9 @@ class SitemapSpider(BaseSpider):
             for url in sitemap_urls_from_robots(response.body):
                 yield Request(url, callback=self._parse_sitemap)
         else:
+            if not isinstance(response, XmlResponse):
+                log.msg("Ignoring non-XML sitemap: %s" % response, log.WARNING)
+                return
             s = Sitemap(response.body)
             if s.type == 'sitemapindex':
                 for loc in iterloc(s):
