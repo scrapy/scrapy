@@ -74,6 +74,7 @@ class Shell(object):
         else:
             url = any_to_uri(request_or_url)
             request = Request(url, dont_filter=True)
+            request.meta['handle_httpstatus_all'] = True
         response = None
         response, spider = threads.blockingCallFromThread(reactor, \
             self._schedule, request, spider)
