@@ -17,8 +17,6 @@ class HttpCompressionMiddleware(object):
             content_encoding = response.headers.getlist('Content-Encoding')
             if content_encoding:
                 encoding = content_encoding.pop()
-                with open('body', 'w') as f:
-                    f.write(response.body)
                 decoded_body = self._decode(response.body, encoding.lower())
                 respcls = responsetypes.from_args(headers=response.headers, \
                     url=response.url)
