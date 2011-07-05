@@ -10,7 +10,7 @@ class HttpCompressionMiddleware(object):
     sent/received from web sites"""
 
     def process_request(self, request, spider):
-        request.headers.setdefault('Accept-Encoding', 'gzip,deflate')
+        request.headers.setdefault('Accept-Encoding', 'x-gzip,gzip,deflate')
 
     def process_response(self, request, response, spider):
         if isinstance(response, Response):
@@ -32,7 +32,7 @@ class HttpCompressionMiddleware(object):
         return response
 
     def _decode(self, body, encoding):
-        if encoding == 'gzip':
+        if encoding == 'gzip' or encoding == 'x-gzip':
             body = gunzip(body)
 
         if encoding == 'deflate':
