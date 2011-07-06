@@ -3,6 +3,7 @@ import re
 from scrapy.spider import BaseSpider
 from scrapy.http import Request, XmlResponse
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
+from scrapy.utils.gz import gunzip
 from scrapy import log
 
 class SitemapSpider(BaseSpider):
@@ -28,10 +29,15 @@ class SitemapSpider(BaseSpider):
             for url in sitemap_urls_from_robots(response.body):
                 yield Request(url, callback=self._parse_sitemap)
         else:
-            if not isinstance(response, XmlResponse):
+            if isinstance(response, XmlResponse):
+                body = response.body
+            elif is_gzipped(response):
+                body = gunzip(response.body)
+            else:
                 log.msg("Ignoring non-XML sitemap: %s" % response, log.WARNING)
                 return
-            s = Sitemap(response.body)
+
+            s = Sitemap(body)
             if s.type == 'sitemapindex':
                 for loc in iterloc(s):
                     if any(x.search(loc) for x in self._follow):
@@ -43,6 +49,9 @@ class SitemapSpider(BaseSpider):
                             yield Request(loc, callback=c)
                             break
 
+def is_gzipped(response):
+    ctype = response.headers.get('Content-Type', '')
+    return ctype in ('application/x-gzip', 'applicatoin/gzip')
 
 def regex(x):
     if isinstance(x, basestring):
