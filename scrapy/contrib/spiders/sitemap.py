@@ -51,7 +51,7 @@ class SitemapSpider(BaseSpider):
 
 def is_gzipped(response):
     ctype = response.headers.get('Content-Type', '')
-    return ctype in ('application/x-gzip', 'applicatoin/gzip')
+    return ctype in ('application/x-gzip', 'application/gzip')
 
 def regex(x):
     if isinstance(x, basestring):
