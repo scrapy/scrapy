@@ -22,13 +22,11 @@ def get_engine_status(engine=None):
     ]
     spider_tests = [
         "engine.spider_is_idle(spider)",
-        "engine.closing.get(spider)",
-        "engine.scheduler.spider_has_pending_requests(spider)",
+        "engine.slots[spider].closing",
         "len(engine.scheduler.pending_requests[spider])",
         "len(engine.downloader.sites[spider].queue)",
         "len(engine.downloader.sites[spider].active)",
         "len(engine.downloader.sites[spider].transferring)",
-        "engine.downloader.sites[spider].closing",
         "engine.downloader.sites[spider].lastseen",
         "len(engine.scraper.sites[spider].queue)",
         "len(engine.scraper.sites[spider].active)",

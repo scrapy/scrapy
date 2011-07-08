@@ -9,9 +9,6 @@ class Scheduler(object):
         self.dfo = settings['SCHEDULER_ORDER'].upper() == 'DFO'
         self.dupefilter = load_object(settings['DUPEFILTER_CLASS'])()
 
-    def spider_is_open(self, spider):
-        return spider in self.pending_requests
-
     def spider_has_pending_requests(self, spider):
         if spider in self.pending_requests:
             return bool(self.pending_requests[spider])

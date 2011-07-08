@@ -9,7 +9,6 @@ from collections import deque
 from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
 
-from scrapy.exceptions import IgnoreRequest
 from scrapy.conf import settings
 from scrapy.utils.python import setattr_default
 from scrapy.utils.defer import mustbe_deferred
@@ -34,7 +33,6 @@ class SpiderInfo(object):
         self.active = set()
         self.queue = deque()
         self.transferring = set()
-        self.closing = False
         self.lastseen = 0
         self.next_request_calls = set()
 
@@ -77,13 +75,10 @@ class Downloader(object):
         not be downloaded from site.
         """
         site = self.sites[spider]
-        if site.closing:
-            raise IgnoreRequest('Cannot fetch on a closing spider')
 
         site.active.add(request)
         def _deactivate(response):
             site.active.remove(request)
-            self._close_if_idle(spider)
             return response
 
         dfd = self.middleware.download(self.enqueue, request, spider)
@@ -92,8 +87,6 @@ class Downloader(object):
     def enqueue(self, request, spider):
         """Enqueue a Request for a effective download from site"""
         site = self.sites[spider]
-        if site.closing:
-            raise IgnoreRequest
 
         def _downloaded(response):
             send_catch_log(signal=signals.response_downloaded, \
@@ -128,19 +121,8 @@ class Downloader(object):
         # Process enqueued requests if there are free slots to transfer for this site
         while site.queue and site.free_transfer_slots() > 0:
             request, deferred = site.queue.popleft()
-            if site.closing:
-                dfd = defer.fail(Failure(IgnoreRequest()))
-            else:
-                dfd = self._download(site, request, spider)
+            dfd = self._download(site, request, spider)
             dfd.chainDeferred(deferred)
-
-        self._close_if_idle(spider)
-
-    def _close_if_idle(self, spider):
-        site = self.sites.get(spider)
-        if site and site.closing and not site.active:
-            del self.sites[spider]
-            site.closing.callback(None)
 
     def _download(self, site, request, spider):
         # The order is very important for the following deferreds. Do not change!
@@ -156,12 +138,6 @@ class Downloader(object):
         def finish_transferring(_):
             site.transferring.remove(request)
             self._process_queue(spider)
-            # avoid partially downloaded responses from propagating to the
-            # downloader middleware, to speed-up the closing process
-            if site.closing:
-                log.msg("Crawled while closing spider: %s" % request, \
-                    level=log.DEBUG, spider=spider)
-                raise IgnoreRequest
             return _
         return dfd.addBoth(finish_transferring)
 
@@ -173,11 +149,8 @@ class Downloader(object):
     def close_spider(self, spider):
         """Free any resources associated with the given spider"""
         assert spider in self.sites, "Spider not opened: %s" % spider
-        site = self.sites.get(spider)
-        site.closing = defer.Deferred()
+        site = self.sites.pop(spider)
         site.cancel_request_calls()
-        self._process_queue(spider)
-        return site.closing
 
     def is_idle(self):
         return not self.sites
