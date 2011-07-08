@@ -51,10 +51,16 @@ class SitemapTest(unittest.TestCase):
     <changefreq>daily</changefreq>
     <priority>1</priority>
   </url>
+  <url>
+    <loc> http://www.example.com/2</loc>
+    <lastmod />
+  </url>
 </urlset>
 """)
         self.assertEqual(list(s),
-            [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'}])
+            [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
+             {'loc': 'http://www.example.com/2', 'lastmod': ''},
+            ])
 
     def test_sitemap_urls_from_robots(self):
         robots = """User-agent: *
