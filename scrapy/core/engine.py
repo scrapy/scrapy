@@ -271,13 +271,13 @@ class ExecutionEngine(object):
 
         dfd = slot.close()
 
-        dfd.addBoth(lambda _: self.scheduler.close_spider(spider))
-        dfd.addErrback(log.err, spider=spider)
-
         dfd.addBoth(lambda _: self.downloader.close_spider(spider))
         dfd.addErrback(log.err, spider=spider)
 
         dfd.addBoth(lambda _: self.scraper.close_spider(spider))
+        dfd.addErrback(log.err, spider=spider)
+
+        dfd.addBoth(lambda _: self.scheduler.close_spider(spider))
         dfd.addErrback(log.err, spider=spider)
 
         dfd.addBoth(lambda _: self._cancel_next_call(spider))
