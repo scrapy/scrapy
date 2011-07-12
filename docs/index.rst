@@ -221,13 +221,13 @@ All the rest
    :hidden:
 
    contributing
-   api-stability
+   versioning
    experimental/index
 
 :doc:`contributing`
     Learn how to contribute to the Scrapy project.
 
-:doc:`api-stability`
+:doc:`versioning`
     Understand Scrapy versioning and API stability.
 
 :doc:`experimental/index`
