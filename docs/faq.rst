@@ -240,3 +240,8 @@ How can I see the cookies being sent and received from Scrapy?
 
 Enable the :setting:`COOKIES_DEBUG` setting.
 
+How can I manually stop a running spider?
+-----------------------------------------
+
+Raise the :exc:`~scrapy.exceptions.CloseSpider` exception from a callback. For
+more info see: :exc:`~scrapy.exceptions.CloseSpider`.

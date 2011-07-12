@@ -10,7 +10,7 @@ from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errba
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.misc import load_object
 from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
-from scrapy.exceptions import IgnoreRequest, DropItem
+from scrapy.exceptions import CloseSpider, IgnoreRequest, DropItem
 from scrapy import signals
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
@@ -143,6 +143,10 @@ class Scraper(object):
         return dfd.addCallback(iterate_spider_output)
 
     def handle_spider_error(self, _failure, request, response, spider, propagated_failure=None):
+        exc = _failure.value
+        if isinstance(exc, CloseSpider):
+            self.engine.close_spider(spider, exc.reason or 'cancelled')
+            return
         referer = request.headers.get('Referer', None)
         msg = "Spider error processing <%s> (referer: <%s>)" % \
             (request.url, referer)
