@@ -9,11 +9,11 @@ class LogFormatter(object):
     def crawled(self, request, response, spider):
         referer = request.headers.get('Referer')
         flags = ' %s' % str(response.flags) if response.flags else ''
-        return "Crawled (%d) %s (referer: %s)%s" % (response.status, \
+        return u"Crawled (%d) %s (referer: %s)%s" % (response.status, \
             request, referer, flags)
 
     def scraped(self, item, response, spider):
-        return "Scraped from %s" % response + os.linesep + str(item)
+        return u"Scraped from %s%s%s" % (response, os.linesep, item)
 
     def dropped(self, item, exception, response, spider):
-        return "Dropped: %s" % unicode(exception) + os.linesep + str(item)
+        return u"Dropped: %s%s%s" % (exception, os.linesep, item)
