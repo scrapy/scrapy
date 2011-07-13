@@ -476,14 +476,47 @@ in the ``redirect_urls`` :attr:`Request.meta <scrapy.http.Request.meta>` key.
 The :class:`RedirectMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
 
-* :setting:`REDIRECT_MAX_METAREFRESH_DELAY` - Maximum meta-refresh delay that a page is allowed to have for redirection.
-* :setting:`REDIRECT_MAX_TIMES` - Maximum number of redirects to perform on a request.
-* :setting:`REDIRECT_PRIORITY_ADJUST` - Adjusts the redirected request priority by this amount.
+* :setting:`REDIRECT_ENABLED`
+* :setting:`REDIRECT_MAX_TIMES`
+* :setting:`REDIRECT_MAX_METAREFRESH_DELAY`
 
 .. reqmeta:: dont_redirect
 
 If :attr:`Request.meta <scrapy.http.Request.meta>` contains the
 ``dont_redirect`` key, the request will be ignored by this middleware.
+
+
+RedirectMiddleware settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. setting:: REDIRECT_ENABLED
+
+REDIRECT_ENABLED
+^^^^^^^^^^^^^^^^
+
+.. versionadded:: 0.13
+
+Default: ``True``
+
+Whether the Redirect middleware will be enabled.
+
+.. setting:: REDIRECT_MAX_TIMES
+
+REDIRECT_MAX_TIMES
+^^^^^^^^^^^^^^^^^^
+
+Default: ``20``
+
+The maximum number of redirections that will be follow for a single request.
+
+.. setting:: REDIRECT_MAX_METAREFRESH_DELAY
+
+REDIRECT_MAX_METAREFRESH_DELAY
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``100``
+
+The maximum meta-refresh delay (in seconds) to follow the redirection.
 
 RetryMiddleware
 ---------------
