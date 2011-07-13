@@ -1,3 +1,6 @@
+from docutils.parsers.rst.roles import set_classes
+from docutils import nodes
+
 def setup(app):
     app.add_crossref_type(
         directivename = "setting",
@@ -19,3 +22,10 @@ def setup(app):
         rolename      = "reqmeta",
         indextemplate = "pair: %s; reqmeta",
     )
+    app.add_role('source', source_role)
+
+def source_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
+    url = 'http://dev.scrapy.org/browser/' + text
+    set_classes(options)
+    node = nodes.reference(rawtext, text, refuri=ref, **options)
+    return [node], []

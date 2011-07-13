@@ -14,7 +14,7 @@ class TestDownloaderStats(TestCase):
 
         stats.open_spider(self.spider)
 
-        self.req = Request('scrapytest.org')
+        self.req = Request('http://scrapytest.org')
         self.res = Response('scrapytest.org', status=400)
 
     def test_process_request(self):

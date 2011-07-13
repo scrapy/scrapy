@@ -1,6 +1,6 @@
+import os
 import shutil
 import string
-from os import listdir
 from os.path import join, dirname, abspath, exists, splitext
 
 import scrapy
@@ -38,6 +38,8 @@ class Command(ScrapyCommand):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-l", "--list", dest="list", action="store_true",
             help="List available templates")
+        parser.add_option("-e", "--edit", dest="edit", action="store_true",
+            help="Edit spider after creating it")
         parser.add_option("-d", "--dump", dest="dump", metavar="TEMPLATE",
             help="Dump template to standard output")
         parser.add_option("-t", "--template", dest="template", default="crawl",
@@ -72,6 +74,8 @@ class Command(ScrapyCommand):
         template_file = self._find_template(opts.template)
         if template_file:
             self._genspider(module, name, domain, opts.template, template_file)
+            if opts.edit:
+                self.exitcode = os.system('scrapy edit "%s"' % name)
 
     def _genspider(self, module, name, domain, template_name, template_file):
         """Generate the spider module, based on the given template"""
@@ -102,7 +106,7 @@ class Command(ScrapyCommand):
 
     def _list_templates(self):
         print "Available templates:"
-        for filename in sorted(listdir(self.templates_dir)):
+        for filename in sorted(os.listdir(self.templates_dir)):
             if filename.endswith('.tmpl'):
                 print "  %s" % splitext(filename)[0]
 

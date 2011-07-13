@@ -5,14 +5,14 @@ for scraping from an XML feed.
 See documentation in docs/topics/spiders.rst
 """
 
-from scrapy.contrib.spiders.init import InitSpider
+from scrapy.spider import BaseSpider
 from scrapy.item import BaseItem
 from scrapy.http import Request
 from scrapy.utils.iterators import xmliter, csviter
 from scrapy.selector import XmlXPathSelector, HtmlXPathSelector
 from scrapy.exceptions import NotConfigured, NotSupported
 
-class XMLFeedSpider(InitSpider):
+class XMLFeedSpider(BaseSpider):
     """
     This class intends to be the base class for spiders that scrape
     from XML feeds.
@@ -47,7 +47,7 @@ class XMLFeedSpider(InitSpider):
         """This method must be overriden with your custom spider functionality"""
         if hasattr(self, 'parse_item'): # backward compatibility
             return self.parse_item(response, selector)
-        raise NotImplemented
+        raise NotImplementedError
         
     def parse_nodes(self, response, nodes):
         """This method is called for the nodes matching the provided tag name
@@ -90,7 +90,7 @@ class XMLFeedSpider(InitSpider):
         for (prefix, uri) in self.namespaces:
             selector.register_namespace(prefix, uri)
 
-class CSVFeedSpider(InitSpider):
+class CSVFeedSpider(BaseSpider):
     """Spider for parsing CSV feeds.
     It receives a CSV file in a response; iterates through each of its rows,
     and calls parse_row with a dict containing each field's data.
@@ -110,9 +110,9 @@ class CSVFeedSpider(InitSpider):
         """This method has the same purpose as the one in XMLFeedSpider"""
         return response
 
-    def parse_row(self, row):
+    def parse_row(self, response, row):
         """This method must be overriden with your custom spider functionality"""
-        raise NotImplemented
+        raise NotImplementedError
 
     def parse_rows(self, response):
         """Receives a response and a dict (representing each row) with a key for

@@ -16,6 +16,7 @@ SAMPLEDIR = join(tests_datadir, 'compressed')
 
 FORMAT = {
         'gzip': ('html-gzip.bin', 'gzip'),
+        'x-gzip': ('html-gzip.bin', 'gzip'),
         'rawdeflate': ('html-rawdeflate.bin', 'deflate'),
         'zlibdeflate': ('html-zlibdeflate.bin', 'deflate'),
         }
@@ -51,7 +52,7 @@ class HttpCompressionTest(TestCase):
         request = Request('http://scrapytest.org')
         assert 'Accept-Encoding' not in request.headers
         self.mw.process_request(request, self.spider)
-        self.assertEqual(request.headers.get('Accept-Encoding'), 'gzip,deflate')
+        self.assertEqual(request.headers.get('Accept-Encoding'), 'x-gzip,gzip,deflate')
 
     def test_process_response_gzip(self):
         response = self._getresponse('gzip')

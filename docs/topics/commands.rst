@@ -151,6 +151,7 @@ Project-only commands:
 
 * :command:`crawl`
 * :command:`list`
+* :command:`edit`
 * :command:`parse`
 * :command:`genspider`
 * :command:`server`
@@ -268,6 +269,25 @@ Usage example::
     $ scrapy list
     spider1
     spider2
+
+.. command:: edit
+
+edit
+----
+
+* Syntax: ``scrapy edit <spider>``
+* Requires project: *yes*
+
+Edit the given spider using the editor defined in the :setting:`EDITOR`
+setting.
+
+This command is provided only as a convenient shortcut for the most common
+case, the developer is of course free to choose any tool or IDE to write and
+debug his spiders.
+
+Usage example::
+
+    $ scrapy edit spider1
 
 .. command:: fetch
 

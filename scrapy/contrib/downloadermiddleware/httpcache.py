@@ -5,13 +5,14 @@ from os.path import join, exists
 from time import time
 import cPickle as pickle
 
+from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
+
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy import signals
 from scrapy.http import Headers
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.core.downloader.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
-from scrapy.utils.http import headers_dict_to_raw, headers_raw_to_dict
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.project import data_path
@@ -80,8 +81,7 @@ class FilesystemCacheStorage(object):
             body = f.read()
         with open(join(rpath, 'response_headers'), 'rb') as f:
             rawheaders = f.read()
-        # We failback to metadata['url'] to support old generated caches. TODO: remove for Scrapy 0.11
-        url = metadata.get('response_url') or metadata['url']
+        url = metadata.get('response_url')
         status = metadata['status']
         headers = Headers(headers_raw_to_dict(rawheaders))
         respcls = responsetypes.from_args(headers=headers, url=url)

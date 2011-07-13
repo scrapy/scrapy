@@ -7,10 +7,10 @@ because it collides with the lxml library module.
 
 from lxml import etree
 import lxml.html
+from w3lib.url import safe_url_string, urljoin_rfc
 
 from scrapy.link import Link
 from scrapy.utils.python import unique as unique_list, str_to_unicode
-from scrapy.utils.url import safe_url_string, urljoin_rfc
 
 class LxmlLinkExtractor(object):
     def __init__(self, tag="a", attr="href", process=None, unique=False):

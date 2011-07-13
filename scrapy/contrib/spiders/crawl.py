@@ -10,7 +10,7 @@ from functools import partial
 
 from scrapy.http import Request
 from scrapy.utils.spider import iterate_spider_output
-from scrapy.contrib.spiders.init import InitSpider
+from scrapy.spider import BaseSpider
 from scrapy.conf import settings
 
 def identity(x):
@@ -29,7 +29,7 @@ class Rule(object):
         else:
             self.follow = follow
 
-class CrawlSpider(InitSpider):
+class CrawlSpider(BaseSpider):
 
     rules = ()
 

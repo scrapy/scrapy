@@ -11,9 +11,10 @@ except ImportError:
     django = None
 
 if django:
-    from .models import Person
+    from .models import Person, IdentifiedPerson
 else:
     Person = None
+    IdentifiedPerson = None
 
 
 class BasePersonItem(DjangoItem):
@@ -25,7 +26,11 @@ class NewFieldPersonItem(BasePersonItem):
 
 
 class OverrideFieldPersonItem(BasePersonItem):
-    age = Field(default=1)
+    age = Field()
+
+
+class IdentifiedPersonItem(DjangoItem):
+    django_model = IdentifiedPerson
 
 
 class DjangoItemTest(unittest.TestCase):
@@ -45,7 +50,14 @@ class DjangoItemTest(unittest.TestCase):
     def test_override_field(self):
         i = OverrideFieldPersonItem()
         self.assertEqual(i.fields.keys(), ['age', 'name'])
-        self.assertEqual(i.fields['age'], {'default': 1})
+
+    def test_custom_primary_key_field(self):
+        """
+        Test that if a custom primary key exists, it is
+        in the field list.
+        """
+        i = IdentifiedPersonItem()
+        self.assertEqual(i.fields.keys(), ['age', 'identifier', 'name'])
 
     def test_save(self):
         i = BasePersonItem()
@@ -65,5 +77,4 @@ class DjangoItemTest(unittest.TestCase):
         person = i.save(commit=False)
 
         self.assertEqual(person.name, 'John')
-        self.assertEqual(person.age, 1)
 

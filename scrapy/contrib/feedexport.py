@@ -12,14 +12,14 @@ from ftplib import FTP
 from shutil import copyfileobj
 
 from zope.interface import Interface, implements
-
 from twisted.internet import defer, threads
+from w3lib.url import file_uri_to_path
+
 from scrapy import log, signals
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.utils.ftp import ftp_makedirs_cwd
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
-from scrapy.utils.url import file_uri_to_path
 from scrapy.conf import settings
 
 
@@ -136,7 +136,7 @@ class FeedExporter(object):
         self.slots = {}
         dispatcher.connect(self.open_spider, signals.spider_opened)
         dispatcher.connect(self.close_spider, signals.spider_closed)
-        dispatcher.connect(self.item_passed, signals.item_passed)
+        dispatcher.connect(self.item_scraped, signals.item_scraped)
 
     def open_spider(self, spider):
         file = TemporaryFile(prefix='feed-')
@@ -163,7 +163,7 @@ class FeedExporter(object):
         d.addBoth(lambda _: slot.file.close())
         return d
 
-    def item_passed(self, item, spider):
+    def item_scraped(self, item, spider):
         slot = self.slots[spider]
         slot.exporter.export_item(item)
         slot.itemcount += 1

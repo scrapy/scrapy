@@ -61,13 +61,10 @@ class Response(object_ref):
 
     body = property(_get_body, deprecated_setter(_set_body, 'body'))
 
-    def __repr__(self):
-        attrs = ['url', 'status', 'body', 'headers', 'request', 'flags']
-        args = ", ".join(["%s=%r" % (a, getattr(self, a)) for a in attrs])
-        return "%s(%s)" % (self.__class__.__name__, args)
-
     def __str__(self):
         return "<%d %s>" % (self.status, self.url)
+
+    __repr__ = __str__
 
     def copy(self):
         """Return a copy of this Response"""

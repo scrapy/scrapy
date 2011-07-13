@@ -3,12 +3,16 @@ SGMLParser-based Link extractors
 """
 
 import re
+from urlparse import urlparse
+
+from w3lib.url import safe_url_string, urljoin_rfc
 
 from scrapy.selector import HtmlXPathSelector
 from scrapy.link import Link
+from scrapy.linkextractor import IGNORED_EXTENSIONS
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import FixedSGMLParser, unique as unique_list, str_to_unicode
-from scrapy.utils.url import safe_url_string, urljoin_rfc, canonicalize_url, url_is_from_any_domain
+from scrapy.utils.url import canonicalize_url, url_is_from_any_domain, url_has_any_extension
 from scrapy.utils.response import get_base_url
 
 class BaseSgmlLinkExtractor(FixedSGMLParser):
@@ -89,13 +93,17 @@ _is_valid_url = lambda url: url.split('://', 1)[0] in set(['http', 'https', 'fil
 class SgmlLinkExtractor(BaseSgmlLinkExtractor):
 
     def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(), 
-                 tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True, process_value=None):
+                 tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True, process_value=None,
+                 deny_extensions=None):
         self.allow_res = [x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(allow)]
         self.deny_res = [x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(deny)]
         self.allow_domains = set(arg_to_iter(allow_domains))
         self.deny_domains = set(arg_to_iter(deny_domains))
         self.restrict_xpaths = tuple(arg_to_iter(restrict_xpaths))
         self.canonicalize = canonicalize
+        if deny_extensions is None:
+            deny_extensions = IGNORED_EXTENSIONS
+        self.deny_extensions = set(['.' + e for e in deny_extensions])
         tag_func = lambda x: x in tags
         attr_func = lambda x: x in attrs
         BaseSgmlLinkExtractor.__init__(self, tag=tag_func, attr=attr_func, 
@@ -116,23 +124,26 @@ class SgmlLinkExtractor(BaseSgmlLinkExtractor):
         return links
 
     def _process_links(self, links):
-        links = [link for link in links if _is_valid_url(link.url)]
-
-        if self.allow_res:
-            links = [link for link in links if _matches(link.url, self.allow_res)]
-        if self.deny_res:
-            links = [link for link in links if not _matches(link.url, self.deny_res)]
-        if self.allow_domains:
-            links = [link for link in links if url_is_from_any_domain(link.url, self.allow_domains)]
-        if self.deny_domains:
-            links = [link for link in links if not url_is_from_any_domain(link.url, self.deny_domains)]
-
-        if self.canonicalize:
-            for link in links:
-                link.url = canonicalize_url(link.url)
-
+        links = [x for x in links if self._link_allowed(x)]
         links = BaseSgmlLinkExtractor._process_links(self, links)
         return links
+
+    def _link_allowed(self, link):
+        parsed_url = urlparse(link.url)
+        allowed = _is_valid_url(link.url)
+        if self.allow_res:
+            allowed &= _matches(link.url, self.allow_res)
+        if self.deny_res:
+            allowed &= not _matches(link.url, self.deny_res)
+        if self.allow_domains:
+            allowed &= url_is_from_any_domain(parsed_url, self.allow_domains)
+        if self.deny_domains:
+            allowed &= not url_is_from_any_domain(parsed_url, self.deny_domains)
+        if self.deny_extensions:
+            allowed &= not url_has_any_extension(parsed_url, self.deny_extensions)
+        if allowed and self.canonicalize:
+            link.url = canonicalize_url(parsed_url)
+        return allowed
 
     def matches(self, url):
         if self.allow_domains and not url_is_from_any_domain(url, self.allow_domains):

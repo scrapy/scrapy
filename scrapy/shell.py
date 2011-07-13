@@ -7,14 +7,15 @@ See documentation in docs/topics/shell.rst
 import signal
 
 from twisted.internet import reactor, threads
+from w3lib.url import any_to_uri
 
 from scrapy.item import BaseItem
 from scrapy.spider import BaseSpider
 from scrapy.selector import XPathSelector, XmlXPathSelector, HtmlXPathSelector
 from scrapy.utils.spider import create_spider_for_request
 from scrapy.utils.misc import load_object
+from scrapy.utils.request import request_deferred
 from scrapy.utils.response import open_in_browser
-from scrapy.utils.url import any_to_uri
 from scrapy.utils.console import start_python_console
 from scrapy.settings import Settings
 from scrapy.http import Request, Response, HtmlResponse, XmlResponse
@@ -61,8 +62,9 @@ class Shell(object):
                 BaseSpider('default'), log_multiple=True)
         spider.set_crawler(self.crawler)
         self.crawler.engine.open_spider(spider)
-        d = self.crawler.engine.schedule(request, spider)
+        d = request_deferred(request)
         d.addCallback(lambda x: (x, spider))
+        self.crawler.engine.crawl(request, spider)
         return d
 
     def fetch(self, request_or_url, spider=None):
@@ -72,6 +74,7 @@ class Shell(object):
         else:
             url = any_to_uri(request_or_url)
             request = Request(url, dont_filter=True)
+            request.meta['handle_httpstatus_all'] = True
         response = None
         response, spider = threads.blockingCallFromThread(reactor, \
             self._schedule, request, spider)

@@ -1,7 +1,7 @@
 import re
 
-from scrapy.utils.url import urljoin_rfc
-from scrapy.utils.markup import remove_tags, remove_entities, replace_escape_chars
+from w3lib.url import urljoin_rfc
+from w3lib.html import remove_tags, remove_entities, replace_escape_chars
 
 from scrapy.link import Link
 from .sgml import SgmlLinkExtractor

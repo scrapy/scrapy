@@ -29,12 +29,12 @@ class XmliterTestCase(unittest.TestCase):
         for x in self.xmliter(response, 'product'):
             attrs.append((x.select("@id").extract(), x.select("name/text()").extract(), x.select("./type/text()").extract()))
 
-        self.assertEqual(attrs, 
+        self.assertEqual(attrs,
                          [(['001'], ['Name 1'], ['Type 1']), (['002'], ['Name 2'], ['Type 2'])])
 
     def test_xmliter_text(self):
         body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""
-        
+
         self.assertEqual([x.select("text()").extract() for x in self.xmliter(body, 'product')],
                          [[u'one'], [u'two']])
 
@@ -74,7 +74,7 @@ class XmliterTestCase(unittest.TestCase):
 
     def test_xmliter_exception(self):
         body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""
-        
+
         iter = self.xmliter(body, 'product')
         iter.next()
         iter.next()
@@ -96,6 +96,35 @@ class LxmlXmliterTestCase(XmliterTestCase):
         import lxml
     except ImportError:
         skip = "lxml not available"
+
+    def test_xmliter_iterate_namespace(self):
+        body = """\
+            <?xml version="1.0" encoding="UTF-8"?>
+            <rss version="2.0" xmlns="http://base.google.com/ns/1.0">
+                <channel>
+                <title>My Dummy Company</title>
+                <link>http://www.mydummycompany.com</link>
+                <description>This is a dummy company. We do nothing.</description>
+                <item>
+                    <title>Item 1</title>
+                    <description>This is item 1</description>
+                    <link>http://www.mydummycompany.com/items/1</link>
+                    <image_link>http://www.mydummycompany.com/images/item1.jpg</image_link>
+                    <image_link>http://www.mydummycompany.com/images/item2.jpg</image_link>
+                </item>
+                </channel>
+            </rss>
+        """
+        response = XmlResponse(url='http://mydummycompany.com', body=body)
+
+        no_namespace_iter = self.xmliter(response, 'image_link')
+        self.assertEqual(len(list(no_namespace_iter)), 0)
+
+        namespace_iter = self.xmliter(response, 'image_link', 'http://base.google.com/ns/1.0')
+        node = namespace_iter.next()
+        self.assertEqual(node.select('text()').extract(), ['http://www.mydummycompany.com/images/item1.jpg'])
+        node = namespace_iter.next()
+        self.assertEqual(node.select('text()').extract(), ['http://www.mydummycompany.com/images/item2.jpg'])
 
 
 class UtilsCsvTestCase(unittest.TestCase):

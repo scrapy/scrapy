@@ -4,9 +4,10 @@ HTMLParser-based link extractor
 
 from HTMLParser import HTMLParser
 
+from w3lib.url import safe_url_string, urljoin_rfc
+
 from scrapy.link import Link
 from scrapy.utils.python import unique as unique_list
-from scrapy.utils.url import safe_url_string, urljoin_rfc
 
 class HtmlParserLinkExtractor(HTMLParser):
 

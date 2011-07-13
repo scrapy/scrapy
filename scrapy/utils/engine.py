@@ -22,13 +22,11 @@ def get_engine_status(engine=None):
     ]
     spider_tests = [
         "engine.spider_is_idle(spider)",
-        "engine.closing.get(spider)",
-        "engine.scheduler.spider_has_pending_requests(spider)",
+        "engine.slots[spider].closing",
         "len(engine.scheduler.pending_requests[spider])",
         "len(engine.downloader.sites[spider].queue)",
         "len(engine.downloader.sites[spider].active)",
         "len(engine.downloader.sites[spider].transferring)",
-        "engine.downloader.sites[spider].closing",
         "engine.downloader.sites[spider].lastseen",
         "len(engine.scraper.sites[spider].queue)",
         "len(engine.scraper.sites[spider].active)",
@@ -37,31 +35,31 @@ def get_engine_status(engine=None):
         "engine.scraper.sites[spider].needs_backout()",
     ]
 
-    status = {'global': {}, 'spiders': {}}
+    status = {'global': [], 'spiders': {}}
     for test in global_tests:
         try:
-            status['global'][test] = eval(test)
+            status['global'] += [(test, eval(test))]
         except Exception, e:
-            status['global'][test] = "%s (exception)" % type(e).__name__
-    for spider in engine.downloader.sites:
-        x = {}
+            status['global'] += [(test, "%s (exception)" % type(e).__name__)]
+    for spider in set(engine.downloader.sites.keys() + engine.scraper.sites.keys()):
+        x = []
         for test in spider_tests:
             try:
-                x[test] = eval(test)
+                x += [(test, eval(test))]
             except Exception, e:
-                x[test] = "%s (exception)" % type(e).__name__
+                x += [(test, "%s (exception)" % type(e).__name__)]
             status['spiders'][spider] = x
     return status
 
 def format_engine_status(engine=None):
     status = get_engine_status(engine)
     s = "Execution engine status\n\n"
-    for test, result in status['global'].items():
+    for test, result in status['global']:
         s += "%-47s : %s\n" % (test, result)
     s += "\n"
     for spider, tests in status['spiders'].items():
         s += "Spider: %s\n" % spider
-        for test, result in tests.items():
+        for test, result in tests:
             s += "  %-50s : %s\n" % (test, result)
     return s
 

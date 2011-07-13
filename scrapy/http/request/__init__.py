@@ -7,8 +7,9 @@ See documentation in docs/topics/request-response.rst
 
 import copy
 
+from w3lib.url import safe_url_string
+
 from scrapy.http.headers import Headers
-from scrapy.utils.url import safe_url_string
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.decorator import deprecated
 from scrapy.http.common import deprecated_setter
@@ -24,7 +25,7 @@ class Request(object_ref):
                  dont_filter=False, errback=None):
 
         self._encoding = encoding  # this one has to be set first
-        self.method = method.upper()
+        self.method = str(method).upper()
         self._set_url(url)
         self._set_body(body)
         self.priority = priority
@@ -59,6 +60,8 @@ class Request(object_ref):
             self._url = safe_url_string(unicode_url, self.encoding)
         else:
             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
+        if ':' not in self._url:
+            raise ValueError('Missing scheme in request url: %s' % self._url)
 
     url = property(_get_url, deprecated_setter(_set_url, 'url'))
 
@@ -87,10 +90,7 @@ class Request(object_ref):
     def __str__(self):
         return "<%s %s>" % (self.method, self.url)
 
-    def __repr__(self):
-        attrs = ['url', 'method', 'body', 'headers', 'cookies', 'meta']
-        args = ", ".join(["%s=%r" % (a, getattr(self, a)) for a in attrs])
-        return "%s(%s)" % (self.__class__.__name__, args)
+    __repr__ = __str__
 
     def copy(self):
         """Return a copy of this Request"""

@@ -3,7 +3,7 @@
 Frequently Asked Questions
 ==========================
 
-How does Scrapy compare to BeautifulSoul or lxml?
+How does Scrapy compare to BeautifulSoup or lxml?
 -------------------------------------------------
 
 `BeautifulSoup`_ and `lxml`_ are libraries for parsing HTML and XML. Scrapy is
@@ -115,24 +115,10 @@ Try changing the default `Accept-Language`_ request header by overriding the
 
 .. _Accept-Language: http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.4
 
-Where can I find some example code using Scrapy?
-------------------------------------------------
+Where can I find some example Scrapy projects?
+----------------------------------------------
 
-Scrapy comes with a built-in, fully functional project to scrape the `Google
-Directory`_. You can find it in the `examples/googledir`_ directory of the
-Scrapy distribution.
-
-Also, there's a site for sharing code snippets (spiders, middlewares,
-extensions) called `Scrapy snippets`_.
-
-Finally, you can find some example code for performing not-so-trivial tasks in
-the `Scrapy Recipes`_ wiki page.
-
-.. _Google Directory: http://www.google.com/dirhp
-.. _examples/googledir: http://dev.scrapy.org/browser/examples/googledir
-.. _Community Spiders: http://dev.scrapy.org/wiki/CommunitySpiders
-.. _Scrapy Recipes: http://dev.scrapy.org/wiki/ScrapyRecipes
-.. _Scrapy snippets: http://snippets.scrapy.org/
+See :ref:`intro-examples`.
 
 Can I run a spider without creating a project?
 ----------------------------------------------
@@ -240,3 +226,22 @@ In order to avoid parsing all the entire feed at once in memory, you can use
 the functions ``xmliter`` and ``csviter`` from ``scrapy.utils.iterators``
 module. In fact, this is what the feed spiders (see :ref:`topics-spiders`) use
 under the cover.
+
+Does Scrapy manage cookies automatically?
+-----------------------------------------
+
+Yes, Scrapy receives and keeps track of cookies sent by servers, and sends them
+back on subsequent requests, like any regular web browser does.
+
+For more info see :ref:`topics-request-response` and :ref:`cookies-mw`.
+
+How can I see the cookies being sent and received from Scrapy?
+--------------------------------------------------------------
+
+Enable the :setting:`COOKIES_DEBUG` setting.
+
+How can I instruct a spider to stop itself?
+-------------------------------------------
+
+Raise the :exc:`~scrapy.exceptions.CloseSpider` exception from a callback. For
+more info see: :exc:`~scrapy.exceptions.CloseSpider`.

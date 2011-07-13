@@ -2,14 +2,19 @@ from scrapy.http import Response
 from scrapy.selector import XmlXPathSelector
 
 
-def xmliter_lxml(obj, nodename):
+def xmliter_lxml(obj, nodename, namespace=None):
     from lxml import etree
     reader = _StreamReader(obj)
-    iterable = etree.iterparse(reader, tag=nodename, encoding=reader.encoding)
+    tag = '{%s}%s' % (namespace, nodename) if namespace else nodename
+    iterable = etree.iterparse(reader, tag=tag, encoding=reader.encoding)
+    selxpath = '//' + ('x:%s' % nodename if namespace else nodename)
     for _, node in iterable:
         nodetext = etree.tostring(node)
         node.clear()
-        yield XmlXPathSelector(text=nodetext).select('//' + nodename)[0]
+        xs = XmlXPathSelector(text=nodetext)
+        if namespace:
+            xs.register_namespace('x', namespace)
+        yield xs.select(selxpath)[0]
 
 
 class _StreamReader(object):

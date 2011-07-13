@@ -13,6 +13,7 @@ Scrapy developers, if you add a setting here remember to:
 
 """
 
+import sys, os
 from os.path import join, abspath, dirname
 
 BOT_NAME = 'scrapybot'
@@ -20,7 +21,7 @@ BOT_VERSION = '1.0'
 
 CLOSESPIDER_TIMEOUT = 0
 CLOSESPIDER_PAGECOUNT = 0
-CLOSESPIDER_ITEMPASSED = 0
+CLOSESPIDER_ITEMCOUNT = 0
 
 COMMANDS_MODULE = ''
 
@@ -28,6 +29,7 @@ CONCURRENT_ITEMS = 100
 CONCURRENT_REQUESTS_PER_SPIDER = 8
 CONCURRENT_SPIDERS = 8
 
+COOKIES_ENABLED = True
 COOKIES_DEBUG = False
 
 DEFAULT_ITEM_CLASS = 'scrapy.item.Item'
@@ -81,6 +83,14 @@ DOWNLOADER_STATS = True
 
 DUPEFILTER_CLASS = 'scrapy.contrib.dupefilter.RequestFingerprintDupeFilter'
 
+try:
+    EDITOR = os.environ['EDITOR']
+except KeyError:
+    if sys.platform == 'win32':
+        EDITOR = '%s -m idlelib.idle'
+    else:
+        EDITOR = 'vi'
+
 ENCODING_ALIASES = {}
 
 ENCODING_ALIASES_BASE = {
@@ -126,6 +136,8 @@ EXTENSIONS_BASE = {
     'scrapy.contrib.closespider.CloseSpider': 0,
     'scrapy.contrib.feedexport.FeedExporter': 0,
     'scrapy.contrib.spidercontext.SpiderContext': 0,
+    'scrapy.contrib.throttle.AutoThrottle': 0,
+    'scrapy.contrib.logstats.LogStats': 0,
 }
 
 FEED_URI = None
@@ -155,6 +167,7 @@ HTTPCACHE_STORAGE = 'scrapy.contrib.downloadermiddleware.httpcache.FilesystemCac
 HTTPCACHE_EXPIRATION_SECS = 0
 HTTPCACHE_IGNORE_HTTP_CODES = []
 HTTPCACHE_IGNORE_SCHEMES = ['file']
+HTTPCACHE_DBM_MODULE = 'anydbm'
 
 ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'
 
@@ -169,6 +182,8 @@ LOG_FORMATTER = 'scrapy.logformatter.LogFormatter'
 LOG_STDOUT = False
 LOG_LEVEL = 'DEBUG'
 LOG_FILE = None
+
+LOGSTATS_INTERVAL = 60.0
 
 MAIL_DEBUG = False
 MAIL_HOST = 'localhost'
@@ -192,24 +207,19 @@ QUEUE_POLL_INTERVAL = 5
 
 RANDOMIZE_DOWNLOAD_DELAY = True
 
+REDIRECT_ENABLED = True
 REDIRECT_MAX_METAREFRESH_DELAY = 100
 REDIRECT_MAX_TIMES = 20 # uses Firefox default setting
 REDIRECT_PRIORITY_ADJUST = +2
 
-# contrib.middleware.retry.RetryMiddleware default settings
+RETRY_ENABLED = True
 RETRY_TIMES = 2 # initial response + 2 retries = 3 requests
-RETRY_HTTP_CODES = ['500', '503', '504', '400', '408']
+RETRY_HTTP_CODES = [500, 503, 504, 400, 408]
 RETRY_PRIORITY_ADJUST = -1
 
 ROBOTSTXT_OBEY = False
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
-
-SCHEDULER_MIDDLEWARES = {}
-
-SCHEDULER_MIDDLEWARES_BASE = {
-    'scrapy.contrib.schedulermiddleware.duplicatesfilter.DuplicatesFilterMiddleware': 500,
-}
 
 SCHEDULER_ORDER = 'DFO'
 
@@ -245,7 +255,7 @@ SQS_REGION = 'us-east-1'
 
 STATS_CLASS = 'scrapy.statscol.MemoryStatsCollector'
 STATS_ENABLED = True
-STATS_DUMP = False
+STATS_DUMP = True
 
 STATS_SDB_DOMAIN = 'scrapy_stats'
 STATS_SDB_ASYNC = False

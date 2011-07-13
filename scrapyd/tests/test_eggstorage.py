@@ -29,10 +29,12 @@ class EggStorageTest(unittest.TestCase):
         v, f = self.eggst.get('mybot')
         self.assertEqual(v, "03")
         self.assertEqual(f.read(), "egg03")
+        f.close()
 
         v, f = self.eggst.get('mybot', '02')
         self.assertEqual(v, "02")
         self.assertEqual(f.read(), "egg02")
+        f.close()
 
         self.eggst.delete('mybot', '02')
         self.assertEqual(self.eggst.list('mybot'), ['01', '03'])

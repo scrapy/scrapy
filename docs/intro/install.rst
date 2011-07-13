@@ -16,6 +16,8 @@ Requirements
 * `Twisted`_ 2.5.0, 8.0 or above (Windows users: you'll need to install
   `Zope.Interface`_ and maybe `pywin32`_ because of `this Twisted bug`_)
 
+* `w3lib`_
+
 * `lxml`_ or `libxml2`_ (if using `libxml2`_, version 2.6.28 or above is highly recommended)
 
 * `simplejson`_ (not required if using Python 2.6 or above)
@@ -111,6 +113,10 @@ If you're running Debian Linux, run the following command as root::
 
    apt-get install python-twisted python-libxml2 python-pyopenssl python-simplejson
 
+Then::
+
+    easy_install -U w3lib
+
 And then follow the instructions in :ref:`intro-install-scrapy`.
 
 Arch Linux
@@ -120,13 +126,17 @@ If you are running Arch Linux, run the following command as root::
 
    pacman -S twisted libxml2 pyopenssl python-simplejson
 
+Then::
+
+    easy_install -U w3lib
+
 And then follow the instructions in :ref:`intro-install-scrapy`.
 
 Other Linux distros
 ~~~~~~~~~~~~~~~~~~~
 
 The easiest way to install Scrapy in other Linux distros is through
-``easy_install``, which will automatically install Twisted and lxml as
+``easy_install``, which will automatically install Twisted, w3lib and lxml as
 dependencies. See :ref:`intro-install-easy`.
 
 Another way would be to install dependencies, if you know the packages in your
@@ -135,8 +145,8 @@ distros that meets them. See :ref:`intro-install-requirements`.
 Mac OS X
 --------
 
-The easiest way to install Scrapy on Mac is through ``easy_install``, which
-will automatically install Twisted and lxml as dependencies.
+The easiest way to install Scrapy on Mac is through ``easy_install`` or
+``pip``, which will automatically install Twisted, w3lib and lxml dependencies.
 
 See :ref:`intro-install-easy`.
 
@@ -164,6 +174,7 @@ There are two ways to install Scrapy in Windows:
 
 .. _Python: http://www.python.org
 .. _Twisted: http://twistedmatrix.com
+.. _w3lib: http://pypi.python.org/pypi/w3lib
 .. _lxml: http://codespeak.net/lxml/
 .. _libxml2: http://xmlsoft.org
 .. _pywin32: http://sourceforge.net/projects/pywin32/

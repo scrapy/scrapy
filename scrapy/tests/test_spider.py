@@ -6,8 +6,7 @@ from twisted.trial import unittest
 
 from scrapy.spider import BaseSpider
 from scrapy.contrib.spiders.init import InitSpider
-from scrapy.contrib.spiders.crawl import CrawlSpider
-from scrapy.contrib.spiders.feed import XMLFeedSpider, CSVFeedSpider
+from scrapy.contrib.spiders import CrawlSpider, XMLFeedSpider, CSVFeedSpider, SitemapSpider
 
 
 class BaseSpiderTest(unittest.TestCase):
@@ -51,6 +50,10 @@ class CSVFeedSpiderTest(BaseSpiderTest):
 class CrawlSpiderTest(BaseSpiderTest):
 
     spider_class = CrawlSpider
+
+class SitemapSpiderTest(BaseSpiderTest):
+
+    spider_class = SitemapSpider
 
 
 if __name__ == '__main__':
