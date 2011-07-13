@@ -22,7 +22,7 @@ with command::
 
     lsb_release -cs
 
-Supported Ubuntu releases are: ``karmic``, ``lucid``, ``maverick``.
+Supported Ubuntu releases are: ``karmic``, ``lucid``, ``maverick``, ``natty``.
 
 For Ubuntu Maverick (10.10)::
 
