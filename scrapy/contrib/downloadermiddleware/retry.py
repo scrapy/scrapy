@@ -25,6 +25,7 @@ from twisted.internet.defer import TimeoutError as UserTimeoutError
 from twisted.web.client import PartialDownloadError
 
 from scrapy import log
+from scrapy.exceptions import NotConfigured
 from scrapy.utils.response import response_status_message
 from scrapy.conf import settings
 
@@ -37,8 +38,10 @@ class RetryMiddleware(object):
                            ConnectionLost, PartialDownloadError, IOError)
 
     def __init__(self):
+        if not settings.getbool('RETRY_ENABLED'):
+            raise NotConfigured
         self.max_retry_times = settings.getint('RETRY_TIMES')
-        self.retry_http_codes = map(int, settings.getlist('RETRY_HTTP_CODES'))
+        self.retry_http_codes = set(int(x) for x in settings.getlist('RETRY_HTTP_CODES'))
         self.priority_adjust = settings.getint('RETRY_PRIORITY_ADJUST')
 
     def process_response(self, request, response, spider):
@@ -66,6 +69,6 @@ class RetryMiddleware(object):
             retryreq.priority = request.priority + self.priority_adjust
             return retryreq
         else:
-            log.msg("Discarding %s (failed %d times): %s" % (request, retries, reason),
+            log.msg("Gave up retrying %s (failed %d times): %s" % (request, retries, reason),
                     spider=spider, level=log.DEBUG)
 

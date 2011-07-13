@@ -324,8 +324,8 @@ to ``scrapy.contrib.httpcache.DbmCacheStorage``.
 By default, it uses the anydbm_ module, but you can change it with the
 :setting:`HTTPCACHE_DBM_MODULE` setting.
 
-Settings
-~~~~~~~~
+HTTPCache middleware settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :class:`HttpCacheMiddleware` can be configured through the following
 settings:
@@ -504,12 +504,13 @@ Once there are no more failed pages to retry, this middleware sends a signal
 The :class:`RetryMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
 
-* :setting:`RETRY_TIMES` - how many times to retry a failed page
-* :setting:`RETRY_HTTP_CODES` - which HTTP response codes to retry
+* :setting:`RETRY_ENABLED`
+* :setting:`RETRY_TIMES`
+* :setting:`RETRY_HTTP_CODES`
 
 About HTTP errors to consider:
 
-You may want to remove 400 from RETRY_HTTP_CODES, if you stick to the
+You may want to remove 400 from :setting:`RETRY_HTTP_CODES`, if you stick to the
 HTTP protocol. It's included by default because it's a common code used
 to indicate server overload, which would be something we want to retry.
 
@@ -517,6 +518,39 @@ to indicate server overload, which would be something we want to retry.
 
 If :attr:`Request.meta <scrapy.http.Request.meta>` contains the ``dont_retry``
 key, the request will be ignored by this middleware.
+
+RetryMiddleware Settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. setting:: RETRY_ENABLED
+
+RETRY_ENABLED
+^^^^^^^^^^^^^
+
+.. versionadded:: 0.13
+
+Default: ``True``
+
+Whether the Retry middleware will be enabled.
+
+.. setting:: RETRY_TIMES
+
+RETRY_TIMES
+^^^^^^^^^^^
+
+Default: ``2``
+
+Maximum number of times to retry, in addition to the first download.
+
+.. setting:: RETRY_HTTP_CODES
+
+RETRY_HTTP_CODES
+^^^^^^^^^^^^^^^^
+
+Default: ``[500, 503, 504, 400, 408]``
+
+Which HTTP response codes to retry. Other errors (DNS lookup issues,
+connections lost, etc) are always retried.
 
 .. _topics-dlmw-robots:
 
