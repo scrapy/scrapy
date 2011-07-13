@@ -13,7 +13,7 @@ from scrapy import log, signals
 from scrapy.stats import stats
 from scrapy.core.downloader import Downloader
 from scrapy.core.scraper import Scraper
-from scrapy.exceptions import IgnoreRequest, DontCloseSpider
+from scrapy.exceptions import DontCloseSpider
 from scrapy.http import Response, Request
 from scrapy.utils.misc import load_object
 from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
@@ -139,7 +139,7 @@ class ExecutionEngine(object):
         # response is a Response or Failure
         d = defer.Deferred()
         d.addBoth(self.scraper.enqueue_scrape, request, spider)
-        d.addErrback(log.err, "Unhandled error on engine.crawl()", spider=spider)
+        d.addErrback(log.err, spider=spider)
         if isinstance(response, Failure):
             d.errback(response)
         else:
@@ -204,27 +204,12 @@ class ExecutionEngine(object):
                     response=response, request=request, spider=spider)
             return response
 
-        def _on_error(_failure):
-            """handle an error processing a page"""
-            exc = _failure.value
-            if isinstance(exc, IgnoreRequest):
-                errmsg = _failure.getErrorMessage()
-            else:
-                errmsg = str(_failure)
-            if errmsg:
-                log.msg("Error downloading <%s>: %s" % (request.url, errmsg), \
-                    level=log.ERROR, spider=spider)
-            return Failure(IgnoreRequest(str(exc)))
-
         def _on_complete(_):
             self.next_request(spider)
             return _
 
-        if spider not in self.downloader.sites:
-            return defer.fail(Failure(IgnoreRequest())).addBoth(_on_complete)
-
         dwld = mustbe_deferred(self.downloader.fetch, request, spider)
-        dwld.addCallbacks(_on_success, _on_error)
+        dwld.addCallback(_on_success)
         dwld.addBoth(_on_complete)
         return dwld
 

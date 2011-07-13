@@ -10,7 +10,7 @@ from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errba
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.misc import load_object
 from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
-from scrapy.exceptions import CloseSpider, IgnoreRequest, DropItem
+from scrapy.exceptions import CloseSpider, DropItem
 from scrapy import signals
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
@@ -134,7 +134,7 @@ class Scraper(object):
         else:
             # FIXME: don't ignore errors in spider middleware
             dfd = self.call_spider(request_result, request, spider)
-            return dfd.addErrback(self._check_propagated_failure, \
+            return dfd.addErrback(self._log_download_errors, \
                 request_result, request, spider)
 
     def call_spider(self, result, request, spider):
@@ -142,15 +142,12 @@ class Scraper(object):
         dfd.addCallbacks(request.callback or spider.parse, request.errback)
         return dfd.addCallback(iterate_spider_output)
 
-    def handle_spider_error(self, _failure, request, response, spider, propagated_failure=None):
+    def handle_spider_error(self, _failure, request, response, spider):
         exc = _failure.value
         if isinstance(exc, CloseSpider):
             self.engine.close_spider(spider, exc.reason or 'cancelled')
             return
-        referer = request.headers.get('Referer', None)
-        msg = "Spider error processing <%s> (referer: <%s>)" % \
-            (request.url, referer)
-        log.err(_failure, msg, spider=spider)
+        log.err(_failure, "Spider error processing %s" % request, spider=spider)
         send_catch_log(signal=signals.spider_error, failure=_failure, response=response, \
             spider=spider)
         stats.inc_value("spider_exceptions/%s" % _failure.value.__class__.__name__, \
@@ -183,20 +180,15 @@ class Scraper(object):
             log.msg("Spider must return Request, BaseItem or None, got %r in %s" % \
                 (type(output).__name__, request), log.ERROR, spider=spider)
 
-    def _check_propagated_failure(self, spider_failure, propagated_failure, request, spider):
-        """Log and silence the bugs raised outside of spiders, but still allow
-        spiders to be notified about general failures while downloading spider
-        generated requests
+    def _log_download_errors(self, spider_failure, download_failure, request, spider):
+        """Log and silence errors that come from the engine (typically download
+        errors that got propagated thru here)
         """
-        # ignored requests are commonly propagated exceptions safes to be silenced
-        if isinstance(spider_failure.value, IgnoreRequest):
+        if spider_failure is download_failure:
+            log.msg("Error downloading %s: %s" % \
+                (request, spider_failure.getErrorMessage()), log.ERROR, spider=spider)
             return
-        elif spider_failure is propagated_failure:
-            log.err(spider_failure, 'Unhandled error propagated to spider', \
-                spider=spider)
-            return # stop propagating this error
-        else:
-            return spider_failure # exceptions raised in the spider code
+        return spider_failure
 
     def _itemproc_finished(self, output, item, response, spider):
         """ItemProcessor finished for the given ``item`` and returned ``output``
