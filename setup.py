@@ -120,10 +120,15 @@ setup_args = {
 
 try:
     from setuptools import setup
-    setup_args['install_requires'] = ['Twisted>=2.5', 'lxml', 'w3lib', 'pyOpenSSL']
-    if sys.version_info < (2, 6):
-        setup_args['install_requires'] += ['simplejson']
 except ImportError:
     from distutils.core import setup
+else:
+    setup_args['install_requires'] = ['Twisted>=2.5', 'w3lib', 'pyOpenSSL']
+    if sys.version_info < (2, 6):
+        setup_args['install_requires'] += ['simplejson']
+    try:
+        import libxml2
+    except ImportError:
+        setup_args['install_requires'] += ['lxml']
  
 setup(**setup_args)
