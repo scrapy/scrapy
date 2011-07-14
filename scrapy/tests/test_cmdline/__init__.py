@@ -3,13 +3,12 @@ import os
 from subprocess import Popen, PIPE
 import unittest
 
-import scrapy
-
 class CmdlineTest(unittest.TestCase):
 
     def setUp(self):
         self.env = os.environ.copy()
-        self.env['PYTHONPATH'] = os.path.dirname(scrapy.__path__[0])
+        if 'PYTHONPATH' in os.environ:
+            self.env['PYTHONPATH'] = os.environ['PYTHONPATH']
         self.env['SCRAPY_SETTINGS_MODULE'] = 'scrapy.tests.test_cmdline.settings'
 
     def _execute(self, *new_args, **kwargs):
