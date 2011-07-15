@@ -179,16 +179,14 @@ class ExecutionEngine(object):
     def download(self, request, spider):
         slot = self.slots[spider]
         slot.add_request(request)
-        if isinstance(request, Response):
-            return request
         d = self._download(request, spider)
-        d.addCallback(self.download, spider)
-        d.addBoth(self._remove_request, slot, request)
+        d.addBoth(self._downloaded, slot, request, spider)
         return d
 
-    def _remove_request(self, _, slot, request):
+    def _downloaded(self, response, slot, request, spider):
         slot.remove_request(request)
-        return _
+        return self.download(response, spider) \
+                if isinstance(response, Request) else response
 
     def _download(self, request, spider):
         slot = self.slots[spider]
