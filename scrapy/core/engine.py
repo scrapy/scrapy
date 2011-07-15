@@ -177,7 +177,7 @@ class ExecutionEngine(object):
         return self.scheduler.enqueue_request(spider, request)
 
     def download(self, request, spider):
-        slot = self.slots[request]
+        slot = self.slots[spider]
         slot.add_request(request)
         if isinstance(request, Response):
             return request
