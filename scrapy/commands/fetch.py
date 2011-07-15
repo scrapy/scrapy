@@ -1,10 +1,10 @@
 from w3lib.url import is_url
 
-from scrapy import log
 from scrapy.command import ScrapyCommand
 from scrapy.http import Request
 from scrapy.spider import BaseSpider
 from scrapy.exceptions import UsageError
+from scrapy.utils.spider import create_spider_for_request
 
 class Command(ScrapyCommand):
 
@@ -49,12 +49,10 @@ class Command(ScrapyCommand):
 
         spider = None
         if opts.spider:
-            try:
-                spider = self.crawler.spiders.create(opts.spider)
-            except KeyError:
-                log.msg("Could not find spider: %s" % opts.spider, log.ERROR)
-
-        self.crawler.queue.append_request(request, spider, \
-            default_spider=BaseSpider('default'))
+            spider = self.crawler.spiders.create(opts.spider)
+        else:
+            spider = create_spider_for_request(self.crawler.spiders, request, \
+                default_spider=BaseSpider('default'))
+        self.crawler.crawl(spider, [request])
         self.crawler.start()
 

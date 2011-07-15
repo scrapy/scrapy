@@ -174,8 +174,6 @@ ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'
 # Item pipelines are typically set in specific commands settings
 ITEM_PIPELINES = []
 
-KEEP_ALIVE = False
-
 LOG_ENABLED = True
 LOG_ENCODING = 'utf-8'
 LOG_FORMATTER = 'scrapy.logformatter.LogFormatter'
@@ -202,8 +200,6 @@ MEMUSAGE_REPORT = False
 MEMUSAGE_WARNING_MB = 0
 
 NEWSPIDER_MODULE = ''
-
-QUEUE_POLL_INTERVAL = 5
 
 RANDOMIZE_DOWNLOAD_DELAY = True
 

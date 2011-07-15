@@ -84,7 +84,7 @@ class Command(ScrapyCommand):
         spider = self.get_spider(request, opts)
         if not spider:
             return None, None
-        self.crawler.queue.append_request(request, spider)
+        self.crawler.crawl(spider, [request])
         self.crawler.start()
         if not responses:
             log.msg('No response downloaded for: %s' % request, log.ERROR, \

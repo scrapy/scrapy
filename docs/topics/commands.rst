@@ -218,22 +218,16 @@ Usage example::
 crawl
 -----
 
-* Syntax: ``scrapy crawl <spider|url>``
+* Syntax: ``scrapy crawl <spider>``
 * Requires project: *yes*
 
-Start crawling a spider. If a URL is passed instead of a spider, it will start
-from that URL instead of the spider start urls.
+Start crawling a spider. 
 
 Usage examples::
-
-    $ scrapy crawl example.com
-    [ ... example.com spider starts crawling ... ]
 
     $ scrapy crawl myspider
     [ ... myspider starts crawling ... ]
 
-    $ scrapy crawl http://example.com/some/page.html
-    [ ... spider that handles example.com starts crawling from that url ... ]
 
 .. command:: server
 

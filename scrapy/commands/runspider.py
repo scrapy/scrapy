@@ -60,6 +60,6 @@ class Command(ScrapyCommand):
         if not spclasses:
             raise UsageError("No spider found in file: %s\n" % filename)
         spider = spclasses.pop()(**opts.spargs)
-        # schedule spider and start engine
-        self.crawler.queue.append_spider(spider)
+
+        self.crawler.crawl(spider)
         self.crawler.start()

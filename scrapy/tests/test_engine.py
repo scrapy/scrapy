@@ -97,7 +97,7 @@ class CrawlerRun(object):
         self.crawler = get_crawler()
         self.crawler.install()
         self.crawler.configure()
-        self.crawler.queue.append_spider(self.spider)
+        self.crawler.crawl(self.spider)
         self.crawler.start()
 
         self.deferred = defer.Deferred()

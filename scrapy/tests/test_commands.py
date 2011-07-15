@@ -103,9 +103,6 @@ class GenspiderCommandTest(CommandTest):
 
 class MiscCommandsTest(CommandTest):
 
-    def test_crawl(self):
-        self.assertEqual(0, self.call('crawl'))
-
     def test_list(self):
         self.assertEqual(0, self.call('list'))
 

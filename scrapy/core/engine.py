@@ -21,9 +21,11 @@ from scrapy.utils.defer import mustbe_deferred
 
 class Slot(object):
 
-    def __init__(self):
+    def __init__(self, start_requests, close_if_idle):
         self.closing = False
         self.inprogress = set() # requests in progress
+        self.requests = iter(start_requests)
+        self.close_if_idle = close_if_idle
 
     def add_request(self, request):
         self.inprogress.add(request)
@@ -107,7 +109,13 @@ class ExecutionEngine(object):
                 break
 
         if self.spider_is_idle(spider):
-            self._spider_idle(spider)
+            slot = self.slots[spider]
+            try:
+                request = slot.requests.next()
+                self.crawl(request, spider)
+            except StopIteration:
+                if slot.close_if_idle:
+                    self._spider_idle(spider)
 
     def _needs_backout(self, spider):
         slot = self.slots[spider]
@@ -212,11 +220,11 @@ class ExecutionEngine(object):
         return dwld
 
     @defer.inlineCallbacks
-    def open_spider(self, spider):
+    def open_spider(self, spider, start_requests=None, close_if_idle=True):
         assert self.has_capacity(), "No free spider slots when opening %r" % \
             spider.name
         log.msg("Spider opened", spider=spider)
-        self.slots[spider] = Slot()
+        self.slots[spider] = Slot(start_requests or (), close_if_idle)
         yield self.scheduler.open_spider(spider)
         self.downloader.open_spider(spider)
         yield self.scraper.open_spider(spider)

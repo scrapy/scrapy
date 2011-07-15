@@ -61,7 +61,7 @@ class Shell(object):
             spider = create_spider_for_request(self.crawler.spiders, request, \
                 BaseSpider('default'), log_multiple=True)
         spider.set_crawler(self.crawler)
-        self.crawler.engine.open_spider(spider)
+        self.crawler.engine.open_spider(spider, close_if_idle=False)
         d = request_deferred(request)
         d.addCallback(lambda x: (x, spider))
         self.crawler.engine.crawl(request, spider)
