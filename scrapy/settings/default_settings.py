@@ -237,8 +237,6 @@ SPIDER_MIDDLEWARES_BASE = {
 
 SPIDER_MODULES = []
 
-SPIDER_QUEUE_CLASS = 'scrapy.spiderqueue.SqliteSpiderQueue'
-
 SPIDER_CONTEXT_ENABLED = True
 SPIDER_CONTEXT_STORAGE_CLASS = 'scrapy.contrib.spidercontext.SqliteSpiderContextStorage'
 

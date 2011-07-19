@@ -1,6 +1,6 @@
 from zope.interface import implements
 
-from scrapy.interfaces import ISpiderQueue
+from scrapyd.interfaces import ISpiderQueue
 from scrapy.utils.sqlite import JsonSqlitePriorityQueue
 from scrapy.utils.project import sqlite_db
 

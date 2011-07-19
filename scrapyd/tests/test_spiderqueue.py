@@ -3,8 +3,8 @@ from twisted.trial import unittest
 
 from zope.interface.verify import verifyObject
 
-from scrapy.interfaces import ISpiderQueue
-from scrapy.spiderqueue import SqliteSpiderQueue
+from scrapyd.interfaces import ISpiderQueue
+from scrapyd.spiderqueue import SqliteSpiderQueue
 
 class SpiderQueueTest(unittest.TestCase):
     """This test case can be used easily for testing other SpiderQueue's by
