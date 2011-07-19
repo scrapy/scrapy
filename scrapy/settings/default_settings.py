@@ -245,10 +245,6 @@ SPIDER_CONTEXT_STORAGE_CLASS = 'scrapy.contrib.spidercontext.SqliteSpiderContext
 
 SQLITE_DB = 'scrapy.db'
 
-SQS_QUEUE = 'scrapy'
-SQS_VISIBILITY_TIMEOUT = 7200
-SQS_REGION = 'us-east-1'
-
 STATS_CLASS = 'scrapy.statscol.MemoryStatsCollector'
 STATS_ENABLED = True
 STATS_DUMP = True
