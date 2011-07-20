@@ -247,9 +247,6 @@ STATS_CLASS = 'scrapy.statscol.MemoryStatsCollector'
 STATS_ENABLED = True
 STATS_DUMP = True
 
-STATS_SDB_DOMAIN = 'scrapy_stats'
-STATS_SDB_ASYNC = False
-
 STATSMAILER_RCPTS = []
 
 TEMPLATES_DIR = abspath(join(dirname(__file__), '..', 'templates'))
