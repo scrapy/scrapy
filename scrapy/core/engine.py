@@ -108,14 +108,16 @@ class ExecutionEngine(object):
             if not self._next_request(spider):
                 break
 
-        if self.spider_is_idle(spider):
-            slot = self.slots[spider]
+        slot = self.slots[spider]
+        if slot.requests and not self._needs_backout(spider):
             try:
                 request = slot.requests.next()
                 self.crawl(request, spider)
             except StopIteration:
-                if slot.close_if_idle:
-                    self._spider_idle(spider)
+                slot.requests = None
+
+        if self.spider_is_idle(spider) and slot.close_if_idle:
+            self._spider_idle(spider)
 
     def _needs_backout(self, spider):
         slot = self.slots[spider]
