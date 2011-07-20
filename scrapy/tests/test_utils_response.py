@@ -2,10 +2,8 @@ import os
 import unittest
 import urlparse
 
-from scrapy.xlib.BeautifulSoup import BeautifulSoup
 from scrapy.http import Response, TextResponse, HtmlResponse
-from scrapy.utils.response import body_or_str, get_base_url, get_meta_refresh, \
-    response_httprepr, get_cached_beautifulsoup, open_in_browser
+from scrapy.utils.response import body_or_str, response_httprepr, open_in_browser
 
 __doctests__ = ['scrapy.utils.response']
 
@@ -40,31 +38,6 @@ class ResponseUtilsTest(unittest.TestCase):
 
         r1 = Response("http://www.example.com", status=6666, headers={"Content-type": "text/html"}, body="Some body")
         self.assertEqual(response_httprepr(r1), 'HTTP/1.1 6666 \r\nContent-Type: text/html\r\n\r\nSome body')
-
-    def test_get_cached_beautifulsoup(self):
-        r1 = Response('http://www.example.com', body='')
-
-        soup1 = get_cached_beautifulsoup(r1)
-        soup2 = get_cached_beautifulsoup(r1)
-
-        assert isinstance(soup1, BeautifulSoup)
-        assert isinstance(soup2, BeautifulSoup)
-        # make sure it's cached
-        assert soup1 is soup2
-
-        # when body is None, an empty soup should be returned
-        r1 = Response('http://www.example.com')
-        assert r1.body == ""
-        assert isinstance(get_cached_beautifulsoup(r1), BeautifulSoup)
-
-        r1 = Response('http://www.example.com', body='')
-        soup1 = get_cached_beautifulsoup(r1)
-        r2 = r1.copy()
-        soup2 = get_cached_beautifulsoup(r1)
-        soup3 = get_cached_beautifulsoup(r2)
-
-        assert soup1 is soup2
-        assert soup1 is not soup3
 
     def test_open_in_browser(self):
         url = "http:///www.example.com/some/page.html"

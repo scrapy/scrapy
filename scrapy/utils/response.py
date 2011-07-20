@@ -43,14 +43,6 @@ def get_meta_refresh(response):
             response.encoding)
     return _metaref_cache[response]
 
-_beautifulsoup_cache = weakref.WeakKeyDictionary()
-def get_cached_beautifulsoup(response):
-    """Return BeautifulSoup object of the given response, with caching
-    support"""
-    if response not in _beautifulsoup_cache:
-        _beautifulsoup_cache[response] = BeautifulSoup(response.body)
-    return _beautifulsoup_cache[response]
-
 def response_status_message(status):
     """Return status code plus status text descriptive message
 
