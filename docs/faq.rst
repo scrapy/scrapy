@@ -245,9 +245,3 @@ How can I instruct a spider to stop itself?
 
 Raise the :exc:`~scrapy.exceptions.CloseSpider` exception from a callback. For
 more info see: :exc:`~scrapy.exceptions.CloseSpider`.
-
-I'm getting a `OSError: [Errno 4] Interrupted system call` on ``scrapy deploy``
--------------------------------------------------------------------------------
-
-This only appears to happen on Mac OS X and Python 2.5. Upgrading to Python 2.6
-(or above) is known to fix the issue.
