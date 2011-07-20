@@ -24,7 +24,7 @@ class Slot(object):
     def __init__(self, start_requests, close_if_idle):
         self.closing = False
         self.inprogress = set() # requests in progress
-        self.requests = iter(start_requests)
+        self.start_requests = iter(start_requests)
         self.close_if_idle = close_if_idle
 
     def add_request(self, request):
@@ -109,12 +109,12 @@ class ExecutionEngine(object):
                 break
 
         slot = self.slots[spider]
-        if slot.requests and not self._needs_backout(spider):
+        if slot.start_requests and not self._needs_backout(spider):
             try:
-                request = slot.requests.next()
+                request = slot.start_requests.next()
                 self.crawl(request, spider)
             except StopIteration:
-                slot.requests = None
+                slot.start_requests = None
 
         if self.spider_is_idle(spider) and slot.close_if_idle:
             self._spider_idle(spider)
