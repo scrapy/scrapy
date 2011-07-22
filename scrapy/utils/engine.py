@@ -16,7 +16,7 @@ def get_engine_status(engine=None):
         "engine.scheduler.is_idle()",
         "len(engine.scheduler.pending_requests)",
         "engine.downloader.is_idle()",
-        "len(engine.downloader.sites)",
+        "len(engine.downloader.slots)",
         "engine.scraper.is_idle()",
         "len(engine.scraper.slots)",
     ]
@@ -24,10 +24,10 @@ def get_engine_status(engine=None):
         "engine.spider_is_idle(spider)",
         "engine.slots[spider].closing",
         "len(engine.scheduler.pending_requests[spider])",
-        "len(engine.downloader.sites[spider].queue)",
-        "len(engine.downloader.sites[spider].active)",
-        "len(engine.downloader.sites[spider].transferring)",
-        "engine.downloader.sites[spider].lastseen",
+        "len(engine.downloader.slots[spider].queue)",
+        "len(engine.downloader.slots[spider].active)",
+        "len(engine.downloader.slots[spider].transferring)",
+        "engine.downloader.slots[spider].lastseen",
         "len(engine.scraper.slots[spider].queue)",
         "len(engine.scraper.slots[spider].active)",
         "engine.scraper.slots[spider].active_size",
@@ -41,7 +41,7 @@ def get_engine_status(engine=None):
             status['global'] += [(test, eval(test))]
         except Exception, e:
             status['global'] += [(test, "%s (exception)" % type(e).__name__)]
-    for spider in set(engine.downloader.sites.keys() + engine.scraper.slots.keys()):
+    for spider in set(engine.downloader.slots.keys() + engine.scraper.slots.keys()):
         x = []
         for test in spider_tests:
             try:

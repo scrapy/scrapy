@@ -124,7 +124,7 @@ class ExecutionEngine(object):
         return not self.running \
             or slot.closing \
             or self.spider_is_closed(spider) \
-            or self.downloader.sites[spider].needs_backout() \
+            or self.downloader.slots[spider].needs_backout() \
             or self.scraper.slots[spider].needs_backout()
 
     def _next_request(self, spider):
@@ -160,22 +160,22 @@ class ExecutionEngine(object):
         scraper_idle = spider in self.scraper.slots \
             and self.scraper.slots[spider].is_idle()
         pending = self.scheduler.spider_has_pending_requests(spider)
-        downloading = spider in self.downloader.sites \
-            and self.downloader.sites[spider].active
+        downloading = spider in self.downloader.slots \
+            and self.downloader.slots[spider].active
         return scraper_idle and not (pending or downloading)
 
     def spider_is_closed(self, spider):
         """Return True if the spider is fully closed (ie. not even in the
         closing stage)"""
-        return spider not in self.downloader.sites
+        return spider not in self.downloader.slots
 
     @property
     def open_spiders(self):
-        return self.downloader.sites.keys()
+        return self.downloader.slots.keys()
 
     def has_capacity(self):
         """Does the engine have capacity to handle more spiders"""
-        return len(self.downloader.sites) < self.downloader.concurrent_spiders
+        return len(self.downloader.slots) < self.downloader.concurrent_spiders
 
     def crawl(self, request, spider):
         assert spider in self.open_spiders, \

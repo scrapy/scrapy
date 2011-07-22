@@ -18,8 +18,8 @@ from scrapy import log
 from .middleware import DownloaderMiddlewareManager
 from .handlers import DownloadHandlers
 
-class SpiderInfo(object):
-    """Simple class to keep information and state for each open spider"""
+class Slot(object):
+    """Downloader spider slot"""
 
     def __init__(self, spider):
         setattr_default(spider, 'download_delay', spider.settings.getfloat('DOWNLOAD_DELAY'))
@@ -62,7 +62,7 @@ class Downloader(object):
     """
 
     def __init__(self):
-        self.sites = {}
+        self.slots = {}
         self.handlers = DownloadHandlers()
         self.middleware = DownloaderMiddlewareManager.from_settings(settings)
         self.concurrent_spiders = settings.getint('CONCURRENT_SPIDERS')
@@ -74,11 +74,11 @@ class Downloader(object):
         Response object, then request never reach downloader queue, and it will
         not be downloaded from site.
         """
-        site = self.sites[spider]
+        slot = self.slots[spider]
 
-        site.active.add(request)
+        slot.active.add(request)
         def _deactivate(response):
-            site.active.remove(request)
+            slot.active.remove(request)
             return response
 
         dfd = self.middleware.download(self.enqueue, request, spider)
@@ -86,7 +86,7 @@ class Downloader(object):
 
     def enqueue(self, request, spider):
         """Enqueue a Request for a effective download from site"""
-        site = self.sites[spider]
+        slot = self.slots[spider]
 
         def _downloaded(response):
             send_catch_log(signal=signals.response_downloaded, \
@@ -94,37 +94,37 @@ class Downloader(object):
             return response
 
         deferred = defer.Deferred().addCallback(_downloaded)
-        site.queue.append((request, deferred))
+        slot.queue.append((request, deferred))
         self._process_queue(spider)
         return deferred
 
     def _process_queue(self, spider):
-        """Effective download requests from site queue"""
-        site = self.sites.get(spider)
-        if not site:
+        """Effective download requests from slot queue"""
+        slot = self.slots.get(spider)
+        if not slot:
             return
 
         # Delay queue processing if a download_delay is configured
         now = time()
-        delay = site.download_delay()
+        delay = slot.download_delay()
         if delay:
-            penalty = delay - now + site.lastseen
-            if penalty > 0 and site.free_transfer_slots():
+            penalty = delay - now + slot.lastseen
+            if penalty > 0 and slot.free_transfer_slots():
                 d = defer.Deferred()
                 d.addCallback(self._process_queue)
                 call = reactor.callLater(penalty, d.callback, spider)
-                site.next_request_calls.add(call)
-                d.addBoth(lambda x: site.next_request_calls.remove(call))
+                slot.next_request_calls.add(call)
+                d.addBoth(lambda x: slot.next_request_calls.remove(call))
                 return
-        site.lastseen = now
+        slot.lastseen = now
 
-        # Process enqueued requests if there are free slots to transfer for this site
-        while site.queue and site.free_transfer_slots() > 0:
-            request, deferred = site.queue.popleft()
-            dfd = self._download(site, request, spider)
+        # Process enqueued requests if there are free slots to transfer for this slot
+        while slot.queue and slot.free_transfer_slots() > 0:
+            request, deferred = slot.queue.popleft()
+            dfd = self._download(slot, request, spider)
             dfd.chainDeferred(deferred)
 
-    def _download(self, site, request, spider):
+    def _download(self, slot, request, spider):
         # The order is very important for the following deferreds. Do not change!
 
         # 1. Create the download deferred
@@ -134,24 +134,24 @@ class Downloader(object):
         # state to free up the transferring slot so it can be used by the
         # following requests (perhaps those which came from the downloader
         # middleware itself)
-        site.transferring.add(request)
+        slot.transferring.add(request)
         def finish_transferring(_):
-            site.transferring.remove(request)
+            slot.transferring.remove(request)
             self._process_queue(spider)
             return _
         return dfd.addBoth(finish_transferring)
 
     def open_spider(self, spider):
         """Allocate resources to begin processing a spider"""
-        assert spider not in self.sites, "Spider already opened: %s" % spider
-        self.sites[spider] = SpiderInfo(spider)
+        assert spider not in self.slots, "Spider already opened: %s" % spider
+        self.slots[spider] = Slot(spider)
 
     def close_spider(self, spider):
         """Free any resources associated with the given spider"""
-        assert spider in self.sites, "Spider not opened: %s" % spider
-        site = self.sites.pop(spider)
-        site.cancel_request_calls()
+        assert spider in self.slots, "Spider not opened: %s" % spider
+        slot = self.slots.pop(spider)
+        slot.cancel_request_calls()
 
     def is_idle(self):
-        return not self.sites
+        return not self.slots
 
