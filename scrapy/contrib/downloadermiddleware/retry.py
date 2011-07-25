@@ -20,7 +20,7 @@ About HTTP errors to consider:
 
 from twisted.internet.error import TimeoutError as ServerTimeoutError, DNSLookupError, \
                                    ConnectionRefusedError, ConnectionDone, ConnectError, \
-                                   ConnectionLost
+                                   ConnectionLost, TCPTimedOutError
 from twisted.internet.defer import TimeoutError as UserTimeoutError
 from twisted.web.client import PartialDownloadError
 
@@ -35,7 +35,8 @@ class RetryMiddleware(object):
     # decompress an empty response
     EXCEPTIONS_TO_RETRY = (ServerTimeoutError, UserTimeoutError, DNSLookupError,
                            ConnectionRefusedError, ConnectionDone, ConnectError,
-                           ConnectionLost, PartialDownloadError, IOError)
+                           ConnectionLost, PartialDownloadError, TCPTimedOutError,
+                           IOError)
 
     def __init__(self):
         if not settings.getbool('RETRY_ENABLED'):
