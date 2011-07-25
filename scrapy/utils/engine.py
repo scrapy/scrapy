@@ -23,6 +23,7 @@ def get_engine_status(engine=None):
     spider_tests = [
         "engine.spider_is_idle(spider)",
         "engine.slots[spider].closing",
+        "len(engine.slots[spider].inprogress)",
         "len(engine.scheduler.pending_requests[spider])",
         "len(engine.downloader.slots[spider].queue)",
         "len(engine.downloader.slots[spider].active)",
@@ -41,7 +42,7 @@ def get_engine_status(engine=None):
             status['global'] += [(test, eval(test))]
         except Exception, e:
             status['global'] += [(test, "%s (exception)" % type(e).__name__)]
-    for spider in set(engine.downloader.slots.keys() + engine.scraper.slots.keys()):
+    for spider in engine.slots.keys():
         x = []
         for test in spider_tests:
             try:
