@@ -95,7 +95,8 @@ class ExecutionEngine(object):
             return
 
         if self.paused:
-            return slot.nextcall.schedule(5)
+            slot.nextcall.schedule(5)
+            return
 
         while not self._needs_backout(spider):
             if not self._next_request_from_scheduler(spider):
@@ -235,7 +236,8 @@ class ExecutionEngine(object):
             spider=spider, dont_log=DontCloseSpider)
         if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) \
                 for _, x in res):
-            return self.slots[spider].nextcall.schedule(5)
+            self.slots[spider].nextcall.schedule(5)
+            return
 
         if self.spider_is_idle(spider):
             self.close_spider(spider, reason='finished')
