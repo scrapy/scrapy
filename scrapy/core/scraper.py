@@ -43,11 +43,11 @@ class Slot(object):
 
     def next_response_request_deferred(self):
         response, request, deferred = self.queue.popleft()
-        self.active.add(response)
+        self.active.add(request)
         return response, request, deferred
 
-    def finish_response(self, response):
-        self.active.remove(response)
+    def finish_response(self, response, request):
+        self.active.remove(request)
         if isinstance(response, Response):
             self.active_size -= max(len(response.body), self.MIN_RESPONSE_SIZE)
         else:
@@ -98,7 +98,7 @@ class Scraper(object):
         slot = self.slots[spider]
         dfd = slot.add_response_request(response, request)
         def finish_scraping(_):
-            slot.finish_response(response)
+            slot.finish_response(response, request)
             self._check_if_closing(spider, slot)
             self._scrape_next(spider, slot)
             return _
