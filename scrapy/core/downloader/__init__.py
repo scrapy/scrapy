@@ -57,7 +57,6 @@ class Downloader(object):
         self.slots = {}
         self.handlers = DownloadHandlers()
         self.middleware = DownloaderMiddlewareManager.from_settings(settings)
-        self.concurrent_spiders = settings.getint('CONCURRENT_SPIDERS')
 
     def fetch(self, request, spider):
         slot = self.slots[spider]

@@ -59,6 +59,7 @@ class ExecutionEngine(object):
         self.scheduler = load_object(settings['SCHEDULER'])()
         self.downloader = Downloader()
         self.scraper = Scraper(self, self.settings)
+        self._concurrent_spiders = settings.getint('CONCURRENT_SPIDERS')
         self._spider_closed_callback = spider_closed_callback
 
     @defer.inlineCallbacks
@@ -164,7 +165,7 @@ class ExecutionEngine(object):
 
     def has_capacity(self):
         """Does the engine have capacity to handle more spiders"""
-        return len(self.downloader.slots) < self.downloader.concurrent_spiders
+        return len(self.slots) < self._concurrent_spiders
 
     def crawl(self, request, spider):
         assert spider in self.open_spiders, \
