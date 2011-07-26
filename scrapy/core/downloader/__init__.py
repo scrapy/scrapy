@@ -1,7 +1,3 @@
-"""
-Download web pages using asynchronous IO
-"""
-
 import random
 from time import time
 from collections import deque
@@ -56,10 +52,6 @@ class Slot(object):
 
 
 class Downloader(object):
-    """Mantain many concurrent downloads and provide an HTTP abstraction.
-    It supports a limited number of connections per spider and many spiders in
-    parallel.
-    """
 
     def __init__(self):
         self.slots = {}
@@ -68,12 +60,6 @@ class Downloader(object):
         self.concurrent_spiders = settings.getint('CONCURRENT_SPIDERS')
 
     def fetch(self, request, spider):
-        """Main method to use to request a download
-
-        This method includes middleware mangling. Middleware can returns a
-        Response object, then request never reach downloader queue, and it will
-        not be downloaded from site.
-        """
         slot = self.slots[spider]
 
         slot.active.add(request)
@@ -85,7 +71,6 @@ class Downloader(object):
         return dfd.addBoth(_deactivate)
 
     def enqueue(self, request, spider):
-        """Enqueue a Request for a effective download from site"""
         slot = self.slots[spider]
 
         def _downloaded(response):
@@ -99,7 +84,6 @@ class Downloader(object):
         return deferred
 
     def _process_queue(self, spider):
-        """Effective download requests from slot queue"""
         slot = self.slots.get(spider)
         if not slot:
             return
@@ -142,12 +126,10 @@ class Downloader(object):
         return dfd.addBoth(finish_transferring)
 
     def open_spider(self, spider):
-        """Allocate resources to begin processing a spider"""
         assert spider not in self.slots, "Spider already opened: %s" % spider
         self.slots[spider] = Slot(spider)
 
     def close_spider(self, spider):
-        """Free any resources associated with the given spider"""
         assert spider in self.slots, "Spider not opened: %s" % spider
         slot = self.slots.pop(spider)
         slot.cancel_request_calls()
