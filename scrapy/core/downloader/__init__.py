@@ -66,10 +66,10 @@ class Downloader(object):
             slot.active.remove(request)
             return response
 
-        dfd = self.middleware.download(self.enqueue, request, spider)
+        dfd = self.middleware.download(self._enqueue_request, request, spider)
         return dfd.addBoth(_deactivate)
 
-    def enqueue(self, request, spider):
+    def _enqueue_request(self, request, spider):
         slot = self.slots[spider]
 
         def _downloaded(response):
@@ -79,14 +79,10 @@ class Downloader(object):
 
         deferred = defer.Deferred().addCallback(_downloaded)
         slot.queue.append((request, deferred))
-        self._process_queue(spider)
+        self._process_queue(spider, slot)
         return deferred
 
-    def _process_queue(self, spider):
-        slot = self.slots.get(spider)
-        if not slot:
-            return
-
+    def _process_queue(self, spider, slot):
         # Delay queue processing if a download_delay is configured
         now = time()
         delay = slot.download_delay()
@@ -95,7 +91,7 @@ class Downloader(object):
             if penalty > 0 and slot.free_transfer_slots():
                 d = defer.Deferred()
                 d.addCallback(self._process_queue)
-                call = reactor.callLater(penalty, d.callback, spider)
+                call = reactor.callLater(penalty, d.callback, spider, slot)
                 slot.next_request_calls.add(call)
                 d.addBoth(lambda x: slot.next_request_calls.remove(call))
                 return
@@ -120,7 +116,7 @@ class Downloader(object):
         slot.transferring.add(request)
         def finish_transferring(_):
             slot.transferring.remove(request)
-            self._process_queue(spider)
+            self._process_queue(spider, slot)
             return _
         return dfd.addBoth(finish_transferring)
 
