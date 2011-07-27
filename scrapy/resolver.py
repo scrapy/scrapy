@@ -5,8 +5,10 @@ from twisted.internet.base import ThreadedResolver
 
 from scrapy.utils.datatypes import LocalCache
 
+# TODO: cache misses
+# TODO: make cache size a setting
 
-dnscache = LocalCache(10000) # XXX: make size a setting?
+dnscache = LocalCache(10000)
 
 def gethostbyname(hostname):
     if hostname not in dnscache:
