@@ -22,9 +22,9 @@ from .handlers import DownloadHandlers
 class Slot(object):
     """Downloader slot"""
 
-    def __init__(self, concurrency, settings):
+    def __init__(self, concurrency, delay, settings):
         self.concurrency = concurrency
-        self.delay = settings.getfloat('DOWNLOAD_DELAY')
+        self.delay = delay
         self.randomize_delay = settings.getbool('RANDOMIZE_DOWNLOAD_DELAY')
         self.active = set()
         self.queue = deque()
@@ -40,6 +40,28 @@ class Slot(object):
         return self.delay
 
 
+def _get_concurrency_delay(concurrency, spider, settings):
+    delay = settings.getfloat('DOWNLOAD_DELAY')
+    if hasattr(spider, 'download_delay'):
+        delay = spider.download_delay
+
+    # TODO: remove for Scrapy 0.15
+    c = settings.getint('CONCURRENT_REQUESTS_PER_SPIDER')
+    if c:
+        warnings.warn("CONCURRENT_REQUESTS_PER_SPIDER setting is deprecated, " \
+            "use CONCURRENT_REQUESTS_PER_DOMAIN instead", DeprecationWarning)
+        concurrency = c
+    # ----------------------------
+
+    if hasattr(spider, 'max_concurrent_requests'):
+        concurrency = spider.max_concurrent_requests
+
+    if delay > 0:
+        concurrency = 1 # force concurrency=1 if download delay required
+
+    return concurrency, delay
+
+
 class Downloader(object):
 
     def __init__(self, settings):
@@ -52,14 +74,9 @@ class Downloader(object):
         self.ip_concurrency = settings.getint('CONCURRENT_REQUESTS_PER_IP')
         self.middleware = DownloaderMiddlewareManager.from_settings(settings)
 
-        # TODO: remove for Scrapy 0.15
-        c = settings.getint('CONCURRENT_REQUESTS_PER_SPIDER')
-        if c:
-            warnings.warn("CONCURRENT_REQUESTS_PER_SPIDER setting is deprecated, use CONCURRENT_REQUESTS_PER_DOMAIN instead", DeprecationWarning)
-            self.domain_concurrency = c
 
     def fetch(self, request, spider):
-        key, slot = self._get_slot(request)
+        key, slot = self._get_slot(request, spider)
 
         self.active.add(request)
         slot.active.add(request)
@@ -77,18 +94,19 @@ class Downloader(object):
     def needs_backout(self):
         return len(self.active) >= self.total_concurrency
 
-    def _get_slot(self, request):
+    def _get_slot(self, request, spider):
         key = urlparse_cached(request).hostname
-        if self.ip_concurrency:
-            concurrency = self.ip_concurrency
-            try:
-                key = gethostbyname(key)
-            except socket.error: # resolution error
-                pass
-        else:
-            concurrency = self.domain_concurrency
         if key not in self.slots:
-            self.slots[key] = Slot(concurrency, self.settings)
+            if self.ip_concurrency:
+                concurrency = self.ip_concurrency
+                try:
+                    key = gethostbyname(key)
+                except socket.error: # resolution error
+                    pass
+            else:
+                concurrency = self.domain_concurrency
+            concurrency, delay = _get_concurrency_delay(concurrency, spider, self.settings)
+            self.slots[key] = Slot(concurrency, delay, self.settings)
         return key, self.slots[key]
 
     def _enqueue_request(self, request, spider, slot):
@@ -110,8 +128,8 @@ class Downloader(object):
             penalty = delay - now + slot.lastseen
             if penalty > 0 and slot.free_transfer_slots():
                 d = defer.Deferred()
-                d.addCallback(self._process_queue)
-                reactor.callLater(penalty, d.callback, spider, slot)
+                d.addCallback(self._process_queue, slot)
+                reactor.callLater(penalty, d.callback, spider)
                 return
         slot.lastseen = now
 
