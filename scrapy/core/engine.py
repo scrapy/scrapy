@@ -57,7 +57,7 @@ class ExecutionEngine(object):
         self.running = False
         self.paused = False
         self.scheduler = load_object(settings['SCHEDULER'])()
-        self.downloader = Downloader()
+        self.downloader = Downloader(self.settings)
         self.scraper = Scraper(self, self.settings)
         self._concurrent_spiders = settings.getint('CONCURRENT_SPIDERS')
         self._spider_closed_callback = spider_closed_callback
@@ -117,8 +117,7 @@ class ExecutionEngine(object):
         slot = self.slots[spider]
         return not self.running \
             or slot.closing \
-            or self.spider_is_closed(spider) \
-            or self.downloader.slots[spider].needs_backout() \
+            or self.downloader.needs_backout() \
             or self.scraper.slots[spider].needs_backout()
 
     def _next_request_from_scheduler(self, spider):
@@ -150,14 +149,9 @@ class ExecutionEngine(object):
         scraper_idle = spider in self.scraper.slots \
             and self.scraper.slots[spider].is_idle()
         pending = self.scheduler.spider_has_pending_requests(spider)
-        downloading = spider in self.downloader.slots \
-            and self.downloader.slots[spider].active
-        return scraper_idle and not (pending or downloading)
-
-    def spider_is_closed(self, spider):
-        """Return True if the spider is fully closed (ie. not even in the
-        closing stage)"""
-        return spider not in self.downloader.slots
+        downloading = bool(self.downloader.slots)
+        idle = scraper_idle and not (pending or downloading)
+        return idle
 
     @property
     def open_spiders(self):
@@ -205,7 +199,7 @@ class ExecutionEngine(object):
             slot.nextcall.schedule()
             return _
 
-        dwld = mustbe_deferred(self.downloader.fetch, request, spider)
+        dwld = self.downloader.fetch(request, spider)
         dwld.addCallback(_on_success)
         dwld.addBoth(_on_complete)
         return dwld
@@ -219,7 +213,6 @@ class ExecutionEngine(object):
         slot = Slot(start_requests or (), close_if_idle, nextcall)
         self.slots[spider] = slot
         yield self.scheduler.open_spider(spider)
-        self.downloader.open_spider(spider)
         yield self.scraper.open_spider(spider)
         stats.open_spider(spider)
         yield send_catch_log_deferred(signals.spider_opened, spider=spider)
@@ -254,9 +247,6 @@ class ExecutionEngine(object):
         self.scheduler.clear_pending_requests(spider)
 
         dfd = slot.close()
-
-        dfd.addBoth(lambda _: self.downloader.close_spider(spider))
-        dfd.addErrback(log.err, spider=spider)
 
         dfd.addBoth(lambda _: self.scraper.close_spider(spider))
         dfd.addErrback(log.err, spider=spider)

@@ -26,7 +26,11 @@ CLOSESPIDER_ITEMCOUNT = 0
 COMMANDS_MODULE = ''
 
 CONCURRENT_ITEMS = 100
-CONCURRENT_REQUESTS_PER_SPIDER = 8
+
+CONCURRENT_REQUESTS = 16
+CONCURRENT_REQUESTS_PER_DOMAIN = 8
+CONCURRENT_REQUESTS_PER_IP = 0
+
 CONCURRENT_SPIDERS = 8
 
 COOKIES_ENABLED = True
@@ -136,7 +140,6 @@ EXTENSIONS_BASE = {
     'scrapy.contrib.closespider.CloseSpider': 0,
     'scrapy.contrib.feedexport.FeedExporter': 0,
     'scrapy.contrib.spidercontext.SpiderContext': 0,
-    'scrapy.contrib.throttle.AutoThrottle': 0,
     'scrapy.contrib.logstats.LogStats': 0,
 }
 

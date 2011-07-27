@@ -17,6 +17,7 @@ def get_engine_status(engine=None):
         "len(engine.scheduler.pending_requests)",
         "engine.downloader.is_idle()",
         "len(engine.downloader.slots)",
+        "len(engine.downloader.active)",
         "engine.scraper.is_idle()",
         "len(engine.scraper.slots)",
     ]
@@ -25,10 +26,6 @@ def get_engine_status(engine=None):
         "engine.slots[spider].closing",
         "len(engine.slots[spider].inprogress)",
         "len(engine.scheduler.pending_requests[spider])",
-        "len(engine.downloader.slots[spider].queue)",
-        "len(engine.downloader.slots[spider].active)",
-        "len(engine.downloader.slots[spider].transferring)",
-        "engine.downloader.slots[spider].lastseen",
         "len(engine.scraper.slots[spider].queue)",
         "len(engine.scraper.slots[spider].active)",
         "engine.scraper.slots[spider].active_size",

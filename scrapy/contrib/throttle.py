@@ -1,3 +1,6 @@
+# TODO: this extension is currently broken and needs to be ported after the
+# downloader refactoring introduced in r2732
+
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.utils.python import setattr_default
 from scrapy.conf import settings

@@ -1,77 +1,97 @@
+import socket
 import random
+import warnings
 from time import time
 from collections import deque
+from functools import partial
 
 from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
 
-from scrapy.conf import settings
 from scrapy.utils.python import setattr_default
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.signal import send_catch_log
+from scrapy.utils.reactor import CallLaterOnce
+from scrapy.utils.httpobj import urlparse_cached
+from scrapy.resolver import gethostbyname
 from scrapy import signals
 from scrapy import log
 from .middleware import DownloaderMiddlewareManager
 from .handlers import DownloadHandlers
 
 class Slot(object):
-    """Downloader spider slot"""
+    """Downloader slot"""
 
-    def __init__(self, spider):
-        setattr_default(spider, 'download_delay', spider.settings.getfloat('DOWNLOAD_DELAY'))
-        setattr_default(spider, 'randomize_download_delay', spider.settings.getbool('RANDOMIZE_DOWNLOAD_DELAY'))
-        setattr_default(spider, 'max_concurrent_requests', spider.settings.getint('CONCURRENT_REQUESTS_PER_SPIDER'))
-        if spider.download_delay > 0 and spider.max_concurrent_requests > 1:
-            spider.max_concurrent_requests = 1
-            msg = "Setting max_concurrent_requests=1 because of download_delay=%s" % spider.download_delay
-            log.msg(msg, spider=spider)
-        self.spider = spider
+    def __init__(self, concurrency, settings):
+        self.concurrency = concurrency
+        self.delay = settings.getfloat('DOWNLOAD_DELAY')
+        self.randomize_delay = settings.getbool('RANDOMIZE_DOWNLOAD_DELAY')
         self.active = set()
         self.queue = deque()
         self.transferring = set()
         self.lastseen = 0
-        self.next_request_calls = set()
 
     def free_transfer_slots(self):
-        return self.spider.max_concurrent_requests - len(self.transferring)
-
-    def needs_backout(self):
-        # use self.active to include requests in the downloader middleware
-        return len(self.active) > 2 * self.spider.max_concurrent_requests
+        return self.concurrency - len(self.transferring)
 
     def download_delay(self):
-        delay = self.spider.download_delay
-        if self.spider.randomize_download_delay:
-            delay = random.uniform(0.5*delay, 1.5*delay)
-        return delay
-
-    def cancel_request_calls(self):
-        for call in self.next_request_calls:
-            call.cancel()
-        self.next_request_calls.clear()
+        if self.randomize_delay:
+            return random.uniform(0.5*self.delay, 1.5*self.delay)
+        return self.delay
 
 
 class Downloader(object):
 
-    def __init__(self):
+    def __init__(self, settings):
+        self.settings = settings
         self.slots = {}
+        self.active = set()
         self.handlers = DownloadHandlers()
+        self.total_concurrency = settings.getint('CONCURRENT_REQUESTS')
+        self.domain_concurrency = settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
+        self.ip_concurrency = settings.getint('CONCURRENT_REQUESTS_PER_IP')
         self.middleware = DownloaderMiddlewareManager.from_settings(settings)
 
-    def fetch(self, request, spider):
-        slot = self.slots[spider]
+        # TODO: remove for Scrapy 0.15
+        c = settings.getint('CONCURRENT_REQUESTS_PER_SPIDER')
+        if c:
+            warnings.warn("CONCURRENT_REQUESTS_PER_SPIDER setting is deprecated, use CONCURRENT_REQUESTS_PER_DOMAIN instead", DeprecationWarning)
+            self.domain_concurrency = c
 
+    def fetch(self, request, spider):
+        key, slot = self._get_slot(request)
+
+        self.active.add(request)
         slot.active.add(request)
         def _deactivate(response):
+            self.active.remove(request)
             slot.active.remove(request)
+            if not slot.active: # remove empty slots
+                del self.slots[key]
             return response
 
-        dfd = self.middleware.download(self._enqueue_request, request, spider)
+        dlfunc = partial(self._enqueue_request, slot=slot)
+        dfd = self.middleware.download(dlfunc, request, spider)
         return dfd.addBoth(_deactivate)
 
-    def _enqueue_request(self, request, spider):
-        slot = self.slots[spider]
+    def needs_backout(self):
+        return len(self.active) >= self.total_concurrency
 
+    def _get_slot(self, request):
+        key = urlparse_cached(request).hostname
+        if self.ip_concurrency:
+            concurrency = self.ip_concurrency
+            try:
+                key = gethostbyname(key)
+            except socket.error: # resolution error
+                pass
+        else:
+            concurrency = self.domain_concurrency
+        if key not in self.slots:
+            self.slots[key] = Slot(concurrency, self.settings)
+        return key, self.slots[key]
+
+    def _enqueue_request(self, request, spider, slot):
         def _downloaded(response):
             send_catch_log(signal=signals.response_downloaded, \
                     response=response, request=request, spider=spider)
@@ -91,9 +111,7 @@ class Downloader(object):
             if penalty > 0 and slot.free_transfer_slots():
                 d = defer.Deferred()
                 d.addCallback(self._process_queue)
-                call = reactor.callLater(penalty, d.callback, spider, slot)
-                slot.next_request_calls.add(call)
-                d.addBoth(lambda x: slot.next_request_calls.remove(call))
+                reactor.callLater(penalty, d.callback, spider, slot)
                 return
         slot.lastseen = now
 
@@ -119,15 +137,6 @@ class Downloader(object):
             self._process_queue(spider, slot)
             return _
         return dfd.addBoth(finish_transferring)
-
-    def open_spider(self, spider):
-        assert spider not in self.slots, "Spider already opened: %s" % spider
-        self.slots[spider] = Slot(spider)
-
-    def close_spider(self, spider):
-        assert spider in self.slots, "Spider not opened: %s" % spider
-        slot = self.slots.pop(spider)
-        slot.cancel_request_calls()
 
     def is_idle(self):
         return not self.slots

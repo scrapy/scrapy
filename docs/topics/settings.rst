@@ -242,15 +242,39 @@ Default: ``100``
 Maximum number of concurrent items (per response) to process in parallel in the
 Item Processor (also known as the :ref:`Item Pipeline <topics-item-pipeline>`).
 
-.. setting:: CONCURRENT_REQUESTS_PER_SPIDER
+.. setting:: CONCURRENT_REQUESTS
 
-CONCURRENT_REQUESTS_PER_SPIDER
+CONCURRENT_REQUESTS
+-------------------
+
+Default: ``16``
+
+The maximum number of concurrent (ie. simultaneous) requests that will be
+performed by the Scrapy downloader.
+
+
+.. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
+
+CONCURRENT_REQUESTS_PER_DOMAIN
 ------------------------------
 
 Default: ``8``
 
-Specifies how many concurrent (ie. simultaneous) requests will be performed per
-open spider.
+The maximum number of concurrent (ie. simultaneous) requests that will be
+performed to any single domain.
+
+.. setting:: CONCURRENT_REQUESTS_PER_IP
+
+CONCURRENT_REQUESTS_PER_IP
+--------------------------
+
+Default: ``0``
+
+The maximum number of concurrent (ie. simultaneous) requests that will be
+performed to any single IP. If non-zero, the
+:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` setting is ignored, and this one is
+used instead. In other words, concurrency limits will be applied per IP, not
+per domain.
 
 .. setting:: CONCURRENT_SPIDERS
 
@@ -548,7 +572,6 @@ Default::
         'scrapy.contrib.closespider.CloseSpider': 0,
         'scrapy.contrib.feedexport.FeedExporter': 0,
         'scrapy.contrib.spidercontext.SpiderContext': 0,
-        'scrapy.contrib.throttle.AutoThrottle': 0,
         'scrapy.contrib.logstats.LogStats': 0,
     }
 
