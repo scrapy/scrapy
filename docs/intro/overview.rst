@@ -248,6 +248,8 @@ scraping easy and efficient, such as:
 
 * Support for crawling based on URLs discovered through `Sitemaps`_
 
+* A caching DNS resolver
+
 What's next?
 ============
 

@@ -4,6 +4,7 @@ from twisted.internet import reactor, defer
 
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core.engine import ExecutionEngine
+from scrapy.resolver import CachingThreadedResolver
 from scrapy.extension import ExtensionManager
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.misc import load_object
@@ -69,6 +70,7 @@ class CrawlerProcess(Crawler):
 
     def start(self):
         super(CrawlerProcess, self).start()
+        reactor.installResolver(CachingThreadedResolver(reactor))
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
         reactor.run(installSignalHandlers=False) # blocking call
 
