@@ -245,3 +245,29 @@ How can I instruct a spider to stop itself?
 
 Raise the :exc:`~scrapy.exceptions.CloseSpider` exception from a callback. For
 more info see: :exc:`~scrapy.exceptions.CloseSpider`.
+
+How can I prevent my Scrapy bot from getting banned?
+----------------------------------------------------
+
+Some websites implement certain measures to prevent bots from crawling them,
+with varying degrees of sophistication. Getting around those measures can be
+difficult and tricky, and may sometimes require special infrastructure.
+
+Here are some tips to keep in mind when dealing with these kind of sites:
+
+* rotate your user agent from a pool of well-known ones from browsers (google
+  around to get a list of them)
+* disable cookies (see :setting:`COOKIES_ENABLED`) as some sites may use
+  cookies to spot bot behaviour
+* use download delays (2 or higher). See :setting:`DOWNLOAD_DELAY` setting.
+* is possible, use `Google cache`_ to fetch pages, instead of hitting the sites
+  directly
+* use a pool of rotating IPs. For example, the free `Tor project`_.
+
+If you are still unable to prevent your bot getting banned, consider contacting
+`commercial support`_.
+
+.. _user agents: http://en.wikipedia.org/wiki/User_agent
+.. _Google cache: http://www.googleguide.com/cached_pages.html
+.. _Tor project: https://www.torproject.org/
+.. _commercial support: http://scrapy.org/support/
