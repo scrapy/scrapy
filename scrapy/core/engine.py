@@ -17,18 +17,18 @@ from scrapy.exceptions import DontCloseSpider
 from scrapy.http import Response, Request
 from scrapy.utils.misc import load_object
 from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
-from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.reactor import CallLaterOnce
 
 
 class Slot(object):
 
-    def __init__(self, start_requests, close_if_idle, nextcall):
+    def __init__(self, start_requests, close_if_idle, nextcall, scheduler):
         self.closing = False
         self.inprogress = set() # requests in progress
         self.start_requests = iter(start_requests)
         self.close_if_idle = close_if_idle
         self.nextcall = nextcall
+        self.scheduler = scheduler
 
     def add_request(self, request):
         self.inprogress.add(request)
@@ -56,7 +56,7 @@ class ExecutionEngine(object):
         self.slots = {}
         self.running = False
         self.paused = False
-        self.scheduler = load_object(settings['SCHEDULER'])()
+        self.scheduler_cls = load_object(settings['SCHEDULER'])
         self.downloader = Downloader(self.settings)
         self.scraper = Scraper(self, self.settings)
         self._concurrent_spiders = settings.getint('CONCURRENT_SPIDERS')
@@ -84,10 +84,6 @@ class ExecutionEngine(object):
     def unpause(self):
         """Resume the execution engine"""
         self.paused = False
-
-    def is_idle(self):
-        return self.scheduler.is_idle() and self.downloader.is_idle() and \
-            self.scraper.is_idle()
 
     def _next_request(self, spider):
         try:
@@ -121,13 +117,13 @@ class ExecutionEngine(object):
             or self.scraper.slots[spider].needs_backout()
 
     def _next_request_from_scheduler(self, spider):
-        request = self.scheduler.next_request(spider)
+        slot = self.slots[spider]
+        request = slot.scheduler.next_request()
         if not request:
             return
         d = self._download(request, spider)
         d.addBoth(self._handle_downloader_output, request, spider)
         d.addErrback(log.msg, spider=spider)
-        slot = self.slots[spider]
         d.addBoth(lambda _: slot.remove_request(request))
         d.addErrback(log.msg, spider=spider)
         d.addBoth(lambda _: slot.nextcall.schedule())
@@ -148,7 +144,7 @@ class ExecutionEngine(object):
     def spider_is_idle(self, spider):
         scraper_idle = spider in self.scraper.slots \
             and self.scraper.slots[spider].is_idle()
-        pending = self.scheduler.spider_has_pending_requests(spider)
+        pending = self.slots[spider].scheduler.has_pending_requests()
         downloading = bool(self.downloader.slots)
         idle = scraper_idle and not (pending or downloading)
         return idle
@@ -168,7 +164,7 @@ class ExecutionEngine(object):
         self.slots[spider].nextcall.schedule()
 
     def schedule(self, request, spider):
-        return self.scheduler.enqueue_request(spider, request)
+        return self.slots[spider].scheduler.enqueue_request(request)
 
     def download(self, request, spider):
         slot = self.slots[spider]
@@ -210,9 +206,10 @@ class ExecutionEngine(object):
             spider.name
         log.msg("Spider opened", spider=spider)
         nextcall = CallLaterOnce(self._next_request, spider)
-        slot = Slot(start_requests or (), close_if_idle, nextcall)
+        scheduler = self.scheduler_cls.from_settings(self.settings)
+        slot = Slot(start_requests or (), close_if_idle, nextcall, scheduler)
         self.slots[spider] = slot
-        yield self.scheduler.open_spider(spider)
+        yield scheduler.open(spider)
         yield self.scraper.open_spider(spider)
         stats.open_spider(spider)
         yield send_catch_log_deferred(signals.spider_opened, spider=spider)
@@ -244,14 +241,12 @@ class ExecutionEngine(object):
             return slot.closing
         log.msg("Closing spider (%s)" % reason, spider=spider)
 
-        self.scheduler.clear_pending_requests(spider)
-
         dfd = slot.close()
 
         dfd.addBoth(lambda _: self.scraper.close_spider(spider))
         dfd.addErrback(log.err, spider=spider)
 
-        dfd.addBoth(lambda _: self.scheduler.close_spider(spider))
+        dfd.addBoth(lambda _: slot.scheduler.close(reason))
         dfd.addErrback(log.err, spider=spider)
 
         dfd.addBoth(lambda _: send_catch_log_deferred(signal=signals.spider_closed, \
