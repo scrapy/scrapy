@@ -331,6 +331,22 @@ Default: ``0``
 The maximum depth that will be allowed to crawl for any site. If zero, no limit
 will be imposed.
 
+.. setting:: DEPTH_PRIORITY
+
+DEPTH_PRIORITY
+--------------
+
+Default: ``1``
+
+An integer that is used to set the request priority based on request depth.
+
+To crawl in `breath-first order`_, set :setting:`DEPTH_PRIORITY` to ``1``.
+
+To crawl in `depth-first order`_, set :setting:`DEPTH_PRIORITY` to ``-1``.
+
+To disable any priority adjustment based on depth, set
+:setting:`DEPTH_PRIORITY` to ``0``.
+
 .. setting:: DEPTH_STATS
 
 DEPTH_STATS
@@ -468,12 +484,12 @@ The amount of time (in secs) that the downloader will wait before timing out.
 DUPEFILTER_CLASS
 ----------------
 
-Default: ``'scrapy.contrib.dupefilter.RequestFingerprintDupeFilter'``
+Default: ``'scrapy.dupefilter.RFPDupeFilter'``
 
 The class used to detect and filter duplicate requests.
 
-The default (``RequestFingerprintDupeFilter``) filters based on request fingerprint
-(using ``scrapy.utils.request.request_fingerprint``) and grouping per domain.
+The default (``RFPDupeFilter``) filters based on request fingerprint using
+the ``scrapy.utils.request.request_fingerprint`` function.
 
 .. setting:: EDITOR
 
@@ -827,26 +843,6 @@ Default: ``'scrapy.core.scheduler.Scheduler'``
 
 The scheduler to use for crawling.
 
-.. setting:: SCHEDULER_ORDER 
-
-SCHEDULER_ORDER
----------------
-
-Default: ``'DFO'``
-
-Scope: ``scrapy.core.scheduler``
-
-The order to use for the crawling scheduler. Available orders are: 
-
-* ``'BFO'``:  `Breadth-first order`_ - typically consumes more memory but
-  reaches most relevant pages earlier.
-
-* ``'DFO'``:  `Depth-first order`_ - typically consumes less memory than
-  but takes longer to reach most relevant pages.
-
-.. _Breadth-first order: http://en.wikipedia.org/wiki/Breadth-first_search
-.. _Depth-first order: http://en.wikipedia.org/wiki/Depth-first_search
-
 .. setting:: SPIDER_MIDDLEWARES
 
 SPIDER_MIDDLEWARES
@@ -997,3 +993,5 @@ Default: ``"%s/%s" % (BOT_NAME, BOT_VERSION)``
 The default User-Agent to use when crawling, unless overridden. 
 
 .. _Amazon web services: http://aws.amazon.com/
+.. _breadth-first order: http://en.wikipedia.org/wiki/Breadth-first_search
+.. _depth-first order: http://en.wikipedia.org/wiki/Depth-first_search

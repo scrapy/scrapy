@@ -84,10 +84,11 @@ How can I simulate a user login in my spider?
 
 See :ref:`topics-request-response-ref-request-userlogin`.
 
-Can I crawl in breadth-first order instead of depth-first order?
-----------------------------------------------------------------
+Does Scrapy crawl in breath-first or depth-first order?
+-------------------------------------------------------
 
-Yes, there's a setting for that: :setting:`SCHEDULER_ORDER`.
+It crawls on breath-first order by default, but you can change it to
+depth-first order by setting the :setting:`DEPTH_PRIORITY` setting to ``-1``.
 
 My Scrapy crawler has memory leaks. What can I do?
 --------------------------------------------------

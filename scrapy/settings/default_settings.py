@@ -47,6 +47,7 @@ DEFAULT_RESPONSE_ENCODING = 'ascii'
 
 DEPTH_LIMIT = 0
 DEPTH_STATS = True
+DEPTH_PRIORITY = 1
 
 DOWNLOAD_DELAY = 0
 
@@ -85,7 +86,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
 
 DOWNLOADER_STATS = True
 
-DUPEFILTER_CLASS = 'scrapy.contrib.dupefilter.RequestFingerprintDupeFilter'
+DUPEFILTER_CLASS = 'scrapy.dupefilter.RFPDupeFilter'
 
 try:
     EDITOR = os.environ['EDITOR']
@@ -219,8 +220,7 @@ RETRY_PRIORITY_ADJUST = -1
 ROBOTSTXT_OBEY = False
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
-
-SCHEDULER_ORDER = 'DFO'
+SCHEDULER_DISK_QUEUE = 'scrapy.squeue.MarshalDiskQueue'
 
 SELECTORS_BACKEND = None # possible values: libxml2, lxml
 

@@ -21,13 +21,14 @@ class Request(object_ref):
         '__weakref__']
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None, 
-                 cookies=None, meta=None, encoding='utf-8', priority=0.0,
+                 cookies=None, meta=None, encoding='utf-8', priority=0,
                  dont_filter=False, errback=None):
 
         self._encoding = encoding  # this one has to be set first
         self.method = str(method).upper()
         self._set_url(url)
         self._set_body(body)
+        assert isinstance(priority, int), "Request priority not an integer: %r" % priority
         self.priority = priority
 
         assert callback or not errback, "Cannot use errback without a callback"
