@@ -191,12 +191,16 @@ class ExecutionEngine(object):
                     response=response, request=request, spider=spider)
             return response
 
+        def _on_error(failure):
+            failure.request = request
+            return failure
+
         def _on_complete(_):
             slot.nextcall.schedule()
             return _
 
         dwld = self.downloader.fetch(request, spider)
-        dwld.addCallback(_on_success)
+        dwld.addCallbacks(_on_success, _on_error)
         dwld.addBoth(_on_complete)
         return dwld
 
