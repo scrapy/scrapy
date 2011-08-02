@@ -50,6 +50,9 @@ class Scheduler(object):
     def next_request(self):
         return self.mqs.pop() or self._dqpop()
 
+    def __len__(self):
+        return len(self.dqs) + len(self.mqs)
+
     def _dqpush(self, request):
         if self.dqs is None:
             return
