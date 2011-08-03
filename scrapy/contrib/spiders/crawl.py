@@ -53,7 +53,7 @@ class CrawlSpider(BaseSpider):
                 links = rule.process_links(links)
             seen = seen.union(links)
             for link in links:
-                r = Request(url=link.url, callback='_response_downloaded')
+                r = Request(url=link.url, callback=self._response_downloaded)
                 r.meta.update(rule=n, link_text=link.text)
                 yield rule.process_request(r)
 
