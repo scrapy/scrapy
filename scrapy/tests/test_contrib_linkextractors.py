@@ -135,10 +135,6 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
         self.assertEqual([link for link in lx.extract_links(self.response)],
             [ Link(url='http://www.google.com/something', text=u'') ])
 
-        lx = SgmlLinkExtractor(tags=('img', ), attrs=('src', ))
-        self.assertEqual([link for link in lx.extract_links(self.response)],
-            [ Link(url='http://example.com/sample2.jpg', text=u'') ])
-
     def test_extraction_using_single_values(self):
         '''Test the extractor's behaviour among different situations'''
 
@@ -210,6 +206,13 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
         lx = SgmlLinkExtractor(restrict_xpaths="//div[@class='links']") 
         self.assertEqual(lx.extract_links(response),
                          [Link(url='http://example.org/about.html', text=u'About us\xa3')])
+
+    def test_deny_extensions(self):
+        html = """<a href="page.html">asd</a> and <a href="photo.jpg">"""
+        response = HtmlResponse("http://example.org/", body=html)
+        lx = SgmlLinkExtractor()
+        self.assertEqual(lx.extract_links(response),
+            [Link(url='http://example.org/page.html', text=u'asd')])
 
     def test_process_value(self):
         """Test restrict_xpaths with encodings"""

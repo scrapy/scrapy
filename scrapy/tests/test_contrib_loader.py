@@ -215,6 +215,32 @@ class ItemLoaderTest(unittest.TestCase):
         il.add_value('name', [u'mar', u'ta'])
         self.assertEqual(il.get_output_value('name'), u'Mar Ta')
 
+
+    def test_output_processor_error(self):
+        class TestItemLoader(ItemLoader):
+            default_item_class = TestItem
+            name_out = MapCompose(float)
+
+        il = TestItemLoader()
+        il.add_value('name', [u'$10'])
+        try:
+            float('$10')
+        except Exception, e:
+            expected_exc_str = str(e)
+
+        exc = None
+        try:
+            il.load_item()
+        except Exception, e:
+            exc = e
+        assert isinstance(exc, ValueError)
+        s = str(exc)
+        assert 'name' in s, s
+        assert '$10' in s, s
+        assert 'ValueError' in s, s
+        assert expected_exc_str in s, s
+
+
     def test_output_processor_using_classes(self):
         il = TestItemLoader()
         il.add_value('name', [u'mar', u'ta'])

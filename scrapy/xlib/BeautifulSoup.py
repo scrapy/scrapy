@@ -1,4 +1,8 @@
-"""Beautiful Soup
+"""
+FIXME: this module is only needed beacuse scrapy.xlib.ClientForm uses it. We
+should remove it after we remove the scrapy.xlib.ClientForm module.
+
+Beautiful Soup
 Elixir and Tonic
 "The Screen-Scraper's Friend"
 http://www.crummy.com/software/BeautifulSoup/

@@ -4,6 +4,7 @@ conditions are met.
 See documentation in docs/topics/extensions.rst
 """
 
+import warnings
 from collections import defaultdict
 
 from twisted.internet import reactor
@@ -18,7 +19,11 @@ class CloseSpider(object):
 
     def __init__(self):
         self.timeout = settings.getint('CLOSESPIDER_TIMEOUT')
-        self.itempassed = settings.getint('CLOSESPIDER_ITEMPASSED')
+        self.itemcount = settings.getint('CLOSESPIDER_ITEMCOUNT')
+        # XXX: legacy support - remove for future releases
+        if settings.getint('CLOSESPIDER_ITEMPASSED'):
+            warnings.warn("CLOSESPIDER_ITEMPASSED setting is deprecated, use CLOSESPIDER_ITEMCOUNT instead", DeprecationWarning)
+            self.pagecount = settings.getint('CLOSESPIDER_ITEMPASSED')
         self.pagecount = settings.getint('CLOSESPIDER_PAGECOUNT')
         self.errorcount = settings.getint('CLOSESPIDER_ERRORCOUNT')
 
@@ -33,8 +38,8 @@ class CloseSpider(object):
             dispatcher.connect(self.page_count, signal=signals.response_received)
         if self.timeout:
             dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
-        if self.itempassed:
-            dispatcher.connect(self.item_passed, signal=signals.item_passed)
+        if self.itemcount:
+            dispatcher.connect(self.item_scraped, signal=signals.item_scraped)
         dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
 
     def catch_log(self, event):
@@ -55,10 +60,10 @@ class CloseSpider(object):
             crawler.engine.close_spider, spider=spider, \
             reason='closespider_timeout')
 
-    def item_passed(self, item, spider):
+    def item_scraped(self, item, spider):
         self.counts[spider] += 1
-        if self.counts[spider] == self.itempassed:
-            crawler.engine.close_spider(spider, 'closespider_itempassed')
+        if self.counts[spider] == self.itemcount:
+            crawler.engine.close_spider(spider, 'closespider_itemcount')
 
     def spider_closed(self, spider):
         self.counts.pop(spider, None)

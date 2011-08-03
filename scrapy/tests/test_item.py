@@ -40,13 +40,6 @@ class ItemTest(unittest.TestCase):
         self.assertRaises(KeyError, i.__setitem__, 'field', 'text')
         self.assertRaises(KeyError, i.__getitem__, 'field')
 
-    def test_default_value(self):
-        class TestItem(Item):
-            name = Field(default=u'John')
- 
-        i = TestItem()
-        self.assertEqual(i['name'], u'John')
-
     def test_repr(self):
         class TestItem(Item):
             name = Field()
@@ -57,7 +50,7 @@ class ItemTest(unittest.TestCase):
         i['number'] = 123
         itemrepr = repr(i)
         self.assertEqual(itemrepr,
-                         "TestItem(name=u'John Doe', number=123)")
+                         "{'name': u'John Doe', 'number': 123}")
 
         i2 = eval(itemrepr)
         self.assertEqual(i2['name'], 'John Doe')

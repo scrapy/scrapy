@@ -79,30 +79,29 @@ using the telnet console::
     >>> est()
     Execution engine status
 
-    datetime.now()-self.start_time                  : 0:00:09.051588
-    self.is_idle()                                  : False
-    self.scheduler.is_idle()                        : False
-    len(self.scheduler.pending_requests)            : 1
-    self.downloader.is_idle()                       : False
-    len(self.downloader.sites)                      : 1
-    self.downloader.has_capacity()                  : True
-    self.pipeline.is_idle()                         : False
-    len(self.pipeline.domaininfo)                   : 1
-    len(self._scraping)                             : 1
+    time()-engine.start_time                        : 21.3188259602
+    engine.is_idle()                                : False
+    engine.has_capacity()                           : True
+    engine.scheduler.is_idle()                      : False
+    len(engine.scheduler.pending_requests)          : 1
+    engine.downloader.is_idle()                     : False
+    len(engine.downloader.slots)                    : 1
+    engine.scraper.is_idle()                        : False
+    len(engine.scraper.slots)                       : 1
 
-    example.com
-      self.domain_is_idle(domain)                        : False
-      self.closing.get(domain)                           : None
-      self.scheduler.domain_has_pending_requests(domain) : True
-      len(self.scheduler.pending_requests[domain])       : 97
-      len(self.downloader.sites[domain].queue)           : 17
-      len(self.downloader.sites[domain].active)          : 25
-      len(self.downloader.sites[domain].transferring)    : 8
-      self.downloader.sites[domain].closing              : False
-      self.downloader.sites[domain].lastseen             : 2009-06-23 15:20:16.563675
-      self.pipeline.domain_is_idle(domain)               : True
-      len(self.pipeline.domaininfo[domain])              : 0
-      len(self._scraping[domain])                        : 0
+    Spider: <GayotSpider 'gayotcom' at 0x2dc2b10>
+      engine.spider_is_idle(spider)                      : False
+      engine.slots[spider].closing                       : False
+      len(engine.scheduler.pending_requests[spider])     : 11504
+      len(engine.downloader.slots[spider].queue)         : 9
+      len(engine.downloader.slots[spider].active)        : 17
+      len(engine.downloader.slots[spider].transferring)  : 8
+      engine.downloader.slots[spider].lastseen           : 1311311093.61
+      len(engine.scraper.slots[spider].queue)            : 0
+      len(engine.scraper.slots[spider].active)           : 0
+      engine.scraper.slots[spider].active_size           : 0
+      engine.scraper.slots[spider].itemproc_size         : 0
+      engine.scraper.slots[spider].needs_backout()       : False
 
 
 Pause, resume and stop the Scrapy engine
