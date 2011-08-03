@@ -162,6 +162,7 @@ FEED_EXPORTERS_BASE = {
     'jsonlines': 'scrapy.contrib.exporter.JsonLinesItemExporter',
     'csv': 'scrapy.contrib.exporter.CsvItemExporter',
     'xml': 'scrapy.contrib.exporter.XmlItemExporter',
+    'marshal': 'scrapy.contrib.exporter.MarshalItemExporter',
 }
 
 HTTPCACHE_ENABLED = False
