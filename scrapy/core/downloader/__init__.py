@@ -1,4 +1,3 @@
-import socket
 import random
 import warnings
 from time import time
@@ -8,12 +7,10 @@ from functools import partial
 from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
 
-from scrapy.utils.python import setattr_default
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.signal import send_catch_log
-from scrapy.utils.reactor import CallLaterOnce
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.resolver import gethostbyname
+from scrapy.resolver import dnscache
 from scrapy import signals
 from scrapy import log
 from .middleware import DownloaderMiddlewareManager
@@ -95,14 +92,12 @@ class Downloader(object):
         return len(self.active) >= self.total_concurrency
 
     def _get_slot(self, request, spider):
-        key = urlparse_cached(request).hostname
+        key = urlparse_cached(request).hostname or ''
+        if self.ip_concurrency:
+            key = dnscache.get(key, key)
         if key not in self.slots:
             if self.ip_concurrency:
                 concurrency = self.ip_concurrency
-                try:
-                    key = gethostbyname(key)
-                except socket.error: # resolution error
-                    pass
             else:
                 concurrency = self.domain_concurrency
             concurrency, delay = _get_concurrency_delay(concurrency, spider, self.settings)

@@ -10,11 +10,6 @@ from scrapy.utils.datatypes import LocalCache
 
 dnscache = LocalCache(10000)
 
-def gethostbyname(hostname):
-    if hostname not in dnscache:
-        dnscache[hostname] = socket.gethostbyname(hostname)
-    return dnscache[hostname]
-
 class CachingThreadedResolver(ThreadedResolver):
 
     def getHostByName(self, name, timeout = (1, 3, 11, 45)):
