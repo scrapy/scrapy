@@ -12,4 +12,6 @@ class MarshalDiskQueue(DiskQueue):
         super(MarshalDiskQueue, self).push(marshal.dumps(obj))
 
     def pop(self):
-        return marshal.loads(super(MarshalDiskQueue, self).pop())
+        s = super(MarshalDiskQueue, self).pop()
+        if s:
+            return marshal.loads(s)
