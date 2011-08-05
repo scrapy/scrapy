@@ -58,10 +58,10 @@ class Scheduler(object):
             return
         try:
             reqd = request_to_dict(request, self.spider)
+            self.dqs.push(reqd, request.priority)
         except ValueError: # non serializable request
             return
         else:
-            self.dqs.push(reqd, request.priority)
             stats.inc_value('scheduler/disk_enqueued', spider=self.spider)
             return True
 
