@@ -366,6 +366,15 @@ Default: ``False``
 Whether to collect verbose depth stats. If this is enabled, the number of
 requests for each depth is collected in the stats.
 
+.. setting:: DNSCACHE_ENABLED
+
+DNSCACHE_ENABLED
+----------------
+
+Default: ``True``
+
+Whether to enable DNS in-memory cache.
+
 .. setting:: DOWNLOADER_DEBUG
 
 DOWNLOADER_DEBUG
