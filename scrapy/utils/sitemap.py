@@ -22,7 +22,8 @@ class Sitemap(object):
         for elem in self._root.getchildren():
             d = {}
             for el in elem.getchildren():
-                _, name = el.tag.split('}', 1)
+                tag = el.tag
+                name = tag.split('}', 1)[1] if '}' in tag else tag
                 d[name] = el.text.strip() if el.text else ''
             yield d
 

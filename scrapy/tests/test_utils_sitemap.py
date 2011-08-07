@@ -62,6 +62,28 @@ class SitemapTest(unittest.TestCase):
              {'loc': 'http://www.example.com/2', 'lastmod': ''},
             ])
 
+    def test_sitemap_wrong_ns(self):
+        """We have seen sitemaps with wrongs ns. Presumably, Google still works
+        with these, though is not 100% confirmed"""
+        s = Sitemap("""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.google.com/schemas/sitemap/0.84">
+  <url xmlns="">
+    <loc> http://www.example.com/</loc>
+    <lastmod>2009-08-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1</priority>
+  </url>
+  <url xmlns="">
+    <loc> http://www.example.com/2</loc>
+    <lastmod />
+  </url>
+</urlset>
+""")
+        self.assertEqual(list(s),
+            [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
+             {'loc': 'http://www.example.com/2', 'lastmod': ''},
+            ])
+
     def test_sitemap_urls_from_robots(self):
         robots = """User-agent: *
 Disallow: /aff/
