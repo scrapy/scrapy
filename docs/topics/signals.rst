@@ -43,10 +43,13 @@ engine_started
 .. signal:: engine_started
 .. function:: engine_started()
 
-    Sent when the Scrapy engine is started (for example, when a crawling
-    process has started).
+    Sent when the Scrapy engine has started crawling.
 
     This signal supports returning deferreds from their handlers.
+
+.. note:: This signal may be fired *after* the :signal:`spider_opened` signal,
+    depending on how the spider was started. So **don't** rely on this signal
+    getting fired before :signal:`spider_opened`.
 
 engine_stopped
 --------------
