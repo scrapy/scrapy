@@ -16,7 +16,8 @@ class Sitemap(object):
         tree = ElementTree()
         tree.parse(StringIO(xmltext))
         self._root = tree.getroot()
-        _, self.type = self._root.tag.split('}', 1)
+        rt = self._root.tag
+        self.type = self._root.tag.split('}', 1)[1] if '}' in rt else rt
 
     def __iter__(self):
         for elem in self._root.getchildren():
