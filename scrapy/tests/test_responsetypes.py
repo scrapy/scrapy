@@ -1,5 +1,5 @@
 import unittest
-from scrapy.core.downloader.responsetypes import responsetypes
+from scrapy.responsetypes import responsetypes
 
 from scrapy.http import Response, TextResponse, XmlResponse, HtmlResponse, Headers
 

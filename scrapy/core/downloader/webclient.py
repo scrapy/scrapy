@@ -8,7 +8,7 @@ from twisted.internet import defer
 
 from scrapy.http import Headers
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.core.downloader.responsetypes import responsetypes
+from scrapy.responsetypes import responsetypes
 
 
 def _parsed_url_args(parsed):

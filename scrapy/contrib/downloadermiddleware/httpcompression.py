@@ -2,7 +2,7 @@ import zlib
 
 from scrapy.utils.gz import gunzip
 from scrapy.http import Response, TextResponse
-from scrapy.core.downloader.responsetypes import responsetypes
+from scrapy.responsetypes import responsetypes
 
 
 class HttpCompressionMiddleware(object):

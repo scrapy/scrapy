@@ -5,7 +5,7 @@ from time import time
 import cPickle as pickle
 
 from scrapy.http import Headers
-from scrapy.core.downloader.responsetypes import responsetypes
+from scrapy.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.project import data_path
 from scrapy import conf

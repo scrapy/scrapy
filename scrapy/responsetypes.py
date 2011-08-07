@@ -14,8 +14,6 @@ from scrapy.utils.python import isbinarytext
 from scrapy.utils.py26 import get_data
 from scrapy.conf import settings
 
-__package__ = 'scrapy.core.downloader.responsetypes' # required for python 2.5
-
 class ResponseTypes(object):
 
     CLASSES = {
@@ -36,7 +34,7 @@ class ResponseTypes(object):
         self.CLASSES.update(settings.get('RESPONSE_CLASSES', {}))
         self.classes = {}
         self.mimetypes = MimeTypes()
-        mimedata = get_data(__package__, 'mime.types')
+        mimedata = get_data('scrapy', 'mime.types')
         self.mimetypes.readfp(StringIO(mimedata))
         for mimetype, cls in self.CLASSES.iteritems():
             self.classes[mimetype] = load_object(cls)

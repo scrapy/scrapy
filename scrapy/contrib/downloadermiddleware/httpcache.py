@@ -11,7 +11,7 @@ from scrapy.xlib.pydispatch import dispatcher
 from scrapy import signals
 from scrapy.http import Headers
 from scrapy.exceptions import NotConfigured, IgnoreRequest
-from scrapy.core.downloader.responsetypes import responsetypes
+from scrapy.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
