@@ -26,7 +26,7 @@ class Scheduler(object):
         return cls(dupefilter, job_dir(settings), dqclass)
 
     def has_pending_requests(self):
-        return len(self.dqs) or len(self.mqs)
+        return len(self) > 0
 
     def open(self, spider):
         self.spider = spider

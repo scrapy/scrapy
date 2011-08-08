@@ -53,6 +53,3 @@ class PriorityQueue(object):
 
     def __len__(self):
         return sum(len(x) for x in self.queues.values()) if self.queues else 0
-
-    def __nonzero__(self):
-        return bool(self.queues)
