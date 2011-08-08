@@ -17,14 +17,18 @@ class MediaPipeline(object):
             self.downloaded = {}
             self.waiting = defaultdict(list)
 
-    def __init__(self, download_func=None, crawler=None):
+    def __init__(self, download_func=None):
         self.spiderinfo = {}
         self.download_func = download_func
-        self.crawler = crawler
 
     @classmethod
     def from_crawler(cls, crawler):
-        return cls(crawler=crawler)
+        try:
+            pipe = cls.from_settings(crawler.settings)
+        except AttributeError:
+            pipe = cls()
+        pipe.crawler = crawler
+        return pipe
 
     def open_spider(self, spider):
         self.spiderinfo[spider] = self.SpiderInfo(spider)
