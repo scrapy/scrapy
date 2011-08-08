@@ -43,9 +43,13 @@ convenience:
 +----------------+-------------------------------------------------------------------+
 | Shortcut       | Description                                                       |
 +================+===================================================================+
-| ``manager``    | the Project Crawler object (``scrapy.project.crawler``)           |
+| ``crawler``    | the Scrapy Crawler object (``scrapy.crawler``)                    |
 +----------------+-------------------------------------------------------------------+
-| ``engine``     | the Scrapy engine object (``scrapy.project.crawler.engine``)      |
+| ``engine``     | the Scrapy Engine object (``scrapy.core.engine``)                 |
++----------------+-------------------------------------------------------------------+
+| ``spider``     | the spider object (only if there is a single spider opened)       |
++----------------+-------------------------------------------------------------------+
+| ``slot``       | the engine slot (only if there is a single spider opened)         |
 +----------------+-------------------------------------------------------------------+
 | ``extensions`` | the Extension Manager (``scrapy.project.crawler.extensions``)     |
 +----------------+-------------------------------------------------------------------+
