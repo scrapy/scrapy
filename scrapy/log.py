@@ -13,6 +13,7 @@ import scrapy
 from scrapy.conf import settings
 from scrapy.utils.python import unicode_to_str
 from scrapy.utils.misc import load_object
+from scrapy.exceptions import ScrapyDeprecationWarning
  
 # Logging levels
 DEBUG = logging.DEBUG
@@ -114,7 +115,7 @@ def start(logfile=None, loglevel=None, logstdout=None):
 def msg(message, level=INFO, **kw):
     if 'component' in kw:
         warnings.warn("Argument `component` of scrapy.log.msg() is deprecated", \
-            DeprecationWarning, stacklevel=2)
+            ScrapyDeprecationWarning, stacklevel=2)
     kw.setdefault('system', 'scrapy')
     kw['logLevel'] = level
     log.msg(message, **kw)

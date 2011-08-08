@@ -12,6 +12,7 @@ from twisted.python import log as txlog
 from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy import signals, log
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.project import crawler
 from scrapy.conf import settings
 
@@ -22,7 +23,7 @@ class CloseSpider(object):
         self.itemcount = settings.getint('CLOSESPIDER_ITEMCOUNT')
         # XXX: legacy support - remove for future releases
         if settings.getint('CLOSESPIDER_ITEMPASSED'):
-            warnings.warn("CLOSESPIDER_ITEMPASSED setting is deprecated, use CLOSESPIDER_ITEMCOUNT instead", DeprecationWarning)
+            warnings.warn("CLOSESPIDER_ITEMPASSED setting is deprecated, use CLOSESPIDER_ITEMCOUNT instead", ScrapyDeprecationWarning)
             self.pagecount = settings.getint('CLOSESPIDER_ITEMPASSED')
         self.pagecount = settings.getint('CLOSESPIDER_PAGECOUNT')
         self.errorcount = settings.getint('CLOSESPIDER_ERRORCOUNT')

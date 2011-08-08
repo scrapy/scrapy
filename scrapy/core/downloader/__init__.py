@@ -11,6 +11,7 @@ from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.signal import send_catch_log
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.resolver import dnscache
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy import signals
 from scrapy import log
 from .middleware import DownloaderMiddlewareManager
@@ -46,7 +47,7 @@ def _get_concurrency_delay(concurrency, spider, settings):
     c = settings.getint('CONCURRENT_REQUESTS_PER_SPIDER')
     if c:
         warnings.warn("CONCURRENT_REQUESTS_PER_SPIDER setting is deprecated, " \
-            "use CONCURRENT_REQUESTS_PER_DOMAIN instead", DeprecationWarning)
+            "use CONCURRENT_REQUESTS_PER_DOMAIN instead", ScrapyDeprecationWarning)
         concurrency = c
     # ----------------------------
 

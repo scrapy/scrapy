@@ -11,7 +11,7 @@ from scrapy.crawler import CrawlerProcess
 from scrapy.xlib import lsprofcalltree
 from scrapy.conf import settings
 from scrapy.command import ScrapyCommand
-from scrapy.exceptions import UsageError
+from scrapy.exceptions import UsageError, ScrapyDeprecationWarning
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import inside_project
 
@@ -82,7 +82,7 @@ def _check_deprecated_scrapy_ctl(argv, inproject):
         return
     import warnings
     warnings.warn("`scrapy-ctl.py` command-line tool is deprecated and will be removed in Scrapy 0.11, use `scrapy` instead",
-        DeprecationWarning, stacklevel=3)
+        ScrapyDeprecationWarning, stacklevel=3)
     if inproject:
         projpath = os.path.abspath(os.path.dirname(os.path.dirname(settings.settings_module.__file__)))
         cfg_path = os.path.join(projpath, 'scrapy.cfg')

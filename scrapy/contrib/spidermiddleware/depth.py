@@ -8,6 +8,7 @@ import warnings
 
 from scrapy import log
 from scrapy.http import Request
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 class DepthMiddleware(object):
 
@@ -27,7 +28,7 @@ class DepthMiddleware(object):
             # XXX: backwards compatibility with old SCHEDULER_ORDER setting
             # will be removed on Scrapy 0.15
             warnings.warn("SCHEDULER_ORDER setting is deprecated, " \
-                "use DEPTH_PRIORITY instead", DeprecationWarning)
+                "use DEPTH_PRIORITY instead", ScrapyDeprecationWarning)
             if sorder == 'BFO':
                 prio = 1
             elif sorder == 'DFO':
