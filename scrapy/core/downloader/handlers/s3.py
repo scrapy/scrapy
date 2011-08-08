@@ -27,8 +27,10 @@ class S3DownloadHandler(object):
     def download_request(self, request, spider):
         p = urlparse_cached(request)
         scheme = 'https' if request.meta.get('is_secure') else 'http'
-        url = '%s://%s.s3.amazonaws.com%s' % (scheme, p.hostname, p.path)
+        bucket = p.hostname
+        path = p.path + '?' + p.query if p.query else p.path
+        url = '%s://%s.s3.amazonaws.com%s' % (scheme, bucket, path)
         httpreq = request.replace(url=url)
         self.conn.add_aws_auth_header(httpreq.headers, httpreq.method, \
-                '%s/%s' % (p.hostname, p.path))
+                '%s/%s' % (bucket, path))
         return self._download_http(httpreq, spider)
