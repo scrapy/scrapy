@@ -62,15 +62,15 @@ def _get_concurrency_delay(concurrency, spider, settings):
 
 class Downloader(object):
 
-    def __init__(self, settings):
-        self.settings = settings
+    def __init__(self, crawler):
+        self.settings = crawler.settings
         self.slots = {}
         self.active = set()
         self.handlers = DownloadHandlers()
-        self.total_concurrency = settings.getint('CONCURRENT_REQUESTS')
-        self.domain_concurrency = settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
-        self.ip_concurrency = settings.getint('CONCURRENT_REQUESTS_PER_IP')
-        self.middleware = DownloaderMiddlewareManager.from_settings(settings)
+        self.total_concurrency = self.settings.getint('CONCURRENT_REQUESTS')
+        self.domain_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
+        self.ip_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_IP')
+        self.middleware = DownloaderMiddlewareManager.from_crawler(crawler)
 
 
     def fetch(self, request, spider):

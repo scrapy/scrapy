@@ -9,24 +9,27 @@ import robotparser
 from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy import signals, log
-from scrapy.project import crawler
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.conf import settings
 
 class RobotsTxtMiddleware(object):
     DOWNLOAD_PRIORITY = 1000
 
-    def __init__(self):
-        if not settings.getbool('ROBOTSTXT_OBEY'):
+    def __init__(self, crawler):
+        if not crawler.settings.getbool('ROBOTSTXT_OBEY'):
             raise NotConfigured
 
+        self.crawler = crawler
         self._parsers = {}
         self._spider_netlocs = {}
         self._useragents = {}
         dispatcher.connect(self.spider_opened, signals.spider_opened)
         dispatcher.connect(self.spider_closed, signals.spider_closed)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
 
     def process_request(self, request, spider):
         useragent = self._useragents[spider]
@@ -42,7 +45,7 @@ class RobotsTxtMiddleware(object):
             self._parsers[netloc] = None
             robotsurl = "%s://%s/robots.txt" % (url.scheme, url.netloc)
             robotsreq = Request(robotsurl, priority=self.DOWNLOAD_PRIORITY)
-            dfd = crawler.engine.download(robotsreq, spider)
+            dfd = self.crawler.engine.download(robotsreq, spider)
             dfd.addCallback(self._parse_robots)
             self._spider_netlocs[spider].add(netloc)
         return self._parsers[netloc]

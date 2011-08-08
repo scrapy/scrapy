@@ -51,15 +51,15 @@ class Slot(object):
 
 class ExecutionEngine(object):
 
-    def __init__(self, settings, spider_closed_callback):
-        self.settings = settings
+    def __init__(self, crawler, spider_closed_callback):
+        self.settings = crawler.settings
         self.slots = {}
         self.running = False
         self.paused = False
-        self.scheduler_cls = load_object(settings['SCHEDULER'])
-        self.downloader = Downloader(self.settings)
-        self.scraper = Scraper(self, self.settings)
-        self._concurrent_spiders = settings.getint('CONCURRENT_SPIDERS')
+        self.scheduler_cls = load_object(self.settings['SCHEDULER'])
+        self.downloader = Downloader(crawler)
+        self.scraper = Scraper(crawler)
+        self._concurrent_spiders = self.settings.getint('CONCURRENT_SPIDERS')
         self._spider_closed_callback = spider_closed_callback
 
     @defer.inlineCallbacks

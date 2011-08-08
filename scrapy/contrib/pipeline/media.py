@@ -17,12 +17,14 @@ class MediaPipeline(object):
             self.downloaded = {}
             self.waiting = defaultdict(list)
 
-    def __init__(self, download_func=None):
+    def __init__(self, download_func=None, crawler=None):
         self.spiderinfo = {}
         self.download_func = download_func
-        if not download_func:
-            from scrapy.project import crawler
-            self.crawler = crawler
+        self.crawler = crawler
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler=crawler)
 
     def open_spider(self, spider):
         self.spiderinfo[spider] = self.SpiderInfo(spider)

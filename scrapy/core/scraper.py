@@ -61,13 +61,13 @@ class Slot(object):
 
 class Scraper(object):
 
-    def __init__(self, engine, settings):
+    def __init__(self, crawler):
         self.slots = {}
-        self.spidermw = SpiderMiddlewareManager.from_settings(settings)
-        itemproc_cls = load_object(settings['ITEM_PROCESSOR'])
-        self.itemproc = itemproc_cls.from_settings(settings)
-        self.concurrent_items = settings.getint('CONCURRENT_ITEMS')
-        self.engine = engine
+        self.spidermw = SpiderMiddlewareManager.from_crawler(crawler)
+        itemproc_cls = load_object(crawler.settings['ITEM_PROCESSOR'])
+        self.itemproc = itemproc_cls.from_crawler(crawler)
+        self.concurrent_items = crawler.settings.getint('CONCURRENT_ITEMS')
+        self.crawler = crawler
 
     @defer.inlineCallbacks
     def open_spider(self, spider):
@@ -143,7 +143,7 @@ class Scraper(object):
     def handle_spider_error(self, _failure, request, response, spider):
         exc = _failure.value
         if isinstance(exc, CloseSpider):
-            self.engine.close_spider(spider, exc.reason or 'cancelled')
+            self.crawler.engine.close_spider(spider, exc.reason or 'cancelled')
             return
         log.err(_failure, "Spider error processing %s" % request, spider=spider)
         send_catch_log(signal=signals.spider_error, failure=_failure, response=response, \
@@ -166,7 +166,7 @@ class Scraper(object):
         if isinstance(output, Request):
             send_catch_log(signal=signals.request_received, request=output, \
                 spider=spider)
-            self.engine.crawl(request=output, spider=spider)
+            self.crawler.engine.crawl(request=output, spider=spider)
         elif isinstance(output, BaseItem):
             self.slots[spider].itemproc_size += 1
             dfd = self.itemproc.process_item(output, spider)

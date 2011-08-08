@@ -15,19 +15,21 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.txweb import JsonResource as JsonResource_
 from scrapy.utils.reactor import listen_tcp
 from scrapy.utils.conf import build_component_list
-from scrapy.conf import settings
 
 
 class JsonResource(JsonResource_):
 
-    json_encoder = ScrapyJSONEncoder()
+    def __init__(self, crawler, target=None):
+        JsonResource_.__init__(self)
+        self.crawler = crawler
+        self.json_encoder = ScrapyJSONEncoder(crawler=crawler)
 
 class JsonRpcResource(JsonResource):
 
-    json_decoder = ScrapyJSONDecoder()
-
-    def __init__(self, target=None):
-        JsonResource.__init__(self)
+    def __init__(self, crawler, target=None):
+        JsonResource.__init__(self, crawler, target)
+        self.json_decoder = ScrapyJSONDecoder(crawler=crawler)
+        self.crawler = crawler
         self._target = target
 
     def render_GET(self, txrequest):
@@ -63,22 +65,27 @@ class RootResource(JsonResource):
 
 class WebService(server.Site):
 
-    def __init__(self):
-        if not settings.getbool('WEBSERVICE_ENABLED'):
+    def __init__(self, crawler):
+        if not crawler.settings.getbool('WEBSERVICE_ENABLED'):
             raise NotConfigured
-        logfile = settings['WEBSERVICE_LOGFILE']
-        self.portrange = map(int, settings.getlist('WEBSERVICE_PORT'))
-        self.host = settings['WEBSERVICE_HOST']
-        root = RootResource()
-        reslist = build_component_list(settings['WEBSERVICE_RESOURCES_BASE'], \
-            settings['WEBSERVICE_RESOURCES'])
+        self.crawler = crawler
+        logfile = crawler.settings['WEBSERVICE_LOGFILE']
+        self.portrange = map(int, crawler.settings.getlist('WEBSERVICE_PORT'))
+        self.host = crawler.settings['WEBSERVICE_HOST']
+        root = RootResource(crawler)
+        reslist = build_component_list(crawler.settings['WEBSERVICE_RESOURCES_BASE'], \
+            crawler.settings['WEBSERVICE_RESOURCES'])
         for res_cls in map(load_object, reslist):
-            res = res_cls()
+            res = res_cls(crawler)
             root.putChild(res.ws_name, res)
         server.Site.__init__(self, root, logPath=logfile)
         self.noisy = False
         dispatcher.connect(self.start_listening, signals.engine_started)
         dispatcher.connect(self.stop_listening, signals.engine_stopped)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
 
     def start_listening(self):
         self.port = listen_tcp(self.portrange, self.host, self)

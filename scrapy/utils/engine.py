@@ -2,13 +2,8 @@
 
 from time import time # used in global tests code
 
-from scrapy.project import crawler
-
-def get_engine_status(engine=None):
+def get_engine_status(engine):
     """Return a report of the current engine status"""
-    if engine is None:
-        engine = crawler.engine
-
     global_tests = [
         "time()-engine.start_time",
         "engine.has_capacity()",
@@ -59,6 +54,6 @@ def format_engine_status(engine=None):
             s += "  %-50s : %s\n" % (test, result)
     return s
 
-def print_engine_status(engine=None):
+def print_engine_status(engine):
     print format_engine_status(engine)
 

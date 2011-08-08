@@ -31,10 +31,10 @@ class Crawler(object):
         if self.configured:
             return
         self.configured = True
-        self.extensions = ExtensionManager.from_settings(self.settings)
+        self.extensions = ExtensionManager.from_crawler(self)
         spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
         self.spiders = spman_cls.from_settings(self.settings)
-        self.engine = ExecutionEngine(self.settings, self._spider_closed)
+        self.engine = ExecutionEngine(self, self._spider_closed)
 
     def crawl(self, spider, requests=None):
         spider.set_crawler(self)

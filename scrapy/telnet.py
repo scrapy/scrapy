@@ -12,14 +12,12 @@ from twisted.internet import protocol
 
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.exceptions import NotConfigured
-from scrapy.project import crawler
 from scrapy.stats import stats
 from scrapy import log, signals
 from scrapy.utils.signal import send_catch_log
 from scrapy.utils.trackref import print_live_refs
 from scrapy.utils.engine import print_engine_status
 from scrapy.utils.reactor import listen_tcp
-from scrapy.conf import settings
 
 try:
     import guppy
@@ -34,14 +32,19 @@ update_telnet_vars = object()
 
 class TelnetConsole(protocol.ServerFactory):
 
-    def __init__(self):
-        if not settings.getbool('TELNETCONSOLE_ENABLED'):
+    def __init__(self, crawler):
+        if not crawler.settings.getbool('TELNETCONSOLE_ENABLED'):
             raise NotConfigured
+        self.crawler = crawler
         self.noisy = False
-        self.portrange = map(int, settings.getlist('TELNETCONSOLE_PORT'))
-        self.host = settings['TELNETCONSOLE_HOST']
+        self.portrange = map(int, crawler.settings.getlist('TELNETCONSOLE_PORT'))
+        self.host = crawler.settings['TELNETCONSOLE_HOST']
         dispatcher.connect(self.start_listening, signals.engine_started)
         dispatcher.connect(self.stop_listening, signals.engine_stopped)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
 
     def start_listening(self):
         self.port = listen_tcp(self.portrange, self.host, self)
@@ -59,13 +62,13 @@ class TelnetConsole(protocol.ServerFactory):
     def _get_telnet_vars(self):
         # Note: if you add entries here also update topics/telnetconsole.rst
         telnet_vars = {
-            'engine': crawler.engine,
-            'manager': crawler,
-            'extensions': crawler.extensions,
+            'engine': self.crawler.engine,
+            'manager': self.crawler,
+            'extensions': self.crawler.extensions,
             'stats': stats,
-            'spiders': crawler.spiders,
-            'settings': settings,
-            'est': print_engine_status,
+            'spiders': self.crawler.spiders,
+            'settings': self.crawler.settings,
+            'est': lambda x: print_engine_status(self.crawler),
             'p': pprint.pprint,
             'prefs': print_live_refs,
             'hpy': hpy,
