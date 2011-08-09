@@ -3,7 +3,7 @@
 Frequently Asked Questions
 ==========================
 
-How does Scrapy compare to BeautifulSoul or lxml?
+How does Scrapy compare to BeautifulSoup or lxml?
 -------------------------------------------------
 
 `BeautifulSoup`_ and `lxml`_ are libraries for parsing HTML and XML. Scrapy is
@@ -84,10 +84,11 @@ How can I simulate a user login in my spider?
 
 See :ref:`topics-request-response-ref-request-userlogin`.
 
-Can I crawl in breadth-first order instead of depth-first order?
-----------------------------------------------------------------
+Does Scrapy crawl in breath-first or depth-first order?
+-------------------------------------------------------
 
-Yes, there's a setting for that: :setting:`SCHEDULER_ORDER`.
+It crawls on breath-first order by default, but you can change it to
+depth-first order by setting the :setting:`DEPTH_PRIORITY` setting to ``-1``.
 
 My Scrapy crawler has memory leaks. What can I do?
 --------------------------------------------------
@@ -115,24 +116,10 @@ Try changing the default `Accept-Language`_ request header by overriding the
 
 .. _Accept-Language: http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.4
 
-Where can I find some example code using Scrapy?
-------------------------------------------------
+Where can I find some example Scrapy projects?
+----------------------------------------------
 
-Scrapy comes with a built-in, fully functional project to scrape the `Google
-Directory`_. You can find it in the `examples/googledir`_ directory of the
-Scrapy distribution.
-
-Also, there's a site for sharing code snippets (spiders, middlewares,
-extensions) called `Scrapy snippets`_.
-
-Finally, you can find some example code for performing not-so-trivial tasks in
-the `Scrapy Recipes`_ wiki page.
-
-.. _Google Directory: http://www.google.com/dirhp
-.. _examples/googledir: http://dev.scrapy.org/browser/examples/googledir
-.. _Community Spiders: http://dev.scrapy.org/wiki/CommunitySpiders
-.. _Scrapy Recipes: http://dev.scrapy.org/wiki/ScrapyRecipes
-.. _Scrapy snippets: http://snippets.scrapy.org/
+See :ref:`intro-examples`.
 
 Can I run a spider without creating a project?
 ----------------------------------------------
@@ -240,3 +227,48 @@ In order to avoid parsing all the entire feed at once in memory, you can use
 the functions ``xmliter`` and ``csviter`` from ``scrapy.utils.iterators``
 module. In fact, this is what the feed spiders (see :ref:`topics-spiders`) use
 under the cover.
+
+Does Scrapy manage cookies automatically?
+-----------------------------------------
+
+Yes, Scrapy receives and keeps track of cookies sent by servers, and sends them
+back on subsequent requests, like any regular web browser does.
+
+For more info see :ref:`topics-request-response` and :ref:`cookies-mw`.
+
+How can I see the cookies being sent and received from Scrapy?
+--------------------------------------------------------------
+
+Enable the :setting:`COOKIES_DEBUG` setting.
+
+How can I instruct a spider to stop itself?
+-------------------------------------------
+
+Raise the :exc:`~scrapy.exceptions.CloseSpider` exception from a callback. For
+more info see: :exc:`~scrapy.exceptions.CloseSpider`.
+
+How can I prevent my Scrapy bot from getting banned?
+----------------------------------------------------
+
+Some websites implement certain measures to prevent bots from crawling them,
+with varying degrees of sophistication. Getting around those measures can be
+difficult and tricky, and may sometimes require special infrastructure.
+
+Here are some tips to keep in mind when dealing with these kind of sites:
+
+* rotate your user agent from a pool of well-known ones from browsers (google
+  around to get a list of them)
+* disable cookies (see :setting:`COOKIES_ENABLED`) as some sites may use
+  cookies to spot bot behaviour
+* use download delays (2 or higher). See :setting:`DOWNLOAD_DELAY` setting.
+* is possible, use `Google cache`_ to fetch pages, instead of hitting the sites
+  directly
+* use a pool of rotating IPs. For example, the free `Tor project`_.
+
+If you are still unable to prevent your bot getting banned, consider contacting
+`commercial support`_.
+
+.. _user agents: http://en.wikipedia.org/wiki/User_agent
+.. _Google cache: http://www.googleguide.com/cached_pages.html
+.. _Tor project: https://www.torproject.org/
+.. _commercial support: http://scrapy.org/support/

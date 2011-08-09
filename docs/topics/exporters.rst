@@ -264,7 +264,7 @@ XmlItemExporter
 CsvItemExporter
 ---------------
 
-.. class:: CsvItemExporter(file, include_headers_line=True, \**kwargs)
+.. class:: CsvItemExporter(file, include_headers_line=True, join_multivalued=',', \**kwargs)
 
    Exports Items in CSV format to the given file-like object. If the
    :attr:`fields_to_export` attribute is set, it will be used to define the
@@ -277,6 +277,10 @@ CsvItemExporter
       line with the field names taken from 
       :attr:`BaseItemExporter.fields_to_export` or the first exported item fields.
    :type include_headers_line: boolean
+
+   :param join_multivalued: The char (or chars) that will be used for joining
+      multi-valued fields, if found.
+   :type include_headers_line: str
 
    The additional keyword arguments of this constructor are passed to the
    :class:`BaseItemExporter` constructor, and the leftover arguments to the

@@ -64,6 +64,15 @@ XML
  * :setting:`FEED_FORMAT`: ``xml``
  * Exporter used: :class:`~scrapy.contrib.exporter.XmlItemExporter`
 
+.. _topics-feed-format-marshal:
+
+Marshal
+-------
+
+ * :setting:`FEED_FORMAT`: ``marshal``
+ * Exporter used: :class:`~scrapy.contrib.exporter.MarshalItemExporter`
+
+
 .. _topics-feed-storage:
 
 Storages
@@ -267,6 +276,7 @@ Default::
         'jsonlines': 'scrapy.contrib.exporter.JsonLinesItemExporter',
         'csv': 'scrapy.contrib.exporter.CsvItemExporter',
         'xml': 'scrapy.contrib.exporter.XmlItemExporter',
+        'marshal': 'scrapy.contrib.exporter.MarshalItemExporter',
     }
 
 A dict containing the built-in feed exporters supported by Scrapy.

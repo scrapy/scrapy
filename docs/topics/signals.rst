@@ -43,10 +43,13 @@ engine_started
 .. signal:: engine_started
 .. function:: engine_started()
 
-    Sent when the Scrapy engine is started (for example, when a crawling
-    process has started).
+    Sent when the Scrapy engine has started crawling.
 
     This signal supports returning deferreds from their handlers.
+
+.. note:: This signal may be fired *after* the :signal:`spider_opened` signal,
+    depending on how the spider was started. So **don't** rely on this signal
+    getting fired before :signal:`spider_opened`.
 
 engine_stopped
 --------------
@@ -63,43 +66,20 @@ item_scraped
 ------------
 
 .. signal:: item_scraped
-.. function:: item_scraped(item, spider, response)
+.. function:: item_scraped(item, response, spider)
 
-    Sent when the engine receives a new scraped item from the spider, and right
-    before the item is sent to the :ref:`topics-item-pipeline`.
+    Sent when an item has been scraped, after it has passed all the
+    :ref:`topics-item-pipeline` stages (without being dropped).
 
     This signal supports returning deferreds from their handlers.
 
-    :param item: is the item scraped
+    :param item: the item scraped
     :type item: :class:`~scrapy.item.Item` object
 
-    :param spider: the spider which scraped the item
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
-
-    :param response: the response from which the item was scraped
+    :param response: the response from where the item was scraped
     :type response: :class:`~scrapy.http.Response` object
 
-item_passed
------------
-
-.. signal:: item_passed
-.. function:: item_passed(item, spider, original_item)
-
-    Sent after an item has passed all the :ref:`topics-item-pipeline` stages
-    without being dropped. Same as :func:`item_scraped` if there are no
-    pipelines enabled.
-
-    This signal supports returning deferreds from their handlers.
-
-    :param item: the item which passed the pipeline
-    :type item: :class:`~scrapy.item.Item` object
-
     :param spider: the spider which scraped the item
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
-
-    :param original_item: the input of the item pipeline. This is typically the
-        same :class:`~scrapy.item.Item` object received in the ``item``
-        parameter, unless some pipeline stage created a new item.
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
 item_dropped
@@ -186,6 +166,24 @@ spider_idle
     :param spider: the spider which has gone idle
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
+spider_error
+------------
+
+.. signal:: spider_error
+.. function:: spider_error(failure, response, spider)
+
+    Sent when a spider callback generates an error (ie. raises an exception).
+
+    :param failure: the exception raised as a Twisted `Failure`_ object
+    :type failure: `Failure`_ object
+
+    :param response: the response being processed when the exception was raised
+    :type response: :class:`~scrapy.http.Response` object
+
+    :param spider: the spider which raised the exception
+    :type spider: :class:`~scrapy.spider.BaseSpider` object
+
+
 request_received
 ----------------
 
@@ -241,3 +239,4 @@ response_downloaded
     :param spider: the spider for which the response is intended
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
+.. _Failure: http://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html

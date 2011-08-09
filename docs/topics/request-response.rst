@@ -68,6 +68,8 @@ Request objects
             request_with_cookies = Request(url="http://www.example.com",
                                            cookies={currency: 'USD', country: 'UY'},
                                            meta={'dont_merge_cookies': True})
+
+        For more info see :ref:`cookies-mw`.
     :type cookies: dict
 
     :param encoding: the encoding of this request (defaults to ``'utf-8'``).

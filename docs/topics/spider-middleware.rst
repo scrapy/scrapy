@@ -106,7 +106,7 @@ single Python class that defines one or more of the following methods:
 
     .. method:: process_spider_exception(response, exception, spider)
 
-        This method is called when when a spider or :meth:process_spider_input:
+        This method is called when when a spider or :meth:`process_spider_input`
         method (from other spider middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
@@ -164,6 +164,8 @@ DepthMiddleware
       * :setting:`DEPTH_LIMIT` - The maximum depth that will be allowed to
         crawl for any site. If zero, no limit will be imposed.
       * :setting:`DEPTH_STATS` - Whether to collect depth stats.
+      * :setting:`DEPTH_PRIORITY` - Whether to prioritize the requests based on
+        their depth, to crawl in breadh-first or depth-first order.
 
 HttpErrorMiddleware
 -------------------

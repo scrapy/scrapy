@@ -154,6 +154,8 @@ class ImagesPipeline(MediaPipeline):
             }
 
     def __init__(self, store_uri, download_func=None):
+        if not store_uri:
+            raise NotConfigured
         self.store = self._get_store(store_uri)
         super(ImagesPipeline, self).__init__(download_func=download_func)
 
@@ -167,8 +169,6 @@ class ImagesPipeline(MediaPipeline):
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
         store_uri = settings['IMAGES_STORE']
-        if not store_uri:
-            raise NotConfigured
         return cls(store_uri)
 
     def _get_store(self, uri):

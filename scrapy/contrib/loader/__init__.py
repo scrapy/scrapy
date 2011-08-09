@@ -79,7 +79,11 @@ class ItemLoader(object):
     def get_output_value(self, field_name):
         proc = self.get_output_processor(field_name)
         proc = wrap_loader_context(proc, self.context)
-        return proc(self._values[field_name])
+        try:
+            return proc(self._values[field_name])
+        except Exception, e:
+            raise ValueError("Error with output processor: field=%r value=%r error='%s: %s'" % \
+                (field_name, self._values[field_name], type(e).__name__, str(e)))
 
     def get_collected_values(self, field_name):
         return self._values[field_name]

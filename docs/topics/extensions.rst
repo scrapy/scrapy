@@ -178,10 +178,20 @@ Built-in extensions reference
 General purpose extensions
 --------------------------
 
+Log Stats extension
+~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.contrib.logstats
+   :synopsis: Basic stats logging
+
+.. class:: LogStats
+
+Log basic stats like crawled pages and scraped items.
+
 Core Stats extension
 ~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.contrib.corestats.corestats
+.. module:: scrapy.contrib.corestats
    :synopsis: Core stats collection
 
 .. class:: CoreStats
@@ -256,11 +266,14 @@ Memory debugger extension
 
 .. class:: scrapy.contrib.memdebug.MemoryDebugger
 
-A memory debugger which collects some info about objects uncollected by the
-garbage collector and libxml2 memory leaks. To enable this extension, turn on
-the :setting:`MEMDEBUG_ENABLED` setting. The report will be printed to standard
-output. If the :setting:`MEMDEBUG_NOTIFY` setting contains a list of e-mails the
-report will also be sent to those addresses.
+An extension for debugging memory usage. It collects information about:
+
+* objects uncollected by the Python garbage collector
+* libxml2 memory leaks
+* objects left alive that shouldn't. For more info, see :ref:`topics-leaks-trackrefs`
+
+To enable this extension, turn on the :setting:`MEMDEBUG_ENABLED` setting. The
+info will be stored in the stats.
 
 Close spider extension
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -277,7 +290,7 @@ The conditions for closing a spider can be configured through the following
 settings:
 
 * :setting:`CLOSESPIDER_TIMEOUT`
-* :setting:`CLOSESPIDER_ITEMPASSED`
+* :setting:`CLOSESPIDER_ITEMCOUNT`
 * :setting:`CLOSESPIDER_PAGECOUNT`
 * :setting:`CLOSESPIDER_ERRORCOUNT`
 
@@ -293,16 +306,16 @@ more than that number of second, it will be automatically closed with the
 reason ``closespider_timeout``. If zero (or non set), spiders won't be closed by
 timeout.
 
-.. setting:: CLOSESPIDER_ITEMPASSED
+.. setting:: CLOSESPIDER_ITEMCOUNT
 
-CLOSESPIDER_ITEMPASSED
-""""""""""""""""""""""
+CLOSESPIDER_ITEMCOUNT
+"""""""""""""""""""""
 
 Default: ``0``
 
 An integer which specifies a number of items. If the spider scrapes more than
 that amount if items and those items are passed by the item pipeline, the
-spider will be closed with the reason ``closespider_itempassed``. If zero (or
+spider will be closed with the reason ``closespider_itemcount``. If zero (or
 non set), spiders won't be closed by number of passed items.
 
 .. setting:: CLOSESPIDER_PAGECOUNT
@@ -357,15 +370,25 @@ Stack trace dump extension
 
 .. class:: scrapy.contrib.debug.StackTraceDump
 
-Dumps the stack trace of a runnning Scrapy process when a `SIGUSR2`_ signal is
-received. After the stack trace is dumped, the Scrapy process continues running
-normally.
+Dumps the stack trace and Scrapy engine status of a runnning process when a
+`SIGQUIT`_ or `SIGUSR2`_ signal is received. After the stack trace and engine
+status is dumped, the Scrapy process continues running normally.
 
-The stack trace is sent to standard output.
+The dump is sent to standard output.
 
 This extension only works on POSIX-compliant platforms (ie. not Windows).
 
+There are at least two ways to send Scrapy the `SIGQUIT`_ signal:
+
+1. By pressing Ctrl-\ while a Scrapy process is running (Linux only?)
+
+2. By running this command (assuming ``<pid>`` is the process id of the Scrapy
+   process)::
+
+    kill -QUIT <pid>
+
 .. _SIGUSR2: http://en.wikipedia.org/wiki/SIGUSR1_and_SIGUSR2
+.. _SIGQUIT: http://en.wikipedia.org/wiki/SIGQUIT
 
 Debugger extension
 ~~~~~~~~~~~~~~~~~~

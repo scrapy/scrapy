@@ -242,15 +242,39 @@ Default: ``100``
 Maximum number of concurrent items (per response) to process in parallel in the
 Item Processor (also known as the :ref:`Item Pipeline <topics-item-pipeline>`).
 
-.. setting:: CONCURRENT_REQUESTS_PER_SPIDER
+.. setting:: CONCURRENT_REQUESTS
 
-CONCURRENT_REQUESTS_PER_SPIDER
+CONCURRENT_REQUESTS
+-------------------
+
+Default: ``16``
+
+The maximum number of concurrent (ie. simultaneous) requests that will be
+performed by the Scrapy downloader.
+
+
+.. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
+
+CONCURRENT_REQUESTS_PER_DOMAIN
 ------------------------------
 
 Default: ``8``
 
-Specifies how many concurrent (ie. simultaneous) requests will be performed per
-open spider.
+The maximum number of concurrent (ie. simultaneous) requests that will be
+performed to any single domain.
+
+.. setting:: CONCURRENT_REQUESTS_PER_IP
+
+CONCURRENT_REQUESTS_PER_IP
+--------------------------
+
+Default: ``0``
+
+The maximum number of concurrent (ie. simultaneous) requests that will be
+performed to any single IP. If non-zero, the
+:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` setting is ignored, and this one is
+used instead. In other words, concurrency limits will be applied per IP, not
+per domain.
 
 .. setting:: CONCURRENT_SPIDERS
 
@@ -260,15 +284,6 @@ CONCURRENT_SPIDERS
 Default: ``8``
 
 Maximum number of spiders to scrape in parallel.
-
-.. setting:: COOKIES_DEBUG
-
-COOKIES_DEBUG
--------------
-
-Default: ``False``
-
-Enable debugging message of Cookies Downloader Middleware.
 
 .. setting:: DEFAULT_ITEM_CLASS
 
@@ -316,6 +331,22 @@ Default: ``0``
 The maximum depth that will be allowed to crawl for any site. If zero, no limit
 will be imposed.
 
+.. setting:: DEPTH_PRIORITY
+
+DEPTH_PRIORITY
+--------------
+
+Default: ``1``
+
+An integer that is used to set the request priority based on request depth.
+
+To crawl in `breath-first order`_, set :setting:`DEPTH_PRIORITY` to ``1``.
+
+To crawl in `depth-first order`_, set :setting:`DEPTH_PRIORITY` to ``-1``.
+
+To disable any priority adjustment based on depth, set
+:setting:`DEPTH_PRIORITY` to ``0``.
+
 .. setting:: DEPTH_STATS
 
 DEPTH_STATS
@@ -323,7 +354,26 @@ DEPTH_STATS
 
 Default: ``True``
 
-Whether to collect depth stats.
+Whether to collect maximum depth stats.
+
+.. setting:: DEPTH_STATS_VERBOSE
+
+DEPTH_STATS_VERBOSE
+-------------------
+
+Default: ``False``
+
+Whether to collect verbose depth stats. If this is enabled, the number of
+requests for each depth is collected in the stats.
+
+.. setting:: DNSCACHE_ENABLED
+
+DNSCACHE_ENABLED
+----------------
+
+Default: ``True``
+
+Whether to enable DNS in-memory cache.
 
 .. setting:: DOWNLOADER_DEBUG
 
@@ -354,6 +404,7 @@ Default::
     {
         'scrapy.contrib.downloadermiddleware.robotstxt.RobotsTxtMiddleware': 100,
         'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware': 300,
+        'scrapy.contrib.downloadermiddleware.downloadtimeout.DownloadTimeoutMiddleware': 350,
         'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': 400,
         'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware': 500,
         'scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware': 550,
@@ -442,12 +493,21 @@ The amount of time (in secs) that the downloader will wait before timing out.
 DUPEFILTER_CLASS
 ----------------
 
-Default: ``'scrapy.contrib.dupefilter.RequestFingerprintDupeFilter'``
+Default: ``'scrapy.dupefilter.RFPDupeFilter'``
 
 The class used to detect and filter duplicate requests.
 
-The default (``RequestFingerprintDupeFilter``) filters based on request fingerprint
-(using ``scrapy.utils.request.request_fingerprint``) and grouping per domain.
+The default (``RFPDupeFilter``) filters based on request fingerprint using
+the ``scrapy.utils.request.request_fingerprint`` function.
+
+.. setting:: EDITOR
+
+EDITOR
+------
+
+The editor to use for editing spiders with the :command:`edit` command. It
+defaults to the ``EDITOR`` environment variable, if set. Otherwise, it defaults
+to ``vi`` (on Unix systems) or the IDLE editor (on Windows).
 
 .. setting:: ENCODING_ALIASES
 
@@ -526,7 +586,7 @@ A dict containing the extensions enabled in your project, and their orders.
 EXTENSIONS_BASE
 ---------------
 
-Default:: 
+Default::
 
     {
         'scrapy.contrib.corestats.CoreStats': 0,
@@ -534,7 +594,10 @@ Default::
         'scrapy.telnet.TelnetConsole': 0,
         'scrapy.contrib.memusage.MemoryUsage': 0,
         'scrapy.contrib.memdebug.MemoryDebugger': 0,
-        'scrapy.contrib.closedomain.CloseDomain': 0,
+        'scrapy.contrib.closespider.CloseSpider': 0,
+        'scrapy.contrib.feedexport.FeedExporter': 0,
+        'scrapy.contrib.spidercontext.SpiderContext': 0,
+        'scrapy.contrib.logstats.LogStats': 0,
     }
 
 The list of available extensions. Keep in mind that some of them need to
@@ -687,7 +750,7 @@ Default: ``False``
 
 Scope: ``scrapy.contrib.memusage``
 
-Whether to send a memory usage report after each domain has been closed.
+Whether to send a memory usage report after each spider has been closed.
 
 See :ref:`topics-extensions-ref-memusage`.
 
@@ -789,51 +852,6 @@ Default: ``'scrapy.core.scheduler.Scheduler'``
 
 The scheduler to use for crawling.
 
-.. setting:: SCHEDULER_ORDER 
-
-SCHEDULER_ORDER
----------------
-
-Default: ``'DFO'``
-
-Scope: ``scrapy.core.scheduler``
-
-The order to use for the crawling scheduler. Available orders are: 
-
-* ``'BFO'``:  `Breadth-first order`_ - typically consumes more memory but
-  reaches most relevant pages earlier.
-
-* ``'DFO'``:  `Depth-first order`_ - typically consumes less memory than
-  but takes longer to reach most relevant pages.
-
-.. _Breadth-first order: http://en.wikipedia.org/wiki/Breadth-first_search
-.. _Depth-first order: http://en.wikipedia.org/wiki/Depth-first_search
-
-.. setting:: SCHEDULER_MIDDLEWARES
-
-SCHEDULER_MIDDLEWARES
----------------------
-
-Default:: ``{}``
-
-A dict containing the scheduler middlewares enabled in your project, and their
-orders. 
-
-.. setting:: SCHEDULER_MIDDLEWARES_BASE
-
-SCHEDULER_MIDDLEWARES_BASE
---------------------------
-
-Default:: 
-
-    SCHEDULER_MIDDLEWARES_BASE = {
-        'scrapy.contrib.schedulermiddleware.duplicatesfilter.DuplicatesFilterMiddleware': 500,
-    }
-
-A dict containing the scheduler middlewares enabled by default in Scrapy. You
-should never modify this setting in your project, modify
-:setting:`SCHEDULER_MIDDLEWARES` instead. 
-
 .. setting:: SPIDER_MIDDLEWARES
 
 SPIDER_MIDDLEWARES
@@ -853,7 +871,6 @@ Default::
 
     {
         'scrapy.contrib.spidermiddleware.httperror.HttpErrorMiddleware': 50,
-        'scrapy.contrib.itemsampler.ItemSamplerMiddleware': 100,
         'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware': 500,
         'scrapy.contrib.spidermiddleware.referer.RefererMiddleware': 700,
         'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware': 800,
@@ -905,11 +922,13 @@ or subclass the StatsCollector class).
 STATS_DUMP
 ----------
 
-Default: ``False``
+Default: ``True``
 
-Dump (to log) domain-specific stats collected when a domain is closed, and all
-global stats when the Scrapy process finishes (ie. when the engine is
-shutdown).
+Dump (to the Scrapy log) the :ref:`Scrapy stats <topics-stats>` collected
+during the crawl. The spider-specific stats are logged when the spider is
+closed, while the global stats are dumped when the Scrapy process finishes.
+
+For more info see: :ref:`topics-stats`.
 
 .. setting:: STATS_ENABLED
 
@@ -927,7 +946,7 @@ STATSMAILER_RCPTS
 
 Default: ``[]`` (empty list)
 
-Send Scrapy stats after domains finish scraping. See
+Send Scrapy stats after spiders finish scraping. See
 :class:`~scrapy.contrib.statsmailer.StatsMailer` for more info.
 
 .. setting:: TELNETCONSOLE_ENABLED
@@ -983,3 +1002,5 @@ Default: ``"%s/%s" % (BOT_NAME, BOT_VERSION)``
 The default User-Agent to use when crawling, unless overridden. 
 
 .. _Amazon web services: http://aws.amazon.com/
+.. _breadth-first order: http://en.wikipedia.org/wiki/Breadth-first_search
+.. _depth-first order: http://en.wikipedia.org/wiki/Depth-first_search

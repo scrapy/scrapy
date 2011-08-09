@@ -260,6 +260,10 @@ class HtmlResponseTest(TextResponseTest):
         r4 = r3.replace(body=body)
         self._assert_response_values(r4, 'iso-8859-1', body)
 
+    def test_html5_meta_charset(self):
+        body = """<html><head><meta charset="gb2312" /><title>Some page</title><body>bla bla</body>"""
+        r1 = self.response_class("http://www.example.com", body=body)
+        self._assert_response_values(r1, 'gb2312', body)
 
 
 class XmlResponseTest(TextResponseTest):

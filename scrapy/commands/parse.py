@@ -1,9 +1,9 @@
+from w3lib.url import is_url
 from scrapy.command import ScrapyCommand
 from scrapy.http import Request
 from scrapy.item import BaseItem
 from scrapy.utils import display
 from scrapy.utils.spider import iterate_spider_output, create_spider_for_request
-from scrapy.utils.url import is_url
 from scrapy.exceptions import UsageError
 from scrapy import log
 
@@ -84,7 +84,7 @@ class Command(ScrapyCommand):
         spider = self.get_spider(request, opts)
         if not spider:
             return None, None
-        self.crawler.queue.append_request(request, spider)
+        self.crawler.crawl(spider, [request])
         self.crawler.start()
         if not responses:
             log.msg('No response downloaded for: %s' % request, log.ERROR, \

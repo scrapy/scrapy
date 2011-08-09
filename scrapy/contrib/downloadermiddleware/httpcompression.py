@@ -1,9 +1,8 @@
 import zlib
-from gzip import GzipFile
-from cStringIO import StringIO
 
+from scrapy.utils.gz import gunzip
 from scrapy.http import Response, TextResponse
-from scrapy.core.downloader.responsetypes import responsetypes
+from scrapy.responsetypes import responsetypes
 
 
 class HttpCompressionMiddleware(object):
@@ -11,7 +10,7 @@ class HttpCompressionMiddleware(object):
     sent/received from web sites"""
 
     def process_request(self, request, spider):
-        request.headers.setdefault('Accept-Encoding', 'gzip,deflate')
+        request.headers.setdefault('Accept-Encoding', 'x-gzip,gzip,deflate')
 
     def process_response(self, request, response, spider):
         if isinstance(response, Response):
@@ -33,8 +32,8 @@ class HttpCompressionMiddleware(object):
         return response
 
     def _decode(self, body, encoding):
-        if encoding == 'gzip':
-            body = GzipFile(fileobj=StringIO(body)).read()
+        if encoding == 'gzip' or encoding == 'x-gzip':
+            body = gunzip(body)
 
         if encoding == 'deflate':
             try:

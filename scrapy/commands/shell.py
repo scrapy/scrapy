@@ -11,7 +11,7 @@ from scrapy import log
 class Command(ScrapyCommand):
 
     requires_project = False
-    default_settings = {'KEEP_ALIVE': True}
+    default_settings = {'KEEP_ALIVE': True, 'LOGSTATS_INTERVAL': 0}
 
     def syntax(self):
         return "[url|file]"

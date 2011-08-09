@@ -33,6 +33,7 @@ First steps
    intro/overview
    intro/install
    intro/tutorial
+   intro/examples
 
 :doc:`intro/overview`
     Understand what Scrapy is and how it can help you.
@@ -43,9 +44,13 @@ First steps
 :doc:`intro/tutorial`
     Write your first Scrapy project.
 
+:doc:`intro/examples`
+    Learn more by playing with a pre-made Scrapy project.
 
-Scraping basics
-===============
+.. _section-basics:
+
+Basic concepts
+==============
 
 .. toctree::
    :hidden:
@@ -59,6 +64,7 @@ Scraping basics
    topics/shell
    topics/item-pipeline
    topics/feed-exports
+   topics/link-extractors
 
 :doc:`topics/commands`
     Learn about the command-line tool used to manage your Scrapy project.
@@ -84,6 +90,8 @@ Scraping basics
 :doc:`topics/feed-exports`
     Output your scraped data using different formats and storages.
 
+:doc:`topics/link-extractors`
+    Convenient classes to extract links to follow from pages.
 
 Built-in services
 =================
@@ -213,13 +221,13 @@ All the rest
    :hidden:
 
    contributing
-   api-stability
+   versioning
    experimental/index
 
 :doc:`contributing`
     Learn how to contribute to the Scrapy project.
 
-:doc:`api-stability`
+:doc:`versioning`
     Understand Scrapy versioning and API stability.
 
 :doc:`experimental/index`

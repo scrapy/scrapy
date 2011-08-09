@@ -3,7 +3,7 @@ import os
 from subprocess import Popen, PIPE
 from ConfigParser import NoSectionError
 
-from scrapy.spiderqueue import SqliteSpiderQueue
+from scrapyd.spiderqueue import SqliteSpiderQueue
 from scrapy.utils.python import stringify_dict, unicode_to_str
 from scrapyd.config import Config
 

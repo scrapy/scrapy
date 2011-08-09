@@ -4,8 +4,8 @@ import re
 import hashlib
 from pkgutil import iter_modules
 
+from w3lib.html import remove_entities
 from scrapy.utils.python import flatten
-from scrapy.utils.markup import remove_entities
 
 def arg_to_iter(arg):
     """Convert an argument to an iterable. The argument can be a None, single

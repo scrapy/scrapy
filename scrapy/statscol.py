@@ -17,7 +17,6 @@ class StatsCollector(object):
     def __init__(self):
         self._dump = settings.getbool('STATS_DUMP')
         self._stats = {None: {}} # None is for global stats
-        dispatcher.connect(self._engine_stopped, signal=signals.engine_stopped)
 
     def get_value(self, key, default=None, spider=None):
         return self._stats[spider].get(key, default)
@@ -63,7 +62,7 @@ class StatsCollector(object):
                 spider=spider)
         self._persist_stats(stats, spider)
 
-    def _engine_stopped(self):
+    def engine_stopped(self):
         stats = self.get_stats()
         if self._dump:
             log.msg("Dumping global stats:\n" + pprint.pformat(stats))

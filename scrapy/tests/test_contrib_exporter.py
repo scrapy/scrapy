@@ -127,6 +127,18 @@ class CsvItemExporterTest(BaseItemExporterTest):
         ie.finish_exporting()
         self.assertEqual(output.getvalue(), '22,John\xc2\xa3\r\n')
 
+    def test_join_multivalue(self):
+        class TestItem2(Item):
+            name = Field()
+            friends = Field()
+
+        i = TestItem2(name='John', friends=['Mary', 'Paul'])
+        output = StringIO()
+        ie = CsvItemExporter(output, include_headers_line=False)
+        ie.start_exporting()
+        ie.export_item(i)
+        ie.finish_exporting()
+        self.assertEqual(output.getvalue(), '"Mary,Paul",John\r\n')
 
 class XmlItemExporterTest(BaseItemExporterTest):
 

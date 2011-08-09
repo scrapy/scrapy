@@ -42,7 +42,7 @@ All available link extractors classes bundled with Scrapy are provided in the
 SgmlLinkExtractor
 -----------------
 
-.. class:: SgmlLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths(), tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True, process_value=None)
+.. class:: SgmlLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), deny_extensions=None, restrict_xpaths(), tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True, process_value=None)
 
     The SgmlLinkExtractor extends the base :class:`BaseSgmlLinkExtractor` by
     providing additional filters that you can specify to extract links,
@@ -59,15 +59,21 @@ SgmlLinkExtractor
         that the (absolute) urls must match in order to be excluded (ie. not
         extracted). It has precedence over the ``allow`` parameter. If not
         given (or empty) it won't exclude any links.
-    :type allow: a regular expression (or list of)
+    :type deny: a regular expression (or list of)
 
     :param allow_domains: a single value or a list of string containing
         domains which will be considered for extracting the links
-    :type allow: str or list
+    :type allow_domains: str or list
 
     :param deny_domains: a single value or a list of strings containing
         domains which won't be considered for extracting the links
-    :type allow: str or list
+    :type deny_domains: str or list
+
+    :param deny_extensions: a list of extensions that should be ignored when
+        extracting links. If not given, it will default to the
+        ``IGNORED_EXTENSIONS`` list defined in the `scrapy.linkextractor`_
+        module.
+    :type deny_extensions: list
 
     :param restrict_xpaths: is a XPath (or list of XPath's) which defines
         regions inside the response where links should be extracted from. 
@@ -145,3 +151,4 @@ BaseSgmlLinkExtractor
 
     :type process_value: callable
 
+.. _scrapy.linkextractor: http://dev.scrapy.org/browser/scrapy/linkextractor.py
