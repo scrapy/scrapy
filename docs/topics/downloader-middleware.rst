@@ -434,6 +434,16 @@ HttpCompressionMiddleware
    This middleware allows compressed (gzip, deflate) traffic to be
    sent/received from web sites.
 
+ChunkedTransferMiddleware
+-------------------------
+
+.. module:: scrapy.contrib.downloadermiddleware.chunked
+   :synopsis: Chunked Transfer Middleware
+
+.. class:: ChunkedTransferMiddleware 
+
+   This middleware adds support for `chunked transfer encoding`_
+
 HttpProxyMiddleware
 -------------------
 
@@ -637,3 +647,4 @@ UserAgentMiddleware
 
 .. _DBM: http://en.wikipedia.org/wiki/Dbm
 .. _anydbm: http://docs.python.org/library/anydbm.html
+.. _chunked transfer encoding: http://en.wikipedia.org/wiki/Chunked_transfer_encoding
