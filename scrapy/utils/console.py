@@ -12,10 +12,10 @@ def start_python_console(namespace=None, noipython=False):
                 raise ImportError
             import IPython
             try:
-                shell = IPython.embed(user_ns=namespace)
+                IPython.embed(user_ns=namespace)
             except AttributeError:
                 shell = IPython.Shell.IPShellEmbed(argv=[], user_ns=namespace)
-            shell()
+                shell()
         except ImportError:
             import code
             try: # readline module is only available on unix systems
