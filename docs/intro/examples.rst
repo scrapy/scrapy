@@ -4,9 +4,10 @@
 Examples
 ========
 
-The best way to learn is with examples. For this reason, there is an example
-Scrapy project named dirbot_, that you can use to play and learn more about
-Scrapy. It contains the dmoz spider described in the tutorial.
+The best way to learn is with examples, and Scrapy is no exception. For this
+reason, there is an example Scrapy project named dirbot_, that you can use to
+play and learn more about Scrapy. It contains the dmoz spider described in the
+tutorial.
 
 This dirbot_ project is available at: https://github.com/scrapy/dirbot
 
@@ -23,7 +24,8 @@ called `Scrapy snippets`_.
 
 2. There is also a `Scrapy Recipes`_ page on the wiki that contains code
 snippets for performing not-so-trivial tasks. This contains code posted before
-the `Scrapy snippets`_ site was lunched. New code should be posted there.
+the `Scrapy snippets`_ site was lunched. New code should be posted in `Scrapy
+snippets`_.
 
 .. _dirbot: https://github.com/scrapy/dirbot
 .. _Downloads: https://github.com/scrapy/dirbot/archives/master
