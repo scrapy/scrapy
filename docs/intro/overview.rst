@@ -43,7 +43,7 @@ done through :ref:`Scrapy Items <topics-items>` (Torrent files, in this case).
 
 This would be our Item::
 
-    from scrapy.item import Item
+    from scrapy.item import Item, Field
 
     class Torrent(Item):
         url = Field()
