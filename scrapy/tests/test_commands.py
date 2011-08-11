@@ -3,13 +3,11 @@ from __future__ import with_statement
 import sys
 import os
 import subprocess
-from os.path import exists, join, dirname, abspath
+from os.path import exists, join, abspath
 from shutil import rmtree
 from tempfile import mkdtemp
 
 from twisted.trial import unittest
-
-import scrapy
 
 
 class ProjectTest(unittest.TestCase):
@@ -21,7 +19,8 @@ class ProjectTest(unittest.TestCase):
         self.proj_path = join(self.temp_path, self.project_name)
         self.proj_mod_path = join(self.proj_path, self.project_name)
         self.env = os.environ.copy()
-        self.env['PYTHONPATH'] = dirname(scrapy.__path__[0])
+        if 'PYTHONPATH' in os.environ:
+            self.env['PYTHONPATH'] = os.environ['PYTHONPATH']
 
     def tearDown(self):
         rmtree(self.temp_path)
@@ -103,9 +102,6 @@ class GenspiderCommandTest(CommandTest):
 
 
 class MiscCommandsTest(CommandTest):
-
-    def test_crawl(self):
-        self.assertEqual(0, self.call('crawl'))
 
     def test_list(self):
         self.assertEqual(0, self.call('list'))

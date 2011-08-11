@@ -1,11 +1,13 @@
 """
-This module contains the Scrapy Crawler once installed by calling the crawler
-``install`` method, like this::
+--------- WARNING: THIS MODULE IS DEPRECATED -----------
 
-    crawler.install()
+This module is deprecated. If you want to get the Scrapy crawler from your
+extension, middleware or pipeline implement the `from_crawler` class method.
 
-After that, you can import the (singleton) crawler like this::
+For example:
 
-    from scrapy.project import crawler
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
 
 """

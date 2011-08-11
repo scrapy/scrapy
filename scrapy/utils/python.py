@@ -215,3 +215,10 @@ def is_writable(path):
         return os.access(path, os.W_OK)
     else:
         return os.access(os.path.dirname(path), os.W_OK)
+
+def setattr_default(obj, name, value):
+    """Set attribute value, but only if it's not already set. Similar to
+    setdefault() for dicts.
+    """
+    if not hasattr(obj, name):
+        setattr(obj, name, value)

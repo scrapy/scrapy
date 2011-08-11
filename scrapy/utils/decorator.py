@@ -3,6 +3,7 @@ from functools import wraps
 
 from twisted.internet import defer, threads
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 def deprecated(use_instead=None):
     """This is a decorator which can be used to mark functions
@@ -15,7 +16,7 @@ def deprecated(use_instead=None):
             message = "Call to deprecated function %s." % func.__name__
             if use_instead:
                 message += " Use %s instead." % use_instead
-            warnings.warn(message, category=DeprecationWarning, stacklevel=2)
+            warnings.warn(message, category=ScrapyDeprecationWarning, stacklevel=2)
             return func(*args, **kwargs)
         return new_func
     return wrapped

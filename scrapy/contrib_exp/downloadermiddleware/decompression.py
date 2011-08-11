@@ -11,7 +11,7 @@ from tempfile import mktemp
 
 from scrapy import log
 from scrapy.http import Response
-from scrapy.core.downloader.responsetypes import responsetypes
+from scrapy.responsetypes import responsetypes
 
 
 class DecompressionMiddleware(object):

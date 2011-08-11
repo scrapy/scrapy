@@ -1,4 +1,3 @@
-import cgi
 import traceback
 import uuid
 from cStringIO import StringIO
@@ -36,12 +35,9 @@ class Schedule(WsResource):
 class AddVersion(WsResource):
 
     def render_POST(self, txrequest):
-        ct = txrequest.requestHeaders.getRawHeaders('Content-Type')[0]
-        boundary = ct.split('boundary=', 1)[1]
-        d = cgi.parse_multipart(txrequest.content, {'boundary': boundary})
-        project = d['project'][0]
-        version = d['version'][0]
-        eggf = StringIO(d['egg'][0])
+        project = txrequest.args['project'][0]
+        version = txrequest.args['version'][0]
+        eggf = StringIO(txrequest.args['egg'][0])
         self.root.eggstorage.put(eggf, project, version)
         spiders = get_spider_list(project)
         self.root.update_projects()
@@ -87,3 +83,12 @@ class DeleteVersion(DeleteProject):
         self._delete_version(project, version)
         return {"status": "ok"}
 
+class ListJobs(WsResource):
+    def render_POST(self, txrequest):
+        project = txrequest.args['project'][0]
+        spiders = self.root.launcher.processes.values()
+        jlist = list()
+        for s in spiders:
+            if project == s.project:
+                jlist.append({"job": {"id":s.job, "spider": s.spider}})
+        return {"status":"ok", "jobs": jlist}

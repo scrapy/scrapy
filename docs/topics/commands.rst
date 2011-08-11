@@ -151,6 +151,7 @@ Project-only commands:
 
 * :command:`crawl`
 * :command:`list`
+* :command:`edit`
 * :command:`parse`
 * :command:`genspider`
 * :command:`server`
@@ -217,22 +218,16 @@ Usage example::
 crawl
 -----
 
-* Syntax: ``scrapy crawl <spider|url>``
+* Syntax: ``scrapy crawl <spider>``
 * Requires project: *yes*
 
-Start crawling a spider. If a URL is passed instead of a spider, it will start
-from that URL instead of the spider start urls.
+Start crawling a spider. 
 
 Usage examples::
-
-    $ scrapy crawl example.com
-    [ ... example.com spider starts crawling ... ]
 
     $ scrapy crawl myspider
     [ ... myspider starts crawling ... ]
 
-    $ scrapy crawl http://example.com/some/page.html
-    [ ... spider that handles example.com starts crawling from that url ... ]
 
 .. command:: server
 
@@ -268,6 +263,25 @@ Usage example::
     $ scrapy list
     spider1
     spider2
+
+.. command:: edit
+
+edit
+----
+
+* Syntax: ``scrapy edit <spider>``
+* Requires project: *yes*
+
+Edit the given spider using the editor defined in the :setting:`EDITOR`
+setting.
+
+This command is provided only as a convenient shortcut for the most common
+case, the developer is of course free to choose any tool or IDE to write and
+debug his spiders.
+
+Usage example::
+
+    $ scrapy edit spider1
 
 .. command:: fetch
 

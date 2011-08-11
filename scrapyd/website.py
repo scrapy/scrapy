@@ -22,6 +22,7 @@ class Root(resource.Resource):
         self.putChild('listspiders.json', webservice.ListSpiders(self))
         self.putChild('delproject.json', webservice.DeleteProject(self))
         self.putChild('delversion.json', webservice.DeleteVersion(self))
+        self.putChild('listjobs.json', webservice.ListJobs(self))
         self.putChild('logs', static.File(logsdir, 'text/plain'))
         self.putChild('procmon', ProcessMonitor(self))
         self.update_projects()

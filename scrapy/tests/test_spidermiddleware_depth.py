@@ -14,8 +14,7 @@ class TestDepthMiddleware(TestCase):
         self.stats = StatsCollector()
         self.stats.open_spider(self.spider)
 
-        self.mw = DepthMiddleware(1, self.stats)
-        self.assertEquals(self.stats.get_value('envinfo/request_depth_limit'), 1)
+        self.mw = DepthMiddleware(1, self.stats, True)
 
     def test_process_spider_output(self):
         req = Request('http://scrapytest.org')

@@ -4,6 +4,7 @@ Item Exporters are used to export/serialize items into different formats.
 
 import csv
 import pprint
+import marshal
 from cPickle import Pickler
 from xml.sax.saxutils import XMLGenerator
 
@@ -12,7 +13,7 @@ from scrapy.utils.py26 import json
 
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter', \
     'CsvItemExporter', 'XmlItemExporter', 'JsonLinesItemExporter', \
-    'JsonItemExporter']
+    'JsonItemExporter', 'MarshalItemExporter']
 
 class BaseItemExporter(object):
 
@@ -143,11 +144,20 @@ class XmlItemExporter(BaseItemExporter):
 
 class CsvItemExporter(BaseItemExporter):
 
-    def __init__(self, file, include_headers_line=True, **kwargs):
+    def __init__(self, file, include_headers_line=True, join_multivalued=',', **kwargs):
         self._configure(kwargs, dont_fail=True)
         self.include_headers_line = include_headers_line
         self.csv_writer = csv.writer(file, **kwargs)
         self._headers_not_written = True
+        self._join_multivalued = join_multivalued
+
+    def _to_str_if_unicode(self, value):
+        if isinstance(value, (list, tuple)):
+            try:
+                value = self._join_multivalued.join(value)
+            except TypeError: # list in value may not contain strings
+                pass
+        return super(CsvItemExporter, self)._to_str_if_unicode(value)
 
     def export_item(self, item):
         if self._headers_not_written:
@@ -174,6 +184,16 @@ class PickleItemExporter(BaseItemExporter):
 
     def export_item(self, item):
         self.pickler.dump(dict(self._get_serialized_fields(item)))
+
+
+class MarshalItemExporter(BaseItemExporter):
+
+    def __init__(self, file, **kwargs):
+        self._configure(kwargs)
+        self.file = file
+
+    def export_item(self, item):
+        marshal.dump(dict(self._get_serialized_fields(item)), self.file)
 
 
 class PprintItemExporter(BaseItemExporter):

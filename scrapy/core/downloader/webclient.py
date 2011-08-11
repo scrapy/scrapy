@@ -1,3 +1,4 @@
+from time import time
 from urlparse import urlparse, urlunparse, urldefrag
 
 from twisted.python import failure
@@ -7,7 +8,7 @@ from twisted.internet import defer
 
 from scrapy.http import Headers
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.core.downloader.responsetypes import responsetypes
+from scrapy.responsetypes import responsetypes
 
 
 def _parsed_url_args(parsed):
@@ -97,7 +98,8 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
         self.headers = Headers(request.headers)
         self.response_headers = None
         self.timeout = request.meta.get('download_timeout') or timeout
-        self.deferred = defer.Deferred().addCallback(self._build_response)
+        self.start_time = time()
+        self.deferred = defer.Deferred().addCallback(self._build_response, request)
 
         self._set_connection_attributes(request)
 
@@ -110,7 +112,8 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
             # just in case a broken http/1.1 decides to keep connection alive
             self.headers.setdefault("Connection", "close")
 
-    def _build_response(self, body):
+    def _build_response(self, body, request):
+        request.meta['download_latency'] = self.headers_time-self.start_time
         status = int(self.status)
         headers = Headers(self.response_headers)
         respcls = responsetypes.from_args(headers=headers, url=self.url)
@@ -125,4 +128,5 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
             self.path = self.url
 
     def gotHeaders(self, headers):
+        self.headers_time = time()
         self.response_headers = headers

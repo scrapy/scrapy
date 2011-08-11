@@ -1,13 +1,20 @@
 import unittest
-from scrapy.utils.http import basic_auth_header
 
-__doctests__ = ['scrapy.utils.http']
+from scrapy.utils.http import decode_chunked_transfer
 
-class UtilsHttpTestCase(unittest.TestCase):
+class ChunkedTest(unittest.TestCase):
 
-    def test_basic_auth_header(self):
-        self.assertEqual('Basic c29tZXVzZXI6c29tZXBhc3M=',
-                basic_auth_header('someuser', 'somepass'))
-        # Check url unsafe encoded header
-        self.assertEqual('Basic c29tZXVzZXI6QDx5dTk-Jm8_UQ==',
-            basic_auth_header('someuser', '@<yu9>&o?Q'))
+    def test_decode_chunked_transfer(self):
+        """Example taken from: http://en.wikipedia.org/wiki/Chunked_transfer_encoding"""
+        chunked_body = "25\r\n" + "This is the data in the first chunk\r\n\r\n"
+        chunked_body += "1C\r\n" + "and this is the second one\r\n\r\n"
+        chunked_body += "3\r\n" + "con\r\n"
+        chunked_body += "8\r\n" + "sequence\r\n"
+        chunked_body += "0\r\n\r\n"
+        body = decode_chunked_transfer(chunked_body)
+        self.assertEqual(body, \
+            "This is the data in the first chunk\r\n" +
+            "and this is the second one\r\n" +
+            "consequence")
+
+

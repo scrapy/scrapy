@@ -13,6 +13,7 @@ Scrapy developers, if you add a setting here remember to:
 
 """
 
+import sys, os
 from os.path import join, abspath, dirname
 
 BOT_NAME = 'scrapybot'
@@ -20,14 +21,19 @@ BOT_VERSION = '1.0'
 
 CLOSESPIDER_TIMEOUT = 0
 CLOSESPIDER_PAGECOUNT = 0
-CLOSESPIDER_ITEMPASSED = 0
+CLOSESPIDER_ITEMCOUNT = 0
 
 COMMANDS_MODULE = ''
 
 CONCURRENT_ITEMS = 100
-CONCURRENT_REQUESTS_PER_SPIDER = 8
+
+CONCURRENT_REQUESTS = 16
+CONCURRENT_REQUESTS_PER_DOMAIN = 8
+CONCURRENT_REQUESTS_PER_IP = 0
+
 CONCURRENT_SPIDERS = 8
 
+COOKIES_ENABLED = True
 COOKIES_DEBUG = False
 
 DEFAULT_ITEM_CLASS = 'scrapy.item.Item'
@@ -41,6 +47,9 @@ DEFAULT_RESPONSE_ENCODING = 'ascii'
 
 DEPTH_LIMIT = 0
 DEPTH_STATS = True
+DEPTH_PRIORITY = 1
+
+DNSCACHE_ENABLED = True
 
 DOWNLOAD_DELAY = 0
 
@@ -72,6 +81,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware': 700,
     'scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware': 750,
     'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 800,
+    'scrapy.contrib.downloadermiddleware.chunked.ChunkedTransferMiddleware': 830,
     'scrapy.contrib.downloadermiddleware.stats.DownloaderStats': 850,
     'scrapy.contrib.downloadermiddleware.httpcache.HttpCacheMiddleware': 900,
     # Downloader side
@@ -79,7 +89,15 @@ DOWNLOADER_MIDDLEWARES_BASE = {
 
 DOWNLOADER_STATS = True
 
-DUPEFILTER_CLASS = 'scrapy.contrib.dupefilter.RequestFingerprintDupeFilter'
+DUPEFILTER_CLASS = 'scrapy.dupefilter.RFPDupeFilter'
+
+try:
+    EDITOR = os.environ['EDITOR']
+except KeyError:
+    if sys.platform == 'win32':
+        EDITOR = '%s -m idlelib.idle'
+    else:
+        EDITOR = 'vi'
 
 ENCODING_ALIASES = {}
 
@@ -126,6 +144,7 @@ EXTENSIONS_BASE = {
     'scrapy.contrib.closespider.CloseSpider': 0,
     'scrapy.contrib.feedexport.FeedExporter': 0,
     'scrapy.contrib.spidercontext.SpiderContext': 0,
+    'scrapy.contrib.logstats.LogStats': 0,
 }
 
 FEED_URI = None
@@ -146,6 +165,7 @@ FEED_EXPORTERS_BASE = {
     'jsonlines': 'scrapy.contrib.exporter.JsonLinesItemExporter',
     'csv': 'scrapy.contrib.exporter.CsvItemExporter',
     'xml': 'scrapy.contrib.exporter.XmlItemExporter',
+    'marshal': 'scrapy.contrib.exporter.MarshalItemExporter',
 }
 
 HTTPCACHE_ENABLED = False
@@ -155,13 +175,12 @@ HTTPCACHE_STORAGE = 'scrapy.contrib.downloadermiddleware.httpcache.FilesystemCac
 HTTPCACHE_EXPIRATION_SECS = 0
 HTTPCACHE_IGNORE_HTTP_CODES = []
 HTTPCACHE_IGNORE_SCHEMES = ['file']
+HTTPCACHE_DBM_MODULE = 'anydbm'
 
 ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'
 
 # Item pipelines are typically set in specific commands settings
 ITEM_PIPELINES = []
-
-KEEP_ALIVE = False
 
 LOG_ENABLED = True
 LOG_ENCODING = 'utf-8'
@@ -169,6 +188,8 @@ LOG_FORMATTER = 'scrapy.logformatter.LogFormatter'
 LOG_STDOUT = False
 LOG_LEVEL = 'DEBUG'
 LOG_FILE = None
+
+LOGSTATS_INTERVAL = 60.0
 
 MAIL_DEBUG = False
 MAIL_HOST = 'localhost'
@@ -188,30 +209,22 @@ MEMUSAGE_WARNING_MB = 0
 
 NEWSPIDER_MODULE = ''
 
-QUEUE_POLL_INTERVAL = 5
-
 RANDOMIZE_DOWNLOAD_DELAY = True
 
+REDIRECT_ENABLED = True
 REDIRECT_MAX_METAREFRESH_DELAY = 100
 REDIRECT_MAX_TIMES = 20 # uses Firefox default setting
 REDIRECT_PRIORITY_ADJUST = +2
 
-# contrib.middleware.retry.RetryMiddleware default settings
+RETRY_ENABLED = True
 RETRY_TIMES = 2 # initial response + 2 retries = 3 requests
-RETRY_HTTP_CODES = ['500', '503', '504', '400', '408']
+RETRY_HTTP_CODES = [500, 503, 504, 400, 408]
 RETRY_PRIORITY_ADJUST = -1
 
 ROBOTSTXT_OBEY = False
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
-
-SCHEDULER_MIDDLEWARES = {}
-
-SCHEDULER_MIDDLEWARES_BASE = {
-    'scrapy.contrib.schedulermiddleware.duplicatesfilter.DuplicatesFilterMiddleware': 500,
-}
-
-SCHEDULER_ORDER = 'DFO'
+SCHEDULER_DISK_QUEUE = 'scrapy.squeue.MarshalDiskQueue'
 
 SELECTORS_BACKEND = None # possible values: libxml2, lxml
 
@@ -231,24 +244,15 @@ SPIDER_MIDDLEWARES_BASE = {
 
 SPIDER_MODULES = []
 
-SPIDER_QUEUE_CLASS = 'scrapy.spiderqueue.SqliteSpiderQueue'
-
 SPIDER_CONTEXT_ENABLED = True
 SPIDER_CONTEXT_STORAGE_CLASS = 'scrapy.contrib.spidercontext.SqliteSpiderContextStorage'
 
 
 SQLITE_DB = 'scrapy.db'
 
-SQS_QUEUE = 'scrapy'
-SQS_VISIBILITY_TIMEOUT = 7200
-SQS_REGION = 'us-east-1'
-
 STATS_CLASS = 'scrapy.statscol.MemoryStatsCollector'
 STATS_ENABLED = True
-STATS_DUMP = False
-
-STATS_SDB_DOMAIN = 'scrapy_stats'
-STATS_SDB_ASYNC = False
+STATS_DUMP = True
 
 STATSMAILER_RCPTS = []
 

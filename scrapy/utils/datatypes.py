@@ -9,6 +9,9 @@ import copy
 from collections import deque, defaultdict
 from itertools import chain
 
+from scrapy.utils.py27 import OrderedDict
+
+
 class MultiValueDictKeyError(KeyError):
     pass
 
@@ -265,75 +268,18 @@ class MergeDict(object):
         return self.__copy__()
 
 
-class PriorityQueue(object):
-    """Priority queue using a deque for priority 0"""
+class LocalCache(OrderedDict):
+    """Dictionary with a finite number of keys.
 
-    def __init__(self):
-        self.negitems = defaultdict(deque)
-        self.pzero = deque()
-        self.positems = defaultdict(deque)
+    Older items expires first.
 
-    def push(self, item, priority=0):
-        if priority == 0:
-            self.pzero.appendleft(item)
-        elif priority < 0:
-            self.negitems[priority].appendleft(item)
-        else:
-            self.positems[priority].appendleft(item)
+    """
 
-    def pop(self):
-        if self.negitems:
-            priorities = self.negitems.keys()
-            priorities.sort()
-            for priority in priorities:
-                deq = self.negitems[priority]
-                if deq:
-                    t = (deq.pop(), priority)
-                    if not deq:
-                        del self.negitems[priority]
-                    return t
-        elif self.pzero:
-            return (self.pzero.pop(), 0)
-        else:
-            priorities = self.positems.keys()
-            priorities.sort()
-            for priority in priorities:
-                deq = self.positems[priority]
-                if deq:
-                    t = (deq.pop(), priority)
-                    if not deq:
-                        del self.positems[priority]
-                    return t
-        raise IndexError("pop from an empty queue")
+    def __init__(self, limit=None):
+        super(LocalCache, self).__init__()
+        self.limit = limit
 
-    def __len__(self):
-        total = sum(len(v) for v in self.negitems.values()) + \
-                len(self.pzero) + \
-                sum(len(v) for v in self.positems.values())
-        return total
-
-    def __iter__(self):
-        gen_negs = ((i, priority) 
-                    for priority in sorted(self.negitems.keys())
-                    for i in reversed(self.negitems[priority]))
-        gen_zeros = ((item,0) for item in self.pzero)
-        gen_pos = ((i, priority) 
-                    for priority in sorted(self.positems.keys())
-                    for i in reversed(self.positems[priority]))
-        return chain(gen_negs, gen_zeros, gen_pos)
-
-    def __nonzero__(self):
-        return bool(self.negitems or self.pzero or self.positems)
-
-class PriorityStack(PriorityQueue):
-    """A simple priority stack which is similar to PriorityQueue but pops its
-    items in reverse order (for the same priority)"""
-
-    def push(self, item, priority=0):
-        if priority == 0:
-            self.pzero.append(item)
-        elif priority < 0:
-            self.negitems[priority].append(item)
-        else:
-            self.positems[priority].append(item)
-
+    def __setitem__(self, key, value):
+        while len(self) >= self.limit:
+            self.popitem(last=False)
+        super(LocalCache, self).__setitem__(key, value)

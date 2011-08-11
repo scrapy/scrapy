@@ -4,7 +4,7 @@ HTTP basic auth downloader middleware
 See documentation in docs/topics/downloader-middleware.rst
 """
 
-from scrapy.utils.http import basic_auth_header
+from w3lib.http import basic_auth_header
 from scrapy.utils.python import WeakKeyCache
 
 

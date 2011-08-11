@@ -7,7 +7,7 @@ See documentation in docs/topics/request-response.rst
 
 import re
 import codecs
-from scrapy.xlib.BeautifulSoup import UnicodeDammit
+from scrapy.http.response.dammit import UnicodeDammit
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs
 from scrapy.utils.encoding import encoding_exists, resolve_encoding

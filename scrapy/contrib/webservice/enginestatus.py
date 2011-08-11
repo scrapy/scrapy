@@ -1,19 +1,17 @@
 from scrapy.webservice import JsonResource
-from scrapy.project import crawler
 from scrapy.utils.engine import get_engine_status
 
 class EngineStatusResource(JsonResource):
 
     ws_name = 'enginestatus'
 
-    def __init__(self, spider_name=None, _crawler=crawler):
-        JsonResource.__init__(self)
+    def __init__(self, crawler, spider_name=None):
+        JsonResource.__init__(self, crawler)
         self._spider_name = spider_name
         self.isLeaf = spider_name is not None
-        self._crawler = _crawler
 
     def render_GET(self, txrequest):
-        status = get_engine_status(self._crawler.engine)
+        status = get_engine_status(self.crawler.engine)
         if self._spider_name is None:
             return status
         for sp, st in status['spiders'].items():
@@ -21,4 +19,4 @@ class EngineStatusResource(JsonResource):
                 return st
 
     def getChild(self, name, txrequest):
-        return EngineStatusResource(name, self._crawler)
+        return EngineStatusResource(name, self.crawler)

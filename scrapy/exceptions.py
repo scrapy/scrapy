@@ -20,6 +20,12 @@ class DontCloseSpider(Exception):
     """Request the spider not to be closed yet"""
     pass
 
+class CloseSpider(Exception):
+    """Raise this from callbacks to request the spider to be closed"""
+
+    def __init__(self, reason='cancelled'):
+        self.reason = reason
+
 # Items
 
 class DropItem(Exception):
@@ -37,3 +43,10 @@ class UsageError(Exception):
     def __init__(self, *a, **kw):
         self.print_help = kw.pop('print_help', True)
         super(UsageError, self).__init__(*a, **kw)
+
+class ScrapyDeprecationWarning(Warning):
+    """Warning category for deprecated features, since the default
+    DeprecationWarning is silenced on Python 2.7+
+    """
+    pass
+

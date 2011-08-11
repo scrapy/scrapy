@@ -246,6 +246,10 @@ scraping easy and efficient, such as:
 * :ref:`Logging <topics-logging>` facility that you can hook on to for catching
   errors during the scraping process.
 
+* Support for crawling based on URLs discovered through `Sitemaps`_
+
+* A caching DNS resolver
+
 What's next?
 ============
 
@@ -262,3 +266,4 @@ interest!
 .. _XPath: http://www.w3.org/TR/xpath
 .. _XPath reference: http://www.w3.org/TR/xpath
 .. _Amazon S3: http://aws.amazon.com/s3/
+.. _Sitemaps: http://www.sitemaps.org

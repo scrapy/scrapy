@@ -1,5 +1,4 @@
 import unittest
-import weakref
 import copy
 
 from scrapy.http import Headers
@@ -33,6 +32,23 @@ class HeadersTest(unittest.TestCase):
         self.assertEqual(h.get('X-Forwarded-For'), 'ip2')
         self.assertEqual(h.getlist('X-Forwarded-For'), hlist)
         assert h.getlist('X-Forwarded-For') is not hlist
+
+    def test_encode_utf8(self):
+        h = Headers({u'key': u'\xa3'}, encoding='utf-8')
+        key, val = dict(h).items()[0]
+        assert isinstance(key, str), key
+        assert isinstance(val[0], str), val[0]
+        self.assertEqual(val[0], '\xc2\xa3')
+
+    def test_encode_latin1(self):
+        h = Headers({u'key': u'\xa3'}, encoding='latin1')
+        key, val = dict(h).items()[0]
+        self.assertEqual(val[0], '\xa3')
+
+    def test_encode_multiple(self):
+        h = Headers({u'key': [u'\xa3']}, encoding='utf-8')
+        key, val = dict(h).items()[0]
+        self.assertEqual(val[0], '\xc2\xa3')
 
     def test_delete_and_contains(self):
         h = Headers()

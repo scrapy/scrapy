@@ -18,6 +18,5 @@ class FetchTest(ProcessTest, SiteTest, unittest.TestCase):
     def test_headers(self):
         _, out, _ = yield self.execute([self.url('/text'), '--headers'])
         out = out.replace('\r', '') # required on win32
-        headers = eval(out)
-        assert 'TwistedWeb' in headers['Server'][0]
-        self.assertEqual(headers['Content-Type'], ['text/plain'])
+        assert 'Server: TwistedWeb' in out
+        assert 'Content-Type: text/plain' in out
