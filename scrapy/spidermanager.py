@@ -5,7 +5,7 @@ spiders
 
 from zope.interface import implements
 
-from scrapy import log, signals
+from scrapy import signals
 from scrapy.interfaces import ISpiderManager
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.spider import iter_spider_classes
@@ -31,6 +31,10 @@ class SpiderManager(object):
     @classmethod
     def from_settings(cls, settings):
         return cls(settings.getlist('SPIDER_MODULES'))
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls.from_settings(crawler.settings)
 
     def create(self, spider_name, **spider_kwargs):
         try:

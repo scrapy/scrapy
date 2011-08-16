@@ -33,7 +33,7 @@ class Crawler(object):
         self.configured = True
         self.extensions = ExtensionManager.from_crawler(self)
         spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
-        self.spiders = spman_cls.from_settings(self.settings)
+        self.spiders = spman_cls.from_crawler(self)
         self.engine = ExecutionEngine(self, self._spider_closed)
 
     def crawl(self, spider, requests=None):
