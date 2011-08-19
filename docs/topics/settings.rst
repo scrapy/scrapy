@@ -338,7 +338,7 @@ DEPTH_PRIORITY
 
 Default: ``1``
 
-An integer that is used to set the request priority based on request depth.
+An integer that is used to adjust the request priority based on its depth.
 
 To crawl in `breadth-first order`_, set :setting:`DEPTH_PRIORITY` to ``1``.
 

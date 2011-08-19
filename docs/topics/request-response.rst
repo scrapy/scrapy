@@ -77,11 +77,10 @@ Request objects
        body to ``str`` (if given as ``unicode``).
     :type encoding: string
 
-    :param priority: the priority of this request (defaults to ``0.0``).
-       The priority is used by the scheduler to define the order used to return
-       requests. It can also be used to feed priorities externally, for
-       example, using an offline long-term scheduler.
-    :type encoding: int or float
+    :param priority: the priority of this request (defaults to ``0``).
+       The priority is used by the scheduler to define the order used to process
+       requests.
+    :type priority: int
 
     :param dont_filter: indicates that this request should not be filtered by
        the scheduler. This is used when you want to perform an identical

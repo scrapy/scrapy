@@ -47,7 +47,7 @@ class DepthMiddleware(object):
                 depth = response.request.meta['depth'] + 1
                 request.meta['depth'] = depth
                 if self.prio:
-                    request.priority += depth * self.prio
+                    request.priority -= depth * self.prio
                 if self.maxdepth and depth > self.maxdepth:
                     log.msg("Ignoring link (depth > %d): %s " % (self.maxdepth, request.url), \
                         level=log.DEBUG, spider=spider)

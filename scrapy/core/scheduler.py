@@ -58,7 +58,7 @@ class Scheduler(object):
             return
         try:
             reqd = request_to_dict(request, self.spider)
-            self.dqs.push(reqd, request.priority)
+            self.dqs.push(reqd, -request.priority)
         except ValueError: # non serializable request
             return
         else:
@@ -67,7 +67,7 @@ class Scheduler(object):
 
     def _mqpush(self, request):
         stats.inc_value('scheduler/memory_enqueued', spider=self.spider)
-        self.mqs.push(request, request.priority)
+        self.mqs.push(request, -request.priority)
 
     def _dqpop(self):
         if self.dqs:
