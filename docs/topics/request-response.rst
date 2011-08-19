@@ -24,7 +24,7 @@ below in :ref:`topics-request-response-ref-request-subclasses` and
 Request objects
 ===============
 
-.. class:: Request(url[, method='GET', body, headers, cookies, meta, encoding='utf-8', priority=0.0, dont_filter=False, callback, errback])
+.. class:: Request(url[, method='GET', body, headers, cookies, meta, encoding='utf-8', priority=0, dont_filter=False, callback, errback])
 
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
