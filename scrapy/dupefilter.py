@@ -15,7 +15,7 @@ class BaseDupeFilter(object):
     def open(self):  # can return deferred
         pass
 
-    def close(self): # can return a deferred
+    def close(self, reason): # can return a deferred
         pass
 
 
@@ -41,6 +41,6 @@ class RFPDupeFilter(BaseDupeFilter):
         if self.file:
             self.file.write(fp + os.linesep)
 
-    def close(self):
+    def close(self, reason):
         if self.file:
             self.file.close()

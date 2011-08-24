@@ -39,7 +39,7 @@ class Scheduler(object):
             prios = self.dqs.close()
             with open(join(self.dqdir, 'active.json'), 'w') as f:
                 json.dump(prios, f)
-        return self.df.close()
+        return self.df.close(reason)
 
     def enqueue_request(self, request):
         if not request.dont_filter and self.df.request_seen(request):
