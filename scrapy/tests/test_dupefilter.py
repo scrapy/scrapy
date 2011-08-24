@@ -20,4 +20,4 @@ class RFPDupeFilterTest(unittest.TestCase):
         assert not filter.request_seen(r2)
         assert filter.request_seen(r3)
 
-        filter.close()
+        filter.close('finished')
