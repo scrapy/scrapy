@@ -2,9 +2,6 @@ from zope.interface import Interface
 
 class ISpiderManager(Interface):
 
-    def from_settings(settings):
-        """Class method to instantiate from settings"""
-
     def create(spider_name, **spider_args):
         """Returns a new Spider instance for the given spider name, and using
         the given spider arguments. If the spider name is not found, it must
