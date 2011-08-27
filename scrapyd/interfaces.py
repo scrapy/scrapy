@@ -49,9 +49,6 @@ class IPoller(Interface):
 
 class ISpiderQueue(Interface):
 
-    def from_settings(settings):
-        """Class method to instantiate from settings"""
-
     def add(name, **spider_args):
         """Add a spider to the queue given its name a some spider arguments.
 

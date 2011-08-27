@@ -1,8 +1,7 @@
 from zope.interface import implements
 
 from scrapyd.interfaces import ISpiderQueue
-from scrapy.utils.sqlite import JsonSqlitePriorityQueue
-from scrapy.utils.project import sqlite_db
+from scrapyd.sqlite import JsonSqlitePriorityQueue
 
 
 class SqliteSpiderQueue(object):
@@ -11,10 +10,6 @@ class SqliteSpiderQueue(object):
 
     def __init__(self, database=None, table='spider_queue'):
         self.q = JsonSqlitePriorityQueue(database, table)
-
-    @classmethod
-    def from_settings(cls, settings):
-        return cls(sqlite_db(settings['SQLITE_DB']))
 
     def add(self, name, **spider_args):
         d = spider_args.copy()

@@ -40,24 +40,3 @@ def data_path(path):
     otherwise return the path unmodified
     """
     return path if isabs(path) else join(project_data_dir(), path)
-
-def sqlite_db(path, nonwritable_fallback=True):
-    """Get the SQLite database to use. If path is relative, returns the given
-    path inside the project data dir, otherwise returns the path unmodified. If
-    not inside a project returns :memory: to use an in-memory database.
-
-    If nonwritable_fallback is True, and the path is not writable it issues a
-    warning and returns :memory:
-    """
-    if not inside_project() or path == ':memory:':
-        db = ':memory:'
-    else:
-        try:
-            db = data_path(path)
-        except NotConfigured:
-            db = ':memory:'
-        else:
-            if not is_writable(db) and nonwritable_fallback:
-                warnings.warn("%r is not writable - using in-memory SQLite instead" % db)
-                db = ':memory:'
-    return db

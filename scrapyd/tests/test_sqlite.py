@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from scrapy.http import Request
-from scrapy.utils.sqlite import SqlitePriorityQueue, JsonSqlitePriorityQueue, \
+from scrapyd.sqlite import SqlitePriorityQueue, JsonSqlitePriorityQueue, \
     PickleSqlitePriorityQueue, SqliteDict, JsonSqliteDict, PickleSqliteDict
 
 
