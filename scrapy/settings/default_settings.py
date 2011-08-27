@@ -143,7 +143,6 @@ EXTENSIONS_BASE = {
     'scrapy.contrib.memdebug.MemoryDebugger': 0,
     'scrapy.contrib.closespider.CloseSpider': 0,
     'scrapy.contrib.feedexport.FeedExporter': 0,
-    'scrapy.contrib.spidercontext.SpiderContext': 0,
     'scrapy.contrib.logstats.LogStats': 0,
 }
 
@@ -243,10 +242,6 @@ SPIDER_MIDDLEWARES_BASE = {
 }
 
 SPIDER_MODULES = []
-
-SPIDER_CONTEXT_ENABLED = True
-SPIDER_CONTEXT_STORAGE_CLASS = 'scrapy.contrib.spidercontext.SqliteSpiderContextStorage'
-
 
 SQLITE_DB = 'scrapy.db'
 
