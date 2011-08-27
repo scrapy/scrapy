@@ -436,6 +436,7 @@ Schedule a spider run.
 * Parameters:
   * ``project`` (string, required) - the project name
   * ``spider`` (string, required) - the spider name
+  * ``setting`` (string, optional) - a scrapy setting to use when running the spider
   * any other parameter is passed as spider argument
 
 Example request::
@@ -445,6 +446,12 @@ Example request::
 Example response::
 
     {"status": "ok"}
+
+Example request passing a spider argument (``arg1``) and a setting
+(:setting:`DOWNLOAD_DELAY`)::
+
+    $ curl http://localhost:6800/schedule.json -d project=myproject -d spider=somespider -d setting=DOWNLOAD_DELAY=2 -d arg1=val1
+
 
 listprojects.json
 -----------------
