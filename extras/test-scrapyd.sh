@@ -14,9 +14,9 @@ export PATH=$PATH:$(pwd)/bin
 export PYTHONPATH=$PYTHONPATH:$(pwd)
 
 scrapyd_dir=$(mktemp /tmp/test-scrapyd.XXXXXXX -d)
-scrapyd_log=$(mktemp /tmp/test-scrapyd.XXXXXXX.log)
+scrapyd_log=$(mktemp /tmp/test-scrapyd.XXXXXXX)
 scrapy_dir=$(mktemp /tmp/test-scrapyd.XXXXXXX -d)
-feed_path=$(mktemp /tmp/test-scrapyd.XXXXXXX.jl)
+feed_path=$(mktemp /tmp/test-scrapyd.XXXXXXX)
 
 twistd -ny extras/scrapyd.tac -d $scrapyd_dir -l $scrapyd_log &
 
@@ -70,13 +70,16 @@ scrapy deploy
 
 curl -s http://localhost:6800/schedule.json -d project=testproj -d spider=insophia -d setting=FEED_URI=$feed_path -d arg=SOME_ARGUMENT
 
-echo "waiting for spider to finish..."
-until grep -q "Process finished" $scrapyd_log; do
-    sleep 1
-done
+echo "waiting 20 seconds for spider to run and finish..."
+sleep 20
 
 kill %1
 wait %1
+
+if ! grep -q "Process finished" $scrapyd_log; then
+    echo "error: 'Process finished' not found on scrapyd log"
+    exit 1
+fi
 
 numitems="$(cat $feed_path | wc -l)"
 if [ "$numitems" != "8" ]; then
