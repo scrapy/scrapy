@@ -4,3 +4,4 @@ _trial_temp
 dropin.cache
 .svn
 docs/build
+*egg-info
