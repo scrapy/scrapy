@@ -13,17 +13,19 @@ from scrapy import log
 
 class Scheduler(object):
 
-    def __init__(self, dupefilter, jobdir=None, dqclass=None):
+    def __init__(self, dupefilter, jobdir=None, dqclass=None, logunser=False):
         self.df = dupefilter
         self.dqdir = join(jobdir, 'requests.queue') if jobdir else None
         self.dqclass = dqclass
+        self.logunser = logunser
 
     @classmethod
     def from_settings(cls, settings):
         dupefilter_cls = load_object(settings['DUPEFILTER_CLASS'])
         dupefilter = dupefilter_cls.from_settings(settings)
         dqclass = load_object(settings['SCHEDULER_DISK_QUEUE'])
-        return cls(dupefilter, job_dir(settings), dqclass)
+        logunser = settings.getbool('LOG_UNSERIALIZABLE_REQUESTS')
+        return cls(dupefilter, job_dir(settings), dqclass, logunser)
 
     def has_pending_requests(self):
         return len(self) > 0
@@ -59,7 +61,10 @@ class Scheduler(object):
         try:
             reqd = request_to_dict(request, self.spider)
             self.dqs.push(reqd, -request.priority)
-        except ValueError: # non serializable request
+        except ValueError, e: # non serializable request
+            if self.logunser:
+                log.msg("Unable to serialize request: %s - reason: %s" % \
+                    (request, str(e)), level=log.ERROR, spider=self.spider)
             return
         else:
             stats.inc_value('scheduler/disk_enqueued', spider=self.spider)

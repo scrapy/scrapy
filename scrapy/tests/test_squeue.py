@@ -30,6 +30,10 @@ class MarshalDiskQueueTest(t.DiskQueueTest):
         self.assertEqual(q.pop(), 123)
         self.assertEqual(q.pop(), {'a': 'dict'})
 
+    def test_nonserializable_object(self):
+        q = self.queue()
+        self.assertRaises(ValueError, q.push, lambda x: x)
+
 class ChunkSize1MarshalDiskQueueTest(MarshalDiskQueueTest):
     chunksize = 1
 
