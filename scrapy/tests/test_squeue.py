@@ -43,21 +43,12 @@ class ChunkSize4MarshalDiskQueueTest(MarshalDiskQueueTest):
     chunksize = 4
 
 
-class PickleDiskQueueTest(t.DiskQueueTest):
+class PickleDiskQueueTest(MarshalDiskQueueTest):
 
     chunksize = 100000
 
     def queue(self):
         return PickleDiskQueue(self.qdir, chunksize=self.chunksize)
-
-    def test_serialize(self):
-        q = self.queue()
-        q.push('a')
-        q.push(123)
-        q.push({'a': 'dict'})
-        self.assertEqual(q.pop(), 'a')
-        self.assertEqual(q.pop(), 123)
-        self.assertEqual(q.pop(), {'a': 'dict'})
 
     def test_serialize_item(self):
         q = self.queue()
