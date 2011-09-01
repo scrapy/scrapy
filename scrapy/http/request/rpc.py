@@ -15,8 +15,6 @@ DUMPS_ARGS = get_func_args(xmlrpclib.dumps)
 
 class XmlRpcRequest(Request):
 
-    __slots__ = ()
-
     def __init__(self, *args, **kwargs):
         encoding = kwargs.get('encoding', None)
         if 'body' not in kwargs and 'params' in kwargs:

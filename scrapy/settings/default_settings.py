@@ -223,7 +223,7 @@ RETRY_PRIORITY_ADJUST = -1
 ROBOTSTXT_OBEY = False
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
-SCHEDULER_DISK_QUEUE = 'scrapy.squeue.MarshalDiskQueue'
+SCHEDULER_DISK_QUEUE = 'scrapy.squeue.PickleDiskQueue'
 
 SELECTORS_BACKEND = None # possible values: libxml2, lxml
 

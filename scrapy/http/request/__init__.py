@@ -16,10 +16,6 @@ from scrapy.http.common import deprecated_setter
 
 class Request(object_ref):
 
-    __slots__ = ['_encoding', 'method', '_url', '_body', '_meta', \
-        'dont_filter', 'headers', 'cookies', 'callback', 'errback', 'priority', \
-        '__weakref__']
-
     def __init__(self, url, callback=None, method='GET', headers=None, body=None, 
                  cookies=None, meta=None, encoding='utf-8', priority=0,
                  dont_filter=False, errback=None):

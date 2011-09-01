@@ -119,9 +119,3 @@ class HeadersTest(unittest.TestCase):
         h1.setlistdefault('header2', ['value2', 'value3'])
         self.assertEqual(h1.getlist('header1'), ['value1'])
         self.assertEqual(h1.getlist('header2'), ['value2', 'value3'])
-
-    def test_slots(self):
-        """Check that classes are using slots and are weak-referenceable"""
-        x = Headers({})
-        assert not hasattr(x, '__dict__'), "%s does not use __slots__" % \
-            x.__class__.__name__

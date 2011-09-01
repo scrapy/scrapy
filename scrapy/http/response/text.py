@@ -24,8 +24,6 @@ class TextResponse(Response):
     _DEFAULT_ENCODING = settings['DEFAULT_RESPONSE_ENCODING']
     _ENCODING_RE = re.compile(r'charset=([\w-]+)', re.I)
 
-    __slots__ = ['_encoding', '_cached_benc', '_cached_ubody']
-
     def __init__(self, *args, **kwargs):
         self._encoding = kwargs.pop('encoding', None)
         self._cached_benc = None

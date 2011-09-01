@@ -1,5 +1,4 @@
 import cgi
-import weakref
 import unittest
 import xmlrpclib
 from inspect import getargspec
@@ -168,13 +167,6 @@ class RequestTest(unittest.TestCase):
     def test_method_always_str(self):
         r = self.request_class("http://www.example.com", method=u"POST")
         assert isinstance(r.method, str)
-
-    def test_weakref_slots(self):
-        """Check that classes are using slots and are weak-referenceable"""
-        x = self.request_class('http://www.example.com')
-        weakref.ref(x)
-        assert not hasattr(x, '__dict__'), "%s does not use __slots__" % \
-            x.__class__.__name__
 
 
 class FormRequestTest(RequestTest):

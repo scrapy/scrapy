@@ -12,8 +12,6 @@ from scrapy.utils.python import memoizemethod_noargs
 
 class HtmlResponse(TextResponse):
 
-    __slots__ = ()
-
     _template = r'''%s\s*=\s*["']?\s*%s\s*["']?'''
 
     _httpequiv_re = _template % ('http-equiv', 'Content-Type')

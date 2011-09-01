@@ -13,9 +13,6 @@ from scrapy.http.common import deprecated_setter
 
 class Response(object_ref):
 
-    __slots__ = ['_url', 'headers', 'status', '_body', 'request', \
-        'flags', '__weakref__']
-
     def __init__(self, url, status=200, headers=None, body='', flags=None, request=None):
         self.headers = Headers(headers or {})
         self.status = int(status)
