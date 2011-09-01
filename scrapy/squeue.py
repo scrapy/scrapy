@@ -10,7 +10,8 @@ from scrapy.utils.queue import DiskQueue
 class PickleDiskQueue(DiskQueue):
 
     def push(self, obj):
-        super(PickleDiskQueue, self).push(pickle.dumps(obj))
+        s = pickle.dumps(obj, protocol=2)
+        super(PickleDiskQueue, self).push(s)
 
     def pop(self):
         s = super(PickleDiskQueue, self).pop()
