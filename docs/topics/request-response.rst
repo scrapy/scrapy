@@ -169,7 +169,7 @@ downloaded :class:`Response` object as its first argument.
 Example::
 
     def parse_page1(self, response):
-        request = Request("http://www.example.com/some_page.html", 
+        return Request("http://www.example.com/some_page.html", 
                           callback=self.parse_page2)
 
     def parse_page2(self, response):
@@ -189,6 +189,7 @@ different fields from different pages::
         request = Request("http://www.example.com/some_page.html", 
                           callback=self.parse_page2)
         request.meta['item'] = item
+        return request
 
     def parse_page2(self, response):
         item = response.meta['item']
