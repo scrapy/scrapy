@@ -159,12 +159,12 @@ Request objects
 
 .. _topics-request-response-ref-request-callback-arguments:
 
-Passing arguments to callback functions
----------------------------------------
+Passing additional data to callback functions
+---------------------------------------------
 
 The callback of a request is a function that will be called when the response
 of that request is downloaded. The callback function will be called with the
-:class:`Response` object downloaded as its first argument. 
+downloaded :class:`Response` object as its first argument. 
 
 Example::
 
@@ -177,37 +177,23 @@ Example::
         self.log("Visited %s" % response.url) 
 
 In some cases you may be interested in passing arguments to those callback
-functions so you can receive those arguments later, when the response is
-downloaded. There are two ways for doing this:
+functions so you can receive the arguments later, in the second callback. You
+can use the :attr:`Request.meta` attribute for that.
 
-    1. using a lambda function (or any other function/callable)
-    
-    2. using the :attr:`Request.meta` attribute.
-    
-Here's an example of logging the referer URL of each page using each mechanism.
-Keep in mind, however, that the referer URL could be accessed easier via
-``response.request.url``).
-
-Using lambda function::
+Here's an example of how to pass an item using this mechanism, to populate
+different fields from different pages::
 
     def parse_page1(self, response):
-        myarg = response.url
-        request = Request("http://www.example.com/some_page.html", 
-                          callback=lambda r: self.parse_page2(r, myarg))
-
-    def parse_page2(self, response, referer_url):
-        self.log("Visited page %s from %s" % (response.url, referer_url))
-
-Using Request.meta::
-
-    def parse_page1(self, response):
+        item = MyItem()
+        item['main_url'] = response.url
         request = Request("http://www.example.com/some_page.html", 
                           callback=self.parse_page2)
-        request.meta['referer_url'] = response.url
+        request.meta['item'] = item
 
     def parse_page2(self, response):
-        referer_url = response.request.meta['referer_url']
-        self.log("Visited page %s from %s" % (response.url, referer_url))
+        item = response.meta['item']
+        item['other_url'] = response.url
+        return item
 
 .. _topics-request-meta:
 
