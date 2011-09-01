@@ -77,7 +77,7 @@ class ScrapyCommand(object):
             help="write lsprof profiling stats to FILE")
         group.add_option("--pidfile", dest="pidfile", metavar="FILE", \
             help="write process ID to FILE")
-        group.add_option("--set", dest="set", action="append", default=[], metavar="NAME=VALUE", \
+        group.add_option("-s", "--set", dest="set", action="append", default=[], metavar="NAME=VALUE", \
             help="set/override setting (may be repeated)")
         parser.add_option_group(group)
         
