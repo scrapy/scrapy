@@ -85,7 +85,7 @@ class ScrapyCommand(object):
         try:
             settings.overrides.update(arglist_to_dict(opts.set))
         except ValueError:
-            raise UsageError("Invalid --set value, use --set NAME=VALUE", print_help=False)
+            raise UsageError("Invalid -s value, use -s NAME=VALUE", print_help=False)
 
         if opts.logfile:
             settings.overrides['LOG_ENABLED'] = True

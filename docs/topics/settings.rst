@@ -56,13 +56,13 @@ Example::
    >>> settings.overrides['LOG_ENABLED'] = True
 
 You can also override one (or more) settings from command line using the
-``--set`` command line argument. 
+``-s`` (or ``--set``) command line option. 
 
 .. highlight:: sh
 
 Example::
 
-    scrapy crawl domain.com --set LOG_FILE=scrapy.log
+    scrapy crawl domain.com -s LOG_FILE=scrapy.log
 
 2. Project settings module
 --------------------------

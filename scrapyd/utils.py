@@ -45,7 +45,7 @@ def get_crawl_args(message):
         args += ['-a']
         args += ['%s=%s' % (k, v)]
     for k, v in stringify_dict(settings, keys_only=False).items():
-        args += ['--set']
+        args += ['-s']
         args += ['%s=%s' % (k, v)]
     return args
 

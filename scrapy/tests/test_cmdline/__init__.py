@@ -22,7 +22,7 @@ class CmdlineTest(unittest.TestCase):
             'default + loaded + started')
 
     def test_override_settings_using_set_arg(self):
-        self.assertEqual(self._execute('settings', '--get', 'TEST1', '--set', 'TEST1=override'), \
+        self.assertEqual(self._execute('settings', '--get', 'TEST1', '-s', 'TEST1=override'), \
             'override + loaded + started')
 
     def test_override_settings_using_envvar(self):

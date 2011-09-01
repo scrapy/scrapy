@@ -25,7 +25,7 @@ class UtilsTest(unittest.TestCase):
     def test_get_crawl_args_with_settings(self):
         msg = {'_project': 'lolo', '_spider': 'lala', 'arg1': u'val1', 'settings': {'ONE': 'two'}}
         cargs = get_crawl_args(msg)
-        self.assertEqual(cargs, ['lala', '-a', 'arg1=val1', '--set', 'ONE=two'])
+        self.assertEqual(cargs, ['lala', '-a', 'arg1=val1', '-s', 'ONE=two'])
         assert all(isinstance(x, str) for x in cargs), cargs
 
 class GetSpiderListTest(unittest.TestCase):

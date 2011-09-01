@@ -161,7 +161,7 @@ Run the spider to extract the data
 Finally, we'll run the spider to crawl the site an output file
 ``scraped_data.json`` with the scraped data in JSON format::
 
-    scrapy crawl mininova.org --set FEED_URI=scraped_data.json --set FEED_FORMAT=json
+    scrapy crawl mininova.org -s FEED_URI=scraped_data.json -s FEED_FORMAT=json
 
 This uses :ref:`feed exports <topics-feed-exports>` to generate the JSON file.
 You can easily change the export format (XML or CSV, for example) or the
