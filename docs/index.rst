@@ -134,6 +134,7 @@ Solving specific problems
    topics/images
    topics/ubuntu
    topics/scrapyd
+   topics/jobs
 
 :doc:`faq`
     Get answers to most frequently asked questions.
@@ -155,6 +156,9 @@ Solving specific problems
 
 :doc:`topics/scrapyd`
     Deploying your Scrapy project in production.
+
+:doc:`topics/jobs`
+    Learn how to pause and resume crawls for large spiders.
 
 .. _extending-scrapy:
 
