@@ -3,7 +3,7 @@ This module implements the HtmlImageLinkExtractor for extracting
 image links only.
 """
 
-from w3lib.url import urljoin_rfc
+from urlparse import urljoin
 from scrapy.link import Link
 from scrapy.utils.url import canonicalize_url
 from scrapy.utils.python import unicode_to_str, flatten
@@ -51,7 +51,7 @@ class HTMLImageLinkExtractor(object):
     def extract_links(self, response):
         xs = HtmlXPathSelector(response)
         base_url = xs.select('//base/@href').extract()
-        base_url = urljoin_rfc(response.url, base_url[0]) if base_url else response.url
+        base_url = urljoin(response.url, base_url[0].encode(response.encoding)) if base_url else response.url
 
         links = []
         for location in self.locations:
@@ -67,7 +67,7 @@ class HTMLImageLinkExtractor(object):
 
         seen, ret = set(), []
         for link in links:
-            link.url = urljoin_rfc(base_url, link.url, response.encoding)
+            link.url = urljoin(base_url, link.url)
             if self.unique:
                 if link.url in seen:
                     continue

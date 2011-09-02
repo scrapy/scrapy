@@ -3,9 +3,9 @@ SGMLParser-based Link extractors
 """
 
 import re
-from urlparse import urlparse
+from urlparse import urlparse, urljoin
 
-from w3lib.url import safe_url_string, urljoin_rfc
+from w3lib.url import safe_url_string
 
 from scrapy.selector import HtmlXPathSelector
 from scrapy.link import Link
@@ -33,9 +33,11 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
 
         ret = []
         if base_url is None:
-            base_url = urljoin_rfc(response_url, self.base_url) if self.base_url else response_url
+            base_url = urljoin(response_url, self.base_url) if self.base_url else response_url
         for link in self.links:
-            link.url = urljoin_rfc(base_url, link.url, response_encoding)
+            if isinstance(link.url, unicode):
+                link.url = link.url.encode(response_encoding)
+            link.url = urljoin(base_url, link.url)
             link.url = safe_url_string(link.url, response_encoding)
             link.text = str_to_unicode(link.text, response_encoding, errors='replace')
             ret.append(link)

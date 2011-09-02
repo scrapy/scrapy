@@ -3,8 +3,9 @@ HTMLParser-based link extractor
 """
 
 from HTMLParser import HTMLParser
+from urlparse import urljoin
 
-from w3lib.url import safe_url_string, urljoin_rfc
+from w3lib.url import safe_url_string
 
 from scrapy.link import Link
 from scrapy.utils.python import unique as unique_list
@@ -27,9 +28,11 @@ class HtmlParserLinkExtractor(HTMLParser):
         links = unique_list(self.links, key=lambda link: link.url) if self.unique else self.links
 
         ret = []
-        base_url = urljoin_rfc(response_url, self.base_url) if self.base_url else response_url
+        base_url = urljoin(response_url, self.base_url) if self.base_url else response_url
         for link in links:
-            link.url = urljoin_rfc(base_url, link.url, response_encoding)
+            if isinstance(link.url, unicode):
+                link.url = link.url.encode(response_encoding)
+            link.url = urljoin(base_url, link.url)
             link.url = safe_url_string(link.url, response_encoding)
             link.text = link.text.decode(response_encoding)
             ret.append(link)
