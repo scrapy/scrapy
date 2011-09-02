@@ -4,6 +4,7 @@ This is the Scrapy engine which controls the Scheduler, Downloader and Spiders.
 For more information see docs/topics/architecture.rst
 
 """
+import warnings
 from time import time
 
 from twisted.internet import defer
@@ -13,7 +14,7 @@ from scrapy import log, signals
 from scrapy.stats import stats
 from scrapy.core.downloader import Downloader
 from scrapy.core.scraper import Scraper
-from scrapy.exceptions import DontCloseSpider
+from scrapy.exceptions import DontCloseSpider, ScrapyDeprecationWarning
 from scrapy.http import Response, Request
 from scrapy.utils.misc import load_object
 from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
@@ -59,7 +60,10 @@ class ExecutionEngine(object):
         self.scheduler_cls = load_object(self.settings['SCHEDULER'])
         self.downloader = Downloader(crawler)
         self.scraper = Scraper(crawler)
-        self._concurrent_spiders = self.settings.getint('CONCURRENT_SPIDERS')
+        self._concurrent_spiders = self.settings.getint('CONCURRENT_SPIDERS', 1)
+        if self._concurrent_spiders != 1:
+            warnings.warn("CONCURRENT_SPIDERS settings is deprecated, use " \
+                "Scrapyd max_proc config instead", ScrapyDeprecationWarning)
         self._spider_closed_callback = spider_closed_callback
 
     @defer.inlineCallbacks

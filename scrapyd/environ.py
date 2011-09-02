@@ -30,7 +30,6 @@ class Environment(object):
         dbpath = os.path.join(self.dbs_dir, '%s.db' % project)
         env['SCRAPY_SQLITE_DB'] = dbpath
         env['SCRAPY_LOG_FILE'] = self._get_log_file(message)
-        env['SCRAPY_CONCURRENT_SPIDERS'] = '1' # scrapyd runs one spider per process
         return env
 
     def _get_log_file(self, message):

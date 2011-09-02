@@ -276,15 +276,6 @@ performed to any single IP. If non-zero, the
 used instead. In other words, concurrency limits will be applied per IP, not
 per domain.
 
-.. setting:: CONCURRENT_SPIDERS
-
-CONCURRENT_SPIDERS
-------------------
-
-Default: ``8``
-
-Maximum number of spiders to scrape in parallel.
-
 .. setting:: DEFAULT_ITEM_CLASS
 
 DEFAULT_ITEM_CLASS

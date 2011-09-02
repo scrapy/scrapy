@@ -29,7 +29,6 @@ class EnvironmentTest(unittest.TestCase):
         self.assertEqual(env['SCRAPY_SLOT'], '3')
         self.assertEqual(env['SCRAPY_SPIDER'], 'myspider')
         self.assertEqual(env['SCRAPY_JOB'], 'ID')
-        self.assertEqual(env['SCRAPY_CONCURRENT_SPIDERS'], '1')
         self.assert_(env['SCRAPY_SQLITE_DB'].endswith('mybot.db'))
         self.assert_(env['SCRAPY_LOG_FILE'].endswith(os.path.join('mybot', 'myspider', 'ID.log')))
         self.failIf('SCRAPY_SETTINGS_MODULE' in env)
