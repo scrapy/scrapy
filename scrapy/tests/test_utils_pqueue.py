@@ -1,19 +1,32 @@
-import unittest
+from twisted.trial import unittest
 
 from scrapy.utils.pqueue import PriorityQueue
-from scrapy.utils.queue import MemoryQueue
+from scrapy.utils.queue import MemoryQueue, DiskQueue
 
 
 class TestMemoryQueue(MemoryQueue):
 
-    def __init__(self):
-        super(TestMemoryQueue, self).__init__()
+    def __init__(self, *a, **kw):
+        super(TestMemoryQueue, self).__init__(*a, **kw)
         self.closed = False
 
     def close(self):
+        super(TestMemoryQueue, self).close()
         self.closed = True
 
-class PriorityQueueTest(unittest.TestCase):
+
+class TestDiskQueue(DiskQueue):
+
+    def __init__(self, *a, **kw):
+        super(TestDiskQueue, self).__init__(*a, **kw)
+        self.closed = False
+
+    def close(self):
+        super(TestDiskQueue, self).close()
+        self.closed = True
+
+
+class MemoryPriorityQueueTest(unittest.TestCase):
 
     def setUp(self):
         qfactory = lambda x: TestMemoryQueue()
@@ -64,6 +77,13 @@ class PriorityQueueTest(unittest.TestCase):
         self.assertEqual(sorted(self.q.close()), [1, 2, 3])
         assert all(q.closed for q in iqueues)
 
+    def test_close_return_active(self):
+        self.q.push('b', 1)
+        self.q.push('c', 2)
+        self.q.push('a', 3)
+        self.q.pop()
+        self.assertEqual(sorted(self.q.close()), [2, 3])
+
     def test_popped_internal_queues_closed(self):
         self.q.push('a', 3)
         self.q.push('b', 1)
@@ -72,3 +92,34 @@ class PriorityQueueTest(unittest.TestCase):
         self.assertEqual(self.q.pop(), 'b')
         self.q.close()
         assert p1queue.closed
+
+
+class DiskPriorityQueueTest(MemoryPriorityQueueTest):
+
+    def setUp(self):
+        qfactory = lambda x: TestDiskQueue(self.mktemp())
+        self.q = PriorityQueue(qfactory)
+
+    def test_nonserializable_object_one(self):
+        self.assertRaises(TypeError, self.q.push, lambda x: x, 0)
+        self.assertEqual(self.q.close(), [])
+
+    def test_nonserializable_object_many_close(self):
+        self.q.push('a', 3)
+        self.q.push('b', 1)
+        self.assertRaises(TypeError, self.q.push, lambda x: x, 0)
+        self.q.push('c', 2)
+        self.assertEqual(self.q.pop(), 'b')
+        self.assertEqual(sorted(self.q.close()), [2, 3])
+
+    def test_nonserializable_object_many_pop(self):
+        self.q.push('a', 3)
+        self.q.push('b', 1)
+        self.assertRaises(TypeError, self.q.push, lambda x: x, 0)
+        self.q.push('c', 2)
+        self.assertEqual(self.q.pop(), 'b')
+        self.assertEqual(self.q.pop(), 'c')
+        self.assertEqual(self.q.pop(), 'a')
+        self.assertEqual(self.q.pop(), None)
+        self.assertEqual(self.q.close(), [])
+

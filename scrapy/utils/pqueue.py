@@ -20,17 +20,14 @@ class PriorityQueue(object):
         self.queues = {}
         self.qfactory = qfactory
         for p in startprios:
-            q = self.qfactory(p)
-            if q:
-                self.queues[p] = q
+            self.queues[p] = self.qfactory(p)
         self.curprio = min(startprios) if startprios else None
 
     def push(self, obj, priority=0):
-        try:
-            q = self.queues[priority]
-        except KeyError:
-            self.queues[priority] = q = self.qfactory(priority)
-        q.push(obj)
+        if priority not in self.queues:
+            self.queues[priority] = self.qfactory(priority)
+        q = self.queues[priority]
+        q.push(obj) # this may fail (eg. serialization error)
         if priority < self.curprio or self.curprio is None:
             self.curprio = priority
 
@@ -39,17 +36,20 @@ class PriorityQueue(object):
             return
         q = self.queues[self.curprio]
         m = q.pop()
-        if not q:
-            q = self.queues.pop(self.curprio)
+        if len(q) == 0:
+            del self.queues[self.curprio]
             q.close()
-            prios = self.queues.keys()
+            prios = [p for p, q in self.queues.items() if len(q) > 0]
             self.curprio = min(prios) if prios else None
         return m
 
     def close(self):
-        for q in self.queues.values():
+        active = []
+        for p, q in self.queues.items():
+            if len(q):
+                active.append(p)
             q.close()
-        return self.queues.keys()
+        return active
 
     def __len__(self):
         return sum(len(x) for x in self.queues.values()) if self.queues else 0
