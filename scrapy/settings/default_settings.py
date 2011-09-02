@@ -144,6 +144,7 @@ EXTENSIONS_BASE = {
     'scrapy.contrib.closespider.CloseSpider': 0,
     'scrapy.contrib.feedexport.FeedExporter': 0,
     'scrapy.contrib.logstats.LogStats': 0,
+    'scrapy.contrib.spiderstate.SpiderState': 0,
 }
 
 FEED_URI = None
