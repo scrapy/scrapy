@@ -32,8 +32,7 @@ class Schedule(WsResource):
         jobid = uuid.uuid1().hex
         args['_job'] = jobid
         self.root.scheduler.schedule(project, spider, **args)
-        jobids = {spider: jobid}
-        return {"status": "ok", "jobs": jobids}
+        return {"status": "ok", "jobid": jobid}
 
 class AddVersion(WsResource):
 

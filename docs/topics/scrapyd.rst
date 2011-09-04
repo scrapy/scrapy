@@ -386,7 +386,7 @@ Scheduling a spider run
 To schedule a spider run::
 
     $ curl http://localhost:6800/schedule.json -d project=myproject -d spider=spider2
-    {"status": "ok"}
+    {"status": "ok", "jobid": "26d1b1a6d6f111e0be5c001e648c57f8"}
 
 For more resources see: :ref:`topics-scrapyd-jsonapi` for more available resources.
 
