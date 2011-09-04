@@ -7,19 +7,20 @@ from scrapy.exceptions import NotConfigured
 from scrapy.xlib.pydispatch import dispatcher
 
 class SpiderState(object):
-    """Stores and loads spider state"""
+    """Store and load spider state during a scraping job"""
 
     def __init__(self, jobdir):
         self.statefn = os.path.join(jobdir, 'spider.state')
-        dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
-        dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
 
     @classmethod
     def from_crawler(cls, crawler):
         jobdir = crawler.settings.get('JOBDIR')
         if not jobdir:
             raise NotConfigured
-        return cls(jobdir)
+        obj = cls(jobdir)
+        dispatcher.connect(obj.spider_closed, signal=signals.spider_closed)
+        dispatcher.connect(obj.spider_opened, signal=signals.spider_opened)
+        return obj
 
     def spider_closed(self, spider):
         with open(self.statefn, 'wb') as f:
