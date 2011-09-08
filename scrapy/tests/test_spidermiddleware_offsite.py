@@ -20,8 +20,10 @@ class TestOffsiteMiddleware(TestCase):
 
         onsite_reqs = [Request('http://scrapytest.org/1'),
                        Request('http://scrapy.org/1'),
-                       Request('http://sub.scrapy.org/1')]
-        offsite_reqs = [Request('http://scrapy2.org')]
+                       Request('http://sub.scrapy.org/1'),
+                       Request('http://offsite.tld/letmepass', dont_filter=True)]
+        offsite_reqs = [Request('http://scrapy2.org'),
+                       Request('http://offsite.tld/')]
         reqs = onsite_reqs + offsite_reqs
 
         out = list(self.mw.process_spider_output(res, reqs, self.spider))

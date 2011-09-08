@@ -211,7 +211,7 @@ OffsiteMiddleware
 -----------------
 
 .. module:: scrapy.contrib.spidermiddleware.offsite
-   :synopsis: Offiste Spider Middleware
+   :synopsis: Offsite Spider Middleware
 
 .. class:: OffsiteMiddleware
 
@@ -235,6 +235,10 @@ OffsiteMiddleware
    If the spider doesn't define an
    :attr:`~scrapy.spider.BaseSpider.allowed_domains` attribute, or the
    attribute is empty, the offsite middleware will allow all requests.
+
+   If the request has the :attr:`~scrapy.http.Request.dont_filter` attribute
+   set, the offsite middleware will allow the request even if its domain is not
+   listed in allowed domains.
 
 
 RefererMiddleware

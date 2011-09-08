@@ -23,7 +23,7 @@ class OffsiteMiddleware(object):
     def process_spider_output(self, response, result, spider):
         for x in result:
             if isinstance(x, Request):
-                if self.should_follow(x, spider):
+                if x.dont_filter or self.should_follow(x, spider):
                     yield x
                 else:
                     domain = urlparse_cached(x).hostname
