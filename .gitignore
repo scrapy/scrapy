@@ -1,0 +1,10 @@
+*.swp
+*.pyc
+_trial_temp
+dropin.cache
+.svn
+docs/build
+build/
+dist/
+Scrapy.egg-info/
+bin/scrapyc
