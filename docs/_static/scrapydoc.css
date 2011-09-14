@@ -638,19 +638,6 @@ img.logo {
     border: 0;
 }
 
-.docversion {
-    padding-top: 5px;
-    padding-bottom: 5px;
-}
-
-.devdoc {
-    color: red;
-}
-
-.stabledoc {
-    color: #777;
-}
-
 /* :::: PRINT :::: */
 @media print {
     div.document,
