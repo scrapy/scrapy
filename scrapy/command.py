@@ -5,12 +5,9 @@ Base class for Scrapy commands
 from __future__ import with_statement
 
 import os
-import sys
 from optparse import OptionGroup
 
-import scrapy
 from scrapy import log
-from scrapy.conf import settings
 from scrapy.utils.conf import arglist_to_dict
 from scrapy.exceptions import UsageError
 
@@ -23,7 +20,11 @@ class ScrapyCommand(object):
 
     exitcode = 0
 
+    def __init__(self):
+        self.settings = None # set in scrapy.cmdline
+
     def set_crawler(self, crawler):
+        assert not hasattr(self, '_crawler'), "crawler already set"
         self._crawler = crawler
 
     @property
@@ -68,7 +69,7 @@ class ScrapyCommand(object):
             help="log file. if omitted stderr will be used")
         group.add_option("-L", "--loglevel", metavar="LEVEL", \
             default=None, \
-            help="log level (default: %s)" % settings['LOGLEVEL'])
+            help="log level (default: %s)" % self.settings['LOG_LEVEL'])
         group.add_option("--nolog", action="store_true", \
             help="disable logging completely")
         group.add_option("--profile", metavar="FILE", default=None, \
@@ -83,20 +84,20 @@ class ScrapyCommand(object):
         
     def process_options(self, args, opts):
         try:
-            settings.overrides.update(arglist_to_dict(opts.set))
+            self.settings.overrides.update(arglist_to_dict(opts.set))
         except ValueError:
             raise UsageError("Invalid -s value, use -s NAME=VALUE", print_help=False)
 
         if opts.logfile:
-            settings.overrides['LOG_ENABLED'] = True
-            settings.overrides['LOG_FILE'] = opts.logfile
+            self.settings.overrides['LOG_ENABLED'] = True
+            self.settings.overrides['LOG_FILE'] = opts.logfile
 
         if opts.loglevel:
-            settings.overrides['LOG_ENABLED'] = True
-            settings.overrides['LOG_LEVEL'] = opts.loglevel
+            self.settings.overrides['LOG_ENABLED'] = True
+            self.settings.overrides['LOG_LEVEL'] = opts.loglevel
 
         if opts.nolog:
-            settings.overrides['LOG_ENABLED'] = False
+            self.settings.overrides['LOG_ENABLED'] = False
 
         if opts.pidfile:
             with open(opts.pidfile, "w") as f:

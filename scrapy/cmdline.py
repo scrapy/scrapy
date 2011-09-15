@@ -124,10 +124,11 @@ def execute(argv=None):
     parser.usage = "scrapy %s %s" % (cmdname, cmd.syntax())
     parser.description = cmd.long_desc()
     settings.defaults.update(cmd.default_settings)
-    cmd.set_crawler(crawler)
+    cmd.settings = settings
     cmd.add_options(parser)
     opts, args = parser.parse_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
+    cmd.set_crawler(crawler)
     _run_print_help(parser, _run_command, cmd, args, opts)
     sys.exit(cmd.exitcode)
 
