@@ -150,6 +150,9 @@ def _get_version(target, opts):
     if version == 'HG':
         p = Popen(['hg', 'tip', '--template', '{rev}'], stdout=PIPE)
         return 'r%s' % p.communicate()[0]
+    elif version == 'GIT':
+        p = Popen(['git', 'rev-parse', 'HEAD'], stdout=PIPE)
+        return '%s' % p.communicate()[0].strip('\n')
     elif version:
         return version
     else:

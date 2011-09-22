@@ -313,6 +313,12 @@ revision, for example ``r382``::
 
     scrapy deploy scrapyd -p project1 --version HG
 
+Also, if you use Git for tracking your project source code, you can use
+``GIT`` for the version which will be replaced by the SHA1 of current Git
+revision, for example ``b0582849179d1de7bd86eaa7201ea3cda4b5651f``::
+
+    scrapy deploy scrapyd -p project1 --version GIT
+
 Support for other version discovery sources may be added in the future.
 
 Finally, if you don't want to specify the target, project and version every
