@@ -165,7 +165,7 @@ DepthMiddleware
         crawl for any site. If zero, no limit will be imposed.
       * :setting:`DEPTH_STATS` - Whether to collect depth stats.
       * :setting:`DEPTH_PRIORITY` - Whether to prioritize the requests based on
-        their depth, to crawl in breadh-first or depth-first order.
+        their depth.
 
 HttpErrorMiddleware
 -------------------

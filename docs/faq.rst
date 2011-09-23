@@ -87,8 +87,14 @@ See :ref:`topics-request-response-ref-request-userlogin`.
 Does Scrapy crawl in breath-first or depth-first order?
 -------------------------------------------------------
 
-It crawls on breath-first order by default, but you can change it to
-depth-first order by setting the :setting:`DEPTH_PRIORITY` setting to ``-1``.
+By default, Scrapy uses a `LIFO`_ queue for storing pending requests, which
+basically means that it crawls in `DFO order`_. This order is more convenient
+in most cases. If you do want to crawl in true `BFO order`_, you can do it by
+setting the following settings::
+
+    DEPTH_PRIORITY = 1
+    SCHEDULER_DISK_QUEUE = 'scrapy.squeue.PickleFifoDiskQueue'
+    SCHEDULER_MEMORY_QUEUE = 'scrapy.squeue.FifoMemoryQueue'
 
 My Scrapy crawler has memory leaks. What can I do?
 --------------------------------------------------
@@ -272,3 +278,6 @@ If you are still unable to prevent your bot getting banned, consider contacting
 .. _Google cache: http://www.googleguide.com/cached_pages.html
 .. _Tor project: https://www.torproject.org/
 .. _commercial support: http://scrapy.org/support/
+.. _LIFO: http://en.wikipedia.org/wiki/LIFO
+.. _DFO order: http://en.wikipedia.org/wiki/Depth-first_search
+.. _BFO order: http://en.wikipedia.org/wiki/Breadth-first_search

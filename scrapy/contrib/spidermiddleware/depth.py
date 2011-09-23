@@ -23,18 +23,7 @@ class DepthMiddleware(object):
         maxdepth = settings.getint('DEPTH_LIMIT')
         usestats = settings.getbool('DEPTH_STATS')
         verbose = settings.getbool('DEPTH_STATS_VERBOSE')
-        sorder = settings['SCHEDULER_ORDER']
-        if sorder:
-            # XXX: backwards compatibility with old SCHEDULER_ORDER setting
-            # will be removed on Scrapy 0.15
-            warnings.warn("SCHEDULER_ORDER setting is deprecated, " \
-                "use DEPTH_PRIORITY instead", ScrapyDeprecationWarning)
-            if sorder == 'BFO':
-                prio = 1
-            elif sorder == 'DFO':
-                prio = -1
-        else:
-            prio = settings.getint('DEPTH_PRIORITY')
+        prio = settings.getint('DEPTH_PRIORITY')
         if usestats:
             from scrapy.stats import stats
         else:
