@@ -1,8 +1,8 @@
 from __future__ import with_statement
 
+import os
 from os.path import join, exists
 
-from scrapy.utils.queue import MemoryQueue
 from scrapy.utils.pqueue import PriorityQueue
 from scrapy.utils.reqser import request_to_dict, request_from_dict
 from scrapy.utils.misc import load_object
@@ -13,10 +13,11 @@ from scrapy import log
 
 class Scheduler(object):
 
-    def __init__(self, dupefilter, jobdir=None, dqclass=None, logunser=False):
+    def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None, logunser=False):
         self.df = dupefilter
-        self.dqdir = join(jobdir, 'requests.queue') if jobdir else None
+        self.dqdir = self._dqdir(jobdir)
         self.dqclass = dqclass
+        self.mqclass = mqclass
         self.logunser = logunser
 
     @classmethod
@@ -24,8 +25,9 @@ class Scheduler(object):
         dupefilter_cls = load_object(settings['DUPEFILTER_CLASS'])
         dupefilter = dupefilter_cls.from_settings(settings)
         dqclass = load_object(settings['SCHEDULER_DISK_QUEUE'])
+        mqclass = load_object(settings['SCHEDULER_MEMORY_QUEUE'])
         logunser = settings.getbool('LOG_UNSERIALIZABLE_REQUESTS')
-        return cls(dupefilter, job_dir(settings), dqclass, logunser)
+        return cls(dupefilter, job_dir(settings), dqclass, mqclass, logunser)
 
     def has_pending_requests(self):
         return len(self) > 0
@@ -81,7 +83,7 @@ class Scheduler(object):
                 return request_from_dict(d, self.spider)
 
     def _newmq(self, priority):
-        return MemoryQueue()
+        return self.mqclass()
 
     def _newdq(self, priority):
         return self.dqclass(join(self.dqdir, 'p%s' % priority))
@@ -98,3 +100,10 @@ class Scheduler(object):
             log.msg("Resuming crawl (%d requests scheduled)" % len(q), \
                 spider=self.spider)
         return q
+
+    def _dqdir(self, jobdir):
+        if jobdir:
+            dqdir = join(jobdir, 'requests.queue')
+            if not exists(dqdir):
+                os.makedirs(dqdir)
+            return dqdir

@@ -45,7 +45,7 @@ DEFAULT_RESPONSE_ENCODING = 'ascii'
 
 DEPTH_LIMIT = 0
 DEPTH_STATS = True
-DEPTH_PRIORITY = 1
+DEPTH_PRIORITY = 0
 
 DNSCACHE_ENABLED = True
 
@@ -224,7 +224,8 @@ RETRY_PRIORITY_ADJUST = -1
 ROBOTSTXT_OBEY = False
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
-SCHEDULER_DISK_QUEUE = 'scrapy.squeue.PickleDiskQueue'
+SCHEDULER_DISK_QUEUE = 'scrapy.squeue.PickleLifoDiskQueue'
+SCHEDULER_MEMORY_QUEUE = 'scrapy.squeue.LifoMemoryQueue'
 
 SELECTORS_BACKEND = None # possible values: libxml2, lxml
 

@@ -1,33 +1,39 @@
 """
-Scheduler disk-based queues
+Scheduler queues
 """
 
 import marshal, cPickle as pickle
 
-from scrapy.utils.queue import DiskQueue
+from scrapy.utils import queue
 
+def _serializable_queue(queue_class, serialize, deserialize):
 
-class PickleDiskQueue(DiskQueue):
+    class SerializableQueue(queue_class):
 
-    def push(self, obj):
-        try:
-            s = pickle.dumps(obj, protocol=2)
-        except pickle.PicklingError, e:
-            raise ValueError(str(e))
-        super(PickleDiskQueue, self).push(s)
+        def push(self, obj):
+            s = serialize(obj)
+            super(SerializableQueue, self).push(s)
 
-    def pop(self):
-        s = super(PickleDiskQueue, self).pop()
-        if s:
-            return pickle.loads(s)
+        def pop(self):
+            s = super(SerializableQueue, self).pop()
+            if s:
+                return deserialize(s)
 
+    return SerializableQueue
 
-class MarshalDiskQueue(DiskQueue):
+def _pickle_serialize(obj):
+    try:
+        return pickle.dumps(obj, protocol=2)
+    except pickle.PicklingError, e:
+        raise ValueError(str(e))
 
-    def push(self, obj):
-        super(MarshalDiskQueue, self).push(marshal.dumps(obj))
-
-    def pop(self):
-        s = super(MarshalDiskQueue, self).pop()
-        if s:
-            return marshal.loads(s)
+PickleFifoDiskQueue = _serializable_queue(queue.FifoDiskQueue, \
+    _pickle_serialize, pickle.loads)
+PickleLifoDiskQueue = _serializable_queue(queue.LifoDiskQueue, \
+    _pickle_serialize, pickle.loads)
+MarshalFifoDiskQueue = _serializable_queue(queue.FifoDiskQueue, \
+    marshal.dumps, marshal.loads)
+MarshalLifoDiskQueue = _serializable_queue(queue.LifoDiskQueue, \
+    marshal.dumps, marshal.loads)
+FifoMemoryQueue = queue.FifoMemoryQueue
+LifoMemoryQueue = queue.LifoMemoryQueue

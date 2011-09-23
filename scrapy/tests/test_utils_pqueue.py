@@ -1,36 +1,32 @@
 from twisted.trial import unittest
 
 from scrapy.utils.pqueue import PriorityQueue
-from scrapy.utils.queue import MemoryQueue, DiskQueue
+from scrapy.utils.queue import FifoMemoryQueue, LifoMemoryQueue, FifoDiskQueue, LifoDiskQueue
 
 
-class TestMemoryQueue(MemoryQueue):
+def track_closed(cls):
+    """Wraps a queue class to track down if close() method was called"""
 
-    def __init__(self, *a, **kw):
-        super(TestMemoryQueue, self).__init__(*a, **kw)
-        self.closed = False
+    class TrackingClosed(cls):
 
-    def close(self):
-        super(TestMemoryQueue, self).close()
-        self.closed = True
+        def __init__(self, *a, **kw):
+            super(TrackingClosed, self).__init__(*a, **kw)
+            self.closed = False
 
+        def close(self):
+            super(TrackingClosed, self).close()
+            self.closed = True
 
-class TestDiskQueue(DiskQueue):
-
-    def __init__(self, *a, **kw):
-        super(TestDiskQueue, self).__init__(*a, **kw)
-        self.closed = False
-
-    def close(self):
-        super(TestDiskQueue, self).close()
-        self.closed = True
+    return TrackingClosed
 
 
-class MemoryPriorityQueueTest(unittest.TestCase):
+class FifoMemoryPriorityQueueTest(unittest.TestCase):
 
     def setUp(self):
-        qfactory = lambda x: TestMemoryQueue()
-        self.q = PriorityQueue(qfactory)
+        self.q = PriorityQueue(self.qfactory)
+
+    def qfactory(self, prio):
+        return track_closed(FifoMemoryQueue)()
 
     def test_push_pop_noprio(self):
         self.q.push('a')
@@ -94,11 +90,39 @@ class MemoryPriorityQueueTest(unittest.TestCase):
         assert p1queue.closed
 
 
-class DiskPriorityQueueTest(MemoryPriorityQueueTest):
+class LifoMemoryPriorityQueueTest(FifoMemoryPriorityQueueTest):
+
+    def qfactory(self, prio):
+        return track_closed(LifoMemoryQueue)()
+
+    def test_push_pop_noprio(self):
+        self.q.push('a')
+        self.q.push('b')
+        self.q.push('c')
+        self.assertEqual(self.q.pop(), 'c')
+        self.assertEqual(self.q.pop(), 'b')
+        self.assertEqual(self.q.pop(), 'a')
+        self.assertEqual(self.q.pop(), None)
+
+    def test_push_pop_prio(self):
+        self.q.push('a', 3)
+        self.q.push('b', 1)
+        self.q.push('c', 2)
+        self.q.push('d', 1)
+        self.assertEqual(self.q.pop(), 'd')
+        self.assertEqual(self.q.pop(), 'b')
+        self.assertEqual(self.q.pop(), 'c')
+        self.assertEqual(self.q.pop(), 'a')
+        self.assertEqual(self.q.pop(), None)
+
+
+class FifoDiskPriorityQueueTest(FifoMemoryPriorityQueueTest):
 
     def setUp(self):
-        qfactory = lambda x: TestDiskQueue(self.mktemp())
-        self.q = PriorityQueue(qfactory)
+        self.q = PriorityQueue(self.qfactory)
+
+    def qfactory(self, prio):
+        return track_closed(FifoDiskQueue)(self.mktemp())
 
     def test_nonserializable_object_one(self):
         self.assertRaises(TypeError, self.q.push, lambda x: x, 0)
@@ -123,3 +147,37 @@ class DiskPriorityQueueTest(MemoryPriorityQueueTest):
         self.assertEqual(self.q.pop(), None)
         self.assertEqual(self.q.close(), [])
 
+
+class FifoDiskPriorityQueueTest(FifoMemoryPriorityQueueTest):
+
+    def qfactory(self, prio):
+        return track_closed(FifoDiskQueue)(self.mktemp())
+
+    def test_nonserializable_object_one(self):
+        self.assertRaises(TypeError, self.q.push, lambda x: x, 0)
+        self.assertEqual(self.q.close(), [])
+
+    def test_nonserializable_object_many_close(self):
+        self.q.push('a', 3)
+        self.q.push('b', 1)
+        self.assertRaises(TypeError, self.q.push, lambda x: x, 0)
+        self.q.push('c', 2)
+        self.assertEqual(self.q.pop(), 'b')
+        self.assertEqual(sorted(self.q.close()), [2, 3])
+
+    def test_nonserializable_object_many_pop(self):
+        self.q.push('a', 3)
+        self.q.push('b', 1)
+        self.assertRaises(TypeError, self.q.push, lambda x: x, 0)
+        self.q.push('c', 2)
+        self.assertEqual(self.q.pop(), 'b')
+        self.assertEqual(self.q.pop(), 'c')
+        self.assertEqual(self.q.pop(), 'a')
+        self.assertEqual(self.q.pop(), None)
+        self.assertEqual(self.q.close(), [])
+
+
+class LifoDiskPriorityQueueTest(LifoMemoryPriorityQueueTest):
+
+    def qfactory(self, prio):
+        return track_closed(LifoDiskQueue)(self.mktemp())

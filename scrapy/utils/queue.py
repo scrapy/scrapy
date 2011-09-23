@@ -8,7 +8,7 @@ from collections import deque
 from scrapy.utils.py26 import json
 
 
-class MemoryQueue(object):
+class FifoMemoryQueue(object):
     """Memory FIFO queue."""
 
     def __init__(self):
@@ -28,7 +28,14 @@ class MemoryQueue(object):
         return len(self.q)
 
 
-class DiskQueue(object):
+class LifoMemoryQueue(FifoMemoryQueue):
+    """Memory LIFO queue."""
+
+    def push(self, obj):
+        self.q.append(obj)
+
+
+class FifoDiskQueue(object):
     """Persistent FIFO queue."""
 
     szhdr_format = ">L"
@@ -119,3 +126,52 @@ class DiskQueue(object):
         os.remove(os.path.join(self.path, 'info.json'))
         if not os.listdir(self.path):
             os.rmdir(self.path)
+
+
+
+class LifoDiskQueue(object):
+    """Persistent LIFO queue."""
+
+    SIZE_FORMAT = ">L"
+    SIZE_SIZE = struct.calcsize(SIZE_FORMAT)
+
+    def __init__(self, path):
+        self.path = path
+        if os.path.exists(path):
+            self.f = open(path, 'rb+')
+            qsize = self.f.read(self.SIZE_SIZE)
+            self.size, = struct.unpack(self.SIZE_FORMAT, qsize)
+            self.f.seek(0, os.SEEK_END)
+        else:
+            self.f = open(path, 'wb+')
+            self.f.write(struct.pack(self.SIZE_FORMAT, 0))
+            self.size = 0
+
+    def push(self, string):
+        self.f.write(string)
+        ssize = struct.pack(self.SIZE_FORMAT, len(string))
+        self.f.write(ssize)
+        self.size += 1
+
+    def pop(self):
+        if not self.size:
+            return
+        self.f.seek(-self.SIZE_SIZE, os.SEEK_END)
+        size, = struct.unpack(self.SIZE_FORMAT, self.f.read())
+        self.f.seek(-size-self.SIZE_SIZE, os.SEEK_END)
+        data = self.f.read(size)
+        self.f.seek(-size, os.SEEK_CUR)
+        self.f.truncate()
+        self.size -= 1
+        return data
+
+    def close(self):
+        if self.size:
+            self.f.seek(0)
+            self.f.write(struct.pack(self.SIZE_FORMAT, self.size))
+        self.f.close()
+        if not self.size:
+            os.remove(self.path)
+
+    def __len__(self):
+        return self.size
