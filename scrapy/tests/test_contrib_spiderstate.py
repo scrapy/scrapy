@@ -25,3 +25,12 @@ class SpiderStateTest(unittest.TestCase):
         ss2.spider_opened(spider2)
         self.assertEqual(spider.state, {'one': 1, 'dt': dt})
         ss2.spider_closed(spider2)
+
+    def test_state_attribute(self):
+        # state attribute must be present if jobdir is not set, to provide a
+        # consistent interface 
+        spider = BaseSpider(name='default')
+        ss = SpiderState()
+        ss.spider_opened(spider)
+        self.assertEqual(spider.state, {})
+        ss.spider_closed(spider)
