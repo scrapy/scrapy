@@ -151,4 +151,4 @@ BaseSgmlLinkExtractor
 
     :type process_value: callable
 
-.. _scrapy.linkextractor: http://dev.scrapy.org/browser/scrapy/linkextractor.py
+.. _scrapy.linkextractor: https://github.com/scrapy/scrapy/blob/master/scrapy/linkextractor.py

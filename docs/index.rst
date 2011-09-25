@@ -16,12 +16,12 @@ Having trouble? We'd like to help!
 * Search for information in the `archives of the scrapy-users mailing list`_, or
   `post a question`_.
 * Ask a question in the `#scrapy IRC channel`_.
-* Report bugs with Scrapy in our `ticket tracker`_.
+* Report bugs with Scrapy in our `issue tracker`_.
 
 .. _archives of the scrapy-users mailing list: http://groups.google.com/group/scrapy-users/
 .. _post a question: http://groups.google.com/group/scrapy-users/
 .. _#scrapy IRC channel: irc://irc.freenode.net/scrapy
-.. _ticket tracker: http://dev.scrapy.org/
+.. _issue tracker: https://github.com/scrapy/scrapy/issues
 
 
 First steps

@@ -18,8 +18,8 @@ There are 4 numbers in a Scrapy version: *A.B.C.D*
   stable branches, and odd Bs will be development.
 * *C* is the bugfix release number, but it has been recently deprecated of
   favor of using the revision number (*D*)
-* *D* is the revision number of the Mercurial repo from where the release was
-  taken
+* *D* is an incremental number (aka. revision) based on the number of commits
+  in the git repo where the release was taken
 
 For example:
 

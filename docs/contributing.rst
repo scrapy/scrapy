@@ -8,7 +8,7 @@ There are many ways to contribute to Scrapy. Here are some of them:
   newcomers with more examples and the Scrapy project to increase its
   visibility.
 
-* Report bugs and request features in the `ticket tracker`_, trying to follow
+* Report bugs and request features in the `issue tracker`_, trying to follow
   the guidelines detailed in `Reporting bugs`_ below.
 
 * Submit patches for new functionality and/or bug fixes. Please read
@@ -27,10 +27,9 @@ guidelines when reporting a new bug.
 * check the :ref:`FAQ <faq>` first to see if your issue is addressed in a
   well-known question
 
-* check the `active tickets` in the issue tracker to see if your issue has
-  already been reported. If it has, don't dismiss the report but check the
-  ticket history and comments, you may find additional useful information to
-  contribute.
+* check the `open issues`_ to see if it has already been reported. If it has,
+  don't dismiss the report but check the ticket history and comments, you may
+  find additional useful information to contribute.
 
 * search the `scrapy-users`_ list to see if it has been discussed there, or
   if you're not sure if what you're seeing is a bug. You can also ask in the
@@ -71,21 +70,16 @@ Well-written patches should:
 Submitting patches
 ==================
 
-To submit patches, any of the following mechanism is considered good:
+The best way to submit a patch is to issue a `pull request`_ on Github,
+optionally creating a new issue first.
 
-* create appropriate tickets in the issue tracker and attach the patches to
-  those tickets. The patches can be generated using ``hg diff``.
+Alternatively, we also accept the patches in the traditional way of sending
+them to the `scrapy-developers`_ list.
 
-* send the patches to the `scrapy-developers`_ list, along with a comment
-  explaining what was fixed or the new functionality (what it is, why it's
-  needed, etc). The more info you include, the easier will be for core
-  developers to understand and accept your patch.
-
-* fork the `Github mirror`_ and send a pull request when you're done working on
-  the patch
-
-* clone the `Bitbucket mirror`_ and send a pull request when you're done
-  working on the patch
+Regardless of which mechanism you use, remember to explain what was fixed or
+the new functionality (what it is, why it's needed, etc). The more info you
+include, the easier will be for core developers to understand and accept your
+patch.
 
 You can also discuss the new functionality (or bug fix) in `scrapy-developers`_
 first, before creating the patch, but it's always good to have a patch ready to
@@ -112,7 +106,7 @@ Documentation policies
 * **Don't** use docstrings for documenting classes, or methods which are
   already documented in the official (sphinx) documentation. For example, the
   :meth:`ItemLoader.add_value` method should be documented in the sphinx
-  documentation and not its docstring.
+  documentation, not its docstring.
 
 * **Do** use docstrings for documenting functions not present in the official
   (sphinx) documentation, such as functions from ``scrapy.utils`` package and
@@ -156,12 +150,11 @@ And their unit-tests are in::
 
     scrapy.tests.test_contrib_loader
 
-.. _ticket tracker: http://dev.scrapy.org/newticket
+.. _issue tracker: https://github.com/scrapy/scrapy/issues
 .. _scrapy-users: http://groups.google.com/group/scrapy-users
 .. _scrapy-developers: http://groups.google.com/group/scrapy-developers
-.. _Github mirror: http://github.com/insophia/scrapy/
-.. _Bitbucket mirror: http://bitbucket.org/insophia/scrapy/
 .. _Twisted unit-testing framework: http://twistedmatrix.com/documents/current/core/development/policy/test-standard.html
-.. _AUTHORS: http://dev.scrapy.org/browser/AUTHORS
-.. _scrapy/tests: http://dev.scrapy.org/browser/scrapy/tests
-.. _active tickets: http://dev.scrapy.org/report/1
+.. _AUTHORS: https://github.com/scrapy/scrapy/blob/master/AUTHORS
+.. _scrapy/tests: https://github.com/scrapy/scrapy/tree/master/scrapy/tests
+.. _open issues: https://github.com/scrapy/scrapy/issues
+.. _pull request: http://help.github.com/send-pull-requests/

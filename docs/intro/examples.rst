@@ -16,18 +16,10 @@ It contains a README file with a detailed description of the project contents.
 If you're familiar with git, you can checkout the code. Otherwise you can
 download a tarball or zip file of the project by clicking on `Downloads`_.
 
-Other sources for examples
-==========================
-
-1. There is a site for sharing code snippets (spiders, middlewares, extensions)
-called `Scrapy snippets`_.
-
-2. There is also a `Scrapy Recipes`_ page on the wiki that contains code
-snippets for performing not-so-trivial tasks. This contains code posted before
-the `Scrapy snippets`_ site was lunched. New code should be posted in `Scrapy
-snippets`_.
+There is also a site for sharing code snippets such as spiders, middlewares,
+extensions, or scripts, called `Scrapy snippets`_. Feel free to share any code
+there.
 
 .. _dirbot: https://github.com/scrapy/dirbot
 .. _Downloads: https://github.com/scrapy/dirbot/archives/master
-.. _Scrapy Recipes: http://dev.scrapy.org/wiki/ScrapyRecipes
 .. _Scrapy snippets: http://snippets.scrapy.org/

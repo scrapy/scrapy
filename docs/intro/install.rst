@@ -183,6 +183,5 @@ There are two ways to install Scrapy in Windows:
 .. _this Twisted bug: http://twistedmatrix.com/trac/ticket/3707
 .. _pip: http://pypi.python.org/pypi/pip
 .. _setuptools: http://pypi.python.org/pypi/setuptools
-.. _Mercurial: http://www.selenic.com/mercurial/
 .. _Control Panel: http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
 .. _Downloads page: http://scrapy.org/download/

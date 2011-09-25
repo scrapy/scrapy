@@ -32,10 +32,7 @@ What Python versions does Scrapy support?
 Scrapy runs in Python 2.5, 2.6 and 2.7. But it's recommended you use Python 2.6
 or above, since the Python 2.5 standard library has a few bugs in their URL
 handling libraries. Some of these Python 2.5 bugs not only affect Scrapy but
-any user code, such as spiders. You can see a list of `Python 2.5 bugs that
-affect Scrapy`_ in the issue tracker.
-
-.. _Python 2.5 bugs that affect Scrapy: http://dev.scrapy.org/query?status=accepted&status=assigned&status=new&status=reopened&order=priority&keywords=~py25-bug
+any user code, such as spiders.
 
 Does Scrapy work with Python 3.0?
 ---------------------------------
