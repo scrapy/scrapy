@@ -221,4 +221,4 @@ class LifoDiskQueueTest(LifoMemoryQueueTest):
         q = self.queue()
         q.pop()
         q.close()
-        self.assertLess(os.path.getsize(self.path), size)
+        assert os.path.getsize(self.path), size
