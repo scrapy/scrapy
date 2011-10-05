@@ -1,5 +1,6 @@
 from time import time
 from urlparse import urlparse, urlunparse, urldefrag
+from twisted.internet.ssl import ClientContextFactory
 
 from twisted.python import failure
 from twisted.web.client import PartialDownloadError, HTTPClientFactory
@@ -9,7 +10,7 @@ from twisted.internet import defer
 from scrapy.http import Headers
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.responsetypes import responsetypes
-
+from scrapy import log
 
 def _parsed_url_args(parsed):
     path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
@@ -35,6 +36,16 @@ class ScrapyHTTPPageGetter(HTTPClient):
     def connectionMade(self):
         self.headers = Headers() # bucket for response headers
 
+        if self.factory.use_tunnel:
+            log.msg("Sending CONNECT", log.DEBUG)
+            self.tunnel_started = False
+            self.sendCommand("CONNECT", "%s:%s"
+                % (self.factory.tunnel_to_host, self.factory.tunnel_to_port))
+            self.endHeaders()
+        else:
+            self.sendHeaders()
+
+    def sendHeaders(self):
         # Method command
         self.sendCommand(self.factory.method, self.factory.path)
         # Headers
@@ -47,13 +58,43 @@ class ScrapyHTTPPageGetter(HTTPClient):
             self.transport.write(self.factory.body)
 
     def lineReceived(self, line):
-        return HTTPClient.lineReceived(self, line.rstrip())
+        if self.factory.use_tunnel and not self.tunnel_started: log.msg("LINE: %s" % line)
+        if self.factory.use_tunnel and not self.tunnel_started and not line.rstrip():
+            # End of headers from the proxy in response to our CONNECT request
+            # Skip the call to HTTPClient.lienReceived for now, since otherwise
+            # it would switch to row mode.
+            self.startTunnel()
+        else:
+            return HTTPClient.lineReceived(self, line.rstrip())
+
+    def startTunnel(self):
+
+        log.msg("starting Tunnel")
+
+        # We'll get a new batch of headers through the tunnel. This sets us
+        # up to capture them.
+        self.firstLine = True
+        self.tunnel_started = True
+
+        # Switch to SSL
+        ctx = ClientContextFactory()
+        self.transport.startTLS(ctx, self.factory)
+
+        # And send the normal request:
+        self.sendHeaders()
+
 
     def handleHeader(self, key, value):
-        self.headers.appendlist(key, value)
+        if self.factory.use_tunnel and not self.tunnel_started:
+            pass # maybe log headers for CONNECT request?
+        else:
+            self.headers.appendlist(key, value)
 
     def handleStatus(self, version, status, message):
-        self.factory.gotStatus(version, status, message)
+        if self.factory.use_tunnel and not self.tunnel_started:
+            self.tunnel_status = status
+        else:
+            self.factory.gotStatus(version, status, message)
 
     def handleEndHeaders(self):
         self.factory.gotHeaders(self.headers)
@@ -122,10 +163,16 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
     def _set_connection_attributes(self, request):
         parsed = urlparse_cached(request)
         self.scheme, self.netloc, self.host, self.port, self.path = _parsed_url_args(parsed)
+        self.use_tunnel = False
         proxy = request.meta.get('proxy')
         if proxy:
+            old_scheme, old_host, old_port = self.scheme, self.host, self.port
             self.scheme, _, self.host, self.port, _ = _parse(proxy)
             self.path = self.url
+            if old_scheme=="https":
+                self.use_tunnel = True
+                self.tunnel_to_host = old_host
+                self.tunnel_to_port = old_port
 
     def gotHeaders(self, headers):
         self.headers_time = time()
