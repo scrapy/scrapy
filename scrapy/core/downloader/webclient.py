@@ -41,18 +41,38 @@ class ScrapyHTTPPageGetter(HTTPClient):
             self.tunnel_started = False
             self.sendCommand("CONNECT", "%s:%s"
                 % (self.factory.tunnel_to_host, self.factory.tunnel_to_port))
-            self.endHeaders()
+            self.sendHeaders(only=['Host','Proxy-Connection', 'User-Agent'])
+            del self.factory.headers['Proxy-Connection']
         else:
-            self.sendHeaders()
+            self.sendEverything()
 
-    def sendHeaders(self):
+
+    def sendCommand(self, command, path):
+        if self.factory.use_tunnel and not self.tunnel_started:
+            http_version = "1.1"
+        else:
+            http_version = "1.0"
+        self.transport.write('%s %s HTTP/%s\r\n' % (command, path, http_version))
+
+
+    def sendEverything(self):
+        self.sendMethod()
+        self.sendHeaders()
+        self.sendBody()
+
+    def sendMethod(self):
         # Method command
         self.sendCommand(self.factory.method, self.factory.path)
-        # Headers
-        for key, values in self.factory.headers.items():
-            for value in values:
+
+    def sendHeaders(self, only=None):
+        # Note: it's a Headers object, not a dict
+        keys = only if only is not None else self.factory.headers.keys()
+        for key in keys:
+            for value in self.factory.headers.getlist(key):
                 self.sendHeader(key, value)
         self.endHeaders()
+
+    def sendBody(self):
         # Body
         if self.factory.body is not None:
             self.transport.write(self.factory.body)
@@ -81,7 +101,7 @@ class ScrapyHTTPPageGetter(HTTPClient):
         self.transport.startTLS(ctx, self.factory)
 
         # And send the normal request:
-        self.sendHeaders()
+        self.sendEverything()
 
 
     def handleHeader(self, key, value):
@@ -170,6 +190,7 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
             self.scheme, _, self.host, self.port, _ = _parse(proxy)
             self.path = self.url
             if old_scheme=="https":
+                self.headers['Proxy-Connection'] = 'keep-alive'
                 self.use_tunnel = True
                 self.tunnel_to_host = old_host
                 self.tunnel_to_port = old_port
