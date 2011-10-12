@@ -180,10 +180,12 @@ class PickleItemExporter(BaseItemExporter):
 
     def __init__(self, file, protocol=0, **kwargs):
         self._configure(kwargs)
-        self.pickler = Pickler(file, protocol)
+        self.file = file
+        self.protocol = protocol
 
     def export_item(self, item):
-        self.pickler.dump(dict(self._get_serialized_fields(item)))
+        pickle.dump(dict(self._get_serialized_fields(item)), self.file,
+            self.protocol)
 
 
 class MarshalItemExporter(BaseItemExporter):
