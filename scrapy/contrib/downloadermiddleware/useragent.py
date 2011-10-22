@@ -1,7 +1,6 @@
 """Set User-Agent header per spider or use a default value from settings"""
 
 from scrapy.utils.python import WeakKeyCache
-from scrapy.utils import deprecate
 
 
 class UserAgentMiddleware(object):
@@ -12,7 +11,6 @@ class UserAgentMiddleware(object):
 
     def _user_agent(self, spider):
         if hasattr(spider, 'user_agent'):
-            deprecate.attribute(spider, 'user_agent', 'USER_AGENT')
             return spider.user_agent
         return spider.settings['USER_AGENT']
 
