@@ -17,9 +17,9 @@ class Command(ScrapyCommand):
         parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE", \
             help="set spider argument (may be repeated)")
         parser.add_option("-o", "--output", metavar="FILE", \
-            help="store scraped items into FILE (using feed exports)")
+            help="dump scraped items into FILE (use - for stdout)")
         parser.add_option("-t", "--output-format", metavar="FORMAT", default="jsonlines", \
-            help="format to use in feed exports (default: %default)")
+            help="format to use for dumping items with -o (default: %default)")
 
     def process_options(self, args, opts):
         ScrapyCommand.process_options(self, args, opts)
@@ -28,7 +28,10 @@ class Command(ScrapyCommand):
         except ValueError:
             raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
         if opts.output:
-            self.settings.overrides['FEED_URI'] = opts.output
+            if opts.output == '-':
+                self.settings.overrides['FEED_URI'] = 'stdout:'
+            else:
+                self.settings.overrides['FEED_URI'] = opts.output
             self.settings.overrides['FEED_FORMAT'] = opts.output_format
 
     def run(self, args, opts):
