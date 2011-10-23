@@ -10,18 +10,7 @@ from scrapy.spider import BaseSpider
 from scrapy.contrib.feedexport import IFeedStorage, FileFeedStorage, FTPFeedStorage, S3FeedStorage, StdoutFeedStorage
 from scrapy.utils.test import assert_aws_environ
 
-class FeedStorageTest(unittest.TestCase):
-
-    @defer.inlineCallbacks
-    def _assert_stores(self, storage, path):
-        yield storage.store(StringIO("content"), BaseSpider("default"))
-        self.failUnless(os.path.exists(path))
-        self.failUnlessEqual(open(path).read(), "content")
-        # again, to check files are overwritten properly
-        yield storage.store(StringIO("new content"), BaseSpider("default"))
-        self.failUnlessEqual(open(path).read(), "new content")
-
-class FileFeedStorageTest(FeedStorageTest):
+class FileFeedStorageTest(unittest.TestCase):
 
     def test_store_file_uri(self):
         path = os.path.abspath(self.mktemp())
@@ -47,8 +36,17 @@ class FileFeedStorageTest(FeedStorageTest):
         st = FileFeedStorage(path)
         verifyObject(IFeedStorage, st)
 
+    @defer.inlineCallbacks
+    def _assert_stores(self, storage, path):
+        spider = BaseSpider("default")
+        file = storage.open(spider)
+        file.write("content")
+        yield storage.store(file)
+        self.failUnless(os.path.exists(path))
+        self.failUnlessEqual(open(path).read(), "content")
 
-class FTPFeedStorageTest(FeedStorageTest):
+
+class FTPFeedStorageTest(unittest.TestCase):
 
     def test_store(self):
         uri = os.environ.get('FEEDTEST_FTP_URI')
@@ -58,6 +56,18 @@ class FTPFeedStorageTest(FeedStorageTest):
         st = FTPFeedStorage(uri)
         verifyObject(IFeedStorage, st)
         return self._assert_stores(st, path)
+
+    @defer.inlineCallbacks
+    def _assert_stores(self, storage, path):
+        spider = BaseSpider("default")
+        file = storage.open(spider)
+        file.write("content")
+        yield storage.store(file)
+        self.failUnless(os.path.exists(path))
+        self.failUnlessEqual(open(path).read(), "content")
+        # again, to check s3 objects are overwritten
+        yield storage.store(StringIO("new content"))
+        self.failUnlessEqual(open(path).read(), "new content")
 
 
 class S3FeedStorageTest(unittest.TestCase):
@@ -71,16 +81,20 @@ class S3FeedStorageTest(unittest.TestCase):
         from boto import connect_s3
         storage = S3FeedStorage(uri)
         verifyObject(IFeedStorage, storage)
-        yield storage.store(StringIO("content"), BaseSpider("default"))
+        file = storage.open(BaseSpider("default"))
+        file.write("content")
+        yield storage.store(file)
         u = urlparse.urlparse(uri)
         key = connect_s3().get_bucket(u.hostname, validate=False).get_key(u.path)
         self.failUnlessEqual(key.get_contents_as_string(), "content")
 
-class StdoutFeedStorageTest(FeedStorageTest):
+class StdoutFeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_store(self):
         out = StringIO()
         storage = StdoutFeedStorage('stdout:', _stdout=out)
-        yield storage.store(StringIO("content"), BaseSpider("default"))
+        file = storage.open(BaseSpider("default"))
+        file.write("content")
+        yield storage.store(file)
         self.assertEqual(out.getvalue(), "content")
