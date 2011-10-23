@@ -86,7 +86,9 @@ in your Ubuntu servers.
 So, if you plan to deploy Scrapyd on a Ubuntu server, just add the Ubuntu
 repositories as described in :ref:`topics-ubuntu` and then run::
 
-    aptitude install scrapyd-0.13
+    aptitude install scrapyd-X.YY
+
+Where ``X.YY`` is the Scrapy version, for example: ``0.14``.
 
 This will install Scrapyd in your Ubuntu server creating a ``scrapy`` user
 which Scrapyd will run as. It will also create some directories and files that
