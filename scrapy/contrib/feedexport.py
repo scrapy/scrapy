@@ -165,13 +165,11 @@ class FeedExporter(object):
         if not slot.itemcount and not self.store_empty:
             return
         slot.exporter.finish_exporting()
-        nbytes = slot.file.tell()
-        logfmt = "%%s %s feed (%d items, %d bytes) in: %s" % (self.format, \
-            slot.itemcount, nbytes, slot.uri)
+        logfmt = "%%s %s feed (%d items) in: %s" % (self.format, \
+            slot.itemcount, slot.uri)
         d = defer.maybeDeferred(slot.storage.store, slot.file)
         d.addCallback(lambda _: log.msg(logfmt % "Stored", spider=spider))
         d.addErrback(log.err, logfmt % "Error storing", spider=spider)
-        d.addBoth(lambda _: slot.file.close())
         return d
 
     def item_scraped(self, item, spider):
