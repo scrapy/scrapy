@@ -22,7 +22,6 @@ from twisted.internet.error import TimeoutError as ServerTimeoutError, DNSLookup
                                    ConnectionRefusedError, ConnectionDone, ConnectError, \
                                    ConnectionLost, TCPTimedOutError
 from twisted.internet.defer import TimeoutError as UserTimeoutError
-from twisted.web.client import PartialDownloadError
 
 from scrapy import log
 from scrapy.exceptions import NotConfigured
@@ -35,7 +34,7 @@ class RetryMiddleware(object):
     # decompress an empty response
     EXCEPTIONS_TO_RETRY = (ServerTimeoutError, UserTimeoutError, DNSLookupError,
                            ConnectionRefusedError, ConnectionDone, ConnectError,
-                           ConnectionLost, PartialDownloadError, TCPTimedOutError,
+                           ConnectionLost, TCPTimedOutError,
                            IOError)
 
     def __init__(self):

@@ -222,13 +222,6 @@ class WebClientTestCase(unittest.TestCase):
         s = "0123456789" * 10
         return getPage(self.getURL("payload"), body=s).addCallback(self.assertEquals, s)
 
-    def testBrokenDownload(self):
-        # test what happens when download gets disconnected in the middle
-        d = getPage(self.getURL("broken"))
-        d = self.assertFailure(d, client.PartialDownloadError)
-        d.addCallback(lambda exc: self.assertEquals(exc.response, "abc"))
-        return d
-
     def testHostHeader(self):
         # if we pass Host header explicitly, it should be used, otherwise
         # it should extract from url

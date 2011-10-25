@@ -2,7 +2,7 @@ from time import time
 from urlparse import urlparse, urlunparse, urldefrag
 
 from twisted.python import failure
-from twisted.web.client import PartialDownloadError, HTTPClientFactory
+from twisted.web.client import HTTPClientFactory
 from twisted.web.http import HTTPClient
 from twisted.internet import defer
 
@@ -65,9 +65,6 @@ class ScrapyHTTPPageGetter(HTTPClient):
     def handleResponse(self, response):
         if self.factory.method.upper() == 'HEAD':
             self.factory.page('')
-        elif self.length != None and self.length != 0:
-            self.factory.noPage(failure.Failure(
-                PartialDownloadError(self.factory.status, None, response)))
         else:
             self.factory.page(response)
         self.transport.loseConnection()

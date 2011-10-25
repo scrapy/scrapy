@@ -10,7 +10,6 @@ from twisted.web.test.test_webclient import ForeverTakingResource, \
         PayloadResource, BrokenDownloadResource
 from w3lib.url import path_to_file_uri
 
-from scrapy.core.downloader.webclient import PartialDownloadError
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.http import HttpDownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
@@ -130,11 +129,6 @@ class HttpTestCase(unittest.TestCase):
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEquals, body)
         return d
-
-    def test_broken_download(self):
-        request = Request(self.getURL('broken'))
-        d = self.download_request(request, BaseSpider('foo'))
-        return self.assertFailure(d, PartialDownloadError)
 
 
 class UriResource(resource.Resource):
