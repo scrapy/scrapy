@@ -22,7 +22,16 @@ with command::
 
     lsb_release -cs
 
-Supported Ubuntu releases are: ``karmic``, ``lucid``, ``maverick``, ``natty``.
+Supported Ubuntu releases are: ``karmic``, ``lucid``, ``maverick``, ``natty``,
+``oneiric``.
+
+For Ubuntu Oneiric (11.10)::
+
+    deb http://archive.scrapy.org/ubuntu oneiric main
+
+For Ubuntu Natty (11.04)::
+
+    deb http://archive.scrapy.org/ubuntu natty main
 
 For Ubuntu Maverick (10.10)::
 
