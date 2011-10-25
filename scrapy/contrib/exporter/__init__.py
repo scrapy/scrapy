@@ -5,7 +5,7 @@ Item Exporters are used to export/serialize items into different formats.
 import csv
 import pprint
 import marshal
-from cPickle import Pickler
+import cPickle as pickle
 from xml.sax.saxutils import XMLGenerator
 
 from scrapy.utils.py26 import json
@@ -178,12 +178,14 @@ class CsvItemExporter(BaseItemExporter):
 
 class PickleItemExporter(BaseItemExporter):
 
-    def __init__(self, file, protocol=0, **kwargs):
+    def __init__(self, file, protocol=2, **kwargs):
         self._configure(kwargs)
-        self.pickler = Pickler(file, protocol)
+        self.file =file
+        self.protocol = protocol
 
     def export_item(self, item):
-        self.pickler.dump(dict(self._get_serialized_fields(item)))
+        d = dict(self._get_serialized_fields(item))
+        pickle.dump(d, self.file, self.protocol)
 
 
 class MarshalItemExporter(BaseItemExporter):

@@ -164,6 +164,7 @@ FEED_EXPORTERS_BASE = {
     'csv': 'scrapy.contrib.exporter.CsvItemExporter',
     'xml': 'scrapy.contrib.exporter.XmlItemExporter',
     'marshal': 'scrapy.contrib.exporter.MarshalItemExporter',
+    'pickle': 'scrapy.contrib.exporter.PickleItemExporter',
 }
 
 HTTPCACHE_ENABLED = False

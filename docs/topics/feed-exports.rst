@@ -64,6 +64,14 @@ XML
  * :setting:`FEED_FORMAT`: ``xml``
  * Exporter used: :class:`~scrapy.contrib.exporter.XmlItemExporter`
 
+.. _topics-feed-format-pickle:
+
+Pickle
+------
+
+ * :setting:`FEED_FORMAT`: ``pickle``
+ * Exporter used: :class:`~scrapy.contrib.exporter.PickleItemExporter`
+
 .. _topics-feed-format-marshal:
 
 Marshal

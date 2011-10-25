@@ -88,6 +88,19 @@ class PickleItemExporterTest(BaseItemExporterTest):
     def _check_output(self):
         self._assert_expected_item(pickle.loads(self.output.getvalue()))
 
+    def test_export_multiple_items(self):
+        i1 = TestItem(name='hello', age='world')
+        i2 = TestItem(name='bye', age='world')
+        f = StringIO()
+        ie = PickleItemExporter(f)
+        ie.start_exporting()
+        ie.export_item(i1)
+        ie.export_item(i2)
+        ie.finish_exporting()
+        f.reset()
+        self.assertEqual(pickle.load(f), i1)
+        self.assertEqual(pickle.load(f), i2)
+
 
 class CsvItemExporterTest(BaseItemExporterTest):
 
