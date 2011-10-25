@@ -4,7 +4,6 @@ Download timeout middleware
 See documentation in docs/topics/downloader-middleware.rst
 """
 from scrapy.utils.python import WeakKeyCache
-from scrapy.utils import deprecate
 
 
 class DownloadTimeoutMiddleware(object):
@@ -14,7 +13,6 @@ class DownloadTimeoutMiddleware(object):
 
     def _download_timeout(self, spider):
         if hasattr(spider, 'download_timeout'):
-            deprecate.attribute(spider, 'download_timeout', 'DOWNLOAD_TIMEOUT')
             return spider.download_timeout
         return spider.settings.getint('DOWNLOAD_TIMEOUT')
 
