@@ -12,6 +12,7 @@ from w3lib.url import safe_url_string
 from scrapy.http.headers import Headers
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.decorator import deprecated
+from scrapy.utils.url import escape_ajax
 from scrapy.http.common import deprecated_setter
 
 class Request(object_ref):
@@ -48,7 +49,7 @@ class Request(object_ref):
 
     def _set_url(self, url):
         if isinstance(url, str):
-            self._url = safe_url_string(url)
+            self._url = escape_ajax(safe_url_string(url))
         elif isinstance(url, unicode):
             if self.encoding is None:
                 raise TypeError('Cannot convert unicode url - %s has no encoding' %

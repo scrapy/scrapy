@@ -62,3 +62,15 @@ def parse_url(url, encoding=None):
     """
     return url if isinstance(url, urlparse.ParseResult) else \
         urlparse.urlparse(unicode_to_str(url, encoding))
+
+def escape_ajax(url):
+    """
+    Return the crawleable url according to:
+    http://code.google.com/web/ajaxcrawling/docs/getting-started.html
+
+    TODO: add support for urls with query arguments
+
+    >>> escape_ajax("www.example.com/ajax.html#!key=value")
+    'www.example.com/ajax.html?_escaped_fragment_=key=value'
+    """
+    return url.replace('#!', '?_escaped_fragment_=')

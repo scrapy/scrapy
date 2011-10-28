@@ -107,6 +107,10 @@ class RequestTest(unittest.TestCase):
         assert isinstance(r4.body, str)
         self.assertEqual(r4.body, "Price: \xa3100")
 
+    def test_ajax_url(self):
+        r = self.request_class(url="http://www.example.com/ajax.html#!key=value")
+        self.assertEqual(r.url, "http://www.example.com/ajax.html?_escaped_fragment_=key=value")
+
     def test_copy(self):
         """Test Request copy"""
         

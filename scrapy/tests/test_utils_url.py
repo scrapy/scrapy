@@ -2,6 +2,8 @@ import unittest
 from scrapy.spider import BaseSpider
 from scrapy.utils.url import url_is_from_any_domain, url_is_from_spider, canonicalize_url
 
+__doctests__ = ['scrapy.utils.url']
+
 class UrlUtilsTest(unittest.TestCase):
 
     def test_url_is_from_any_domain(self):
