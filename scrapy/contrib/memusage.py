@@ -28,7 +28,7 @@ class MemoryUsage(object):
 
         self.crawler = crawler
         self.warned = False
-        self.notify_mails = crawler.settings.getlist('MEMUSAGE_NOTIFY')
+        self.notify_mails = crawler.settings.getlist('MEMUSAGE_NOTIFY_MAIL')
         self.limit = crawler.settings.getint('MEMUSAGE_LIMIT_MB')*1024*1024
         self.warning = crawler.settings.getint('MEMUSAGE_WARNING_MB')*1024*1024
         self.report = crawler.settings.getbool('MEMUSAGE_REPORT')
