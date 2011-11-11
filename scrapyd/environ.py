@@ -37,7 +37,7 @@ class Environment(object):
             message['_spider'])
         if not os.path.exists(logsdir):
             os.makedirs(logsdir)
-        to_delete = sorted(os.listdir(logsdir), reverse=True)[:-self.logs_to_keep]
+        to_delete = sorted((os.path.join(logsdir, x) for x in os.listdir(logsdir)), key=os.path.getmtime)[:-self.logs_to_keep]
         for x in to_delete:
-            os.remove(os.path.join(logsdir, x))
+            os.remove(x)
         return os.path.join(logsdir, "%s.log" % message['_job'])
