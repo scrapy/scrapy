@@ -69,8 +69,17 @@ class ResponseUtilsTest(unittest.TestCase):
         </noSCRIPT>
         <body>blahablsdfsal&amp;</body>
         </html>""")
+        r3 = HtmlResponse("http://www.example.com", body="""
+    <noscript><meta http-equiv="REFRESH" content="0;url=http://www.example.com/newpage</noscript>
+    <script type="text/javascript">
+    if(!checkCookies()){
+        document.write('<meta http-equiv="REFRESH" content="0;url=http://www.example.com/newpage">');
+    }
+    </script>
+        """)
         self.assertEqual(get_meta_refresh(r1), (5.0, 'http://example.org/newpage'))
         self.assertEqual(get_meta_refresh(r2), (None, None))
+        self.assertEqual(get_meta_refresh(r3), (None, None))
 
 if __name__ == "__main__":
     unittest.main()

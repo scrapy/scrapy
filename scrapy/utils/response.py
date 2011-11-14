@@ -35,12 +35,14 @@ def get_base_url(response):
     return _baseurl_cache[response]
 
 _noscript_re = re.compile(u'<noscript>.*?</noscript>', re.IGNORECASE | re.DOTALL)
+_script_re = re.compile(u'<script.*?>.*?</script>', re.IGNORECASE | re.DOTALL)
 _metaref_cache = weakref.WeakKeyDictionary()
 def get_meta_refresh(response):
     """Parse the http-equiv refrsh parameter from the given response"""
     if response not in _metaref_cache:
         text = response.body_as_unicode()[0:4096]
         text = _noscript_re.sub(u'', text)
+        text = _script_re.sub(u'', text)
         _metaref_cache[response] = html.get_meta_refresh(text, response.url, \
             response.encoding)
     return _metaref_cache[response]
