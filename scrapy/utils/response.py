@@ -4,6 +4,7 @@ scrapy.http.Response objects
 """
 
 import os
+import re
 import weakref
 import webbrowser
 import tempfile
@@ -12,7 +13,6 @@ from twisted.web import http
 from twisted.web.http import RESPONSES
 from w3lib import html
 
-from scrapy.xlib.BeautifulSoup import BeautifulSoup
 from scrapy.http import Response, HtmlResponse
 
 def body_or_str(obj, unicode=True):
@@ -34,11 +34,13 @@ def get_base_url(response):
             response.encoding)
     return _baseurl_cache[response]
 
+_noscript_re = re.compile(u'<noscript>.*?</noscript>', re.IGNORECASE | re.DOTALL)
 _metaref_cache = weakref.WeakKeyDictionary()
 def get_meta_refresh(response):
     """Parse the http-equiv refrsh parameter from the given response"""
     if response not in _metaref_cache:
         text = response.body_as_unicode()[0:4096]
+        text = _noscript_re.sub(u'', text)
         _metaref_cache[response] = html.get_meta_refresh(text, response.url, \
             response.encoding)
     return _metaref_cache[response]

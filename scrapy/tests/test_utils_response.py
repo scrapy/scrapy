@@ -3,7 +3,8 @@ import unittest
 import urlparse
 
 from scrapy.http import Response, TextResponse, HtmlResponse
-from scrapy.utils.response import body_or_str, response_httprepr, open_in_browser
+from scrapy.utils.response import body_or_str, response_httprepr, open_in_browser, \
+    get_meta_refresh
 
 __doctests__ = ['scrapy.utils.response']
 
@@ -54,6 +55,22 @@ class ResponseUtilsTest(unittest.TestCase):
             "Browser not called"
         self.assertRaises(TypeError, open_in_browser, Response(url, body=body), \
             debug=True)
+
+    def test_get_meta_refresh(self):
+        r1 = HtmlResponse("http://www.example.com", body="""
+        <html>
+        <head><title>Dummy</title><meta http-equiv="refresh" content="5;url=http://example.org/newpage" /></head>
+        <body>blahablsdfsal&amp;</body>
+        </html>""")
+        r2 = HtmlResponse("http://www.example.com", body="""
+        <html>
+        <head><title>Dummy</title><noScript>
+        <meta http-equiv="refresh" content="5;url=http://example.org/newpage" /></head>
+        </noSCRIPT>
+        <body>blahablsdfsal&amp;</body>
+        </html>""")
+        self.assertEqual(get_meta_refresh(r1), (5.0, 'http://example.org/newpage'))
+        self.assertEqual(get_meta_refresh(r2), (None, None))
 
 if __name__ == "__main__":
     unittest.main()
