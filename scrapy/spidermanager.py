@@ -38,9 +38,10 @@ class SpiderManager(object):
 
     def create(self, spider_name, **spider_kwargs):
         try:
-            return self._spiders[spider_name](**spider_kwargs)
+            spcls = self._spiders[spider_name]
         except KeyError:
             raise KeyError("Spider not found: %s" % spider_name)
+        return spcls(**spider_kwargs)
 
     def find_by_request(self, request):
         return [name for name, cls in self._spiders.iteritems()
