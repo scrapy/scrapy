@@ -8,7 +8,11 @@ Request and Response outside this module.
 from scrapy.http.headers import Headers
 
 from scrapy.http.request import Request
-from scrapy.http.request.form import FormRequest
+from scrapy.conf import settings
+if settings['FORMREQUEST_BACKEND'] == 'lxml':
+    from scrapy.http.request.lxmlform import LxmlFormRequest as FormRequest
+else:
+    from scrapy.http.request.form import FormRequest
 from scrapy.http.request.rpc import XmlRpcRequest
 
 from scrapy.http.response import Response
