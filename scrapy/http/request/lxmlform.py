@@ -24,24 +24,24 @@ class LxmlFormRequest(FormRequest):
 
     @classmethod
     def from_response(cls, response, formname=None, formnumber=0, formdata=None,
-                       clickdata=None, dont_click=False, **kwargs):
+                       dont_click=False, **kwargs):
         if not hasattr(formdata, "items"):
             try:
                 formdata = dict(formdata)
             except (ValueError, TypeError):
                 raise ValueError('formdata should be a dict or iterable of tuples')
-            
+
         hxs = html.fromstring(response.body, base_url=response.url)
         forms = hxs.forms
         if not forms:
             raise ValueError("No <form> element found in %s" % response)
-        
+
         form = None
 
         if formname:
             for f in forms:
                 attrs = f.attrib
-                if 'name' in attrs and formname==attrs['name']: 
+                if 'name' in attrs and formname==attrs['name']:
                     form = f
                     break
 
@@ -50,47 +50,58 @@ class LxmlFormRequest(FormRequest):
                 form = forms[formnumber]
             except IndexError:
                 raise IndexError("Form number %d not found in %s" % (formnumber, response))
-        
-        if not dont_click:
-            # get first button to click
-            for el in form.xpath(".//input[@type='submit']"):
-                key = el.xpath("@name")
-                value = el.xpath("@value")
-                if key and not clickdata:
-                    if key[0] not in formdata:
-                        formdata[key[0]] = value[0] if value else ''
-                    break
-        # lxml doesnt use first option  if there is no 'selected'
-        for sel in form.xpath(".//select"):
-            key = sel.xpath('@name')
-            if not key:continue
-            if key[0] in formdata:continue
-            if not sel.xpath(".//option[@selected]"):
-                formdata[key[0]] = sel.xpath(".//option[1]/@value") or ''
-        def dummy_open_http(method, url, values):
-            return method, url, values
-        method, url, values = html.submit_form(form, formdata, dummy_open_http)
-        
-        if method == "POST":
+
+        clickable = set()
+        results = []
+        for el in form.inputs:
+            name = el.name
+            if not name or name in formdata:
+                continue
+            tag = html._nons(el.tag)
+            if tag == 'textarea':
+                results.append((name, el.value))
+            elif tag == 'select':
+                value = el.value
+                if el.multiple:
+                    for v in value:
+                        if v is not None:
+                            results.append((name, v))
+                elif value is not None:
+                    results.append((name, el.value))
+            else:
+                assert tag == 'input', (
+                    "Unexpected tag: %r" % el)
+                if el.checkable and not el.checked:
+                    continue
+                if el.type in ( 'image', 'reset'):
+                    continue
+                elif el.type=='submit':
+                    clickable.add(el)
+                value = el.value
+                if value is not None:
+                    results.append((name, el.value))
+        if not dont_click and clickable:
+            if not clickable.intersection(formdata):
+                button = clickable.pop()
+                results.append((button.name, button.value))
+
+        results.extend([(key, value) for key, value in formdata.iteritems()])
+        values = [(_unicode_to_str(key, response.encoding), _unicode_to_str(value, response.encoding))
+                  for key,value in results]
+        if form.action:
+            url = form.action
+        else:
+            url = form.base_url
+        if form.method == "POST":
             kwargs.setdefault('headers', {}).update(
                         {'Content-Type':'application/x-www-form-urlencoded'})
-            body = urllib.urlencode(values)
+            body = urllib.urlencode(values, doseq=1)
         else:
             if '?' in url:
                 url += '&'
             else:
                 url += '?'
-            url += urllib.urlencode(values)
+            url += urllib.urlencode(values, doseq=1)
             body=None
 
         return cls(url, method=form.method, body=body, **kwargs)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
