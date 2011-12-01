@@ -8,8 +8,16 @@ See documentation in docs/topics/request-response.rst
 import urllib
 from lxml import html
 
-from scrapy.http.request.form import FormRequest
-from scrapy.utils.python import unicode_to_str
+from scrapy.http.request import Request
+
+
+def unicode_to_str(text, encoding='utf-8', errors='strict'):
+    if isinstance(text, unicode):
+        return text.encode(encoding, errors)
+    elif isinstance(text, str):
+        return unicode(text, 'utf-8', errors).encode(encoding, errors)
+    else:
+        raise TypeError('unicode_to_str must receive a unicode or str object, got %s' % type(text).__name__)
 
 def _unicode_to_str(string, encoding):
     if hasattr(string, '__iter__'):
@@ -18,7 +26,7 @@ def _unicode_to_str(string, encoding):
         return unicode_to_str(string, encoding)
 
 
-class LxmlFormRequest(FormRequest):
+class LxmlFormRequest(Request):
 
     __slots__ = ()
 
@@ -27,11 +35,13 @@ class LxmlFormRequest(FormRequest):
                        dont_click=False, **kwargs):
         if not hasattr(formdata, "items"):
             try:
-                formdata = dict(formdata)
+                if formdata:
+                    formdata = dict(formdata)
+                else: formdata = {}
             except (ValueError, TypeError):
                 raise ValueError('formdata should be a dict or iterable of tuples')
-
-        hxs = html.fromstring(response.body, base_url=response.url)
+        encoding = kwargs.get('encoding', response.encoding or 'UTF-8')
+        hxs = html.fromstring(response.body_as_unicode(), base_url=response.url)
         forms = hxs.forms
         if not forms:
             raise ValueError("No <form> element found in %s" % response)
@@ -61,16 +71,24 @@ class LxmlFormRequest(FormRequest):
             if tag == 'textarea':
                 results.append((name, el.value))
             elif tag == 'select':
-                value = el.value
+                if u' xmlns' in response.body_as_unicode()[:200]:
+                    #use builtin select parser with namespaces
+                    value = el.value
+                else:
+                    value = el.xpath(".//option[@selected]") or None
+
                 if el.multiple:
                     for v in value:
                         if v is not None:
                             results.append((name, v))
                 elif value is not None:
-                    results.append((name, el.value))
+                    results.append((name, value))
+                else:
+                    option = el.xpath(".//option[1]/@value")
+                    if option:
+                        results.append((name, option[0]))
             else:
-                assert tag == 'input', (
-                    "Unexpected tag: %r" % el)
+                assert tag == 'input', ("Unexpected tag: %r" % el)
                 if el.checkable and not el.checked:
                     continue
                 if el.type in ( 'image', 'reset'):
@@ -86,7 +104,7 @@ class LxmlFormRequest(FormRequest):
                 results.append((button.name, button.value))
 
         results.extend([(key, value) for key, value in formdata.iteritems()])
-        values = [(_unicode_to_str(key, response.encoding), _unicode_to_str(value, response.encoding))
+        values = [(_unicode_to_str(key, encoding), _unicode_to_str(value, encoding))
                   for key,value in results]
         if form.action:
             url = form.action
@@ -104,4 +122,4 @@ class LxmlFormRequest(FormRequest):
             url += urllib.urlencode(values, doseq=1)
             body=None
 
-        return cls(url, method=form.method, body=body, **kwargs)
+        return cls(url, method=form.method, body=body, encoding=encoding, **kwargs)
