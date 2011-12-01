@@ -76,6 +76,9 @@ class AutoThrottle(object):
 
     def spider_opened(self, spider):
         spider.download_delay = self.START_DELAY
+        if hasattr(spider, "max_concurrent_requests"):
+            self.MAX_CONCURRENCY = spider.max_concurrent_requests
+        # override in order to avoid to initialize slot with concurrency > 1
         spider.max_concurrent_requests = 1
         self.last_latencies = [self.START_DELAY]
         self.last_lat = self.START_DELAY, 0.0
