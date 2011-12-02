@@ -8,7 +8,7 @@ See documentation in docs/topics/request-response.rst
 import urllib
 from lxml import html
 
-from scrapy.http.request import Request
+from scrapy.http.request.form import FormRequest
 
 
 def unicode_to_str(text, encoding='utf-8', errors='strict'):
@@ -26,7 +26,7 @@ def _unicode_to_str(string, encoding):
         return unicode_to_str(string, encoding)
 
 
-class LxmlFormRequest(Request):
+class LxmlFormRequest(FormRequest):
 
     __slots__ = ()
 
@@ -82,7 +82,7 @@ class LxmlFormRequest(Request):
                         if v is not None:
                             results.append((name, v))
                 elif value is not None:
-                    results.append((name, value))
+                    results.append((name, value[0] if isinstance(value, list) else value))
                 else:
                     option = el.xpath(".//option[1]/@value")
                     if option:
