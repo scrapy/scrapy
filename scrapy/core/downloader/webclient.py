@@ -98,6 +98,14 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
         self.start_time = time()
         self.deferred = defer.Deferred().addCallback(self._build_response, request)
 
+        # Fixes Twisted 11.1.0+ support as HTTPClientFactory is expected
+        # to have _disconnectedDeferred. See Twisted r32329.
+        # As Scrapy implements it's own logic to handle redirects is not
+        # needed to add the callback _waitForDisconnect.
+        # Specifically this avoids the AttributeError exception when
+        # clientConnectionFailed method is called.
+        self._disconnectedDeferred = defer.Deferred()
+
         self._set_connection_attributes(request)
 
         # set Host header based on url
