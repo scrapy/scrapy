@@ -53,7 +53,7 @@ class TakeFirst(object):
 
     def __call__(self, values):
         for value in values:
-            if not value is None:
+            if value is not None:
                 return value
 
 
