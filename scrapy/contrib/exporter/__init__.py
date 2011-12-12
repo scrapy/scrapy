@@ -106,7 +106,7 @@ class JsonItemExporter(JsonLinesItemExporter):
             self.first_item = False
         else:
             self.file.write(',\n')
-        itemdict = dict(self._get_serialized_fields(item))
+        itemdict = dict(item)
         self.file.write(self.encoder.encode(itemdict))
 
 
@@ -124,9 +124,10 @@ class XmlItemExporter(BaseItemExporter):
 
     def export_item(self, item):
         self.xg.startElement(self.item_element, {})
-        for name, value in self._get_serialized_fields(item, default_value=''):
-            self._export_xml_field(name, value)
+        for value in item :
+            self._export_xml_field(value, item[value])
         self.xg.endElement(self.item_element)
+
 
     def finish_exporting(self):
         self.xg.endElement(self.root_element)
@@ -134,9 +135,15 @@ class XmlItemExporter(BaseItemExporter):
 
     def _export_xml_field(self, name, serialized_value):
         self.xg.startElement(name, {})
-        if hasattr(serialized_value, '__iter__'):
-            for value in serialized_value:
-                self._export_xml_field('value', value)
+        if hasattr(serialized_value, '__iter__') :
+            if type(serialized_value).__name__ != 'dict' :
+                for value in serialized_value:
+                    if type(value).__name__ == 'str' or type(value).__name__ == 'unicode' :
+                        self._export_xml_field('value', value)
+                    else :
+                        self.export_item(value)
+            else :
+                self.export_item(serialized_value)
         else:
             self.xg.characters(serialized_value)
         self.xg.endElement(name)
