@@ -335,7 +335,9 @@ class ProcessorsTest(unittest.TestCase):
 
     def test_take_first(self):
         proc = TakeFirst()
-        self.assertEqual(proc([None, '', 'hello', 'world']), 'hello')
+        self.assertEqual(proc([None, '', 'hello', 'world']), '')
+        self.assertEqual(proc([None, 0, 'hello', 'world']), 0)
+        self.assertEqual(proc([None, 'hello', 'world']), 'hello')
 
     def test_identity(self):
         proc = Identity()
