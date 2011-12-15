@@ -102,6 +102,8 @@ class S3ImagesStore(object):
 
     def _get_boto_bucket(self):
         from boto.s3.connection import S3Connection
+        # disable ssl (is_secure=False) because of this python bug:
+        # http://bugs.python.org/issue5103
         c = S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=False)
         return c.get_bucket(self.bucket, validate=False)
 
