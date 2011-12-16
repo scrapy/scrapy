@@ -111,7 +111,7 @@ Debian or Ubuntu (9.04 or older)
 
 If you're running Debian Linux, run the following command as root::
 
-   apt-get install python-twisted python-libxml2 python-pyopenssl python-simplejson
+   apt-get install python-twisted python-libxml2 python-pyopenssl python-simplejson python-setuptools
 
 Then::
 
