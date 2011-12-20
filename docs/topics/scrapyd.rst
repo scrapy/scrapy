@@ -442,6 +442,7 @@ Schedule a spider run.
 
 * Supported Request Methods: ``POST``
 * Parameters:
+
   * ``project`` (string, required) - the project name
   * ``spider`` (string, required) - the spider name
   * ``setting`` (string, optional) - a scrapy setting to use when running the spider
@@ -485,6 +486,7 @@ in order, the last one is the currently used version.
 
 * Supported Request Methods: ``GET``
 * Parameters:
+
   * ``project`` (string, required) - the project name
 
 Example request::
@@ -502,6 +504,7 @@ Get the list of spiders available in the last version of some project.
 
 * Supported Request Methods: ``GET``
 * Parameters:
+
   * ``project`` (string, required) - the project name
 
 Example request::
@@ -520,6 +523,7 @@ project, that project will be deleted too.
 
 * Supported Request Methods: ``POST``
 * Parameters:
+
   * ``project`` (string, required) - the project name
   * ``version`` (string, required) - the project version
 
@@ -538,6 +542,7 @@ Delete a project and all its uploaded versions.
 
 * Supported Request Methods: ``POST``
 * Parameters:
+
   * ``project`` (string, required) - the project name
 
 Example request::
