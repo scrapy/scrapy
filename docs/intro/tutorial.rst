@@ -76,7 +76,7 @@ easy task).
 We begin by modeling the item that we will use to hold the sites data obtained
 from dmoz.org, as we want to capture the name, url and description of the
 sites, we define fields for each of these three attributes. To do that, we edit
-items.py, found in the dmoz directory. Our Item class looks like this::
+items.py, found in the ``tutorial`` directory. Our Item class looks like this::
 
     from scrapy.item import Item, Field
 
