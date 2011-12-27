@@ -7,7 +7,7 @@ See documentation in docs/topics/spiders.rst
 
 import copy
 
-from scrapy.http import Request
+from scrapy.http import Request, HtmlResponse
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.spider import BaseSpider
 from scrapy.conf import settings
@@ -46,6 +46,8 @@ class CrawlSpider(BaseSpider):
         return results
 
     def _requests_to_follow(self, response):
+        if not isinstance(response, HtmlResponse):
+            return
         seen = set()
         for n, rule in enumerate(self._rules):
             links = [l for l in rule.link_extractor.extract_links(response) if l not in seen]
