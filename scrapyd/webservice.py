@@ -66,6 +66,17 @@ class ListSpiders(WsResource):
         spiders = get_spider_list(project, runner=self.root.runner)
         return {"status": "ok", "spiders": spiders}
 
+class ListJobs(WsResource):
+
+    def render_POST(self, txrequest):
+        project = txrequest.args['project'][0]
+        spiders = self.root.launcher.processes.values()
+        jlist = list()
+        for s in spiders:
+            if project == s.project:
+                jlist.append({"job": {"id":s.job, "spider": s.spider}})
+        return {"status":"ok", "jobs": jlist}
+
 class DeleteProject(WsResource):
 
     def render_POST(self, txrequest):
@@ -84,13 +95,3 @@ class DeleteVersion(DeleteProject):
         version = txrequest.args['version'][0]
         self._delete_version(project, version)
         return {"status": "ok"}
-
-class ListJobs(WsResource):
-    def render_POST(self, txrequest):
-        project = txrequest.args['project'][0]
-        spiders = self.root.launcher.processes.values()
-        jlist = list()
-        for s in spiders:
-            if project == s.project:
-                jlist.append({"job": {"id":s.job, "spider": s.spider}})
-        return {"status":"ok", "jobs": jlist}
