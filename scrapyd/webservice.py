@@ -68,14 +68,15 @@ class ListSpiders(WsResource):
 
 class ListJobs(WsResource):
 
-    def render_POST(self, txrequest):
+    def render_GET(self, txrequest):
         project = txrequest.args['project'][0]
         spiders = self.root.launcher.processes.values()
-        jlist = list()
-        for s in spiders:
-            if project == s.project:
-                jlist.append({"job": {"id":s.job, "spider": s.spider}})
-        return {"status":"ok", "jobs": jlist}
+        running = [{"id": s.job, "spider": s.spider} for s in spiders if s.project == project]
+        queue = self.root.poller.queues[project]
+        pending = [{"id": x["_job"], "spider": x["name"]} for x in queue.list()]
+        finished = [{"id": s.job, "spider": s.spider} for s in self.root.launcher.finished
+            if s.project == project]
+        return {"status":"ok", "pending": pending, "running": running, "finished": finished}
 
 class DeleteProject(WsResource):
 

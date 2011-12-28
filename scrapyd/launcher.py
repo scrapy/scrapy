@@ -16,6 +16,8 @@ class Launcher(Service):
 
     def __init__(self, config, app):
         self.processes = {}
+        self.finished = []
+        self.finished_to_keep = config.getint('finished_to_keep', 100)
         self.max_proc = config.getint('max_proc', 0)
         if not self.max_proc:
             self.max_proc = cpu_count() * config.getint('max_proc_per_cpu', 4)
@@ -47,7 +49,9 @@ class Launcher(Service):
         self.processes[slot] = pp
 
     def _process_finished(self, _, slot):
-        self.processes.pop(slot)
+        process = self.processes.pop(slot)
+        self.finished.append(process)
+        del self.finished[:-self.finished_to_keep] # keep last 100 finished jobs
         self._wait_for_project(slot)
 
 
