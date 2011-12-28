@@ -1,4 +1,4 @@
-import sys, os
+import sys
 from datetime import datetime
 
 from twisted.internet import reactor, defer, protocol, error
