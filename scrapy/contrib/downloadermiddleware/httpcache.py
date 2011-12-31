@@ -11,6 +11,7 @@ from scrapy.xlib.pydispatch import dispatcher
 from scrapy import signals
 from scrapy.http import Headers
 from scrapy.exceptions import NotConfigured, IgnoreRequest
+from scrapy.stats import stats
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.httpobj import urlparse_cached
@@ -43,13 +44,19 @@ class HttpCacheMiddleware(object):
         response = self.storage.retrieve_response(spider, request)
         if response and self.is_cacheable_response(response):
             response.flags.append('cached')
+            stats.inc_value('httpcache/hit', spider=spider)
             return response
-        elif self.ignore_missing:
+
+        stats.inc_value('httpcache/miss', spider=spider)
+        if self.ignore_missing:
             raise IgnoreRequest("Ignored request not in cache: %s" % request)
 
     def process_response(self, request, response, spider):
-        if self.is_cacheable(request) and self.is_cacheable_response(response):
+        if (self.is_cacheable(request)
+            and self.is_cacheable_response(response)
+            and 'cached' not in response.flags):
             self.storage.store_response(spider, request, response)
+            stats.inc_value('httpcache/store', spider=spider)
         return response
 
     def is_cacheable_response(self, response):
