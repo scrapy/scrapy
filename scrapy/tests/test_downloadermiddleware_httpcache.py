@@ -3,6 +3,7 @@ import unittest, tempfile, shutil, time
 from scrapy.http import Response, HtmlResponse, Request
 from scrapy.spider import BaseSpider
 from scrapy.contrib.downloadermiddleware.httpcache import FilesystemCacheStorage, HttpCacheMiddleware
+from scrapy.stats import stats
 from scrapy.settings import Settings
 from scrapy.exceptions import IgnoreRequest
 
@@ -16,8 +17,10 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
         self.tmpdir = tempfile.mkdtemp()
         self.request = Request('http://www.example.com', headers={'User-Agent': 'test'})
         self.response = Response('http://www.example.com', headers={'Content-Type': 'text/html'}, body='test body', status=202)
+        stats.open_spider(self.spider)
 
     def tearDown(self):
+        stats.close_spider(self.spider, '')
         shutil.rmtree(self.tmpdir)
 
     def _get_settings(self, **new_settings):
