@@ -119,6 +119,20 @@ class SqlitePriorityQueue(object):
         self.conn.commit()
         return self.decode(msg)
 
+    def remove(self, func):
+        q = "select id, message from %s" % self.table
+        n = 0
+        for id, msg in self.conn.execute(q):
+            if func(self.decode(msg)):
+                q = "delete from %s where id=?" % self.table
+                c = self.conn.execute(q, (id,))
+                if not c.rowcount: # record vanished, so let's try again
+                    self.conn.rollback()
+                    return self.remove(func)
+                n += 1
+        self.conn.commit()
+        return n
+
     def clear(self):
         self.conn.execute("delete from %s" % self.table)
         self.conn.commit()
