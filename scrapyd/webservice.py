@@ -34,6 +34,25 @@ class Schedule(WsResource):
         self.root.scheduler.schedule(project, spider, **args)
         return {"status": "ok", "jobid": jobid}
 
+class Cancel(WsResource):
+
+    def render_POST(self, txrequest):
+        args = dict((k, v[0]) for k, v in txrequest.args.items())
+        project = args['project']
+        jobid = args['job']
+        signal = args.get('signal', 'TERM')
+        prevstate = None
+        queue = self.root.poller.queues[project]
+        c = queue.remove(lambda x: x["_job"] == jobid)
+        if c:
+            prevstate = "pending"
+        spiders = self.root.launcher.processes.values()
+        for s in spiders:
+            if s.job == jobid:
+                s.transport.signalProcess(signal)
+                prevstate = "running"
+        return {"status": "ok", "prevstate": prevstate}
+
 class AddVersion(WsResource):
 
     def render_POST(self, txrequest):

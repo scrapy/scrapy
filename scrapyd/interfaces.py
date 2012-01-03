@@ -73,6 +73,11 @@ class ISpiderQueue(Interface):
 
         This method can return a deferred. """
 
+    def remove(func):
+        """Remove all elements from the queue for which func(element) is true,
+        and return the number of removed elements.
+        """
+
     def clear():
         """Clear the queue.
 

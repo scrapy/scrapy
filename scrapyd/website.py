@@ -16,6 +16,7 @@ class Root(resource.Resource):
         self.app = app
         self.putChild('', Home(self))
         self.putChild('schedule.json', webservice.Schedule(self))
+        self.putChild('cancel.json', webservice.Cancel(self))
         self.putChild('addversion.json', webservice.AddVersion(self))
         self.putChild('listprojects.json', webservice.ListProjects(self))
         self.putChild('listversions.json', webservice.ListVersions(self))
