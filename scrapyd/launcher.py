@@ -68,6 +68,7 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.end_time = None
         self.env = env
         self.logfile = env['SCRAPY_LOG_FILE']
+        self.itemsfile = env['SCRAPY_FEED_URI']
         self.deferred = defer.Deferred()
 
     def outReceived(self, data):
@@ -88,6 +89,6 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.deferred.callback(self)
 
     def log(self, msg):
-        msg += "project=%r spider=%r job=%r pid=%r log=%r" % (self.project, \
-            self.spider, self.job, self.pid, self.logfile)
+        msg += "project=%r spider=%r job=%r pid=%r log=%r items=%r" % (self.project, \
+            self.spider, self.job, self.pid, self.logfile, self.itemsfile)
         log.msg(msg, system="Launcher")

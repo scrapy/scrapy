@@ -189,10 +189,16 @@ logs_dir
 
 The directory where the Scrapy processes logs will be stored.
 
-logs_to_keep
+items_dir
+---------
+
+The directory where the Scrapy items will be stored.
+
+jobs_to_keep
 ------------
 
-The number of logs to keep per spider. Defaults to ``5``.
+The number of finished jobs to keep per spider. Defaults to ``5``. This
+includes logs and items.
 
 runner
 ------

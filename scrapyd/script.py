@@ -18,9 +18,10 @@ def _get_config():
     conf = {
         'eggs_dir': os.path.join(datadir, 'eggs'),
         'logs_dir': os.path.join(datadir, 'logs'),
+        'items_dir': os.path.join(datadir, 'items'),
         'dbs_dir': os.path.join(datadir, 'dbs'),
     }
-    for k in ['eggs_dir', 'logs_dir', 'dbs_dir']: # create dirs
+    for k in ['eggs_dir', 'logs_dir', 'items_dir', 'dbs_dir']: # create dirs
         d = conf[k]
         if not os.path.exists(d):
             os.makedirs(d)
@@ -28,6 +29,7 @@ def _get_config():
 [scrapyd]
 eggs_dir = %(eggs_dir)s
 logs_dir = %(logs_dir)s
+items_dir = %(items_dir)s
 dbs_dir  = %(dbs_dir)s
     """ % conf
     return Config(extra_sources=[StringIO(scrapyd_conf)])
