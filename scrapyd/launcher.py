@@ -50,6 +50,7 @@ class Launcher(Service):
 
     def _process_finished(self, _, slot):
         process = self.processes.pop(slot)
+        process.end_time = datetime.now()
         self.finished.append(process)
         del self.finished[:-self.finished_to_keep] # keep last 100 finished jobs
         self._wait_for_project(slot)
@@ -64,6 +65,7 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.spider = spider
         self.job = job
         self.start_time = datetime.now()
+        self.end_time = None
         self.env = env
         self.logfile = env['SCRAPY_LOG_FILE']
         self.deferred = defer.Deferred()
