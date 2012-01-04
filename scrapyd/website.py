@@ -69,7 +69,7 @@ class Home(resource.Resource):
 <ul>
 <li><a href="/jobs">Jobs</a></li>
 <li><a href="/logs/">Logs</li>
-<li><a href="http://doc.scrapy.org/topics/scrapyd.html">Documentation</a></li>
+<li><a href="http://doc.scrapy.org/en/latest/topics/scrapyd.html">Documentation</a></li>
 </ul>
 
 <h2>How to schedule a spider?</h2>
