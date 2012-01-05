@@ -192,7 +192,11 @@ The directory where the Scrapy processes logs will be stored.
 items_dir
 ---------
 
-The directory where the Scrapy items will be stored.
+The directory where the Scrapy items will be stored. If you want to disable
+storing feeds of scraped items (perhaps, because you use a database or other
+storage) set this option empty, like this::
+
+    items_dir =
 
 jobs_to_keep
 ------------
