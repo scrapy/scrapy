@@ -192,6 +192,8 @@ The directory where the Scrapy processes logs will be stored.
 items_dir
 ---------
 
+.. versionadded:: 0.15
+
 The directory where the Scrapy items will be stored. If you want to disable
 storing feeds of scraped items (perhaps, because you use a database or other
 storage) set this option empty, like this::
@@ -201,8 +203,12 @@ storage) set this option empty, like this::
 jobs_to_keep
 ------------
 
+.. versionadded:: 0.15
+
 The number of finished jobs to keep per spider. Defaults to ``5``. This
 includes logs and items.
+
+This setting was named ``logs_to_keep`` in previous versions.
 
 runner
 ------
@@ -448,7 +454,7 @@ Example reponse::
 schedule.json
 -------------
 
-Schedule a spider run.
+Schedule a spider run (also known as a job), returning the job id.
 
 * Supported Request Methods: ``POST``
 * Parameters:
@@ -464,13 +470,39 @@ Example request::
 
 Example response::
 
-    {"status": "ok"}
+    {"status": "ok", "jobid": "6487ec79947edab326d6db28a2d86511e8247444"}
 
 Example request passing a spider argument (``arg1``) and a setting
 (:setting:`DOWNLOAD_DELAY`)::
 
     $ curl http://localhost:6800/schedule.json -d project=myproject -d spider=somespider -d setting=DOWNLOAD_DELAY=2 -d arg1=val1
 
+cancel.json
+-----------
+
+.. versionadded:: 0.15
+
+Schedule a spider run (aka. job). If the job is pending, it will be removed. If
+the job is running, it will be terminated.
+
+* Supported Request Methods: ``POST``
+* Parameters:
+
+  * ``project`` (string, required) - the project name
+  * ``job`` (string, required) - the job id
+
+Example request::
+
+    $ curl http://localhost:6800/cancel.json -d project=myproject -d job=6487ec79947edab326d6db28a2d86511e8247444
+
+Example response::
+
+    {"status": "ok", "prevstate": "running"}
+
+Example request passing a spider argument (``arg1``) and a setting
+(:setting:`DOWNLOAD_DELAY`)::
+
+    $ curl http://localhost:6800/schedule.json -d project=myproject -d spider=somespider -d setting=DOWNLOAD_DELAY=2 -d arg1=val1
 
 listprojects.json
 -----------------
@@ -524,6 +556,29 @@ Example request::
 Example response::
 
     {"status": "ok", "spiders": ["spider1", "spider2", "spider3"]}
+
+listjobs.json
+-------------
+
+.. versionadded:: 0.15
+
+Get the list of pending, running and finished jobs of some project.
+
+* Supported Request Methods: ``GET``
+* Parameters:
+
+  * ``project`` (string, required) - the project name
+
+Example request::
+
+    $ curl http://localhost:6800/listjobs.json?project=myproject
+
+Example response::
+
+    {"status": "ok",
+     "pending": ["26d1b1a6d6f111e0be5c001e648c57f8", "a0571c5b9493187adb5bd07ad0faf279a86251df"],
+     "running": ["422e608f9f28cef127b3d5ef93fe93992108bc5c"],
+     "finished": ["5c7fd9513b1796bcd9311dd0f59bcf8973c58859"]}
 
 delversion.json
 ---------------
