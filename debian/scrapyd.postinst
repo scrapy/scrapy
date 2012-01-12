@@ -12,7 +12,8 @@ case "$1" in
         fi
 
         chown scrapy:nogroup /var/log/scrapyd \
-            /var/lib/scrapyd /var/lib/scrapyd/eggs /var/lib/scrapyd/dbs
+            /var/lib/scrapyd /var/lib/scrapyd/eggs /var/lib/scrapyd/dbs \
+            /var/lib/scrapyd/items
 
         update-python-modules -p # so upstart restart uses the new code
     ;;
