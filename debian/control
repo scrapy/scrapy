@@ -20,7 +20,7 @@ Description: Python web crawling and scraping framework
 
 Package: scrapyd-SUFFIX
 Architecture: all
-Depends: scrapy-SUFFIX, python-setuptools
+Depends: scrapy-SUFFIX (>= ${source:Version}), python-setuptools
 Conflicts: scrapyd, scrapyd-0.11
 Provides: scrapyd
 Description: Scrapy Service
