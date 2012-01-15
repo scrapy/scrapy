@@ -21,7 +21,7 @@ class XPathSelector(object_ref):
     __slots__ = ['doc', 'xmlNode', 'expr', '__weakref__']
 
     def __init__(self, response=None, text=None, node=None, parent=None, expr=None):
-        if parent:
+        if parent is not None:
             self.doc = parent.doc
             self.xmlNode = node
         elif response:
