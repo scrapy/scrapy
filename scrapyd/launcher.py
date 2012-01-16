@@ -1,4 +1,4 @@
-import sys, os
+import sys
 from datetime import datetime
 
 from twisted.internet import reactor, defer, protocol, error
@@ -16,6 +16,8 @@ class Launcher(Service):
 
     def __init__(self, config, app):
         self.processes = {}
+        self.finished = []
+        self.finished_to_keep = config.getint('finished_to_keep', 100)
         self.max_proc = config.getint('max_proc', 0)
         if not self.max_proc:
             self.max_proc = cpu_count() * config.getint('max_proc_per_cpu', 4)
@@ -47,7 +49,10 @@ class Launcher(Service):
         self.processes[slot] = pp
 
     def _process_finished(self, _, slot):
-        self.processes.pop(slot)
+        process = self.processes.pop(slot)
+        process.end_time = datetime.now()
+        self.finished.append(process)
+        del self.finished[:-self.finished_to_keep] # keep last 100 finished jobs
         self._wait_for_project(slot)
 
 
@@ -60,8 +65,10 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.spider = spider
         self.job = job
         self.start_time = datetime.now()
+        self.end_time = None
         self.env = env
         self.logfile = env['SCRAPY_LOG_FILE']
+        self.itemsfile = env['SCRAPY_FEED_URI']
         self.deferred = defer.Deferred()
 
     def outReceived(self, data):
@@ -82,6 +89,6 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.deferred.callback(self)
 
     def log(self, msg):
-        msg += "project=%r spider=%r job=%r pid=%r log=%r" % (self.project, \
-            self.spider, self.job, self.pid, self.logfile)
+        msg += "project=%r spider=%r job=%r pid=%r log=%r items=%r" % (self.project, \
+            self.spider, self.job, self.pid, self.logfile, self.itemsfile)
         log.msg(msg, system="Launcher")

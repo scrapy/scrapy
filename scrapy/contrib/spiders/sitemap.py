@@ -3,7 +3,7 @@ import re
 from scrapy.spider import BaseSpider
 from scrapy.http import Request, XmlResponse
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
-from scrapy.utils.gz import gunzip
+from scrapy.utils.gz import gunzip, is_gzipped
 from scrapy import log
 
 class SitemapSpider(BaseSpider):
@@ -29,12 +29,9 @@ class SitemapSpider(BaseSpider):
             for url in sitemap_urls_from_robots(response.body):
                 yield Request(url, callback=self._parse_sitemap)
         else:
-            if isinstance(response, XmlResponse):
-                body = response.body
-            elif is_gzipped(response):
-                body = gunzip(response.body)
-            else:
-                log.msg("Ignoring non-XML sitemap: %s" % response, log.WARNING)
+            body = self._get_sitemap_body(response)
+            if body is None:
+                log.msg("Ignoring invalid sitemap: %s" % response, log.WARNING)
                 return
 
             s = Sitemap(body)
@@ -49,9 +46,18 @@ class SitemapSpider(BaseSpider):
                             yield Request(loc, callback=c)
                             break
 
-def is_gzipped(response):
-    ctype = response.headers.get('Content-Type', '')
-    return ctype in ('application/x-gzip', 'application/gzip')
+    def _get_sitemap_body(self, response):
+        """Return the sitemap body contained in the given response, or None if the
+        response is not a sitemap.
+        """
+        if isinstance(response, XmlResponse):
+            return response.body
+        elif is_gzipped(response):
+            return gunzip(response.body)
+        elif response.url.endswith('.xml'):
+            return response.body
+        elif response.url.endswith('.xml.gz'):
+            return gunzip(response.body)
 
 def regex(x):
     if isinstance(x, basestring):

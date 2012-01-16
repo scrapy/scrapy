@@ -82,14 +82,10 @@ scripts = ['bin/scrapy']
 if os.name == 'nt':
     scripts.append('extras/scrapy.bat')
 
-if os.environ.get('SCRAPY_VERSION_FROM_HG'):
-    rev = Popen(["hg", "tip", "--template", "{rev}"], stdout=PIPE).communicate()[0]
+if os.environ.get('SCRAPY_VERSION_FROM_GIT'):
+    v = Popen("git describe", shell=True, stdout=PIPE).communicate()[0]
     with open('scrapy/__init__.py', 'a') as f:
-        f.write("\n__version__ = '.'.join(map(str, version_info)) + '.%s'" % rev)
-elif os.environ.get('SCRAPY_VERSION_FROM_GIT'):
-    rev = Popen("git log --oneline | wc -l", shell=True, stdout=PIPE).communicate()[0]
-    with open('scrapy/__init__.py', 'a') as f:
-        f.write("\n__version__ = '.'.join(map(str, version_info)) + '.%s'" % rev.strip())
+        f.write("\n__version__ = '%s'" % v.strip())
 version = __import__('scrapy').__version__
 
 setup_args = {

@@ -31,4 +31,5 @@ class EnvironmentTest(unittest.TestCase):
         self.assertEqual(env['SCRAPY_JOB'], 'ID')
         self.assert_(env['SCRAPY_SQLITE_DB'].endswith('mybot.db'))
         self.assert_(env['SCRAPY_LOG_FILE'].endswith(os.path.join('mybot', 'myspider', 'ID.log')))
+        self.assert_(env['SCRAPY_FEED_URI'].endswith(os.path.join('mybot', 'myspider', 'ID.jl')))
         self.failIf('SCRAPY_SETTINGS_MODULE' in env)

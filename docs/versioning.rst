@@ -9,24 +9,20 @@ Versioning
 
 Scrapy uses the `odd-numbered versions for development releases`_.
 
-There are 4 numbers in a Scrapy version: *A.B.C.D*
+There are 3 numbers in a Scrapy version: *A.B.C*
 
 * *A* is the major version. This will rarely change and will signify very
-  large changes. So far, only zero is available for *A*
+  large changes. So far, only zero is available for *A* as Scrapy hasn't yet
+  reached 1.0.
 * *B* is the release number. This will include many changes including features
-  and things that possible break backwards compatibility. Even Bs will be
+  and things that possibly break backwards compatibility. Even Bs will be
   stable branches, and odd Bs will be development.
-* *C* is the bugfix release number, but it has been recently deprecated of
-  favor of using the revision number (*D*)
-* *D* is an incremental number (aka. revision) based on the number of commits
-  in the git repo where the release was taken
+* *C* is the bugfix release number.
 
 For example:
 
-* *0.12.0.2542* is the stable release *12* at revision *2542* (safe to use in
+* *0.14.1* is the first bugfix release of the *0.14* series (safe to use in
   production)
-* *0.13.0.2691* is the development release *13* at revision *2691* (use with
-  care in production)
 
 API Stability
 =============

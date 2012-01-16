@@ -16,9 +16,8 @@ def build(suffix):
         with open(ifn, 'w') as of:
             of.write(s)
 
-    env={'SCRAPY_VERSION_FROM_GIT': '1'}
     check_call('debchange -m -D unstable --force-distribution -v $(python setup.py --version)+$(date +%s) "Automatic build"', \
-        shell=True, env=env)
+        shell=True)
     check_call('debuild -us -uc -b', shell=True)
 
 def clean(suffix):

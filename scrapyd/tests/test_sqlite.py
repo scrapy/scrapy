@@ -125,6 +125,20 @@ class SqlitePriorityQueueTest(unittest.TestCase):
         self.failUnlessEqual(len(self.q), 0)
         self.failUnlessEqual(list(self.q), [])
 
+    def test_remove(self):
+        self.failUnlessEqual(len(self.q), 0)
+        self.failUnlessEqual(list(self.q), [])
+        msg1 = "good message 1"
+        msg2 = "bad message 2"
+        msg3 = "good message 3"
+        msg4 = "bad message 4"
+        self.q.put(msg1)
+        self.q.put(msg2)
+        self.q.put(msg3)
+        self.q.put(msg4)
+        self.q.remove(lambda x: x.startswith("bad"))
+        self.failUnlessEqual(list(self.q), [(msg1, 0.0), (msg3, 0.0)])
+
     def test_types(self):
         for x in self.supported_values:
             self.q.put(x)
