@@ -69,12 +69,15 @@ class AutoThrottle(object):
         self.CONCURRENCY_CHECK_PERIOD = settings.getint("AUTOTHROTTLE_CONCURRENCY_CHECK_PERIOD", 10)
         self.MAX_CONCURRENCY = settings.getint("AUTOTHROTTLE_MAX_CONCURRENCY", 8)
         self.DEBUG = settings.getint("AUTOTHROTTLE_DEBUG", False)
+        self.MIN_DOWNLOAD_DELAY = settings.getint("AUTOTHROTTLE_MIN_DOWNLOAD_DELAY")
 
     @classmethod
     def from_crawler(cls, crawler):
         return cls(crawler)
 
     def spider_opened(self, spider):
+        if hasattr(spider, "download_delay"):
+            self.MIN_DOWNLOAD_DELAY = spider.download_delay
         spider.download_delay = self.START_DELAY
         if hasattr(spider, "max_concurrent_requests"):
             self.MAX_CONCURRENCY = spider.max_concurrent_requests
@@ -82,7 +85,7 @@ class AutoThrottle(object):
         spider.max_concurrent_requests = 1
         self.last_latencies = [self.START_DELAY]
         self.last_lat = self.START_DELAY, 0.0
-        
+
     def response_received(self, response, spider):
         slot = self._get_slot(response.request)
         latency = response.meta.get('download_latency')
@@ -123,6 +126,9 @@ class AutoThrottle(object):
         """Define delay adjustment policy"""
         # if latency is bigger than old delay, then use latency instead of mean. Works better with problematic sites
         new_delay = (slot.delay + latency) / 2.0 if latency < slot.delay else latency
+
+        if new_delay < self.MIN_DOWNLOAD_DELAY:
+            new_delay = self.MIN_DOWNLOAD_DELAY
 
         # dont adjust delay if response status != 200 and new delay is smaller than old one,
         # as error pages (and redirections) are usually small and so tend to reduce latency, thus provoking a positive feedback
