@@ -64,6 +64,7 @@ DOWNLOAD_TIMEOUT = 180      # 3mins
 DOWNLOADER_DEBUG = False
 
 DOWNLOADER_HTTPCLIENTFACTORY = 'scrapy.core.downloader.webclient.ScrapyHTTPClientFactory'
+DOWNLOADER_CLIENTCONTEXTFACTORY = 'scrapy.core.downloader.webclient.ScrapyClientContextFactory'
 
 DOWNLOADER_MIDDLEWARES = {}
 

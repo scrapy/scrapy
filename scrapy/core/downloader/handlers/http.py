@@ -8,10 +8,9 @@ from scrapy.conf import settings
 from scrapy import optional_features
 
 ssl_supported = 'ssl' in optional_features
-if ssl_supported:
-    from twisted.internet.ssl import ClientContextFactory
 
 HTTPClientFactory = load_object(settings['DOWNLOADER_HTTPCLIENTFACTORY'])
+ClientContextFactory = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
 
 
 class HttpDownloadHandler(object):
