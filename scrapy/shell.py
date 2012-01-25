@@ -94,10 +94,11 @@ class Shell(object):
         self.vars['spider'] = spider
         self.vars['request'] = request
         self.vars['response'] = response
-        self.vars['xxs'] = XmlXPathSelector(response) \
-            if isinstance(response, XmlResponse) else None
-        self.vars['hxs'] = HtmlXPathSelector(response) \
-            if isinstance(response, HtmlResponse) else None
+        if response.body:
+            self.vars['xxs'] = XmlXPathSelector(response) \
+                if isinstance(response, XmlResponse) else None
+            self.vars['hxs'] = HtmlXPathSelector(response) \
+                if isinstance(response, HtmlResponse) else None
         if self.inthread:
             self.vars['fetch'] = self.fetch
         self.vars['view'] = open_in_browser
