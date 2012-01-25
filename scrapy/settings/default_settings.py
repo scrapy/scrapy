@@ -53,6 +53,7 @@ DOWNLOAD_DELAY = 0
 
 DOWNLOAD_HANDLERS = {}
 DOWNLOAD_HANDLERS_BASE = {
+    'about': 'scrapy.core.downloader.handlers.about.AboutDownloadHandler',
     'file': 'scrapy.core.downloader.handlers.file.FileDownloadHandler',
     'http': 'scrapy.core.downloader.handlers.http.HttpDownloadHandler',
     'https': 'scrapy.core.downloader.handlers.http.HttpDownloadHandler',
