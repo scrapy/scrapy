@@ -9,6 +9,7 @@ from twisted.internet import defer
 from scrapy.http import Headers
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.responsetypes import responsetypes
+from scrapy import optional_features
 
 
 def _parsed_url_args(parsed):
@@ -135,3 +136,19 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
     def gotHeaders(self, headers):
         self.headers_time = time()
         self.response_headers = headers
+
+
+
+if 'ssl' in optional_features:
+    from twisted.internet.ssl import ClientContextFactory
+    from OpenSSL import SSL
+else:
+    ClientContextFactory = object
+
+
+class ScrapyClientContextFactory(ClientContextFactory):
+
+    def getContext(self):
+        ctx = ClientContextFactory.getContext(self)
+        ctx.set_options(SSL.OP_ALL)
+        return ctx
