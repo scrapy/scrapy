@@ -106,9 +106,13 @@ class ExecutionEngine(object):
         if slot.start_requests and not self._needs_backout(spider):
             try:
                 request = slot.start_requests.next()
-                self.crawl(request, spider)
             except StopIteration:
                 slot.start_requests = None
+            except Exception, exc:
+                log.err(None, 'Obtaining request from start requests', \
+                        spider=spider)
+            else:
+                self.crawl(request, spider)
 
         if self.spider_is_idle(spider) and slot.close_if_idle:
             self._spider_idle(spider)
