@@ -1,7 +1,10 @@
+import gzip
+from cStringIO import StringIO
+
 from twisted.trial.unittest import TestCase
 from twisted.python.failure import Failure
 
-from scrapy.http import Request, Response
+from scrapy.http import Request, Response, HtmlResponse
 from scrapy.spider import BaseSpider
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.utils.test import get_crawler
@@ -68,10 +71,10 @@ class GzippedRedirectionTest(ManagerTestCase):
 
     """
 
-    def test_gzipped_redirection(self):
+    def test_gzipped_redirect_30x(self):
         req = Request('http://example.com')
         body = '<p>You are being redirected</p>'
-        resp = Response(req.url, status=302, body=body, request=req, headers={
+        resp = Response(req.url, status=301, body=body, request=req, headers={
             'Content-Length': len(body),
             'Content-Type': 'text/html',
             'Content-Encoding': 'gzip',
@@ -82,3 +85,40 @@ class GzippedRedirectionTest(ManagerTestCase):
                         "Not redirected: {0!r}".format(ret))
         self.assertEqual(ret.url, resp.headers['Location'],
                          "Not redirected to location header")
+
+    def test_gzipped_meta_redirect(self):
+        req = Request('http://example.org')
+        body = """<meta http-equiv="refresh" content="0; url=http://example.com/">"""
+        cbody = self._compress(body)
+        resp = HtmlResponse(req.url, status=200, body=cbody, request=req,
+                            headers={
+                                'Content-Length': len(cbody),
+                                'Content-Type': 'text/html',
+                                'Content-Encoding': 'gzip',
+                            })
+        ret = self._download(request=req, response=resp)
+        self.assertTrue(isinstance(ret, Request), "Not redirected: {0!r}".format(ret))
+        self.assertEqual(ret.url, 'http://example.com/')
+
+    def test_gzipped_meta_redirect_30x(self):
+        req = Request('http://example.org')
+        body = """<meta http-equiv="refresh" content="5; url=http://example.com/">"""
+        cbody = self._compress(body)
+        resp = HtmlResponse(req.url, status=301, body=cbody, request=req,
+                            headers={
+                                'Content-Length': len(cbody),
+                                'Content-Type': 'text/html',
+                                'Content-Encoding': 'gzip',
+                                'Location': '/index.php',
+                            })
+        ret = self._download(request=req, response=resp)
+        self.assertTrue(isinstance(ret, Request), "Not redirected: {0!r}".format(ret))
+        # meta redirect should be ignored
+        self.assertEqual(ret.url, 'http://example.org/index.php')
+
+    def _compress(self, content):
+        fp = StringIO()
+        zf = gzip.GzipFile(fileobj=fp, mode='wb')
+        zf.write(content)
+        zf.close()
+        return fp.getvalue()
