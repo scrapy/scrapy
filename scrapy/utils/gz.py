@@ -1,3 +1,4 @@
+import struct
 from cStringIO import StringIO
 from gzip import GzipFile
 
@@ -13,8 +14,9 @@ def gunzip(data):
         try:
             chunk = f.read(8196)
             output += chunk
-        except IOError:
+        except (IOError, struct.error):
             # complete only if there is some data, otherwise re-raise
+            # see issue 87 about catching struct.error
             if output:
                 output += f.extrabuf
                 break
