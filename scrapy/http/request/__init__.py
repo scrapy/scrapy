@@ -54,8 +54,7 @@ class Request(object_ref):
             if self.encoding is None:
                 raise TypeError('Cannot convert unicode url - %s has no encoding' %
                     type(self).__name__)
-            unicode_url = url if isinstance(url, unicode) else url.decode(self.encoding)
-            self._url = safe_url_string(unicode_url, self.encoding)
+            self._set_url(url.encode(self.encoding))
         else:
             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
         if ':' not in self._url:
