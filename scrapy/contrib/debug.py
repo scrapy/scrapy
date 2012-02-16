@@ -4,7 +4,6 @@ Extensions for debugging Scrapy
 See documentation in docs/topics/extensions.rst
 """
 
-import os
 import sys
 import signal
 import traceback
@@ -12,6 +11,7 @@ import threading
 from pdb import Pdb
 
 from scrapy.utils.engine import format_engine_status
+from scrapy.utils.trackref import format_live_refs
 from scrapy import log
 
 
@@ -19,13 +19,13 @@ class StackTraceDump(object):
 
     def __init__(self, crawler=None):
         self.crawler = crawler
+        self.dumprefs = crawler.settings.getbool('TRACK_REFS')
         try:
             signal.signal(signal.SIGUSR2, self.dump_stacktrace)
             signal.signal(signal.SIGQUIT, self.dump_stacktrace)
         except AttributeError:
             # win32 platforms don't support SIGUSR signals
             pass
-
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -34,8 +34,9 @@ class StackTraceDump(object):
     def dump_stacktrace(self, signum, frame):
         stackdumps = self._thread_stacks()
         enginestatus = format_engine_status(self.crawler.engine)
+        liverefs = format_live_refs() if self.dumprefs else ""
         msg = "Dumping stack trace and engine status" \
-            "\n{0}\n{1}".format(enginestatus, stackdumps)
+            "\n{0}\n{1}\n{2}".format(enginestatus, liverefs, stackdumps)
         log.msg(msg)
 
     def _thread_stacks(self):
