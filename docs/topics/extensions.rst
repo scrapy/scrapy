@@ -370,18 +370,22 @@ Stack trace dump extension
 
 .. class:: scrapy.contrib.debug.StackTraceDump
 
-Dumps the stack trace and Scrapy engine status of a runnning process when a
-`SIGQUIT`_ or `SIGUSR2`_ signal is received. After the stack trace and engine
-status is dumped, the Scrapy process continues running normally.
+Dumps information about the running process when a `SIGQUIT`_ or `SIGUSR2`_
+signal is received. The information dumped is the following:
 
-The dump is sent to standard output.
+1. engine status (using ``scrapy.utils.engine.get_engine_status()``)
+2. live references (see :ref:`topics-leaks-trackrefs`)
+3. stack trace of all threads
 
-This extension only works on POSIX-compliant platforms (ie. not Windows).
+After the stack trace and engine status is dumped, the Scrapy process continues
+running normally.
+
+This extension only works on POSIX-compliant platforms (ie. not Windows),
+because the `SIGQUIT`_ and `SIGUSR2`_ signals are not available on Windows.
 
 There are at least two ways to send Scrapy the `SIGQUIT`_ signal:
 
 1. By pressing Ctrl-\ while a Scrapy process is running (Linux only?)
-
 2. By running this command (assuming ``<pid>`` is the process id of the Scrapy
    process)::
 
