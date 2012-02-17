@@ -87,7 +87,7 @@ class AutoThrottle(object):
         spider.max_concurrent_requests = 1
 
     def response_received(self, response, spider):
-        slot = self._get_slot(response.request)
+        key, slot = self._get_slot(response.request)
         latency = response.meta.get('download_latency')
         
         if not latency or not slot:
@@ -97,8 +97,8 @@ class AutoThrottle(object):
         self._check_concurrency(slot, latency)
 
         if self.DEBUG:
-            spider.log("conc:%2d | delay:%5d ms | latency:%5d ms | size:%6d bytes" % \
-                (slot.concurrency, slot.delay*1000, \
+            spider.log("slot: %s | conc:%2d | delay:%5d ms | latency:%5d ms | size:%6d bytes" % \
+                (key, slot.concurrency, slot.delay*1000, \
                 latency*1000, len(response.body)))
 
     def _get_slot(self, request):
@@ -106,7 +106,7 @@ class AutoThrottle(object):
         key = urlparse_cached(request).hostname or ''
         if downloader.ip_concurrency:
             key = dnscache.get(key, key)
-        return downloader.slots.get(key)
+        return key, downloader.slots.get(key)
 
     def _check_concurrency(self, slot, latency):
         latencies = self.last_latencies
