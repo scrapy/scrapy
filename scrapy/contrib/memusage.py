@@ -100,6 +100,6 @@ class MemoryUsage(object):
 
         s += "ENGINE STATUS ------------------------------------------------------- \r\n"
         s += "\r\n"
-        s += pformat(get_engine_status())
+        s += pformat(get_engine_status(self.crawler.engine))
         s += "\r\n"
         self.mail.send(rcpts, subject, s)
