@@ -72,8 +72,8 @@ class HttpDigestMiddleware(object):
         www_auth = response.headers.get('WWW-Authenticate', '')
         if not www_auth or 'Digest' not in www_auth: return response
         
-        usr = getattr(spider, 'http_user', '')
-        pwd = getattr(spider, 'http_pass', '')
+        usr = getattr(spider, 'digest_user', '')
+        pwd = getattr(spider, 'digest_pass', '')
         if not usr or not pwd: return response
         
         parts = dict([p.split('=') for p in re.split(',\s*', www_auth[7:].strip())])
