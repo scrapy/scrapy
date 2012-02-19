@@ -47,7 +47,9 @@ class HttpDigestMiddleware(object):
         if not info['qops']:
             resp = hasher(':'.join([ha1, info['nonce'], ha2]))
         else: # auth or auth-int
-            nonce_count = self.nonce_counts[spider.name] + 1
+            # nonce_count must always increase
+            self.nonce_counts[spider.name] += 1
+            nonce_count = self.nonce_counts[spider.name]
             nc = '%08x' % nonce_count # zero fill nonce_count so it's 8 digits long
             # cnonce is a 16 char hash of a random string
             cnonce = hasher(''.join([str(nonce_count), info['nonce'], time.ctime()] + [chr(random.randrange(32, 128)) for i in range(8)]).encode('utf-8'))[:16]
