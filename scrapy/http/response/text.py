@@ -5,24 +5,17 @@ discovering (through HTTP headers) to base Response class.
 See documentation in docs/topics/request-response.rst
 """
 
-import re
-import codecs
-from scrapy.http.response.dammit import UnicodeDammit
+from w3lib.encoding import html_to_unicode, resolve_encoding, \
+    html_body_declared_encoding, http_content_type_encoding
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs
-from scrapy.utils.encoding import encoding_exists, resolve_encoding
+from scrapy.utils.encoding import encoding_exists
 from scrapy.conf import settings
-
-
-# Python decoder doesn't follow unicode standard when handling
-# bad utf-8 encoded strings. see http://bugs.python.org/issue8271
-codecs.register_error('scrapy_replace', lambda exc: (u'\ufffd', exc.start+1))
 
 
 class TextResponse(Response):
 
     _DEFAULT_ENCODING = settings['DEFAULT_RESPONSE_ENCODING']
-    _ENCODING_RE = re.compile(r'charset=([\w-]+)', re.I)
 
     def __init__(self, *args, **kwargs):
         self._encoding = kwargs.pop('encoding', None)
@@ -80,24 +73,19 @@ class TextResponse(Response):
     @memoizemethod_noargs
     def _headers_encoding(self):
         content_type = self.headers.get('Content-Type')
-        if content_type:
-            m = self._ENCODING_RE.search(content_type)
-            if m:
-                encoding = m.group(1)
-                if encoding_exists(encoding):
-                    return encoding
+        return http_content_type_encoding(content_type)
 
     def _body_inferred_encoding(self):
         if self._cached_benc is None:
-            enc = self._get_encoding()
-            dammit = UnicodeDammit(self.body, [enc])
-            benc = dammit.originalEncoding
+            content_type = self.headers.get('Content-Type')
+            benc, _ = html_to_unicode(content_type, self.body, default_encoding=self._DEFAULT_ENCODING)
             self._cached_benc = benc
+            # XXX: is this needed?
             # UnicodeDammit is buggy decoding utf-16
-            if self._cached_ubody is None and benc != 'utf-16':
-                self._cached_ubody = dammit.unicode
+            #if self._cached_ubody is None and benc != 'utf-16':
+            #    self._cached_ubody = dammit.unicode
         return self._cached_benc
 
+    @memoizemethod_noargs
     def _body_declared_encoding(self):
-        # implemented in subclasses (XmlResponse, HtmlResponse)
-        return None
+        return html_body_declared_encoding(self.body)

@@ -1,7 +1,7 @@
 import unittest
 
+from w3lib.encoding import resolve_encoding
 from scrapy.http import Request, Response, TextResponse, HtmlResponse, XmlResponse, Headers
-from scrapy.utils.encoding import resolve_encoding
 
 
 class BaseResponseTest(unittest.TestCase):
