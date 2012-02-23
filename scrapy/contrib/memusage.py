@@ -41,7 +41,7 @@ class MemoryUsage(object):
         return cls(crawler)
 
     def get_virtual_size(self):
-        return get_vmvalue_from_procfs('VmSize')
+        return get_vmvalue_from_procfs('VmRSS')
 
     def engine_started(self):
         stats.set_value('memusage/startup', self.get_virtual_size())
