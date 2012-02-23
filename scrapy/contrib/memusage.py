@@ -76,7 +76,12 @@ class MemoryUsage(object):
                         (self.crawler.settings['BOT_NAME'], mem, socket.gethostname())
                 self._send_report(self.notify_mails, subj)
                 stats.set_value('memusage/limit_notified', 1)
-            self.crawler.stop()
+            open_spiders = self.crawler.engine.open_spiders
+            if open_spiders:
+                for spider in open_spiders:
+                    self.crawler.engine.close_spider(spider, 'memusage_exceeded')
+            else:
+                self.crawler.stop()
 
     def _check_warning(self):
         if self.warned: # warn only once
