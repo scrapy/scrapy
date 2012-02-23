@@ -249,13 +249,12 @@ class ImagesPipeline(MediaPipeline):
         return dfd
 
     def image_downloaded(self, response, request, info):
-        first_buf = None
+        checksum = None
         for key, image, buf in self.get_images(response, request, info):
+            if checksum is None:
+                checksum = md5sum(buf)
             self.store.persist_image(key, image, buf, info)
-            if first_buf is None:
-                first_buf = buf
-        first_buf.seek(0)
-        return md5sum(first_buf)
+        return checksum
 
     def get_images(self, response, request, info):
         key = self.image_key(request.url)
