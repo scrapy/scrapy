@@ -252,6 +252,7 @@ class ImagesPipeline(MediaPipeline):
         checksum = None
         for key, image, buf in self.get_images(response, request, info):
             if checksum is None:
+                buf.seek(0)
                 checksum = md5sum(buf)
             self.store.persist_image(key, image, buf, info)
         return checksum
