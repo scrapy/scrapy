@@ -47,6 +47,9 @@ class RedirectMiddleware(object):
         return response
 
     def _redirect(self, redirected, request, spider, reason):
+        if not spider.handles_request(redirected):
+            raise IgnoreRequest
+            
         ttl = request.meta.setdefault('redirect_ttl', self.max_redirect_times)
         redirects = request.meta.get('redirect_times', 0) + 1
 
