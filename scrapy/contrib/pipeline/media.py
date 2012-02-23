@@ -1,5 +1,6 @@
 from collections import defaultdict
 from twisted.internet.defer import Deferred, DeferredList
+from twisted.python.failure import Failure
 
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy import log
@@ -88,6 +89,11 @@ class MediaPipeline(object):
         return dfd
 
     def _cache_result_and_execute_waiters(self, result, fp, info):
+        if isinstance(result, Failure):
+            # minimize cached information for failure
+            result.cleanFailure()
+            result.frames = []
+            result.stack = None
         info.downloading.remove(fp)
         info.downloaded[fp] = result # cache result
         for wad in info.waiting.pop(fp):
