@@ -15,6 +15,10 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertTrue(url_is_from_any_domain(url, ['wheele-bin-art.co.uk']))
         self.assertFalse(url_is_from_any_domain(url, ['art.co.uk']))
 
+        url = 'http://192.169.0.15:8080/mypage.html'
+        self.assertTrue(url_is_from_any_domain(url, ['192.169.0.15:8080']))
+        self.assertFalse(url_is_from_any_domain(url, ['192.169.0.15']))
+
         url = 'javascript:%20document.orderform_2581_1190810811.mode.value=%27add%27;%20javascript:%20document.orderform_2581_1190810811.submit%28%29'
         self.assertFalse(url_is_from_any_domain(url, ['testdomain.com']))
         self.assertFalse(url_is_from_any_domain(url+'.testdomain.com', ['testdomain.com']))
