@@ -1,8 +1,6 @@
 import os
 from collections import defaultdict
-from scrapy.xlib.pydispatch import dispatcher
 
-from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
@@ -18,13 +16,13 @@ class CookiesMiddleware(object):
         if not settings.getbool('COOKIES_ENABLED'):
             raise NotConfigured
         self.jars = defaultdict(CookieJar)
-        dispatcher.connect(self.spider_closed, signals.spider_closed)
 
     def process_request(self, request, spider):
         if 'dont_merge_cookies' in request.meta:
             return
 
-        jar = self.jars[spider]
+        cookiejarkey = request.meta.get("cookiejar")
+        jar = self.jars[cookiejarkey]
         cookies = self._get_request_cookies(jar, request)
         for cookie in cookies:
             jar.set_cookie_if_ok(cookie, request)
@@ -39,14 +37,12 @@ class CookiesMiddleware(object):
             return response
 
         # extract cookies from Set-Cookie and drop invalid/expired cookies
-        jar = self.jars[spider]
+        cookiejarkey = request.meta.get("cookiejar")
+        jar = self.jars[cookiejarkey]
         jar.extract_cookies(response, request)
         self._debug_set_cookie(response, spider)
 
         return response
-
-    def spider_closed(self, spider):
-        self.jars.pop(spider, None)
 
     def _debug_cookie(self, request, spider):
         if self.debug:
