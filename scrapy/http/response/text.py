@@ -6,10 +6,9 @@ See documentation in docs/topics/request-response.rst
 """
 
 from w3lib.encoding import html_to_unicode, resolve_encoding, \
-    html_body_declared_encoding, http_content_type_encoding
+    html_body_declared_encoding, http_content_type_encoding, to_unicode
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs
-from scrapy.utils.encoding import encoding_exists
 from scrapy.conf import settings
 
 
@@ -48,17 +47,7 @@ class TextResponse(Response):
 
     @property
     def encoding(self):
-        return self._get_encoding(infer=True)
-
-    def _get_encoding(self, infer=False):
-        enc = self._declared_encoding()
-        if enc and not encoding_exists(enc):
-            enc = None
-        if not enc and infer:
-            enc = self._body_inferred_encoding()
-        if not enc:
-            enc = self._DEFAULT_ENCODING
-        return resolve_encoding(enc)
+        return self._declared_encoding() or self._body_inferred_encoding()
 
     def _declared_encoding(self):
         return self._encoding or self._headers_encoding() \
@@ -67,7 +56,7 @@ class TextResponse(Response):
     def body_as_unicode(self):
         """Return body as unicode"""
         if self._cached_ubody is None:
-            self._cached_ubody = self.body.decode(self.encoding, 'scrapy_replace')
+            self._cached_ubody = to_unicode(self.body, self.encoding)
         return self._cached_ubody
 
     @memoizemethod_noargs
@@ -78,13 +67,20 @@ class TextResponse(Response):
     def _body_inferred_encoding(self):
         if self._cached_benc is None:
             content_type = self.headers.get('Content-Type')
-            benc, _ = html_to_unicode(content_type, self.body, default_encoding=self._DEFAULT_ENCODING)
+            benc, ubody = html_to_unicode(content_type, self.body, \
+                    auto_detect_fun=self._auto_detect_fun, \
+                    default_encoding=self._DEFAULT_ENCODING)
             self._cached_benc = benc
-            # XXX: is this needed?
-            # UnicodeDammit is buggy decoding utf-16
-            #if self._cached_ubody is None and benc != 'utf-16':
-            #    self._cached_ubody = dammit.unicode
+            self._cached_ubody = ubody
         return self._cached_benc
+
+    def _auto_detect_fun(self, text):
+        for enc in (self._DEFAULT_ENCODING, 'utf-8', 'cp1252'):
+            try:
+                text.decode(enc)
+            except UnicodeError:
+                continue
+            return resolve_encoding(enc)
 
     @memoizemethod_noargs
     def _body_declared_encoding(self):
