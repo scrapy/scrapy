@@ -192,7 +192,8 @@ There is support for keeping multiple cookie sessions per spider by using the
 For example::
 
     for i, url in enumerate(urls):
-        return Request("http://www.example.com", meta={'cookiejar': i})
+        yield Request("http://www.example.com", meta={'cookiejar': i},
+            callback=self.parse_page)
 
 .. setting:: COOKIES_ENABLED
 
