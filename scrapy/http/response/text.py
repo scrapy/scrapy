@@ -5,24 +5,16 @@ discovering (through HTTP headers) to base Response class.
 See documentation in docs/topics/request-response.rst
 """
 
-import re
-import codecs
-from scrapy.http.response.dammit import UnicodeDammit
+from w3lib.encoding import html_to_unicode, resolve_encoding, \
+    html_body_declared_encoding, http_content_type_encoding, to_unicode
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs
-from scrapy.utils.encoding import encoding_exists, resolve_encoding
 from scrapy.conf import settings
-
-
-# Python decoder doesn't follow unicode standard when handling
-# bad utf-8 encoded strings. see http://bugs.python.org/issue8271
-codecs.register_error('scrapy_replace', lambda exc: (u'\ufffd', exc.start+1))
 
 
 class TextResponse(Response):
 
     _DEFAULT_ENCODING = settings['DEFAULT_RESPONSE_ENCODING']
-    _ENCODING_RE = re.compile(r'charset=([\w-]+)', re.I)
 
     def __init__(self, *args, **kwargs):
         self._encoding = kwargs.pop('encoding', None)
@@ -55,17 +47,7 @@ class TextResponse(Response):
 
     @property
     def encoding(self):
-        return self._get_encoding(infer=True)
-
-    def _get_encoding(self, infer=False):
-        enc = self._declared_encoding()
-        if enc and not encoding_exists(enc):
-            enc = None
-        if not enc and infer:
-            enc = self._body_inferred_encoding()
-        if not enc:
-            enc = self._DEFAULT_ENCODING
-        return resolve_encoding(enc)
+        return self._declared_encoding() or self._body_inferred_encoding()
 
     def _declared_encoding(self):
         return self._encoding or self._headers_encoding() \
@@ -74,30 +56,32 @@ class TextResponse(Response):
     def body_as_unicode(self):
         """Return body as unicode"""
         if self._cached_ubody is None:
-            self._cached_ubody = self.body.decode(self.encoding, 'scrapy_replace')
+            self._cached_ubody = to_unicode(self.body, self.encoding)
         return self._cached_ubody
 
     @memoizemethod_noargs
     def _headers_encoding(self):
         content_type = self.headers.get('Content-Type')
-        if content_type:
-            m = self._ENCODING_RE.search(content_type)
-            if m:
-                encoding = m.group(1)
-                if encoding_exists(encoding):
-                    return encoding
+        return http_content_type_encoding(content_type)
 
     def _body_inferred_encoding(self):
         if self._cached_benc is None:
-            enc = self._get_encoding()
-            dammit = UnicodeDammit(self.body, [enc])
-            benc = dammit.originalEncoding
+            content_type = self.headers.get('Content-Type')
+            benc, ubody = html_to_unicode(content_type, self.body, \
+                    auto_detect_fun=self._auto_detect_fun, \
+                    default_encoding=self._DEFAULT_ENCODING)
             self._cached_benc = benc
-            # UnicodeDammit is buggy decoding utf-16
-            if self._cached_ubody is None and benc != 'utf-16':
-                self._cached_ubody = dammit.unicode
+            self._cached_ubody = ubody
         return self._cached_benc
 
+    def _auto_detect_fun(self, text):
+        for enc in (self._DEFAULT_ENCODING, 'utf-8', 'cp1252'):
+            try:
+                text.decode(enc)
+            except UnicodeError:
+                continue
+            return resolve_encoding(enc)
+
+    @memoizemethod_noargs
     def _body_declared_encoding(self):
-        # implemented in subclasses (XmlResponse, HtmlResponse)
-        return None
+        return html_body_declared_encoding(self.body)

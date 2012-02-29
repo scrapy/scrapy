@@ -123,7 +123,7 @@ try:
 except ImportError:
     from distutils.core import setup
 else:
-    setup_args['install_requires'] = ['Twisted>=2.5', 'w3lib', 'pyOpenSSL']
+    setup_args['install_requires'] = ['Twisted>=2.5', 'w3lib>=1.1', 'pyOpenSSL']
     if sys.version_info < (2, 6):
         setup_args['install_requires'] += ['simplejson']
     try:

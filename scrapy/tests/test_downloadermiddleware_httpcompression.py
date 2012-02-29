@@ -9,7 +9,7 @@ from scrapy.spider import BaseSpider
 from scrapy.http import Response, Request, HtmlResponse
 from scrapy.contrib.downloadermiddleware.httpcompression import HttpCompressionMiddleware
 from scrapy.tests import tests_datadir
-from scrapy.utils.encoding import resolve_encoding
+from w3lib.encoding import resolve_encoding
 
 
 SAMPLEDIR = join(tests_datadir, 'compressed')
