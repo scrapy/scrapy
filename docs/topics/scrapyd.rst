@@ -153,6 +153,11 @@ http_port
 
 The TCP port where the HTTP JSON API will listen. Defaults to ``6800``.
 
+bind_address
+------------
+
+The IP address where the HTTP JSON API will listen. Defaults to ``0.0.0.0`` (all)
+
 max_proc
 --------
 
