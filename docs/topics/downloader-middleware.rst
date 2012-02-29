@@ -195,6 +195,15 @@ For example::
         yield Request("http://www.example.com", meta={'cookiejar': i},
             callback=self.parse_page)
 
+Keep in mind that the :reqmeta:`cookiejar` meta key is not "sticky". You need to keep
+passing it along on subsequent requests. For example::
+
+    def parse_page(self, response):
+        # do some processing
+        return Request("http://www.example.com/otherpage",
+            meta={'cookiejar': response.meta['cookiejar']},
+            callback=self.parse_other_page)
+
 .. setting:: COOKIES_ENABLED
 
 COOKIES_ENABLED
