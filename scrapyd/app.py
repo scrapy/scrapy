@@ -15,6 +15,7 @@ from .config import Config
 def application(config):
     app = Application("Scrapyd")
     http_port = config.getint('http_port', 6800)
+    bind_address = config.get('bind_address', '0.0.0.0')
 
     poller = QueuePoller(config)
     eggstorage = FilesystemEggStorage(config)
@@ -28,8 +29,8 @@ def application(config):
 
     launcher = Launcher(config, app)
     timer = TimerService(5, poller.poll)
-    webservice = TCPServer(http_port, server.Site(Root(config, app)))
-    log.msg("Scrapyd web console available at http://localhost:%s/" % http_port)
+    webservice = TCPServer(http_port, server.Site(Root(config, app)), interface=bind_address)
+    log.msg("Scrapyd web console available at http://%s:%s/" % (bind_address, http_port))
 
     launcher.setServiceParent(app)
     timer.setServiceParent(app)
