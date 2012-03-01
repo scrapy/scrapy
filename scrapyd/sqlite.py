@@ -1,8 +1,7 @@
 import sqlite3
 import cPickle
+import json
 from UserDict import DictMixin
-
-from scrapy.utils.py26 import json
 
 
 class SqliteDict(DictMixin):

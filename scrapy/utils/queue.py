@@ -1,11 +1,8 @@
-from __future__ import with_statement
-
 import os
 import struct
 import glob
+import json
 from collections import deque
-
-from scrapy.utils.py26 import json
 
 
 class FifoMemoryQueue(object):

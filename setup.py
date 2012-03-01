@@ -3,8 +3,6 @@
 # It doesn't depend on setuptools, but if setuptools is available it'll use
 # some of its features, like package dependencies.
 
-from __future__ import with_statement
-
 from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
 from subprocess import Popen, PIPE
@@ -104,7 +102,6 @@ setup_args = {
     'scripts': scripts,
     'classifiers': [
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.5',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'License :: OSI Approved :: BSD License',

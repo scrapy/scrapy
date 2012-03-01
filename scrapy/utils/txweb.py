@@ -1,6 +1,6 @@
-from twisted.web import resource
+import json
 
-from scrapy.utils.py26 import json
+from twisted.web import resource
 
 class JsonResource(resource.Resource):
 

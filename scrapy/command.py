@@ -2,8 +2,6 @@
 Base class for Scrapy commands
 """
 
-from __future__ import with_statement
-
 import os
 from optparse import OptionGroup
 

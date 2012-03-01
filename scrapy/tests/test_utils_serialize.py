@@ -1,11 +1,11 @@
 import unittest
 import datetime
+import json
 from decimal import Decimal
 
 from twisted.internet import defer
 
 from scrapy.utils.serialize import SpiderReferencer, ScrapyJSONEncoder, ScrapyJSONDecoder
-from scrapy.utils.py26 import json
 from scrapy.spider import BaseSpider
 from scrapy.http import Request, Response
 

@@ -4,9 +4,9 @@ http://groups.google.com/group/json-rpc/web/json-rpc-2-0
 """
 
 import urllib
+import json
 import traceback
 
-from scrapy.utils.py26 import json
 from scrapy.utils.serialize import ScrapyJSONDecoder
 
 # JSON-RPC 2.0 errors, as defined in:

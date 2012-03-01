@@ -1,13 +1,11 @@
-from __future__ import with_statement
-
 import os
+import json
 from os.path import join, exists
 
 from scrapy.utils.pqueue import PriorityQueue
 from scrapy.utils.reqser import request_to_dict, request_from_dict
 from scrapy.utils.misc import load_object
 from scrapy.utils.job import job_dir
-from scrapy.utils.py26 import json
 from scrapy.stats import stats
 from scrapy import log
 

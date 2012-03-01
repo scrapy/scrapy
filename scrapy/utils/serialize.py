@@ -1,12 +1,12 @@
 import re
 import datetime
 import decimal
+import json
 
 from twisted.internet import defer
 
 from scrapy.spider import BaseSpider
 from scrapy.http import Request, Response
-from scrapy.utils.py26 import json
 
 
 class SpiderReferencer(object):

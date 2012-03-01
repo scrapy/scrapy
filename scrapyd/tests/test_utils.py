@@ -1,16 +1,12 @@
-from __future__ import with_statement
-
 import os
+from pkgutil import get_data
 from cStringIO import StringIO
 
 from twisted.trial import unittest
 
-from scrapy.utils.py26 import get_data
 from scrapyd.interfaces import IEggStorage
 from scrapyd.utils import get_crawl_args, get_spider_list
 from scrapyd import get_application
-
-__package__ = 'scrapyd.tests' # required for compatibility with python 2.5
 
 class UtilsTest(unittest.TestCase):
 

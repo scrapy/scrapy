@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 from glob import glob
 from os import path, makedirs, remove
 from shutil import copyfileobj, rmtree

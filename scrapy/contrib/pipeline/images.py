@@ -4,7 +4,6 @@ Images Pipeline
 See documentation in topics/images.rst
 """
 
-from __future__ import with_statement
 import os
 import time
 import hashlib
