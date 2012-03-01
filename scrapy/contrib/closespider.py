@@ -21,10 +21,6 @@ class CloseSpider(object):
         self.crawler = crawler
         self.timeout = settings.getint('CLOSESPIDER_TIMEOUT')
         self.itemcount = settings.getint('CLOSESPIDER_ITEMCOUNT')
-        # XXX: legacy support - remove for future releases
-        if settings.getint('CLOSESPIDER_ITEMPASSED'):
-            warnings.warn("CLOSESPIDER_ITEMPASSED setting is deprecated, use CLOSESPIDER_ITEMCOUNT instead", ScrapyDeprecationWarning)
-            self.pagecount = settings.getint('CLOSESPIDER_ITEMPASSED')
         self.pagecount = settings.getint('CLOSESPIDER_PAGECOUNT')
         self.errorcount = settings.getint('CLOSESPIDER_ERRORCOUNT')
 
