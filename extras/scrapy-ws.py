@@ -11,11 +11,10 @@ command).
 
 """
 
-import sys, optparse, urllib
+import sys, optparse, urllib, json
 from urlparse import urljoin
 
 from scrapy.utils.jsonrpc import jsonrpc_client_call, JsonRpcError
-from scrapy.utils.py26 import json
 
 def get_commands():
     return {

@@ -1,11 +1,9 @@
 import glob
 from cStringIO import StringIO
+from pkgutil import get_data
 from ConfigParser import SafeConfigParser, NoSectionError, NoOptionError
 
 from scrapy.utils.conf import closest_scrapy_cfg
-from scrapy.utils.py26 import get_data
-
-__package__ = 'scrapyd' # required for compatibility with python 2.5
 
 class Config(object):
     """A ConfigParser wrapper to support defaults when calling instance

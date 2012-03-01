@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 from unittest import TestCase
 from os.path import join, abspath, dirname
 from cStringIO import StringIO

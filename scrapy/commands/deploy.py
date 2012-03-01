@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import sys
 import os
 import glob
@@ -8,6 +6,7 @@ import shutil
 import time
 import urllib2
 import netrc
+import json
 from urlparse import urlparse, urljoin
 from subprocess import Popen, PIPE, check_call
 
@@ -15,7 +14,6 @@ from w3lib.form import encode_multipart
 
 from scrapy.command import ScrapyCommand
 from scrapy.exceptions import UsageError
-from scrapy.utils.py26 import json
 from scrapy.utils.http import basic_auth_header
 from scrapy.utils.conf import get_config, closest_scrapy_cfg
 

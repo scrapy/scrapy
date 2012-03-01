@@ -1,11 +1,11 @@
 import sys
 from datetime import datetime
+from multiprocessing import cpu_count
 
 from twisted.internet import reactor, defer, protocol, error
 from twisted.application.service import Service
 from twisted.python import log
 
-from scrapy.utils.py26 import cpu_count
 from scrapy.utils.python import stringify_dict
 from scrapyd.utils import get_crawl_args
 from .interfaces import IPoller, IEnvironment

@@ -5,10 +5,9 @@ Item Exporters are used to export/serialize items into different formats.
 import csv
 import pprint
 import marshal
+import json
 import cPickle as pickle
 from xml.sax.saxutils import XMLGenerator
-
-from scrapy.utils.py26 import json
 
 
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter', \

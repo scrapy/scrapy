@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import os
 from time import time
 import cPickle as pickle

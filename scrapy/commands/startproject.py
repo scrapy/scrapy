@@ -3,11 +3,11 @@ import string
 import re
 import shutil
 from os.path import join, exists
+from shutil import copytree, ignore_patterns
 
 import scrapy
 from scrapy.command import ScrapyCommand
 from scrapy.utils.template import render_templatefile, string_camelcase
-from scrapy.utils.py26 import ignore_patterns, copytree
 from scrapy.exceptions import UsageError
 
 TEMPLATES_PATH = join(scrapy.__path__[0], 'templates', 'project')

@@ -2,7 +2,7 @@
 This module contains essential stuff that should've come with Python itself ;)
 
 It also contains functions (or functionality) which is in Python versions
-higher than 2.5 which is the lowest version supported by Scrapy.
+higher than 2.5 which used to be the lowest version supported by Scrapy.
 
 """
 import os

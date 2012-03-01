@@ -11,7 +11,7 @@ This document describes how to install Scrapy on Linux, Windows and Mac OS X.
 Requirements
 ============
 
-* `Python`_ 2.5, 2.6, 2.7 (3.x is not yet supported)
+* `Python`_ 2.6, 2.7 (3.x is not yet supported)
 
 * `Twisted`_ 2.5.0, 8.0 or above (Windows users: you'll need to install
   `Zope.Interface`_ and maybe `pywin32`_ because of `this Twisted bug`_)
@@ -32,7 +32,7 @@ Install Python
 
 First, you need to install Python, if you haven't done so already.
 
-Scrapy works with Python 2.5, 2.6 or 2.7, which you can get at
+Scrapy works with Python 2.6 or 2.7, which you can get at
 http://www.python.org/download/
 
 .. seealso:: :ref:`faq-python-versions`

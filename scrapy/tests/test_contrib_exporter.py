@@ -1,9 +1,8 @@
-import unittest, cPickle as pickle
+import unittest, json, cPickle as pickle
 from cStringIO import StringIO
 
 from scrapy.item import Item, Field
 from scrapy.utils.python import str_to_unicode
-from scrapy.utils.py26 import json
 from scrapy.contrib.exporter import BaseItemExporter, PprintItemExporter, \
     PickleItemExporter, CsvItemExporter, XmlItemExporter, JsonLinesItemExporter, \
     JsonItemExporter
