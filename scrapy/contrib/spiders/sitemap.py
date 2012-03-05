@@ -22,7 +22,7 @@ class SitemapSpider(BaseSpider):
         self._follow = [regex(x) for x in self.sitemap_follow]
 
     def start_requests(self):
-        return [Request(x, callback=self._parse_sitemap) for x in self.sitemap_urls]
+        return (Request(x, callback=self._parse_sitemap) for x in self.sitemap_urls)
 
     def _parse_sitemap(self, response):
         if response.url.endswith('/robots.txt'):
