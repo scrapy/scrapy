@@ -50,10 +50,8 @@ class BaseSpider(object_ref):
         return self._settings
 
     def start_requests(self):
-        reqs = []
         for url in self.start_urls:
-            reqs.extend(arg_to_iter(self.make_requests_from_url(url)))
-        return reqs
+            yield self.make_requests_from_url(url)
 
     def make_requests_from_url(self, url):
         return Request(url, dont_filter=True)
