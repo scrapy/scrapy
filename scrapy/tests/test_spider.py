@@ -1,4 +1,4 @@
-import gzip, warnings
+import gzip, warnings, inspect
 from cStringIO import StringIO
 
 from twisted.trial import unittest
@@ -23,6 +23,12 @@ class BaseSpiderTest(unittest.TestCase):
         spider = self.spider_class("example.com")
         self.assertEqual(spider.name, 'example.com')
         self.assertEqual(spider.start_urls, [])
+
+    def test_start_requests(self):
+        spider = self.spider_class('example.com')
+        start_requests = spider.start_requests()
+        self.assertTrue(inspect.isgenerator(start_requests))
+        self.assertEqual(list(start_requests), [])
 
     def test_spider_args(self):
         """Constructor arguments are assigned to spider attributes"""
