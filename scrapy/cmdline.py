@@ -1,5 +1,4 @@
 import sys
-import os
 import optparse
 import cProfile
 import inspect
@@ -9,7 +8,7 @@ from scrapy.crawler import CrawlerProcess
 from scrapy.xlib import lsprofcalltree
 from scrapy.conf import settings
 from scrapy.command import ScrapyCommand
-from scrapy.exceptions import UsageError, ScrapyDeprecationWarning
+from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import inside_project
 
@@ -72,24 +71,6 @@ def _print_unknown_command(cmdname, inproject):
         print
         print "More commands are available in project mode"
 
-def _check_deprecated_scrapy_ctl(argv, inproject):
-    """Check if Scrapy was called using the deprecated scrapy-ctl command and
-    warn in that case, also creating a scrapy.cfg if it doesn't exist.
-    """
-    if not any('scrapy-ctl' in x for x in argv):
-        return
-    import warnings
-    warnings.warn("`scrapy-ctl.py` command-line tool is deprecated and will be removed in Scrapy 0.11, use `scrapy` instead",
-        ScrapyDeprecationWarning, stacklevel=3)
-    if inproject:
-        projpath = os.path.abspath(os.path.dirname(os.path.dirname(settings.settings_module.__file__)))
-        cfg_path = os.path.join(projpath, 'scrapy.cfg')
-        if not os.path.exists(cfg_path):
-            with open(cfg_path, 'w') as f:
-                f.write("# generated automatically - feel free to edit" + os.linesep)
-                f.write("[settings]" + os.linesep)
-                f.write("default = %s" % settings.settings_module.__name__ + os.linesep)
-
 def _run_print_help(parser, func, *a, **kw):
     try:
         func(*a, **kw)
@@ -106,7 +87,6 @@ def execute(argv=None):
     crawler = CrawlerProcess(settings)
     crawler.install()
     inproject = inside_project()
-    _check_deprecated_scrapy_ctl(argv, inproject) # TODO: remove for Scrapy 0.11
     cmds = _get_commands_dict(inproject)
     cmdname = _pop_command_name(argv)
     parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(), \
