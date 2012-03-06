@@ -1,18 +1,19 @@
 import unittest 
 
 from scrapy.spider import BaseSpider
-from scrapy.xlib.pydispatch import dispatcher
 from scrapy.statscol import StatsCollector, DummyStatsCollector
 from scrapy.signals import stats_spider_opened, stats_spider_closing, \
     stats_spider_closed
+from scrapy.utils.test import get_crawler
 
 class StatsCollectorTest(unittest.TestCase):
 
     def setUp(self):
+        self.crawler = get_crawler()
         self.spider = BaseSpider('foo')
 
     def test_collector(self):
-        stats = StatsCollector()
+        stats = StatsCollector(self.crawler)
         self.assertEqual(stats.get_stats(), {})
         self.assertEqual(stats.get_value('anything'), None)
         self.assertEqual(stats.get_value('anything', 'default'), 'default')
@@ -39,7 +40,7 @@ class StatsCollectorTest(unittest.TestCase):
         self.assertEqual(stats.get_value('test4'), 7)
 
     def test_dummy_collector(self):
-        stats = DummyStatsCollector()
+        stats = DummyStatsCollector(self.crawler)
         self.assertEqual(stats.get_stats(), {})
         self.assertEqual(stats.get_value('anything'), None)
         self.assertEqual(stats.get_value('anything', 'default'), 'default')
@@ -70,11 +71,11 @@ class StatsCollectorTest(unittest.TestCase):
             assert spider_stats == {'test': 1}
             signals_catched.add(stats_spider_closed)
 
-        dispatcher.connect(spider_opened, signal=stats_spider_opened)
-        dispatcher.connect(spider_closing, signal=stats_spider_closing)
-        dispatcher.connect(spider_closed, signal=stats_spider_closed)
+        self.crawler.signals.connect(spider_opened, signal=stats_spider_opened)
+        self.crawler.signals.connect(spider_closing, signal=stats_spider_closing)
+        self.crawler.signals.connect(spider_closed, signal=stats_spider_closed)
 
-        stats = StatsCollector()
+        stats = StatsCollector(self.crawler)
         stats.open_spider(self.spider)
         stats.set_value('test', 1, spider=self.spider)
         self.assertEqual([(self.spider, {'test': 1})], list(stats.iter_spider_stats()))
@@ -83,9 +84,9 @@ class StatsCollectorTest(unittest.TestCase):
         assert stats_spider_closing in signals_catched
         assert stats_spider_closed in signals_catched
 
-        dispatcher.disconnect(spider_opened, signal=stats_spider_opened)
-        dispatcher.disconnect(spider_closing, signal=stats_spider_closing)
-        dispatcher.disconnect(spider_closed, signal=stats_spider_closed)
+        self.crawler.signals.disconnect(spider_opened, signal=stats_spider_opened)
+        self.crawler.signals.disconnect(spider_closing, signal=stats_spider_closing)
+        self.crawler.signals.disconnect(spider_closed, signal=stats_spider_closed)
 
 if __name__ == "__main__":
     unittest.main()

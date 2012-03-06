@@ -1,4 +1,3 @@
-from scrapy.xlib.pydispatch import dispatcher
 from scrapy.exceptions import NotConfigured
 from scrapy import signals
 from scrapy.utils.httpobj import urlparse_cached
@@ -63,8 +62,8 @@ class AutoThrottle(object):
         if not settings.getbool('AUTOTHROTTLE_ENABLED'):
             raise NotConfigured
         self.crawler = crawler
-        dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
-        dispatcher.connect(self.response_received, signal=signals.response_received)
+        crawler.signals.connect(self.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(self.response_received, signal=signals.response_received)
         self.START_DELAY = settings.getfloat("AUTOTHROTTLE_START_DELAY", 5.0)
         self.CONCURRENCY_CHECK_PERIOD = settings.getint("AUTOTHROTTLE_CONCURRENCY_CHECK_PERIOD", 10)
         self.MAX_CONCURRENCY = settings.getint("AUTOTHROTTLE_MAX_CONCURRENCY", 8)

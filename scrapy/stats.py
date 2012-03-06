@@ -1,9 +1,7 @@
-from scrapy.statscol import DummyStatsCollector
-from scrapy.conf import settings
-from scrapy.utils.misc import load_object
+from scrapy.project import crawler
+stats = crawler.stats
 
-# if stats are disabled use a DummyStatsCollector to improve performance
-if settings.getbool('STATS_ENABLED'):
-    stats = load_object(settings['STATS_CLASS'])()
-else:
-    stats = DummyStatsCollector()
+import warnings
+from scrapy.exceptions import ScrapyDeprecationWarning
+warnings.warn("Module `scrapy.stats` is deprecated, use `crawler.stats` attribute instead",
+    ScrapyDeprecationWarning, stacklevel=2)

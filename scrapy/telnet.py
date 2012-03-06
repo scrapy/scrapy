@@ -10,11 +10,8 @@ from twisted.conch import manhole, telnet
 from twisted.conch.insults import insults
 from twisted.internet import protocol
 
-from scrapy.xlib.pydispatch import dispatcher
 from scrapy.exceptions import NotConfigured
-from scrapy.stats import stats
 from scrapy import log, signals
-from scrapy.utils.signal import send_catch_log
 from scrapy.utils.trackref import print_live_refs
 from scrapy.utils.engine import print_engine_status
 from scrapy.utils.reactor import listen_tcp
@@ -39,8 +36,8 @@ class TelnetConsole(protocol.ServerFactory):
         self.noisy = False
         self.portrange = map(int, crawler.settings.getlist('TELNETCONSOLE_PORT'))
         self.host = crawler.settings['TELNETCONSOLE_HOST']
-        dispatcher.connect(self.start_listening, signals.engine_started)
-        dispatcher.connect(self.stop_listening, signals.engine_stopped)
+        self.crawler.signals.connect(self.start_listening, signals.engine_started)
+        self.crawler.signals.connect(self.stop_listening, signals.engine_stopped)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -70,7 +67,7 @@ class TelnetConsole(protocol.ServerFactory):
             'slot': slot,
             'manager': self.crawler,
             'extensions': self.crawler.extensions,
-            'stats': stats,
+            'stats': self.crawler.stats,
             'spiders': self.crawler.spiders,
             'settings': self.crawler.settings,
             'est': lambda: print_engine_status(self.crawler.engine),
@@ -80,5 +77,5 @@ class TelnetConsole(protocol.ServerFactory):
             'help': "This is Scrapy telnet console. For more info see: " \
                 "http://doc.scrapy.org/en/latest/topics/telnetconsole.html",
         }
-        send_catch_log(update_telnet_vars, telnet_vars=telnet_vars)
+        self.crawler.signals.send_catch_log(update_telnet_vars, telnet_vars=telnet_vars)
         return telnet_vars

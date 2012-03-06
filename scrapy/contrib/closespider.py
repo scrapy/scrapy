@@ -8,7 +8,6 @@ from collections import defaultdict
 
 from twisted.internet import reactor
 from twisted.python import log as txlog
-from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy import signals, log
 
@@ -29,12 +28,12 @@ class CloseSpider(object):
         if self.errorcount:
             txlog.addObserver(self.catch_log)
         if self.pagecount:
-            dispatcher.connect(self.page_count, signal=signals.response_received)
+            crawler.signals.connect(self.page_count, signal=signals.response_received)
         if self.timeout:
-            dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
+            crawler.signals.connect(self.spider_opened, signal=signals.spider_opened)
         if self.itemcount:
-            dispatcher.connect(self.item_scraped, signal=signals.item_scraped)
-        dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
+            crawler.signals.connect(self.item_scraped, signal=signals.item_scraped)
+        crawler.signals.connect(self.spider_closed, signal=signals.spider_closed)
 
     @classmethod
     def from_crawler(cls, crawler):

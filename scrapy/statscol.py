@@ -3,20 +3,16 @@ Scrapy extension for collecting scraping stats
 """
 import pprint
 
-from scrapy.xlib.pydispatch import dispatcher
-
 from scrapy.signals import stats_spider_opened, stats_spider_closing, \
     stats_spider_closed
-from scrapy.utils.signal import send_catch_log
-from scrapy import signals
 from scrapy import log
-from scrapy.conf import settings
 
 class StatsCollector(object):
 
-    def __init__(self):
-        self._dump = settings.getbool('STATS_DUMP')
+    def __init__(self, crawler):
+        self._dump = crawler.settings.getbool('STATS_DUMP')
         self._stats = {None: {}} # None is for global stats
+        self._signals = crawler.signals
 
     def get_value(self, key, default=None, spider=None):
         return self._stats[spider].get(key, default)
@@ -50,12 +46,12 @@ class StatsCollector(object):
 
     def open_spider(self, spider):
         self._stats[spider] = {}
-        send_catch_log(stats_spider_opened, spider=spider)
+        self._signals.send_catch_log(stats_spider_opened, spider=spider)
 
     def close_spider(self, spider, reason):
-        send_catch_log(stats_spider_closing, spider=spider, reason=reason)
+        self._signals.send_catch_log(stats_spider_closing, spider=spider, reason=reason)
         stats = self._stats.pop(spider)
-        send_catch_log(stats_spider_closed, spider=spider, reason=reason, \
+        self._signals.send_catch_log(stats_spider_closed, spider=spider, reason=reason, \
             spider_stats=stats)
         if self._dump:
             log.msg("Dumping spider stats:\n" + pprint.pformat(stats), \
@@ -73,8 +69,8 @@ class StatsCollector(object):
 
 class MemoryStatsCollector(StatsCollector):
 
-    def __init__(self):
-        super(MemoryStatsCollector, self).__init__()
+    def __init__(self, crawler):
+        super(MemoryStatsCollector, self).__init__(crawler)
         self.spider_stats = {}
 
     def _persist_stats(self, stats, spider=None):
