@@ -13,7 +13,7 @@ Requirements
 
 * `Python`_ 2.6, 2.7 (3.x is not yet supported)
 
-* `Twisted`_ 2.5.0, 8.0 or above (Windows users: you'll need to install
+* `Twisted`_ 8.0 or above (Windows users: you'll need to install
   `Zope.Interface`_ and maybe `pywin32`_ because of `this Twisted bug`_)
 
 * `w3lib`_
