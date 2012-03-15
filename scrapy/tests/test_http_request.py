@@ -1,11 +1,10 @@
 import cgi
 import unittest
 import xmlrpclib
-from inspect import getargspec
 from cStringIO import StringIO
 from urlparse import urlparse
 
-from scrapy.http import Request, FormRequest, XmlRpcRequest, Headers, Response
+from scrapy.http import Request, FormRequest, XmlRpcRequest, Headers, HtmlResponse
 
 
 class RequestTest(unittest.TestCase):
@@ -214,7 +213,7 @@ class FormRequestTest(RequestTest):
 <input type="hidden" name="test2" value="xxx">
 </form>
         """
-        response = Response("http://www.example.com/this/list.html", body=respbody)
+        response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
         r1 = self.request_class.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'}, callback=lambda x: x)
         self.assertEqual(r1.method, 'POST')
         self.assertEqual(r1.headers['Content-type'], 'application/x-www-form-urlencoded')
@@ -234,7 +233,7 @@ class FormRequestTest(RequestTest):
 </form>
         """
         headers = {"Accept-Encoding": "gzip,deflate"}
-        response = Response("http://www.example.com/this/list.html", body=respbody)
+        response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
         r1 = self.request_class.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'}, headers=headers, callback=lambda x: x)
         self.assertEqual(r1.method, 'POST')
         self.assertEqual(r1.headers['Content-type'], 'application/x-www-form-urlencoded')
@@ -248,7 +247,7 @@ class FormRequestTest(RequestTest):
 <input type="hidden" name="test2" value="xxx">
 </form>
         """
-        response = Response("http://www.example.com/this/list.html", body=respbody)
+        response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
         r1 = self.request_class.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'})
         self.assertEqual(r1.method, 'GET')
         self.assertEqual(urlparse(r1.url).hostname, "www.example.com")
@@ -266,7 +265,7 @@ class FormRequestTest(RequestTest):
 <input type="hidden" name="two" value="3">
 </form>
         """
-        response = Response("http://www.example.com/this/list.html", body=respbody)
+        response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
         r1 = self.request_class.from_response(response, formdata={'two': '2'})
         fs = cgi.FieldStorage(StringIO(r1.body), r1.headers, environ={"REQUEST_METHOD": "POST"})
         self.assertEqual(fs['one'].value, '1')
@@ -281,7 +280,7 @@ class FormRequestTest(RequestTest):
 <input type="submit" name="clickeable2" value="clicked2">
 </form>
         """
-        response = Response("http://www.example.com/this/list.html", body=respbody)
+        response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
         r1 = self.request_class.from_response(response, formdata={'two': '2'})
         urlargs = cgi.parse_qs(urlparse(r1.url).query)
         self.assertEqual(urlargs['clickeable1'], ['clicked1'])
@@ -298,7 +297,7 @@ class FormRequestTest(RequestTest):
 <input type="submit" name="clickeable2" value="clicked2">
 </form>
         """
-        response = Response("http://www.example.com/this/list.html", body=respbody)
+        response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
         r1 = self.request_class.from_response(response, formdata={'two': '2'}, clickdata={'name': 'clickeable2'})
         urlargs = cgi.parse_qs(urlparse(r1.url).query)
         self.assertEqual(urlargs['clickeable2'], ['clicked2'])
@@ -315,7 +314,7 @@ class FormRequestTest(RequestTest):
 <input type="submit" name="clickeable2" value="clicked2">
 </form>
         """
-        response = Response("http://www.example.com/this/list.html", body=respbody)
+        response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
         r1 = self.request_class.from_response(response, dont_click=True)
         urlargs = cgi.parse_qs(urlparse(r1.url).query)
         self.assertFalse('clickeable1' in urlargs, urlargs)
@@ -323,7 +322,7 @@ class FormRequestTest(RequestTest):
 
     def test_from_response_errors_noform(self):
         respbody = """<html></html>"""
-        response = Response("http://www.example.com/lala.html", body=respbody)
+        response = HtmlResponse("http://www.example.com/lala.html", body=respbody)
         self.assertRaises(ValueError, self.request_class.from_response, response)
 
     def test_from_response_errors_formnumber(self):
@@ -334,7 +333,7 @@ class FormRequestTest(RequestTest):
 <input type="hidden" name="test2" value="xxx">
 </form>
         """
-        response = Response("http://www.example.com/lala.html", body=respbody)
+        response = HtmlResponse("http://www.example.com/lala.html", body=respbody)
         self.assertRaises(IndexError, self.request_class.from_response, response, formnumber=1)
 
     def test_from_response_noformname(self):
@@ -344,7 +343,7 @@ class FormRequestTest(RequestTest):
 <input type="hidden" name="two" value="2">
 </form>
         """
-        response = Response("http://www.example.com/formname.html", body=respbody)
+        response = HtmlResponse("http://www.example.com/formname.html", body=respbody)
         r1 = self.request_class.from_response(response, formdata={'two':'3'}, callback=lambda x: x)
         self.assertEqual(r1.method, 'POST')
         self.assertEqual(r1.headers['Content-type'], 'application/x-www-form-urlencoded')
@@ -364,7 +363,7 @@ class FormRequestTest(RequestTest):
 <input type="hidden" name="four" value="4">
 </form>
         """
-        response = Response("http://www.example.com/formname.html", body=respbody)
+        response = HtmlResponse("http://www.example.com/formname.html", body=respbody)
         r1 = self.request_class.from_response(response, formname="form2", callback=lambda x: x)
         self.assertEqual(r1.method, 'POST')
         fs = cgi.FieldStorage(StringIO(r1.body), r1.headers, environ={"REQUEST_METHOD": "POST"})
@@ -380,7 +379,7 @@ class FormRequestTest(RequestTest):
 <input type="hidden" name="two" value="2">
 </form>
         """
-        response = Response("http://www.example.com/formname.html", body=respbody)
+        response = HtmlResponse("http://www.example.com/formname.html", body=respbody)
         r1 = self.request_class.from_response(response, formname="form3", callback=lambda x: x)
         self.assertEqual(r1.method, 'POST')
         fs = cgi.FieldStorage(StringIO(r1.body), r1.headers, environ={"REQUEST_METHOD": "POST"})
@@ -395,7 +394,7 @@ class FormRequestTest(RequestTest):
 <input type="hidden" name="two" value="2">
 </form>
         """
-        response = Response("http://www.example.com/formname.html", body=respbody)
+        response = HtmlResponse("http://www.example.com/formname.html", body=respbody)
         self.assertRaises(IndexError, self.request_class.from_response, response, formname="form3", formnumber=2)
 
 
