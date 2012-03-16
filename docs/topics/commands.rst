@@ -35,8 +35,6 @@ structure by default, similar to this::
            spider1.py
            spider2.py
            ...
-   .scrapy/
-       scrapy.db
 
 The directory where the ``scrapy.cfg`` file resides is known as the *project
 root directory*. That file contains the name of the python module that defines
@@ -44,12 +42,6 @@ the project settings. Here is an example::
 
     [settings]
     default = myproject.settings
-
-By default, Scrapy projects use a SQLite_ database to store persistent runtime
-data of the project, such as the spider queue (the list of spiders that are
-scheduled to run).  By default, this SQLite database is stored in the *project
-data directory* which, by default, is the ``.scrapy`` directory inside the
-project root directory mentioned above.
 
 Using the ``scrapy`` tool
 =========================
@@ -466,5 +458,3 @@ commands for your Scrapy project.
 Example::
 
     COMMANDS_MODULE = 'mybot.commands'
-
-.. _SQLite: http://en.wikipedia.org/wiki/SQLite
