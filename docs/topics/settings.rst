@@ -883,18 +883,6 @@ Example::
 
     SPIDER_MODULES = ['mybot.spiders_prod', 'mybot.spiders_dev']
 
-.. setting:: SQLITE_DB
-
-SQLITE_DB
----------
-
-Default: ``'scrapy.db'``
-
-The location of the project SQLite database, used for storing the spider queue
-and other persistent data of the project. If a relative path is given, is taken
-relative to the project data dir. For more info see:
-:ref:`topics-project-structure`.
-
 .. setting:: STATS_CLASS
 
 STATS_CLASS

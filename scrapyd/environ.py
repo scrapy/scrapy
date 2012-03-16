@@ -28,8 +28,6 @@ class Environment(object):
         env['SCRAPY_JOB'] = message['_job']
         if project in self.settings:
             env['SCRAPY_SETTINGS_MODULE'] = self.settings[project]
-        dbpath = os.path.join(self.dbs_dir, '%s.db' % project)
-        env['SCRAPY_SQLITE_DB'] = dbpath
         env['SCRAPY_LOG_FILE'] = self._get_file(message, self.logs_dir, 'log')
         env['SCRAPY_FEED_URI'] = self._get_file(message, self.items_dir, 'jl')
         return env
