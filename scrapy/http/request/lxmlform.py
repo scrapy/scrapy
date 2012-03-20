@@ -32,7 +32,7 @@ class LxmlFormRequest(FormRequest):
 
     @classmethod
     def from_response(cls, response, formname=None, formnumber=0, formdata=None,
-                       dont_click=False, **kwargs):
+                      clickdata=None, dont_click=False, **kwargs):
         if not hasattr(formdata, "items"):
             try:
                 if formdata:
@@ -55,14 +55,15 @@ class LxmlFormRequest(FormRequest):
                     form = f
                     break
 
-        if not form:
+        if form is None:
             try:
                 form = forms[formnumber]
             except IndexError:
                 raise IndexError("Form number %d not found in %s" % (formnumber, response))
 
-        clickable = set()
+        clickable = []
         results = []
+        xmlns = bool(hxs.xpath("@xmlns"))
         for el in form.inputs:
             name = el.name
             if not name or name in formdata:
@@ -71,7 +72,7 @@ class LxmlFormRequest(FormRequest):
             if tag == 'textarea':
                 results.append((name, el.value))
             elif tag == 'select':
-                if u' xmlns' in response.body_as_unicode()[:200]:
+                if xmlns:
                     #use builtin select parser with namespaces
                     value = el.value
                 else:
@@ -94,15 +95,19 @@ class LxmlFormRequest(FormRequest):
                 if el.type in ( 'image', 'reset'):
                     continue
                 elif el.type=='submit':
-                    clickable.add(el)
+                    clickable.append(el)
+                    continue
                 value = el.value
                 if value is not None:
                     results.append((name, el.value))
-        if not dont_click and clickable:
-            if not clickable.intersection(formdata):
-                button = clickable.pop()
+        if clickdata is not None:
+            for key, value in clickdata.items():
+                input = form.xpath(".//input[@%s='%s']" %(key, value))[0]
+                results.append([input.xpath("@name")[0], input.xpath("@value")])
+        elif not dont_click and clickable:
+            if not set(clickable).intersection(formdata):
+                button = clickable.pop(0)
                 results.append((button.name, button.value))
-
         results.extend([(key, value) for key, value in formdata.iteritems()])
         values = [(_unicode_to_str(key, encoding), _unicode_to_str(value, encoding))
                   for key,value in results]
