@@ -54,7 +54,7 @@ Request objects
     :param cookies: the request cookies. Example::
 
             request_with_cookies = Request(url="http://www.example.com",
-                                           cookies={currency: 'USD', country: 'UY'})
+                                           cookies={'currency': 'USD', 'country': 'UY'})
 
         When some site returns cookies (in a response) those are stored in the
         cookies for that domain and will be sent again in future requests. That's
@@ -66,7 +66,7 @@ Request objects
         Example of request without merging cookies::
 
             request_with_cookies = Request(url="http://www.example.com",
-                                           cookies={currency: 'USD', country: 'UY'},
+                                           cookies={'currency': 'USD', 'country': 'UY'},
                                            meta={'dont_merge_cookies': True})
 
         For more info see :ref:`cookies-mw`.
