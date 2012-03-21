@@ -42,7 +42,7 @@ All available link extractors classes bundled with Scrapy are provided in the
 SgmlLinkExtractor
 -----------------
 
-.. class:: SgmlLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), deny_extensions=None, restrict_xpaths(), tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True, process_value=None)
+.. class:: SgmlLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), deny_extensions=None, restrict_xpaths=(), tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True, process_value=None)
 
     The SgmlLinkExtractor extends the base :class:`BaseSgmlLinkExtractor` by
     providing additional filters that you can specify to extract links,
