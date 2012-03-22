@@ -82,7 +82,7 @@ if ! grep -q "Process finished" $scrapyd_log; then
 fi
 
 numitems="$(cat $feed_path | wc -l)"
-if [ "$numitems" != "8" ]; then
+if [ "$numitems" != "7" ]; then
     echo "error: wrong number of items scraped: $numitems"
     exit 1
 fi
