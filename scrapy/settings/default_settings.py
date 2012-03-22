@@ -185,6 +185,8 @@ REDIRECT_MAX_METAREFRESH_DELAY = 100
 REDIRECT_MAX_TIMES = 20 # uses Firefox default setting
 REDIRECT_PRIORITY_ADJUST = +2
 
+REFERER_ENABLED = True
+
 RETRY_ENABLED = True
 RETRY_TIMES = 2 # initial response + 2 retries = 3 requests
 RETRY_HTTP_CODES = [500, 503, 504, 400, 408]

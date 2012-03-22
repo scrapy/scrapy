@@ -251,6 +251,20 @@ RefererMiddleware
 
    Populates Request referer field, based on the Response which originated it.
 
+RefererMiddleware settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. setting:: REFERER_ENABLED
+
+REFERER_ENABLED
+^^^^^^^^^^^^^^^
+
+.. versionadded:: 0.15
+
+Default: ``True``
+
+Whether to enable referer middleware will be enabled.
+
 UrlLengthMiddleware
 -------------------
 
