@@ -222,16 +222,6 @@ also for logging.
 It's automatically populated with your project name when you create your
 project with the :command:`startproject` command.
 
-.. setting:: BOT_VERSION
-
-BOT_VERSION
------------
-
-Default: ``1.0``
-
-The version of the bot implemented by this Scrapy project. This will be used to
-construct the User-Agent by default.
-
 .. setting:: CONCURRENT_ITEMS
 
 CONCURRENT_ITEMS
@@ -973,7 +963,7 @@ the default value for this setting see: http://www.boutell.com/newfaq/misc/urlle
 USER_AGENT
 ----------
 
-Default: ``"%s/%s" % (BOT_NAME, BOT_VERSION)``
+Default: ``"Scrapy/0.15 (+http://scrapy.org)"``
 
 The default User-Agent to use when crawling, unless overridden. 
 

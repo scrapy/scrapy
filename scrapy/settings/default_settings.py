@@ -17,7 +17,6 @@ import sys, os
 from os.path import join, abspath, dirname
 
 BOT_NAME = 'scrapybot'
-BOT_VERSION = '1.0'
 
 CLOSESPIDER_TIMEOUT = 0
 CLOSESPIDER_PAGECOUNT = 0
@@ -226,7 +225,7 @@ TEMPLATES_DIR = abspath(join(dirname(__file__), '..', 'templates'))
 
 URLLENGTH_LIMIT = 2083
 
-USER_AGENT = '%s/%s' % (BOT_NAME, BOT_VERSION)
+USER_AGENT = 'Scrapy/0.15 (+http://scrapy.org)'
 
 TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_PORT = [6023, 6073]
