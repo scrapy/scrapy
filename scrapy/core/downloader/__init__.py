@@ -30,7 +30,10 @@ class Slot(object):
         self.lastseen = 0
 
     def free_transfer_slots(self):
-        return self.concurrency - len(self.transferring)
+        free_slots = self.concurrency - len(self.transferring)
+        if free_slots > 0:
+            return free_slots
+        return 0
 
     def download_delay(self):
         if self.randomize_delay:
@@ -100,13 +103,15 @@ class Downloader(object):
         key = urlparse_cached(request).hostname or ''
         if self.ip_concurrency:
             key = dnscache.get(key, key)
+            concurrency = self.ip_concurrency
+        else:
+            concurrency = self.domain_concurrency
+        concurrency, delay = _get_concurrency_delay(concurrency, spider, self.settings)
         if key not in self.slots:
-            if self.ip_concurrency:
-                concurrency = self.ip_concurrency
-            else:
-                concurrency = self.domain_concurrency
-            concurrency, delay = _get_concurrency_delay(concurrency, spider, self.settings)
             self.slots[key] = Slot(concurrency, delay, self.settings)
+        else:
+            self.slots[key].concurrency = concurrency
+            self.slots[key].delay = delay
         return key, self.slots[key]
 
     def _enqueue_request(self, request, spider, slot):
