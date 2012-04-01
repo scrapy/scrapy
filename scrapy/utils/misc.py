@@ -75,7 +75,7 @@ def extract_regex(regex, text, encoding='utf-8'):
     """
 
     if isinstance(regex, basestring):
-        regex = re.compile(regex)
+        regex = re.compile(regex, re.UNICODE)
 
     try:
         strings = [regex.search(text).group('extract')]   # named group

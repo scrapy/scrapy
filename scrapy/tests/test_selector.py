@@ -175,6 +175,13 @@ class XPathSelectorTestCase(unittest.TestCase):
                          ["10", "20"])
 
     @libxml2debug
+    def test_selector_re_intl(self):
+        body = """<div>Evento: cumplea\xc3\xb1os</div>"""
+        response = HtmlResponse(url="http://example.com", body=body, encoding='utf-8')
+        x = self.hxs_cls(response)
+        self.assertEqual(x.select("//div").re("Evento: (\w+)"), [u'cumplea\xf1os'])
+
+    @libxml2debug
     def test_selector_over_text(self):
         hxs = self.hxs_cls(text='<root>lala</root>')
         self.assertEqual(hxs.extract(),
