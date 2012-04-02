@@ -1,5 +1,5 @@
 """
-This module contains the default values for all settings used by Scrapy. 
+This module contains the default values for all settings used by Scrapy.
 
 For more information about these settings you can read the settings
 documentation in docs/topics/settings.rst
@@ -198,6 +198,7 @@ SCHEDULER_DISK_QUEUE = 'scrapy.squeue.PickleLifoDiskQueue'
 SCHEDULER_MEMORY_QUEUE = 'scrapy.squeue.LifoMemoryQueue'
 
 SELECTORS_BACKEND = None # possible values: libxml2, lxml
+FORMREQUEST_BACKEND = 'clientform' #clientform or lxml
 
 SPIDER_MANAGER_CLASS = 'scrapy.spidermanager.SpiderManager'
 
