@@ -75,7 +75,7 @@ class Downloader(object):
         self.domain_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self.ip_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_IP')
         self.middleware = DownloaderMiddlewareManager.from_crawler(crawler)
-
+        self.inactive_slots = {}
 
     def fetch(self, request, spider):
         key, slot = self._get_slot(request, spider)
@@ -86,7 +86,7 @@ class Downloader(object):
             self.active.remove(request)
             slot.active.remove(request)
             if not slot.active: # remove empty slots
-                del self.slots[key]
+                self.inactive_slots[key] = self.slots.pop(key)
             return response
 
         dlfunc = partial(self._enqueue_request, slot=slot)
@@ -101,12 +101,15 @@ class Downloader(object):
         if self.ip_concurrency:
             key = dnscache.get(key, key)
         if key not in self.slots:
-            if self.ip_concurrency:
-                concurrency = self.ip_concurrency
+            if key in self.inactive_slots:
+                self.slots[key] = self.inactive_slots.pop(key)
             else:
-                concurrency = self.domain_concurrency
-            concurrency, delay = _get_concurrency_delay(concurrency, spider, self.settings)
-            self.slots[key] = Slot(concurrency, delay, self.settings)
+                if self.ip_concurrency:
+                    concurrency = self.ip_concurrency
+                else:
+                    concurrency = self.domain_concurrency
+                concurrency, delay = _get_concurrency_delay(concurrency, spider, self.settings)
+                self.slots[key] = Slot(concurrency, delay, self.settings)
         return key, self.slots[key]
 
     def _enqueue_request(self, request, spider, slot):
