@@ -106,7 +106,7 @@ class AutoThrottle(object):
         key = urlparse_cached(request).hostname or ''
         if downloader.ip_concurrency:
             key = dnscache.get(key, key)
-        return key, downloader.slots.get(key)
+        return key, downloader.slots.get(key) or downloader.inactive_slots.get(key)
 
     def _check_concurrency(self, slot, latency):
         latencies = self.last_latencies
