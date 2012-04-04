@@ -43,6 +43,12 @@ class XPathSelectorTestCase(unittest.TestCase):
         self.assertEqual([x.extract() for x in xpath.select("concat(//input[@name='a']/@value, //input[@name='b']/@value)")],
                          [u'12'])
 
+    def test_selector_unicode_query(self):
+        body = u"<p><input name='\xa9' value='1'/></p>"
+        response = TextResponse(url="http://example.com", body=body, encoding='utf8')
+        xpath = self.hxs_cls(response)
+        self.assertEqual(xpath.select(u'//input[@name="\xa9"]/@value').extract(), [u'1'])
+
     @libxml2debug
     def test_selector_same_type(self):
         """Test XPathSelector returning the same type in x() method"""
