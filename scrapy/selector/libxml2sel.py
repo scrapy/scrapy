@@ -37,6 +37,7 @@ class XPathSelector(object_ref):
     def select(self, xpath):
         if hasattr(self.xmlNode, 'xpathEval'):
             self.doc.xpathContext.setContextNode(self.xmlNode)
+            xpath = unicode_to_str(xpath, 'utf-8')
             try:
                 xpath_result = self.doc.xpathContext.xpathEval(xpath)
             except libxml2.xpathError:
