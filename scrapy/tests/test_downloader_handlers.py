@@ -12,6 +12,7 @@ from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.http import HttpDownloadHandler
+from scrapy.core.downloader.handlers.http11 import HttpDownloadHandler as Http11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
@@ -132,6 +133,11 @@ class HttpTestCase(unittest.TestCase):
         return d
 
 
+class Http11TestCase(HttpTestCase):
+    def setUp(self):
+        HttpTestCase.setUp(self)
+        self.download_request = Http11DownloadHandler().download_request
+
 class UriResource(resource.Resource):
     """Return the full uri that was requested"""
 
@@ -175,6 +181,12 @@ class HttpProxyTestCase(unittest.TestCase):
 
         request = Request(self.getURL('path/to/resource'))
         return self.download_request(request, BaseSpider('foo')).addCallback(_test)
+
+
+class Http11ProxyTestCase(HttpProxyTestCase):
+    def setUp(self):
+        HttpProxyTestCase.setUp(self)
+        self.download_request = Http11DownloadHandler().download_request
 
 
 class HttpDownloadHandlerMock(object):
@@ -240,7 +252,7 @@ class S3TestCase(unittest.TestCase):
                 'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
 
     def test_request_signing5(self):
-        # deletes an object from the 'johnsmith' bucket using the 
+        # deletes an object from the 'johnsmith' bucket using the
         # path-style and Date alternative.
         req = Request('s3://johnsmith/photos/puppy.jpg', \
                 method='DELETE', headers={
