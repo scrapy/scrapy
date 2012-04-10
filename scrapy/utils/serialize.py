@@ -12,7 +12,7 @@ from scrapy.http import Request, Response
 class SpiderReferencer(object):
     """Class to serialize (and deserialize) objects (typically dicts)
     containing references to running spiders (ie. Spider objects). This is
-    required because simplejson fails to serialize dicts containing
+    required because json library fails to serialize dicts containing
     non-primitive types as keys, even when you override
     ScrapyJSONEncoder.default() with a custom encoding mechanism.
     """
