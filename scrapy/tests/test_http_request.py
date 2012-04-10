@@ -5,6 +5,7 @@ from cStringIO import StringIO
 from urlparse import urlparse
 
 from scrapy.http import Request, FormRequest, XmlRpcRequest, Headers, HtmlResponse
+from scrapy.http.request.form import MultipleElementsFound
 
 
 class RequestTest(unittest.TestCase):
@@ -319,6 +320,21 @@ class FormRequestTest(RequestTest):
         urlargs = cgi.parse_qs(urlparse(r1.url).query)
         self.assertFalse('clickeable1' in urlargs, urlargs)
         self.assertFalse('clickeable2' in urlargs, urlargs)
+
+    def test_from_response_ambiguous_clickdata(self):
+        respbody = """
+<form action="get.php" method="GET">
+<input type="submit" name="clickeable1" value="clicked1">
+<input type="hidden" name="one" value="1">
+<input type="hidden" name="two" value="3">
+<input type="submit" name="clickeable2" value="clicked2">
+</form>
+        """
+        response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
+        self.assertRaises(MultipleElementsFound,
+                          self.request_class.from_response,
+                          response,
+                          clickdata={'type': 'submit'})
 
     def test_from_response_errors_noform(self):
         respbody = """<html></html>"""
