@@ -133,7 +133,7 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
         clickable = _get_clickable(clickdata, clickables, form)
         inputs.append(clickable)
 
-    inputs.extend([(key, value) for key, value in formdata.iteritems()])
+    inputs.extend(formdata.iteritems())
     return inputs
 
 def _get_clickable(clickdata, clickables, form):
