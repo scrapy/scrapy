@@ -1,4 +1,4 @@
-"""Download handlers for http scheme"""
+"""Download handlers for http and https schemes"""
 
 from twisted.internet import reactor
 
@@ -42,7 +42,7 @@ def _parsed_url_args(parsed):
     scheme = parsed.scheme
     netloc = parsed.netloc
     if port is None:
-        port = 80
+        port = 443 if scheme == 'https' else 80
     return scheme, netloc, host, port, path
 
 
