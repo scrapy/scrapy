@@ -6,7 +6,7 @@ from lxml import etree
 
 from scrapy.utils.misc import extract_regex
 from scrapy.utils.trackref import object_ref
-from scrapy.utils.python import unicode_to_str
+from scrapy.utils.python import unicode_to_str, str_to_unicode
 from scrapy.utils.decorator import deprecated
 from scrapy.http import TextResponse
 from .list import XPathSelectorList
@@ -17,11 +17,12 @@ __all__ = ['HtmlXPathSelector', 'XmlXPathSelector', 'XPathSelector', \
 class XPathSelector(object_ref):
 
     __slots__ = ['response', 'text', 'expr', 'namespaces', '_root', '_xpathev', \
-        '__weakref__']
+        '_encoding', '__weakref__']
     _parser = etree.HTMLParser
     _tostring_method = 'html'
 
-    def __init__(self, response=None, text=None, root=None, expr=None, namespaces=None):
+    def __init__(self, response=None, text=None, root=None, expr=None, \
+                 namespaces=None, _encoding=None):
         if text:
             self.response = TextResponse(url='about:blank', \
                 body=unicode_to_str(text, 'utf-8'), encoding='utf-8')
@@ -29,13 +30,14 @@ class XPathSelector(object_ref):
             self.response = response
         self._root = root
         self._xpathev = None
+        self._encoding = _encoding or response and response.encoding
         self.namespaces = namespaces
         self.expr = expr
 
     @property
     def root(self):
         if self._root is None:
-            parser = self._parser(encoding=self.response.encoding, recover=True)
+            parser = self._parser(encoding=self._encoding, recover=True)
             self._root = etree.fromstring(self.response.body, parser=parser, \
                 base_url=self.response.url)
         return self._root
@@ -47,15 +49,20 @@ class XPathSelector(object_ref):
         return self._xpathev
 
     def select(self, xpath):
+        xpath = str_to_unicode(xpath, encoding=self._encoding)
         try:
             result = self.xpathev(xpath)
         except etree.XPathError:
             raise ValueError("Invalid XPath: %s" % xpath)
         if hasattr(result, '__iter__'):
-            result = [self.__class__(root=x, expr=xpath, namespaces=self.namespaces) \
-                for x in result]
+            result = [self.__class__(root=x, expr=xpath, \
+                                     namespaces=self.namespaces, \
+                                     _encoding=self._encoding) \
+                      for x in result]
         else:
-            result = [self.__class__(root=result, expr=xpath, namespaces=self.namespaces)]
+            result = [self.__class__(root=result, expr=xpath, \
+                                     namespaces=self.namespaces, \
+                                     _encoding=self._encoding)]
         return XPathSelectorList(result)
 
     def re(self, regex):
