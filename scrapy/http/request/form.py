@@ -12,6 +12,8 @@ from lxml import html
 from scrapy.http.request import Request
 from scrapy.utils.python import unicode_to_str
 
+XHTML_NAMESPACE = "http://www.w3.org/1999/xhtml"
+
 
 class MultipleElementsFound(Exception):
     pass
@@ -51,6 +53,13 @@ class FormRequest(Request):
         url = form.action or form.base_url
         return cls(url, method=form.method, formdata=formdata, **kwargs)
 
+# Copied from lxml.html to avoid relying on a non-public function
+def _nons(tag):
+    if isinstance(tag, basestring):
+        if tag[0] == '{' and tag[1:len(XHTML_NAMESPACE)+1] == XHTML_NAMESPACE:
+            return tag.split('}')[-1]
+    return tag
+
 def _urlencode(seq, enc):
     values = [(unicode_to_str(k, enc), unicode_to_str(v, enc))
               for k, vs in seq
@@ -89,15 +98,17 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
     """
     clickables = []
     inputs = []
+    xmlns_in_resp = u' xmlns' in response.body_as_unicode()[:200]
+
     for el in form.inputs:
         name = el.name
         if not name or name in formdata:
             continue
-        tag = html._nons(el.tag)
+        tag = _nons(el.tag)
         if tag == 'textarea':
             inputs.append((name, el.value))
         elif tag == 'select':
-            if u' xmlns' in response.body_as_unicode()[:200]:
+            if xmlns_in_resp:
                 #use builtin select parser with namespaces
                 value = el.value
             else:
