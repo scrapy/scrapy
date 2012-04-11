@@ -12,7 +12,7 @@ from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.http import HttpDownloadHandler
-from scrapy.core.downloader.handlers.http11 import HttpDownloadHandler as Http11DownloadHandler
+from scrapy.core.downloader.handlers.http11 import Http11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
