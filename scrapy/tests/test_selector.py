@@ -49,6 +49,17 @@ class XPathSelectorTestCase(unittest.TestCase):
         xpath = self.hxs_cls(response)
         self.assertEqual(xpath.select(u'//input[@name="\xa9"]/@value').extract(), [u'1'])
 
+    def test_selector_encoded_query(self):
+        body = '''<p><input name="\xa3" value='1'/></p>'''
+        response = TextResponse(url="http://example.com", body=body, encoding='latin1')
+        xpath = self.hxs_cls(response)
+        self.assertEqual(xpath.select(b'//input[@name="\xa3"]/@value').extract(), [u'1'])
+
+        body = '''<p><div class="\xa3"><span id="\xa3">text</span></div></p>'''
+        response = TextResponse(url="http://example.com", body=body, encoding='latin1')
+        xpath = self.hxs_cls(response)
+        self.assertEqual(xpath.select(b'//div[@class="\xa3"]').select('.//span[@id="\xa3"]/text()').extract(), [u'text'])
+
     @libxml2debug
     def test_selector_same_type(self):
         """Test XPathSelector returning the same type in x() method"""
