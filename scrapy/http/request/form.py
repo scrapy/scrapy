@@ -10,6 +10,7 @@ import urllib
 from lxml import html
 
 from scrapy.http.request import Request
+from scrapy.utils.python import unicode_to_str
 
 
 class MultipleElementsFound(Exception):
@@ -20,66 +21,41 @@ class FormRequest(Request):
 
     def __init__(self, *args, **kwargs):
         formdata = kwargs.pop('formdata', None)
+        if formdata and kwargs.get('method') is None:
+            kwargs['method'] = 'POST'
+
         super(FormRequest, self).__init__(*args, **kwargs)
 
         if formdata:
             items = formdata.iteritems() if isinstance(formdata, dict) else formdata
-            query = [(unicode_to_str(k, self.encoding), _unicode_to_str(v, self.encoding))
-                    for k, v in items]
-            self.method = 'POST'
-            self._set_body(urllib.urlencode(query, doseq=1))
-            self.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+            querystr = _urlencode(items, self.encoding)
+            if self.method == 'POST':
+                self.headers.setdefault('Content-Type', 'application/x-www-form-urlencoded')
+                self._set_body(querystr)
+            else:
+                self._set_url(self.url + ('&' if '?' in self.url else '?') + querystr)
 
     @classmethod
     def from_response(cls, response, formname=None, formnumber=0, formdata=None,
                       clickdata=None, dont_click=False, **kwargs):
         if not hasattr(formdata, "items"):
             try:
-                if formdata:
-                    formdata = dict(formdata)
-                else: formdata = {}
+                formdata = dict(formdata) if formdata else {}
             except (ValueError, TypeError):
                 raise ValueError('formdata should be a dict or iterable of tuples')
 
-        encoding = kwargs.get('encoding', response.encoding or 'UTF-8')
-        hxs = html.fromstring(response.body_as_unicode(),
-                              base_url=response.url)
+        kwargs.setdefault('encoding', response.encoding)
+        hxs = html.fromstring(response.body_as_unicode(), base_url=response.url)
         form = _get_form(hxs, formname, formnumber, response)
-        inputs = _get_inputs(form, formdata, dont_click, clickdata, response)
-        values = [(_unicode_to_str(key, encoding), _unicode_to_str(value, encoding))
-                  for key,value in inputs]
-        if form.action:
-            url = form.action
-        else:
-            url = form.base_url
-        if form.method == "POST":
-            kwargs.setdefault('headers', {}).update(
-                        {'Content-Type':'application/x-www-form-urlencoded'})
-            body = urllib.urlencode(values, doseq=1)
-        else:
-            if '?' in url:
-                url += '&'
-            else:
-                url += '?'
-            url += urllib.urlencode(values, doseq=1)
-            body=None
+        formdata = _get_inputs(form, formdata, dont_click, clickdata, response)
+        url = form.action or form.base_url
+        return cls(url, method=form.method, formdata=formdata, **kwargs)
 
-        return cls(url, method=form.method, body=body, encoding=encoding, **kwargs)
-
-
-def unicode_to_str(text, encoding='utf-8', errors='strict'):
-    if isinstance(text, unicode):
-        return text.encode(encoding, errors)
-    elif isinstance(text, str):
-        return unicode(text, 'utf-8', errors).encode(encoding, errors)
-    else:
-        raise TypeError('unicode_to_str must receive a unicode or str object, got %s' % type(text).__name__)
-
-def _unicode_to_str(string, encoding):
-    if hasattr(string, '__iter__'):
-        return [unicode_to_str(k, encoding) for k in string]
-    else:
-        return unicode_to_str(string, encoding)
+def _urlencode(seq, enc):
+    values = [(unicode_to_str(k, enc), unicode_to_str(v, enc))
+              for k, vs in seq
+              for v in (vs if hasattr(vs, '__iter__') else [vs])]
+    return urllib.urlencode(values, doseq=1)
 
 def _get_form(hxs, formname, formnumber, response):
     """
