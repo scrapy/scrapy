@@ -63,12 +63,8 @@ class XPathSelectorTestCase(unittest.TestCase):
         body = "<p><input name='a'value='1'/><input name='b'value='2'/></p>"
         response = TextResponse(url="http://example.com", body=body)
         xs = self.hxs_cls(response)
-        true = xs.select("//input[@name='a']/@name='a'").extract()[0]
-        false = xs.select("//input[@name='a']/@name='n'").extract()[0]
-
-        # the actual result depends on the backend used
-        assert true in [u'1', u'True'], true
-        assert false in [u'0', u'False'], false
+        self.assertEquals(xs.select("//input[@name='a']/@name='a'").extract(), [u'1'])
+        self.assertEquals(xs.select("//input[@name='a']/@name='n'").extract(), [u'0'])
 
     @libxml2debug
     def test_selector_xml_html(self):

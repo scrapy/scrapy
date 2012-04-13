@@ -68,7 +68,12 @@ class XPathSelector(object_ref):
             return etree.tostring(self.root, method=self._tostring_method, \
                 encoding=unicode)
         except (AttributeError, TypeError):
-            return unicode(self.root)
+            if self.root is True:
+                return u'1'
+            elif self.root is False:
+                return u'0'
+            else:
+                return unicode(self.root)
 
     def register_namespace(self, prefix, uri):
         if self.namespaces is None:
