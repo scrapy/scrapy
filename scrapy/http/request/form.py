@@ -33,12 +33,6 @@ class FormRequest(Request):
     def from_response(cls, response, formname=None, formnumber=0, formdata=None,
                       clickdata=None, dont_click=False, **kwargs):
         from scrapy.selector.lxmldocument import LxmlDocument
-        if not hasattr(formdata, "items"):
-            try:
-                formdata = dict(formdata) if formdata else {}
-            except (ValueError, TypeError):
-                raise ValueError('formdata should be a dict or iterable of tuples')
-
         kwargs.setdefault('encoding', response.encoding)
         root = LxmlDocument(response, lxml.html.HTMLParser)
         form = _get_form(root, formname, formnumber, response)
@@ -78,6 +72,11 @@ def _get_form(root, formname, formnumber, response):
             return form
 
 def _get_inputs(form, formdata, dont_click, clickdata, response):
+    try:
+        formdata = dict(formdata or ())
+    except (ValueError, TypeError):
+        raise ValueError('formdata should be a dict or iterable of tuples')
+
     inputs = [(n, v) for n, v in form.form_values() if n not in formdata]
 
     if not dont_click:
