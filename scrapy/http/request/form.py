@@ -6,9 +6,7 @@ See documentation in docs/topics/request-response.rst
 """
 
 import urllib
-
-from lxml import html
-
+import lxml.html
 from scrapy.http.request import Request
 from scrapy.utils.python import unicode_to_str
 
@@ -34,6 +32,7 @@ class FormRequest(Request):
     @classmethod
     def from_response(cls, response, formname=None, formnumber=0, formdata=None,
                       clickdata=None, dont_click=False, **kwargs):
+        from scrapy.selector.lxmldocument import LxmlDocument
         if not hasattr(formdata, "items"):
             try:
                 formdata = dict(formdata) if formdata else {}
@@ -41,11 +40,12 @@ class FormRequest(Request):
                 raise ValueError('formdata should be a dict or iterable of tuples')
 
         kwargs.setdefault('encoding', response.encoding)
-        hxs = html.fromstring(response.body_as_unicode(), base_url=response.url)
-        form = _get_form(hxs, formname, formnumber, response)
+        root = LxmlDocument(response, lxml.html.HTMLParser)
+        form = _get_form(root, formname, formnumber, response)
         formdata = _get_inputs(form, formdata, dont_click, clickdata, response)
         url = form.action or form.base_url
         return cls(url, method=form.method, formdata=formdata, **kwargs)
+
 
 def _urlencode(seq, enc):
     values = [(unicode_to_str(k, enc), unicode_to_str(v, enc))
@@ -53,16 +53,16 @@ def _urlencode(seq, enc):
               for v in (vs if hasattr(vs, '__iter__') else [vs])]
     return urllib.urlencode(values, doseq=1)
 
-def _get_form(hxs, formname, formnumber, response):
+def _get_form(root, formname, formnumber, response):
     """
     Uses all the passed arguments to get the required form
     element
     """
-    if not hxs.forms:
+    if not root.forms:
         raise ValueError("No <form> element found in %s" % response)
 
     if formname is not None:
-        f = hxs.xpath('//form[@name="%s"]' % formname)
+        f = root.xpath('//form[@name="%s"]' % formname)
         if f:
             return f[0]
 
@@ -70,7 +70,7 @@ def _get_form(hxs, formname, formnumber, response):
     # or invalid
     if formnumber is not None:
         try:
-            form = hxs.forms[formnumber]
+            form = root.forms[formnumber]
         except IndexError:
             raise IndexError("Form number %d not found in %s" %
                                 (formnumber, response))

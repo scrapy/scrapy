@@ -18,7 +18,7 @@ def _factory(response, parser_cls):
 class LxmlDocument(object_ref):
 
     cache = weakref.WeakKeyDictionary()
-    __slots__ = ['xmlDoc', 'xpathContext', '__weakref__']
+    __slots__ = ['__weakref__']
 
     def __new__(cls, response, parser=etree.HTMLParser):
         cache = cls.cache.setdefault(response, {})
