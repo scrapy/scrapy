@@ -5,7 +5,6 @@ from cStringIO import StringIO
 from urlparse import urlparse
 
 from scrapy.http import Request, FormRequest, XmlRpcRequest, Headers, HtmlResponse
-from scrapy.http.request.form import MultipleElementsFound
 
 
 class RequestTest(unittest.TestCase):
@@ -384,7 +383,7 @@ class FormRequestTest(RequestTest):
 </form>
         """
         response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
-        self.assertRaises(MultipleElementsFound,
+        self.assertRaises(ValueError,
                           self.request_class.from_response,
                           response,
                           clickdata={'type': 'submit'})

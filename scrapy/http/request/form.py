@@ -13,10 +13,6 @@ from scrapy.http.request import Request
 from scrapy.utils.python import unicode_to_str
 
 
-class MultipleElementsFound(Exception):
-    pass
-
-
 class FormRequest(Request):
 
     def __init__(self, *args, **kwargs):
@@ -124,8 +120,7 @@ def _get_clickable(clickdata, clickables, form):
     if len(el) == 1:
         return (el[0].name, el[0].value)
     elif len(el) > 1:
-        raise MultipleElementsFound("Multiple elements found (%r) "
-                                    "matching the criteria in clickdata: %r"
-                                    % (el, clickdata))
+        raise ValueError("Multiple elements found (%r) matching the criteria "
+                         "in clickdata: %r" % (el, clickdata))
     else:
-        raise ValueError('No clickeable element matching clickdata')
+        raise ValueError('No clickeable element matching clickdata: %r' % (clickdata,))
