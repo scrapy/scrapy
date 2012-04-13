@@ -238,9 +238,55 @@ class XPathSelectorTestCase(unittest.TestCase):
 
     @libxml2debug
     def test_empty_bodies(self):
+        # shouldn't raise errors
         r1 = TextResponse('http://www.example.com', body='')
-        self.hxs_cls(r1) # shouldn't raise error
-        self.xxs_cls(r1) # shouldn't raise error
+        self.hxs_cls(r1).select('//text()').extract()
+        self.xxs_cls(r1).select('//text()').extract()
+
+    @libxml2debug
+    def test_null_bytes(self):
+        # shouldn't raise errors
+        r1 = TextResponse('http://www.example.com', \
+                          body='<root>pre\x00post</root>', \
+                          encoding='utf-8')
+        self.hxs_cls(r1).select('//text()').extract()
+        self.xxs_cls(r1).select('//text()').extract()
+
+    @libxml2debug
+    def test_badly_encoded_body(self):
+        # \xe9 alone isn't valid utf8 sequence
+        r1 = TextResponse('http://www.example.com', \
+                          body='<html><p>an Jos\xe9 de</p><html>', \
+                          encoding='utf-8')
+        self.hxs_cls(r1).select('//text()').extract()
+        self.xxs_cls(r1).select('//text()').extract()
+
+    @libxml2debug
+    def test_select_on_unevaluable_nodes(self):
+        r = self.hxs_cls(text=u'<span class="big">some text</span>')
+        # Text node
+        x1 = r.select('//text()')
+        self.assertEquals(x1.extract(), [u'some text'])
+        self.assertEquals(x1.select('.//b').extract(), [])
+        # Tag attribute
+        x1 = r.select('//span/@class')
+        self.assertEquals(x1.extract(), [u'big'])
+        self.assertEquals(x1.select('.//text()').extract(), [])
+
+    @libxml2debug
+    def test_select_on_text_nodes(self):
+        # FIXME: can't get this to work with lxml backend
+        r = self.hxs_cls(text=u'<div><b>Options:</b>opt1</div><div><b>Other</b>opt2</div>')
+        x1 = r.select("//div/descendant::text()[preceding-sibling::b[contains(text(), 'Options')]]")
+        self.assertEquals(x1.extract(), [u'opt1'])
+
+        x1 = r.select("//div/descendant::text()/preceding-sibling::b[contains(text(), 'Options')]")
+        self.assertEquals(x1.extract(), [u'<b>Options:</b>'])
+
+        x1 = r.select("//div/descendant::text()")
+        x2 = x1.select("./preceding-sibling::b[contains(text(), 'Options')]")
+        self.assertEquals(x2.extract(), [u'<b>Options:</b>'])
+    test_select_on_text_nodes.skip = True
 
     @libxml2debug
     def test_weakref_slots(self):
@@ -250,4 +296,3 @@ class XPathSelectorTestCase(unittest.TestCase):
             weakref.ref(x)
             assert not hasattr(x, '__dict__'), "%s does not use __slots__" % \
                 x.__class__.__name__
-

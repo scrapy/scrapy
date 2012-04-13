@@ -35,27 +35,29 @@ class XPathSelector(object_ref):
     @property
     def root(self):
         if self._root is None:
-            parser = self._parser(encoding=self.response.encoding, recover=True)
-            self._root = etree.fromstring(self.response.body, parser=parser, \
-                base_url=self.response.url)
+            url = self.response.url
+            body = self.response.body_as_unicode().strip().encode('utf8') or '<html/>'
+            parser = self._parser(recover=True, encoding='utf8')
+            self._root = etree.fromstring(body, parser=parser, base_url=url)
+            assert self._root is not None, 'BUG lxml selector with None root'
         return self._root
-
-    @property
-    def xpathev(self):
-        if self._xpathev is None:
-            self._xpathev = etree.XPathEvaluator(self.root, namespaces=self.namespaces)
-        return self._xpathev
 
     def select(self, xpath):
         try:
-            result = self.xpathev(xpath)
+            xpathev = self.root.xpath
+        except AttributeError:
+            return XPathSelectorList([])
+
+        try:
+            result = xpathev(xpath, namespaces=self.namespaces)
         except etree.XPathError:
             raise ValueError("Invalid XPath: %s" % xpath)
-        if hasattr(result, '__iter__'):
-            result = [self.__class__(root=x, expr=xpath, namespaces=self.namespaces) \
-                for x in result]
-        else:
-            result = [self.__class__(root=result, expr=xpath, namespaces=self.namespaces)]
+
+        if type(result) is not list:
+            result = [result]
+
+        result = [self.__class__(root=x, expr=xpath, namespaces=self.namespaces)
+                  for x in result]
         return XPathSelectorList(result)
 
     def re(self, regex):
