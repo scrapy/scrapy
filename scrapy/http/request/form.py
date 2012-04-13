@@ -118,17 +118,14 @@ def _get_clickable(clickdata, clickables, form):
 
     # We didn't find it, so now we build an XPath expression out of the other
     # arguments, because they can be used as such
-    xpath_pred = []
-    for k, v in clickdata.items():
-        if k == 'coord':
-            v = ','.join(str(c) for c in v)
-        xpath_pred.append('[@%s="%s"]' % (k, v))
-
-    xpath_expr = '//*%s' % ''.join(xpath_pred)
-    el = form.xpath(xpath_expr)
-    if len(el) > 1:
+    xpath = u'.//*' + \
+            u''.join(u'[@%s="%s"]' % tuple(c) for c in clickdata.iteritems())
+    el = form.xpath(xpath)
+    if len(el) == 1:
+        return (el[0].name, el[0].value)
+    elif len(el) > 1:
         raise MultipleElementsFound("Multiple elements found (%r) "
                                     "matching the criteria in clickdata: %r"
                                     % (el, clickdata))
     else:
-        return (el[0].name, el[0].value)
+        raise ValueError('No clickeable element matching clickdata')
