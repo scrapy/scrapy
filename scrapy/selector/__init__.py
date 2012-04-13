@@ -18,13 +18,13 @@ elif settings['SELECTORS_BACKEND'] == 'dummy':
     from scrapy.selector.dummysel import *
 else:
     try:
-        import libxml2
+        import lxml
     except ImportError:
         try:
-            import lxml
+            import libxml2
         except ImportError:
             from scrapy.selector.dummysel import *
         else:
-            from scrapy.selector.lxmlsel import *
+            from scrapy.selector.libxml2sel import *
     else:
-        from scrapy.selector.libxml2sel import *
+        from scrapy.selector.lxmlsel import *

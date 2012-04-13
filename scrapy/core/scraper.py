@@ -183,8 +183,9 @@ class Scraper(object):
         errors that got propagated thru here)
         """
         if spider_failure is download_failure:
-            log.msg("Error downloading %s: %s" % \
-                (request, spider_failure.getErrorMessage()), log.ERROR, spider=spider)
+            errmsg = spider_failure.getErrorMessage()
+            if errmsg:
+                log.msg("Error downloading %s: %s" % (request, errmsg), log.ERROR, spider=spider)
             return
         return spider_failure
 

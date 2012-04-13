@@ -1,4 +1,4 @@
-"""Helper functinos for working with signals"""
+"""Helper functions for working with signals"""
 
 from twisted.internet.defer import maybeDeferred, DeferredList, Deferred
 from twisted.python.failure import Failure

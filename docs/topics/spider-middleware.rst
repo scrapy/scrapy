@@ -64,7 +64,7 @@ single Python class that defines one or more of the following methods:
         This method is called for each response that goes through the spider
         middleware and into the spider, for processing.
 
-        :meth:`process_spider_input` should return ``None`` or raise and
+        :meth:`process_spider_input` should return ``None`` or raise an
         exception.
 
         If it returns ``None``, Scrapy will continue processing this response,

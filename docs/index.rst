@@ -224,9 +224,13 @@ All the rest
 .. toctree::
    :hidden:
 
+   news
    contributing
    versioning
    experimental/index
+
+:doc:`news`
+    See what has changed in recent Scrapy versions.
 
 :doc:`contributing`
     Learn how to contribute to the Scrapy project.

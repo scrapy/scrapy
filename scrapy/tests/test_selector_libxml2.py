@@ -7,9 +7,10 @@ import unittest
 from scrapy.http import TextResponse, HtmlResponse, XmlResponse
 from scrapy.selector.libxml2sel import XmlXPathSelector, HtmlXPathSelector, \
     XPathSelector
-from scrapy.selector.document import Libxml2Document
+from scrapy.selector.libxml2document import Libxml2Document
 from scrapy.utils.test import libxml2debug
 from scrapy.tests import test_selector
+
 
 class Libxml2XPathSelectorTestCase(test_selector.XPathSelectorTestCase):
 
