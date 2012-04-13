@@ -9,8 +9,7 @@ from scrapy.utils.python import unicode_to_str
 from scrapy.utils.misc import extract_regex
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.decorator import deprecated
-from .factories import xmlDoc_from_html, xmlDoc_from_xml
-from .document import Libxml2Document
+from .libxml2document import Libxml2Document, xmlDoc_from_html, xmlDoc_from_xml
 from .list import XPathSelectorList
 
 __all__ = ['HtmlXPathSelector', 'XmlXPathSelector', 'XPathSelector', \

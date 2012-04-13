@@ -2,35 +2,40 @@
 Selectors tests, specific for lxml backend
 """
 
-from scrapy.http import TextResponse, XmlResponse
-has_lxml = True
-try:
-    from scrapy.selector.lxmlsel import XmlXPathSelector, HtmlXPathSelector, \
-        XPathSelector
-except ImportError:
-    has_lxml = False
-from scrapy.utils.test import libxml2debug
+import unittest
 from scrapy.tests import test_selector
+from scrapy.http import TextResponse, HtmlResponse
+from scrapy.selector.lxmldocument import LxmlDocument
+from scrapy.selector.lxmlsel import XmlXPathSelector, HtmlXPathSelector, XPathSelector
+
 
 class LxmlXPathSelectorTestCase(test_selector.XPathSelectorTestCase):
 
-    if has_lxml:
-        xs_cls = XPathSelector
-        hxs_cls = HtmlXPathSelector
-        xxs_cls = XmlXPathSelector
-    else:
-        skip = "lxml not available"
+    xs_cls = XPathSelector
+    hxs_cls = HtmlXPathSelector
+    xxs_cls = XmlXPathSelector
 
-    # XXX: this test was disabled because lxml behaves inconsistently when
-    # handling null bytes between different 2.2.x versions, but it may be due
-    # to differences in libxml2 too. it's also unclear what should be the
-    # proper behaviour (pablo - 26 oct 2010)
-    #@libxml2debug
-    #def test_null_bytes(self):
-    #    hxs = HtmlXPathSelector(text='<root>la\x00la</root>')
-    #    self.assertEqual(hxs.extract(),
-    #                     u'<html><body><root>la</root></body></html>')
-    #
-    #    xxs = XmlXPathSelector(text='<root>la\x00la</root>')
-    #    self.assertEqual(xxs.extract(),
-    #                     u'<root>la</root>')
+
+class Libxml2DocumentTest(unittest.TestCase):
+
+    def test_caching(self):
+        r1 = HtmlResponse('http://www.example.com', body='<html><head></head><body></body></html>')
+        r2 = r1.copy()
+
+        doc1 = LxmlDocument(r1)
+        doc2 = LxmlDocument(r1)
+        doc3 = LxmlDocument(r2)
+
+        # make sure it's cached
+        assert doc1 is doc2
+        assert doc1 is not doc3
+
+        # don't leave documents in memory to avoid wrong libxml2 leaks reports
+        del doc1, doc2, doc3
+
+    def test_null_char(self):
+        # make sure bodies with null char ('\x00') don't raise a TypeError exception
+        self.body_content = 'test problematic \x00 body'
+        response = TextResponse('http://example.com/catalog/product/blabla-123',
+                            headers={'Content-Type': 'text/plain; charset=utf-8'}, body=self.body_content)
+        LxmlDocument(response)
