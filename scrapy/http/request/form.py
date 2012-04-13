@@ -91,52 +91,8 @@ def _get_form(hxs, formname, formnumber, response):
             return form
 
 def _get_inputs(form, formdata, dont_click, clickdata, response):
-    """
-    Returns all the inputs that will be sent with the request,
-    both those already present in the form and those given by
-    the user
-    """
-    clickables = []
-    inputs = []
-    xmlns_in_resp = u' xmlns' in response.body_as_unicode()[:200]
-
-    for el in form.inputs:
-        name = el.name
-        if not name or name in formdata:
-            continue
-        tag = _nons(el.tag)
-        if tag == 'textarea':
-            inputs.append((name, el.value))
-        elif tag == 'select':
-            if xmlns_in_resp:
-                #use builtin select parser with namespaces
-                value = el.value
-            else:
-                value = el.xpath(".//option[@selected]") or None
-
-            if el.multiple:
-                for v in value:
-                    if v is not None:
-                        inputs.append((name, v))
-            elif value is not None:
-                inputs.append((name, value[0] if isinstance(value, list)
-                                               else value))
-            else:
-                option = el.xpath(".//option[1]/@value")
-                if option:
-                    inputs.append((name, option[0]))
-        else:
-            assert tag == 'input', ("Unexpected tag: %r" % el)
-            if el.checkable and not el.checked:
-                continue
-            if el.type in ('image', 'reset'):
-                continue
-            elif el.type == 'submit':
-                clickables.append(el)
-            else:
-                value = el.value
-                if value is not None:
-                    inputs.append((name, el.value))
+    inputs = [(n, v) for n, v in form.form_values() if n not in formdata]
+    clickables = [el for el in form.inputs if el.type == 'submit']
 
     # If we are allowed to click on buttons and we have clickable
     # elements, we move on to see if we have any clickdata
