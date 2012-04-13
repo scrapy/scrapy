@@ -271,54 +271,54 @@ class FormRequestTest(RequestTest):
         self.assertEqual(fs['one'].value, '1')
         self.assertEqual(fs['two'].value, '2')
 
-    def test_from_response_submit_first_clickeable(self):
+    def test_from_response_submit_first_clickable(self):
         respbody = """
 <form action="get.php" method="GET">
-<input type="submit" name="clickeable1" value="clicked1">
+<input type="submit" name="clickable1" value="clicked1">
 <input type="hidden" name="one" value="1">
 <input type="hidden" name="two" value="3">
-<input type="submit" name="clickeable2" value="clicked2">
+<input type="submit" name="clickable2" value="clicked2">
 </form>
         """
         response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
         r1 = self.request_class.from_response(response, formdata={'two': '2'})
         urlargs = cgi.parse_qs(urlparse(r1.url).query)
-        self.assertEqual(urlargs['clickeable1'], ['clicked1'])
-        self.assertFalse('clickeable2' in urlargs, urlargs)
+        self.assertEqual(urlargs['clickable1'], ['clicked1'])
+        self.assertFalse('clickable2' in urlargs, urlargs)
         self.assertEqual(urlargs['one'], ['1'])
         self.assertEqual(urlargs['two'], ['2'])
 
-    def test_from_response_submit_not_first_clickeable(self):
+    def test_from_response_submit_not_first_clickable(self):
         respbody = """
 <form action="get.php" method="GET">
-<input type="submit" name="clickeable1" value="clicked1">
+<input type="submit" name="clickable1" value="clicked1">
 <input type="hidden" name="one" value="1">
 <input type="hidden" name="two" value="3">
-<input type="submit" name="clickeable2" value="clicked2">
+<input type="submit" name="clickable2" value="clicked2">
 </form>
         """
         response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
-        r1 = self.request_class.from_response(response, formdata={'two': '2'}, clickdata={'name': 'clickeable2'})
+        r1 = self.request_class.from_response(response, formdata={'two': '2'}, clickdata={'name': 'clickable2'})
         urlargs = cgi.parse_qs(urlparse(r1.url).query)
-        self.assertEqual(urlargs['clickeable2'], ['clicked2'])
-        self.assertFalse('clickeable1' in urlargs, urlargs)
+        self.assertEqual(urlargs['clickable2'], ['clicked2'])
+        self.assertFalse('clickable1' in urlargs, urlargs)
         self.assertEqual(urlargs['one'], ['1'])
         self.assertEqual(urlargs['two'], ['2'])
 
     def test_from_response_multiple_clickdata(self):
         respbody = """
 <form action="get.php" method="GET">
-<input type="submit" name="clickeable" value="clicked1">
-<input type="submit" name="clickeable" value="clicked2">
+<input type="submit" name="clickable" value="clicked1">
+<input type="submit" name="clickable" value="clicked2">
 <input type="hidden" name="one" value="clicked1">
 <input type="hidden" name="two" value="clicked2">
 </form>
         """
         response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
         r1 = self.request_class.from_response(response, \
-                clickdata={'name': 'clickeable', 'value': 'clicked2'})
+                clickdata={'name': 'clickable', 'value': 'clicked2'})
         urlargs = cgi.parse_qs(urlparse(r1.url).query)
-        self.assertEqual(urlargs['clickeable'], ['clicked2'])
+        self.assertEqual(urlargs['clickable'], ['clicked2'])
         self.assertEqual(urlargs['one'], ['clicked1'])
         self.assertEqual(urlargs['two'], ['clicked2'])
 
@@ -341,45 +341,54 @@ class FormRequestTest(RequestTest):
     def test_from_response_multiple_forms_clickdata(self):
         body = u"""
         <form name="form1">
-          <input type="submit" name="clickeable" value="clicked">
+          <input type="submit" name="clickable" value="clicked">
           <input type="hidden" name="field1" value="value1">
         </form>
         <form name="form2">
-          <input type="submit" name="clickeable" value="clicked">
+          <input type="submit" name="clickable" value="clicked">
           <input type="hidden" name="field2" value="value2">
         </form>
         """
         res = HtmlResponse("http://example.com", body=body, encoding='utf-8')
         req = self.request_class.from_response(res, \
                                               formname='form2', \
-                                              clickdata={'name': 'clickeable'})
+                                              clickdata={'name': 'clickable'})
         urlargs = cgi.parse_qs(urlparse(req.url).query)
-        self.assertEqual(urlargs['clickeable'], ['clicked'])
+        self.assertEqual(urlargs['clickable'], ['clicked'])
         self.assertEqual(urlargs['field2'], ['value2'])
         self.assertFalse('field1' in urlargs, urlargs)
+
+    def test_from_response_multiple_forms_clickdata(self):
+        body = u'<form><input type="submit" name="clickme" value="one"></form>'
+        res = HtmlResponse("http://example.com", body=body, encoding='utf-8')
+        req = self.request_class.from_response(res, \
+                                               formdata={'clickme': 'two'}, \
+                                               clickdata={'name': 'clickme'})
+        urlargs = cgi.parse_qs(urlparse(req.url).query)
+        self.assertEqual(urlargs['clickme'], ['two'])
 
     def test_from_response_dont_click(self):
         respbody = """
 <form action="get.php" method="GET">
-<input type="submit" name="clickeable1" value="clicked1">
+<input type="submit" name="clickable1" value="clicked1">
 <input type="hidden" name="one" value="1">
 <input type="hidden" name="two" value="3">
-<input type="submit" name="clickeable2" value="clicked2">
+<input type="submit" name="clickable2" value="clicked2">
 </form>
         """
         response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
         r1 = self.request_class.from_response(response, dont_click=True)
         urlargs = cgi.parse_qs(urlparse(r1.url).query)
-        self.assertFalse('clickeable1' in urlargs, urlargs)
-        self.assertFalse('clickeable2' in urlargs, urlargs)
+        self.assertFalse('clickable1' in urlargs, urlargs)
+        self.assertFalse('clickable2' in urlargs, urlargs)
 
     def test_from_response_ambiguous_clickdata(self):
         respbody = """
 <form action="get.php" method="GET">
-<input type="submit" name="clickeable1" value="clicked1">
+<input type="submit" name="clickable1" value="clicked1">
 <input type="hidden" name="one" value="1">
 <input type="hidden" name="two" value="3">
-<input type="submit" name="clickeable2" value="clicked2">
+<input type="submit" name="clickable2" value="clicked2">
 </form>
         """
         response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
@@ -391,7 +400,7 @@ class FormRequestTest(RequestTest):
     def test_from_response_non_matching_clickdata(self):
         body = """
         <form>
-          <input type="submit" name="clickeable" value="clicked">
+          <input type="submit" name="clickable" value="clicked">
         </form>
         """
         res = HtmlResponse("http://example.com", body=body)

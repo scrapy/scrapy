@@ -80,23 +80,26 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
     inputs = [(n, v) for n, v in form.form_values() if n not in formdata]
 
     if not dont_click:
-        clickables = [el for el in form.inputs if el.type == 'submit']
-        if clickables:
-            clickable = _get_clickable(clickdata, clickables, form)
+        clickable = _get_clickable(clickdata, form)
+        if clickable and clickable[0] not in formdata:
             inputs.append(clickable)
 
     inputs.extend(formdata.iteritems())
     return inputs
 
-def _get_clickable(clickdata, clickables, form):
+def _get_clickable(clickdata, form):
     """
     Returns the clickable element specified in clickdata,
     if the latter is given. If not, it returns the first
     clickable element found
     """
+    clickables = [el for el in form.inputs if el.type == 'submit']
+    if not clickables:
+        return
+
     # If we don't have clickdata, we just use the first clickable element
     if clickdata is None:
-        el = clickables.pop(0)
+        el = clickables[0]
         return (el.name, el.value)
 
     # If clickdata is given, we compare it to the clickable elements to find a
@@ -122,4 +125,4 @@ def _get_clickable(clickdata, clickables, form):
         raise ValueError("Multiple elements found (%r) matching the criteria "
                          "in clickdata: %r" % (el, clickdata))
     else:
-        raise ValueError('No clickeable element matching clickdata: %r' % (clickdata,))
+        raise ValueError('No clickable element matching clickdata: %r' % (clickdata,))
