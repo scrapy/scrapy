@@ -117,7 +117,7 @@ def _get_clickable(clickdata, form):
     # We didn't find it, so now we build an XPath expression out of the other
     # arguments, because they can be used as such
     xpath = u'.//*' + \
-            u''.join(u'[@%s="%s"]' % tuple(c) for c in clickdata.iteritems())
+            u''.join(u'[@%s="%s"]' % c for c in clickdata.iteritems())
     el = form.xpath(xpath)
     if len(el) == 1:
         return (el[0].name, el[0].value)
