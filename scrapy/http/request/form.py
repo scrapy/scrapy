@@ -93,7 +93,7 @@ def _get_clickable(clickdata, form):
     if the latter is given. If not, it returns the first
     clickable element found
     """
-    clickables = [el for el in form.inputs if el.type == 'submit']
+    clickables = [el for el in form.xpath('.//input[@type="submit"]')]
     if not clickables:
         return
 
