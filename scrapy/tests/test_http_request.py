@@ -338,27 +338,38 @@ class FormRequestTest(RequestTest):
         urlargs = cgi.parse_qs(urlparse(r1.url).query)
         self.assertTrue(urlargs[u'price in \u00a3'.encode('utf-8')])
 
+    def test_from_response_with_select(self):
+        body = u"""
+        <form name="form1">
+          <select name="inputname"><option selected="selected" value="inputvalue">text</option></select>
+          <input type="submit" name="clickable" value="clicked">
+        </form>
+        """
+        res = HtmlResponse("http://example.com", body=body, encoding='utf-8')
+        req = self.request_class.from_response(res)
+        urlargs = cgi.parse_qs(urlparse(req.url).query)
+        self.assertEqual(urlargs['inputname'], ['inputvalue'])
+
     def test_from_response_multiple_forms_clickdata(self):
         body = u"""
         <form name="form1">
-          <input type="submit" name="clickable" value="clicked">
+          <input type="submit" name="clickable" value="clicked1">
           <input type="hidden" name="field1" value="value1">
         </form>
         <form name="form2">
-          <input type="submit" name="clickable" value="clicked">
+          <input type="submit" name="clickable" value="clicked2">
           <input type="hidden" name="field2" value="value2">
         </form>
         """
         res = HtmlResponse("http://example.com", body=body, encoding='utf-8')
-        req = self.request_class.from_response(res, \
-                                              formname='form2', \
-                                              clickdata={'name': 'clickable'})
+        req = self.request_class.from_response(res, formname='form2', \
+                clickdata={'name': 'clickable'})
         urlargs = cgi.parse_qs(urlparse(req.url).query)
-        self.assertEqual(urlargs['clickable'], ['clicked'])
+        self.assertEqual(urlargs['clickable'], ['clicked2'])
         self.assertEqual(urlargs['field2'], ['value2'])
         self.assertFalse('field1' in urlargs, urlargs)
 
-    def test_from_response_multiple_forms_clickdata(self):
+    def test_from_response_override_clickable(self):
         body = u'<form><input type="submit" name="clickme" value="one"></form>'
         res = HtmlResponse("http://example.com", body=body, encoding='utf-8')
         req = self.request_class.from_response(res, \
