@@ -6,6 +6,8 @@ Release notes
 
 Scrapy changes:
 
+- `lxml` is now the default selectors backend instead of `libxml2`
+- ported FormRequest.from_response() to use `lxml`_ instead of `ClientForm`_
 - SitemapSpider: added support for sitemap urls ending in .xml and .xml.gz, even if they advertise a wrong content type (:commit:`10ed28b`)
 - StackTraceDump extension: also dump trackref live references (:commit:`fe2ce93`)
 - added :reqmeta:`cookiejar` Request meta key to support multiple cookie sessions per spider
@@ -337,3 +339,5 @@ First release of Scrapy.
 .. _scrapely: https://github.com/scrapy/scrapely
 .. _marshal: http://docs.python.org/library/marshal.html
 .. _w3lib.encoding: https://github.com/scrapy/w3lib/blob/master/w3lib/encoding.py
+.. _lxml: http://lxml.de/
+.. _ClientForm: http://wwwsearch.sourceforge.net/old/ClientForm/
