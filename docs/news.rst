@@ -8,6 +8,7 @@ Scrapy changes:
 
 - `lxml` is now the default selectors backend instead of `libxml2`
 - ported FormRequest.from_response() to use `lxml`_ instead of `ClientForm`_
+- removed modules: ``scrapy.xlib.BeautifulSoup`` and ``scrapy.xlib.ClientForm``
 - SitemapSpider: added support for sitemap urls ending in .xml and .xml.gz, even if they advertise a wrong content type (:commit:`10ed28b`)
 - StackTraceDump extension: also dump trackref live references (:commit:`fe2ce93`)
 - added :reqmeta:`cookiejar` Request meta key to support multiple cookie sessions per spider
