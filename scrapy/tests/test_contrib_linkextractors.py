@@ -4,7 +4,6 @@ import unittest
 from scrapy.http import HtmlResponse
 from scrapy.link import Link
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor, BaseSgmlLinkExtractor
-from scrapy.contrib.linkextractors.image import HTMLImageLinkExtractor
 from scrapy.tests import get_testdata
 
 class LinkExtractorTestCase(unittest.TestCase):
@@ -240,72 +239,6 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.extract_links(response),
                          [Link(url='http://otherdomain.com/base/item/12.html', text='Item 12')])
 
-
-class HTMLImageLinkExtractorTestCase(unittest.TestCase):
-    def setUp(self):
-        body = get_testdata('link_extractor', 'image_linkextractor.html')
-        self.response = HtmlResponse(url='http://example.com/index', body=body)
-
-    def tearDown(self):
-        del self.response
-
-    def test_urls_type(self):
-        '''Test that the resulting urls are regular strings and not a unicode objects'''
-        lx = HTMLImageLinkExtractor()
-        links = lx.extract_links(self.response)
-        self.assertTrue(all(isinstance(link.url, str) for link in links))
-
-    def test_extraction(self):
-        '''Test the extractor's behaviour among different situations'''
-
-        lx = HTMLImageLinkExtractor(locations=('//img', ))
-        links_1 = lx.extract_links(self.response)
-        self.assertEqual(links_1,
-            [ Link(url='http://example.com/sample1.jpg', text=u'sample 1'),
-              Link(url='http://example.com/sample2.jpg', text=u'sample 2'),
-              Link(url='http://example.com/sample4.jpg', text=u'sample 4') ])
-
-        lx = HTMLImageLinkExtractor(locations=('//img', ), unique=False)
-        links_2 = lx.extract_links(self.response)
-
-        self.assertEqual(links_2,
-            [ Link(url='http://example.com/sample1.jpg', text=u'sample 1'),
-              Link(url='http://example.com/sample2.jpg', text=u'sample 2'),
-              Link(url='http://example.com/sample4.jpg', text=u'sample 4'),
-              Link(url='http://example.com/sample4.jpg', text=u'sample 4 repetition') ])
-
-        lx = HTMLImageLinkExtractor(locations=('//div[@id="wrapper"]', ))
-        links_3 = lx.extract_links(self.response)
-        self.assertEqual(links_3,
-            [ Link(url='http://example.com/sample1.jpg', text=u'sample 1'),
-              Link(url='http://example.com/sample2.jpg', text=u'sample 2'),
-              Link(url='http://example.com/sample4.jpg', text=u'sample 4') ])
-
-        lx = HTMLImageLinkExtractor(locations=('//a', ))
-        links_4 = lx.extract_links(self.response)
-        self.assertEqual(links_4,
-            [Link(url='http://example.com/sample2.jpg', text=u'sample 2')])
-
-    def test_extraction_over_selector(self):
-        from scrapy.selector import HtmlXPathSelector
-        body = """
-        <html>
-          <head>
-            <base href="http://example.com"/>
-          </head>
-        <body>
-          <b>Image: </b>
-          <img src="/images/items/CH29.jpg" width="270" height="270" alt="CH29">
-        </body>
-        </html>
-        """
-        response = HtmlResponse(url='http://example.com/mypage.html', body=body)
-        xp = HtmlXPathSelector(response)
-        lx = HTMLImageLinkExtractor(locations=[xp.select("//img")], canonicalize=False)
-
-        result = lx.extract_links(response)
-        self.assertTrue(result)
-        self.assertEquals('http://example.com/images/items/CH29.jpg', result[0].url)
 
 
 if __name__ == "__main__":
