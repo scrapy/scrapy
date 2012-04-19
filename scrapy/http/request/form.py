@@ -32,10 +32,8 @@ class FormRequest(Request):
     @classmethod
     def from_response(cls, response, formname=None, formnumber=0, formdata=None,
                       clickdata=None, dont_click=False, **kwargs):
-        from scrapy.selector.lxmldocument import LxmlDocument
         kwargs.setdefault('encoding', response.encoding)
-        root = LxmlDocument(response, lxml.html.HTMLParser)
-        form = _get_form(root, formname, formnumber, response)
+        form = _get_form(response, formname, formnumber)
         formdata = _get_inputs(form, formdata, dont_click, clickdata, response)
         url = form.action or form.base_url
         return cls(url, method=form.method, formdata=formdata, **kwargs)
@@ -47,11 +45,10 @@ def _urlencode(seq, enc):
               for v in (vs if hasattr(vs, '__iter__') else [vs])]
     return urllib.urlencode(values, doseq=1)
 
-def _get_form(root, formname, formnumber, response):
-    """
-    Uses all the passed arguments to get the required form
-    element
-    """
+def _get_form(response, formname, formnumber):
+    """Find the form element """
+    from scrapy.selector.lxmldocument import LxmlDocument
+    root = LxmlDocument(response, lxml.html.HTMLParser)
     if not root.forms:
         raise ValueError("No <form> element found in %s" % response)
 
@@ -77,15 +74,18 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
     except (ValueError, TypeError):
         raise ValueError('formdata should be a dict or iterable of tuples')
 
-    inputs = [(n, u'' if v is None else v) for n, v in form.fields.items() if n not in formdata]
+    inputs = form.xpath('descendant::input[@type!="submit"]|descendant::textarea|descendant::select')
+    values = [(k, u'' if v is None else v) \
+              for k, v in ((e.name, e.value) for e in inputs) \
+              if k not in formdata]
 
     if not dont_click:
         clickable = _get_clickable(clickdata, form)
         if clickable and clickable[0] not in formdata and not clickable[0] is None:
-            inputs.append(clickable)
+            values.append(clickable)
 
-    inputs.extend(formdata.iteritems())
-    return inputs
+    values.extend(formdata.iteritems())
+    return values
 
 def _get_clickable(clickdata, form):
     """
