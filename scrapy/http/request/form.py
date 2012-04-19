@@ -79,7 +79,7 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
                         '|descendant::input[@type!="submit" '
                         'and ((@type!="checkbox" and @type!="radio") or @checked)]')
     values = [(k, u'' if v is None else v) \
-              for k, v in ((e.name, _value(e)) for e in inputs) \
+              for k, v in (_value(e) for e in inputs) \
               if k and k not in formdata]
 
     if not dont_click:
@@ -91,12 +91,17 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
     return values
 
 def _value(ele):
+    n = ele.name
     v = ele.value
+    # Match browser behaviour on simple select tag without options selected
+    # Or for select tags wihout options
     if v is None and ele.tag == 'select' and not ele.multiple:
         o = ele.value_options
         if o:
-            return o[0]
-    return v
+            return n, o[0]
+        else:
+            return None, None
+    return n, v
 
 def _get_clickable(clickdata, form):
     """

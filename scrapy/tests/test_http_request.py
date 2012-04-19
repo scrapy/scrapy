@@ -496,34 +496,6 @@ class FormRequestTest(RequestTest):
         response = HtmlResponse("http://www.example.com/formname.html", body=respbody)
         self.assertRaises(IndexError, self.request_class.from_response, response, formname="form3", formnumber=2)
 
-    def test_from_response_missed_value(self):
-        respbody = """
-<form action="get.php" method="POST">
-    <input type="hidden" name="key1" value="val1">
-    <input type="hidden" name="key2">
-    <input type="radio" name="key3" checked>
-    <input type="checkbox" name="key4" checked>
-    <textarea name="key5">val5</textarea>
-    <textarea name="key6"/>
-    <select name="key7">
-        <option name="opt1" selected></option>
-        <option name="opt2">opt2</option>
-    </select>
-    <input type="submit" value="val8">
-</form>
-        """
-        res = HtmlResponse("http://example.com", body=respbody, encoding='utf-8')
-        req = self.request_class.from_response(res)
-        fs = cgi.parse_qs(req.body, True)
-        self.assertEqual(fs['key1'], ['val1'])
-        self.assertEqual(fs['key2'], [''])
-        self.assertEqual(fs['key3'], ['on'])
-        self.assertEqual(fs['key4'], ['on'])
-        self.assertEqual(fs['key5'], ['val5'])
-        self.assertEqual(fs['key6'], [''])
-        self.assertEqual(fs['key7'], [''])
-        self.assertEqual(set(fs), set(['key1', 'key2', 'key3', 'key4', 'key5', 'key6', 'key7']))
-
     def test_from_response_select(self):
         res = _buildresponse(
             '''<form>
@@ -548,6 +520,8 @@ class FormRequestTest(RequestTest):
                 <option value="i5v1">option 1</option>
                 <option value="i5v2">option 2</option>
             </select>
+            <select name="i6"></select>
+            <select name="i7"/>
             </form>''')
         req = self.request_class.from_response(res)
         fs = _qs(req)
@@ -556,7 +530,7 @@ class FormRequestTest(RequestTest):
     def test_from_response_radio(self):
         res = _buildresponse(
             '''<form>
-            <input type="radio" name="i1" value="iv1">
+            <input type="radio" name="i1" value="i1v1">
             <input type="radio" name="i1" value="iv2" checked>
             <input type="radio" name="i2" checked>
             <input type="radio" name="i2">
@@ -570,7 +544,7 @@ class FormRequestTest(RequestTest):
     def test_from_response_checkbox(self):
         res = _buildresponse(
             '''<form>
-            <input type="checkbox" name="i1" value="iv1">
+            <input type="checkbox" name="i1" value="i1v1">
             <input type="checkbox" name="i1" value="iv2" checked>
             <input type="checkbox" name="i2" checked>
             <input type="checkbox" name="i2">
@@ -584,35 +558,47 @@ class FormRequestTest(RequestTest):
     def test_from_response_input_text(self):
         res = _buildresponse(
             '''<form>
-            <input type="text" name="i1" value="iv1">
+            <input type="text" name="i1" value="i1v1">
             <input type="text" name="i2">
             <input type="text">
             </form>''')
         req = self.request_class.from_response(res)
         fs = _qs(req)
-        self.assertEqual(fs, {'i1': ['iv1'], 'i2': ['']})
+        self.assertEqual(fs, {'i1': ['i1v1'], 'i2': ['']})
 
     def test_from_response_input_hidden(self):
         res = _buildresponse(
             '''<form>
-            <input type="hidden" name="i1" value="iv1">
+            <input type="hidden" name="i1" value="i1v1">
             <input type="hidden" name="i2">
             <input type="hidden">
             </form>''')
         req = self.request_class.from_response(res)
         fs = _qs(req)
-        self.assertEqual(fs, {'i1': ['iv1'], 'i2': ['']})
+        self.assertEqual(fs, {'i1': ['i1v1'], 'i2': ['']})
 
     def test_from_response_input_hidden(self):
         res = _buildresponse(
             '''<form>
-            <input type="hidden" name="i1" value="iv1">
+            <input type="hidden" name="i1" value="i1v1">
             <input type="hidden" name="i2">
             <input type="hidden">
             </form>''')
         req = self.request_class.from_response(res)
         fs = _qs(req)
-        self.assertEqual(fs, {'i1': ['iv1'], 'i2': ['']})
+        self.assertEqual(fs, {'i1': ['i1v1'], 'i2': ['']})
+
+    def test_from_response_input_textarea(self):
+        res = _buildresponse(
+            '''<form>
+            <textarea name="i1">i1v</textarea>
+            <textarea name="i2"></textarea>
+            <textarea name="i3"/>
+            <textarea>i4v</textarea>
+            </form>''')
+        req = self.request_class.from_response(res)
+        fs = _qs(req)
+        self.assertEqual(fs, {'i1': ['i1v'], 'i2': [''], 'i3': ['']})
 
 def _buildresponse(body, **kwargs):
     kwargs.setdefault('body', body)
