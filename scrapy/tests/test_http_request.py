@@ -206,295 +206,248 @@ class FormRequestTest(RequestTest):
         self.assertEqual(r3.body, 'colours=red&colours=blue&colours=green&price=%C2%A3+100')
 
     def test_from_response_post(self):
-        respbody = """
-<form action="post.php" method="POST">
-<input type="hidden" name="test" value="val1">
-<input type="hidden" name="test" value="val2">
-<input type="hidden" name="test2" value="xxx">
-</form>
-        """
-        response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
-        r1 = self.request_class.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'}, callback=lambda x: x)
-        self.assertEqual(r1.method, 'POST')
-        self.assertEqual(r1.headers['Content-type'], 'application/x-www-form-urlencoded')
-        fs = cgi.FieldStorage(StringIO(r1.body), r1.headers, environ={"REQUEST_METHOD": "POST"})
-        self.assertEqual(r1.url, "http://www.example.com/this/post.php")
-        self.assertEqual(set([f.value for f in fs["test"]]), set(["val1", "val2"]))
-        self.assertEqual(set([f.value for f in fs["one"]]), set(["two", "three"]))
-        self.assertEqual(fs['test2'].value, 'xxx')
-        self.assertEqual(fs['six'].value, 'seven')
+        response = _buildresponse(
+            """<form action="post.php" method="POST">
+            <input type="hidden" name="test" value="val1">
+            <input type="hidden" name="test" value="val2">
+            <input type="hidden" name="test2" value="xxx">
+            </form>""",
+            url="http://www.example.com/this/list.html")
+        req = self.request_class.from_response(response,
+                formdata={'one': ['two', 'three'], 'six': 'seven'})
+        self.assertEqual(req.method, 'POST')
+        self.assertEqual(req.headers['Content-type'], 'application/x-www-form-urlencoded')
+        self.assertEqual(req.url, "http://www.example.com/this/post.php")
+        fs = _qs(req)
+        self.assertEqual(set(fs["test"]), set(["val1", "val2"]))
+        self.assertEqual(set(fs["one"]), set(["two", "three"]))
+        self.assertEqual(fs['test2'], ['xxx'])
+        self.assertEqual(fs['six'], ['seven'])
 
     def test_from_response_extra_headers(self):
-        respbody = """
-<form action="post.php" method="POST">
-<input type="hidden" name="test" value="val1">
-<input type="hidden" name="test" value="val2">
-<input type="hidden" name="test2" value="xxx">
-</form>
-        """
-        headers = {"Accept-Encoding": "gzip,deflate"}
-        response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
-        r1 = self.request_class.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'}, headers=headers, callback=lambda x: x)
-        self.assertEqual(r1.method, 'POST')
-        self.assertEqual(r1.headers['Content-type'], 'application/x-www-form-urlencoded')
-        self.assertEqual(r1.headers['Accept-Encoding'], 'gzip,deflate')
+        response = _buildresponse(
+            """<form action="post.php" method="POST">
+            <input type="hidden" name="test" value="val1">
+            <input type="hidden" name="test" value="val2">
+            <input type="hidden" name="test2" value="xxx">
+            </form>""")
+        req = self.request_class.from_response(response,
+                formdata={'one': ['two', 'three'], 'six': 'seven'},
+                headers={"Accept-Encoding": "gzip,deflate"})
+        self.assertEqual(req.method, 'POST')
+        self.assertEqual(req.headers['Content-type'], 'application/x-www-form-urlencoded')
+        self.assertEqual(req.headers['Accept-Encoding'], 'gzip,deflate')
 
     def test_from_response_get(self):
-        respbody = """
-<form action="get.php" method="GET">
-<input type="hidden" name="test" value="val1">
-<input type="hidden" name="test" value="val2">
-<input type="hidden" name="test2" value="xxx">
-</form>
-        """
-        response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
-        r1 = self.request_class.from_response(response, formdata={'one': ['two', 'three'], 'six': 'seven'})
+        response = _buildresponse(
+            """<form action="get.php" method="GET">
+            <input type="hidden" name="test" value="val1">
+            <input type="hidden" name="test" value="val2">
+            <input type="hidden" name="test2" value="xxx">
+            </form>""",
+            url="http://www.example.com/this/list.html")
+        r1 = self.request_class.from_response(response,
+                formdata={'one': ['two', 'three'], 'six': 'seven'})
         self.assertEqual(r1.method, 'GET')
         self.assertEqual(urlparse(r1.url).hostname, "www.example.com")
         self.assertEqual(urlparse(r1.url).path, "/this/get.php")
-        urlargs = cgi.parse_qs(urlparse(r1.url).query)
-        self.assertEqual(set(urlargs['test']), set(['val1', 'val2']))
-        self.assertEqual(set(urlargs['one']), set(['two', 'three']))
-        self.assertEqual(urlargs['test2'], ['xxx'])
-        self.assertEqual(urlargs['six'], ['seven'])
+        fs = _qs(r1)
+        self.assertEqual(set(fs['test']), set(['val1', 'val2']))
+        self.assertEqual(set(fs['one']), set(['two', 'three']))
+        self.assertEqual(fs['test2'], ['xxx'])
+        self.assertEqual(fs['six'], ['seven'])
 
     def test_from_response_override_params(self):
-        respbody = """
-<form action="get.php" method="POST">
-<input type="hidden" name="one" value="1">
-<input type="hidden" name="two" value="3">
-</form>
-        """
-        response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
-        r1 = self.request_class.from_response(response, formdata={'two': '2'})
-        fs = cgi.FieldStorage(StringIO(r1.body), r1.headers, environ={"REQUEST_METHOD": "POST"})
-        self.assertEqual(fs['one'].value, '1')
-        self.assertEqual(fs['two'].value, '2')
+        response = _buildresponse(
+            """<form action="get.php" method="POST">
+            <input type="hidden" name="one" value="1">
+            <input type="hidden" name="two" value="3">
+            </form>""")
+        req = self.request_class.from_response(response, formdata={'two': '2'})
+        fs = _qs(req)
+        self.assertEqual(fs['one'], ['1'])
+        self.assertEqual(fs['two'], ['2'])
 
     def test_from_response_submit_first_clickable(self):
-        respbody = """
-<form action="get.php" method="GET">
-<input type="submit" name="clickable1" value="clicked1">
-<input type="hidden" name="one" value="1">
-<input type="hidden" name="two" value="3">
-<input type="submit" name="clickable2" value="clicked2">
-</form>
-        """
-        response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
-        r1 = self.request_class.from_response(response, formdata={'two': '2'})
-        urlargs = cgi.parse_qs(urlparse(r1.url).query)
-        self.assertEqual(urlargs['clickable1'], ['clicked1'])
-        self.assertFalse('clickable2' in urlargs, urlargs)
-        self.assertEqual(urlargs['one'], ['1'])
-        self.assertEqual(urlargs['two'], ['2'])
+        response = _buildresponse(
+            """<form action="get.php" method="GET">
+            <input type="submit" name="clickable1" value="clicked1">
+            <input type="hidden" name="one" value="1">
+            <input type="hidden" name="two" value="3">
+            <input type="submit" name="clickable2" value="clicked2">
+            </form>""")
+        req = self.request_class.from_response(response, formdata={'two': '2'})
+        fs = _qs(req)
+        self.assertEqual(fs['clickable1'], ['clicked1'])
+        self.assertFalse('clickable2' in fs, fs)
+        self.assertEqual(fs['one'], ['1'])
+        self.assertEqual(fs['two'], ['2'])
 
     def test_from_response_submit_not_first_clickable(self):
-        respbody = """
-<form action="get.php" method="GET">
-<input type="submit" name="clickable1" value="clicked1">
-<input type="hidden" name="one" value="1">
-<input type="hidden" name="two" value="3">
-<input type="submit" name="clickable2" value="clicked2">
-</form>
-        """
-        response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
-        r1 = self.request_class.from_response(response, formdata={'two': '2'}, clickdata={'name': 'clickable2'})
-        urlargs = cgi.parse_qs(urlparse(r1.url).query)
-        self.assertEqual(urlargs['clickable2'], ['clicked2'])
-        self.assertFalse('clickable1' in urlargs, urlargs)
-        self.assertEqual(urlargs['one'], ['1'])
-        self.assertEqual(urlargs['two'], ['2'])
+        response = _buildresponse(
+            """<form action="get.php" method="GET">
+            <input type="submit" name="clickable1" value="clicked1">
+            <input type="hidden" name="one" value="1">
+            <input type="hidden" name="two" value="3">
+            <input type="submit" name="clickable2" value="clicked2">
+            </form>""")
+        req = self.request_class.from_response(response, formdata={'two': '2'}, \
+                                              clickdata={'name': 'clickable2'})
+        fs = _qs(req)
+        self.assertEqual(fs['clickable2'], ['clicked2'])
+        self.assertFalse('clickable1' in fs, fs)
+        self.assertEqual(fs['one'], ['1'])
+        self.assertEqual(fs['two'], ['2'])
 
     def test_from_response_multiple_clickdata(self):
-        respbody = """
-<form action="get.php" method="GET">
-<input type="submit" name="clickable" value="clicked1">
-<input type="submit" name="clickable" value="clicked2">
-<input type="hidden" name="one" value="clicked1">
-<input type="hidden" name="two" value="clicked2">
-</form>
-        """
-        response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
-        r1 = self.request_class.from_response(response, \
+        response = _buildresponse(
+            """<form action="get.php" method="GET">
+            <input type="submit" name="clickable" value="clicked1">
+            <input type="submit" name="clickable" value="clicked2">
+            <input type="hidden" name="one" value="clicked1">
+            <input type="hidden" name="two" value="clicked2">
+            </form>""")
+        req = self.request_class.from_response(response, \
                 clickdata={'name': 'clickable', 'value': 'clicked2'})
-        urlargs = cgi.parse_qs(urlparse(r1.url).query)
-        self.assertEqual(urlargs['clickable'], ['clicked2'])
-        self.assertEqual(urlargs['one'], ['clicked1'])
-        self.assertEqual(urlargs['two'], ['clicked2'])
+        fs = _qs(req)
+        self.assertEqual(fs['clickable'], ['clicked2'])
+        self.assertEqual(fs['one'], ['clicked1'])
+        self.assertEqual(fs['two'], ['clicked2'])
 
     def test_from_response_unicode_clickdata(self):
-        body = u"""
-<form action="get.php" method="GET">
-<input type="submit" name="price in \u00a3" value="\u00a3 1000">
-<input type="submit" name="price in \u20ac" value="\u20ac 2000">
-<input type="hidden" name="poundsign" value="\u00a3">
-<input type="hidden" name="eurosign" value="\u20ac">
-</form>
-        """
-        response = HtmlResponse("http://www.example.com", body=body, \
-                                encoding='utf-8')
-        r1 = self.request_class.from_response(response, \
+        response = _buildresponse(
+            u"""<form action="get.php" method="GET">
+            <input type="submit" name="price in \u00a3" value="\u00a3 1000">
+            <input type="submit" name="price in \u20ac" value="\u20ac 2000">
+            <input type="hidden" name="poundsign" value="\u00a3">
+            <input type="hidden" name="eurosign" value="\u20ac">
+            </form>""")
+        req = self.request_class.from_response(response, \
                 clickdata={'name': u'price in \u00a3'})
-        urlargs = cgi.parse_qs(urlparse(r1.url).query)
-        self.assertTrue(urlargs[u'price in \u00a3'.encode('utf-8')])
-
-    def test_from_response_with_select(self):
-        body = u"""
-        <form name="form1">
-          <select name="inputname"><option selected="selected" value="inputvalue">text</option></select>
-          <input type="submit" name="clickable" value="clicked">
-        </form>
-        """
-        res = HtmlResponse("http://example.com", body=body, encoding='utf-8')
-        req = self.request_class.from_response(res)
-        urlargs = cgi.parse_qs(urlparse(req.url).query)
-        self.assertEqual(urlargs['inputname'], ['inputvalue'])
+        fs = _qs(req)
+        self.assertTrue(fs[u'price in \u00a3'.encode('utf-8')])
 
     def test_from_response_multiple_forms_clickdata(self):
-        body = u"""
-        <form name="form1">
-          <input type="submit" name="clickable" value="clicked1">
-          <input type="hidden" name="field1" value="value1">
-        </form>
-        <form name="form2">
-          <input type="submit" name="clickable" value="clicked2">
-          <input type="hidden" name="field2" value="value2">
-        </form>
-        """
-        res = HtmlResponse("http://example.com", body=body, encoding='utf-8')
-        req = self.request_class.from_response(res, formname='form2', \
+        response = _buildresponse(
+            """<form name="form1">
+            <input type="submit" name="clickable" value="clicked1">
+            <input type="hidden" name="field1" value="value1">
+            </form>
+            <form name="form2">
+            <input type="submit" name="clickable" value="clicked2">
+            <input type="hidden" name="field2" value="value2">
+            </form>
+            """)
+        req = self.request_class.from_response(response, formname='form2', \
                 clickdata={'name': 'clickable'})
-        urlargs = cgi.parse_qs(urlparse(req.url).query)
-        self.assertEqual(urlargs['clickable'], ['clicked2'])
-        self.assertEqual(urlargs['field2'], ['value2'])
-        self.assertFalse('field1' in urlargs, urlargs)
+        fs = _qs(req)
+        self.assertEqual(fs['clickable'], ['clicked2'])
+        self.assertEqual(fs['field2'], ['value2'])
+        self.assertFalse('field1' in fs, fs)
 
     def test_from_response_override_clickable(self):
-        body = u'<form><input type="submit" name="clickme" value="one"></form>'
-        res = HtmlResponse("http://example.com", body=body, encoding='utf-8')
-        req = self.request_class.from_response(res, \
-                                               formdata={'clickme': 'two'}, \
-                                               clickdata={'name': 'clickme'})
-        urlargs = cgi.parse_qs(urlparse(req.url).query)
-        self.assertEqual(urlargs['clickme'], ['two'])
+        response = _buildresponse('''<form><input type="submit" name="clickme" value="one"> </form>''')
+        req = self.request_class.from_response(response, \
+                formdata={'clickme': 'two'}, clickdata={'name': 'clickme'})
+        fs = _qs(req)
+        self.assertEqual(fs['clickme'], ['two'])
 
     def test_from_response_dont_click(self):
-        respbody = """
-<form action="get.php" method="GET">
-<input type="submit" name="clickable1" value="clicked1">
-<input type="hidden" name="one" value="1">
-<input type="hidden" name="two" value="3">
-<input type="submit" name="clickable2" value="clicked2">
-</form>
-        """
-        response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
+        response = _buildresponse(
+            """<form action="get.php" method="GET">
+            <input type="submit" name="clickable1" value="clicked1">
+            <input type="hidden" name="one" value="1">
+            <input type="hidden" name="two" value="3">
+            <input type="submit" name="clickable2" value="clicked2">
+            </form>""")
         r1 = self.request_class.from_response(response, dont_click=True)
-        urlargs = cgi.parse_qs(urlparse(r1.url).query)
-        self.assertFalse('clickable1' in urlargs, urlargs)
-        self.assertFalse('clickable2' in urlargs, urlargs)
+        fs = _qs(r1)
+        self.assertFalse('clickable1' in fs, fs)
+        self.assertFalse('clickable2' in fs, fs)
 
     def test_from_response_ambiguous_clickdata(self):
-        respbody = """
-<form action="get.php" method="GET">
-<input type="submit" name="clickable1" value="clicked1">
-<input type="hidden" name="one" value="1">
-<input type="hidden" name="two" value="3">
-<input type="submit" name="clickable2" value="clicked2">
-</form>
-        """
-        response = HtmlResponse("http://www.example.com/this/list.html", body=respbody)
-        self.assertRaises(ValueError,
-                          self.request_class.from_response,
-                          response,
-                          clickdata={'type': 'submit'})
+        response = _buildresponse(
+            """
+            <form action="get.php" method="GET">
+            <input type="submit" name="clickable1" value="clicked1">
+            <input type="hidden" name="one" value="1">
+            <input type="hidden" name="two" value="3">
+            <input type="submit" name="clickable2" value="clicked2">
+            </form>""")
+        self.assertRaises(ValueError, self.request_class.from_response,
+                          response, clickdata={'type': 'submit'})
 
     def test_from_response_non_matching_clickdata(self):
-        body = """
-        <form>
-          <input type="submit" name="clickable" value="clicked">
-        </form>
-        """
-        res = HtmlResponse("http://example.com", body=body)
-        self.assertRaises(ValueError,
-                          self.request_class.from_response, res,
-                                clickdata={'nonexistent': 'notme'})
+        response = _buildresponse(
+            """<form>
+            <input type="submit" name="clickable" value="clicked">
+            </form>""")
+        self.assertRaises(ValueError, self.request_class.from_response,
+                          response, clickdata={'nonexistent': 'notme'})
 
     def test_from_response_errors_noform(self):
-        respbody = """<html></html>"""
-        response = HtmlResponse("http://www.example.com/lala.html", body=respbody)
+        response = _buildresponse("""<html></html>""")
         self.assertRaises(ValueError, self.request_class.from_response, response)
 
     def test_from_response_errors_formnumber(self):
-        respbody = """
-<form action="get.php" method="GET">
-<input type="hidden" name="test" value="val1">
-<input type="hidden" name="test" value="val2">
-<input type="hidden" name="test2" value="xxx">
-</form>
-        """
-        response = HtmlResponse("http://www.example.com/lala.html", body=respbody)
+        response = _buildresponse(
+            """<form action="get.php" method="GET">
+            <input type="hidden" name="test" value="val1">
+            <input type="hidden" name="test" value="val2">
+            <input type="hidden" name="test2" value="xxx">
+            </form>""")
         self.assertRaises(IndexError, self.request_class.from_response, response, formnumber=1)
 
     def test_from_response_noformname(self):
-        respbody = """
-<form action="post.php" method="POST">
-<input type="hidden" name="one" value="1">
-<input type="hidden" name="two" value="2">
-</form>
-        """
-        response = HtmlResponse("http://www.example.com/formname.html", body=respbody)
-        r1 = self.request_class.from_response(response, formdata={'two':'3'}, callback=lambda x: x)
+        response = _buildresponse(
+            """<form action="post.php" method="POST">
+            <input type="hidden" name="one" value="1">
+            <input type="hidden" name="two" value="2">
+            </form>""")
+        r1 = self.request_class.from_response(response, formdata={'two':'3'})
         self.assertEqual(r1.method, 'POST')
         self.assertEqual(r1.headers['Content-type'], 'application/x-www-form-urlencoded')
-        fs = cgi.FieldStorage(StringIO(r1.body), r1.headers, environ={"REQUEST_METHOD": "POST"})
-        self.assertEqual(fs['one'].value, '1')
-        self.assertEqual(fs['two'].value, '3')
-
+        fs = _qs(r1)
+        self.assertEqual(fs, {'one': ['1'], 'two': ['3']})
 
     def test_from_response_formname_exists(self):
-        respbody = """
-<form action="post.php" method="POST">
-<input type="hidden" name="one" value="1">
-<input type="hidden" name="two" value="2">
-</form>
-<form name="form2" action="post.php" method="POST">
-<input type="hidden" name="three" value="3">
-<input type="hidden" name="four" value="4">
-</form>
-        """
-        response = HtmlResponse("http://www.example.com/formname.html", body=respbody)
-        r1 = self.request_class.from_response(response, formname="form2", callback=lambda x: x)
+        response = _buildresponse(
+            """<form action="post.php" method="POST">
+            <input type="hidden" name="one" value="1">
+            <input type="hidden" name="two" value="2">
+            </form>
+            <form name="form2" action="post.php" method="POST">
+            <input type="hidden" name="three" value="3">
+            <input type="hidden" name="four" value="4">
+            </form>""")
+        r1 = self.request_class.from_response(response, formname="form2")
         self.assertEqual(r1.method, 'POST')
-        fs = cgi.FieldStorage(StringIO(r1.body), r1.headers, environ={"REQUEST_METHOD": "POST"})
-        self.assertEqual(fs['three'].value, "3")
-        self.assertEqual(fs['four'].value, "4")
+        fs = _qs(r1)
+        self.assertEqual(fs, {'four': ['4'], 'three': ['3']})
 
     def test_from_response_formname_notexist(self):
-        respbody = """
-<form name="form1" action="post.php" method="POST">
-<input type="hidden" name="one" value="1">
-</form>
-<form name="form2" action="post.php" method="POST">
-<input type="hidden" name="two" value="2">
-</form>
-        """
-        response = HtmlResponse("http://www.example.com/formname.html", body=respbody)
-        r1 = self.request_class.from_response(response, formname="form3", callback=lambda x: x)
+        response = _buildresponse(
+            """<form name="form1" action="post.php" method="POST">
+            <input type="hidden" name="one" value="1">
+            </form>
+            <form name="form2" action="post.php" method="POST">
+            <input type="hidden" name="two" value="2">
+            </form>""")
+        r1 = self.request_class.from_response(response, formname="form3")
         self.assertEqual(r1.method, 'POST')
-        fs = cgi.FieldStorage(StringIO(r1.body), r1.headers, environ={"REQUEST_METHOD": "POST"})
-        self.assertEqual(fs['one'].value, "1")
+        fs = _qs(r1)
+        self.assertEqual(fs, {'one': ['1']})
 
     def test_from_response_formname_errors_formnumber(self):
-        respbody = """
-<form name="form1" action="post.php" method="POST">
-<input type="hidden" name="one" value="1">
-</form>
-<form name="form2" action="post.php" method="POST">
-<input type="hidden" name="two" value="2">
-</form>
-        """
-        response = HtmlResponse("http://www.example.com/formname.html", body=respbody)
-        self.assertRaises(IndexError, self.request_class.from_response, response, formname="form3", formnumber=2)
+        response = _buildresponse(
+            """<form name="form1" action="post.php" method="POST">
+            <input type="hidden" name="one" value="1">
+            </form>
+            <form name="form2" action="post.php" method="POST">
+            <input type="hidden" name="two" value="2">
+            </form>""")
+        self.assertRaises(IndexError, self.request_class.from_response, \
+                          response, formname="form3", formnumber=2)
 
     def test_from_response_select(self):
         res = _buildresponse(
@@ -612,6 +565,7 @@ def _qs(req):
     else:
         qs = req.url.partition('?')[2]
     return cgi.parse_qs(qs, True)
+
 
 class XmlRpcRequestTest(RequestTest):
 
