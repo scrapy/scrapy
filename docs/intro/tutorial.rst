@@ -436,8 +436,11 @@ Next steps
 ==========
            
 This tutorial covers only the basics of Scrapy, but there's a lot of other
-features not mentioned here. We recommend you continue by playing with an
-example project (see :ref:`intro-examples`), and then continue with the section
+features not mentioned here. Check the :ref:`topics-whatelse` section in
+:ref:`intro-overview` chapter for a quick overview of the most important ones.
+
+Then, we recommend you continue by playing with an example project (see
+:ref:`intro-examples`), and then continue with the section
 :ref:`section-basics`.
 
 .. _JSON: http://en.wikipedia.org/wiki/JSON

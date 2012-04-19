@@ -186,6 +186,8 @@ directly) are actually lists. This is because the :ref:`selectors
 perform some additional parsing/cleansing to the values. That's what
 :ref:`Item Loaders <topics-loaders>` are for.
 
+.. _topics-whatelse:
+
 What else?
 ==========
 
@@ -225,6 +227,10 @@ scraping easy and efficient, such as:
 
 * Robust encoding support and auto-detection, for dealing with foreign,
   non-standard and broken encoding declarations.
+
+* Support for creating spiders based on pre-defined templates, to speed up
+  spider creation and make their code more consistent on large projects. See
+  :command:`genspider` command for more details.
 
 * Extensible :ref:`stats collection <topics-stats>` for multiple spider
   metrics, useful for monitoring the performance of your spiders and detecting
