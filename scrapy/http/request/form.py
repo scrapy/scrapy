@@ -77,11 +77,11 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
     except (ValueError, TypeError):
         raise ValueError('formdata should be a dict or iterable of tuples')
 
-    inputs = [(n, v) for n, v in form.form_values() if n not in formdata]
+    inputs = [(n, u'' if v is None else v) for n, v in form.fields.items() if n not in formdata]
 
     if not dont_click:
         clickable = _get_clickable(clickdata, form)
-        if clickable and clickable[0] not in formdata:
+        if clickable and clickable[0] not in formdata and not clickable[0] is None:
             inputs.append(clickable)
 
     inputs.extend(formdata.iteritems())
