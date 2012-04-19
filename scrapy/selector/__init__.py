@@ -1,11 +1,11 @@
 """
 XPath selectors
 
-Two backends are currently available: libxml2 and lxml
-
 To select the backend explicitly use the SELECTORS_BACKEND variable in your
-project. Otherwise, libxml2 will be tried first. If libxml2 is not available,
-lxml will be used.
+project settings.
+
+Two backends are currently available: lxml (default) and libxml2.
+
 """
 
 from scrapy.conf import settings
