@@ -553,6 +553,28 @@ class FormRequestTest(RequestTest):
         fs = _qs(req)
         self.assertEqual(fs, {'i1': ['i1v'], 'i2': [''], 'i3': ['']})
 
+    def test_from_response_descendants(self):
+        res = _buildresponse(
+            '''<form>
+            <div>
+              <fieldset>
+                <input type="text" name="i1">
+                <select name="i2">
+                    <option value="v1" selected>
+                </select>
+              </fieldset>
+              <input type="radio" name="i3" value="i3v2" checked>
+              <input type="checkbox" name="i4" value="i4v2" checked>
+              <textarea name="i5"></textarea>
+              <input type="hidden" name="h1" value="h1v">
+              </div>
+            <input type="hidden" name="h2" value="h2v">
+            </form>''')
+        req = self.request_class.from_response(res)
+        fs = _qs(req)
+        self.assertEqual(set(fs), set(['h2', 'i2', 'i1', 'i3', 'h1', 'i5', 'i4']))
+
+
 def _buildresponse(body, **kwargs):
     kwargs.setdefault('body', body)
     kwargs.setdefault('url', 'http://example.com')
