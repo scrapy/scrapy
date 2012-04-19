@@ -524,6 +524,109 @@ class FormRequestTest(RequestTest):
         self.assertEqual(fs['key7'], [''])
         self.assertEqual(set(fs), set(['key1', 'key2', 'key3', 'key4', 'key5', 'key6', 'key7']))
 
+    def test_from_response_select(self):
+        res = _buildresponse(
+            '''<form>
+            <select name="i1">
+                <option value="i1v1">option 1</option>
+                <option value="i1v2" selected>option 2</option>
+            </select>
+            <select name="i2">
+                <option value="i2v1">option 1</option>
+                <option value="i2v2">option 2</option>
+            </select>
+            <select>
+                <option value="i3v1">option 1</option>
+                <option value="i3v2">option 2</option>
+            </select>
+            <select name="i4" multiple>
+                <option value="i4v1">option 1</option>
+                <option value="i4v2" selected>option 2</option>
+                <option value="i4v3" selected>option 3</option>
+            </select>
+            <select name="i5" multiple>
+                <option value="i5v1">option 1</option>
+                <option value="i5v2">option 2</option>
+            </select>
+            </form>''')
+        req = self.request_class.from_response(res)
+        fs = _qs(req)
+        self.assertEqual(fs, {'i1': ['i1v2'], 'i2': ['i2v1'], 'i4': ['i4v2', 'i4v3']})
+
+    def test_from_response_radio(self):
+        res = _buildresponse(
+            '''<form>
+            <input type="radio" name="i1" value="iv1">
+            <input type="radio" name="i1" value="iv2" checked>
+            <input type="radio" name="i2" checked>
+            <input type="radio" name="i2">
+            <input type="radio" name="i3" value="i3v1">
+            <input type="radio" name="i3">
+            </form>''')
+        req = self.request_class.from_response(res)
+        fs = _qs(req)
+        self.assertEqual(fs, {'i1': ['iv2'], 'i2': ['on']})
+
+    def test_from_response_checkbox(self):
+        res = _buildresponse(
+            '''<form>
+            <input type="checkbox" name="i1" value="iv1">
+            <input type="checkbox" name="i1" value="iv2" checked>
+            <input type="checkbox" name="i2" checked>
+            <input type="checkbox" name="i2">
+            <input type="checkbox" name="i3" value="i3v1">
+            <input type="checkbox" name="i3">
+            </form>''')
+        req = self.request_class.from_response(res)
+        fs = _qs(req)
+        self.assertEqual(fs, {'i1': ['iv2'], 'i2': ['on']})
+
+    def test_from_response_input_text(self):
+        res = _buildresponse(
+            '''<form>
+            <input type="text" name="i1" value="iv1">
+            <input type="text" name="i2">
+            <input type="text">
+            </form>''')
+        req = self.request_class.from_response(res)
+        fs = _qs(req)
+        self.assertEqual(fs, {'i1': ['iv1'], 'i2': ['']})
+
+    def test_from_response_input_hidden(self):
+        res = _buildresponse(
+            '''<form>
+            <input type="hidden" name="i1" value="iv1">
+            <input type="hidden" name="i2">
+            <input type="hidden">
+            </form>''')
+        req = self.request_class.from_response(res)
+        fs = _qs(req)
+        self.assertEqual(fs, {'i1': ['iv1'], 'i2': ['']})
+
+    def test_from_response_input_hidden(self):
+        res = _buildresponse(
+            '''<form>
+            <input type="hidden" name="i1" value="iv1">
+            <input type="hidden" name="i2">
+            <input type="hidden">
+            </form>''')
+        req = self.request_class.from_response(res)
+        fs = _qs(req)
+        self.assertEqual(fs, {'i1': ['iv1'], 'i2': ['']})
+
+def _buildresponse(body, **kwargs):
+    kwargs.setdefault('body', body)
+    kwargs.setdefault('url', 'http://example.com')
+    kwargs.setdefault('encoding', 'utf-8')
+    return HtmlResponse(**kwargs)
+
+def _qs(req):
+    if req.method == 'POST':
+        qs = req.body
+    else:
+        qs = req.url.partition('?')[2]
+    return cgi.parse_qs(qs, True)
+
 class XmlRpcRequestTest(RequestTest):
 
     request_class = XmlRpcRequest

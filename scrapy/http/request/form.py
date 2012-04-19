@@ -74,10 +74,13 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
     except (ValueError, TypeError):
         raise ValueError('formdata should be a dict or iterable of tuples')
 
-    inputs = form.xpath('descendant::input[@type!="submit"]|descendant::textarea|descendant::select')
+    inputs = form.xpath('descendant::textarea'
+                        '|descendant::select'
+                        '|descendant::input[@type!="submit" '
+                        'and ((@type!="checkbox" and @type!="radio") or @checked)]')
     values = [(k, u'' if v is None else v) \
-              for k, v in ((e.name, e.value) for e in inputs) \
-              if k not in formdata]
+              for k, v in ((e.name, _value(e)) for e in inputs) \
+              if k and k not in formdata]
 
     if not dont_click:
         clickable = _get_clickable(clickdata, form)
@@ -86,6 +89,14 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
 
     values.extend(formdata.iteritems())
     return values
+
+def _value(ele):
+    v = ele.value
+    if v is None and ele.tag == 'select' and not ele.multiple:
+        o = ele.value_options
+        if o:
+            return o[0]
+    return v
 
 def _get_clickable(clickdata, form):
     """
