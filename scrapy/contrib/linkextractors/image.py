@@ -7,7 +7,7 @@ from urlparse import urljoin
 from scrapy.link import Link
 from scrapy.utils.url import canonicalize_url
 from scrapy.utils.python import unicode_to_str, flatten
-from scrapy.selector.libxml2sel import XPathSelectorList, HtmlXPathSelector
+from scrapy.selector import XPathSelectorList, HtmlXPathSelector
 
 class HTMLImageLinkExtractor(object):
     '''HTMLImageLinkExtractor objects are intended to extract image links from HTML pages
@@ -25,28 +25,20 @@ class HTMLImageLinkExtractor(object):
         self.canonicalize = canonicalize
 
     def extract_from_selector(self, selector, encoding, parent=None):
-        ret = []
-        def _add_link(url_sel, alt_sel=None):
-            url = flatten([url_sel.extract()])
-            alt = flatten([alt_sel.extract()]) if alt_sel else (u'', )
-            if url:
-                ret.append(Link(unicode_to_str(url[0], encoding), alt[0]))
+        """Extract the links of all the images found in the selector given."""
+        links = []
+        for img in selector.select('descendant-or-self::img'):
+            url = self._img_attr(img, "src")
+            if not url:
+                continue
+            text = self._img_attr(img, "alt") or self._img_attr(img, "title") or ""
+            links.append(Link(unicode_to_str(url, encoding), text=text))
+        return links
 
-        if selector.xmlNode.type == 'element':
-            if selector.xmlNode.name == 'img':
-                _add_link(selector.select('@src'), selector.select('@alt') or \
-                          selector.select('@title'))
-            else:
-                children = selector.select('child::*')
-                if len(children):
-                    for child in children:
-                        ret.extend(self.extract_from_selector(child, encoding, parent=selector))
-                elif selector.xmlNode.name == 'a' and not parent:
-                    _add_link(selector.select('@href'), selector.select('@title'))
-        else:
-            _add_link(selector)
-
-        return ret
+    def _img_attr(self, img, attr):
+        """Get the value of the given ``attr`` of ``img`` tag"""
+        res = img.select("@%s" % attr).extract()
+        return res[0] if res else None
 
     def extract_links(self, response):
         xs = HtmlXPathSelector(response)
