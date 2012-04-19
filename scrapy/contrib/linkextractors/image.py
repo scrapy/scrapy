@@ -26,25 +26,19 @@ class HTMLImageLinkExtractor(object):
 
     def extract_from_selector(self, selector, encoding, parent=None):
         """Extract the links of all the images found in the selector given."""
-
-        selectors = [selector] if selector.select("local-name()").re("^img$") \
-                        else selector.select(".//img")
-
-        def _img_attr(img, attr):
-            """Helper to get the value of the given ``attr`` of the ``img``
-            selector"""
-            res = img.select("@%s" % attr).extract()
-            return res[0] if res else None
-
         links = []
-        for img in selectors:
-            url = _img_attr(img, "src")
-            text = _img_attr(img, "alt") or _img_attr(img, "title") or ""
+        for img in selector.select('descendant-or-self::img'):
+            url = self._img_attr(img, "src")
             if not url:
                 continue
+            text = self._img_attr(img, "alt") or self._img_attr(img, "title") or ""
             links.append(Link(unicode_to_str(url, encoding), text=text))
         return links
 
+    def _img_attr(self, img, attr):
+        """Get the value of the given ``attr`` of ``img`` tag"""
+        res = img.select("@%s" % attr).extract()
+        return res[0] if res else None
 
     def extract_links(self, response):
         xs = HtmlXPathSelector(response)
