@@ -4,6 +4,12 @@
 Using Firebug for scraping
 ==========================
 
+.. note:: Google Directory, the example website used in this guide is no longer
+   available as it `has been shut down by Google`_. The concepts in this guide
+   are still valid though. If you want to update this guide to use a new
+   (working) site, your contribution will be more than welcome!. See
+   :ref:`topics-contributing` for information on how to do so.
+
 Introduction
 ============
 
@@ -159,3 +165,5 @@ elements.
 
 or tags which Therefer   in page HTML
 sources may on Firebug inspects the live DOM 
+
+.. _has been shut down by Google: http://searchenginewatch.com/article/2096661/Google-Directory-Has-Been-Shut-Down
