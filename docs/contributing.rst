@@ -1,3 +1,5 @@
+.. _topics-contributing:
+
 ======================
 Contributing to Scrapy
 ======================
