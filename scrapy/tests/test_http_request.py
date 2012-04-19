@@ -496,6 +496,33 @@ class FormRequestTest(RequestTest):
         response = HtmlResponse("http://www.example.com/formname.html", body=respbody)
         self.assertRaises(IndexError, self.request_class.from_response, response, formname="form3", formnumber=2)
 
+    def test_from_response_missed_value(self):
+        respbody = """
+<form action="get.php" method="POST">
+    <input type="hidden" name="key1" value="val1">
+    <input type="hidden" name="key2">
+    <input type="radio" name="key3" checked>
+    <input type="checkbox" name="key4" checked>
+    <textarea name="key5">val5</textarea>
+    <textarea name="key6"/>
+    <select name="key7">
+        <option name="opt1" selected></option>
+        <option name="opt2">opt2</option>
+    </select>
+    <input type="submit" value="val8">
+</form>
+        """
+        res = HtmlResponse("http://example.com", body=respbody, encoding='utf-8')
+        req = self.request_class.from_response(res)
+        fs = cgi.parse_qs(req.body, True)
+        self.assertEqual(fs['key1'], ['val1'])
+        self.assertEqual(fs['key2'], [''])
+        self.assertEqual(fs['key3'], ['on'])
+        self.assertEqual(fs['key4'], ['on'])
+        self.assertEqual(fs['key5'], ['val5'])
+        self.assertEqual(fs['key6'], [''])
+        self.assertEqual(fs['key7'], [''])
+        self.assertEqual(set(fs), set(['key1', 'key2', 'key3', 'key4', 'key5', 'key6', 'key7']))
 
 class XmlRpcRequestTest(RequestTest):
 
