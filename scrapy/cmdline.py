@@ -60,6 +60,9 @@ def _print_commands(inproject):
     cmds = _get_commands_dict(inproject)
     for cmdname, cmdclass in sorted(cmds.iteritems()):
         print "  %-13s %s" % (cmdname, cmdclass.short_desc())
+    if not inproject:
+        print
+        print "  [ more ]      More commands available when run from project directory"
     print
     print 'Use "scrapy <command> -h" to see more info about a command'
 
@@ -67,9 +70,6 @@ def _print_unknown_command(cmdname, inproject):
     _print_header(inproject)
     print "Unknown command: %s\n" % cmdname
     print 'Use "scrapy" to see available commands' 
-    if not inproject:
-        print
-        print "More commands are available in project mode"
 
 def _run_print_help(parser, func, *a, **kw):
     try:
