@@ -27,6 +27,21 @@ Scrapyd changes:
 - Items are now stored on disk using feed exports, and accessible through the Scrapyd web interface
 - Support making Scrapyd listen into a specific IP address (see ``bind_address`` option)
 
+0.14.3
+------
+
+- bumped version to 0.14.3 (:commit:`02df475`)
+- forgot to include pydispatch license. #118 (:commit:`fd85f9c`)
+- include egg files used by testsuite in source distribution. #118 (:commit:`c897793`)
+- update docstring in project template to avoid confusion with genspider command, which may be considered as an advanced feature. refs #107 (:commit:`2548dcc`)
+- added note to docs/topics/firebug.rst about google directory being shut down (:commit:`668e352`)
+- Merge branch '0.14' of github.com:scrapy/scrapy into 0.14 (:commit:`835d082`)
+- dont discard slot when empty, just save in another dict in order to recycle if needed again. (:commit:`8e9f607`)
+- do not fail handling unicode xpaths in libxml2 backed selectors (:commit:`b830e95`)
+- fixed minor mistake in Request objects documentation (:commit:`bf3c9ee`)
+- fixed minor defect in link extractors documentation (:commit:`ba14f38`)
+- removed some obsolete remaining code related to sqlite support in scrapy (:commit:`0665175`)
+
 0.14.2
 ------
 
