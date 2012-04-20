@@ -489,6 +489,8 @@ class FormRequestTest(RequestTest):
             <input type="radio" name="i2">
             <input type="radio" name="i3" value="i3v1">
             <input type="radio" name="i3">
+            <input type="radio" value="i4v1">
+            <input type="radio">
             </form>''')
         req = self.request_class.from_response(res)
         fs = _qs(req)
@@ -503,6 +505,8 @@ class FormRequestTest(RequestTest):
             <input type="checkbox" name="i2">
             <input type="checkbox" name="i3" value="i3v1">
             <input type="checkbox" name="i3">
+            <input type="checkbox" value="i4v1">
+            <input type="checkbox">
             </form>''')
         req = self.request_class.from_response(res)
         fs = _qs(req)
@@ -513,6 +517,7 @@ class FormRequestTest(RequestTest):
             '''<form>
             <input type="text" name="i1" value="i1v1">
             <input type="text" name="i2">
+            <input type="text" value="i3v1">
             <input type="text">
             </form>''')
         req = self.request_class.from_response(res)
@@ -524,6 +529,7 @@ class FormRequestTest(RequestTest):
             '''<form>
             <input type="hidden" name="i1" value="i1v1">
             <input type="hidden" name="i2">
+            <input type="hidden" value="i3v1">
             <input type="hidden">
             </form>''')
         req = self.request_class.from_response(res)
