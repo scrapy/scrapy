@@ -41,8 +41,10 @@ if [ $# -eq 0 ]; then
 else
     $trial "$@"
 fi
+exit_status=$?
 
 # cleanup vsftpd stuff
 [ -n "$vsftpd_pid" ] && kill $vsftpd_pid
 [ -n "$ftproot" ] && rm -rf $ftproot $vsftpd_conf
 
+exit $exit_status
