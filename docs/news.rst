@@ -30,7 +30,6 @@ Scrapyd changes:
 0.14.3
 ------
 
-- bumped version to 0.14.3 (:commit:`02df475`)
 - forgot to include pydispatch license. #118 (:commit:`fd85f9c`)
 - include egg files used by testsuite in source distribution. #118 (:commit:`c897793`)
 - update docstring in project template to avoid confusion with genspider command, which may be considered as an advanced feature. refs #107 (:commit:`2548dcc`)
@@ -45,7 +44,6 @@ Scrapyd changes:
 0.14.2
 ------
 
-- bumped version to 0.14.2 (:commit:`68c1c98`)
 - move buffer pointing to start of file before computing checksum. refs #92 (:commit:`6a5bef2`)
 - Compute image checksum before persisting images. closes #92 (:commit:`9817df1`)
 - remove leaking references in cached failures (:commit:`673a120`)
