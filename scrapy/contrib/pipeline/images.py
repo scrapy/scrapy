@@ -9,11 +9,11 @@ import time
 import hashlib
 import urlparse
 import rfc822
-import Image
 from cStringIO import StringIO
 from collections import defaultdict
 
 from twisted.internet import defer, threads
+from PIL import Image
 
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy import log

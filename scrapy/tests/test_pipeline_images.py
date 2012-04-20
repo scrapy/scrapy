@@ -7,7 +7,7 @@ from twisted.trial import unittest
 
 
 try:
-    import Image
+    from PIL import Image
     skip = False
 except ImportError, e:
     skip = True
