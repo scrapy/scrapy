@@ -9,7 +9,7 @@ import time
 import hashlib
 import urlparse
 import rfc822
-import Image
+from PIL import Image
 from cStringIO import StringIO
 from collections import defaultdict
 
