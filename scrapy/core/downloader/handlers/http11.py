@@ -1,94 +1,56 @@
 """Download handlers for http and https schemes"""
 
-from twisted.internet import reactor
-
-from scrapy.exceptions import NotSupported
-from scrapy.utils.misc import load_object
-from scrapy.conf import settings
-from scrapy.utils.httpobj import urlparse_cached
-from scrapy import optional_features
-
-from scrapy.utils.misc import load_object
-from scrapy.conf import settings
-from scrapy.http import Headers as ScrapyHeaders
-from scrapy.utils.httpobj import urlparse_cached
-from scrapy.responsetypes import responsetypes
-
-
-from twisted.internet import defer, reactor, protocol
-from twisted.web.client import Agent, ProxyAgent, ResponseDone, WebClientContextFactory
-
-from twisted.web.http_headers import Headers
-from twisted.web._newclient import Response
-
-from twisted.web.http import PotentialDataLoss
-from twisted.web._newclient import ResponseFailed
-from twisted.web.iweb import IBodyProducer
-from twisted.internet.error import TimeoutError
-
-from twisted.internet.endpoints import TCP4ClientEndpoint
-
 from time import time
+from cStringIO import StringIO
 from urlparse import urldefrag
 
 from zope.interface import implements
+from twisted.internet import defer, reactor, protocol
+from twisted.web.client import Agent, ProxyAgent, ResponseDone, ResponseFailed
+from twisted.web.http_headers import Headers
+from twisted.web.http import PotentialDataLoss
+from twisted.web.iweb import IBodyProducer
+from twisted.internet.endpoints import TCP4ClientEndpoint
 
-from urlparse import urlparse, urlunparse, urldefrag
-
-def _parsed_url_args(parsed):
-    path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
-    host = parsed.hostname
-    port = parsed.port
-    scheme = parsed.scheme
-    netloc = parsed.netloc
-    if port is None:
-        port = 443 if scheme == 'https' else 80
-    return scheme, netloc, host, port, path
-
-
-def _parse(url):
-    url = url.strip()
-    parsed = urlparse(url)
-    return _parsed_url_args(parsed)
+from scrapy.http import Headers as ScrapyHeaders
+from scrapy.responsetypes import responsetypes
+from scrapy.core.downloader.webclient import _parse
 
 
 class ScrapyAgent(object):
-    def __init__(self, reactor, contextFactory=WebClientContextFactory(),
-                 connectTimeout=180, bindAddress=None):
-        self._reactor = reactor
+
+    def __init__(self, contextFactory=None, connectTimeout=180, bindAddress=None):
         self._contextFactory = contextFactory
         self._connectTimeout = connectTimeout
         self._bindAddress = bindAddress
 
     def launchRequest(self, request):
-        self._scrapyrequest = request
         request_timeout = request.meta.get('download_timeout') or self._connectTimeout
 
-        proxy = self._scrapyrequest.meta.get('proxy')
+        proxy = request.meta.get('proxy')
         if proxy is not None and proxy != '':
             scheme, _, host, port, _ = _parse(proxy)
-            endpoint = TCP4ClientEndpoint(self._reactor,
+            endpoint = TCP4ClientEndpoint(reactor,
                 host, port,
                 timeout=request_timeout,
                 bindAddress=self._bindAddress)
             agent = ProxyAgent(endpoint)
-
         else:
-            agent = Agent(self._reactor,
+            agent = Agent(reactor,
                 contextFactory=self._contextFactory,
                 connectTimeout=request_timeout,
                 bindAddress=self._bindAddress)
 
-        self._scrapyrequest._tw_start_time = time()
-        d = agent.request(
-                self._scrapyrequest.method,
-                urldefrag(self._scrapyrequest.url)[0],
-                Headers(self._scrapyrequest.headers),
-                ScrapyAgentRequestBodyProducer(self._scrapyrequest.body) if (self._scrapyrequest.body is not None) else None)
-        return d
+        request._tw_start_time = time()
+        return agent.request(
+                request.method,
+                urldefrag(request.url)[0],
+                Headers(request.headers),
+                _RequestBodyProducer(request.body or ''),
+        )
 
 
-class ScrapyAgentRequestBodyProducer(object):
+class _RequestBodyProducer(object):
     implements(IBodyProducer)
 
     def __init__(self, body):
@@ -106,104 +68,60 @@ class ScrapyAgentRequestBodyProducer(object):
         pass
 
 
-from cStringIO import StringIO
-class ScrapyAgentResponseReader(protocol.Protocol):
+class _ResponseReader(protocol.Protocol):
 
-    def __init__(self, finished, response, scrapyRequest, debug=0):
-        self.debug = debug
-
-        # finished is the deferred that will be fired
+    def __init__(self, finished):
         self._finished = finished
-        self.status = int(response.code)
-
-        self._scrapyrequest = scrapyRequest
-        self._scrapyrequest._tw_headers_time = time()
-        self._scrapyrequest.meta['download_latency'] = self._scrapyrequest._tw_headers_time - self._scrapyrequest._tw_start_time
-
-        # twisted.web._newclient.HTTPClientParser already decodes chunked response bodies,
-        # so prevent extra processing in scrapy.contrib.downloadermiddleware.chunked
-        # by removing the Transfer-Encoding header if found
-        txEncodings = response.headers.getRawHeaders('Transfer-Encoding')
-        if txEncodings is not None and 'chunked' in txEncodings:
-            # hopefully there's only one Transfer-Encoding header...
-            response.headers.removeHeader('Transfer-Encoding')
-
-        self.resp_headers = list(response.headers.getAllRawHeaders())
-
-        # body, if any
-        self.bodyBuffer = StringIO()
+        self._bodybuf = StringIO()
 
     def dataReceived(self, bodyBytes):
-        if self.debug > 2:
-            print "dataReceived", len(bodyBytes), [bodyBytes[0:min(len(bodyBytes), 16)]]
-        self.bodyBuffer.write(bodyBytes)
+        self._bodybuf.write(bodyBytes)
 
     def connectionLost(self, reason):
-
-        if reason.check(PotentialDataLoss):
-            if self.debug > 2:
-                print "PotentialDataLoss"
-
-        elif reason.check(ResponseFailed):
-            if self.debug > 2:
-                print "ResponseFailed"
-                print reason.getErrorMessage()
-                reason.getBriefTraceback()
-
-        elif reason.check(ResponseDone):
-            if self.debug > 2:
-                print "ReponseDone"
-                print "connection lost: %s" % reason
-                print 'Finished receiving body:', reason.getErrorMessage()
-
-        # fire the deferred with Scrapy Response object
-        self._finished.callback(self._build_response())
-
-    def _build_response(self):
-        headers = ScrapyHeaders(self.resp_headers)
-        respcls = responsetypes.from_args(headers=headers, url=urldefrag(self._scrapyrequest.url)[0])
-        return respcls(
-            url=urldefrag(self._scrapyrequest.url)[0],
-            status=self.status,
-            headers=headers,
-            body=self.bodyBuffer.getvalue())
+        body = self._bodybuf.getvalue()
+        if reason.check(ResponseDone):
+            self._finished.callback((body, None))
+        elif reason.check(PotentialDataLoss, ResponseFailed):
+            self._finished.callback((body, 'partial_download'))
+        else:
+            self._finished.errback(reason)
 
 
 class Http11DownloadHandler(object):
 
-    def __init__(self, httpclientfactory=None):
+    def __init__(self):
         self.debug = False
-        self._httpclientfactory = httpclientfactory
-
 
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
-
-        agent = ScrapyAgent(reactor, self._httpclientfactory)
+        agent = ScrapyAgent(reactor)
         d = agent.launchRequest(request)
+        d.addBoth(self._download_latency, request, time())
         d.addCallback(self._agent_callback, request)
         d.addErrback(self._agent_errback, request)
         return d
 
+    def _download_latency(self, any_, request, start_time):
+        request.meta['download_latency'] = time() - start_time
+        return any_
 
-    def _agent_callback(self, response, request):
+    def _agent_callback(self, txresponse, request):
+        if txresponse.length == 0:
+            return self._build_response(('', None), txresponse, request)
         finished = defer.Deferred()
-        reader = ScrapyAgentResponseReader(finished, response, request, debug = 0)
+        finished.addCallback(self._build_response, txresponse, request)
+        txresponse.deliverBody(_ResponseReader(finished))
+        return finished
 
-        # is a response body expected?
-        if response.length > 0:
-            response.deliverBody(reader)
-            return finished
-        else:
-            return reader._build_response()
-
+    def _build_response(self, (body, flag), txresponse, request):
+        if flag is not None:
+            request.meta[flag] = True
+        url = urldefrag(request.url)[0]
+        status = int(txresponse.code)
+        headers = ScrapyHeaders(txresponse.headers.getAllRawHeaders())
+        respcls = responsetypes.from_args(headers=headers, url=url)
+        return respcls(url=url, status=status, headers=headers, body=body)
 
     def _agent_errback(self, failure, request):
-        if self.debug:
-            print "HttpDownloadHandler: errback called!"
-            print failure.getErrorMessage()
-            failure.getBriefTraceback()
-            failure.printTraceback()
-
-        if failure.check(TimeoutError):
-            raise defer.TimeoutError
+        #log.err(failure, 'HTTP11 failure: %s' % request)
+        return failure

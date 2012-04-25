@@ -3,7 +3,7 @@ import os
 from twisted.trial import unittest
 from twisted.protocols.policies import WrappingFactory
 from twisted.python.filepath import FilePath
-from twisted.internet import reactor, defer
+from twisted.internet import reactor, defer, error
 from twisted.web import server, static, util, resource
 from twisted.web.test.test_webclient import ForeverTakingResource, \
         NoLengthResource, HostHeaderResource, \
@@ -101,7 +101,7 @@ class HttpTestCase(unittest.TestCase):
     def test_timeout_download_from_spider(self):
         request = Request(self.getURL('wait'), meta=dict(download_timeout=0.000001))
         d = self.download_request(request, BaseSpider('foo'))
-        return self.assertFailure(d, defer.TimeoutError)
+        return self.assertFailure(d, defer.TimeoutError, error.TimeoutError)
 
     def test_host_header_not_in_request_headers(self):
         def _test(response):
