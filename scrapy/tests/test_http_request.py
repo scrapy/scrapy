@@ -299,6 +299,17 @@ class FormRequestTest(RequestTest):
         self.assertEqual(fs['one'], ['1'])
         self.assertEqual(fs['two'], ['2'])
 
+    def test_from_response_dont_submit_image_as_input(self):
+        response = _buildresponse(
+            """<form>
+            <input type="hidden" name="i1" value="i1v">
+            <input type="image" name="i2" src="http://my.image.org/1.jpg">
+            <input type="submit" name="i3" value="i3v">
+            </form>""")
+        req = self.request_class.from_response(response, dont_click=True)
+        fs = _qs(req)
+        self.assertEqual(fs, {'i1': ['i1v']})
+
     def test_from_response_multiple_clickdata(self):
         response = _buildresponse(
             """<form action="get.php" method="GET">
