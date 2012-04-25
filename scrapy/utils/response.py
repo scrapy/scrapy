@@ -13,7 +13,7 @@ from twisted.web import http
 from twisted.web.http import RESPONSES
 from w3lib import html
 
-from scrapy.http import Response, HtmlResponse
+from scrapy.http import Response, HtmlResponse, TextResponse
 
 def body_or_str(obj, unicode=True):
     assert isinstance(obj, (Response, basestring)), \
@@ -76,13 +76,17 @@ def open_in_browser(response, _openfunc=webbrowser.open):
     tag for external links to work
     """
     # XXX: this implementation is a bit dirty and could be improved
-    if not isinstance(response, HtmlResponse):
+    body = response.body
+    if isinstance(response, HtmlResponse):
+        if '<base' not in body:
+            body = body.replace('<head>', '<head><base href="%s">' % response.url)
+        ext = '.html'
+    elif isinstance(response, TextResponse):
+        ext = '.txt'
+    else:
         raise TypeError("Unsupported response type: %s" % \
             response.__class__.__name__)
-    body = response.body
-    if '<base' not in body:
-        body = body.replace('<head>', '<head><base href="%s">' % response.url)
-    fd, fname = tempfile.mkstemp('.html')
+    fd, fname = tempfile.mkstemp(ext)
     os.write(fd, body)
     os.close(fd)
     return _openfunc("file://%s" % fname)
