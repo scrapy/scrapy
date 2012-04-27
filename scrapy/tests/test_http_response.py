@@ -226,7 +226,6 @@ class HtmlResponseTest(TextResponseTest):
     response_class = HtmlResponse
 
     def test_html_encoding(self):
-        
         body = """<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
         </head><body>Price: \xa3100</body></html>'
         """
@@ -256,6 +255,16 @@ class HtmlResponseTest(TextResponseTest):
         body = """<html><head><meta charset="gb2312" /><title>Some page</title><body>bla bla</body>"""
         r1 = self.response_class("http://www.example.com", body=body)
         self._assert_response_values(r1, 'gb2312', body)
+
+    def test_httpequiv_meta(self):
+        body = '''<html><head><meta content="text/html; charset=gb18030" http-equiv="Content-Type" /></head></html>'''
+        response = self.response_class('http://example.com', body=body)
+        self._assert_response_values(response, 'gb18030', body)
+
+        body = '''<html><head><meta http-equiv="Content-Type" content="text/html; charset=gb18030" /></head></html>'''
+        response = self.response_class('http://example.com', body=body)
+        self._assert_response_values(response, 'gb18030', body)
+
 
 
 class XmlResponseTest(TextResponseTest):
