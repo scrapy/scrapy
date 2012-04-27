@@ -111,7 +111,7 @@ class ResponseText(BaseResponseTest):
 
     def test_no_unicode_url(self):
         self.assertRaises(TypeError, self.response_class, u'http://www.example.com')
-    
+
 
 class TextResponseTest(BaseResponseTest):
 
@@ -188,19 +188,52 @@ class TextResponseTest(BaseResponseTest):
 
     def test_declared_encoding_invalid(self):
         """Check that unknown declared encodings are ignored"""
-        r = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=UKNOWN"]}, body="\xc2\xa3")
+        r = self.response_class("http://www.example.com",
+                                headers={"Content-type": ["text/html; charset=UKNOWN"]},
+                                body="\xc2\xa3")
         self.assertEqual(r._declared_encoding(), None)
         self._assert_response_values(r, 'utf-8', u"\xa3")
 
     def test_utf16(self):
         """Test utf-16 because UnicodeDammit is known to have problems with"""
-        r = self.response_class("http://www.example.com", body='\xff\xfeh\x00i\x00', encoding='utf-16')
+        r = self.response_class("http://www.example.com",
+                                body='\xff\xfeh\x00i\x00',
+                                encoding='utf-16')
         self._assert_response_values(r, 'utf-16', u"hi")
 
     def test_invalid_utf8_encoded_body_with_valid_utf8_BOM(self):
-        r6 = self.response_class("http://www.example.com", headers={"Content-type": ["text/html; charset=utf-8"]}, body="\xef\xbb\xbfWORD\xe3\xab")
+        r6 = self.response_class("http://www.example.com",
+                                 headers={"Content-type": ["text/html; charset=utf-8"]},
+                                 body="\xef\xbb\xbfWORD\xe3\xab")
         self.assertEqual(r6.encoding, 'utf-8')
-        self.assertEqual(r6.body_as_unicode(), u'\ufeffWORD\ufffd\ufffd')
+        self.assertEqual(r6.body_as_unicode(), u'WORD\ufffd\ufffd')
+
+    def test_bom_is_removed_from_body(self):
+        # Inferring encoding from body also cache decoded body as sideeffect,
+        # this test tries to ensure that calling response.encoding and
+        # response.body_as_unicode() in indistint order doesn't affect final
+        # values for encoding and decoded body.
+        url = 'http://example.com'
+        body = "\xef\xbb\xbfWORD"
+        headers = {"Content-type": ["text/html; charset=utf-8"]}
+
+        # Test response without content-type and BOM encoding
+        response = self.response_class(url, body=body)
+        self.assertEqual(response.encoding, 'utf-8')
+        self.assertEqual(response.body_as_unicode(), u'WORD')
+        response = self.response_class(url, body=body)
+        self.assertEqual(response.body_as_unicode(), u'WORD')
+        self.assertEqual(response.encoding, 'utf-8')
+
+        # Body caching sideeffect isn't triggered when encoding is declared in
+        # content-type header but BOM still need to be removed from decoded
+        # body
+        response = self.response_class(url, headers=headers, body=body)
+        self.assertEqual(response.encoding, 'utf-8')
+        self.assertEqual(response.body_as_unicode(), u'WORD')
+        response = self.response_class(url, headers=headers, body=body)
+        self.assertEqual(response.body_as_unicode(), u'WORD')
+        self.assertEqual(response.encoding, 'utf-8')
 
     def test_replace_wrong_encoding(self):
         """Test invalid chars are replaced properly"""

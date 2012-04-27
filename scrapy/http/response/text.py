@@ -6,7 +6,7 @@ See documentation in docs/topics/request-response.rst
 """
 
 from w3lib.encoding import html_to_unicode, resolve_encoding, \
-    html_body_declared_encoding, http_content_type_encoding, to_unicode
+    html_body_declared_encoding, http_content_type_encoding
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs
 from scrapy.conf import settings
@@ -55,8 +55,12 @@ class TextResponse(Response):
 
     def body_as_unicode(self):
         """Return body as unicode"""
+        # check for self.encoding before _cached_ubody just in
+        # _body_inferred_encoding is called
+        benc = self.encoding
         if self._cached_ubody is None:
-            self._cached_ubody = to_unicode(self.body, self.encoding)
+            charset = 'charset=%s' % benc
+            self._cached_ubody = html_to_unicode(charset, self.body)[1]
         return self._cached_ubody
 
     @memoizemethod_noargs
