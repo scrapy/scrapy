@@ -262,10 +262,10 @@ Crawling rules
    of links extracted from each response using the specified ``link_extractor``.
    This is mainly used for filtering purposes. 
 
-    ``process_request`` is a callable, or a string (in which case a method from
-    the spider object with that name will be used) which will be called with
-    every request extracted by this rule, and must return a request or None (to
-    filter out the request).
+   ``process_request`` is a callable, or a string (in which case a method from
+   the spider object with that name will be used) which will be called with
+   every request extracted by this rule, and must return a request or None (to
+   filter out the request).
 
 CrawlSpider example
 ~~~~~~~~~~~~~~~~~~~
