@@ -20,6 +20,7 @@ def get_project_settings():
     try:
         settings_module = __import__(settings_module_path, {}, {}, [''])
     except ImportError:
+        print "Error can't import settings: %s" % (settings_module_path)
         settings_module = None
     settings = CrawlerSettings(settings_module)
 
