@@ -1,10 +1,10 @@
-This package was debianized by the Insophia <info@insophia.com>.
+This package was debianized by the Scrapinghub team <info@scrapinghub.com>.
 
 It was downloaded from http://scrapy.org
 
 Upstream Author: Scrapy Developers
 
-Copyright: 2007-2010 Scrapy Developers
+Copyright: 2007-2012 Scrapy Developers
 
 License: bsd
 
@@ -36,5 +36,5 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-The Debian packaging is (C) 2010, Insophia <info@insophia.com> and
+The Debian packaging is (C) 2010-2012, Scrapinghub <info@scrapinghub.com> and
 is licensed under the BSD, see `/usr/share/common-licenses/BSD'.

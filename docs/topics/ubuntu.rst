@@ -6,7 +6,7 @@ Ubuntu packages
 
 .. versionadded:: 0.10
 
-`Insophia`_ publishes apt-gettable packages which are generally fresher than
+`Scrapinghub`_ publishes apt-gettable packages which are generally fresher than
 those in Ubuntu, and more stable too since they're continuously built from
 `Github repo`_ (master & stable branches) and so they contain the latest bug
 fixes.
@@ -54,5 +54,5 @@ keyring as follows::
 
     curl -s http://archive.scrapy.org/ubuntu/archive.key | sudo apt-key add -
 
-.. _Insophia: http://insophia.com/
+.. _Scrapinghub: http://scrapinghub.com/
 .. _Github repo: https://github.com/scrapy/scrapy
