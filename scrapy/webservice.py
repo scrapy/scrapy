@@ -44,7 +44,7 @@ class JsonRpcResource(JsonResource):
         target = self.get_target()
         try:
             newtarget = getattr(target, name)
-            return JsonRpcResource(newtarget)
+            return JsonRpcResource(self.crawler, newtarget)
         except AttributeError:
             return error.NoResource("No such child resource.")
 

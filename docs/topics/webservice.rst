@@ -194,7 +194,7 @@ To write a web service resource you should subclass the :class:`JsonResource` or
 
             http://localhost:6080/resource1/
 
-.. class:: scrapy.webservice.JsonRpcResource(target=None)
+.. class:: scrapy.webservice.JsonRpcResource(crawler, target=None)
 
     This is a subclass of :class:`JsonResource` for implementing JSON-RPC
     resources. JSON-RPC resources wrap Python (Scrapy) objects around a
