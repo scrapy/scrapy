@@ -19,7 +19,6 @@ from scrapy.utils.jsonrpc import jsonrpc_client_call, JsonRpcError
 def get_commands():
     return {
         'help': cmd_help,
-        'run': cmd_run,
         'stop': cmd_stop,
         'list-available': cmd_list_available,
         'list-running': cmd_list_running,
@@ -33,10 +32,6 @@ def cmd_help(args, opts):
     print "Available commands:"
     for _, func in sorted(get_commands().items()):
         print "  ", func.__doc__
-
-def cmd_run(args, opts):
-    """run <spider_name> - schedule spider for running"""
-    jsonrpc_call(opts, 'crawler/queue', 'append_spider_name', args[0])
 
 def cmd_stop(args, opts):
     """stop <spider> - stop a running spider"""
