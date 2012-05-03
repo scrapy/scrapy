@@ -60,12 +60,15 @@ class UrlUtilsTest(unittest.TestCase):
 
     def test_canonicalize_url(self):
         # simplest case
-        self.assertEqual(canonicalize_url("http://www.example.com"),
-                                          "http://www.example.com")
+        self.assertEqual(canonicalize_url("http://www.example.com/"),
+                                          "http://www.example.com/")
 
         # always return a str
         assert isinstance(canonicalize_url(u"http://www.example.com"), str)
 
+        # append missing path
+        self.assertEqual(canonicalize_url("http://www.example.com"),
+                                          "http://www.example.com/")
         # typical usage
         self.assertEqual(canonicalize_url("http://www.example.com/do?a=1&b=2&c=3"),
                                           "http://www.example.com/do?a=1&b=2&c=3")
@@ -145,8 +148,8 @@ class UrlUtilsTest(unittest.TestCase):
                                            'http://www.example.com/caf%E9-con-leche.htm')
 
         # domains are case insensitive
-        self.assertEqual(canonicalize_url("http://www.EXAMPLE.com"),
-                                          "http://www.example.com")
+        self.assertEqual(canonicalize_url("http://www.EXAMPLE.com/"),
+                                          "http://www.example.com/")
 
 
 if __name__ == "__main__":
