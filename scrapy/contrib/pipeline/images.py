@@ -309,5 +309,6 @@ class ImagesPipeline(MediaPipeline):
         return [Request(x) for x in item.get('image_urls', [])]
 
     def item_completed(self, results, item, info):
-        item['images'] = [x for ok, x in results if ok]
+        if 'images' in item.fields:
+            item['images'] = [x for ok, x in results if ok]
         return item
