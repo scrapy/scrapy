@@ -43,6 +43,7 @@ class XPathSelectorTestCase(unittest.TestCase):
         self.assertEqual([x.extract() for x in xpath.select("concat(//input[@name='a']/@value, //input[@name='b']/@value)")],
                          [u'12'])
 
+    @libxml2debug
     def test_selector_unicode_query(self):
         body = u"<p><input name='\xa9' value='1'/></p>"
         response = TextResponse(url="http://example.com", body=body, encoding='utf8')
@@ -271,7 +272,6 @@ class XPathSelectorTestCase(unittest.TestCase):
 
     @libxml2debug
     def test_select_on_text_nodes(self):
-        # FIXME: can't get this to work with lxml backend
         r = self.hxs_cls(text=u'<div><b>Options:</b>opt1</div><div><b>Other</b>opt2</div>')
         x1 = r.select("//div/descendant::text()[preceding-sibling::b[contains(text(), 'Options')]]")
         self.assertEquals(x1.extract(), [u'opt1'])
@@ -279,10 +279,15 @@ class XPathSelectorTestCase(unittest.TestCase):
         x1 = r.select("//div/descendant::text()/preceding-sibling::b[contains(text(), 'Options')]")
         self.assertEquals(x1.extract(), [u'<b>Options:</b>'])
 
+    @libxml2debug
+    def test_nested_select_on_text_nodes(self):
+        # FIXME: does not work with lxml backend [upstream]
+        r = self.hxs_cls(text=u'<div><b>Options:</b>opt1</div><div><b>Other</b>opt2</div>')
         x1 = r.select("//div/descendant::text()")
         x2 = x1.select("./preceding-sibling::b[contains(text(), 'Options')]")
+
         self.assertEquals(x2.extract(), [u'<b>Options:</b>'])
-    test_select_on_text_nodes.skip = True
+    test_nested_select_on_text_nodes.skip = True
 
     @libxml2debug
     def test_weakref_slots(self):

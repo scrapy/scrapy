@@ -59,7 +59,7 @@ class XPathSelector(object_ref):
     def extract(self):
         try:
             return etree.tostring(self._root, method=self._tostring_method, \
-                encoding=unicode)
+                encoding=unicode, with_tail=False)
         except (AttributeError, TypeError):
             if self._root is True:
                 return u'1'
