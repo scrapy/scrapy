@@ -192,7 +192,10 @@ spider queues).
 logs_dir
 --------
 
-The directory where the Scrapy processes logs will be stored.
+The directory where the Scrapy logs will be stored. If you want to disable
+storing logs set this option empty, like this::
+
+    logs_dir =
 
 items_dir
 ---------

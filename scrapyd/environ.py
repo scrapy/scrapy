@@ -28,8 +28,10 @@ class Environment(object):
         env['SCRAPY_JOB'] = message['_job']
         if project in self.settings:
             env['SCRAPY_SETTINGS_MODULE'] = self.settings[project]
-        env['SCRAPY_LOG_FILE'] = self._get_file(message, self.logs_dir, 'log')
-        env['SCRAPY_FEED_URI'] = self._get_file(message, self.items_dir, 'jl')
+        if self.logs_dir:
+            env['SCRAPY_LOG_FILE'] = self._get_file(message, self.logs_dir, 'log')
+        if self.items_dir:
+            env['SCRAPY_FEED_URI'] = self._get_file(message, self.items_dir, 'jl')
         return env
 
     def _get_file(self, message, dir, ext):

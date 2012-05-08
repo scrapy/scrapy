@@ -32,3 +32,14 @@ class EnvironmentTest(unittest.TestCase):
         self.assert_(env['SCRAPY_LOG_FILE'].endswith(os.path.join('mybot', 'myspider', 'ID.log')))
         self.assert_(env['SCRAPY_FEED_URI'].endswith(os.path.join('mybot', 'myspider', 'ID.jl')))
         self.failIf('SCRAPY_SETTINGS_MODULE' in env)
+
+    def test_get_environment_with_no_items_dir(self):
+        config = Config(values={'items_dir': '', 'logs_dir': ''})
+        config.cp.add_section('settings')
+        config.cp.set('settings', 'newbot', 'newbot.settings')
+        msg = {'_project': 'mybot', '_spider': 'myspider', '_job': 'ID'}
+        slot = 3
+        environ = Environment(config, initenv={})
+        env = environ.get_environment(msg, slot)
+        self.failUnless('SCRAPY_FEED_URI' not in env)
+        self.failUnless('SCRAPY_LOG_FILE' not in env)
