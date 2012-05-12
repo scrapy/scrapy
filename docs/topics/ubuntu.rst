@@ -23,7 +23,11 @@ with command::
     lsb_release -cs
 
 Supported Ubuntu releases are: ``karmic``, ``lucid``, ``maverick``, ``natty``,
-``oneiric``.
+``oneiric``, ``precise``.
+
+For Ubuntu Precise (12.04)::
+
+    deb http://archive.scrapy.org/ubuntu precise main
 
 For Ubuntu Oneiric (11.10)::
 
