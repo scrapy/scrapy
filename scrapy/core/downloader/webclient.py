@@ -144,12 +144,16 @@ class ScrapyClientContextFactory(ClientContextFactory):
     # see https://github.com/scrapy/scrapy/issues/82
     # and https://github.com/scrapy/scrapy/issues/26
 
+<<<<<<< HEAD
     def __init__(self):
         # see this issue on why we use TLSv1_METHOD by default
         # https://github.com/scrapy/scrapy/issues/194
         self.method = SSL.TLSv1_METHOD
 
     def getContext(self):
+=======
+    def getContext(self, hostname, port):
+>>>>>>> add http connection pool and custom ssl context factory
         ctx = ClientContextFactory.getContext(self)
         # Enable all workarounds to SSL bugs as documented by
         # http://www.openssl.org/docs/ssl/SSL_CTX_set_options.html
