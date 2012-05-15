@@ -27,6 +27,15 @@ Scrapyd changes:
 - Items are now stored on disk using feed exports, and accessible through the Scrapyd web interface
 - Support making Scrapyd listen into a specific IP address (see ``bind_address`` option)
 
+0.14.4
+------
+
+- added precise to supported ubuntu distros (:commit:`b7e46df`)
+- fixed bug in json-rpc webservice reported in https://groups.google.com/d/topic/scrapy-users/qgVBmFybNAQ/discussion. also removed no longer supported 'run' command from extras/scrapy-ws.py (:commit:`340fbdb`)
+- meta tag attributes for content-type http equiv can be in any order. #123 (:commit:`0cb68af`)
+- replace "import Image" by more standard "from PIL import Image". closes #88 (:commit:`4d17048`)
+- return trial status as bin/runtests.sh exit value. #118 (:commit:`b7b2e7f`)
+
 0.14.3
 ------
 
