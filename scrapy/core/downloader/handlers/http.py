@@ -1,8 +1,8 @@
-"""Download handlers for http and https schemes"""
-
+"""Download handlers for http and https schemes
+"""
 from twisted.internet import reactor
-
 from scrapy.utils.misc import load_object
+
 
 class HttpDownloadHandler(object):
 
@@ -19,7 +19,7 @@ class HttpDownloadHandler(object):
     def _connect(self, factory):
         host, port = factory.host, factory.port
         if factory.scheme == 'https':
-            return reactor.connectSSL(host, port, factory, \
-                    self.ClientContextFactory())
+            return reactor.connectSSL(host, port, factory,
+                                      self.ClientContextFactory())
         else:
             return reactor.connectTCP(host, port, factory)
