@@ -27,7 +27,7 @@ ClientContextFactory = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
 class Http11DownloadHandler(object):
 
     def __init__(self):
-        self._pool = HTTPConnectionPool(reactor, persistent=False)
+        self._pool = HTTPConnectionPool(reactor, persistent=True)
         self._contextFactory = ClientContextFactory()
 
     def download_request(self, request, spider):
