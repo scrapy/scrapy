@@ -47,6 +47,8 @@ class FileTestCase(unittest.TestCase):
 
 class HttpTestCase(unittest.TestCase):
 
+    download_handler_cls = HttpDownloadHandler
+
     def setUp(self):
         name = self.mktemp()
         os.mkdir(name)
@@ -62,10 +64,14 @@ class HttpTestCase(unittest.TestCase):
         self.wrapper = WrappingFactory(self.site)
         self.port = reactor.listenTCP(0, self.wrapper, interface='127.0.0.1')
         self.portno = self.port.getHost().port
-        self.download_request = HttpDownloadHandler(Settings()).download_request
+        self.download_handler = self.download_handler_cls(Settings())
+        self.download_request = self.download_handler.download_request
 
+    @defer.inlineCallbacks
     def tearDown(self):
-        return self.port.stopListening()
+        yield self.port.stopListening()
+        if hasattr(self.download_handler, 'close'):
+            yield self.download_handler.close()
 
     def getURL(self, path):
         return "http://127.0.0.1:%d/%s" % (self.portno, path)
@@ -134,9 +140,9 @@ class HttpTestCase(unittest.TestCase):
 
 
 class Http11TestCase(HttpTestCase):
-    def setUp(self):
-        HttpTestCase.setUp(self)
-        self.download_request = Http11DownloadHandler().download_request
+    """HTTP 1.1 test case"""
+    download_handler_cls = Http11DownloadHandler
+
 
 class UriResource(resource.Resource):
     """Return the full uri that was requested"""
@@ -150,15 +156,21 @@ class UriResource(resource.Resource):
 
 class HttpProxyTestCase(unittest.TestCase):
 
+    download_handler_cls = HttpDownloadHandler
+
     def setUp(self):
         site = server.Site(UriResource(), timeout=None)
         wrapper = WrappingFactory(site)
         self.port = reactor.listenTCP(0, wrapper, interface='127.0.0.1')
         self.portno = self.port.getHost().port
-        self.download_request = HttpDownloadHandler(Settings()).download_request
+        self.download_handler = self.download_handler_cls(Settings())
+        self.download_request = self.download_handler.download_request
 
+    @defer.inlineCallbacks
     def tearDown(self):
-        return self.port.stopListening()
+        yield self.port.stopListening()
+        if hasattr(self.download_handler, 'close'):
+            yield self.download_handler.close()
 
     def getURL(self, path):
         return "http://127.0.0.1:%d/%s" % (self.portno, path)
@@ -184,9 +196,7 @@ class HttpProxyTestCase(unittest.TestCase):
 
 
 class Http11ProxyTestCase(HttpProxyTestCase):
-    def setUp(self):
-        HttpProxyTestCase.setUp(self)
-        self.download_request = Http11DownloadHandler().download_request
+    download_handler_cls = Http11DownloadHandler
 
 
 class HttpDownloadHandlerMock(object):
