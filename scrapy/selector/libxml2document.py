@@ -4,16 +4,18 @@ garbage collection to libxml2 documents (xmlDoc).
 """
 
 import weakref
-import libxml2
 from scrapy.utils.trackref import object_ref
+from scrapy import optional_features
 
-xml_parser_options = libxml2.XML_PARSE_RECOVER + \
-                     libxml2.XML_PARSE_NOERROR + \
-                     libxml2.XML_PARSE_NOWARNING
+if 'libxml2' in optional_features:
+    import libxml2
+    xml_parser_options = libxml2.XML_PARSE_RECOVER + \
+                         libxml2.XML_PARSE_NOERROR + \
+                         libxml2.XML_PARSE_NOWARNING
 
-html_parser_options = libxml2.HTML_PARSE_RECOVER + \
-                      libxml2.HTML_PARSE_NOERROR + \
-                      libxml2.HTML_PARSE_NOWARNING
+    html_parser_options = libxml2.HTML_PARSE_RECOVER + \
+                          libxml2.HTML_PARSE_NOERROR + \
+                          libxml2.HTML_PARSE_NOWARNING
 
 
 _UTF8_ENCODINGS = set(('utf-8', 'UTF-8', 'utf8', 'UTF8'))

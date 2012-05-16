@@ -2,7 +2,9 @@
 XPath selectors based on libxml2
 """
 
-import libxml2
+from scrapy import optional_features
+if 'libxml2' in optional_features:
+    import libxml2
 
 from scrapy.http import TextResponse
 from scrapy.utils.python import unicode_to_str

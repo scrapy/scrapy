@@ -2,7 +2,9 @@
 Selectors tests, specific for libxml2 backend
 """
 
-import unittest
+from twisted.trial import unittest
+from scrapy import optional_features
+
 
 from scrapy.http import TextResponse, HtmlResponse, XmlResponse
 from scrapy.selector.libxml2sel import XmlXPathSelector, HtmlXPathSelector, \
@@ -17,6 +19,8 @@ class Libxml2XPathSelectorTestCase(test_selector.XPathSelectorTestCase):
     xs_cls = XPathSelector
     hxs_cls = HtmlXPathSelector
     xxs_cls = XmlXPathSelector
+
+    skip = 'libxml2' not in optional_features
 
     @libxml2debug
     def test_null_bytes(self):
@@ -61,6 +65,8 @@ class Libxml2XPathSelectorTestCase(test_selector.XPathSelectorTestCase):
 
 
 class Libxml2DocumentTest(unittest.TestCase):
+
+    skip = 'libxml2' not in optional_features
 
     @libxml2debug
     def test_response_libxml2_caching(self):

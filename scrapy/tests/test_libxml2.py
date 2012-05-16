@@ -1,13 +1,12 @@
 from twisted.trial import unittest
 
 from scrapy.utils.test import libxml2debug
+from scrapy import optional_features
+
 
 class Libxml2Test(unittest.TestCase):
 
-    try:
-        import libxml2
-    except ImportError, e:
-        skip = str(e)
+    skip = 'libxml2' not in optional_features
 
     @libxml2debug
     def test_libxml2_bug_2_6_27(self):
