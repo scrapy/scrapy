@@ -35,6 +35,9 @@ class Http11DownloadHandler(object):
         agent = ScrapyAgent(contextFactory=self._contextFactory, pool=self._pool)
         return agent.download_request(request)
 
+    def close(self):
+        return self._pool.closeCachedConnections()
+
 
 class ScrapyAgent(object):
 
