@@ -22,7 +22,7 @@ class Command(ScrapyCommand):
     def run(self, args, opts):
         if opts.verbose:
             try:
-                import lxml.etree2
+                import lxml.etree
             except ImportError:
                 lxml_version = libxml2_version = "(lxml not available)"
             else:
