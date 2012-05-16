@@ -54,7 +54,7 @@ class ScrapyAgent(object):
         url = urldefrag(request.url)[0]
         method = request.method
         headers = Headers(request.headers)
-        bodyproducer = _RequestBodyProducer(request.body or '')
+        bodyproducer = _RequestBodyProducer(request.body) if request.body else None
         agent = self._get_agent(request)
         start_time = time()
         d = agent.request(method, url, headers, bodyproducer)
