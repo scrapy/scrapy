@@ -5,7 +5,6 @@ include LICENSE
 include MANIFEST.in
 include scrapy/mime.types
 include scrapyd/default_scrapyd.conf
-recursive-include scrapyd license.txt
 recursive-include scrapyd/tests *.egg
 recursive-include scrapy/templates *
 recursive-include scrapy/tests/sample_data *
@@ -13,7 +12,5 @@ recursive-include scrapy license.txt
 recursive-include scrapy/tests *.egg
 recursive-include docs *
 prune docs/build
-recursive-include scripts *
-recursive-include examples *
 recursive-include extras *
 recursive-include bin *
