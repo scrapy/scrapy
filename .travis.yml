@@ -1,0 +1,15 @@
+language: python
+python:
+    - 2.6
+    - 2.7
+env:
+    - BUILDENV=lucid
+    - BUILDENV=precise
+    - BUILDENV=latest
+before_install:
+    - sudo apt-get update -qq
+    - sudo apt-get install -qf python-libxml2
+install:
+    - pip install --use-mirrors -r .travis/requirements-$BUILDENV.txt
+script:
+    - trial scrapy scrapyd
