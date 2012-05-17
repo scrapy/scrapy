@@ -4,8 +4,9 @@ python:
     - 2.7
 env:
     - BUILDENV=lucid
+    - BUILDENV=precise
     - BUILDENV=latest
 install:
     - pip install --use-mirrors -r .travis/requirements-$BUILDENV.txt
 script:
-    - trial scrapy
+    - trial scrapy scrapyd
