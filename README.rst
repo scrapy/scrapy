@@ -2,6 +2,9 @@
 Scrapy
 ======
 
+.. image:: https://secure.travis-ci.org/scrapy/scrapy.png?branch=master
+   :target: http://travis-ci.org/scrapy/scrapy
+
 Overview
 ========
 
