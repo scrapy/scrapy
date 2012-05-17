@@ -1,0 +1,5 @@
+pyOpenSSL
+lxml
+twisted
+boto
+.
