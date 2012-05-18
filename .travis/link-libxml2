@@ -1,0 +1,23 @@
+#!/usr/bin/python
+import site, os
+from os.path import exists, join
+from optparse import OptionParser
+
+
+def _link_libxml2():
+    for path in site.getsitepackages():
+        if exists(join(path, 'libxml2.py')):
+            os.symlink(join(path, 'libxml2.py'), 'libxml2.py')
+            os.symlink(join(path, 'libxml2mod.so'), 'libxml2mod.so')
+            break
+    else:
+        assert False, 'Failed to link libxml2'
+
+def main():
+    op = OptionParser()
+    opts, args = op.parse_args()
+    _link_libxml2()
+    import libxml2
+
+if __name__ == '__main__':
+    main()
