@@ -24,6 +24,10 @@ class BaseSpider(object_ref):
             self.name = name
         elif not getattr(self, 'name', None):
             raise ValueError("%s must have a name" % type(self).__name__)
+
+        if "start_urls" in kwargs:
+            kwargs["start_urls"] = kwargs["start_urls"].split(',')
+
         self.__dict__.update(kwargs)
         if not hasattr(self, 'start_urls'):
             self.start_urls = []
