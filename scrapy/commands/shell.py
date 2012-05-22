@@ -4,6 +4,8 @@ Scrapy Shell
 See documentation in docs/topics/shell.rst
 """
 
+from threading import Thread
+
 from scrapy.command import ScrapyCommand
 from scrapy.shell import Shell
 from scrapy import log
@@ -35,12 +37,11 @@ class Command(ScrapyCommand):
 
     def run(self, args, opts):
         url = args[0] if args else None
-        shell = Shell(self.crawler, update_vars=self.update_vars, inthread=True, \
-            code=opts.code)
-        def err(f):
-            log.err(f, "Shell error")
-            self.exitcode = 1
-        d = shell.start(url=url)
-        d.addErrback(err)
-        d.addBoth(lambda _: self.crawler.stop())
-        self.crawler.start()
+        shell = Shell(self.crawler, update_vars=self.update_vars, code=opts.code)
+        self._start_crawler_thread()
+        shell.start(url=url)
+
+    def _start_crawler_thread(self):
+        t = Thread(target=self.crawler.start)
+        t.daemon = True
+        t.start()
