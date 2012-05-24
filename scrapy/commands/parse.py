@@ -12,8 +12,8 @@ class Command(ScrapyCommand):
     requires_project = True
 
     spider = None
-    items = []
-    requests = []
+    items = {}
+    requests = {}
     
     first_response = None
 
@@ -39,8 +39,63 @@ class Command(ScrapyCommand):
             help="use this callback for parsing, instead looking for a callback")
         parser.add_option("-d", "--depth", dest="depth", type="int", default=1, \
             help="maximum depth for parsing requests [default: %default]")
-        # parser.add_option("-v", "--verbose", dest="verbose", action="store_true", \
-        #     help="print each depth level one by one")
+        parser.add_option("-v", "--verbose", dest="verbose", action="store_true", \
+            help="print each depth level one by one")
+
+
+    @property
+    def max_level(self):
+        levels = self.items.keys() + self.requests.keys()
+        if levels: return max(levels)
+        else: return 0
+
+    def add_items(self, lvl, new_items):
+        old_items = self.items.get(lvl, [])
+        self.items[lvl] = old_items + new_items
+
+    def add_requests(self, lvl, new_reqs):
+        old_reqs = self.requests.get(lvl, [])
+        self.requests[lvl] = old_reqs + new_reqs
+    
+    def print_items(self, lvl=None, colour=True):
+        if lvl is None:
+            items = [item for lst in self.items.values() for item in lst]
+        else:
+            items = self.items.get(lvl, [])
+
+        print "# Scraped Items ", "-"*60
+        display.pprint([dict(x) for x in items], colorize=colour)
+
+    def print_requests(self, lvl=None, colour=True):
+        if lvl is None:
+            levels = self.requests.keys()
+            if levels:
+                requests = self.requests[max(levels)]
+            else:
+                requests = []
+        else:
+            requests = self.requests.get(lvl, [])
+
+        print "# Requests ", "-"*65
+        display.pprint(requests, colorize=colour)
+
+    def print_results(self, opts):
+        colour = not opts.nocolour
+
+        if opts.verbose:
+            for level in xrange(1, self.max_level+1):
+                print '\n>>> DEPTH LEVEL: %s <<<' % level
+                if not opts.noitems:
+                    self.print_items(level, colour)
+                if not opts.nolinks:
+                    self.print_requests(level, colour)
+        else:
+            print '\n>>> STATUS DEPTH LEVEL %s <<<' % self.max_level
+            if not opts.noitems:
+                self.print_items(colour=colour)
+            if not opts.nolinks:
+                self.print_requests(colour=colour)
+
 
     def run_callback(self, response, cb):
         items, requests = [], []
@@ -60,14 +115,6 @@ class Command(ScrapyCommand):
         else:
             log.msg("No CrawlSpider rules found in spider %r, please specify "
                 "a callback to use for parsing" % self.spider.name, log.ERROR)
-
-    def print_results(self, opts):
-        if not opts.noitems:
-            print "# Scraped Items ", "-"*60
-            display.pprint([dict(x) for x in self.items], colorize=not opts.nocolour)
-        if not opts.nolinks:
-            print "# Requests ", "-"*65
-            display.pprint(self.requests, colorize=not opts.nocolour)
 
     def set_spider(self, url, opts):
         if opts.spider:
@@ -110,18 +157,18 @@ class Command(ScrapyCommand):
                 log.msg('Cannot find callback %r in spider: %s' % (callback, spider.name))
 
             # parse items and requests
-            items, requests = self.run_callback(response, cb)
-            self.items += items
-
             depth = response.meta['_depth']
+
+            items, requests = self.run_callback(response, cb)
+            self.add_items(depth, items)
+            self.add_requests(depth, requests)
+
             if depth < opts.depth:
                 for req in requests:
                     req.meta['_depth'] = depth + 1
                     req.meta['_callback'] = req.callback
                     req.callback = callback
                 return requests
-            else:
-                self.requests += requests
 
         request.meta['_depth'] = 1
         request.meta['_callback'] = request.callback
