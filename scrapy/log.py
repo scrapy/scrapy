@@ -84,10 +84,6 @@ def _get_log_level(level_name_or_id=None):
     if level_name_or_id is None:
         lvlname = settings['LOG_LEVEL']
         return globals()[lvlname]
-    elif isinstance(level_name_or_id, int):
-        return level_name_or_id
-    elif isinstance(level_name_or_id, basestring):
-        return globals()[level_name_or_id]
     else:
         raise ValueError("Unknown log level: %r" % level_name_or_id)
 
