@@ -92,7 +92,11 @@ class ScrapyCommand(object):
 
         if opts.loglevel:
             self.settings.overrides['LOG_ENABLED'] = True
-            self.settings.overrides['LOG_LEVEL'] = opts.loglevel
+            try:
+                level = int(opts.loglevel)
+            except:
+                level = opts.loglevel
+            self.settings.overrides['LOG_LEVEL'] = level
 
         if opts.nolog:
             self.settings.overrides['LOG_ENABLED'] = False
