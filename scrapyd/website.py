@@ -2,6 +2,9 @@ from datetime import datetime
 
 from twisted.web import resource, static
 from twisted.application.service import IServiceCollection
+
+from scrapy.utils.misc import load_object
+
 from .interfaces import IPoller, IEggStorage, ISpiderScheduler
 
 from . import webservice
@@ -16,18 +19,13 @@ class Root(resource.Resource):
         itemsdir = config.get('items_dir')
         self.app = app
         self.putChild('', Home(self))
-        self.putChild('schedule.json', webservice.Schedule(self))
-        self.putChild('cancel.json', webservice.Cancel(self))
-        self.putChild('addversion.json', webservice.AddVersion(self))
-        self.putChild('listprojects.json', webservice.ListProjects(self))
-        self.putChild('listversions.json', webservice.ListVersions(self))
-        self.putChild('listspiders.json', webservice.ListSpiders(self))
-        self.putChild('delproject.json', webservice.DeleteProject(self))
-        self.putChild('delversion.json', webservice.DeleteVersion(self))
-        self.putChild('listjobs.json', webservice.ListJobs(self))
         self.putChild('logs', static.File(logsdir, 'text/plain'))
         self.putChild('items', static.File(itemsdir, 'text/plain'))
         self.putChild('jobs', Jobs(self))
+        services = config.items('services', ())
+        for servName, servClsName in services:
+          servCls = load_object(servClsName)
+          self.putChild(servName, servCls(self))
         self.update_projects()
 
     def update_projects(self):
