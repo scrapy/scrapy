@@ -7,6 +7,7 @@ See documentation in docs/topics/shell.rst
 import signal
 
 from twisted.internet import reactor, threads
+from twisted.python import threadable
 from w3lib.url import any_to_uri
 
 from scrapy.item import BaseItem
@@ -25,24 +26,18 @@ class Shell(object):
     relevant_classes = (BaseSpider, Request, Response, BaseItem, \
         XPathSelector, Settings)
 
-    def __init__(self, crawler, update_vars=None, inthread=False, code=None):
+    def __init__(self, crawler, update_vars=None, code=None):
         self.crawler = crawler
         self.update_vars = update_vars or (lambda x: None)
         self.item_class = load_object(crawler.settings['DEFAULT_ITEM_CLASS'])
         self.spider = None
-        self.inthread = inthread
+        self.inthread = not threadable.isInIOThread()
         self.code = code
         self.vars = {}
 
-    def start(self, *a, **kw):
+    def start(self, url=None, request=None, response=None, spider=None):
         # disable accidental Ctrl-C key press from shutting down the engine
         signal.signal(signal.SIGINT, signal.SIG_IGN)
-        if self.inthread:
-            return threads.deferToThread(self._start, *a, **kw)
-        else:
-            self._start(*a, **kw)
-
-    def _start(self, url=None, request=None, response=None, spider=None):
         if url:
             self.fetch(url, spider)
         elif request:
