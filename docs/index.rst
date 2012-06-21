@@ -128,6 +128,7 @@ Solving specific problems
    :hidden:
 
    faq
+   topics/debug
    topics/firefox
    topics/firebug
    topics/leaks
@@ -138,6 +139,9 @@ Solving specific problems
 
 :doc:`faq`
     Get answers to most frequently asked questions.
+
+:doc:`topics/debug`
+    Learn how to debug common problems of your scrapy spider.
 
 :doc:`topics/firefox`
     Learn how to scrape with Firefox and some useful add-ons.
