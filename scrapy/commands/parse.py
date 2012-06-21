@@ -154,7 +154,7 @@ class Command(ScrapyCommand):
 
             cb = cb if callable(cb) else getattr(self.spider, cb, None)
             if not cb:
-                log.msg('Cannot find callback %r in spider: %s' % (callback, spider.name))
+                log.msg('Cannot find callback %r in spider: %s' % (callback, self.spider.name))
 
             # parse items and requests
             depth = response.meta['_depth']
