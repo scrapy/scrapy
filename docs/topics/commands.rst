@@ -368,15 +368,25 @@ Supported options:
 
 * ``--nolinks``: don't show scraped items
 
+* ``--depth`` or ``-d``: depth level for which the requests should be followed
+  recursively (default: 1)
+
+* ``--verbose`` or ``-v``: display information for each depth level
+
 Usage example::
 
     $ scrapy parse http://www.example.com/ -c parse_item
     [ ... scrapy log lines crawling example.com spider ... ]
-    # Scraped Items - callback: parse ------------------------------------------------------------
-    MyItem({'name': u"Example item",
+
+    >>> STATUS DEPTH LEVEL 1 <<<
+    # Scraped Items  ------------------------------------------------------------
+    [{'name': u'Example item',
      'category': u'Furniture',
-     'length': u'12 cm'}
-    )
+     'length': u'12 cm'}]
+
+    # Requests  -----------------------------------------------------------------
+    []
+
 
 .. command:: settings
 
