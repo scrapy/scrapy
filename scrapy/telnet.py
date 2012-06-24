@@ -78,7 +78,7 @@ class TelnetConsole(protocol.ServerFactory):
             'prefs': print_live_refs,
             'hpy': hpy,
             'help': "This is Scrapy telnet console. For more info see: " \
-                "http://doc.scrapy.org/topics/telnetconsole.html", # see #284
+                "http://doc.scrapy.org/en/latest/topics/telnetconsole.html",
         }
         send_catch_log(update_telnet_vars, telnet_vars=telnet_vars)
         return telnet_vars
