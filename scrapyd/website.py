@@ -83,7 +83,7 @@ monitoring)</p>
 <p>Example using <a href="http://curl.haxx.se/">curl</a>:</p>
 <p><code>curl http://localhost:6800/schedule.json -d project=default -d spider=somespider</code></p>
 
-<p>For more information about the API, see the <a href="http://doc.scrapy.org/topics/scrapyd.html">Scrapyd documentation</a></p>
+<p>For more information about the API, see the <a href="http://doc.scrapy.org/en/latest/topics/scrapyd.html">Scrapyd documentation</a></p>
 </body>
 </html>
 """ % vars
