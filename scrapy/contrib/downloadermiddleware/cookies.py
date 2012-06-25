@@ -60,10 +60,26 @@ class CookiesMiddleware(object):
                 msg += os.linesep.join("Set-Cookie: %s" % c for c in cl)
                 log.msg(msg, spider=spider, level=log.DEBUG)
 
+    def _format_cookie(self, cookie):
+        # build cookie string
+        cookie_str = '%s=%s' % (cookie['name'], cookie['value'])
+
+        if cookie.get('path', None):
+            cookie_str += '; Path=%s' % cookie['path']
+        if cookie.get('domain', None):
+            cookie_str += '; Domain=%s' % cookie['domain']
+
+        return cookie_str
+
     def _get_request_cookies(self, jar, request):
-        headers = {'Set-Cookie': ['%s=%s;' % (k, v) for k, v in request.cookies.iteritems()]}
+        if isinstance(request.cookies, dict):
+            cookie_list = [{'name': k, 'value': v} for k, v in \
+                    request.cookies.iteritems()]
+        else:
+            cookie_list = request.cookies
+
+        cookies = map(self._format_cookie, cookie_list)
+        headers = {'Set-Cookie': cookies}
         response = Response(request.url, headers=headers)
-        cookies = jar.make_cookies(response, request)
-        return cookies
 
-
+        return jar.make_cookies(response, request)
