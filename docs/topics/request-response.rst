@@ -51,10 +51,21 @@ Request objects
        (for single valued headers) or lists (for multi-valued headers).
     :type headers: dict
 
-    :param cookies: the request cookies. Example::
+    :param cookies: the request cookies. These can be sent in two forms::
 
             request_with_cookies = Request(url="http://www.example.com",
                                            cookies={'currency': 'USD', 'country': 'UY'})
+        ::
+
+            request_with_cookies = Request(url="http://www.example.com",
+                                           cookies=[{'name': 'currency',
+                                                    'value': 'USD',
+                                                    'domain': 'example.com',
+                                                    'path': '/currency'}])
+
+        The latter form allows for customizing the ``domain`` and ``path``
+        attributes of the cookie. These is only useful if the cookies are saved
+        for later requests.
 
         When some site returns cookies (in a response) those are stored in the
         cookies for that domain and will be sent again in future requests. That's
@@ -70,7 +81,7 @@ Request objects
                                            meta={'dont_merge_cookies': True})
 
         For more info see :ref:`cookies-mw`.
-    :type cookies: dict
+    :type cookies: dict or list
 
     :param encoding: the encoding of this request (defaults to ``'utf-8'``).
        This encoding will be used to percent-encode the URL and to convert the

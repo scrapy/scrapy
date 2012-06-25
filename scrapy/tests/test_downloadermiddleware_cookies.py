@@ -49,6 +49,32 @@ class CookiesMiddlewareTest(TestCase):
         assert self.mw.process_request(req, self.spider) is None
         self.assertEquals(req.headers.get('Cookie'), 'C1=value1')
 
+    def test_complex_cookies(self):
+        # merge some cookies into jar
+        cookies = [{'name': 'C1', 'value': 'value1', 'path': '/foo', 'domain': 'scrapytest.org'},
+                {'name': 'C2', 'value': 'value2', 'path': '/bar', 'domain': 'scrapytest.org'},
+                {'name': 'C3', 'value': 'value3', 'path': '/foo', 'domain': 'scrapytest.org'},
+                {'name': 'C4', 'value': 'value4', 'path': '/foo', 'domain': 'scrapy.org'}]
+
+
+        req = Request('http://scrapytest.org/', cookies=cookies)
+        self.mw.process_request(req, self.spider)
+
+        # embed C1 and C3 for scrapytest.org/foo
+        req = Request('http://scrapytest.org/foo')
+        self.mw.process_request(req, self.spider)
+        assert req.headers.get('Cookie') in ('C1=value1; C3=value3', 'C3=value3; C1=value1')
+
+        # embed C2 for scrapytest.org/bar
+        req = Request('http://scrapytest.org/bar')
+        self.mw.process_request(req, self.spider)
+        self.assertEquals(req.headers.get('Cookie'), 'C2=value2')
+
+        # embed nothing for scrapytest.org/baz
+        req = Request('http://scrapytest.org/baz')
+        self.mw.process_request(req, self.spider)
+        assert 'Cookie' not in req.headers
+
     def test_merge_request_cookies(self):
         req = Request('http://scrapytest.org/', cookies={'galleta': 'salada'})
         assert self.mw.process_request(req, self.spider) is None
