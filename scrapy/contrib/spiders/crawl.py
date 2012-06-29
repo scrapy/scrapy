@@ -55,7 +55,7 @@ class CrawlSpider(BaseSpider):
                 links = rule.process_links(links)
             seen = seen.union(links)
             for link in links:
-                r = Request(url=link.url, callback=self._response_downloaded)
+                r = Request(url=link.url, callback=self._response_downloaded, meta=response.meta)
                 r.meta.update(rule=n, link_text=link.text)
                 yield rule.process_request(r)
 
@@ -73,7 +73,7 @@ class CrawlSpider(BaseSpider):
         if follow and settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True):
             for request_or_item in self._requests_to_follow(response):
                 yield request_or_item
-                
+
 
     def _compile_rules(self):
         def get_method(method):
