@@ -372,7 +372,7 @@ standard dict syntax like::
    'Example title'
 
 Spiders are expected to return their scraped data inside
-:class:`~scrapy.item.Item` objects. So, in order to returnthe data we've
+:class:`~scrapy.item.Item` objects. So, in order to return the data we've
 scraped so far, the final code for our Spider would be like this::
 
    from scrapy.spider import BaseSpider
