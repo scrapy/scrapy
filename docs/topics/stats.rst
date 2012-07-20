@@ -92,7 +92,7 @@ Get spider-specific stat value::
 
 Get all stats from a given spider::
 
-    >>> stats.get_stats('pages_crawled', spider=some_spider)
+    >>> stats.get_stats(spider=some_spider)
     {'pages_crawled': 1238, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
 
 .. _topics-stats-ref:
