@@ -25,7 +25,8 @@ class DjangoItem(Item):
     django_model = None
 
     def save(self, commit=True):
-        modelargs = dict((f, self.get(f, None)) for f in self._model_fields)
+        modelargs = dict((k, self.get(k)) for k in self._values
+                         if k in self._model_fields)
         model = self.django_model(**modelargs)
         if commit:
             model.save()
