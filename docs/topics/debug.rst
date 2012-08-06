@@ -46,7 +46,7 @@ simple to use, but does not allow debugging code inside a method.
 
 In order to see the item scraped from a specific url::
 
-    $ scrapy --spider=myspider -c parse_item -d 2 <item_url>
+    $ scrapy parse --spider=myspider -c parse_item -d 2 <item_url>
     [ ... scrapy log lines crawling example.com spider ... ]
 
     >>> STATUS DEPTH LEVEL 2 <<<
@@ -58,7 +58,7 @@ In order to see the item scraped from a specific url::
 
 Using the ``--verbose`` or ``-v`` option we can see the status at each depth level::
 
-    $ scrapy --spider=myspider -c parse_item -d 2 -v <item_url>
+    $ scrapy parse --spider=myspider -c parse_item -d 2 -v <item_url>
     [ ... scrapy log lines crawling example.com spider ... ]
 
     >>> DEPTH LEVEL: 1 <<<
@@ -79,7 +79,7 @@ Using the ``--verbose`` or ``-v`` option we can see the status at each depth lev
 Checking items scraped from a single start_url, can also be easily achieved
 using::
 
-    $ scrapy --spider=myspider -d 3 'http://example.com/page1'
+    $ scrapy parse --spider=myspider -d 3 'http://example.com/page1'
 
 
 Scrapy Shell
