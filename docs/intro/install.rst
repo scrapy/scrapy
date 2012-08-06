@@ -133,9 +133,11 @@ And then follow the instructions in :ref:`intro-install-scrapy`.
 Other Linux distros
 ~~~~~~~~~~~~~~~~~~~
 
-The easiest way to install Scrapy in other Linux distros is through
-``easy_install``, which will automatically install Twisted, w3lib and lxml as
-dependencies. See :ref:`intro-install-easy`.
+The easiest way to install Scrapy on other Linux distros is through
+``easy_install`` or ``pip``, which will automatically install Twisted, w3lib
+and lxml dependencies.
+
+See :ref:`intro-install-easy` or :ref:`intro-install-pip`
 
 Another way would be to install dependencies, if you know the packages in your
 distros that meets them. See :ref:`intro-install-requirements`.
@@ -146,29 +148,15 @@ Mac OS X
 The easiest way to install Scrapy on Mac is through ``easy_install`` or
 ``pip``, which will automatically install Twisted, w3lib and lxml dependencies.
 
-See :ref:`intro-install-easy`.
+See :ref:`intro-install-easy` or :ref:`intro-install-pip`
 
 Windows
 -------
 
-There are two ways to install Scrapy in Windows:
+The easiest way to install Scrapy on Windows is through ``easy_install`` or
+``pip``, which will automatically install Twisted, w3lib and lxml dependencies.
 
-* using ``easy_install`` or ``pip`` - see :ref:`intro-install-easy` or
-  :ref:`intro-install-pip`
-
-* using the Windows installer, but you need to download and install the
-  dependencies manually:
-
-  1. `Twisted for Windows <http://twistedmatrix.com/trac/wiki/Downloads>`_ - you
-     may need to install `pywin32`_ because of `this Twisted bug`_
-
-  2. Install `Zope.Interface`_ (required by Twisted)
-
-  3. `libxml2 for Windows <http://users.skynet.be/sbi/libxml-python/>`_
-
-  4. `PyOpenSSL for Windows <http://sourceforge.net/project/showfiles.php?group_id=31249>`_
-
-  5. Download the Windows installer from the `Downloads page`_ and install it.
+See :ref:`intro-install-easy` or :ref:`intro-install-pip`
 
 .. _Python: http://www.python.org
 .. _Twisted: http://twistedmatrix.com
@@ -181,4 +169,3 @@ There are two ways to install Scrapy in Windows:
 .. _pip: http://pypi.python.org/pypi/pip
 .. _setuptools: http://pypi.python.org/pypi/setuptools
 .. _Control Panel: http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
-.. _Downloads page: http://scrapy.org/download/
