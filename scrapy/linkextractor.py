@@ -16,6 +16,9 @@ IGNORED_EXTENSIONS = [
     '3gp', 'asf', 'asx', 'avi', 'mov', 'mp4', 'mpg', 'qt', 'rm', 'swf', 'wmv',
     'm4a',
 
+    # office suites
+    'xls', 'ppt', 'doc', 'docx', 'odt', 'ods', 'odg', 'odp',
+
     # other
-    'css', 'pdf', 'doc', 'exe', 'bin', 'rss', 'zip', 'rar', 'ppt',
+    'css', 'pdf', 'doc', 'exe', 'bin', 'rss', 'zip', 'rar',
 ]
