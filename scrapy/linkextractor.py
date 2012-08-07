@@ -17,5 +17,5 @@ IGNORED_EXTENSIONS = [
     'm4a',
 
     # other
-    'css', 'pdf', 'doc', 'exe', 'bin', 'rss', 'zip', 'rar',
+    'css', 'pdf', 'doc', 'exe', 'bin', 'rss', 'zip', 'rar', 'ppt',
 ]
