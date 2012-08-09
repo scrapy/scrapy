@@ -91,13 +91,13 @@ class CrawlerProcess(Crawler):
     def _signal_shutdown(self, signum, _):
         install_shutdown_handlers(self._signal_kill)
         signame = signal_names[signum]
-        log.msg("Received %s, shutting down gracefully. Send again to force " \
-            "unclean shutdown" % signame, level=log.INFO)
+        log.msg(format="Received %(signame)s, shutting down gracefully. Send again to force ",
+                level=log.INFO, signame=signame)
         reactor.callFromThread(self.stop)
 
     def _signal_kill(self, signum, _):
         install_shutdown_handlers(signal.SIG_IGN)
         signame = signal_names[signum]
-        log.msg('Received %s twice, forcing unclean shutdown' % signame, \
-            level=log.INFO)
+        log.msg(format='Received %(signame)s twice, forcing unclean shutdown',
+                level=log.INFO, signame=signame)
         reactor.callFromThread(self._stop_reactor)

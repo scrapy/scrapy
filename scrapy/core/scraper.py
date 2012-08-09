@@ -174,8 +174,10 @@ class Scraper(object):
         elif output is None:
             pass
         else:
-            log.msg("Spider must return Request, BaseItem or None, got %r in %s" % \
-                (type(output).__name__, request), log.ERROR, spider=spider)
+            typename = type(output).__name__
+            log.msg(format='Spider must return Request, BaseItem or None, '
+                           'got %(typename)r in %(request)s',
+                    level=log.ERROR, spider=spider, request=request, typename=typename)
 
     def _log_download_errors(self, spider_failure, download_failure, request, spider):
         """Log and silence errors that come from the engine (typically download
@@ -185,7 +187,8 @@ class Scraper(object):
             errmsg = spider_failure.getErrorMessage()
             spider_failure.printTraceback()
             if errmsg:
-                log.msg("Error downloading %s: %s" % (request, errmsg), log.ERROR, spider=spider)
+                log.msg(format='Error downloading %(request)s: %(errmsg)s',
+                        level=log.ERROR, spider=spider, request=request, errmsg=errmsg)
             return
         return spider_failure
 
@@ -196,15 +199,15 @@ class Scraper(object):
         if isinstance(output, Failure):
             ex = output.value
             if isinstance(ex, DropItem):
-                log.msg(log.formatter.dropped(item, ex, response, spider), \
-                    level=log.WARNING, spider=spider)
+                logkws = log.formatter.dropped(item, ex, response, spider)
+                log.msg(level=log.WARNING, spider=spider, **logkws)
                 return self.signals.send_catch_log_deferred(signal=signals.item_dropped, \
                     item=item, spider=spider, exception=output.value)
             else:
-                log.err(output, 'Error processing %s' % item, spider=spider)
+                log.err(output, 'Error processing %(item)s', item=item, spider=spider)
         else:
-            log.msg(log.formatter.scraped(output, response, spider), \
-                log.DEBUG, spider=spider)
+            logkws = log.formatter.scraped(output, response, spider)
+            log.msg(level=log.DEBUG, spider=spider, **logkws)
             return self.signals.send_catch_log_deferred(signal=signals.item_scraped, \
                 item=output, response=response, spider=spider)
 

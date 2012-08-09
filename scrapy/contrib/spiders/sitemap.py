@@ -31,7 +31,8 @@ class SitemapSpider(BaseSpider):
         else:
             body = self._get_sitemap_body(response)
             if body is None:
-                log.msg("Ignoring invalid sitemap: %s" % response, log.WARNING)
+                log.msg(format="Ignoring invalid sitemap: %(response)s",
+                        level=log.WARNING, spider=self, response=response)
                 return
 
             s = Sitemap(body)

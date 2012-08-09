@@ -32,9 +32,9 @@ class OffsiteMiddleware(object):
                 else:
                     domain = urlparse_cached(x).hostname
                     if domain and domain not in self.domains_seen[spider]:
-                        log.msg("Filtered offsite request to %r: %s" % (domain, x),
-                            level=log.DEBUG, spider=spider)
                         self.domains_seen[spider].add(domain)
+                        log.msg(format="Filtered offsite request to %(domain)r: %(request)s",
+                                level=log.DEBUG, spider=spider, domain=domain, request=x)
             else:
                 yield x
 

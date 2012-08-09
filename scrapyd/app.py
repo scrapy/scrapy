@@ -35,7 +35,8 @@ def application(config):
 
     timer = TimerService(5, poller.poll)
     webservice = TCPServer(http_port, server.Site(Root(config, app)), interface=bind_address)
-    log.msg("Scrapyd web console available at http://%s:%s/" % (bind_address, http_port))
+    log.msg(format="Scrapyd web console available at http://%(bind_address)s:%(http_port)s/",
+            bind_address=bind_address, http_port=http_port)
 
     launcher.setServiceParent(app)
     timer.setServiceParent(app)

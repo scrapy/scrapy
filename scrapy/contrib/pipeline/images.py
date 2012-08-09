@@ -177,26 +177,29 @@ class ImagesPipeline(MediaPipeline):
         referer = request.headers.get('Referer')
 
         if response.status != 200:
-            log.msg('Image (code: %s): Error downloading image from %s referred in <%s>' \
-                    % (response.status, request, referer), level=log.WARNING, spider=info.spider)
+            log.msg(format='Image (code: %(status)s): Error downloading image from %(request)s referred in <%(referer)s>',
+                    level=log.WARNING, spider=info.spider,
+                    status=response.status, request=request, referer=referer)
             raise ImageException
 
         if not response.body:
-            log.msg('Image (empty-content): Empty image from %s referred in <%s>: no-content' \
-                    % (request, referer), level=log.WARNING, spider=info.spider)
+            log.msg(format='Image (empty-content): Empty image from %(request)s referred in <%(referer)s>: no-content',
+                    level=log.WARNING, spider=info.spider,
+                    request=request, referer=referer)
             raise ImageException
 
         status = 'cached' if 'cached' in response.flags else 'downloaded'
-        msg = 'Image (%s): Downloaded image from %s referred in <%s>' % \
-                (status, request, referer)
-        log.msg(msg, level=log.DEBUG, spider=info.spider)
+        log.msg(format='Image (%(status)s): Downloaded image from %(request)s referred in <%(referer)s>',
+                level=log.DEBUG, spider=info.spider,
+                status=status, request=request, referer=referer)
         self.inc_stats(info.spider, status)
 
         try:
             key = self.image_key(request.url)
             checksum = self.image_downloaded(response, request, info)
         except ImageException, ex:
-            log.msg(str(ex), level=log.WARNING, spider=info.spider)
+            log.err('image_downloaded hook failed',
+                    level=log.WARNING, spider=info.spider)
             raise
         except Exception:
             log.err(spider=info.spider)
@@ -207,9 +210,12 @@ class ImagesPipeline(MediaPipeline):
     def media_failed(self, failure, request, info):
         if not isinstance(failure.value, IgnoreRequest):
             referer = request.headers.get('Referer')
-            msg = 'Image (unknown-error): Error downloading %s from %s referred in <%s>: %s' \
-                    % (self.MEDIA_NAME, request, referer, str(failure))
-            log.msg(msg, level=log.WARNING, spider=info.spider)
+            log.msg(format='Image (unknown-error): Error downloading '
+                           '%(medianame)s from %(request)s referred in '
+                           '<%(referer)s>: %(exception)s',
+                    level=log.WARNING, spider=info.spider, exception=failure.value,
+                    medianame=self.MEDIA_NAME, request=request, referer=referer)
+
         raise ImageException
 
     def media_to_download(self, request, info):
@@ -227,8 +233,9 @@ class ImagesPipeline(MediaPipeline):
                 return # returning None force download
 
             referer = request.headers.get('Referer')
-            log.msg('Image (uptodate): Downloaded %s from <%s> referred in <%s>' % \
-                    (self.MEDIA_NAME, request.url, referer), level=log.DEBUG, spider=info.spider)
+            log.msg(format='Image (uptodate): Downloaded %(medianame)s from %(request)s referred in <%(referer)s>',
+                    level=log.DEBUG, spider=info.spider,
+                    medianame=self.MEDIA_NAME, request=request, referer=referer)
             self.inc_stats(info.spider, 'uptodate')
 
             checksum = result.get('checksum', None)
