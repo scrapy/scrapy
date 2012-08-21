@@ -5,7 +5,6 @@ See documentation in docs/topics/spiders.rst
 """
 
 from scrapy import log
-from scrapy.settings import SpiderSettings
 from scrapy.http import Request
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.trackref import object_ref
@@ -45,9 +44,7 @@ class BaseSpider(object_ref):
 
     @property
     def settings(self):
-        if not hasattr(self, '_settings'):
-            self._settings = SpiderSettings(self, self.crawler.settings)
-        return self._settings
+        return self.crawler.settings
 
     def start_requests(self):
         for url in self.start_urls:

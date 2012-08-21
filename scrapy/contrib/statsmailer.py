@@ -9,17 +9,21 @@ from scrapy.xlib.pydispatch import dispatcher
 from scrapy.stats import stats
 from scrapy import signals
 from scrapy.mail import MailSender
-from scrapy.conf import settings
 from scrapy.exceptions import NotConfigured
 
 class StatsMailer(object):
 
-    def __init__(self):
-        self.recipients = settings.getlist("STATSMAILER_RCPTS")
+    def __init__(self, recipients):
+        self.recipients = recipients
         if not self.recipients:
             raise NotConfigured
         dispatcher.connect(self.stats_spider_closed, signal=signals.stats_spider_closed)
-        
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        recipients = crawler.settings.getlist("STATSMAILER_RCPTS")
+        return cls(recipients)
+
     def stats_spider_closed(self, spider, spider_stats):
         mail = MailSender()
         body = "Global stats\n\n"

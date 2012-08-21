@@ -15,12 +15,11 @@ from scrapy.utils.request import request_fingerprint
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.project import data_path
-from scrapy import conf
 
 
 class HttpCacheMiddleware(object):
 
-    def __init__(self, settings=conf.settings):
+    def __init__(self, settings):
         if not settings.getbool('HTTPCACHE_ENABLED'):
             raise NotConfigured
         self.storage = load_object(settings['HTTPCACHE_STORAGE'])(settings)
@@ -29,6 +28,10 @@ class HttpCacheMiddleware(object):
         self.ignore_http_codes = map(int, settings.getlist('HTTPCACHE_IGNORE_HTTP_CODES'))
         dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
         dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler.settings)
 
     def spider_opened(self, spider):
         self.storage.open_spider(spider)
@@ -66,7 +69,7 @@ class HttpCacheMiddleware(object):
 
 class FilesystemCacheStorage(object):
 
-    def __init__(self, settings=conf.settings):
+    def __init__(self, settings):
         self.cachedir = data_path(settings['HTTPCACHE_DIR'])
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
 

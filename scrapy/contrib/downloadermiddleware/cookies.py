@@ -4,18 +4,21 @@ from collections import defaultdict
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
-from scrapy.conf import settings
 from scrapy import log
 
 
 class CookiesMiddleware(object):
     """This middleware enables working with sites that need cookies"""
-    debug = settings.getbool('COOKIES_DEBUG')
 
-    def __init__(self):
-        if not settings.getbool('COOKIES_ENABLED'):
-            raise NotConfigured
+    def __init__(self, debug=False):
         self.jars = defaultdict(CookieJar)
+        self.debug = debug
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        if not crawler.settings.getbool('COOKIES_ENABLED'):
+            raise NotConfigured
+        return cls(crawler.settings.getbool('COOKIES_DEBUG'))
 
     def process_request(self, request, spider):
         if 'dont_merge_cookies' in request.meta:

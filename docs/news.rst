@@ -18,6 +18,9 @@ Scrapy changes:
 - added :setting:`REFERER_ENABLED` setting, to control referer middleware
 - changed default user agent to: ``Scrapy/VERSION (+http://scrapy.org)``
 - removed (undocumented) ``HTMLImageLinkExtractor`` class from ``scrapy.contrib.linkextractors.image``
+- removed per-spider settings (to be replaced by instantiating multiple crawler objects)
+- ``USER_AGENT`` spider attribute will no longer work, use ``user_agent`` attribute instead
+- ``DOWNLOAD_TIMEOUT`` spider attribute will no longer work, use ``download_timeout`` attribute instead
 
 Scrapyd changes:
 

@@ -2,13 +2,14 @@ from scrapy.exceptions import NotConfigured
 from scrapy.utils.request import request_httprepr
 from scrapy.utils.response import response_httprepr
 from scrapy.stats import stats
-from scrapy.conf import settings
 
 class DownloaderStats(object):
 
-    def __init__(self):
-        if not settings.getbool('DOWNLOADER_STATS'):
+    @classmethod
+    def from_crawler(cls, crawler):
+        if not crawler.settings.getbool('DOWNLOADER_STATS'):
             raise NotConfigured
+        return cls()
 
     def process_request(self, request, spider):
         stats.inc_value('downloader/request_count', spider=spider)

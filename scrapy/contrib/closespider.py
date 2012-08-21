@@ -4,7 +4,6 @@ conditions are met.
 See documentation in docs/topics/extensions.rst
 """
 
-import warnings
 from collections import defaultdict
 
 from twisted.internet import reactor
@@ -12,17 +11,15 @@ from twisted.python import log as txlog
 from scrapy.xlib.pydispatch import dispatcher
 
 from scrapy import signals, log
-from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.conf import settings
 
 class CloseSpider(object):
 
     def __init__(self, crawler):
         self.crawler = crawler
-        self.timeout = settings.getint('CLOSESPIDER_TIMEOUT')
-        self.itemcount = settings.getint('CLOSESPIDER_ITEMCOUNT')
-        self.pagecount = settings.getint('CLOSESPIDER_PAGECOUNT')
-        self.errorcount = settings.getint('CLOSESPIDER_ERRORCOUNT')
+        self.timeout = crawler.settings.getint('CLOSESPIDER_TIMEOUT')
+        self.itemcount = crawler.settings.getint('CLOSESPIDER_ITEMCOUNT')
+        self.pagecount = crawler.settings.getint('CLOSESPIDER_PAGECOUNT')
+        self.errorcount = crawler.settings.getint('CLOSESPIDER_ERRORCOUNT')
 
         self.errorcounts = defaultdict(int)
         self.pagecounts = defaultdict(int)

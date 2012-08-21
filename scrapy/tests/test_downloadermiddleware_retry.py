@@ -7,11 +7,13 @@ from twisted.internet.error import TimeoutError as ServerTimeoutError, DNSLookup
 from scrapy.contrib.downloadermiddleware.retry import RetryMiddleware
 from scrapy.spider import BaseSpider
 from scrapy.http import Request, Response
+from scrapy.utils.test import get_crawler
 
 class RetryTest(unittest.TestCase):
     def setUp(self):
+        crawler = get_crawler()
         self.spider = BaseSpider('foo')
-        self.mw = RetryMiddleware()
+        self.mw = RetryMiddleware.from_crawler(crawler)
         self.mw.max_retry_times = 2
 
     def test_priority_adjust(self):

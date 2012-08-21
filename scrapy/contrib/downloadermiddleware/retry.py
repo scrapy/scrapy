@@ -26,7 +26,6 @@ from twisted.internet.defer import TimeoutError as UserTimeoutError
 from scrapy import log
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.response import response_status_message
-from scrapy.conf import settings
 
 class RetryMiddleware(object):
 
@@ -37,12 +36,16 @@ class RetryMiddleware(object):
                            ConnectionLost, TCPTimedOutError,
                            IOError)
 
-    def __init__(self):
+    def __init__(self, settings):
         if not settings.getbool('RETRY_ENABLED'):
             raise NotConfigured
         self.max_retry_times = settings.getint('RETRY_TIMES')
         self.retry_http_codes = set(int(x) for x in settings.getlist('RETRY_HTTP_CODES'))
         self.priority_adjust = settings.getint('RETRY_PRIORITY_ADJUST')
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler.settings)
 
     def process_response(self, request, response, spider):
         if 'dont_retry' in request.meta:

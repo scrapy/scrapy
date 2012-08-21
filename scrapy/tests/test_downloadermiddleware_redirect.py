@@ -4,12 +4,14 @@ from scrapy.contrib.downloadermiddleware.redirect import RedirectMiddleware
 from scrapy.spider import BaseSpider
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response, HtmlResponse, Headers
+from scrapy.utils.test import get_crawler
 
 class RedirectMiddlewareTest(unittest.TestCase):
 
     def setUp(self):
+        crawler = get_crawler()
         self.spider = BaseSpider('foo')
-        self.mw = RedirectMiddleware()
+        self.mw = RedirectMiddleware.from_crawler(crawler)
 
     def test_priority_adjust(self):
         req = Request('http://a.com')

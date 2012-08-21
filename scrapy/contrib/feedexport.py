@@ -19,7 +19,6 @@ from scrapy.xlib.pydispatch import dispatcher
 from scrapy.utils.ftp import ftp_makedirs_cwd
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
-from scrapy.conf import settings
 
 
 class IFeedStorage(Interface):
@@ -82,6 +81,7 @@ class FileFeedStorage(object):
 class S3FeedStorage(BlockingFeedStorage):
 
     def __init__(self, uri):
+        from scrapy.conf import settings
         try:
             import boto
         except ImportError:
@@ -133,7 +133,8 @@ class SpiderSlot(object):
 
 class FeedExporter(object):
 
-    def __init__(self):
+    def __init__(self, settings):
+        self.settings = settings
         self.urifmt = settings['FEED_URI']
         if not self.urifmt:
             raise NotConfigured
@@ -151,6 +152,10 @@ class FeedExporter(object):
         dispatcher.connect(self.open_spider, signals.spider_opened)
         dispatcher.connect(self.close_spider, signals.spider_closed)
         dispatcher.connect(self.item_scraped, signals.item_scraped)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return FeedExporter(crawler.settings)
 
     def open_spider(self, spider):
         uri = self.urifmt % self._get_uri_params(spider)
@@ -179,8 +184,8 @@ class FeedExporter(object):
         return item
 
     def _load_components(self, setting_prefix):
-        conf = dict(settings['%s_BASE' % setting_prefix])
-        conf.update(settings[setting_prefix])
+        conf = dict(self.settings['%s_BASE' % setting_prefix])
+        conf.update(self.settings[setting_prefix])
         d = {}
         for k, v in conf.items():
             try:

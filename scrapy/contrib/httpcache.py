@@ -6,12 +6,11 @@ from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.project import data_path
-from scrapy import conf
 
 
 class DbmCacheStorage(object):
 
-    def __init__(self, settings=conf.settings):
+    def __init__(self, settings):
         self.cachedir = data_path(settings['HTTPCACHE_DIR'])
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
         self.dbmodule = __import__(settings['HTTPCACHE_DBM_MODULE'])
