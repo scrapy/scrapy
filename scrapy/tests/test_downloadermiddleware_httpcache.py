@@ -3,9 +3,9 @@ import unittest, tempfile, shutil, time
 from scrapy.http import Response, HtmlResponse, Request
 from scrapy.spider import BaseSpider
 from scrapy.contrib.downloadermiddleware.httpcache import FilesystemCacheStorage, HttpCacheMiddleware
-from scrapy.stats import stats
 from scrapy.settings import Settings
 from scrapy.exceptions import IgnoreRequest
+from scrapy.utils.test import get_crawler
 
 
 class HttpCacheMiddlewareTest(unittest.TestCase):
@@ -13,14 +13,15 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
     storage_class = FilesystemCacheStorage
 
     def setUp(self):
+        self.crawler = get_crawler()
         self.spider = BaseSpider('example.com')
         self.tmpdir = tempfile.mkdtemp()
         self.request = Request('http://www.example.com', headers={'User-Agent': 'test'})
         self.response = Response('http://www.example.com', headers={'Content-Type': 'text/html'}, body='test body', status=202)
-        stats.open_spider(self.spider)
+        self.crawler.stats.open_spider(self.spider)
 
     def tearDown(self):
-        stats.close_spider(self.spider, '')
+        self.crawler.stats.close_spider(self.spider, '')
         shutil.rmtree(self.tmpdir)
 
     def _get_settings(self, **new_settings):
@@ -37,7 +38,7 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
         return self.storage_class(self._get_settings(**new_settings))
 
     def _get_middleware(self, **new_settings):
-        return HttpCacheMiddleware(self._get_settings(**new_settings))
+        return HttpCacheMiddleware(self._get_settings(**new_settings), self.crawler.stats)
 
     def test_storage(self):
         storage = self._get_storage()
@@ -58,7 +59,7 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
         assert storage.retrieve_response(self.spider, self.request)
 
     def test_middleware(self):
-        mw = HttpCacheMiddleware(self._get_settings())
+        mw = HttpCacheMiddleware(self._get_settings(), self.crawler.stats)
         assert mw.process_request(self.request, self.spider) is None
         mw.process_response(self.request, self.response, self.spider)
         response = mw.process_request(self.request, self.spider)
@@ -67,7 +68,7 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
         assert 'cached' in response.flags
 
     def test_different_request_response_urls(self):
-        mw = HttpCacheMiddleware(self._get_settings())
+        mw = HttpCacheMiddleware(self._get_settings(), self.crawler.stats)
         req = Request('http://host.com/path')
         res = Response('http://host2.net/test.html')
         assert mw.process_request(req, self.spider) is None
