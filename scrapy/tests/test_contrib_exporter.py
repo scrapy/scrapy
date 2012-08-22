@@ -183,7 +183,7 @@ class JsonLinesItemExporterTest(BaseItemExporterTest):
         self.assertEqual(exported, dict(self.i))
 
     def test_nested_item(self):
-        i1 = TestItem(name=u'Joseph\xa3', age='22')
+        i1 = TestItem(name=u'Joseph', age='22')
         i2 = TestItem(name=u'Maria', age=i1)
         i3 = TestItem(name=u'Jesus', age=i2)
         self.ie.start_exporting()
