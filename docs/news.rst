@@ -11,6 +11,7 @@ Scrapy changes:
 - removed modules: ``scrapy.xlib.BeautifulSoup`` and ``scrapy.xlib.ClientForm``
 - SitemapSpider: added support for sitemap urls ending in .xml and .xml.gz, even if they advertise a wrong content type (:commit:`10ed28b`)
 - StackTraceDump extension: also dump trackref live references (:commit:`fe2ce93`)
+- nested items now fully supported in JSON and JSONLines exporters
 - added :reqmeta:`cookiejar` Request meta key to support multiple cookie sessions per spider
 - decoupled encoding detection code to `w3lib.encoding`_, and ported Scrapy code to use that mdule
 - dropped support for Python 2.5. See http://blog.scrapy.org/scrapy-dropping-support-for-python-25

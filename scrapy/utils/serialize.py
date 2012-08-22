@@ -7,6 +7,7 @@ from twisted.internet import defer
 
 from scrapy.spider import BaseSpider
 from scrapy.http import Request, Response
+from scrapy.item import BaseItem
 
 
 class SpiderReferencer(object):
@@ -98,6 +99,8 @@ class ScrapyJSONEncoder(json.JSONEncoder):
             return str(o)
         elif isinstance(o, defer.Deferred):
             return str(o)
+        elif isinstance(o, BaseItem):
+            return dict(o)
         elif isinstance(o, Request):
             return "<%s %s %s>" % (type(o).__name__, o.method, o.url)
         elif isinstance(o, Response):

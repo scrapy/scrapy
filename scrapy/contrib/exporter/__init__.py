@@ -8,6 +8,7 @@ import marshal
 import json
 import cPickle as pickle
 from xml.sax.saxutils import XMLGenerator
+from scrapy.utils.serialize import ScrapyJSONEncoder
 
 
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter', \
@@ -79,7 +80,7 @@ class JsonLinesItemExporter(BaseItemExporter):
     def __init__(self, file, **kwargs):
         self._configure(kwargs)
         self.file = file
-        self.encoder = json.JSONEncoder(**kwargs)
+        self.encoder = ScrapyJSONEncoder(**kwargs)
 
     def export_item(self, item):
         itemdict = dict(self._get_serialized_fields(item))
@@ -91,7 +92,7 @@ class JsonItemExporter(JsonLinesItemExporter):
     def __init__(self, file, **kwargs):
         self._configure(kwargs)
         self.file = file
-        self.encoder = json.JSONEncoder(**kwargs)
+        self.encoder = ScrapyJSONEncoder(**kwargs)
         self.first_item = True
 
     def start_exporting(self):
