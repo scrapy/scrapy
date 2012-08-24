@@ -50,3 +50,6 @@ class ScrapyDeprecationWarning(Warning):
     """
     pass
 
+class ContractFail(Exception):
+    """Error in constructing contracts for a method"""
+    pass

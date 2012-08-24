@@ -1,6 +1,7 @@
 """Helper functions which doesn't fit anywhere else"""
 
 import re
+import inspect
 import hashlib
 from pkgutil import iter_modules
 
@@ -104,3 +105,17 @@ def md5sum(file):
         m.update(d)
     return m.hexdigest()
 
+def get_spec(func):
+    """Returns (args, kwargs) touple for a function
+
+    >>> import re
+    >>> get_spec(re.match)
+    (['pattern', 'string'], {'flags': 0})
+    """
+    spec = inspect.getargspec(func)
+    defaults = spec.defaults or []
+
+    firstdefault = len(spec.args) - len(defaults)
+    args = spec.args[:firstdefault]
+    kwargs = dict(zip(spec.args[firstdefault:], defaults))
+    return args, kwargs

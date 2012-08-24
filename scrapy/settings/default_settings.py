@@ -241,3 +241,10 @@ WEBSERVICE_RESOURCES_BASE = {
     'scrapy.contrib.webservice.enginestatus.EngineStatusResource': 1,
     'scrapy.contrib.webservice.stats.StatsResource': 1,
 }
+
+SPIDER_CONTRACTS = []
+SPIDER_CONTRACTS_BASE = [
+    'scrapy.contracts.default.UrlContract',
+    'scrapy.contracts.default.ReturnsContract',
+    'scrapy.contracts.default.ScrapesContract',
+]
