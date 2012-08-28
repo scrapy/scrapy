@@ -151,15 +151,11 @@ class FeedExporter(object):
 
     @classmethod
     def from_crawler(cls, crawler):
-        o = cls()
+        o = cls(crawler.settings)
         crawler.signals.connect(o.open_spider, signals.spider_opened)
         crawler.signals.connect(o.close_spider, signals.spider_closed)
         crawler.signals.connect(o.item_scraped, signals.item_scraped)
         return o
-
-    @classmethod
-    def from_crawler(cls, crawler):
-        return FeedExporter(crawler.settings)
 
     def open_spider(self, spider):
         uri = self.urifmt % self._get_uri_params(spider)
