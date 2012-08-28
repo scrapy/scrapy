@@ -4,9 +4,6 @@
 Settings
 ========
 
-.. module:: scrapy.conf
-   :synopsis: Settings manager
-
 The Scrapy settings allows you to customize the behaviour of all Scrapy
 components, including the core, extensions, pipelines and spiders themselves.
 
@@ -49,14 +46,11 @@ These mechanisms are described in more detail below.
 -------------------
 
 Global overrides are the ones that take most precedence, and are usually
-populated by command-line options.
+populated by command-line options. You can also override one (or more) settings
+from command line using the ``-s`` (or ``--set``) command line option. 
 
-Example::
-   >>> from scrapy.conf import settings
-   >>> settings.overrides['LOG_ENABLED'] = True
-
-You can also override one (or more) settings from command line using the
-``-s`` (or ``--set``) command line option. 
+For more information see the :attr:`~scrapy.settings.Settings.overrides`
+Settings attribute.
 
 .. highlight:: sh
 
@@ -90,82 +84,22 @@ How to access settings
 
 .. highlight:: python
 
-Here's an example of the simplest way to access settings from Python code::
+Settings can be accessed through the :attr:`scrapy.crawler.Crawler.settings`
+attribute of the Crawler that is passed to ``from_crawler`` method in
+extensions and middlewares::
 
-   >>> from scrapy.conf import settings
-   >>> print settings['LOG_ENABLED']
-   True
+    class MyExtension(object):
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            settings = crawler.settings
+            if settings['LOG_ENABLED']:
+                print "log is enabled!"
 
 In other words, settings can be accesed like a dict, but it's usually preferred
 to extract the setting in the format you need it to avoid type errors. In order
-to do that you'll have to use one of the following methods:
-
-.. class:: Settings()
-
-   There is a (singleton) Settings object automatically instantiated when the
-   :mod:`scrapy.conf` module is loaded, and it's usually accessed like this::
-
-   >>> from scrapy.conf import settings
-
-    .. method:: get(name, default=None)
-
-       Get a setting value without affecting its original type.
-
-       :param name: the setting name
-       :type name: string
-
-       :param default: the value to return if no setting is found
-       :type default: any
-
-    .. method:: getbool(name, default=False)
-
-       Get a setting value as a boolean. For example, both ``1`` and ``'1'``, and
-       ``True`` return ``True``, while ``0``, ``'0'``, ``False`` and ``None``
-       return ``False````
-
-       For example, settings populated through environment variables set to ``'0'``
-       will return ``False`` when using this method.
-
-       :param name: the setting name
-       :type name: string
-
-       :param default: the value to return if no setting is found
-       :type default: any
-
-    .. method:: getint(name, default=0)
-
-       Get a setting value as an int
-
-       :param name: the setting name
-       :type name: string
-
-       :param default: the value to return if no setting is found
-       :type default: any
-
-    .. method:: getfloat(name, default=0.0)
-
-       Get a setting value as a float
-
-       :param name: the setting name
-       :type name: string
-
-       :param default: the value to return if no setting is found
-       :type default: any
-
-    .. method:: getlist(name, default=None)
-
-       Get a setting value as a list. If the setting original type is a list it
-       will be returned verbatim. If it's a string it will be split by ",".
-
-       For example, settings populated through environment variables set to
-       ``'one,two'`` will return a list ['one', 'two'] when using this method.
-
-       :param name: the setting name
-       :type name: string
-
-       :param default: the value to return if no setting is found
-       :type default: any
-
+to do that you'll have to use one of the methods provided the
+:class:`~scrapy.settings.Settings` API.
 
 Rationale for setting names
 ===========================
@@ -477,77 +411,16 @@ The class used to detect and filter duplicate requests.
 The default (``RFPDupeFilter``) filters based on request fingerprint using
 the ``scrapy.utils.request.request_fingerprint`` function.
 
-.. setting:: EDITOR
+.. setting:: jDITOR
 
 EDITOR
 ------
 
+Default: `depends on the environment`
+
 The editor to use for editing spiders with the :command:`edit` command. It
 defaults to the ``EDITOR`` environment variable, if set. Otherwise, it defaults
 to ``vi`` (on Unix systems) or the IDLE editor (on Windows).
-
-.. setting:: ENCODING_ALIASES
-
-ENCODING_ALIASES
-----------------
-
-Default: ``{}``
-
-A mapping of custom encoding aliases for your project, where the keys are the
-aliases (and must be lower case) and the values are the encodings they map to.
-
-This setting extends the :setting:`ENCODING_ALIASES_BASE` setting which
-contains some default mappings.
-
-.. setting:: ENCODING_ALIASES_BASE
-
-ENCODING_ALIASES_BASE
----------------------
-
-Default::
-
-    {
-        # gb2312 is superseded by gb18030
-        'gb2312': 'gb18030',
-        'chinese': 'gb18030',
-        'csiso58gb231280': 'gb18030',
-        'euc- cn': 'gb18030',
-        'euccn': 'gb18030',
-        'eucgb2312-cn': 'gb18030',
-        'gb2312-1980': 'gb18030',
-        'gb2312-80': 'gb18030',
-        'iso- ir-58': 'gb18030',
-        # gbk is superseded by gb18030
-        'gbk': 'gb18030',
-        '936': 'gb18030',
-        'cp936': 'gb18030',
-        'ms936': 'gb18030',
-        # latin_1 is a subset of cp1252
-        'latin_1': 'cp1252',
-        'iso-8859-1': 'cp1252',
-        'iso8859-1': 'cp1252',
-        '8859': 'cp1252',
-        'cp819': 'cp1252',
-        'latin': 'cp1252',
-        'latin1': 'cp1252',
-        'l1': 'cp1252',
-        # others
-        'zh-cn': 'gb18030',
-        'win-1251': 'cp1251',
-        'macintosh' : 'mac_roman',
-        'x-sjis': 'shift_jis',
-    }
-
-The default encoding aliases defined in Scrapy. Don't override this setting in
-your project, override :setting:`ENCODING_ALIASES` instead.
-
-The reason why `ISO-8859-1`_ (and all its aliases) are mapped to `CP1252`_ is
-due to a well known browser hack. For more information see: `Character
-encodings in HTML`_.
-
-.. _ISO-8859-1: http://en.wikipedia.org/wiki/ISO/IEC_8859-1
-.. _CP1252: http://en.wikipedia.org/wiki/Windows-1252
-.. _Character encodings in HTML: http://en.wikipedia.org/wiki/Character_encodings_in_HTML
 
 .. setting:: EXTENSIONS
 
@@ -880,8 +753,8 @@ STATS_CLASS
 
 Default: ``'scrapy.statscol.MemoryStatsCollector'``
 
-The class to use for collecting stats (must implement the Stats Collector API,
-or subclass the StatsCollector class).
+The class to use for collecting stats, who must implement the
+:ref:`topics-api-stats`.
 
 .. setting:: STATS_DUMP
 
@@ -895,15 +768,6 @@ during the crawl. The spider-specific stats are logged when the spider is
 closed, while the global stats are dumped when the Scrapy process finishes.
 
 For more info see: :ref:`topics-stats`.
-
-.. setting:: STATS_ENABLED
-
-STATS_ENABLED
--------------
-
-Default: ``True``
-
-Enable stats collection.
 
 .. setting:: STATSMAILER_RCPTS
 

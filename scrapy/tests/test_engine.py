@@ -90,13 +90,13 @@ class CrawlerRun(object):
         for name, signal in vars(signals).items():
             if not name.startswith('_'):
                 dispatcher.connect(self.record_signal, signal)
-        dispatcher.connect(self.item_scraped, signals.item_scraped)
-        dispatcher.connect(self.request_received, signals.request_received)
-        dispatcher.connect(self.response_downloaded, signals.response_downloaded)
 
         self.crawler = get_crawler()
         self.crawler.install()
         self.crawler.configure()
+        self.crawler.signals.connect(self.item_scraped, signals.item_scraped)
+        self.crawler.signals.connect(self.request_received, signals.request_received)
+        self.crawler.signals.connect(self.response_downloaded, signals.response_downloaded)
         self.crawler.crawl(self.spider)
         self.crawler.start()
 

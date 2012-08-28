@@ -39,16 +39,20 @@ the end of the exporting process
 Here you can see an :doc:`Item Pipeline <item-pipeline>` which uses an Item
 Exporter to export scraped items to different files, one per spider::
 
-   from scrapy.xlib.pydispatch import dispatcher
    from scrapy import signals
    from scrapy.contrib.exporter import XmlItemExporter
 
    class XmlExportPipeline(object):
 
        def __init__(self):
-           dispatcher.connect(self.spider_opened, signals.spider_opened) 
-           dispatcher.connect(self.spider_closed, signals.spider_closed)
            self.files = {}
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            pipeline = cls()
+            crawler.signals.connect(pipeline.spider_opened, signals.spider_opened)
+            crawler.signals.connect(pipeline.spider_closed, signals.spider_closed)
+            return pipeline
 
        def spider_opened(self, spider):
            file = open('%s_products.xml' % spider.name, 'w+b')
