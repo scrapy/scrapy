@@ -11,13 +11,11 @@ from twisted.internet import defer
 from twisted.python.failure import Failure
 
 from scrapy import log, signals
-from scrapy.stats import stats
 from scrapy.core.downloader import Downloader
 from scrapy.core.scraper import Scraper
 from scrapy.exceptions import DontCloseSpider, ScrapyDeprecationWarning
 from scrapy.http import Response, Request
 from scrapy.utils.misc import load_object
-from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
 from scrapy.utils.reactor import CallLaterOnce
 
 
@@ -53,7 +51,9 @@ class Slot(object):
 class ExecutionEngine(object):
 
     def __init__(self, crawler, spider_closed_callback):
+        self.crawler = crawler
         self.settings = crawler.settings
+        self.signals = crawler.signals
         self.slots = {}
         self.running = False
         self.paused = False
@@ -71,7 +71,7 @@ class ExecutionEngine(object):
         """Start the execution engine"""
         assert not self.running, "Engine already running"
         self.start_time = time()
-        yield send_catch_log_deferred(signal=signals.engine_started)
+        yield self.signals.send_catch_log_deferred(signal=signals.engine_started)
         self.running = True
 
     def stop(self):
@@ -195,7 +195,7 @@ class ExecutionEngine(object):
                 response.request = request # tie request to response received
                 log.msg(log.formatter.crawled(request, response, spider), \
                     level=log.DEBUG, spider=spider)
-                send_catch_log(signal=signals.response_received, \
+                self.signals.send_catch_log(signal=signals.response_received, \
                     response=response, request=request, spider=spider)
             return response
 
@@ -218,13 +218,13 @@ class ExecutionEngine(object):
             spider.name
         log.msg("Spider opened", spider=spider)
         nextcall = CallLaterOnce(self._next_request, spider)
-        scheduler = self.scheduler_cls.from_settings(self.settings)
+        scheduler = self.scheduler_cls.from_crawler(self.crawler)
         slot = Slot(start_requests or (), close_if_idle, nextcall, scheduler)
         self.slots[spider] = slot
         yield scheduler.open(spider)
         yield self.scraper.open_spider(spider)
-        stats.open_spider(spider)
-        yield send_catch_log_deferred(signals.spider_opened, spider=spider)
+        self.crawler.stats.open_spider(spider)
+        yield self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
         slot.nextcall.schedule()
 
     def _spider_idle(self, spider):
@@ -235,7 +235,7 @@ class ExecutionEngine(object):
         next loop and this function is guaranteed to be called (at least) once
         again for this spider.
         """
-        res = send_catch_log(signal=signals.spider_idle, \
+        res = self.signals.send_catch_log(signal=signals.spider_idle, \
             spider=spider, dont_log=DontCloseSpider)
         if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) \
                 for _, x in res):
@@ -261,11 +261,11 @@ class ExecutionEngine(object):
         dfd.addBoth(lambda _: slot.scheduler.close(reason))
         dfd.addErrback(log.err, spider=spider)
 
-        dfd.addBoth(lambda _: send_catch_log_deferred(signal=signals.spider_closed, \
+        dfd.addBoth(lambda _: self.signals.send_catch_log_deferred(signal=signals.spider_closed, \
             spider=spider, reason=reason))
         dfd.addErrback(log.err, spider=spider)
 
-        dfd.addBoth(lambda _: stats.close_spider(spider, reason=reason))
+        dfd.addBoth(lambda _: self.crawler.stats.close_spider(spider, reason=reason))
         dfd.addErrback(log.err, spider=spider)
 
         dfd.addBoth(lambda _: log.msg("Spider closed (%s)" % reason, spider=spider))
@@ -284,5 +284,5 @@ class ExecutionEngine(object):
 
     @defer.inlineCallbacks
     def _finish_stopping_engine(self):
-        yield send_catch_log_deferred(signal=signals.engine_stopped)
-        yield stats.engine_stopped()
+        yield self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
+        yield self.crawler.stats.engine_stopped()

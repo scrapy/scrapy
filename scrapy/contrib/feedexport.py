@@ -15,7 +15,6 @@ from twisted.internet import defer, threads
 from w3lib.url import file_uri_to_path
 
 from scrapy import log, signals
-from scrapy.xlib.pydispatch import dispatcher
 from scrapy.utils.ftp import ftp_makedirs_cwd
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
@@ -149,9 +148,14 @@ class FeedExporter(object):
         uripar = settings['FEED_URI_PARAMS']
         self._uripar = load_object(uripar) if uripar else lambda x, y: None
         self.slots = {}
-        dispatcher.connect(self.open_spider, signals.spider_opened)
-        dispatcher.connect(self.close_spider, signals.spider_closed)
-        dispatcher.connect(self.item_scraped, signals.item_scraped)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        o = cls()
+        crawler.signals.connect(o.open_spider, signals.spider_opened)
+        crawler.signals.connect(o.close_spider, signals.spider_closed)
+        crawler.signals.connect(o.item_scraped, signals.item_scraped)
+        return o
 
     @classmethod
     def from_crawler(cls, crawler):

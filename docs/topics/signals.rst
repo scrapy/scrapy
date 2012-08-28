@@ -13,11 +13,8 @@ Even though signals provide several arguments, the handlers that catch them
 don't need to accept all of them - the signal dispatching mechanism will only
 deliver the arguments that the handler receives.
 
-Finally, for more detailed information about signals internals see the
-documentation of `pydispatcher`_ (the which the signal dispatching mechanism is
-based on).
-
-.. _pydispatcher: http://pydispatcher.sourceforge.net/
+You can connect to signals (or send your own) through the
+:ref:`topics-api-signals`.
 
 Deferred signal handlers
 ========================

@@ -176,6 +176,7 @@ Extending Scrapy
    topics/downloader-middleware
    topics/spider-middleware
    topics/extensions
+   topics/api
 
 :doc:`topics/architecture`
     Understand the Scrapy architecture.
@@ -187,9 +188,10 @@ Extending Scrapy
     Customize the input and output of your spiders.
 
 :doc:`topics/extensions`
-    Add any custom functionality using :doc:`signals <topics/signals>` and the
-    Scrapy API
+    Extend Scrapy with your custom functionality
 
+:doc:`topics/api`
+    Use it on extensions and middlewares to extend Scrapy functionality
 
 Reference
 =========

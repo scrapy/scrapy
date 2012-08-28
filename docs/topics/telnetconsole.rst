@@ -43,21 +43,21 @@ convenience:
 +----------------+-------------------------------------------------------------------+
 | Shortcut       | Description                                                       |
 +================+===================================================================+
-| ``crawler``    | the Scrapy Crawler object (``scrapy.crawler``)                    |
+| ``crawler``    | the Scrapy Crawler (:class:`scrapy.crawler.Crawler` object)       |
 +----------------+-------------------------------------------------------------------+
-| ``engine``     | the Scrapy Engine object (``scrapy.core.engine``)                 |
+| ``engine``     | Crawler.engine attribute                                          |
 +----------------+-------------------------------------------------------------------+
-| ``spider``     | the spider object (only if there is a single spider opened)       |
+| ``spider``     | the active spider                                                 |
 +----------------+-------------------------------------------------------------------+
-| ``slot``       | the engine slot (only if there is a single spider opened)         |
+| ``slot``       | the engine slot                                                   |
 +----------------+-------------------------------------------------------------------+
-| ``extensions`` | the Extension Manager (``scrapy.project.crawler.extensions``)     |
+| ``extensions`` | the Extension Manager (Crawler.extensions attribute)              |
 +----------------+-------------------------------------------------------------------+
-| ``stats``      | the Stats Collector (``scrapy.stats.stats``)                      |
+| ``stats``      | the Stats Collector (Crawler.stats attribute)                     |
 +----------------+-------------------------------------------------------------------+
-| ``settings``   | the Scrapy settings object (``scrapy.conf.settings``)             |
+| ``settings``   | the Scrapy settings object (Crawler.settings attribute)           |
 +----------------+-------------------------------------------------------------------+
-| ``est``        | print a report of the current engine status                       |
+| ``est``        | print a report of the engine status                               |
 +----------------+-------------------------------------------------------------------+
 | ``prefs``      | for memory debugging (see :ref:`topics-leaks`)                    |
 +----------------+-------------------------------------------------------------------+

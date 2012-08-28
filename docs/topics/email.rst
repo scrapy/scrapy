@@ -12,7 +12,7 @@ library, Scrapy provides its own facility for sending e-mails which is very
 easy to use and it's implemented using `Twisted non-blocking IO`_, to avoid
 interfering with the non-blocking IO of the crawler. It also provides a
 simple API for sending attachments and it's very easy to configure, with a few
-:ref:`settings <topics-email-settings`.
+:ref:`settings <topics-email-settings>`.
 
 .. _smtplib: http://docs.python.org/library/smtplib.html
 .. _Twisted non-blocking IO: http://twistedmatrix.com/projects/core/documentation/howto/async.html

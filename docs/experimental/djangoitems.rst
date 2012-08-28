@@ -77,8 +77,7 @@ As said before, we can add other fields to the item::
    p['age'] = '22'
    p['sex'] = 'M'
 
-.. note:: fields added to the item won't be taken into account when doing a
-   :meth:`~DjangoItem.save`
+.. note:: fields added to the item won't be taken into account when doing a :meth:`~DjangoItem.save`
 
 And we can override the fields of the model with your own::
 

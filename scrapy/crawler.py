@@ -2,10 +2,10 @@ import signal
 
 from twisted.internet import reactor, defer
 
-from scrapy.xlib.pydispatch import dispatcher
 from scrapy.core.engine import ExecutionEngine
 from scrapy.resolver import CachingThreadedResolver
 from scrapy.extension import ExtensionManager
+from scrapy.signalmanager import SignalManager
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.misc import load_object
 from scrapy import log, signals
@@ -16,6 +16,8 @@ class Crawler(object):
     def __init__(self, settings):
         self.configured = False
         self.settings = settings
+        self.signals = SignalManager(self)
+        self.stats = load_object(settings['STATS_CLASS'])(self)
 
     def install(self):
         import scrapy.project
@@ -65,7 +67,7 @@ class CrawlerProcess(Crawler):
 
     def __init__(self, *a, **kw):
         super(CrawlerProcess, self).__init__(*a, **kw)
-        dispatcher.connect(self.stop, signals.engine_stopped)
+        self.signals.connect(self.stop, signals.engine_stopped)
         install_shutdown_handlers(self._signal_shutdown)
 
     def start(self):

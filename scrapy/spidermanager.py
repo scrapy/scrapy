@@ -9,7 +9,6 @@ from scrapy import signals
 from scrapy.interfaces import ISpiderManager
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.spider import iter_spider_classes
-from scrapy.xlib.pydispatch import dispatcher
 
 
 class SpiderManager(object):
@@ -22,7 +21,6 @@ class SpiderManager(object):
         for name in self.spider_modules:
             for module in walk_modules(name):
                 self._load_spiders(module)
-        dispatcher.connect(self.close_spider, signals.spider_closed)
 
     def _load_spiders(self, module):
         for spcls in iter_spider_classes(module):
@@ -34,7 +32,9 @@ class SpiderManager(object):
 
     @classmethod
     def from_crawler(cls, crawler):
-        return cls.from_settings(crawler.settings)
+        sm = cls.from_settings(crawler.settings)
+        crawler.signals.connect(sm.close_spider, signals.spider_closed)
+        return sm
 
     def create(self, spider_name, **spider_kwargs):
         try:

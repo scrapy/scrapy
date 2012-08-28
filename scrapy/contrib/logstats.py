@@ -1,6 +1,5 @@
 from twisted.internet import task
 
-from scrapy.xlib.pydispatch import dispatcher
 from scrapy.exceptions import NotConfigured
 from scrapy import log, signals
 
@@ -19,12 +18,20 @@ class LogStats(object):
         self.interval = interval
         self.slots = {}
         self.multiplier = 60.0 / self.interval
-        dispatcher.connect(self.item_scraped, signal=signals.item_scraped)
-        dispatcher.connect(self.response_received, signal=signals.response_received)
-        dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
-        dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
-        dispatcher.connect(self.engine_started, signal=signals.engine_started)
-        dispatcher.connect(self.engine_stopped, signal=signals.engine_stopped)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        interval = settings.getfloat('LOGSTATS_INTERVAL')
+        if not interval:
+            raise NotConfigured
+        o = cls(interval)
+        crawler.signals.connect(o.item_scraped, signal=signals.item_scraped)
+        crawler.signals.connect(o.response_received, signal=signals.response_received)
+        crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
+        crawler.signals.connect(o.engine_started, signal=signals.engine_started)
+        crawler.signals.connect(o.engine_stopped, signal=signals.engine_stopped)
+        return o
 
     @classmethod
     def from_crawler(cls, crawler):

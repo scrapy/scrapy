@@ -5,11 +5,9 @@ import cPickle as pickle
 
 from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
 
-from scrapy.xlib.pydispatch import dispatcher
 from scrapy import signals
 from scrapy.http import Headers
 from scrapy.exceptions import NotConfigured, IgnoreRequest
-from scrapy.stats import stats
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.httpobj import urlparse_cached
@@ -19,19 +17,21 @@ from scrapy.utils.project import data_path
 
 class HttpCacheMiddleware(object):
 
-    def __init__(self, settings):
+    def __init__(self, settings, stats):
         if not settings.getbool('HTTPCACHE_ENABLED'):
             raise NotConfigured
         self.storage = load_object(settings['HTTPCACHE_STORAGE'])(settings)
         self.ignore_missing = settings.getbool('HTTPCACHE_IGNORE_MISSING')
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
         self.ignore_http_codes = map(int, settings.getlist('HTTPCACHE_IGNORE_HTTP_CODES'))
-        dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
-        dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
+        self.stats = stats
 
     @classmethod
     def from_crawler(cls, crawler):
-        return cls(crawler.settings)
+        o = cls(crawler.settings, crawler.stats)
+        crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
+        return o
 
     def spider_opened(self, spider):
         self.storage.open_spider(spider)
@@ -45,10 +45,10 @@ class HttpCacheMiddleware(object):
         response = self.storage.retrieve_response(spider, request)
         if response and self.is_cacheable_response(response):
             response.flags.append('cached')
-            stats.inc_value('httpcache/hit', spider=spider)
+            self.stats.inc_value('httpcache/hit', spider=spider)
             return response
 
-        stats.inc_value('httpcache/miss', spider=spider)
+        self.stats.inc_value('httpcache/miss', spider=spider)
         if self.ignore_missing:
             raise IgnoreRequest("Ignored request not in cache: %s" % request)
 
@@ -57,7 +57,7 @@ class HttpCacheMiddleware(object):
             and self.is_cacheable_response(response)
             and 'cached' not in response.flags):
             self.storage.store_response(spider, request, response)
-            stats.inc_value('httpcache/store', spider=spider)
+            self.stats.inc_value('httpcache/store', spider=spider)
         return response
 
     def is_cacheable_response(self, response):

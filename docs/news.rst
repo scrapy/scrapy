@@ -6,6 +6,9 @@ Release notes
 
 Scrapy changes:
 
+- dropped Signals singleton. Signals should now be accesed through the Crawler.signals attribute. See the signals documentation for more info.
+- dropped Stats Collector singleton. Stats can now be accessed through the Crawler.stats attribute. See the stats collection documentation for more info.
+- documented :ref:`topics-api`
 - `lxml` is now the default selectors backend instead of `libxml2`
 - ported FormRequest.from_response() to use `lxml`_ instead of `ClientForm`_
 - removed modules: ``scrapy.xlib.BeautifulSoup`` and ``scrapy.xlib.ClientForm``
@@ -22,6 +25,7 @@ Scrapy changes:
 - removed per-spider settings (to be replaced by instantiating multiple crawler objects)
 - ``USER_AGENT`` spider attribute will no longer work, use ``user_agent`` attribute instead
 - ``DOWNLOAD_TIMEOUT`` spider attribute will no longer work, use ``download_timeout`` attribute instead
+- removed ``ENCODING_ALIASES`` setting, as encoding auto-detection has been moved to the `w3lib`_ library
 
 Scrapyd changes:
 

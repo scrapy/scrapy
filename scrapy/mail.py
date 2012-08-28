@@ -17,7 +17,6 @@ from twisted.mail.smtp import ESMTPSenderFactory
 from scrapy import log
 from scrapy.exceptions import NotConfigured
 from scrapy.conf import settings
-from scrapy.utils.signal import send_catch_log
 
 
 # signal sent when message is sent
@@ -28,13 +27,14 @@ mail_sent = object()
 class MailSender(object):
 
     def __init__(self, smtphost=None, mailfrom=None, smtpuser=None, smtppass=None, \
-            smtpport=None, debug=False):
+            smtpport=None, debug=False, crawler=None):
         self.smtphost = smtphost or settings['MAIL_HOST']
         self.smtpport = smtpport or settings.getint('MAIL_PORT')
         self.smtpuser = smtpuser or settings['MAIL_USER']
         self.smtppass = smtppass or settings['MAIL_PASS']
         self.mailfrom = mailfrom or settings['MAIL_FROM']
         self.debug = debug
+        self.signals = crawler.signals if crawler else None
 
         if not self.smtphost or not self.mailfrom:
             raise NotConfigured("MAIL_HOST and MAIL_FROM settings are required")
@@ -65,7 +65,8 @@ class MailSender(object):
         else:
             msg.set_payload(body)
 
-        send_catch_log(signal=mail_sent, to=to, subject=subject, body=body,
+        if self.signals:
+            self.signals.send_catch_log(signal=mail_sent, to=to, subject=subject, body=body,
                        cc=cc, attach=attachs, msg=msg)
 
         if self.debug:

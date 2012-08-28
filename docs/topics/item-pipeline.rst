@@ -104,6 +104,30 @@ format::
    item pipelines. If you really want to store all scraped items into a JSON
    file you should use the :ref:`Feed exports <topics-feed-exports>`.
 
+Duplicates filter
+-----------------
+
+A filter that looks for duplicate items, and drops those items that were
+already processed. Let say that our items have an unique id, but our spider
+returns multiples items with the same id::
+
+
+    from scrapy import signals
+    from scrapy.exceptions import DropItem
+
+    class DuplicatesPipeline(object):
+
+        def __init__(self):
+            self.ids_seen = set()
+
+        def process_item(self, item, spider):
+            if item['id'] in self.ids_seen:
+                raise DropItem("Duplicate item found: %s" % item)
+            else:
+                self.ids_seen.add(item['id'])
+                return item
+
+
 Activating an Item Pipeline component
 =====================================
 
@@ -114,37 +138,3 @@ To activate an Item Pipeline component you must add its class to the
        'myproject.pipeline.PricePipeline',
        'myproject.pipeline.JsonWriterPipeline',
    ]
-
-Item pipeline example with resources per spider
-===============================================
-
-Sometimes you need to keep resources about the items processed grouped per
-spider, and delete those resource when a spider finishes.
-
-An example is a filter that looks for duplicate items, and drops those items
-that were already processed. Let say that our items have an unique id, but our
-spider returns multiples items with the same id::
-
-
-    from scrapy.xlib.pydispatch import dispatcher
-    from scrapy import signals
-    from scrapy.exceptions import DropItem
-
-    class DuplicatesPipeline(object):
-        def __init__(self):
-            self.duplicates = {}
-            dispatcher.connect(self.spider_opened, signals.spider_opened)
-            dispatcher.connect(self.spider_closed, signals.spider_closed)
-
-        def spider_opened(self, spider):
-            self.duplicates[spider] = set()
-
-        def spider_closed(self, spider):
-            del self.duplicates[spider]
-
-        def process_item(self, item, spider):
-            if item['id'] in self.duplicates[spider]:
-                raise DropItem("Duplicate item found: %s" % item)
-            else:
-                self.duplicates[spider].add(item['id'])
-                return item

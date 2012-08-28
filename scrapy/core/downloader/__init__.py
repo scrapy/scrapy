@@ -8,7 +8,6 @@ from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
 
 from scrapy.utils.defer import mustbe_deferred
-from scrapy.utils.signal import send_catch_log
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.resolver import dnscache
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -68,6 +67,7 @@ class Downloader(object):
 
     def __init__(self, crawler):
         self.settings = crawler.settings
+        self.signals = crawler.signals
         self.slots = {}
         self.active = set()
         self.handlers = DownloadHandlers()
@@ -114,7 +114,7 @@ class Downloader(object):
 
     def _enqueue_request(self, request, spider, slot):
         def _downloaded(response):
-            send_catch_log(signal=signals.response_downloaded, \
+            self.signals.send_catch_log(signal=signals.response_downloaded, \
                     response=response, request=request, spider=spider)
             return response
 

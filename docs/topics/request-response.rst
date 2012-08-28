@@ -51,11 +51,13 @@ Request objects
        (for single valued headers) or lists (for multi-valued headers).
     :type headers: dict
 
-    :param cookies: the request cookies. These can be sent in two forms::
+    :param cookies: the request cookies. These can be sent in two forms.
+
+        1. Using a dict::
 
             request_with_cookies = Request(url="http://www.example.com",
                                            cookies={'currency': 'USD', 'country': 'UY'})
-        ::
+        2. Using a list of dicts::
 
             request_with_cookies = Request(url="http://www.example.com",
                                            cookies=[{'name': 'currency',

@@ -4,11 +4,8 @@ Depth Spider Middleware
 See documentation in docs/topics/spider-middleware.rst
 """
 
-import warnings
-
 from scrapy import log
 from scrapy.http import Request
-from scrapy.exceptions import ScrapyDeprecationWarning
 
 class DepthMiddleware(object):
 
@@ -19,16 +16,12 @@ class DepthMiddleware(object):
         self.prio = prio
 
     @classmethod
-    def from_settings(cls, settings):
+    def from_crawler(cls, crawler):
+        settings = crawler.settings
         maxdepth = settings.getint('DEPTH_LIMIT')
-        usestats = settings.getbool('DEPTH_STATS')
         verbose = settings.getbool('DEPTH_STATS_VERBOSE')
         prio = settings.getint('DEPTH_PRIORITY')
-        if usestats:
-            from scrapy.stats import stats
-        else:
-            stats = None
-        return cls(maxdepth, stats, verbose, prio)
+        return cls(maxdepth, crawler.stats, verbose, prio)
 
     def process_spider_output(self, response, result, spider):
         def _filter(request):

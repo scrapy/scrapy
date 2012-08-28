@@ -62,113 +62,81 @@ Not all available extensions will be enabled. Some of them usually depend on a
 particular setting. For example, the HTTP Cache extension is available by default
 but disabled unless the :setting:`HTTPCACHE_ENABLED` setting is set.
 
-Accessing enabled extensions
-============================
-
-Even though it's not usually needed, you can access extension objects through
-the :ref:`topics-extensions-ref-manager` which is populated when extensions are
-loaded.  For example, to access the ``WebService`` extension::
-
-    from scrapy.project import extensions
-    webservice_extension = extensions.enabled['WebService']
-
-.. see also::
-
-    :ref:`topics-extensions-ref-manager`, for the complete Extension Manager
-    reference.
-
 Writing your own extension
 ==========================
 
 Writing your own extension is easy. Each extension is a single Python class
 which doesn't need to implement any particular method. 
 
-All extension initialization code must be performed in the class constructor
-(``__init__`` method). If that method raises the
+The main entry point for a Scrapy extension (this also includes middlewares and
+pipelines) is the ``from_crawler`` class method which receives a
+``Crawler`` instance which is the main object controlling the Scrapy crawler.
+Through that object you can access settings, signals, stats, and also control
+the crawler behaviour, if your extension needs to such thing.
+
+Typically, extensions connect to :ref:`signals <topics-signals>` and perform
+tasks triggered by them.
+
+Finally, if the ``from_crawler`` method raises the
 :exc:`~scrapy.exceptions.NotConfigured` exception, the extension will be
 disabled. Otherwise, the extension will be enabled.
 
-Let's take a look at the following example extension which just logs a message
-every time a domain/spider is opened and closed::
+Sample extension
+----------------
 
-    from scrapy.xlib.pydispatch import dispatcher
+Here we will implement a simple extension to illustrate the concepts described
+in the previous section. This extension will log a message every time:
+
+* a spider is opened
+* a spider is closed
+* a specific number of items are scraped
+
+The extension will be enabled through the ``MYEXT_ENABLED`` setting and the
+number of items will be specified through the ``MYEXT_ITEMCOUNT`` setting.
+
+Here is the code of such extension::
+
     from scrapy import signals
+    from scrapy.exceptions import NotConfigured
 
     class SpiderOpenCloseLogging(object):
 
-        def __init__(self):
-            dispatcher.connect(self.spider_opened, signal=signals.spider_opened)
-            dispatcher.connect(self.spider_closed, signal=signals.spider_closed)
+        def __init__(self, item_count):
+            self.item_count = item_count
+            self.items_scraped = 0
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            # first check if the extension should be enabled and raise
+            # NotConfigured otherwise
+            if not crawler.settings.getbool('MYEXT_ENABLED'):
+                raise NotConfigured
+
+            # get the number of items from settings
+            item_count = crawler.settings.getint('MYEXT_ITEMCOUNT', 1000)
+
+            # instantiate the extension object
+            ext = cls(item_count)
+
+            # connect the extension object to signals
+            crawler.signals.connect(ext.spider_opened, signal=signals.spider_opened)
+            crawler.signals.connect(ext.spider_closed, signal=signals.spider_closed)
+            crawler.signals.connect(ext.item_scraped, signal=signals.item_scraped)
+
+            # return the extension object 
+            return ext
 
         def spider_opened(self, spider):
-            log.msg("opened spider %s" % spider.name)
+            spider.log("opened spider %s" % spider.name)
 
         def spider_closed(self, spider):
-            log.msg("closed spider %s" % spider.name)
+            spider.log("closed spider %s" % spider.name)
 
-
-.. _topics-extensions-ref-manager:
-
-Extension Manager
-=================
-
-.. module:: scrapy.extension
-   :synopsis: The extension manager
-
-The Extension Manager is responsible for loading and keeping track of installed
-extensions and it's configured through the :setting:`EXTENSIONS` setting which
-contains a dictionary of all available extensions and their order similar to
-how you :ref:`configure the downloader middlewares
-<topics-downloader-middleware-setting>`.
-
-.. class:: ExtensionManager
-
-    The Extension Manager is a singleton object, which is instantiated at module
-    loading time and can be accessed like this::
-
-        from scrapy.project import extensions
-
-    .. attribute:: loaded
-
-        A boolean which is True if extensions are already loaded or False if
-        they're not.
-
-    .. attribute:: enabled
-
-        A dict with the enabled extensions. The keys are the extension class names,
-        and the values are the extension objects. Example::
-
-            >>> from scrapy.project import extensions
-            >>> extensions.load()
-            >>> print extensions.enabled
-            {'CoreStats': <scrapy.contrib.corestats.CoreStats object at 0x9e272ac>,
-             'WebService': <scrapy.management.telnet.TelnetConsole instance at 0xa05670c>,
-            ...
-
-    .. attribute:: disabled
-
-        A dict with the disabled extensions. The keys are the extension class names,
-        and the values are the extension class paths (because objects are never
-        instantiated for disabled extensions). Example::
-
-            >>> from scrapy.project import extensions
-            >>> extensions.load()
-            >>> print extensions.disabled
-            {'MemoryDebugger': 'scrapy.contrib.memdebug.MemoryDebugger',
-             'MyExtension': 'myproject.extensions.MyExtension',
-            ...
-
-    .. method:: load()
-
-        Load the available extensions configured in the :setting:`EXTENSIONS`
-        setting. On a standard run, this method is usually called by the Execution
-        Manager, but you may need to call it explicitly if you're dealing with
-        code outside Scrapy.
-
-    .. method:: reload()
-
-        Reload the available extensions. See :meth:`load`.
-
+        def item_scrapde(self, item, spider):
+            self.items_scraped += 1
+            if self.items_scraped == self.item_count:
+                spider.log("scraped %d items, resetting counter" % self.items_scraped)
+                self.item_count = 0
 
 .. _topics-extensions-ref:
 

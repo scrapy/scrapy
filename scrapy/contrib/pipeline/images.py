@@ -15,12 +15,9 @@ from collections import defaultdict
 from twisted.internet import defer, threads
 from PIL import Image
 
-from scrapy.xlib.pydispatch import dispatcher
 from scrapy import log
-from scrapy.stats import stats
 from scrapy.utils.misc import md5sum
 from scrapy.http import Request
-from scrapy import signals
 from scrapy.exceptions import DropItem, NotConfigured, IgnoreRequest
 from scrapy.contrib.pipeline.media import MediaPipeline
 
@@ -40,10 +37,6 @@ class FSImagesStore(object):
         self.basedir = basedir
         self._mkdir(self.basedir)
         self.created_directories = defaultdict(set)
-        dispatcher.connect(self.spider_closed, signals.spider_closed)
-
-    def spider_closed(self, spider):
-        self.created_directories.pop(spider.name, None)
 
     def persist_image(self, key, image, buf, info):
         absolute_path = self._get_filesystem_path(key)
@@ -274,8 +267,8 @@ class ImagesPipeline(MediaPipeline):
             yield thumb_key, thumb_image, thumb_buf
 
     def inc_stats(self, spider, status):
-        stats.inc_value('image_count', spider=spider)
-        stats.inc_value('image_status_count/%s' % status, spider=spider)
+        spider.crawler.stats.inc_value('image_count', spider=spider)
+        spider.crawler.stats.inc_value('image_status_count/%s' % status, spider=spider)
 
     def convert_image(self, image, size=None):
         if image.format == 'PNG' and image.mode == 'RGBA':
