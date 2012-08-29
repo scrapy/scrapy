@@ -7,6 +7,8 @@ from tempfile import mkdtemp
 
 from twisted.trial import unittest
 
+from scrapy.utils.python import retry_on_eintr
+
 
 class ProjectTest(unittest.TestCase):
     project_name = 'testproject'
@@ -75,11 +77,11 @@ class GenspiderCommandTest(CommandTest):
         args = ['--template=%s' % tplname] if tplname else []
         spname = 'test_spider'
         p = self.proc('genspider', spname, 'test.com', *args)
-        out = p.stdout.read()
+        out = retry_on_eintr(p.stdout.read)
         self.assert_("Created spider %r using template %r in module" % (spname, tplname) in out)
         self.assert_(exists(join(self.proj_mod_path, 'spiders', 'test_spider.py')))
         p = self.proc('genspider', spname, 'test.com', *args)
-        out = p.stdout.read()
+        out = retry_on_eintr(p.stdout.read)
         self.assert_("Spider %r already exists in module" % spname in out)
 
     def test_template_basic(self):

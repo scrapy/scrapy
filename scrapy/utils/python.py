@@ -9,6 +9,7 @@ import os
 import re
 import inspect
 import weakref
+import errno
 from functools import wraps
 from sgmllib import SGMLParser
 
@@ -222,3 +223,13 @@ def setattr_default(obj, name, value):
     """
     if not hasattr(obj, name):
         setattr(obj, name, value)
+
+
+def retry_on_eintr(function, *args, **kw):
+    """Run a function and retry it while getting EINTR errors"""
+    while True:
+        try:
+            return function(*args, **kw)
+        except IOError, e:
+            if e.errno != errno.EINTR:
+                raise
