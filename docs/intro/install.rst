@@ -4,168 +4,78 @@
 Installation guide
 ==================
 
-This document describes how to install Scrapy on Linux, Windows and Mac OS X.
-
-.. _intro-install-requirements:
-
-Requirements
-============
-
-* `Python`_ 2.6, 2.7 (3.x is not yet supported)
-
-* `Twisted`_ 8.0 or above (Windows users: you'll need to install
-  `Zope.Interface`_ and maybe `pywin32`_ because of `this Twisted bug`_)
-
-* `w3lib`_
-
-* `lxml`_ or `libxml2`_ (if using `libxml2`_, version 2.6.28 or above is highly recommended)
-
-* `pyopenssl <http://pyopenssl.sourceforge.net>`_ (for HTTPS support. Optional,
-  but highly recommended)
-
-.. _intro-install-python:
-
-Install Python
+Pre-requisites
 ==============
 
-First, you need to install Python, if you haven't done so already.
+The installation steps assume that you have the following things installed:
 
-Scrapy works with Python 2.6 or 2.7, which you can get at
-http://www.python.org/download/
+* Python 2.6 or 2.7
+* OpenSSL. This comes preinstalled in all operating systems except Windows (see :ref:`intro-install-platform-notes`)
+* `pip`_ or `easy_install`_ Python package managers
 
-.. seealso:: :ref:`faq-python-versions`
+Installing Scrapy
+=================
 
-.. highlight:: sh
+You can install Scrapy using easy_install or pip (which is the canonical way to
+distribute and install Python packages).
 
-.. _intro-install-scrapy:
+.. note:: Check :ref:`intro-install-platform-notes` first.
 
-Install Scrapy
-==============
-
-There are many ways to install Scrapy. Pick the one you feel more comfortable
-with.
-
-* :ref:`intro-install-release` (requires installing dependencies separately)
-* :ref:`intro-install-easy` (automatically installs dependencies)
-* :ref:`intro-install-pip` (automatically installs dependencies)
-
-.. _intro-install-release:
-
-Download and install an official release
-----------------------------------------
-
-Download Scrapy from the `Download page`_. Scrapy is distributed in two ways: a
-source code tarball (for Unix and Mac OS X systems) and a Windows installer
-(for Windows). If you downloaded the tarball, you can install it as any Python
-package using ``setup.py``::
-
-   tar zxf Scrapy-X.X.X.tar.gz
-   cd Scrapy-X.X.X
-   python setup.py install
-
-If you downloaded the Windows installer, just run it.
-
-.. warning:: In Windows, you may need to add the ``C:\Python25\Scripts`` (or
-   ``C:\Python26\Scripts``) folder to the system path by adding that directory
-   to the ``PATH`` environment variable from the `Control Panel`_.
-
-.. _Download page: http://scrapy.org/download/
-
-.. _intro-install-easy:
-
-Installing with ``easy_install``
---------------------------------
-
-You can install Scrapy using setuptools_'s ``easy_install`` with::
-
-   easy_install -U Scrapy
-
-.. _intro-install-pip:
-
-Installing with `pip`_
-----------------------
-
-You can install Scrapy using `pip`_ with::
+To install using pip::
 
    pip install Scrapy
 
-.. _intro-install-platforms:
+To install using easy_install::
 
-Platform specific instructions
-==============================
+   easy_install Scrapy
 
-Linux
------
+.. _intro-install-platform-notes:
 
-Ubuntu 9.10 or above
-~~~~~~~~~~~~~~~~~~~~
-
-If you're running Ubuntu 9.10 (or above), use the official :ref:`Ubuntu
-Packages <topics-ubuntu>`, which already solve all dependencies for you and are
-continuously updated with  the latest bug fixes.
-
-Debian or Ubuntu (9.04 or older)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If you're running Debian Linux, run the following command as root::
-
-   apt-get install python-twisted python-lxmlxml python-pyopenssl
-
-Then::
-
-    easy_install -U w3lib
-
-And then follow the instructions in :ref:`intro-install-scrapy`.
-
-Arch Linux
-~~~~~~~~~~
-
-If you are running Arch Linux, run the following command as root::
-
-   pacman -S twisted python-lxml pyopenssl
-
-Then::
-
-    easy_install -U w3lib
-
-And then follow the instructions in :ref:`intro-install-scrapy`.
-
-Other Linux distros
-~~~~~~~~~~~~~~~~~~~
-
-The easiest way to install Scrapy on other Linux distros is through
-``easy_install`` or ``pip``, which will automatically install Twisted, w3lib
-and lxml dependencies.
-
-See :ref:`intro-install-easy` or :ref:`intro-install-pip`
-
-Another way would be to install dependencies, if you know the packages in your
-distros that meets them. See :ref:`intro-install-requirements`.
-
-Mac OS X
---------
-
-The easiest way to install Scrapy on Mac is through ``easy_install`` or
-``pip``, which will automatically install Twisted, w3lib and lxml dependencies.
-
-See :ref:`intro-install-easy` or :ref:`intro-install-pip`
+Platform specific installation notes
+====================================
 
 Windows
 -------
 
-The easiest way to install Scrapy on Windows is through ``easy_install`` or
-``pip``, which will automatically install Twisted, w3lib and lxml dependencies.
+After installing Python, follow these steps before installing Scrapy:
 
-See :ref:`intro-install-easy` or :ref:`intro-install-pip`
+* add the ``C:\python27\Scripts`` and ``C:\python27`` folders to the system
+  path by adding those directories to the ``PATH`` environment variable from
+  the `Control Panel`_.
+
+* you will need to install OpenSSL by following these steps:
+
+  1. go to `this page <http://slproweb.com/products/Win32OpenSSL.html>`_ 
+
+  2. download Visual C++ 2008 redistributables for your Windows and architecture
+
+  3. download OpenSSL for your Windows and architecture (the regular version, not the light one)
+
+  4. add the ``c:\openssl-win32\bin`` (or similar) directory to your ``PATH``, the same way you added ``python27`` in the first step`` in the first step
+
+* you may need to install `pywin32`_ because of `this Twisted bug`_
+
+* some binary packages that Scrapy depends on (like Twisted, lxml and pyOpenSSL) require a compiler available to install, and fail if you don't have Visual Studio installed. You can find Windows installers for those in following links. Make sure you respect your Python version, and Windows architecture.
+
+  * pywin32: http://sourceforge.net/projects/pywin32/files/
+  * Twisted: http://twistedmatrix.com/trac/wiki/Downloads
+  * zope.interface: download the egg from `this page <http://pypi.python.org/pypi/zope.interface>`_ and install it by running ``easy_install file.egg``
+  * lxml: http://pypi.python.org/pypi/lxml/
+  * pyOpenSSL: https://launchpad.net/pyopenssl
+
+Ubuntu 9.10 or above
+~~~~~~~~~~~~~~~~~~~~
+
+**Don't** use the ``python-scrapy`` package provided by Ubuntu, they are
+typically too old and slow to catch up with latest Scrapy.
+
+Instead, use the official :ref:`Ubuntu Packages <topics-ubuntu>`, which already
+solve all dependencies for you and are continuously updated with the latest bug
+fixes.
 
 .. _Python: http://www.python.org
-.. _Twisted: http://twistedmatrix.com
-.. _w3lib: http://pypi.python.org/pypi/w3lib
-.. _lxml: http://codespeak.net/lxml/
-.. _libxml2: http://xmlsoft.org
 .. _pywin32: http://sourceforge.net/projects/pywin32/
-.. _Zope.Interface: http://pypi.python.org/pypi/zope.interface#download
 .. _this Twisted bug: http://twistedmatrix.com/trac/ticket/3707
-.. _pip: http://pypi.python.org/pypi/pip
-.. _setuptools: http://pypi.python.org/pypi/setuptools
+.. _pip: http://www.pip-installer.org/en/latest/installing.html
+.. _easy_install: http://pypi.python.org/pypi/setuptools
 .. _Control Panel: http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
