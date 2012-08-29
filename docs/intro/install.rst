@@ -43,7 +43,7 @@ After installing Python, follow these steps before installing Scrapy:
   path by adding those directories to the ``PATH`` environment variable from
   the `Control Panel`_.
 
-* you will need to install OpenSSL by following these steps:
+* install OpenSSL by following these steps:
 
   1. go to `this page <http://slproweb.com/products/Win32OpenSSL.html>`_ 
 
@@ -53,9 +53,7 @@ After installing Python, follow these steps before installing Scrapy:
 
   4. add the ``c:\openssl-win32\bin`` (or similar) directory to your ``PATH``, the same way you added ``python27`` in the first step`` in the first step
 
-* you may need to install `pywin32`_ because of `this Twisted bug`_
-
-* some binary packages that Scrapy depends on (like Twisted, lxml and pyOpenSSL) require a compiler available to install, and fail if you don't have Visual Studio installed. You can find Windows installers for those in following links. Make sure you respect your Python version, and Windows architecture.
+* some binary packages that Scrapy depends on (like Twisted, lxml and pyOpenSSL) require a compiler available to install, and fail if you don't have Visual Studio installed. You can find Windows installers for those in the following links. Make sure you respect your Python version and Windows architecture.
 
   * pywin32: http://sourceforge.net/projects/pywin32/files/
   * Twisted: http://twistedmatrix.com/trac/wiki/Downloads
