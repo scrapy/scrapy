@@ -5,7 +5,6 @@ from os.path import join, dirname, abspath, exists, splitext
 
 import scrapy
 from scrapy.command import ScrapyCommand
-from scrapy.conf import settings
 from scrapy.utils.template import render_templatefile, string_camelcase
 from scrapy.exceptions import UsageError
 
@@ -19,14 +18,10 @@ def sanitize_module_name(module_name):
         module_name = "a" + module_name
     return module_name
 
-_templates_base_dir = settings['TEMPLATES_DIR'] or join(scrapy.__path__[0], \
-    'templates')
-
 class Command(ScrapyCommand):
 
     requires_project = True
     default_settings = {'LOG_ENABLED': False}
-    templates_dir = join(_templates_base_dir, 'spiders')
 
     def syntax(self):
         return "[options] <name> <domain>"
@@ -80,15 +75,15 @@ class Command(ScrapyCommand):
     def _genspider(self, module, name, domain, template_name, template_file):
         """Generate the spider module, based on the given template"""
         tvars = {
-            'project_name': settings.get('BOT_NAME'),
-            'ProjectName': string_camelcase(settings.get('BOT_NAME')),
+            'project_name': self.settings.get('BOT_NAME'),
+            'ProjectName': string_camelcase(self.settings.get('BOT_NAME')),
             'module': module,
             'name': name,
             'domain': domain,
             'classname': '%sSpider' % ''.join([s.capitalize() \
                 for s in module.split('_')])
         }
-        spiders_module = __import__(settings['NEWSPIDER_MODULE'], {}, {}, [''])
+        spiders_module = __import__(self.settings['NEWSPIDER_MODULE'], {}, {}, [''])
         spiders_dir = abspath(dirname(spiders_module.__file__))
         spider_file = "%s.py" % join(spiders_dir, module)
         shutil.copyfile(template_file, spider_file)
@@ -110,3 +105,8 @@ class Command(ScrapyCommand):
             if filename.endswith('.tmpl'):
                 print "  %s" % splitext(filename)[0]
 
+    @property
+    def templates_dir(self):
+        _templates_base_dir = self.settings['TEMPLATES_DIR'] or \
+            join(scrapy.__path__[0], 'templates')
+        return join(_templates_base_dir, 'spiders')
