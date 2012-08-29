@@ -1,7 +1,7 @@
 import os
 from twisted.trial import unittest
 
-from scrapy.contrib_exp.djangoitem import DjangoItem, Field
+from scrapy.contrib.djangoitem import DjangoItem, Field
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'scrapy.tests.test_djangoitem.settings'
 

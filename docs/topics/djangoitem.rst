@@ -1,6 +1,6 @@
 .. _topics-djangoitem:
 
-.. module:: scrapy.contrib_exp.djangoitem
+.. module:: scrapy.contrib.djangoitem
 
 ==========
 DjangoItem
@@ -87,3 +87,12 @@ And we can override the fields of the model with your own::
 
 This is usefull to provide properties to the field, like a default or any other
 property that your project uses.
+
+DjangoItem caveats
+==================
+
+DjangoItem is a rather convenient way to integrate Scrapy projects with Django
+models, but bear in mind that Django ORM may not scale well if you scrape a lot
+of items (ie. millions) with Scrapy. This is because a relational backend is
+often not a good choice for a write intensive application (such as a web
+crawler), specially if the database is highly normalized and with many indices.

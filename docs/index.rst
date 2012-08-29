@@ -136,6 +136,7 @@ Solving specific problems
    topics/ubuntu
    topics/scrapyd
    topics/jobs
+   topics/djangoitem
 
 :doc:`faq`
     Get answers to most frequently asked questions.
@@ -163,6 +164,9 @@ Solving specific problems
 
 :doc:`topics/jobs`
     Learn how to pause and resume crawls for large spiders.
+
+:doc:`topics/djangoitem`
+    Write scraped items using Django models.
 
 .. _extending-scrapy:
 

@@ -16,7 +16,4 @@ it's properly merged) . Use at your own risk.
 
    This documentation is a work in progress. Use at your own risk.
 
-.. toctree::
-   :maxdepth: 1
-
-   djangoitems
+*No experimental features at this time*

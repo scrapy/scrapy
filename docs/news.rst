@@ -26,6 +26,7 @@ Scrapy changes:
 - ``USER_AGENT`` spider attribute will no longer work, use ``user_agent`` attribute instead
 - ``DOWNLOAD_TIMEOUT`` spider attribute will no longer work, use ``download_timeout`` attribute instead
 - removed ``ENCODING_ALIASES`` setting, as encoding auto-detection has been moved to the `w3lib`_ library
+- promoted :ref:`topics-djangoitem` to main contrib
 
 Scrapyd changes:
 
