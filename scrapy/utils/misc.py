@@ -106,7 +106,7 @@ def md5sum(file):
     return m.hexdigest()
 
 def get_spec(func):
-    """Returns (args, kwargs) touple for a function
+    """Returns (args, kwargs) tuple for a function
 
     >>> import re
     >>> get_spec(re.match)

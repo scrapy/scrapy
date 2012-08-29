@@ -8,10 +8,11 @@ from scrapy.utils.misc import get_spec
 from scrapy.exceptions import ContractFail
 
 class ContractsManager(object):
-    registered = {}
+    contracts = {}
 
-    def register(self, contract):
-        self.registered[contract.name] = contract
+    def __init__(self, contracts):
+        for contract in contracts:
+            self.contracts[contract.name] = contract
 
     def extract_contracts(self, method):
         contracts = []
@@ -20,9 +21,9 @@ class ContractsManager(object):
 
             if line.startswith('@'):
                 name, args = re.match(r'@(\w+)\s*(.*)', line).groups()
-                args = re.split(r'\s*\,\s*', args)
+                args = re.split(r'\s+', args)
 
-                contracts.append(self.registered[name](method, *args))
+                contracts.append(self.contracts[name](method, *args))
 
         return contracts
 
@@ -30,18 +31,23 @@ class ContractsManager(object):
         contracts = self.extract_contracts(method)
         if contracts:
             # calculate request args
-            args = get_spec(Request.__init__)[1]
-            args['callback'] = method
+            args, kwargs = get_spec(Request.__init__)
+            kwargs['callback'] = method
             for contract in contracts:
-                args = contract.adjust_request_args(args)
+                kwargs = contract.adjust_request_args(kwargs)
 
             # create and prepare request
-            assert 'url' in args, "Method '%s' does not have an url contract" % method.__name__
-            request = Request(**args)
-            for contract in contracts:
-                request = contract.prepare_request(request)
+            args.remove('self')
+            if set(args).issubset(set(kwargs)):
+                request = Request(**kwargs)
 
-            return request
+                # execute pre and post hooks in order
+                for contract in reversed(contracts):
+                    request = contract.add_pre_hook(request)
+                for contract in contracts:
+                    request = contract.add_post_hook(request)
+
+                return request
 
 class Contract(object):
     """ Abstract class for contracts """
@@ -50,24 +56,29 @@ class Contract(object):
         self.method = method
         self.args = args
 
-    def prepare_request(self, request):
+    def add_pre_hook(self, request):
         cb = request.callback
         @wraps(cb)
         def wrapper(response):
             self.pre_process(response)
+            return list(iterate_spider_output(cb(response)))
+
+        request.callback = wrapper
+        return request
+
+    def add_post_hook(self, request):
+        cb = request.callback
+        @wraps(cb)
+        def wrapper(response):
             output = list(iterate_spider_output(cb(response)))
             self.post_process(output)
             return output
 
         request.callback = wrapper
-        request = self.modify_request(request)
         return request
 
     def adjust_request_args(self, args):
         return args
-
-    def modify_request(self, request):
-        return request
 
     def pre_process(self, response):
         pass

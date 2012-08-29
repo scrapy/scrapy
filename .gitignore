@@ -1,12 +1,6 @@
 *.pyc
-*swp
-*~
-
 _trial_temp
 dropin.cache
 docs/build
 *egg-info
 .tox
-
-build/
-dist/

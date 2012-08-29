@@ -1,3 +1,4 @@
+from collections import defaultdict
 from functools import wraps
 
 from scrapy.conf import settings
@@ -7,6 +8,7 @@ from scrapy.contracts import ContractsManager
 from scrapy.utils import display
 from scrapy.utils.misc import load_object
 from scrapy.utils.spider import iterate_spider_output
+from scrapy.utils.conf import build_component_list
 
 def _generate(cb):
     """ create a callback which does not return anything """
@@ -19,6 +21,7 @@ def _generate(cb):
 
 class Command(ScrapyCommand):
     requires_project = True
+    default_settings = {'LOG_ENABLED': False}
 
     def syntax(self):
         return "[options] <spider>"
@@ -26,27 +29,40 @@ class Command(ScrapyCommand):
     def short_desc(self):
         return "Check contracts for given spider"
 
+    def add_options(self, parser):
+        ScrapyCommand.add_options(self, parser)
+        parser.add_option("-l", "--list", dest="list", action="store_true", \
+            help="only list contracts, without checking them")
+
+
     def run(self, args, opts):
-        self.conman = ContractsManager()
-
         # load contracts
-        contracts = settings['SPIDER_CONTRACTS_BASE'] + \
-                settings['SPIDER_CONTRACTS']
+        contracts = build_component_list(settings['SPIDER_CONTRACTS_BASE'],
+                settings['SPIDER_CONTRACTS'])
+        self.conman = ContractsManager([load_object(c) for c in contracts])
 
-        for contract in contracts:
-            concls = load_object(contract)
-            self.conman.register(concls)
-
-        # schedule requests
+        # contract requests
+        contract_reqs = defaultdict(list)
         self.crawler.engine.has_capacity = lambda: True
 
         for spider in args or self.crawler.spiders.list():
             spider = self.crawler.spiders.create(spider)
             requests = self.get_requests(spider)
-            self.crawler.crawl(spider, requests)
+
+            if opts.list:
+                for req in requests:
+                    contract_reqs[spider.name].append(req.callback.__name__)
+            else:
+                self.crawler.crawl(spider, requests)
 
         # start checks
-        self.crawler.start()
+        if opts.list:
+            for spider, methods in sorted(contract_reqs.iteritems()):
+                print spider
+                for method in sorted(methods):
+                    print '  * %s' % method
+        else:
+            self.crawler.start()
 
     def get_requests(self, spider):
         requests = []

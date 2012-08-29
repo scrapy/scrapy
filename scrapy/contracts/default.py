@@ -17,34 +17,44 @@ class UrlContract(Contract):
         args['url'] = self.args[0]
         return args
 
+
 class ReturnsContract(Contract):
     """ Contract to check the output of a callback
-        @returns items, 1
-        @returns requests, 1+
+
+        general form:
+        @returns request(s)/item(s) [min=1 [max]]
+
+        e.g.:
+        @returns request
+        @returns request 2
+        @returns request 2 10
+        @returns request 0 10
     """
 
     name = 'returns'
     objects = {
+        'request': Request,
         'requests': Request,
+        'item': BaseItem,
         'items': BaseItem,
     }
 
     def __init__(self, *args, **kwargs):
         super(ReturnsContract, self).__init__(*args, **kwargs)
 
-        if len(self.args) != 2:
-            raise ContractError("Returns Contract must have two arguments")
-        self.obj_name, self.raw_num = self.args
-
-        # validate input
+        assert len(self.args) in [1, 2, 3]
+        self.obj_name = self.args[0] or None
         self.obj_type = self.objects[self.obj_name]
 
-        self.modifier = self.raw_num[-1]
-        if self.modifier in ['+', '-']:
-            self.num = int(self.raw_num[:-1])
-        else:
-            self.num = int(self.raw_num)
-            self.modifier = None
+        try:
+            self.min_bound = int(self.args[1])
+        except IndexError:
+            self.min_bound = 1
+
+        try:
+            self.max_bound = int(self.args[2])
+        except IndexError:
+            self.max_bound = float('inf')
 
     def post_process(self, output):
         occurences = 0
@@ -52,21 +62,23 @@ class ReturnsContract(Contract):
             if isinstance(x, self.obj_type):
                 occurences += 1
 
-        if self.modifier == '+':
-            assertion = (occurences >= self.num)
-        elif self.modifier == '-':
-            assertion = (occurences <= self.num)
-        else:
-            assertion = (occurences == self.num)
+        assertion = (self.min_bound <= occurences <= self.max_bound)
 
         if not assertion:
+            if self.min_bound == self.max_bound:
+                expected = self.min_bound
+            else:
+                expected = '%s..%s' % (self.min_bound, self.max_bound)
+
             raise ContractFail("Returned %s %s, expected %s" % \
-                (occurences, self.obj_name, self.raw_num))
+                (occurences, self.obj_name, expected))
+
 
 class ScrapesContract(Contract):
     """ Contract to check presence of fields in scraped items
-        @scrapes page_name, page_body
+        @scrapes page_name page_body
     """
+
     name = 'scrapes'
 
     def post_process(self, output):
@@ -74,4 +86,4 @@ class ScrapesContract(Contract):
             if isinstance(x, BaseItem):
                 for arg in self.args:
                     if not arg in x:
-                        raise ContractFail('%r field is missing' % arg)
+                        raise ContractFail("'%s' field is missing" % arg)
