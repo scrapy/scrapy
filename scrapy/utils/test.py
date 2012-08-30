@@ -2,12 +2,9 @@
 This module contains some assorted functions used in tests
 """
 
-import os
+import os, sys
 
 from twisted.trial.unittest import SkipTest
-
-from scrapy.crawler import Crawler
-from scrapy.settings import CrawlerSettings
 
 def libxml2debug(testfunction):
     """Decorator for debugging libxml2 memory leaks inside a function.
@@ -51,6 +48,9 @@ def get_crawler(settings_dict=None):
     will be used as the settings present in the settings module of the
     CrawlerSettings.
     """
+    from scrapy.crawler import Crawler
+    from scrapy.settings import CrawlerSettings
+
     class SettingsModuleMock(object):
         pass
     settings_module = SettingsModuleMock()
@@ -59,3 +59,10 @@ def get_crawler(settings_dict=None):
             setattr(settings_module, k, v)
     settings = CrawlerSettings(settings_module)
     return Crawler(settings)
+
+def get_pythonpath():
+    """Return a PYTHONPATH suitable to use in processes so that they find this
+    installation of Scrapy"""
+    sep = ';' if sys.platform == 'win32' else ':'
+    scrapy_path = __import__('scrapy').__path__[0]
+    return os.path.dirname(scrapy_path) + sep + os.environ.get('PYTHONPATH', '')

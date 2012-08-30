@@ -8,7 +8,7 @@ from tempfile import mkdtemp
 from twisted.trial import unittest
 
 from scrapy.utils.python import retry_on_eintr
-
+from scrapy.utils.test import get_pythonpath
 
 class ProjectTest(unittest.TestCase):
     project_name = 'testproject'
@@ -19,8 +19,7 @@ class ProjectTest(unittest.TestCase):
         self.proj_path = join(self.temp_path, self.project_name)
         self.proj_mod_path = join(self.proj_path, self.project_name)
         self.env = os.environ.copy()
-        if 'PYTHONPATH' in os.environ:
-            self.env['PYTHONPATH'] = os.environ['PYTHONPATH']
+        self.env['PYTHONPATH'] = get_pythonpath()
 
     def tearDown(self):
         rmtree(self.temp_path)
