@@ -49,12 +49,14 @@ def get_crawl_args(message):
         args += ['%s=%s' % (k, v)]
     return args
 
-def get_spider_list(project, runner=None):
+def get_spider_list(project, runner=None, pythonpath=None):
     """Return the spider list from the given project, using the given runner"""
     if runner is None:
         runner = Config().get('runner')
     env = os.environ.copy()
     env['SCRAPY_PROJECT'] = project
+    if pythonpath:
+        env['PYTHONPATH'] = pythonpath
     pargs = [sys.executable, '-m', runner, 'list']
     proc = Popen(pargs, stdout=PIPE, stderr=PIPE, env=env)
     out, err = proc.communicate()

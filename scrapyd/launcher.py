@@ -18,9 +18,7 @@ class Launcher(Service):
         self.processes = {}
         self.finished = []
         self.finished_to_keep = config.getint('finished_to_keep', 100)
-        self.max_proc = config.getint('max_proc', 0)
-        if not self.max_proc:
-            self.max_proc = cpu_count() * config.getint('max_proc_per_cpu', 4)
+        self.max_proc = self._get_max_proc(config)
         self.runner = config.get('runner', 'scrapyd.runner')
         self.app = app
 
@@ -55,6 +53,15 @@ class Launcher(Service):
         del self.finished[:-self.finished_to_keep] # keep last 100 finished jobs
         self._wait_for_project(slot)
 
+    def _get_max_proc(self, config):
+        max_proc = config.getint('max_proc', 0)
+        if not max_proc:
+            try:
+                cpus = cpu_count()
+            except NotImplementedError:
+                cpus = 1
+            max_proc = cpus * config.getint('max_proc_per_cpu', 4)
+        return max_proc
 
 class ScrapyProcessProtocol(protocol.ProcessProtocol):
 

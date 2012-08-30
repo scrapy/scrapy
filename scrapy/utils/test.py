@@ -66,3 +66,9 @@ def get_pythonpath():
     sep = ';' if sys.platform == 'win32' else ':'
     scrapy_path = __import__('scrapy').__path__[0]
     return os.path.dirname(scrapy_path) + sep + os.environ.get('PYTHONPATH', '')
+
+def assert_samelines(testcase, text1, text2, msg=None):
+    """Asserts text1 and text2 have the same lines, ignoring differences in
+    line endings between platforms
+    """
+    testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)

@@ -1,8 +1,9 @@
 from unittest import TestCase, main
-from scrapy.http import Response, XmlResponse, Request
+from scrapy.http import Response, XmlResponse
 from scrapy.contrib_exp.downloadermiddleware.decompression import DecompressionMiddleware
 from scrapy.spider import BaseSpider
 from scrapy.tests import get_testdata
+from scrapy.utils.test import assert_samelines
 
 
 def _test_data(formats):
@@ -29,13 +30,13 @@ class DecompressionMiddlewareTest(TestCase):
             new = self.mw.process_response(None, rsp, self.spider)
             assert isinstance(new, XmlResponse), \
                     'Failed %s, response type %s' % (fmt, type(new).__name__)
-            self.assertEqual(new.body, self.uncompressed_body, fmt)
+            assert_samelines(self, new.body, self.uncompressed_body, fmt)
 
     def test_plain_response(self):
         rsp = Response(url='http://test.com', body=self.uncompressed_body)
         new = self.mw.process_response(None, rsp, self.spider)
         assert new is rsp
-        self.assertEqual(new.body, rsp.body)
+        assert_samelines(self, new.body, rsp.body)
 
     def test_empty_response(self):
         rsp = Response(url='http://test.com', body='')

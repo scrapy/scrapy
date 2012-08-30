@@ -6,6 +6,7 @@ from scrapy.contrib_exp.iterators import xmliter_lxml
 from scrapy.http import XmlResponse, TextResponse, Response
 from scrapy.tests import get_testdata
 
+FOOBAR_NL = u"foo" + os.linesep + u"bar"
 
 class XmliterTestCase(unittest.TestCase):
 
@@ -142,7 +143,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         self.assertEqual(result,
                          [{u'id': u'1', u'name': u'alpha',   u'value': u'foobar'},
                           {u'id': u'2', u'name': u'unicode', u'value': u'\xfan\xedc\xf3d\xe9\u203d'},
-                          {u'id': u'3', u'name': u'multi',   u'value': u'foo\nbar'},
+                          {u'id': u'3', u'name': u'multi',   u'value': FOOBAR_NL},
                           {u'id': u'4', u'name': u'empty',   u'value': u''}])
 
         # explicit type check cuz' we no like stinkin' autocasting! yarrr
@@ -158,7 +159,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         self.assertEqual([row for row in csv],
                          [{u'id': u'1', u'name': u'alpha',   u'value': u'foobar'},
                           {u'id': u'2', u'name': u'unicode', u'value': u'\xfan\xedc\xf3d\xe9\u203d'},
-                          {u'id': u'3', u'name': u'multi',   u'value': u'foo\nbar'},
+                          {u'id': u'3', u'name': u'multi',   u'value': FOOBAR_NL},
                           {u'id': u'4', u'name': u'empty',   u'value': u''}])
 
     def test_csviter_delimiter_binary_response_assume_utf8_encoding(self):
@@ -169,7 +170,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         self.assertEqual([row for row in csv],
                          [{u'id': u'1', u'name': u'alpha',   u'value': u'foobar'},
                           {u'id': u'2', u'name': u'unicode', u'value': u'\xfan\xedc\xf3d\xe9\u203d'},
-                          {u'id': u'3', u'name': u'multi',   u'value': u'foo\nbar'},
+                          {u'id': u'3', u'name': u'multi',   u'value': FOOBAR_NL},
                           {u'id': u'4', u'name': u'empty',   u'value': u''}])
 
 
@@ -196,7 +197,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         self.assertEqual([row for row in csv],
                          [{u'id': u'1', u'name': u'alpha',   u'value': u'foobar'},
                           {u'id': u'2', u'name': u'unicode', u'value': u'\xfan\xedc\xf3d\xe9\u203d'},
-                          {u'id': u'3', u'name': u'multi',   u'value': u'foo\nbar'},
+                          {u'id': u'3', u'name': u'multi',   u'value': FOOBAR_NL},
                           {u'id': u'4', u'name': u'empty',   u'value': u''}])
 
     def test_csviter_exception(self):
