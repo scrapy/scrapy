@@ -263,7 +263,7 @@ REFERER_ENABLED
 
 Default: ``True``
 
-Whether to enable referer middleware will be enabled.
+Whether to enable referer middleware.
 
 UrlLengthMiddleware
 -------------------
