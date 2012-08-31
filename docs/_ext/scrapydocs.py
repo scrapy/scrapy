@@ -24,12 +24,19 @@ def setup(app):
     )
     app.add_role('source', source_role)
     app.add_role('commit', commit_role)
+    app.add_role('issue', issue_role)
     app.add_role('rev', rev_role)
 
 def source_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     ref = 'https://github.com/scrapy/scrapy/blob/master/' + text
     set_classes(options)
     node = nodes.reference(rawtext, text, refuri=ref, **options)
+    return [node], []
+
+def issue_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
+    ref = 'https://github.com/scrapy/scrapy/issues/' + text
+    set_classes(options)
+    node = nodes.reference(rawtext, 'issue ' + text, refuri=ref, **options)
     return [node], []
 
 def commit_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
