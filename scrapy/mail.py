@@ -70,8 +70,8 @@ class MailSender(object):
                        cc=cc, attach=attachs, msg=msg)
 
         if self.debug:
-            log.msg('Debug mail sent OK: To=%s Cc=%s Subject="%s" Attachs=%d' % \
-                (to, cc, subject, len(attachs)), level=log.DEBUG)
+            log.msg(format='Debug mail sent OK: To=%(mailto)s Cc=%(mailcc)s Subject="%(mailsubject)s" Attachs=%(mailattachs)d',
+                    level=log.DEBUG, mailto=to, mailcc=cc, mailsubject=subject, mailattachs=len(attachs))
             return
 
         dfd = self._sendmail(rcpts, msg.as_string())
@@ -82,13 +82,17 @@ class MailSender(object):
         return dfd
 
     def _sent_ok(self, result, to, cc, subject, nattachs):
-        log.msg('Mail sent OK: To=%s Cc=%s Subject="%s" Attachs=%d' % \
-            (to, cc, subject, nattachs))
+        log.msg(format='Mail sent OK: To=%(mailto)s Cc=%(mailcc)s '
+                       'Subject="%(mailsubject)s" Attachs=%(mailattachs)d',
+                mailto=to, mailcc=cc, mailsubject=subject, mailattachs=nattachs)
 
     def _sent_failed(self, failure, to, cc, subject, nattachs):
         errstr = str(failure.value)
-        log.msg('Unable to send mail: To=%s Cc=%s Subject="%s" Attachs=%d - %s' % \
-            (to, cc, subject, nattachs, errstr), level=log.ERROR)
+        log.msg(format='Unable to send mail: To=%(mailto)s Cc=%(mailcc)s '
+                       'Subject="%(mailsubject)s" Attachs=%(mailattachs)d'
+                       '- %(mailerr)s',
+                level=log.ERROR, mailto=to, mailcc=cc, mailsubject=subject,
+                mailattachs=nattachs, mailerr=errstr)
 
     def _sendmail(self, to_addrs, msg):
         msg = StringIO(msg)

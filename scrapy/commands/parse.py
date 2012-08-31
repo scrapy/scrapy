@@ -113,19 +113,22 @@ class Command(ScrapyCommand):
                 if rule.link_extractor.matches(response.url) and rule.callback:
                     return rule.callback
         else:
-            log.msg("No CrawlSpider rules found in spider %r, please specify "
-                "a callback to use for parsing" % self.spider.name, log.ERROR)
+            log.msg(format='No CrawlSpider rules found in spider %(spider)r, '
+                           'please specify a callback to use for parsing',
+                    level=log.ERROR, spider=self.spider.name)
 
     def set_spider(self, url, opts):
         if opts.spider:
             try:
                 self.spider = self.crawler.spiders.create(opts.spider)
             except KeyError:
-                log.msg('Unable to find spider: %s' % opts.spider, log.ERROR)
+                log.msg(format='Unable to find spider: %(spider)s',
+                        level=log.ERROR, spider=opts.spider)
         else:
             self.spider = create_spider_for_request(self.crawler.spiders, url)
             if not self.spider:
-                log.msg('Unable to find spider for: %s' % request, log.ERROR)
+                log.msg(format='Unable to find spider for: %(url)s',
+                        level=log.ERROR, url=url)
 
     def start_parsing(self, url, opts):
         request = Request(url, opts.callback)
@@ -135,8 +138,8 @@ class Command(ScrapyCommand):
         self.crawler.start()
 
         if not self.first_response:
-            log.msg('No response downloaded for: %s' % request, log.ERROR, \
-                spider=self.spider)
+            log.msg(format='No response downloaded for: %(request)s',
+                    level=log.ERROR, request=request)
 
     def prepare_request(self, request, opts):
         def callback(response):
@@ -157,8 +160,8 @@ class Command(ScrapyCommand):
                 if callable(cb_method):
                     cb = cb_method
                 else:
-                    log.msg('Cannot find callback %r in spider: %s' % \
-                            (cb, self.spider.name), level=log.ERROR)
+                    log.msg(format='Cannot find callback %(callback)r in spider: %(spider)s',
+                            callback=callback, spider=self.spider.name, level=log.ERROR)
                     return
 
             # parse items and requests

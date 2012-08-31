@@ -64,8 +64,9 @@ class Scheduler(object):
             self.dqs.push(reqd, -request.priority)
         except ValueError, e: # non serializable request
             if self.logunser:
-                log.msg("Unable to serialize request: %s - reason: %s" % \
-                    (request, str(e)), level=log.ERROR, spider=self.spider)
+                log.msg(format="Unable to serialize request: %(request)s - reason: %(reason)s",
+                        level=log.ERROR, spider=self.spider,
+                        request=request, reason=e)
             return
         else:
             if self.stats:
@@ -98,8 +99,8 @@ class Scheduler(object):
             prios = ()
         q = PriorityQueue(self._newdq, startprios=prios)
         if q:
-            log.msg("Resuming crawl (%d requests scheduled)" % len(q), \
-                spider=self.spider)
+            log.msg(format="Resuming crawl (%(queuesize)d requests scheduled)",
+                    spider=self.spider, queuesize=len(q))
         return q
 
     def _dqdir(self, jobdir):

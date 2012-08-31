@@ -25,8 +25,9 @@ class Launcher(Service):
     def startService(self):
         for slot in range(self.max_proc):
             self._wait_for_project(slot)
-        log.msg("%s started: max_proc=%r, runner=%r" % (self.parent.name, \
-            self.max_proc, self.runner), system="Launcher")
+        log.msg(format='%(parent)s started: max_proc=%(max_proc)r, runner=%(runner)r',
+                parent=self.parent.name, max_proc=self.max_proc,
+                runner=self.runner, system='Launcher')
 
     def _wait_for_project(self, slot):
         poller = self.app.getComponent(IPoller)
@@ -96,6 +97,6 @@ class ScrapyProcessProtocol(protocol.ProcessProtocol):
         self.deferred.callback(self)
 
     def log(self, msg):
-        msg += "project=%r spider=%r job=%r pid=%r log=%r items=%r" % (self.project, \
-            self.spider, self.job, self.pid, self.logfile, self.itemsfile)
-        log.msg(msg, system="Launcher")
+        fmt = 'project=%(project)r spider=%(spider)r job=%(job)r pid=%(pid)r log=%(log)r items=%(items)r'
+        log.msg(format=fmt, project=self.project, spider=self.spider,
+                job=self.job, pid=self.pid, log=self.logfile, items=self.itemsfile)

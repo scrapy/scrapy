@@ -6,6 +6,7 @@ Release notes
 
 Scrapy changes:
 
+- changed LogFormatter API to support lazy formatting of scraped/dropped items. #164 (:commit:`dcef7b0`)
 - added :meth:`~scrapy.contrib.spidermiddleware.SpiderMiddleware.process_start_requests` method to spider middlewares
 - dropped Signals singleton. Signals should now be accesed through the Crawler.signals attribute. See the signals documentation for more info.
 - dropped Signals singleton. Signals should now be accesed through the Crawler.signals attribute. See the signals documentation for more info.

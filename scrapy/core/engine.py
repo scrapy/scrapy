@@ -193,8 +193,8 @@ class ExecutionEngine(object):
             assert isinstance(response, (Response, Request))
             if isinstance(response, Response):
                 response.request = request # tie request to response received
-                log.msg(log.formatter.crawled(request, response, spider), \
-                    level=log.DEBUG, spider=spider)
+                logkws = log.formatter.crawled(request, response, spider)
+                log.msg(level=log.DEBUG, spider=spider, **logkws)
                 self.signals.send_catch_log(signal=signals.response_received, \
                     response=response, request=request, spider=spider)
             return response
@@ -252,7 +252,8 @@ class ExecutionEngine(object):
         slot = self.slots[spider]
         if slot.closing:
             return slot.closing
-        log.msg("Closing spider (%s)" % reason, spider=spider)
+        log.msg(format="Closing spider (%(reason)s)", reason=reason, spider=spider)
+        log.msg(format='hohohoohoo %(aaa)s', spider=spider, aaa='12')
 
         dfd = slot.close()
 
@@ -269,7 +270,7 @@ class ExecutionEngine(object):
         dfd.addBoth(lambda _: self.crawler.stats.close_spider(spider, reason=reason))
         dfd.addErrback(log.err, spider=spider)
 
-        dfd.addBoth(lambda _: log.msg("Spider closed (%s)" % reason, spider=spider))
+        dfd.addBoth(lambda _: log.msg(format="Spider closed (%(reason)s)", reason=reason, spider=spider))
 
         dfd.addBoth(lambda _: self.slots.pop(spider))
         dfd.addErrback(log.err, spider=spider)
