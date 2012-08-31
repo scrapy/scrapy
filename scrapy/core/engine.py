@@ -253,7 +253,6 @@ class ExecutionEngine(object):
         if slot.closing:
             return slot.closing
         log.msg(format="Closing spider (%(reason)s)", reason=reason, spider=spider)
-        log.msg(format='hohohoohoo %(aaa)s', spider=spider, aaa='12')
 
         dfd = slot.close()
 
