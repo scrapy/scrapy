@@ -6,6 +6,8 @@ Release notes
 
 Scrapy changes:
 
+- added :meth:`~scrapy.contrib.spidermiddleware.SpiderMiddleware.process_start_requests` method to spider middlewares
+- dropped Signals singleton. Signals should now be accesed through the Crawler.signals attribute. See the signals documentation for more info.
 - dropped Signals singleton. Signals should now be accesed through the Crawler.signals attribute. See the signals documentation for more info.
 - dropped Stats Collector singleton. Stats can now be accessed through the Crawler.stats attribute. See the stats collection documentation for more info.
 - documented :ref:`topics-api`

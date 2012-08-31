@@ -29,6 +29,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
             self.methods['process_spider_output'].insert(0, mw.process_spider_output)
         if hasattr(mw, 'process_spider_exception'):
             self.methods['process_spider_exception'].insert(0, mw.process_spider_exception)
+        if hasattr(mw, 'process_start_requests'):
+            self.methods['process_start_requests'].insert(0, mw.process_start_requests)
 
     def scrape_response(self, scrape_func, response, request, spider):
         fname = lambda f:'%s.%s' % (f.im_self.__class__.__name__, f.im_func.__name__)
@@ -68,3 +70,6 @@ class SpiderMiddlewareManager(MiddlewareManager):
         dfd.addErrback(process_spider_exception)
         dfd.addCallback(process_spider_output)
         return dfd
+
+    def process_start_requests(self, start_requests, spider):
+        return self._process_chain('process_start_requests', start_requests, spider)

@@ -213,13 +213,14 @@ class ExecutionEngine(object):
         return dwld
 
     @defer.inlineCallbacks
-    def open_spider(self, spider, start_requests=None, close_if_idle=True):
+    def open_spider(self, spider, start_requests=(), close_if_idle=True):
         assert self.has_capacity(), "No free spider slots when opening %r" % \
             spider.name
         log.msg("Spider opened", spider=spider)
         nextcall = CallLaterOnce(self._next_request, spider)
         scheduler = self.scheduler_cls.from_crawler(self.crawler)
-        slot = Slot(start_requests or (), close_if_idle, nextcall, scheduler)
+        start_requests = yield self.scraper.spidermw.process_start_requests(start_requests, spider)
+        slot = Slot(start_requests, close_if_idle, nextcall, scheduler)
         self.slots[spider] = slot
         yield scheduler.open(spider)
         yield self.scraper.open_spider(spider)

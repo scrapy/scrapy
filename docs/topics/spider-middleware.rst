@@ -131,6 +131,34 @@ single Python class that defines one or more of the following methods:
         :param spider: the spider which raised the exception
         :type spider: :class:`scrapy.spider.BaseSpider` object
 
+    .. method:: process_start_requests(start_requests, spider)
+
+        .. versionadded:: 0.15
+
+        This method is called with the start requests of the spider, and works
+        similarly to the :meth:`process_spider_output` method, except that it
+        doesn't have a response associated and must return only requests (not
+        items).
+
+        It receives an iterable (in the ``start_requests`` parameter) and must
+        return another iterable of :class:`~scrapy.http.Request` objects.
+
+        .. note:: When implementing this method in your spider middleware, you
+           should always return an iterable (that follows the input one) and
+           not consume all ``start_requests`` iterator because it can be very
+           large (or even unbounded) and cause a memory overflow. The Scrapy
+           engine is designed to pull start requests while it has capacity to
+           process them, so the start requests iterator can be effectively
+           endless where there is some other condition for stopping the spider
+           (like a time limit or item/page count).
+
+        :param start_requests: the start requests
+        :type start_requests: an iterable of :class:`~scrapy.http.Request`
+
+        :param spider: the spider to whom the start requests belong
+        :type spider: :class:`~scrapy.item.BaseSpider` object
+
+
 .. _Exception: http://docs.python.org/library/exceptions.html#exceptions.Exception
 
 
