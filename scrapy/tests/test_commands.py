@@ -1,6 +1,7 @@
-import sys
 import os
+import sys
 import subprocess
+from time import sleep
 from os.path import exists, join, abspath
 from shutil import rmtree
 from tempfile import mkdtemp
@@ -32,8 +33,20 @@ class ProjectTest(unittest.TestCase):
 
     def proc(self, *new_args, **kwargs):
         args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
-        return subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, \
-            cwd=self.cwd, env=self.env, **kwargs)
+        p = subprocess.Popen(args, cwd=self.cwd, env=self.env,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             **kwargs)
+
+        waited = 0
+        interval = 0.2
+        while p.poll() is None:
+            sleep(interval)
+            waited += interval
+            if waited > 5:
+                p.kill()
+                assert False, 'Command took too much time to complete'
+
+        return p
 
 
 class StartprojectTest(ProjectTest):
@@ -125,10 +138,10 @@ class MySpider(BaseSpider):
 """)
         p = self.proc('runspider', fname)
         log = p.stderr.read()
-        self.assert_("[myspider] DEBUG: It Works!" in log)
-        self.assert_("[myspider] INFO: Spider opened" in log)
-        self.assert_("[myspider] INFO: Closing spider (finished)" in log)
-        self.assert_("[myspider] INFO: Spider closed (finished)" in log)
+        self.assert_("[myspider] DEBUG: It Works!" in log, log)
+        self.assert_("[myspider] INFO: Spider opened" in log, log)
+        self.assert_("[myspider] INFO: Closing spider (finished)" in log, log)
+        self.assert_("[myspider] INFO: Spider closed (finished)" in log, log)
 
     def test_runspider_no_spider_found(self):
         tmpdir = self.mktemp()

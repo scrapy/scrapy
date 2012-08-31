@@ -38,10 +38,14 @@ def create_spider_for_request(spidermanager, request, default_spider=None, \
     snames = spidermanager.find_by_request(request)
     if len(snames) == 1:
         return spidermanager.create(snames[0], **spider_kwargs)
+
     if len(snames) > 1 and log_multiple:
-        log.msg('More than one spider can handle: %s - %s' % \
-            (request, ", ".join(snames)), log.ERROR)
+        log.msg(format='More than one spider can handle: %(request)s - %(snames)s',
+                level=log.ERROR, request=request, snames=', '.join(snames))
+
     if len(snames) == 0 and log_none:
-        log.msg('Unable to find spider that handles: %s' % request, log.ERROR)
+        log.msg(format='Unable to find spider that handles: %(request)s',
+                level=log.ERROR, request=request)
+
     return default_spider
 

@@ -56,28 +56,41 @@ def _adapt_eventdict(eventDict, log_level=INFO, encoding='utf-8', prepend_level=
     ev = eventDict.copy()
     if ev['isError']:
         ev.setdefault('logLevel', ERROR)
+
     # ignore non-error messages from outside scrapy
     if ev.get('system') != 'scrapy' and not ev['isError']:
         return
+
     level = ev.get('logLevel')
     if level < log_level:
         return
+
     spider = ev.get('spider')
     if spider:
         ev['system'] = spider.name
-    message = ev.get('message')
+
     lvlname = level_names.get(level, 'NOLEVEL')
+    message = ev.get('message')
     if message:
         message = [unicode_to_str(x, encoding) for x in message]
         if prepend_level:
             message[0] = "%s: %s" % (lvlname, message[0])
-    ev['message'] = message
+        ev['message'] = message
+
     why = ev.get('why')
     if why:
         why = unicode_to_str(why, encoding)
         if prepend_level:
             why = "%s: %s" % (lvlname, why)
-    ev['why'] = why
+        ev['why'] = why
+
+    fmt = ev.get('format')
+    if fmt:
+        fmt = unicode_to_str(fmt, encoding)
+        if prepend_level:
+            fmt = "%s: %s" % (lvlname, fmt)
+        ev['format'] = fmt
+
     return ev
 
 def _get_log_level(level_name_or_id=None):
@@ -111,14 +124,17 @@ def start(logfile=None, loglevel=None, logstdout=None):
         msg("Scrapy %s started (bot: %s)" % (scrapy.__version__, \
             settings['BOT_NAME']))
 
-def msg(message, level=INFO, **kw):
+def msg(message=None, _level=INFO, **kw):
+    kw['logLevel'] = kw.pop('level', _level)
     kw.setdefault('system', 'scrapy')
-    kw['logLevel'] = level
-    log.msg(message, **kw)
+    if message is None:
+        log.msg(**kw)
+    else:
+        log.msg(message, **kw)
 
 def err(_stuff=None, _why=None, **kw):
-    kw.setdefault('system', 'scrapy')
     kw['logLevel'] = kw.pop('level', ERROR)
+    kw.setdefault('system', 'scrapy')
     log.err(_stuff, _why, **kw)
 
 formatter = load_object(settings['LOG_FORMATTER'])()

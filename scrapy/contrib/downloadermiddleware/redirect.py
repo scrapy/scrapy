@@ -60,12 +60,13 @@ class RedirectMiddleware(object):
                 [request.url]
             redirected.dont_filter = request.dont_filter
             redirected.priority = request.priority + self.priority_adjust
-            log.msg("Redirecting (%s) to %s from %s" % (reason, redirected, request),
-                    spider=spider, level=log.DEBUG)
+            log.msg(format="Redirecting (%(reason)s) to %(redirected)s from %(request)s",
+                    level=log.DEBUG, spider=spider, request=request,
+                    redirected=redirected, reason=reason)
             return redirected
         else:
-            log.msg("Discarding %s: max redirections reached" % request,
-                    spider=spider, level=log.DEBUG)
+            log.msg(format="Discarding %(request)s: max redirections reached",
+                    level=log.DEBUG, spider=spider, request=request)
             raise IgnoreRequest
 
     def _redirect_request_using_get(self, request, redirect_url):

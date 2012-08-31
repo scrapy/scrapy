@@ -61,7 +61,8 @@ def csviter(obj, delimiter=None, headers=None, encoding=None):
     while True:
         row = _getrow(csv_r)
         if len(row) != len(headers):
-            log.msg("ignoring row %d (length: %d, should be: %d)" % (csv_r.line_num, len(row), len(headers)), log.WARNING)
+            log.msg(format="ignoring row %(csvlnum)d (length: %(csvrow)d, should be: %(csvheader)d)",
+                    level=log.WARNING, csvlnum=csv_r.line_num, csvrow=len(row), csvheader=len(headers))
             continue
         else:
             yield dict(zip(headers, row))

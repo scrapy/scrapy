@@ -37,10 +37,12 @@ class MiddlewareManager(object):
             except NotConfigured, e:
                 if e.args:
                     clsname = clspath.split('.')[-1]
-                    log.msg("Disabled %s: %s" % (clsname, e.args[0]), log.WARNING)
+                    log.msg(format="Disabled %(clsname)s: %(eargs)s",
+                            level=log.WARNING, clsname=clsname, eargs=e.args[0])
+
         enabled = [x.__class__.__name__ for x in middlewares]
-        log.msg("Enabled %ss: %s" % (cls.component_name, ", ".join(enabled)), \
-            level=log.DEBUG)
+        log.msg(format="Enabled %(componentname)ss: %(enabledlist)s", level=log.DEBUG,
+                componentname=cls.component_name, enabledlist=', '.join(enabled))
         return cls(*middlewares)
 
     @classmethod

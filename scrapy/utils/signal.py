@@ -21,8 +21,8 @@ def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
             response = robustApply(receiver, signal=signal, sender=sender,
                 *arguments, **named)
             if isinstance(response, Deferred):
-                log.msg("Cannot return deferreds from signal handler: %s" % \
-                    receiver, log.ERROR, spider=spider)
+                log.msg(format="Cannot return deferreds from signal handler: %(receiver)s",
+                        level=log.ERROR, spider=spider, receiver=receiver)
         except dont_log:
             result = Failure()
         except Exception:

@@ -89,7 +89,8 @@ class WebService(server.Site):
     def start_listening(self):
         self.port = listen_tcp(self.portrange, self.host, self)
         h = self.port.getHost()
-        log.msg("Web service listening on %s:%d" % (h.host, h.port), log.DEBUG)
+        log.msg(format='Web service listening on %(host)s:%(port)d',
+                level=log.DEBUG, host=h.host, port=h.port)
 
     def stop_listening(self):
         self.port.stopListening()

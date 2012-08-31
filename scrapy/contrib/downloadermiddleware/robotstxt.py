@@ -33,7 +33,8 @@ class RobotsTxtMiddleware(object):
         useragent = self._useragents[spider]
         rp = self.robot_parser(request, spider)
         if rp and not rp.can_fetch(useragent, request.url):
-            log.msg("Forbidden by robots.txt: %s" % request, log.DEBUG)
+            log.msg(format="Forbidden by robots.txt: %(request)s",
+                    level=log.DEBUG, request=request)
             raise IgnoreRequest
 
     def robot_parser(self, request, spider):
