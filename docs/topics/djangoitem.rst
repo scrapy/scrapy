@@ -1,7 +1,5 @@
 .. _topics-djangoitem:
 
-.. module:: scrapy.contrib.djangoitem
-
 ==========
 DjangoItem
 ==========
