@@ -12,7 +12,6 @@ from twisted.internet import task
 from scrapy import signals, log
 from scrapy.exceptions import NotConfigured
 from scrapy.mail import MailSender
-from scrapy.utils.memory import get_vmvalue_from_procfs, procfs_supported
 from scrapy.utils.engine import get_engine_status
 
 class MemoryUsage(object):
@@ -20,7 +19,9 @@ class MemoryUsage(object):
     def __init__(self, crawler):
         if not crawler.settings.getbool('MEMUSAGE_ENABLED'):
             raise NotConfigured
-        if not procfs_supported():
+        try:
+            self.resource = __import__('resource')
+        except ImportError:
             raise NotConfigured
 
         self.crawler = crawler
@@ -38,7 +39,7 @@ class MemoryUsage(object):
         return cls(crawler)
 
     def get_virtual_size(self):
-        return get_vmvalue_from_procfs('VmRSS')
+        return self.resource.getrusage(self.resource.RUSAGE_SELF).ru_maxrss * 1024
 
     def engine_started(self):
         self.crawler.stats.set_value('memusage/startup', self.get_virtual_size())

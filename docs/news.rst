@@ -31,6 +31,7 @@ Scrapy changes:
 - promoted :ref:`topics-djangoitem` to main contrib
 - LogFormatter method now return dicts(instead of strings) to support lazy formatting (:issue:`164`, :commit:`dcef7b0`)
 - downloader handlers (:setting:`DOWNLOAD_HANDLERS` setting) now receive settings as the first argument of the constructor
+- replaced memory usage acounting with (more portable) `resource`_ module, removed ``scrapy.utils.memory`` module
 
 Scrapyd changes:
 
@@ -377,3 +378,4 @@ First release of Scrapy.
 .. _w3lib.encoding: https://github.com/scrapy/w3lib/blob/master/w3lib/encoding.py
 .. _lxml: http://lxml.de/
 .. _ClientForm: http://wwwsearch.sourceforge.net/old/ClientForm/
+.. _resource: http://docs.python.org/library/resource.html
