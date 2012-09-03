@@ -15,6 +15,7 @@ from scrapy.core.downloader.handlers.http import HttpDownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
+from scrapy.settings import Settings
 from scrapy import optional_features
 
 
@@ -25,7 +26,7 @@ class FileTestCase(unittest.TestCase):
         fd = open(self.tmpname + '^', 'w')
         fd.write('0123456789')
         fd.close()
-        self.download_request = FileDownloadHandler().download_request
+        self.download_request = FileDownloadHandler(Settings()).download_request
 
     def test_download(self):
         def _test(response):
@@ -60,7 +61,7 @@ class HttpTestCase(unittest.TestCase):
         self.wrapper = WrappingFactory(self.site)
         self.port = reactor.listenTCP(0, self.wrapper, interface='127.0.0.1')
         self.portno = self.port.getHost().port
-        self.download_request = HttpDownloadHandler().download_request
+        self.download_request = HttpDownloadHandler(Settings()).download_request
 
     def tearDown(self):
         return self.port.stopListening()
@@ -148,7 +149,7 @@ class HttpProxyTestCase(unittest.TestCase):
         wrapper = WrappingFactory(site)
         self.port = reactor.listenTCP(0, wrapper, interface='127.0.0.1')
         self.portno = self.port.getHost().port
-        self.download_request = HttpDownloadHandler().download_request
+        self.download_request = HttpDownloadHandler(Settings()).download_request
 
     def tearDown(self):
         return self.port.stopListening()
@@ -177,6 +178,9 @@ class HttpProxyTestCase(unittest.TestCase):
 
 
 class HttpDownloadHandlerMock(object):
+    def __init__(self, settings):
+        pass
+
     def download_request(self, request, spider):
         return request
 
@@ -191,7 +195,7 @@ class S3TestCase(unittest.TestCase):
     AWS_SECRET_ACCESS_KEY = 'uV3F3YluFJax1cknvbcGwgjvx4QpvB+leU8dUj2o'
 
     def setUp(self):
-        s3reqh = S3DownloadHandler(self.AWS_ACCESS_KEY_ID, \
+        s3reqh = S3DownloadHandler(Settings(), self.AWS_ACCESS_KEY_ID, \
                 self.AWS_SECRET_ACCESS_KEY, \
                 httpdownloadhandler=HttpDownloadHandlerMock)
         self.download_request = s3reqh.download_request
