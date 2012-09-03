@@ -197,6 +197,8 @@ storing logs set this option empty, like this::
 
     logs_dir =
 
+.. _items_dir:
+
 items_dir
 ---------
 
@@ -207,6 +209,8 @@ storing feeds of scraped items (perhaps, because you use a database or other
 storage) set this option empty, like this::
 
     items_dir =
+
+.. _jobs_to_keep:
 
 jobs_to_keep
 ------------
@@ -485,6 +489,8 @@ Example request passing a spider argument (``arg1``) and a setting
 
     $ curl http://localhost:6800/schedule.json -d project=myproject -d spider=somespider -d setting=DOWNLOAD_DELAY=2 -d arg1=val1
 
+.. _cancel.json:
+
 cancel.json
 -----------
 
@@ -564,6 +570,8 @@ Example request::
 Example response::
 
     {"status": "ok", "spiders": ["spider1", "spider2", "spider3"]}
+
+.. _listjobs.json:
 
 listjobs.json
 -------------

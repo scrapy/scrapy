@@ -34,9 +34,8 @@ Scrapy changes:
 
 Scrapyd changes:
 
-- New Scrapy API methods (see documentation for details)
-   - ``listjobs.json`` to see pending/running/finished jobs
-   - ``cancel.json`` to cancel pending and running jobs
+- New Scrapyd API methods: :ref:`listjobs.json` and :ref:`cancel.json`
+- New Scrapyd settings: :ref:`items_dir` and :ref:`jobs_to_keep`
 - Items are now stored on disk using feed exports, and accessible through the Scrapyd web interface
 - Support making Scrapyd listen into a specific IP address (see ``bind_address`` option)
 
