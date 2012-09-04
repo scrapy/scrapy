@@ -17,18 +17,15 @@ from scrapy.http import Headers as ScrapyHeaders
 from scrapy.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import _parse
 from scrapy.utils.misc import load_object
-from scrapy.conf import settings
 from scrapy import log
 
-
-ClientContextFactory = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
 
 
 class Http11DownloadHandler(object):
 
-    def __init__(self):
+    def __init__(self, settings):
         self._pool = HTTPConnectionPool(reactor, persistent=True)
-        self._contextFactory = ClientContextFactory()
+        self._contextFactory = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
 
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
