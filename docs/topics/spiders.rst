@@ -4,10 +4,11 @@
 Spiders
 =======
 
-Spiders are classes which define how a certain site (or domain) will be
-scraped, including how to crawl the site and how to extract scraped items from
-their pages. In other words, Spiders are the place where you define the custom
-behaviour for crawling and parsing pages for a particular site.
+Spiders are classes which define how a certain site (or group of sites) will be
+scraped, including how to perform the crawl (ie. follow links) and how to
+extract structured data from their pages (ie. scraping items). In other words,
+Spiders are the place where you define the custom behaviour for crawling and
+parsing pages for a particular site (or, in some cases, group of sites).
 
 For spiders, the scraping cycle goes through something like this:
 
@@ -32,13 +33,39 @@ For spiders, the scraping cycle goes through something like this:
    :ref:`topics-selectors` (but you can also use BeautifuSoup, lxml or whatever
    mechanism you prefer) and generate items with the parsed data.
 
-4. Finally, the items returned from the spider will be typically persisted in
-   some Item pipeline.
+4. Finally, the items returned from the spider will be typically persisted to a
+   database (in some :ref:`Item Pipeline <topics-item-pipeline>`) or written to
+   a file using :ref:`topics-feed-exports`.
 
 Even though this cycle applies (more or less) to any kind of spider, there are
 different kinds of default spiders bundled into Scrapy for different purposes.
 We will talk about those types here.
 
+.. _spiderargs:
+
+Spider arguments
+================
+
+Spiders can receive arguments that modify their behaviour. Some common uses for
+spider arguments are to define the start URLs or to restrict the crawl to
+certain sections of the site, but they can be used to configure any
+functionality of the spider.
+
+Spider arguments are passed through the :command:`crawl` command using the
+``-a`` option. For example::
+
+    scrapy crawl myspider -a category=electronics
+
+Spiders receive arguments in their constructors::
+
+    class MySpider(BaseSpider):
+        name = 'myspider'
+
+        def __init__(self, category=None):
+            self.start_urls = ['http://www.example.com/categories/%s' % category]
+            # ...
+
+Spider arguments can also be passed through the :ref:`scrapyd-schedule` API.
 
 .. _topics-spiders-ref:
 
@@ -83,7 +110,10 @@ BaseSpider
        instance of the same spider. This is the most important spider attribute
        and it's required.
 
-       Is recommended to name your spiders after the domain that their crawl.
+       If the spider scrapes a single domain, a common practice is to name the
+       spider after the domain, or without the `TLD`_. So, for example, a
+       spider that crawls ``mywebsite.com`` would often be called
+       ``mywebsite``.
 
    .. attribute:: allowed_domains
 
@@ -594,3 +624,4 @@ Combine SitemapSpider with other sources of urls::
 .. _Sitemaps: http://www.sitemaps.org
 .. _Sitemap index files: http://www.sitemaps.org/protocol.php#index
 .. _robots.txt: http://www.robotstxt.org/
+.. _TLD: http://en.wikipedia.org/wiki/Top-level_domain

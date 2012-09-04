@@ -463,6 +463,8 @@ Example reponse::
 
     {"status": "ok", "spiders": 3}
 
+.. _scrapyd-schedule:
+
 schedule.json
 -------------
 

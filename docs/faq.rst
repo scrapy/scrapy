@@ -270,6 +270,22 @@ Here are some tips to keep in mind when dealing with these kind of sites:
 If you are still unable to prevent your bot getting banned, consider contacting
 `commercial support`_.
 
+Should I use spider arguments or settings to configure my spider?
+-----------------------------------------------------------------
+
+Both :ref:`spider arguments <spiderargs>` and :ref:`settings <topics-settings>`
+can be used to configure your spider. There is no strict rule that mandates to
+use one or the other, but settings are more suited for parameters that, once
+set, don't change much, while spider arguments are meant to change more often,
+even on each spider run and sometimes are required for the spider to run at all
+(for example, to set the start url of a spider).
+
+To illustrate with an example, assuming you have a spider that needs to log
+into a site to scrape data, and you only want to scrape data from a certain
+section of the site (which varies each time). In that case, the credentials to
+log in would be settings, while the url of the section to scrape would be a
+spider argument.
+
 .. _user agents: http://en.wikipedia.org/wiki/User_agent
 .. _Google cache: http://www.googleguide.com/cached_pages.html
 .. _Tor project: https://www.torproject.org/
