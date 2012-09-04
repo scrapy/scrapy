@@ -181,6 +181,11 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(get_func_args(A), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(a.method), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(cal), ['a', 'b', 'c'])
+        self.assertEqual(get_func_args(object), [])
+
+        # TODO: how do we fix this to return the actual argument names?
+        self.assertEqual(get_func_args(unicode.split), [])
+        self.assertEqual(get_func_args(" ".join), [])
 
 if __name__ == "__main__":
     unittest.main()

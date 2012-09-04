@@ -146,21 +146,25 @@ def isbinarytext(text):
     assert isinstance(text, str), "text must be str, got '%s'" % type(text).__name__
     return any(c in _BINARYCHARS for c in text)
 
-def get_func_args(func):
+def get_func_args(func, stripself=False):
     """Return the argument name list of a callable"""
     if inspect.isfunction(func):
         func_args, _, _, _ = inspect.getargspec(func)
     elif inspect.isclass(func):
-        func_args, _, _, _ = inspect.getargspec(func.__init__)
-        func_args.pop(0) # self
+        return get_func_args(func.__init__, True)
     elif inspect.ismethod(func):
-        func_args, _, _, _ = inspect.getargspec(func.__func__)
-        func_args.pop(0) # self
+        return get_func_args(func.__func__, True)
+    elif inspect.ismethoddescriptor(func):
+        return []
     elif hasattr(func, '__call__'):
-        func_args, _, _, _ = inspect.getargspec(func.__call__)
-        func_args.pop(0) # self
+        if inspect.isroutine(func):
+            return []
+        else:
+            return get_func_args(func.__call__, True)
     else:
         raise TypeError('%s is not callable' % type(func))
+    if stripself:
+        func_args.pop(0) # self
     return func_args
 
 def equal_attributes(obj1, obj2, attributes):
