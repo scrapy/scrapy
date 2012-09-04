@@ -16,10 +16,10 @@ It contains a README file with a detailed description of the project contents.
 If you're familiar with git, you can checkout the code. Otherwise you can
 download a tarball or zip file of the project by clicking on `Downloads`_.
 
-There is also a site for sharing code snippets such as spiders, middlewares,
-extensions, or scripts, called `Scrapy snippets`_. Feel free to share any code
-there.
+The `scrapy tag on Snipplr`_ is used for sharing code snippets such as spiders,
+middlewares, extensions, or scripts. Feel free (and encouraged!) to share any
+code there.
 
 .. _dirbot: https://github.com/scrapy/dirbot
 .. _Downloads: https://github.com/scrapy/dirbot/archives/master
-.. _Scrapy snippets: http://snippets.scrapy.org/
+.. _scrapy tag on Snipplr: http://snipplr.com/all/tags/scrapy/

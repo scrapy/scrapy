@@ -244,7 +244,7 @@ API changes
 
 - ``url`` and ``body`` attributes of Request objects are now read-only (#230)
 - ``Request.copy()`` and ``Request.replace()`` now also copies their ``callback`` and ``errback`` attributes (#231)
-- Removed ``UrlFilterMiddleware`` from ``scrapy.contrib`` (already disabled by default) - see this snippet for a replacement: http://snippets.scrapy.org/snippets/12/
+- Removed ``UrlFilterMiddleware`` from ``scrapy.contrib`` (already disabled by default)
 - Offsite middelware doesn't filter out any request coming from a spider that doesn't have a allowed_domains attribute (#225)
 - Removed Spider Manager ``load()`` method. Now spiders are loaded in the constructor itself.
 - Changes to Scrapy Manager (now called "Crawler"):
