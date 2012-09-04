@@ -150,11 +150,15 @@ def get_func_args(func):
     """Return the argument name list of a callable"""
     if inspect.isfunction(func):
         func_args, _, _, _ = inspect.getargspec(func)
+    elif inspect.isclass(func):
+        func_args, _, _, _ = inspect.getargspec(func.__init__)
+        func_args.pop(0) # self
+    elif inspect.ismethod(func):
+        func_args, _, _, _ = inspect.getargspec(func.__func__)
+        func_args.pop(0) # self
     elif hasattr(func, '__call__'):
-        try:
-            func_args, _, _, _ = inspect.getargspec(func.__call__)
-        except Exception:
-            func_args = []
+        func_args, _, _, _ = inspect.getargspec(func.__call__)
+        func_args.pop(0) # self
     else:
         raise TypeError('%s is not callable' % type(func))
     return func_args

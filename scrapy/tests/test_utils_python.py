@@ -4,7 +4,7 @@ from itertools import count
 
 from scrapy.utils.python import str_to_unicode, unicode_to_str, \
     memoizemethod_noargs, isbinarytext, equal_attributes, \
-    WeakKeyCache, stringify_dict
+    WeakKeyCache, stringify_dict, get_func_args
 
 __doctests__ = ['scrapy.utils.python']
 
@@ -153,6 +153,34 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.failUnlessEqual(d, d2)
         self.failIf(d is d2) # shouldn't modify in place
         self.failIf(any(isinstance(x, unicode) for x in d2.keys()))
+
+    def test_get_func_args(self):
+        def f1(a, b, c):
+            pass
+
+        def f2(a, b=None, c=None):
+            pass
+
+        class A(object):
+            def __init__(self, a, b, c):
+                pass
+
+            def method(self, a, b, c):
+                pass
+
+        class Callable(object):
+
+            def __call__(self, a, b, c):
+                pass
+
+        a = A(1, 2, 3)
+        cal = Callable()
+
+        self.assertEqual(get_func_args(f1), ['a', 'b', 'c'])
+        self.assertEqual(get_func_args(f2), ['a', 'b', 'c'])
+        self.assertEqual(get_func_args(A), ['a', 'b', 'c'])
+        self.assertEqual(get_func_args(a.method), ['a', 'b', 'c'])
+        self.assertEqual(get_func_args(cal), ['a', 'b', 'c'])
 
 if __name__ == "__main__":
     unittest.main()
