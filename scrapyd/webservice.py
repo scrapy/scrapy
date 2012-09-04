@@ -2,6 +2,8 @@ import traceback
 import uuid
 from cStringIO import StringIO
 
+from twisted.python import log
+
 from scrapy.utils.txweb import JsonResource
 from .utils import get_spider_list
 
@@ -17,6 +19,7 @@ class WsResource(JsonResource):
         except Exception, e:
             if self.root.debug:
                 return traceback.format_exc()
+            log.err()
             r = {"status": "error", "message": str(e)}
             return self.render_object(r, txrequest)
 
