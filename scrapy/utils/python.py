@@ -164,7 +164,7 @@ def get_func_args(func, stripself=False):
     else:
         raise TypeError('%s is not callable' % type(func))
     if stripself:
-        func_args.pop(0) # self
+        func_args.pop(0)
     return func_args
 
 def equal_attributes(obj1, obj2, attributes):
