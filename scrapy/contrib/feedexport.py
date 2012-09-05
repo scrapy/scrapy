@@ -134,6 +134,7 @@ class SpiderSlot(object):
 class FeedExporter(object):
 
     def __init__(self, settings):
+        self.settings = settings
         self.urifmt = settings['FEED_URI']
         if not self.urifmt:
             raise NotConfigured
