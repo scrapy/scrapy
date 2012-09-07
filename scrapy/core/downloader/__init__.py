@@ -70,7 +70,7 @@ class Downloader(object):
         self.signals = crawler.signals
         self.slots = {}
         self.active = set()
-        self.handlers = DownloadHandlers(crawler.settings)
+        self.handlers = DownloadHandlers(crawler)
         self.total_concurrency = self.settings.getint('CONCURRENT_REQUESTS')
         self.domain_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self.ip_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_IP')
