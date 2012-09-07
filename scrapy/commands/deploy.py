@@ -15,6 +15,7 @@ from w3lib.form import encode_multipart
 from scrapy.command import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.http import basic_auth_header
+from scrapy.utils.python import retry_on_eintr
 from scrapy.utils.conf import get_config, closest_scrapy_cfg
 
 _SETUP_PY_TEMPLATE = \
@@ -206,7 +207,7 @@ def _build_egg():
         _create_default_setup_py(settings=settings)
     d = tempfile.mkdtemp()
     f = tempfile.TemporaryFile(dir=d)
-    check_call([sys.executable, 'setup.py', 'clean', '-a', 'bdist_egg', '-d', d], stdout=f)
+    retry_on_eintr(check_call, [sys.executable, 'setup.py', 'clean', '-a', 'bdist_egg', '-d', d], stdout=f)
     egg = glob.glob(os.path.join(d, '*.egg'))[0]
     return egg, d
 
