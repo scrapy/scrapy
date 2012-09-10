@@ -60,7 +60,9 @@ class Contract(object):
         cb = request.callback
         @wraps(cb)
         def wrapper(response):
-            self.pre_process(response)
+            try: self.pre_process(response)
+            except ContractFail as e:
+                print e.format(self.method)
             return list(iterate_spider_output(cb(response)))
 
         request.callback = wrapper
@@ -71,7 +73,9 @@ class Contract(object):
         @wraps(cb)
         def wrapper(response):
             output = list(iterate_spider_output(cb(response)))
-            self.post_process(output)
+            try: self.post_process(output)
+            except ContractFail as e:
+                print e.format(self.method)
             return output
 
         request.callback = wrapper
