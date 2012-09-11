@@ -15,31 +15,24 @@ from twisted.internet import defer, reactor
 from twisted.mail.smtp import ESMTPSenderFactory
 
 from scrapy import log
-from scrapy.exceptions import NotConfigured
-from scrapy.conf import settings
-
-
-# signal sent when message is sent
-# args: to, subject, body, cc, attach, msg
-mail_sent = object()
-
 
 class MailSender(object):
 
-    def __init__(self, smtphost=None, mailfrom=None, smtpuser=None, smtppass=None, \
-            smtpport=None, debug=False, crawler=None):
-        self.smtphost = smtphost or settings['MAIL_HOST']
-        self.smtpport = smtpport or settings.getint('MAIL_PORT')
-        self.smtpuser = smtpuser or settings['MAIL_USER']
-        self.smtppass = smtppass or settings['MAIL_PASS']
-        self.mailfrom = mailfrom or settings['MAIL_FROM']
+    def __init__(self, smtphost='localhost', mailfrom='scrapy@localhost',
+            smtpuser=None, smtppass=None, smtpport=25, debug=False):
+        self.smtphost = smtphost
+        self.smtpport = smtpport
+        self.smtpuser = smtpuser
+        self.smtppass = smtppass
+        self.mailfrom = mailfrom
         self.debug = debug
-        self.signals = crawler.signals if crawler else None
 
-        if not self.smtphost or not self.mailfrom:
-            raise NotConfigured("MAIL_HOST and MAIL_FROM settings are required")
+    @classmethod
+    def from_settings(cls, settings):
+        return cls(settings['MAIL_HOST'], settings['MAIL_FROM'], settings['MAIL_USER'],
+            settings['MAIL_PASS'], settings.getint('MAIL_PORT'))
 
-    def send(self, to, subject, body, cc=None, attachs=()):
+    def send(self, to, subject, body, cc=None, attachs=(), _callback=None):
         if attachs:
             msg = MIMEMultipart()
         else:
@@ -65,9 +58,8 @@ class MailSender(object):
         else:
             msg.set_payload(body)
 
-        if self.signals:
-            self.signals.send_catch_log(signal=mail_sent, to=to, subject=subject, body=body,
-                       cc=cc, attach=attachs, msg=msg)
+        if _callback:
+            _callback(to=to, subject=subject, body=body, cc=cc, attach=attachs, msg=msg)
 
         if self.debug:
             log.msg(format='Debug mail sent OK: To=%(mailto)s Cc=%(mailcc)s Subject="%(mailsubject)s" Attachs=%(mailattachs)d',

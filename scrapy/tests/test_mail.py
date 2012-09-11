@@ -1,23 +1,13 @@
 from cStringIO import StringIO
 import unittest
 
-from scrapy.mail import MailSender, mail_sent
-from scrapy.utils.test import get_crawler
-
+from scrapy.mail import MailSender
 
 class MailSenderTest(unittest.TestCase):
 
-    def setUp(self):
-        self.catched_msg = None
-        self.crawler = get_crawler()
-        self.crawler.signals.connect(self._catch_mail_sent, signal=mail_sent)
-
-    def tearDown(self):
-        self.crawler.signals.disconnect(self._catch_mail_sent, signal=mail_sent)
-
     def test_send(self):
-        mailsender = MailSender(debug=True, crawler=self.crawler)
-        mailsender.send(to=['test@scrapy.org'], subject='subject', body='body')
+        mailsender = MailSender(debug=True)
+        mailsender.send(to=['test@scrapy.org'], subject='subject', body='body', _callback=self._catch_mail_sent)
 
         assert self.catched_msg
 
@@ -36,9 +26,9 @@ class MailSenderTest(unittest.TestCase):
         attach.seek(0)
         attachs = [('attachment', 'text/plain', attach)]
 
-        mailsender = MailSender(debug=True, crawler=self.crawler)
+        mailsender = MailSender(debug=True)
         mailsender.send(to=['test@scrapy.org'], subject='subject', body='body',
-                       attachs=attachs)
+                       attachs=attachs, _callback=self._catch_mail_sent)
 
         assert self.catched_msg
         self.assertEqual(self.catched_msg['to'], ['test@scrapy.org'])

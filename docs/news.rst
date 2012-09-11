@@ -32,6 +32,7 @@ Scrapy changes:
 - LogFormatter method now return dicts(instead of strings) to support lazy formatting (:issue:`164`, :commit:`dcef7b0`)
 - downloader handlers (:setting:`DOWNLOAD_HANDLERS` setting) now receive settings as the first argument of the constructor
 - replaced memory usage acounting with (more portable) `resource`_ module, removed ``scrapy.utils.memory`` module
+- removed signal: ``scrapy.mail.mail_sent``
 
 Scrapyd changes:
 

@@ -20,11 +20,19 @@ simple API for sending attachments and it's very easy to configure, with a few
 Quick example
 =============
 
-Here's a quick example of how to send an e-mail (without attachments)::
+There are two ways to instantiate the mail sender. You can instantiate it using
+the standard constructor::
 
     from scrapy.mail import MailSender
-
     mailer = MailSender()
+
+Or you can instantiate it passing a Scrapy settings object, which will respect
+the :ref:`settings <topics-email-settings>`::
+
+    mailer = MailSender.from_settings(settings)
+
+And here is how to use it to send an e-mail (without attachments)::
+
     mailer.send(to=["someone@example.com"], subject="Some subject", body="Some body", cc=["another@example.com"])
 
 MailSender class reference
@@ -33,7 +41,7 @@ MailSender class reference
 MailSender is the preferred class to use for sending emails from Scrapy, as it
 uses `Twisted non-blocking IO`_, like the rest of the framework. 
 
-.. class:: MailSender(smtphost=None, mailfrom=None, smtpuser=None, smtppass=None, smtpport=None):
+.. class:: MailSender(smtphost=None, mailfrom=None, smtpuser=None, smtppass=None, smtpport=None)
 
     :param smtphost: the SMTP host to use for sending the emails. If omitted, the 
       :setting:`MAIL_HOST` setting will be used.
@@ -54,9 +62,17 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
     :param smtpport: the SMTP port to connect to
     :type smtpport: int
 
+    .. classmethod:: from_settings(settings)
+
+        Instantiate using a Scrapy settings object, which will respect
+        :ref:`these Scrapy settings <topics-email-settings>`.
+
+        :param settings: the e-mail recipients
+        :type settings: :class:`scrapy.settings.Settings` object
+
     .. method:: send(to, subject, body, cc=None, attachs=())
 
-        Send email to the given recipients. Emits the :signal:`mail_sent` signal.
+        Send email to the given recipients.
 
         :param to: the e-mail recipients
         :type to: list
@@ -132,34 +148,3 @@ MAIL_PASS
 Default: ``None``
 
 Password to use for SMTP authentication, along with :setting:`MAIL_USER`.
-
-
-Mail signals
-============
-
-.. signal:: mail_sent
-.. function:: mail_sent(to, subject, body, cc, attachs, msg)
-
-  Emitted by :meth:`MailSender.send` after an email has been sent.
-
-  :param to: the e-mail recipients
-  :type to: list
-
-  :param subject: the subject of the e-mail
-  :type subject: str
-
-  :param cc: the e-mails to CC
-  :type cc: list
-
-  :param body: the e-mail body
-  :type body: str
-
-  :param attachs: an iterable of tuples ``(attach_name, mimetype,
-    file_object)`` where  ``attach_name`` is a string with the name that will
-    appear on the e-mail's attachment, ``mimetype`` is the mimetype of the
-    attachment and ``file_object`` is a readable file object with the
-    contents of the attachment
-  :type attachs: iterable
-
-  :param msg: the generated message
-  :type msg: ``MIMEMultipart`` or ``MIMENonMultipart``
