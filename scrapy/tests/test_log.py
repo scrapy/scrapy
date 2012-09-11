@@ -5,12 +5,12 @@ from twisted.trial import unittest
 
 from scrapy import log
 from scrapy.spider import BaseSpider
-from scrapy.conf import settings
+from scrapy.settings import default_settings
 
 class LogTest(unittest.TestCase):
 
     def test_get_log_level(self):
-        default_log_level = getattr(log, settings['LOG_LEVEL'])
+        default_log_level = getattr(log, default_settings.LOG_LEVEL)
         self.assertEqual(log._get_log_level(), default_log_level)
         self.assertEqual(log._get_log_level('WARNING'), log.WARNING)
         self.assertEqual(log._get_log_level(log.WARNING), log.WARNING)
