@@ -20,14 +20,14 @@ class CmdlineTest(unittest.TestCase):
 
     def test_default_settings(self):
         self.assertEqual(self._execute('settings', '--get', 'TEST1'), \
-            'default + loaded + started')
+            'default + started')
 
     def test_override_settings_using_set_arg(self):
         self.assertEqual(self._execute('settings', '--get', 'TEST1', '-s', 'TEST1=override'), \
-            'override + loaded + started')
+            'override + started')
 
     def test_override_settings_using_envvar(self):
         self.env['SCRAPY_TEST1'] = 'override'
         self.assertEqual(self._execute('settings', '--get', 'TEST1'), \
-            'override + loaded + started')
+            'override + started')
 
