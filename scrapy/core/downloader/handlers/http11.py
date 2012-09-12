@@ -8,12 +8,12 @@ from zope.interface import implements
 from twisted.internet import defer, reactor, protocol
 from twisted.web.client import Agent, ProxyAgent, ResponseDone, \
         ResponseFailed, HTTPConnectionPool
-from twisted.web.http_headers import Headers
+from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.http import PotentialDataLoss
 from twisted.web.iweb import IBodyProducer
 from twisted.internet.endpoints import TCP4ClientEndpoint
 
-from scrapy.http import Headers as ScrapyHeaders
+from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import _parse
 from scrapy.utils.misc import load_object
@@ -25,7 +25,8 @@ class Http11DownloadHandler(object):
 
     def __init__(self, settings):
         self._pool = HTTPConnectionPool(reactor, persistent=True)
-        self._contextFactory = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
+        self._contextFactoryClass = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
+        self._contextFactory = self._contextFactoryClass()
 
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
@@ -50,7 +51,7 @@ class ScrapyAgent(object):
     def download_request(self, request):
         url = urldefrag(request.url)[0]
         method = request.method
-        headers = Headers(request.headers)
+        headers = TxHeaders(request.headers)
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
         agent = self._get_agent(request)
         start_time = time()
@@ -90,7 +91,7 @@ class ScrapyAgent(object):
             request.meta[flag] = True
         url = urldefrag(request.url)[0]
         status = int(txresponse.code)
-        headers = ScrapyHeaders(txresponse.headers.getAllRawHeaders())
+        headers = Headers(txresponse.headers.getAllRawHeaders())
         respcls = responsetypes.from_args(headers=headers, url=url)
         return respcls(url=url, status=status, headers=headers, body=body)
 
