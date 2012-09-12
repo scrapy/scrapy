@@ -1,7 +1,6 @@
 import traceback
 import uuid
 from cStringIO import StringIO
-from datetime import datetime
 
 from twisted.python import log
 
@@ -98,8 +97,8 @@ class ListJobs(WsResource):
         queue = self.root.poller.queues[project]
         pending = [{"id": x["_job"], "spider": x["name"]} for x in queue.list()]
         finished = [{"id": s.job, "spider": s.spider,
-            "start_time": datetime.isoformat(s.start_time),
-            "end_time": datetime.isoformat(s.end_time)} for s in self.root.launcher.finished
+            "start_time": s.start_time.isoformat(' '),
+            "end_time": s.end_time.isoformat(' ')} for s in self.root.launcher.finished
             if s.project == project]
         return {"status":"ok", "pending": pending, "running": running, "finished": finished}
 
