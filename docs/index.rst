@@ -76,7 +76,7 @@ Basic concepts
     Write the rules to crawl your websites.
 
 :doc:`topics/selectors`
-    Extract the data from web pages.
+    Extract the data from web pages using XPath.
 
 :doc:`topics/shell`
     Test your extraction code in an interactive environment.
