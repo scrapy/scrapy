@@ -49,20 +49,20 @@ class Scheduler(object):
             return
         dqok = self._dqpush(request)
         if dqok:
-            self.stats.inc_value('scheduler/disk_enqueued', spider=self.spider)
+            self.stats.inc_value('scheduler/enqueued/disk', spider=self.spider)
         else:
             self._mqpush(request)
-            self.stats.inc_value('scheduler/memory_enqueued', spider=self.spider)
+            self.stats.inc_value('scheduler/enqueued/memory', spider=self.spider)
         self.stats.inc_value('scheduler/enqueued', spider=self.spider)
 
     def next_request(self):
         request = self.mqs.pop()
         if request:
-            self.stats.inc_value('scheduler/memory_dequeued', spider=self.spider)
+            self.stats.inc_value('scheduler/dequeued/memory', spider=self.spider)
         else:
             request = self._dqpop()
             if request:
-                self.stats.inc_value('scheduler/disk_dequeued', spider=self.spider)
+                self.stats.inc_value('scheduler/dequeued/disk', spider=self.spider)
         if request:
             self.stats.inc_value('scheduler/dequeued', spider=self.spider)
         return request
