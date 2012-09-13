@@ -45,7 +45,7 @@ After installing Python, follow these steps before installing Scrapy:
 
 * install OpenSSL by following these steps:
 
-  1. go to `this page <http://slproweb.com/products/Win32OpenSSL.html>`_ 
+  1. go to `Win32 OpenSSL page <http://slproweb.com/products/Win32OpenSSL.html>`_
 
   2. download Visual C++ 2008 redistributables for your Windows and architecture
 
@@ -57,7 +57,7 @@ After installing Python, follow these steps before installing Scrapy:
 
   * pywin32: http://sourceforge.net/projects/pywin32/files/
   * Twisted: http://twistedmatrix.com/trac/wiki/Downloads
-  * zope.interface: download the egg from `this page <http://pypi.python.org/pypi/zope.interface>`_ and install it by running ``easy_install file.egg``
+  * zope.interface: download the egg from `zope.interface pypi page <http://pypi.python.org/pypi/zope.interface>`_ and install it by running ``easy_install file.egg``
   * lxml: http://pypi.python.org/pypi/lxml/
   * pyOpenSSL: https://launchpad.net/pyopenssl
 
