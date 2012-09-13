@@ -593,10 +593,7 @@ Example response::
      "running": [{"id": "422e608f9f28cef127b3d5ef93fe9399", "spider": "spider2"}],
      "finished": [{"id": "2f16646cfcaf11e1b0090800272a6d06", "spider": "spider3", "start_time": "2012-09-12 10:14:03.594664", "end_time": "2012-09-12 10:24:03.594664"}]}
 
-Please note:
-
-* fields "start_time" and "end_time" for finished jobs were added after version 0.15.1
-* jobs data is stored in the memory so after the scrapyd service is restarted all information about pending, running and finished jobs is lost.
+.. note:: All job data is kept in memory and will be reset when the Scrapyd service is restarted. See :issue:`173`.
 
 delversion.json
 ---------------
