@@ -47,11 +47,25 @@ class Scheduler(object):
     def enqueue_request(self, request):
         if not request.dont_filter and self.df.request_seen(request):
             return
-        if not self._dqpush(request):
+        dqok = self._dqpush(request)
+        if dqok:
+            self.stats.inc_value('scheduler/disk_enqueued', spider=self.spider)
+        else:
             self._mqpush(request)
+            self.stats.inc_value('scheduler/memory_enqueued', spider=self.spider)
+        self.stats.inc_value('scheduler/enqueued', spider=self.spider)
 
     def next_request(self):
-        return self.mqs.pop() or self._dqpop()
+        request = self.mqs.pop()
+        if request:
+            self.stats.inc_value('scheduler/memory_dequeued', spider=self.spider)
+        else:
+            request = self._dqpop()
+            if request:
+                self.stats.inc_value('scheduler/disk_dequeued', spider=self.spider)
+        if request:
+            self.stats.inc_value('scheduler/dequeued', spider=self.spider)
+        return request
 
     def __len__(self):
         return len(self.dqs) + len(self.mqs) if self.dqs else len(self.mqs)
@@ -69,13 +83,9 @@ class Scheduler(object):
                         request=request, reason=e)
             return
         else:
-            if self.stats:
-                self.stats.inc_value('scheduler/disk_enqueued', spider=self.spider)
             return True
 
     def _mqpush(self, request):
-        if self.stats:
-            self.stats.inc_value('scheduler/memory_enqueued', spider=self.spider)
         self.mqs.push(request, -request.priority)
 
     def _dqpop(self):
