@@ -2,8 +2,6 @@ import unittest
 
 from scrapy.spider import BaseSpider
 from scrapy.statscol import StatsCollector, DummyStatsCollector
-from scrapy.signals import stats_spider_opened, stats_spider_closing, \
-    stats_spider_closed
 from scrapy.utils.test import get_crawler
 
 class StatsCollectorTest(unittest.TestCase):
@@ -52,41 +50,6 @@ class StatsCollectorTest(unittest.TestCase):
         stats.set_value('test', 'value', spider=self.spider)
         self.assertEqual(stats.get_stats(), {})
         self.assertEqual(stats.get_stats('a'), {})
-
-    def test_signals(self):
-        signals_catched = set()
-
-        def spider_opened(spider):
-            assert spider is self.spider
-            signals_catched.add(stats_spider_opened)
-
-        def spider_closing(spider, reason):
-            assert spider is self.spider
-            assert reason == 'testing'
-            signals_catched.add(stats_spider_closing)
-
-        def spider_closed(spider, reason, spider_stats):
-            assert spider is self.spider
-            assert reason == 'testing'
-            assert spider_stats == {'test': 1}
-            signals_catched.add(stats_spider_closed)
-
-        self.crawler.signals.connect(spider_opened, signal=stats_spider_opened)
-        self.crawler.signals.connect(spider_closing, signal=stats_spider_closing)
-        self.crawler.signals.connect(spider_closed, signal=stats_spider_closed)
-
-        stats = StatsCollector(self.crawler)
-        stats.open_spider(self.spider)
-        stats.set_value('test', 1, spider=self.spider)
-        self.assertEqual([(self.spider, {'test': 1})], list(stats.iter_spider_stats()))
-        stats.close_spider(self.spider, 'testing')
-        assert stats_spider_opened in signals_catched
-        assert stats_spider_closing in signals_catched
-        assert stats_spider_closed in signals_catched
-
-        self.crawler.signals.disconnect(spider_opened, signal=stats_spider_opened)
-        self.crawler.signals.disconnect(spider_closing, signal=stats_spider_closing)
-        self.crawler.signals.disconnect(spider_closed, signal=stats_spider_closed)
 
 if __name__ == "__main__":
     unittest.main()

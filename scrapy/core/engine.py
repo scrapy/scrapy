@@ -286,4 +286,3 @@ class ExecutionEngine(object):
     @defer.inlineCallbacks
     def _finish_stopping_engine(self):
         yield self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
-        yield self.crawler.stats.engine_stopped()

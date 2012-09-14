@@ -250,68 +250,42 @@ class (which they all inherit from).
 
 .. class:: StatsCollector
 
-    .. method:: get_value(key, default=None, spider=None)
+    .. method:: get_value(key, default=None)
 
         Return the value for the given stats key or default if it doesn't exist.
-        If spider is ``None`` the global stats table is consulted, otherwise the
-        spider specific one is. If the spider is not yet opened a ``KeyError``
-        exception is raised.
 
-    .. method:: get_stats(spider=None)
+    .. method:: get_stats()
 
-        Get all stats from the given spider (if spider is given) or all global
-        stats otherwise, as a dict. If spider is not opened ``KeyError`` is
-        raised.
+        Get all stats from the currently running spider as a dict.
 
-    .. method:: set_value(key, value, spider=None)
+    .. method:: set_value(key, value)
 
-        Set the given value for the given stats key on the global stats (if
-        spider is not given) or the spider-specific stats (if spider is given),
-        which must be opened or a ``KeyError`` will be raised.
+        Set the given value for the given stats key.
 
-    .. method:: set_stats(stats, spider=None)
+    .. method:: set_stats(stats)
 
-        Set the given stats (as a dict) for the given spider. If the spider is
-        not opened a ``KeyError`` will be raised.
+        Override the current stats with the dict passed in ``stats`` argument.
 
-    .. method:: inc_value(key, count=1, start=0, spider=None)
+    .. method:: inc_value(key, count=1, start=0)
 
         Increment the value of the given stats key, by the given count,
-        assuming the start value given (when it's not set). If spider is not
-        given the global stats table is used, otherwise the spider-specific
-        stats table is used, which must be opened or a ``KeyError`` will be
-        raised.
+        assuming the start value given (when it's not set).
 
-    .. method:: max_value(key, value, spider=None)
+    .. method:: max_value(key, value)
 
         Set the given value for the given key only if current value for the
         same key is lower than value. If there is no current value for the
-        given key, the value is always set. If spider is not given, the global
-        stats table is used, otherwise the spider-specific stats table is used,
-        which must be opened or a KeyError will be raised.
+        given key, the value is always set. 
 
-    .. method:: min_value(key, value, spider=None)
+    .. method:: min_value(key, value)
 
         Set the given value for the given key only if current value for the
         same key is greater than value. If there is no current value for the
-        given key, the value is always set. If spider is not given, the global
-        stats table is used, otherwise the spider-specific stats table is used,
-        which must be opened or a KeyError will be raised.
+        given key, the value is always set.
 
-    .. method:: clear_stats(spider=None)
+    .. method:: clear_stats()
 
-        Clear all global stats (if spider is not given) or all spider-specific
-        stats if spider is given, in which case it must be opened or a
-        ``KeyError`` will be raised.
-
-    .. method:: iter_spider_stats()
-
-        Return a iterator over ``(spider, spider_stats)`` for each open spider
-        currently tracked by the stats collector, where ``spider_stats`` is the
-        dict containing all spider-specific stats.
-
-        Global stats are not included in the iterator. If you want to get
-        those, use :meth:`get_stats` method.
+        Clear all stats.
 
     The following methods are not part of the stats collection api but instead
     used when implementing custom stats collectors:
@@ -323,11 +297,7 @@ class (which they all inherit from).
     .. method:: close_spider(spider)
 
         Close the given spider. After this is called, no more specific stats
-        for this spider can be accessed.
-
-    .. method:: engine_stopped()
-
-        Called after the engine is stopped, to dump or persist global stats.
+        can be accessed or collected.
 
 .. _deferreds: http://twistedmatrix.com/documents/current/core/howto/defer.html
 .. _deferred: http://twistedmatrix.com/documents/current/core/howto/defer.html

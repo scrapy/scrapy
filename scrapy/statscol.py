@@ -3,68 +3,49 @@ Scrapy extension for collecting scraping stats
 """
 import pprint
 
-from scrapy.signals import stats_spider_opened, stats_spider_closing, \
-    stats_spider_closed
 from scrapy import log
 
 class StatsCollector(object):
 
     def __init__(self, crawler):
         self._dump = crawler.settings.getbool('STATS_DUMP')
-        self._stats = {None: {}} # None is for global stats
-        self._signals = crawler.signals
+        self._stats = {}
 
     def get_value(self, key, default=None, spider=None):
-        return self._stats[spider].get(key, default)
+        return self._stats.get(key, default)
 
     def get_stats(self, spider=None):
-        return self._stats[spider]
+        return self._stats
 
     def set_value(self, key, value, spider=None):
-        self._stats[spider][key] = value
+        self._stats[key] = value
 
     def set_stats(self, stats, spider=None):
-        self._stats[spider] = stats
+        self._stats = stats
 
     def inc_value(self, key, count=1, start=0, spider=None):
-        d = self._stats[spider]
+        d = self._stats
         d[key] = d.setdefault(key, start) + count
 
     def max_value(self, key, value, spider=None):
-        d = self._stats[spider]
-        d[key] = max(d.setdefault(key, value), value)
+        self._stats[key] = max(self._stats.setdefault(key, value), value)
 
     def min_value(self, key, value, spider=None):
-        d = self._stats[spider]
-        d[key] = min(d.setdefault(key, value), value)
+        self._stats[key] = min(self._stats.setdefault(key, value), value)
 
     def clear_stats(self, spider=None):
-        self._stats[spider].clear()
-
-    def iter_spider_stats(self):
-        return [x for x in self._stats.iteritems() if x[0]]
+        self._stats.clear()
 
     def open_spider(self, spider):
-        self._stats[spider] = {}
-        self._signals.send_catch_log(stats_spider_opened, spider=spider)
+        self._stats = {}
 
     def close_spider(self, spider, reason):
-        self._signals.send_catch_log(stats_spider_closing, spider=spider, reason=reason)
-        stats = self._stats.pop(spider)
-        self._signals.send_catch_log(stats_spider_closed, spider=spider, reason=reason, \
-            spider_stats=stats)
         if self._dump:
-            log.msg("Dumping spider stats:\n" + pprint.pformat(stats), \
+            log.msg("Dumping spider stats:\n" + pprint.pformat(self._stats), \
                 spider=spider)
-        self._persist_stats(stats, spider)
+        self._persist_stats(self._stats, spider)
 
-    def engine_stopped(self):
-        stats = self.get_stats()
-        if self._dump:
-            log.msg("Dumping global stats:\n" + pprint.pformat(stats))
-        self._persist_stats(stats, spider=None)
-
-    def _persist_stats(self, stats, spider=None):
+    def _persist_stats(self, stats, spider):
         pass
 
 class MemoryStatsCollector(StatsCollector):
@@ -73,9 +54,8 @@ class MemoryStatsCollector(StatsCollector):
         super(MemoryStatsCollector, self).__init__(crawler)
         self.spider_stats = {}
 
-    def _persist_stats(self, stats, spider=None):
-        if spider is not None:
-            self.spider_stats[spider.name] = stats
+    def _persist_stats(self, stats, spider):
+        self.spider_stats[spider.name] = stats
 
 
 class DummyStatsCollector(StatsCollector):

@@ -13,16 +13,16 @@ class CoreStats(object):
     @classmethod
     def from_crawler(cls, crawler):
         o = cls(crawler.stats)
-        crawler.signals.connect(o.stats_spider_opened, signal=signals.stats_spider_opened)
-        crawler.signals.connect(o.stats_spider_closing, signal=signals.stats_spider_closing)
+        crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         crawler.signals.connect(o.item_scraped, signal=signals.item_scraped)
         crawler.signals.connect(o.item_dropped, signal=signals.item_dropped)
         return o
 
-    def stats_spider_opened(self, spider):
+    def spider_opened(self, spider):
         self.stats.set_value('start_time', datetime.datetime.utcnow(), spider=spider)
 
-    def stats_spider_closing(self, spider, reason):
+    def spider_closed(self, spider, reason):
         self.stats.set_value('finish_time', datetime.datetime.utcnow(), spider=spider)
         self.stats.set_value('finish_reason', reason, spider=spider)
 
