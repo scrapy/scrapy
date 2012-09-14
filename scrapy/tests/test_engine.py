@@ -197,6 +197,7 @@ class EngineTest(unittest.TestCase):
                          self.run.signals_catched[signals.spider_opened])
         self.assertEqual({'spider': self.run.spider},
                          self.run.signals_catched[signals.spider_idle])
+        self.run.signals_catched[signals.spider_closed].pop('spider_stats', None) # XXX: remove for scrapy 0.17
         self.assertEqual({'spider': self.run.spider, 'reason': 'finished'},
                          self.run.signals_catched[signals.spider_closed])
 

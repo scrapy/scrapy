@@ -262,8 +262,10 @@ class ExecutionEngine(object):
         dfd.addBoth(lambda _: slot.scheduler.close(reason))
         dfd.addErrback(log.err, spider=spider)
 
+        # XXX: spider_stats argument was added for backwards compatibility with
+        # stats collection refactoring added in 0.15. it should be removed in 0.17.
         dfd.addBoth(lambda _: self.signals.send_catch_log_deferred(signal=signals.spider_closed, \
-            spider=spider, reason=reason))
+            spider=spider, reason=reason, spider_stats=self.crawler.stats.get_stats()))
         dfd.addErrback(log.err, spider=spider)
 
         dfd.addBoth(lambda _: self.crawler.stats.close_spider(spider, reason=reason))
