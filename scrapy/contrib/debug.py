@@ -19,7 +19,6 @@ class StackTraceDump(object):
 
     def __init__(self, crawler=None):
         self.crawler = crawler
-        self.dumprefs = crawler.settings.getbool('TRACK_REFS')
         try:
             signal.signal(signal.SIGUSR2, self.dump_stacktrace)
             signal.signal(signal.SIGQUIT, self.dump_stacktrace)
@@ -34,7 +33,7 @@ class StackTraceDump(object):
     def dump_stacktrace(self, signum, frame):
         stackdumps = self._thread_stacks()
         enginestatus = format_engine_status(self.crawler.engine)
-        liverefs = format_live_refs() if self.dumprefs else ""
+        liverefs = format_live_refs()
         msg = "Dumping stack trace and engine status" \
             "\n{0}\n{1}\n{2}".format(enginestatus, liverefs, stackdumps)
         log.msg(msg)

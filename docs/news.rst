@@ -34,6 +34,7 @@ Scrapy changes:
 - downloader handlers (:setting:`DOWNLOAD_HANDLERS` setting) now receive settings as the first argument of the constructor
 - replaced memory usage acounting with (more portable) `resource`_ module, removed ``scrapy.utils.memory`` module
 - removed signal: ``scrapy.mail.mail_sent``
+- removed ``TRACK_REFS`` setting, now :ref:`trackrefs <topics-leaks-trackrefs>` is always enabled
 
 Scrapyd changes:
 

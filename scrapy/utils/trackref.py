@@ -2,8 +2,7 @@
 references to live object instances.
 
 If you want live objects for a particular class to be tracked, you only have to
-subclass form object_ref (instead of object). Also, remember to turn on
-tracking by enabling the TRACK_REFS setting.
+subclass form object_ref (instead of object).
 
 About performance: This library has a minimal performance impact when enabled,
 and no performance penalty at all when disabled (as object_ref becomes just an
@@ -15,8 +14,6 @@ from collections import defaultdict
 from time import time
 from operator import itemgetter
 from types import NoneType
-
-from scrapy.conf import settings
 
 live_refs = defaultdict(weakref.WeakKeyDictionary)
 
@@ -31,12 +28,7 @@ class object_ref(object):
         live_refs[cls][obj] = time()
         return obj
 
-if not settings.getbool('TRACK_REFS'):
-    object_ref = object
-
 def format_live_refs(ignore=NoneType):
-    if object_ref is object:
-        return "The trackref module is disabled. Use TRACK_REFS setting to enable it."
     s = "Live References" + os.linesep + os.linesep
     now = time()
     for cls, wdict in live_refs.iteritems():

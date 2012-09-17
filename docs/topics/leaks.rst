@@ -56,14 +56,9 @@ Debugging memory leaks with ``trackref``
 memory leaks. It basically tracks the references to all live Requests,
 Responses, Item and Selector objects. 
 
-To activate the ``trackref`` module, enable the :setting:`TRACK_REFS` setting.
-It only imposes a minor performance impact, so it should be OK to use it, even
-in production environments.
-
-Once you have ``trackref`` enabled, you can enter the telnet console and inspect
-how many objects (of the classes mentioned above) are currently alive using the
-``prefs()`` function which is an alias to the
-:func:`~scrapy.utils.trackref.print_live_refs` function::
+You can enter the telnet console and inspect how many objects (of the classes
+mentioned above) are currently alive using the ``prefs()`` function which is an
+alias to the :func:`~scrapy.utils.trackref.print_live_refs` function::
 
     telnet localhost 6023
 
