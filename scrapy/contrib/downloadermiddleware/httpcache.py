@@ -45,10 +45,10 @@ class HttpCacheMiddleware(object):
         response = self.storage.retrieve_response(spider, request)
         if response and self.is_cacheable_response(response):
             response.flags.append('cached')
-            self.stats.inc_value('httpcache/hit', spider=spider)
+            self.stats.inc_value('httpcache/hits', spider=spider)
             return response
 
-        self.stats.inc_value('httpcache/miss', spider=spider)
+        self.stats.inc_value('httpcache/misses', spider=spider)
         if self.ignore_missing:
             raise IgnoreRequest("Ignored request not in cache: %s" % request)
 

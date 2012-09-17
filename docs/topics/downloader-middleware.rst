@@ -304,16 +304,30 @@ HttpCacheMiddleware
 
     Scrapy ships with two storage backends for the HTTP cache middleware:
 
-    * :ref:`httpcache-fs-backend`
     * :ref:`httpcache-dbm-backend`
+    * :ref:`httpcache-fs-backend`
 
     You can change the storage backend with the :setting:`HTTPCACHE_STORAGE`
     setting. Or you can also implement your own backend.
 
+.. _httpcache-dbm-backend:
+
+DBM storage backend (default)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: 0.13
+
+A DBM_ storage backend is also available for the HTTP cache middleware. To use
+it (instead of the default filesystem backend) set :setting:`HTTPCACHE_STORAGE`
+to ``scrapy.contrib.httpcache.DbmCacheStorage``.
+
+By default, it uses the anydbm_ module, but you can change it with the
+:setting:`HTTPCACHE_DBM_MODULE` setting.
+
 .. _httpcache-fs-backend:
 
-File system backend (default)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+File system backend
+~~~~~~~~~~~~~~~~~~~
 
 By default, the :class:`HttpCacheMiddleware` uses a file system storage  with the following structure:
 
@@ -335,20 +349,6 @@ used to avoid creating too many files into the same directory (which is
 inefficient in many file systems). An example directory could be::
 
    /path/to/cache/dir/example.com/72/72811f648e718090f041317756c03adb0ada46c7
-
-.. _httpcache-dbm-backend:
-
-DBM storage backend
-~~~~~~~~~~~~~~~~~~~
-
-.. versionadded:: 0.13
-
-A DBM_ storage backend is also available for the HTTP cache middleware. To use
-it (instead of the default filesystem backend) set :setting:`HTTPCACHE_STORAGE`
-to ``scrapy.contrib.httpcache.DbmCacheStorage``.
-
-By default, it uses the anydbm_ module, but you can change it with the
-:setting:`HTTPCACHE_DBM_MODULE` setting.
 
 HTTPCache middleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

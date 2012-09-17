@@ -37,11 +37,15 @@ def project_data_dir(project='default'):
         os.makedirs(d)
     return d
 
-def data_path(path):
+def data_path(path, createdir=False):
     """If path is relative, return the given path inside the project data dir,
     otherwise return the path unmodified
     """
-    return path if isabs(path) else join(project_data_dir(), path)
+    if not isabs(path):
+        path = join(project_data_dir(), path)
+    if createdir and not exists(path):
+        os.makedirs(path)
+    return path
 
 def get_project_settings():
     if ENVVAR not in os.environ:

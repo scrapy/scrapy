@@ -11,17 +11,17 @@ from scrapy.utils.project import data_path
 class DbmCacheStorage(object):
 
     def __init__(self, settings):
-        self.cachedir = data_path(settings['HTTPCACHE_DIR'])
+        self.cachedir = data_path(settings['HTTPCACHE_DIR'], createdir=True)
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
         self.dbmodule = __import__(settings['HTTPCACHE_DBM_MODULE'])
-        self.dbs = {}
+        self.db = None
 
     def open_spider(self, spider):
         dbpath = os.path.join(self.cachedir, '%s.db' % spider.name)
-        self.dbs[spider] = self.dbmodule.open(dbpath, 'c')
+        self.db = self.dbmodule.open(dbpath, 'c')
 
     def close_spider(self, spider):
-        self.dbs[spider].close()
+        self.db.close()
 
     def retrieve_response(self, spider, request):
         data = self._read_data(spider, request)
@@ -43,12 +43,12 @@ class DbmCacheStorage(object):
             'headers': dict(response.headers),
             'body': response.body,
         }
-        self.dbs[spider]['%s_data' % key] = pickle.dumps(data, protocol=2)
-        self.dbs[spider]['%s_time' % key] = str(time())
+        self.db['%s_data' % key] = pickle.dumps(data, protocol=2)
+        self.db['%s_time' % key] = str(time())
 
     def _read_data(self, spider, request):
         key = self._request_key(request)
-        db = self.dbs[spider]
+        db = self.db
         tkey = '%s_time' % key
         if not db.has_key(tkey):
             return # not found

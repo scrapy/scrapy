@@ -35,6 +35,7 @@ Scrapy changes:
 - replaced memory usage acounting with (more portable) `resource`_ module, removed ``scrapy.utils.memory`` module
 - removed signal: ``scrapy.mail.mail_sent``
 - removed ``TRACK_REFS`` setting, now :ref:`trackrefs <topics-leaks-trackrefs>` is always enabled
+- DBM is now the default storage backend for HTTP cache middleware
 
 Scrapyd changes:
 

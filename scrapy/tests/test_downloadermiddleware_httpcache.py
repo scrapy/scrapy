@@ -38,7 +38,9 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
         return self.storage_class(self._get_settings(**new_settings))
 
     def _get_middleware(self, **new_settings):
-        return HttpCacheMiddleware(self._get_settings(**new_settings), self.crawler.stats)
+        mw = HttpCacheMiddleware(self._get_settings(**new_settings), self.crawler.stats)
+        mw.spider_opened(self.spider)
+        return mw
 
     def test_storage(self):
         storage = self._get_storage()
@@ -59,7 +61,7 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
         assert storage.retrieve_response(self.spider, self.request)
 
     def test_middleware(self):
-        mw = HttpCacheMiddleware(self._get_settings(), self.crawler.stats)
+        mw = self._get_middleware()
         assert mw.process_request(self.request, self.spider) is None
         mw.process_response(self.request, self.response, self.spider)
         response = mw.process_request(self.request, self.spider)
@@ -68,7 +70,7 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
         assert 'cached' in response.flags
 
     def test_different_request_response_urls(self):
-        mw = HttpCacheMiddleware(self._get_settings(), self.crawler.stats)
+        mw = self._get_middleware()
         req = Request('http://host.com/path')
         res = Response('http://host2.net/test.html')
         assert mw.process_request(req, self.spider) is None
