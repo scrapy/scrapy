@@ -179,7 +179,7 @@ BaseSpider
        the same requirements as the :class:`BaseSpider` class.
 
        This method, as well as any other Request callback, must return an
-       iterable of :class:`~scrapy.http.Request~ and/or
+       iterable of :class:`~scrapy.http.Request` and/or
        :class:`~scrapy.item.Item` objects.
 
        :param response: the response to parse
