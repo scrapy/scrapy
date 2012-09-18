@@ -361,15 +361,15 @@ XmlXPathSelector examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Here's a couple of :class:`XmlXPathSelector` examples to illustrate several
-concepts.  In all cases we assume there is already a :class:`XmlPathSelector`
+concepts.  In both cases we assume there is already an :class:`XmlPathSelector`
 instantiated with a :class:`~scrapy.http.Response` object like this::
 
-      x = HtmlXPathSelector(xml_response)
+      x = XmlPathSelector(xml_response)
 
 1. Select all ``<product>`` elements from a XML response body, returning a list of
    :class:`XPathSelector` objects (ie. a :class:`XPathSelectorList` object)::
 
-      x.select("//h1")
+      x.select("//product")
 
 2. Extract all prices from a `Google Base XML feed`_ which requires registering
    a namespace::
