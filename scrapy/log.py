@@ -100,7 +100,7 @@ def _get_log_level(level_name_or_id):
         raise ValueError("Unknown log level: %r" % level_name_or_id)
 
 def start(logfile=None, loglevel='INFO', logstdout=True, logencoding='utf-8'):
-    if log.defaultObserver or True: # check twisted log not already started
+    if log.defaultObserver: # check twisted log not already started
         loglevel = _get_log_level(loglevel)
         file = open(logfile, 'a') if logfile else sys.stderr
         sflo = ScrapyFileLogObserver(file, loglevel, logencoding)
