@@ -84,13 +84,22 @@ def _run_print_help(parser, func, *a, **kw):
 def execute(argv=None, settings=None):
     if argv is None:
         argv = sys.argv
+
+    # --- backwards compatibility for scrapy.conf.settings singleton ---
+    if settings is None and 'scrapy.conf' in sys.modules:
+        from scrapy import conf
+        if hasattr(conf, 'settings'):
+            settings = conf.settings
+    # ------------------------------------------------------------------
+
     if settings is None:
         settings = get_project_settings()
     check_deprecated_settings(settings)
 
-    # backwards compatibility to support scrapy.conf.settings
+    # --- backwards compatibility for scrapy.conf.settings singleton ---
     from scrapy import conf
     conf.settings = settings
+    # ------------------------------------------------------------------
 
     crawler = CrawlerProcess(settings)
     crawler.install()
