@@ -10,6 +10,7 @@ from scrapy.command import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import inside_project, get_project_settings
+from scrapy.settings.deprecated import check_deprecated_settings
 
 def _iter_command_classes(module_name):
     # TODO: add `name` attribute to commands and and merge this function with
@@ -80,10 +81,17 @@ def _run_print_help(parser, func, *a, **kw):
             parser.print_help()
         sys.exit(2)
 
-def execute(argv=None):
+def execute(argv=None, settings=None):
     if argv is None:
         argv = sys.argv
-    settings = get_project_settings()
+    if settings is None:
+        settings = get_project_settings()
+    check_deprecated_settings(settings)
+
+    # backwards compatibility to support scrapy.conf.settings
+    from scrapy import conf
+    conf.settings = settings
+
     crawler = CrawlerProcess(settings)
     crawler.install()
     inproject = inside_project()

@@ -10,7 +10,6 @@ import warnings
 from twisted.python import log
 
 import scrapy
-from scrapy.conf import settings
 from scrapy.utils.python import unicode_to_str
 from scrapy.utils.misc import load_object
  
@@ -32,6 +31,7 @@ level_names = {
 }
 
 started = False
+formatter = None
 
 class ScrapyFileLogObserver(log.FileLogObserver):
 
@@ -94,35 +94,22 @@ def _adapt_eventdict(eventDict, log_level=INFO, encoding='utf-8', prepend_level=
     return ev
 
 def _get_log_level(level_name_or_id=None):
-    if level_name_or_id is None:
-        lvlname = settings['LOG_LEVEL']
-        return globals()[lvlname]
-    elif isinstance(level_name_or_id, int):
+    if isinstance(level_name_or_id, int):
         return level_name_or_id
     elif isinstance(level_name_or_id, basestring):
         return globals()[level_name_or_id]
     else:
         raise ValueError("Unknown log level: %r" % level_name_or_id)
 
-def start(logfile=None, loglevel=None, logstdout=None):
-    global started
-    if started or not settings.getbool('LOG_ENABLED'):
-        return
-    started = True
-
+def start(logfile=None, loglevel='INFO', logstdout=True, logencoding='utf-8'):
     if log.defaultObserver: # check twisted log not already started
         loglevel = _get_log_level(loglevel)
-        logfile = logfile or settings['LOG_FILE']
         file = open(logfile, 'a') if logfile else sys.stderr
-        if logstdout is None:
-            logstdout = settings.getbool('LOG_STDOUT')
-        sflo = ScrapyFileLogObserver(file, loglevel, settings['LOG_ENCODING'])
+        sflo = ScrapyFileLogObserver(file, loglevel, logencoding)
         _oldshowwarning = warnings.showwarning
         log.startLoggingWithObserver(sflo.emit, setStdout=logstdout)
         # restore warnings, wrongly silenced by Twisted
         warnings.showwarning = _oldshowwarning
-        msg("Scrapy %s started (bot: %s)" % (scrapy.__version__, \
-            settings['BOT_NAME']))
 
 def msg(message=None, _level=INFO, **kw):
     kw['logLevel'] = kw.pop('level', _level)
@@ -137,4 +124,16 @@ def err(_stuff=None, _why=None, **kw):
     kw.setdefault('system', 'scrapy')
     log.err(_stuff, _why, **kw)
 
-formatter = load_object(settings['LOG_FORMATTER'])()
+def start_from_settings(settings):
+    global started, formatter
+    if started or not settings.getbool('LOG_ENABLED'):
+        return
+    started = True
+    formatter = load_object(settings['LOG_FORMATTER'])()
+
+    if not settings.getbool('LOG_ENABLED'):
+        return
+    start(settings['LOG_FILE'], settings['LOG_LEVEL'], settings['LOG_STDOUT'],
+        settings['LOG_ENCODING'])
+    msg("Scrapy %s started (bot: %s)" % (scrapy.__version__, \
+        settings['BOT_NAME']))
