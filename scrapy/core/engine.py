@@ -54,6 +54,7 @@ class ExecutionEngine(object):
         self.crawler = crawler
         self.settings = crawler.settings
         self.signals = crawler.signals
+        self.logformatter = crawler.logformatter
         self.slots = {}
         self.running = False
         self.paused = False
@@ -193,7 +194,7 @@ class ExecutionEngine(object):
             assert isinstance(response, (Response, Request))
             if isinstance(response, Response):
                 response.request = request # tie request to response received
-                logkws = log.formatter.crawled(request, response, spider)
+                logkws = self.logformatter.crawled(request, response, spider)
                 log.msg(level=log.DEBUG, spider=spider, **logkws)
                 self.signals.send_catch_log(signal=signals.response_received, \
                     response=response, request=request, spider=spider)

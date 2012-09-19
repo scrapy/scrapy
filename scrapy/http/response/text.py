@@ -9,12 +9,11 @@ from w3lib.encoding import html_to_unicode, resolve_encoding, \
     html_body_declared_encoding, http_content_type_encoding
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs
-from scrapy.conf import settings
 
 
 class TextResponse(Response):
 
-    _DEFAULT_ENCODING = settings['DEFAULT_RESPONSE_ENCODING']
+    _DEFAULT_ENCODING = 'ascii'
 
     def __init__(self, *args, **kwargs):
         self._encoding = kwargs.pop('encoding', None)

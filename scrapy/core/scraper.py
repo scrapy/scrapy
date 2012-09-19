@@ -67,6 +67,7 @@ class Scraper(object):
         self.concurrent_items = crawler.settings.getint('CONCURRENT_ITEMS')
         self.crawler = crawler
         self.signals = crawler.signals
+        self.logformatter = crawler.logformatter
 
     @defer.inlineCallbacks
     def open_spider(self, spider):
@@ -198,14 +199,14 @@ class Scraper(object):
         if isinstance(output, Failure):
             ex = output.value
             if isinstance(ex, DropItem):
-                logkws = log.formatter.dropped(item, ex, response, spider)
+                logkws = self.logformatter.dropped(item, ex, response, spider)
                 log.msg(level=log.WARNING, spider=spider, **logkws)
                 return self.signals.send_catch_log_deferred(signal=signals.item_dropped, \
                     item=item, spider=spider, exception=output.value)
             else:
                 log.err(output, 'Error processing %(item)s', item=item, spider=spider)
         else:
-            logkws = log.formatter.scraped(output, response, spider)
+            logkws = self.logformatter.scraped(output, response, spider)
             log.msg(level=log.DEBUG, spider=spider, **logkws)
             return self.signals.send_catch_log_deferred(signal=signals.item_scraped, \
                 item=output, response=response, spider=spider)

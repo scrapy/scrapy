@@ -33,6 +33,8 @@ class Crawler(object):
         if self.configured:
             return
         self.configured = True
+        lf_cls = load_object(self.settings['LOG_FORMATTER'])
+        self.logformatter = lf_cls.from_crawler(self)
         self.extensions = ExtensionManager.from_crawler(self)
         spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
         self.spiders = spman_cls.from_crawler(self)

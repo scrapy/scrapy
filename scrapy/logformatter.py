@@ -37,3 +37,7 @@ class LogFormatter(object):
             'exception': exception,
             'item': item,
         }
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls()

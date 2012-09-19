@@ -11,7 +11,6 @@ from cStringIO import StringIO
 from scrapy.http import Response
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import isbinarytext
-from scrapy.conf import settings
 
 class ResponseTypes(object):
 
@@ -31,7 +30,6 @@ class ResponseTypes(object):
     }
 
     def __init__(self):
-        self.CLASSES.update(settings.get('RESPONSE_CLASSES', {}))
         self.classes = {}
         self.mimetypes = MimeTypes()
         mimedata = get_data('scrapy', 'mime.types')

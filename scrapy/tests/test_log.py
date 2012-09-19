@@ -11,7 +11,6 @@ class LogTest(unittest.TestCase):
 
     def test_get_log_level(self):
         default_log_level = getattr(log, default_settings.LOG_LEVEL)
-        self.assertEqual(log._get_log_level(), default_log_level)
         self.assertEqual(log._get_log_level('WARNING'), log.WARNING)
         self.assertEqual(log._get_log_level(log.WARNING), log.WARNING)
         self.assertRaises(ValueError, log._get_log_level, object())

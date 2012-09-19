@@ -41,8 +41,6 @@ DEFAULT_REQUEST_HEADERS = {
     'Accept-Language': 'en',
 }
 
-DEFAULT_RESPONSE_ENCODING = 'ascii'
-
 DEPTH_LIMIT = 0
 DEPTH_STATS = True
 DEPTH_PRIORITY = 0
@@ -197,8 +195,6 @@ SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_DISK_QUEUE = 'scrapy.squeue.PickleLifoDiskQueue'
 SCHEDULER_MEMORY_QUEUE = 'scrapy.squeue.LifoMemoryQueue'
 
-SELECTORS_BACKEND = None # possible values: libxml2, lxml
-
 SPIDER_MANAGER_CLASS = 'scrapy.spidermanager.SpiderManager'
 
 SPIDER_MIDDLEWARES = {}
@@ -224,7 +220,7 @@ TEMPLATES_DIR = abspath(join(dirname(__file__), '..', 'templates'))
 
 URLLENGTH_LIMIT = 2083
 
-USER_AGENT = 'Scrapy/0.15 (+http://scrapy.org)'
+USER_AGENT = 'Scrapy/%s (+http://scrapy.org)' % __import__('scrapy').__version__
 
 TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_PORT = [6023, 6073]
