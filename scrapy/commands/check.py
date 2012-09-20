@@ -1,14 +1,12 @@
 from collections import defaultdict
 from functools import wraps
 
-from scrapy.conf import settings
 from scrapy.command import ScrapyCommand
-from scrapy.http import Request
 from scrapy.contracts import ContractsManager
-from scrapy.utils import display
 from scrapy.utils.misc import load_object
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.conf import build_component_list
+
 
 def _generate(cb):
     """ create a callback which does not return anything """
@@ -16,8 +14,8 @@ def _generate(cb):
     def wrapper(response):
         output = cb(response)
         output = list(iterate_spider_output(output))
-        # display.pprint(output)
     return wrapper
+
 
 class Command(ScrapyCommand):
     requires_project = True
@@ -31,14 +29,15 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("-l", "--list", dest="list", action="store_true", \
+        parser.add_option("-l", "--list", dest="list", action="store_true",
             help="only list contracts, without checking them")
-
 
     def run(self, args, opts):
         # load contracts
-        contracts = build_component_list(settings['SPIDER_CONTRACTS_BASE'],
-                settings['SPIDER_CONTRACTS'])
+        contracts = build_component_list(
+            self.settings['SPIDER_CONTRACTS_BASE'],
+            self.settings['SPIDER_CONTRACTS'],
+        )
         self.conman = ContractsManager([load_object(c) for c in contracts])
 
         # contract requests

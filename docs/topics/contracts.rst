@@ -1,8 +1,8 @@
-.. _topics-testing:
+.. _topics-contracts:
 
-===============
-Testing Spiders
-===============
+=================
+Spiders Contracts
+=================
 
 Testing spiders can get particularly annoying and while nothing prevents you
 from writing unit tests the task gets cumbersome quickly. Scrapy offers an

@@ -129,7 +129,7 @@ Solving specific problems
 
    faq
    topics/debug
-   topics/testing
+   topics/contracts
    topics/firefox
    topics/firebug
    topics/leaks
@@ -144,7 +144,7 @@ Solving specific problems
 :doc:`topics/debug`
     Learn how to debug common problems of your scrapy spider.
 
-:doc:`topics/testing`
+:doc:`topics/contracts`
 	Learn how to use contracts for testing your spiders.
 
 :doc:`topics/firefox`

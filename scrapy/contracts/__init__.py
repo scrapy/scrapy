@@ -1,11 +1,11 @@
 import re
-import inspect
 from functools import wraps
 
 from scrapy.http import Request
 from scrapy.utils.spider import iterate_spider_output
-from scrapy.utils.misc import get_spec
+from scrapy.utils.python import get_spec
 from scrapy.exceptions import ContractFail
+
 
 class ContractsManager(object):
     contracts = {}
@@ -27,7 +27,7 @@ class ContractsManager(object):
 
         return contracts
 
-    def from_method(self, method):
+    def from_method(self, method, fail=False):
         contracts = self.extract_contracts(method)
         if contracts:
             # calculate request args
@@ -43,11 +43,12 @@ class ContractsManager(object):
 
                 # execute pre and post hooks in order
                 for contract in reversed(contracts):
-                    request = contract.add_pre_hook(request)
+                    request = contract.add_pre_hook(request, fail)
                 for contract in contracts:
-                    request = contract.add_post_hook(request)
+                    request = contract.add_post_hook(request, fail)
 
                 return request
+
 
 class Contract(object):
     """ Abstract class for contracts """
@@ -56,26 +57,36 @@ class Contract(object):
         self.method = method
         self.args = args
 
-    def add_pre_hook(self, request):
+    def add_pre_hook(self, request, fail=False):
         cb = request.callback
+
         @wraps(cb)
         def wrapper(response):
-            try: self.pre_process(response)
+            try:
+                self.pre_process(response)
             except ContractFail as e:
-                print e.format(self.method)
+                if fail:
+                    raise
+                else:
+                    print e.format(self.method)
             return list(iterate_spider_output(cb(response)))
 
         request.callback = wrapper
         return request
 
-    def add_post_hook(self, request):
+    def add_post_hook(self, request, fail=False):
         cb = request.callback
+
         @wraps(cb)
         def wrapper(response):
             output = list(iterate_spider_output(cb(response)))
-            try: self.post_process(output)
+            try:
+                self.post_process(output)
             except ContractFail as e:
-                print e.format(self.method)
+                if fail:
+                    raise
+                else:
+                    print e.format(self.method)
             return output
 
         request.callback = wrapper

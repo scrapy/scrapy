@@ -104,18 +104,3 @@ def md5sum(file):
             break
         m.update(d)
     return m.hexdigest()
-
-def get_spec(func):
-    """Returns (args, kwargs) tuple for a function
-
-    >>> import re
-    >>> get_spec(re.match)
-    (['pattern', 'string'], {'flags': 0})
-    """
-    spec = inspect.getargspec(func)
-    defaults = spec.defaults or []
-
-    firstdefault = len(spec.args) - len(defaults)
-    args = spec.args[:firstdefault]
-    kwargs = dict(zip(spec.args[firstdefault:], defaults))
-    return args, kwargs
