@@ -108,6 +108,7 @@ EXTENSIONS_BASE = {
     'scrapy.contrib.feedexport.FeedExporter': 0,
     'scrapy.contrib.logstats.LogStats': 0,
     'scrapy.contrib.spiderstate.SpiderState': 0,
+    'scrapy.contrib.throttle.AutoThrottle': 0,
 }
 
 FEED_URI = None

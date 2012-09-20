@@ -10,6 +10,8 @@ DEPRECATED_SETTINGS = [
     ('STATS_ENABLED', 'no longer supported (change STATS_CLASS instead)'),
     ('SQLITE_DB', 'no longer supported'),
     ('SELECTORS_BACKEND', 'use SCRAPY_SELECTORS_BACKEND environment variable instead'),
+    ('AUTOTHROTTLE_MIN_DOWNLOAD_DELAY', 'use DOWNLOAD_DELAY instead'),
+    ('AUTOTHROTTLE_MAX_CONCURRENCY', 'use CONCURRENT_REQUESTS_PER_DOMAIN instead'),
 ]
 
 def check_deprecated_settings(settings):

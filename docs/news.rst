@@ -6,6 +6,7 @@ Release notes
 
 Scrapy changes:
 
+- documented :doc:`topics/autothrottle` and added to extensions installed by default. You still need to enable it with :setting:`AUTOTHROTTLE_ENABLED`
 - major Stats Collection refactoring: removed separation of global/per-spider stats, removed stats-related signals (``stats_spider_opened``, etc). Stats are much simpler now, backwards compatibility is kept on the Stats Collector API and signals.
 - added :meth:`~scrapy.contrib.spidermiddleware.SpiderMiddleware.process_start_requests` method to spider middlewares
 - dropped Signals singleton. Signals should now be accesed through the Crawler.signals attribute. See the signals documentation for more info.

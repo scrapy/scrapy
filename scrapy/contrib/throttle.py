@@ -4,58 +4,6 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.resolver import dnscache
 
 class AutoThrottle(object):
-    """
-    ============
-    AutoThrottle
-    ============
-
-    This is an extension for automatically throttling crawling speed based on
-    load.
-
-    Design goals
-    ============
-
-    1. be nicer to sites instead of using default download delay of zero
-
-    2. automatically adjust scrapy to the optimum crawling speed, so the user
-    doesn't have to tune the download delays and concurrent requests to find
-    the optimum one. the user only needs to specify the maximum concurrent
-    requests it allows, and the extension does the rest.
-
-    Download latencies
-    ==================
-
-    In Scrapy, the download latency is the (real) time elapsed between
-    establishing the TCP connection and receiving the HTTP headers.
-
-    Note that these latencies are very hard to measure accurately in a
-    cooperative multitasking environment because Scrapy may be busy processing
-    a spider callback, for example, and unable to attend downloads. However,
-    the latencies should give a reasonable estimate of how busy Scrapy (and
-    ultimately, the server) is. This extension builds on that premise.
-
-    Throttling rules
-    ================
-
-    This adjusts download delays and concurrency based on the following rules:
-
-    1. spiders always start with one concurrent request and a download delay of
-    START_DELAY
-
-    2. when a response is received, the download delay is adjusted to the
-    average of previous download delay and the latency of the response.
-
-    3. after CONCURRENCY_CHECK_PERIOD responses have passed, the average
-    latency of this period is checked against the previous one and:
-
-    3.1. if the latency remained constant (within standard deviation limits)
-    and the concurrency is lower than MAX_CONCURRENCY, the concurrency is
-    increased
-
-    3.2. if the latency has increased (beyond standard deviation limits) and
-    the concurrency is higher than 1, the concurrency is decreased
-
-    """
 
     def __init__(self, crawler):
         settings = crawler.settings    
@@ -66,11 +14,26 @@ class AutoThrottle(object):
         crawler.signals.connect(self.response_received, signal=signals.response_received)
         self.START_DELAY = settings.getfloat("AUTOTHROTTLE_START_DELAY", 5.0)
         self.CONCURRENCY_CHECK_PERIOD = settings.getint("AUTOTHROTTLE_CONCURRENCY_CHECK_PERIOD", 10)
-        self.MAX_CONCURRENCY = settings.getint("AUTOTHROTTLE_MAX_CONCURRENCY", 8)
+        self.MAX_CONCURRENCY = self._max_concurency(settings)
+        self.MIN_DOWNLOAD_DELAY = self._min_download_delay(settings)
         self.DEBUG = settings.getbool("AUTOTHROTTLE_DEBUG")
-        self.MIN_DOWNLOAD_DELAY = settings.getint("AUTOTHROTTLE_MIN_DOWNLOAD_DELAY")
         self.last_latencies = [self.START_DELAY]
         self.last_lat = self.START_DELAY, 0.0
+
+    def _min_download_delay(self, settings):
+        return max(settings.getint("AUTOTHROTTLE_MIN_DOWNLOAD_DELAY"),
+            settings.getint("DOWNLOAD_DELAY"))
+
+    def _max_concurency(self, settings):
+        delay = self._min_download_delay(settings)
+        if delay == 0:
+            candidates = ["AUTOTHROTTLE_MAX_CONCURRENCY",
+                "CONCURRENT_REQUESTS_PER_DOMAIN", "CONCURRENT_REQUESTS_PER_IP"]
+            candidates = [settings.getint(x) for x in candidates]
+            candidates = [x for x in candidates if x > 0]
+            if candidates:
+                return min(candidates)
+        return 1
 
     @classmethod
     def from_crawler(cls, crawler):

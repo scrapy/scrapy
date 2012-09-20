@@ -135,6 +135,7 @@ Solving specific problems
    topics/images
    topics/ubuntu
    topics/scrapyd
+   topics/autothrottle
    topics/jobs
    topics/djangoitem
 
@@ -161,6 +162,9 @@ Solving specific problems
 
 :doc:`topics/scrapyd`
     Deploying your Scrapy project in production.
+
+:doc:`topics/autothrottle`
+    Adjust crawl rate dynamically based on load.
 
 :doc:`topics/jobs`
     Learn how to pause and resume crawls for large spiders.
