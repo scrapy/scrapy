@@ -1,7 +1,6 @@
 """Helper functions which doesn't fit anywhere else"""
 
 import re
-import inspect
 import hashlib
 from pkgutil import iter_modules
 
