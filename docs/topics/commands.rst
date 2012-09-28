@@ -142,6 +142,7 @@ Global commands:
 Project-only commands:
 
 * :command:`crawl`
+* :command:`check`
 * :command:`list`
 * :command:`edit`
 * :command:`parse`
@@ -220,6 +221,33 @@ Usage examples::
     $ scrapy crawl myspider
     [ ... myspider starts crawling ... ]
 
+
+.. command:: check
+
+check
+-----
+
+* Syntax: ``scrapy check [-l] <spider>``
+* Requires project: *yes*
+
+Run contract checks.
+
+Usage examples::
+
+    $ scrapy check -l
+    first_spider
+      * parse
+      * parse_item
+    second_spider
+      * parse
+      * parse_item
+
+    $ scrapy check
+    [FAILED] first_spider:parse_item
+    >>> 'RetailPricex' field is missing
+
+    [FAILED] first_spider:parse
+    >>> Returned 92 requests, expected 0..4
 
 .. command:: server
 
