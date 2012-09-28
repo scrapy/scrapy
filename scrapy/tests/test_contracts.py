@@ -82,11 +82,11 @@ class ContractsManagerTest(unittest.TestCase):
 
         # returns request for valid method
         request = conman.from_method(TestSpider.returns_request)
-        self.assertIsNotNone(request)
+        self.assertNotEqual(request, None)
 
         # no request for missing url
         request = conman.from_method(TestSpider.parse_no_url)
-        self.assertIsNone(request)
+        self.assertEqual(request, None)
 
     def test_returns(self):
         conman = ContractsManager(self.contracts)
