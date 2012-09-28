@@ -167,6 +167,42 @@ def get_func_args(func, stripself=False):
         func_args.pop(0)
     return func_args
 
+def get_spec(func):
+    """Returns (args, kwargs) tuple for a function
+    >>> import re
+    >>> get_spec(re.match)
+    (['pattern', 'string'], {'flags': 0})
+
+    >>> class Test(object):
+    ...     def __call__(self, val):
+    ...         pass
+    ...     def method(self, val, flags=0):
+    ...         pass
+
+    >>> get_spec(Test)
+    (['self', 'val'], {})
+
+    >>> get_spec(Test.method)
+    (['self', 'val'], {'flags': 0})
+
+    >>> get_spec(Test().method)
+    (['self', 'val'], {'flags': 0})
+    """
+
+    if inspect.isfunction(func) or inspect.ismethod(func):
+        spec = inspect.getargspec(func)
+    elif hasattr(func, '__call__'):
+        spec = inspect.getargspec(func.__call__)
+    else:
+        raise TypeError('%s is not callable' % type(func))
+
+    defaults = spec.defaults or []
+
+    firstdefault = len(spec.args) - len(defaults)
+    args = spec.args[:firstdefault]
+    kwargs = dict(zip(spec.args[firstdefault:], defaults))
+    return args, kwargs
+
 def equal_attributes(obj1, obj2, attributes):
     """Compare two objects attributes"""
     # not attributes given return False by default
