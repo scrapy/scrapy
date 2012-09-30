@@ -43,3 +43,10 @@ except ImportError:
     pass
 else:
     optional_features.add('django')
+
+try:
+    import cssselect
+except ImportError:
+    pass
+else:
+    optional_features.add('cssselect')
