@@ -24,3 +24,5 @@ else:
         from scrapy.selector.libxml2sel import *
     else:
         from scrapy.selector.lxmlsel import *
+
+from scrapy.selector.csssel import *

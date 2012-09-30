@@ -11,7 +11,7 @@ from w3lib.url import any_to_uri
 
 from scrapy.item import BaseItem
 from scrapy.spider import BaseSpider
-from scrapy.selector import XPathSelector, XmlXPathSelector, HtmlXPathSelector
+from scrapy.selector import XPathSelector, XmlXPathSelector, HtmlXPathSelector, XmlCSSSelector, HtmlCSSSelector
 from scrapy.utils.spider import create_spider_for_request
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
@@ -97,7 +97,11 @@ class Shell(object):
         self.vars['response'] = response
         self.vars['xxs'] = XmlXPathSelector(response) \
             if isinstance(response, XmlResponse) else None
+        self.vars['xcs'] = XmlCSSSelector(response) \
+            if isinstance(response, XmlResponse) else None
         self.vars['hxs'] = HtmlXPathSelector(response) \
+            if isinstance(response, HtmlResponse) else None
+        self.vars['hcs'] = HtmlCSSSelector(response) \
             if isinstance(response, HtmlResponse) else None
         if self.inthread:
             self.vars['fetch'] = self.fetch
