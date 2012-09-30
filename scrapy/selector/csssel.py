@@ -1,12 +1,23 @@
+from lxml.etree import XPath
 from scrapy.selector import HtmlXPathSelector, XmlXPathSelector
 from cssselect import GenericTranslator, HTMLTranslator
 
-class XmlCSSSelector(XmlXPathSelector):
+class CSSSelectorMixin(object):
     translator = GenericTranslator()
-    def select(self, css):
-        return super(XMLCSSSelector, self).select(self.translator.css_to_xpath(css))
+    _collect_string_content = XPath("string()")
 
-class HtmlCSSSelector(HtmlXPathSelector):
-    translator = HTMLTranslator()
+    def text_content(self):
+        return self._collect_string_content(self._root)
+
+    def get(self, key, default=None):
+        return self._root.get(key, default)
+
+class XmlCSSSelector(XmlXPathSelector, CSSSelectorMixin):
     def select(self, css):
-        return super(HtmlCSSSelector, self).select(self.translator.css_to_xpath(css))
+        return super(self.__class__, self).select(self.translator.css_to_xpath(css))
+
+class HtmlCSSSelector(HtmlXPathSelector, CSSSelectorMixin):
+    translator = HTMLTranslator()
+
+    def select(self, css):
+        return super(self.__class__, self).select(self.translator.css_to_xpath(css))
