@@ -9,9 +9,10 @@ class ProcessTest(object):
     prefix = [sys.executable, '-m', 'scrapy.cmdline']
     cwd = os.getcwd() # trial chdirs to temp dir
 
-    def execute(self, args, check_code=True, settings='missing'):
+    def execute(self, args, check_code=True, settings=None):
         env = os.environ.copy()
-        env['SCRAPY_SETTINGS_MODULE'] = settings
+        if settings is not None:
+            env['SCRAPY_SETTINGS_MODULE'] = settings
         cmd = self.prefix + [self.command] + list(args)
         pp = TestProcessProtocol()
         pp.deferred.addBoth(self._process_finished, cmd, check_code)

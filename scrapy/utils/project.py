@@ -51,10 +51,10 @@ def get_project_settings():
     if ENVVAR not in os.environ:
         project = os.environ.get('SCRAPY_PROJECT', 'default')
         init_env(project)
-    settings_module_path = os.environ.get(ENVVAR, 'scrapy_settings')
-    try:
+    settings_module_path = os.environ.get(ENVVAR)
+    if settings_module_path:
         settings_module = __import__(settings_module_path, {}, {}, [''])
-    except ImportError:
+    else:
         settings_module = None
     settings = CrawlerSettings(settings_module)
 
