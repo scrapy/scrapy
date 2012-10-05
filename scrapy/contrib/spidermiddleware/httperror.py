@@ -19,7 +19,7 @@ class HttpErrorMiddleware(object):
     def process_spider_input(self, response, spider):
         if 200 <= response.status < 300: # common case
             return
-        meta = response.request.meta
+        meta = response.meta
         if 'handle_httpstatus_all' in meta:
             return
         if 'handle_httpstatus_list' in meta:
