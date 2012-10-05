@@ -26,7 +26,7 @@ class DepthMiddleware(object):
     def process_spider_output(self, response, result, spider):
         def _filter(request):
             if isinstance(request, Request):
-                depth = response.request.meta['depth'] + 1
+                depth = response.meta['depth'] + 1
                 request.meta['depth'] = depth
                 if self.prio:
                     request.priority -= depth * self.prio
@@ -42,8 +42,8 @@ class DepthMiddleware(object):
             return True
 
         # base case (depth=0)
-        if self.stats and 'depth' not in response.request.meta: 
-            response.request.meta['depth'] = 0
+        if self.stats and 'depth' not in response.meta:
+            response.meta['depth'] = 0
             if self.verbose_stats:
                 self.stats.inc_value('request_depth_count/0', spider=spider)
 
