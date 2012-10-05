@@ -136,6 +136,7 @@ class Scraper(object):
                 request_result, request, spider)
 
     def call_spider(self, result, request, spider):
+        result.request = request
         dfd = defer_result(result)
         dfd.addCallbacks(request.callback or spider.parse, request.errback)
         return dfd.addCallback(iterate_spider_output)
