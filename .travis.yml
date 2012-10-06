@@ -10,3 +10,6 @@ install:
     - pip install --use-mirrors -r .travis/requirements-$BUILDENV.txt
 script:
     - trial scrapy scrapyd
+notifications:
+    - irc:
+        - "irc.freenode.org#scrapy"
