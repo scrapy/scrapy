@@ -96,13 +96,13 @@ if [ ! -f "$log_path" ]; then
 fi
 
 numitems="$(cat $feed_path | wc -l)"
-if [ "$numitems" != "7" ]; then
+if [ "$numitems" != "6" ]; then
     echo "error: wrong number of items scraped: $numitems"
     exit 1
 fi
 
 numscraped="$(cat $log_path | grep Scraped | wc -l)"
-if [ "$numscraped" != "7" ]; then
+if [ "$numscraped" != "6" ]; then
     echo "error: wrong number of 'Scraped' lines in log: $numscraped"
     exit 1
 fi
