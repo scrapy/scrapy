@@ -53,10 +53,6 @@ scrapy.log module
 .. module:: scrapy.log
    :synopsis: Logging facility
 
-.. attribute:: started
-
-   A boolean which is ``True`` if logging has been started or ``False`` otherwise.
-
 .. function:: start(logfile=None, loglevel=None, logstdout=None)
 
     Start the logging facility. This must be called before actually logging any

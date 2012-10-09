@@ -29,8 +29,6 @@ level_names = {
     SILENT: "SILENT",
 }
 
-started = False
-
 class ScrapyFileLogObserver(log.FileLogObserver):
 
     def __init__(self, f, level=INFO, encoding='utf-8', crawler=None):
@@ -113,15 +111,14 @@ def _get_log_level(level_name_or_id):
         raise ValueError("Unknown log level: %r" % level_name_or_id)
 
 def start(logfile=None, loglevel='INFO', logstdout=True, logencoding='utf-8', crawler=None):
-    if log.defaultObserver: # check twisted log not already started
-        loglevel = _get_log_level(loglevel)
-        file = open(logfile, 'a') if logfile else sys.stderr
-        sflo = ScrapyFileLogObserver(file, loglevel, logencoding, crawler)
-        _oldshowwarning = warnings.showwarning
-        log.startLoggingWithObserver(sflo.emit, setStdout=logstdout)
-        # restore warnings, wrongly silenced by Twisted
-        warnings.showwarning = _oldshowwarning
-        return sflo
+    loglevel = _get_log_level(loglevel)
+    file = open(logfile, 'a') if logfile else sys.stderr
+    sflo = ScrapyFileLogObserver(file, loglevel, logencoding, crawler)
+    _oldshowwarning = warnings.showwarning
+    log.startLoggingWithObserver(sflo.emit, setStdout=logstdout)
+    # restore warnings, wrongly silenced by Twisted
+    warnings.showwarning = _oldshowwarning
+    return sflo
 
 def msg(message=None, _level=INFO, **kw):
     kw['logLevel'] = kw.pop('level', _level)
@@ -137,11 +134,9 @@ def err(_stuff=None, _why=None, **kw):
     log.err(_stuff, _why, **kw)
 
 def start_from_crawler(crawler):
-    global started
     settings = crawler.settings
-    if started or not settings.getbool('LOG_ENABLED'):
+    if not settings.getbool('LOG_ENABLED'):
         return
-    started = True
 
     start(settings['LOG_FILE'], settings['LOG_LEVEL'], settings['LOG_STDOUT'],
         settings['LOG_ENCODING'], crawler)

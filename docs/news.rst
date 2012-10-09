@@ -43,6 +43,7 @@ Scrapy changes:
 - DBM is now the default storage backend for HTTP cache middleware
 - number of log messages (per level) are now tracked through Scrapy stats (stat name: ``log_count/LEVEL``)
 - number received responses are now tracked through Scrapy stats (stat name: ``response_received_count``)
+- removed ``scrapy.log.started`` attribute
 
 Scrapyd changes:
 
