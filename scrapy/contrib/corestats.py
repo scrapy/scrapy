@@ -17,6 +17,7 @@ class CoreStats(object):
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         crawler.signals.connect(o.item_scraped, signal=signals.item_scraped)
         crawler.signals.connect(o.item_dropped, signal=signals.item_dropped)
+        crawler.signals.connect(o.response_received, signal=signals.response_received)
         return o
 
     def spider_opened(self, spider):
@@ -28,6 +29,9 @@ class CoreStats(object):
 
     def item_scraped(self, item, spider):
         self.stats.inc_value('item_scraped_count', spider=spider)
+
+    def response_received(self, spider):
+        self.stats.inc_value('response_received_count', spider=spider)
 
     def item_dropped(self, item, spider, exception):
         reason = exception.__class__.__name__
