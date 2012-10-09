@@ -33,15 +33,28 @@ started = False
 
 class ScrapyFileLogObserver(log.FileLogObserver):
 
-    def __init__(self, f, level=INFO, encoding='utf-8'):
+    def __init__(self, f, level=INFO, encoding='utf-8', crawler=None):
         self.level = level
         self.encoding = encoding
+        if crawler:
+            self.crawler = crawler
+            self.emit = self._emit_with_crawler
+        else:
+            self.emit = self._emit
         log.FileLogObserver.__init__(self, f)
 
-    def emit(self, eventDict):
+    def _emit(self, eventDict):
         ev = _adapt_eventdict(eventDict, self.level, self.encoding)
         if ev is not None:
             log.FileLogObserver.emit(self, ev)
+        return ev
+
+    def _emit_with_crawler(self, eventDict):
+        ev = self._emit(eventDict)
+        if ev:
+            level = ev['logLevel']
+            sname = 'log_count/%s' % level_names.get(level, level)
+            self.crawler.stats.inc_value(sname)
 
 def _adapt_eventdict(eventDict, log_level=INFO, encoding='utf-8', prepend_level=True):
     """Adapt Twisted log eventDict making it suitable for logging with a Scrapy
@@ -99,15 +112,16 @@ def _get_log_level(level_name_or_id):
     else:
         raise ValueError("Unknown log level: %r" % level_name_or_id)
 
-def start(logfile=None, loglevel='INFO', logstdout=True, logencoding='utf-8'):
+def start(logfile=None, loglevel='INFO', logstdout=True, logencoding='utf-8', crawler=None):
     if log.defaultObserver: # check twisted log not already started
         loglevel = _get_log_level(loglevel)
         file = open(logfile, 'a') if logfile else sys.stderr
-        sflo = ScrapyFileLogObserver(file, loglevel, logencoding)
+        sflo = ScrapyFileLogObserver(file, loglevel, logencoding, crawler)
         _oldshowwarning = warnings.showwarning
         log.startLoggingWithObserver(sflo.emit, setStdout=logstdout)
         # restore warnings, wrongly silenced by Twisted
         warnings.showwarning = _oldshowwarning
+        return sflo
 
 def msg(message=None, _level=INFO, **kw):
     kw['logLevel'] = kw.pop('level', _level)
@@ -122,13 +136,14 @@ def err(_stuff=None, _why=None, **kw):
     kw.setdefault('system', 'scrapy')
     log.err(_stuff, _why, **kw)
 
-def start_from_settings(settings):
+def start_from_crawler(crawler):
     global started
+    settings = crawler.settings
     if started or not settings.getbool('LOG_ENABLED'):
         return
     started = True
 
     start(settings['LOG_FILE'], settings['LOG_LEVEL'], settings['LOG_STDOUT'],
-        settings['LOG_ENCODING'])
+        settings['LOG_ENCODING'], crawler)
     msg("Scrapy %s started (bot: %s)" % (scrapy.__version__, \
         settings['BOT_NAME']))

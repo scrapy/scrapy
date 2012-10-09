@@ -28,7 +28,7 @@ class ScrapyCommand(object):
     @property
     def crawler(self):
         if not log.started:
-            log.start_from_settings(self.settings)
+            log.start_from_crawler(self._crawler)
         self._crawler.configure()
         return self._crawler
 
