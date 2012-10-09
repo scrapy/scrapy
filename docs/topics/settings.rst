@@ -701,7 +701,7 @@ SPIDER_CONTRACTS
 Default:: ``{}``
 
 A dict containing the scrapy contracts enabled in your project, used for
-testing spiders. For more info see :ref:`topics-testing`.
+testing spiders. For more info see :ref:`topics-contracts`.
 
 SPIDER_CONTRACTS_BASE
 ---------------------
@@ -716,7 +716,7 @@ Default::
 
 A dict containing the scrapy contracts enabled by default in Scrapy. You should
 never modify this setting in your project, modify :setting:`SPIDER_CONTRACTS`
-instead. For more info see :ref:`topics-testing`.
+instead. For more info see :ref:`topics-contracts`.
 
 SPIDER_MIDDLEWARES
 ------------------
