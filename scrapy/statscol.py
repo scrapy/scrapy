@@ -37,7 +37,7 @@ class StatsCollector(object):
         self._stats.clear()
 
     def open_spider(self, spider):
-        self._stats = {}
+        pass
 
     def close_spider(self, spider, reason):
         if self._dump:
