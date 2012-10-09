@@ -41,6 +41,8 @@ Scrapy changes:
 - removed signal: ``scrapy.mail.mail_sent``
 - removed ``TRACK_REFS`` setting, now :ref:`trackrefs <topics-leaks-trackrefs>` is always enabled
 - DBM is now the default storage backend for HTTP cache middleware
+- number of log messages (per level) are now tracked through Scrapy stats (stat name: ``log_count/LEVEL``)
+- number received responses are now tracked through Scrapy stats (stat name: ``response_received_count``)
 
 Scrapyd changes:
 
