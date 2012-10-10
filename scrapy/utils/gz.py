@@ -17,7 +17,9 @@ def gunzip(data):
         except (IOError, struct.error):
             # complete only if there is some data, otherwise re-raise
             # see issue 87 about catching struct.error
-            if output:
+            # some pages are quite small so output is '' and f.extrabuf
+            # contains the whole page content
+            if output or f.extrabuf:
                 output += f.extrabuf
                 break
             else:
