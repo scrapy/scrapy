@@ -96,11 +96,6 @@ def execute(argv=None, settings=None):
         settings = get_project_settings()
     check_deprecated_settings(settings)
 
-    # --- backwards compatibility for scrapy.conf.settings singleton ---
-    from scrapy import conf
-    conf.settings = settings
-    # ------------------------------------------------------------------
-
     crawler = CrawlerProcess(settings)
     crawler.install()
     inproject = inside_project()
