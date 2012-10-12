@@ -25,7 +25,7 @@ class Command(ScrapyCommand):
         return "[options] <spider>"
 
     def short_desc(self):
-        return "Check contracts for given spider"
+        return "Check spider contracts"
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
