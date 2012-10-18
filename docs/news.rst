@@ -3,7 +3,7 @@
 Release notes
 =============
 
-0.16 (not yet released)
+0.16.0 (released 2012-10-18)
 -----------------------
 
 Scrapy changes:
