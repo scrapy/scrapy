@@ -29,12 +29,17 @@ opened when the spider is opened, and closed when the spider is closed.
 Common Stats Collector uses
 ===========================
 
-Access the stats collector throught the :attr:`~scrapy.crawler.Crawler.stats`
-attribute::
+Access the stats collector through the :attr:`~scrapy.crawler.Crawler.stats`
+attribute. Here is an example of an extension that access stats::
 
-    @classmethod
-    def from_crawler(cls, crawler):
-        stats = crawler.stats
+    class ExtensionThatAccessStats(object):
+
+        def __init__(self, stats):
+            self.stats = stats
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            return cls(crawler.stats)
 
 Set stat value::
 
