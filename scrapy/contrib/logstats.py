@@ -21,7 +21,7 @@ class LogStats(object):
 
     @classmethod
     def from_crawler(cls, crawler):
-        interval = settings.getfloat('LOGSTATS_INTERVAL')
+        interval = crawler.settings.getfloat('LOGSTATS_INTERVAL')
         if not interval:
             raise NotConfigured
         o = cls(interval)
@@ -32,13 +32,6 @@ class LogStats(object):
         crawler.signals.connect(o.engine_started, signal=signals.engine_started)
         crawler.signals.connect(o.engine_stopped, signal=signals.engine_stopped)
         return o
-
-    @classmethod
-    def from_crawler(cls, crawler):
-        interval = crawler.settings.getfloat('LOGSTATS_INTERVAL')
-        if not interval:
-            raise NotConfigured
-        return cls(interval)
 
     def item_scraped(self, spider):
         self.slots[spider].items += 1
