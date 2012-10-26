@@ -3,6 +3,17 @@
 Release notes
 =============
 
+0.16.1 (released 2012-10-26)
+----------------------------
+
+- fixed LogStats extension, which got broken after a wrong merge before the 0.16 release (:commit:`8c780fd`)
+- better backwards compatibility for scrapy.conf.settings (:commit:`3403089`)
+- extended documentation on how to access crawler stats from extensions (:commit:`c4da0b5`)
+- removed .hgtags (no longer needed now that scrapy uses git) (:commit:`d52c188`)
+- fix dashes under rst headers (:commit:`fa4f7f9`)
+- set release date for 0.16.0 in news (:commit:`e292246`)
+
+
 0.16.0 (released 2012-10-18)
 ----------------------------
 
