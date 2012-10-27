@@ -1,10 +1,22 @@
+import sys
 import re
 from functools import wraps
+from unittest.case import TestCase
 
 from scrapy.http import Request
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.python import get_spec
-from scrapy.exceptions import ContractFail
+
+
+def create_testcase(method):
+    name = '%s.%s' % (method.__self__.__class__.__name__, method.__name__)
+
+    class ContractTestCase(TestCase):
+        def __str__(self):
+            return "%s (%s)" % (name, method.__self__.name)
+
+    setattr(ContractTestCase, name, lambda x: x)
+    return ContractTestCase(name)
 
 
 class ContractsManager(object):
@@ -27,7 +39,7 @@ class ContractsManager(object):
 
         return contracts
 
-    def from_method(self, method, fail=False):
+    def from_method(self, method, results):
         contracts = self.extract_contracts(method)
         if contracts:
             # calculate request args
@@ -43,9 +55,9 @@ class ContractsManager(object):
 
                 # execute pre and post hooks in order
                 for contract in reversed(contracts):
-                    request = contract.add_pre_hook(request, fail)
+                    request = contract.add_pre_hook(request, results)
                 for contract in contracts:
-                    request = contract.add_post_hook(request, fail)
+                    request = contract.add_post_hook(request, results)
 
                 return request
 
@@ -54,40 +66,44 @@ class Contract(object):
     """ Abstract class for contracts """
 
     def __init__(self, method, *args):
-        self.method = method
+        self.testcase = create_testcase(method)
         self.args = args
 
-    def add_pre_hook(self, request, fail=False):
+    def add_pre_hook(self, request, results):
         cb = request.callback
 
         @wraps(cb)
         def wrapper(response):
             try:
                 self.pre_process(response)
-            except ContractFail as e:
-                if fail:
-                    raise
-                else:
-                    print e.format(self.method)
-            return list(iterate_spider_output(cb(response)))
+            except AssertionError:
+                results.addFailure(self.testcase, sys.exc_info())
+            except Exception:
+                results.addError(self.testcase, sys.exc_info())
+            else:
+                results.addSuccess(self.testcase)
+            finally:
+                return list(iterate_spider_output(cb(response)))
 
         request.callback = wrapper
         return request
 
-    def add_post_hook(self, request, fail=False):
+    def add_post_hook(self, request, results):
         cb = request.callback
 
         @wraps(cb)
         def wrapper(response):
-            output = list(iterate_spider_output(cb(response)))
             try:
+                output = list(iterate_spider_output(cb(response)))
                 self.post_process(output)
-            except ContractFail as e:
-                if fail:
-                    raise
-                else:
-                    print e.format(self.method)
-            return output
+            except AssertionError:
+                results.addFailure(self.testcase, sys.exc_info())
+            except Exception:
+                results.addError(self.testcase, sys.exc_info())
+            else:
+                results.addSuccess(self.testcase)
+            finally:
+                return output
 
         request.callback = wrapper
         return request
