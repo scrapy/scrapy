@@ -1,11 +1,14 @@
 from collections import defaultdict
 from functools import wraps
+from unittest.runner import TextTestRunner
 
+from scrapy import signals
 from scrapy.command import ScrapyCommand
 from scrapy.contracts import ContractsManager
 from scrapy.utils.misc import load_object
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.conf import build_component_list
+from scrapy.xlib.pydispatch import dispatcher
 
 
 def _generate(cb):
@@ -39,6 +42,7 @@ class Command(ScrapyCommand):
             self.settings['SPIDER_CONTRACTS'],
         )
         self.conman = ContractsManager([load_object(c) for c in contracts])
+        self.results = TextTestRunner()._makeResult()
 
         # contract requests
         contract_reqs = defaultdict(list)
@@ -61,6 +65,8 @@ class Command(ScrapyCommand):
                 for method in sorted(methods):
                     print '  * %s' % method
         else:
+            dispatcher.connect(self.results.printErrors,
+                    signals.engine_stopped)
             self.crawler.start()
 
     def get_requests(self, spider):
@@ -69,7 +75,7 @@ class Command(ScrapyCommand):
         for key, value in vars(type(spider)).items():
             if callable(value) and value.__doc__:
                 bound_method = value.__get__(spider, type(spider))
-                request = self.conman.from_method(bound_method)
+                request = self.conman.from_method(bound_method, self.results)
 
                 if request:
                     request.callback = _generate(request.callback)
