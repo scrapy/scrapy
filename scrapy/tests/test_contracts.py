@@ -86,20 +86,20 @@ class ContractsManagerTest(unittest.TestCase):
         self.assertFalse(self.results.errors)
 
     def test_contracts(self):
+        spider = TestSpider()
+
         # extract contracts correctly
-        contracts = self.conman.extract_contracts(TestSpider.returns_request)
+        contracts = self.conman.extract_contracts(spider.returns_request)
         self.assertEqual(len(contracts), 2)
         self.assertEqual(frozenset(map(type, contracts)),
             frozenset([UrlContract, ReturnsContract]))
 
         # returns request for valid method
-        request = self.conman.from_method(TestSpider.returns_request,
-                self.results)
+        request = self.conman.from_method(spider.returns_request, self.results)
         self.assertNotEqual(request, None)
 
         # no request for missing url
-        request = self.conman.from_method(TestSpider.parse_no_url,
-                self.results)
+        request = self.conman.from_method(spider.parse_no_url, self.results)
         self.assertEqual(request, None)
 
     def test_returns(self):

@@ -8,17 +8,6 @@ from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.python import get_spec
 
 
-def create_testcase(method):
-    name = '%s.%s' % (method.__self__.__class__.__name__, method.__name__)
-
-    class ContractTestCase(TestCase):
-        def __str__(self):
-            return "%s (%s)" % (name, method.__self__.name)
-
-    setattr(ContractTestCase, name, lambda x: x)
-    return ContractTestCase(name)
-
-
 class ContractsManager(object):
     contracts = {}
 
@@ -66,53 +55,67 @@ class Contract(object):
     """ Abstract class for contracts """
 
     def __init__(self, method, *args):
-        self.testcase = create_testcase(method)
+        self.testcase_pre = self.create_testcase(method, 'pre-hook')
+        self.testcase_post = self.create_testcase(method, 'post-hook')
         self.args = args
 
+    def create_testcase(self, method, hook):
+        spider = method.__self__.name
+
+        class ContractTestCase(TestCase):
+            def __str__(_self):
+                return "[%s] %s (@%s %s)" % (spider, method.__name__, self.name, hook)
+
+        name = '%s_%s' % (spider, method.__name__)
+        setattr(ContractTestCase, name, lambda x: x)
+        return ContractTestCase(name)
+
     def add_pre_hook(self, request, results):
-        cb = request.callback
+        if hasattr(self, 'pre_process'):
+            cb = request.callback
 
-        @wraps(cb)
-        def wrapper(response):
-            try:
-                self.pre_process(response)
-            except AssertionError:
-                results.addFailure(self.testcase, sys.exc_info())
-            except Exception:
-                results.addError(self.testcase, sys.exc_info())
-            else:
-                results.addSuccess(self.testcase)
-            finally:
-                return list(iterate_spider_output(cb(response)))
+            @wraps(cb)
+            def wrapper(response):
+                try:
+                    results.startTest(self.testcase_pre)
+                    self.pre_process(response)
+                    results.stopTest(self.testcase_pre)
+                except AssertionError:
+                    results.addFailure(self.testcase_pre, sys.exc_info())
+                except Exception:
+                    results.addError(self.testcase_pre, sys.exc_info())
+                else:
+                    results.addSuccess(self.testcase_pre)
+                finally:
+                    return list(iterate_spider_output(cb(response)))
 
-        request.callback = wrapper
+            request.callback = wrapper
+
         return request
 
     def add_post_hook(self, request, results):
-        cb = request.callback
+        if hasattr(self, 'post_process'):
+            cb = request.callback
 
-        @wraps(cb)
-        def wrapper(response):
-            try:
-                output = list(iterate_spider_output(cb(response)))
-                self.post_process(output)
-            except AssertionError:
-                results.addFailure(self.testcase, sys.exc_info())
-            except Exception:
-                results.addError(self.testcase, sys.exc_info())
-            else:
-                results.addSuccess(self.testcase)
-            finally:
-                return output
+            @wraps(cb)
+            def wrapper(response):
+                try:
+                    output = list(iterate_spider_output(cb(response)))
+                    results.startTest(self.testcase_post)
+                    self.post_process(output)
+                    results.stopTest(self.testcase_post)
+                except AssertionError:
+                    results.addFailure(self.testcase_post, sys.exc_info())
+                except Exception:
+                    results.addError(self.testcase_post, sys.exc_info())
+                else:
+                    results.addSuccess(self.testcase_post)
+                finally:
+                    return output
 
-        request.callback = wrapper
+            request.callback = wrapper
+
         return request
 
     def adjust_request_args(self, args):
         return args
-
-    def pre_process(self, response):
-        pass
-
-    def post_process(self, output):
-        pass
