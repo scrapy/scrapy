@@ -1,4 +1,4 @@
-from unittest.runner import TextTestRunner
+from unittest import TextTestRunner
 
 from twisted.trial import unittest
 

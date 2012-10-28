@@ -1,7 +1,7 @@
 import sys
 import re
 from functools import wraps
-from unittest.case import TestCase
+from unittest import TestCase
 
 from scrapy.http import Request
 from scrapy.utils.spider import iterate_spider_output
