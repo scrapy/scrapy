@@ -1,6 +1,6 @@
 from collections import defaultdict
 from functools import wraps
-from unittest.runner import TextTestRunner
+from unittest import TextTestRunner
 
 from scrapy import signals
 from scrapy.command import ScrapyCommand
