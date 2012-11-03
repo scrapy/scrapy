@@ -22,7 +22,7 @@ class SpiderState(object):
 
     def spider_opened(self, spider):
         if self.jobdir and os.path.exists(self.statefn):
-            with open(self.statefn) as f:
+            with open(self.statefn, 'rb') as f:
                 spider.state = pickle.load(f)
         else:
             spider.state = {}
