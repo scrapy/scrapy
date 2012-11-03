@@ -776,9 +776,8 @@ STATS_DUMP
 
 Default: ``True``
 
-Dump (to the Scrapy log) the :ref:`Scrapy stats <topics-stats>` collected
-during the crawl. The spider-specific stats are logged when the spider is
-closed, while the global stats are dumped when the Scrapy process finishes.
+Dump the :ref:`Scrapy stats <topics-stats>` (to the Scrapy log) once the spider
+finishes.
 
 For more info see: :ref:`topics-stats`.
 
