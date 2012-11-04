@@ -103,6 +103,24 @@ Fortunately, the :command:`shell` is your bread and butter in this case (see
         else:
             inspect_response(response, self)
 
+See also: :ref:`topics-shell-inspect-response`.
+
+Open in browser
+===============
+
+Sometimes you just want to see how a certain response looks in a browser, you
+can use the ``open_in_browser`` function for that. Here is an example of how
+you would use it::
+
+    from scrapy.utils.response import open_in_browser
+
+    def parse_details(self, response):
+        if "item name" not in response.body:
+            open_in_browser(response)
+
+``open_in_browser`` will open a browser with the response received by Scrapy at
+that point, adjusting the `base tag`_ so that images and styles are displayed
+properly.
 
 Logging
 =======
@@ -123,3 +141,5 @@ available in all future runs should they be necessary again::
                 level=log.WARNING)
 
 For more information, check the :ref:`topics-logging` section.
+
+.. _base tag: http://www.w3schools.com/tags/tag_base.asp
