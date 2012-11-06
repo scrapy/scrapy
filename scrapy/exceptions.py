@@ -52,7 +52,4 @@ class ScrapyDeprecationWarning(Warning):
 
 class ContractFail(AssertionError):
     """Error raised in case of a failing contract"""
-    
-    def format(self, method):
-        return '[FAILED] %s:%s\n>>> %s\n' % \
-            (method.im_class.name, method.__name__, self)
+    pass
