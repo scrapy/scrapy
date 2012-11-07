@@ -3,6 +3,11 @@
 Release notes
 =============
 
+0.18 (release date not announced yet)
+-------------------------------------
+
+- several improvements to spider contracts
+
 0.16.1 (released 2012-10-26)
 ----------------------------
 
