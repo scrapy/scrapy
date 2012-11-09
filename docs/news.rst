@@ -8,6 +8,18 @@ Release notes
 
 - several improvements to spider contracts
 
+
+0.16.2 (released 2012-11-09)
+----------------------------
+
+- scrapy contracts: python2.6 compat (:commit:`a4a9199`)
+- scrapy contracts verbose option (:commit:`ec41673`)
+- proper unittest-like output for scrapy contracts (:commit:`86635e4`)
+- added open_in_browser to debugging doc (:commit:`c9b690d`)
+- removed reference to global scrapy stats from settings doc (:commit:`dd55067`)
+- Fix SpiderState bug in Windows platforms (:commit:`58998f4`)
+
+
 0.16.1 (released 2012-10-26)
 ----------------------------
 
