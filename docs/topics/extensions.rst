@@ -132,7 +132,7 @@ Here is the code of such extension::
         def spider_closed(self, spider):
             spider.log("closed spider %s" % spider.name)
 
-        def item_scrapde(self, item, spider):
+        def item_scraped(self, item, spider):
             self.items_scraped += 1
             if self.items_scraped == self.item_count:
                 spider.log("scraped %d items, resetting counter" % self.items_scraped)
