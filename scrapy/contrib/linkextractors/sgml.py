@@ -71,7 +71,7 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
                 if self.scan_attr(attr):
                     url = self.process_value(value)
                     if url is not None:
-                        link = Link(url=url)
+                        link = Link(url=url, nofollow=True if dict(attrs).get('rel') == 'nofollow' else False)
                         self.links.append(link)
                         self.current_link = link
 
