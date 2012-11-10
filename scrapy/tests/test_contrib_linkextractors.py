@@ -85,6 +85,17 @@ class LinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.matches(url1), True)
         self.assertEqual(lx.matches(url2), True)
 
+    def test_link_nofollow(self):
+        html = """
+        <a href="page.html?action=print" rel="nofollow">Printer-friendly page</a>
+        <a href="about.html">About us</a>
+        """
+        response = HtmlResponse("http://example.org/page.html", body=html)
+        lx = SgmlLinkExtractor()
+        self.assertEqual([link for link in lx.extract_links(response)],
+            [ Link(url='http://example.org/page.html?action=print', text=u'Printer-friendly page', nofollow=True),
+              Link(url='http://example.org/about.html', text=u'About us', nofollow=False) ])
+
 class SgmlLinkExtractorTestCase(unittest.TestCase):
     def setUp(self):
         body = get_testdata('link_extractor', 'sgml_linkextractor.html')
