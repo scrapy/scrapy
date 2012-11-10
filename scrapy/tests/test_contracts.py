@@ -1,9 +1,10 @@
+from unittest import TextTestRunner
+
 from twisted.trial import unittest
 
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
 from scrapy.item import Item, Field
-from scrapy.exceptions import ContractFail
 from scrapy.contracts import ContractsManager
 from scrapy.contracts.default import (
     UrlContract,
@@ -71,54 +72,69 @@ class TestSpider(BaseSpider):
 class ContractsManagerTest(unittest.TestCase):
     contracts = [UrlContract, ReturnsContract, ScrapesContract]
 
+    def setUp(self):
+        self.conman = ContractsManager(self.contracts)
+        self.results = TextTestRunner()._makeResult()
+        self.results.stream = None
+
+    def should_succeed(self):
+        self.assertFalse(self.results.failures)
+        self.assertFalse(self.results.errors)
+
+    def should_fail(self):
+        self.assertTrue(self.results.failures)
+        self.assertFalse(self.results.errors)
+
     def test_contracts(self):
-        conman = ContractsManager(self.contracts)
+        spider = TestSpider()
 
         # extract contracts correctly
-        contracts = conman.extract_contracts(TestSpider.returns_request)
+        contracts = self.conman.extract_contracts(spider.returns_request)
         self.assertEqual(len(contracts), 2)
         self.assertEqual(frozenset(map(type, contracts)),
             frozenset([UrlContract, ReturnsContract]))
 
         # returns request for valid method
-        request = conman.from_method(TestSpider.returns_request)
+        request = self.conman.from_method(spider.returns_request, self.results)
         self.assertNotEqual(request, None)
 
         # no request for missing url
-        request = conman.from_method(TestSpider.parse_no_url)
+        request = self.conman.from_method(spider.parse_no_url, self.results)
         self.assertEqual(request, None)
 
     def test_returns(self):
-        conman = ContractsManager(self.contracts)
-
         spider = TestSpider()
         response = ResponseMock()
 
         # returns_item
-        request = conman.from_method(spider.returns_item, fail=True)
+        request = self.conman.from_method(spider.returns_item, self.results)
         output = request.callback(response)
         self.assertEqual(map(type, output), [TestItem])
+        self.should_succeed()
 
         # returns_request
-        request = conman.from_method(spider.returns_request, fail=True)
+        request = self.conman.from_method(spider.returns_request, self.results)
         output = request.callback(response)
         self.assertEqual(map(type, output), [Request])
+        self.should_succeed()
 
         # returns_fail
-        request = conman.from_method(spider.returns_fail, fail=True)
-        self.assertRaises(ContractFail, request.callback, response)
+        request = self.conman.from_method(spider.returns_fail, self.results)
+        request.callback(response)
+        self.should_fail()
 
     def test_scrapes(self):
-        conman = ContractsManager(self.contracts)
-
         spider = TestSpider()
         response = ResponseMock()
 
         # scrapes_item_ok
-        request = conman.from_method(spider.scrapes_item_ok, fail=True)
+        request = self.conman.from_method(spider.scrapes_item_ok, self.results)
         output = request.callback(response)
         self.assertEqual(map(type, output), [TestItem])
+        self.should_succeed()
 
         # scrapes_item_fail
-        request = conman.from_method(spider.scrapes_item_fail, fail=True)
-        self.assertRaises(ContractFail, request.callback, response)
+        request = self.conman.from_method(spider.scrapes_item_fail,
+                self.results)
+        request.callback(response)
+        self.should_fail()
