@@ -151,6 +151,9 @@ class ScrapyClientContextFactory(ClientContextFactory):
     # see https://github.com/scrapy/scrapy/issues/82
     # and https://github.com/scrapy/scrapy/issues/26
 
+    def __init__(self, request):
+        self.method = request.meta.get('ssl_method', SSL.SSLv23_METHOD)
+
     def getContext(self):
         ctx = ClientContextFactory.getContext(self)
         # Enable all workarounds to SSL bugs as documented by
