@@ -21,8 +21,8 @@ class AutoThrottle(object):
         self.last_lat = self.START_DELAY, 0.0
 
     def _min_download_delay(self, settings):
-        return max(settings.getint("AUTOTHROTTLE_MIN_DOWNLOAD_DELAY"),
-            settings.getint("DOWNLOAD_DELAY"))
+        return max(settings.getfloat("AUTOTHROTTLE_MIN_DOWNLOAD_DELAY"),
+            settings.getfloat("DOWNLOAD_DELAY"))
 
     def _max_concurency(self, settings):
         delay = self._min_download_delay(settings)
