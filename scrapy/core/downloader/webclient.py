@@ -1,7 +1,6 @@
 from time import time
 from urlparse import urlparse, urlunparse, urldefrag
 
-from twisted.python import failure
 from twisted.web.client import HTTPClientFactory
 from twisted.web.http import HTTPClient
 from twisted.internet import defer
