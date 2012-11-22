@@ -96,7 +96,7 @@ single Python class that defines one or more of the following methods:
    .. method:: process_response(request, response, spider)
 
       :meth:`process_response` should return a :class:`~scrapy.http.Response`
-      object or raise a :exc:`~scrapy.exceptions.IgnoreRequest` exception. 
+      object or raise a :exc:`~scrapy.exceptions.IgnoreRequest` exception.
 
       If it returns a :class:`~scrapy.http.Response` (it could be the same given
       response, or a brand-new one), that response will continue to be processed
@@ -131,7 +131,7 @@ single Python class that defines one or more of the following methods:
       kicks in, and won't bother calling any other exception middleware.
 
       If it returns a :class:`~scrapy.http.Request` object, the returned request is
-      used to instruct an immediate redirection. 
+      used to instruct an immediate redirection.
       The original request won't finish until the redirected
       request is completed. This stops the :meth:`process_exception`
       middleware the same as returning Response would do.
@@ -236,7 +236,7 @@ Here's an example of a log with :setting:`COOKIES_DEBUG` enabled::
     2011-04-06 14:49:50-0300 [diningcity] DEBUG: Crawled (200) <GET http://www.diningcity.com/netherlands/index.html> (referer: None)
     [...]
 
-   
+
 DefaultHeadersMiddleware
 ------------------------
 
@@ -256,7 +256,7 @@ DownloadTimeoutMiddleware
 
 .. class:: DownloadTimeoutMiddleware
 
-    This middleware sets the download timeout for requests specified in the 
+    This middleware sets the download timeout for requests specified in the
     :setting:`DOWNLOAD_TIMEOUT` setting.
 
 HttpAuthMiddleware
@@ -317,8 +317,8 @@ DBM storage backend (default)
 
 .. versionadded:: 0.13
 
-A DBM_ storage backend is also available for the HTTP cache middleware. To use
-it (instead of the default filesystem backend) set :setting:`HTTPCACHE_STORAGE`
+A DBM_ storage backend is available for the HTTP cache middleware. To use it
+(note: it is the default storage backend) set :setting:`HTTPCACHE_STORAGE`
 to ``scrapy.contrib.httpcache.DbmCacheStorage``.
 
 By default, it uses the anydbm_ module, but you can change it with the
@@ -329,7 +329,9 @@ By default, it uses the anydbm_ module, but you can change it with the
 File system backend
 ~~~~~~~~~~~~~~~~~~~
 
-By default, the :class:`HttpCacheMiddleware` uses a file system storage  with the following structure:
+A file system storage backend is also available for the HTTP cache middleware.
+To use it (instead of the default DBM_ storage backend) set :setting:`HTTPCACHE_STORAGE`
+to ``scrapy.contrib.downloadermiddleware.httpcache.FilesystemCacheStorage``.
 
 Each request/response pair is stored in a different directory containing
 the following files:
@@ -414,7 +416,7 @@ HTTPCACHE_IGNORE_MISSING
 
 Default: ``False``
 
-If enabled, requests not found in the cache will be ignored instead of downloaded. 
+If enabled, requests not found in the cache will be ignored instead of downloaded.
 
 .. setting:: HTTPCACHE_IGNORE_SCHEMES
 
@@ -432,7 +434,7 @@ Don't cache responses with these URI schemes.
 HTTPCACHE_STORAGE
 ^^^^^^^^^^^^^^^^^
 
-Default: ``'scrapy.contrib.downloadermiddleware.httpcache.FilesystemCacheStorage'``
+Default: ``'scrapy.contrib.httpcache.DbmCacheStorage'``
 
 The class which implements the cache storage backend.
 
@@ -455,7 +457,7 @@ HttpCompressionMiddleware
 .. module:: scrapy.contrib.downloadermiddleware.httpcompression
    :synopsis: Http Compression Middleware
 
-.. class:: HttpCompressionMiddleware 
+.. class:: HttpCompressionMiddleware
 
    This middleware allows compressed (gzip, deflate) traffic to be
    sent/received from web sites.
@@ -466,7 +468,7 @@ ChunkedTransferMiddleware
 .. module:: scrapy.contrib.downloadermiddleware.chunked
    :synopsis: Chunked Transfer Middleware
 
-.. class:: ChunkedTransferMiddleware 
+.. class:: ChunkedTransferMiddleware
 
    This middleware adds support for `chunked transfer encoding`_
 
@@ -666,7 +668,7 @@ UserAgentMiddleware
 .. class:: UserAgentMiddleware
 
    Middleware that allows spiders to override the default user agent.
-   
+
    In order for a spider to override the default user agent, its `user_agent`
    attribute must be set.
 
