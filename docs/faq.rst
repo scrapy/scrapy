@@ -265,7 +265,7 @@ Here are some tips to keep in mind when dealing with these kind of sites:
 * is possible, use `Google cache`_ to fetch pages, instead of hitting the sites
   directly
 * use a pool of rotating IPs. For example, the free `Tor project`_ or paid
-  services like `ProxyMesh`_ or `ProxyHub`_.
+  services like `ProxyMesh`_
 
 If you are still unable to prevent your bot getting banned, consider contacting
 `commercial support`_.
@@ -294,4 +294,3 @@ spider argument.
 .. _DFO order: http://en.wikipedia.org/wiki/Depth-first_search
 .. _BFO order: http://en.wikipedia.org/wiki/Breadth-first_search
 .. _ProxyMesh: http://proxymesh.com/
-.. _ProxyHub: http://scrapinghub.com/proxyhub.html
