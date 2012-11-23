@@ -238,11 +238,10 @@ FormRequest objects
 -------------------
 
 The FormRequest class extends the base :class:`Request` with functionality for
-dealing with HTML forms. It uses the `ClientForm`_ library (bundled with
-Scrapy) to pre-populate form fields with form data from :class:`Response`
-objects.
+dealing with HTML forms. It uses `lxml.html forms`_  to pre-populate form
+fields with form data from :class:`Response` objects.
 
-.. _ClientForm: http://wwwsearch.sourceforge.net/ClientForm/
+.. _lxml.html forms: http://lxml.de/lxmlhtml.html#forms
 
 .. class:: FormRequest(url, [formdata, ...])
 
@@ -258,24 +257,23 @@ objects.
     The :class:`FormRequest` objects support the following class method in
     addition to the standard :class:`Request` methods:
 
-    .. classmethod:: FormRequest.from_response(response, [formname=None, formnumber=0, formdata=None, clickdata=None, dont_click=False, ...])
+    .. classmethod:: FormRequest.from_response(response, [formname=None, formnumber=0, formdata=None, dont_click=False, ...])
 
        Returns a new :class:`FormRequest` object with its form field values
        pre-populated with those found in the HTML ``<form>`` element contained
        in the given response. For an example see
        :ref:`topics-request-response-ref-request-userlogin`.
 
-       Keep in mind that this method is implemented using `ClientForm`_ whose
-       policy is to automatically simulate a click, by default, on any form
+       The policy is to automatically simulate a click, by default, on any form
        control that looks clickable, like a ``<input type="submit">``.  Even
        though this is quite convenient, and often the desired behaviour,
        sometimes it can cause problems which could be hard to debug. For
        example, when working with forms that are filled and/or submitted using
-       javascript, the default :meth:`from_response` (and `ClientForm`_)
-       behaviour may not be the most appropiate. To disable this behaviour you
-       can set the ``dont_click`` argument to ``True``. Also, if you want to
-       change the control clicked (instead of disabling it) you can also use
-       the ``clickdata`` argument.
+       javascript, the default :meth:`from_response` behaviour may not be the
+       most appropiate. To disable this behaviour you can set the
+       ``dont_click`` argument to ``True``. Also, if you want to change the
+       control clicked (instead of disabling it) you can also use the
+       ``clickdata`` argument.
 
        :param response: the response containing a HTML form which will be used
           to pre-populate the form fields
@@ -294,11 +292,6 @@ objects.
           already present in the response ``<form>`` element, its value is
           overridden by the one passed in this parameter.
        :type formdata: dict
-
-       :param clickdata: Arguments to be passed directly to the ClientForm
-          ``click_request_data()`` method. See `ClientForm`_ homepage for
-          more info.
-       :type clickdata: dict
 
        :param dont_click: If True, the form data will be sumbitted without
          clicking in any element.
