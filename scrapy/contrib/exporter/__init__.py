@@ -54,10 +54,7 @@ class BaseItemExporter(object):
         if include_empty is None:
             include_empty = self.export_empty_fields
         if self.fields_to_export is None:
-            if include_empty:
-                field_iter = item.fields.iterkeys()
-            else:
-                field_iter = item.iterkeys()
+            field_iter = item.get_field_order()
         else:
             if include_empty:
                 field_iter = self.fields_to_export
@@ -172,7 +169,7 @@ class CsvItemExporter(BaseItemExporter):
     def _write_headers_and_set_fields_to_export(self, item):
         if self.include_headers_line:
             if not self.fields_to_export:
-                self.fields_to_export = item.fields.keys()
+                self.fields_to_export = item.get_field_order()
             self.csv_writer.writerow(self.fields_to_export)
 
 
