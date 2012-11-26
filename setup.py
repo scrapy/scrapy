@@ -91,7 +91,7 @@ setup_args = {
     'version': version,
     'url': 'http://scrapy.org',
     'description': 'A high-level Python Screen Scraping framework',
-    'long_description': 'Scrapy is a high level scraping and web crawling framework for writing spiders to crawl and parse web pages for all kinds of purposes, from information retrieval to monitoring or testing web sites.',
+    'long_description': open('README.rst').read(),
     'author': 'Scrapy developers',
     'maintainer': 'Pablo Hoffman',
     'maintainer_email': 'pablo@pablohoffman.com',
