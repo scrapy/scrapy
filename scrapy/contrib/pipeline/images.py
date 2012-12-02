@@ -198,7 +198,7 @@ class ImagesPipeline(MediaPipeline):
             key = self.image_key(request.url)
             checksum = self.image_downloaded(response, request, info)
         except ImageException, ex:
-            log.err('image_downloaded hook failed',
+            log.err('image_downloaded hook failed: %s' % ex,
                     level=log.WARNING, spider=info.spider)
             raise
         except Exception:
