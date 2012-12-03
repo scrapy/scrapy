@@ -45,7 +45,7 @@ class FifoDiskQueue(object):
         self.chunksize = self.info['chunksize']
         self.headf = self._openchunk(self.info['head'][0], 'ab+')
         self.tailf = self._openchunk(self.info['tail'][0])
-        self.tailf.seek(self.info['tail'][2])
+        os.lseek(self.tailf.fileno(), self.info['tail'][2], os.SEEK_SET)
 
     def push(self, string):
         hnum, hpos = self.info['head']

@@ -8,9 +8,11 @@ from twisted.trial import unittest
 
 try:
     from PIL import Image
-    skip = False
 except ImportError, e:
     skip = True
+else:
+    encoders = set(('jpeg_encoder', 'jpeg_decoder'))
+    skip = not encoders.issubset(set(Image.core.__dict__))
 
 def _mocked_download_func(request, info):
     response = request.meta.get('response')
