@@ -20,11 +20,11 @@ class HttpProxyMiddleware(object):
             self.proxies.update(proxies)
         for type, url in getproxies().items():
             self.proxies[type].append(url)
-        for type, urls in proxies.items():
+        for type, urls in self.proxies.items():
             self.proxies[type] = [self._get_proxy(url, type) for url in urls]
 
         if not self.proxies:
-            raise NotConfigured('Found no proxies to use.')
+            raise NotConfigured
 
     @classmethod
     def from_crawler(cls, crawler):
