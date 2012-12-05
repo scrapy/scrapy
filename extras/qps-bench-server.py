@@ -39,9 +39,9 @@ class Root(Resource):
             qps = len(self.tail) / sum(self.tail)
             print('samplesize={0} concurrent={1} qps={2:0.2f}'.format(len(self.tail), self.concurrent, qps))
 
-        if 'sleep' in request.args:
-            sleep = float(request.args['sleep'][0])
-            reactor.callLater(sleep, self._finish, request)
+        if 'latency' in request.args:
+            latency = float(request.args['latency'][0])
+            reactor.callLater(latency, self._finish, request)
             return NOT_DONE_YET
 
         self.concurrent -= 1
