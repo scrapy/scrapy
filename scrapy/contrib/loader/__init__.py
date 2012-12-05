@@ -26,6 +26,8 @@ class ItemLoader(object):
         self.item = context['item'] = item
         self.context = context
         self._values = defaultdict(list)
+        for f, v in item.iteritems():
+            self.add_value(f, v)
 
     def add_value(self, field_name, value, *processors, **kw):
         value = self.get_value(value, *processors, **kw)
@@ -143,4 +145,3 @@ class XPathItemLoader(ItemLoader):
     def _get_values(self, xpaths, **kw):
         xpaths = arg_to_iter(xpaths)
         return flatten([self.selector.select(xpath).extract() for xpath in xpaths])
-
