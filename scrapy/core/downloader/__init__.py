@@ -76,6 +76,7 @@ class Downloader(object):
 
     def fetch(self, request, spider):
         key, slot = self._get_slot(request, spider)
+        request.meta['download_slotkey'] = key
 
         self.active.add(request)
         slot.active.add(request)
@@ -112,12 +113,7 @@ class Downloader(object):
         return key, self.slots[key]
 
     def _enqueue_request(self, request, spider, slot):
-        def _downloaded(response):
-            self.signals.send_catch_log(signal=signals.response_downloaded, \
-                    response=response, request=request, spider=spider)
-            return response
-
-        deferred = defer.Deferred().addCallback(_downloaded)
+        deferred = defer.Deferred()
         slot.queue.append((request, deferred))
         self._process_queue(spider, slot)
         return deferred
@@ -152,7 +148,17 @@ class Downloader(object):
         # 1. Create the download deferred
         dfd = mustbe_deferred(self.handlers.download_request, request, spider)
 
-        # 2. After response arrives,  remove the request from transferring
+        # 2. Notify response_downloaded listeners about the recent download
+        # before querying queue for next request
+        def _downloaded(response):
+            self.signals.send_catch_log(signal=signals.response_downloaded,
+                                        response=response,
+                                        request=request,
+                                        spider=spider)
+            return response
+        dfd.addCallback(_downloaded)
+
+        # 3. After response arrives,  remove the request from transferring
         # state to free up the transferring slot so it can be used by the
         # following requests (perhaps those which came from the downloader
         # middleware itself)

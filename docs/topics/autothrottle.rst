@@ -37,12 +37,6 @@ This adjusts download delays and concurrency based on the following rules:
    :setting:`AUTOTHROTTLE_START_DELAY`
 2. when a response is received, the download delay is adjusted to the
    average of previous download delay and the latency of the response.
-3. after :setting:`AUTOTHROTTLE_CONCURRENCY_CHECK_PERIOD` responses have
-   passed, the average latency of this period is checked against the previous
-   one and:
-
-   * if the latency remained constant (within standard deviation limits), it is increased
-   * if the latency has increased (beyond standard deviation limits) and the concurrency is higher than 1, the concurrency is decreased
 
 .. note:: The AutoThrottle extension honours the standard Scrapy settings for
    concurrency and delay. This means that it will never set a download delay
@@ -55,11 +49,11 @@ The settings used to control the AutoThrottle extension are:
 
 * :setting:`AUTOTHROTTLE_ENABLED`
 * :setting:`AUTOTHROTTLE_START_DELAY`
-* :setting:`AUTOTHROTTLE_CONCURRENCY_CHECK_PERIOD`
+* :setting:`AUTOTHROTTLE_MAX_DELAY`
 * :setting:`AUTOTHROTTLE_DEBUG`
-* :setting:`DOWNLOAD_DELAY`
 * :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`
 * :setting:`CONCURRENT_REQUESTS_PER_IP`
+* :setting:`DOWNLOAD_DELAY`
 
 For more information see :ref:`autothrottle-algorithm`.
 
@@ -81,14 +75,14 @@ Default: ``5.0``
 
 The initial download delay (in seconds).
 
-.. setting:: AUTOTHROTTLE_CONCURRENCY_CHECK_PERIOD
+.. setting:: AUTOTHROTTLE_MAX_DELAY
 
-AUTOTHROTTLE_CONCURRENCY_CHECK_PERIOD
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+AUTOTHROTTLE_MAX_DELAY
+~~~~~~~~~~~~~~~~~~~~~~
 
-Default: ``10``
+Default: ``60.0``
 
-How many responses should pass to perform concurrency adjustments.
+The maximum download delay (in seconds) to be set in case of high latencies.
 
 .. setting:: AUTOTHROTTLE_DEBUG
 
