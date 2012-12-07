@@ -3,10 +3,24 @@
 Release notes
 =============
 
-0.18 (release date not announced yet)
--------------------------------------
+0.18 (unreleased)
+-----------------
 
 - several improvements to spider contracts
+
+
+0.16.3 (released 2012-12-07)
+----------------------------
+
+- Remove concurrency limitation when using download delays and still ensure inter-request delays are enforced (:commit:`487b9b5`)
+- add error details when image pipeline fails (:commit:`8232569`)
+- improve mac os compatibility (:commit:`8dcf8aa`)
+- setup.py: use README.rst to populate long_description (:commit:`7b5310d`)
+- doc: removed obsolete references to ClientForm (:commit:`80f9bb6`)
+- correct docs for default storage backend (:commit:`2aa491b`)
+- doc: removed broken proxyhub link from FAQ (:commit:`bdf61c4`)
+- Merge branch '0.16' of github.com:scrapy/scrapy into 0.16 (:commit:`d5087b0`)
+- Fixed docs typo in SpiderOpenCloseLogging example (:commit:`7184094`)
 
 
 0.16.2 (released 2012-11-09)
