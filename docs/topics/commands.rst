@@ -392,9 +392,9 @@ Supported options:
   rules to discover the callback (ie. spider method) to use for parsing the
   response
 
-* ``--noitems``: don't show extracted links
+* ``--noitems``: don't show scraped items
 
-* ``--nolinks``: don't show scraped items
+* ``--nolinks``: don't show extracted links
 
 * ``--depth`` or ``-d``: depth level for which the requests should be followed
   recursively (default: 1)
