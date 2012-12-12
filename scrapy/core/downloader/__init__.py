@@ -5,16 +5,15 @@ from collections import deque
 from functools import partial
 
 from twisted.internet import reactor, defer
-from twisted.python.failure import Failure
 
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.resolver import dnscache
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy import signals
-from scrapy import log
 from .middleware import DownloaderMiddlewareManager
 from .handlers import DownloadHandlers
+
 
 class Slot(object):
     """Downloader slot"""
@@ -34,7 +33,7 @@ class Slot(object):
 
     def download_delay(self):
         if self.randomize_delay:
-            return random.uniform(0.5*self.delay, 1.5*self.delay)
+            return random.uniform(0.5 * self.delay, 1.5 * self.delay)
         return self.delay
 
 
@@ -42,7 +41,7 @@ def _get_concurrency_delay(concurrency, spider, settings):
     delay = settings.getfloat('DOWNLOAD_DELAY')
     if hasattr(spider, 'DOWNLOAD_DELAY'):
         warnings.warn("%s.DOWNLOAD_DELAY attribute is deprecated, use %s.download_delay instead" %
-            (type(spider).__name__, type(spider).__name__))
+                      (type(spider).__name__, type(spider).__name__))
         delay = spider.DOWNLOAD_DELAY
     if hasattr(spider, 'download_delay'):
         delay = spider.download_delay
@@ -50,8 +49,8 @@ def _get_concurrency_delay(concurrency, spider, settings):
     # TODO: remove for Scrapy 0.15
     c = settings.getint('CONCURRENT_REQUESTS_PER_SPIDER')
     if c:
-        warnings.warn("CONCURRENT_REQUESTS_PER_SPIDER setting is deprecated, " \
-            "use CONCURRENT_REQUESTS_PER_DOMAIN instead", ScrapyDeprecationWarning)
+        warnings.warn("CONCURRENT_REQUESTS_PER_SPIDER setting is deprecated, "
+                      "use CONCURRENT_REQUESTS_PER_DOMAIN instead", ScrapyDeprecationWarning)
         concurrency = c
     # ----------------------------
 
@@ -80,10 +79,11 @@ class Downloader(object):
 
         self.active.add(request)
         slot.active.add(request)
+
         def _deactivate(response):
             self.active.remove(request)
             slot.active.remove(request)
-            if not slot.active: # remove empty slots
+            if not slot.active:  # remove empty slots
                 self.inactive_slots[key] = self.slots.pop(key)
 
             return response
@@ -157,12 +157,13 @@ class Downloader(object):
         # following requests (perhaps those which came from the downloader
         # middleware itself)
         slot.transferring.add(request)
+
         def finish_transferring(_):
             slot.transferring.remove(request)
             self._process_queue(spider, slot)
             return _
+
         return dfd.addBoth(finish_transferring)
 
     def is_idle(self):
         return not self.slots
-
