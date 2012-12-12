@@ -71,7 +71,6 @@ class Downloader(object):
         self.domain_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self.ip_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_IP')
         self.middleware = DownloaderMiddlewareManager.from_crawler(crawler)
-        self.inactive_slots = {}
 
     def fetch(self, request, spider):
         def _deactivate(response):
@@ -86,30 +85,30 @@ class Downloader(object):
         return len(self.active) >= self.total_concurrency
 
     def _get_slot(self, request, spider):
+        key = self._get_slot_key(request, spider)
+        if key not in self.slots:
+            conc = self.ip_concurrency if self.ip_concurrency else self.domain_concurrency
+            conc, delay = _get_concurrency_delay(conc, spider, self.settings)
+            self.slots[key] = Slot(conc, delay, self.settings)
+
+        return key, self.slots[key]
+
+    def _get_slot_key(self, request, spider):
+        if 'download_slot' in request.meta:
+            return request.meta['download_slot']
+
         key = urlparse_cached(request).hostname or ''
         if self.ip_concurrency:
             key = dnscache.get(key, key)
 
-        if key not in self.slots:
-            if key in self.inactive_slots:
-                self.slots[key] = self.inactive_slots.pop(key)
-            else:
-                if self.ip_concurrency:
-                    concurrency = self.ip_concurrency
-                else:
-                    concurrency = self.domain_concurrency
-                concurrency, delay = _get_concurrency_delay(concurrency, spider, self.settings)
-                self.slots[key] = Slot(concurrency, delay, self.settings)
-        return key, self.slots[key]
+        return key
 
     def _enqueue_request(self, request, spider):
         key, slot = self._get_slot(request, spider)
-        request.meta['download_slotkey'] = key
+        request.meta['download_slot'] = key
 
         def _deactivate(response):
             slot.active.remove(request)
-            if not slot.active:  # remove empty slots
-                self.inactive_slots[key] = self.slots.pop(key)
             return response
 
         slot.active.add(request)

@@ -52,7 +52,7 @@ class AutoThrottle(object):
             spider.log(msg, level=logging.INFO)
 
     def _get_slot(self, request, spider):
-        key = request.meta.get('download_slotkey')
+        key = request.meta.get('download_slot')
         return key, self.crawler.engine.downloader.slots.get(key)
 
     def _adjust_delay(self, slot, latency, response):
