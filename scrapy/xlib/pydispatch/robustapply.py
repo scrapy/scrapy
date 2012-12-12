@@ -6,6 +6,8 @@ and subset the given arguments to match only
 those which are acceptable.
 """
 
+import inspect
+
 def function( receiver ):
 	"""Get function-like callable object for given receiver
 
@@ -14,7 +16,7 @@ def function( receiver ):
 	If fromMethod is true, then the callable already
 	has its first argument bound
 	"""
-	if hasattr(receiver, '__call__'):
+	if inspect.isclass(receiver) and hasattr(receiver, '__call__'):
 		# receiver is a class instance; assume it is callable.
 		# Reassign receiver to the actual method that will be called.
 		if hasattr( receiver.__call__, 'im_func') or hasattr( receiver.__call__, 'im_code'):
