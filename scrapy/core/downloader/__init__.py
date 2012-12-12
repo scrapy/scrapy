@@ -2,7 +2,6 @@ import random
 import warnings
 from time import time
 from collections import deque
-from functools import partial
 
 from twisted.internet import reactor, defer
 
@@ -75,22 +74,12 @@ class Downloader(object):
         self.inactive_slots = {}
 
     def fetch(self, request, spider):
-        key, slot = self._get_slot(request, spider)
-        request.meta['download_slotkey'] = key
-
-        self.active.add(request)
-        slot.active.add(request)
-
         def _deactivate(response):
             self.active.remove(request)
-            slot.active.remove(request)
-            if not slot.active:  # remove empty slots
-                self.inactive_slots[key] = self.slots.pop(key)
-
             return response
 
-        dlfunc = partial(self._enqueue_request, slot=slot)
-        dfd = self.middleware.download(dlfunc, request, spider)
+        self.active.add(request)
+        dfd = self.middleware.download(self._enqueue_request, request, spider)
         return dfd.addBoth(_deactivate)
 
     def needs_backout(self):
@@ -100,6 +89,7 @@ class Downloader(object):
         key = urlparse_cached(request).hostname or ''
         if self.ip_concurrency:
             key = dnscache.get(key, key)
+
         if key not in self.slots:
             if key in self.inactive_slots:
                 self.slots[key] = self.inactive_slots.pop(key)
@@ -112,8 +102,18 @@ class Downloader(object):
                 self.slots[key] = Slot(concurrency, delay, self.settings)
         return key, self.slots[key]
 
-    def _enqueue_request(self, request, spider, slot):
-        deferred = defer.Deferred()
+    def _enqueue_request(self, request, spider):
+        key, slot = self._get_slot(request, spider)
+        request.meta['download_slotkey'] = key
+
+        def _deactivate(response):
+            slot.active.remove(request)
+            if not slot.active:  # remove empty slots
+                self.inactive_slots[key] = self.slots.pop(key)
+            return response
+
+        slot.active.add(request)
+        deferred = defer.Deferred().addBoth(_deactivate)
         slot.queue.append((request, deferred))
         self._process_queue(spider, slot)
         return deferred
