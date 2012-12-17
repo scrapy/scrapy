@@ -218,7 +218,7 @@ value and extracts a length from it::
         return parsed_length
 
 By accepting a ``loader_context`` argument the function is explicitly telling
-the Item Loader that is able to receive an Item Loader context, so the Item
+the Item Loader that it is able to receive an Item Loader context, so the Item
 Loader passes the currently active context when calling it, and the processor
 function (``parse_length`` in this case) can thus use them.
 
@@ -236,8 +236,8 @@ There are several ways to modify Item Loader context values:
       loader = ItemLoader(product, unit='cm')
 
 3. On Item Loader declaration, for those input/output processors that support
-   instatiating them with a Item Loader context. :class:`~processor.MapCompose` is one of
-   them::
+   instatiating them with a Item Loader context. :class:`~processor.MapCompose`
+   is one of them::
 
        class ProductLoader(ItemLoader):
            length_out = MapCompose(parse_length, unit='cm')
@@ -248,12 +248,16 @@ ItemLoader objects
 
 .. class:: ItemLoader([item], \**kwargs)
 
-    Return a new Item Loader for populating the given Item. If no item is
-    given, one is instantiated automatically using the class in
-    :attr:`default_item_class`.
+    Return a new Item Loader for populating the given Item. If no *item* is
+    specified during instantiation, one is instantiated automatically using
+    the class in :attr:`default_item_class`. If an item is specified during
+    instantiation it is assumed to have been processed through the input and
+    output processors already. If *values* is specified during instantiation
+    it will be processed through the input processors during __init__() and
+    through the output processors during load_item().
 
-    The item and the remaining keyword arguments are assigned to the Loader
-    context (accesible through the :attr:`context` attribute).
+    The item and the remaining keyword arguments (except for values) are assigned
+    to the Loader context (accesible through the :attr:`context` attribute).
 
     .. method:: get_value(value, \*processors, \**kwargs)
 

@@ -52,6 +52,24 @@ class ItemLoaderTest(unittest.TestCase):
         item = il.load_item()
         self.assertEqual(item['name'], [u'Marta'])
 
+    def test_load_values_using_default_loader(self):
+        i = TestItem()
+        i['summary'] = u'lala'
+        il = ItemLoader(item=TestItem(), values=i)
+        il.add_value('name', u'marta')
+        item = il.load_item()
+        self.assertEqual(item['summary'], [u'lala'])
+        self.assertEqual(item['name'], [u'marta'])
+
+    def test_load_values_using_custom_loader(self):
+        i = TestItem()
+        i['summary'] = u'lala'
+        il = TestItemLoader(item=TestItem(), values=i)
+        il.add_value('name', u'marta')
+        item = il.load_item()
+        self.assertEqual(item['summary'], [u'lala'])
+        self.assertEqual(item['name'], [u'Marta'])
+
     def test_add_value(self):
         il = TestItemLoader()
         il.add_value('name', u'marta')

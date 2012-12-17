@@ -20,12 +20,15 @@ class ItemLoader(object):
     default_input_processor = Identity()
     default_output_processor = Identity()
 
-    def __init__(self, item=None, **context):
+    def __init__(self, item=None, values=None, **context):
         if item is None:
             item = self.default_item_class()
         self.item = context['item'] = item
         self.context = context
         self._values = defaultdict(list)
+        if values is not None:
+            for f, v in values.iteritems():
+                self.add_value(f, v)
 
     def add_value(self, field_name, value, *processors, **kw):
         value = self.get_value(value, *processors, **kw)
@@ -80,7 +83,7 @@ class ItemLoader(object):
         proc = self.get_output_processor(field_name)
         proc = wrap_loader_context(proc, self.context)
         try:
-            return proc(self._values[field_name])
+            return proc(self._values.get(field_name, []))
         except Exception, e:
             raise ValueError("Error with output processor: field=%r value=%r error='%s: %s'" % \
                 (field_name, self._values[field_name], type(e).__name__, str(e)))
@@ -118,7 +121,7 @@ class XPathItemLoader(ItemLoader):
 
     default_selector_class = HtmlXPathSelector
 
-    def __init__(self, item=None, selector=None, response=None, **context):
+    def __init__(self, item=None, values=None, selector=None, response=None, **context):
         if selector is None and response is None:
             raise RuntimeError("%s must be instantiated with a selector " \
                 "or response" % self.__class__.__name__)
@@ -126,7 +129,7 @@ class XPathItemLoader(ItemLoader):
             selector = self.default_selector_class(response)
         self.selector = selector
         context.update(selector=selector, response=response)
-        super(XPathItemLoader, self).__init__(item, **context)
+        super(XPathItemLoader, self).__init__(item, values, **context)
 
     def add_xpath(self, field_name, xpath, *processors, **kw):
         values = self._get_values(xpath, **kw)
