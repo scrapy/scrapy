@@ -154,7 +154,7 @@ class ExecutionEngine(object):
         scraper_idle = spider in self.scraper.slots \
             and self.scraper.slots[spider].is_idle()
         pending = self.slots[spider].scheduler.has_pending_requests()
-        downloading = bool(self.downloader.slots)
+        downloading = bool(self.downloader.active)
         idle = scraper_idle and not (pending or downloading)
         return idle
 
