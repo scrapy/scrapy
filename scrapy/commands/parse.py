@@ -125,7 +125,7 @@ class Command(ScrapyCommand):
                 log.msg(format='Unable to find spider: %(spider)s',
                         level=log.ERROR, spider=opts.spider)
         else:
-            self.spider = create_spider_for_request(self.crawler.spiders, url)
+            self.spider = create_spider_for_request(self.crawler.spiders, Request(url))
             if not self.spider:
                 log.msg(format='Unable to find spider for: %(url)s',
                         level=log.ERROR, url=url)
