@@ -293,19 +293,41 @@ HttpCacheMiddleware
 
 .. class:: HttpCacheMiddleware
 
-    This middleware provides low-level cache to all HTTP requests and responses.
-    Every request and its corresponding response are cached. When the same
-    request is seen again, the response is returned without transferring
-    anything from the Internet.
+    There are two types of caches:
 
-    The HTTP cache is useful for testing spiders faster (without having to wait for
-    downloads every time) and for trying your spider offline, when an Internet
-    connection is not available.
+    * Dummy cache
 
-    Scrapy ships with two storage backends for the HTTP cache middleware:
+        This middleware was designed as a dummy low-level cache to all HTTP     
+        requests and responses, with no awareness of any HTTP Cache-Control
+        directives. Every request and its corresponding response are cached.
+        When the same request is seen again, the response is returned
+        without transferring anything from the Internet.
 
-    * :ref:`httpcache-dbm-backend`
-    * :ref:`httpcache-fs-backend`
+        The HTTP cache is useful for testing spiders faster (without having to
+        wait for downloads every time) and for trying your spider offline, when
+        an Internet connection is not available. The goal is to be able to
+        "replay" a spider run *exactly as it run before* and not to use HTTP
+        caching (to save bandwidth and speed up the crawl).
+
+        Scrapy ships with two storage backends for the dummy HTTP cache middleware:
+
+        * :ref:`httpcache-dbm-backend`
+        * :ref:`httpcache-fs-backend`
+    
+    * Real HTTP cache
+
+        This middleware was designed as a real HTTP cache with HTTP Cache-Control
+        awareness, aimed at production and used in continuous runs to avoid
+        downloading unmodified data (to save bandwidth and speed up crawls).
+
+        In order to use the real HTTP cache, set:
+        
+        * :setting:`HTTPCACHE_USE_DUMMY` to ``False``
+        * :setting:`HTTPCACHE_STORAGE` to ``'scrapy.contrib.httpcache.DbmRealCacheStorage'``
+
+        Scrapy ships with one storage backend for the real HTTP cache middleware:
+
+        * :ref:`httprealcache-dbm-backend`
 
     You can change the storage backend with the :setting:`HTTPCACHE_STORAGE`
     setting. Or you can also implement your own backend.
@@ -323,6 +345,20 @@ to ``scrapy.contrib.httpcache.DbmCacheStorage``.
 
 By default, it uses the anydbm_ module, but you can change it with the
 :setting:`HTTPCACHE_DBM_MODULE` setting.
+
+.. _httprealcache-dbm-backend:
+
+DBM storage backend (real HTTP cache)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It inherits from both ``scrapy.contrib.httpcache.DbmCacheStorage`` and
+``scrapy.contrib.httpcache.BaseRealCacheStorage``, the latter providing
+HTTP Cache-Control awareness. To use it set :setting:`HTTPCACHE_STORAGE`
+to ``scrapy.contrib.httpcache.DbmRealCacheStorage`` and
+:setting:`HTTPCACHE_USE_DUMMY` to ``False``.
+
+If you need to create your own storage backend with HTTP Cache-Control awareness,
+you can inherit from ``scrapy.contrib.httpcache.BaseRealCacheStorage``.
 
 .. _httpcache-fs-backend:
 
@@ -371,6 +407,15 @@ Whether the HTTP cache will be enabled.
 
 .. versionchanged:: 0.11
    Before 0.11, :setting:`HTTPCACHE_DIR` was used to enable cache.
+
+.. setting:: HTTPCACHE_USE_DUMMY
+
+HTTPCACHE_USE_DUMMY
+^^^^^^^^^^^^^^^^^^^
+
+Default: ``True``
+
+Whether to use the dummy or the real HTTP cache. The default is set to ``True`` for backwards compatibility.
 
 .. setting:: HTTPCACHE_EXPIRATION_SECS
 
