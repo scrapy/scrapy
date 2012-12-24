@@ -7,6 +7,7 @@ from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
 
 from scrapy import signals
 from scrapy.http import Headers
+from scrapy.http.request import Request
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
@@ -24,6 +25,7 @@ class HttpCacheMiddleware(object):
         self.ignore_missing = settings.getbool('HTTPCACHE_IGNORE_MISSING')
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
         self.ignore_http_codes = map(int, settings.getlist('HTTPCACHE_IGNORE_HTTP_CODES'))
+        self.use_dummy_cache = settings.getbool('HTTPCACHE_USE_DUMMY')
         self.stats = stats
 
     @classmethod
@@ -43,21 +45,41 @@ class HttpCacheMiddleware(object):
         if not self.is_cacheable(request):
             return
         response = self.storage.retrieve_response(spider, request)
-        if response and self.is_cacheable_response(response):
-            response.flags.append('cached')
-            self.stats.inc_value('httpcache/hit', spider=spider)
-            return response
 
+        # Response cached, but stale
+        if response and type(response) is Request:
+            # Return None so that Scrapy continues processing
+            self.stats.inc_value('httpcache/revalidation', spider=spider)
+            return
+
+        if response and self.is_cacheable_response(response):
+            self.stats.inc_value('httpcache/hit', spider=spider)
+            if self.use_dummy_cache:
+                response.flags.append('cached')
+                return response
+            else:
+                # Response cached and fresh
+                raise IgnoreRequest("Ignored request already in cache: %s" % request)
+
+        # Response not cached
         self.stats.inc_value('httpcache/miss', spider=spider)
         if self.ignore_missing:
             raise IgnoreRequest("Ignored request not in cache: %s" % request)
 
     def process_response(self, request, response, spider):
         if (self.is_cacheable(request)
-            and self.is_cacheable_response(response)
-            and 'cached' not in response.flags):
-            self.storage.store_response(spider, request, response)
-            self.stats.inc_value('httpcache/store', spider=spider)
+            and self.is_cacheable_response(response)):
+            if self.use_dummy_cache:
+                if 'cached' not in response.flags:
+                    self.storage.store_response(spider, request, response)
+                    self.stats.inc_value('httpcache/store', spider=spider)
+            else:
+                if response.status != 304:
+                    self.storage.store_response(spider, request, response)
+                    self.stats.inc_value('httpcache/store', spider=spider)
+                else:
+                    response.flags.append('cached')
+                    self.stats.inc_value('httpcache/hits', spider=spider)
         return response
 
     def is_cacheable_response(self, response):

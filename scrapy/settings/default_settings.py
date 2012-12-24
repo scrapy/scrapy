@@ -134,6 +134,7 @@ FEED_EXPORTERS_BASE = {
 }
 
 HTTPCACHE_ENABLED = False
+HTTPCACHE_USE_DUMMY = True
 HTTPCACHE_DIR = 'httpcache'
 HTTPCACHE_IGNORE_MISSING = False
 HTTPCACHE_STORAGE = 'scrapy.contrib.httpcache.DbmCacheStorage'
