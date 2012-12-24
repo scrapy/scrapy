@@ -83,11 +83,16 @@ class HttpCacheMiddleware(object):
         return response
 
     def is_cacheable_response(self, response):
-        return response.status not in self.ignore_http_codes
+        retval = response.status not in self.ignore_http_codes
+        if not self.use_dummy_cache and response.headers.has_key('cache-control'):
+            retval = retval and (response.headers['cache-control'].lower().find('no-store') == -1)
+        return retval
 
     def is_cacheable(self, request):
-        return urlparse_cached(request).scheme not in self.ignore_schemes
-
+        retval = urlparse_cached(request).scheme not in self.ignore_schemes
+        if not self.use_dummy_cache and request.headers.has_key('cache-control'):
+            retval = retval and (request.headers['cache-control'].lower().find('no-store') == -1)
+        return retval
 
 class FilesystemCacheStorage(object):
 
