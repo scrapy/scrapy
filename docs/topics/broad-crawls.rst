@@ -43,7 +43,7 @@ Increase concurrency
 ====================
 
 Concurrency is the number of requests that are processed in parallel. There is
-a global limit a per-domain limit.
+a global limit and a per-domain limit.
 
 The default global concurrency limit in Scrapy is not suitable for crawling
 many different  domains in parallel, so you will want to increase it. How much
