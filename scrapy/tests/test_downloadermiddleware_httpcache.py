@@ -45,6 +45,8 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
             'HTTPCACHE_DIR': self.tmpdir,
             'HTTPCACHE_EXPIRATION_SECS': 1,
             'HTTPCACHE_IGNORE_HTTP_CODES': [],
+            'HTTPCACHE_POLICY_REQUEST': lambda request : True,
+            'HTTPCACHE_POLICY_RESPONSE': lambda response : True,
         }
         settings.update(new_settings)
         return Settings(settings)
@@ -303,6 +305,52 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
             response = storage.retrieve_response(self.spider, request)
             assert isinstance(response, Request)
             self.assertEqualRequest(request, response)
+    
+    def test_http_cache_request_policy(self):
+        callback = lambda r: (r.url == 'http://www.example.com/')
+        
+        # Should be cached
+        req, res = Request('http://www.example.com/'), Response('http://www.example.com/')
+        with self._middleware(HTTPCACHE_POLICY_REQUEST=callback) as mw:
+            assert mw.process_request(req, self.spider) is None
+            mw.process_response(req, res, self.spider)
+
+            cached = mw.process_request(req, self.spider)
+            assert isinstance(cached, Response), type(cached)
+            self.assertEqualResponse(res, cached)
+            assert 'cached' in cached.flags
+        
+        # Should not be cached
+        req, res = Request('http://www.test.com/'), Response('http://www.test.com/')
+        with self._middleware(HTTPCACHE_POLICY_REQUEST=callback) as mw:
+            assert mw.process_request(req, self.spider) is None
+            mw.process_response(req, res, self.spider)
+
+            assert mw.storage.retrieve_response(self.spider, req) is None
+            assert mw.process_request(req, self.spider) is None
+            
+    def test_http_cache_response_policy(self):
+        callback = lambda r: (r.url == 'http://www.example.com/')
+        
+        # Should be cached
+        req, res = Request('http://www.example.com/'), Response('http://www.example.com/')
+        with self._middleware(HTTPCACHE_POLICY_RESPONSE=callback) as mw:
+            assert mw.process_request(req, self.spider) is None
+            mw.process_response(req, res, self.spider)
+
+            cached = mw.process_request(req, self.spider)
+            assert isinstance(cached, Response), type(cached)
+            self.assertEqualResponse(res, cached)
+            assert 'cached' in cached.flags
+        
+        # Should not be cached
+        req, res = Request('http://www.test.com/'), Response('http://www.test.com/')
+        with self._middleware(HTTPCACHE_POLICY_RESPONSE=callback) as mw:
+            assert mw.process_request(req, self.spider) is None
+            mw.process_response(req, res, self.spider)
+
+            assert mw.storage.retrieve_response(self.spider, req) is None
+            assert mw.process_request(req, self.spider) is None
 
     def assertEqualResponse(self, response1, response2):
         self.assertEqual(response1.url, response2.url)

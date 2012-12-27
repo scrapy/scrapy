@@ -495,6 +495,29 @@ Default: ``'anydbm'``
 The database module to use in the :ref:`DBM storage backend
 <httpcache-dbm-backend>`. This setting is specific to the DBM backend.
 
+HTTPCACHE_POLICY_REQUEST
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 0.18
+
+Default: ```lambda request: True```
+
+A callback function used by the HTTP cache to decide whether a request
+is cacheable. The function should take a :class:`~scrapy.http.Request`
+object as a parameter and return ``True`` if a cached response can be returned;
+or ``False`` if it should be fetched again.
+
+HTTPCACHE_POLICY_RESPONSE
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 0.18
+
+Default: ```lambda response: True```
+
+A callback function used by the HTTP cache to decide whether a response
+is cacheable. The function should take a :class:`~scrapy.http.Response`
+object as a parameter and return ``True`` if a response can be cached;
+or ``False`` if it should not be stored in the cache.
 
 HttpCompressionMiddleware
 -------------------------

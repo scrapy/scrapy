@@ -142,6 +142,8 @@ HTTPCACHE_EXPIRATION_SECS = 0
 HTTPCACHE_IGNORE_HTTP_CODES = []
 HTTPCACHE_IGNORE_SCHEMES = ['file']
 HTTPCACHE_DBM_MODULE = 'anydbm'
+HTTPCACHE_POLICY_REQUEST = lambda request : True
+HTTPCACHE_POLICY_RESPONSE = lambda response : True
 
 ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'
 

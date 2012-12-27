@@ -27,6 +27,8 @@ class HttpCacheMiddleware(object):
         self.ignore_http_codes = map(int, settings.getlist('HTTPCACHE_IGNORE_HTTP_CODES'))
         self.use_dummy_cache = settings.getbool('HTTPCACHE_USE_DUMMY')
         self.stats = stats
+        self.policy_request = settings.get('HTTPCACHE_POLICY_REQUEST')
+        self.policy_response = settings.get('HTTPCACHE_POLICY_RESPONSE')
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -86,12 +88,14 @@ class HttpCacheMiddleware(object):
         retval = response.status not in self.ignore_http_codes
         if not self.use_dummy_cache and response.headers.has_key('cache-control'):
             retval = retval and (response.headers['cache-control'].lower().find('no-store') == -1)
+        retval = retval and self.policy_response(response)
         return retval
 
     def is_cacheable(self, request):
         retval = urlparse_cached(request).scheme not in self.ignore_schemes
         if not self.use_dummy_cache and request.headers.has_key('cache-control'):
             retval = retval and (request.headers['cache-control'].lower().find('no-store') == -1)
+        retval = retval and self.policy_request(request)
         return retval
 
 class FilesystemCacheStorage(object):
