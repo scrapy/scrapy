@@ -81,7 +81,7 @@ class HttpCacheMiddleware(object):
                     self.stats.inc_value('httpcache/store', spider=spider)
                 else:
                     response.flags.append('cached')
-                    self.stats.inc_value('httpcache/hits', spider=spider)
+                    self.stats.inc_value('httpcache/hit', spider=spider)
         return response
 
     def is_cacheable_response(self, response):
