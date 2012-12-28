@@ -7,8 +7,6 @@ from scrapy.utils.misc import load_object
 
 from .interfaces import IPoller, IEggStorage, ISpiderScheduler
 
-from . import webservice
-
 class Root(resource.Resource):
 
     def __init__(self, config, app):

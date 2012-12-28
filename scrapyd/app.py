@@ -6,7 +6,6 @@ from twisted.python import log
 from scrapy.utils.misc import load_object
 
 from .interfaces import IEggStorage, IPoller, ISpiderScheduler, IEnvironment
-from .launcher import Launcher
 from .eggstorage import FilesystemEggStorage
 from .scheduler import SpiderScheduler
 from .poller import QueuePoller
