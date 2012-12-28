@@ -201,14 +201,18 @@ class Scraper(object):
             ex = output.value
             if isinstance(ex, DropItem):
                 logkws = self.logformatter.dropped(item, ex, response, spider)
-                log.msg(level=log.WARNING, spider=spider, **logkws)
+                if 'level' not in logkws:
+                    logkws['level'] = log.WARNING
+                log.msg(spider=spider, **logkws)
                 return self.signals.send_catch_log_deferred(signal=signals.item_dropped, \
                     item=item, spider=spider, exception=output.value)
             else:
                 log.err(output, 'Error processing %(item)s', item=item, spider=spider)
         else:
             logkws = self.logformatter.scraped(output, response, spider)
-            log.msg(level=log.DEBUG, spider=spider, **logkws)
+            if 'level' not in logkws:
+                logkws['level'] = log.DEBUG
+            log.msg(spider=spider, **logkws)
             return self.signals.send_catch_log_deferred(signal=signals.item_scraped, \
                 item=output, response=response, spider=spider)
 
