@@ -41,12 +41,10 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
     def _get_settings(self, **new_settings):
         settings = {
             'HTTPCACHE_ENABLED': True,
-            'HTTPCACHE_USE_DUMMY': True,
             'HTTPCACHE_DIR': self.tmpdir,
             'HTTPCACHE_EXPIRATION_SECS': 1,
             'HTTPCACHE_IGNORE_HTTP_CODES': [],
-            'HTTPCACHE_POLICY_REQUEST': lambda request : True,
-            'HTTPCACHE_POLICY_RESPONSE': lambda response : True,
+            'HTTPCACHE_POLICY': 'dummy'
         }
         settings.update(new_settings)
         return Settings(settings)
@@ -54,7 +52,7 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
     @contextmanager
     def _storage(self, **new_settings):
         settings = self._get_settings(**new_settings)
-        if settings.getbool('HTTPCACHE_USE_DUMMY'):
+        if settings.get('HTTPCACHE_POLICY') == 'dummy':
             storage = self.storage_class(settings)
         else:
             storage = self.realcache_storage_class(settings)
@@ -187,7 +185,7 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
     def test_real_http_cache_middleware_response304_not_cached(self):
         # test response is not cached because the status is 304 Not Modified
         # (so it should be cached already)
-        with self._middleware(HTTPCACHE_USE_DUMMY=False) as mw:
+        with self._middleware(HTTPCACHE_POLICY='rfc2616') as mw:
             assert mw.process_request(self.request, self.spider) is None
             response = Response('http://www.example.com', status=304)
             mw.process_response(self.request, response, self.spider)
@@ -199,7 +197,7 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
     def test_real_http_cache_middleware_response_nostore_not_cached(self):
         # test response is not cached because of the Cache-Control 'no-store' directive
         # http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.2
-        with self._middleware(HTTPCACHE_USE_DUMMY=False) as mw:
+        with self._middleware(HTTPCACHE_POLICY='rfc2616') as mw:
             assert mw.process_request(self.request, self.spider) is None
             response = Response('http://www.example.com', headers=
                 {'Content-Type': 'text/html', 'Cache-Control': 'no-store'},
@@ -212,7 +210,7 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
     def test_real_http_cache_middleware_request_nostore_not_cached(self):
         # test response is not cached because of the request's Cache-Control 'no-store' directive
         # http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.2
-        with self._middleware(HTTPCACHE_USE_DUMMY=False) as mw:
+        with self._middleware(HTTPCACHE_POLICY='rfc2616') as mw:
             request = Request('http://www.example.com',
                 headers={'User-Agent': 'test', 'Cache-Control': 'no-store'})
             assert mw.process_request(request, self.spider) is None
@@ -223,14 +221,14 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
 
     def test_real_http_cache_middleware_response_cached_and_fresh(self):
         # test response cached and fresh
-        with self._middleware(HTTPCACHE_USE_DUMMY=False) as mw:
+        with self._middleware(HTTPCACHE_POLICY='rfc2616') as mw:
             response = mw.process_response(self.request, self.response, self.spider)
             self.assertRaises(IgnoreRequest, mw.process_request, self.request, self.spider)
             assert 'cached' not in response.flags
 
     def test_real_http_cache_middleware_response_cached_and_stale(self):
         # test response cached but stale
-        with self._middleware(HTTPCACHE_USE_DUMMY=False,
+        with self._middleware(HTTPCACHE_POLICY='rfc2616',
             HTTPCACHE_STORAGE = 'scrapy.contrib.httpcache.DbmRealCacheStorage') as mw:
             response = Response('http://www.example.com', headers=
                 {'Content-Type': 'text/html', 'Cache-Control': 'no-cache'},
@@ -244,7 +242,7 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
     def test_real_http_cache_storage_response_cached_and_fresh(self):
         # test response is cached and is fresh
         # (response requested should be same as response received)
-        with self._storage(HTTPCACHE_USE_DUMMY=False) as storage:
+        with self._storage(HTTPCACHE_POLICY='rfc2616') as storage:
             assert storage.retrieve_response(self.spider, self.request) is None
 
             response = Response('http://www.example.com', headers=
@@ -257,7 +255,7 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
     def test_real_http_cache_storage_response403_cached_and_further_requests_ignored(self):
         # test response is cached but further requests are ignored
         # because response status is 403 (as per the RFC)
-        with self._storage(HTTPCACHE_USE_DUMMY=False) as storage:
+        with self._storage(HTTPCACHE_POLICY='rfc2616') as storage:
             assert storage.retrieve_response(self.spider, self.request) is None
 
             response = Response('http://www.example.com', headers=
@@ -270,7 +268,7 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
     def test_real_http_cache_storage_response_cached_and_stale(self):
         # test response is cached and is stale (no cache validators inserted)
         # (request should be same as response received)
-        with self._storage(HTTPCACHE_USE_DUMMY=False) as storage:
+        with self._storage(HTTPCACHE_POLICY='rfc2616') as storage:
             assert storage.retrieve_response(self.spider, self.request) is None
 
             response = Response('http://www.example.com', headers=
@@ -283,7 +281,7 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
 
     def test_real_http_cache_storage_response_cached_and_stale_with_cache_validators(self):
         # test response is cached and is stale and cache validators are inserted
-        with self._storage(HTTPCACHE_USE_DUMMY=False) as storage:
+        with self._storage(HTTPCACHE_POLICY='rfc2616') as storage:
             assert storage.retrieve_response(self.spider, self.request) is None
 
             response = Response('http://www.example.com', headers=
@@ -297,7 +295,7 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
     def test_real_http_cache_storage_response_cached_and_transparent(self):
         # test response is not cached because of the request's Cache-Control 'no-cache' directive
         # http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.2
-        with self._storage(HTTPCACHE_USE_DUMMY=False) as storage:
+        with self._storage(HTTPCACHE_POLICY='rfc2616') as storage:
             request = Request('http://www.example.com',
                 headers={'User-Agent': 'test', 'Cache-Control': 'no-cache'})
             assert storage.retrieve_response(self.spider, request) is None

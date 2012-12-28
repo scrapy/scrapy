@@ -134,7 +134,6 @@ FEED_EXPORTERS_BASE = {
 }
 
 HTTPCACHE_ENABLED = False
-HTTPCACHE_USE_DUMMY = True
 HTTPCACHE_DIR = 'httpcache'
 HTTPCACHE_IGNORE_MISSING = False
 HTTPCACHE_STORAGE = 'scrapy.contrib.httpcache.DbmCacheStorage'
@@ -142,8 +141,7 @@ HTTPCACHE_EXPIRATION_SECS = 0
 HTTPCACHE_IGNORE_HTTP_CODES = []
 HTTPCACHE_IGNORE_SCHEMES = ['file']
 HTTPCACHE_DBM_MODULE = 'anydbm'
-HTTPCACHE_POLICY_REQUEST = lambda request : True
-HTTPCACHE_POLICY_RESPONSE = lambda response : True
+HTTPCACHE_POLICY = 'dummy'
 
 ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'
 

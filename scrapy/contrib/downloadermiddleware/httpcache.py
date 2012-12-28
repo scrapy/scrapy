@@ -16,23 +16,44 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.project import data_path
 
 
-class HttpCacheMiddleware(object):
+class HttpCachePolicy(object):
+    def __init__(self, settings):
+        self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
+        self.ignore_http_codes = map(int, settings.getlist('HTTPCACHE_IGNORE_HTTP_CODES'))
+        self.policy = settings.get('HTTPCACHE_POLICY')
+
+        if self.policy == 'dummy':
+            self.use_dummy_cache = True
+        else:
+            self.use_dummy_cache = False
+
+    def should_cache_response(self, response):
+        retval = response.status not in self.ignore_http_codes
+        if not self.use_dummy_cache and response.headers.has_key('cache-control'):
+            retval = retval and (response.headers['cache-control'].lower().find('no-store') == -1)
+        #retval = retval and self.policy_response(response)
+        return retval
+
+    def should_cache_request(self, request):
+        retval = urlparse_cached(request).scheme not in self.ignore_schemes
+        if not self.use_dummy_cache and request.headers.has_key('cache-control'):
+            retval = retval and (request.headers['cache-control'].lower().find('no-store') == -1)
+        #retval = retval and self.policy_request(request)
+        return retval
+
+class HttpCacheMiddleware(HttpCachePolicy):
 
     def __init__(self, settings, stats):
         if not settings.getbool('HTTPCACHE_ENABLED'):
             raise NotConfigured
         self.storage = load_object(settings['HTTPCACHE_STORAGE'])(settings)
         self.ignore_missing = settings.getbool('HTTPCACHE_IGNORE_MISSING')
-        self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
-        self.ignore_http_codes = map(int, settings.getlist('HTTPCACHE_IGNORE_HTTP_CODES'))
-        self.use_dummy_cache = settings.getbool('HTTPCACHE_USE_DUMMY')
         self.stats = stats
-        self.policy_request = settings.get('HTTPCACHE_POLICY_REQUEST')
-        self.policy_response = settings.get('HTTPCACHE_POLICY_RESPONSE')
+        super(HttpCacheMiddleware, self).__init__(settings)
 
     @classmethod
     def from_crawler(cls, crawler):
-        o = cls(crawler.settings, crawler.stats)
+        o = cls.from_settings(crawler.settings, crawler.stats)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o
@@ -44,7 +65,7 @@ class HttpCacheMiddleware(object):
         self.storage.close_spider(spider)
 
     def process_request(self, request, spider):
-        if not self.is_cacheable(request):
+        if not self.should_cache_request(request):
             return
         response = self.storage.retrieve_response(spider, request)
 
@@ -54,7 +75,7 @@ class HttpCacheMiddleware(object):
             self.stats.inc_value('httpcache/revalidation', spider=spider)
             return
 
-        if response and self.is_cacheable_response(response):
+        if response and self.should_cache_response(response):
             self.stats.inc_value('httpcache/hit', spider=spider)
             if self.use_dummy_cache:
                 response.flags.append('cached')
@@ -69,8 +90,8 @@ class HttpCacheMiddleware(object):
             raise IgnoreRequest("Ignored request not in cache: %s" % request)
 
     def process_response(self, request, response, spider):
-        if (self.is_cacheable(request)
-            and self.is_cacheable_response(response)):
+        if (self.should_cache_request(request)
+            and self.should_cache_response(response)):
             if self.use_dummy_cache:
                 if 'cached' not in response.flags:
                     self.storage.store_response(spider, request, response)
@@ -84,19 +105,6 @@ class HttpCacheMiddleware(object):
                     self.stats.inc_value('httpcache/hit', spider=spider)
         return response
 
-    def is_cacheable_response(self, response):
-        retval = response.status not in self.ignore_http_codes
-        if not self.use_dummy_cache and response.headers.has_key('cache-control'):
-            retval = retval and (response.headers['cache-control'].lower().find('no-store') == -1)
-        retval = retval and self.policy_response(response)
-        return retval
-
-    def is_cacheable(self, request):
-        retval = urlparse_cached(request).scheme not in self.ignore_schemes
-        if not self.use_dummy_cache and request.headers.has_key('cache-control'):
-            retval = retval and (request.headers['cache-control'].lower().find('no-store') == -1)
-        retval = retval and self.policy_request(request)
-        return retval
 
 class FilesystemCacheStorage(object):
 
