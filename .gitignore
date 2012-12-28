@@ -4,3 +4,4 @@ dropin.cache
 docs/build
 *egg-info
 .tox
+venv
