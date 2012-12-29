@@ -195,7 +195,7 @@ class ExecutionEngine(object):
             if isinstance(response, Response):
                 response.request = request # tie request to response received
                 logkws = self.logformatter.crawled(request, response, spider)
-                log.msg(level=log.DEBUG, spider=spider, **logkws)
+                log.msg(spider=spider, **logkws)
                 self.signals.send_catch_log(signal=signals.response_received, \
                     response=response, request=request, spider=spider)
             return response
