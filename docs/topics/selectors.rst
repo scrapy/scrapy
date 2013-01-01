@@ -17,11 +17,13 @@ achieve this:
    API based on `ElementTree`_ (which is not part of the Python standard
    library).
 
-Scrapy comes with its own mechanism for extracting data. They're called XPath
-selectors (or just "selectors", for short) because they "select" certain parts
-of the HTML document specified by `XPath`_ expressions.
+Scrapy comes with its own mechanism for extracting data. They're called selectors
+because they "select" certain parts of the HTML document specified either by `XPath`_
+or `CSS`_ expressions.
 
 `XPath`_ is a language for selecting nodes in XML documents, which can also be used with HTML.
+`CSS`_ is a language for applying styles to HTML documents. It defines selectors to associate
+those styles with specific HTML elements.
 
 Both `lxml`_ and Scrapy Selectors are built over the `libxml2`_ library, which
 means they're very similar in speed and parsing accuracy.
@@ -31,14 +33,15 @@ small and simple, unlike the `lxml`_ API which is much bigger because the
 `lxml`_ library can be used for many other tasks, besides selecting markup
 documents.
 
-For a complete reference of the selectors API see the :ref:`XPath selector
-reference <topics-selectors-ref>`.
+For a complete reference of the selectors API see :ref:`XPath selector
+reference <topics-xpath-selectors-ref>` and :ref:`CSS selector reference <topics-css-selectors-ref>`.
 
 .. _BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/
 .. _lxml: http://codespeak.net/lxml/
 .. _ElementTree: http://docs.python.org/library/xml.etree.elementtree.html
 .. _libxml2: http://xmlsoft.org/
 .. _XPath: http://www.w3.org/TR/xpath
+.. _CSS: http://www.w3.org/TR/selectors
 
 Using selectors
 ===============
@@ -46,21 +49,25 @@ Using selectors
 Constructing selectors
 ----------------------
 
-There are two types of selectors bundled with Scrapy. Those are:
+There are four types of selectors bundled with Scrapy. Those are:
 
- * :class:`~scrapy.selector.HtmlXPathSelector` - for working with HTML documents
+ * :class:`~scrapy.selector.HtmlXPathSelector` - for working with HTML documents using XPath.
 
- * :class:`~scrapy.selector.XmlXPathSelector` - for working with XML documents
+ * :class:`~scrapy.selector.XmlXPathSelector` - for working with XML documents using XPath.
+
+ * :class:`~scrapy.selector.HtmlCSSSelector` - for working with HTML documents using CSS selectors.
+
+ * :class:`~scrapy.selector.XmlCSSSelector` - for working with XML documents using CSS selectors.
 
 .. highlight:: python
 
-Both share the same selector API, and are constructed with a Response object as
+All of them share the same selector API, and are constructed with a Response object as
 their first parameter. This is the Response they're going to be "selecting".
 
 Example::
 
-    hxs = HtmlXPathSelector(response) # a HTML selector
-    xxs = XmlXPathSelector(response) # a XML selector
+    hcs = HtmlCSSSelector(response) # an HTML CSS selector
+    xxs = XmlXPathSelector(response) # an XML XPath selector
 
 Using selectors with XPaths
 ---------------------------
