@@ -2,6 +2,7 @@ import time
 import tempfile
 import shutil
 import unittest
+import email.utils
 from contextlib import contextmanager
 
 from scrapy.http import Response, HtmlResponse, Request
@@ -11,11 +12,20 @@ from scrapy.exceptions import IgnoreRequest
 from scrapy.utils.test import get_crawler
 from scrapy.contrib.downloadermiddleware.httpcache import \
     FilesystemCacheStorage, HttpCacheMiddleware
+from scrapy.contrib.httpcache import DbmRealCacheStorage
 
 
 class HttpCacheMiddlewareTest(unittest.TestCase):
 
     storage_class = FilesystemCacheStorage
+    realcache_storage_class = DbmRealCacheStorage
+
+    dummy_policy = 'scrapy.contrib.downloadermiddleware.httpcache.DummyPolicy'
+    rfc2616_policy = 'scrapy.contrib.downloadermiddleware.httpcache.RFC2616Policy'
+
+    yesterday = email.utils.formatdate(time.time() - 1 * 24 * 60 * 60)
+    now = email.utils.formatdate()
+    tomorrow = email.utils.formatdate(time.time() + 1 * 24 * 60 * 60)
 
     def setUp(self):
         self.crawler = get_crawler()
@@ -37,6 +47,7 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
             'HTTPCACHE_DIR': self.tmpdir,
             'HTTPCACHE_EXPIRATION_SECS': 1,
             'HTTPCACHE_IGNORE_HTTP_CODES': [],
+            'HTTPCACHE_POLICY': self.dummy_policy
         }
         settings.update(new_settings)
         return Settings(settings)
@@ -44,7 +55,10 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
     @contextmanager
     def _storage(self, **new_settings):
         settings = self._get_settings(**new_settings)
-        storage = self.storage_class(settings)
+        if settings.get('HTTPCACHE_POLICY') == self.dummy_policy:
+            storage = self.storage_class(settings)
+        else:
+            storage = self.realcache_storage_class(settings)
         storage.open_spider(self.spider)
         try:
             yield storage
@@ -171,11 +185,192 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
             self.assertEqualResponse(self.response, response)
             assert 'cached' in response.flags
 
+    def test_middleware_rfc2616policy_response304_not_cached(self):
+        # test response is not cached because the status is 304 Not Modified
+        # (so it should be cached already)
+        with self._middleware(HTTPCACHE_POLICY=self.rfc2616_policy) as mw:
+            assert mw.process_request(self.request, self.spider) is None
+            response = Response('http://www.example.com', status=304)
+            mw.process_response(self.request, response, self.spider)
+
+            assert 'cached' in response.flags
+            assert mw.storage.retrieve_response(self.spider, self.request) is None
+            assert mw.process_request(self.request, self.spider) is None
+
+    def test_middleware_rfc2616policy_response_nostore_not_cached(self):
+        # test response is not cached because of the Cache-Control 'no-store' directive
+        # http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.2
+        with self._middleware(HTTPCACHE_POLICY=self.rfc2616_policy) as mw:
+            assert mw.process_request(self.request, self.spider) is None
+            response = Response('http://www.example.com', headers=
+                {'Content-Type': 'text/html', 'Cache-Control': 'no-store'},
+                body='test body', status=200)
+            mw.process_response(self.request, response, self.spider)
+
+            assert mw.storage.retrieve_response(self.spider, self.request) is None
+            assert mw.process_request(self.request, self.spider) is None
+
+    def test_middleware_rfc2616policy_request_nostore_not_cached(self):
+        # test response is not cached because of the request's Cache-Control 'no-store' directive
+        # http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.2
+        with self._middleware(HTTPCACHE_POLICY=self.rfc2616_policy) as mw:
+            request = Request('http://www.example.com',
+                headers={'User-Agent': 'test', 'Cache-Control': 'no-store'})
+            assert mw.process_request(request, self.spider) is None
+            mw.process_response(request, self.response, self.spider)
+
+            assert mw.storage.retrieve_response(self.spider, request) is None
+            assert mw.process_request(request, self.spider) is None
+
+    def test_middleware_rfc2616policy_response_cached_and_fresh(self):
+        # test response cached and fresh
+        with self._middleware(HTTPCACHE_POLICY=self.rfc2616_policy) as mw:
+            response = mw.process_response(self.request, self.response, self.spider)
+            self.assertRaises(IgnoreRequest, mw.process_request, self.request, self.spider)
+            assert 'cached' not in response.flags
+
+    def test_middleware_rfc2616policy_response_cached_and_stale(self):
+        # test response cached but stale
+        with self._middleware(HTTPCACHE_POLICY=self.rfc2616_policy,
+            HTTPCACHE_STORAGE = 'scrapy.contrib.httpcache.DbmRealCacheStorage') as mw:
+            response = Response('http://www.example.com', headers=
+                {'Content-Type': 'text/html', 'Cache-Control': 'no-cache'},
+                body='test body', status=200)
+            mw.process_response(self.request, response, self.spider)
+            assert mw.process_request(self.request, self.spider) is None
+
+            response = mw.storage.retrieve_response(self.spider, self.request)
+            assert isinstance(response, Request)
+
+    def test_storage_rfc2616policy_response_cached_and_fresh(self):
+        # test response is cached and is fresh
+        # (response requested should be same as response received)
+        with self._storage(HTTPCACHE_POLICY=self.rfc2616_policy) as storage:
+            assert storage.retrieve_response(self.spider, self.request) is None
+
+            response = Response('http://www.example.com', headers=
+                {'Content-Type': 'text/html', 'Date': self.yesterday, 'Expires': self.tomorrow},
+                body='test body', status=200)
+            storage.store_response(self.spider, self.request, response)
+            response2 = storage.retrieve_response(self.spider, self.request)
+            self.assertEqualResponse(response, response2)
+
+    def test_storage_rfc2616policy_response403_cached_and_further_requests_ignored(self):
+        # test response is cached but further requests are ignored
+        # because response status is 403 (as per the RFC)
+        with self._storage(HTTPCACHE_POLICY=self.rfc2616_policy) as storage:
+            assert storage.retrieve_response(self.spider, self.request) is None
+
+            response = Response('http://www.example.com', headers=
+                {'Content-Type': 'text/html', 'Date': self.yesterday, 'Expires': self.tomorrow},
+                body='test body', status=403)
+            storage.store_response(self.spider, self.request, response)
+            self.assertRaises(IgnoreRequest, storage.retrieve_response,
+                self.spider, self.request)
+
+    def test_storage_rfc2616policy_response_cached_and_stale(self):
+        # test response is cached and is stale (no cache validators inserted)
+        # (request should be same as response received)
+        with self._storage(HTTPCACHE_POLICY=self.rfc2616_policy) as storage:
+            assert storage.retrieve_response(self.spider, self.request) is None
+
+            response = Response('http://www.example.com', headers=
+                {'Content-Type': 'text/html', 'Date': self.now, 'Expires': self.yesterday},
+                body='test body', status=200)
+            storage.store_response(self.spider, self.request, response)
+            response2 = storage.retrieve_response(self.spider, self.request)
+            assert isinstance(response2, Request)
+            self.assertEqualRequest(self.request, response2)
+
+    def test_storage_rfc2616policy_response_cached_and_stale_with_cache_validators(self):
+        # test response is cached and is stale and cache validators are inserted
+        with self._storage(HTTPCACHE_POLICY=self.rfc2616_policy) as storage:
+            assert storage.retrieve_response(self.spider, self.request) is None
+
+            response = Response('http://www.example.com', headers=
+                {'Content-Type': 'text/html', 'Date': self.now, 'Expires': self.yesterday,
+                'Last-Modified': self.yesterday}, body='test body', status=200)
+            storage.store_response(self.spider, self.request, response)
+            response2 = storage.retrieve_response(self.spider, self.request)
+            assert isinstance(response2, Request)
+            self.assertEqualRequestButWithCacheValidators(self.request, response2)
+
+    def test_storage_rfc2616policy_response_cached_and_transparent(self):
+        # test response is not cached because of the request's Cache-Control 'no-cache' directive
+        # http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.2
+        with self._storage(HTTPCACHE_POLICY=self.rfc2616_policy) as storage:
+            request = Request('http://www.example.com',
+                headers={'User-Agent': 'test', 'Cache-Control': 'no-cache'})
+            assert storage.retrieve_response(self.spider, request) is None
+            storage.store_response(self.spider, request, self.response)
+            response = storage.retrieve_response(self.spider, request)
+            assert isinstance(response, Request)
+            self.assertEqualRequest(request, response)
+    
+    def test_http_cache_request_policy(self):
+        callback = lambda r: (r.url == 'http://www.example.com/')
+        
+        # Should be cached
+        req, res = Request('http://www.example.com/'), Response('http://www.example.com/')
+        with self._middleware(HTTPCACHE_POLICY_REQUEST=callback) as mw:
+            assert mw.process_request(req, self.spider) is None
+            mw.process_response(req, res, self.spider)
+
+            cached = mw.process_request(req, self.spider)
+            assert isinstance(cached, Response), type(cached)
+            self.assertEqualResponse(res, cached)
+            assert 'cached' in cached.flags
+        
+        # Should not be cached
+        req, res = Request('http://www.test.com/'), Response('http://www.test.com/')
+        with self._middleware(HTTPCACHE_POLICY_REQUEST=callback) as mw:
+            assert mw.process_request(req, self.spider) is None
+            mw.process_response(req, res, self.spider)
+
+            assert mw.storage.retrieve_response(self.spider, req) is None
+            assert mw.process_request(req, self.spider) is None
+            
+    def test_http_cache_response_policy(self):
+        callback = lambda r: (r.url == 'http://www.example.com/')
+        
+        # Should be cached
+        req, res = Request('http://www.example.com/'), Response('http://www.example.com/')
+        with self._middleware(HTTPCACHE_POLICY_RESPONSE=callback) as mw:
+            assert mw.process_request(req, self.spider) is None
+            mw.process_response(req, res, self.spider)
+
+            cached = mw.process_request(req, self.spider)
+            assert isinstance(cached, Response), type(cached)
+            self.assertEqualResponse(res, cached)
+            assert 'cached' in cached.flags
+        
+        # Should not be cached
+        req, res = Request('http://www.test.com/'), Response('http://www.test.com/')
+        with self._middleware(HTTPCACHE_POLICY_RESPONSE=callback) as mw:
+            assert mw.process_request(req, self.spider) is None
+            mw.process_response(req, res, self.spider)
+
+            assert mw.storage.retrieve_response(self.spider, req) is None
+            assert mw.process_request(req, self.spider) is None
+
     def assertEqualResponse(self, response1, response2):
         self.assertEqual(response1.url, response2.url)
         self.assertEqual(response1.status, response2.status)
         self.assertEqual(response1.headers, response2.headers)
         self.assertEqual(response1.body, response2.body)
+
+    def assertEqualRequest(self, request1, request2):
+        self.assertEqual(request1.url, request2.url)
+        self.assertEqual(request1.headers, request2.headers)
+        self.assertEqual(request1.body, request2.body)
+
+    def assertEqualRequestButWithCacheValidators(self, request1, request2):
+        self.assertEqual(request1.url, request2.url)
+        assert not request1.headers.has_key('If-None-Match')
+        assert not request1.headers.has_key('If-Modified-Since')
+        assert (request2.headers.has_key('If-None-Match') or \
+            request2.headers.has_key('If-Modified-Since'))
+        self.assertEqual(request1.body, request2.body)
 
 if __name__ == '__main__':
     unittest.main()

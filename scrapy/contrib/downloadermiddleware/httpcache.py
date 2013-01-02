@@ -7,6 +7,7 @@ from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
 
 from scrapy import signals
 from scrapy.http import Headers
+from scrapy.http.request import Request
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
@@ -15,6 +16,38 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.project import data_path
 
 
+class DummyPolicy(object):
+    def __init__(self, settings):
+        self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
+        self.ignore_http_codes = map(int, settings.getlist('HTTPCACHE_IGNORE_HTTP_CODES'))
+        
+    def should_cache_response(self, response):
+        return response.status not in self.ignore_http_codes
+
+    def should_cache_request(self, request):
+        return urlparse_cached(request).scheme not in self.ignore_schemes
+
+
+class RFC2616Policy(DummyPolicy):
+    def __init__(self, settings):
+        super(RFC2616Policy, self).__init__(settings)
+
+    def should_cache_response(self, response):
+        retval = super(RFC2616Policy, self).should_cache_response(response)
+
+        if response.headers.has_key('cache-control'):
+            retval = retval and (response.headers['cache-control'].lower().find('no-store') == -1)
+        #retval = retval and self.policy_response(response)
+        return retval
+
+    def should_cache_request(self, request):
+        retval = super(RFC2616Policy, self).should_cache_request(request)
+        
+        if request.headers.has_key('cache-control'):
+            retval = retval and (request.headers['cache-control'].lower().find('no-store') == -1)
+        #retval = retval and self.policy_request(request)
+        return retval
+
 class HttpCacheMiddleware(object):
 
     def __init__(self, settings, stats):
@@ -22,8 +55,7 @@ class HttpCacheMiddleware(object):
             raise NotConfigured
         self.storage = load_object(settings['HTTPCACHE_STORAGE'])(settings)
         self.ignore_missing = settings.getbool('HTTPCACHE_IGNORE_MISSING')
-        self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
-        self.ignore_http_codes = map(int, settings.getlist('HTTPCACHE_IGNORE_HTTP_CODES'))
+        self.policy = load_object(settings['HTTPCACHE_POLICY'])(settings)
         self.stats = stats
 
     @classmethod
@@ -40,31 +72,45 @@ class HttpCacheMiddleware(object):
         self.storage.close_spider(spider)
 
     def process_request(self, request, spider):
-        if not self.is_cacheable(request):
+        if not self.policy.should_cache_request(request):
             return
         response = self.storage.retrieve_response(spider, request)
-        if response and self.is_cacheable_response(response):
-            response.flags.append('cached')
-            self.stats.inc_value('httpcache/hits', spider=spider)
-            return response
 
-        self.stats.inc_value('httpcache/misses', spider=spider)
+        # Response cached, but stale
+        if response and type(response) is Request:
+            # Return None so that Scrapy continues processing
+            self.stats.inc_value('httpcache/revalidation', spider=spider)
+            return
+
+        if response and self.policy.should_cache_response(response):
+            self.stats.inc_value('httpcache/hit', spider=spider)
+            if isinstance(self.policy, RFC2616Policy):
+                # Response cached and fresh
+                raise IgnoreRequest("Ignored request already in cache: %s" % request)
+            else:
+                response.flags.append('cached')
+                return response
+
+        # Response not cached
+        self.stats.inc_value('httpcache/miss', spider=spider)
         if self.ignore_missing:
             raise IgnoreRequest("Ignored request not in cache: %s" % request)
 
     def process_response(self, request, response, spider):
-        if (self.is_cacheable(request)
-            and self.is_cacheable_response(response)
-            and 'cached' not in response.flags):
-            self.storage.store_response(spider, request, response)
-            self.stats.inc_value('httpcache/store', spider=spider)
+        if (self.policy.should_cache_request(request)
+            and self.policy.should_cache_response(response)):
+            if isinstance(self.policy, RFC2616Policy):
+                if response.status != 304:
+                    self.storage.store_response(spider, request, response)
+                    self.stats.inc_value('httpcache/store', spider=spider)
+                else:
+                    response.flags.append('cached')
+                    self.stats.inc_value('httpcache/hit', spider=spider)
+            else:
+                if 'cached' not in response.flags:
+                    self.storage.store_response(spider, request, response)
+                    self.stats.inc_value('httpcache/store', spider=spider)
         return response
-
-    def is_cacheable_response(self, response):
-        return response.status not in self.ignore_http_codes
-
-    def is_cacheable(self, request):
-        return urlparse_cached(request).scheme not in self.ignore_schemes
 
 
 class FilesystemCacheStorage(object):
