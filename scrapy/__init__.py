@@ -36,6 +36,7 @@ except ImportError:
     pass
 else:
     optional_features.add('libxml2')
+<<<<<<< HEAD
 
 try:
     import django
@@ -43,10 +44,3 @@ except ImportError:
     pass
 else:
     optional_features.add('django')
-
-try:
-    import cssselect
-except ImportError:
-    pass
-else:
-    optional_features.add('cssselect')

@@ -9,7 +9,6 @@ Two backends are currently available: lxml (default) and libxml2.
 """
 
 import os
-from scrapy import optional_features
 
 backend = os.environ.get('SCRAPY_SELECTORS_BACKEND')
 
@@ -26,5 +25,4 @@ else:
     else:
         from scrapy.selector.lxmlsel import *
 
-if 'cssselect' in optional_features:
-    from scrapy.selector.csssel import *
+from scrapy.selector.csssel import *
