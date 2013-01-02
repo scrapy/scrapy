@@ -69,8 +69,8 @@ Example::
     hcs = HtmlCSSSelector(response) # an HTML CSS selector
     xxs = XmlXPathSelector(response) # an XML XPath selector
 
-Using selectors with XPaths
----------------------------
+Using selectors
+---------------
 
 To explain how to use the selectors we'll use the `Scrapy shell` (which
 provides interactive testing) and an example page located in the Scrapy
@@ -94,9 +94,11 @@ First, let's open the shell::
 Then, after the shell loads, you'll have some selectors already instantiated and
 ready to use.
 
-Since we're dealing with HTML, we'll be using the
+Since we're dealing with HTML, we can use either the
 :class:`~scrapy.selector.HtmlXPathSelector` object which is found, by default, in
-the ``hxs`` shell variable.
+the ``hxs`` shell variable, or the equivalent :class:`~scrapy.selector.HtmlCSSSelector`
+found in the ``hcs`` shell variable. Note that CSS selectors are limited to element nodes,
+while XPath selectors can select any nodes, including text and comment nodes.
 
 .. highlight:: python
 
@@ -116,10 +118,27 @@ method, as follows::
     >>> hxs.select('//title/text()').extract()
     [u'Example website']
 
+Now notice that CSS selectors can't select the text nodes. Therefore::
+
+    >>> hcs.select('title')
+    [<HtmlCSSSelector xpath=u'descendant-or-self::title' data=u'<title>Example website</title>'>]
+    >>> hcs.select('title').extract()
+    [u'<title>Example website</title>']
+
+However, CSS selectors provide some useful methods from lxml.html.HTMLMixin,
+such as text_content(), to extract text from children text nodes and get()
+to access the attributes. You'll have to choose one of the elements, though::
+
+    >>> hcs.select('title')[0].text_content()
+    'Example website'
+
 Now we're going to get the base URL and some image links::
 
     >>> hxs.select('//base/@href').extract()
     [u'http://example.com/']
+
+    >>> hcs.select('base')[0].get('href')
+    'http://example.com/'
 
     >>> hxs.select('//a[contains(@href, "image")]/@href').extract()
     [u'image1.html',
@@ -128,6 +147,13 @@ Now we're going to get the base URL and some image links::
      u'image4.html',
      u'image5.html']
 
+    >>> [element.get('href') for element in hcs.select('a[href*=image]')]
+    ['image1.html',
+     'image2.html',
+     'image3.html',
+     'image4.html',
+     'image5.html']
+
     >>> hxs.select('//a[contains(@href, "image")]/img/@src').extract()
     [u'image1_thumb.jpg',
      u'image2_thumb.jpg',
@@ -135,6 +161,12 @@ Now we're going to get the base URL and some image links::
      u'image4_thumb.jpg',
      u'image5_thumb.jpg']
 
+    >>> [element.get('src') for element in hcs.select('a[href*=image] img')]
+    ['image1_thumb.jpg',
+     'image2_thumb.jpg',
+     'image3_thumb.jpg',
+     'image4_thumb.jpg',
+     'image5_thumb.jpg']
 
 Using selectors with regular expressions
 ----------------------------------------
