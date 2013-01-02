@@ -1,23 +1,35 @@
 from lxml.etree import XPath
-from scrapy.selector import HtmlXPathSelector, XmlXPathSelector
 from cssselect import GenericTranslator, HTMLTranslator
+from scrapy.utils.python import flatten
+from scrapy.selector import HtmlXPathSelector, XmlXPathSelector, XPathSelectorList
+
+class CSSSelectorList(XPathSelectorList):
+    def xpath(self, xpath):
+        return self.__class__(flatten([x.xpath(xpath) for x in self]))
+
+    def get(self, attr):
+        return self.__class__(flatten([x.get(attr) for x in self]))
+
+    def text(self, recursive=False):
+        return self.__class__(flatten([x.text(recursive) for x in self]))
 
 class CSSSelectorMixin(object):
+    _collect_string_content = XPath('string()')
+
+    def select(self, css):
+        return CSSSelectorList(super(CSSSelectorMixin, self).select(self.translator.css_to_xpath(css)))
+
+    def xpath(self, xpath):
+        return CSSSelectorList(super(CSSSelectorMixin, self).select(xpath))
+
+    def text(self, recursive=False):
+        return self.xpath('//text()') if recursive else self.xpath('text()')
+
+    def get(self, attr):
+        return self.xpath('@' + attr)
+
+class XmlCSSSelector(CSSSelectorMixin, XmlXPathSelector):
     translator = GenericTranslator()
-    _collect_string_content = XPath("string()")
 
-    def text_content(self):
-        return self._collect_string_content(self._root)
-
-    def get(self, key, default=None):
-        return self._root.get(key, default)
-
-class XmlCSSSelector(XmlXPathSelector, CSSSelectorMixin):
-    def select(self, css):
-        return super(self.__class__, self).select(self.translator.css_to_xpath(css))
-
-class HtmlCSSSelector(HtmlXPathSelector, CSSSelectorMixin):
+class HtmlCSSSelector(CSSSelectorMixin, HtmlXPathSelector):
     translator = HTMLTranslator()
-
-    def select(self, css):
-        return super(self.__class__, self).select(self.translator.css_to_xpath(css))
