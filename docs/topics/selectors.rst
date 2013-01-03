@@ -163,24 +163,6 @@ Now we're going to get the base URL and some image links::
      u'image4_thumb.jpg',
      u'image5_thumb.jpg']
 
-Using selectors with regular expressions
-----------------------------------------
-
-Selectors also have a ``re()`` method for extracting data using regular
-expressions. However, unlike using the ``select()`` method, the ``re()`` method
-does not return a list of :class:`~scrapy.selector.XPathSelector` objects, so you
-can't construct nested ``.re()`` calls. 
-
-Here's an example used to extract images names from the :ref:`HTML code
-<topics-selectors-htmlcode>` above::
-
-    >>> hxs.select('//a[contains(@href, "image")]/text()').re(r'Name:\s*(.*)')
-    [u'My image 1',
-     u'My image 2',
-     u'My image 3',
-     u'My image 4',
-     u'My image 5']
-
 .. _topics-selectors-nesting-selectors:
 
 Nesting selectors
@@ -206,6 +188,25 @@ The ``select()`` selector method returns a list of selectors, so you can call th
     Link number 2 points to url [u'image3.html'] and image [u'image3_thumb.jpg']
     Link number 3 points to url [u'image4.html'] and image [u'image4_thumb.jpg']
     Link number 4 points to url [u'image5.html'] and image [u'image5_thumb.jpg']
+
+Using selectors with regular expressions
+----------------------------------------
+
+Selectors also have a ``re()`` method for extracting data using regular
+expressions. However, unlike using the ``select()`` method, the ``re()`` method
+does not return a list of :class:`~scrapy.selector.XPathSelector` objects, so you
+can't construct nested ``.re()`` calls. 
+
+Here's an example used to extract images names from the :ref:`HTML code
+<topics-selectors-htmlcode>` above::
+
+    >>> hxs.select('//a[contains(@href, "image")]/text()').re(r'Name:\s*(.*)')
+    >>> hcs.select('a[href*=image]').text().re(r'Name:\s*(.*)')
+    [u'My image 1',
+     u'My image 2',
+     u'My image 3',
+     u'My image 4',
+     u'My image 5']
 
 .. _topics-selectors-relative-xpaths:
 
