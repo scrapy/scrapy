@@ -120,7 +120,7 @@ method, as follows::
     [u'Example website']
 
 Now notice that CSS selectors can't select the text nodes. There are some
-methods that allow enhancing CSS selectors, though::
+methods that allow enhancing CSS selectors, such as ``text`` and ``get``::
 
     >>> hcs.select('title').text()
     [<HtmlCSSSelector xpath='text()' data=u'Example website'>]
@@ -168,7 +168,7 @@ Now we're going to get the base URL and some image links::
 Nesting selectors
 -----------------
 
-The ``select()`` selector method returns a list of selectors, so you can call the
+The ``select()`` selector method returns a list of selectors of the same type (XPath or CSS), so you can call the
 ``select()`` for those selectors too. Here's an example::
 
     >>> links = hxs.select('//a[contains(@href, "image")]')
@@ -189,19 +189,32 @@ The ``select()`` selector method returns a list of selectors, so you can call th
     Link number 3 points to url [u'image4.html'] and image [u'image4_thumb.jpg']
     Link number 4 points to url [u'image5.html'] and image [u'image5_thumb.jpg']
 
+The CSS Selector List ``select`` method will accept CSS selectors, as expected, but it also provides
+an ``xpath`` method that accepts XPath selectors to augment the CSS selectors. Here's an example::
+
+    >>> links = hcs.select('a[href*=image]')
+    >>> for index, link in enumerate(links):
+            args = (index, link.get('href').extract(), link.xpath('img/@src').extract())
+            print 'Link number %d points to url %s and image %s' % args
+
+    Link number 0 points to url [u'image1.html'] and image [u'image1_thumb.jpg']
+    Link number 1 points to url [u'image2.html'] and image [u'image2_thumb.jpg']
+    Link number 2 points to url [u'image3.html'] and image [u'image3_thumb.jpg']
+    Link number 3 points to url [u'image4.html'] and image [u'image4_thumb.jpg']
+    Link number 4 points to url [u'image5.html'] and image [u'image5_thumb.jpg']
+
 Using selectors with regular expressions
 ----------------------------------------
 
-Selectors also have a ``re()`` method for extracting data using regular
+Selectors (both CSS and XPath) also have a ``re()`` method for extracting data using regular
 expressions. However, unlike using the ``select()`` method, the ``re()`` method
 does not return a list of :class:`~scrapy.selector.XPathSelector` objects, so you
-can't construct nested ``.re()`` calls. 
+can't construct nested ``.re()`` calls.
 
 Here's an example used to extract images names from the :ref:`HTML code
 <topics-selectors-htmlcode>` above::
 
     >>> hxs.select('//a[contains(@href, "image")]/text()').re(r'Name:\s*(.*)')
-    >>> hcs.select('a[href*=image]').text().re(r'Name:\s*(.*)')
     [u'My image 1',
      u'My image 2',
      u'My image 3',
