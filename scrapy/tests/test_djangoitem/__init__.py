@@ -34,7 +34,7 @@ class IdentifiedPersonItem(DjangoItem):
 
 
 class DjangoItemTest(unittest.TestCase):
-    
+
     def setUp(self):
         if not django:
             raise unittest.SkipTest("Django is not available")
@@ -74,9 +74,43 @@ class DjangoItemTest(unittest.TestCase):
         i = OverrideFieldPersonItem()
 
         i['name'] = 'John'
+        # it is not obvious that "age" should be saved also, since it was
+        # redefined in child class
+        i['age'] = '22'
         person = i.save(commit=False)
 
         self.assertEqual(person.name, 'John')
+        self.assertEqual(person.age, '22')
+
+    def test_validation(self):
+        long_name = 'z' * 300
+        i = BasePersonItem(name=long_name)
+        self.assertFalse(i.is_valid())
+        self.assertDictEqual(
+            {
+                'age': [u'This field cannot be null.'],
+                'name': [u'Ensure this value has at most 255 characters (it has 300).']
+            },
+            i.errors)
+
+        i = BasePersonItem(name='John', age='22')
+        self.assertDictEqual({}, i.errors)
+        self.assertTrue(i.is_valid())
+
+        # once the item is validated, it does not validate again
+        i['name'] = long_name
+        self.assertTrue(i.is_valid())
+
+    def test_override_validation(self):
+        i = OverrideFieldPersonItem()
+        i['name'] = 'John'
+        self.assertFalse(i.is_valid())
+
+        i = i = OverrideFieldPersonItem()
+        i['name'] = 'John'
+        i['age'] = '22'
+        self.assertTrue(i.is_valid())
+
 
     def test_default_field_values(self):
         i = BasePersonItem()
