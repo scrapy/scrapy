@@ -9,22 +9,24 @@ from scrapy.spider import BaseSpider
 from scrapy.settings import Settings
 from scrapy.exceptions import IgnoreRequest
 from scrapy.utils.test import get_crawler
-from scrapy.contrib.downloadermiddleware.httpcache import \
-    FilesystemCacheStorage, HttpCacheMiddleware
+from scrapy.contrib.httpcache import FilesystemCacheStorage, DbmCacheStorage
+from scrapy.contrib.downloadermiddleware.httpcache import HttpCacheMiddleware
 
 
 class HttpCacheMiddlewareTest(unittest.TestCase):
 
-    storage_class = FilesystemCacheStorage
+    storage_class = DbmCacheStorage
 
     def setUp(self):
         self.crawler = get_crawler()
         self.spider = BaseSpider('example.com')
         self.tmpdir = tempfile.mkdtemp()
         self.request = Request('http://www.example.com',
-            headers={'User-Agent': 'test'})
-        self.response = Response('http://www.example.com', headers=
-            {'Content-Type': 'text/html'}, body='test body', status=202)
+                               headers={'User-Agent': 'test'})
+        self.response = Response('http://www.example.com',
+                                 headers={'Content-Type': 'text/html'},
+                                 body='test body',
+                                 status=202)
         self.crawler.stats.open_spider(self.spider)
 
     def tearDown(self):
@@ -176,6 +178,11 @@ class HttpCacheMiddlewareTest(unittest.TestCase):
         self.assertEqual(response1.status, response2.status)
         self.assertEqual(response1.headers, response2.headers)
         self.assertEqual(response1.body, response2.body)
+
+
+class FilesystemCacheStorageTest(HttpCacheMiddlewareTest):
+
+    storage = FilesystemCacheStorage
 
 if __name__ == '__main__':
     unittest.main()
