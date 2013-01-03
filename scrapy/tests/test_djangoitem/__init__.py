@@ -93,9 +93,9 @@ class DjangoItemTest(unittest.TestCase):
             },
             i.errors)
 
-        i = BasePersonItem(name='John', age='22')
+        i = BasePersonItem(name='John')
+        self.assertTrue(i.is_valid(exclude=['age']))
         self.assertDictEqual({}, i.errors)
-        self.assertTrue(i.is_valid())
 
         # once the item is validated, it does not validate again
         i['name'] = long_name
