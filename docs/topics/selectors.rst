@@ -525,3 +525,34 @@ CSS Selector objects
        ``all`` is a boolean to either select children text nodes (False) or
        select a string node concatenating all of the descendant text nodes.
 
+CSSSelectorList objects
+-----------------------
+
+.. class:: CSSSelectorList
+
+   The :class:`CSSSelectorList` class is subclass of :class:`XPathSelectorList`
+   which overrides and adds methods to match those of :class:`CSSSelectorMixin`.
+
+   .. method:: xpath(xpath)
+
+       Call the :meth:`CSSSelector.xpath` method for all :class:`CSSSelector`
+       objects in this list and return their results flattened, as a new
+       :class:`CSSSelectorList`.
+
+       ``xpath`` is the same argument as the one in :meth:`CSSSelector.xpath`
+
+   .. method:: get(attr)
+
+       Call the :meth:`CSSSelector.get` method for all :class:`CSSSelector`
+       objects in this list and return their results flattened, as a new
+       :class:`CSSSelectorList`.
+
+       ``attr`` is the same argument as the one in :meth:`CSSSelector.get`
+
+   .. method:: text(all=False)
+
+       Call the :meth:`CSSSelector.text` method for all :class:`CSSSelector`
+       objects in this list and return their results flattened, as a new
+       :class:`CSSSelectorList`.
+
+       ``all`` is the same argument as the one in :meth:`CSSSelector.text`
