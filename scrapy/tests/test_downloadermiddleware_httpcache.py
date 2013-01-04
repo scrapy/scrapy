@@ -241,15 +241,27 @@ class RFC2616MiddlewareTest(DefaultStorageTest):
                         headers={'Expires': self.tomorrow})
         req0 = Request('http://example.com')
         req1 = req0.replace(headers={'Cache-Control': 'no-store'})
+        req2 = req0.replace(headers={'Cache-Control': 'no-cache'})
         with self._middleware() as mw:
+            # response for a request with no-store must not be cached
             res1 = self._process_requestresponse(mw, req1, res0)
             self.assertEqualResponse(res1, res0)
             assert mw.storage.retrieve_response(self.spider, req1) is None
+            # Re-do request without no-store and expect it to be cached
             res2 = self._process_requestresponse(mw, req0, res0)
             assert 'cached' not in res2.flags
             res3 = mw.process_request(req0, self.spider)
             assert 'cached' in res3.flags
             self.assertEqualResponse(res2, res3)
+            # request with no-cache directive must not return cached response
+            # but it allows new response to be stored
+            res0b = res0.replace(body='foo')
+            res4 = self._process_requestresponse(mw, req2, res0b)
+            self.assertEqualResponse(res4, res0b)
+            assert 'cached' not in res4.flags
+            res5 = self._process_requestresponse(mw, req0, None)
+            self.assertEqualResponse(res5, res0b)
+            assert 'cached' in res5.flags
 
     def test_response_cacheability(self):
         responses = [

@@ -79,7 +79,8 @@ class RFC2616Policy(object):
 
     def is_cached_response_fresh(self, cachedresponse, request):
         cc = self._parse_cachecontrol(cachedresponse)
-        if 'no-cache' in cc:
+        ccreq = self._parse_cachecontrol(request)
+        if 'no-cache' in cc or 'no-cache' in ccreq:
             return False
 
         now = time()
