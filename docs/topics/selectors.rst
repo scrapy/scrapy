@@ -375,7 +375,7 @@ HtmlXPathSelector examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Here's a couple of :class:`HtmlXPathSelector` examples to illustrate several
-concepts.  In all cases, we assume there is already an :class:`HtmlPathSelector`
+concepts.  In all cases, we assume there is already an :class:`HtmlXPathSelector`
 instantiated with a :class:`~scrapy.http.Response` object like this::
 
       x = HtmlXPathSelector(html_response)
@@ -394,7 +394,7 @@ instantiated with a :class:`~scrapy.http.Response` object like this::
 3. Iterate over all ``<p>`` tags and print their class attribute::
 
       for node in x.select("//p"):
-      ...    print node.select("@href")
+      ...    print node.select("@class").extract()
 
 4. Extract textual data from all ``<p>`` tags without entities, as a list of
    unicode strings::
@@ -417,7 +417,7 @@ XmlXPathSelector examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Here's a couple of :class:`XmlXPathSelector` examples to illustrate several
-concepts.  In both cases we assume there is already an :class:`XmlXPathSelector`
+concepts. In both cases we assume there is already an :class:`XmlXPathSelector`
 instantiated with a :class:`~scrapy.http.Response` object like this::
 
       x = XmlXPathSelector(xml_response)
