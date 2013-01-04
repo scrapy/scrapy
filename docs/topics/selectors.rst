@@ -556,3 +556,36 @@ CSSSelectorList objects
        :class:`CSSSelectorList`.
 
        ``all`` is the same argument as the one in :meth:`CSSSelector.text`
+
+HtmlCSSSelector objects
+-----------------------
+
+.. class:: HtmlCSSSelector(response)
+
+   A subclass of :class:`CSSSelectorMixin` and :class:`HtmlXPathSelector` for
+   working with HTML content using CSS Selectors.
+
+HtmlCSSSelector examples
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Here's a couple of :class:`HtmlCSSSelector` examples to illustrate several
+concepts. In all cases, we assume there is already an :class:`HtmlCSSSelector`
+instantiated with a :class:`~scrapy.http.Response` object like this::
+
+      x = HtmlCSSSelector(html_response)
+
+1. Select all ``<h1>`` elements from a HTML response body, returning a list of
+   :class:`HtmlCSSSelector` objects (ie. a :class:`CSSSelectorList` object)::
+
+      x.select("h1")
+
+2. Extract the text of all ``<h1>`` elements from a HTML response body,
+   returning a list of unicode strings::
+
+      x.select("h1").extract()         # this includes the h1 tag
+      x.select("h1").text().extract()  # this excludes the h1 tag
+
+3. Iterate over all ``<p>`` tags and print their class attribute::
+
+      for node in x.select("p"):
+      ...    print node.get("class").extract()
