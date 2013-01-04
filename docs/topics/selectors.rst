@@ -6,24 +6,24 @@ Selectors
 
 When you're scraping web pages, the most common task you need to perform is
 to extract data from the HTML source. There are several libraries available to
-achieve this: 
+achieve this:
 
  * `BeautifulSoup`_ is a very popular screen scraping library among Python
-   programmers which constructs a Python object based on the
-   structure of the HTML code and also deals with bad markup reasonably well,
-   but it has one drawback: it's slow.
+   programmers which constructs a Python object based on the structure of the
+   HTML code and also deals with bad markup reasonably well, but it has one
+   drawback: it's slow.
 
  * `lxml`_ is a XML parsing library (which also parses HTML) with a pythonic
    API based on `ElementTree`_ (which is not part of the Python standard
    library).
 
 Scrapy comes with its own mechanism for extracting data. They're called selectors
-because they "select" certain parts of the HTML document specified either by `XPath`_
-or `CSS`_ expressions.
+because they "select" certain parts of the HTML document specified either by
+`XPath`_ or `CSS`_ expressions.
 
-`XPath`_ is a language for selecting nodes in XML documents, which can also be used with HTML.
-`CSS`_ is a language for applying styles to HTML documents. It defines selectors to associate
-those styles with specific HTML elements.
+`XPath`_ is a language for selecting nodes in XML documents, which can also be
+used with HTML. `CSS`_ is a language for applying styles to HTML documents. It
+defines selectors to associate those styles with specific HTML elements.
 
 Both `lxml`_ and Scrapy Selectors are built over the `libxml2`_ library, which
 means they're very similar in speed and parsing accuracy.
@@ -34,7 +34,8 @@ small and simple, unlike the `lxml`_ API which is much bigger because the
 documents.
 
 For a complete reference of the selectors API see :ref:`XPath selector
-reference <topics-xpath-selectors-ref>` and :ref:`CSS selector reference <topics-css-selectors-ref>`.
+reference <topics-xpath-selectors-ref>` and :ref:`CSS selector reference
+<topics-css-selectors-ref>`.
 
 .. _BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/
 .. _lxml: http://codespeak.net/lxml/
@@ -51,18 +52,23 @@ Constructing selectors
 
 There are four types of selectors bundled with Scrapy. Those are:
 
- * :class:`~scrapy.selector.HtmlXPathSelector` - for working with HTML documents using XPath.
+ * :class:`~scrapy.selector.HtmlXPathSelector` - for working with HTML
+   documents using XPath.
 
- * :class:`~scrapy.selector.XmlXPathSelector` - for working with XML documents using XPath.
+ * :class:`~scrapy.selector.XmlXPathSelector` - for working with XML documents
+   using XPath.
 
- * :class:`~scrapy.selector.HtmlCSSSelector` - for working with HTML documents using CSS selectors.
+ * :class:`~scrapy.selector.HtmlCSSSelector` - for working with HTML documents
+   using CSS selectors.
 
- * :class:`~scrapy.selector.XmlCSSSelector` - for working with XML documents using CSS selectors.
+ * :class:`~scrapy.selector.XmlCSSSelector` - for working with XML documents
+   using CSS selectors.
 
 .. highlight:: python
 
-All of them share the same selector API, and are constructed with a Response object as
-their first parameter. This is the Response they're going to be "selecting".
+All of them share the same selector API, and are constructed with a Response
+object as their first parameter. This is the Response they're going to be
+"selecting".
 
 Example::
 
@@ -91,27 +97,28 @@ First, let's open the shell::
 
     scrapy shell http://doc.scrapy.org/en/latest/_static/selectors-sample1.html
 
-Then, after the shell loads, you'll have some selectors already instantiated and
-ready to use.
+Then, after the shell loads, you'll have some selectors already instantiated
+and ready to use.
 
 Since we're dealing with HTML, we can use either the
-:class:`~scrapy.selector.HtmlXPathSelector` object which is found, by default, in
-the ``hxs`` shell variable, or the equivalent :class:`~scrapy.selector.HtmlCSSSelector`
-found in the ``hcs`` shell variable. Note that CSS selectors can only select element nodes,
-while XPath selectors can select any nodes, including text and comment nodes. There are some
-methods to augment CSS selectors with XPath as we'll see below.
+:class:`~scrapy.selector.HtmlXPathSelector` object which is found, by default,
+in the ``hxs`` shell variable, or the equivalent
+:class:`~scrapy.selector.HtmlCSSSelector` found in the ``hcs`` shell variable.
+Note that CSS selectors can only select element nodes, while XPath selectors
+can select any nodes, including text and comment nodes. There are some methods
+to augment CSS selectors with XPath as we'll see below.
 
 .. highlight:: python
 
-So, by looking at the :ref:`HTML code <topics-selectors-htmlcode>` of that page,
-let's construct an XPath (using an HTML selector) for selecting the text inside
-the title tag::
+So, by looking at the :ref:`HTML code <topics-selectors-htmlcode>` of that
+page, let's construct an XPath (using an HTML selector) for selecting the text
+inside the title tag::
 
     >>> hxs.select('//title/text()')
     [<HtmlXPathSelector (text) xpath=//title/text()>]
 
-As you can see, the select() method returns an XPathSelectorList, which is a list of
-new selectors. This API can be used quickly for extracting nested data.
+As you can see, the select() method returns an XPathSelectorList, which is a
+list of new selectors. This API can be used quickly for extracting nested data.
 
 To actually extract the textual data, you must call the selector ``extract()``
 method, as follows::
@@ -168,8 +175,9 @@ Now we're going to get the base URL and some image links::
 Nesting selectors
 -----------------
 
-The ``select()`` selector method returns a list of selectors of the same type (XPath or CSS), so you can call the
-``select()`` for those selectors too. Here's an example::
+The ``select()`` selector method returns a list of selectors of the same type
+(XPath or CSS), so you can call the ``select()`` for those selectors too.
+Here's an example::
 
     >>> links = hxs.select('//a[contains(@href, "image")]')
     >>> links.extract()
@@ -189,8 +197,9 @@ The ``select()`` selector method returns a list of selectors of the same type (X
     Link number 3 points to url [u'image4.html'] and image [u'image4_thumb.jpg']
     Link number 4 points to url [u'image5.html'] and image [u'image5_thumb.jpg']
 
-The CSS Selector List ``select`` method will accept CSS selectors, as expected, but it also provides
-an ``xpath`` method that accepts XPath selectors to augment the CSS selectors. Here's an example::
+The CSS Selector List ``select`` method will accept CSS selectors, as expected,
+but it also provides an ``xpath`` method that accepts XPath selectors to
+augment the CSS selectors. Here's an example::
 
     >>> links = hcs.select('a[href*=image]')
     >>> for index, link in enumerate(links):
@@ -206,10 +215,11 @@ an ``xpath`` method that accepts XPath selectors to augment the CSS selectors. H
 Using selectors with regular expressions
 ----------------------------------------
 
-Selectors (both CSS and XPath) also have a ``re()`` method for extracting data using regular
-expressions. However, unlike using the ``select()`` method, the ``re()`` method
-does not return a list of :class:`~scrapy.selector.XPathSelector` objects, so you
-can't construct nested ``.re()`` calls.
+Selectors (both CSS and XPath) also have a ``re()`` method for extracting data
+using regular expressions. However, unlike using the ``select()`` method, the
+``re()`` method does not return a list of
+:class:`~scrapy.selector.XPathSelector` objects, so you can't construct nested
+``.re()`` calls.
 
 Here's an example used to extract images names from the :ref:`HTML code
 <topics-selectors-htmlcode>` above::
@@ -288,8 +298,8 @@ XPathSelector objects
    .. method:: select(xpath)
 
        Apply the given XPath relative to this XPathSelector and return a list
-       of :class:`XPathSelector` objects (ie. a :class:`XPathSelectorList`) with
-       the result.
+       of :class:`XPathSelector` objects (ie. a :class:`XPathSelectorList`)
+       with the result.
 
        ``xpath`` is a string containing the XPath to apply
 
@@ -320,8 +330,8 @@ XPathSelector objects
    .. method:: __nonzero__()
 
        Returns ``True`` if there is any real content selected by this
-       :class:`XPathSelector` or ``False`` otherwise.  In other words, the boolean
-       value of an XPathSelector is given by the contents it selects.
+       :class:`XPathSelector` or ``False`` otherwise.  In other words, the
+       boolean value of an XPathSelector is given by the contents it selects.
 
 XPathSelectorList objects
 -------------------------
@@ -333,11 +343,12 @@ XPathSelectorList objects
 
    .. method:: select(xpath)
 
-       Call the :meth:`XPathSelector.select` method for all :class:`XPathSelector`
-       objects in this list and return their results flattened, as a new
-       :class:`XPathSelectorList`.
+       Call the :meth:`XPathSelector.select` method for all
+       :class:`XPathSelector` objects in this list and return their results
+       flattened, as a new :class:`XPathSelectorList`.
 
-       ``xpath`` is the same argument as the one in :meth:`XPathSelector.select`
+       ``xpath`` is the same argument as the one in
+       :meth:`XPathSelector.select`
 
    .. method:: re(regex)
 
@@ -349,16 +360,16 @@ XPathSelectorList objects
 
    .. method:: extract()
 
-       Call the :meth:`XPathSelector.extract` method for all :class:`XPathSelector`
-       objects in this list and return their results flattened, as a list of
-       unicode strings.
+       Call the :meth:`XPathSelector.extract` method for all
+       :class:`XPathSelector` objects in this list and return their results
+       flattened, as a list of unicode strings.
 
    .. method:: extract_unquoted()
 
        Call the :meth:`XPathSelector.extract_unoquoted` method for all
        :class:`XPathSelector` objects in this list and return their results
-       flattened, as a list of unicode strings. This method should not be applied
-       to all kinds of XPathSelectors. For more info see
+       flattened, as a list of unicode strings. This method should not be
+       applied to all kinds of XPathSelectors. For more info see
        :meth:`XPathSelector.extract_unoquoted`.
 
 HtmlXPathSelector objects
@@ -367,7 +378,8 @@ HtmlXPathSelector objects
 .. class:: HtmlXPathSelector(response)
 
    A subclass of :class:`XPathSelector` for working with HTML content. It uses
-   the `libxml2`_ HTML parser. See the :class:`XPathSelector` API for more info.
+   the `libxml2`_ HTML parser. See the :class:`XPathSelector` API for more
+   info.
 
 .. _libxml2: http://xmlsoft.org/
 
@@ -375,8 +387,9 @@ HtmlXPathSelector examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Here's a couple of :class:`HtmlXPathSelector` examples to illustrate several
-concepts.  In all cases, we assume there is already an :class:`HtmlXPathSelector`
-instantiated with a :class:`~scrapy.http.Response` object like this::
+concepts.  In all cases, we assume there is already an
+:class:`HtmlXPathSelector` instantiated with a :class:`~scrapy.http.Response`
+object like this::
 
       x = HtmlXPathSelector(html_response)
 
@@ -422,8 +435,9 @@ instantiated with a :class:`~scrapy.http.Response` object like this::
 
       x = XmlXPathSelector(xml_response)
 
-1. Select all ``<product>`` elements from a XML response body, returning a list of
-   :class:`XPathSelector` objects (ie. a :class:`XPathSelectorList` object)::
+1. Select all ``<product>`` elements from a XML response body, returning a list
+   of :class:`XPathSelector` objects (ie. a :class:`XPathSelectorList`
+   object)::
 
       x.select("//product")
 
@@ -531,7 +545,8 @@ CSSSelectorList objects
 .. class:: CSSSelectorList
 
    The :class:`CSSSelectorList` class is subclass of :class:`XPathSelectorList`
-   which overrides and adds methods to match those of :class:`CSSSelectorMixin`.
+   which overrides and adds methods to match those of
+   :class:`CSSSelectorMixin`.
 
    .. method:: xpath(xpath)
 
@@ -591,7 +606,7 @@ instantiated with a :class:`~scrapy.http.Response` object like this::
       ...    print node.get("class").extract()
 
 XmlCSSSelector objects
--------------------------
+----------------------
 
 .. class:: XmlCSSSelector(response)
 
@@ -599,7 +614,7 @@ XmlCSSSelector objects
    working with XML content using CSS selectors.
 
 XmlCSSSelector examples
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Here's a couple of :class:`XmlCSSSelector` examples to illustrate several
 concepts. In both cases we assume there is already an :class:`XmlCSSSelector`
@@ -607,8 +622,8 @@ instantiated with a :class:`~scrapy.http.Response` object like this::
 
       x = XmlCSSSelector(xml_response)
 
-1. Select all ``<product>`` elements from a XML response body, returning a list of
-   :class:`XmlCSSSelector` objects (ie. a :class:`CSSSelectorList` object)::
+1. Select all ``<product>`` elements from a XML response body, returning a list
+   of :class:`XmlCSSSelector` objects (ie. a :class:`CSSSelectorList` object)::
 
       x.select("product")
 
