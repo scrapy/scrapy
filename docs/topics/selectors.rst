@@ -499,11 +499,11 @@ CSSSelector objects
 
 .. class:: CSSSelectorMixin(object)
 
-   A :class:`CSSSelectorMixin` object is a wrapper over either XmlXPathSelector
-   or HtmlXPathSelector to select element nodes using CSS selectors syntax. As
-   a mixin, it is not meant to be used on its own, but as a secondary parent
-   class. See :class:`XmlCSSSelector` and :class:`HtmlCSSSelector` for
-   implementations.
+   A :class:`CSSSelectorMixin` object is a mixin for either
+   :class:`XmlXPathSelector` or :class:`HtmlXPathSelector` to select element
+   nodes using CSS selectors syntax. As a mixin, it is not meant to be used on
+   its own, but as a secondary parent class. See :class:`XmlCSSSelector` and
+   :class:`HtmlCSSSelector` for implementations.
 
    .. method:: select(css)
 
