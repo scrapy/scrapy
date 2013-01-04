@@ -19,8 +19,8 @@ class CSSSelectorMixin(object):
     def xpath(self, xpath):
         return CSSSelectorList(super(CSSSelectorMixin, self).select(xpath))
 
-    def text(self, recursive=False):
-        return self.xpath('.//text()') if recursive else self.xpath('text()')
+    def text(self, all=False):
+        return self.xpath('string()') if all else self.xpath('text()')
 
     def get(self, attr):
         return self.xpath('@' + attr)
