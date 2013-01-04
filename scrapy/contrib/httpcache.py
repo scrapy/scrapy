@@ -1,12 +1,9 @@
 import os
-import calendar
-import email.utils
 from time import time
 import cPickle as pickle
-
-from scrapy import log
+from email.utils import mktime_tz, parsedate_tz
+from w3lib.http import headers_raw_to_dict, headers_dict_to_raw
 from scrapy.http import Headers
-from scrapy.exceptions import IgnoreRequest
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.project import data_path
@@ -30,7 +27,7 @@ class DbmCacheStorage(object):
     def retrieve_response(self, spider, request):
         data = self._read_data(spider, request)
         if data is None:
-            return # not cached
+            return  # not cached
         url = data['url']
         status = data['status']
         headers = Headers(data['headers'])
@@ -55,149 +52,107 @@ class DbmCacheStorage(object):
         db = self.db
         tkey = '%s_time' % key
         if not db.has_key(tkey):
-            return # not found
+            return  # not found
         ts = db[tkey]
         if 0 < self.expiration_secs < time() - float(ts):
-            return # expired
+            return  # expired
         return pickle.loads(db['%s_data' % key])
 
     def _request_key(self, request):
         return request_fingerprint(request)
 
 
-class BaseRealCacheStorage(object):
-    """
-    Most of the code was taken from the httplib2 (MIT License)
-    https://code.google.com/p/httplib2/source/browse/python2/httplib2/__init__.py
-    """
-    
-    def parse_cache_control(self, headers):
-        retval = {}
-        if headers.has_key('cache-control'):
-            parts =  headers['cache-control'].split(',')
-            parts_with_args = [tuple([x.strip().lower() for x in part.split("=", 1)]) for part in parts if -1 != part.find("=")]
-            parts_wo_args = [(name.strip().lower(), 1) for name in parts if -1 == name.find("=")]
-            retval = dict(parts_with_args + parts_wo_args)
-        return retval
-    
-    
-    def get(self, response_headers, request_headers):
-        """Determine freshness from the Date, Expires and Cache-Control headers.
+class FilesystemCacheStorage(object):
 
-        We don't handle the following:
-
-        1. Cache-Control: max-stale
-        2. Age: headers are not used in the calculations.
-
-        Not that this algorithm is simpler than you might think
-        because we are operating as a private (non-shared) cache.
-        This lets us ignore 's-maxage'. We can also ignore
-        'proxy-invalidate' since we aren't a proxy.
-        We will never return a stale document as
-        fresh as a design decision, and thus the non-implementation
-        of 'max-stale'. This also lets us safely ignore 'must-revalidate'
-        since we operate as if every server has sent 'must-revalidate'.
-        Since we are private we get to ignore both 'public' and
-        'private' parameters. We also ignore 'no-transform' since
-        we don't do any transformations.
-        The 'no-store' parameter is handled at a higher level.
-        So the only Cache-Control parameters we look at are:
-
-        no-cache
-        only-if-cached
-        max-age
-        min-fresh
-        """
-
-        retval = "STALE"
-        cc = self.parse_cache_control(request_headers)
-        cc_response = self.parse_cache_control(response_headers)
-        
-        if request_headers.has_key('pragma') and request_headers['pragma'].lower().find('no-cache') != -1:
-            retval = "TRANSPARENT"
-            if 'cache-control' not in request_headers:
-                request_headers['cache-control'] = 'no-cache'
-        elif cc.has_key('no-cache'):
-            retval = "TRANSPARENT"
-        elif cc_response.has_key('no-cache'):
-            retval = "STALE"
-        elif cc.has_key('only-if-cached'):
-            retval = "FRESH"
-        elif response_headers.has_key('date'):
-            date = calendar.timegm(email.utils.parsedate_tz(response_headers['date']))
-            now = time()
-            current_age = max(0, now - date)
-            if cc_response.has_key('max-age'):
-                try:
-                    freshness_lifetime = int(cc_response['max-age'])
-                except ValueError:
-                    freshness_lifetime = 0
-            elif response_headers.has_key('expires'):
-                expires = email.utils.parsedate_tz(response_headers['expires'])
-                if None == expires:
-                    freshness_lifetime = 0
-                else:
-                    freshness_lifetime = max(0, calendar.timegm(expires) - date)
-            else:
-                freshness_lifetime = 0
-            if cc.has_key('max-age'):
-                try:
-                    freshness_lifetime = int(cc['max-age'])
-                except ValueError:
-                    freshness_lifetime = 0
-            if cc.has_key('min-fresh'):
-                try:
-                    min_fresh = int(cc['min-fresh'])
-                except ValueError:
-                    min_fresh = 0
-                current_age += min_fresh
-            if freshness_lifetime > current_age:
-                retval = "FRESH"
-        return retval
-
-    def retrieve_cache(self, spider, request, response_headers, response_status, response_url='', response_body=''):
-        # Determine our course of action:
-        #   Is the cached entry fresh or stale?
-        #
-        # There seems to be three possible answers:
-        # 1. [FRESH] Return the Response object
-        # 2. [STALE] Update the Request object with cache validators if available
-        # 3. [TRANSPARENT] Don't update the Request with cache validators (Cache-Control: no-cache)
-        entry_disposition = self.get(Headers(response_headers), Headers(request.headers))
-        
-        # Per the RFC, requests should not be repeated in these situations
-        if response_status in [400, 401, 403, 410]:
-            raise IgnoreRequest("Ignored request because cached response status is %d." % response_status)
-        
-        if entry_disposition == "FRESH":
-            log.msg("Cache is FRESH", level=log.DEBUG, spider=spider)
-            
-            headers = Headers(response_headers)
-            respcls = responsetypes.from_args(headers=headers, url=response_url)
-            response = respcls(url=response_url, headers=headers, status=response_status, body=response_body)
-            
-            return response
-
-        new_request = request.copy()
-        if entry_disposition == "STALE":
-            log.msg("Cache is STALE, updating Request object with cache validators", level=log.DEBUG, spider=spider)
-            if response_headers.has_key('ETag') and not 'If-None-Match' in request.headers:
-                new_request.headers['If-None-Match'] = response_headers['ETag']
-            if response_headers.has_key('Last-Modified') and not 'Last-Modified' in request.headers:
-                new_request.headers['If-Modified-Since'] = response_headers['Last-Modified']
-        elif entry_disposition == "TRANSPARENT":
-            log.msg("Cache is TRANSPARENT, not adding cache validators to Request object", level=log.DEBUG, spider=spider)
-        
-        return new_request
-
-
-class DbmRealCacheStorage(DbmCacheStorage, BaseRealCacheStorage):
     def __init__(self, settings):
-        super(DbmRealCacheStorage, self).__init__(settings)
-    
+        self.cachedir = data_path(settings['HTTPCACHE_DIR'])
+        self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
+
+    def open_spider(self, spider):
+        pass
+
+    def close_spider(self, spider):
+        pass
+
     def retrieve_response(self, spider, request):
-        data = self._read_data(spider, request)
-        if data is None:
-            return # not cached
-        else:
-            return self.retrieve_cache(spider, request, data['headers'], data['status'], data['url'], data['body'])
+        """Return response if present in cache, or None otherwise."""
+        metadata = self._read_meta(spider, request)
+        if metadata is None:
+            return  # not cached
+        rpath = self._get_request_path(spider, request)
+        with open(os.path.join(rpath, 'response_body'), 'rb') as f:
+            body = f.read()
+        with open(os.path.join(rpath, 'response_headers'), 'rb') as f:
+            rawheaders = f.read()
+        url = metadata.get('response_url')
+        status = metadata['status']
+        headers = Headers(headers_raw_to_dict(rawheaders))
+        respcls = responsetypes.from_args(headers=headers, url=url)
+        response = respcls(url=url, headers=headers, status=status, body=body)
+        return response
+
+    def store_response(self, spider, request, response):
+        """Store the given response in the cache."""
+        rpath = self._get_request_path(spider, request)
+        if not os.path.exists(rpath):
+            os.makedirs(rpath)
+        metadata = {
+            'url': request.url,
+            'method': request.method,
+            'status': response.status,
+            'response_url': response.url,
+            'timestamp': time(),
+        }
+        with open(os.path.join(rpath, 'meta'), 'wb') as f:
+            f.write(repr(metadata))
+        with open(os.path.join(rpath, 'pickled_meta'), 'wb') as f:
+            pickle.dump(metadata, f, protocol=2)
+        with open(os.path.join(rpath, 'response_headers'), 'wb') as f:
+            f.write(headers_dict_to_raw(response.headers))
+        with open(os.path.join(rpath, 'response_body'), 'wb') as f:
+            f.write(response.body)
+        with open(os.path.join(rpath, 'request_headers'), 'wb') as f:
+            f.write(headers_dict_to_raw(request.headers))
+        with open(os.path.join(rpath, 'request_body'), 'wb') as f:
+            f.write(request.body)
+
+    def _get_request_path(self, spider, request):
+        key = request_fingerprint(request)
+        return os.path.join(self.cachedir, spider.name, key[0:2], key)
+
+    def _read_meta(self, spider, request):
+        rpath = self._get_request_path(spider, request)
+        metapath = os.path.join(rpath, 'pickled_meta')
+        if not os.path.exists(metapath):
+            return  # not found
+        mtime = os.stat(rpath).st_mtime
+        if 0 < self.expiration_secs < time() - mtime:
+            return  # expired
+        with open(metapath, 'rb') as f:
+            return pickle.load(f)
+
+
+def parse_cachecontrol(header):
+    """Parse Cache-Control header
+
+    http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9
+
+    >>> cachecontrol_directives('public, max-age=3600')
+    {'public': None, 'max-age': '3600'}
+    >>> cachecontrol_directives('')
+    {}
+
+    """
+    directives = {}
+    for directive in header.split(','):
+        key, sep, val = directive.strip().partition('=')
+        if key:
+            directives[key.lower()] = val if sep else None
+    return directives
+
+
+def rfc1123_to_epoch(date_str):
+    try:
+        return mktime_tz(parsedate_tz(date_str))
+    except Exception:
+        return None
