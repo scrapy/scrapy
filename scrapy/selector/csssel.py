@@ -1,4 +1,3 @@
-from lxml.etree import XPath
 from cssselect import GenericTranslator, HTMLTranslator
 from scrapy.utils.python import flatten
 from scrapy.selector import HtmlXPathSelector, XmlXPathSelector, XPathSelectorList
@@ -14,8 +13,6 @@ class CSSSelectorList(XPathSelectorList):
         return self.__class__(flatten([x.text(recursive) for x in self]))
 
 class CSSSelectorMixin(object):
-    _collect_string_content = XPath('string()')
-
     def select(self, css):
         return CSSSelectorList(super(CSSSelectorMixin, self).select(self.translator.css_to_xpath(css)))
 
