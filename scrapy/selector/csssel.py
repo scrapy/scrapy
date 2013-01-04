@@ -9,8 +9,8 @@ class CSSSelectorList(XPathSelectorList):
     def get(self, attr):
         return self.__class__(flatten([x.get(attr) for x in self]))
 
-    def text(self, recursive=False):
-        return self.__class__(flatten([x.text(recursive) for x in self]))
+    def text(self, all=False):
+        return self.__class__(flatten([x.text(all) for x in self]))
 
 class CSSSelectorMixin(object):
     def select(self, css):
