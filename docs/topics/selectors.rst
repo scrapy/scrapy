@@ -589,3 +589,33 @@ instantiated with a :class:`~scrapy.http.Response` object like this::
 
       for node in x.select("p"):
       ...    print node.get("class").extract()
+
+XmlCSSSelector objects
+-------------------------
+
+.. class:: XmlCSSSelector(response)
+
+   A subclass of :class:`CSSSelectorMixin` and :class:`XmlXPathSelector` for
+   working with XML content using CSS selectors.
+
+XmlCSSSelector examples
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Here's a couple of :class:`XmlCSSSelector` examples to illustrate several
+concepts. In both cases we assume there is already an :class:`XmlCSSSelector`
+instantiated with a :class:`~scrapy.http.Response` object like this::
+
+      x = XmlCSSSelector(xml_response)
+
+1. Select all ``<product>`` elements from a XML response body, returning a list of
+   :class:`XmlCSSSelector` objects (ie. a :class:`CSSSelectorList` object)::
+
+      x.select("product")
+
+2. Extract all prices from a `Google Base XML feed`_ which requires registering
+   a namespace::
+
+      x.register_namespace("g", "http://base.google.com/ns/1.0")
+      x.xpath("//g:price").extract()
+
+.. _Google Base XML feed: http://base.google.com/support/bin/answer.py?hl=en&answer=59461
