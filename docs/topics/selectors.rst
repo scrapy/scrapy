@@ -17,9 +17,9 @@ achieve this:
    API based on `ElementTree`_ (which is not part of the Python standard
    library).
 
-Scrapy comes with its own mechanism for extracting data. They're called selectors
-because they "select" certain parts of the HTML document specified either by
-`XPath`_ or `CSS`_ expressions.
+Scrapy comes with its own mechanism for extracting data. They're called
+selectors because they "select" certain parts of the HTML document specified
+either by `XPath`_ or `CSS`_ expressions.
 
 `XPath`_ is a language for selecting nodes in XML documents, which can also be
 used with HTML. `CSS`_ is a language for applying styles to HTML documents. It
@@ -197,7 +197,7 @@ Here's an example::
     Link number 3 points to url [u'image4.html'] and image [u'image4_thumb.jpg']
     Link number 4 points to url [u'image5.html'] and image [u'image5_thumb.jpg']
 
-The CSS Selector List ``select`` method will accept CSS selectors, as expected,
+The CSSSelectorList ``select`` method will accept CSS selectors, as expected,
 but it also provides an ``xpath`` method that accepts XPath selectors to
 augment the CSS selectors. Here's an example::
 
@@ -494,47 +494,48 @@ of relevance, are:
 
 .. _topics-css-selectors-ref:
 
-CSS Selector objects
+CSSSelector objects
 --------------------
 
 .. class:: CSSSelectorMixin(object)
 
    A :class:`CSSSelectorMixin` object is a wrapper over either XmlXPathSelector
-   or HtmlXPathSelector to select element nodes using CSS Selectors syntax. As
+   or HtmlXPathSelector to select element nodes using CSS selectors syntax. As
    a mixin, it is not meant to be used on its own, but as a secondary parent
    class. See :class:`XmlCSSSelector` and :class:`HtmlCSSSelector` for
    implementations.
 
    .. method:: select(css)
 
-       Apply the given CSS selector relative to this CSSSelector and return a
-       list of :class:`CSSSelector` objects (ie. a :class:`CSSSelectorList`)
-       with the result.
+       Apply the given CSS selector relative to this CSSSelectorMixin and
+       return a list of :class:`CSSSelectorMixin` objects (ie. a
+       :class:`CSSSelectorList`) with the result.
 
        ``css`` is a string containing the CSS selector to apply.
 
    .. method:: xpath(xpath)
 
-       Apply the given XPath relative to this CSSSelector and return a list
-       of :class:`CSSSelector` objects (ie. a :class:`CSSSelectorList`) with
-       the result.
+       Apply the given XPath relative to this CSSSelectorMixin and return a list
+       of :class:`CSSSelectorMixin` objects (ie. a :class:`CSSSelectorList`)
+       with the result.
 
        ``xpath`` is a string containing the XPath to apply.
 
    .. method:: get(attr)
 
-       Get the attribute relative to this CSSSelector and return a list
-       of :class:`CSSSelector` objects (ie. a :class:`CSSSelectorList`) with
-       the result (usually with one element only).
+       Get the attribute relative to this CSSSelectorMixin and return a list
+       of :class:`CSSSelectorMixin` objects (ie. a :class:`CSSSelectorList`)
+       with the result (usually with one element only).
 
        ``attr`` is a string containing the attribute name to get.
 
    .. method:: text(all=False)
 
-       Get the children text nodes relative to this CSSSelector or, if ``all``
-       is True, a string node concatenating all of the descendant text nodes
-       relative to this CSSSelector, and return a list of :class:`CSSSelector`
-       objects (ie. a :class:`CSSSelectorList`) with the result.
+       Get the children text nodes relative to this CSSSelectorMixin or, if
+       ``all`` is True, a string node concatenating all of the descendant text
+       nodes relative to this CSSSelectorMixin, and return a list of
+       :class:`CSSSelectorMixin` objects (ie. a :class:`CSSSelectorList`) with
+       the result.
 
        ``all`` is a boolean to either select children text nodes (False) or
        select a string node concatenating all of the descendant text nodes.
@@ -550,27 +551,28 @@ CSSSelectorList objects
 
    .. method:: xpath(xpath)
 
-       Call the :meth:`CSSSelector.xpath` method for all :class:`CSSSelector`
-       objects in this list and return their results flattened, as a new
-       :class:`CSSSelectorList`.
+       Call the :meth:`CSSSelectorMixin.xpath` method for all
+       :class:`CSSSelectorMixin` objects in this list and return their results
+       flattened, as a new :class:`CSSSelectorList`.
 
-       ``xpath`` is the same argument as the one in :meth:`CSSSelector.xpath`
+       ``xpath`` is the same argument as the one in
+       :meth:`CSSSelectorMixin.xpath`
 
    .. method:: get(attr)
 
-       Call the :meth:`CSSSelector.get` method for all :class:`CSSSelector`
-       objects in this list and return their results flattened, as a new
-       :class:`CSSSelectorList`.
+       Call the :meth:`CSSSelectorMixin.get` method for all
+       :class:`CSSSelectorMixin` objects in this list and return their results
+       flattened, as a new :class:`CSSSelectorList`.
 
-       ``attr`` is the same argument as the one in :meth:`CSSSelector.get`
+       ``attr`` is the same argument as the one in :meth:`CSSSelectorMixin.get`
 
    .. method:: text(all=False)
 
-       Call the :meth:`CSSSelector.text` method for all :class:`CSSSelector`
-       objects in this list and return their results flattened, as a new
-       :class:`CSSSelectorList`.
+       Call the :meth:`CSSSelectorMixin.text` method for all
+       :class:`CSSSelectorMixin` objects in this list and return their results
+       flattened, as a new :class:`CSSSelectorList`.
 
-       ``all`` is the same argument as the one in :meth:`CSSSelector.text`
+       ``all`` is the same argument as the one in :meth:`CSSSelectorMixin.text`
 
 HtmlCSSSelector objects
 -----------------------
@@ -578,7 +580,7 @@ HtmlCSSSelector objects
 .. class:: HtmlCSSSelector(response)
 
    A subclass of :class:`CSSSelectorMixin` and :class:`HtmlXPathSelector` for
-   working with HTML content using CSS Selectors.
+   working with HTML content using CSS selectors.
 
 HtmlCSSSelector examples
 ~~~~~~~~~~~~~~~~~~~~~~~~
