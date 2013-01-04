@@ -24,14 +24,16 @@ override fields that are present in the model defining them in the item.
 
 Let's see some examples:
 
-Django model for the examples::
-
+Creating a Django model for the examples::
+   
+   from django.db import models
    class Person(models.Model):
        name = models.CharField(max_length=255)
        age = models.IntegerField()
 
 Defining a basic :class:`DjangoItem`::
-    
+
+   from scrapy.contrib.djangoitem import DjangoItem 
    class PersonItem(DjangoItem):
        django_model = Person
        
@@ -52,7 +54,7 @@ To obtain the Django model from the item, we call the extra method
    >>> person.id
    1
 
-As you see the model is already saved when we call :meth:`~DjangoItem.save`, we
+The model is already saved when we call :meth:`~DjangoItem.save`, we
 can prevent this by calling it with ``commit=False``. We can use
 ``commit=False`` in :meth:`~DjangoItem.save` method to obtain an unsaved model::
 
