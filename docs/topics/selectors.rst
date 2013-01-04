@@ -260,16 +260,19 @@ XPath specification.
 
 .. _topics-selectors-ref:
 
-Built-in XPath Selectors reference
+Built-in Selectors reference
 ==================================
 
 .. module:: scrapy.selector
-   :synopsis: XPath selectors classes
+   :synopsis: Selectors classes
 
-There are two types of selectors bundled with Scrapy:
-:class:`HtmlXPathSelector` and :class:`XmlXPathSelector`. Both of them
-implement the same :class:`XPathSelector` interface. The only different is that
-one is used to process HTML data and the other XML data.
+There are four types of selectors bundled with Scrapy:
+:class:`HtmlXPathSelector` and :class:`XmlXPathSelector`,
+:class:`HtmlCSSSelector` and :class:`XmlCSSSelector`. All of them implement the
+same :class:`XPathSelector` interface. The only differences are the selector
+syntax and whether it is used to process HTML data or XML data.
+
+.. _topics-xpath-selectors-ref:
 
 XPathSelector objects
 ---------------------
@@ -280,7 +283,7 @@ XPathSelector objects
    certain parts of its content.
 
    ``response`` is a :class:`~scrapy.http.Response` object that will be used
-   for selecting and extracting data 
+   for selecting and extracting data.
 
    .. method:: select(xpath)
 
@@ -318,7 +321,7 @@ XPathSelector objects
 
        Returns ``True`` if there is any real content selected by this
        :class:`XPathSelector` or ``False`` otherwise.  In other words, the boolean
-       value of an XPathSelector is given by the contents it selects. 
+       value of an XPathSelector is given by the contents it selects.
 
 XPathSelectorList objects
 -------------------------
@@ -474,3 +477,51 @@ of relevance, are:
    though.
 
 .. _Google Base XML feed: http://base.google.com/support/bin/answer.py?hl=en&answer=59461
+
+.. _topics-css-selectors-ref:
+
+CSS Selector objects
+--------------------
+
+.. class:: CSSSelectorMixin(object)
+
+   A :class:`CSSSelectorMixin` object is a wrapper over either XmlXPathSelector
+   or HtmlXPathSelector to select element nodes using CSS Selectors syntax. As
+   a mixin, it is not meant to be used on its own, but as a secondary parent
+   class. See :class:`XmlCSSSelector` and :class:`HtmlCSSSelector` for
+   implementations.
+
+   .. method:: select(css)
+
+       Apply the given CSS selector relative to this CSSSelector and return a
+       list of :class:`CSSSelector` objects (ie. a :class:`CSSSelectorList`)
+       with the result.
+
+       ``css`` is a string containing the CSS selector to apply.
+
+   .. method:: xpath(xpath)
+
+       Apply the given XPath relative to this CSSSelector and return a list
+       of :class:`CSSSelector` objects (ie. a :class:`CSSSelectorList`) with
+       the result.
+
+       ``xpath`` is a string containing the XPath to apply.
+
+   .. method:: get(attr)
+
+       Get the attribute relative to this CSSSelector and return a list
+       of :class:`CSSSelector` objects (ie. a :class:`CSSSelectorList`) with
+       the result (usually with one element only).
+
+       ``attr`` is a string containing the attribute name to get.
+
+   .. method:: text(all=False)
+
+       Get the children text nodes relative to this CSSSelector or, if ``all``
+       is True, a string node concatenating all of the descendant text nodes
+       relative to this CSSSelector, and return a list of :class:`CSSSelector`
+       objects (ie. a :class:`CSSSelectorList`) with the result.
+
+       ``all`` is a boolean to either select children text nodes (False) or
+       select a string node concatenating all of the descendant text nodes.
+
