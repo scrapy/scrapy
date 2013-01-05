@@ -17,9 +17,9 @@ class Config(object):
             default_config = get_data(__package__, 'default_scrapyd.conf')
             self.cp = SafeConfigParser()
             self.cp.readfp(StringIO(default_config))
-            self.cp.read(sources)
             for fp in extra_sources:
                 self.cp.readfp(fp)
+            self.cp.read(sources)
         else:
             self.cp = SafeConfigParser(values)
             self.cp.add_section(self.SECTION)
