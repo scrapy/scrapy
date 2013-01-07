@@ -15,8 +15,16 @@ class BaseItem(object_ref):
 
 
 class Field(dict):
-    """Container of field metadata"""
-
+    """
+    Container of field metadata. The item keeps track of in which
+    order it was created to provide a default ordering for items with
+    none specified.
+    """
+    creation_counter = 0
+    def __init__(self, *args, **kwargs):
+        super(Field, self).__init__(*args, **kwargs)
+        self.creation_counter = Field.creation_counter
+        Field.creation_counter += 1
 
 class ItemMeta(type):
 
@@ -38,6 +46,16 @@ class ItemMeta(type):
 class DictItem(DictMixin, BaseItem):
 
     fields = {}
+
+    @classmethod
+    def get_field_order(cls):
+        """
+        Gets the order in which the items fields were specified.
+        """
+        kvs = [(v.creation_counter, k)
+               for (k, v) in cls.fields.items()
+               if isinstance(v, Field)]
+        return [kv[1] for kv in sorted(kvs)]
 
     def __init__(self, *args, **kwargs):
         self._values = {}

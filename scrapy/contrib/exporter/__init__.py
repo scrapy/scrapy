@@ -49,22 +49,17 @@ class BaseItemExporter(object):
 
     def _get_serialized_fields(self, item, default_value=None, include_empty=None):
         """Return the fields to export as an iterable of tuples (name,
-        serialized_value)
+        serialized_value). If the fields to export isn't set explictly, then
+        they are taken from get_field_order.
         """
         if include_empty is None:
             include_empty = self.export_empty_fields
-        if self.fields_to_export is None:
-            if include_empty:
-                field_iter = item.fields.iterkeys()
-            else:
-                field_iter = item.iterkeys()
-        else:
-            if include_empty:
-                field_iter = self.fields_to_export
-            else:
-                nonempty_fields = set(item.keys())
-                field_iter = (x for x in self.fields_to_export if x in \
-                    nonempty_fields)
+        field_iter = self.fields_to_export
+        if field_iter is None:
+            field_iter = item.get_field_order()
+        if not include_empty:
+            nonempty_fields = set(item.keys())
+            field_iter = (x for x in field_iter if x in nonempty_fields)
         for field_name in field_iter:
             if field_name in item:
                 field = item.fields[field_name]
@@ -172,7 +167,7 @@ class CsvItemExporter(BaseItemExporter):
     def _write_headers_and_set_fields_to_export(self, item):
         if self.include_headers_line:
             if not self.fields_to_export:
-                self.fields_to_export = item.fields.keys()
+                self.fields_to_export = item.get_field_order()
             self.csv_writer.writerow(self.fields_to_export)
 
 

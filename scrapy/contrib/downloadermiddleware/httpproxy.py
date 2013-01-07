@@ -1,4 +1,6 @@
 import base64
+from collections import defaultdict
+from random import choice
 from urllib import getproxies, unquote, proxy_bypass
 from urllib2 import _parse_proxy
 from urlparse import urlunparse
@@ -9,13 +11,24 @@ from scrapy.exceptions import NotConfigured
 
 class HttpProxyMiddleware(object):
 
-    def __init__(self):
-        self.proxies = {}
+    def __init__(self, proxies):
+        """Proxies used is a combination of those system configured
+        and those specified in the ``WEB_PROXIES`` setting.
+        """
+        self.proxies = defaultdict(list)
+        if proxies:
+            self.proxies.update(proxies)
         for type, url in getproxies().items():
-            self.proxies[type] = self._get_proxy(url, type)
+            self.proxies[type].append(url)
+        for type, urls in self.proxies.items():
+            self.proxies[type] = [self._get_proxy(url, type) for url in urls]
 
         if not self.proxies:
             raise NotConfigured
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler.settings['WEB_PROXIES'])
 
     def _get_proxy(self, url, orig_type):
         proxy_type, user, password, hostport = _parse_proxy(url)
@@ -45,7 +58,7 @@ class HttpProxyMiddleware(object):
             self._set_proxy(request, scheme)
 
     def _set_proxy(self, request, scheme):
-        creds, proxy = self.proxies[scheme]
+        creds, proxy = choice(self.proxies[scheme])
         request.meta['proxy'] = proxy
         if creds:
             request.headers['Proxy-Authorization'] = 'Basic ' + creds
