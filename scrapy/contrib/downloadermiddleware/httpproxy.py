@@ -32,6 +32,13 @@ class HttpProxyMiddleware(object):
     def process_request(self, request, spider):
         # ignore if proxy is already seted
         if 'proxy' in request.meta:
+            # parse out user/password
+            # if exists setup authentication
+            creds, proxy = self._get_proxy(request.meta['proxy'], 'http')
+
+            if creds:
+                request.meta['proxy'] = proxy
+                request.headers['Proxy-Authorization'] = 'Basic ' + creds
             return
 
         parsed = urlparse_cached(request)
