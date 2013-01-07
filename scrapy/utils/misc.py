@@ -22,10 +22,14 @@ def arg_to_iter(arg):
 
 def load_object(path):
     """Load an object given its absolute object path, and return it.
+    If given a non-string object directly, return it.
 
-    object can be a class, function, variable o instance.
+    object can be a class, function, variable or instance.
     path ie: 'scrapy.contrib.downloadermiddelware.redirect.RedirectMiddleware'
     """
+    
+    if not isinstance(path, basestring):
+        return path
 
     try:
         dot = path.rindex('.')
