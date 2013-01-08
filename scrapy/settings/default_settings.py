@@ -1,5 +1,5 @@
 """
-This module contains the default values for all settings used by Scrapy. 
+This module contains the default values for all settings used by Scrapy.
 
 For more information about these settings you can read the settings
 documentation in docs/topics/settings.rst
@@ -141,7 +141,7 @@ HTTPCACHE_EXPIRATION_SECS = 0
 HTTPCACHE_IGNORE_HTTP_CODES = []
 HTTPCACHE_IGNORE_SCHEMES = ['file']
 HTTPCACHE_DBM_MODULE = 'anydbm'
-HTTPCACHE_POLICY = 'scrapy.contrib.downloadermiddleware.httpcache.DummyPolicy'
+HTTPCACHE_POLICY = 'scrapy.contrib.httpcache.RFC2616Policy'
 
 ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'
 

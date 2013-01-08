@@ -16,7 +16,7 @@ from scrapy.contrib.downloadermiddleware.httpcache import HttpCacheMiddleware
 class _BaseTest(unittest.TestCase):
 
     storage_class = 'scrapy.contrib.httpcache.DbmCacheStorage'
-    policy_class = 'scrapy.contrib.downloadermiddleware.httpcache.DummyPolicy'
+    policy_class = 'scrapy.contrib.httpcache.RFC2616Policy'
 
     def setUp(self):
         self.yesterday = email.utils.formatdate(time.time() - 86400)
@@ -121,7 +121,9 @@ class FilesystemStorageTest(DefaultStorageTest):
     storage_class = 'scrapy.contrib.httpcache.FilesystemCacheStorage'
 
 
-class DefaultMiddlewaretest(_BaseTest):
+class DummyPolicyTest(_BaseTest):
+
+    policy_class = 'scrapy.contrib.httpcache.DummyPolicy'
 
     def test_middleware(self):
         with self._middleware() as mw:
@@ -211,14 +213,9 @@ class DefaultMiddlewaretest(_BaseTest):
             assert 'cached' in response.flags
 
 
-class DummyMiddlewareTest(DefaultStorageTest):
+class RFC2616PolicyTest(DefaultStorageTest):
 
-    policy_class = 'scrapy.contrib.downloadermiddleware.httpcache.DummyPolicy'
-
-
-class RFC2616MiddlewareTest(DefaultStorageTest):
-
-    policy_class = 'scrapy.contrib.downloadermiddleware.httpcache.RFC2616Policy'
+    policy_class = 'scrapy.contrib.httpcache.RFC2616Policy'
 
     def _process_requestresponse(self, mw, request, response):
         try:
