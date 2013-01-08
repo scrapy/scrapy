@@ -10,6 +10,7 @@ from twisted.web.test.test_webclient import ForeverTakingResource, \
         PayloadResource, BrokenDownloadResource
 from w3lib.url import path_to_file_uri
 
+from scrapy.core.downloader.handlers.about import AboutDownloadHandler
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.http import HttpDownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
@@ -17,6 +18,22 @@ from scrapy.spider import BaseSpider
 from scrapy.http import Request
 from scrapy.settings import Settings
 from scrapy import optional_features
+
+
+class AboutTestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.download_request = AboutDownloadHandler().download_request
+
+    def test_download(self):
+        def _test(response):
+            self.assertEquals(response.url, request.url)
+            self.assertEquals(response.status, 200)
+            self.assertEquals(response.body, '')
+            self.assertEquals(response.encoding, 'utf-8')
+
+        request = Request('about:blank')
+        return self.download_request(request, BaseSpider('foo')).addCallback(_test)
 
 
 class FileTestCase(unittest.TestCase):
