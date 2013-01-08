@@ -503,8 +503,7 @@ RedirectMiddleware
 
 .. class:: RedirectMiddleware
 
-   This middleware handles redirection of requests based on response status and
-   meta-refresh html tag.
+   This middleware handles redirection of requests based on response status.
 
 .. reqmeta:: redirect_urls
 
@@ -516,7 +515,6 @@ settings (see the settings documentation for more info):
 
 * :setting:`REDIRECT_ENABLED`
 * :setting:`REDIRECT_MAX_TIMES`
-* :setting:`REDIRECT_MAX_METAREFRESH_DELAY`
 
 .. reqmeta:: dont_redirect
 
@@ -546,6 +544,38 @@ REDIRECT_MAX_TIMES
 Default: ``20``
 
 The maximum number of redirections that will be follow for a single request.
+
+MetaRefreshMiddleware
+---------------------
+
+.. class:: MetaRefreshMiddleware
+
+   This middleware handles redirection of requests based on meta-refresh html tag.
+
+The :class:`MetaRefreshMiddleware` can be configured through the following
+settings (see the settings documentation for more info):
+
+* :setting:`METAREFRESH_ENABLED`
+* :setting:`REDIRECT_MAX_METAREFRESH_DELAY`
+* :setting:`REDIRECT_MAX_TIMES`
+
+This middleware obey :setting:`REDIRECT_MAX_TIMES` setting, :reqmeta:`dont_redirect`
+and :reqmeta:`redirect_urls` request meta keys as described for :class:`RedirectMiddleware`
+
+
+MetaRefreshMiddleware settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. setting:: METAREFRESH_ENABLED
+
+METAREFRESH_ENABLED
+^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 0.17
+
+Default: ``True``
+
+Whether the Meta Refresh middleware will be enabled.
 
 .. setting:: REDIRECT_MAX_METAREFRESH_DELAY
 
