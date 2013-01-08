@@ -7,32 +7,36 @@ from scrapy.item import Item, Field
 from scrapy.selector import HtmlXPathSelector
 from scrapy.http import HtmlResponse
 
-# test items
 
+# test items
 class NameItem(Item):
     name = Field()
+
 
 class TestItem(NameItem):
     url = Field()
     summary = Field()
 
-# test item loaders
 
+# test item loaders
 class NameItemLoader(ItemLoader):
     default_item_class = TestItem
+
 
 class TestItemLoader(NameItemLoader):
     name_in = MapCompose(lambda v: v.title())
 
+
 class DefaultedItemLoader(NameItemLoader):
     default_input_processor = MapCompose(lambda v: v[:-1])
 
-# test processors
 
+# test processors
 def processor_with_args(value, other=None, loader_context=None):
     if 'key' in loader_context:
         return loader_context['key']
     return value
+
 
 class ItemLoaderTest(unittest.TestCase):
 
@@ -95,7 +99,6 @@ class ItemLoaderTest(unittest.TestCase):
         self.assertEqual([u'foo'], il.get_collected_values('name'))
         il.replace_value('name', u'name:bar', re=u'name:(.*)$')
         self.assertEqual([u'bar'], il.get_collected_values('name'))
-
 
     def test_iter_on_input_processor_input(self):
         class NameFirstItemLoader(NameItemLoader):
@@ -215,7 +218,6 @@ class ItemLoaderTest(unittest.TestCase):
         il.add_value('name', [u'mar', u'ta'])
         self.assertEqual(il.get_output_value('name'), u'Mar Ta')
 
-
     def test_output_processor_error(self):
         class TestItemLoader(ItemLoader):
             default_item_class = TestItem
@@ -239,7 +241,6 @@ class ItemLoaderTest(unittest.TestCase):
         assert '$10' in s, s
         assert 'ValueError' in s, s
         assert expected_exc_str in s, s
-
 
     def test_output_processor_using_classes(self):
         il = TestItemLoader()
@@ -331,11 +332,13 @@ class ItemLoaderTest(unittest.TestCase):
         item = il.load_item()
         self.assertEqual(item['name'], u'Mart')
 
+
 class ProcessorsTest(unittest.TestCase):
 
     def test_take_first(self):
         proc = TakeFirst()
         self.assertEqual(proc([None, '', 'hello', 'world']), 'hello')
+        self.assertEqual(proc([None, '', 0, 'hello', 'world']), 0)
 
     def test_identity(self):
         proc = Identity()
@@ -363,9 +366,11 @@ class ProcessorsTest(unittest.TestCase):
         self.assertEqual(proc([u'hello', u'world', u'this', u'is', u'scrapy']),
                          [u'HELLO', u'THIS', u'IS', u'SCRAPY'])
 
+
 class TestXPathItemLoader(XPathItemLoader):
     default_item_class = TestItem
     name_in = MapCompose(lambda v: v.title())
+
 
 class XPathItemLoaderTest(unittest.TestCase):
     response = HtmlResponse(url="", body='<html><body><div id="id">marta</div><p>paragraph</p></body></html>')
@@ -428,4 +433,3 @@ class XPathItemLoaderTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

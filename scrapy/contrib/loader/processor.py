@@ -13,7 +13,7 @@ class MapCompose(object):
     def __init__(self, *functions, **default_loader_context):
         self.functions = functions
         self.default_loader_context = default_loader_context
-        
+
     def __call__(self, value, loader_context=None):
         values = arg_to_iter(value)
         if loader_context:
@@ -35,7 +35,7 @@ class Compose(object):
         self.functions = functions
         self.stop_on_none = default_loader_context.get('stop_on_none', True)
         self.default_loader_context = default_loader_context
-    
+
     def __call__(self, value, loader_context=None):
         if loader_context:
             context = MergeDict(loader_context, self.default_loader_context)
@@ -53,7 +53,7 @@ class TakeFirst(object):
 
     def __call__(self, values):
         for value in values:
-            if value:
+            if value is not None and value != '':
                 return value
 
 
