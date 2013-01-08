@@ -7,6 +7,8 @@ Release notes
 -----------------
 
 - several improvements to spider contracts
+- New default middleware named MetaRefreshMiddldeware that handles meta-refresh html tag redirections,
+  MetaRefreshMiddldeware and RedirectMiddleware have different priorities to address #62
 
 
 0.16.3 (released 2012-12-07)
@@ -19,7 +21,6 @@ Release notes
 - doc: removed obsolete references to ClientForm (:commit:`80f9bb6`)
 - correct docs for default storage backend (:commit:`2aa491b`)
 - doc: removed broken proxyhub link from FAQ (:commit:`bdf61c4`)
-- Merge branch '0.16' of github.com:scrapy/scrapy into 0.16 (:commit:`d5087b0`)
 - Fixed docs typo in SpiderOpenCloseLogging example (:commit:`7184094`)
 
 
@@ -110,7 +111,6 @@ Scrapyd changes:
 - include egg files used by testsuite in source distribution. #118 (:commit:`c897793`)
 - update docstring in project template to avoid confusion with genspider command, which may be considered as an advanced feature. refs #107 (:commit:`2548dcc`)
 - added note to docs/topics/firebug.rst about google directory being shut down (:commit:`668e352`)
-- Merge branch '0.14' of github.com:scrapy/scrapy into 0.14 (:commit:`835d082`)
 - dont discard slot when empty, just save in another dict in order to recycle if needed again. (:commit:`8e9f607`)
 - do not fail handling unicode xpaths in libxml2 backed selectors (:commit:`b830e95`)
 - fixed minor mistake in Request objects documentation (:commit:`bf3c9ee`)
@@ -124,7 +124,6 @@ Scrapyd changes:
 - Compute image checksum before persisting images. closes #92 (:commit:`9817df1`)
 - remove leaking references in cached failures (:commit:`673a120`)
 - fixed bug in MemoryUsage extension: get_engine_status() takes exactly 1 argument (0 given) (:commit:`11133e9`)
-- Merge branch '0.14' of github.com:scrapy/scrapy into 0.14 (:commit:`1627320`)
 - fixed struct.error on http compression middleware. closes #87 (:commit:`1423140`)
 - ajax crawling wasn't expanding for unicode urls (:commit:`0de3fb4`)
 - Catch start_requests iterator errors. refs #83 (:commit:`454a21d`)
