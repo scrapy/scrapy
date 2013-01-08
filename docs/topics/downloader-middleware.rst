@@ -556,8 +556,7 @@ The :class:`MetaRefreshMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
 
 * :setting:`METAREFRESH_ENABLED`
-* :setting:`REDIRECT_MAX_METAREFRESH_DELAY`
-* :setting:`REDIRECT_MAX_TIMES`
+* :setting:`METAREFRESH_MAXDELAY`
 
 This middleware obey :setting:`REDIRECT_MAX_TIMES` setting, :reqmeta:`dont_redirect`
 and :reqmeta:`redirect_urls` request meta keys as described for :class:`RedirectMiddleware`

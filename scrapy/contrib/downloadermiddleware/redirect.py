@@ -8,8 +8,10 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured
 
 class BaseRedirectMiddleware(object):
 
+    enabled_setting = 'REDIRECT_ENABLED'
+
     def __init__(self, settings):
-        if not settings.getbool('REDIRECT_ENABLED'):
+        if not settings.getbool(self.enabled_setting):
             raise NotConfigured
 
         self.max_redirect_times = settings.getint('REDIRECT_MAX_TIMES')
@@ -76,9 +78,12 @@ class RedirectMiddleware(BaseRedirectMiddleware):
 
 class MetaRefreshMiddleware(BaseRedirectMiddleware):
 
+    enabled_setting = 'METAREFRESH_ENABLED'
+
     def __init__(self, settings):
         super(MetaRefreshMiddleware, self).__init__(settings)
-        self.max_metarefresh_delay = settings.getint('REDIRECT_MAX_METAREFRESH_DELAY')
+        self._maxdelay = settings.getint('REDIRECT_MAX_METAREFRESH_DELAY',
+                                         settings.getint('METAREFRESH_MAXDELAY'))
 
     def process_response(self, request, response, spider):
         if 'dont_redirect' in request.meta or request.method == 'HEAD' or \
@@ -87,7 +92,7 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
 
         if isinstance(response, HtmlResponse):
             interval, url = get_meta_refresh(response)
-            if url and interval < self.max_metarefresh_delay:
+            if url and interval < self._maxdelay:
                 redirected = self._redirect_request_using_get(request, url)
                 return self._redirect(redirected, request, spider, 'meta refresh')
 
