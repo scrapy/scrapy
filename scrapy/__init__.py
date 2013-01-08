@@ -40,3 +40,10 @@ except ImportError:
     pass
 else:
     optional_features.add('libxml2')
+
+try:
+    import django
+except ImportError:
+    pass
+else:
+    optional_features.add('django')
