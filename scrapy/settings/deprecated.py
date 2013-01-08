@@ -16,6 +16,7 @@ DEPRECATED_SETTINGS = [
     ('REDIRECT_MAX_METAREFRESH_DELAY', 'use METAREFRESH_MAXDELAY instead'),
 ]
 
+
 def check_deprecated_settings(settings):
     deprecated = [x for x in DEPRECATED_SETTINGS if settings[x[0]] is not None]
     if deprecated:

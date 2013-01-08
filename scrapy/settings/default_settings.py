@@ -13,7 +13,8 @@ Scrapy developers, if you add a setting here remember to:
 
 """
 
-import sys, os
+import os
+import sys
 from os.path import join, abspath, dirname
 
 BOT_NAME = 'scrapybot'
@@ -113,7 +114,7 @@ EXTENSIONS_BASE = {
 }
 
 FEED_URI = None
-FEED_URI_PARAMS = None # a function to extend uri arguments
+FEED_URI_PARAMS = None  # a function to extend uri arguments
 FEED_FORMAT = 'jsonlines'
 FEED_STORE_EMPTY = False
 FEED_STORAGES = {}
@@ -189,7 +190,7 @@ REDIRECT_PRIORITY_ADJUST = +2
 REFERER_ENABLED = True
 
 RETRY_ENABLED = True
-RETRY_TIMES = 2 # initial response + 2 retries = 3 requests
+RETRY_TIMES = 2  # initial response + 2 retries = 3 requests
 RETRY_HTTP_CODES = [500, 503, 504, 400, 408]
 RETRY_PRIORITY_ADJUST = -1
 
@@ -243,7 +244,7 @@ WEBSERVICE_RESOURCES_BASE = {
 
 SPIDER_CONTRACTS = {}
 SPIDER_CONTRACTS_BASE = {
-    'scrapy.contracts.default.UrlContract' : 1,
+    'scrapy.contracts.default.UrlContract': 1,
     'scrapy.contracts.default.ReturnsContract': 2,
     'scrapy.contracts.default.ScrapesContract': 3,
 }
