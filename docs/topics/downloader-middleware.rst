@@ -323,6 +323,26 @@ This policy provides a RFC2616 compliant HTTP cache, i.e. with HTTP
 Cache-Control awareness, aimed at production and used in continuous
 runs to avoid downloading unmodified data (to save bandwidth and speed up crawls).
 
+what is implemented:
+
+* Do not attempt to store responses/requests with `no-store` cache-control directive set
+* Do not serve responses from cache if `no-cache` cache-control directive is set even for fresh responses
+* Compute freshness lifetime from `max-age` cache-control directive
+* Compute freshness lifetime from `Expires` response header
+* Compute freshness lifetime from `Last-Modified` response header (heuristic used by Firefox)
+* Compute current age from `Age` response header
+* Compute current age from `Date` header
+* Revalidate stale responses based on `Last-Modified` response header
+* Revalidate stale responses based on `ETag` response header
+* Set `Date` header for any received response missing it
+
+what is missing:
+
+* `Pragma: no-cache` support http://www.mnot.net/cache_docs/#PRAGMA
+* `Vary` header support http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.6
+* Invalidation after updates or deletes http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.10
+* ... probably others ..
+
 In order to use this policy, set:
 
 * :setting:`HTTPCACHE_POLICY` to ``scrapy.contrib.httpcache.RFC2616Policy``
@@ -494,7 +514,7 @@ HTTPCACHE_DBM_MODULE
 Default: ``'anydbm'``
 
 The database module to use in the :ref:`DBM storage backend
-<httpcache-dbm-backend>`. This setting is specific to the DBM backend.
+<httpcache-storage-dbm>`. This setting is specific to the DBM backend.
 
 .. setting:: HTTPCACHE_POLICY
 
