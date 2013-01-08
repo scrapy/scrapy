@@ -1,5 +1,5 @@
 """
-This module contains the default values for all settings used by Scrapy. 
+This module contains the default values for all settings used by Scrapy.
 
 For more information about these settings you can read the settings
 documentation in docs/topics/settings.rst
@@ -74,10 +74,11 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': 400,
     'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware': 500,
     'scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware': 550,
+    'scrapy.contrib.downloadermiddleware.redirect.MetaRefreshMiddleware': 580,
+    'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 590,
     'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware': 600,
     'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware': 700,
     'scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware': 750,
-    'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 800,
     'scrapy.contrib.downloadermiddleware.chunked.ChunkedTransferMiddleware': 830,
     'scrapy.contrib.downloadermiddleware.stats.DownloaderStats': 850,
     'scrapy.contrib.downloadermiddleware.httpcache.HttpCacheMiddleware': 900,

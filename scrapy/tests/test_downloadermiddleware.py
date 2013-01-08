@@ -5,7 +5,6 @@ from scrapy.http import Request, Response
 from scrapy.spider import BaseSpider
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.utils.test import get_crawler
-from scrapy.stats import stats
 
 
 class ManagerTestCase(TestCase):
@@ -18,22 +17,24 @@ class ManagerTestCase(TestCase):
         self.spider.set_crawler(self.crawler)
         self.mwman = DownloaderMiddlewareManager.from_crawler(self.crawler)
         # some mw depends on stats collector
-        stats.open_spider(self.spider)
+        self.crawler.stats.open_spider(self.spider)
         return self.mwman.open_spider(self.spider)
 
     def tearDown(self):
-        stats.close_spider(self.spider, '')
+        self.crawler.stats.close_spider(self.spider, '')
         return self.mwman.close_spider(self.spider)
 
-    def _download(self,request, response=None):
+    def _download(self, request, response=None):
         """Executes downloader mw manager's download method and returns
         the result (Request or Response) or raise exception in case of
         failure.
         """
         if not response:
-            response = Response(request.url, request=request)
+            response = Response(request.url)
+
         def download_func(**kwargs):
             return response
+
         dfd = self.mwman.download(download_func, request, self.spider)
         # catch deferred result and return the value
         results = []
@@ -50,28 +51,25 @@ class DefaultsTest(ManagerTestCase):
 
     def test_request_response(self):
         req = Request('http://example.com/index.html')
-        resp = Response(req.url, status=200, request=req)
+        resp = Response(req.url, status=200)
         ret = self._download(req, resp)
-        self.assertTrue(isinstance(resp, Response), "Non-response returned")
+        self.assertTrue(isinstance(ret, Response), "Non-response returned")
 
+    def test_3xx_and_invalid_gzipped_body_must_redirect(self):
+        """Regression test for a failure when redirecting a compressed
+        request.
 
-class GzippedRedirectionTest(ManagerTestCase):
-    """Regression test for a failure when redirecting a compressed
-    request.
+        This happens when httpcompression middleware is executed before redirect
+        middleware and attempts to decompress a non-compressed body.
+        In particular when some website returns a 30x response with header
+        'Content-Encoding: gzip' giving as result the error below:
 
-    This happens when httpcompression middleware is executed before redirect
-    middleware and attempts to decompress a non-compressed body.
-    In particular when some website returns a 30x response with header
-    'Content-Encoding: gzip' giving as result the error below:
+            exceptions.IOError: Not a gzipped file
 
-        exceptions.IOError: Not a gzipped file
-
-    """
-
-    def test_gzipped_redirection(self):
+        """
         req = Request('http://example.com')
         body = '<p>You are being redirected</p>'
-        resp = Response(req.url, status=302, body=body, request=req, headers={
+        resp = Response(req.url, status=302, body=body, headers={
             'Content-Length': len(body),
             'Content-Type': 'text/html',
             'Content-Encoding': 'gzip',
@@ -82,3 +80,14 @@ class GzippedRedirectionTest(ManagerTestCase):
                         "Not redirected: {0!r}".format(ret))
         self.assertEqual(ret.url, resp.headers['Location'],
                          "Not redirected to location header")
+
+    def test_200_and_invalid_gzipped_body_must_fail(self):
+        req = Request('http://example.com')
+        body = '<p>You are being redirected</p>'
+        resp = Response(req.url, status=200, body=body, headers={
+            'Content-Length': len(body),
+            'Content-Type': 'text/html',
+            'Content-Encoding': 'gzip',
+            'Location': 'http://example.com/login',
+        })
+        self.assertRaises(IOError, self._download, request=req, response=resp)

@@ -6,48 +6,18 @@ from scrapy.utils.response import get_meta_refresh
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 
 
-class RedirectMiddleware(object):
-    """Handle redirection of requests based on response status and meta-refresh html tag"""
+class BaseRedirectMiddleware(object):
 
     def __init__(self, settings):
         if not settings.getbool('REDIRECT_ENABLED'):
             raise NotConfigured
-        self.max_metarefresh_delay = settings.getint('REDIRECT_MAX_METAREFRESH_DELAY')
+
         self.max_redirect_times = settings.getint('REDIRECT_MAX_TIMES')
         self.priority_adjust = settings.getint('REDIRECT_PRIORITY_ADJUST')
 
     @classmethod
     def from_crawler(cls, crawler):
         return cls(crawler.settings)
-
-    def process_response(self, request, response, spider):
-        if 'dont_redirect' in request.meta:
-            return response
-        if request.method.upper() == 'HEAD':
-            if response.status in [301, 302, 303, 307] and 'Location' in response.headers:
-                redirected_url = urljoin(request.url, response.headers['location'])
-                redirected = request.replace(url=redirected_url)
-                return self._redirect(redirected, request, spider, response.status)
-            else:
-                return response
-
-        if response.status in [302, 303] and 'Location' in response.headers:
-            redirected_url = urljoin(request.url, response.headers['location'])
-            redirected = self._redirect_request_using_get(request, redirected_url)
-            return self._redirect(redirected, request, spider, response.status)
-
-        if response.status in [301, 307] and 'Location' in response.headers:
-            redirected_url = urljoin(request.url, response.headers['location'])
-            redirected = request.replace(url=redirected_url)
-            return self._redirect(redirected, request, spider, response.status)
-
-        if isinstance(response, HtmlResponse):
-            interval, url = get_meta_refresh(response)
-            if url and interval < self.max_metarefresh_delay:
-                redirected = self._redirect_request_using_get(request, url)
-                return self._redirect(redirected, request, spider, 'meta refresh')
-
-        return response
 
     def _redirect(self, redirected, request, spider, reason):
         ttl = request.meta.setdefault('redirect_ttl', self.max_redirect_times)
@@ -76,3 +46,49 @@ class RedirectMiddleware(object):
         return redirected
 
 
+class RedirectMiddleware(BaseRedirectMiddleware):
+    """Handle redirection of requests based on response status and meta-refresh html tag"""
+
+    def process_response(self, request, response, spider):
+        if 'dont_redirect' in request.meta:
+            return response
+
+        if request.method == 'HEAD':
+            if response.status in [301, 302, 303, 307] and 'Location' in response.headers:
+                redirected_url = urljoin(request.url, response.headers['location'])
+                redirected = request.replace(url=redirected_url)
+                return self._redirect(redirected, request, spider, response.status)
+            else:
+                return response
+
+        if response.status in [302, 303] and 'Location' in response.headers:
+            redirected_url = urljoin(request.url, response.headers['location'])
+            redirected = self._redirect_request_using_get(request, redirected_url)
+            return self._redirect(redirected, request, spider, response.status)
+
+        if response.status in [301, 307] and 'Location' in response.headers:
+            redirected_url = urljoin(request.url, response.headers['location'])
+            redirected = request.replace(url=redirected_url)
+            return self._redirect(redirected, request, spider, response.status)
+
+        return response
+
+
+class MetaRefreshMiddleware(BaseRedirectMiddleware):
+
+    def __init__(self, settings):
+        super(MetaRefreshMiddleware, self).__init__(settings)
+        self.max_metarefresh_delay = settings.getint('REDIRECT_MAX_METAREFRESH_DELAY')
+
+    def process_response(self, request, response, spider):
+        if 'dont_redirect' in request.meta or request.method == 'HEAD' or \
+                not isinstance(response, HtmlResponse):
+            return response
+
+        if isinstance(response, HtmlResponse):
+            interval, url = get_meta_refresh(response)
+            if url and interval < self.max_metarefresh_delay:
+                redirected = self._redirect_request_using_get(request, url)
+                return self._redirect(redirected, request, spider, 'meta refresh')
+
+        return response
