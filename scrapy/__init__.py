@@ -36,7 +36,6 @@ except ImportError:
     pass
 else:
     optional_features.add('libxml2')
-<<<<<<< HEAD
 
 try:
     import django
