@@ -1,8 +1,10 @@
 from cssselect import GenericTranslator, HTMLTranslator
 from scrapy.utils.python import flatten
-from scrapy.selector import HtmlXPathSelector, XmlXPathSelector, XPathSelectorList
+from scrapy.selector import HtmlXPathSelector, XmlXPathSelector
+from .list import SelectorList
 
-class CSSSelectorList(XPathSelectorList):
+
+class CSSSelectorList(SelectorList):
     def xpath(self, xpath):
         return self.__class__(flatten([x.xpath(xpath) for x in self]))
 
@@ -11,6 +13,7 @@ class CSSSelectorList(XPathSelectorList):
 
     def text(self, all=False):
         return self.__class__(flatten([x.text(all) for x in self]))
+
 
 class CSSSelectorMixin(object):
     def select(self, css):
@@ -25,8 +28,10 @@ class CSSSelectorMixin(object):
     def get(self, attr):
         return self.xpath('@' + attr)
 
+
 class XmlCSSSelector(CSSSelectorMixin, XmlXPathSelector):
     translator = GenericTranslator()
+
 
 class HtmlCSSSelector(CSSSelectorMixin, HtmlXPathSelector):
     translator = HTMLTranslator()

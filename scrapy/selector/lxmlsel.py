@@ -10,11 +10,10 @@ from scrapy.utils.python import unicode_to_str
 from scrapy.utils.decorator import deprecated
 from scrapy.http import TextResponse
 from .lxmldocument import LxmlDocument
-from .list import XPathSelectorList
+from .list import SelectorList
 
 
-__all__ = ['HtmlXPathSelector', 'XmlXPathSelector', 'XPathSelector', \
-           'XPathSelectorList']
+__all__ = ['HtmlXPathSelector', 'XmlXPathSelector', 'XPathSelector']
 
 
 class XPathSelector(object_ref):
@@ -25,8 +24,8 @@ class XPathSelector(object_ref):
 
     def __init__(self, response=None, text=None, namespaces=None, _root=None, _expr=None):
         if text is not None:
-            response = TextResponse(url='about:blank', \
-                body=unicode_to_str(text, 'utf-8'), encoding='utf-8')
+            response = TextResponse(url='about:blank', encoding='utf-8',
+                                    body=unicode_to_str(text, 'utf-8'))
         if response is not None:
             _root = LxmlDocument(response, self._parser)
 
@@ -39,7 +38,7 @@ class XPathSelector(object_ref):
         try:
             xpathev = self._root.xpath
         except AttributeError:
-            return XPathSelectorList([])
+            return SelectorList([])
 
         try:
             result = xpathev(xpath, namespaces=self.namespaces)
@@ -51,7 +50,7 @@ class XPathSelector(object_ref):
 
         result = [self.__class__(_root=x, _expr=xpath, namespaces=self.namespaces)
                   for x in result]
-        return XPathSelectorList(result)
+        return SelectorList(result)
 
     def re(self, regex):
         return extract_regex(regex, self.extract())
@@ -88,9 +87,7 @@ class XPathSelector(object_ref):
     def __str__(self):
         data = repr(self.extract()[:40])
         return "<%s xpath=%r data=%s>" % (type(self).__name__, self._expr, data)
-
     __repr__ = __str__
-
 
     @deprecated(use_instead='XPathSelector.extract')
     def extract_unquoted(self):

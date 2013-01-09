@@ -1,7 +1,8 @@
 from scrapy.utils.python import flatten
 from scrapy.utils.decorator import deprecated
 
-class XPathSelectorList(list):
+
+class SelectorList(list):
 
     def __getslice__(self, i, j):
         return self.__class__(list.__getslice__(self, i, j))
@@ -18,6 +19,6 @@ class XPathSelectorList(list):
     def extract_unquoted(self):
         return [x.extract_unquoted() for x in self]
 
-    @deprecated(use_instead='XPathSelectorList.select')
+    @deprecated(use_instead='SelectorList.select')
     def x(self, xpath):
         return self.select(xpath)
