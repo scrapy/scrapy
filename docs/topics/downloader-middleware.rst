@@ -314,10 +314,30 @@ HttpCacheMiddleware
     setting. Or you can also implement your own policy.
 
 
+.. _httpcache-policy-dummy:
+
+Dummy policy (default)
+~~~~~~~~~~~~~~~~~~~~~~
+
+This policy has no awareness of any HTTP Cache-Control directives.
+Every request and its corresponding response are cached.  When the same
+request is seen again, the response is returned without transferring
+anything from the Internet.
+
+The Dummy policy is useful for testing spiders faster (without having
+to wait for downloads every time) and for trying your spider offline,
+when an Internet connection is not available. The goal is to be able to
+"replay" a spider run *exactly as it ran before*.
+
+In order to use this policy, set:
+
+* :setting:`HTTPCACHE_POLICY` to ``scrapy.contrib.httpcache.DummyPolicy``
+
+
 .. _httpcache-policy-rfc2616:
 
-RFC2616 policy (default)
-~~~~~~~~~~~~~~~~~~~~~~~~
+RFC2616 policy
+~~~~~~~~~~~~~~
 
 This policy provides a RFC2616 compliant HTTP cache, i.e. with HTTP
 Cache-Control awareness, aimed at production and used in continuous
@@ -348,26 +368,6 @@ In order to use this policy, set:
 * :setting:`HTTPCACHE_POLICY` to ``scrapy.contrib.httpcache.RFC2616Policy``
 
 This is the default cache policy.
-
-
-.. _httpcache-policy-dummy:
-
-Dummy policy
-~~~~~~~~~~~~
-
-This policy has no awareness of any HTTP Cache-Control directives.
-Every request and its corresponding response are cached.  When the same
-request is seen again, the response is returned without transferring
-anything from the Internet.
-
-The Dummy policy is useful for testing spiders faster (without having
-to wait for downloads every time) and for trying your spider offline,
-when an Internet connection is not available. The goal is to be able to
-"replay" a spider run *exactly as it ran before*.
-
-In order to use this policy, set:
-
-* :setting:`HTTPCACHE_POLICY` to ``scrapy.contrib.httpcache.DummyPolicy``
 
 
 .. _httpcache-storage-dbm:
@@ -523,7 +523,7 @@ HTTPCACHE_POLICY
 
 .. versionadded:: 0.18
 
-Default: ``'scrapy.contrib.httpcache.RFC2616Policy'``
+Default: ``'scrapy.contrib.httpcache.DummyPolicy'``
 
 The class which implements the cache policy.
 
