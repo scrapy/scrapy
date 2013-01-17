@@ -75,7 +75,7 @@ class DjangoItemTest(unittest.TestCase):
         long_name = 'z' * 300
         i = BasePersonItem(name=long_name)
         self.assertFalse(i.is_valid())
-        self.assertDictEqual(
+        self.assertEqual(
             {
                 'age': [u'This field cannot be null.'],
                 'name': [u'Ensure this value has at most 255 characters (it has 300).']
@@ -84,7 +84,7 @@ class DjangoItemTest(unittest.TestCase):
 
         i = BasePersonItem(name='John')
         self.assertTrue(i.is_valid(exclude=['age']))
-        self.assertDictEqual({}, i.errors)
+        self.assertEqual({}, i.errors)
 
         # once the item is validated, it does not validate again
         i['name'] = long_name
