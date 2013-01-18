@@ -382,24 +382,47 @@ instantiated with a :class:`~scrapy.http.Response` object like this::
       x.register_namespace("g", "http://base.google.com/ns/1.0")
       x.select("//g:price").extract()
 
+.. _removing-namespaces:
+
 Removing namespaces
 ~~~~~~~~~~~~~~~~~~~
 
 When dealing with scraping projects, it is often quite convenient to get rid of
-namespaces altogether and just work with element names. You can use the
-:meth:`XmlXPathSelector.remove_namespaces` method for that.
+namespaces altogether and just work with element names, to write more
+simple/convenient XPaths. You can use the
+:meth:`XPathSelector.remove_namespaces` method for that.
 
-Here's an example that illustrates this to parse the Github blog atom feed::
+Let's show an example that illustrates this with Github blog atom feed.
+
+First, we open the shell with the url we want to scrape::
 
     $ scrapy shell https://github.com/blog.atom
-    # ...
+
+Once in the shell we can try selecting all ``<link>`` objects and see that it
+doesn't work (because the Atom XML namespace is obfuscating those nodes)::
+
     >>> xxs.select("//link")
     []
+
+But once we call the :meth:`XPathSelector.remove_namespaces` method, all
+nodes can be accessed directly by their names::
+
     >>> xxs.remove_namespaces()
     >>> xxs.select("//link")
     [<XmlXPathSelector xpath='//link' data=u'<link xmlns="http://www.w3.org/2005/Atom'>,
      <XmlXPathSelector xpath='//link' data=u'<link xmlns="http://www.w3.org/2005/Atom'>,
      ...
-    ]
+
+If you wonder why the namespace removal procedure is not always called, instead
+of having to call it manually. This is because of two reasons which, in order
+of relevance, are:
+
+1. removing namespaces requires to iterate and modify all nodes in the
+   document, which is a reasonably expensive operation to performs for all
+   documents crawled by Scrapy
+
+2. there could be some cases where using namespaces is actually required, in
+   case some element names clash between namespaces. These cases are very rare
+   though.
 
 .. _Google Base XML feed: http://base.google.com/support/bin/answer.py?hl=en&answer=59461

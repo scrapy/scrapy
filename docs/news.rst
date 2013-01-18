@@ -6,7 +6,7 @@ Release notes
 0.18 (unreleased)
 -----------------
 
-- added :meth:`XmlXPathSelector.remove_namespaces` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`topics-selectors`.
+- added :meth:`XPathSelector.remove_namespaces` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`topics-selectors`.
 - several improvements to spider contracts
 - New default middleware named MetaRefreshMiddldeware that handles meta-refresh html tag redirections,
   MetaRefreshMiddldeware and RedirectMiddleware have different priorities to address #62

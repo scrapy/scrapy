@@ -268,6 +268,11 @@ section of the site (which varies each time). In that case, the credentials to
 log in would be settings, while the url of the section to scrape would be a
 spider argument.
 
+I'm scraping a XML document and my XPath selector doesn't return any items
+--------------------------------------------------------------------------
+
+You may need to remove namespaces. See :ref:`removing-namespaces`.
+
 .. _user agents: http://en.wikipedia.org/wiki/User_agent
 .. _LIFO: http://en.wikipedia.org/wiki/LIFO
 .. _DFO order: http://en.wikipedia.org/wiki/Depth-first_search
