@@ -261,6 +261,11 @@ XPathSelector objects
        Without registering namespaces you can't select or extract data from
        non-standard namespaces. See examples below.
 
+   .. method:: remove_namespaces()
+
+       Remove all namespaces, allowing to traverse the document using
+       namespace-less xpaths. See example below.
+
    .. method:: __nonzero__()
 
        Returns ``True`` if there is any real content selected by this
@@ -376,5 +381,25 @@ instantiated with a :class:`~scrapy.http.Response` object like this::
 
       x.register_namespace("g", "http://base.google.com/ns/1.0")
       x.select("//g:price").extract()
+
+Removing namespaces
+~~~~~~~~~~~~~~~~~~~
+
+When dealing with scraping projects, it is often quite convenient to get rid of
+namespaces altogether and just work with element names. You can use the
+:meth:`XmlXPathSelector.remove_namespaces` method for that.
+
+Here's an example that illustrates this to parse the Github blog atom feed::
+
+    $ scrapy shell https://github.com/blog.atom
+    # ...
+    >>> xxs.select("//link")
+    []
+    >>> xxs.remove_namespaces()
+    >>> xxs.select("//link")
+    [<XmlXPathSelector xpath='//link' data=u'<link xmlns="http://www.w3.org/2005/Atom'>,
+     <XmlXPathSelector xpath='//link' data=u'<link xmlns="http://www.w3.org/2005/Atom'>,
+     ...
+    ]
 
 .. _Google Base XML feed: http://base.google.com/support/bin/answer.py?hl=en&answer=59461
