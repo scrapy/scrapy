@@ -100,4 +100,4 @@ class FilesystemCacheStorage(_FilesystemCacheStorage):
                       'scrapy.contrib.downloadermiddlware.httpcache is '
                       'deprecated, use scrapy.contrib.httpcache instead.',
                       category=ScrapyDeprecationWarning, stacklevel=1)
-        super(_FilesystemCacheStorage, self).__init__(*args, **kwargs)
+        super(FilesystemCacheStorage, self).__init__(*args, **kwargs)
