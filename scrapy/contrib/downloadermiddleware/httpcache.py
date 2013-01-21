@@ -1,11 +1,7 @@
-from time import time
 from email.utils import formatdate
-from weakref import WeakKeyDictionary
 from scrapy import signals
 from scrapy.exceptions import NotConfigured, IgnoreRequest
-from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
-from scrapy.contrib.httpcache import rfc1123_to_epoch, parse_cachecontrol
 
 
 class HttpCacheMiddleware(object):
