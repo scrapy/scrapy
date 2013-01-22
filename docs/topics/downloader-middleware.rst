@@ -108,7 +108,7 @@ single Python class that defines one or more of the following methods:
       :param request: the request that originated the response
       :type request: is a :class:`~scrapy.http.Request` object
 
-      :param reponse: the response being processed
+      :param response: the response being processed
       :type response: :class:`~scrapy.http.Response` object
 
       :param spider: the spider for which this response is intended
@@ -563,7 +563,7 @@ HttpProxyMiddleware
    ``proxy`` meta value to :class:`~scrapy.http.Request` objects.
 
    Like the Python standard library modules `urllib`_ and `urllib2`_, it obeys
-   the following enviroment variables:
+   the following environment variables:
 
    * ``http_proxy``
    * ``https_proxy``

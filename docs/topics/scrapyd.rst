@@ -66,7 +66,7 @@ Or, if you want to start Scrapyd from inside a Scrapy project you can use the
 Installing Scrapyd
 ==================
 
-How to deploy Scrapyd on your servers depends on the platform your're using.
+How to deploy Scrapyd on your servers depends on the platform you're using.
 Scrapy comes with Ubuntu packages for Scrapyd ready for deploying it as a
 system service, to ease the installation and administration, but you can create
 packages for other distribution or operating systems (including Windows). If
@@ -303,7 +303,7 @@ Now, if you type ``scrapy deploy -l`` you'll see::
 See available projects
 ----------------------
 
-To see all available projets in a specific target use::
+To see all available projects in a specific target use::
 
     scrapy deploy -L scrapyd
 
@@ -459,7 +459,7 @@ Example request::
 
     $ curl http://localhost:6800/addversion.json -F project=myproject -F version=r23 -F egg=@myproject.egg
 
-Example reponse::
+Example response::
 
     {"status": "ok", "spiders": 3}
 
