@@ -244,7 +244,7 @@ XmlItemExporter
         </item>
        </items>
 
-   Unless overriden in the :meth:`serialize_field` method, multi-valued fields are
+   Unless overridden in the :meth:`serialize_field` method, multi-valued fields are
    exported by serializing each value inside a ``<value>`` element. This is for
    convenience, as multi-valued fields are very common.
 

@@ -61,7 +61,7 @@ In other words, data is being collected by extracting it from two XPath
 locations, using the :meth:`~XPathItemLoader.add_xpath` method. This is the
 data that will be assigned to the ``name`` field later.
 
-Afterwards, similar calls are used for ``price`` and ``stock`` fields, and
+Afterwords, similar calls are used for ``price`` and ``stock`` fields, and
 finally the ``last_update`` field is populated directly with a literal value
 (``today``) using a different method: :meth:`~ItemLoader.add_value`.
 
@@ -253,7 +253,7 @@ ItemLoader objects
     :attr:`default_item_class`.
 
     The item and the remaining keyword arguments are assigned to the Loader
-    context (accesible through the :attr:`context` attribute).
+    context (accessible through the :attr:`context` attribute).
 
     .. method:: get_value(value, \*processors, \**kwargs)
 
@@ -280,7 +280,7 @@ ItemLoader objects
         The value is first passed through :meth:`get_value` by giving the
         ``processors`` and ``kwargs``, and then passed through the
         :ref:`field input processor <topics-loaders-processors>` and its result
-        appened to the data collected for that field. If the field already
+        appended to the data collected for that field. If the field already
         contains collected data, the new data is added.
 
         The given ``field_name`` can be ``None``, in which case values for

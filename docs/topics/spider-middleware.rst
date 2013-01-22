@@ -77,7 +77,7 @@ single Python class that defines one or more of the following methods:
         direction for :meth:`process_spider_output` to process it, or
         :meth:`process_spider_exception` if it raised an exception.
 
-        :param reponse: the response being processed
+        :param response: the response being processed
         :type response: :class:`~scrapy.http.Response` object
 
         :param spider: the spider for which this response is intended
@@ -258,7 +258,7 @@ OffsiteMiddleware
    these messages for each new domain filtered. So, for example, if another
    request for ``www.othersite.com`` is filtered, no log message will be
    printed. But if a request for ``someothersite.com`` is filtered, a message
-   will be printed (but only for the first request filtred).
+   will be printed (but only for the first request filtered).
 
    If the spider doesn't define an
    :attr:`~scrapy.spider.BaseSpider.allowed_domains` attribute, or the

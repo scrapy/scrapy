@@ -100,7 +100,7 @@ how you :ref:`configure the downloader middlewares
 
     .. method:: start()
 
-        Start the crawler. This calss :meth:`configure` if it hasn't been called yet.
+        Start the crawler. This calls :meth:`configure` if it hasn't been called yet.
 
 Settings API
 ============

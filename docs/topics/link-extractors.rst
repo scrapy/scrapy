@@ -85,7 +85,7 @@ SgmlLinkExtractor
         Defaults to ``('a', 'area')``.
     :type tags: str or list
 
-    :param attrs: list of attrbitues which should be considered when looking
+    :param attrs: list of attributes which should be considered when looking
         for links to extract (only for those tags specified in the ``tags``
         parameter). Defaults to ``('href',)``
     :type attrs: boolean
