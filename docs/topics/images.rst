@@ -273,7 +273,7 @@ Here are the methods that you should override in your custom Images Pipeline:
    .. method:: item_completed(results, items, info)
 
       The :meth:`ImagesPipeline.item_completed` method called when all image
-      requests for a single item have completed (either finshed downloading, or
+      requests for a single item have completed (either finished downloading, or
       failed for some reason).
 
       The :meth:`~item_completed` method must return the

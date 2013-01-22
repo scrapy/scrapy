@@ -87,7 +87,7 @@ Scrapy Shell
 
 While the :command:`parse` command is very useful for checking behaviour of a
 spider, it is of little help to check what happens inside a callback, besides
-showing the reponse received and the output. How to debug the situation when
+showing the response received and the output. How to debug the situation when
 ``parse_details`` sometimes receives no item?
 
 Fortunately, the :command:`shell` is your bread and butter in this case (see

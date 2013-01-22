@@ -96,7 +96,7 @@ extensions and middlewares::
             if settings['LOG_ENABLED']:
                 print "log is enabled!"
 
-In other words, settings can be accesed like a dict, but it's usually preferred
+In other words, settings can be accessed like a dict, but it's usually preferred
 to extract the setting in the format you need it to avoid type errors. In order
 to do that you'll have to use one of the methods provided the
 :class:`~scrapy.settings.Settings` API.
@@ -648,7 +648,7 @@ REDIRECT_MAX_TIMES
 
 Default: ``20``
 
-Defines the maximun times a request can be redirected. After this maximun the
+Defines the maximum times a request can be redirected. After this maximum the
 request's response is returned as is. We used Firefox default value for the
 same task.
 

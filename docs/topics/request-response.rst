@@ -152,7 +152,7 @@ Request objects
         recognized by Scrapy.
 
         This dict is `shallow copied`_ when the request is cloned using the
-        ``copy()`` or ``replace()`` methods, and can also be accesed, in your
+        ``copy()`` or ``replace()`` methods, and can also be accessed, in your
         spider, from the ``response.meta`` attribute.
 
     .. _shallow copied: http://docs.python.org/library/copy.html
@@ -270,7 +270,7 @@ fields with form data from :class:`Response` objects.
        sometimes it can cause problems which could be hard to debug. For
        example, when working with forms that are filled and/or submitted using
        javascript, the default :meth:`from_response` behaviour may not be the
-       most appropiate. To disable this behaviour you can set the
+       most appropriate. To disable this behaviour you can set the
        ``dont_click`` argument to ``True``. Also, if you want to change the
        control clicked (instead of disabling it) you can also use the
        ``clickdata`` argument.
@@ -294,7 +294,7 @@ fields with form data from :class:`Response` objects.
           overridden by the one passed in this parameter.
        :type formdata: dict
 
-       :param dont_click: If True, the form data will be sumbitted without
+       :param dont_click: If True, the form data will be submitted without
          clicking in any element.
        :type dont_click: boolean
 

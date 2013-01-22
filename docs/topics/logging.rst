@@ -63,13 +63,13 @@ scrapy.log module
         will be sent to standard error.
     :type logfile: str
 
-    :param loglevel: the minimum logging level to log. Availables values are:
+    :param loglevel: the minimum logging level to log. Available values are:
         :data:`CRITICAL`, :data:`ERROR`, :data:`WARNING`, :data:`INFO` and
         :data:`DEBUG`.
 
     :param logstdout: if ``True``, all standard output (and error) of your
         application will be logged instead. For example if you "print 'hello'"
-        it will appear in the Scrapy log. If ommited, the :setting:`LOG_STDOUT`
+        it will appear in the Scrapy log. If omitted, the :setting:`LOG_STDOUT`
         setting will be used.
     :type logstdout: boolean
 

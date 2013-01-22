@@ -6,7 +6,7 @@ Stats Collection
 
 Scrapy provides a convenient facility for collecting stats in the form of
 key/values, where values are often counters. The facility is called the Stats
-Collector, and can be accesed through the :attr:`~scrapy.crawler.Crawler.stats`
+Collector, and can be accessed through the :attr:`~scrapy.crawler.Crawler.stats`
 attribute of the :ref:`topics-api-crawler`, as illustrated by the examples in
 the :ref:`topics-stats-usecases` section below.
 
@@ -100,7 +100,7 @@ DummyStatsCollector
 
 .. class:: DummyStatsCollector
 
-    A Stats collector which does nothing but is very efficient (beacuse it does
+    A Stats collector which does nothing but is very efficient (because it does
     nothing). This stats collector can be set via the :setting:`STATS_CLASS`
     setting, to disable stats collect in order to improve performance. However,
     the performance penalty of stats collection is usually marginal compared to
