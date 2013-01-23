@@ -16,7 +16,7 @@ Using DjangoItem
 ================
 
 :class:`DjangoItem` works much like ModelForms in Django, you create a subclass
-and define its ``django_model`` atribute to ve a valid Django model. With this
+and define its ``django_model`` attribute to be a valid Django model. With this
 you will get an item with a field for each Django model field.
 
 In addition, you can define fields that aren't present in the model and even
@@ -85,7 +85,7 @@ And we can override the fields of the model with your own::
        django_model = Person
        name = Field(default='No Name')
 
-This is usefull to provide properties to the field, like a default or any other
+This is useful to provide properties to the field, like a default or any other
 property that your project uses.
 
 DjangoItem caveats

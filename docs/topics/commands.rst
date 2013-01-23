@@ -126,7 +126,7 @@ And you can see all available commands with::
 There are two kinds of commands, those that only work from inside a Scrapy
 project (Project-specific commands) and those that also work without an active
 Scrapy project (Global commands), though they may behave slightly different
-when running from inside a project (as they would use the project overriden
+when running from inside a project (as they would use the project overridden
 settings).
 
 Global commands:

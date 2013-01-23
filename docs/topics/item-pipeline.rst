@@ -62,7 +62,7 @@ Item pipeline example
 Price validation and dropping items with no prices
 --------------------------------------------------
 
-Let's take a look at the following hypothetic pipeline that adjusts the ``price``
+Let's take a look at the following hypothetical pipeline that adjusts the ``price``
 attribute for those items that do not include VAT (``price_excludes_vat``
 attribute), and drops those items which don't contain a price::
 

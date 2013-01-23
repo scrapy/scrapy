@@ -56,7 +56,7 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
       performed.
     :type smtphost: str
 
-    :param smtppass: the SMTP pass for authetnication.
+    :param smtppass: the SMTP pass for authentication.
     :type smtppass: str
 
     :param smtpport: the SMTP port to connect to

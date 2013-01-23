@@ -49,7 +49,7 @@ loading that attribute from the job directory, when the spider starts and
 stops.
 
 Here's an example of a callback that uses the spider state (other spider code
-is ommited for brevity)::
+is omitted for brevity)::
 
     def parse_item(self, response):
         # parse item here
