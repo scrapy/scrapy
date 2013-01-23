@@ -11,6 +11,17 @@ Release notes
 - New default middleware named MetaRefreshMiddldeware that handles meta-refresh html tag redirections,
   MetaRefreshMiddldeware and RedirectMiddleware have different priorities to address #62
 
+0.16.4 (released 2013-01-23)
+----------------------------
+
+- fixes spelling errors in documentation (:commit:`6d2b3aa`)
+- add doc about disabling an extension. refs #132 (:commit:`c90de33`)
+- Fixed error message formatting. log.err() doesn't support cool formatting and when error occured, the message was:    "ERROR: Error processing %(item)s" (:commit:`c16150c`)
+- lint and improve images pipeline error logging (:commit:`56b45fc`)
+- fixed doc typos (:commit:`243be84`)
+- add documentation topics: Broad Crawls & Common Practies (:commit:`1fbb715`)
+- fix bug in scrapy parse command when spider is not specified explicitly. closes #209 (:commit:`c72e682`)
+- Update docs/topics/commands.rst (:commit:`28eac7a`)
 
 0.16.3 (released 2012-12-07)
 ----------------------------
