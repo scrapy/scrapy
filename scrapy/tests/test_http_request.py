@@ -116,7 +116,7 @@ class RequestTest(unittest.TestCase):
 
     def test_copy(self):
         """Test Request copy"""
-        
+
         def somecallback():
             pass
 
@@ -399,6 +399,14 @@ class FormRequestTest(RequestTest):
     def test_from_response_errors_noform(self):
         response = _buildresponse("""<html></html>""")
         self.assertRaises(ValueError, self.request_class.from_response, response)
+
+    def test_from_response_invalid_html5(self):
+        response = _buildresponse("""<!DOCTYPE html><body></html><form>"""
+                                  """<input type="text" name="foo" value="xxx">"""
+                                  """</form></body></html>""")
+        req = self.request_class.from_response(response, formdata={'bar': 'buz'})
+        fs = _qs(req)
+        self.assertEqual(fs, {'foo': ['xxx'], 'bar': ['buz']})
 
     def test_from_response_errors_formnumber(self):
         response = _buildresponse(
