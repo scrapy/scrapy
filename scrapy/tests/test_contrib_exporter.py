@@ -171,6 +171,47 @@ class XmlItemExporterTest(BaseItemExporterTest):
         expected_value = '<?xml version="1.0" encoding="utf-8"?>\n<items><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></items>'
         self.assertEqual(output.getvalue(), expected_value)
 
+    def test_nested_item(self):
+        output = StringIO()
+        i1 = TestItem(name=u'foo\xa3hoo', age='22')
+        i2 = TestItem(name=u'bar', age=i1)
+        i3 = TestItem(name=u'buz', age=i2)
+        ie = XmlItemExporter(output)
+        ie.start_exporting()
+        ie.export_item(i3)
+        ie.finish_exporting()
+        expected_value = '<?xml version="1.0" encoding="utf-8"?>\n'\
+                '<items><item>'\
+                    '<age>'\
+                        '<age>'\
+                            '<age>22</age>'\
+                            '<name>foo\xc2\xa3hoo</name>'\
+                        '</age>'\
+                        '<name>bar</name>'\
+                    '</age>'\
+                    '<name>buz</name>'\
+                '</item></items>'
+        self.assertEqual(output.getvalue(), expected_value)
+
+    def test_nested_list_item(self):
+        output = StringIO()
+        i1 = TestItem(name=u'foo')
+        i2 = TestItem(name=u'bar')
+        i3 = TestItem(name=u'buz', age=[i1, i2])
+        ie = XmlItemExporter(output)
+        ie.start_exporting()
+        ie.export_item(i3)
+        ie.finish_exporting()
+        expected_value =  '<?xml version="1.0" encoding="utf-8"?>\n'\
+                '<items><item>'\
+                    '<age>'\
+                        '<value><name>foo</name></value>'\
+                        '<value><name>bar</name></value>'\
+                    '</age>'\
+                    '<name>buz</name>'\
+                '</item></items>'
+        self.assertEqual(output.getvalue(), expected_value)
+
 class JsonLinesItemExporterTest(BaseItemExporterTest):
 
     _expected_nested = {'name': u'Jesus', 'age': {'name': 'Maria', 'age': {'name': 'Joseph', 'age': '22'}}}
