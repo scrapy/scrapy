@@ -1,4 +1,8 @@
+import posixpath
+
 from datetime import datetime
+
+from jinja2 import Template
 
 from twisted.web import resource, static
 from twisted.application.service import IServiceCollection
@@ -13,13 +17,24 @@ class Root(resource.Resource):
         resource.Resource.__init__(self)
         self.debug = config.getboolean('debug', False)
         self.runner = config.get('runner')
+
+        self.htdocsdir = posixpath.join(posixpath.split(__file__)[0], "htdocs")
+
         logsdir = config.get('logs_dir')
         itemsdir = config.get('items_dir')
+        
         self.app = app
         self.putChild('', Home(self))
+        self.putChild('old', OldHome(self))
+
         self.putChild('logs', static.File(logsdir, 'text/plain'))
         self.putChild('items', static.File(itemsdir, 'text/plain'))
         self.putChild('jobs', Jobs(self))
+
+        for path in ['css', 'js', 'img']:
+            fullpath = posixpath.join(self.htdocsdir, path)
+            self.putChild(path, static.File(fullpath))
+
         services = config.items('services', ())
         for servName, servClsName in services:
           servCls = load_object(servClsName)
@@ -48,8 +63,7 @@ class Root(resource.Resource):
         return self.app.getComponent(IPoller)
 
 
-class Home(resource.Resource):
-
+class OldHome(resource.Resource):
     def __init__(self, root):
         resource.Resource.__init__(self)
         self.root = root
@@ -62,6 +76,7 @@ class Home(resource.Resource):
 <html>
 <head><title>Scrapyd</title></head>
 <body>
+<a href="/">New Front-End</a>
 <h1>Scrapyd</h1>
 <p>Available projects: <b>%(projects)s</b></p>
 <ul>
@@ -83,7 +98,28 @@ monitoring)</p>
 </body>
 </html>
 """ % vars
+    
 
+class Home(resource.Resource):
+
+    def __init__(self, root):
+        resource.Resource.__init__(self)
+        self.root = root
+
+    def render_GET(self, txrequest):
+        ctx = {
+            'appname': "Scrapy",
+            'projects': self.root.scheduler.list_projects(),
+            'queues': self.root.poller.queues,
+            'launcher': self.root.launcher,
+        }
+        
+        full_path = posixpath.join(self.root.htdocsdir, "index.html")
+
+        raw_data = open(full_path).read().decode("utf-8")
+        template = Template(raw_data)
+        response = template.render(**ctx)
+        return response.encode("utf-8")
 
 class Jobs(resource.Resource):
 
@@ -95,7 +131,7 @@ class Jobs(resource.Resource):
         s = "<html><head><title>Scrapyd</title></title>"
         s += "<body>"
         s += "<h1>Jobs</h1>"
-        s += "<p><a href='..'>Go back</a></p>"
+        s += "<p><a href='/'>New Front-end</a> <a href='/old'>Go back</a></p>"
         s += "<table border='1'>"
         s += "<th>Project</th><th>Spider</th><th>Job</th><th>PID</th><th>Runtime</th><th>Log</th><th>Items</th>"
         s += "<tr><th colspan='7' style='background-color: #ddd'>Pending</th></tr>"
