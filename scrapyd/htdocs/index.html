@@ -44,45 +44,18 @@
     <div class="container">
       <table class="table table-bordered">
         <th>Project</th><th>Spider</th><th>Job</th><th>Status</th><th>Runtime</th>
-        {% for queue in queues %}
-          {{queue.list}}
-          {% if queue.list %}
+        {% for task in tasks %}
           <tr>
-            <td>{{queue}}</td>
-            <td>{% if queue.queue %}{{queue.queue.ame}}{% endif %}</td>
-            <td></td>
-            <td>{% if queue.queue %}pending{% endif %}</td>
-            <td>{{queue.queue._job}}</td>
-            <td></td>
-          </tr>
-          {% endif %}
-        {% endfor %}
-        {% for job in launcher.processes %}
-          <tr>
-            <td>{{job.project}}</td>
-            <td>{{job.spider}}</td>
+            <td>{{task.project}}</td>
+            <td>{{task.spider}}</td>
             <td>
-              <a class="icon-book" title="Log" href="/logs/{{job.project}}/{{job.spider}}/{{job.job}}.log"></a>
-              <a class="icon-file" title="Items" href="/items/{{job.project}}/{{job.spider}}/{{job.job}}.jl"></a>
-              {{job.job}}
-            </td>
-            <td>
-              running
-            </td>
-            <td>{{job.start_time}}</td>
-          </tr>
-        {% endfor %}
-        {% for job in launcher.finished %}
-          <tr>
-            <td>{{job.project}}</td>
-            <td>{{job.spider}}</td>
-            <td>
-              <a class="icon-book" title="Log" href="/logs/{{job.project}}/{{job.spider}}/{{job.job}}.log"></a>
-              <a class="icon-file" title="Items" href="/items/{{job.project}}/{{job.spider}}/{{job.job}}.jl"></a>
-              {{job.job}}
-            </td>
-            <td>finished</td>
-            <td>{{job.end_time - job.start_time}}</td>
+              {% if task.status != "pending" %}
+              <a class="icon-book" title="Log" href="/logs/{{task.project}}/{{task.spider}}/{{task.job}}.log"></a>
+              <a class="icon-file" title="Items" href="/items/{{task.project}}/{{task.spider}}/{{task.job}}.jl"></a>
+              {% endif %}
+              {{task.job}}</td>
+            <td>{{task.status}}</td>
+            <td>{{task.elapsed}}</td>
           </tr>
         {% endfor %}
       </table>

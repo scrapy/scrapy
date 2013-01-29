@@ -1,7 +1,7 @@
 import posixpath
-
 from datetime import datetime
 
+import humanize
 from jinja2 import Template
 
 from twisted.web import resource, static
@@ -107,13 +107,41 @@ class Home(resource.Resource):
         self.root = root
 
     def render_GET(self, txrequest):
+
+        tasks = []
+        now = datetime.now()
+        for project, queue in self.root.poller.queues.items():
+            for m in queue.list():
+                tasks.append(
+                    dict(project=project, 
+                        spider=str(m['name']),
+                        job=str(m['_job']),
+                        status="pending"))
+
+        for p in self.root.launcher.processes.values():
+            tasks.append(
+                dict(project=p.project, 
+                    spider=p.spider,
+                    job=p.job,
+                    elapsed=humanize.naturaltime(now - p.start_time),
+                    status="running"))
+
+        for p in self.root.launcher.finished:
+            tasks.append(
+                dict(project=p.project, 
+                    spider=p.spider,
+                    job=p.job,
+                    elapsed=humanize.naturaltime(p.end_time - p.start_time),
+                    status="finished"))
+
         ctx = {
             'appname': "Scrapy",
             'projects': self.root.scheduler.list_projects(),
             'queues': self.root.poller.queues,
             'launcher': self.root.launcher,
+            'tasks': tasks,
         }
-        
+
         full_path = posixpath.join(self.root.htdocsdir, "index.html")
 
         raw_data = open(full_path).read().decode("utf-8")
