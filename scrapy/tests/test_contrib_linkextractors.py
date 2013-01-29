@@ -217,6 +217,15 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.extract_links(response),
                          [Link(url='http://example.org/about.html', text=u'About us\xa3')])
 
+    def test_restrict_xpaths_concat_in_handle_data(self):
+        """html entities cause SGMLParser to call handle_data hook twice"""
+        body = """<html><body><div><a href="/foo">&gt;\xbe\xa9&lt;\xb6\xab</a></body></html>"""
+        response = HtmlResponse("http://example.org", body=body, encoding='gb18030')
+        lx = SgmlLinkExtractor(restrict_xpaths="//div")
+        self.assertEqual(lx.extract_links(response),
+                         [Link(url='http://example.org/foo', text=u'>\u4eac<\u4e1c',
+                               fragment='', nofollow=False)])
+
     def test_deny_extensions(self):
         html = """<a href="page.html">asd</a> and <a href="photo.jpg">"""
         response = HtmlResponse("http://example.org/", body=html)

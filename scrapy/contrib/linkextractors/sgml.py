@@ -115,13 +115,15 @@ class SgmlLinkExtractor(BaseSgmlLinkExtractor):
         base_url = None
         if self.restrict_xpaths:
             hxs = HtmlXPathSelector(response)
-            html = ''.join(''.join(html_fragm for html_fragm in hxs.select(xpath_expr).extract()) \
-                for xpath_expr in self.restrict_xpaths)
             base_url = get_base_url(response)
+            body = u''.join(f
+                            for x in self.restrict_xpaths
+                            for f in hxs.select(x).extract()
+                            ).encode(response.encoding)
         else:
-            html = response.body
+            body = response.body
 
-        links = self._extract_links(html, response.url, response.encoding, base_url)
+        links = self._extract_links(body, response.url, response.encoding, base_url)
         links = self._process_links(links)
         return links
 
