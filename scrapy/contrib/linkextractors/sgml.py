@@ -1,12 +1,9 @@
 """
 SGMLParser-based Link extractors
 """
-
 import re
 from urlparse import urlparse, urljoin
-
 from w3lib.url import safe_url_string
-
 from scrapy.selector import HtmlXPathSelector
 from scrapy.link import Link
 from scrapy.linkextractor import IGNORED_EXTENSIONS
@@ -14,6 +11,7 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import FixedSGMLParser, unique as unique_list, str_to_unicode
 from scrapy.utils.url import canonicalize_url, url_is_from_any_domain, url_has_any_extension
 from scrapy.utils.response import get_base_url
+
 
 class BaseSgmlLinkExtractor(FixedSGMLParser):
 
@@ -92,9 +90,10 @@ _re_type = type(re.compile("", 0))
 _matches = lambda url, regexs: any((r.search(url) for r in regexs))
 _is_valid_url = lambda url: url.split('://', 1)[0] in set(['http', 'https', 'file'])
 
+
 class SgmlLinkExtractor(BaseSgmlLinkExtractor):
 
-    def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(), 
+    def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(),
                  tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True, process_value=None,
                  deny_extensions=None):
         self.allow_res = [x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(allow)]
@@ -108,8 +107,11 @@ class SgmlLinkExtractor(BaseSgmlLinkExtractor):
         self.deny_extensions = set(['.' + e for e in deny_extensions])
         tag_func = lambda x: x in tags
         attr_func = lambda x: x in attrs
-        BaseSgmlLinkExtractor.__init__(self, tag=tag_func, attr=attr_func, 
-            unique=unique, process_value=process_value)
+        BaseSgmlLinkExtractor.__init__(self,
+                                       tag=tag_func,
+                                       attr=attr_func,
+                                       unique=unique,
+                                       process_value=process_value)
 
     def extract_links(self, response):
         base_url = None
