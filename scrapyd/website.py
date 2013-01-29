@@ -1,7 +1,6 @@
 import posixpath
 from datetime import datetime
 
-import humanize
 from jinja2 import Template
 
 from twisted.web import resource, static
@@ -119,19 +118,25 @@ class Home(resource.Resource):
                         status="pending"))
 
         for p in self.root.launcher.processes.values():
+            elapsed = now - p.start_time
             tasks.append(
                 dict(project=p.project, 
                     spider=p.spider,
                     job=p.job,
-                    elapsed=humanize.naturaltime(now - p.start_time),
-                    status="running"))
+                    elapsed=elapsed,
+                    start_time=p.start_time,
+                    end_time=None,
+                    status="started"))
 
         for p in self.root.launcher.finished:
+            elapsed = p.end_time - p.start_time
             tasks.append(
                 dict(project=p.project, 
                     spider=p.spider,
                     job=p.job,
-                    elapsed=humanize.naturaltime(p.end_time - p.start_time),
+                    elapsed=elapsed,
+                    start_time=p.start_time,
+                    end_time=p.end_time,
                     status="finished"))
 
         ctx = {
