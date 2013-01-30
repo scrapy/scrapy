@@ -52,9 +52,16 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False, \
     keyvals = cgi.parse_qsl(query, keep_blank_values)
     keyvals.sort()
     query = urllib.urlencode(keyvals)
-    path = safe_url_string(urllib.unquote(path)) or '/'
+    path = safe_url_string(_unquotepath(path)) or '/'
     fragment = '' if not keep_fragments else fragment
     return urlparse.urlunparse((scheme, netloc.lower(), path, params, query, fragment))
+
+
+def _unquotepath(path):
+    for reserved in ('2f', '2F', '3f', '3F'):
+        path = path.replace('%' + reserved, '%25' + reserved.upper())
+    return urllib.unquote(path)
+
 
 def parse_url(url, encoding=None):
     """Return urlparsed url from the given argument (which could be an already

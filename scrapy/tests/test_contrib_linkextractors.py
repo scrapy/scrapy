@@ -243,6 +243,22 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
                          [Link(url='http://example.org/foo', text=u'>\u4eac<\u4e1c',
                                fragment='', nofollow=False)])
 
+    def test_encoded_url(self):
+        body = """<html><body><div><a href="?page=2">BinB</a></body></html>"""
+        response = HtmlResponse("http://known.fm/AC%2FDC/", body=body, encoding='utf8')
+        lx = SgmlLinkExtractor()
+        self.assertEqual(lx.extract_links(response), [
+            Link(url='http://known.fm/AC%2FDC/?page=2', text=u'BinB', fragment='', nofollow=False),
+        ])
+
+    def test_encoded_url_in_restricted_xpath(self):
+        body = """<html><body><div><a href="?page=2">BinB</a></body></html>"""
+        response = HtmlResponse("http://known.fm/AC%2FDC/", body=body, encoding='utf8')
+        lx = SgmlLinkExtractor(restrict_xpaths="//div")
+        self.assertEqual(lx.extract_links(response), [
+            Link(url='http://known.fm/AC%2FDC/?page=2', text=u'BinB', fragment='', nofollow=False),
+        ])
+
     def test_deny_extensions(self):
         html = """<a href="page.html">asd</a> and <a href="photo.jpg">"""
         response = HtmlResponse("http://example.org/", body=html)
