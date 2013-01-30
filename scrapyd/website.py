@@ -1,3 +1,4 @@
+import json
 import posixpath
 from datetime import datetime
 
@@ -30,6 +31,7 @@ class Root(resource.Resource):
 
         self.putChild('logs', static.File(logsdir, 'text/plain'))
         self.putChild('items', static.File(itemsdir, 'text/plain'))
+        self.putChild('d', Data(self))
 
         for path in ['css', 'js', 'img']:
             fullpath = posixpath.join(self.htdocsdir, path)
@@ -65,6 +67,50 @@ class Root(resource.Resource):
     def poller(self):
         return self.app.getComponent(IPoller)
 
+def get_tasks(root):
+    tasks = []
+    now = datetime.now()
+
+    for project, queue in root.poller.queues.items():
+        for m in queue.list():
+            tasks.append(
+                dict(project=project, 
+                    spider=str(m['name']),
+                    job=str(m['_job']),
+                    status="pending"))
+
+    for p in root.launcher.processes.values():
+        elapsed = now - p.start_time
+        tasks.append(
+            dict(project=p.project, 
+                spider=p.spider,
+                job=p.job,
+                elapsed=elapsed,
+                start_time=p.start_time,
+                end_time=None,
+                status="started"))
+
+    for p in root.launcher.finished:
+        elapsed = p.end_time - p.start_time
+        tasks.append(
+            dict(project=p.project, 
+                spider=p.spider,
+                job=p.job,
+                elapsed=elapsed,
+                start_time=p.start_time,
+                end_time=p.end_time,
+                status="finished"))
+    return tasks
+    
+class Data(resource.Resource):
+    def __init__(self, root):
+        resource.Resource.__init__(self)
+        self.root = root
+
+    def render_GET(self, txrequest):
+        tasks = get_tasks(self.root)
+        dthandler = lambda obj: obj.isoformat() if isinstance(obj, datetime) else None
+        return json.dumps(tasks, default=dthandler)
 
 class Renderer(resource.Resource):
 
@@ -74,39 +120,7 @@ class Renderer(resource.Resource):
         self.name = name or document_root
 
     def render_GET(self, txrequest):
-
-        tasks = []
-        now = datetime.now()
-        for project, queue in self.root.poller.queues.items():
-            for m in queue.list():
-                tasks.append(
-                    dict(project=project, 
-                        spider=str(m['name']),
-                        job=str(m['_job']),
-                        status="pending"))
-
-        for p in self.root.launcher.processes.values():
-            elapsed = now - p.start_time
-            tasks.append(
-                dict(project=p.project, 
-                    spider=p.spider,
-                    job=p.job,
-                    elapsed=elapsed,
-                    start_time=p.start_time,
-                    end_time=None,
-                    status="started"))
-
-        for p in self.root.launcher.finished:
-            elapsed = p.end_time - p.start_time
-            tasks.append(
-                dict(project=p.project, 
-                    spider=p.spider,
-                    job=p.job,
-                    elapsed=elapsed,
-                    start_time=p.start_time,
-                    end_time=p.end_time,
-                    status="finished"))
-
+        tasks = get_tasks(self.root)
         ctx = {
             'appname': "Scrapy",
             'projects': self.root.scheduler.list_projects(),
