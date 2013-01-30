@@ -4,13 +4,14 @@ for scraping from an XML feed.
 
 See documentation in docs/topics/spiders.rst
 """
-
 from scrapy.spider import BaseSpider
 from scrapy.item import BaseItem
 from scrapy.http import Request
 from scrapy.utils.iterators import xmliter, csviter
+from scrapy.utils.spider import iterate_spider_output
 from scrapy.selector import XmlXPathSelector, HtmlXPathSelector
 from scrapy.exceptions import NotConfigured, NotSupported
+
 
 class XMLFeedSpider(BaseSpider):
     """
@@ -45,10 +46,10 @@ class XMLFeedSpider(BaseSpider):
 
     def parse_node(self, response, selector):
         """This method must be overriden with your custom spider functionality"""
-        if hasattr(self, 'parse_item'): # backward compatibility
+        if hasattr(self, 'parse_item'):  # backward compatibility
             return self.parse_item(response, selector)
         raise NotImplementedError
-        
+
     def parse_nodes(self, response, nodes):
         """This method is called for the nodes matching the provided tag name
         (itertag). Receives the response and an XPathSelector for each node.
@@ -58,11 +59,7 @@ class XMLFeedSpider(BaseSpider):
         """
 
         for selector in nodes:
-            ret = self.parse_node(response, selector)
-            if isinstance(ret, (BaseItem, Request)):
-                ret = [ret]
-            if not isinstance(ret, (list, tuple)):
-                raise TypeError('You cannot return an "%s" object from a spider' % type(ret).__name__)
+            ret = iterate_spider_output(self.parse_node(response, selector))
             for result_item in self.process_results(response, ret):
                 yield result_item
 
@@ -72,7 +69,7 @@ class XMLFeedSpider(BaseSpider):
 
         response = self.adapt_response(response)
         if self.iterator == 'iternodes':
-            nodes = xmliter(response, self.itertag)
+            nodes = self._iternodes(response)
         elif self.iterator == 'xml':
             selector = XmlXPathSelector(response)
             self._register_namespaces(selector)
@@ -85,6 +82,11 @@ class XMLFeedSpider(BaseSpider):
             raise NotSupported('Unsupported node iterator')
 
         return self.parse_nodes(response, nodes)
+
+    def _iternodes(self, response):
+        for node in xmliter(response, self.itertag):
+            self._register_namespaces(node)
+            yield node
 
     def _register_namespaces(self, selector):
         for (prefix, uri) in self.namespaces:
