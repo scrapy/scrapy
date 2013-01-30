@@ -1,0 +1,24 @@
+{% extends "main.html" %}
+{% block container %}
+  {% if tasks|count %}
+    <table class="table table-bordered">
+      <th>Project</th><th>Spider</th><th>Job</th><th>Status</th><th>Time</th>
+      {% for task in tasks %}
+        <tr>
+          <td>{{task.project}}</td>
+          <td>{{task.spider}}</td>
+          <td>
+            {% if task.status != "pending" %}
+            <a class="icon-book" title="Log" href="/logs/{{task.project}}/{{task.spider}}/{{task.job}}.log"></a>
+            <a class="icon-file" title="Items" href="/items/{{task.project}}/{{task.spider}}/{{task.job}}.jl"></a>
+            {% endif %}
+            {{task.job}}</td>
+          <td>{{task.status}}</td>
+          <td>{{task.elapsed}}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    {{ super() }}
+  {% endif %}
+{% endblock container %}
