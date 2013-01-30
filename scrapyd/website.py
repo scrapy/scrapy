@@ -35,13 +35,14 @@ class Root(resource.Resource):
             fullpath = posixpath.join(self.htdocsdir, path)
             self.putChild(path, static.File(fullpath))
 
-        self.putChild('', Home(self))
-
         services = config.items('services', ())
         for servName, servClsName in services:
           servCls = load_object(servClsName)
           self.putChild(servName, servCls(self))
         self.update_projects()
+
+    def getChild(self, name, request):
+        return Renderer(self, name)
         
     def update_projects(self):
         self.poller.update_projects()
@@ -65,11 +66,12 @@ class Root(resource.Resource):
         return self.app.getComponent(IPoller)
 
 
-class Home(resource.Resource):
+class Renderer(resource.Resource):
 
-    def __init__(self, root):
+    def __init__(self, root, name, document_root='index.html'):
         resource.Resource.__init__(self)
         self.root = root
+        self.name = name or document_root
 
     def render_GET(self, txrequest):
 
@@ -113,7 +115,7 @@ class Home(resource.Resource):
             'tasks': tasks,
         }
 
-        template = self.root.environ.get_template('index.html')
+        template = self.root.environ.get_template(self.name)
         response = template.render(**ctx)
         return response.encode("utf-8")
 
