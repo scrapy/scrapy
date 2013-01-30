@@ -1,7 +1,7 @@
 import posixpath
 from datetime import datetime
 
-from jinja2 import Template
+from jinja2 import Template, Environment, FileSystemLoader
 
 from twisted.web import resource, static
 from twisted.application.service import IServiceCollection
@@ -18,12 +18,12 @@ class Root(resource.Resource):
         self.runner = config.get('runner')
 
         self.htdocsdir = posixpath.join(posixpath.split(__file__)[0], "htdocs")
+        self.environ = Environment(loader=FileSystemLoader(self.htdocsdir))
 
         logsdir = config.get('logs_dir')
         itemsdir = config.get('items_dir')
         
         self.app = app
-        self.putChild('', Home(self))
         self.putChild('old', OldHome(self))
 
         self.putChild('logs', static.File(logsdir, 'text/plain'))
@@ -33,6 +33,8 @@ class Root(resource.Resource):
         for path in ['css', 'js', 'img']:
             fullpath = posixpath.join(self.htdocsdir, path)
             self.putChild(path, static.File(fullpath))
+
+        self.putChild('', Home(self))
 
         services = config.items('services', ())
         for servName, servClsName in services:
@@ -147,10 +149,7 @@ class Home(resource.Resource):
             'tasks': tasks,
         }
 
-        full_path = posixpath.join(self.root.htdocsdir, "index.html")
-
-        raw_data = open(full_path).read().decode("utf-8")
-        template = Template(raw_data)
+        template = self.root.environ.get_template('index.html')
         response = template.render(**ctx)
         return response.encode("utf-8")
 
