@@ -41,8 +41,21 @@
 
     <div class="container">
       {% block container %}
-      <h1>{{appname}} Server</h1>
-      
+      <div class="hero-unit">
+        <center><img src="/img/scrapy-logo.png"></center>
+        <p>This is <i>Scrapyd web</i>. There are no crawling tasks at this time.</p>
+        <p>
+          <a class="btn btn-primary btn-large" href="http://doc.scrapy.org/en/latest/topics/scrapyd.html">
+            Learn more
+          </a>
+        </p>
+      </div>
+      <h2>How to submit a task</h2>
+      <p>To submit a new crawling task, use a http POST request, 
+      <code>        
+        curl http://localhost:6800/schedule.json -d project=default -d spider=XXXXX
+      </code>. <a href="http://doc.scrapy.org/en/latest/topics/scrapyd.html#json-api-reference">Read more</a>.
+      </p>
       {% endblock container %}
     </div> <!-- /container -->
 
