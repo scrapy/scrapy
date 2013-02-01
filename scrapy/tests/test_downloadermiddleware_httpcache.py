@@ -116,6 +116,20 @@ class DbmStorageTest(DefaultStorageTest):
     storage_class = 'scrapy.contrib.httpcache.DbmCacheStorage'
 
 
+class DbmStorageWithCustomDbmModuleTest(DbmStorageTest):
+
+    dbm_module = 'scrapy.tests.mocks.dummydbm'
+
+    def _get_settings(self, **new_settings):
+        new_settings.setdefault('HTTPCACHE_DBM_MODULE', self.dbm_module)
+        return super(DbmStorageWithCustomDbmModuleTest, self)._get_settings(**new_settings)
+
+    def test_custom_dbm_module_loaded(self):
+        # make sure our dbm module has been loaded
+        with self._storage() as storage:
+            self.assertEqual(storage.dbmodule.__name__, self.dbm_module)
+
+
 class FilesystemStorageTest(DefaultStorageTest):
 
     storage_class = 'scrapy.contrib.httpcache.FilesystemCacheStorage'
