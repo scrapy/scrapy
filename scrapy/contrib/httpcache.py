@@ -163,7 +163,7 @@ class DbmCacheStorage(object):
     def __init__(self, settings):
         self.cachedir = data_path(settings['HTTPCACHE_DIR'], createdir=True)
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
-        self.dbmodule = __import__(settings['HTTPCACHE_DBM_MODULE'])
+        self.dbmodule = __import__(settings['HTTPCACHE_DBM_MODULE'], {}, {}, [''])
         self.db = None
 
     def open_spider(self, spider):
