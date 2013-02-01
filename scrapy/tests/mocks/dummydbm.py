@@ -8,8 +8,7 @@ class DummyDB(dict):
         pass
 
 
-class error(Exception):
-    pass
+error = KeyError
 
 
 _DATABASES = collections.defaultdict(DummyDB)
