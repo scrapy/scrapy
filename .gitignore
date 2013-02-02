@@ -5,3 +5,6 @@ docs/build
 *egg-info
 .tox
 venv
+
+dist
+build

@@ -1,4 +1,8 @@
+import json
+import posixpath
 from datetime import datetime
+
+from jinja2 import Template, Environment, FileSystemLoader
 
 from twisted.web import resource, static
 from twisted.application.service import IServiceCollection
@@ -13,19 +17,35 @@ class Root(resource.Resource):
         resource.Resource.__init__(self)
         self.debug = config.getboolean('debug', False)
         self.runner = config.get('runner')
+
+        
+        self.htdocsdir = (config.get('htdocs_dir') or 
+            posixpath.join(posixpath.split(__file__)[0], "htdocs"))
+
+        self.environ = Environment(loader=FileSystemLoader(self.htdocsdir))
+
         logsdir = config.get('logs_dir')
         itemsdir = config.get('items_dir')
+        
         self.app = app
-        self.putChild('', Home(self))
+
         self.putChild('logs', static.File(logsdir, 'text/plain'))
         self.putChild('items', static.File(itemsdir, 'text/plain'))
-        self.putChild('jobs', Jobs(self))
+        self.putChild('d', Data(self))
+
+        for path in ['css', 'js', 'img']:
+            fullpath = posixpath.join(self.htdocsdir, path)
+            self.putChild(path, static.File(fullpath))
+
         services = config.items('services', ())
         for servName, servClsName in services:
           servCls = load_object(servClsName)
           self.putChild(servName, servCls(self))
         self.update_projects()
 
+    def getChild(self, name, request):
+        return Renderer(self, name)
+        
     def update_projects(self):
         self.poller.update_projects()
         self.scheduler.update_projects()
@@ -47,85 +67,69 @@ class Root(resource.Resource):
     def poller(self):
         return self.app.getComponent(IPoller)
 
+def get_tasks(root):
+    tasks = []
+    now = datetime.now()
 
-class Home(resource.Resource):
+    for project, queue in root.poller.queues.items():
+        for m in queue.list():
+            tasks.append(
+                dict(project=project, 
+                    spider=str(m['name']),
+                    job=str(m['_job']),
+                    status="pending"))
 
+    for p in root.launcher.processes.values():
+        elapsed = now - p.start_time
+        tasks.append(
+            dict(project=p.project, 
+                spider=p.spider,
+                job=p.job,
+                elapsed=elapsed,
+                start_time=p.start_time,
+                end_time=None,
+                status="started"))
+
+    for p in root.launcher.finished:
+        elapsed = p.end_time - p.start_time
+        tasks.append(
+            dict(project=p.project, 
+                spider=p.spider,
+                job=p.job,
+                elapsed=elapsed,
+                start_time=p.start_time,
+                end_time=p.end_time,
+                status="finished"))
+    return tasks
+    
+class Data(resource.Resource):
     def __init__(self, root):
         resource.Resource.__init__(self)
         self.root = root
 
     def render_GET(self, txrequest):
-        vars = {
-            'projects': ', '.join(self.root.scheduler.list_projects()),
-        }
-        return """
-<html>
-<head><title>Scrapyd</title></head>
-<body>
-<h1>Scrapyd</h1>
-<p>Available projects: <b>%(projects)s</b></p>
-<ul>
-<li><a href="/jobs">Jobs</a></li>
-<li><a href="/items/">Items</li>
-<li><a href="/logs/">Logs</li>
-<li><a href="http://doc.scrapy.org/en/latest/topics/scrapyd.html">Documentation</a></li>
-</ul>
+        tasks = get_tasks(self.root)
+        dthandler = lambda obj: obj.isoformat() if isinstance(obj, datetime) else None
+        return json.dumps(tasks, default=dthandler)
 
-<h2>How to schedule a spider?</h2>
+class Renderer(resource.Resource):
 
-<p>To schedule a spider you need to use the API (this web UI is only for
-monitoring)</p>
-
-<p>Example using <a href="http://curl.haxx.se/">curl</a>:</p>
-<p><code>curl http://localhost:6800/schedule.json -d project=default -d spider=somespider</code></p>
-
-<p>For more information about the API, see the <a href="http://doc.scrapy.org/en/latest/topics/scrapyd.html">Scrapyd documentation</a></p>
-</body>
-</html>
-""" % vars
-
-
-class Jobs(resource.Resource):
-
-    def __init__(self, root):
+    def __init__(self, root, name, document_root='index.html'):
         resource.Resource.__init__(self)
         self.root = root
+        self.name = name or document_root
 
-    def render(self, txrequest):
-        s = "<html><head><title>Scrapyd</title></title>"
-        s += "<body>"
-        s += "<h1>Jobs</h1>"
-        s += "<p><a href='..'>Go back</a></p>"
-        s += "<table border='1'>"
-        s += "<th>Project</th><th>Spider</th><th>Job</th><th>PID</th><th>Runtime</th><th>Log</th><th>Items</th>"
-        s += "<tr><th colspan='7' style='background-color: #ddd'>Pending</th></tr>"
-        for project, queue in self.root.poller.queues.items():
-            for m in queue.list():
-                s += "<tr>"
-                s += "<td>%s</td>" % project
-                s += "<td>%s</td>" % str(m['name'])
-                s += "<td>%s</td>" % str(m['_job'])
-                s += "</tr>"
-        s += "<tr><th colspan='7' style='background-color: #ddd'>Running</th></tr>"
-        for p in self.root.launcher.processes.values():
-            s += "<tr>"
-            for a in ['project', 'spider', 'job', 'pid']:
-                s += "<td>%s</td>" % getattr(p, a)
-            s += "<td>%s</td>" % (datetime.now() - p.start_time)
-            s += "<td><a href='/logs/%s/%s/%s.log'>Log</a></td>" % (p.project, p.spider, p.job)
-            s += "<td><a href='/items/%s/%s/%s.jl'>Items</a></td>" % (p.project, p.spider, p.job)
-            s += "</tr>"
-        s += "<tr><th colspan='7' style='background-color: #ddd'>Finished</th></tr>"
-        for p in self.root.launcher.finished:
-            s += "<tr>"
-            for a in ['project', 'spider', 'job']:
-                s += "<td>%s</td>" % getattr(p, a)
-            s += "<td></td>"
-            s += "<td>%s</td>" % (p.end_time - p.start_time)
-            s += "<td><a href='/logs/%s/%s/%s.log'>Log</a></td>" % (p.project, p.spider, p.job)
-            s += "<td><a href='/items/%s/%s/%s.jl'>Items</a></td>" % (p.project, p.spider, p.job)
-            s += "</tr>"
-        s += "</table>"
-        s += "</body>"
-        s += "</html>"
-        return s
+    def render_GET(self, txrequest):
+        tasks = get_tasks(self.root)
+        ctx = {
+            'appname': "Scrapy",
+            'projects': self.root.scheduler.list_projects(),
+            'queues': self.root.poller.queues,
+            'launcher': self.root.launcher,
+            'tasks': tasks,
+        }
+
+        template = self.root.environ.get_template(self.name)
+        response = template.render(**ctx)
+        return response.encode("utf-8")
+
