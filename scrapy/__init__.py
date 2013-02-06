@@ -1,9 +1,9 @@
 """
 Scrapy - a screen scraping framework written in Python
 """
-
-version_info = (0, 17, 0)
-__version__ = "0.17.0"
+import pkgutil
+__version__ = pkgutil.get_data(__package__, 'VERSION').strip()
+version_info = tuple(__version__.split('.')[:3])
 
 import sys, os, warnings
 
