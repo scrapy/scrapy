@@ -1,2 +1,0 @@
-debian/scrapyd-files/000-default etc/scrapyd/conf.d
-extras/scrapyd.tac usr/share/scrapyd

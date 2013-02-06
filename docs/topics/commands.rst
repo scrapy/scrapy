@@ -249,24 +249,6 @@ Usage examples::
     [FAILED] first_spider:parse
     >>> Returned 92 requests, expected 0..4
 
-.. command:: server
-
-server
-------
-
-* Syntax: ``scrapy server``
-* Requires project: *yes*
-
-Start Scrapyd server for this project, which can be referred from the JSON API
-with the project name ``default``. For more info see: :ref:`topics-scrapyd`.
-
-Usage example::
-
-    $ scrapy server
-    [ ... scrapyd starts and stays idle waiting for spiders to get scheduled ... ]
-
-To schedule spiders, use the Scrapyd JSON API.
-
 .. command:: list
 
 list

@@ -2,7 +2,7 @@ import sys, os, glob, shutil
 from subprocess import check_call
 
 def build(suffix):
-    for ifn in glob.glob("debian/scrapy.*") + glob.glob("debian/scrapyd.*"):
+    for ifn in glob.glob("debian/scrapy.*"):
         s = open(ifn).read()
         s = s.replace('SUFFIX', suffix)
         pre, suf = ifn.split('.', 1)
@@ -21,8 +21,7 @@ def build(suffix):
     check_call('debuild -us -uc -b', shell=True)
 
 def clean(suffix):
-    for f in glob.glob("debian/python-scrapy%s*" % suffix) + \
-            glob.glob("debian/scrapyd%s*" % suffix):
+    for f in glob.glob("debian/python-scrapy%s*" % suffix):
         if os.path.isdir(f):
             shutil.rmtree(f)
         else:
