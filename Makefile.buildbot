@@ -16,3 +16,5 @@ build:
 clean:
 	git checkout debian scrapy/VERSION
 	git clean -dfq
+
+.PHONY: clean test build
