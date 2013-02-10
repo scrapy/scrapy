@@ -27,11 +27,11 @@ class BaseSpider(object_ref):
         if not hasattr(self, 'start_urls'):
             self.start_urls = []
 
-    def log(self, message, level=log.DEBUG):
+    def log(self, message, level=log.DEBUG, **kw):
         """Log the given messages at the given log level. Always use this
         method to send log messages from your spider
         """
-        log.msg(message, spider=self, level=level)
+        log.msg(message, spider=self, level=level, **kw)
 
     def set_crawler(self, crawler):
         assert not hasattr(self, '_crawler'), "Spider already bounded to %s" % crawler
