@@ -9,7 +9,14 @@ env:
 install:
     - pip install --use-mirrors -r .travis/requirements-$BUILDENV.txt
 script:
-    - trial scrapy scrapyd
+    - trial scrapy
+branches:
+    only:
+        - master
+        - /^[0-9].*$/
 notifications:
-    - irc:
-        - "irc.freenode.org#scrapy"
+    irc:
+        channels:
+            - "irc.freenode.org#scrapy"
+        use_notice: true
+        skip_join: true

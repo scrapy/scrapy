@@ -16,7 +16,7 @@ Using DjangoItem
 ================
 
 :class:`DjangoItem` works much like ModelForms in Django, you create a subclass
-and define its ``django_model`` atribute to ve a valid Django model. With this
+and define its ``django_model`` attribute to be a valid Django model. With this
 you will get an item with a field for each Django model field.
 
 In addition, you can define fields that aren't present in the model and even
@@ -24,14 +24,16 @@ override fields that are present in the model defining them in the item.
 
 Let's see some examples:
 
-Django model for the examples::
-
+Creating a Django model for the examples::
+   
+   from django.db import models
    class Person(models.Model):
        name = models.CharField(max_length=255)
        age = models.IntegerField()
 
 Defining a basic :class:`DjangoItem`::
-    
+
+   from scrapy.contrib.djangoitem import DjangoItem 
    class PersonItem(DjangoItem):
        django_model = Person
        
@@ -52,7 +54,7 @@ To obtain the Django model from the item, we call the extra method
    >>> person.id
    1
 
-As you see the model is already saved when we call :meth:`~DjangoItem.save`, we
+The model is already saved when we call :meth:`~DjangoItem.save`, we
 can prevent this by calling it with ``commit=False``. We can use
 ``commit=False`` in :meth:`~DjangoItem.save` method to obtain an unsaved model::
 
@@ -83,7 +85,7 @@ And we can override the fields of the model with your own::
        django_model = Person
        name = Field(default='No Name')
 
-This is usefull to provide properties to the field, like a default or any other
+This is useful to provide properties to the field, like a default or any other
 property that your project uses.
 
 DjangoItem caveats

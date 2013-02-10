@@ -4,7 +4,7 @@ Selectors tests, specific for lxml backend
 
 import unittest
 from scrapy.tests import test_selector
-from scrapy.http import TextResponse, HtmlResponse
+from scrapy.http import TextResponse, HtmlResponse, XmlResponse
 from scrapy.selector.lxmldocument import LxmlDocument
 from scrapy.selector.lxmlsel import XmlXPathSelector, HtmlXPathSelector, XPathSelector
 
@@ -15,6 +15,17 @@ class LxmlXPathSelectorTestCase(test_selector.XPathSelectorTestCase):
     hxs_cls = HtmlXPathSelector
     xxs_cls = XmlXPathSelector
 
+    def test_remove_namespaces(self):
+        xml = """<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en-US" xmlns:media="http://search.yahoo.com/mrss/">
+  <link type="text/html">
+  <link type="application/atom+xml">
+</feed>
+"""
+        xxs = XmlXPathSelector(XmlResponse("http://example.com/feed.atom", body=xml))
+        self.assertEqual(len(xxs.select("//link")), 0)
+        xxs.remove_namespaces()
+        self.assertEqual(len(xxs.select("//link")), 2)
 
 class Libxml2DocumentTest(unittest.TestCase):
 

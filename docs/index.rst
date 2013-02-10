@@ -130,6 +130,8 @@ Solving specific problems
    faq
    topics/debug
    topics/contracts
+   topics/practices
+   topics/broad-crawls
    topics/firefox
    topics/firebug
    topics/leaks
@@ -147,7 +149,13 @@ Solving specific problems
     Learn how to debug common problems of your scrapy spider.
 
 :doc:`topics/contracts`
-	Learn how to use contracts for testing your spiders.
+    Learn how to use contracts for testing your spiders.
+
+:doc:`topics/practices`
+    Get familiar with some Scrapy common practices.
+
+:doc:`topics/broad-crawls`
+    Tune Scrapy for crawling a lot domains in parallel.
 
 :doc:`topics/firefox`
     Learn how to scrape with Firefox and some useful add-ons.

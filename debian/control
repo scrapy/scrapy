@@ -17,14 +17,3 @@ Description: Python web crawling and scraping framework
  used to crawl websites and extract structured data from their pages. 
  It can be used for a wide range of purposes, from data mining to 
  monitoring and automated testing.
-
-Package: scrapyd-SUFFIX
-Architecture: all
-Depends: scrapy-SUFFIX (>= ${source:Version}), python-setuptools
-Conflicts: scrapyd, scrapyd-0.11
-Provides: scrapyd
-Description: Scrapy Service
- The Scrapy service allows you to deploy your Scrapy projects by building
- Python eggs of them and uploading them to the Scrapy service using a JSON API
- that you can also use for scheduling spider runs. It supports multiple
- projects also.

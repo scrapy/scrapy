@@ -73,6 +73,11 @@ class XPathSelector(object_ref):
             self.namespaces = {}
         self.namespaces[prefix] = uri
 
+    def remove_namespaces(self):
+        for el in self._root.iter('*'):
+            if el.tag.startswith('{'):
+                el.tag = el.tag.split('}', 1)[1]
+
     def __nonzero__(self):
         return bool(self.extract())
 

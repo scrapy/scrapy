@@ -1,5 +1,5 @@
 """
-This module contains the default values for all settings used by Scrapy. 
+This module contains the default values for all settings used by Scrapy.
 
 For more information about these settings you can read the settings
 documentation in docs/topics/settings.rst
@@ -13,7 +13,8 @@ Scrapy developers, if you add a setting here remember to:
 
 """
 
-import sys, os
+import os
+import sys
 from os.path import join, abspath, dirname
 
 BOT_NAME = 'scrapybot'
@@ -74,10 +75,11 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': 400,
     'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware': 500,
     'scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware': 550,
+    'scrapy.contrib.downloadermiddleware.redirect.MetaRefreshMiddleware': 580,
+    'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 590,
     'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware': 600,
     'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware': 700,
     'scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware': 750,
-    'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 800,
     'scrapy.contrib.downloadermiddleware.chunked.ChunkedTransferMiddleware': 830,
     'scrapy.contrib.downloadermiddleware.stats.DownloaderStats': 850,
     'scrapy.contrib.downloadermiddleware.httpcache.HttpCacheMiddleware': 900,
@@ -112,7 +114,7 @@ EXTENSIONS_BASE = {
 }
 
 FEED_URI = None
-FEED_URI_PARAMS = None # a function to extend uri arguments
+FEED_URI_PARAMS = None  # a function to extend uri arguments
 FEED_FORMAT = 'jsonlines'
 FEED_STORE_EMPTY = False
 FEED_STORAGES = {}
@@ -141,6 +143,7 @@ HTTPCACHE_EXPIRATION_SECS = 0
 HTTPCACHE_IGNORE_HTTP_CODES = []
 HTTPCACHE_IGNORE_SCHEMES = ['file']
 HTTPCACHE_DBM_MODULE = 'anydbm'
+HTTPCACHE_POLICY = 'scrapy.contrib.httpcache.DummyPolicy'
 
 ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'
 
@@ -174,19 +177,21 @@ MEMUSAGE_NOTIFY_MAIL = []
 MEMUSAGE_REPORT = False
 MEMUSAGE_WARNING_MB = 0
 
+METAREFRESH_ENABLED = True
+METAREFRESH_MAXDELAY = 100
+
 NEWSPIDER_MODULE = ''
 
 RANDOMIZE_DOWNLOAD_DELAY = True
 
 REDIRECT_ENABLED = True
-REDIRECT_MAX_METAREFRESH_DELAY = 100
-REDIRECT_MAX_TIMES = 20 # uses Firefox default setting
+REDIRECT_MAX_TIMES = 20  # uses Firefox default setting
 REDIRECT_PRIORITY_ADJUST = +2
 
 REFERER_ENABLED = True
 
 RETRY_ENABLED = True
-RETRY_TIMES = 2 # initial response + 2 retries = 3 requests
+RETRY_TIMES = 2  # initial response + 2 retries = 3 requests
 RETRY_HTTP_CODES = [500, 503, 504, 400, 408]
 RETRY_PRIORITY_ADJUST = -1
 
@@ -240,7 +245,7 @@ WEBSERVICE_RESOURCES_BASE = {
 
 SPIDER_CONTRACTS = {}
 SPIDER_CONTRACTS_BASE = {
-    'scrapy.contracts.default.UrlContract' : 1,
+    'scrapy.contracts.default.UrlContract': 1,
     'scrapy.contracts.default.ReturnsContract': 2,
     'scrapy.contracts.default.ScrapesContract': 3,
 }

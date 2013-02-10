@@ -1,4 +1,6 @@
-import gzip, warnings, inspect
+import gzip
+import inspect
+import warnings
 from cStringIO import StringIO
 
 from twisted.trial import unittest
@@ -45,17 +47,60 @@ class InitSpiderTest(BaseSpiderTest):
 
     spider_class = InitSpider
 
+
 class XMLFeedSpiderTest(BaseSpiderTest):
 
     spider_class = XMLFeedSpider
+
+    def test_register_namespace(self):
+        body = """<?xml version="1.0" encoding="UTF-8"?>
+        <urlset xmlns:x="http://www.google.com/schemas/sitemap/0.84"
+                xmlns:y="http://www.example.com/schemas/extras/1.0">
+        <url><x:loc>http://www.example.com/Special-Offers.html</loc><y:updated>2009-08-16</updated><other value="bar" y:custom="fuu"/></url>
+        <url><loc>http://www.example.com/</loc><y:updated>2009-08-16</updated><other value="foo"/></url>
+        </urlset>"""
+        response = XmlResponse(url='http://example.com/sitemap.xml', body=body)
+
+        class _XMLSpider(self.spider_class):
+            itertag = 'url'
+            namespaces = (
+                ('a', 'http://www.google.com/schemas/sitemap/0.84'),
+                ('b', 'http://www.example.com/schemas/extras/1.0'),
+            )
+
+            def parse_node(self, response, selector):
+                yield {
+                    'loc': selector.select('a:loc/text()').extract(),
+                    'updated': selector.select('b:updated/text()').extract(),
+                    'other': selector.select('other/@value').extract(),
+                    'custom': selector.select('other/@b:custom').extract(),
+                }
+
+        for iterator in ('iternodes', 'xml'):
+            spider = _XMLSpider('example', iterator=iterator)
+            output = list(spider.parse(response))
+            self.assertEqual(len(output), 2, iterator)
+            self.assertEqual(output, [
+                {'loc': [u'http://www.example.com/Special-Offers.html'],
+                 'updated': [u'2009-08-16'],
+                 'custom': [u'fuu'],
+                 'other': [u'bar']},
+                {'loc': [],
+                 'updated': [u'2009-08-16'],
+                 'other': [u'foo'],
+                 'custom': []},
+            ], iterator)
+
 
 class CSVFeedSpiderTest(BaseSpiderTest):
 
     spider_class = CSVFeedSpider
 
+
 class CrawlSpiderTest(BaseSpiderTest):
 
     spider_class = CrawlSpider
+
 
 class SitemapSpiderTest(BaseSpiderTest):
 

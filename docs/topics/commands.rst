@@ -126,7 +126,7 @@ And you can see all available commands with::
 There are two kinds of commands, those that only work from inside a Scrapy
 project (Project-specific commands) and those that also work without an active
 Scrapy project (Global commands), though they may behave slightly different
-when running from inside a project (as they would use the project overriden
+when running from inside a project (as they would use the project overridden
 settings).
 
 Global commands:
@@ -248,24 +248,6 @@ Usage examples::
 
     [FAILED] first_spider:parse
     >>> Returned 92 requests, expected 0..4
-
-.. command:: server
-
-server
-------
-
-* Syntax: ``scrapy server``
-* Requires project: *yes*
-
-Start Scrapyd server for this project, which can be referred from the JSON API
-with the project name ``default``. For more info see: :ref:`topics-scrapyd`.
-
-Usage example::
-
-    $ scrapy server
-    [ ... scrapyd starts and stays idle waiting for spiders to get scheduled ... ]
-
-To schedule spiders, use the Scrapyd JSON API.
 
 .. command:: list
 

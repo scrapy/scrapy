@@ -1,8 +1,9 @@
 import sys, os, glob, shutil
 from subprocess import check_call
+from scrapy import version_info
 
 def build(suffix):
-    for ifn in glob.glob("debian/scrapy.*") + glob.glob("debian/scrapyd.*"):
+    for ifn in glob.glob("debian/scrapy.*"):
         s = open(ifn).read()
         s = s.replace('SUFFIX', suffix)
         pre, suf = ifn.split('.', 1)
@@ -21,8 +22,7 @@ def build(suffix):
     check_call('debuild -us -uc -b', shell=True)
 
 def clean(suffix):
-    for f in glob.glob("debian/python-scrapy%s*" % suffix) + \
-            glob.glob("debian/scrapyd%s*" % suffix):
+    for f in glob.glob("debian/python-scrapy%s*" % suffix):
         if os.path.isdir(f):
             shutil.rmtree(f)
         else:
@@ -30,7 +30,7 @@ def clean(suffix):
 
 def main():
     cmd = sys.argv[1]
-    suffix = '%s.%s' % __import__('scrapy').version_info[:2]
+    suffix = '%s.%s' % version_info[:2]
     if cmd == 'build':
         build(suffix)
     elif cmd == 'clean':

@@ -1,3 +1,1 @@
-usr/lib/python*/*-packages/scrapy*
-usr/bin
 extras/scrapy_bash_completion etc/bash_completion.d/

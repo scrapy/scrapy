@@ -25,6 +25,7 @@ from scrapy.contrib.pipeline.media import MediaPipeline
 class NoimagesDrop(DropItem):
     """Product with no images exception"""
 
+
 class ImageException(Exception):
     """General image error exception"""
 
@@ -47,7 +48,7 @@ class FSImagesStore(object):
         absolute_path = self._get_filesystem_path(key)
         try:
             last_modified = os.path.getmtime(absolute_path)
-        except: # FIXME: catching everything!
+        except:  # FIXME: catching everything!
             return {}
 
         with open(absolute_path, 'rb') as imagefile:
@@ -74,9 +75,9 @@ class S3ImagesStore(object):
 
     POLICY = 'public-read'
     HEADERS = {
-            'Cache-Control': 'max-age=172800',
-            'Content-Type': 'image/jpeg',
-            }
+        'Cache-Control': 'max-age=172800',
+        'Content-Type': 'image/jpeg',
+    }
 
     def __init__(self, uri):
         assert uri.startswith('s3://')
@@ -113,8 +114,8 @@ class S3ImagesStore(object):
         k.set_metadata('width', str(width))
         k.set_metadata('height', str(height))
         buf.seek(0)
-        return threads.deferToThread(k.set_contents_from_file, buf, \
-                headers=self.HEADERS, policy=self.POLICY)
+        return threads.deferToThread(k.set_contents_from_file, buf,
+                                     headers=self.HEADERS, policy=self.POLICY)
 
 
 class ImagesPipeline(MediaPipeline):
@@ -142,10 +143,10 @@ class ImagesPipeline(MediaPipeline):
     EXPIRES = 90
     THUMBS = {}
     STORE_SCHEMES = {
-            '': FSImagesStore,
-            'file': FSImagesStore,
-            's3': S3ImagesStore,
-            }
+        '': FSImagesStore,
+        'file': FSImagesStore,
+        's3': S3ImagesStore,
+    }
 
     def __init__(self, store_uri, download_func=None):
         if not store_uri:
@@ -166,7 +167,7 @@ class ImagesPipeline(MediaPipeline):
         return cls(store_uri)
 
     def _get_store(self, uri):
-        if os.path.isabs(uri): # to support win32 paths like: C:\\some\dir
+        if os.path.isabs(uri):  # to support win32 paths like: C:\\some\dir
             scheme = 'file'
         else:
             scheme = urlparse.urlparse(uri).scheme
@@ -180,13 +181,13 @@ class ImagesPipeline(MediaPipeline):
             log.msg(format='Image (code: %(status)s): Error downloading image from %(request)s referred in <%(referer)s>',
                     level=log.WARNING, spider=info.spider,
                     status=response.status, request=request, referer=referer)
-            raise ImageException
+            raise ImageException('download-error')
 
         if not response.body:
             log.msg(format='Image (empty-content): Empty image from %(request)s referred in <%(referer)s>: no-content',
                     level=log.WARNING, spider=info.spider,
                     request=request, referer=referer)
-            raise ImageException
+            raise ImageException('empty-content')
 
         status = 'cached' if 'cached' in response.flags else 'downloaded'
         log.msg(format='Image (%(status)s): Downloaded image from %(request)s referred in <%(referer)s>',
@@ -197,13 +198,15 @@ class ImagesPipeline(MediaPipeline):
         try:
             key = self.image_key(request.url)
             checksum = self.image_downloaded(response, request, info)
-        except ImageException, ex:
-            log.err('image_downloaded hook failed: %s' % ex,
-                    level=log.WARNING, spider=info.spider)
+        except ImageException as exc:
+            whyfmt = 'Image (error): Error processing image from %(request)s referred in <%(referer)s>: %(errormsg)s'
+            log.msg(format=whyfmt, level=log.WARNING, spider=info.spider,
+                    request=request, referer=referer, errormsg=str(exc))
             raise
-        except Exception:
-            log.err(spider=info.spider)
-            raise ImageException
+        except Exception as exc:
+            whyfmt = 'Image (unknown-error): Error processing image from %(request)s referred in <%(referer)s>'
+            log.err(None, whyfmt % {'request': request, 'referer': referer}, spider=info.spider)
+            raise ImageException(str(exc))
 
         return {'url': request.url, 'path': key, 'checksum': checksum}
 
@@ -221,16 +224,16 @@ class ImagesPipeline(MediaPipeline):
     def media_to_download(self, request, info):
         def _onsuccess(result):
             if not result:
-                return # returning None force download
+                return  # returning None force download
 
             last_modified = result.get('last_modified', None)
             if not last_modified:
-                return # returning None force download
+                return  # returning None force download
 
             age_seconds = time.time() - last_modified
             age_days = age_seconds / 60 / 60 / 24
             if age_days > self.EXPIRES:
-                return # returning None force download
+                return  # returning None force download
 
             referer = request.headers.get('Referer')
             log.msg(format='Image (uptodate): Downloaded %(medianame)s from %(request)s referred in <%(referer)s>',
@@ -243,7 +246,7 @@ class ImagesPipeline(MediaPipeline):
 
         key = self.image_key(request.url)
         dfd = defer.maybeDeferred(self.store.stat_image, key, info)
-        dfd.addCallbacks(_onsuccess, lambda _:None)
+        dfd.addCallbacks(_onsuccess, lambda _: None)
         dfd.addErrback(log.err, self.__class__.__name__ + '.store.stat_image')
         return dfd
 
@@ -262,8 +265,8 @@ class ImagesPipeline(MediaPipeline):
 
         width, height = orig_image.size
         if width < self.MIN_WIDTH or height < self.MIN_HEIGHT:
-            raise ImageException("Image too small (%dx%d < %dx%d): %s" % \
-                    (width, height, self.MIN_WIDTH, self.MIN_HEIGHT, response.url))
+            raise ImageException("Image too small (%dx%d < %dx%d)" %
+                                 (width, height, self.MIN_WIDTH, self.MIN_HEIGHT))
 
         image, buf = self.convert_image(orig_image)
         yield key, image, buf
@@ -290,11 +293,7 @@ class ImagesPipeline(MediaPipeline):
             image.thumbnail(size, Image.ANTIALIAS)
 
         buf = StringIO()
-        try:
-            image.save(buf, 'JPEG')
-        except Exception, ex:
-            raise ImageException("Cannot process image. Error: %s" % ex)
-
+        image.save(buf, 'JPEG')
         return image, buf
 
     def image_key(self, url):

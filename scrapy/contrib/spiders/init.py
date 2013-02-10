@@ -1,31 +1,18 @@
 from scrapy.spider import BaseSpider
+from scrapy.utils.spider import iterate_spider_output
 
 class InitSpider(BaseSpider):
     """Base Spider with initialization facilities"""
     
-    def __init__(self, *a, **kw):
-        super(InitSpider, self).__init__(*a, **kw)
-        self._postinit_reqs = []
-        self._init_complete = False
-        self._init_started = False
-
-    def make_requests_from_url(self, url):
-        req = super(InitSpider, self).make_requests_from_url(url)
-        if self._init_complete:
-            return req
-        self._postinit_reqs.append(req)
-        if not self._init_started:
-            self._init_started = True
-            return self.init_request()
+    def start_requests(self):
+        self._postinit_reqs = super(InitSpider, self).start_requests()
+        return iterate_spider_output(self.init_request())
 
     def initialized(self, response=None):
         """This method must be set as the callback of your last initialization
         request. See self.init_request() docstring for more info.
         """
-        self._init_complete = True
-        reqs = self._postinit_reqs[:]
-        del self._postinit_reqs
-        return reqs
+        return self.__dict__.pop('_postinit_reqs')
 
     def init_request(self):
         """This function should return one initialization request, with the

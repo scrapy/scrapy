@@ -28,7 +28,7 @@ The web service contains several resources, defined in the
 functionality. See :ref:`topics-webservice-resources-ref` for a list of
 resources available by default.
 
-Althought you can implement your own resources using any protocol, there are
+Although you can implement your own resources using any protocol, there are
 two kinds of resources bundled with Scrapy:
 
 * Simple JSON resources - which are read-only and just output JSON data
@@ -188,7 +188,7 @@ To write a web service resource you should subclass the :class:`JsonResource` or
     .. attribute:: ws_name
 
         The name by which the Scrapy web service will known this resource, and
-        also the path wehere this resource will listen. For example, assuming
+        also the path where this resource will listen. For example, assuming
         Scrapy web service is listening on http://localhost:6080/ and the
         ``ws_name`` is ``'resource1'`` the URL for that resource will be:
 

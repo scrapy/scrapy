@@ -30,7 +30,7 @@ For spiders, the scraping cycle goes through something like this:
    response handled by the specified callback.
 
 3. In callback functions, you parse the page contents, typically using
-   :ref:`topics-selectors` (but you can also use BeautifuSoup, lxml or whatever
+   :ref:`topics-selectors` (but you can also use BeautifulSoup, lxml or whatever
    mechanism you prefer) and generate items with the parsed data.
 
 4. Finally, the items returned from the spider will be typically persisted to a
@@ -183,7 +183,7 @@ BaseSpider
        :class:`~scrapy.item.Item` objects.
 
        :param response: the response to parse
-       :type reponse: :class:~scrapy.http.Response`
+       :type response: :class:~scrapy.http.Response`
 
    .. method:: log(message, [level, component])
 
@@ -434,7 +434,7 @@ These spiders are pretty easy to use, let's have a look at one example::
         name = 'example.com'
         allowed_domains = ['example.com']
         start_urls = ['http://www.example.com/feed.xml']
-        iterator = 'iternodes' # This is actually unnecesary, since it's the default value
+        iterator = 'iternodes' # This is actually unnecessary, since it's the default value
         itertag = 'item'
 
         def parse_node(self, response, node):

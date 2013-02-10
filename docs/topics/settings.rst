@@ -96,7 +96,7 @@ extensions and middlewares::
             if settings['LOG_ENABLED']:
                 print "log is enabled!"
 
-In other words, settings can be accesed like a dict, but it's usually preferred
+In other words, settings can be accessed like a dict, but it's usually preferred
 to extract the setting in the format you need it to avoid type errors. In order
 to do that you'll have to use one of the methods provided the
 :class:`~scrapy.settings.Settings` API.
@@ -307,10 +307,11 @@ Default::
         'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': 400,
         'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware': 500,
         'scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware': 550,
+        'scrapy.contrib.downloadermiddleware.redirect.MetaRefreshMiddleware': 580,
+        'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 590,
         'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware': 600,
         'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware': 700,
         'scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware': 750,
-        'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 800,
         'scrapy.contrib.downloadermiddleware.chunked.ChunkedTransferMiddleware': 830,
         'scrapy.contrib.downloadermiddleware.stats.DownloaderStats': 850,
         'scrapy.contrib.downloadermiddleware.httpcache.HttpCacheMiddleware': 900,
@@ -647,7 +648,7 @@ REDIRECT_MAX_TIMES
 
 Default: ``20``
 
-Defines the maximun times a request can be redirected. After this maximun the
+Defines the maximum times a request can be redirected. After this maximum the
 request's response is returned as is. We used Firefox default value for the
 same task.
 

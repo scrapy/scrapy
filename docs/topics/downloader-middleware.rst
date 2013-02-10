@@ -108,7 +108,7 @@ single Python class that defines one or more of the following methods:
       :param request: the request that originated the response
       :type request: is a :class:`~scrapy.http.Request` object
 
-      :param reponse: the response being processed
+      :param response: the response being processed
       :type response: :class:`~scrapy.http.Response` object
 
       :param spider: the spider for which this response is intended
@@ -285,6 +285,7 @@ HttpAuthMiddleware
 
 .. _Basic access authentication: http://en.wikipedia.org/wiki/Basic_access_authentication
 
+
 HttpCacheMiddleware
 -------------------
 
@@ -294,44 +295,108 @@ HttpCacheMiddleware
 .. class:: HttpCacheMiddleware
 
     This middleware provides low-level cache to all HTTP requests and responses.
-    Every request and its corresponding response are cached. When the same
-    request is seen again, the response is returned without transferring
-    anything from the Internet.
+    It has to be combined with a cache storage backend as well as a cache policy.
 
-    The HTTP cache is useful for testing spiders faster (without having to wait for
-    downloads every time) and for trying your spider offline, when an Internet
-    connection is not available.
+    Scrapy ships with two HTTP cache storage backends:
 
-    Scrapy ships with two storage backends for the HTTP cache middleware:
+        * :ref:`httpcache-storage-dbm`
+        * :ref:`httpcache-storage-fs`
 
-    * :ref:`httpcache-dbm-backend`
-    * :ref:`httpcache-fs-backend`
+    You can change the HTTP cache storage backend with the :setting:`HTTPCACHE_STORAGE`
+    setting. Or you can also implement your own storage backend.
 
-    You can change the storage backend with the :setting:`HTTPCACHE_STORAGE`
-    setting. Or you can also implement your own backend.
+    Scrapy ships with two HTTP cache policies:
 
-.. _httpcache-dbm-backend:
+        * :ref:`httpcache-policy-rfc2616`
+        * :ref:`httpcache-policy-dummy`
+
+    You can change the HTTP cache policy with the :setting:`HTTPCACHE_POLICY`
+    setting. Or you can also implement your own policy.
+
+
+.. _httpcache-policy-dummy:
+
+Dummy policy (default)
+~~~~~~~~~~~~~~~~~~~~~~
+
+This policy has no awareness of any HTTP Cache-Control directives.
+Every request and its corresponding response are cached.  When the same
+request is seen again, the response is returned without transferring
+anything from the Internet.
+
+The Dummy policy is useful for testing spiders faster (without having
+to wait for downloads every time) and for trying your spider offline,
+when an Internet connection is not available. The goal is to be able to
+"replay" a spider run *exactly as it ran before*.
+
+In order to use this policy, set:
+
+* :setting:`HTTPCACHE_POLICY` to ``scrapy.contrib.httpcache.DummyPolicy``
+
+
+.. _httpcache-policy-rfc2616:
+
+RFC2616 policy
+~~~~~~~~~~~~~~
+
+This policy provides a RFC2616 compliant HTTP cache, i.e. with HTTP
+Cache-Control awareness, aimed at production and used in continuous
+runs to avoid downloading unmodified data (to save bandwidth and speed up crawls).
+
+what is implemented:
+
+* Do not attempt to store responses/requests with `no-store` cache-control directive set
+* Do not serve responses from cache if `no-cache` cache-control directive is set even for fresh responses
+* Compute freshness lifetime from `max-age` cache-control directive
+* Compute freshness lifetime from `Expires` response header
+* Compute freshness lifetime from `Last-Modified` response header (heuristic used by Firefox)
+* Compute current age from `Age` response header
+* Compute current age from `Date` header
+* Revalidate stale responses based on `Last-Modified` response header
+* Revalidate stale responses based on `ETag` response header
+* Set `Date` header for any received response missing it
+
+what is missing:
+
+* `Pragma: no-cache` support http://www.mnot.net/cache_docs/#PRAGMA
+* `Vary` header support http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.6
+* Invalidation after updates or deletes http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.10
+* ... probably others ..
+
+In order to use this policy, set:
+
+* :setting:`HTTPCACHE_POLICY` to ``scrapy.contrib.httpcache.RFC2616Policy``
+
+This is the default cache policy.
+
+
+.. _httpcache-storage-dbm:
 
 DBM storage backend (default)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. versionadded:: 0.13
 
-A DBM_ storage backend is available for the HTTP cache middleware. To use it
-(note: it is the default storage backend) set :setting:`HTTPCACHE_STORAGE`
-to ``scrapy.contrib.httpcache.DbmCacheStorage``.
+A DBM_ storage backend is available for the HTTP cache middleware.
 
 By default, it uses the anydbm_ module, but you can change it with the
 :setting:`HTTPCACHE_DBM_MODULE` setting.
 
-.. _httpcache-fs-backend:
+In order to use this storage backend, set:
 
-File system backend
-~~~~~~~~~~~~~~~~~~~
+* :setting:`HTTPCACHE_STORAGE` to ``scrapy.contrib.httpcache.DbmCacheStorage``
+
+
+.. _httpcache-storage-fs:
+
+Filesystem storage backend
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A file system storage backend is also available for the HTTP cache middleware.
-To use it (instead of the default DBM_ storage backend) set :setting:`HTTPCACHE_STORAGE`
-to ``scrapy.contrib.downloadermiddleware.httpcache.FilesystemCacheStorage``.
+
+In order to use this storage backend, set:
+
+* :setting:`HTTPCACHE_STORAGE` to ``scrapy.contrib.httpcache.FilesystemCacheStorage``
 
 Each request/response pair is stored in a different directory containing
 the following files:
@@ -351,6 +416,7 @@ used to avoid creating too many files into the same directory (which is
 inefficient in many file systems). An example directory could be::
 
    /path/to/cache/dir/example.com/72/72811f648e718090f041317756c03adb0ada46c7
+
 
 HTTPCache middleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -448,7 +514,18 @@ HTTPCACHE_DBM_MODULE
 Default: ``'anydbm'``
 
 The database module to use in the :ref:`DBM storage backend
-<httpcache-dbm-backend>`. This setting is specific to the DBM backend.
+<httpcache-storage-dbm>`. This setting is specific to the DBM backend.
+
+.. setting:: HTTPCACHE_POLICY
+
+HTTPCACHE_POLICY
+^^^^^^^^^^^^^^^^
+
+.. versionadded:: 0.18
+
+Default: ``'scrapy.contrib.httpcache.DummyPolicy'``
+
+The class which implements the cache policy.
 
 
 HttpCompressionMiddleware
@@ -486,7 +563,7 @@ HttpProxyMiddleware
    ``proxy`` meta value to :class:`~scrapy.http.Request` objects.
 
    Like the Python standard library modules `urllib`_ and `urllib2`_, it obeys
-   the following enviroment variables:
+   the following environment variables:
 
    * ``http_proxy``
    * ``https_proxy``
@@ -503,8 +580,7 @@ RedirectMiddleware
 
 .. class:: RedirectMiddleware
 
-   This middleware handles redirection of requests based on response status and
-   meta-refresh html tag.
+   This middleware handles redirection of requests based on response status.
 
 .. reqmeta:: redirect_urls
 
@@ -516,7 +592,6 @@ settings (see the settings documentation for more info):
 
 * :setting:`REDIRECT_ENABLED`
 * :setting:`REDIRECT_MAX_TIMES`
-* :setting:`REDIRECT_MAX_METAREFRESH_DELAY`
 
 .. reqmeta:: dont_redirect
 
@@ -546,6 +621,37 @@ REDIRECT_MAX_TIMES
 Default: ``20``
 
 The maximum number of redirections that will be follow for a single request.
+
+MetaRefreshMiddleware
+---------------------
+
+.. class:: MetaRefreshMiddleware
+
+   This middleware handles redirection of requests based on meta-refresh html tag.
+
+The :class:`MetaRefreshMiddleware` can be configured through the following
+settings (see the settings documentation for more info):
+
+* :setting:`METAREFRESH_ENABLED`
+* :setting:`METAREFRESH_MAXDELAY`
+
+This middleware obey :setting:`REDIRECT_MAX_TIMES` setting, :reqmeta:`dont_redirect`
+and :reqmeta:`redirect_urls` request meta keys as described for :class:`RedirectMiddleware`
+
+
+MetaRefreshMiddleware settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. setting:: METAREFRESH_ENABLED
+
+METAREFRESH_ENABLED
+^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 0.17
+
+Default: ``True``
+
+Whether the Meta Refresh middleware will be enabled.
 
 .. setting:: REDIRECT_MAX_METAREFRESH_DELAY
 

@@ -113,7 +113,7 @@ being created. These parameters are:
  * ``%(time)s`` - gets replaced by a timestamp when the feed is being created
  * ``%(name)s`` - gets replaced by the spider name
 
-Any other named parmeter gets replaced by the spider attribute of the same
+Any other named parameter gets replaced by the spider attribute of the same
 name. For example, ``%(site_id)s`` would get replaced by the ``spider.site_id``
 attribute the moment the feed is being created.
 

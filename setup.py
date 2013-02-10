@@ -1,4 +1,4 @@
-# Scrapy setup.py script 
+# Scrapy setup.py script
 #
 # It doesn't depend on setuptools, but if setuptools is available it'll use
 # some of its features, like package dependencies.
@@ -57,7 +57,7 @@ if root_dir != '':
 def is_not_module(filename):
     return os.path.splitext(f)[1] not in ['.py', '.pyc', '.pyo']
 
-for scrapy_dir in ['scrapy', 'scrapyd']:
+for scrapy_dir in ['scrapy']:
     for dirpath, dirnames, filenames in os.walk(scrapy_dir):
         # Ignore dirnames that start with '.'
         for i, dirname in enumerate(dirnames):
@@ -82,9 +82,11 @@ if os.name == 'nt':
 
 if os.environ.get('SCRAPY_VERSION_FROM_GIT'):
     v = Popen("git describe", shell=True, stdout=PIPE).communicate()[0]
-    with open('scrapy/__init__.py', 'a') as f:
-        f.write("\n__version__ = '%s'" % v.strip())
-version = __import__('scrapy').__version__
+    with open('scrapy/VERSION', 'w+') as f:
+        f.write(v.strip())
+with open(os.path.join(os.path.dirname(__file__), 'scrapy/VERSION')) as f:
+    version = f.read().strip()
+
 
 setup_args = {
     'name': 'Scrapy',
@@ -121,5 +123,5 @@ except ImportError:
     from distutils.core import setup
 else:
     setup_args['install_requires'] = ['Twisted>=8.0', 'w3lib>=1.2', 'lxml', 'pyOpenSSL']
- 
+
 setup(**setup_args)

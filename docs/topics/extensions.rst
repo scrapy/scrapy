@@ -62,6 +62,17 @@ Not all available extensions will be enabled. Some of them usually depend on a
 particular setting. For example, the HTTP Cache extension is available by default
 but disabled unless the :setting:`HTTPCACHE_ENABLED` setting is set.
 
+Disabling an extension
+======================
+
+In order to disable an extension that comes enabled by default (ie. those
+included in the :setting:`EXTENSIONS_BASE` setting) you must set its order to
+``None``. For example::
+
+    EXTENSIONS = {
+        'scrapy.contrib.corestats.CoreStats': None,
+    }
+
 Writing your own extension
 ==========================
 

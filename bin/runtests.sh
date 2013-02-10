@@ -37,7 +37,7 @@ fi
 
 find . -name '*.py[co]' -delete
 if [ $# -eq 0 ]; then
-    $trial --reporter=text scrapy scrapyd
+    $trial --reporter=text scrapy
 else
     $trial "$@"
 fi

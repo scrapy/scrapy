@@ -61,7 +61,7 @@ certain field keys to configure that behaviour. You must refer to their
 documentation to see which metadata keys are used by each component.
 
 It's important to note that the :class:`Field` objects used to declare the item
-do not stay assigned as class attributes. Instead, they can be accesed through
+do not stay assigned as class attributes. Instead, they can be accessed through
 the :attr:`Item.fields` attribute. 
 
 And that's all you need to know about declaring items. 
@@ -137,7 +137,7 @@ Setting field values
         ...
     KeyError: 'Product does not support field: lala'
 
-Accesing all populated values
+Accessing all populated values
 -----------------------------
 
 To access all populated values, just use the typical `dict API`_::

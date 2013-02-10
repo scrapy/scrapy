@@ -1,8 +1,20 @@
 TRIAL := $(shell which trial)
+BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
+ifeq ($(BRANCH),master)
+export SCRAPY_VERSION_FROM_GIT=1
+endif
+export PYTHONPATH=$(PWD)
 
-deb:
+test:
+	coverage run --branch $(TRIAL) --reporter=text scrapy.tests
+	rm -rf htmlcov && coverage html
+	-s3cmd sync -P htmlcov/ s3://static.scrapy.org/coverage-scrapy-$(BRANCH)/
+
+build:
 	python extras/makedeb.py build
 
-deb-clean:
-	debclean
-	python extras/makedeb.py clean
+clean:
+	git checkout debian scrapy/VERSION
+	git clean -dfq
+
+.PHONY: clean test build

@@ -3,9 +3,8 @@ include AUTHORS
 include INSTALL
 include LICENSE
 include MANIFEST.in
+include scrapy/VERSION
 include scrapy/mime.types
-include scrapyd/default_scrapyd.conf
-recursive-include scrapyd/tests *.egg
 recursive-include scrapy/templates *
 recursive-include scrapy/tests/sample_data *
 recursive-include scrapy license.txt

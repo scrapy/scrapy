@@ -39,8 +39,8 @@ a signal), and resume it later by issuing the same command::
 
     scrapy crawl somespider -s JOBDIR=crawls/somespider-1
 
-Keeping persitent state between batches
-=======================================
+Keeping persistent state between batches
+========================================
 
 Sometimes you'll want to keep some persistent spider state between pause/resume
 batches. You can use the ``spider.state`` attribute for that, which should be a
@@ -49,7 +49,7 @@ loading that attribute from the job directory, when the spider starts and
 stops.
 
 Here's an example of a callback that uses the spider state (other spider code
-is ommited for brevity)::
+is omitted for brevity)::
 
     def parse_item(self, response):
         # parse item here
