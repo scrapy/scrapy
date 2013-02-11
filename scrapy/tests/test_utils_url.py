@@ -158,13 +158,6 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertEqual(canonicalize_url("http://foo.com/AC%2FDC/"),
                          "http://foo.com/AC%2FDC/")
 
-    def test_url_has_any_extension(self):
-        self.assertTrue(url_has_any_extension("http://www.example.com/page.doc", IGNORED_EXTENSIONS))
-        self.assertTrue(url_has_any_extension("http://www.example.com/page.pdf", IGNORED_EXTENSIONS))
-        self.assertFalse(url_has_any_extension("http://www.example.com/page.htm", IGNORED_EXTENSIONS))
-        self.assertFalse(url_has_any_extension("http://www.example.com/", IGNORED_EXTENSIONS))
-        self.assertFalse(url_has_any_extension("http://www.example.com/page.doc.html", IGNORED_EXTENSIONS))
-
 
 if __name__ == "__main__":
     unittest.main()
