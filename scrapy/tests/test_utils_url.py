@@ -1,6 +1,7 @@
 import unittest
 from scrapy.spider import BaseSpider
-from scrapy.utils.url import url_is_from_any_domain, url_is_from_spider, canonicalize_url
+from scrapy.utils.url import url_is_from_any_domain, url_is_from_spider, canonicalize_url, url_has_any_extension
+from scrapy.linkextractor import IGNORED_EXTENSIONS
 
 __doctests__ = ['scrapy.utils.url']
 
@@ -156,6 +157,13 @@ class UrlUtilsTest(unittest.TestCase):
                          "http://foo.com/AC%2FDC+rocks%3F/?yeah=1")
         self.assertEqual(canonicalize_url("http://foo.com/AC%2FDC/"),
                          "http://foo.com/AC%2FDC/")
+
+    def test_url_has_any_extension(self):
+        self.assertTrue(url_has_any_extension("http://www.example.com/page.doc", IGNORED_EXTENSIONS))
+        self.assertTrue(url_has_any_extension("http://www.example.com/page.pdf", IGNORED_EXTENSIONS))
+        self.assertFalse(url_has_any_extension("http://www.example.com/page.htm", IGNORED_EXTENSIONS))
+        self.assertFalse(url_has_any_extension("http://www.example.com/", IGNORED_EXTENSIONS))
+        self.assertFalse(url_has_any_extension("http://www.example.com/page.doc.html", IGNORED_EXTENSIONS))
 
 
 if __name__ == "__main__":
