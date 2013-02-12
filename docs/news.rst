@@ -6,6 +6,7 @@ Release notes
 0.18 (unreleased)
 -----------------
 
+- added ``--pdb`` option to ``scrapy`` command line tool
 - added :meth:`XPathSelector.remove_namespaces` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`topics-selectors`.
 - several improvements to spider contracts
 - New default middleware named MetaRefreshMiddldeware that handles meta-refresh html tag redirections,
