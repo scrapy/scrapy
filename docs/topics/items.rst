@@ -138,7 +138,7 @@ Setting field values
     KeyError: 'Product does not support field: lala'
 
 Accessing all populated values
------------------------------
+------------------------------
 
 To access all populated values, just use the typical `dict API`_::
 
