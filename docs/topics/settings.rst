@@ -26,7 +26,7 @@ The value of ``SCRAPY_SETTINGS_MODULE`` should be in Python path syntax, e.g.
 ``myproject.settings``. Note that the settings module should be on the
 Python `import search path`_.
 
-.. _import search path: http://diveintopython.org/getting_to_know_python/everything_is_an_object.html
+.. _import search path: http://docs.python.org/2/tutorial/modules.html#the-module-search-path
 
 Populating the settings
 =======================
