@@ -49,7 +49,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
     def test_thumbnail_name(self):
         thumbnail_name = self.pipeline.thumb_key
         name = '50'
-        self.assertEqual(thumbnail_name("/tmp/foo.jpg", name),  
+        self.assertEqual(thumbnail_name("/tmp/foo.jpg", name),
                          'thumbs/50/271f172bb4727281011c80fe763e93a47bb6b3fe.jpg')
         self.assertEqual(thumbnail_name("foo.png", name),
                          'thumbs/50/0945c699b5580b99e4f40dffc009699b2b6830a7.jpg')
@@ -59,8 +59,8 @@ class ImagesPipelineTestCase(unittest.TestCase):
                          'thumbs/50/92dac2a6a2072c5695a5dff1f865b3cb70c657bb.jpg')
 
     def test_fs_store(self):
-        from scrapy.contrib.pipeline.images import FSImagesStore
-        assert isinstance(self.pipeline.store, FSImagesStore)
+        from scrapy.contrib.pipeline.files import FSFilesStore
+        assert isinstance(self.pipeline.store, FSFilesStore)
         self.assertEqual(self.pipeline.store.basedir, self.tempdir)
 
         key = 'some/image/key.jpg'
