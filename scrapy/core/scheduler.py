@@ -46,6 +46,8 @@ class Scheduler(object):
 
     def enqueue_request(self, request):
         if not request.dont_filter and self.df.request_seen(request):
+            log.msg(format="Skip already visited URL: %(url)s",
+                    level=log.DEBUG, url=request.url)
             return
         dqok = self._dqpush(request)
         if dqok:
