@@ -1,6 +1,7 @@
 import unittest
 from scrapy.spider import BaseSpider
-from scrapy.utils.url import url_is_from_any_domain, url_is_from_spider, canonicalize_url
+from scrapy.utils.url import url_is_from_any_domain, url_is_from_spider, canonicalize_url, url_has_any_extension
+from scrapy.linkextractor import IGNORED_EXTENSIONS
 
 __doctests__ = ['scrapy.utils.url']
 

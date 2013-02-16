@@ -56,6 +56,11 @@ class Command(ScrapyCommand):
 
         name, domain = args[0:2]
         module = sanitize_module_name(name)
+
+        if self.settings.get('BOT_NAME') == module:
+            print "Cannot create a spider with the same name as your project"
+            return
+
         try:
             spider = self.crawler.spiders.create(name)
         except KeyError:

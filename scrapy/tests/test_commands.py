@@ -112,6 +112,10 @@ class GenspiderCommandTest(CommandTest):
         self.assertEqual(0, self.call('genspider', '--dump=basic'))
         self.assertEqual(0, self.call('genspider', '-d', 'basic'))
 
+    def test_same_name_as_project(self):
+        self.assertEqual(2, self.call('genspider', self.project_name))
+        assert not exists(join(self.proj_mod_path, 'spiders', '%s.py' % self.project_name))
+
 
 class MiscCommandsTest(CommandTest):
 

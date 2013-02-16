@@ -4,6 +4,7 @@ Base class for Scrapy commands
 
 import os
 from optparse import OptionGroup
+from twisted.python import failure
 
 from scrapy import log
 from scrapy.utils.conf import arglist_to_dict
@@ -80,6 +81,7 @@ class ScrapyCommand(object):
             help="write process ID to FILE")
         group.add_option("-s", "--set", action="append", default=[], metavar="NAME=VALUE", \
             help="set/override setting (may be repeated)")
+        group.add_option("--pdb", action="store_true", help="enable pdb on failure")
         parser.add_option_group(group)
         
     def process_options(self, args, opts):
@@ -102,6 +104,9 @@ class ScrapyCommand(object):
         if opts.pidfile:
             with open(opts.pidfile, "w") as f:
                 f.write(str(os.getpid()) + os.linesep)
+
+        if opts.pdb:
+            failure.startDebugMode()
 
     def run(self, args, opts):
         """
