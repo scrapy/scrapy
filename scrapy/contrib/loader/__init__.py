@@ -3,9 +3,7 @@ Item Loader
 
 See documentation in docs/topics/loaders.rst
 """
-
 from collections import defaultdict
-import re
 
 from scrapy.item import Item
 from scrapy.selector import HtmlXPathSelector
@@ -13,6 +11,7 @@ from scrapy.utils.misc import arg_to_iter, extract_regex
 from scrapy.utils.python import flatten
 from .common import wrap_loader_context
 from .processor import Identity
+
 
 class ItemLoader(object):
 
@@ -28,14 +27,15 @@ class ItemLoader(object):
         self._values = defaultdict(list)
         if values is not None:
             for f, v in values.iteritems():
-                self.add_value(f, v)
+                for vv in arg_to_iter(v):
+                    self.add_value(f, vv)
 
     def add_value(self, field_name, value, *processors, **kw):
         value = self.get_value(value, *processors, **kw)
         if value is None:
             return
         if not field_name:
-            for k,v in value.iteritems():
+            for k, v in value.iteritems():
                 self._add_value(k, v)
         else:
             self._add_value(field_name, value)
@@ -45,7 +45,7 @@ class ItemLoader(object):
         if value is None:
             return
         if not field_name:
-            for k,v in value.iteritems():
+            for k, v in value.iteritems():
                 self._replace_value(k, v)
         else:
             self._replace_value(field_name, value)
@@ -117,6 +117,7 @@ class ItemLoader(object):
             value = default
         return value
 
+
 class XPathItemLoader(ItemLoader):
 
     default_selector_class = HtmlXPathSelector
@@ -146,4 +147,3 @@ class XPathItemLoader(ItemLoader):
     def _get_values(self, xpaths, **kw):
         xpaths = arg_to_iter(xpaths)
         return flatten([self.selector.select(xpath).extract() for xpath in xpaths])
-
