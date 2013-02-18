@@ -128,10 +128,21 @@ class ItemTest(unittest.TestCase):
     def test_to_dict(self):
         class TestItem(Item):
             name = Field()
+            value = Field()
 
         i = TestItem()
         i['name'] = u'John'
+        # non-set field is not included
         self.assertEqual(dict(i), {'name': u'John'})
+
+    def test_encode(self):
+        class MyItem(Item):
+            name = Field(serializer=lambda s: s.upper())
+            desc = Field()
+            flag = Field()
+
+        i = MyItem(name='foo', desc='')
+        self.assertEqual(i.encode(), {'name': 'FOO', 'desc': ''})
 
 
 if __name__ == "__main__":
