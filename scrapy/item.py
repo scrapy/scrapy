@@ -75,6 +75,14 @@ class DictItem(DictMixin, BaseItem):
     def __repr__(self):
         return pformat(dict(self))
 
+    def encode(self):
+        d = {}
+        for k, f in self.fields.iteritems():
+            s = f.get("serializer", None)
+            v = self.get(k, None)
+            d[k] = s(v) if s else v
+        return d
+
 
 class Item(DictItem):
 
