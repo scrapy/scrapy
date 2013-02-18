@@ -79,8 +79,9 @@ class DictItem(DictMixin, BaseItem):
         d = {}
         for k, f in self.fields.iteritems():
             s = f.get("serializer", None)
-            v = self.get(k, None)
-            d[k] = s(v) if s else v
+            if k in self:
+                v = self[k]
+                d[k] = s(v) if s else v
         return d
 
 
