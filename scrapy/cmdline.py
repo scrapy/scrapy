@@ -32,9 +32,10 @@ def _get_commands_from_module(module, inproject):
 
 def _get_commands_dict(settings, inproject):
     cmds = _get_commands_from_module('scrapy.commands', inproject)
-    cmds_module = settings['COMMANDS_MODULE']
-    if cmds_module:
-        cmds.update(_get_commands_from_module(cmds_module, inproject))
+    cmds_modules = settings['COMMANDS_MODULE']
+    for cmds_module in cmds_modules.split(":"):
+        if cmds_module:
+            cmds.update(_get_commands_from_module(cmds_module, inproject))
     return cmds
 
 def _pop_command_name(argv):
