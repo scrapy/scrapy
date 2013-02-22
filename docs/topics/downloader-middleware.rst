@@ -724,7 +724,7 @@ Maximum number of times to retry, in addition to the first download.
 RETRY_HTTP_CODES
 ^^^^^^^^^^^^^^^^
 
-Default: ``[500, 503, 504, 400, 408]``
+Default: ``[500, 502, 503, 504, 400, 408]``
 
 Which HTTP response codes to retry. Other errors (DNS lookup issues,
 connections lost, etc) are always retried.
