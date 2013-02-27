@@ -233,6 +233,7 @@ class ExecutionEngine(object):
         next loop and this function is guaranteed to be called (at least) once
         again for this spider.
         """
+        print ">>> spider_idle!"
         res = self.signals.send_catch_log(signal=signals.spider_idle, \
             spider=spider, dont_log=DontCloseSpider)
         if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) \

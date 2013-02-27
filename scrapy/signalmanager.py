@@ -3,7 +3,7 @@ from scrapy.utils import signal
 
 class SignalManager(object):
 
-    def __init__(self, sender=dispatcher.Anonymous):
+    def __init__(self, sender=dispatcher.Any):
         self.sender = sender
 
     def connect(self, *a, **kw):

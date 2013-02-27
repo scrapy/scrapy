@@ -16,7 +16,7 @@ def arg_to_iter(arg):
     """
     if arg is None:
         return []
-    elif not isinstance(arg, dict) and not isinstance(arg, BaseItem) and hasattr(arg, '__iter__'):
+    elif not isinstance(arg, (dict, BaseItem)) and hasattr(arg, '__iter__'):
         return arg
     else:
         return [arg]
