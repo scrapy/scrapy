@@ -33,7 +33,11 @@ def _get_commands_from_module(module, inproject):
 def _get_commands_dict(settings, inproject):
     cmds = _get_commands_from_module('scrapy.commands', inproject)
     cmds_modules = settings['COMMANDS_MODULE']
-    for cmds_module in cmds_modules.split(":"):
+
+    if isinstance(cmds_modules, basestring):
+        cmds_modules = cmds_modules.split(":")
+    assert isinstance(cmds_modules, (tuple, list))
+    for cmds_module in cmds_modules:
         if cmds_module:
             cmds.update(_get_commands_from_module(cmds_module, inproject))
     return cmds
