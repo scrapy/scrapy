@@ -8,6 +8,9 @@ signals here without documenting them there.
 class Signal(object):
     def __init__(self, name):
         self.name = name
+        
+    def __repr__(self):
+        return self.name or "signal"
 
 engine_started = Signal("engine_started")
 engine_stopped = Signal("engine_stopped")
