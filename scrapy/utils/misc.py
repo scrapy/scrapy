@@ -6,6 +6,7 @@ from pkgutil import iter_modules
 
 from w3lib.html import remove_entities
 from scrapy.utils.python import flatten
+from scrapy.item import BaseItem
 
 def arg_to_iter(arg):
     """Convert an argument to an iterable. The argument can be a None, single
@@ -15,7 +16,7 @@ def arg_to_iter(arg):
     """
     if arg is None:
         return []
-    elif not isinstance(arg, dict) and hasattr(arg, '__iter__'):
+    elif not isinstance(arg, (dict, BaseItem)) and hasattr(arg, '__iter__'):
         return arg
     else:
         return [arg]
