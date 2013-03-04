@@ -461,7 +461,7 @@ Custom project commands
 =======================
 
 You can also add your custom project commands by using the
-:setting:`COMMANDS_MODULE` setting. See the Scrapy commands in
+:setting:`COMMANDS_MODULE` setting. It is also posible to set multiple sources separated by colon `:`. See the Scrapy commands in
 `scrapy/commands`_ for examples on how to implement your commands.
 
 .. _scrapy/commands: https://github.com/scrapy/scrapy/blob/master/scrapy/commands
@@ -478,3 +478,7 @@ commands for your Scrapy project.
 Example::
 
     COMMANDS_MODULE = 'mybot.commands'
+
+Using multiple sources example::
+
+    COMMANDS_MODULE = 'mybot.commands:scrapy_sentry.commands'
