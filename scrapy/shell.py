@@ -3,7 +3,6 @@ Scrapy Shell
 
 See documentation in docs/topics/shell.rst
 """
-
 import signal
 
 from twisted.internet import reactor, threads
@@ -20,10 +19,12 @@ from scrapy.utils.response import open_in_browser
 from scrapy.utils.console import start_python_console
 from scrapy.settings import Settings
 from scrapy.http import Request, Response, HtmlResponse, XmlResponse
+from scrapy.exceptions import IgnoreRequest
+
 
 class Shell(object):
 
-    relevant_classes = (BaseSpider, Request, Response, BaseItem, \
+    relevant_classes = (BaseSpider, Request, Response, BaseItem,
         XPathSelector, Settings)
 
     def __init__(self, crawler, update_vars=None, code=None):
@@ -63,7 +64,7 @@ class Shell(object):
         if self.spider:
             return self.spider
         if spider is None:
-            spider = create_spider_for_request(self.crawler.spiders, request, \
+            spider = create_spider_for_request(self.crawler.spiders, request,
                 BaseSpider('default'), log_multiple=True)
         spider.set_crawler(self.crawler)
         self.crawler.engine.open_spider(spider, close_if_idle=False)
@@ -79,8 +80,11 @@ class Shell(object):
             request = Request(url, dont_filter=True)
             request.meta['handle_httpstatus_all'] = True
         response = None
-        response, spider = threads.blockingCallFromThread(reactor, \
-            self._schedule, request, spider)
+        try:
+            response, spider = threads.blockingCallFromThread(
+                reactor, self._schedule, request, spider)
+        except IgnoreRequest:
+            pass
         self.populate_vars(response, request, spider)
 
     def populate_vars(self, response=None, request=None, spider=None):
