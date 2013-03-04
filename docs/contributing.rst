@@ -102,6 +102,15 @@ Scrapy:
 * Don't put your name in the code you contribute. Our policy is to keep
   the contributor's name in the `AUTHORS`_ file distributed with Scrapy.
 
+Scrapy Contrib
+==============
+
+Scrapy contrib shares a similar rationale as Django contrib, which is explained
+in `this post <http://jacobian.org/writing/what-is-django-contrib/>`_. If you
+are working on a new functionality, please follow that rationale to decide
+whether it should be a Scrapy contrib. If unsure, you can ask in
+`scrapy-developers`_.
+
 Documentation policies
 ======================
 
