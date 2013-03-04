@@ -7,7 +7,7 @@ Spider Middleware
 The spider middleware is a framework of hooks into Scrapy's spider processing
 mechanism where you can plug custom functionality to process the requests that
 are sent to :ref:`topics-spiders` for processing and to process the responses
-and items that are generated from spiders. 
+and items that are generated from spiders.
 
 .. _topics-spider-middleware-setting:
 
@@ -68,7 +68,7 @@ single Python class that defines one or more of the following methods:
         exception.
 
         If it returns ``None``, Scrapy will continue processing this response,
-        executing all other middlewares until, finally, the response is handled
+        executing all other middlewares until, finally, the response is handed
         to the spider for processing.
 
         If it raises an exception, Scrapy won't bother calling any other spider
@@ -277,7 +277,8 @@ RefererMiddleware
 
 .. class:: RefererMiddleware
 
-   Populates Request referer field, based on the Response which originated it.
+   Populates Request ``Referer`` header, based on the URL of the Response which
+   generated it.
 
 RefererMiddleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -299,7 +300,7 @@ UrlLengthMiddleware
 .. module:: scrapy.contrib.spidermiddleware.urllength
    :synopsis: URL Length Spider Middleware
 
-.. class:: UrlLengthMiddleware 
+.. class:: UrlLengthMiddleware
 
    Filters out requests with URLs longer than URLLENGTH_LIMIT
 
