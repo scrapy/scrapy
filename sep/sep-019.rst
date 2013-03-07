@@ -1,7 +1,7 @@
 SEP-019: Per-spider settings
 ============================
 
-This is a proposal to add support for overrding settings per-spiders in a
+This is a proposal to add support for overriding settings per-spiders in a
 consistent way.
 
 In short, you will be able to overwrite settings (on a per-spider basis) by
@@ -20,10 +20,12 @@ implementing a class method in your spider::
 What this solves
 ================
 
-1. true overridable per-spider setting
-2. supports accessing settings from spiders (currently not supported wihout
-   hacky code)
-3. avoid mistakenly believing you can change settings after they have been
+1. support true overridable per-spider setting, from both command-line usage
+   and library mode
+
+2. support for accessing settings from spiders (currently not supported
+   without hacky code)
+3. avoids mistakenly believing you can change settings after they have been
    populated (you can, but they won't have any effect)
 
 Proposed changes
@@ -50,7 +52,7 @@ Settings class will be split into two classes ``SettingsLoader`` and ``SettingsR
 SettingsLoader
 --------------
 
-- used at startup (only) to populate settings, then converted to a SettingsReader and discarded
+- used at startup (only) to populate settings, then converted to a ``SettingsReader`` and discarded
 - will have a method ``set(name, value, priority)`` to register a setting with a given priority
 
 SettingsReader
@@ -79,7 +81,7 @@ Currently, the spider manager is part of the crawler which creates a cyclic
 loop between settings and spiders and it shouldn't belong there. The spiders
 should be loaded outside and passed to the crawler object, which will require a
 spider class to be instantiated. It will need to be a class because when the
-spider is instantiated the SettingsReader should already be available.
+spider is instantiated the ``SettingsReader`` should already be available.
 
 This new spider manager will not have access to the settings (they won't be
 loaded yet) so it will use scrapy.cfg to configure itself.
@@ -95,7 +97,7 @@ The ``scrapy.cfg`` would look like this::
 
 - ``manager`` replaces ``SPIDER_MANAGER_CLASS`` setting and can, if omitted,
   will default to ``scrapy.spidermanager.SpiderManager``
-- ``modules`` replaces ``SPIDER_MODULES`` setting and will be rquired
+- ``modules`` replaces ``SPIDER_MODULES`` setting and will be required
 
 Startup process
 ===============
