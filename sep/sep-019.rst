@@ -66,7 +66,7 @@ Setting priorities
 
 There will be 5 setting priorities used by default:
 
-- 0: lobal defaults (those in ``scrapy.settings.default_settings``)
+- 0: global defaults (those in ``scrapy.settings.default_settings``)
 - 10: per-command defaults (for example, shell runs with ``KEEP_ALIVE=True``)
 - 20: project settings (those in ``settings.py``)
 - 30: per-spider settings (those returned by ``Spider.custom_settings`` class method)
@@ -134,7 +134,7 @@ Proposed (new) startup process
     spidercls = sm.load('myspider') # NOTE: returns spider class, not instance
 
     settings = get_project_settings() # loads settings.py
-    settings.set(DOWNLOAD_DELAY, 5, priority=40)
+    settings.set('DOWNLOAD_DELAY', 5, priority=40)
 
     crawler = Crawler(spidercls, settings=settings)
         settings.override(spidercls.custom_settings())
