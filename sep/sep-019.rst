@@ -17,8 +17,17 @@ implementing a class method in your spider::
             }
 
 
+What this solves
+================
+
+1. true overridable per-spider setting
+2. supports accessing settings from spiders (currently not supported wihout
+   hacky code)
+3. avoid mistakenly believing you can change settings after they have been
+   populated (you can, but they won't have any effect)
+
 Proposed changes
-----------------
+================
 
 - new ``custom_settings`` class method will be added to spiders, to give them
   a chance to override settings *before* they're used to instantiate the crawler
@@ -133,15 +142,6 @@ Proposed (new) startup process
     crawler.crawl(arg='value')
         spider = self.spidercls.from_crawler(self, arg='value')
         # starts crawling spider
-
-What this solves
-================
-
-1. true overridable per-spider setting
-2. supports accessing settings from spiders (currently not supported wihout
-   hacky code)
-3. avoid mistakenly believing you can change settings after they have been
-   populated (you can, but they won't have any effect)
 
 TODO
 ====
