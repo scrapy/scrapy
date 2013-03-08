@@ -1,5 +1,13 @@
+=======  ===================
+SEP      19
+Title    Per-spider settings
+Author   Pablo Hoffman
+Created  2013-03-07
+Status   Draft
+=======  ===================
+
 SEP-019: Per-spider settings
-============================
+****************************
 
 This is a proposal to add support for overriding settings per-spiders in a
 consistent way.
