@@ -144,8 +144,3 @@ Proposed (new) startup process
     crawler.crawl(arg='value')
         spider = self.spidercls.from_crawler(self, arg='value')
         # starts crawling spider
-
-TODO
-====
-
-- should ``custom_settings`` be a static method instead of a class method?
