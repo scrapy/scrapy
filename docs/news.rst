@@ -6,6 +6,7 @@ Release notes
 0.18 (unreleased)
 -----------------
 
+- add scrapy commands using external libraries (:issue:`260`)
 - added ``--pdb`` option to ``scrapy`` command line tool
 - added :meth:`XPathSelector.remove_namespaces` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`topics-selectors`.
 - several improvements to spider contracts
