@@ -50,7 +50,10 @@ class RetryMiddleware(object):
     def process_response(self, request, response, spider):
         if 'dont_retry' in request.meta:
             return response
-        if response.status in self.retry_http_codes:
+        retry_http_codes = self.retry_http_codes
+        if hasattr(spider, 'retry_http_codes'):
+            retry_http_codes += spider.retry_http_codes
+        if response.status in retry_http_codes:
             reason = response_status_message(response.status)
             return self._retry(request, reason, spider) or response
         return response
