@@ -8,6 +8,7 @@ from twisted.internet import defer
 from scrapy.utils.serialize import SpiderReferencer, ScrapyJSONEncoder, ScrapyJSONDecoder
 from scrapy.spider import BaseSpider
 from scrapy.http import Request, Response
+from scrapy.item import Field, Item
 
 
 class _EngineMock(object):
@@ -126,6 +127,18 @@ class JsonEncoderTestCase(BaseTestCase):
         rs = self.encoder.encode(r)
         assert r.url in rs
         assert str(r.status) in rs
+
+    def test_encode_nested_item(self):
+        class MyItem(Item):
+            name = Field()
+            child = Field()
+
+        i = MyItem(name='foo')
+        i['child'] = MyItem(name='bar')
+
+        result = self.encoder.encode(i)
+        expected = '{"name": "foo", "child": {"name": "bar"}}'
+        self.assertEqual(result, expected)
 
 
 if __name__ == "__main__":
