@@ -48,6 +48,16 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertTrue(url_is_from_spider('http://www.example.net/some/page.html', spider))
         self.assertFalse(url_is_from_spider('http://www.example.us/some/page.html', spider))
 
+        spider = BaseSpider(name='example.com', allowed_domains=set(('example.com', 'example.net')))
+        self.assertTrue(url_is_from_spider('http://www.example.com/some/page.html', spider))
+
+        spider = BaseSpider(name='example.com', allowed_domains=('example.com', 'example.net'))
+        self.assertTrue(url_is_from_spider('http://www.example.com/some/page.html', spider))
+        self.assertFalse(url_is_from_spider('http://www.example.org/some/page.html', spider))
+
+        spider = BaseSpider(name='example.com', allowed_domains={'example.org': None})
+        self.assertTrue(url_is_from_spider('http://www.example.org/some/page.html', spider))
+
     def test_url_is_from_spider_with_allowed_domains_class_attributes(self):
         class MySpider(BaseSpider):
             name = 'example.com'
@@ -58,6 +68,16 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertTrue(url_is_from_spider('http://www.example.org/some/page.html', MySpider))
         self.assertTrue(url_is_from_spider('http://www.example.net/some/page.html', MySpider))
         self.assertFalse(url_is_from_spider('http://www.example.us/some/page.html', MySpider))
+
+        class MySetSpider(BaseSpider):
+            name = 'example.com'
+            allowed_domains = set(('example.org', 'example.net'))
+        self.assertTrue(url_is_from_spider('http://www.example.com/some/page.html', MySetSpider))
+        self.assertTrue(url_is_from_spider('http://sub.example.com/some/page.html', MySetSpider))
+        self.assertTrue(url_is_from_spider('http://example.com/some/page.html', MySetSpider))
+        self.assertTrue(url_is_from_spider('http://www.example.org/some/page.html', MySetSpider))
+        self.assertTrue(url_is_from_spider('http://www.example.net/some/page.html', MySetSpider))
+        self.assertFalse(url_is_from_spider('http://www.example.us/some/page.html', MySetSpider))
 
     def test_canonicalize_url(self):
         # simplest case
