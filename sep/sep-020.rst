@@ -8,8 +8,9 @@ Status   Draft
 
 .. note: this SEP has been migrated from the Wiki.
 
+=========================
 SEP-020: Bulk Item Loader
-*************************
+=========================
 
 Introduction
 ============
