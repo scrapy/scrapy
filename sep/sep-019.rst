@@ -148,7 +148,7 @@ Proposed (new) startup process
     settings.set('DOWNLOAD_DELAY', 5, priority=40)
 
     crawler = Crawler(spidercls, settings=settings)
-        settings.override(spidercls.custom_settings())
+        settings.overrides.update(spidercls.custom_settings())
         # load extensions, middlewares, pipelines
     crawler.crawl(arg='value')
         spider = self.spidercls.from_crawler(self, arg='value')
