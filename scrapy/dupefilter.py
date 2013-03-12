@@ -1,6 +1,7 @@
 import os
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.job import job_dir
+from scrapy import log
 
 
 class BaseDupeFilter(object):
@@ -18,6 +19,8 @@ class BaseDupeFilter(object):
     def close(self, reason): # can return a deferred
         pass
 
+    def log(self, request, spider): # log that a request has been filtered
+        pass
 
 class RFPDupeFilter(BaseDupeFilter):
     """Request Fingerprint duplicates filter"""
@@ -25,6 +28,7 @@ class RFPDupeFilter(BaseDupeFilter):
     def __init__(self, path=None):
         self.file = None
         self.fingerprints = set()
+        self.logdupes = True
         if path:
             self.file = open(os.path.join(path, 'requests.seen'), 'a+')
             self.fingerprints.update(x.rstrip() for x in self.file)
@@ -44,3 +48,9 @@ class RFPDupeFilter(BaseDupeFilter):
     def close(self, reason):
         if self.file:
             self.file.close()
+
+    def log(self, request, spider):
+        if self.logdupes:
+            fmt = "Filtered duplicate request: %(request)s - no more duplicates will be shown (see DUPEFILTER_CLASS)"
+            log.msg(format=fmt, request=request, level=log.DEBUG, spider=spider)
+            self.logdupes = False
