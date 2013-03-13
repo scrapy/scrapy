@@ -73,23 +73,20 @@ Submitting patches
 ==================
 
 The best way to submit a patch is to issue a `pull request`_ on Github,
-optionally creating a new issue first. And try to keep your commits to just
-the new functionality; meaning, if you want to clean up the code, to conform
-to :pep:`8` for example, make an additional commit. This keeps the commit
-history cleaner.
+optionally creating a new issue first.
 
-Alternatively, we also accept the patches in the traditional way of sending
-them to the `scrapy-developers`_ list.
-
-Regardless of which mechanism you use, remember to explain what was fixed or
-the new functionality (what it is, why it's needed, etc). The more info you
-include, the easier will be for core developers to understand and accept your
-patch.
+Remember to explain what was fixed or the new functionality (what it is, why
+it's needed, etc). The more info you include, the easier will be for core
+developers to understand and accept your patch.
 
 You can also discuss the new functionality (or bug fix) in `scrapy-developers`_
 first, before creating the patch, but it's always good to have a patch ready to
 illustrate your arguments and show that you have put some additional thought
 into the subject.
+
+Finally, try to keep aesthetic changes (:pep:`8` compliance, unused imports
+removal, etc) in separate commits than functional changes, to make the pull
+request easier to review.
 
 Coding style
 ============
