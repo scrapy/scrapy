@@ -65,7 +65,7 @@ Well-written patches should:
 * include one (or more) test cases that check the bug fixed or the new
   functionality added. See `Writing tests`_ below.
 
-* if you're adding or changing a public (documented) API, please include 
+* if you're adding or changing a public (documented) API, please include
   the documentation changes in the same patch.  See `Documentation policies`_
   below.
 
@@ -73,7 +73,10 @@ Submitting patches
 ==================
 
 The best way to submit a patch is to issue a `pull request`_ on Github,
-optionally creating a new issue first.
+optionally creating a new issue first. And try to keep your commits to just
+the new functionality; meaning, if you want to clean up the code, to conform
+to :pep:`8` for example, make an additional commit. This keeps the commit
+history cleaner.
 
 Alternatively, we also accept the patches in the traditional way of sending
 them to the `scrapy-developers`_ list.
