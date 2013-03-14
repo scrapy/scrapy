@@ -97,7 +97,8 @@ class Command(ScrapyCommand):
             else:
                 _log("Packing version %s" % version)
                 egg, tmpdir = _build_egg()
-            _upload_egg(target, egg, project, version)
+            if not _upload_egg(target, egg, project, version):
+                self.exitcode = 1
 
         if tmpdir:
             if opts.debug:
@@ -185,7 +186,7 @@ def _upload_egg(target, eggpath, project, version):
     req = urllib2.Request(url, body, headers)
     _add_auth_header(req, target)
     _log('Deploying to project "%s" in %s' % (project, url))
-    _http_post(req)
+    return _http_post(req)
 
 def _add_auth_header(request, target):
     if 'username' in target:
@@ -204,6 +205,7 @@ def _http_post(request):
         f = urllib2.urlopen(request)
         _log("Server response (%s):" % f.code)
         print f.read()
+        return True
     except urllib2.HTTPError, e:
         _log("Deploy failed (%s):" % e.code)
         print e.read()
