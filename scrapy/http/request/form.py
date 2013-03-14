@@ -36,7 +36,8 @@ class FormRequest(Request):
         form = _get_form(response, formname, formnumber, formxpath)
         formdata = _get_inputs(form, formdata, dont_click, clickdata, response)
         url = form.action or form.base_url
-        return cls(url, method=form.method, formdata=formdata, **kwargs)
+        method = kwargs.pop('method', form.method)
+        return cls(url, method=method, formdata=formdata, **kwargs)
 
 
 def _urlencode(seq, enc):

@@ -268,6 +268,16 @@ class FormRequestTest(RequestTest):
         self.assertEqual(fs['one'], ['1'])
         self.assertEqual(fs['two'], ['2'])
 
+    def test_from_response_override_method(self):
+        response = _buildresponse(
+                '''<html><body>
+                <form action="/app"></form>
+                </body></html>''')
+        request = FormRequest.from_response(response)
+        self.assertEqual(request.method, 'GET')
+        request = FormRequest.from_response(response, method='POST')
+        self.assertEqual(request.method, 'POST')
+
     def test_from_response_submit_first_clickable(self):
         response = _buildresponse(
             """<form action="get.php" method="GET">
