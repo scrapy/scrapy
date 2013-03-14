@@ -300,10 +300,9 @@ to use ``from_crawler`` class method, for example::
             o.crawler = crawler
             return o
 
-Scrapy command line tool has some backwards compatibility in place to still
-support the old import mechanism (with a deprecation warning), but this
-mechanism may not work if you use Scrapy differently (for example, as a
-library).
+Scrapy command line tool has some backwards compatibility in place to support
+the old import mechanism (with a deprecation warning), but this mechanism may
+not work if you use Scrapy differently (for example, as a library).
 
 .. _user agents: http://en.wikipedia.org/wiki/User_agent
 .. _LIFO: http://en.wikipedia.org/wiki/LIFO
