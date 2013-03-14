@@ -555,17 +555,6 @@ class FormRequestTest(RequestTest):
         fs = _qs(req)
         self.assertEqual(fs, {'i1': ['i1v1'], 'i2': ['']})
 
-    def test_from_response_input_hidden(self):
-        res = _buildresponse(
-            '''<form>
-            <input type="hidden" name="i1" value="i1v1">
-            <input type="hidden" name="i2">
-            <input type="hidden">
-            </form>''')
-        req = self.request_class.from_response(res)
-        fs = _qs(req)
-        self.assertEqual(fs, {'i1': ['i1v1'], 'i2': ['']})
-
     def test_from_response_input_textarea(self):
         res = _buildresponse(
             '''<form>
