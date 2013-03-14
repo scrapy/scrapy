@@ -608,4 +608,3 @@ Here is a list of all built-in processors:
     As with the Compose processor, functions can receive Loader contexts, and
     constructor keyword arguments are used as default context values. See
     :class:`Compose` processor for more info.
-
