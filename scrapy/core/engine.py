@@ -123,7 +123,7 @@ class ExecutionEngine(object):
         return not self.running \
             or slot.closing \
             or self.downloader.needs_backout() \
-            or self.scraper.slots[spider].needs_backout()
+            or self.scraper.slot.needs_backout()
 
     def _next_request_from_scheduler(self, spider):
         slot = self.slots[spider]
@@ -151,8 +151,7 @@ class ExecutionEngine(object):
         return d
 
     def spider_is_idle(self, spider):
-        scraper_idle = spider in self.scraper.slots \
-            and self.scraper.slots[spider].is_idle()
+        scraper_idle = self.scraper.slot.is_idle()
         pending = self.slots[spider].scheduler.has_pending_requests()
         downloading = bool(self.downloader.active)
         idle = scraper_idle and not (pending or downloading)

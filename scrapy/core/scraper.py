@@ -60,7 +60,7 @@ class Slot(object):
 class Scraper(object):
 
     def __init__(self, crawler):
-        self.slots = {}
+        self.slot = None
         self.spidermw = SpiderMiddlewareManager.from_crawler(crawler)
         itemproc_cls = load_object(crawler.settings['ITEM_PROCESSOR'])
         self.itemproc = itemproc_cls.from_crawler(crawler)
@@ -72,14 +72,12 @@ class Scraper(object):
     @defer.inlineCallbacks
     def open_spider(self, spider):
         """Open the given spider for scraping and allocate resources for it"""
-        assert spider not in self.slots, "Spider already opened: %s" % spider
-        self.slots[spider] = Slot()
+        self.slot = Slot()
         yield self.itemproc.open_spider(spider)
 
     def close_spider(self, spider):
         """Close a spider being scraped and release its resources"""
-        assert spider in self.slots, "Spider not opened: %s" % spider
-        slot = self.slots[spider]
+        slot = self.slot
         slot.closing = defer.Deferred()
         slot.closing.addCallback(self.itemproc.close_spider)
         self._check_if_closing(spider, slot)
@@ -87,15 +85,14 @@ class Scraper(object):
 
     def is_idle(self):
         """Return True if there isn't any more spiders to process"""
-        return not self.slots
+        return not self.slot
 
     def _check_if_closing(self, spider, slot):
         if slot.closing and slot.is_idle():
-            del self.slots[spider]
             slot.closing.callback(spider)
 
     def enqueue_scrape(self, response, request, spider):
-        slot = self.slots[spider]
+        slot = self.slot
         dfd = slot.add_response_request(response, request)
         def finish_scraping(_):
             slot.finish_response(response, request)
@@ -169,7 +166,7 @@ class Scraper(object):
                 spider=spider)
             self.crawler.engine.crawl(request=output, spider=spider)
         elif isinstance(output, BaseItem):
-            self.slots[spider].itemproc_size += 1
+            self.slot.itemproc_size += 1
             dfd = self.itemproc.process_item(output, spider)
             dfd.addBoth(self._itemproc_finished, output, response, spider)
             return dfd
@@ -196,7 +193,7 @@ class Scraper(object):
     def _itemproc_finished(self, output, item, response, spider):
         """ItemProcessor finished for the given ``item`` and returned ``output``
         """
-        self.slots[spider].itemproc_size -= 1
+        self.slot.itemproc_size -= 1
         if isinstance(output, Failure):
             ex = output.value
             if isinstance(ex, DropItem):
