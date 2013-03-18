@@ -11,7 +11,6 @@ def get_engine_status(engine):
         "len(engine.downloader.slots)",
         "len(engine.downloader.active)",
         "engine.scraper.is_idle()",
-        "1",
     ]
     spider_tests = [
         "engine.spider_is_idle(spider)",
