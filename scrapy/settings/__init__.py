@@ -1,3 +1,4 @@
+import json
 from . import default_settings
 
 
@@ -37,6 +38,15 @@ class Settings(object):
         else:
             return str(value).split(',')
 
+    def getdict(self, name, default=None):
+        value = self.get(name)
+        if value is None:
+            return default or {}
+        if isinstance(value, basestring):
+            value = json.loads(value)
+        if isinstance(value, dict):
+            return value
+        raise ValueError("Cannot convert value for setting '%s' to dict: '%s'" % (name, value))
 
 class CrawlerSettings(Settings):
 
