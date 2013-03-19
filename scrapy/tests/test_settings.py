@@ -21,6 +21,8 @@ class SettingsTest(unittest.TestCase):
             'TEST_LIST1': ['one', 'two'],
             'TEST_LIST2': 'one,two',
             'TEST_STR': 'value',
+            'TEST_DICT1': {'key1': 'val1', 'ke2': 3},
+            'TEST_DICT2': '{"key1": "val1", "ke2": 3}',
         })
         assert settings.getbool('TEST_ENABLED1') is True
         assert settings.getbool('TEST_ENABLED2') is True
@@ -47,6 +49,12 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings['TEST_STRx'], None)
         self.assertEqual(settings.get('TEST_STRx'), None)
         self.assertEqual(settings.get('TEST_STRx', 'default'), 'default')
+        self.assertEqual(settings.getdict('TEST_DICT1'), {'key1': 'val1', 'ke2': 3})
+        self.assertEqual(settings.getdict('TEST_DICT2'), {'key1': 'val1', 'ke2': 3})
+        self.assertEqual(settings.getdict('TEST_DICT3'), {})
+        self.assertEqual(settings.getdict('TEST_DICT3', {'key1': 5}), {'key1': 5})
+        self.assertRaises(ValueError, settings.getdict, 'TEST_LIST1')
+
 
 class CrawlerSettingsTest(unittest.TestCase):
 
