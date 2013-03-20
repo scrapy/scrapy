@@ -74,6 +74,8 @@ class ExecutionEngine(object):
         self.start_time = time()
         yield self.signals.send_catch_log_deferred(signal=signals.engine_started)
         self.running = True
+        self._closewait = defer.Deferred()
+        yield self._closewait
 
     def stop(self):
         """Stop the execution engine gracefully"""
@@ -284,3 +286,4 @@ class ExecutionEngine(object):
     @defer.inlineCallbacks
     def _finish_stopping_engine(self):
         yield self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
+        self._closewait.callback(None)

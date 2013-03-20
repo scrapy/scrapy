@@ -101,6 +101,7 @@ how you :ref:`configure the downloader middlewares
     .. method:: start()
 
         Start the crawler. This calls :meth:`configure` if it hasn't been called yet.
+        Returns a deferred that is fired when the crawl is finished.
 
 Settings API
 ============
