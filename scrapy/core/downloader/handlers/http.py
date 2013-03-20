@@ -2,11 +2,7 @@
 
 from twisted.internet import reactor
 
-from scrapy.exceptions import NotSupported
 from scrapy.utils.misc import load_object
-from scrapy import optional_features
-
-ssl_supported = 'ssl' in optional_features
 
 class HttpDownloadHandler(object):
 
@@ -23,9 +19,7 @@ class HttpDownloadHandler(object):
     def _connect(self, factory):
         host, port = factory.host, factory.port
         if factory.scheme == 'https':
-            if ssl_supported:
-                return reactor.connectSSL(host, port, factory, \
-                        self.ClientContextFactory())
-            raise NotSupported("HTTPS not supported: install pyopenssl library")
+            return reactor.connectSSL(host, port, factory, \
+                    self.ClientContextFactory())
         else:
             return reactor.connectTCP(host, port, factory)
