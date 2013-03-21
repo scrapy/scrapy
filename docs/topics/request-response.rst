@@ -1,14 +1,14 @@
 .. _topics-request-response:
 
 ======================
-Requests and Responses 
+Requests and Responses
 ======================
 
 .. module:: scrapy.http
    :synopsis: Request and Response classes
 
 Scrapy uses :class:`Request` and :class:`Response` objects for crawling web
-sites. 
+sites.
 
 Typically, :class:`Request` objects are generated in the spiders and pass
 across the system until they reach the Downloader, which executes the request
@@ -29,7 +29,7 @@ Request objects
     A :class:`Request` object represents an HTTP request, which is usually
     generated in the Spider and executed by the Downloader, and thus generating
     a :class:`Response`.
-    
+
     :param url: the URL of this request
     :type url: string
 
@@ -74,8 +74,8 @@ Request objects
         the typical behaviour of any regular web browser. However, if, for some
         reason, you want to avoid merging with existing cookies you can instruct
         Scrapy to do so by setting the ``dont_merge_cookies`` key in the
-        :attr:`Request.meta`. 
-      
+        :attr:`Request.meta`.
+
         Example of request without merging cookies::
 
             request_with_cookies = Request(url="http://www.example.com",
@@ -177,17 +177,17 @@ Passing additional data to callback functions
 
 The callback of a request is a function that will be called when the response
 of that request is downloaded. The callback function will be called with the
-downloaded :class:`Response` object as its first argument. 
+downloaded :class:`Response` object as its first argument.
 
 Example::
 
     def parse_page1(self, response):
-        return Request("http://www.example.com/some_page.html", 
+        return Request("http://www.example.com/some_page.html",
                           callback=self.parse_page2)
 
     def parse_page2(self, response):
         # this would log http://www.example.com/some_page.html
-        self.log("Visited %s" % response.url) 
+        self.log("Visited %s" % response.url)
 
 In some cases you may be interested in passing arguments to those callback
 functions so you can receive the arguments later, in the second callback. You
@@ -199,7 +199,7 @@ different fields from different pages::
     def parse_page1(self, response):
         item = MyItem()
         item['main_url'] = response.url
-        request = Request("http://www.example.com/some_page.html", 
+        request = Request("http://www.example.com/some_page.html",
                           callback=self.parse_page2)
         request.meta['item'] = item
         return request
@@ -317,7 +317,7 @@ If you want to simulate a HTML Form POST in your spider and send a couple of
 key-value fields, you can return a :class:`FormRequest` object (from your
 spider) like this::
 
-   return [FormRequest(url="http://www.example.com/post/action", 
+   return [FormRequest(url="http://www.example.com/post/action",
                        formdata={'name': 'John Doe', age: '27'},
                        callback=self.after_post)]
 
@@ -342,12 +342,12 @@ method for this job. Here's an example spider which uses it::
                         formdata={'username': 'john', 'password': 'secret'},
                         callback=self.after_login)]
 
-        def after_login(self, response): 
+        def after_login(self, response):
             # check login succeed before going on
             if "authentication failed" in response.body:
                 self.log("Login failed", level=log.ERROR)
                 return
-            
+
             # continue scraping with authenticated session...
 
 
@@ -358,7 +358,7 @@ Response objects
 
     A :class:`Response` object represents an HTTP response, which is usually
     downloaded (by the Downloader) and fed to the Spiders for processing.
-    
+
     :param url: the URL of this response
     :type url: string
 
@@ -386,7 +386,7 @@ Response objects
 
     .. attribute:: Response.url
 
-        A string containing the URL of the response. 
+        A string containing the URL of the response.
 
         This attribute is read-only. To change the URL of a Response use
         :meth:`replace`.
@@ -423,7 +423,7 @@ Response objects
 
         - Response.request.url doesn't always equal Response.url
 
-        - This attribute is only available in the spider code, and in the 
+        - This attribute is only available in the spider code, and in the
           :ref:`Spider Middlewares <topics-spider-middleware>`, but not in
           Downloader Middlewares (although you have the Request available there by
           other means) and handlers of the :signal:`response_downloaded` signal.
@@ -509,19 +509,19 @@ TextResponse objects
     the standard :class:`Response` ones:
 
     .. method:: TextResponse.body_as_unicode()
- 
+
         Returns the body of the response as unicode. This is equivalent to::
- 
+
             response.body.decode(response.encoding)
- 
+
         But **not** equivalent to::
-        
+
             unicode(response.body)
-        
+
         Since, in the latter case, you would be using you system default encoding
         (typically `ascii`) to convert the body to uniode, instead of the response
         encoding.
- 
+
 HtmlResponse objects
 --------------------
 
@@ -541,4 +541,3 @@ XmlResponse objects
     The :class:`XmlResponse` class is a subclass of :class:`TextResponse` which
     adds encoding auto-discovering support by looking into the XML declaration
     line.  See :attr:`TextResponse.encoding`.
-
