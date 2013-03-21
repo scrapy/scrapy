@@ -450,12 +450,11 @@ Response objects
 
        Returns a new Response which is a copy of this Response.
 
-    .. method:: Response.replace([url, status, headers, body, meta, flags, cls])
+    .. method:: Response.replace([url, status, headers, body, request, flags, cls])
 
        Returns a Response object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The
-       attribute :attr:`Response.meta` is copied by default (unless a new value
-       is given in the ``meta`` argument).
+       attribute :attr:`Response.meta` is copied by default.
 
 .. _topics-request-response-ref-response-subclasses:
 
