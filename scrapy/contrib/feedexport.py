@@ -19,7 +19,6 @@ from scrapy.utils.ftp import ftp_makedirs_cwd
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import get_func_args
-from scrapy.utils.project import get_project_settings
 
 
 class IFeedStorage(Interface):
@@ -82,7 +81,7 @@ class FileFeedStorage(object):
 class S3FeedStorage(BlockingFeedStorage):
 
     def __init__(self, uri):
-        settings = get_project_settings()
+        from scrapy.conf import settings
         try:
             import boto
         except ImportError:
