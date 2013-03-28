@@ -3,6 +3,7 @@ from scrapy.command import ScrapyCommand
 from scrapy.http import Request
 from scrapy.item import BaseItem
 from scrapy.utils import display
+from scrapy.utils.conf import arglist_to_dict
 from scrapy.utils.spider import iterate_spider_output, create_spider_for_request
 from scrapy.exceptions import UsageError
 from scrapy import log
@@ -14,7 +15,7 @@ class Command(ScrapyCommand):
     spider = None
     items = {}
     requests = {}
-    
+
     first_response = None
 
     def syntax(self):
@@ -27,6 +28,8 @@ class Command(ScrapyCommand):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--spider", dest="spider", default=None, \
             help="use this spider without looking for one")
+        parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE", \
+            help="set spider argument (may be repeated)")
         parser.add_option("--nolinks", dest="nolinks", action="store_true", \
             help="don't show links to follow (extracted requests)")
         parser.add_option("--noitems", dest="noitems", action="store_true", \
@@ -56,7 +59,7 @@ class Command(ScrapyCommand):
     def add_requests(self, lvl, new_reqs):
         old_reqs = self.requests.get(lvl, [])
         self.requests[lvl] = old_reqs + new_reqs
-    
+
     def print_items(self, lvl=None, colour=True):
         if lvl is None:
             items = [item for lst in self.items.values() for item in lst]
@@ -120,12 +123,12 @@ class Command(ScrapyCommand):
     def set_spider(self, url, opts):
         if opts.spider:
             try:
-                self.spider = self.crawler.spiders.create(opts.spider)
+                self.spider = self.crawler.spiders.create(opts.spider, **opts.spargs)
             except KeyError:
                 log.msg(format='Unable to find spider: %(spider)s',
                         level=log.ERROR, spider=opts.spider)
         else:
-            self.spider = create_spider_for_request(self.crawler.spiders, Request(url))
+            self.spider = create_spider_for_request(self.crawler.spiders, Request(url), **opts.spargs)
             if not self.spider:
                 log.msg(format='Unable to find spider for: %(url)s',
                         level=log.ERROR, url=url)
@@ -182,6 +185,13 @@ class Command(ScrapyCommand):
         request.meta['_callback'] = request.callback
         request.callback = callback
         return request
+
+    def process_options(self, args, opts):
+        ScrapyCommand.process_options(self, args, opts)
+        try:
+            opts.spargs = arglist_to_dict(opts.spargs)
+        except ValueError:
+            raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
 
     def run(self, args, opts):
         # parse arguments

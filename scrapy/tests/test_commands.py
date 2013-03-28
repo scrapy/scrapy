@@ -175,3 +175,26 @@ from scrapy.spider import BaseSpider
         log = p.stderr.read()
         self.assert_("Unable to load" in log)
 
+
+class ParseCommandTest(CommandTest):
+
+    def test_spider_arguments(self):
+        spider_name = 'parse_spider'
+        fname = abspath(join(self.proj_mod_path, 'spiders', 'myspider.py'))
+        with open(fname, 'w') as f:
+            f.write("""
+from scrapy import log
+from scrapy.spider import BaseSpider
+
+class MySpider(BaseSpider):
+    name = '{0}'
+
+    def parse(self, response):
+        if self.test_arg:
+            self.log('It Works!')
+        return []
+""".format(spider_name))
+
+        p = self.proc('parse', '--spider', spider_name, '-a', 'test_arg=1', '-c', 'parse', 'http://scrapinghub.com')
+        log = p.stderr.read()
+        self.assert_("[parse_spider] DEBUG: It Works!" in log, log)
