@@ -141,6 +141,7 @@ class FeedExporter(object):
         self.format = settings['FEED_FORMAT'].lower()
         self.storages = self._load_components('FEED_STORAGES')
         self.exporters = self._load_components('FEED_EXPORTERS')
+        self.delimiter = settings.get('FEED_EXPORT_DELIMITER')
         if not self._storage_supported(self.urifmt):
             raise NotConfigured
         if not self._exporter_supported(self.format):
@@ -170,7 +171,8 @@ class FeedExporter(object):
         uri = self.urifmt % self._get_uri_params(spider)
         storage = self._get_storage(uri)
         file = storage.open(spider)
-        exporter = self._get_exporter(file)
+        kwargs = dict(delimiter=self.delimiter) if self.delimiter else {}
+        exporter = self._get_exporter(file, **kwargs)
         exporter.start_exporting()
         self.slots[spider] = SpiderSlot(file, exporter, storage, uri)
 
