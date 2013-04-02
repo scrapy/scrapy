@@ -1,7 +1,8 @@
 About avoid getting banned:
 ==========================
+
 <pre>
-<h2> GoogleCacheMiddleware:</h2>
+<h1>GoogleCacheMiddleware:</h1>
       this is a downloadmiddle to avoid getting banned,you can set the 
 GOOGLE_CACHE_DOMAINS variable or you can set the user_agent_list 
 attribute in your spider to define what domain you will use to visit the 
