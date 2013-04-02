@@ -64,7 +64,7 @@ Commercial Support
 See http://scrapy.org/support/
 
 
-#About avoid getting banned:
+# About avoid getting banned:
 
 
 # GoogleCacheMiddleware:
