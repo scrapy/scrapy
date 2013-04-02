@@ -8,7 +8,8 @@ class RotateUserAgentMiddleware(UserAgentMiddleware):
     """
         a useragent middleware which rotate the user agent when crawl websites
         
-        if you set the USER_AGENT_LIST in settings,the rotate with it,if not,then use the default user_agent_list attribute instead.
+        if you set the USER_AGENT_LIST in settings,the rotate with it,if not,then use the default user_agent_list 
+        attribute instead.
     """
 
     #the default user_agent_list composes chrome,I E,firefox,Mozilla,opera,netscape
