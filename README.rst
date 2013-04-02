@@ -1,5 +1,4 @@
-
-<h1> About avoid getting banned:</h1>
+<h1> About avoid getting banned:
 
 
 <h2> GoogleCacheMiddleware:</h2>
