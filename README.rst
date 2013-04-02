@@ -1,9 +1,8 @@
 
+<h1> About avoid getting banned:</h1>
 
-# About avoid getting banned:
 
-
-# GoogleCacheMiddleware:
+<h2> GoogleCacheMiddleware:</h2>
 
 <pre>
       this is a downloadmiddle to avoid getting banned,you can set the 
@@ -11,7 +10,7 @@ GOOGLE_CACHE_DOMAINS variable or you can set the user_agent_list
 attribute in your spider to define what domain you will use to visit the 
 google cache,it is a list,eg:GOOGLE_CACHE_DOMAINS = ['www.woaidu.org',]
 </pre>
-# RotateUserAgentMiddleware:
+<h2>RotateUserAgentMiddleware:<h2>
 <pre>
       this is also a downloadmiddleware to avoid getting banned,you can 
 set the USER_AGENT_LIST in settings,then the middleware will random
