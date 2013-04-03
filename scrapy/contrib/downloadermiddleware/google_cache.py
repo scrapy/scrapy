@@ -45,7 +45,7 @@ class GoogleCacheMiddleware(object):
         gcd = self.cache[spider]
         if gcd:
             if urlparse(request.url).netloc in gcd:
-                request = Request(self.google_cache + request.url,request.callback)
+                request = request.replace(url=self.google_cache + request.url)
                 request.meta['google_cache'] = True
                 return request
       
