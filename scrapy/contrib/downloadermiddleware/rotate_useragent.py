@@ -9,7 +9,7 @@ class RotateUserAgentMiddleware(UserAgentMiddleware):
         a useragent middleware which rotate the user agent when crawl websites
         
         if you set the USER_AGENT_LIST in settings,the rotate with it,if not,then use the default user_agent_list 
-        attribute instead.
+        attribute instead.TO use this you must set USER_AGET = "".
     """
 
     #the default user_agent_list composes chrome,I E,firefox,Mozilla,opera,netscape
@@ -41,7 +41,7 @@ class RotateUserAgentMiddleware(UserAgentMiddleware):
     ]
 
     def __init__(self, user_agent=''):
-        super(RotateUserAgentMiddleware,self).__init__(user_agent)
+        self.user_agent = user_agent
 
     def _user_agent(self, spider):
         if hasattr(spider, 'user_agent'):
@@ -50,3 +50,8 @@ class RotateUserAgentMiddleware(UserAgentMiddleware):
             return self.user_agent
 
         return random.choice(self.user_agent_list)
+
+    def process_request(self, request, spider):
+        ua = self._user_agent(spider)
+        if ua:
+            request.headers.setdefault('User-Agent', ua)
