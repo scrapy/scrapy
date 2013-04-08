@@ -30,6 +30,8 @@ class Command(ScrapyCommand):
             help="use this spider without looking for one")
         parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE", \
             help="set spider argument (may be repeated)")
+        parser.add_option("--pipelines", action="store_true", \
+            help="process items through pipelines")
         parser.add_option("--nolinks", dest="nolinks", action="store_true", \
             help="don't show links to follow (extracted requests)")
         parser.add_option("--noitems", dest="noitems", action="store_true", \
@@ -171,6 +173,10 @@ class Command(ScrapyCommand):
             depth = response.meta['_depth']
 
             items, requests = self.run_callback(response, cb)
+            if opts.pipelines:
+                itemproc = self.crawler.engine.scraper.itemproc
+                for item in items:
+                    itemproc.process_item(item, self.spider)
             self.add_items(depth, items)
             self.add_requests(depth, requests)
 
