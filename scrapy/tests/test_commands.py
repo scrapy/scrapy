@@ -178,23 +178,52 @@ from scrapy.spider import BaseSpider
 
 class ParseCommandTest(CommandTest):
 
-    def test_spider_arguments(self):
-        spider_name = 'parse_spider'
+    def setUp(self):
+        super(ParseCommandTest, self).setUp()
+        self.spider_name = 'parse_spider'
         fname = abspath(join(self.proj_mod_path, 'spiders', 'myspider.py'))
         with open(fname, 'w') as f:
             f.write("""
 from scrapy import log
 from scrapy.spider import BaseSpider
+from scrapy.item import Item
 
 class MySpider(BaseSpider):
     name = '{0}'
 
     def parse(self, response):
-        if self.test_arg:
+        if getattr(self, 'test_arg', None):
             self.log('It Works!')
-        return []
-""".format(spider_name))
+        return [Item()]
+""".format(self.spider_name))
 
-        p = self.proc('parse', '--spider', spider_name, '-a', 'test_arg=1', '-c', 'parse', 'http://scrapinghub.com')
+        fname = abspath(join(self.proj_mod_path, 'pipelines.py'))
+        with open(fname, 'w') as f:
+            f.write("""
+from scrapy import log
+
+class MyPipeline(object):
+    component_name = 'my_pipeline'
+
+    def process_item(self, item, spider):
+        log.msg('It Works!')
+        return item
+""")
+
+        fname = abspath(join(self.proj_mod_path, 'settings.py'))
+        with open(fname, 'a') as f:
+            f.write("""
+ITEM_PIPELINES = ['{0}.pipelines.MyPipeline']
+""".format(self.project_name))
+
+    def test_spider_arguments(self):
+        p = self.proc('parse', '--spider', self.spider_name, '-a', 'test_arg=1',
+                '-c', 'parse', 'http://scrapinghub.com')
         log = p.stderr.read()
         self.assert_("[parse_spider] DEBUG: It Works!" in log, log)
+
+    def test_pipelines(self):
+        p = self.proc('parse', '--spider', self.spider_name, '--pipelines',
+                '-c', 'parse', 'http://scrapinghub.com')
+        log = p.stderr.read()
+        print log
