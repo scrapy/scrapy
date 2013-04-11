@@ -300,7 +300,7 @@ class FileMediaPipeline(MediaPipeline):
         key = self._file_key(url)
         store_result = self.store.persist_file(key, buf, None, info)
         store_result.update({'url': url})
-        yield processing_result
+        yield store_result
 
     def inc_stats(self, spider, status):
         spider.crawler.stats.inc_value('media_count', spider=spider)

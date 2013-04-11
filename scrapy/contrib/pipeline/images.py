@@ -127,6 +127,7 @@ class ImagesPipeline(FileMediaPipeline):
     _imagefile_extensions = {
         'JPEG': 'jpg',
         'PNG': 'png',
+        'TIFF': 'tif',
     }
 
     @classmethod
@@ -162,7 +163,7 @@ class ImagesPipeline(FileMediaPipeline):
             convimage, convbuf = self.convert_image(
                 image, format=self.ORIGINAL_CONVERT_FORMAT)
             result = self.persist_image(
-                self.convimage_key(url, convimage.format),
+                self.convimage_key(url),
                 convimage, convbuf.getvalue(), info)
             result.update({'url': url, 'tag': 'converted'})
             yield result
@@ -182,7 +183,6 @@ class ImagesPipeline(FileMediaPipeline):
             key, buf, {'width' :  width, 'height': height}, info)
         if self.REPORT_DIMENSIONS:
             result.update({'width': width, 'height': height})
-        result.update({'format': image.format})
         return result
 
     def convert_image(self, image, size=None, format='JPEG'):
