@@ -3,6 +3,7 @@ import os
 import unittest
 from cStringIO import StringIO
 
+from scrapy.item import Item, Field
 from scrapy.utils.misc import load_object, arg_to_iter, walk_modules
 
 __doctests__ = ['scrapy.utils.misc']
@@ -56,6 +57,10 @@ class UtilsMiscTestCase(unittest.TestCase):
             sys.path.remove(egg)
 
     def test_arg_to_iter(self):
+
+        class TestItem(Item):
+            name = Field()
+
         assert hasattr(arg_to_iter(None), '__iter__')
         assert hasattr(arg_to_iter(100), '__iter__')
         assert hasattr(arg_to_iter('lala'), '__iter__')
@@ -68,6 +73,7 @@ class UtilsMiscTestCase(unittest.TestCase):
         self.assertEqual(list(arg_to_iter(l for l in 'abc')), ['a', 'b', 'c'])
         self.assertEqual(list(arg_to_iter([1,2,3])), [1,2,3])
         self.assertEqual(list(arg_to_iter({'a':1})), [{'a': 1}])
+        self.assertEqual(list(arg_to_iter(TestItem(name="john"))), [TestItem(name="john")])
 
 if __name__ == "__main__":
     unittest.main()

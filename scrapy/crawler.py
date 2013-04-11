@@ -8,6 +8,7 @@ from scrapy.extension import ExtensionManager
 from scrapy.signalmanager import SignalManager
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.misc import load_object
+from scrapy.settings import overridden_settings
 from scrapy import log, signals
 
 
@@ -33,6 +34,8 @@ class Crawler(object):
         if self.configured:
             return
         self.configured = True
+        d = dict(overridden_settings(self.settings))
+        log.msg(format="Overridden settings: %(settings)r", settings=d, level=log.DEBUG)
         lf_cls = load_object(self.settings['LOG_FORMATTER'])
         self.logformatter = lf_cls.from_crawler(self)
         self.extensions = ExtensionManager.from_crawler(self)

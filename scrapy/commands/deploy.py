@@ -53,6 +53,8 @@ class Command(ScrapyCommand):
             help="the version to deploy. Defaults to current timestamp")
         parser.add_option("-l", "--list-targets", action="store_true", \
             help="list available targets")
+        parser.add_option("-d", "--debug", action="store_true",
+            help="debug mode (do not remove build dir)")
         parser.add_option("-L", "--list-projects", metavar="TARGET", \
             help="list available projects on TARGET")
         parser.add_option("--egg", metavar="FILE",
@@ -93,12 +95,16 @@ class Command(ScrapyCommand):
                 _log("Using egg: %s" % opts.egg)
                 egg = opts.egg
             else:
-                _log("Building egg of %s-%s" % (project, version))
+                _log("Packing version %s" % version)
                 egg, tmpdir = _build_egg()
-            _upload_egg(target, egg, project, version)
+            if not _upload_egg(target, egg, project, version):
+                self.exitcode = 1
 
         if tmpdir:
-            shutil.rmtree(tmpdir)
+            if opts.debug:
+                _log("Output dir not removed: %s" % tmpdir)
+            else:
+                shutil.rmtree(tmpdir)
 
 def _log(message):
     sys.stderr.write(message + os.linesep)
@@ -148,10 +154,16 @@ def _get_version(target, opts):
     version = opts.version or target.get('version')
     if version == 'HG':
         p = Popen(['hg', 'tip', '--template', '{rev}'], stdout=PIPE)
-        return 'r%s' % p.communicate()[0]
+        d = 'r%s' % p.communicate()[0]
+        p = Popen(['hg', 'branch'], stdout=PIPE)
+        b = p.communicate()[0].strip('\n')
+        return '%s-%s' % (d, b)
     elif version == 'GIT':
         p = Popen(['git', 'describe', '--always'], stdout=PIPE)
-        return '%s' % p.communicate()[0].strip('\n')
+        d = p.communicate()[0].strip('\n')
+        p = Popen(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], stdout=PIPE)
+        b = p.communicate()[0].strip('\n')
+        return '%s-%s' % (d, b)
     elif version:
         return version
     else:
@@ -173,8 +185,8 @@ def _upload_egg(target, eggpath, project, version):
     }
     req = urllib2.Request(url, body, headers)
     _add_auth_header(req, target)
-    _log("Deploying %s-%s to %s" % (project, version, url))
-    _http_post(req)
+    _log('Deploying to project "%s" in %s' % (project, url))
+    return _http_post(req)
 
 def _add_auth_header(request, target):
     if 'username' in target:
@@ -193,6 +205,7 @@ def _http_post(request):
         f = urllib2.urlopen(request)
         _log("Server response (%s):" % f.code)
         print f.read()
+        return True
     except urllib2.HTTPError, e:
         _log("Deploy failed (%s):" % e.code)
         print e.read()
@@ -205,9 +218,12 @@ def _build_egg():
     if not os.path.exists('setup.py'):
         settings = get_config().get('settings', 'default')
         _create_default_setup_py(settings=settings)
-    d = tempfile.mkdtemp()
-    f = tempfile.TemporaryFile(dir=d)
-    retry_on_eintr(check_call, [sys.executable, 'setup.py', 'clean', '-a', 'bdist_egg', '-d', d], stdout=f)
+    d = tempfile.mkdtemp(prefix="scrapydeploy-")
+    o = open(os.path.join(d, "stdout"), "wb")
+    e = open(os.path.join(d, "stderr"), "wb")
+    retry_on_eintr(check_call, [sys.executable, 'setup.py', 'clean', '-a', 'bdist_egg', '-d', d], stdout=o, stderr=e)
+    o.close()
+    e.close()
     egg = glob.glob(os.path.join(d, '*.egg'))[0]
     return egg, d
 

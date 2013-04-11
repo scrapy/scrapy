@@ -273,6 +273,37 @@ I'm scraping a XML document and my XPath selector doesn't return any items
 
 You may need to remove namespaces. See :ref:`removing-namespaces`.
 
+
+I'm getting an error: "cannot import name crawler"
+--------------------------------------------------
+
+This is caused by Scrapy changes due to the singletons removal. The error is
+most likely raised by a module (extension, middleware, pipeline or spider) in
+your Scrapy project that imports ``crawler`` from ``scrapy.project``. For
+example::
+
+    from scrapy.project import crawler
+
+    class SomeExtension(object):
+        def __init__(self):
+            self.crawler = crawler
+            # ...
+
+This way to access the crawler object is deprecated, the code should be ported
+to use ``from_crawler`` class method, for example::
+
+    class SomeExtension(object):
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            o = cls()
+            o.crawler = crawler
+            return o
+
+Scrapy command line tool has some backwards compatibility in place to support
+the old import mechanism (with a deprecation warning), but this mechanism may
+not work if you use Scrapy differently (for example, as a library).
+
 .. _user agents: http://en.wikipedia.org/wiki/User_agent
 .. _LIFO: http://en.wikipedia.org/wiki/LIFO
 .. _DFO order: http://en.wikipedia.org/wiki/Depth-first_search

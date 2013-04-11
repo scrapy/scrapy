@@ -65,7 +65,7 @@ Well-written patches should:
 * include one (or more) test cases that check the bug fixed or the new
   functionality added. See `Writing tests`_ below.
 
-* if you're adding or changing a public (documented) API, please include 
+* if you're adding or changing a public (documented) API, please include
   the documentation changes in the same patch.  See `Documentation policies`_
   below.
 
@@ -75,18 +75,18 @@ Submitting patches
 The best way to submit a patch is to issue a `pull request`_ on Github,
 optionally creating a new issue first.
 
-Alternatively, we also accept the patches in the traditional way of sending
-them to the `scrapy-developers`_ list.
-
-Regardless of which mechanism you use, remember to explain what was fixed or
-the new functionality (what it is, why it's needed, etc). The more info you
-include, the easier will be for core developers to understand and accept your
-patch.
+Remember to explain what was fixed or the new functionality (what it is, why
+it's needed, etc). The more info you include, the easier will be for core
+developers to understand and accept your patch.
 
 You can also discuss the new functionality (or bug fix) in `scrapy-developers`_
 first, before creating the patch, but it's always good to have a patch ready to
 illustrate your arguments and show that you have put some additional thought
 into the subject.
+
+Finally, try to keep aesthetic changes (:pep:`8` compliance, unused imports
+removal, etc) in separate commits than functional changes, to make the pull
+request easier to review.
 
 Coding style
 ============
@@ -101,6 +101,15 @@ Scrapy:
 
 * Don't put your name in the code you contribute. Our policy is to keep
   the contributor's name in the `AUTHORS`_ file distributed with Scrapy.
+
+Scrapy Contrib
+==============
+
+Scrapy contrib shares a similar rationale as Django contrib, which is explained
+in `this post <http://jacobian.org/writing/what-is-django-contrib/>`_. If you
+are working on a new functionality, please follow that rationale to decide
+whether it should be a Scrapy contrib. If unsure, you can ask in
+`scrapy-developers`_.
 
 Documentation policies
 ======================

@@ -83,29 +83,24 @@ using the telnet console::
     >>> est()
     Execution engine status
 
-    time()-engine.start_time                        : 21.3188259602
-    engine.is_idle()                                : False
-    engine.has_capacity()                           : True
-    engine.scheduler.is_idle()                      : False
-    len(engine.scheduler.pending_requests)          : 1
+    time()-engine.start_time                        : 9.24237799644
+    engine.has_capacity()                           : False
     engine.downloader.is_idle()                     : False
-    len(engine.downloader.slots)                    : 1
+    len(engine.downloader.slots)                    : 2
+    len(engine.downloader.active)                   : 16
     engine.scraper.is_idle()                        : False
-    len(engine.scraper.slots)                       : 1
 
     Spider: <GayotSpider 'gayotcom' at 0x2dc2b10>
       engine.spider_is_idle(spider)                      : False
       engine.slots[spider].closing                       : False
-      len(engine.scheduler.pending_requests[spider])     : 11504
-      len(engine.downloader.slots[spider].queue)         : 9
-      len(engine.downloader.slots[spider].active)        : 17
-      len(engine.downloader.slots[spider].transferring)  : 8
-      engine.downloader.slots[spider].lastseen           : 1311311093.61
-      len(engine.scraper.slots[spider].queue)            : 0
-      len(engine.scraper.slots[spider].active)           : 0
-      engine.scraper.slots[spider].active_size           : 0
-      engine.scraper.slots[spider].itemproc_size         : 0
-      engine.scraper.slots[spider].needs_backout()       : False
+      len(engine.slots[spider].inprogress)               : 21
+      len(engine.slots[spider].scheduler.dqs or [])      : 0
+      len(engine.slots[spider].scheduler.mqs)            : 4453
+      len(engine.scraper.slot.queue)                     : 0
+      len(engine.scraper.slot.active)                    : 5
+      engine.scraper.slot.active_size                    : 1515069
+      engine.scraper.slot.itemproc_size                  : 0
+      engine.scraper.slot.needs_backout()                : False
 
 
 Pause, resume and stop the Scrapy engine

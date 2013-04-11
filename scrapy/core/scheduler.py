@@ -46,6 +46,7 @@ class Scheduler(object):
 
     def enqueue_request(self, request):
         if not request.dont_filter and self.df.request_seen(request):
+            self.df.log(request, self.spider)
             return
         dqok = self._dqpush(request)
         if dqok:

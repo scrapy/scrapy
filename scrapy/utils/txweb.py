@@ -13,5 +13,8 @@ class JsonResource(resource.Resource):
     def render_object(self, obj, txrequest):
         r = self.json_encoder.encode(obj) + "\n"
         txrequest.setHeader('Content-Type', 'application/json')
+        txrequest.setHeader('Access-Control-Allow-Origin', '*')
+        txrequest.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE')
+        txrequest.setHeader('Access-Control-Allow-Headers',' X-Requested-With')
         txrequest.setHeader('Content-Length', len(r))
         return r

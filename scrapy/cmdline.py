@@ -2,6 +2,7 @@ import sys
 import optparse
 import cProfile
 import inspect
+import pkg_resources
 
 import scrapy
 from scrapy.crawler import CrawlerProcess
@@ -30,8 +31,19 @@ def _get_commands_from_module(module, inproject):
             d[cmdname] = cmd()
     return d
 
+def _get_commands_from_entry_points(inproject, group='scrapy.commands'):
+    cmds = {}
+    for entry_point in pkg_resources.iter_entry_points(group):
+        obj = entry_point.load()
+        if inspect.isclass(obj):
+            cmds[entry_point.name] = obj()
+        else:
+            raise Exception("Invalid entry point %s" % entry_point.name)
+    return cmds
+
 def _get_commands_dict(settings, inproject):
     cmds = _get_commands_from_module('scrapy.commands', inproject)
+    cmds.update(_get_commands_from_entry_points(inproject))
     cmds_module = settings['COMMANDS_MODULE']
     if cmds_module:
         cmds.update(_get_commands_from_module(cmds_module, inproject))

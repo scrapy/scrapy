@@ -74,6 +74,8 @@ class ExecutionEngine(object):
         self.start_time = time()
         yield self.signals.send_catch_log_deferred(signal=signals.engine_started)
         self.running = True
+        self._closewait = defer.Deferred()
+        yield self._closewait
 
     def stop(self):
         """Stop the execution engine gracefully"""
@@ -123,7 +125,7 @@ class ExecutionEngine(object):
         return not self.running \
             or slot.closing \
             or self.downloader.needs_backout() \
-            or self.scraper.slots[spider].needs_backout()
+            or self.scraper.slot.needs_backout()
 
     def _next_request_from_scheduler(self, spider):
         slot = self.slots[spider]
@@ -151,8 +153,7 @@ class ExecutionEngine(object):
         return d
 
     def spider_is_idle(self, spider):
-        scraper_idle = spider in self.scraper.slots \
-            and self.scraper.slots[spider].is_idle()
+        scraper_idle = self.scraper.slot.is_idle()
         pending = self.slots[spider].scheduler.has_pending_requests()
         downloading = bool(self.downloader.active)
         idle = scraper_idle and not (pending or downloading)
@@ -285,3 +286,4 @@ class ExecutionEngine(object):
     @defer.inlineCallbacks
     def _finish_stopping_engine(self):
         yield self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
+        self._closewait.callback(None)

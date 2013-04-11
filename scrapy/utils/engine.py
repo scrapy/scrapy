@@ -11,7 +11,6 @@ def get_engine_status(engine):
         "len(engine.downloader.slots)",
         "len(engine.downloader.active)",
         "engine.scraper.is_idle()",
-        "len(engine.scraper.slots)",
     ]
     spider_tests = [
         "engine.spider_is_idle(spider)",
@@ -19,11 +18,11 @@ def get_engine_status(engine):
         "len(engine.slots[spider].inprogress)",
         "len(engine.slots[spider].scheduler.dqs or [])",
         "len(engine.slots[spider].scheduler.mqs)",
-        "len(engine.scraper.slots[spider].queue)",
-        "len(engine.scraper.slots[spider].active)",
-        "engine.scraper.slots[spider].active_size",
-        "engine.scraper.slots[spider].itemproc_size",
-        "engine.scraper.slots[spider].needs_backout()",
+        "len(engine.scraper.slot.queue)",
+        "len(engine.scraper.slot.active)",
+        "engine.scraper.slot.active_size",
+        "engine.scraper.slot.itemproc_size",
+        "engine.scraper.slot.needs_backout()",
     ]
 
     status = {'global': [], 'spiders': {}}

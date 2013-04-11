@@ -9,6 +9,7 @@ from UserDict import DictMixin
 
 from scrapy.utils.trackref import object_ref
 
+
 class BaseItem(object_ref):
     """Base class for all scraped items."""
     pass
@@ -41,7 +42,7 @@ class DictItem(DictMixin, BaseItem):
 
     def __init__(self, *args, **kwargs):
         self._values = {}
-        if args or kwargs: # avoid creating dict for most common case
+        if args or kwargs:  # avoid creating dict for most common case
             for k, v in dict(*args, **kwargs).iteritems():
                 self[k] = v
 
@@ -52,7 +53,7 @@ class DictItem(DictMixin, BaseItem):
         if key in self.fields:
             self._values[key] = value
         else:
-            raise KeyError("%s does not support field: %s" % \
+            raise KeyError("%s does not support field: %s" %
                 (self.__class__.__name__, key))
 
     def __delitem__(self, key):
@@ -65,7 +66,7 @@ class DictItem(DictMixin, BaseItem):
 
     def __setattr__(self, name, value):
         if not name.startswith('_'):
-            raise AttributeError("Use item[%r] = %r to set field value" % \
+            raise AttributeError("Use item[%r] = %r to set field value" %
                 (name, value))
         super(DictItem, self).__setattr__(name, value)
 
@@ -79,4 +80,3 @@ class DictItem(DictMixin, BaseItem):
 class Item(DictItem):
 
     __metaclass__ = ItemMeta
-

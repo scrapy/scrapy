@@ -16,4 +16,19 @@ it's properly merged) . Use at your own risk.
 
    This documentation is a work in progress. Use at your own risk.
 
-*No experimental features at this time*
+Add commands using external libraries
+-------------------------------------
+
+You can also add Scrapy commands from an external library by adding `scrapy.commands` section into entry_points in the `setup.py`.
+
+The following example adds `my_command` command::
+
+  from setuptools import setup, find_packages
+
+  setup(name='scrapy-mymodule',
+    entry_points={
+      'scrapy.commands': [
+        'my_command=my_scrapy_module.commands:MyCommand',
+      ],
+    },
+   )

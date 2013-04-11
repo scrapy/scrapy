@@ -61,6 +61,11 @@ After installing Python, follow these steps before installing Scrapy:
   * lxml: http://pypi.python.org/pypi/lxml/
   * pyOpenSSL: https://launchpad.net/pyopenssl
 
+Finally, this page contains many precompiled Python binary libraries, which may
+come handy to fulfill Scrapy dependencies:
+
+    http://www.lfd.uci.edu/~gohlke/pythonlibs/
+
 Ubuntu 9.10 or above
 ~~~~~~~~~~~~~~~~~~~~
 

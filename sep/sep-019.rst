@@ -1,0 +1,155 @@
+=======  ===================
+SEP      19
+Title    Per-spider settings
+Author   Pablo Hoffman, Nicolás Ramirez
+Created  2013-03-07
+Status   Draft
+=======  ===================
+
+============================
+SEP-019: Per-spider settings
+============================
+
+This is a proposal to add support for overriding settings per-spiders in a
+consistent way.
+
+In short, you will be able to overwrite settings (on a per-spider basis) by
+implementing a class method in your spider::
+
+    def MySpider(BaseSpider):
+
+        @classmethod
+        def custom_settings(cls):
+            return {
+                "DOWNLOAD_DELAY": 5.0,
+                "RETRY_ENABLED": False,
+            }
+
+
+What this solves
+================
+
+1. support true overridable per-spider setting, from both command-line usage
+   and library mode
+
+2. support for accessing settings from spiders (currently not supported
+   without hacky code)
+3. avoids mistakenly believing you can change settings after they have been
+   populated (you can, but they won't have any effect)
+
+Proposed changes
+================
+
+- new ``custom_settings`` class method will be added to spiders, to give them
+  a chance to override settings *before* they're used to instantiate the crawler
+- new ``from_crawler`` class method will be added to spiders, to give spiders a
+  chance to access settings, stats, or the crawler core components themselves
+- spider manager will be striped out of Crawler class
+- ``SPIDER_MODULES`` setting will be removed and replaced by an entry on ``scrapy.cfg``
+- Crawler object constructor will receive a spider class as (required) first argument
+- add new settings to ``scrapy.cfg`` to define the spider manager class and
+  spider modules
+- Settings class will be split into two classes: ``SettingsLoader`` and
+  ``SettingsReader``, and a new concept of "setting priority" will be added
+
+
+Settings
+========
+
+Settings class will be split into two classes ``SettingsLoader`` and ``SettingsReader``.
+
+SettingsLoader
+--------------
+
+- used at startup (only) to populate settings, then converted to a ``SettingsReader`` and discarded
+- will have a method ``set(name, value, priority)`` to register a setting with a given priority
+
+SettingsReader
+--------------
+
+- used by core, extensions, et.al to configure themselves
+- read-only
+- this will be the one with methods: get, getint, getfloat, etc
+- this will be the one accesible via ``crawler.settings``
+
+Setting priorities
+------------------
+
+There will be 5 setting priorities used by default:
+
+- 0: global defaults (those in ``scrapy.settings.default_settings``)
+- 10: per-command defaults (for example, shell runs with ``KEEP_ALIVE=True``)
+- 20: project settings (those in ``settings.py``)
+- 30: per-spider settings (those returned by ``Spider.custom_settings`` class method)
+- 40: command line arguments (those passed in the command line)
+
+Spider manager
+==============
+
+Currently, the spider manager is part of the crawler which creates a cyclic
+loop between settings and spiders and it shouldn't belong there. The spiders
+should be loaded outside and passed to the crawler object, which will require a
+spider class to be instantiated. It will need to be a class because when the
+spider is instantiated the ``SettingsReader`` should already be available.
+
+This new spider manager will not have access to the settings (they won't be
+loaded yet) so it will use scrapy.cfg to configure itself.
+
+The ``scrapy.cfg`` would look like this::
+
+    [settings]
+    default = myproject.settings
+
+    [spiders]
+    manager = scrapy.spidermanager.SpiderManager
+    modules = myproject.spiders
+
+- ``manager`` replaces ``SPIDER_MANAGER_CLASS`` setting and can, if omitted,
+  will default to ``scrapy.spidermanager.SpiderManager``
+- ``modules`` replaces ``SPIDER_MODULES`` setting and will be required
+
+Startup process
+===============
+
+This describes the current and new proposed mechanism for starting up a Scrapy
+crawler assuming one is running the following command::
+
+    scrapy crawl myspider -a arg=value -s DOWNLOAD_DELAY=5
+
+Most of the code here happens in ``scrapy.cmdline`` and
+``scrapy.commands.crawl`` modules, imports are omitted for brevity.
+
+Current (old) startup process
+-----------------------------
+
+::
+
+    settings = get_project_settings() # loads settings.py
+    settings.overrides.update(DOWNLOAD_DELAY=5)
+
+    crawler = CrawlerProcess(settings)
+    crawler.configure()
+        # load extensions, middlewares, pipelines
+    spider = crawler.spiders.create('myspider', arg=value)
+    crawler.crawl(spider)
+    crawler.start()
+        # starts crawling spider
+
+Proposed (new) startup process
+------------------------------
+
+::
+
+    smcls = get_spider_manager_class_from_scrapycfg()
+    sm = smcls() # loads spiders from module defined in scrapy.cfg
+    spidercls = sm.load('myspider') # NOTE: returns spider class, not instance
+
+    settings = get_project_settings() # loads settings.py
+    settings.set('DOWNLOAD_DELAY', 5, priority=40)
+
+    crawler = Crawler(spidercls, settings=settings)
+        settings.overrides.update(spidercls.custom_settings())
+        # load extensions, middlewares, pipelines
+    crawler.crawl(arg='value')
+        spider = self.spidercls.from_crawler(self, arg='value')
+        # starts crawling spider
