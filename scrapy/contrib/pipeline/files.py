@@ -21,10 +21,10 @@ from scrapy.contrib.pipeline.media import MediaPipeline
 
 
 class FileException(Exception):
-    """General image error exception"""
+    """General file error exception"""
 
 
-def file_key(self, url, params=None):
+def file_key(url, params=None):
     return hashlib.sha1(url).hexdigest()
 
 
@@ -109,7 +109,6 @@ class S3FilesStore(object):
     POLICY = 'public-read'
     HEADERS = {
         'Cache-Control': 'max-age=172800',
-        'Content-Type': 'image/jpeg',
     }
 
     def __init__(self, uri):
@@ -139,7 +138,7 @@ class S3FilesStore(object):
         return threads.deferToThread(b.get_key, key_name)
 
     def persist_file(self, key, buf, meta, info):
-        """Upload image to S3 storage"""
+        """Upload file to S3 storage"""
         b = self._get_boto_bucket()
         if meta:
             key_name = '%s%s' % (self.prefix, key)
@@ -218,14 +217,14 @@ class FileMediaPipeline(MediaPipeline):
                     level=log.WARNING, spider=info.spider,
                     medianame=self.MEDIA_NAME,
                     status=response.status, request=request, referer=referer)
-            raise ImageException('download-error')
+            raise FileException('download-error')
 
         if not response.body:
             log.msg(format='Media (empty-content): Empty '
                            '%(medianame)s from %(request)s referred in <%(referer)s>: no-content',
                     level=log.WARNING, spider=info.spider,
                     medianame=self.MEDIA_NAME, request=request, referer=referer)
-            raise ImageException('empty-content')
+            raise FileException('empty-content')
 
         status = 'cached' if 'cached' in response.flags else 'downloaded'
         log.msg(format='Media (%(status)s): Downloaded '
@@ -237,7 +236,7 @@ class FileMediaPipeline(MediaPipeline):
 
         try:
             processing_result = list(self.file_downloaded(response, request, info))
-        except ImageException as exc:
+        except FileException as exc:
             whyfmt = 'Media (error): Error processing %(medianame)s from %(request)s referred in <%(referer)s>: %(errormsg)s'
             log.msg(format=whyfmt, level=log.WARNING, spider=info.spider,
                     medianame=self.MEDIA_NAME,
@@ -248,7 +247,7 @@ class FileMediaPipeline(MediaPipeline):
             log.err(None, whyfmt % {'request': request, 'referer': referer,
                                     'medianame': self.MEDIA_NAME},
                         spider=info.spider)
-            raise ImageException(str(exc))
+            raise FileException(str(exc))
 
         return processing_result
 

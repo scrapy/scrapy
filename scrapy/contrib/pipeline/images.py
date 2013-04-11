@@ -19,7 +19,7 @@ from scrapy import log
 from scrapy.utils.misc import md5sum
 from scrapy.http import Request
 from scrapy.exceptions import DropItem, NotConfigured, IgnoreRequest
-from scrapy.contrib.pipeline.files import FileMediaPipeline
+from scrapy.contrib.pipeline.files import FileMediaPipeline, S3FilesStore
 
 
 class NoimagesDrop(DropItem):
@@ -68,7 +68,7 @@ class FSImagesStore(object):
             seen.add(dirname)
 
 
-class S3ImagesStore(object):
+class S3ImagesStore(S3FilesStore):
 
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
@@ -122,6 +122,12 @@ class ImagesPipeline(FileMediaPipeline):
     MEDIA_NAME = 'image'
     ITEM_MEDIA_URLS_KEY = 'image_urls'
     ITEM_MEDIA_RESULT_KEY = 'images'
+    ORIGINAL_CONVERT_FORMAT = 'JPEG'
+
+    _imagefile_extensions = {
+        'JPEG': 'jpg',
+        'PNG': 'png',
+    }
 
     @classmethod
     def from_settings(cls, settings):
@@ -131,6 +137,8 @@ class ImagesPipeline(FileMediaPipeline):
         cls.THUMBS = settings.get('IMAGES_THUMBS', {})
         cls.ORIGINAL_SAVE = settings.getbool('IMAGES_ORIGINAL_SAVE', False)
         cls.ORIGINAL_CONVERT = settings.getbool('IMAGES_ORIGINAL_CONVERT', True)
+        cls.ORIGINAL_CONVERT_FORMAT = settings.get(
+            'IMAGES_ORIGINAL_CONVERT_FORMAT', 'JPEG')
         cls.REPORT_DIMENSIONS = settings.getbool('IMAGES_REPORT_DIMENSIONS', False)
         s3store = cls.STORE_SCHEMES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
@@ -151,15 +159,17 @@ class ImagesPipeline(FileMediaPipeline):
             yield result
 
         if self.ORIGINAL_CONVERT:
-            convimage, convbuf = self.convert_image(image)
+            convimage, convbuf = self.convert_image(
+                image, format=self.ORIGINAL_CONVERT_FORMAT)
             result = self.persist_image(
-                self.convimage_key(url),
+                self.convimage_key(url, convimage.format),
                 convimage, convbuf.getvalue(), info)
             result.update({'url': url, 'tag': 'converted'})
             yield result
 
         for thumb_id, size in self.THUMBS.iteritems():
-            thumb_image, thumb_buf = self.convert_image(image, size)
+            thumb_image, thumb_buf = self.convert_image(
+                image, size, format=self.ORIGINAL_CONVERT_FORMAT)
             result = self.persist_image(
                 self.thumb_key(url, thumb_id),
                 thumb_image, thumb_buf.getvalue(), info)
@@ -175,7 +185,7 @@ class ImagesPipeline(FileMediaPipeline):
         result.update({'format': image.format})
         return result
 
-    def convert_image(self, image, size=None):
+    def convert_image(self, image, size=None, format='JPEG'):
         if image.format == 'PNG' and image.mode == 'RGBA':
             background = Image.new('RGBA', image.size, (255, 255, 255))
             background.paste(image, image)
@@ -188,7 +198,7 @@ class ImagesPipeline(FileMediaPipeline):
             image.thumbnail(size, Image.ANTIALIAS)
 
         buf = StringIO()
-        image.save(buf, 'JPEG')
+        image.save(buf, format)
         return image, buf
 
     def _file_key(self, url):
@@ -207,10 +217,16 @@ class ImagesPipeline(FileMediaPipeline):
     def image_key(self, url):
         return self.convimage_key(url)
 
+    def _url_hash(self, url):
+        return hashlib.sha1(url).hexdigest()
+
     def convimage_key(self, url):
-        image_guid = hashlib.sha1(url).hexdigest()
-        return 'full/%s.jpg' % image_guid
+        return 'full/%s.%s' % (
+            self._url_hash(url),
+            self._imagefile_extensions.get(self.ORIGINAL_CONVERT_FORMAT, 'jpg'))
 
     def thumb_key(self, url, thumb_id):
-        image_guid = hashlib.sha1(url).hexdigest()
-        return 'thumbs/%s/%s.jpg' % (thumb_id, image_guid)
+        return 'thumbs/%s/%s.%s' % (
+            thumb_id,
+            self._url_hash(url),
+            self._imagefile_extensions.get(self.ORIGINAL_CONVERT_FORMAT, 'jpg'))
