@@ -123,7 +123,9 @@ class SgmlLinkExtractor(BaseSgmlLinkExtractor):
             try:
                 body = body.encode(response.encoding)
             except UnicodeEncodeError:
-                body = body.encode('utf-8')
+                # upon error fall back to utf-8 encoding
+                response = response.replace(encoding='utf-8')
+                body = body.encode(response.encoding)
         else:
             body = response.body
 
