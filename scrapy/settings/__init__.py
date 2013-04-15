@@ -36,7 +36,7 @@ class Settings(object):
         elif hasattr(value, '__iter__'):
             return value
         else:
-            return str(value).split(',')
+            return list(v for v in str(value).split(',') if v)
 
     def getdict(self, name, default=None):
         value = self.get(name)

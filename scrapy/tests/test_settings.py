@@ -20,6 +20,7 @@ class SettingsTest(unittest.TestCase):
             'TEST_FLOAT2': '123.45',
             'TEST_LIST1': ['one', 'two'],
             'TEST_LIST2': 'one,two',
+            'TEST_LIST3': 'one,',
             'TEST_STR': 'value',
             'TEST_DICT1': {'key1': 'val1', 'ke2': 3},
             'TEST_DICT2': '{"key1": "val1", "ke2": 3}',
@@ -42,6 +43,7 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.getfloat('TEST_FLOATx', 55.0), 55.0)
         self.assertEqual(settings.getlist('TEST_LIST1'), ['one', 'two'])
         self.assertEqual(settings.getlist('TEST_LIST2'), ['one', 'two'])
+        self.assertEqual(settings.getlist('TEST_LIST3'), ['one'])
         self.assertEqual(settings.getlist('TEST_LISTx'), [])
         self.assertEqual(settings.getlist('TEST_LISTx', ['default']), ['default'])
         self.assertEqual(settings['TEST_STR'], 'value')
