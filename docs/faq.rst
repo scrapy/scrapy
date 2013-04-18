@@ -173,7 +173,7 @@ higher) in your spider::
 
         name = 'myspider'
 
-        DOWNLOAD_DELAY = 2
+        download_delay = 2
 
         # [ ... rest of the spider code ... ]
 
