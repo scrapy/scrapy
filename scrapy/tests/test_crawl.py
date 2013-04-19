@@ -33,7 +33,7 @@ class CrawlTestCase(TestCase):
 
     def setUp(self):
         self.proc = Popen([sys.executable, '-m', 'scrapy.tests.mockserver'])
-        time.sleep(0.2)
+        time.sleep(0.5)
 
     def tearDown(self):
         self.proc.kill()
