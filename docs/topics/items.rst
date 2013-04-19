@@ -157,6 +157,10 @@ Copying items::
     >>> print product2
     Product(name='Desktop PC', price=1000)
 
+    >>> product3 = product2.copy()
+    >>> print product3
+    Product(name='Desktop PC', price=1000)
+
 Creating dicts from items::
 
     >>> dict(product) # create a dict from all populated values

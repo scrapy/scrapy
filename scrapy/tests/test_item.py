@@ -98,8 +98,8 @@ class ItemTest(unittest.TestCase):
     def test_metaclass(self):
         class TestItem(Item):
             name = Field()
-            keys = Field() 
-            values = Field() 
+            keys = Field()
+            values = Field()
 
         i = TestItem()
         i['name'] = u'John'
@@ -114,8 +114,8 @@ class ItemTest(unittest.TestCase):
     def test_metaclass_inheritance(self):
         class BaseItem(Item):
             name = Field()
-            keys = Field() 
-            values = Field() 
+            keys = Field()
+            values = Field()
 
         class TestItem(BaseItem):
             keys = Field()
@@ -132,6 +132,15 @@ class ItemTest(unittest.TestCase):
         i = TestItem()
         i['name'] = u'John'
         self.assertEqual(dict(i), {'name': u'John'})
+
+    def test_copy(self):
+        class TestItem(Item):
+            name = Field()
+        item = TestItem({'name':'lower'})
+        copied_item = item.copy()
+        self.assertNotEqual(id(item), id(copied_item))
+        copied_item['name'] = copied_item['name'].upper()
+        self.assertNotEqual(item['name'], copied_item['name'])
 
 
 if __name__ == "__main__":

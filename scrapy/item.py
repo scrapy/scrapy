@@ -4,6 +4,7 @@ Scrapy Item
 See documentation in docs/topics/item.rst
 """
 
+from copy import deepcopy
 from pprint import pformat
 from UserDict import DictMixin
 
@@ -75,6 +76,9 @@ class DictItem(DictMixin, BaseItem):
 
     def __repr__(self):
         return pformat(dict(self))
+
+    def copy(self):
+        return self.__class__(self)
 
 
 class Item(DictItem):
