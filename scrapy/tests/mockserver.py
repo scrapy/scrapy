@@ -77,7 +77,12 @@ class Root(Resource):
         return 'Scrapy mock HTTP server\n'
 
 
-root = Root()
-factory = Site(root)
-reactor.listenTCP(8998, factory)
-reactor.run()
+if __name__ == "__main__":
+    root = Root()
+    factory = Site(root)
+    port = reactor.listenTCP(8998, factory, interface="127.0.0.1")
+    def print_listening():
+        h = port.getHost()
+        print "Mock server running at http://%s:%d" % (h.host, h.port)
+    reactor.callWhenRunning(print_listening)
+    reactor.run()

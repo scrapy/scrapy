@@ -1,7 +1,7 @@
 import sys, time
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase, SkipTest
-from subprocess import Popen
+from subprocess import Popen, PIPE
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
@@ -32,8 +32,8 @@ def docrawl(spider, settings=None):
 class CrawlTestCase(TestCase):
 
     def setUp(self):
-        self.proc = Popen([sys.executable, '-m', 'scrapy.tests.mockserver'])
-        time.sleep(0.5)
+        self.proc = Popen([sys.executable, '-u', '-m', 'scrapy.tests.mockserver'], stdout=PIPE)
+        self.proc.stdout.readline()
 
     def tearDown(self):
         self.proc.kill()
