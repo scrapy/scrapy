@@ -226,4 +226,4 @@ ITEM_PIPELINES = ['{0}.pipelines.MyPipeline']
         p = self.proc('parse', '--spider', self.spider_name, '--pipelines',
                 '-c', 'parse', 'http://scrapinghub.com')
         log = p.stderr.read()
-        print log
+        self.assert_("[scrapy] INFO: It Works!" in log, log)
