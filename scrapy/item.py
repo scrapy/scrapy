@@ -4,7 +4,6 @@ Scrapy Item
 See documentation in docs/topics/item.rst
 """
 
-from copy import deepcopy
 from pprint import pformat
 from UserDict import DictMixin
 
