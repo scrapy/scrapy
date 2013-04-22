@@ -236,3 +236,40 @@ class BenchCommandTest(CommandTest):
                 '-s', 'CLOSESPIDER_TIMEOUT=0.01')
         log = p.stderr.read()
         self.assert_('INFO: Crawled' in log, log)
+
+
+class DeployCommandTest(CommandTest):
+
+    def setUp(self):
+        super(DeployCommandTest, self).setUp()
+        fname = abspath(join(self.proj_path, 'scrapy.cfg'))
+        with open(fname, 'w') as f:
+            f.write("""
+[settings]
+default = salesify_main.settings
+
+[deploy:default]
+url = http://localhost
+project = 1
+version = GIT
+exclude = local_settings.py,*.local
+""")
+        os.chdir(self.proj_path)
+
+    def tearDown(self):
+        os.chdir(self.cwd)
+
+    def test_exclude_from_egg(self):
+        from scrapy.commands.deploy import _get_exclude, _get_target_name, _get_target
+
+        class MockedOpts(object):
+            exclude = None
+
+        opts = MockedOpts()
+        target_name = _get_target_name(())
+        target = _get_target(target_name)
+        exclude = _get_exclude(target, opts)
+        self.assertEqual(exclude, repr(('local_settings.py', '*.local')))
+        opts.exclude = ('locale.py', )
+        exclude = _get_exclude(target, opts)
+        self.assertEqual(exclude, repr(('locale.py', )))
