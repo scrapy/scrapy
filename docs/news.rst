@@ -6,6 +6,7 @@ Release notes
 0.18 (unreleased)
 -----------------
 
+- moved persistent (on disk) queues to a separate project (queuelib_) which scrapy now depends on
 - add scrapy commands using external libraries (:issue:`260`)
 - added ``--pdb`` option to ``scrapy`` command line tool
 - added :meth:`XPathSelector.remove_namespaces` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`topics-selectors`.
@@ -446,3 +447,4 @@ First release of Scrapy.
 .. _lxml: http://lxml.de/
 .. _ClientForm: http://wwwsearch.sourceforge.net/old/ClientForm/
 .. _resource: http://docs.python.org/library/resource.html
+.. _queuelib: https://github.com/scrapy/queuelib

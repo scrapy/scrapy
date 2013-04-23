@@ -4,7 +4,7 @@ Scheduler queues
 
 import marshal, cPickle as pickle
 
-from scrapy.utils import queue
+from queuelib import queue
 
 def _serializable_queue(queue_class, serialize, deserialize):
 
