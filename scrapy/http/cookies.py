@@ -1,7 +1,7 @@
 import time
 from cookielib import CookieJar as _CookieJar, DefaultCookiePolicy, IPV4_RE
-
 from scrapy.utils.httpobj import urlparse_cached
+
 
 class CookieJar(object):
     def __init__(self, policy=None, check_expired_frequency=10000):
@@ -19,10 +19,9 @@ class CookieJar(object):
     def add_cookie_header(self, request):
         wreq = WrappedRequest(request)
         self.policy._now = self.jar._now = int(time.time())
-        
+
         # the cookiejar implementation iterates through all domains
         # instead we restrict to potential matches on the domain
-        
         req_host = urlparse_cached(request).netloc
         if not IPV4_RE.search(req_host):
             hosts = potential_domain_matches(req_host)
@@ -41,19 +40,11 @@ class CookieJar(object):
             if not wreq.has_header("Cookie"):
                 wreq.add_unredirected_header("Cookie", "; ".join(attrs))
 
-        # if necessary, advertise that we know RFC 2965
-        if (self.policy.rfc2965 and not self.policy.hide_cookie2 and
-            not request.has_header("Cookie2")):
-            for cookie in cookies:
-                if cookie.version != 1:
-                    request.add_unredirected_header("Cookie2", '$Version="1"')
-                    break
-        
         self.processed += 1
         if self.processed % self.check_expired_frequency == 0:
             # This is still quite inefficient for large number of cookies
             self.jar.clear_expired_cookies()
-    
+
     @property
     def _cookies(self):
         return self.jar._cookies
@@ -87,7 +78,7 @@ class CookieJar(object):
 
 def potential_domain_matches(domain):
     """Potential domain matches for a cookie
-    
+
     >>> potential_domain_matches('www.example.com')
     ['www.example.com', 'example.com']
 
