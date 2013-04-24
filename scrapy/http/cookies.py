@@ -92,7 +92,7 @@ def potential_domain_matches(domain):
             start = domain.index('.', start) + 1
     except ValueError:
         pass
-    return matches
+    return matches + ['.' + d for d in matches]
 
 class _DummyLock(object):
     def acquire(self):
