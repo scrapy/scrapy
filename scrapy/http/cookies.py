@@ -80,7 +80,7 @@ def potential_domain_matches(domain):
     """Potential domain matches for a cookie
 
     >>> potential_domain_matches('www.example.com')
-    ['www.example.com', 'example.com']
+    ['www.example.com', 'example.com', '.www.example.com', '.example.com']
 
     """
     matches = [domain]
