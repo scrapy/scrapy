@@ -2,6 +2,7 @@ import random
 import warnings
 from time import time
 from collections import deque
+from weakref import WeakValueDictionary
 
 from twisted.internet import reactor, defer
 
@@ -64,7 +65,7 @@ class Downloader(object):
     def __init__(self, crawler):
         self.settings = crawler.settings
         self.signals = crawler.signals
-        self.slots = {}
+        self.slots = WeakValueDictionary()
         self.active = set()
         self.handlers = DownloadHandlers(crawler.settings)
         self.total_concurrency = self.settings.getint('CONCURRENT_REQUESTS')
@@ -89,8 +90,8 @@ class Downloader(object):
         if key not in self.slots:
             conc = self.ip_concurrency if self.ip_concurrency else self.domain_concurrency
             conc, delay = _get_concurrency_delay(conc, spider, self.settings)
-            self.slots[key] = Slot(conc, delay, self.settings)
-
+            slot = Slot(conc, delay, self.settings)
+            self.slots[key] = slot
         return key, self.slots[key]
 
     def _get_slot_key(self, request, spider):
