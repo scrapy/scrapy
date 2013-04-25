@@ -83,6 +83,7 @@ class Command(ScrapyCommand):
         tmpdir = None
 
         if opts.build_egg: # build egg only
+            # will use default settings
             egg, tmpdir = _build_egg()
             _log("Writing egg to %s" % opts.build_egg)
             shutil.copyfile(egg, opts.build_egg)
@@ -91,12 +92,13 @@ class Command(ScrapyCommand):
             target = _get_target(target_name)
             project = _get_project(target, opts)
             version = _get_version(target, opts)
+            
             if opts.egg:
                 _log("Using egg: %s" % opts.egg)
                 egg = opts.egg
             else:
                 _log("Packing version %s" % version)
-                egg, tmpdir = _build_egg()
+                egg, tmpdir = _build_egg(target_name=target_name)
             if not _upload_egg(target, egg, project, version):
                 self.exitcode = 1
 
@@ -212,12 +214,22 @@ def _http_post(request):
     except urllib2.URLError, e:
         _log("Deploy failed: %s" % e)
 
-def _build_egg():
+def _build_egg(target_name="default"):
     closest = closest_scrapy_cfg()
     os.chdir(os.path.dirname(closest))
-    if not os.path.exists('setup.py'):
+    
+    if os.path.exists('setup.py'):
+        open('setup.py', 'w').close()
+
+    try:
+        settings = get_config()._sections[config_section_name]['settings']
+        _log("Using settings module: %s" % settings)
+    except:
+        _log("Settings module not specified for target, using default.")
         settings = get_config().get('settings', 'default')
-        _create_default_setup_py(settings=settings)
+
+    _create_default_setup_py(settings=settings)
+        
     d = tempfile.mkdtemp(prefix="scrapydeploy-")
     o = open(os.path.join(d, "stdout"), "wb")
     e = open(os.path.join(d, "stderr"), "wb")
