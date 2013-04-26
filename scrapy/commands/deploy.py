@@ -222,8 +222,10 @@ def _build_egg(target_name="default"):
         open('setup.py', 'w').close()
 
     try:
+        config_section_name = "deploy:%s" % target_name
         settings = get_config()._sections[config_section_name]['settings']
         _log("Using settings module: %s" % settings)
+        print settings
     except:
         _log("Settings module not specified for target, using default.")
         settings = get_config().get('settings', 'default')
