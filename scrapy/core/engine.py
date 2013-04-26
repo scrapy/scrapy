@@ -254,6 +254,9 @@ class ExecutionEngine(object):
 
         dfd = slot.close()
 
+        dfd.addBoth(lambda _: self.downloader.close())
+        dfd.addErrback(log.err, spider=spider)
+
         dfd.addBoth(lambda _: self.scraper.close_spider(spider))
         dfd.addErrback(log.err, spider=spider)
 

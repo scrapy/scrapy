@@ -1,6 +1,6 @@
 import sys, time
 from twisted.internet import defer
-from twisted.trial.unittest import TestCase, SkipTest
+from twisted.trial.unittest import TestCase
 from subprocess import Popen, PIPE
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
@@ -10,12 +10,13 @@ from scrapy.utils.test import get_crawler
 class FollowAllSpider(BaseSpider):
 
     name = 'follow'
-    start_urls = ["http://localhost:8998/follow?total=10&show=5&order=rand"]
     link_extractor = SgmlLinkExtractor()
 
-    def __init__(self):
+    def __init__(self, total=10, show=20, order="rand"):
         self.urls_visited = []
         self.times = []
+        url = "http://localhost:8998/follow?total=%s&show=%s&order=%s" % (total, show, order)
+        self.start_urls = [url]
 
     def parse(self, response):
         self.urls_visited.append(response.url)
@@ -48,13 +49,9 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_delay(self):
-        # FIXME: this test fails because Scrapy leaves the reactor dirty with
-        # callLater calls when download delays are used. This test should be
-        # enabled after this bug is fixed.
-        raise SkipTest("disabled due to a reactor leak in the scrapy downloader")
-
         spider = FollowAllSpider()
-        yield docrawl(spider)
+        yield docrawl(spider, {"DOWNLOAD_DELAY": 0.3})
         t = spider.times[0]
-        for y in spider.times[1:]:
-            self.assertTrue(y-t > 0.5, "download delay too small: %s" % (y-t))
+        for t2 in spider.times[1:]:
+            self.assertTrue(t2-t > 0.15, "download delay too small: %s" % (t2-t))
+            t = t2

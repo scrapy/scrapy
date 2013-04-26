@@ -3,7 +3,7 @@ import warnings
 from time import time
 from collections import deque
 
-from twisted.internet import reactor, defer
+from twisted.internet import reactor, defer, task
 
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.httpobj import urlparse_cached
@@ -34,6 +34,10 @@ class Slot(object):
         if self.randomize_delay:
             return random.uniform(0.5 * self.delay, 1.5 * self.delay)
         return self.delay
+
+    def close(self):
+        if self.latercall and self.latercall.active():
+            self.latercall.cancel()
 
 
 def _get_concurrency_delay(concurrency, spider, settings):
@@ -71,6 +75,8 @@ class Downloader(object):
         self.domain_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
         self.ip_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_IP')
         self.middleware = DownloaderMiddlewareManager.from_crawler(crawler)
+        self._slot_gc_loop = task.LoopingCall(self._slot_gc)
+        self._slot_gc_loop.start(60)
 
     def fetch(self, request, spider):
         def _deactivate(response):
@@ -172,3 +178,14 @@ class Downloader(object):
 
     def is_idle(self):
         return not self.slots
+
+    def close(self):
+        self._slot_gc_loop.stop()
+        for slot in self.slots.itervalues():
+            slot.close()
+
+    def _slot_gc(self, age=60):
+        mintime = time() - age
+        for key, slot in self.slots.items():
+            if not slot.active and slot.lastseen + slot.delay < mintime:
+                self.slots.pop(key).close()
