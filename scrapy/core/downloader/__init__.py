@@ -26,6 +26,7 @@ class Slot(object):
         self.transferring = set()
         self.lastseen = 0
         self.latercall = None
+        self.closecall = None
 
     def free_transfer_slots(self):
         return self.concurrency - len(self.transferring)
@@ -109,6 +110,7 @@ class Downloader(object):
 
         def _deactivate(response):
             slot.active.remove(request)
+            self._maybe_close_slot(slot, key)
             return response
 
         slot.active.add(request)
@@ -172,3 +174,22 @@ class Downloader(object):
 
     def is_idle(self):
         return not self.slots
+
+    def close(self):
+        for slot in self.slots.itervalues():
+            if slot.latercall and slot.latercall.active():
+                slot.latercall.cancel()
+            if slot.closecall and slot.closecall.active():
+                slot.closecall.cancel()
+
+    def _maybe_close_slot(self, slot, key):
+        if not slot.active:
+            closedelay = slot.delay*2 or 1
+            if slot.closecall:
+                slot.closecall.reset(closedelay)
+            else:
+                slot.closecall = reactor.callLater(closedelay, self._do_close_slot, slot, key)
+
+    def _do_close_slot(self, slot, key):
+        if not slot.active:
+            del self.slots[key]
