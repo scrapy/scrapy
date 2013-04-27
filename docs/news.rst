@@ -103,13 +103,6 @@ Scrapy changes:
 - number received responses are now tracked through Scrapy stats (stat name: ``response_received_count``)
 - removed ``scrapy.log.started`` attribute
 
-Scrapyd changes:
-
-- New Scrapyd API methods: :ref:`listjobs.json` and :ref:`cancel.json`
-- New Scrapyd settings: :ref:`items_dir` and :ref:`jobs_to_keep`
-- Items are now stored on disk using feed exports, and accessible through the Scrapyd web interface
-- Support making Scrapyd listen into a specific IP address (see ``bind_address`` option)
-
 0.14.4
 ------
 

@@ -65,7 +65,8 @@ Spiders receive arguments in their constructors::
             self.start_urls = ['http://www.example.com/categories/%s' % category]
             # ...
 
-Spider arguments can also be passed through the :ref:`scrapyd-schedule` API.
+Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
+See `Scrapyd documentation`_.
 
 .. _topics-spiders-ref:
 
@@ -625,3 +626,4 @@ Combine SitemapSpider with other sources of urls::
 .. _Sitemap index files: http://www.sitemaps.org/protocol.php#index
 .. _robots.txt: http://www.robotstxt.org/
 .. _TLD: http://en.wikipedia.org/wiki/Top-level_domain
+.. _Scrapyd documentation: http://scrapyd.readthedocs.org/

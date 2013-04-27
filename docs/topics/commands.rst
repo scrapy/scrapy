@@ -455,7 +455,7 @@ deploy
 * Syntax: ``scrapy deploy [ <target:project> | -l <target> | -L ]``
 * Requires project: *yes*
 
-Deploy the project into a Scrapyd server. See :ref:`topics-deploying`.
+Deploy the project into a Scrapyd server. See `Deploying your project`_.
 
 Custom project commands
 =======================
@@ -478,3 +478,5 @@ commands for your Scrapy project.
 Example::
 
     COMMANDS_MODULE = 'mybot.commands'
+
+.. _Deploying your project: http://scrapyd.readthedocs.org/en/latest/#deploying-your-project
