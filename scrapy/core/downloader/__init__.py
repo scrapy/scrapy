@@ -176,9 +176,6 @@ class Downloader(object):
 
         return dfd.addBoth(finish_transferring)
 
-    def is_idle(self):
-        return not self.slots
-
     def close(self):
         self._slot_gc_loop.stop()
         for slot in self.slots.itervalues():
