@@ -120,6 +120,9 @@ Here are some tips to keep in mind when dealing with these kind of sites:
   directly
 * use a pool of rotating IPs. For example, the free `Tor project`_ or paid
   services like `ProxyMesh`_
+* use a highly distributed downloader that circumvents bans internally, so you
+  can just focus on parsing clean pages. One example of such downloaders is
+  `Crawlera`_
 
 If you are still unable to prevent your bot getting banned, consider contacting
 `commercial support`_.
@@ -130,3 +133,4 @@ If you are still unable to prevent your bot getting banned, consider contacting
 .. _Google cache: http://www.googleguide.com/cached_pages.html
 .. _testspiders: https://github.com/scrapinghub/testspiders
 .. _Twisted Reactor Overview: http://twistedmatrix.com/documents/current/core/howto/reactor-basics.html
+.. _Crawlera: http://crawlera.com
