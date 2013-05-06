@@ -5,7 +5,7 @@ from subprocess import Popen, PIPE
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
-from scrapy.utils.test import get_crawler
+from scrapy.utils.test import get_crawler, get_testenv
 
 class FollowAllSpider(BaseSpider):
 
@@ -52,7 +52,8 @@ def docrawl(spider, settings=None):
 class CrawlTestCase(TestCase):
 
     def setUp(self):
-        self.proc = Popen([sys.executable, '-u', '-m', 'scrapy.tests.mockserver'], stdout=PIPE)
+        self.proc = Popen([sys.executable, '-u', '-m', 'scrapy.tests.mockserver'],
+            stdout=PIPE, env=get_testenv())
         self.proc.stdout.readline()
 
     def tearDown(self):

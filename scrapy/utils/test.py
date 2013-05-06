@@ -67,6 +67,14 @@ def get_pythonpath():
     scrapy_path = __import__('scrapy').__path__[0]
     return os.path.dirname(scrapy_path) + sep + os.environ.get('PYTHONPATH', '')
 
+def get_testenv():
+    """Return a OS environment dict suitable to fork processes that need to import
+    this installation of Scrapy, instead of a system installed one.
+    """
+    env = os.environ.copy()
+    env['PYTHONPATH'] = get_pythonpath()
+    return env
+
 def assert_samelines(testcase, text1, text2, msg=None):
     """Asserts text1 and text2 have the same lines, ignoring differences in
     line endings between platforms
