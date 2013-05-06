@@ -326,7 +326,7 @@ when an Internet connection is not available. The goal is to be able to
 
 In order to use this policy, set:
 
-* :setting:`HTTPCACHE_POLICY` to ``scrapy.contrib.httpcache.DummyPolicy``
+* :setting:`HTTPCACHE_POLICY` to ``scrapy.contrib.downloadermiddleware.httpcache.DummyPolicy``
 
 
 .. _httpcache-policy-rfc2616:
@@ -360,7 +360,7 @@ what is missing:
 
 In order to use this policy, set:
 
-* :setting:`HTTPCACHE_POLICY` to ``scrapy.contrib.httpcache.RFC2616Policy``
+* :setting:`HTTPCACHE_POLICY` to ``scrapy.contrib.downloadermiddleware.httpcache.RFC2616Policy``
 
 This is the default cache policy.
 
@@ -379,7 +379,7 @@ By default, it uses the anydbm_ module, but you can change it with the
 
 In order to use this storage backend, set:
 
-* :setting:`HTTPCACHE_STORAGE` to ``scrapy.contrib.httpcache.DbmCacheStorage``
+* :setting:`HTTPCACHE_STORAGE` to ``scrapy.contrib.downloadermiddleware.httpcache.DbmCacheStorage``
 
 
 .. _httpcache-storage-fs:
@@ -391,7 +391,7 @@ A file system storage backend is also available for the HTTP cache middleware.
 
 In order to use this storage backend, set:
 
-* :setting:`HTTPCACHE_STORAGE` to ``scrapy.contrib.httpcache.FilesystemCacheStorage``
+* :setting:`HTTPCACHE_STORAGE` to ``scrapy.contrib.downloadermiddleware.httpcache.FilesystemCacheStorage``
 
 Each request/response pair is stored in a different directory containing
 the following files:
@@ -495,7 +495,7 @@ Don't cache responses with these URI schemes.
 HTTPCACHE_STORAGE
 ^^^^^^^^^^^^^^^^^
 
-Default: ``'scrapy.contrib.httpcache.DbmCacheStorage'``
+Default: ``'scrapy.contrib.downloadermiddleware.httpcache.DbmCacheStorage'``
 
 The class which implements the cache storage backend.
 
@@ -518,7 +518,7 @@ HTTPCACHE_POLICY
 
 .. versionadded:: 0.18
 
-Default: ``'scrapy.contrib.httpcache.DummyPolicy'``
+Default: ``'scrapy.contrib.downloadermiddleware.httpcache.DummyPolicy'``
 
 The class which implements the cache policy.
 
