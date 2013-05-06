@@ -75,6 +75,17 @@ def get_testenv():
     env['PYTHONPATH'] = get_pythonpath()
     return env
 
+def get_testlog():
+    """Get Scrapy log of current test, ignoring the rest"""
+    thistest = []
+    loglines = open("test.log").readlines()
+    for l in loglines[::-1]:
+        thistest.append(l)
+        if "[-] -->" in l:
+            break
+    return "".join(thistest[::-1])
+
+
 def assert_samelines(testcase, text1, text2, msg=None):
     """Asserts text1 and text2 have the same lines, ignoring differences in
     line endings between platforms

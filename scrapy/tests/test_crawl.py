@@ -5,7 +5,7 @@ from subprocess import Popen, PIPE
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
-from scrapy.utils.test import get_crawler, get_testenv
+from scrapy.utils.test import get_crawler, get_testenv, get_testlog
 
 class FollowAllSpider(BaseSpider):
 
@@ -42,6 +42,16 @@ class DelaySpider(BaseSpider):
 
     def errback(self, failure):
         self.t2_err = time.time()
+
+class SimpleSpider(BaseSpider):
+
+    name = 'simple'
+
+    def __init__(self, url="http://localhost:8998"):
+        self.start_urls = [url]
+
+    def parse(self, response):
+        self.log("Got response %d" % response.status)
 
 def docrawl(spider, settings=None):
     crawler = get_crawler(settings)
@@ -92,3 +102,26 @@ class CrawlTestCase(TestCase):
         self.assertTrue(spider.t2 == 0)
         self.assertTrue(spider.t2_err > 0)
         self.assertTrue(spider.t2_err > spider.t1)
+
+    @defer.inlineCallbacks
+    def test_retry_503(self):
+        spider = SimpleSpider("http://localhost:8998/status?n=503")
+        yield docrawl(spider)
+        self._assert_retried()
+
+    @defer.inlineCallbacks
+    def test_retry_conn_failed(self):
+        spider = SimpleSpider("http://localhost:65432/status?n=503")
+        yield docrawl(spider)
+        self._assert_retried()
+
+    @defer.inlineCallbacks
+    def test_retry_dns_error(self):
+        spider = SimpleSpider("http://localhost666/status?n=503")
+        yield docrawl(spider)
+        self._assert_retried()
+
+    def _assert_retried(self):
+        log = get_testlog()
+        self.assertEqual(log.count("Retrying"), 2)
+        self.assertEqual(log.count("Gave up retrying"), 1)
