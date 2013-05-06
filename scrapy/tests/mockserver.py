@@ -67,6 +67,36 @@ class Delay(Resource):
         request.write("Response delayed for %0.3f seconds\n" % n)
         request.finish()
 
+class Status(Resource):
+
+    isLeaf = True
+
+    def render_GET(self, request):
+        n = getarg(request, "n", 200, type=int)
+        request.setResponseCode(n)
+        return ""
+
+class Partial(Resource):
+
+    isLeaf = True
+
+    def render_GET(self, request):
+        request.setHeader("Content-Length", "1024")
+        d = deferLater(reactor, 0, lambda: request)
+        d.addCallback(self._delayedRender)
+        return NOT_DONE_YET
+
+    def _delayedRender(self, request):
+        request.write("partial content\n")
+        request.finish()
+
+class Drop(Partial):
+
+    def _delayedRender(self, request):
+        request.write("this connection will be dropped\n")
+        request.channel.transport.loseConnection()
+        request.finish()
+
 class Log(Resource):
 
     isLeaf = True
@@ -82,8 +112,11 @@ class Root(Resource):
     def __init__(self):
         Resource.__init__(self)
         self.log = []
+        self.putChild("status", Status())
         self.putChild("follow", Follow())
         self.putChild("delay", Delay())
+        self.putChild("partial", Partial())
+        self.putChild("drop", Drop())
         self.putChild("log", Log(self.log))
 
     def getChild(self, request, name):
