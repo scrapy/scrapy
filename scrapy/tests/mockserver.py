@@ -1,8 +1,9 @@
 import json, random, urllib
 from time import time
-from twisted.web.server import Site
+from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.internet import reactor
+from twisted.internet.task import deferLater
 
 
 _id = lambda x: x
@@ -52,6 +53,20 @@ class Follow(Resource):
         s += """</body>"""
         return s
 
+class Delay(Resource):
+
+    isLeaf = True
+
+    def render_GET(self, request):
+        n = getarg(request, "n", 1, type=float)
+        d = deferLater(reactor, n, lambda: (request, n))
+        d.addCallback(self._delayedRender)
+        return NOT_DONE_YET
+
+    def _delayedRender(self, (request, n)):
+        request.write("Response delayed for %0.3f seconds\n" % n)
+        request.finish()
+
 class Log(Resource):
 
     isLeaf = True
@@ -68,6 +83,7 @@ class Root(Resource):
         Resource.__init__(self)
         self.log = []
         self.putChild("follow", Follow())
+        self.putChild("delay", Delay())
         self.putChild("log", Log(self.log))
 
     def getChild(self, request, name):

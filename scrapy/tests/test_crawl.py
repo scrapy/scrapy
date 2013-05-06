@@ -24,6 +24,25 @@ class FollowAllSpider(BaseSpider):
         for link in self.link_extractor.extract_links(response):
             yield Request(link.url, callback=self.parse)
 
+class DelaySpider(BaseSpider):
+
+    name = 'delay'
+
+    def __init__(self, n=1):
+        self.n = n
+        self.t1 = self.t2 = self.t2_err = 0
+
+    def start_requests(self):
+        self.t1 = time.time()
+        yield Request("http://localhost:8998/delay?n=%s" % self.n, \
+            callback=self.parse, errback=self.errback)
+
+    def parse(self, response):
+        self.t2 = time.time()
+
+    def errback(self, failure):
+        self.t2_err = time.time()
+
 def docrawl(spider, settings=None):
     crawler = get_crawler(settings)
     crawler.configure()
@@ -55,3 +74,20 @@ class CrawlTestCase(TestCase):
         for t2 in spider.times[1:]:
             self.assertTrue(t2-t > 0.15, "download delay too small: %s" % (t2-t))
             t = t2
+
+    @defer.inlineCallbacks
+    def test_timeout_success(self):
+        spider = DelaySpider(n=0.5)
+        yield docrawl(spider)
+        self.assertTrue(spider.t1 > 0)
+        self.assertTrue(spider.t2 > 0)
+        self.assertTrue(spider.t2 > spider.t1)
+
+    @defer.inlineCallbacks
+    def test_timeout_failure(self):
+        spider = DelaySpider(n=0.5)
+        yield docrawl(spider, {"DOWNLOAD_TIMEOUT": 0.35})
+        self.assertTrue(spider.t1 > 0)
+        self.assertTrue(spider.t2 == 0)
+        self.assertTrue(spider.t2_err > 0)
+        self.assertTrue(spider.t2_err > spider.t1)
