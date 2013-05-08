@@ -66,7 +66,7 @@ class TelnetConsole(protocol.ServerFactory):
             'engine': self.crawler.engine,
             'spider': spider,
             'slot': slot,
-            'manager': self.crawler,
+            'crawler': self.crawler,
             'extensions': self.crawler.extensions,
             'stats': self.crawler.stats,
             'spiders': self.crawler.spiders,
