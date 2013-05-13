@@ -11,6 +11,7 @@ from scrapy.command import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import inside_project, get_project_settings
+from scrapy.utils.options import ScrapyComandOptionParser
 from scrapy.settings.deprecated import check_deprecated_settings
 
 def _iter_command_classes(module_name):
@@ -81,7 +82,7 @@ def _print_commands(settings, inproject):
 def _print_unknown_command(settings, cmdname, inproject):
     _print_header(settings, inproject)
     print "Unknown command: %s\n" % cmdname
-    print 'Use "scrapy" to see available commands' 
+    print 'Use "scrapy" to see available commands'
 
 def _run_print_help(parser, func, *a, **kw):
     try:
@@ -122,7 +123,7 @@ def execute(argv=None, settings=None):
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)
     cmdname = _pop_command_name(argv)
-    parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(), \
+    parser = ScrapyComandOptionParser(formatter=optparse.TitledHelpFormatter(), \
         conflict_handler='resolve')
     if not cmdname:
         _print_commands(settings, inproject)
@@ -136,10 +137,10 @@ def execute(argv=None, settings=None):
     parser.description = cmd.long_desc()
     settings.defaults.update(cmd.default_settings)
     cmd.settings = settings
-    cmd.add_options(parser)
+    cmd.set_crawler(crawler)
+    cmd.add_options(parser, argv[1:])
     opts, args = parser.parse_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
-    cmd.set_crawler(crawler)
     _run_print_help(parser, _run_command, cmd, args, opts)
     sys.exit(cmd.exitcode)
 

@@ -61,7 +61,7 @@ class ScrapyCommand(object):
         """
         return self.long_desc()
 
-    def add_options(self, parser):
+    def add_options(self, parser, argv=[]):
         """
         Populate option parse with options available for this command
         """
@@ -83,7 +83,7 @@ class ScrapyCommand(object):
             help="set/override setting (may be repeated)")
         group.add_option("--pdb", action="store_true", help="enable pdb on failure")
         parser.add_option_group(group)
-        
+
     def process_options(self, args, opts):
         try:
             self.settings.overrides.update(arglist_to_dict(opts.set))
