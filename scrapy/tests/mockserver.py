@@ -1,5 +1,5 @@
-import json, random, urllib
-from time import time
+import sys, time, json, random, urllib
+from subprocess import Popen, PIPE
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.internet import reactor
@@ -19,7 +19,7 @@ _request_args = {
 
 def encode_request(request):
     """Encode request into a JSON-serializable type"""
-    d = {"time": time()}
+    d = {"time": time.time()}
     for k, func in _request_args.iteritems():
         d[k] = func(getattr(request, k))
     return d
@@ -124,6 +124,19 @@ class Root(Resource):
 
     def render(self, request):
         return 'Scrapy mock HTTP server\n'
+
+class MockServer():
+
+    def __enter__(self):
+        from scrapy.utils.test import get_testenv
+        self.proc = Popen([sys.executable, '-u', '-m', 'scrapy.tests.mockserver'],
+            stdout=PIPE, env=get_testenv())
+        self.proc.stdout.readline()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.proc.kill()
+        self.proc.wait()
+        time.sleep(0.2)
 
 
 if __name__ == "__main__":
