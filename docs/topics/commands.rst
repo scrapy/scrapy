@@ -149,6 +149,7 @@ Project-only commands:
 * :command:`genspider`
 * :command:`server`
 * :command:`deploy`
+* :command:`bench`
 
 .. command:: startproject
 
@@ -456,6 +457,18 @@ deploy
 * Requires project: *yes*
 
 Deploy the project into a Scrapyd server. See `Deploying your project`_.
+
+.. command:: bench
+
+bench
+-----
+
+.. versionadded:: 0.17
+
+* Syntax: ``scrapy bench``
+* Requires project: *no*
+
+Run quick benchmark test. :ref:`benchmarking`.
 
 Custom project commands
 =======================
