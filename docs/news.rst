@@ -6,6 +6,7 @@ Release notes
 0.18 (unreleased)
 -----------------
 
+- :ref:`benchmarking`
 - moved persistent (on disk) queues to a separate project (queuelib_) which scrapy now depends on
 - add scrapy commands using external libraries (:issue:`260`)
 - added ``--pdb`` option to ``scrapy`` command line tool
