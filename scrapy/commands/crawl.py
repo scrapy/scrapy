@@ -32,6 +32,9 @@ class Command(ScrapyCommand):
                 self.settings.overrides['FEED_URI'] = 'stdout:'
             else:
                 self.settings.overrides['FEED_URI'] = opts.output
+            valid_output_formats = self.settings['FEED_EXPORTERS'].keys() + self.settings['FEED_EXPORTERS_BASE'].keys()
+            if opts.output_format not in valid_output_formats:
+                raise UsageError('Invalid/unrecognized output format: %s, Expected %s' % (opts.output_format,valid_output_formats))
             self.settings.overrides['FEED_FORMAT'] = opts.output_format
 
     def run(self, args, opts):
