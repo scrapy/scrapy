@@ -1,8 +1,11 @@
-import unittest 
+import unittest
+import os
+import json
 
 from scrapy.spider import BaseSpider
-from scrapy.statscol import StatsCollector, DummyStatsCollector
+from scrapy.statscol import StatsCollector, DummyStatsCollector, JsonStatsCollector
 from scrapy.utils.test import get_crawler
+
 
 class StatsCollectorTest(unittest.TestCase):
 
@@ -50,6 +53,30 @@ class StatsCollectorTest(unittest.TestCase):
         stats.set_value('test', 'value', spider=self.spider)
         self.assertEqual(stats.get_stats(), {})
         self.assertEqual(stats.get_stats('a'), {})
+
+    def test_json_dump(self):
+        stats_file = '/tmp/dump.json'
+        self.crawler.settings.values['STATS_FILE'] = stats_file
+        self.crawler.settings.values['STATS_CLASS'] = 'scrapy.statscol.JsonStatsCollector'
+        stats = JsonStatsCollector(self.crawler)
+        self.assertEqual(stats.get_stats(), {})
+        self.assertEqual(stats.get_value('anything'), None)
+        self.assertEqual(stats.get_value('anything', 'default'), 'default')
+        stats.set_value('test', 'value')
+        stats.inc_value('v1')
+        stats.max_value('v2', 100)
+        stats.min_value('v3', 100)
+        stats.open_spider('a')
+        stats.set_value('test', 'value', spider=self.spider)
+        self.assertEqual(stats.get_stats(), {})
+        self.assertEqual(stats.get_stats('a'), {})
+        stats.close_spider('a', 'cause')
+        self.assertTrue(os.path.exists(stats_file))
+
+        #test the dump loading
+        with open(stats_file) as f:
+            stats_dump = json.load(f)
+
 
 if __name__ == "__main__":
     unittest.main()

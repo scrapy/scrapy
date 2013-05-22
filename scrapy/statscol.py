@@ -2,6 +2,7 @@
 Scrapy extension for collecting scraping stats
 """
 import pprint
+import json
 
 from scrapy import log
 
@@ -56,6 +57,16 @@ class MemoryStatsCollector(StatsCollector):
 
     def _persist_stats(self, stats, spider):
         self.spider_stats[spider.name] = stats
+
+
+class JsonStatsCollector(StatsCollector):
+    def __init__(self, crawler):
+        super(JsonStatsCollector, self).__init__(crawler)
+        self._stats_file = crawler.settings.get("STATS_FILE")
+
+    def _persist_stats(self, stats, spider):
+        with open(self._stats_file, "w") as f:
+            json.dump(self._stats, f)
 
 
 class DummyStatsCollector(StatsCollector):
