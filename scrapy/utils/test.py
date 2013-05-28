@@ -2,7 +2,7 @@
 This module contains some assorted functions used in tests
 """
 
-import os, sys
+import os
 
 from twisted.trial.unittest import SkipTest
 
@@ -63,9 +63,8 @@ def get_crawler(settings_dict=None):
 def get_pythonpath():
     """Return a PYTHONPATH suitable to use in processes so that they find this
     installation of Scrapy"""
-    sep = ';' if sys.platform == 'win32' else ':'
     scrapy_path = __import__('scrapy').__path__[0]
-    return os.path.dirname(scrapy_path) + sep + os.environ.get('PYTHONPATH', '')
+    return os.path.dirname(scrapy_path) + os.pathsep + os.environ.get('PYTHONPATH', '')
 
 def get_testenv():
     """Return a OS environment dict suitable to fork processes that need to import
