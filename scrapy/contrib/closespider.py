@@ -15,7 +15,7 @@ class CloseSpider(object):
 
     def __init__(self, crawler):
         self.crawler = crawler
-        self.timeout = crawler.settings.getint('CLOSESPIDER_TIMEOUT')
+        self.timeout = crawler.settings.getfloat('CLOSESPIDER_TIMEOUT')
         self.itemcount = crawler.settings.getint('CLOSESPIDER_ITEMCOUNT')
         self.pagecount = crawler.settings.getint('CLOSESPIDER_PAGECOUNT')
         self.errorcount = crawler.settings.getint('CLOSESPIDER_ERRORCOUNT')
