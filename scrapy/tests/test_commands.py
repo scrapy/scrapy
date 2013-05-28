@@ -226,3 +226,12 @@ ITEM_PIPELINES = ['{0}.pipelines.MyPipeline']
                 '-c', 'parse', 'http://scrapinghub.com')
         log = p.stderr.read()
         self.assert_("[scrapy] INFO: It Works!" in log, log)
+
+
+class BenchCommandTest(CommandTest):
+
+    def test_run(self):
+        p = self.proc('bench', '-s', 'LOGSTATS_INTERVAL=0.001',
+                '-s', 'CLOSESPIDER_TIMEOUT=0.01')
+        log = p.stderr.read()
+        self.assert_('INFO: Crawled' in log, log)
