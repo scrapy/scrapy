@@ -1,28 +1,10 @@
-import sys, time, json, random, urllib
+import sys, time, random, urllib
 from subprocess import Popen, PIPE
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.internet import reactor
 from twisted.internet.task import deferLater
 
-
-_id = lambda x: x
-_request_args = {
-    "args": _id,
-    "clientproto": _id,
-    "requestHeaders": lambda x: x._rawHeaders,
-    "responseHeaders": lambda x: x._rawHeaders,
-    "method": _id,
-    "path": _id,
-    "uri": _id,
-}
-
-def encode_request(request):
-    """Encode request into a JSON-serializable type"""
-    d = {"time": time.time()}
-    for k, func in _request_args.iteritems():
-        d[k] = func(getattr(request, k))
-    return d
 
 def getarg(request, name, default=None, type=str):
     if name in request.args:
@@ -97,29 +79,17 @@ class Drop(Partial):
         request.channel.transport.loseConnection()
         request.finish()
 
-class Log(Resource):
-
-    isLeaf = True
-
-    def __init__(self, log):
-        self.log = log
-
-    def render(self, request):
-        return json.dumps(self.log)
-
 class Root(Resource):
 
     def __init__(self):
         Resource.__init__(self)
-        self.log = []
         self.putChild("status", Status())
         self.putChild("follow", Follow())
         self.putChild("delay", Delay())
         self.putChild("partial", Partial())
         self.putChild("drop", Drop())
-        self.putChild("log", Log(self.log))
 
-    def getChild(self, request, name):
+    def getChild(self, name, request):
         return self
 
     def render(self, request):
