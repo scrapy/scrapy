@@ -15,6 +15,15 @@ Release notes
 - New default middleware named MetaRefreshMiddldeware that handles meta-refresh html tag redirections,
   MetaRefreshMiddldeware and RedirectMiddleware have different priorities to address #62
 
+0.16.5 (released 2013-05-30)
+----------------------------
+
+- obey request method when scrapy deploy is redirected to a new endpoint (:commit:`8c4fcee`)
+- fix inaccurate downloader middleware documentation. refs #280 (:commit:`40667cb`)
+- doc: remove links to diveintopython.org, which is no longer available. closes #246 (:commit:`bd58bfa`)
+- Find form nodes in invalid html5 documents (:commit:`e3d6945`)
+- Fix typo labeling attrs type bool instead of list (:commit:`a274276`)
+
 0.16.4 (released 2013-01-23)
 ----------------------------
 
