@@ -67,10 +67,14 @@ class Command(ScrapyCommand):
             import setuptools
         except ImportError:
             raise UsageError("setuptools not installed")
+
+        urllib2.install_opener(urllib2.build_opener(HTTPRedirectHandler))
+
         if opts.list_targets:
             for name, target in _get_targets().items():
                 print "%-20s %s" % (name, target['url'])
             return
+
         if opts.list_projects:
             target = _get_target(opts.list_projects)
             req = urllib2.Request(_url(target, 'listprojects.json'))
@@ -230,3 +234,24 @@ def _build_egg():
 def _create_default_setup_py(**kwargs):
     with open('setup.py', 'w') as f:
         f.write(_SETUP_PY_TEMPLATE % kwargs)
+
+
+class HTTPRedirectHandler(urllib2.HTTPRedirectHandler):
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        newurl = newurl.replace(' ', '%20')
+        if code in (301, 307):
+            return urllib2.Request(newurl,
+                                   data=req.get_data(),
+                                   headers=req.headers,
+                                   origin_req_host=req.get_origin_req_host(),
+                                   unverifiable=True)
+        elif code in (302, 303):
+            newheaders = dict((k, v) for k, v in req.headers.items()
+                              if k.lower() not in ("content-length", "content-type"))
+            return urllib2.Request(newurl,
+                                   headers=newheaders,
+                                   origin_req_host=req.get_origin_req_host(),
+                                   unverifiable=True)
+        else:
+            raise urllib2.HTTPError(req.get_full_url(), code, msg, headers, fp)
