@@ -64,4 +64,5 @@ class TestCloseSpider(TestCase):
         start = stats.get_value('start_time')
         stop = stats.get_value('finish_time')
         diff = stop - start
-        self.assertTrue(diff.total_seconds() >= close_on)
+        total_seconds = diff.seconds + diff.microseconds
+        self.assertTrue(total_seconds >= close_on)
