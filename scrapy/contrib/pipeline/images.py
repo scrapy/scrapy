@@ -13,7 +13,11 @@ from cStringIO import StringIO
 from collections import defaultdict
 
 from twisted.internet import defer, threads
-from PIL import Image
+
+try:
+    from PIL import Image
+except ImportError:
+    import Image
 
 from scrapy import log
 from scrapy.utils.misc import md5sum
