@@ -7,9 +7,8 @@ See documentation in docs/topics/extensions.rst
 from collections import defaultdict
 
 from twisted.internet import reactor
-from twisted.python import log as txlog
 
-from scrapy import signals, log
+from scrapy import signals
 
 
 class CloseSpider(object):
@@ -27,7 +26,7 @@ class CloseSpider(object):
         self.counter = defaultdict(int)
 
         if self.close_on.get('errorcount'):
-            txlog.addObserver(self.catch_log)
+            crawler.signals.connect(self.error_count, signal=signals.spider_error)
         if self.close_on.get('pagecount'):
             crawler.signals.connect(self.page_count, signal=signals.response_received)
         if self.close_on.get('timeout'):
@@ -40,13 +39,10 @@ class CloseSpider(object):
     def from_crawler(cls, crawler):
         return cls(crawler)
 
-    def catch_log(self, event):
-        if event.get('logLevel') == log.ERROR:
-            spider = event.get('spider')
-            if spider:
-                self.counter['errorcount'] += 1
-                if self.counter['errorcount'] == self.close_on['errorcount']:
-                    self.crawler.engine.close_spider(spider, 'closespider_errorcount')
+    def error_count(self, failure, response, spider):
+        self.counter['errorcount'] += 1
+        if self.counter['errorcount'] == self.close_on['errorcount']:
+            self.crawler.engine.close_spider(spider, 'closespider_errorcount')
 
     def page_count(self, response, request, spider):
         self.counter['pagecount'] += 1
