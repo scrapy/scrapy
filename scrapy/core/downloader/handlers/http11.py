@@ -12,6 +12,7 @@ from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.http import PotentialDataLoss
 from twisted.web.iweb import IBodyProducer
 from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.error import TimeoutError
 
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
@@ -49,20 +50,27 @@ class ScrapyAgent(object):
         self._pool = pool
 
     def download_request(self, request):
+        timeout = request.meta.get('download_timeout') or self._connectTimeout
         url = urldefrag(request.url)[0]
         method = request.method
         headers = TxHeaders(request.headers)
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
-        agent = self._get_agent(request)
+        agent = self._get_agent(request, timeout)
         start_time = time()
         d = agent.request(method, url, headers, bodyproducer)
-        d.addBoth(self._download_latency, request, start_time)
-        d.addCallback(self._agentrequest_downloaded, request)
-        d.addErrback(self._agentrequest_failed, request)
+        d.addBoth(self._both_cb, request, start_time, url, timeout)
+        d.addCallback(self._downloaded, request)
+        self._timeout_cl = reactor.callLater(timeout, d.cancel)
         return d
 
-    def _get_agent(self, request):
-        timeout = request.meta.get('download_timeout') or self._connectTimeout
+    def _both_cb(self, result, request, start_time, url, timeout):
+        request.meta['download_latency'] = time() - start_time
+        if self._timeout_cl.active():
+            self._timeout_cl.cancel()
+            return result
+        raise TimeoutError("Getting %s took longer than %s seconds." % (url, timeout))
+
+    def _get_agent(self, request, timeout):
         bindaddress = request.meta.get('bindaddress') or self._bindAddress
         proxy = request.meta.get('proxy')
         if proxy:
@@ -74,11 +82,7 @@ class ScrapyAgent(object):
         return self._Agent(reactor, contextFactory=self._contextFactory,
             connectTimeout=timeout, bindAddress=bindaddress, pool=self._pool)
 
-    def _download_latency(self, any_, request, start_time):
-        request.meta['download_latency'] = time() - start_time
-        return any_
-
-    def _agentrequest_downloaded(self, txresponse, request):
+    def _downloaded(self, txresponse, request):
         if txresponse.length == 0:
             return self._build_response(('', None), txresponse, request)
         finished = defer.Deferred()
@@ -94,11 +98,6 @@ class ScrapyAgent(object):
         headers = Headers(txresponse.headers.getAllRawHeaders())
         respcls = responsetypes.from_args(headers=headers, url=url)
         return respcls(url=url, status=status, headers=headers, body=body)
-
-    def _agentrequest_failed(self, failure, request):
-        # be clear it is an HTTP failure with new downloader
-        log.err(failure, 'HTTP11 failure: %s' % request)
-        return failure
 
 
 class _RequestBodyProducer(object):
