@@ -105,7 +105,7 @@ class HttpTestCase(unittest.TestCase):
         return d
 
     def test_timeout_download_from_spider(self):
-        request = Request(self.getURL('wait'), meta=dict(download_timeout=0.000001))
+        request = Request(self.getURL('wait'), meta=dict(download_timeout=0.1))
         d = self.download_request(request, BaseSpider('foo'))
         return self.assertFailure(d, defer.TimeoutError, error.TimeoutError)
 
