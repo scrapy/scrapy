@@ -1,9 +1,8 @@
-import twisted
-txver = twisted.__version__.split('.')
-if txver > (13, 0, 0):
+from scrapy import twisted_version
+if twisted_version > (13, 0, 0):
     from twisted.web import client
     from twisted.internet import endpoints
-if txver >= (11, 1, 0):
+if twisted_version >= (11, 1, 0):
     from . import client, endpoints
 else:
     from scrapy.exceptions import NotSupported

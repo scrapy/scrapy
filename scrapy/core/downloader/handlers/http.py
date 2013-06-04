@@ -1,25 +1,11 @@
-"""Download handlers for http and https schemes
-"""
-from twisted.internet import reactor
-from scrapy.utils.misc import load_object
+from scrapy import optional_features
+from .http10 import HTTP10DownloadHandler
+
+if 'http11' in optional_features:
+    from .http11 import HTTP11DownloadHandler as HTTPDownloadHandler
+else:
+    HTTPDownloadHandler = HTTP10DownloadHandler
 
 
-class HttpDownloadHandler(object):
-
-    def __init__(self, settings):
-        self.HTTPClientFactory = load_object(settings['DOWNLOADER_HTTPCLIENTFACTORY'])
-        self.ClientContextFactory = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
-
-    def download_request(self, request, spider):
-        """Return a deferred for the HTTP download"""
-        factory = self.HTTPClientFactory(request)
-        self._connect(factory)
-        return factory.deferred
-
-    def _connect(self, factory):
-        host, port = factory.host, factory.port
-        if factory.scheme == 'https':
-            return reactor.connectSSL(host, port, factory,
-                                      self.ClientContextFactory())
-        else:
-            return reactor.connectTCP(host, port, factory)
+# backwards compatibility
+HttpDownloadHandler = HTTP10DownloadHandler
