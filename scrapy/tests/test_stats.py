@@ -7,7 +7,7 @@ from scrapy.statscol import StatsCollector, DummyStatsCollector, JsonStatsCollec
 from scrapy.utils.test import get_crawler
 
 
-stats_file = '/tmp/dump.json'
+stats_file = tempfile.mkstemp(suffix='.json')[1]
 
 
 class StatsCollectorTest(unittest.TestCase):
