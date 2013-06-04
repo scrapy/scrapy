@@ -1,0 +1,2 @@
+This source files are adapted copies from Twisted trunk to support HTTP1.1
+handler under Twisted >= 11.1 and Twisted <= 13.0.0

@@ -6,13 +6,12 @@ from urlparse import urldefrag
 
 from zope.interface import implements
 from twisted.internet import defer, reactor, protocol
-from twisted.web.client import Agent, ProxyAgent, ResponseDone, \
-        ResponseFailed, HTTPConnectionPool
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.http import PotentialDataLoss
 from twisted.web.iweb import IBodyProducer
-from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
+from scrapy.xlib.tx import Agent, ProxyAgent, ResponseDone, \
+        ResponseFailed, HTTPConnectionPool, TCP4ClientEndpoint
 
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
