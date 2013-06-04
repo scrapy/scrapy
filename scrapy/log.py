@@ -142,3 +142,5 @@ def start_from_crawler(crawler):
         settings['LOG_ENCODING'], crawler)
     msg("Scrapy %s started (bot: %s)" % (scrapy.__version__, \
         settings['BOT_NAME']))
+    msg("Optional features available: %s" % ", ".join(scrapy.optional_features),
+        level=DEBUG)
