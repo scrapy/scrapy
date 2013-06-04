@@ -1,9 +1,10 @@
 import os
+import twisted
 
 from twisted.trial import unittest
 from twisted.protocols.policies import WrappingFactory
 from twisted.python.filepath import FilePath
-from twisted.internet import reactor, defer
+from twisted.internet import reactor, defer, error
 from twisted.web import server, static, util, resource
 from twisted.web.test.test_webclient import ForeverTakingResource, \
         NoLengthResource, HostHeaderResource, \
@@ -11,7 +12,9 @@ from twisted.web.test.test_webclient import ForeverTakingResource, \
 from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
-from scrapy.core.downloader.handlers.http import HttpDownloadHandler
+from scrapy.core.downloader.handlers.http import HTTPDownloadHandler, HttpDownloadHandler
+from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
+from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
@@ -46,6 +49,8 @@ class FileTestCase(unittest.TestCase):
 
 class HttpTestCase(unittest.TestCase):
 
+    download_handler_cls = HTTPDownloadHandler
+
     def setUp(self):
         name = self.mktemp()
         os.mkdir(name)
@@ -61,10 +66,14 @@ class HttpTestCase(unittest.TestCase):
         self.wrapper = WrappingFactory(self.site)
         self.port = reactor.listenTCP(0, self.wrapper, interface='127.0.0.1')
         self.portno = self.port.getHost().port
-        self.download_request = HttpDownloadHandler(Settings()).download_request
+        self.download_handler = self.download_handler_cls(Settings())
+        self.download_request = self.download_handler.download_request
 
+    @defer.inlineCallbacks
     def tearDown(self):
-        return self.port.stopListening()
+        yield self.port.stopListening()
+        if hasattr(self.download_handler, 'close'):
+            yield self.download_handler.close()
 
     def getURL(self, path):
         return "http://127.0.0.1:%d/%s" % (self.portno, path)
@@ -98,9 +107,9 @@ class HttpTestCase(unittest.TestCase):
         return d
 
     def test_timeout_download_from_spider(self):
-        request = Request(self.getURL('wait'), meta=dict(download_timeout=0.000001))
+        request = Request(self.getURL('wait'), meta=dict(download_timeout=0.1))
         d = self.download_request(request, BaseSpider('foo'))
-        return self.assertFailure(d, defer.TimeoutError)
+        return self.assertFailure(d, defer.TimeoutError, error.TimeoutError)
 
     def test_host_header_not_in_request_headers(self):
         def _test(response):
@@ -132,6 +141,23 @@ class HttpTestCase(unittest.TestCase):
         return d
 
 
+class DeprecatedHttpTestCase(HttpTestCase):
+    """HTTP 1.0 test case"""
+    download_handler_cls = HttpDownloadHandler
+
+
+class Http10TestCase(HttpTestCase):
+    """HTTP 1.0 test case"""
+    download_handler_cls = HTTP10DownloadHandler
+
+
+class Http11TestCase(HttpTestCase):
+    """HTTP 1.1 test case"""
+    download_handler_cls = HTTP11DownloadHandler
+    if 'http11' not in optional_features:
+        skip = 'HTTP1.1 not supported in twisted < 11.1.0'
+
+
 class UriResource(resource.Resource):
     """Return the full uri that was requested"""
 
@@ -143,16 +169,21 @@ class UriResource(resource.Resource):
 
 
 class HttpProxyTestCase(unittest.TestCase):
+    download_handler_cls = HTTPDownloadHandler
 
     def setUp(self):
         site = server.Site(UriResource(), timeout=None)
         wrapper = WrappingFactory(site)
         self.port = reactor.listenTCP(0, wrapper, interface='127.0.0.1')
         self.portno = self.port.getHost().port
-        self.download_request = HttpDownloadHandler(Settings()).download_request
+        self.download_handler = self.download_handler_cls(Settings())
+        self.download_request = self.download_handler.download_request
 
+    @defer.inlineCallbacks
     def tearDown(self):
-        return self.port.stopListening()
+        yield self.port.stopListening()
+        if hasattr(self.download_handler, 'close'):
+            yield self.download_handler.close()
 
     def getURL(self, path):
         return "http://127.0.0.1:%d/%s" % (self.portno, path)
@@ -175,6 +206,21 @@ class HttpProxyTestCase(unittest.TestCase):
 
         request = Request(self.getURL('path/to/resource'))
         return self.download_request(request, BaseSpider('foo')).addCallback(_test)
+
+
+class DeprecatedHttpProxyTestCase(unittest.TestCase):
+    """Old deprecated reference to http10 downloader handler"""
+    download_handler_cls = HttpDownloadHandler
+
+
+class Http10ProxyTestCase(HttpProxyTestCase):
+    download_handler_cls = HTTP10DownloadHandler
+
+
+class Http11ProxyTestCase(HttpProxyTestCase):
+    download_handler_cls = HTTP11DownloadHandler
+    if 'http11' not in optional_features:
+        skip = 'HTTP1.1 not supported in twisted < 11.1.0'
 
 
 class HttpDownloadHandlerMock(object):
@@ -240,7 +286,7 @@ class S3TestCase(unittest.TestCase):
                 'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
 
     def test_request_signing5(self):
-        # deletes an object from the 'johnsmith' bucket using the 
+        # deletes an object from the 'johnsmith' bucket using the
         # path-style and Date alternative.
         req = Request('s3://johnsmith/photos/puppy.jpg', \
                 method='DELETE', headers={
