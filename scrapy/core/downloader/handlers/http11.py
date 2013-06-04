@@ -21,7 +21,7 @@ from scrapy import log
 
 
 
-class Http11DownloadHandler(object):
+class HTTP11DownloadHandler(object):
 
     def __init__(self, settings):
         self._pool = HTTPConnectionPool(reactor, persistent=True)

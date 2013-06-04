@@ -12,8 +12,9 @@ from twisted.web.test.test_webclient import ForeverTakingResource, \
 from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
-from scrapy.core.downloader.handlers.http import HttpDownloadHandler
-from scrapy.core.downloader.handlers.http11 import Http11DownloadHandler
+from scrapy.core.downloader.handlers.http import HTTPDownloadHandler, HttpDownloadHandler
+from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
+from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
@@ -48,7 +49,7 @@ class FileTestCase(unittest.TestCase):
 
 class HttpTestCase(unittest.TestCase):
 
-    download_handler_cls = HttpDownloadHandler
+    download_handler_cls = HTTPDownloadHandler
 
     def setUp(self):
         name = self.mktemp()
@@ -140,11 +141,20 @@ class HttpTestCase(unittest.TestCase):
         return d
 
 
+class DeprecatedHttpTestCase(HttpTestCase):
+    """HTTP 1.0 test case"""
+    download_handler_cls = HttpDownloadHandler
+
+
+class Http10TestCase(HttpTestCase):
+    """HTTP 1.0 test case"""
+    download_handler_cls = HTTP10DownloadHandler
+
+
 class Http11TestCase(HttpTestCase):
     """HTTP 1.1 test case"""
-    download_handler_cls = Http11DownloadHandler
-
-    if twisted.__version__.split('.') < (11, 1, 0):
+    download_handler_cls = HTTP11DownloadHandler
+    if 'http11' not in optional_features:
         skip = 'HTTP1.1 not supported in twisted < 11.1.0'
 
 
@@ -159,8 +169,7 @@ class UriResource(resource.Resource):
 
 
 class HttpProxyTestCase(unittest.TestCase):
-
-    download_handler_cls = HttpDownloadHandler
+    download_handler_cls = HTTPDownloadHandler
 
     def setUp(self):
         site = server.Site(UriResource(), timeout=None)
@@ -199,10 +208,18 @@ class HttpProxyTestCase(unittest.TestCase):
         return self.download_request(request, BaseSpider('foo')).addCallback(_test)
 
 
-class Http11ProxyTestCase(HttpProxyTestCase):
-    download_handler_cls = Http11DownloadHandler
+class DeprecatedHttpProxyTestCase(unittest.TestCase):
+    """Old deprecated reference to http10 downloader handler"""
+    download_handler_cls = HttpDownloadHandler
 
-    if twisted.__version__.split('.') < (11, 1, 0):
+
+class Http10ProxyTestCase(HttpProxyTestCase):
+    download_handler_cls = HTTP10DownloadHandler
+
+
+class Http11ProxyTestCase(HttpProxyTestCase):
+    download_handler_cls = HTTP11DownloadHandler
+    if 'http11' not in optional_features:
         skip = 'HTTP1.1 not supported in twisted < 11.1.0'
 
 
