@@ -1,32 +1,42 @@
 """Download handlers for different schemes"""
 
+from twisted.internet import defer
 from scrapy.exceptions import NotSupported, NotConfigured
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
+from scrapy import signals
 
 
 class DownloadHandlers(object):
 
-    def __init__(self, settings):
+    def __init__(self, crawler):
         self._handlers = {}
         self._notconfigured = {}
-        handlers = settings.get('DOWNLOAD_HANDLERS_BASE')
-        handlers.update(settings.get('DOWNLOAD_HANDLERS', {}))
+        handlers = crawler.settings.get('DOWNLOAD_HANDLERS_BASE')
+        handlers.update(crawler.settings.get('DOWNLOAD_HANDLERS', {}))
         for scheme, clspath in handlers.iteritems():
             cls = load_object(clspath)
             try:
-                dh = cls(settings)
+                dh = cls(crawler.settings)
             except NotConfigured, ex:
                 self._notconfigured[scheme] = str(ex)
             else:
-                self._handlers[scheme] = dh.download_request
+                self._handlers[scheme] = dh
+
+        crawler.signals.connect(self._close, signals.engine_stopped)
 
     def download_request(self, request, spider):
         scheme = urlparse_cached(request).scheme
         try:
-            handler = self._handlers[scheme]
+            handler = self._handlers[scheme].download_request
         except KeyError:
             msg = self._notconfigured.get(scheme, \
                     'no handler available for that scheme')
             raise NotSupported("Unsupported URL scheme '%s': %s" % (scheme, msg))
         return handler(request, spider)
+
+    @defer.inlineCallbacks
+    def _close(self, *_a, **_kw):
+        for dh in self._handlers.values():
+            if hasattr(dh, 'close'):
+                yield dh.close()
