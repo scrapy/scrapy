@@ -1,4 +1,5 @@
 import os
+import twisted
 
 from twisted.trial import unittest
 from twisted.protocols.policies import WrappingFactory
@@ -143,6 +144,9 @@ class Http11TestCase(HttpTestCase):
     """HTTP 1.1 test case"""
     download_handler_cls = Http11DownloadHandler
 
+    if twisted.__version__.split('.') < (11, 1, 0):
+        skip = 'HTTP1.1 not supported in twisted < 11.1.0'
+
 
 class UriResource(resource.Resource):
     """Return the full uri that was requested"""
@@ -197,6 +201,9 @@ class HttpProxyTestCase(unittest.TestCase):
 
 class Http11ProxyTestCase(HttpProxyTestCase):
     download_handler_cls = Http11DownloadHandler
+
+    if twisted.__version__.split('.') < (11, 1, 0):
+        skip = 'HTTP1.1 not supported in twisted < 11.1.0'
 
 
 class HttpDownloadHandlerMock(object):
