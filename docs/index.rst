@@ -256,6 +256,7 @@ All the rest
 
    news
    contributing
+   related-projects
    versioning
    experimental/index
 
@@ -264,6 +265,9 @@ All the rest
 
 :doc:`contributing`
     Learn how to contribute to the Scrapy project.
+
+:doc:`related-projects`
+    See projects that add some nice features to Scrapy.
 
 :doc:`versioning`
     Understand Scrapy versioning and API stability.
