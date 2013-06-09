@@ -261,6 +261,14 @@ CrawlSpider
        described below. If multiple rules match the same link, the first one
        will be used, according to the order they're defined in this attribute.
 
+   This spider also exposes an overrideable method:
+
+   .. method:: parse_start_url(response)
+
+      This method is called for the start_urls responses. It allows to parse
+      the initial responses and must return either a 
+      :class:`~scrapy.item.Item` object, a :class:`~scrapy.http.Request` 
+      object, or an iterable containing any of them.
        
 Crawling rules
 ~~~~~~~~~~~~~~
