@@ -98,9 +98,9 @@ extensions and middlewares::
                 print "log is enabled!"
 
 In other words, settings can be accessed like a dict, but it's usually preferred
-to extract the setting in the format you need it to avoid type errors. In order
-to do that you'll have to use one of the methods provided the
-:class:`~scrapy.settings.Settings` API.
+to extract the setting in the format you need it to avoid type errors. Also
+there is a way to mark settings as required. In order to do that you'll have
+to use one of the methods provided the :class:`~scrapy.settings.Settings` API.
 
 Rationale for setting names
 ===========================

@@ -205,7 +205,7 @@ Settings API
            :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
        :type priority: string or int
 
-    .. method:: get(name, default=None)
+    .. method:: get(name, default=None, required=False)
 
        Get a setting value without affecting its original type.
 
@@ -215,7 +215,11 @@ Settings API
        :param default: the value to return if no setting is found
        :type default: any
 
-    .. method:: getbool(name, default=False)
+       :param required: if ``True`` and it returns ``None`` will raise a
+            :class:`~scrapy.exceptions.NotConfigured` exception
+       :type required: boolean
+
+    .. method:: getbool(name, default=False, required=False)
 
        Get a setting value as a boolean. For example, both ``1`` and ``'1'``, and
        ``True`` return ``True``, while ``0``, ``'0'``, ``False`` and ``None``
@@ -230,7 +234,11 @@ Settings API
        :param default: the value to return if no setting is found
        :type default: any
 
-    .. method:: getint(name, default=0)
+       :param required: if ``True`` and it returns ``None`` will raise a
+            :class:`~scrapy.exceptions.NotConfigured` exception
+       :type required: boolean
+
+    .. method:: getint(name, default=0, required=False)
 
        Get a setting value as an int
 
@@ -240,7 +248,11 @@ Settings API
        :param default: the value to return if no setting is found
        :type default: any
 
-    .. method:: getfloat(name, default=0.0)
+       :param required: if ``True`` and it returns ``None`` will raise a
+            :class:`~scrapy.exceptions.NotConfigured` exception
+       :type required: boolean
+
+    .. method:: getfloat(name, default=0.0, required=False)
 
        Get a setting value as a float
 
@@ -250,7 +262,11 @@ Settings API
        :param default: the value to return if no setting is found
        :type default: any
 
-    .. method:: getlist(name, default=None)
+       :param required: if ``True`` and it returns ``None`` will raise a
+            :class:`~scrapy.exceptions.NotConfigured` exception
+       :type required: boolean
+
+    .. method:: getlist(name, default=None, required=False)
 
        Get a setting value as a list. If the setting original type is a list it
        will be returned verbatim. If it's a string it will be split by ",".
@@ -263,6 +279,10 @@ Settings API
 
        :param default: the value to return if no setting is found
        :type default: any
+
+       :param required: if ``True`` and it returns ``None`` will raise a
+            :class:`~scrapy.exceptions.NotConfigured` exception
+       :type required: boolean
 
 .. _topics-api-signals:
 
