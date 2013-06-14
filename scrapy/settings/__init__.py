@@ -1,5 +1,7 @@
 import json
-from . import default_settings
+
+from scrapy.settings import default_settings
+from scrapy.exceptions import NotConfigured
 
 
 class Settings(object):
@@ -13,23 +15,26 @@ class Settings(object):
             return self.values[opt_name]
         return getattr(self.global_defaults, opt_name, None)
 
-    def get(self, name, default=None):
-        return self[name] if self[name] is not None else default
+    def get(self, name, default=None, required=False):
+        value = self[name] if self[name] is not None else default
+        if required and value is None:
+            raise NotConfigured()
+        return value
 
-    def getbool(self, name, default=False):
+    def getbool(self, name, default=False, required=False):
         """
         True is: 1, '1', True
         False is: 0, '0', False, None
         """
         return bool(int(self.get(name, default)))
 
-    def getint(self, name, default=0):
+    def getint(self, name, default=0, required=False):
         return int(self.get(name, default))
 
-    def getfloat(self, name, default=0.0):
+    def getfloat(self, name, default=0.0, required=False):
         return float(self.get(name, default))
 
-    def getlist(self, name, default=None):
+    def getlist(self, name, default=None, required=False):
         value = self.get(name)
         if value is None:
             return default or []
@@ -38,7 +43,7 @@ class Settings(object):
         else:
             return str(value).split(',')
 
-    def getdict(self, name, default=None):
+    def getdict(self, name, default=None, required=False):
         value = self.get(name)
         if value is None:
             return default or {}
