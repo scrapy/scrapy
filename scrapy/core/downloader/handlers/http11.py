@@ -30,7 +30,7 @@ class HTTP11DownloadHandler(object):
 
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
-        agent = ScrapyAgent(contextFactory=self._contextFactory, pool=self._pool)
+        agent = ScrapyAgent(spider, contextFactory=self._contextFactory, pool=self._pool)
         return agent.download_request(request)
 
     def close(self):
@@ -42,7 +42,8 @@ class ScrapyAgent(object):
     _Agent = Agent
     _ProxyAgent = ProxyAgent
 
-    def __init__(self, contextFactory=None, connectTimeout=10, bindAddress=None, pool=None):
+    def __init__(self, spider, contextFactory=None, connectTimeout=10, bindAddress=None, pool=None):
+        self._spider = spider
         self._contextFactory = contextFactory
         self._connectTimeout = connectTimeout
         self._bindAddress = bindAddress
@@ -84,9 +85,10 @@ class ScrapyAgent(object):
     def _downloaded(self, txresponse, request):
         if txresponse.length == 0:
             return self._build_response(('', None), txresponse, request)
+        limit = self._get_response_size_limit(self._spider, request)
         finished = defer.Deferred()
         finished.addCallback(self._build_response, txresponse, request)
-        txresponse.deliverBody(_ResponseReader(finished))
+        txresponse.deliverBody(_ResponseReader(finished, limit))
         return finished
 
     def _build_response(self, (body, flag), txresponse, request):
@@ -98,6 +100,11 @@ class ScrapyAgent(object):
         respcls = responsetypes.from_args(headers=headers, url=url)
         return respcls(url=url, status=status, headers=headers, body=body)
 
+    def _get_response_size_limit(self, spider, request):
+        get_response_size_limit = getattr(spider, 'get_response_size_limit', None)
+        if get_response_size_limit:
+            return get_response_size_limit(request)
+        return -1
 
 class _RequestBodyProducer(object):
     implements(IBodyProducer)
@@ -119,12 +126,18 @@ class _RequestBodyProducer(object):
 
 class _ResponseReader(protocol.Protocol):
 
-    def __init__(self, finished):
+    def __init__(self, finished, size_limit):
         self._finished = finished
         self._bodybuf = StringIO()
+        self._bytes_received = 0
+        self._size_limit = size_limit
 
     def dataReceived(self, bodyBytes):
-        self._bodybuf.write(bodyBytes)
+        self._bytes_received += len(bodyBytes)
+        if self._size_limit != -1 and self._bytes_received >= self._size_limit:
+            self.transport.loseConnection()
+        else:
+            self._bodybuf.write(bodyBytes)
 
     def connectionLost(self, reason):
         body = self._bodybuf.getvalue()
