@@ -48,27 +48,6 @@ class ScrapyAgent(object):
         self._bindAddress = bindAddress
         self._pool = pool
 
-    def download_request(self, request):
-        timeout = request.meta.get('download_timeout') or self._connectTimeout
-        url = urldefrag(request.url)[0]
-        method = request.method
-        headers = TxHeaders(request.headers)
-        bodyproducer = _RequestBodyProducer(request.body) if request.body else None
-        agent = self._get_agent(request, timeout)
-        start_time = time()
-        d = agent.request(method, url, headers, bodyproducer)
-        d.addBoth(self._both_cb, request, start_time, url, timeout)
-        d.addCallback(self._downloaded, request)
-        self._timeout_cl = reactor.callLater(timeout, d.cancel)
-        return d
-
-    def _both_cb(self, result, request, start_time, url, timeout):
-        request.meta['download_latency'] = time() - start_time
-        if self._timeout_cl.active():
-            self._timeout_cl.cancel()
-            return result
-        raise TimeoutError("Getting %s took longer than %s seconds." % (url, timeout))
-
     def _get_agent(self, request, timeout):
         bindaddress = request.meta.get('bindaddress') or self._bindAddress
         proxy = request.meta.get('proxy')
@@ -81,22 +60,53 @@ class ScrapyAgent(object):
         return self._Agent(reactor, contextFactory=self._contextFactory,
             connectTimeout=timeout, bindAddress=bindaddress, pool=self._pool)
 
-    def _downloaded(self, txresponse, request):
+    def download_request(self, request):
+        timeout = request.meta.get('download_timeout') or self._connectTimeout
+        agent = self._get_agent(request, timeout)
+
+        # request details
+        url = urldefrag(request.url)[0]
+        method = request.method
+        headers = TxHeaders(request.headers)
+        bodyproducer = _RequestBodyProducer(request.body) if request.body else None
+
+        start_time = time()
+        d = agent.request(method, url, headers, bodyproducer)
+        # check download timeout
+        self._timeout_cl = reactor.callLater(timeout, d.cancel)
+        d.addBoth(self._cb_timeout, request, url, timeout)
+        # set download latency
+        d.addCallback(self._cb_latency, request, start_time)
+        # response body is ready to be consumed
+        d.addCallback(self._cb_bodyready, request)
+        d.addCallback(self._cb_bodydone, request, url)
+        return d
+
+    def _cb_timeout(self, result, request, url, timeout):
+        if self._timeout_cl.active():
+            self._timeout_cl.cancel()
+            return result
+        raise TimeoutError("Getting %s took longer than %s seconds." % (url, timeout))
+
+    def _cb_latency(self, result, request, start_time):
+        request.meta['download_latency'] = time() - start_time
+        return result
+
+    def _cb_bodyready(self, txresponse, request):
+        # deliverBody hangs for responses without body
         if txresponse.length == 0:
-            return self._build_response(('', None), txresponse, request)
+            return txresponse, '', None
+
         finished = defer.Deferred()
-        finished.addCallback(self._build_response, txresponse, request)
-        txresponse.deliverBody(_ResponseReader(finished))
+        txresponse.deliverBody(_ResponseReader(finished, txresponse, request))
         return finished
 
-    def _build_response(self, (body, flag), txresponse, request):
-        if flag is not None:
-            request.meta[flag] = True
-        url = urldefrag(request.url)[0]
+    def _cb_bodydone(self, result, request, url):
+        txresponse, body, flags = result
         status = int(txresponse.code)
         headers = Headers(txresponse.headers.getAllRawHeaders())
         respcls = responsetypes.from_args(headers=headers, url=url)
-        return respcls(url=url, status=status, headers=headers, body=body)
+        return respcls(url=url, status=status, headers=headers, body=body, flags=flags)
 
 
 class _RequestBodyProducer(object):
@@ -119,8 +129,10 @@ class _RequestBodyProducer(object):
 
 class _ResponseReader(protocol.Protocol):
 
-    def __init__(self, finished):
+    def __init__(self, finished, txresponse, request):
         self._finished = finished
+        self._txresponse = txresponse
+        self._request = request
         self._bodybuf = StringIO()
 
     def dataReceived(self, bodyBytes):
@@ -129,8 +141,8 @@ class _ResponseReader(protocol.Protocol):
     def connectionLost(self, reason):
         body = self._bodybuf.getvalue()
         if reason.check(ResponseDone):
-            self._finished.callback((body, None))
+            self._finished.callback((self._txresponse, body, None))
         elif reason.check(PotentialDataLoss, ResponseFailed):
-            self._finished.callback((body, 'partial_download'))
+            self._finished.callback((self._txresponse, body, ['partial']))
         else:
             self._finished.errback(reason)
