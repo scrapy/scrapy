@@ -17,8 +17,6 @@ from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import _parse
 from scrapy.utils.misc import load_object
-from scrapy import log
-
 
 
 class HTTP11DownloadHandler(object):
@@ -84,9 +82,10 @@ class ScrapyAgent(object):
     def _downloaded(self, txresponse, request):
         if txresponse.length == 0:
             return self._build_response(('', None), txresponse, request)
+        limit = request.meta.get('download_sizelimit', None)
         finished = defer.Deferred()
         finished.addCallback(self._build_response, txresponse, request)
-        txresponse.deliverBody(_ResponseReader(finished))
+        txresponse.deliverBody(_ResponseReader(finished, limit))
         return finished
 
     def _build_response(self, (body, flag), txresponse, request):
@@ -97,7 +96,6 @@ class ScrapyAgent(object):
         headers = Headers(txresponse.headers.getAllRawHeaders())
         respcls = responsetypes.from_args(headers=headers, url=url)
         return respcls(url=url, status=status, headers=headers, body=body)
-
 
 class _RequestBodyProducer(object):
     implements(IBodyProducer)
@@ -119,12 +117,18 @@ class _RequestBodyProducer(object):
 
 class _ResponseReader(protocol.Protocol):
 
-    def __init__(self, finished):
+    def __init__(self, finished, size_limit):
         self._finished = finished
         self._bodybuf = StringIO()
+        self._bytes_received = 0
+        self._size_limit = size_limit
 
     def dataReceived(self, bodyBytes):
-        self._bodybuf.write(bodyBytes)
+        self._bytes_received += len(bodyBytes)
+        if self._bytes_received < self._size_limit:
+            self._bodybuf.write(bodyBytes)
+        else:
+            self.transport.loseConnection()
 
     def connectionLost(self, reason):
         body = self._bodybuf.getvalue()
