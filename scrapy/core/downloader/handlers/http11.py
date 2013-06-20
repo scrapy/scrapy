@@ -72,14 +72,14 @@ class ScrapyAgent(object):
 
         start_time = time()
         d = agent.request(method, url, headers, bodyproducer)
-        # check download timeout
-        self._timeout_cl = reactor.callLater(timeout, d.cancel)
-        d.addBoth(self._cb_timeout, request, url, timeout)
         # set download latency
         d.addCallback(self._cb_latency, request, start_time)
         # response body is ready to be consumed
         d.addCallback(self._cb_bodyready, request)
         d.addCallback(self._cb_bodydone, request, url)
+        # check download timeout
+        d.addBoth(self._cb_timeout, request, url, timeout)
+        self._timeout_cl = reactor.callLater(timeout, d.cancel)
         return d
 
     def _cb_timeout(self, result, request, url, timeout):
@@ -97,9 +97,12 @@ class ScrapyAgent(object):
         if txresponse.length == 0:
             return txresponse, '', None
 
-        finished = defer.Deferred()
-        txresponse.deliverBody(_ResponseReader(finished, txresponse, request))
-        return finished
+        def _cancel(_):
+            txresponse._transport._producer.loseConnection()
+
+        d = defer.Deferred(_cancel)
+        txresponse.deliverBody(_ResponseReader(d, txresponse, request))
+        return d
 
     def _cb_bodydone(self, result, request, url):
         txresponse, body, flags = result
@@ -139,6 +142,8 @@ class _ResponseReader(protocol.Protocol):
         self._bodybuf.write(bodyBytes)
 
     def connectionLost(self, reason):
+        if self._finished.called:
+            return
         body = self._bodybuf.getvalue()
         if reason.check(ResponseDone):
             self._finished.callback((self._txresponse, body, None))

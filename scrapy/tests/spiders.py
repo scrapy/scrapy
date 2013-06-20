@@ -45,15 +45,16 @@ class DelaySpider(MetaSpider):
 
     name = 'delay'
 
-    def __init__(self, n=1, *args, **kwargs):
+    def __init__(self, n=1, b=0, *args, **kwargs):
         super(DelaySpider, self).__init__(*args, **kwargs)
         self.n = n
+        self.b = b
         self.t1 = self.t2 = self.t2_err = 0
 
     def start_requests(self):
         self.t1 = time.time()
-        yield Request("http://localhost:8998/delay?n=%s" % self.n, \
-            callback=self.parse, errback=self.errback)
+        url = "http://localhost:8998/delay?n=%s&b=%s" % (self.n, self.b)
+        yield Request(url, callback=self.parse, errback=self.errback)
 
     def parse(self, response):
         self.t2 = time.time()

@@ -51,6 +51,13 @@ class CrawlTestCase(TestCase):
         self.assertTrue(spider.t2 == 0)
         self.assertTrue(spider.t2_err > 0)
         self.assertTrue(spider.t2_err > spider.t1)
+        # server hangs after receiving response headers
+        spider = DelaySpider(n=0.5, b=1)
+        yield docrawl(spider, {"DOWNLOAD_TIMEOUT": 0.35})
+        self.assertTrue(spider.t1 > 0)
+        self.assertTrue(spider.t2 == 0)
+        self.assertTrue(spider.t2_err > 0)
+        self.assertTrue(spider.t2_err > spider.t1)
 
     @defer.inlineCallbacks
     def test_retry_503(self):
