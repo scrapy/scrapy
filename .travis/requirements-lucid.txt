@@ -1,6 +1,7 @@
 # travis workers uses openssl 1.0 that fails for pyOpenSSL < 0.13
-pyOpenSSL
+pyOpenSSL==0.13
 lxml==2.2.4
 twisted==10.0.0
 boto==1.9b
+Pillow<2.0
 .
