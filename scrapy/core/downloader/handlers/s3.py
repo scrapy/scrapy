@@ -15,7 +15,7 @@ class _v19_S3Connection(S3Connection):
 
 class _v20_S3Connection(S3Connection):
     """A dummy S3Connection wrapper that doesn't do any syncronous download"""
-    def _mexe(self, http_request, *args):
+    def _mexe(self, http_request, *args, **kwargs):
         http_request.authorize(connection=self)
         return http_request.headers
 
