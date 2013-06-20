@@ -58,6 +58,7 @@ class HttpTestCase(unittest.TestCase):
         r = static.File(name)
         r.putChild("redirect", util.Redirect("/file"))
         r.putChild("wait", ForeverTakingResource())
+        r.putChild("hang-after-headers", ForeverTakingResource(write=True))
         r.putChild("nolength", NoLengthResource())
         r.putChild("host", HostHeaderResource())
         r.putChild("payload", PayloadResource())
@@ -106,10 +107,18 @@ class HttpTestCase(unittest.TestCase):
         d.addCallback(self.assertEquals, 302)
         return d
 
+    @defer.inlineCallbacks
     def test_timeout_download_from_spider(self):
-        request = Request(self.getURL('wait'), meta=dict(download_timeout=0.1))
-        d = self.download_request(request, BaseSpider('foo'))
-        return self.assertFailure(d, defer.TimeoutError, error.TimeoutError)
+        spider = BaseSpider('foo')
+        meta = {'download_timeout': 0.2}
+        # client connects but no data is received
+        request = Request(self.getURL('wait'), meta=meta)
+        d = self.download_request(request, spider)
+        yield self.assertFailure(d, defer.TimeoutError, error.TimeoutError)
+        # client connects, server send headers and some body bytes but hangs
+        request = Request(self.getURL('hang-after-headers'), meta=meta)
+        d = self.download_request(request, spider)
+        yield self.assertFailure(d, defer.TimeoutError, error.TimeoutError)
 
     def test_host_header_not_in_request_headers(self):
         def _test(response):
