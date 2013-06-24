@@ -396,6 +396,19 @@ class XPathItemLoaderTest(unittest.TestCase):
         l.add_xpath('name', '//div/text()', re='ma')
         self.assertEqual(l.get_output_value('name'), [u'Ma'])
 
+    def test_add_xpath_iter_fields(self):
+        l = TestXPathItemLoader(response=self.response)
+        l.add_xpath(None, dict(url='id("id")/text()', summary='//p/text()'))
+        self.assertEqual(l.get_output_value('url'), [u'marta'])
+        self.assertEqual(l.get_output_value('summary'), [u'paragraph'])
+
+    def test_replace_xpath_iter_fields(self):
+        l = TestXPathItemLoader(response=self.response)
+        l.add_xpath(None, dict(url='id("id")/text()'))
+        self.assertEqual(l.get_output_value('url'), [u'marta'])
+        l.replace_xpath(None, dict(url='//p/text()'))
+        self.assertEqual(l.get_output_value('url'), [u'paragraph'])
+
     def test_replace_xpath(self):
         l = TestXPathItemLoader(response=self.response)
         self.assert_(l.selector)
