@@ -56,6 +56,24 @@ class ItemLoaderTest(unittest.TestCase):
         item = il.load_item()
         self.assertEqual(item['name'], [u'Marta'])
 
+    def test_load_values_using_default_loader(self):
+        i = TestItem()
+        i['summary'] = u'lala'
+        il = ItemLoader(item=TestItem(), values=i)
+        il.add_value('name', u'marta')
+        item = il.load_item()
+        self.assertEqual(item['summary'], [u'lala'])
+        self.assertEqual(item['name'], [u'marta'])
+
+    def test_load_values_using_custom_loader(self):
+        i = TestItem()
+        i['summary'] = u'lala'
+        il = TestItemLoader(item=TestItem(), values=i)
+        il.add_value('name', u'marta')
+        item = il.load_item()
+        self.assertEqual(item['summary'], [u'lala'])
+        self.assertEqual(item['name'], [u'Marta'])
+
     def test_add_value(self):
         il = TestItemLoader()
         il.add_value('name', u'marta')
@@ -390,6 +408,15 @@ class XPathItemLoaderTest(unittest.TestCase):
         self.assert_(l.selector)
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
+
+    def test_load_values(self):
+        i = TestItem()
+        i['summary'] = u'lala'
+        il = TestXPathItemLoader(response=self.response, item=TestItem(), values=i)
+        il.add_value('name', u'marta')
+        item = il.load_item()
+        self.assertEqual(item['summary'], [u'lala'])
+        self.assertEqual(item['name'], [u'Marta'])
 
     def test_add_xpath_re(self):
         l = TestXPathItemLoader(response=self.response)
