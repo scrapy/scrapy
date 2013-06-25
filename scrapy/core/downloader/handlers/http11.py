@@ -78,8 +78,8 @@ class ScrapyAgent(object):
         d.addCallback(self._cb_bodyready, request)
         d.addCallback(self._cb_bodydone, request, url)
         # check download timeout
-        d.addBoth(self._cb_timeout, request, url, timeout)
         self._timeout_cl = reactor.callLater(timeout, d.cancel)
+        d.addBoth(self._cb_timeout, request, url, timeout)
         return d
 
     def _cb_timeout(self, result, request, url, timeout):
