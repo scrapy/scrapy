@@ -362,8 +362,6 @@ In order to use this policy, set:
 
 * :setting:`HTTPCACHE_POLICY` to ``scrapy.contrib.httpcache.RFC2616Policy``
 
-This is the default cache policy.
-
 
 .. _httpcache-storage-dbm:
 
