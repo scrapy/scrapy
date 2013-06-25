@@ -15,25 +15,32 @@ Run Scrapy from a script
 You can use the :ref:`API <topics-api>` to run Scrapy from a script, instead of
 the typical way of running Scrapy via ``scrapy crawl``.
 
-What follows is a working example of how to do that, using the `testspiders`_
-project as example. Remember that Scrapy is built on top of the Twisted
+Remember that Scrapy is built on top of the Twisted
 asynchronous networking library, so you need run it inside the Twisted reactor.
+
+Note that you will also have to shutdown the Twisted reactor yourself after the
+spider is finished. This can be achieved by connecting a handler to the
+``signals.spider_closed`` signal.
+
+What follows is a working example of how to do that, using the `testspiders`_
+project as example.
 
 ::
 
     from twisted.internet import reactor
     from scrapy.crawler import Crawler
     from scrapy.settings import Settings
-    from scrapy import log
+    from scrapy import log, signals
     from testspiders.spiders.followall import FollowAllSpider
 
     spider = FollowAllSpider(domain='scrapinghub.com')
     crawler = Crawler(Settings())
+    crawler.signals.connect(reactor.stop, signal=signals.spider_closed)
     crawler.configure()
     crawler.crawl(spider)
     crawler.start()
     log.start()
-    reactor.run() # the script will block here
+    reactor.run() # the script will block here until the spider_closed signal was sent
 
 .. seealso:: `Twisted Reactor Overview`_.
 
@@ -60,7 +67,7 @@ Here is an example, using the `testspiders`_ project:
         crawler.configure()
         crawler.crawl(spider)
         crawler.start()
-        
+
     for domain in ['scrapinghub.com', 'insophia.com']:
         setup_crawler(domain)
     log.start()
