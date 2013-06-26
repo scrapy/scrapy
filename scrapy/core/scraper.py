@@ -162,8 +162,6 @@ class Scraper(object):
         from the given spider
         """
         if isinstance(output, Request):
-            self.signals.send_catch_log(signal=signals.request_received, request=output, \
-                spider=spider)
             self.crawler.engine.crawl(request=output, spider=spider)
         elif isinstance(output, BaseItem):
             self.slot.itemproc_size += 1
