@@ -95,7 +95,7 @@ class CrawlerRun(object):
         self.crawler.install()
         self.crawler.configure()
         self.crawler.signals.connect(self.item_scraped, signals.item_scraped)
-        self.crawler.signals.connect(self.request_received, signals.request_received)
+        self.crawler.signals.connect(self.request_scheduled, signals.request_scheduled)
         self.crawler.signals.connect(self.response_downloaded, signals.response_downloaded)
         self.crawler.crawl(self.spider)
         self.crawler.start()
@@ -122,7 +122,7 @@ class CrawlerRun(object):
     def item_scraped(self, item, spider, response):
         self.itemresp.append((item, response))
 
-    def request_received(self, request, spider):
+    def request_scheduled(self, request, spider):
         self.reqplug.append((request, spider))
 
     def response_downloaded(self, response, spider):
@@ -143,21 +143,20 @@ class EngineTest(unittest.TestCase):
         self.run = CrawlerRun()
         yield self.run.run()
         self._assert_visited_urls()
-        self._assert_received_requests()
+        self._assert_scheduled_requests()
         self._assert_downloaded_responses()
         self._assert_scraped_items()
         self._assert_signals_catched()
 
     def _assert_visited_urls(self):
-        must_be_visited = ["/", "/redirect", "/redirected", 
+        must_be_visited = ["/", "/redirect", "/redirected",
                            "/item1.html", "/item2.html", "/item999.html"]
         urls_visited = set([rp[0].url for rp in self.run.respplug])
         urls_expected = set([self.run.geturl(p) for p in must_be_visited])
         assert urls_expected <= urls_visited, "URLs not visited: %s" % list(urls_expected - urls_visited)
 
-    def _assert_received_requests(self):
-        # 3 requests should be received from the spider. start_urls and redirects don't count
-        self.assertEqual(3, len(self.run.reqplug))
+    def _assert_scheduled_requests(self):
+        self.assertEqual(6, len(self.run.reqplug))
 
         paths_expected = ['/item999.html', '/item2.html', '/item1.html']
 
