@@ -1,6 +1,5 @@
 import sys
 import os
-import weakref
 import shutil
 
 from zope.interface.verify import verifyObject
@@ -9,7 +8,6 @@ from twisted.trial import unittest
 
 # ugly hack to avoid cyclic imports of scrapy.spider when running this test
 # alone
-import scrapy.spider
 from scrapy.interfaces import ISpiderManager
 from scrapy.spidermanager import SpiderManager
 from scrapy.http import Request
@@ -36,7 +34,7 @@ class SpiderManagerTest(unittest.TestCase):
 
     def test_list(self):
         self.assertEqual(set(self.spiderman.list()),
-            set(['spider1', 'spider2', 'spider3']))
+            set(['spider1', 'spider2', 'spider3', 'spider4']))
 
     def test_create(self):
         spider1 = self.spiderman.create("spider1")
@@ -66,3 +64,7 @@ class SpiderManagerTest(unittest.TestCase):
     def test_load_base_spider(self):
         self.spiderman = SpiderManager(['scrapy.tests.test_spidermanager.test_spiders.spider0'])
         assert len(self.spiderman._spiders) == 0
+
+    def test_load_from_crawler(self):
+        spider = self.spiderman.create('spider4', a='OK')
+        self.assertEqual(spider.a, 'OK')
