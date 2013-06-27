@@ -174,6 +174,8 @@ class ExecutionEngine(object):
         self.slots[spider].nextcall.schedule()
 
     def schedule(self, request, spider):
+        self.signals.send_catch_log(signal=signals.request_scheduled,
+                request=request, spider=spider)
         return self.slots[spider].scheduler.enqueue_request(request)
 
     def download(self, request, spider):
