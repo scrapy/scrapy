@@ -29,10 +29,10 @@ class CrawlTestCase(TestCase):
     @defer.inlineCallbacks
     def test_delay(self):
         spider = FollowAllSpider()
-        yield docrawl(spider, {"DOWNLOAD_DELAY": 0.3})
+        yield docrawl(spider, {"DOWNLOAD_DELAY": 1})
         t = spider.times[0]
         for t2 in spider.times[1:]:
-            self.assertTrue(t2-t > 0.15, "download delay too small: %s" % (t2-t))
+            self.assertTrue(t2-t > 0.45, "download delay too small: %s" % (t2-t))
             t = t2
 
     @defer.inlineCallbacks
