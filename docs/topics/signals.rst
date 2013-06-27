@@ -181,23 +181,6 @@ spider_error
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
 
-request_scheduled
-----------------
-
-.. signal:: request_scheduled
-.. function:: request_scheduled(request, spider)
-
-    Sent when the engine schedule a :class:`~scrapy.http.Request`.
-
-    It will receive the requests generated from middlewares.
-    This signal does not support returning deferreds from their handlers.
-
-    :param request: the request scheduled
-    :type request: :class:`~scrapy.http.Request` object
-
-    :param spider: the spider which generated the original request
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
-
 response_received
 -----------------
 
