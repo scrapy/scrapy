@@ -181,22 +181,6 @@ spider_error
     :type spider: :class:`~scrapy.spider.BaseSpider` object
 
 
-request_received
-----------------
-
-.. signal:: request_received
-.. function:: request_received(request, spider)
-
-    Sent when the engine receives a :class:`~scrapy.http.Request` from a spider.
-
-    This signal does not support returning deferreds from their handlers.
-
-    :param request: the request received
-    :type request: :class:`~scrapy.http.Request` object
-
-    :param spider: the spider which generated the request
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
-
 response_received
 -----------------
 

@@ -2,7 +2,7 @@ import os
 import json
 from os.path import join, exists
 
-from scrapy.utils.pqueue import PriorityQueue
+from queuelib import PriorityQueue
 from scrapy.utils.reqser import request_to_dict, request_from_dict
 from scrapy.utils.misc import load_object
 from scrapy.utils.job import job_dir

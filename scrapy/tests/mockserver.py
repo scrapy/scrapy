@@ -1,33 +1,17 @@
-import json, random, urllib
-from time import time
-from twisted.web.server import Site
+import sys, time, random, urllib
+from subprocess import Popen, PIPE
+from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
 from twisted.internet import reactor
+from twisted.internet.task import deferLater
 
-
-_id = lambda x: x
-_request_args = {
-    "args": _id,
-    "clientproto": _id,
-    "requestHeaders": lambda x: x._rawHeaders,
-    "responseHeaders": lambda x: x._rawHeaders,
-    "method": _id,
-    "path": _id,
-    "uri": _id,
-}
-
-def encode_request(request):
-    """Encode request into a JSON-serializable type"""
-    d = {"time": time()}
-    for k, func in _request_args.iteritems():
-        d[k] = func(getattr(request, k))
-    return d
 
 def getarg(request, name, default=None, type=str):
     if name in request.args:
         return type(request.args[name][0])
     else:
         return default
+
 
 class Follow(Resource):
 
@@ -40,8 +24,8 @@ class Follow(Resource):
         n = getarg(request, "n", total, type=int)
         if order == "rand":
             nlist = [random.randint(1, total) for _ in range(show)]
-        else: # order == "desc"
-            nlist = range(n, max(n-show, 0), -1)
+        else:  # order == "desc"
+            nlist = range(n, max(n - show, 0), -1)
 
         s = """<html> <head></head> <body>"""
         args = request.args.copy()
@@ -52,32 +36,106 @@ class Follow(Resource):
         s += """</body>"""
         return s
 
-class Log(Resource):
+
+class DeferMixin(Resource):
+
+    def deferRequest(self, request, delay, f, *a, **kw):
+        def _cancelrequest(_):
+            # silence CancelledError
+            d.addErrback(lambda _: None)
+            d.cancel()
+        d = deferLater(reactor, delay, f, *a, **kw)
+        request.notifyFinish().addErrback(_cancelrequest)
+        return d
+
+
+class Delay(DeferMixin, Resource):
 
     isLeaf = True
 
-    def __init__(self, log):
-        self.log = log
+    def render_GET(self, request):
+        n = getarg(request, "n", 1, type=float)
+        b = getarg(request, "b", 1, type=int)
+        if b:
+            # send headers now and delay body
+            request.write('')
+        self.deferRequest(request, n, self._delayedRender, request, n)
+        return NOT_DONE_YET
 
-    def render(self, request):
-        return json.dumps(self.log)
+    def _delayedRender(self, request, n):
+        request.write("Response delayed for %0.3f seconds\n" % n)
+        request.finish()
+
+
+class Status(Resource):
+
+    isLeaf = True
+
+    def render_GET(self, request):
+        n = getarg(request, "n", 200, type=int)
+        request.setResponseCode(n)
+        return ""
+
+
+class Partial(DeferMixin, Resource):
+
+    isLeaf = True
+
+    def render_GET(self, request):
+        request.setHeader("Content-Length", "1024")
+        self.deferRequest(request, 0, self._delayedRender, request)
+        return NOT_DONE_YET
+
+    def _delayedRender(self, request):
+        request.write("partial content\n")
+        request.finish()
+
+
+class Drop(Partial):
+
+    def _delayedRender(self, request):
+        request.write("this connection will be dropped\n")
+        request.channel.transport.loseConnection()
+        request.finish()
+
 
 class Root(Resource):
 
     def __init__(self):
         Resource.__init__(self)
-        self.log = []
+        self.putChild("status", Status())
         self.putChild("follow", Follow())
-        self.putChild("log", Log(self.log))
+        self.putChild("delay", Delay())
+        self.putChild("partial", Partial())
+        self.putChild("drop", Drop())
 
-    def getChild(self, request, name):
+    def getChild(self, name, request):
         return self
 
     def render(self, request):
         return 'Scrapy mock HTTP server\n'
 
 
-root = Root()
-factory = Site(root)
-reactor.listenTCP(8998, factory)
-reactor.run()
+class MockServer():
+
+    def __enter__(self):
+        from scrapy.utils.test import get_testenv
+        self.proc = Popen([sys.executable, '-u', '-m', 'scrapy.tests.mockserver'],
+                          stdout=PIPE, env=get_testenv())
+        self.proc.stdout.readline()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.proc.kill()
+        self.proc.wait()
+        time.sleep(0.2)
+
+
+if __name__ == "__main__":
+    root = Root()
+    factory = Site(root)
+    port = reactor.listenTCP(8998, factory)
+    def print_listening():
+        h = port.getHost()
+        print "Mock server running at http://%s:%d" % (h.host, h.port)
+    reactor.callWhenRunning(print_listening)
+    reactor.run()

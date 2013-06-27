@@ -162,8 +162,6 @@ class Scraper(object):
         from the given spider
         """
         if isinstance(output, Request):
-            self.signals.send_catch_log(signal=signals.request_received, request=output, \
-                spider=spider)
             self.crawler.engine.crawl(request=output, spider=spider)
         elif isinstance(output, BaseItem):
             self.slot.itemproc_size += 1
@@ -184,7 +182,10 @@ class Scraper(object):
         """
         if spider_failure is download_failure:
             errmsg = spider_failure.getErrorMessage()
-            if errmsg:
+            if spider_failure.frames:
+                log.err(spider_failure, 'Error downloading %s' % request,
+                        level=log.ERROR, spider=spider)
+            elif errmsg:
                 log.msg(format='Error downloading %(request)s: %(errmsg)s',
                         level=log.ERROR, spider=spider, request=request, errmsg=errmsg)
             return

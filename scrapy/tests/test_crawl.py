@@ -1,27 +1,9 @@
-import sys, time
 from twisted.internet import defer
-from twisted.trial.unittest import TestCase, SkipTest
-from subprocess import Popen
-from scrapy.spider import BaseSpider
-from scrapy.http import Request
-from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
-from scrapy.utils.test import get_crawler
+from twisted.trial.unittest import TestCase
+from scrapy.utils.test import get_crawler, get_testlog
+from scrapy.tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider
+from scrapy.tests.mockserver import MockServer
 
-class FollowAllSpider(BaseSpider):
-
-    name = 'follow'
-    start_urls = ["http://localhost:8998/follow?total=10&show=5&order=rand"]
-    link_extractor = SgmlLinkExtractor()
-
-    def __init__(self):
-        self.urls_visited = []
-        self.times = []
-
-    def parse(self, response):
-        self.urls_visited.append(response.url)
-        self.times.append(time.time())
-        for link in self.link_extractor.extract_links(response):
-            yield Request(link.url, callback=self.parse)
 
 def docrawl(spider, settings=None):
     crawler = get_crawler(settings)
@@ -32,13 +14,11 @@ def docrawl(spider, settings=None):
 class CrawlTestCase(TestCase):
 
     def setUp(self):
-        self.proc = Popen([sys.executable, '-m', 'scrapy.tests.mockserver'])
-        time.sleep(0.2)
+        self.mockserver = MockServer()
+        self.mockserver.__enter__()
 
     def tearDown(self):
-        self.proc.kill()
-        self.proc.wait()
-        time.sleep(0.2)
+        self.mockserver.__exit__(None, None, None)
 
     @defer.inlineCallbacks
     def test_follow_all(self):
@@ -48,13 +28,56 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_delay(self):
-        # FIXME: this test fails because Scrapy leaves the reactor dirty with
-        # callLater calls when download delays are used. This test should be
-        # enabled after this bug is fixed.
-        raise SkipTest("disabled due to a reactor leak in the scrapy downloader")
-
         spider = FollowAllSpider()
-        yield docrawl(spider)
+        yield docrawl(spider, {"DOWNLOAD_DELAY": 1})
         t = spider.times[0]
-        for y in spider.times[1:]:
-            self.assertTrue(y-t > 0.5, "download delay too small: %s" % (y-t))
+        for t2 in spider.times[1:]:
+            self.assertTrue(t2-t > 0.45, "download delay too small: %s" % (t2-t))
+            t = t2
+
+    @defer.inlineCallbacks
+    def test_timeout_success(self):
+        spider = DelaySpider(n=0.5)
+        yield docrawl(spider)
+        self.assertTrue(spider.t1 > 0)
+        self.assertTrue(spider.t2 > 0)
+        self.assertTrue(spider.t2 > spider.t1)
+
+    @defer.inlineCallbacks
+    def test_timeout_failure(self):
+        spider = DelaySpider(n=0.5)
+        yield docrawl(spider, {"DOWNLOAD_TIMEOUT": 0.35})
+        self.assertTrue(spider.t1 > 0)
+        self.assertTrue(spider.t2 == 0)
+        self.assertTrue(spider.t2_err > 0)
+        self.assertTrue(spider.t2_err > spider.t1)
+        # server hangs after receiving response headers
+        spider = DelaySpider(n=0.5, b=1)
+        yield docrawl(spider, {"DOWNLOAD_TIMEOUT": 0.35})
+        self.assertTrue(spider.t1 > 0)
+        self.assertTrue(spider.t2 == 0)
+        self.assertTrue(spider.t2_err > 0)
+        self.assertTrue(spider.t2_err > spider.t1)
+
+    @defer.inlineCallbacks
+    def test_retry_503(self):
+        spider = SimpleSpider("http://localhost:8998/status?n=503")
+        yield docrawl(spider)
+        self._assert_retried()
+
+    @defer.inlineCallbacks
+    def test_retry_conn_failed(self):
+        spider = SimpleSpider("http://localhost:65432/status?n=503")
+        yield docrawl(spider)
+        self._assert_retried()
+
+    @defer.inlineCallbacks
+    def test_retry_dns_error(self):
+        spider = SimpleSpider("http://localhost666/status?n=503")
+        yield docrawl(spider)
+        self._assert_retried()
+
+    def _assert_retried(self):
+        log = get_testlog()
+        self.assertEqual(log.count("Retrying"), 2)
+        self.assertEqual(log.count("Gave up retrying"), 1)

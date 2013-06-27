@@ -1,7 +1,7 @@
 from scrapy import optional_features
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.httpobj import urlparse_cached
-from .http import HttpDownloadHandler
+from .http import HTTPDownloadHandler
 
 try:
     from boto.s3.connection import S3Connection
@@ -15,7 +15,7 @@ class _v19_S3Connection(S3Connection):
 
 class _v20_S3Connection(S3Connection):
     """A dummy S3Connection wrapper that doesn't do any syncronous download"""
-    def _mexe(self, http_request, *args):
+    def _mexe(self, http_request, *args, **kwargs):
         http_request.authorize(connection=self)
         return http_request.headers
 
@@ -30,7 +30,7 @@ else:
 class S3DownloadHandler(object):
 
     def __init__(self, settings, aws_access_key_id=None, aws_secret_access_key=None, \
-            httpdownloadhandler=HttpDownloadHandler):
+            httpdownloadhandler=HTTPDownloadHandler):
         if 'boto' not in optional_features:
             raise NotConfigured("missing boto library")
 

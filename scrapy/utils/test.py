@@ -2,7 +2,7 @@
 This module contains some assorted functions used in tests
 """
 
-import os, sys
+import os
 
 from twisted.trial.unittest import SkipTest
 
@@ -63,9 +63,27 @@ def get_crawler(settings_dict=None):
 def get_pythonpath():
     """Return a PYTHONPATH suitable to use in processes so that they find this
     installation of Scrapy"""
-    sep = ';' if sys.platform == 'win32' else ':'
     scrapy_path = __import__('scrapy').__path__[0]
-    return os.path.dirname(scrapy_path) + sep + os.environ.get('PYTHONPATH', '')
+    return os.path.dirname(scrapy_path) + os.pathsep + os.environ.get('PYTHONPATH', '')
+
+def get_testenv():
+    """Return a OS environment dict suitable to fork processes that need to import
+    this installation of Scrapy, instead of a system installed one.
+    """
+    env = os.environ.copy()
+    env['PYTHONPATH'] = get_pythonpath()
+    return env
+
+def get_testlog():
+    """Get Scrapy log of current test, ignoring the rest"""
+    thistest = []
+    loglines = open("test.log").readlines()
+    for l in loglines[::-1]:
+        thistest.append(l)
+        if "[-] -->" in l:
+            break
+    return "".join(thistest[::-1])
+
 
 def assert_samelines(testcase, text1, text2, msg=None):
     """Asserts text1 and text2 have the same lines, ignoring differences in

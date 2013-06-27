@@ -6,13 +6,15 @@ from shutil import rmtree
 from twisted.trial import unittest
 
 
+skip = False
 try:
     from PIL import Image
 except ImportError, e:
-    skip = True
+    skip = 'Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow'
 else:
     encoders = set(('jpeg_encoder', 'jpeg_decoder'))
-    skip = not encoders.issubset(set(Image.core.__dict__))
+    if not encoders.issubset(set(Image.core.__dict__)):
+        skip = 'Missing JPEG encoders'
 
 def _mocked_download_func(request, info):
     response = request.meta.get('response')

@@ -65,6 +65,12 @@ Yes. Support for HTTP proxies is provided (since Scrapy 0.8) through the HTTP
 Proxy downloader middleware. See
 :class:`~scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware`.
 
+How can I scrape an item with attributes in different pages?
+------------------------------------------------------------
+
+See :ref:`topics-request-response-ref-request-callback-arguments`.
+
+
 Scrapy crashes with: ImportError: No module named win32api
 ----------------------------------------------------------
 
@@ -173,7 +179,7 @@ higher) in your spider::
 
         name = 'myspider'
 
-        DOWNLOAD_DELAY = 2
+        download_delay = 2
 
         # [ ... rest of the spider code ... ]
 

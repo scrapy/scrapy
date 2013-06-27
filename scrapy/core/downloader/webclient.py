@@ -79,7 +79,7 @@ class ScrapyHTTPPageGetter(HTTPClient):
 
 class ScrapyHTTPClientFactory(HTTPClientFactory):
     """Scrapy implementation of the HTTPClientFactory overwriting the
-    serUrl method to make use of our Url object that cache the parse 
+    serUrl method to make use of our Url object that cache the parse
     result.
     """
 
@@ -137,21 +137,3 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
         self.headers_time = time()
         self.response_headers = headers
 
-
-
-class ScrapyClientContextFactory(ClientContextFactory):
-    "A SSL context factory which is more permissive against SSL bugs."
-    # see https://github.com/scrapy/scrapy/issues/82
-    # and https://github.com/scrapy/scrapy/issues/26
-
-    def __init__(self):
-        # see this issue on why we use TLSv1_METHOD by default
-        # https://github.com/scrapy/scrapy/issues/194
-        self.method = SSL.TLSv1_METHOD
-
-    def getContext(self):
-        ctx = ClientContextFactory.getContext(self)
-        # Enable all workarounds to SSL bugs as documented by
-        # http://www.openssl.org/docs/ssl/SSL_CTX_set_options.html
-        ctx.set_options(SSL.OP_ALL)
-        return ctx

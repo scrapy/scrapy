@@ -9,7 +9,7 @@ from tempfile import mkdtemp
 from twisted.trial import unittest
 
 from scrapy.utils.python import retry_on_eintr
-from scrapy.utils.test import get_pythonpath
+from scrapy.utils.test import get_testenv
 
 class ProjectTest(unittest.TestCase):
     project_name = 'testproject'
@@ -19,8 +19,7 @@ class ProjectTest(unittest.TestCase):
         self.cwd = self.temp_path
         self.proj_path = join(self.temp_path, self.project_name)
         self.proj_mod_path = join(self.proj_path, self.project_name)
-        self.env = os.environ.copy()
-        self.env['PYTHONPATH'] = get_pythonpath()
+        self.env = get_testenv()
 
     def tearDown(self):
         rmtree(self.temp_path)
@@ -226,4 +225,13 @@ ITEM_PIPELINES = ['{0}.pipelines.MyPipeline']
         p = self.proc('parse', '--spider', self.spider_name, '--pipelines',
                 '-c', 'parse', 'http://scrapinghub.com')
         log = p.stderr.read()
-        print log
+        self.assert_("[scrapy] INFO: It Works!" in log, log)
+
+
+class BenchCommandTest(CommandTest):
+
+    def test_run(self):
+        p = self.proc('bench', '-s', 'LOGSTATS_INTERVAL=0.001',
+                '-s', 'CLOSESPIDER_TIMEOUT=0.01')
+        log = p.stderr.read()
+        self.assert_('INFO: Crawled' in log, log)

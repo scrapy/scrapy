@@ -7,7 +7,6 @@ def get_engine_status(engine):
     global_tests = [
         "time()-engine.start_time",
         "engine.has_capacity()",
-        "engine.downloader.is_idle()",
         "len(engine.downloader.slots)",
         "len(engine.downloader.active)",
         "engine.scraper.is_idle()",

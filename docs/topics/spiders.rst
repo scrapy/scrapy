@@ -65,7 +65,8 @@ Spiders receive arguments in their constructors::
             self.start_urls = ['http://www.example.com/categories/%s' % category]
             # ...
 
-Spider arguments can also be passed through the :ref:`scrapyd-schedule` API.
+Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
+See `Scrapyd documentation`_.
 
 .. _topics-spiders-ref:
 
@@ -260,6 +261,14 @@ CrawlSpider
        described below. If multiple rules match the same link, the first one
        will be used, according to the order they're defined in this attribute.
 
+   This spider also exposes an overrideable method:
+
+   .. method:: parse_start_url(response)
+
+      This method is called for the start_urls responses. It allows to parse
+      the initial responses and must return either a 
+      :class:`~scrapy.item.Item` object, a :class:`~scrapy.http.Request` 
+      object, or an iterable containing any of them.
        
 Crawling rules
 ~~~~~~~~~~~~~~
@@ -625,3 +634,4 @@ Combine SitemapSpider with other sources of urls::
 .. _Sitemap index files: http://www.sitemaps.org/protocol.php#index
 .. _robots.txt: http://www.robotstxt.org/
 .. _TLD: http://en.wikipedia.org/wiki/Top-level_domain
+.. _Scrapyd documentation: http://scrapyd.readthedocs.org/

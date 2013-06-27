@@ -6,12 +6,23 @@ Release notes
 0.18 (unreleased)
 -----------------
 
+- :ref:`benchmarking`
+- moved persistent (on disk) queues to a separate project (queuelib_) which scrapy now depends on
 - add scrapy commands using external libraries (:issue:`260`)
 - added ``--pdb`` option to ``scrapy`` command line tool
 - added :meth:`XPathSelector.remove_namespaces` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`topics-selectors`.
 - several improvements to spider contracts
 - New default middleware named MetaRefreshMiddldeware that handles meta-refresh html tag redirections,
   MetaRefreshMiddldeware and RedirectMiddleware have different priorities to address #62
+
+0.16.5 (released 2013-05-30)
+----------------------------
+
+- obey request method when scrapy deploy is redirected to a new endpoint (:commit:`8c4fcee`)
+- fix inaccurate downloader middleware documentation. refs #280 (:commit:`40667cb`)
+- doc: remove links to diveintopython.org, which is no longer available. closes #246 (:commit:`bd58bfa`)
+- Find form nodes in invalid html5 documents (:commit:`e3d6945`)
+- Fix typo labeling attrs type bool instead of list (:commit:`a274276`)
 
 0.16.4 (released 2013-01-23)
 ----------------------------
@@ -101,13 +112,6 @@ Scrapy changes:
 - number of log messages (per level) are now tracked through Scrapy stats (stat name: ``log_count/LEVEL``)
 - number received responses are now tracked through Scrapy stats (stat name: ``response_received_count``)
 - removed ``scrapy.log.started`` attribute
-
-Scrapyd changes:
-
-- New Scrapyd API methods: :ref:`listjobs.json` and :ref:`cancel.json`
-- New Scrapyd settings: :ref:`items_dir` and :ref:`jobs_to_keep`
-- Items are now stored on disk using feed exports, and accessible through the Scrapyd web interface
-- Support making Scrapyd listen into a specific IP address (see ``bind_address`` option)
 
 0.14.4
 ------
@@ -446,3 +450,4 @@ First release of Scrapy.
 .. _lxml: http://lxml.de/
 .. _ClientForm: http://wwwsearch.sourceforge.net/old/ClientForm/
 .. _resource: http://docs.python.org/library/resource.html
+.. _queuelib: https://github.com/scrapy/queuelib

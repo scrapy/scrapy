@@ -174,6 +174,8 @@ class ExecutionEngine(object):
         self.slots[spider].nextcall.schedule()
 
     def schedule(self, request, spider):
+        self.signals.send_catch_log(signal=signals.request_scheduled,
+                request=request, spider=spider)
         return self.slots[spider].scheduler.enqueue_request(request)
 
     def download(self, request, spider):
@@ -253,6 +255,9 @@ class ExecutionEngine(object):
         log.msg(format="Closing spider (%(reason)s)", reason=reason, spider=spider)
 
         dfd = slot.close()
+
+        dfd.addBoth(lambda _: self.downloader.close())
+        dfd.addErrback(log.err, spider=spider)
 
         dfd.addBoth(lambda _: self.scraper.close_spider(spider))
         dfd.addErrback(log.err, spider=spider)
