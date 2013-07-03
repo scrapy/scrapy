@@ -19,7 +19,6 @@ class MediaPipeline(object):
             self.waiting = defaultdict(list)
 
     def __init__(self, download_func=None):
-        self.spiderinfo = {}
         self.download_func = download_func
 
     @classmethod
@@ -32,13 +31,10 @@ class MediaPipeline(object):
         return pipe
 
     def open_spider(self, spider):
-        self.spiderinfo[spider] = self.SpiderInfo(spider)
-
-    def close_spider(self, spider):
-        del self.spiderinfo[spider]
+        self.spiderinfo = self.SpiderInfo(spider)
 
     def process_item(self, item, spider):
-        info = self.spiderinfo[spider]
+        info = self.spiderinfo
         requests = arg_to_iter(self.get_media_requests(item, info))
         dlist = [self._process_request(r, info) for r in requests]
         dfd = DeferredList(dlist, consumeErrors=1)
