@@ -29,9 +29,6 @@ class TestOffsiteMiddleware(TestCase):
         out = list(self.mw.process_spider_output(res, reqs, self.spider))
         self.assertEquals(out, onsite_reqs)
 
-    def tearDown(self):
-        self.mw.spider_closed(self.spider)
-
 
 class TestOffsiteMiddleware2(TestOffsiteMiddleware):
 
