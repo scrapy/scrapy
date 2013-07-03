@@ -148,7 +148,6 @@ class FeedExporter(object):
         self.store_empty = settings.getbool('FEED_STORE_EMPTY')
         uripar = settings['FEED_URI_PARAMS']
         self._uripar = load_object(uripar) if uripar else lambda x, y: None
-        self.slots = {}
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -172,10 +171,10 @@ class FeedExporter(object):
         file = storage.open(spider)
         exporter = self._get_exporter(file)
         exporter.start_exporting()
-        self.slots[spider] = SpiderSlot(file, exporter, storage, uri)
+        self.slot = SpiderSlot(file, exporter, storage, uri)
 
     def close_spider(self, spider):
-        slot = self.slots.pop(spider)
+        slot = self.slot
         if not slot.itemcount and not self.store_empty:
             return
         slot.exporter.finish_exporting()
@@ -187,7 +186,7 @@ class FeedExporter(object):
         return d
 
     def item_scraped(self, item, spider):
-        slot = self.slots[spider]
+        slot = self.slot
         slot.exporter.export_item(item)
         slot.itemcount += 1
         return item
