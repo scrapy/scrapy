@@ -76,7 +76,7 @@ single Python class that defines one or more of the following methods:
       download function; it'll return that Response. Response middleware is
       always called on every Response.
 
-      If it returns an :exc:`~scrapy.exceptions.IgnoreRequest` exception, the
+      If it raises an :exc:`~scrapy.exceptions.IgnoreRequest` exception, the
       entire request will be dropped completely and its callback never called.
 
       :param request: the request being processed
@@ -98,7 +98,7 @@ single Python class that defines one or more of the following methods:
       If it returns a :class:`~scrapy.http.Request` object, the returned request will be
       rescheduled to be downloaded in the future.
 
-      If it returns an :exc:`~scrapy.exceptions.IgnoreRequest` exception, the
+      If it raises an :exc:`~scrapy.exceptions.IgnoreRequest` exception, the
       response will be dropped completely and its callback never called.
 
       :param request: the request that originated the response
