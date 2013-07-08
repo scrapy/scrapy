@@ -153,7 +153,9 @@ class MultiCrawlerProcess(ProcessMixin):
         name, crawler = self.crawlers.popitem()
 
         crawler.sflo = log.start_from_crawler(crawler)
-        crawler.signals.connect(crawler.sflo.stop, signals.engine_stopped)
+        if crawler.sflo:
+            crawler.signals.connect(crawler.sflo.stop, signals.engine_stopped)
+
         crawler.signals.connect(self.check_done, signals.engine_stopped)
         crawler.start()
 
