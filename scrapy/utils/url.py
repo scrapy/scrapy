@@ -79,9 +79,25 @@ def escape_ajax(url):
     Return the crawleable url according to:
     http://code.google.com/web/ajaxcrawling/docs/getting-started.html
 
-    TODO: add support for urls with query arguments
-
     >>> escape_ajax("www.example.com/ajax.html#!key=value")
     'www.example.com/ajax.html?_escaped_fragment_=key=value'
+    >>> escape_ajax("www.example.com/ajax.html?k1=v1&k2=v2#!key=value")
+    'www.example.com/ajax.html?k1=v1&k2=v2&_escaped_fragment_=key=value'
+    >>> escape_ajax("www.example.com/ajax.html?#!key=value")
+    'www.example.com/ajax.html?_escaped_fragment_=key=value'
+    >>> escape_ajax("www.example.com/ajax.html#!")
+    'www.example.com/ajax.html?_escaped_fragment_='
+
+    URLs that are not "AJAX crawlable" (according to Google) returned as-is:
+
+    >>> escape_ajax("www.example.com/ajax.html#key=value")
+    'www.example.com/ajax.html#key=value'
+    >>> escape_ajax("www.example.com/ajax.html#")
+    'www.example.com/ajax.html#'
+    >>> escape_ajax("www.example.com/ajax.html")
+    'www.example.com/ajax.html'
     """
-    return url.replace('#!', '?_escaped_fragment_=')
+    defrag, frag = urlparse.urldefrag(url)
+    if not frag.startswith('!'):
+        return url
+    return add_or_replace_parameter(defrag, '_escaped_fragment_', frag[1:])
