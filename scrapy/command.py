@@ -13,6 +13,7 @@ from scrapy.exceptions import UsageError
 class ScrapyCommand(object):
 
     requires_project = False
+    multi_crawlers = False
 
     # default settings to be used for this command instead of global defaults
     default_settings = {}
@@ -21,7 +22,6 @@ class ScrapyCommand(object):
 
     def __init__(self):
         self.settings = None # set in scrapy.cmdline
-        self.configured = False
 
     def set_crawler(self, crawler):
         assert not hasattr(self, '_crawler'), "crawler already set"
@@ -29,10 +29,10 @@ class ScrapyCommand(object):
 
     @property
     def crawler(self):
-        if not self.configured:
+        if not self.multi_crawlers and not self._crawler.configured:
             log.start_from_crawler(self._crawler)
             self._crawler.configure()
-            self.configured = True
+
         return self._crawler
 
     def syntax(self):
@@ -83,7 +83,7 @@ class ScrapyCommand(object):
             help="set/override setting (may be repeated)")
         group.add_option("--pdb", action="store_true", help="enable pdb on failure")
         parser.add_option_group(group)
-        
+
     def process_options(self, args, opts):
         try:
             self.settings.overrides.update(arglist_to_dict(opts.set))
