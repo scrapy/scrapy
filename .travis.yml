@@ -11,10 +11,6 @@ install:
     - pip install .
 script:
     - trial scrapy
-branches:
-    only:
-        - master
-        - /^[0-9].*$/
 notifications:
     irc:
         channels:
