@@ -27,9 +27,12 @@ class HTTP11DownloadHandler(object):
         self._pool = HTTPConnectionPool(reactor, persistent=True)
         self._contextFactoryClass = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
         self._contextFactory = self._contextFactoryClass()
+        self._default_download_sizelimit = settings['DOWNLOAD_SIZELIMIT']
 
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
+        if 'download_sizelimit' not in request.meta:
+            request.meta.update({'download_sizelimit': self._default_download_sizelimit})
         agent = ScrapyAgent(contextFactory=self._contextFactory, pool=self._pool)
         return agent.download_request(request)
 
@@ -97,6 +100,15 @@ class ScrapyAgent(object):
         if txresponse.length == 0:
             return txresponse, '', None
 
+        headers = Headers(txresponse.headers.getAllRawHeaders())
+        content_length = headers.get('Content-Length', None)
+        size_limit = request.meta['download_sizelimit']
+
+        if content_length > size_limit:
+            log.msg("Content-length %s larger than %s download size limit." % (content_length, size_limit),
+                    logLevel=log.WARNING)
+            raise defer.CancelledError()
+
         def _cancel(_):
             txresponse._transport._producer.loseConnection()
 
@@ -137,9 +149,17 @@ class _ResponseReader(protocol.Protocol):
         self._txresponse = txresponse
         self._request = request
         self._bodybuf = StringIO()
+        self._size_limit  = request.meta['download_sizelimit']
+        self._bytes_received = 0
+
 
     def dataReceived(self, bodyBytes):
         self._bodybuf.write(bodyBytes)
+        self._bytes_received += len(bodyBytes)
+        if self._bytes_received > self._size_limit:
+            log.msg("Received %s bytes exceed the download size limit (%s)." % (self._bytes_received, self._size_limit),
+                    logLevel=log.WARNING)
+            self._finished.cancel()
 
     def connectionLost(self, reason):
         if self._finished.called:
