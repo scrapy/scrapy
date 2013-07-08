@@ -2,13 +2,11 @@ from collections import defaultdict
 from functools import wraps
 from unittest import TextTestRunner
 
-from scrapy import signals
 from scrapy.command import ScrapyCommand
 from scrapy.contracts import ContractsManager
 from scrapy.utils.misc import load_object
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.conf import build_component_list
-from scrapy.xlib.pydispatch import dispatcher
 
 
 def _generate(cb):
@@ -22,7 +20,8 @@ def _generate(cb):
 
 class Command(ScrapyCommand):
     requires_project = True
-    default_settings = {'LOG_ENABLED': False}
+    multi_crawlers = True
+    default_settings = {'LOG_ENABLED': True}
 
     def syntax(self):
         return "[options] <spider>"
@@ -48,17 +47,20 @@ class Command(ScrapyCommand):
 
         # contract requests
         contract_reqs = defaultdict(list)
-        self.crawler.engine.has_capacity = lambda: True
 
-        for spider in args or self.crawler.spiders.list():
-            spider = self.crawler.spiders.create(spider)
+        spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
+        spiders = spman_cls.from_settings(self.settings)
+
+        for spider in args or spiders.list():
+            spider = spiders.create(spider)
             requests = self.get_requests(spider)
 
             if opts.list:
                 for req in requests:
                     contract_reqs[spider.name].append(req.callback.__name__)
-            else:
-                self.crawler.crawl(spider, requests)
+            elif requests:
+                crawler = self.process.create_crawler(spider.name)
+                crawler.crawl(spider, requests)
 
         # start checks
         if opts.list:
@@ -67,9 +69,8 @@ class Command(ScrapyCommand):
                 for method in sorted(methods):
                     print '  * %s' % method
         else:
-            dispatcher.connect(self.results.printErrors,
-                    signals.engine_stopped)
-            self.crawler.start()
+            self.process.start()
+            self.results.printErrors()
 
     def get_requests(self, spider):
         requests = []
