@@ -87,18 +87,19 @@ single Python class that defines one or more of the following methods:
 
    .. method:: process_response(request, response, spider)
 
-      :meth:`process_response` should return a :class:`~scrapy.http.Response`
-      object or raise a :exc:`~scrapy.exceptions.IgnoreRequest` exception.
+      :meth:`process_response` should return either a :class:`~scrapy.http.Response`
+      object, a :class:`~scrapy.http.Request` object or 
+      raise a :exc:`~scrapy.exceptions.IgnoreRequest` exception.
 
       If it returns a :class:`~scrapy.http.Response` (it could be the same given
       response, or a brand-new one), that response will continue to be processed
       with the :meth:`process_response` of the next middleware in the pipeline.
 
-      If it returns an :exc:`~scrapy.exceptions.IgnoreRequest` exception, the
-      response will be dropped completely and its callback never called.
-
       If it returns a :class:`~scrapy.http.Request` object, the returned request will be
       rescheduled to be downloaded in the future.
+
+      If it returns an :exc:`~scrapy.exceptions.IgnoreRequest` exception, the
+      response will be dropped completely and its callback never called.
 
       :param request: the request that originated the response
       :type request: is a :class:`~scrapy.http.Request` object
