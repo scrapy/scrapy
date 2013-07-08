@@ -4,3 +4,4 @@ lxml==2.3.2
 twisted==11.1.0
 boto==2.2.2
 Pillow<2.0
+django==1.3.1
