@@ -1,4 +1,4 @@
-""" 
+"""
 Scrapy logging facility
 
 See documentation in docs/topics/logging.rst
@@ -11,7 +11,7 @@ from twisted.python import log
 
 import scrapy
 from scrapy.utils.python import unicode_to_str
- 
+
 # Logging levels
 DEBUG = logging.DEBUG
 INFO = logging.INFO
@@ -138,9 +138,12 @@ def start_from_crawler(crawler):
     if not settings.getbool('LOG_ENABLED'):
         return
 
-    start(settings['LOG_FILE'], settings['LOG_LEVEL'], settings['LOG_STDOUT'],
+    sflo = start(settings['LOG_FILE'], settings['LOG_LEVEL'], settings['LOG_STDOUT'],
         settings['LOG_ENCODING'], crawler)
+
     msg("Scrapy %s started (bot: %s)" % (scrapy.__version__, \
         settings['BOT_NAME']))
     msg("Optional features available: %s" % ", ".join(scrapy.optional_features),
         level=DEBUG)
+
+    return sflo
