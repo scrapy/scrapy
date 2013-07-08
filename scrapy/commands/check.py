@@ -21,7 +21,7 @@ def _generate(cb):
 class Command(ScrapyCommand):
     requires_project = True
     multi_crawlers = True
-    default_settings = {'LOG_ENABLED': True}
+    default_settings = {'LOG_ENABLED': False}
 
     def syntax(self):
         return "[options] <spider>"
