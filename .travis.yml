@@ -10,10 +10,6 @@ install:
     - pip install --use-mirrors -r .travis/requirements-$BUILDENV.txt
 script:
     - trial scrapy
-branches:
-    only:
-        - master
-        - /^[0-9].*$/
 notifications:
     irc:
         channels:
