@@ -3,7 +3,7 @@
 Release notes
 =============
 
-0.18 (unreleased)
+0.17 (unreleased)
 -----------------
 
 - :ref:`benchmarking`
