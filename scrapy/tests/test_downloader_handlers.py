@@ -162,8 +162,8 @@ class Http11TestCase(HttpTestCase):
         skip = 'HTTP1.1 not supported in twisted < 11.1.0'
 
     @defer.inlineCallbacks
-    def test_download_size_limit(self):
-        meta = {'download_sizelimit': 2}
+    def test_download_maxsize(self):
+        meta = {'download_maxsize': 2}
         request = Request(self.getURL('hang-after-headers'), meta=meta)
         d = self.download_request(request, BaseSpider('foo'))
         yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)

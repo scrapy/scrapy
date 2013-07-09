@@ -27,12 +27,15 @@ class HTTP11DownloadHandler(object):
         self._pool = HTTPConnectionPool(reactor, persistent=True)
         self._contextFactoryClass = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
         self._contextFactory = self._contextFactoryClass()
-        self._default_download_sizelimit = settings['DOWNLOAD_SIZELIMIT']
+        self._default_download_maxsize= settings['DOWNLOAD_MAXSIZE']
+        self._default_download_warnsize = settings['DOWNLOAD_WARNSIZE']
 
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
-        if 'download_sizelimit' not in request.meta:
-            request.meta.update({'download_sizelimit': self._default_download_sizelimit})
+        if 'download_maxsize' not in request.meta:
+            request.meta.update({'download_maxsize': self._default_download_maxsize})
+        # always set to warnsize
+        request.meta.update({'download_warnsize': self._default_download_warnsize})
         agent = ScrapyAgent(contextFactory=self._contextFactory, pool=self._pool)
         return agent.download_request(request)
 
@@ -102,11 +105,16 @@ class ScrapyAgent(object):
 
         headers = Headers(txresponse.headers.getAllRawHeaders())
         content_length = headers.get('Content-Length', None)
-        size_limit = request.meta['download_sizelimit']
+        maxsize = request.meta['download_maxsize']
+        warnsize = request.meta['download_warnsize']
 
-        if content_length > size_limit:
-            log.msg("Content-length %s larger than %s download size limit." % (content_length, size_limit),
+        if warnsize < content_length < maxsize:
+            log.msg("Content-length %s larger than DOWNLOAD_WARNSIZE (%s)." % (content_length, warnsize),
                     logLevel=log.WARNING)
+
+        if content_length > maxsize:
+            log.msg("Content-length %s larger than download size limit (%s)." % (content_length, maxsize),
+                    logLevel=log.ERROR)
             raise defer.CancelledError()
 
         def _cancel(_):
@@ -149,16 +157,22 @@ class _ResponseReader(protocol.Protocol):
         self._txresponse = txresponse
         self._request = request
         self._bodybuf = StringIO()
-        self._size_limit  = request.meta['download_sizelimit']
+        self._maxsize  = request.meta['download_maxsize']
+        self._warnsize  = request.meta['download_warnsize']
         self._bytes_received = 0
 
 
     def dataReceived(self, bodyBytes):
         self._bodybuf.write(bodyBytes)
         self._bytes_received += len(bodyBytes)
-        if self._bytes_received > self._size_limit:
-            log.msg("Received %s bytes exceed the download size limit (%s)." % (self._bytes_received, self._size_limit),
+
+        if self._warnsize < self._bytes_received < self._maxsize:
+            log.msg("Received %s bytes exceed DOWNLOAD_WARNSIZE (%s)." % (self._bytes_received, self._warnsize),
                     logLevel=log.WARNING)
+
+        if self._bytes_received > self._maxsize:
+            log.msg("Received %s bytes exceed the download size limit (%s)." % (self._bytes_received, self._maxsize),
+                    logLevel=log.ERROR)
             self._finished.cancel()
 
     def connectionLost(self, reason):
