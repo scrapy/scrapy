@@ -25,6 +25,7 @@ class HTTP11DownloadHandler(object):
 
     def __init__(self, settings):
         self._pool = HTTPConnectionPool(reactor, persistent=True)
+        self._pool._factory.noisy = False
         self._contextFactoryClass = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
         self._contextFactory = self._contextFactoryClass()
 
