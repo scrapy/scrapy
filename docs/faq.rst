@@ -78,8 +78,8 @@ How can I simulate a user login in my spider?
 
 See :ref:`topics-request-response-ref-request-userlogin`.
 
-Does Scrapy crawl in breath-first or depth-first order?
--------------------------------------------------------
+Does Scrapy crawl in breadth-first or depth-first order?
+--------------------------------------------------------
 
 By default, Scrapy uses a `LIFO`_ queue for storing pending requests, which
 basically means that it crawls in `DFO order`_. This order is more convenient
