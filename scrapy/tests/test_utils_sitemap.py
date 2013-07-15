@@ -120,12 +120,45 @@ Disallow: /s*/*tags
 Sitemap: http://example.com/sitemap.xml
 Sitemap: http://example.com/sitemap-product-index.xml
 
-# Forums 
+# Forums
 Disallow: /forum/search/
 Disallow: /forum/active/
 """
-        self.assertEqual(list(sitemap_urls_from_robots(robots)), 
+        self.assertEqual(list(sitemap_urls_from_robots(robots)),
              ['http://example.com/sitemap.xml', 'http://example.com/sitemap-product-index.xml'])
+
+    def test_sitemap_blanklines(self):
+        """Assert we can deal with starting blank lines before <xml> tag"""
+        s = Sitemap("""\
+
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+<!-- cache: cached = yes name = sitemap_jspCache key = sitemap -->
+<sitemap>
+<loc>http://www.example.com/sitemap1.xml</loc>
+<lastmod>2013-07-15</lastmod>
+</sitemap>
+
+<sitemap>
+<loc>http://www.example.com/sitemap2.xml</loc>
+<lastmod>2013-07-15</lastmod>
+</sitemap>
+
+<sitemap>
+<loc>http://www.example.com/sitemap3.xml</loc>
+<lastmod>2013-07-15</lastmod>
+</sitemap>
+
+<!-- end cache -->
+</sitemapindex>
+""")
+        self.assertEqual(list(s), [
+            {'lastmod': '2013-07-15', 'loc': 'http://www.example.com/sitemap1.xml'},
+            {'lastmod': '2013-07-15', 'loc': 'http://www.example.com/sitemap2.xml'},
+            {'lastmod': '2013-07-15', 'loc': 'http://www.example.com/sitemap3.xml'},
+        ])
+
 
 if __name__ == '__main__':
     unittest.main()
