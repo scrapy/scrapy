@@ -13,31 +13,7 @@ def getarg(request, name, default=None, type=str):
         return default
 
 
-class Follow(Resource):
-
-    isLeaf = True
-
-    def render(self, request):
-        total = getarg(request, "total", 100, type=int)
-        show = getarg(request, "show", 1, type=int)
-        order = getarg(request, "order", "desc")
-        n = getarg(request, "n", total, type=int)
-        if order == "rand":
-            nlist = [random.randint(1, total) for _ in range(show)]
-        else:  # order == "desc"
-            nlist = range(n, max(n - show, 0), -1)
-
-        s = """<html> <head></head> <body>"""
-        args = request.args.copy()
-        for nl in nlist:
-            args["n"] = [str(nl)]
-            argstr = urllib.urlencode(args, doseq=True)
-            s += "<a href='/follow?%s'>follow %d</a><br>" % (argstr, nl)
-        s += """</body>"""
-        return s
-
-
-class DeferMixin(Resource):
+class DeferMixin(object):
 
     def deferRequest(self, request, delay, f, *a, **kw):
         def _cancelrequest(_):
@@ -47,6 +23,37 @@ class DeferMixin(Resource):
         d = deferLater(reactor, delay, f, *a, **kw)
         request.notifyFinish().addErrback(_cancelrequest)
         return d
+
+
+class Follow(DeferMixin, Resource):
+
+    isLeaf = True
+
+    def render(self, request):
+        total = getarg(request, "total", 100, type=int)
+        show = getarg(request, "show", 1, type=int)
+        order = getarg(request, "order", "desc")
+        maxlatency = getarg(request, "maxlatency", 0, type=float)
+        n = getarg(request, "n", total, type=int)
+        if order == "rand":
+            nlist = [random.randint(1, total) for _ in range(show)]
+        else:  # order == "desc"
+            nlist = range(n, max(n - show, 0), -1)
+
+        lag = random.random() * maxlatency
+        self.deferRequest(request, lag, self.renderRequest, request, nlist)
+        return NOT_DONE_YET
+
+    def renderRequest(self, request, nlist):
+        s = """<html> <head></head> <body>"""
+        args = request.args.copy()
+        for nl in nlist:
+            args["n"] = [str(nl)]
+            argstr = urllib.urlencode(args, doseq=True)
+            s += "<a href='/follow?%s'>follow %d</a><br>" % (argstr, nl)
+        s += """</body>"""
+        request.write(s)
+        request.finish()
 
 
 class Delay(DeferMixin, Resource):
