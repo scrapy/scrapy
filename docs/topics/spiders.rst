@@ -62,9 +62,9 @@ Spiders receive arguments in their constructors::
         name = 'myspider'
 
         def __init__(self, category=None, *args, **kwargs):
+            super(MySpider, self).__init__(*args, **kwargs)
             self.start_urls = ['http://www.example.com/categories/%s' % category]
             # ...
-            super(MySpider, self).__init__(*args, **kwargs)
 
 Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
