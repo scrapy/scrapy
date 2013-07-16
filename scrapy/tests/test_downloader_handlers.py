@@ -11,9 +11,10 @@ from twisted.web.test.test_webclient import ForeverTakingResource, \
         PayloadResource, BrokenDownloadResource
 from twisted.protocols.ftp import FTPRealm, FTPFactory
 from twisted.cred import portal, checkers, credentials
-from twisted.protocols.ftp import FTPClient, ConnectionLost 
+from twisted.protocols.ftp import FTPClient, ConnectionLost
 from w3lib.url import path_to_file_uri
 
+from scrapy import twisted_version
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler, HttpDownloadHandler
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
@@ -333,9 +334,12 @@ class S3TestCase(unittest.TestCase):
                 'AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI=')
 
 class FTPTestCase(unittest.TestCase):
-    
+
     username = "scrapy"
     password = "passwd"
+
+    if twisted_version < (10, 2, 0):
+        skip = "Twisted pre 10.2.0 doesn't allow to set home path other than /home"
 
     def setUp(self):
         # setup dirs and test file
