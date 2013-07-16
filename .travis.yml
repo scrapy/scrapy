@@ -8,6 +8,7 @@ env:
     - BUILDENV=latest
 install:
     - pip install --use-mirrors -r .travis/requirements-$BUILDENV.txt
+    - pip install .
 script:
     - trial scrapy
 notifications:

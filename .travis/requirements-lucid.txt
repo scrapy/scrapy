@@ -4,4 +4,3 @@ lxml==2.2.4
 twisted==10.0.0
 boto==1.9b
 Pillow<2.0
-.
