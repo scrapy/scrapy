@@ -11,6 +11,7 @@ def docrawl(spider, settings=None):
     crawler.crawl(spider)
     return crawler.start()
 
+
 class CrawlTestCase(TestCase):
 
     def setUp(self):
@@ -24,16 +25,30 @@ class CrawlTestCase(TestCase):
     def test_follow_all(self):
         spider = FollowAllSpider()
         yield docrawl(spider)
-        self.assertEqual(len(spider.urls_visited), 11) # 10 + start_url
+        self.assertEqual(len(spider.urls_visited), 11)  # 10 + start_url
 
     @defer.inlineCallbacks
     def test_delay(self):
-        spider = FollowAllSpider()
-        yield docrawl(spider, {"DOWNLOAD_DELAY": 1})
-        t = spider.times[0]
-        for t2 in spider.times[1:]:
-            self.assertTrue(t2-t > 0.45, "download delay too small: %s" % (t2-t))
-            t = t2
+        # short to long delays
+        yield self._test_delay(0.2, False)
+        yield self._test_delay(1, False)
+        # randoms
+        yield self._test_delay(0.2, True)
+        yield self._test_delay(1, True)
+
+    @defer.inlineCallbacks
+    def _test_delay(self, delay, randomize):
+        settings = {"DOWNLOAD_DELAY": delay, 'RANDOMIZE_DOWNLOAD_DELAY': randomize}
+        spider = FollowAllSpider(maxlatency=delay * 2)
+        yield docrawl(spider, settings)
+        t = spider.times
+        totaltime = t[-1] - t[0]
+        avgd = totaltime / (len(t) - 1)
+        tolerance = 0.6 if randomize else 0.2
+        self.assertTrue(avgd > delay * (1 - tolerance),
+                        "download delay too small: %s" % avgd)
+        self.assertTrue(avgd < delay * (1 + tolerance),
+                        "download delay too big: %s" % avgd)
 
     @defer.inlineCallbacks
     def test_timeout_success(self):

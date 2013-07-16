@@ -3,6 +3,7 @@ Some spiders used for testing and benchmarking
 """
 
 import time
+from urllib import urlencode
 
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
@@ -27,11 +28,12 @@ class FollowAllSpider(MetaSpider):
     name = 'follow'
     link_extractor = SgmlLinkExtractor()
 
-    def __init__(self, total=10, show=20, order="rand", *args, **kwargs):
+    def __init__(self, total=10, show=20, order="rand", maxlatency=0.0, *args, **kwargs):
         super(FollowAllSpider, self).__init__(*args, **kwargs)
         self.urls_visited = []
         self.times = []
-        url = "http://localhost:8998/follow?total=%s&show=%s&order=%s" % (total, show, order)
+        qargs = {'total': total, 'show': show, 'order': order, 'maxlatency': maxlatency}
+        url = "http://localhost:8998/follow?%s" % urlencode(qargs, doseq=1)
         self.start_urls = [url]
 
     def parse(self, response):
