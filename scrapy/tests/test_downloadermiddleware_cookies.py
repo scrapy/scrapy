@@ -113,3 +113,19 @@ class CookiesMiddlewareTest(TestCase):
         req4 = Request('http://scrapytest.org/', meta=res2.meta)
         assert self.mw.process_request(req4, self.spider) is None
         self.assertEquals(req4.headers.get('Cookie'), 'C2=value2; galleta=dulce')
+
+        #cookies from hosts with port
+        req5_1 = Request('http://scrapytest.org:1104/')
+        assert self.mw.process_request(req5_1, self.spider) is None
+
+        headers = {'Set-Cookie': 'C1=value1; path=/'}
+        res5_1 = Response('http://scrapytest.org:1104/', headers=headers, request=req5_1)
+        assert self.mw.process_response(req5_1, res5_1, self.spider) is res5_1
+
+        req5_2 = Request('http://scrapytest.org:1104/some-redirected-path')
+        assert self.mw.process_request(req5_2, self.spider) is None
+        self.assertEquals(req5_2.headers.get('Cookie'), 'C1=value1')
+
+        req5_3 = Request('http://scrapytest.org/some-redirected-path')
+        assert self.mw.process_request(req5_3, self.spider) is None
+        self.assertEquals(req5_3.headers.get('Cookie'), 'C1=value1')
