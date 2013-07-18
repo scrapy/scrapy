@@ -23,6 +23,11 @@ class CookieJar(object):
         # the cookiejar implementation iterates through all domains
         # instead we restrict to potential matches on the domain
         req_host = urlparse_cached(request).netloc
+
+        # Strip port numbers from netloc, if present
+        if ':' in req_host:
+            req_host = req_host.split(':')[0]
+
         if not IPV4_RE.search(req_host):
             hosts = potential_domain_matches(req_host)
             if req_host.find(".") == -1:
