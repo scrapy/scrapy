@@ -123,10 +123,12 @@ class XmlItemExporter(BaseItemExporter):
         self.xg.startElement(self.root_element, {})
 
     def export_item(self, item):
-        self.xg.startElement(self.item_element, {})
+        if self.item_element is not None:
+            self.xg.startElement(self.item_element, {})
         for name, value in self._get_serialized_fields(item, default_value=''):
             self._export_xml_field(name, value)
-        self.xg.endElement(self.item_element)
+        if self.item_element is not None:
+            self.xg.endElement(self.item_element)
 
     def finish_exporting(self):
         self.xg.endElement(self.root_element)
