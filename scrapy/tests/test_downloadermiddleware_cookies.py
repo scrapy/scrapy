@@ -129,3 +129,8 @@ class CookiesMiddlewareTest(TestCase):
         req5_3 = Request('http://scrapytest.org/some-redirected-path')
         assert self.mw.process_request(req5_3, self.spider) is None
         self.assertEquals(req5_3.headers.get('Cookie'), 'C1=value1')
+
+        #skip cookie retrieval for not http request
+        req6 = Request('file:///scrapy/sometempfile')
+        assert self.mw.process_request(req6, self.spider) is None
+        self.assertEquals(req6.headers.get('Cookie'), None)
