@@ -23,6 +23,8 @@ class CookieJar(object):
         # the cookiejar implementation iterates through all domains
         # instead we restrict to potential matches on the domain
         req_host = urlparse_cached(request).hostname
+        if not req_host:
+            return
 
         if not IPV4_RE.search(req_host):
             hosts = potential_domain_matches(req_host)
