@@ -58,3 +58,10 @@ class SpiderManager(object):
         closed = getattr(spider, 'closed', None)
         if callable(closed):
             return closed(reason)
+
+    def get_option_list(self, spider_name):
+        try:
+            spcls = self._spiders[spider_name]
+        except KeyError:
+            raise KeyError("Spider not found: %s" % spider_name)
+        return getattr(spcls, 'option_list', [])
