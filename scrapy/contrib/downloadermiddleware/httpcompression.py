@@ -3,12 +3,19 @@ import zlib
 from scrapy.utils.gz import gunzip
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
+from scrapy.exceptions import NotConfigured
 
 
 class HttpCompressionMiddleware(object):
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
-
+    
+    @classmethod
+    def from_crawler(cls, crawler):
+        if not crawler.settings.getbool('COMPRESSION_ENABLED'):
+            raise NotConfigured
+        return cls()
+    
     def process_request(self, request, spider):
         request.headers.setdefault('Accept-Encoding', 'x-gzip,gzip,deflate')
 
