@@ -533,6 +533,19 @@ HttpCompressionMiddleware
    This middleware allows compressed (gzip, deflate) traffic to be
    sent/received from web sites.
 
+HttpCompressionMiddleware Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. setting:: COMPRESSION_ENABLED
+
+COMPRESSION_ENABLED
+^^^^^^^^^^^^^^^^^^^
+
+Default: ``True``
+
+Whether the Compression middleware will be enabled.
+
+
 ChunkedTransferMiddleware
 -------------------------
 
