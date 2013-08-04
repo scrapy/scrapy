@@ -13,6 +13,10 @@ class SitemapSpider(BaseSpider):
     sitemap_follow = ['']
 
     def __init__(self, *a, **kw):
+        self._alternate = False
+        if 'alternate' in kw and kw.pop('alternate') == True:
+            self._alternate = True
+
         super(SitemapSpider, self).__init__(*a, **kw)
         self._cbs = []
         for r, c in self.sitemap_rules:
@@ -37,7 +41,7 @@ class SitemapSpider(BaseSpider):
 
             s = Sitemap(body)
             if s.type == 'sitemapindex':
-                for loc in iterloc(s):
+                for loc in iterloc(s, self._alternate):
                     if any(x.search(loc) for x in self._follow):
                         yield Request(loc, callback=self._parse_sitemap)
             elif s.type == 'urlset':
@@ -65,6 +69,11 @@ def regex(x):
         return re.compile(x)
     return x
 
-def iterloc(it):
+def iterloc(it, alt=False):
     for d in it:
         yield d['loc']
+
+        # Also consider alternate URLs (xhtml:link rel="alternate")
+        if alt == True and 'alternate' in d:
+            for l in d['alternate']:
+                yield l
