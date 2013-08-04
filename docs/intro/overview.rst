@@ -45,7 +45,7 @@ This would be our Item::
 
     from scrapy.item import Item, Field
 
-    class Torrent(Item):
+    class TorrentItem(Item):
         url = Field()
         name = Field()
         description = Field()
