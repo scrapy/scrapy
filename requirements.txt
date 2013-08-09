@@ -1,0 +1,5 @@
+Twisted>=8.0
+w3lib>=1.2
+queuelib
+lxml
+pyOpenSSL
