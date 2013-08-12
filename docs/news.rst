@@ -45,6 +45,7 @@ Release notes
 - MetaRefreshMiddldeware and RedirectMiddleware have different priorities to address #62
 
 Contributters by number of commits::
+
     130 Pablo Hoffman <pablo@...>
      97 Daniel Graña <dangra@...>
      20 Nicolás Ramírez <nramirez.uy@...>
