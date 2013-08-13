@@ -5,7 +5,7 @@ from scrapy.item import Item, Field
 from scrapy.utils.python import str_to_unicode
 from scrapy.contrib.exporter import BaseItemExporter, PprintItemExporter, \
     PickleItemExporter, CsvItemExporter, XmlItemExporter, JsonLinesItemExporter, \
-    JsonItemExporter
+    JsonItemExporter, PythonItemExporter
 
 class TestItem(Item):
     name = Field()
@@ -69,7 +69,41 @@ class BaseItemExporterTest(unittest.TestCase):
         self.assertEqual(ie.serialize_field(i.fields['name'], 'name', i['name']), 'John\xc2\xa3')
         self.assertEqual(ie.serialize_field(i.fields['age'], 'age', i['age']), '24')
 
+class PythonItemExporterTest(BaseItemExporterTest):
+    def _get_exporter(self, **kwargs):
+        return PythonItemExporter(**kwargs)
 
+    def test_nested_item(self):
+        i1 = TestItem(name=u'Joseph', age='22')
+        i2 = TestItem(name=u'Maria', age=i1)
+        i3 = TestItem(name=u'Jesus', age=i2)
+        ie = self._get_exporter()
+        exported = ie.export_item(i3)
+        self.assertEqual(type(exported), dict)
+        self.assertEqual(exported, {'age': {'age': {'age': '22', 'name': u'Joseph'}, 'name': u'Maria'}, 'name': 'Jesus'})
+        self.assertEqual(type(exported['age']), dict)
+        self.assertEqual(type(exported['age']['age']), dict)
+
+    def test_export_list(self):
+        i1 = TestItem(name=u'Joseph', age='22')
+        i2 = TestItem(name=u'Maria', age=[i1])
+        i3 = TestItem(name=u'Jesus', age=[i2])
+        ie = self._get_exporter()
+        exported = ie.export_item(i3)
+        self.assertEqual(exported, {'age': [{'age': [{'age': '22', 'name': u'Joseph'}], 'name': u'Maria'}], 'name': 'Jesus'})
+        self.assertEqual(type(exported['age'][0]), dict)
+        self.assertEqual(type(exported['age'][0]['age'][0]), dict)
+
+    def test_export_item_dict_list(self):
+        i1 = TestItem(name=u'Joseph', age='22')
+        i2 = dict(name=u'Maria', age=[i1])
+        i3 = TestItem(name=u'Jesus', age=[i2])
+        ie = self._get_exporter()
+        exported = ie.export_item(i3)
+        self.assertEqual(exported, {'age': [{'age': [{'age': '22', 'name': u'Joseph'}], 'name': u'Maria'}], 'name': 'Jesus'})
+        self.assertEqual(type(exported['age'][0]), dict)
+        self.assertEqual(type(exported['age'][0]['age'][0]), dict)
+  
 class PprintItemExporterTest(BaseItemExporterTest):
 
     def _get_exporter(self, **kwargs):
@@ -77,7 +111,6 @@ class PprintItemExporterTest(BaseItemExporterTest):
 
     def _check_output(self):
         self._assert_expected_item(eval(self.output.getvalue()))
-
 
 class PickleItemExporterTest(BaseItemExporterTest):
 
