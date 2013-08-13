@@ -9,7 +9,7 @@ import json
 import cPickle as pickle
 from xml.sax.saxutils import XMLGenerator
 from scrapy.utils.serialize import ScrapyJSONEncoder
-
+from scrapy.item import BaseItem
 
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter', \
     'CsvItemExporter', 'XmlItemExporter', 'JsonLinesItemExporter', \
@@ -200,7 +200,6 @@ class MarshalItemExporter(BaseItemExporter):
     def export_item(self, item):
         marshal.dump(dict(self._get_serialized_fields(item)), self.file)
 
-
 class PprintItemExporter(BaseItemExporter):
 
     def __init__(self, file, **kwargs):
@@ -210,3 +209,25 @@ class PprintItemExporter(BaseItemExporter):
     def export_item(self, item):
         itemdict = dict(self._get_serialized_fields(item))
         self.file.write(pprint.pformat(itemdict) + '\n')
+
+class PythonItemExporter(BaseItemExporter):
+
+    def serialize_field(self, field, name, value):
+        serializer = field.get('serializer', self._serialize_value)
+        return serializer(value)
+
+    def _serialize_value(self, value):
+        if isinstance(value, BaseItem):
+            return self.export_item(value)
+        if isinstance(value, dict):
+            return dict(self._serialize_dict(value))
+        if hasattr(value, '__iter__'):
+            return [self._serialize_value(v) for v in value]
+        return self._to_str_if_unicode(value)
+
+    def _serialize_dict(self, value):
+        for key, val in value.iteritems():
+            yield key, self._serialize_value(val)
+    
+    def export_item(self, item):
+        return dict(self._get_serialized_fields(item))
