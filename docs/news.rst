@@ -43,8 +43,16 @@ Release notes
 - Several improvements to spider contracts
 - New default middleware named MetaRefreshMiddldeware that handles meta-refresh html tag redirections,
 - MetaRefreshMiddldeware and RedirectMiddleware have different priorities to address #62
+- added from_crawler method to spiders
+- added system tests with mock server
+- more improvements to Mac OS compatibility (thanks Alex Cepoi)
+- several more cleanups to singletons and multi-spider support (thanks Nicolas Ramirez)
+- support custom download slots
+- added --spider option to "shell" command.
+- log overridden settings when scrapy starts
 
-Contributters by number of commits::
+Thanks to everyone who contribute to this release. Here is a list of
+contributors sorted by number of commits::
 
     130 Pablo Hoffman <pablo@...>
      97 Daniel Graña <dangra@...>
