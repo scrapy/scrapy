@@ -211,6 +211,11 @@ class PprintItemExporter(BaseItemExporter):
         self.file.write(pprint.pformat(itemdict) + '\n')
 
 class PythonItemExporter(BaseItemExporter):
+    """The idea behind this exporter is to have a mechanism to serialize items
+    to built-in python types so any serialization library (like
+    json, msgpack, binc, etc) can be used on top of it. Its main goal is to
+    seamless support what BaseItemExporter does plus nested items.
+    """
 
     def serialize_field(self, field, name, value):
         serializer = field.get('serializer', self._serialize_value)
