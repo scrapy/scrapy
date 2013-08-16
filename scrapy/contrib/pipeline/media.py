@@ -7,6 +7,7 @@ from scrapy import log
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.misc import arg_to_iter
 
+
 class MediaPipeline(object):
 
     LOG_FAILED_RESULTS = True
@@ -65,7 +66,7 @@ class MediaPipeline(object):
         dfd.addCallback(self._check_media_to_download, request, info)
         dfd.addBoth(self._cache_result_and_execute_waiters, fp, info)
         dfd.addErrback(log.err, spider=info.spider)
-        return dfd.addBoth(lambda _: wad) # it must return wad at last
+        return dfd.addBoth(lambda _: wad)  # it must return wad at last
 
     def _check_media_to_download(self, result, request, info):
         if result is not None:
@@ -91,7 +92,7 @@ class MediaPipeline(object):
             result.frames = []
             result.stack = None
         info.downloading.remove(fp)
-        info.downloaded[fp] = result # cache result
+        info.downloaded[fp] = result  # cache result
         for wad in info.waiting.pop(fp):
             defer_result(result).chainDeferred(wad)
 

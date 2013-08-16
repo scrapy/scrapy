@@ -61,15 +61,6 @@ class ImagesPipelineTestCase(unittest.TestCase):
         self.assertEqual(thumbnail_name("/tmp/some.name/foo", name),
                          'thumbs/50/92dac2a6a2072c5695a5dff1f865b3cb70c657bb.jpg')
 
-    def test_fs_store(self):
-        from scrapy.contrib.pipeline.files import FSFilesStore
-        assert isinstance(self.pipeline.store, FSFilesStore)
-        self.assertEqual(self.pipeline.store.basedir, self.tempdir)
-
-        key = 'some/image/key.jpg'
-        path = os.path.join(self.tempdir, 'some', 'image', 'key.jpg')
-        self.assertEqual(self.pipeline.store._get_filesystem_path(key), path)
-
     def test_convert_image(self):
         SIZE = (100, 100)
         # straigh forward case: RGB and JPEG
