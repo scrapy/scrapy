@@ -106,3 +106,12 @@ DummyStatsCollector
     the performance penalty of stats collection is usually marginal compared to
     other Scrapy workload like parsing pages.
 
+JsonStatsCollector
+-------------------
+
+.. class:: JsonStatsCollector
+
+    A Stats collector which will log the stats to a json file that must be set
+    using the :setting: 'STAT_FILE' setting. If the file already exist due to 
+    a previous run, the old file will be overwritten by the new stats. The stats
+    will still be logged in the standard logger.
