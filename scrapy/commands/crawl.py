@@ -43,6 +43,8 @@ class Command(ScrapyCommand):
         elif len(args) > 1:
             raise UsageError("running 'scrapy crawl' with more than one spider is no longer supported")
         spname = args[0]
-        spider = self.crawler.spiders.create(spname, **opts.spargs)
-        self.crawler.crawl(spider)
-        self.crawler.start()
+
+        crawler = self.crawler_process.create_crawler()
+        spider = crawler.spiders.create(spname, **opts.spargs)
+        crawler.crawl(spider)
+        self.crawler_process.start()

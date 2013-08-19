@@ -24,9 +24,11 @@ class Command(ScrapyCommand):
     def run(self, args, opts):
         if len(args) != 1:
             raise UsageError()
-        editor = self.crawler.settings['EDITOR']
+
+        crawler = self.crawler_process.create_crawler()
+        editor = crawler.settings['EDITOR']
         try:
-            spider = self.crawler.spiders.create(args[0])
+            spider = crawler.spiders.create(args[0])
         except KeyError:
             return self._err("Spider not found: %s" % args[0])
 

@@ -8,7 +8,7 @@ from threading import Thread
 
 from scrapy.command import ScrapyCommand
 from scrapy.shell import Shell
-from scrapy import log
+
 
 class Command(ScrapyCommand):
 
@@ -38,15 +38,17 @@ class Command(ScrapyCommand):
         pass
 
     def run(self, args, opts):
+        crawler = self.crawler_process.create_crawler()
+
         url = args[0] if args else None
-        spider = None
-        if opts.spider:
-            spider = self.crawler.spiders.create(opts.spider)
-        shell = Shell(self.crawler, update_vars=self.update_vars, code=opts.code)
+        spider = crawler.spiders.create(opts.spider) if opts.spider else None
+
+        shell = Shell(crawler, update_vars=self.update_vars, code=opts.code)
         self._start_crawler_thread()
         shell.start(url=url, spider=spider)
 
     def _start_crawler_thread(self):
-        t = Thread(target=self.crawler.start)
+        self.crawler_process.print_headers()
+        t = Thread(target=self.crawler_process.start, kwargs={'headers': False})
         t.daemon = True
         t.start()

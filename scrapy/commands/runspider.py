@@ -74,5 +74,6 @@ class Command(ScrapyCommand):
             raise UsageError("No spider found in file: %s\n" % filename)
         spider = spclasses.pop()(**opts.spargs)
 
-        self.crawler.crawl(spider)
-        self.crawler.start()
+        crawler = self.crawler_process.create_crawler()
+        crawler.crawl(spider)
+        self.crawler_process.start()
