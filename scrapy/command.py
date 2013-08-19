@@ -34,7 +34,7 @@ class ScrapyCommand(object):
             ScrapyDeprecationWarning)
 
         if not hasattr(self, '_crawler'):
-            crawler = self.crawler_process.create_crawler('default')
+            crawler = self.crawler_process.create_crawler()
 
             old_start = crawler.start
             self.crawler_process.started = False

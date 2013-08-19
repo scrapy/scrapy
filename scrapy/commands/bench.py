@@ -16,5 +16,6 @@ class Command(ScrapyCommand):
     def run(self, args, opts):
         with MockServer():
             spider = FollowAllSpider(total=100000)
-            self.crawler.crawl(spider)
-            self.crawler.start()
+            crawler = self.crawler_process.create_crawler()
+            crawler.crawl(spider)
+            self.crawler_process.start()

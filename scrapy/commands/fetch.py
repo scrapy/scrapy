@@ -47,12 +47,12 @@ class Command(ScrapyCommand):
         request = Request(args[0], callback=cb, dont_filter=True)
         request.meta['handle_httpstatus_all'] = True
 
+        crawler = self.crawler_process.create_crawler()
         spider = None
         if opts.spider:
-            spider = self.crawler.spiders.create(opts.spider)
+            spider = crawler.spiders.create(opts.spider)
         else:
-            spider = create_spider_for_request(self.crawler.spiders, request, \
+            spider = create_spider_for_request(crawler.spiders, request, \
                 default_spider=BaseSpider('default'))
-        self.crawler.crawl(spider, [request])
-        self.crawler.start()
-
+        crawler.crawl(spider, [request])
+        self.crawler_process.start()
