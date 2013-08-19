@@ -20,7 +20,6 @@ def _generate(cb):
 
 class Command(ScrapyCommand):
     requires_project = True
-    multi_crawlers = True
     default_settings = {'LOG_ENABLED': False}
 
     def syntax(self):
@@ -59,7 +58,7 @@ class Command(ScrapyCommand):
                 for req in requests:
                     contract_reqs[spider.name].append(req.callback.__name__)
             elif requests:
-                crawler = self.process.create_crawler(spider.name)
+                crawler = self.crawler_process.create_crawler(spider.name)
                 crawler.crawl(spider, requests)
 
         # start checks
@@ -69,7 +68,7 @@ class Command(ScrapyCommand):
                 for method in sorted(methods):
                     print '  * %s' % method
         else:
-            self.process.start()
+            self.crawler_process.start()
             self.results.printErrors()
 
     def get_requests(self, spider):
