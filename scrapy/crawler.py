@@ -8,7 +8,6 @@ from scrapy.extension import ExtensionManager
 from scrapy.signalmanager import SignalManager
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.misc import load_object
-from scrapy.settings import overridden_settings
 from scrapy import log, signals
 
 
@@ -35,9 +34,8 @@ class Crawler(object):
     def configure(self):
         if self.configured:
             return
+
         self.configured = True
-        d = dict(overridden_settings(self.settings))
-        log.msg(format="Overridden settings: %(settings)r", settings=d, level=log.DEBUG)
         lf_cls = load_object(self.settings['LOG_FORMATTER'])
         self.logformatter = lf_cls.from_crawler(self)
         self.extensions = ExtensionManager.from_crawler(self)
@@ -84,10 +82,14 @@ class ProcessMixin(object):
         install_shutdown_handlers(self._signal_shutdown)
 
     def start(self):
+        self.start_crawling()
         if self.settings.getbool('DNSCACHE_ENABLED'):
             reactor.installResolver(CachingThreadedResolver(reactor))
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
         reactor.run(installSignalHandlers=False)  # blocking call
+
+    def start_crawling(self):
+        raise NotImplementedError
 
     def stop(self):
         raise NotImplementedError
@@ -113,31 +115,12 @@ class ProcessMixin(object):
         reactor.callFromThread(self._stop_reactor)
 
 
-class CrawlerProcess(Crawler, ProcessMixin):
-    """ A class to run a single Scrapy crawler in a process
-    """
-
-    def __init__(self, *a, **kw):
-        Crawler.__init__(self, *a, **kw)
-        ProcessMixin.__init__(self, *a, **kw)
-        self.signals.connect(self.stop, signals.engine_stopped)
-
-    def start(self):
-        Crawler.start(self)
-        ProcessMixin.start(self)
-
-    def stop(self):
-        d = Crawler.stop(self)
-        d.addBoth(self._stop_reactor)
-        return d
-
-
-class MultiCrawlerProcess(ProcessMixin):
+class CrawlerProcess(ProcessMixin):
     """ A class to run multiple scrapy crawlers in a process sequentially
     """
 
     def __init__(self, settings):
-        super(MultiCrawlerProcess, self).__init__(settings)
+        super(CrawlerProcess, self).__init__(settings)
 
         self.settings = settings
         self.crawlers = {}
@@ -145,16 +128,21 @@ class MultiCrawlerProcess(ProcessMixin):
 
     def create_crawler(self, name):
         if name not in self.crawlers:
-            self.crawlers[name] = Crawler(self.settings)
+            crawler = Crawler(self.settings)
+            crawler.configure()
+
+            self.crawlers[name] = crawler
 
         return self.crawlers[name]
 
-    def start_crawler(self):
+    def start_crawling(self):
         name, crawler = self.crawlers.popitem()
 
-        crawler.sflo = log.start_from_crawler(crawler)
-        if crawler.sflo:
-            crawler.signals.connect(crawler.sflo.stop, signals.engine_stopped)
+        sflo = log.start_from_crawler(crawler)
+        crawler.install()
+        crawler.signals.connect(crawler.uninstall, signals.engine_stopped)
+        if sflo:
+            crawler.signals.connect(sflo.stop, signals.engine_stopped)
 
         crawler.signals.connect(self.check_done, signals.engine_stopped)
         crawler.start()
@@ -163,13 +151,13 @@ class MultiCrawlerProcess(ProcessMixin):
 
     def check_done(self, **kwargs):
         if self.crawlers and not self.stopping:
-            self.start_crawler()
+            self.start_crawling()
         else:
             self._stop_reactor()
 
     def start(self):
-        self.start_crawler()
-        super(MultiCrawlerProcess, self).start()
+        log.scrapy_info(self.settings)
+        return super(CrawlerProcess, self).start()
 
     @defer.inlineCallbacks
     def stop(self):

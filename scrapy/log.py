@@ -11,6 +11,7 @@ from twisted.python import log
 
 import scrapy
 from scrapy.utils.python import unicode_to_str
+from scrapy.settings import overridden_settings
 
 # Logging levels
 DEBUG = logging.DEBUG
@@ -133,17 +134,24 @@ def err(_stuff=None, _why=None, **kw):
     kw.setdefault('system', 'scrapy')
     log.err(_stuff, _why, **kw)
 
-def start_from_crawler(crawler):
-    settings = crawler.settings
-    if not settings.getbool('LOG_ENABLED'):
-        return
+def start_from_settings(settings, crawler=None):
+    if settings.getbool('LOG_ENABLED'):
+        return start(settings['LOG_FILE'], settings['LOG_LEVEL'], settings['LOG_STDOUT'],
+            settings['LOG_ENCODING'], crawler)
 
-    sflo = start(settings['LOG_FILE'], settings['LOG_LEVEL'], settings['LOG_STDOUT'],
-        settings['LOG_ENCODING'], crawler)
+def scrapy_info(settings):
+    sflo = start_from_settings(settings)
+    if sflo:
+        msg("Scrapy %s started (bot: %s)" % (scrapy.__version__, \
+            settings['BOT_NAME']))
 
-    msg("Scrapy %s started (bot: %s)" % (scrapy.__version__, \
-        settings['BOT_NAME']))
-    msg("Optional features available: %s" % ", ".join(scrapy.optional_features),
-        level=DEBUG)
+        msg("Optional features available: %s" % ", ".join(scrapy.optional_features),
+            level=DEBUG)
 
-    return sflo
+        d = dict(overridden_settings(settings))
+        msg(format="Overridden settings: %(settings)r", settings=d, level=DEBUG)
+
+        sflo.stop()
+
+def start_from_crawler(crawler, print_headers=False):
+    return start_from_settings(crawler.settings, crawler)
