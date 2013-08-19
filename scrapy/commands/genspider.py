@@ -62,7 +62,8 @@ class Command(ScrapyCommand):
             return
 
         try:
-            spider = self.crawler.spiders.create(name)
+            crawler = self.crawler_process.create_crawler()
+            spider = crawler.spiders.create(name)
         except KeyError:
             pass
         else:

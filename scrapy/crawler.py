@@ -126,7 +126,7 @@ class CrawlerProcess(ProcessMixin):
         self.crawlers = {}
         self.stopping = False
 
-    def create_crawler(self, name):
+    def create_crawler(self, name=None):
         if name not in self.crawlers:
             crawler = Crawler(self.settings)
             crawler.configure()
@@ -155,8 +155,12 @@ class CrawlerProcess(ProcessMixin):
         else:
             self._stop_reactor()
 
-    def start(self):
+    def print_headers(self):
         log.scrapy_info(self.settings)
+
+    def start(self, headers=True):
+        if headers:
+            self.print_headers()
         return super(CrawlerProcess, self).start()
 
     @defer.inlineCallbacks

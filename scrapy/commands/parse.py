@@ -125,12 +125,12 @@ class Command(ScrapyCommand):
     def set_spider(self, url, opts):
         if opts.spider:
             try:
-                self.spider = self.crawler.spiders.create(opts.spider, **opts.spargs)
+                self.spider = self.pcrawler.spiders.create(opts.spider, **opts.spargs)
             except KeyError:
                 log.msg(format='Unable to find spider: %(spider)s',
                         level=log.ERROR, spider=opts.spider)
         else:
-            self.spider = create_spider_for_request(self.crawler.spiders, Request(url), **opts.spargs)
+            self.spider = create_spider_for_request(self.pcrawler.spiders, Request(url), **opts.spargs)
             if not self.spider:
                 log.msg(format='Unable to find spider for: %(url)s',
                         level=log.ERROR, url=url)
@@ -139,8 +139,8 @@ class Command(ScrapyCommand):
         request = Request(url, opts.callback)
         request = self.prepare_request(request, opts)
 
-        self.crawler.crawl(self.spider, [request])
-        self.crawler.start()
+        self.pcrawler.crawl(self.spider, [request])
+        self.crawler_process.start()
 
         if not self.first_response:
             log.msg(format='No response downloaded for: %(request)s',
@@ -174,7 +174,7 @@ class Command(ScrapyCommand):
 
             items, requests = self.run_callback(response, cb)
             if opts.pipelines:
-                itemproc = self.crawler.engine.scraper.itemproc
+                itemproc = self.pcrawler.engine.scraper.itemproc
                 for item in items:
                     itemproc.process_item(item, self.spider)
             self.add_items(depth, items)
@@ -207,6 +207,7 @@ class Command(ScrapyCommand):
             url = args[0]
 
         # prepare spider
+        self.pcrawler = self.crawler_process.create_crawler()
         self.set_spider(url, opts)
 
         if self.spider and opts.depth > 0:
