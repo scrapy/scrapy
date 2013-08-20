@@ -19,6 +19,9 @@ class Crawler(object):
         self.signals = SignalManager(self)
         self.stats = load_object(settings['STATS_CLASS'])(self)
 
+        spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
+        self.spiders = spman_cls.from_crawler(self)
+
         self.scheduled = {}
 
     def install(self):
@@ -39,20 +42,25 @@ class Crawler(object):
         lf_cls = load_object(self.settings['LOG_FORMATTER'])
         self.logformatter = lf_cls.from_crawler(self)
         self.extensions = ExtensionManager.from_crawler(self)
-        spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
-        self.spiders = spman_cls.from_crawler(self)
         self.engine = ExecutionEngine(self, self._spider_closed)
 
     def crawl(self, spider, requests=None):
         spider.set_crawler(self)
-        if requests is None:
-            requests = spider.start_requests()
 
         if self.configured and self.engine.running:
             assert not self.scheduled
-            return self.engine.open_spider(spider, requests)
+            return self.schedule(spider, requests)
         else:
-            self.scheduled.setdefault(spider, []).extend(requests)
+            self.scheduled.setdefault(spider, []).append(requests)
+
+    def schedule(self, spider, batches=[]):
+        requests = []
+        for batch in batches:
+            if batch is None:
+                batch = spider.start_requests()
+            requests.extend(batch)
+
+        return self.engine.open_spider(spider, requests)
 
     def _spider_closed(self, spider=None):
         if not self.engine.open_spiders:
@@ -62,8 +70,8 @@ class Crawler(object):
     def start(self):
         yield defer.maybeDeferred(self.configure)
 
-        for spider, requests in self.scheduled.iteritems():
-            yield self.engine.open_spider(spider, requests)
+        for spider, batches in self.scheduled.iteritems():
+            yield self.schedule(spider, batches)
 
         yield defer.maybeDeferred(self.engine.start)
 
@@ -128,10 +136,7 @@ class CrawlerProcess(ProcessMixin):
 
     def create_crawler(self, name=None):
         if name not in self.crawlers:
-            crawler = Crawler(self.settings)
-            crawler.configure()
-
-            self.crawlers[name] = crawler
+            self.crawlers[name] = Crawler(self.settings)
 
         return self.crawlers[name]
 
@@ -139,6 +144,7 @@ class CrawlerProcess(ProcessMixin):
         name, crawler = self.crawlers.popitem()
 
         sflo = log.start_from_crawler(crawler)
+        crawler.configure()
         crawler.install()
         crawler.signals.connect(crawler.uninstall, signals.engine_stopped)
         if sflo:

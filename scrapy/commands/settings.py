@@ -26,6 +26,7 @@ class Command(ScrapyCommand):
 
     def run(self, args, opts):
         crawler = self.crawler_process.create_crawler()
+        crawler.configure()
         settings = crawler.settings
         if opts.get:
             print settings.get(opts.get)
