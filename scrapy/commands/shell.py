@@ -43,12 +43,13 @@ class Command(ScrapyCommand):
         url = args[0] if args else None
         spider = crawler.spiders.create(opts.spider) if opts.spider else None
 
-        shell = Shell(crawler, update_vars=self.update_vars, code=opts.code)
+        self.crawler_process.start_crawling()
         self._start_crawler_thread()
+
+        shell = Shell(crawler, update_vars=self.update_vars, code=opts.code)
         shell.start(url=url, spider=spider)
 
     def _start_crawler_thread(self):
-        self.crawler_process.print_headers()
-        t = Thread(target=self.crawler_process.start, kwargs={'headers': False})
+        t = Thread(target=self.crawler_process.start_reactor)
         t.daemon = True
         t.start()

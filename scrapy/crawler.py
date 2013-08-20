@@ -91,6 +91,9 @@ class ProcessMixin(object):
 
     def start(self):
         self.start_crawling()
+        self.start_reactor()
+
+    def start_reactor(self):
         if self.settings.getbool('DNSCACHE_ENABLED'):
             reactor.installResolver(CachingThreadedResolver(reactor))
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
@@ -102,7 +105,7 @@ class ProcessMixin(object):
     def stop(self):
         raise NotImplementedError
 
-    def _stop_reactor(self, _=None):
+    def stop_reactor(self, _=None):
         try:
             reactor.stop()
         except RuntimeError:  # raised if already stopped or in shutdown stage
@@ -120,7 +123,7 @@ class ProcessMixin(object):
         signame = signal_names[signum]
         log.msg(format='Received %(signame)s twice, forcing unclean shutdown',
                 level=log.INFO, signame=signame)
-        reactor.callFromThread(self._stop_reactor)
+        reactor.callFromThread(self.stop_reactor)
 
 
 class CrawlerProcess(ProcessMixin):
@@ -140,7 +143,7 @@ class CrawlerProcess(ProcessMixin):
 
         return self.crawlers[name]
 
-    def start_crawling(self):
+    def start_crawler(self):
         name, crawler = self.crawlers.popitem()
 
         sflo = log.start_from_crawler(crawler)
@@ -157,17 +160,13 @@ class CrawlerProcess(ProcessMixin):
 
     def check_done(self, **kwargs):
         if self.crawlers and not self.stopping:
-            self.start_crawling()
+            self.start_crawler()
         else:
-            self._stop_reactor()
+            self.stop_reactor()
 
-    def print_headers(self):
+    def start_crawling(self):
         log.scrapy_info(self.settings)
-
-    def start(self, headers=True):
-        if headers:
-            self.print_headers()
-        return super(CrawlerProcess, self).start()
+        self.start_crawler()
 
     @defer.inlineCallbacks
     def stop(self):
