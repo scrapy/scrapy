@@ -153,5 +153,5 @@ def scrapy_info(settings):
 
         sflo.stop()
 
-def start_from_crawler(crawler, print_headers=False):
+def start_from_crawler(crawler):
     return start_from_settings(crawler.settings, crawler)
