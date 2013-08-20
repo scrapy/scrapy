@@ -53,7 +53,7 @@ class ImagesPipeline(FilesPipeline):
                 buf.seek(0)
                 checksum = md5sum(buf)
             width, height = image.size
-            self.store.persist_image(
+            self.store.persist_file(
                 key, buf, info,
                 meta={'width': width, 'height': height},
                 headers={'Content-Type': 'image/jpeg'})
