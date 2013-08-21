@@ -90,6 +90,12 @@ class CrawlTestCase(TestCase):
         yield docrawl(spider)
         self._assert_retried()
 
+    @defer.inlineCallbacks
+    def test_retry_dropped_connection(self):
+        spider = SimpleSpider("http://localhost:8998/drop")
+        yield docrawl(spider)
+        self._assert_retried()
+
     def _assert_retried(self):
         log = get_testlog()
         self.assertEqual(log.count("Retrying"), 2)

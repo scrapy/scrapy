@@ -102,7 +102,7 @@ class Drop(Partial):
 
     def _delayedRender(self, request):
         request.write("this connection will be dropped\n")
-        request.channel.transport.loseConnection()
+        request.channel.transport.abortConnection()
         request.finish()
 
 
