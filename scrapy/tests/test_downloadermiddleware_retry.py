@@ -1,13 +1,15 @@
 import unittest
 
-from twisted.internet.error import TimeoutError as ServerTimeoutError, DNSLookupError, \
-                                   ConnectionRefusedError, ConnectionDone, ConnectError, \
-                                   ConnectionLost
+from twisted.internet.error import TimeoutError as ServerTimeoutError, \
+    DNSLookupError, ConnectionRefusedError, ConnectionDone, ConnectError, \
+    ConnectionLost
 
 from scrapy.contrib.downloadermiddleware.retry import RetryMiddleware
+from scrapy.xlib.tx import ResponseFailed
 from scrapy.spider import BaseSpider
 from scrapy.http import Request, Response
 from scrapy.utils.test import get_crawler
+
 
 class RetryTest(unittest.TestCase):
     def setUp(self):
@@ -62,9 +64,11 @@ class RetryTest(unittest.TestCase):
         assert self.mw.process_response(req, rsp, self.spider) is rsp
 
     def test_twistederrors(self):
-        for exc in (ServerTimeoutError, DNSLookupError, ConnectionRefusedError, ConnectionDone, ConnectError, ConnectionLost):
+        for exc in (ServerTimeoutError, DNSLookupError, ConnectionRefusedError,
+                    ConnectionDone, ConnectError, ConnectionLost,
+                    ResponseFailed):
             req = Request('http://www.scrapytest.org/%s' % exc.__name__)
-            self._test_retry_exception(req, exc())
+            self._test_retry_exception(req, exc('foo'))
 
     def _test_retry_exception(self, req, exception):
         # first retry
