@@ -3,6 +3,7 @@ Item Exporters are used to export/serialize items into different formats.
 """
 
 import csv
+import sys
 import pprint
 import marshal
 import json
@@ -141,8 +142,22 @@ class XmlItemExporter(BaseItemExporter):
             for value in serialized_value:
                 self._export_xml_field('value', value)
         else:
-            self.xg.characters(serialized_value)
+            self._xg_characters(serialized_value)
         self.xg.endElement(name)
+
+    # Workaround for http://bugs.python.org/issue17606
+    # Before Python 2.7.4 xml.sax.saxutils required bytes;
+    # since 2.7.4 it requires unicode. The bug is likely to be
+    # fixed in 2.7.6, but 2.7.6 will still support unicode,
+    # and Python 3.x will require unicode, so ">= 2.7.4" should be fine.
+    if sys.version_info[:3] >= (2, 7, 4):
+        def _xg_characters(self, serialized_value):
+            if not isinstance(serialized_value, unicode):
+                serialized_value = serialized_value.decode(self.encoding)
+            return self.xg.characters(serialized_value)
+    else:
+        def _xg_characters(self, serialized_value):
+            return self.xg.characters(serialized_value)
 
 
 class CsvItemExporter(BaseItemExporter):
