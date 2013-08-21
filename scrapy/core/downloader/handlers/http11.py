@@ -7,17 +7,16 @@ from urlparse import urldefrag
 from zope.interface import implements
 from twisted.internet import defer, reactor, protocol
 from twisted.web.http_headers import Headers as TxHeaders
-from twisted.web.http import PotentialDataLoss
 from twisted.web.iweb import IBodyProducer
+from twisted.web.http import PotentialDataLoss
 from twisted.internet.error import TimeoutError
 from scrapy.xlib.tx import Agent, ProxyAgent, ResponseDone, \
-        ResponseFailed, HTTPConnectionPool, TCP4ClientEndpoint
+    HTTPConnectionPool, TCP4ClientEndpoint, ResponseFailed
 
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import _parse
 from scrapy.utils.misc import load_object
-from scrapy import log
 
 
 class HTTP11DownloadHandler(object):
@@ -55,7 +54,7 @@ class ScrapyAgent(object):
         if proxy:
             scheme, _, host, port, _ = _parse(proxy)
             endpoint = TCP4ClientEndpoint(reactor, host, port, timeout=timeout,
-                bindAddress=bindaddress)
+                                          bindAddress=bindaddress)
             return self._ProxyAgent(endpoint)
 
         return self._Agent(reactor, contextFactory=self._contextFactory,
@@ -145,10 +144,9 @@ class _ResponseReader(protocol.Protocol):
     def connectionLost(self, reason):
         if self._finished.called:
             return
+
         body = self._bodybuf.getvalue()
         if reason.check(ResponseDone):
             self._finished.callback((self._txresponse, body, None))
-        elif reason.check(PotentialDataLoss, ResponseFailed):
-            self._finished.callback((self._txresponse, body, ['partial']))
         else:
             self._finished.errback(reason)

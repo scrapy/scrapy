@@ -101,9 +101,13 @@ class Partial(DeferMixin, Resource):
 class Drop(Partial):
 
     def _delayedRender(self, request):
+        abort = getarg(request, "abort", 0, type=int)
         request.write("this connection will be dropped\n")
-        request.channel.transport.abortConnection()
-        request.finish()
+        if abort:
+            request.channel.transport.abortConnection()
+        else:
+            request.channel.transport.loseConnection()
+            request.finish()
 
 
 class Root(Resource):
