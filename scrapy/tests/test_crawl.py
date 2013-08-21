@@ -91,8 +91,16 @@ class CrawlTestCase(TestCase):
         self._assert_retried()
 
     @defer.inlineCallbacks
-    def test_retry_dropped_connection(self):
-        spider = SimpleSpider("http://localhost:8998/drop")
+    def test_retry_conn_lost(self):
+        # connection lost after receiving data
+        spider = SimpleSpider("http://localhost:8998/drop?abort=0")
+        yield docrawl(spider)
+        self._assert_retried()
+
+    @defer.inlineCallbacks
+    def test_retry_conn_aborted(self):
+        # connection lost before receiving data
+        spider = SimpleSpider("http://localhost:8998/drop?abort=1")
         yield docrawl(spider)
         self._assert_retried()
 
