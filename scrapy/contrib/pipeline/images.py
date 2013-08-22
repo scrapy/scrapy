@@ -46,7 +46,13 @@ class ImagesPipeline(FilesPipeline):
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri)
 
-    def process_downloaded_media(self, response, request, info):
+    def file_key(self, url):
+        return self.image_key(url)
+
+    def file_downloaded(self, response, request, info):
+        return self.image_downloaded(response, request, info)
+
+    def image_downloaded(self, response, request, info):
         checksum = None
         for key, image, buf in self.get_images(response, request, info):
             if checksum is None:
@@ -99,12 +105,10 @@ class ImagesPipeline(FilesPipeline):
     def get_media_requests(self, item, info):
         return [Request(x) for x in item.get('image_urls', [])]
 
-    def file_key(self, url):
+    # backwards compatibility
+    def image_key(self, url):
         media_guid = hashlib.sha1(url).hexdigest()
         return 'full/%s.jpg' % (media_guid)
-
-    # backwards compatibility
-    image_key = file_key
 
     def item_completed(self, results, item, info):
         if 'images' in item.fields:

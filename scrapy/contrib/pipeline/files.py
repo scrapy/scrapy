@@ -229,7 +229,7 @@ class FilesPipeline(MediaPipeline):
 
         try:
             key = self.file_key(request.url)
-            checksum = self.process_downloaded_media(response, request, info)
+            checksum = self.file_downloaded(response, request, info)
         except FileException as exc:
             whyfmt = 'File (error): Error processing image from %(request)s referred in <%(referer)s>: %(errormsg)s'
             log.msg(format=whyfmt, level=log.WARNING, spider=info.spider,
@@ -255,7 +255,7 @@ class FilesPipeline(MediaPipeline):
         media_ext = os.path.splitext(url)[1]
         return 'full/%s%s' % (media_guid, media_ext)
 
-    def process_downloaded_media(self, response, request, info):
+    def file_downloaded(self, response, request, info):
         key = self.file_key(request.url)
         buf = StringIO(response.body)
         self.store.persist_file(key, buf, info)

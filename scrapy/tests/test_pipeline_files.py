@@ -56,7 +56,7 @@ class FilesPipelineTestCase(unittest.TestCase):
         item = _create_item_with_files(item_url)
         patchers = [
             mock.patch.object(FilesPipeline, 'inc_stats', return_value=True),
-            mock.patch.object(FSFilesStore, 'stat_image', return_value={
+            mock.patch.object(FSFilesStore, 'stat_file', return_value={
                 'checksum': 'abc', 'last_modified': time.time()}),
             mock.patch.object(FilesPipeline, 'get_media_requests',
                               return_value=[_prepare_request_object(item_url)])
@@ -73,7 +73,7 @@ class FilesPipelineTestCase(unittest.TestCase):
         item_url = "http://example.com/file2.pdf"
         item = _create_item_with_files(item_url)
         patchers = [
-            mock.patch.object(FSFilesStore, 'stat_image', return_value={
+            mock.patch.object(FSFilesStore, 'stat_file', return_value={
                 'checksum': 'abc',
                 'last_modified': time.time() - (FilesPipeline.EXPIRES * 60 * 60 * 24 * 2)}),
             mock.patch.object(FilesPipeline, 'get_media_requests',
