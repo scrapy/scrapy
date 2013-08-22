@@ -246,7 +246,7 @@ class FilesPipeline(MediaPipeline):
         spider.crawler.stats.inc_value('file_count', spider=spider)
         spider.crawler.stats.inc_value('file_status_count/%s' % status, spider=spider)
 
-    ### Overradiable Interface
+    ### Overridable Interface
     def get_media_requests(self, item, info):
         return [Request(x) for x in item.get('file_urls', [])]
 
