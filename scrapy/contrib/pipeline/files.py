@@ -36,18 +36,18 @@ class FSFilesStore(object):
     def persist_file(self, key, buf, info, meta=None, headers=None):
         absolute_path = self._get_filesystem_path(key)
         self._mkdir(os.path.dirname(absolute_path), info)
-        with open(absolute_path, 'w') as f:
+        with open(absolute_path, 'wb') as f:
             f.write(buf.getvalue())
 
-    def stat_image(self, key, info):
+    def stat_file(self, key, info):
         absolute_path = self._get_filesystem_path(key)
         try:
             last_modified = os.path.getmtime(absolute_path)
         except:  # FIXME: catching everything!
             return {}
 
-        with open(absolute_path, 'rb') as imagefile:
-            checksum = md5sum(imagefile)
+        with open(absolute_path, 'rb') as f:
+            checksum = md5sum(f)
 
         return {'last_modified': last_modified, 'checksum': checksum}
 
@@ -77,7 +77,7 @@ class S3FilesStore(object):
         assert uri.startswith('s3://')
         self.bucket, self.prefix = uri[5:].split('/', 1)
 
-    def stat_image(self, key, info):
+    def stat_file(self, key, info):
         def _onsuccess(boto_key):
             checksum = boto_key.etag.strip('"')
             last_modified = boto_key.last_modified
@@ -190,9 +190,9 @@ class FilesPipeline(MediaPipeline):
             return {'url': request.url, 'path': key, 'checksum': checksum}
 
         key = self.file_key(request.url)
-        dfd = defer.maybeDeferred(self.store.stat_image, key, info)
+        dfd = defer.maybeDeferred(self.store.stat_file, key, info)
         dfd.addCallbacks(_onsuccess, lambda _: None)
-        dfd.addErrback(log.err, self.__class__.__name__ + '.store.stat_image')
+        dfd.addErrback(log.err, self.__class__.__name__ + '.store.stat_file')
         return dfd
 
     def media_failed(self, failure, request, info):
