@@ -19,7 +19,7 @@ from scrapy import log
 from scrapy.utils.misc import md5sum
 from scrapy.http import Request
 from scrapy.exceptions import DropItem, NotConfigured, IgnoreRequest
-from scrapy.contrib.pipeline.media import MediaPipeline
+from scrapy.contrib.pipeline.files import FileMediaPipeline, S3FilesStore
 
 
 class NoimagesDrop(DropItem):
@@ -68,7 +68,7 @@ class FSImagesStore(object):
             seen.add(dirname)
 
 
-class S3ImagesStore(object):
+class S3ImagesStore(S3FilesStore):
 
     AWS_ACCESS_KEY_ID = None
     AWS_SECRET_ACCESS_KEY = None
@@ -118,41 +118,17 @@ class S3ImagesStore(object):
                                      headers=self.HEADERS, policy=self.POLICY)
 
 
-class ImagesPipeline(MediaPipeline):
-    """Abstract pipeline that implement the image downloading and thumbnail generation logic
-
-    This pipeline tries to minimize network transfers and image processing,
-    doing stat of the images and determining if image is new, uptodate or
-    expired.
-
-    `new` images are those that pipeline never processed and needs to be
-        downloaded from supplier site the first time.
-
-    `uptodate` images are the ones that the pipeline processed and are still
-        valid images.
-
-    `expired` images are those that pipeline already processed but the last
-        modification was made long time ago, so a reprocessing is recommended to
-        refresh it in case of change.
-
-    """
-
+class ImagesPipeline(FileMediaPipeline):
     MEDIA_NAME = 'image'
-    MIN_WIDTH = 0
-    MIN_HEIGHT = 0
-    EXPIRES = 90
-    THUMBS = {}
-    STORE_SCHEMES = {
-        '': FSImagesStore,
-        'file': FSImagesStore,
-        's3': S3ImagesStore,
-    }
+    ITEM_MEDIA_URLS_KEY = 'image_urls'
+    ITEM_MEDIA_RESULT_KEY = 'images'
+    ORIGINAL_CONVERT_FORMAT = 'JPEG'
 
-    def __init__(self, store_uri, download_func=None):
-        if not store_uri:
-            raise NotConfigured
-        self.store = self._get_store(store_uri)
-        super(ImagesPipeline, self).__init__(download_func=download_func)
+    _imagefile_extensions = {
+        'JPEG': 'jpg',
+        'PNG': 'png',
+        'TIFF': 'tif',
+    }
 
     @classmethod
     def from_settings(cls, settings):
@@ -160,127 +136,56 @@ class ImagesPipeline(MediaPipeline):
         cls.MIN_HEIGHT = settings.getint('IMAGES_MIN_HEIGHT', 0)
         cls.EXPIRES = settings.getint('IMAGES_EXPIRES', 90)
         cls.THUMBS = settings.get('IMAGES_THUMBS', {})
+        cls.ORIGINAL_SAVE = settings.getbool('IMAGES_ORIGINAL_SAVE', False)
+        cls.ORIGINAL_CONVERT = settings.getbool('IMAGES_ORIGINAL_CONVERT', True)
+        cls.ORIGINAL_CONVERT_FORMAT = settings.get(
+            'IMAGES_ORIGINAL_CONVERT_FORMAT', 'JPEG')
+        cls.REPORT_DIMENSIONS = settings.getbool('IMAGES_REPORT_DIMENSIONS', False)
         s3store = cls.STORE_SCHEMES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri)
 
-    def _get_store(self, uri):
-        if os.path.isabs(uri):  # to support win32 paths like: C:\\some\dir
-            scheme = 'file'
-        else:
-            scheme = urlparse.urlparse(uri).scheme
-        store_cls = self.STORE_SCHEMES[scheme]
-        return store_cls(uri)
-
-    def media_downloaded(self, response, request, info):
-        referer = request.headers.get('Referer')
-
-        if response.status != 200:
-            log.msg(format='Image (code: %(status)s): Error downloading image from %(request)s referred in <%(referer)s>',
-                    level=log.WARNING, spider=info.spider,
-                    status=response.status, request=request, referer=referer)
-            raise ImageException('download-error')
-
-        if not response.body:
-            log.msg(format='Image (empty-content): Empty image from %(request)s referred in <%(referer)s>: no-content',
-                    level=log.WARNING, spider=info.spider,
-                    request=request, referer=referer)
-            raise ImageException('empty-content')
-
-        status = 'cached' if 'cached' in response.flags else 'downloaded'
-        log.msg(format='Image (%(status)s): Downloaded image from %(request)s referred in <%(referer)s>',
-                level=log.DEBUG, spider=info.spider,
-                status=status, request=request, referer=referer)
-        self.inc_stats(info.spider, status)
-
-        try:
-            key = self.image_key(request.url)
-            checksum = self.image_downloaded(response, request, info)
-        except ImageException as exc:
-            whyfmt = 'Image (error): Error processing image from %(request)s referred in <%(referer)s>: %(errormsg)s'
-            log.msg(format=whyfmt, level=log.WARNING, spider=info.spider,
-                    request=request, referer=referer, errormsg=str(exc))
-            raise
-        except Exception as exc:
-            whyfmt = 'Image (unknown-error): Error processing image from %(request)s referred in <%(referer)s>'
-            log.err(None, whyfmt % {'request': request, 'referer': referer}, spider=info.spider)
-            raise ImageException(str(exc))
-
-        return {'url': request.url, 'path': key, 'checksum': checksum}
-
-    def media_failed(self, failure, request, info):
-        if not isinstance(failure.value, IgnoreRequest):
-            referer = request.headers.get('Referer')
-            log.msg(format='Image (unknown-error): Error downloading '
-                           '%(medianame)s from %(request)s referred in '
-                           '<%(referer)s>: %(exception)s',
-                    level=log.WARNING, spider=info.spider, exception=failure.value,
-                    medianame=self.MEDIA_NAME, request=request, referer=referer)
-
-        raise ImageException
-
-    def media_to_download(self, request, info):
-        def _onsuccess(result):
-            if not result:
-                return  # returning None force download
-
-            last_modified = result.get('last_modified', None)
-            if not last_modified:
-                return  # returning None force download
-
-            age_seconds = time.time() - last_modified
-            age_days = age_seconds / 60 / 60 / 24
-            if age_days > self.EXPIRES:
-                return  # returning None force download
-
-            referer = request.headers.get('Referer')
-            log.msg(format='Image (uptodate): Downloaded %(medianame)s from %(request)s referred in <%(referer)s>',
-                    level=log.DEBUG, spider=info.spider,
-                    medianame=self.MEDIA_NAME, request=request, referer=referer)
-            self.inc_stats(info.spider, 'uptodate')
-
-            checksum = result.get('checksum', None)
-            return {'url': request.url, 'path': key, 'checksum': checksum}
-
-        key = self.image_key(request.url)
-        dfd = defer.maybeDeferred(self.store.stat_image, key, info)
-        dfd.addCallbacks(_onsuccess, lambda _: None)
-        dfd.addErrback(log.err, self.__class__.__name__ + '.store.stat_image')
-        return dfd
-
-    def image_downloaded(self, response, request, info):
-        checksum = None
-        for key, image, buf in self.get_images(response, request, info):
-            if checksum is None:
-                buf.seek(0)
-                checksum = md5sum(buf)
-            self.store.persist_image(key, image, buf, info)
-        return checksum
-
-    def get_images(self, response, request, info):
-        key = self.image_key(request.url)
-        orig_image = Image.open(StringIO(response.body))
-
-        width, height = orig_image.size
+    def process_file_buffer(self, url, buf, info):
+        image = Image.open(StringIO(buf))
+        key = self._file_key(url)
+        width, height = image.size
         if width < self.MIN_WIDTH or height < self.MIN_HEIGHT:
             raise ImageException("Image too small (%dx%d < %dx%d)" %
                                  (width, height, self.MIN_WIDTH, self.MIN_HEIGHT))
+        if self.ORIGINAL_SAVE:
+            result = self.persist_image(self.origimage_key(url), image, buf, info)
+            result.update({'url': url, 'tag': 'original'})
+            yield result
 
-        image, buf = self.convert_image(orig_image)
-        yield key, image, buf
+        if self.ORIGINAL_CONVERT:
+            convimage, convbuf = self.convert_image(
+                image, format=self.ORIGINAL_CONVERT_FORMAT)
+            result = self.persist_image(
+                self.convimage_key(url),
+                convimage, convbuf.getvalue(), info)
+            result.update({'url': url, 'tag': 'converted'})
+            yield result
 
         for thumb_id, size in self.THUMBS.iteritems():
-            thumb_key = self.thumb_key(request.url, thumb_id)
-            thumb_image, thumb_buf = self.convert_image(image, size)
-            yield thumb_key, thumb_image, thumb_buf
+            thumb_image, thumb_buf = self.convert_image(
+                image, size, format=self.ORIGINAL_CONVERT_FORMAT)
+            result = self.persist_image(
+                self.thumb_key(url, thumb_id),
+                thumb_image, thumb_buf.getvalue(), info)
+            result.update({'url': url, 'tag': 'thumbnail'})
+            yield result
 
-    def inc_stats(self, spider, status):
-        spider.crawler.stats.inc_value('image_count', spider=spider)
-        spider.crawler.stats.inc_value('image_status_count/%s' % status, spider=spider)
+    def persist_image(self, key, image, buf, info):
+        width, height = image.size
+        result = self.store.persist_file(
+            key, buf, {'width' :  width, 'height': height}, info)
+        if self.REPORT_DIMENSIONS:
+            result.update({'width': width, 'height': height})
+        return result
 
-    def convert_image(self, image, size=None):
+    def convert_image(self, image, size=None, format='JPEG'):
         if image.format == 'PNG' and image.mode == 'RGBA':
             background = Image.new('RGBA', image.size, (255, 255, 255))
             background.paste(image, image)
@@ -293,21 +198,35 @@ class ImagesPipeline(MediaPipeline):
             image.thumbnail(size, Image.ANTIALIAS)
 
         buf = StringIO()
-        image.save(buf, 'JPEG')
+        image.save(buf, format)
         return image, buf
 
+    def _file_key(self, url):
+        if self.ORIGINAL_SAVE:
+            return self.origimage_key(url)
+        elif self.ORIGINAL_CONVERT:
+            return self.convimage_key(url)
+        # FIXME: if we only generate thumbnails,
+        # the key should be the first thumbnail key
+        else:
+            return super(ImagesPipeline, self)._file_key(url)
+
+    def origimage_key(self, url):
+        return 'full/%s' % super(ImagesPipeline, self)._file_key(url)
+
     def image_key(self, url):
-        image_guid = hashlib.sha1(url).hexdigest()
-        return 'full/%s.jpg' % (image_guid)
+        return self.convimage_key(url)
+
+    def _url_hash(self, url):
+        return hashlib.sha1(url).hexdigest()
+
+    def convimage_key(self, url):
+        return 'full/%s.%s' % (
+            self._url_hash(url),
+            self._imagefile_extensions.get(self.ORIGINAL_CONVERT_FORMAT, 'jpg'))
 
     def thumb_key(self, url, thumb_id):
-        image_guid = hashlib.sha1(url).hexdigest()
-        return 'thumbs/%s/%s.jpg' % (thumb_id, image_guid)
-
-    def get_media_requests(self, item, info):
-        return [Request(x) for x in item.get('image_urls', [])]
-
-    def item_completed(self, results, item, info):
-        if 'images' in item.fields:
-            item['images'] = [x for ok, x in results if ok]
-        return item
+        return 'thumbs/%s/%s.%s' % (
+            thumb_id,
+            self._url_hash(url),
+            self._imagefile_extensions.get(self.ORIGINAL_CONVERT_FORMAT, 'jpg'))

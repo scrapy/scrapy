@@ -61,8 +61,8 @@ class ImagesPipelineTestCase(unittest.TestCase):
                          'thumbs/50/92dac2a6a2072c5695a5dff1f865b3cb70c657bb.jpg')
 
     def test_fs_store(self):
-        from scrapy.contrib.pipeline.images import FSImagesStore
-        assert isinstance(self.pipeline.store, FSImagesStore)
+        from scrapy.contrib.pipeline.files import FSFilesStore
+        assert isinstance(self.pipeline.store, FSFilesStore)
         self.assertEqual(self.pipeline.store.basedir, self.tempdir)
 
         key = 'some/image/key.jpg'
