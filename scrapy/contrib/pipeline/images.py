@@ -103,6 +103,9 @@ class ImagesPipeline(FilesPipeline):
         media_guid = hashlib.sha1(url).hexdigest()
         return 'full/%s.jpg' % (media_guid)
 
+    # backwards compatibility
+    image_key = file_key
+
     def item_completed(self, results, item, info):
         if 'images' in item.fields:
             item['images'] = [x for ok, x in results if ok]
