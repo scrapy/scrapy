@@ -3,6 +3,12 @@
 Release notes
 =============
 
+0.20 (not released yet)
+-----------------------
+
+- Request/Response url/body attributes are now immutable (modifying them had
+  been deprecated for a long time)
+
 0.18.0 (released 2013-08-09)
 ----------------------------
 

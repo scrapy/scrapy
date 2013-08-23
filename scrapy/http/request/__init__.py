@@ -13,7 +13,7 @@ from scrapy.http.headers import Headers
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.decorator import deprecated
 from scrapy.utils.url import escape_ajax
-from scrapy.http.common import deprecated_setter
+from scrapy.http.common import obsolete_setter
 
 class Request(object_ref):
 
@@ -60,7 +60,7 @@ class Request(object_ref):
         if ':' not in self._url:
             raise ValueError('Missing scheme in request url: %s' % self._url)
 
-    url = property(_get_url, deprecated_setter(_set_url, 'url'))
+    url = property(_get_url, obsolete_setter(_set_url, 'url'))
 
     def _get_body(self):
         return self._body
@@ -78,7 +78,7 @@ class Request(object_ref):
         else:
             raise TypeError("Request body must either str or unicode. Got: '%s'" % type(body).__name__)
 
-    body = property(_get_body, deprecated_setter(_set_body, 'body'))
+    body = property(_get_body, obsolete_setter(_set_body, 'body'))
 
     @property
     def encoding(self):
