@@ -6,7 +6,6 @@ See documentation in docs/topics/spiders.rst
 
 from scrapy import log
 from scrapy.http import Request
-from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 

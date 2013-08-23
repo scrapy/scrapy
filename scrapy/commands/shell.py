@@ -9,7 +9,6 @@ from threading import Thread
 from scrapy.command import ScrapyCommand
 from scrapy.shell import Shell
 
-
 class Command(ScrapyCommand):
 
     requires_project = False

@@ -7,7 +7,7 @@ version_info = tuple(__version__.split('.')[:3])
 
 import sys, os, warnings
 
-if sys.version_info < (2,6):
+if sys.version_info < (2, 6):
     print "Scrapy %s requires Python 2.6 or above" % __version__
     sys.exit(1)
 
