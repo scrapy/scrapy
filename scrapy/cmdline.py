@@ -81,7 +81,7 @@ def _print_commands(settings, inproject):
 def _print_unknown_command(settings, cmdname, inproject):
     _print_header(settings, inproject)
     print "Unknown command: %s\n" % cmdname
-    print 'Use "scrapy" to see available commands' 
+    print 'Use "scrapy" to see available commands'
 
 def _run_print_help(parser, func, *a, **kw):
     try:
@@ -117,8 +117,6 @@ def execute(argv=None, settings=None):
         conf.settings = settings
     # ------------------------------------------------------------------
 
-    crawler = CrawlerProcess(settings)
-    crawler.install()
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)
     cmdname = _pop_command_name(argv)
@@ -139,7 +137,8 @@ def execute(argv=None, settings=None):
     cmd.add_options(parser)
     opts, args = parser.parse_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
-    cmd.set_crawler(crawler)
+
+    cmd.crawler_process = CrawlerProcess(settings)
     _run_print_help(parser, _run_command, cmd, args, opts)
     sys.exit(cmd.exitcode)
 
