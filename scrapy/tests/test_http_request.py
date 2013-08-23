@@ -175,6 +175,11 @@ class RequestTest(unittest.TestCase):
         r = self.request_class("http://www.example.com", method=u"POST")
         assert isinstance(r.method, str)
 
+    def test_immutable_attributes(self):
+        r = self.request_class("http://example.com")
+        self.assertRaises(AttributeError, setattr, r, 'url', 'http://example2.com')
+        self.assertRaises(AttributeError, setattr, r, 'body', 'xxx')
+
 
 class FormRequestTest(RequestTest):
 

@@ -107,6 +107,11 @@ class BaseResponseTest(unittest.TestCase):
     def _assert_response_encoding(self, response, encoding):
         self.assertEqual(response.encoding, resolve_encoding(encoding))
 
+    def test_immutable_attributes(self):
+        r = self.response_class("http://example.com")
+        self.assertRaises(AttributeError, setattr, r, 'url', 'http://example2.com')
+        self.assertRaises(AttributeError, setattr, r, 'body', 'xxx')
+
 class ResponseText(BaseResponseTest):
 
     def test_no_unicode_url(self):
