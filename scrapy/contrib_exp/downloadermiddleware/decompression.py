@@ -10,7 +10,6 @@ from cStringIO import StringIO
 from tempfile import mktemp
 
 from scrapy import log
-from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
 
 

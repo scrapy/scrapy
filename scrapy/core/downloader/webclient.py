@@ -1,11 +1,9 @@
 from time import time
 from urlparse import urlparse, urlunparse, urldefrag
 
-from twisted.internet.ssl import ClientContextFactory
 from twisted.web.client import HTTPClientFactory
 from twisted.web.http import HTTPClient
 from twisted.internet import defer
-from OpenSSL import SSL
 
 from scrapy.http import Headers
 from scrapy.utils.httpobj import urlparse_cached

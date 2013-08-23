@@ -8,10 +8,9 @@ from zope.interface import implements
 from twisted.internet import defer, reactor, protocol
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import IBodyProducer
-from twisted.web.http import PotentialDataLoss
 from twisted.internet.error import TimeoutError
 from scrapy.xlib.tx import Agent, ProxyAgent, ResponseDone, \
-    HTTPConnectionPool, TCP4ClientEndpoint, ResponseFailed
+    HTTPConnectionPool, TCP4ClientEndpoint
 
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes

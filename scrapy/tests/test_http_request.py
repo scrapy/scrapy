@@ -1,7 +1,6 @@
 import cgi
 import unittest
 import xmlrpclib
-from cStringIO import StringIO
 from urlparse import urlparse
 
 from scrapy.http import Request, FormRequest, XmlRpcRequest, Headers, HtmlResponse

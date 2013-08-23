@@ -8,7 +8,6 @@ from threading import Thread
 
 from scrapy.command import ScrapyCommand
 from scrapy.shell import Shell
-from scrapy import log
 
 class Command(ScrapyCommand):
 

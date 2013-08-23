@@ -198,7 +198,7 @@ class PickleItemExporter(BaseItemExporter):
 
     def __init__(self, file, protocol=2, **kwargs):
         self._configure(kwargs)
-        self.file =file
+        self.file = file
         self.protocol = protocol
 
     def export_item(self, item):
