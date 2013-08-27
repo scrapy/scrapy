@@ -20,6 +20,7 @@ class DeferMixin(object):
             # silence CancelledError
             d.addErrback(lambda _: None)
             d.cancel()
+
         d = deferLater(reactor, delay, f, *a, **kw)
         request.notifyFinish().addErrback(_cancelrequest)
         return d
@@ -84,6 +85,23 @@ class Status(Resource):
         return ""
 
 
+class Raw(DeferMixin, Resource):
+
+    isLeaf = True
+
+    def render_GET(self, request):
+        request.startedWriting = 1
+        self.deferRequest(request, 0, self._delayedRender, request)
+        return NOT_DONE_YET
+
+    def _delayedRender(self, request):
+        raw = getarg(request, 'raw', 'HTTP 1.1 200 OK\n')
+        request.startedWriting = 1
+        request.write(raw)
+        request.channel.transport.loseConnection()
+        request.finish()
+
+
 class Partial(DeferMixin, Resource):
 
     isLeaf = True
@@ -92,6 +110,7 @@ class Partial(DeferMixin, Resource):
         request.setHeader("Content-Length", "1024")
         self.deferRequest(request, 0, self._delayedRender, request)
         return NOT_DONE_YET
+    render_POST = render_GET
 
     def _delayedRender(self, request):
         request.write("partial content\n")
@@ -119,6 +138,7 @@ class Root(Resource):
         self.putChild("delay", Delay())
         self.putChild("partial", Partial())
         self.putChild("drop", Drop())
+        self.putChild("raw", Raw())
 
     def getChild(self, name, request):
         return self
