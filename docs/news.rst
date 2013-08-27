@@ -9,6 +9,25 @@ Release notes
 - Request/Response url/body attributes are now immutable (modifying them had
   been deprecated for a long time)
 
+0.18.1 (released 2013-08-27)
+----------------------------
+
+- remove extra import added by cherry picked changes (:commit:`d20304e`)
+- fix crawling tests under twisted pre 11.0.0 (:commit:`1994f38`)
+- py26 can not format zero length fields {} (:commit:`abf756f`)
+- test PotentiaDataLoss errors on unbound responses (:commit:`b15470d`)
+- Treat responses without content-length or Transfer-Encoding as good responses (:commit:`c4bf324`)
+- do no include ResponseFailed if http11 handler is not enabled (:commit:`6cbe684`)
+- New HTTP client wraps connection losts in ResponseFailed exception. fix #373 (:commit:`1a20bba`)
+- limit travis-ci build matrix (:commit:`3b01bb8`)
+- Merge pull request #375 from peterarenot/patch-1 (:commit:`fa766d7`)
+- Fixed so it refers to the correct folder (:commit:`3283809`)
+- added quantal & raring to support ubuntu releases (:commit:`1411923`)
+- fix retry middleware which didn't retry certain connection errors after the upgrade to http1 client, closes GH-373 (:commit:`bb35ed0`)
+- fix XmlItemExporter in Python 2.7.4 and 2.7.5 (:commit:`de3e451`)
+- minor updates to 0.18 release notes (:commit:`c45e5f1`)
+- fix contributters list format (:commit:`0b60031`)
+
 0.18.0 (released 2013-08-09)
 ----------------------------
 
