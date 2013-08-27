@@ -8,7 +8,6 @@ from zope.interface import implements
 from twisted.internet import defer, reactor, protocol
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import IBodyProducer
-from twisted.web.http import PotentialDataLoss
 from twisted.internet.error import TimeoutError
 from twisted.web.http import PotentialDataLoss
 from scrapy.xlib.tx import Agent, ProxyAgent, ResponseDone, \
