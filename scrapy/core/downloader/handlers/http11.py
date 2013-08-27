@@ -147,5 +147,7 @@ class _ResponseReader(protocol.Protocol):
         body = self._bodybuf.getvalue()
         if reason.check(ResponseDone):
             self._finished.callback((self._txresponse, body, None))
+        elif reason.check(PotentialDataLoss):
+            self._finished.callback((self._txresponse, body, ['partial']))
         else:
             self._finished.errback(reason)
