@@ -91,6 +91,33 @@ class CrawlTestCase(TestCase):
         self._assert_retried()
 
     @defer.inlineCallbacks
+    def test_unbounded_response(self):
+        # Completeness of responses without Content-Length or Transfer-Encoding
+        # can not be determined, we treat them as valid but flagged as "partial"
+        from urllib import urlencode
+        query = urlencode({'raw': '''\
+HTTP/1.1 200 OK
+Server: Apache-Coyote/1.1
+X-Powered-By: Servlet 2.4; JBoss-4.2.3.GA (build: SVNTag=JBoss_4_2_3_GA date=200807181417)/JBossWeb-2.0
+Set-Cookie: JSESSIONID=08515F572832D0E659FD2B0D8031D75F; Path=/
+Pragma: no-cache
+Expires: Thu, 01 Jan 1970 00:00:00 GMT
+Cache-Control: no-cache
+Cache-Control: no-store
+Content-Type: text/html;charset=UTF-8
+Content-Language: en
+Date: Tue, 27 Aug 2013 13:05:05 GMT
+Connection: close
+
+foo body
+with multiples lines
+'''})
+        spider = SimpleSpider("http://localhost:8998/raw?{}".format(query))
+        yield docrawl(spider)
+        log = get_testlog()
+        self.assertEqual(log.count("Got response 200"), 1)
+
+    @defer.inlineCallbacks
     def test_retry_conn_lost(self):
         # connection lost after receiving data
         spider = SimpleSpider("http://localhost:8998/drop?abort=0")
