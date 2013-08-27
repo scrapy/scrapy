@@ -112,7 +112,7 @@ Connection: close
 foo body
 with multiples lines
 '''})
-        spider = SimpleSpider("http://localhost:8998/raw?{}".format(query))
+        spider = SimpleSpider("http://localhost:8998/raw?{0}".format(query))
         yield docrawl(spider)
         log = get_testlog()
         self.assertEqual(log.count("Got response 200"), 1)
