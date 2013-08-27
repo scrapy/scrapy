@@ -58,12 +58,15 @@ class ScrapyHTTPPageGetter(HTTPClient):
         self.factory.gotHeaders(self.headers)
 
     def connectionLost(self, reason):
+        self._connection_lost_reason = reason
         HTTPClient.connectionLost(self, reason)
         self.factory.noPage(reason)
 
     def handleResponse(self, response):
         if self.factory.method.upper() == 'HEAD':
             self.factory.page('')
+        elif self.length is not None and self.length > 0:
+            self.factory.noPage(self._connection_lost_reason)
         else:
             self.factory.page(response)
         self.transport.loseConnection()
