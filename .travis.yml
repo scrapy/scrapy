@@ -1,14 +1,25 @@
 language: python
 python:
-    - 2.6
-    - 2.7
+    - "2.6"
+    - "2.7"
 env:
     - BUILDENV=lucid
     - BUILDENV=precise
     - BUILDENV=latest
+matrix:
+    include:
+        - python: "2.6"
+          env: BUILDENV=lucid
+        - python: "2.7"
+          env: BUILDENV=precise
+        - python: "2.6"
+          env: BUILDENV=latest
+        - python: "2.7"
+          env: BUILDENV=latest
+
 install:
     - pip install --use-mirrors -r .travis/requirements-$BUILDENV.txt
-    - pip install .
+    - pip install --use-mirrors .
 script:
     - trial scrapy
 notifications:
