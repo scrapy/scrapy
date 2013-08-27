@@ -9,8 +9,6 @@ matrix:
           env: BUILDENV=lucid
         - python: "2.7"
           env: BUILDENV=precise
-        - python: "2.6"
-          env: BUILDENV=latest
         - python: "2.7"
           env: BUILDENV=latest
         - python: "pypy"
