@@ -111,7 +111,7 @@ class S3FilesStore(object):
         if headers:
             h.update(headers)
         buf.seek(0)
-        return threads.deferToThread(k.set_contents_from_file, buf,
+        return threads.deferToThread(k.set_contents_from_string, buf.getvalue(),
                                      headers=h, policy=self.POLICY)
 
 
