@@ -16,6 +16,7 @@ else:
     if not encoders.issubset(set(Image.core.__dict__)):
         skip = 'Missing JPEG encoders'
 
+
 def _mocked_download_func(request, info):
     response = request.meta.get('response')
     return response() if callable(response) else response
@@ -34,7 +35,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
         rmtree(self.tempdir)
 
     def test_image_path(self):
-        image_path = self.pipeline.image_key
+        image_path = self.pipeline.file_key
         self.assertEqual(image_path("https://dev.mydeco.com/mydeco.gif"),
                          'full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
         self.assertEqual(image_path("http://www.maddiebrown.co.uk///catalogue-items//image_54642_12175_95307.jpg"),
@@ -60,15 +61,6 @@ class ImagesPipelineTestCase(unittest.TestCase):
         self.assertEqual(thumbnail_name("/tmp/some.name/foo", name),
                          'thumbs/50/92dac2a6a2072c5695a5dff1f865b3cb70c657bb.jpg')
 
-    def test_fs_store(self):
-        from scrapy.contrib.pipeline.images import FSImagesStore
-        assert isinstance(self.pipeline.store, FSImagesStore)
-        self.assertEqual(self.pipeline.store.basedir, self.tempdir)
-
-        key = 'some/image/key.jpg'
-        path = os.path.join(self.tempdir, 'some', 'image', 'key.jpg')
-        self.assertEqual(self.pipeline.store._get_filesystem_path(key), path)
-
     def test_convert_image(self):
         SIZE = (100, 100)
         # straigh forward case: RGB and JPEG
@@ -89,7 +81,6 @@ class ImagesPipelineTestCase(unittest.TestCase):
         converted, _ = self.pipeline.convert_image(im)
         self.assertEquals(converted.mode, 'RGB')
         self.assertEquals(converted.getcolors(), [(10000, (205, 230, 255))])
-
 
 
 def _create_image(format, *a, **kw):
