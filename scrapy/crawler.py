@@ -90,8 +90,8 @@ class ProcessMixin(object):
         install_shutdown_handlers(self._signal_shutdown)
 
     def start(self):
-        self.start_crawling()
-        self.start_reactor()
+        if self.start_crawling():
+            self.start_reactor()
 
     def start_reactor(self):
         if self.settings.getbool('DNSCACHE_ENABLED'):
@@ -144,29 +144,28 @@ class CrawlerProcess(ProcessMixin):
         return self.crawlers[name]
 
     def start_crawler(self):
-        name, crawler = self.crawlers.popitem()
+        if self.crawlers and not self.stopping:
+            name, crawler = self.crawlers.popitem()
 
-        sflo = log.start_from_crawler(crawler)
-        crawler.configure()
-        crawler.install()
-        crawler.signals.connect(crawler.uninstall, signals.engine_stopped)
-        if sflo:
-            crawler.signals.connect(sflo.stop, signals.engine_stopped)
+            sflo = log.start_from_crawler(crawler)
+            crawler.configure()
+            crawler.install()
+            crawler.signals.connect(crawler.uninstall, signals.engine_stopped)
+            if sflo:
+                crawler.signals.connect(sflo.stop, signals.engine_stopped)
 
-        crawler.signals.connect(self.check_done, signals.engine_stopped)
-        crawler.start()
+            crawler.signals.connect(self.check_done, signals.engine_stopped)
+            crawler.start()
 
-        return name, crawler
+            return name, crawler
 
     def check_done(self, **kwargs):
-        if self.crawlers and not self.stopping:
-            self.start_crawler()
-        else:
+        if not self.start_crawler():
             self.stop_reactor()
 
     def start_crawling(self):
         log.scrapy_info(self.settings)
-        self.start_crawler()
+        return self.start_crawler() is not None
 
     @defer.inlineCallbacks
     def stop(self):
