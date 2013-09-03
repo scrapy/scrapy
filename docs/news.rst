@@ -9,6 +9,12 @@ Release notes
 - Request/Response url/body attributes are now immutable (modifying them had
   been deprecated for a long time)
 
+0.18.2 (released 2013-09-03)
+----------------------------
+
+- Backport `scrapy check` command fixes and backward compatible multi
+  crawler process(:issue:`339`)
+
 0.18.1 (released 2013-08-27)
 ----------------------------
 
