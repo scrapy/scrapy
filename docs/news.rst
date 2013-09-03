@@ -3,6 +3,12 @@
 Release notes
 =============
 
+0.18.2 (released 2013-09-03)
+----------------------------
+
+- Backport `scrapy check` command fixes and backward compatible multi
+  crawler process(:issue:`339`)
+
 0.18.1 (released 2013-08-27)
 ----------------------------
 
