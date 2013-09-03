@@ -125,7 +125,7 @@ tag with ``id=specifications``::
 
 .. highlight:: none
 
-An XPath expression to select the description could be::
+An XPath expression to select the file size could be::
 
    //div[@id='specifications']/p[2]/text()[2]
 

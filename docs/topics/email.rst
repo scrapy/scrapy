@@ -39,11 +39,11 @@ MailSender class reference
 ==========================
 
 MailSender is the preferred class to use for sending emails from Scrapy, as it
-uses `Twisted non-blocking IO`_, like the rest of the framework. 
+uses `Twisted non-blocking IO`_, like the rest of the framework.
 
 .. class:: MailSender(smtphost=None, mailfrom=None, smtpuser=None, smtppass=None, smtpport=None)
 
-    :param smtphost: the SMTP host to use for sending the emails. If omitted, the 
+    :param smtphost: the SMTP host to use for sending the emails. If omitted, the
       :setting:`MAIL_HOST` setting will be used.
     :type smtphost: str
 
@@ -61,6 +61,12 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
 
     :param smtpport: the SMTP port to connect to
     :type smtpport: int
+
+    :param smtptls: enforce using SMTP STARTTLS
+    :type smtpport: boolean
+
+    :param smtpssl: enforce using a secure SSL connection
+    :type smtpport: boolean
 
     .. classmethod:: from_settings(settings)
 
@@ -148,3 +154,21 @@ MAIL_PASS
 Default: ``None``
 
 Password to use for SMTP authentication, along with :setting:`MAIL_USER`.
+
+.. setting:: MAIL_TLS
+
+MAIL_TLS
+---------
+
+Default: ``False``
+
+Enforce using STARTTLS. STARTTLS is a way to take an existing insecure connection, and upgrade it to a secure connection using SSL/TLS.
+
+.. setting:: MAIL_SSL
+
+MAIL_SSL
+---------
+
+Default: ``False``
+
+Enforce connecting using an SSL encrypted connection

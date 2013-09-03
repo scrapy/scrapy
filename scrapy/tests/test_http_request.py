@@ -1,7 +1,6 @@
 import cgi
 import unittest
 import xmlrpclib
-from cStringIO import StringIO
 from urlparse import urlparse
 
 from scrapy.http import Request, FormRequest, XmlRpcRequest, Headers, HtmlResponse
@@ -174,6 +173,11 @@ class RequestTest(unittest.TestCase):
     def test_method_always_str(self):
         r = self.request_class("http://www.example.com", method=u"POST")
         assert isinstance(r.method, str)
+
+    def test_immutable_attributes(self):
+        r = self.request_class("http://example.com")
+        self.assertRaises(AttributeError, setattr, r, 'url', 'http://example2.com')
+        self.assertRaises(AttributeError, setattr, r, 'body', 'xxx')
 
 
 class FormRequestTest(RequestTest):

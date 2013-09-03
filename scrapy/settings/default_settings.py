@@ -26,6 +26,8 @@ CLOSESPIDER_ERRORCOUNT = 0
 
 COMMANDS_MODULE = ''
 
+COMPRESSION_ENABLED = True
+
 CONCURRENT_ITEMS = 100
 
 CONCURRENT_REQUESTS = 16
@@ -56,6 +58,7 @@ DOWNLOAD_HANDLERS_BASE = {
     'http': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
     'https': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
     's3': 'scrapy.core.downloader.handlers.s3.S3DownloadHandler',
+    'ftp': 'scrapy.core.downloader.handlers.ftp.FTPDownloadHandler',
 }
 
 DOWNLOAD_TIMEOUT = 180      # 3mins

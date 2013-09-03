@@ -24,10 +24,13 @@ being scheduled for download, and connects those items that arrive containing
 the same image, to that queue. This avoids downloading the same image more than
 once when it's shared by several items.
 
-The `Python Imaging Library`_ is used for thumbnailing and normalizing images
-to JPEG/RGB format, so you need to install that library in order to use the
-images pipeline.
+`Pillow`_ is used for thumbnailing and normalizing images to JPEG/RGB format,
+so you need to install this library in order to use the images pipeline.
+`Python Imaging Library`_ (PIL) should also work in most cases, but it
+is known to cause troubles in some setups, so we recommend to use `Pillow`_
+instead of `PIL <Python Imaging Library>`_.
 
+.. _Pillow: https://github.com/python-imaging/Pillow
 .. _Python Imaging Library: http://www.pythonware.com/products/pil/
 
 Using the Images Pipeline
@@ -107,7 +110,7 @@ File system storage
 -------------------
 
 The images are stored in files (one per image), using a `SHA1 hash`_ of their
-URLs for the file names. 
+URLs for the file names.
 
 For example, the following image URL::
 
@@ -167,7 +170,7 @@ When you use this feature, the Images Pipeline will create thumbnails of the
 each specified size with this format::
 
     <IMAGES_STORE>/thumbs/<size_name>/<image_id>.jpg
-  
+
 Where:
 
 * ``<size_name>`` is the one specified in the :setting:`IMAGES_THUMBS`

@@ -9,13 +9,19 @@ from twisted.web import server, static, util, resource
 from twisted.web.test.test_webclient import ForeverTakingResource, \
         NoLengthResource, HostHeaderResource, \
         PayloadResource, BrokenDownloadResource
+from twisted.protocols.ftp import FTPRealm, FTPFactory
+from twisted.cred import portal, checkers, credentials
+from twisted.protocols.ftp import FTPClient, ConnectionLost
 from w3lib.url import path_to_file_uri
 
+from scrapy import twisted_version
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler, HttpDownloadHandler
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
+from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
+
 from scrapy.spider import BaseSpider
 from scrapy.http import Request
 from scrapy.settings import Settings
@@ -326,3 +332,86 @@ class S3TestCase(unittest.TestCase):
         httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
                 'AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI=')
+
+class FTPTestCase(unittest.TestCase):
+
+    username = "scrapy"
+    password = "passwd"
+
+    if twisted_version < (10, 2, 0):
+        skip = "Twisted pre 10.2.0 doesn't allow to set home path other than /home"
+
+    def setUp(self):
+        # setup dirs and test file
+        self.directory = self.mktemp()
+        os.mkdir(self.directory)
+        userdir = os.path.join(self.directory, self.username)
+        os.mkdir(userdir)
+        FilePath(userdir).child('file.txt').setContent("I have the power!")
+
+        # setup server
+        realm = FTPRealm(anonymousRoot=self.directory, userHome=self.directory)
+        p = portal.Portal(realm)
+        users_checker = checkers.InMemoryUsernamePasswordDatabaseDontUse()
+        users_checker.addUser(self.username, self.password)
+        p.registerChecker(users_checker, credentials.IUsernamePassword)
+        self.factory = FTPFactory(portal=p)
+        self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
+        self.portNum = self.port.getHost().port
+        self.download_handler = FTPDownloadHandler(Settings())
+        self.addCleanup(self.port.stopListening)
+
+    def _add_test_callbacks(self, deferred, callback=None, errback=None):
+        def _clean(data):
+            self.download_handler.client.transport.loseConnection()
+            return data
+        deferred.addCallback(_clean)
+        if callback:
+            deferred.addCallback(callback)
+        if errback:
+            deferred.addErrback(errback)
+        return deferred
+
+    def test_ftp_download_success(self):
+        request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
+                meta={"ftp_user": self.username, "ftp_password": self.password})
+        d = self.download_handler.download_request(request, None)
+
+        def _test(r):
+            self.assertEqual(r.status, 200)
+            self.assertEqual(r.body, 'I have the power!')
+            self.assertEqual(r.headers, {'Local Filename': [''], 'Size': [17]})
+        return self._add_test_callbacks(d, _test)
+
+    def test_ftp_download_notexist(self):
+        request = Request(url="ftp://127.0.0.1:%s/notexist.txt" % self.portNum,
+                meta={"ftp_user": self.username, "ftp_password": self.password})
+        d = self.download_handler.download_request(request, None)
+
+        def _test(r):
+            self.assertEqual(r.status, 404)
+        return self._add_test_callbacks(d, _test)
+
+    def test_ftp_local_filename(self):
+        local_fname = "/tmp/file.txt"
+        request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
+                meta={"ftp_user": self.username, "ftp_password": self.password, "ftp_local_filename": local_fname})
+        d = self.download_handler.download_request(request, None)
+
+        def _test(r):
+            self.assertEqual(r.body, local_fname)
+            self.assertEqual(r.headers, {'Local Filename': ['/tmp/file.txt'], 'Size': [17]})
+            self.assertTrue(os.path.exists(local_fname))
+            with open(local_fname) as f:
+                self.assertEqual(f.read(), "I have the power!")
+            os.remove(local_fname)
+        return self._add_test_callbacks(d, _test)
+
+    def test_invalid_credentials(self):
+        request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
+                meta={"ftp_user": self.username, "ftp_password": 'invalid'})
+        d = self.download_handler.download_request(request, None)
+
+        def _test(r):
+            self.assertEqual(r.type, ConnectionLost)
+        return self._add_test_callbacks(d, errback=_test)

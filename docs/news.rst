@@ -3,17 +3,122 @@
 Release notes
 =============
 
-0.18 (unreleased)
------------------
+0.20 (not released yet)
+-----------------------
 
-- :ref:`benchmarking`
-- moved persistent (on disk) queues to a separate project (queuelib_) which scrapy now depends on
-- add scrapy commands using external libraries (:issue:`260`)
-- added ``--pdb`` option to ``scrapy`` command line tool
-- added :meth:`XPathSelector.remove_namespaces` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`topics-selectors`.
-- several improvements to spider contracts
+- Request/Response url/body attributes are now immutable (modifying them had
+  been deprecated for a long time)
+
+0.18.1 (released 2013-08-27)
+----------------------------
+
+- remove extra import added by cherry picked changes (:commit:`d20304e`)
+- fix crawling tests under twisted pre 11.0.0 (:commit:`1994f38`)
+- py26 can not format zero length fields {} (:commit:`abf756f`)
+- test PotentiaDataLoss errors on unbound responses (:commit:`b15470d`)
+- Treat responses without content-length or Transfer-Encoding as good responses (:commit:`c4bf324`)
+- do no include ResponseFailed if http11 handler is not enabled (:commit:`6cbe684`)
+- New HTTP client wraps connection losts in ResponseFailed exception. fix #373 (:commit:`1a20bba`)
+- limit travis-ci build matrix (:commit:`3b01bb8`)
+- Merge pull request #375 from peterarenot/patch-1 (:commit:`fa766d7`)
+- Fixed so it refers to the correct folder (:commit:`3283809`)
+- added quantal & raring to support ubuntu releases (:commit:`1411923`)
+- fix retry middleware which didn't retry certain connection errors after the upgrade to http1 client, closes GH-373 (:commit:`bb35ed0`)
+- fix XmlItemExporter in Python 2.7.4 and 2.7.5 (:commit:`de3e451`)
+- minor updates to 0.18 release notes (:commit:`c45e5f1`)
+- fix contributters list format (:commit:`0b60031`)
+
+0.18.0 (released 2013-08-09)
+----------------------------
+
+- Lot of improvements to testsuite run using Tox, including a way to test on pypi
+- Handle GET parameters for AJAX crawleable urls (:commit:`3fe2a32`)
+- Use lxml recover option to parse sitemaps (:issue:`347`)
+- Bugfix cookie merging by hostname and not by netloc (:issue:`352`)
+- Support disabling `HttpCompressionMiddleware` using a flag setting (:issue:`359`)
+- Support xml namespaces using `iternodes` parser in `XMLFeedSpider` (:issue:`12`)
+- Support `dont_cache` request meta flag (:issue:`19`)
+- Bugfix `scrapy.utils.gz.gunzip` broken by changes in python 2.7.4 (:commit:`4dc76e`)
+- Bugfix url encoding on `SgmlLinkExtractor` (:issue:`24`)
+- Bugfix `TakeFirst` processor shouldn't discard zero (0) value (:issue:`59`)
+- Support nested items in xml exporter (:issue:`66`)
+- Improve cookies handling performance (:issue:`77`)
+- Log dupe filtered requests once (:issue:`105`)
+- Split redirection middleware into status and meta based middlewares (:issue:`78`)
+- Use HTTP1.1 as default downloader handler (:issue:`109` and :issue:`318`)
+- Support xpath form selection on `FormRequest.from_response` (:issue:`185`)
+- Bugfix unicode decoding error on `SgmlLinkExtractor` (:issue:`199`)
+- Bugfix signal dispatching on pypi interpreter (:issue:`205`)
+- Improve request delay and concurrency handling (:issue:`206`)
+- Add RFC2616 cache policy to `HttpCacheMiddleware` (:issue:`212`)
+- Allow customization of messages logged by engine (:issue:`214`)
+- Multiples improvements to `DjangoItem` (:issue:`217`, :issue:`218`, :issue:`221`)
+- Extend Scrapy commands using setuptools entry points (:issue:`260`)
+- Allow spider `allowed_domains` value to be set/tuple (:issue:`261`)
+- Support `settings.getdict` (:issue:`269`)
+- Simplify internal `scrapy.core.scraper` slot handling (:issue:`271`)
+- Added `Item.copy` (:issue:`290`)
+- Collect idle downloader slots (:issue:`297`)
+- Add `ftp://` scheme downloader handler (:issue:`329`)
+- Added downloader benchmark webserver and spider tools :ref:`benchmarking`
+- Moved persistent (on disk) queues to a separate project (queuelib_) which scrapy now depends on
+- Add scrapy commands using external libraries (:issue:`260`)
+- Added ``--pdb`` option to ``scrapy`` command line tool
+- Added :meth:`XPathSelector.remove_namespaces` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`topics-selectors`.
+- Several improvements to spider contracts
 - New default middleware named MetaRefreshMiddldeware that handles meta-refresh html tag redirections,
-  MetaRefreshMiddldeware and RedirectMiddleware have different priorities to address #62
+- MetaRefreshMiddldeware and RedirectMiddleware have different priorities to address #62
+- added from_crawler method to spiders
+- added system tests with mock server
+- more improvements to Mac OS compatibility (thanks Alex Cepoi)
+- several more cleanups to singletons and multi-spider support (thanks Nicolas Ramirez)
+- support custom download slots
+- added --spider option to "shell" command.
+- log overridden settings when scrapy starts
+
+Thanks to everyone who contribute to this release. Here is a list of
+contributors sorted by number of commits::
+
+    130 Pablo Hoffman <pablo@...>
+     97 Daniel Graña <dangra@...>
+     20 Nicolás Ramírez <nramirez.uy@...>
+     13 Mikhail Korobov <kmike84@...>
+     12 Pedro Faustino <pedrobandim@...>
+     11 Steven Almeroth <sroth77@...>
+      5 Rolando Espinoza La fuente <darkrho@...>
+      4 Michal Danilak <mimino.coder@...>
+      4 Alex Cepoi <alex.cepoi@...>
+      4 Alexandr N Zamaraev (aka tonal) <tonal@...>
+      3 paul <paul.tremberth@...>
+      3 Martin Olveyra <molveyra@...>
+      3 Jordi Llonch <llonchj@...>
+      3 arijitchakraborty <myself.arijit@...>
+      2 Shane Evans <shane.evans@...>
+      2 joehillen <joehillen@...>
+      2 Hart <HartSimha@...>
+      2 Dan <ellisd23@...>
+      1 Zuhao Wan <wanzuhao@...>
+      1 whodatninja <blake@...>
+      1 vkrest <v.krestiannykov@...>
+      1 tpeng <pengtaoo@...>
+      1 Tom Mortimer-Jones <tom@...>
+      1 Rocio Aramberri <roschegel@...>
+      1 Pedro <pedro@...>
+      1 notsobad <wangxiaohugg@...>
+      1 Natan L <kuyanatan.nlao@...>
+      1 Mark Grey <mark.grey@...>
+      1 Luan <luanpab@...>
+      1 Libor Nenadál <libor.nenadal@...>
+      1 Juan M Uys <opyate@...>
+      1 Jonas Brunsgaard <jonas.brunsgaard@...>
+      1 Ilya Baryshev <baryshev@...>
+      1 Hasnain Lakhani <m.hasnain.lakhani@...>
+      1 Emanuel Schorsch <emschorsch@...>
+      1 Chris Tilden <chris.tilden@...>
+      1 Capi Etheriel <barraponto@...>
+      1 cacovsky <amarquesferraz@...>
+      1 Berend Iwema <berend@...>
+
 
 0.16.5 (released 2013-05-30)
 ----------------------------

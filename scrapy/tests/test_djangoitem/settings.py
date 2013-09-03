@@ -4,3 +4,5 @@ DATABASES = {
         'NAME': ':memory:',
     }
 }
+
+SECRET_KEY = 'top-secret'

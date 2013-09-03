@@ -14,7 +14,7 @@ class MustbeDeferredTest(unittest.TestCase):
             return steps
 
         dfd = mustbe_deferred(_append, 1)
-        dfd.addCallback(self.assertEqual, [1,2]) # it is [1] with maybeDeferred
+        dfd.addCallback(self.assertEqual, [1, 2]) # it is [1] with maybeDeferred
         steps.append(2) # add another value, that should be catched by assertEqual
         return dfd
 
@@ -27,7 +27,7 @@ class MustbeDeferredTest(unittest.TestCase):
             return dfd
 
         dfd = mustbe_deferred(_append, 1)
-        dfd.addCallback(self.assertEqual, [1,2]) # it is [1] with maybeDeferred
+        dfd.addCallback(self.assertEqual, [1, 2]) # it is [1] with maybeDeferred
         steps.append(2) # add another value, that should be catched by assertEqual
         return dfd
 

@@ -3,4 +3,4 @@ lxml
 twisted
 boto
 Pillow
-.
+django

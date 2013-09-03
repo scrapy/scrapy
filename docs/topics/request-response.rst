@@ -318,7 +318,7 @@ key-value fields, you can return a :class:`FormRequest` object (from your
 spider) like this::
 
    return [FormRequest(url="http://www.example.com/post/action",
-                       formdata={'name': 'John Doe', age: '27'},
+                       formdata={'name': 'John Doe', 'age': '27'},
                        callback=self.after_post)]
 
 .. _topics-request-response-ref-request-userlogin:

@@ -33,6 +33,7 @@ class SpiderManager(object):
     @classmethod
     def from_crawler(cls, crawler):
         sm = cls.from_settings(crawler.settings)
+        sm.crawler = crawler
         crawler.signals.connect(sm.close_spider, signals.spider_closed)
         return sm
 
@@ -41,7 +42,10 @@ class SpiderManager(object):
             spcls = self._spiders[spider_name]
         except KeyError:
             raise KeyError("Spider not found: %s" % spider_name)
-        return spcls(**spider_kwargs)
+        if hasattr(self, 'crawler') and hasattr(spcls, 'from_crawler'):
+            return spcls.from_crawler(self.crawler, **spider_kwargs)
+        else:
+            return spcls(**spider_kwargs)
 
     def find_by_request(self, request):
         return [name for name, cls in self._spiders.iteritems()

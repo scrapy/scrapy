@@ -23,7 +23,15 @@ with command::
     lsb_release -cs
 
 Supported Ubuntu releases are: ``karmic``, ``lucid``, ``maverick``, ``natty``,
-``oneiric``, ``precise``.
+``oneiric``, ``precise``, ``quantal``, ``raring``.
+
+For Ubuntu Raring (13.04)::
+
+    deb http://archive.scrapy.org/ubuntu raring main
+
+For Ubuntu Quantal (12.10)::
+
+    deb http://archive.scrapy.org/ubuntu quantal main
 
 For Ubuntu Precise (12.04)::
 
