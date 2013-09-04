@@ -17,4 +17,7 @@ clean:
 	git checkout debian scrapy/VERSION
 	git clean -dfq
 
+pypi:
+	umask 0022 &&  chmod -R a+rX . && python setup.py sdist upload
+
 .PHONY: clean test build
