@@ -18,7 +18,7 @@ from scrapy.http.common import obsolete_setter
 class Request(object_ref):
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None, 
-                 cookies=None, meta=None, encoding='utf-8', priority=0,
+                 cookies=None, meta=None, encoding='utf-8', priority=0, delay=None,
                  dont_filter=False, errback=None):
 
         self._encoding = encoding  # this one has to be set first
@@ -27,6 +27,7 @@ class Request(object_ref):
         self._set_body(body)
         assert isinstance(priority, int), "Request priority not an integer: %r" % priority
         self.priority = priority
+        self.delay = delay
 
         assert callback or not errback, "Cannot use errback without a callback"
         self.callback = callback
