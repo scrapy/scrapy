@@ -233,6 +233,13 @@ class JsonLinesItemExporterTest(BaseItemExporterTest):
         exported = json.loads(self.output.getvalue())
         self.assertEqual(exported, self._expected_nested)
 
+    def test_extra_keywords(self):
+        self.ie = self._get_exporter(sort_keys=True)
+        self.test_export_item()
+        self._check_output()
+        self.assertRaises(TypeError, self._get_exporter, foo_unknown_keyword_bar=True)
+
+
 class JsonItemExporterTest(JsonLinesItemExporterTest):
 
     _expected_nested = [JsonLinesItemExporterTest._expected_nested]

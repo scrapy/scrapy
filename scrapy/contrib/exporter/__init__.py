@@ -79,7 +79,7 @@ class BaseItemExporter(object):
 class JsonLinesItemExporter(BaseItemExporter):
 
     def __init__(self, file, **kwargs):
-        self._configure(kwargs)
+        self._configure(kwargs, dont_fail=True)
         self.file = file
         self.encoder = ScrapyJSONEncoder(**kwargs)
 
@@ -91,7 +91,7 @@ class JsonLinesItemExporter(BaseItemExporter):
 class JsonItemExporter(JsonLinesItemExporter):
 
     def __init__(self, file, **kwargs):
-        self._configure(kwargs)
+        self._configure(kwargs, dont_fail=True)
         self.file = file
         self.encoder = ScrapyJSONEncoder(**kwargs)
         self.first_item = True
