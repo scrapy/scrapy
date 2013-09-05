@@ -103,7 +103,7 @@ class PythonItemExporterTest(BaseItemExporterTest):
         self.assertEqual(exported, {'age': [{'age': [{'age': '22', 'name': u'Joseph'}], 'name': u'Maria'}], 'name': 'Jesus'})
         self.assertEqual(type(exported['age'][0]), dict)
         self.assertEqual(type(exported['age'][0]['age'][0]), dict)
-  
+
 class PprintItemExporterTest(BaseItemExporterTest):
 
     def _get_exporter(self, **kwargs):
@@ -265,6 +265,13 @@ class JsonLinesItemExporterTest(BaseItemExporterTest):
         self.ie.finish_exporting()
         exported = json.loads(self.output.getvalue())
         self.assertEqual(exported, self._expected_nested)
+
+    def test_extra_keywords(self):
+        self.ie = self._get_exporter(sort_keys=True)
+        self.test_export_item()
+        self._check_output()
+        self.assertRaises(TypeError, self._get_exporter, foo_unknown_keyword_bar=True)
+
 
 class JsonItemExporterTest(JsonLinesItemExporterTest):
 
