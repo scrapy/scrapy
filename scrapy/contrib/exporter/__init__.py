@@ -6,15 +6,15 @@ import csv
 import sys
 import pprint
 import marshal
-import json
 import cPickle as pickle
 from xml.sax.saxutils import XMLGenerator
 from scrapy.utils.serialize import ScrapyJSONEncoder
 from scrapy.item import BaseItem
 
-__all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter', \
-    'CsvItemExporter', 'XmlItemExporter', 'JsonLinesItemExporter', \
-    'JsonItemExporter', 'MarshalItemExporter']
+__all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
+           'CsvItemExporter', 'XmlItemExporter', 'JsonLinesItemExporter',
+           'JsonItemExporter', 'MarshalItemExporter']
+
 
 class BaseItemExporter(object):
 
@@ -64,8 +64,8 @@ class BaseItemExporter(object):
                 field_iter = self.fields_to_export
             else:
                 nonempty_fields = set(item.keys())
-                field_iter = (x for x in self.fields_to_export if x in \
-                    nonempty_fields)
+                field_iter = (x for x in self.fields_to_export if x in
+                              nonempty_fields)
         for field_name in field_iter:
             if field_name in item:
                 field = item.fields[field_name]
@@ -173,7 +173,7 @@ class CsvItemExporter(BaseItemExporter):
         if isinstance(value, (list, tuple)):
             try:
                 value = self._join_multivalued.join(value)
-            except TypeError: # list in value may not contain strings
+            except TypeError:  # list in value may not contain strings
                 pass
         return super(CsvItemExporter, self)._to_str_if_unicode(value)
 
@@ -182,8 +182,8 @@ class CsvItemExporter(BaseItemExporter):
             self._headers_not_written = False
             self._write_headers_and_set_fields_to_export(item)
 
-        fields = self._get_serialized_fields(item, default_value='', \
-            include_empty=True)
+        fields = self._get_serialized_fields(item, default_value='',
+                                             include_empty=True)
         values = [x[1] for x in fields]
         self.csv_writer.writerow(values)
 
@@ -215,6 +215,7 @@ class MarshalItemExporter(BaseItemExporter):
     def export_item(self, item):
         marshal.dump(dict(self._get_serialized_fields(item)), self.file)
 
+
 class PprintItemExporter(BaseItemExporter):
 
     def __init__(self, file, **kwargs):
@@ -224,6 +225,7 @@ class PprintItemExporter(BaseItemExporter):
     def export_item(self, item):
         itemdict = dict(self._get_serialized_fields(item))
         self.file.write(pprint.pformat(itemdict) + '\n')
+
 
 class PythonItemExporter(BaseItemExporter):
     """The idea behind this exporter is to have a mechanism to serialize items
