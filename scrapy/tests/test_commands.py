@@ -41,7 +41,7 @@ class ProjectTest(unittest.TestCase):
         while p.poll() is None:
             sleep(interval)
             waited += interval
-            if waited > 5:
+            if waited > 15:
                 p.kill()
                 assert False, 'Command took too much time to complete'
 
