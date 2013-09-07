@@ -171,6 +171,7 @@ Disallow: /forum/active/
                 href="http://www.example.com/schweiz-deutsch/"/>
             <xhtml:link rel="alternate" hreflang="en"
                 href="http://www.example.com/english/"/>
+            <xhtml:link rel="alternate" hreflang="en"/><!-- wrong tag without href -->
         </url>
     </urlset>""")
         

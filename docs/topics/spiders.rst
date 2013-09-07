@@ -560,6 +560,25 @@ SitemapSpider
 
         By default, all sitemaps are followed.
 
+    .. attribute:: use_alternate_links
+
+        Specifies if alternate links for one ``url`` should be followed. These
+        are links for the same website in another language passed within
+        the same ``url`` block.
+        
+        For example::
+       
+            <url>
+                <loc>http://example.com/</loc>
+                <xhtml:link rel="alternate" hreflang="de" href="http://example.com/de"/>
+            </url>
+
+        With ``use_alternate_links`` set, this would retrieve both URLs. With
+        ``use_alternate_links`` disabled, only ``http://example.com/`` would be
+        retrieved.
+
+        Default is ``use_alternate_links`` disabled.
+
 
 SitemapSpider examples
 ~~~~~~~~~~~~~~~~~~~~~~
