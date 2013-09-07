@@ -12,7 +12,7 @@ class Sitemap(object):
     (type=sitemapindex) files"""
 
     def __init__(self, xmltext):
-        xmlp = lxml.etree.XMLParser(recover=True)
+        xmlp = lxml.etree.XMLParser(recover=True, remove_comments=True)
         self._root = lxml.etree.fromstring(xmltext, parser=xmlp)
         rt = self._root.tag
         self.type = self._root.tag.split('}', 1)[1] if '}' in rt else rt
@@ -25,10 +25,11 @@ class Sitemap(object):
                 name = tag.split('}', 1)[1] if '}' in tag else tag
 
                 if name == 'link':
-                    d.setdefault('alternate', []).append(el.get('href'))
+                    if 'href' in el.attrib:
+                        d.setdefault('alternate', []).append(el.get('href'))
                 else:
                     d[name] = el.text.strip() if el.text else ''
-            
+
             if 'loc' in d:
                 yield d
 
