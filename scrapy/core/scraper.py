@@ -9,7 +9,7 @@ from twisted.internet import defer
 from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errback
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.misc import load_object
-from scrapy.exceptions import CloseSpider, DropItem
+from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy import signals
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
@@ -180,7 +180,8 @@ class Scraper(object):
         """Log and silence errors that come from the engine (typically download
         errors that got propagated thru here)
         """
-        if isinstance(download_failure, Failure):
+        if isinstance(download_failure, Failure) \
+                and not download_failure.check(IgnoreRequest):
             if download_failure.frames:
                 log.err(download_failure, 'Error downloading %s' % request,
                         spider=spider)
