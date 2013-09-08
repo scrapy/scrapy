@@ -91,7 +91,7 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
 
     inputs = form.xpath('descendant::textarea'
                         '|descendant::select'
-                        '|descendant::input[@type!="submit" and @type!="image" '
+                        '|descendant::input[@type!="submit" and @type!="image" and @type!="reset"'
                         'and ((@type!="checkbox" and @type!="radio") or @checked)]')
     values = [(k, u'' if v is None else v) \
               for k, v in (_value(e) for e in inputs) \
