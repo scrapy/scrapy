@@ -9,8 +9,9 @@ Pre-requisites
 
 The installation steps assume that you have the following things installed:
 
-* Python 2.6 or 2.7
-* OpenSSL. This comes preinstalled in all operating systems except Windows (see :ref:`intro-install-platform-notes`)
+* `Python`_ 2.6 or 2.7
+* `lxml`_. Most Linux distributions ships prepackaged versions of lxml. Otherwise refer to http://lxml.de/installation.html
+* `OpenSSL`_. This comes preinstalled in all operating systems except Windows (see :ref:`intro-install-platform-notes`)
 * `pip`_ or `easy_install`_ Python package managers
 
 Installing Scrapy
@@ -76,9 +77,10 @@ Instead, use the official :ref:`Ubuntu Packages <topics-ubuntu>`, which already
 solve all dependencies for you and are continuously updated with the latest bug
 fixes.
 
+
 .. _Python: http://www.python.org
-.. _pywin32: http://sourceforge.net/projects/pywin32/
-.. _this Twisted bug: http://twistedmatrix.com/trac/ticket/3707
 .. _pip: http://www.pip-installer.org/en/latest/installing.html
 .. _easy_install: http://pypi.python.org/pypi/setuptools
 .. _Control Panel: http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
+.. _lxml: http://lxml.de/
+.. _OpenSSL: https://pypi.python.org/pypi/pyOpenSSL
