@@ -2,8 +2,29 @@ import sys, time, random, urllib
 from subprocess import Popen, PIPE
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
-from twisted.internet import reactor
-from twisted.internet.task import deferLater
+from twisted.internet import reactor, defer
+from scrapy import twisted_version
+
+
+if twisted_version < (11, 0, 0):
+    def deferLater(clock, delay, func, *args, **kw):
+        def _cancel_method():
+            _cancel_cb(None)
+            d.errback(Exception())
+
+        def _cancel_cb(result):
+            if cl.active():
+                cl.cancel()
+            return result
+
+        d = defer.Deferred()
+        d.cancel = _cancel_method
+        d.addCallback(lambda ignored: func(*args, **kw))
+        d.addBoth(_cancel_cb)
+        cl = clock.callLater(delay, d.callback, None)
+        return d
+else:
+    from twisted.internet.task import deferLater
 
 
 def getarg(request, name, default=None, type=str):
@@ -13,21 +34,22 @@ def getarg(request, name, default=None, type=str):
         return default
 
 
-class DeferMixin(object):
+class LeafResource(Resource):
+
+    isLeaf = True
 
     def deferRequest(self, request, delay, f, *a, **kw):
         def _cancelrequest(_):
             # silence CancelledError
             d.addErrback(lambda _: None)
             d.cancel()
+
         d = deferLater(reactor, delay, f, *a, **kw)
         request.notifyFinish().addErrback(_cancelrequest)
         return d
 
 
-class Follow(DeferMixin, Resource):
-
-    isLeaf = True
+class Follow(LeafResource):
 
     def render(self, request):
         total = getarg(request, "total", 100, type=int)
@@ -56,9 +78,7 @@ class Follow(DeferMixin, Resource):
         request.finish()
 
 
-class Delay(DeferMixin, Resource):
-
-    isLeaf = True
+class Delay(LeafResource):
 
     def render_GET(self, request):
         n = getarg(request, "n", 1, type=float)
@@ -74,9 +94,7 @@ class Delay(DeferMixin, Resource):
         request.finish()
 
 
-class Status(Resource):
-
-    isLeaf = True
+class Status(LeafResource):
 
     def render_GET(self, request):
         n = getarg(request, "n", 200, type=int)
@@ -84,9 +102,23 @@ class Status(Resource):
         return ""
 
 
-class Partial(DeferMixin, Resource):
+class Raw(LeafResource):
 
-    isLeaf = True
+    def render_GET(self, request):
+        request.startedWriting = 1
+        self.deferRequest(request, 0, self._delayedRender, request)
+        return NOT_DONE_YET
+    render_POST = render_GET
+
+    def _delayedRender(self, request):
+        raw = getarg(request, 'raw', 'HTTP 1.1 200 OK\n')
+        request.startedWriting = 1
+        request.write(raw)
+        request.channel.transport.loseConnection()
+        request.finish()
+
+
+class Partial(LeafResource):
 
     def render_GET(self, request):
         request.setHeader("Content-Length", "1024")
@@ -101,9 +133,16 @@ class Partial(DeferMixin, Resource):
 class Drop(Partial):
 
     def _delayedRender(self, request):
+        abort = getarg(request, "abort", 0, type=int)
         request.write("this connection will be dropped\n")
-        request.channel.transport.loseConnection()
-        request.finish()
+        tr = request.channel.transport
+        try:
+            if abort and hasattr(tr, 'abortConnection'):
+                tr.abortConnection()
+            else:
+                tr.loseConnection()
+        finally:
+            request.finish()
 
 
 class Root(Resource):
@@ -115,6 +154,7 @@ class Root(Resource):
         self.putChild("delay", Delay())
         self.putChild("partial", Partial())
         self.putChild("drop", Drop())
+        self.putChild("raw", Raw())
 
     def getChild(self, name, request):
         return self
@@ -141,6 +181,7 @@ if __name__ == "__main__":
     root = Root()
     factory = Site(root)
     port = reactor.listenTCP(8998, factory)
+
     def print_listening():
         h = port.getHost()
         print "Mock server running at http://%s:%d" % (h.host, h.port)

@@ -18,14 +18,16 @@ About HTTP errors to consider:
   indicate server overload, which would be something we want to retry
 """
 
-from twisted.internet.error import TimeoutError as ServerTimeoutError, DNSLookupError, \
-                                   ConnectionRefusedError, ConnectionDone, ConnectError, \
-                                   ConnectionLost, TCPTimedOutError
 from twisted.internet.defer import TimeoutError as UserTimeoutError
+from twisted.internet.error import TimeoutError as ServerTimeoutError, \
+        DNSLookupError, ConnectionRefusedError, ConnectionDone, ConnectError, \
+        ConnectionLost, TCPTimedOutError
 
 from scrapy import log
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.response import response_status_message
+from scrapy.xlib.tx import ResponseFailed
+
 
 class RetryMiddleware(object):
 
@@ -33,7 +35,7 @@ class RetryMiddleware(object):
     # decompress an empty response
     EXCEPTIONS_TO_RETRY = (ServerTimeoutError, UserTimeoutError, DNSLookupError,
                            ConnectionRefusedError, ConnectionDone, ConnectError,
-                           ConnectionLost, TCPTimedOutError,
+                           ConnectionLost, TCPTimedOutError, ResponseFailed,
                            IOError)
 
     def __init__(self, settings):

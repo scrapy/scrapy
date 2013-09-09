@@ -99,8 +99,8 @@ class Contract(object):
 
             @wraps(cb)
             def wrapper(response):
+                output = list(iterate_spider_output(cb(response)))
                 try:
-                    output = list(iterate_spider_output(cb(response)))
                     results.startTest(self.testcase_post)
                     self.post_process(output)
                     results.stopTest(self.testcase_post)

@@ -3,16 +3,17 @@ Base class for Scrapy commands
 """
 
 import os
+import warnings
 from optparse import OptionGroup
 from twisted.python import failure
 
-from scrapy import log
 from scrapy.utils.conf import arglist_to_dict
-from scrapy.exceptions import UsageError
+from scrapy.exceptions import UsageError, ScrapyDeprecationWarning
 
 class ScrapyCommand(object):
 
     requires_project = False
+    crawler_process = None
 
     # default settings to be used for this command instead of global defaults
     default_settings = {}
@@ -21,7 +22,6 @@ class ScrapyCommand(object):
 
     def __init__(self):
         self.settings = None # set in scrapy.cmdline
-        self.configured = False
 
     def set_crawler(self, crawler):
         assert not hasattr(self, '_crawler'), "crawler already set"
@@ -29,10 +29,25 @@ class ScrapyCommand(object):
 
     @property
     def crawler(self):
-        if not self.configured:
-            log.start_from_crawler(self._crawler)
-            self._crawler.configure()
-            self.configured = True
+        warnings.warn("Command's default `crawler` is deprecated and will be removed. "
+            "Use `create_crawler` method to instatiate crawlers.",
+            ScrapyDeprecationWarning)
+
+        if not hasattr(self, '_crawler'):
+            crawler = self.crawler_process.create_crawler()
+
+            old_start = crawler.start
+            self.crawler_process.started = False
+            def wrapped_start():
+                if self.crawler_process.started:
+                    old_start()
+                else:
+                    self.crawler_process.started = True
+                    self.crawler_process.start()
+            crawler.start = wrapped_start
+
+            self.set_crawler(crawler)
+
         return self._crawler
 
     def syntax(self):
@@ -83,7 +98,7 @@ class ScrapyCommand(object):
             help="set/override setting (may be repeated)")
         group.add_option("--pdb", action="store_true", help="enable pdb on failure")
         parser.add_option_group(group)
-        
+
     def process_options(self, args, opts):
         try:
             self.settings.overrides.update(arglist_to_dict(opts.set))

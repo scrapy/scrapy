@@ -9,5 +9,6 @@ class Command(ScrapyCommand):
         return "List available spiders"
 
     def run(self, args, opts):
-        for s in self.crawler.spiders.list():
+        crawler = self.crawler_process.create_crawler()
+        for s in crawler.spiders.list():
             print s
