@@ -12,29 +12,57 @@ class StatsCollector(object):
         self._stats = {}
 
     def get_value(self, key, default=None, spider=None):
-        return self._stats.get(key, default)
+        if spider:
+            return self._stats[spider].get(key, default)
 
     def get_stats(self, spider=None):
-        return self._stats
+        if spider:
+            if spider in self._stats:
+                return self._stats[spider]
+            else:
+                return {}
+        return self._stats  # maybe sum should be done here
 
     def set_value(self, key, value, spider=None):
-        self._stats[key] = value
+        if spider:
+            sp = spider.name
+            if sp not in self._stats:
+                self._stats[sp] = {}
+            self._stats[sp][key] = value
 
     def set_stats(self, stats, spider=None):
         self._stats = stats
 
     def inc_value(self, key, count=1, start=0, spider=None):
-        d = self._stats
-        d[key] = d.setdefault(key, start) + count
+        if spider:
+            sp = spider.name
+            if sp not in self._stats:
+                self._stats[sp] = {}
+            d = self._stats[sp]
+            d[key] = d.setdefault(key, start) + count
 
     def max_value(self, key, value, spider=None):
-        self._stats[key] = max(self._stats.setdefault(key, value), value)
+        if spider:
+            sp = spider.name
+            if sp not in self._stats:
+                self._stats[sp] = {}
+            self._stats[sp][key] = max(self._stats[spider].setdefault(key, value), value)
 
     def min_value(self, key, value, spider=None):
-        self._stats[key] = min(self._stats.setdefault(key, value), value)
+        if spider:
+            sp = spider.name
+            if sp not in self._stats:
+                self._stats[sp] = {}
+            self._stats[sp][key] = min(self._stats[spider].setdefault(key, value), value)
 
     def clear_stats(self, spider=None):
-        self._stats.clear()
+        if spider:
+            sp = spider.name
+            if sp not in self._stats:
+                self._stats[sp] = {}
+            self._stats[sp].clear()
+        else:
+            self._stats.clear()
 
     def open_spider(self, spider):
         pass
