@@ -398,7 +398,8 @@ Default: `1073741824` (1024Mb)
 
 The maximum response size (in bytes) that downloader will download.
 
-You can also set the maximum size per request in Request's meta attribute. Example::
+You can also set the maximum size per request in Request's meta attribute. For example,
+to limit the response size to 1 Mb::
 
     Request(url='http://www.example.com', meta={'download_maxsize': 1024 * 1024})
 

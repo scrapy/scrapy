@@ -27,7 +27,7 @@ class HTTP11DownloadHandler(object):
         self._pool = HTTPConnectionPool(reactor, persistent=True)
         self._contextFactoryClass = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
         self._contextFactory = self._contextFactoryClass()
-        self._default_download_maxsize= settings['DOWNLOAD_MAXSIZE']
+        self._default_download_maxsize = settings['DOWNLOAD_MAXSIZE']
         self._default_download_warnsize = settings['DOWNLOAD_WARNSIZE']
 
     def download_request(self, request, spider):
