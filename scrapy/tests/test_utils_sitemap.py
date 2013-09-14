@@ -159,6 +159,20 @@ Disallow: /forum/active/
             {'lastmod': '2013-07-15', 'loc': 'http://www.example.com/sitemap3.xml'},
         ])
 
+    def test_comment(self):
+        s = Sitemap("""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+        <url>
+            <loc>http://www.example.com/</loc>
+            <!-- this is a comment on which the parser might raise an exception if implemented incorrectly -->
+        </url>
+    </urlset>""")
+
+        self.assertEqual(list(s), [
+            {'loc': 'http://www.example.com/'}
+        ])
+
     def test_alternate(self):
         s = Sitemap("""<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
