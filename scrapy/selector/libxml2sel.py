@@ -55,14 +55,14 @@ class XPathSelector(object_ref):
     def re(self, regex):
         return extract_regex(regex, self.extract())
 
-    def extract(self):
+    def extract(self, method=None, with_tail=False):
         if isinstance(self.xmlNode, basestring):
             text = unicode(self.xmlNode, 'utf-8', errors='ignore')
         elif hasattr(self.xmlNode, 'serialize'):
             if isinstance(self.xmlNode, libxml2.xmlDoc):
                 data = self.xmlNode.getRootElement().serialize('utf-8')
                 text = unicode(data, 'utf-8', errors='ignore') if data else u''
-            elif isinstance(self.xmlNode, libxml2.xmlAttr): 
+            elif isinstance(self.xmlNode, libxml2.xmlAttr):
                 # serialization doesn't work sometimes for xmlAttr types
                 text = unicode(self.xmlNode.content, 'utf-8', errors='ignore')
             else:

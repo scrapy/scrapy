@@ -56,7 +56,7 @@ class XPathSelectorTestCase(unittest.TestCase):
         text = '<p>test<p>'
         assert isinstance(self.xxs_cls(text=text).select("//p")[0],
                           self.xxs_cls)
-        assert isinstance(self.hxs_cls(text=text).select("//p")[0], 
+        assert isinstance(self.hxs_cls(text=text).select("//p")[0],
                           self.hxs_cls)
 
     @libxml2debug
@@ -155,6 +155,8 @@ class XPathSelectorTestCase(unittest.TestCase):
         self.assertEqual(x.select("//p:SecondTestTag").select("./xmlns:price/text()")[0].extract(), '90')
         self.assertEqual(x.select("//p:SecondTestTag/xmlns:material/text()").extract()[0], 'iron')
 
+        self.assertEqual(x.select("//b:Operation").extract(method="text")[0], 'hello')
+
     @libxml2debug
     def test_selector_re(self):
         body = """<div>Name: Mary
@@ -198,6 +200,49 @@ class XPathSelectorTestCase(unittest.TestCase):
         self.assertEqual(xxs.select('.').extract(),
                          [u'<root>lala</root>'])
 
+    @libxml2debug
+    def test_selector_extract_text_method(self):
+        body = """<html>
+<body>
+<h1>A title</h1>
+Includes the following:
+<p>
+This is a paragraph.
+</p>
+<div>
+This includes <a href="page.html">a nested link</a>.
+</div>
+</body>
+</html>
+               """
+        response = HtmlResponse(url="http://example.com", body=body)
+        hxs = self.hxs_cls(response)
+
+        self.assertEqual(hxs.select('//p/text()').extract(),
+                         [u'\nThis is a paragraph.\n'])
+        self.assertEqual(hxs.select('//p').extract(method="text"),
+                         [u'\nThis is a paragraph.\n'])
+        self.assertEqual(hxs.select('//p/text()').extract(method="text"),
+                         [u'\nThis is a paragraph.\n'])
+
+        self.assertEqual(hxs.select('//h1').extract(method="text", with_tail=True),
+                         [u'A title\nIncludes the following:\n'])
+
+        self.assertEqual(hxs.select('//a').extract(),
+                         [u'<a href="page.html">a nested link</a>'])
+        self.assertEqual(hxs.select('//a/text()').extract(),
+                         [u'a nested link'])
+        self.assertEqual(hxs.select('//a').extract(method="text"),
+                         [u'a nested link'])
+        self.assertEqual(hxs.select('//a').extract(method="text", with_tail=True),
+                         [u'a nested link.\n'])
+
+        self.assertEqual(hxs.select('//div/text()').extract(),
+                         [u'\nThis includes ', u'.\n'])
+        self.assertEqual(hxs.select('//div').extract(method="text"),
+                         [u'\nThis includes a nested link.\n'])
+        self.assertEqual(hxs.select('string(//div)').extract(),
+                         [u'\nThis includes a nested link.\n'])
 
     @libxml2debug
     def test_selector_invalid_xpath(self):

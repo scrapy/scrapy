@@ -12,8 +12,8 @@ class XPathSelectorList(list):
     def re(self, regex):
         return flatten([x.re(regex) for x in self])
 
-    def extract(self):
-        return [x.extract() for x in self]
+    def extract(self, method=None, with_tail=False):
+        return [x.extract(method=method, with_tail=with_tail) for x in self]
 
     def extract_unquoted(self):
         return [x.extract_unquoted() for x in self]
