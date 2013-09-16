@@ -46,18 +46,6 @@ class TranslatorMixin(object):
         xpath = super(TranslatorMixin, self).xpath_element(selector)
         return ScrapyXPathExpr.from_xpath(xpath)
 
-    def xpath_text_pseudo(self, xpath):
-        """Support selecting text nodes using :text pseudo-element"""
-        return ScrapyXPathExpr.from_xpath(xpath, textnode=True)
-
-    def xpath_attribute_function(self, xpath, function):
-        if function.argument_types() not in (['STRING'], ['IDENT']):
-            raise ExpressionError(
-                "Expected a single string or ident for :contains(), got %r"
-                % function.arguments)
-        value = function.arguments[0].value
-        return ScrapyXPathExpr.from_xpath(xpath, attribute=value)
-
     def xpath_pseudo_element(self, xpath, pseudo_element):
         if isinstance(pseudo_element, FunctionalPseudoElement):
             method = 'xpath_%s_functional_pseudo_element' % (
@@ -79,11 +67,17 @@ class TranslatorMixin(object):
             xpath = method(xpath)
         return xpath
 
-    def xpath_attribute_functional_pseudo_element(self, xpath, arguments):
-        return self.xpath_attribute_function(xpath, arguments)
+    def xpath_attr_functional_pseudo_element(self, xpath, function):
+        if function.argument_types() not in (['STRING'], ['IDENT']):
+            raise ExpressionError(
+                "Expected a single string or ident for ::attr(), got %r"
+                % function.arguments)
+        return ScrapyXPathExpr.from_xpath(xpath,
+            attribute=function.arguments[0].value)
 
     def xpath_text_simple_pseudo_element(self, xpath):
-        return self.xpath_text_pseudo(xpath)
+        """Support selecting text nodes using ::text pseudo-element"""
+        return ScrapyXPathExpr.from_xpath(xpath, textnode=True)
 
 
 class ScrapyGenericTranslator(TranslatorMixin, GenericTranslator):
