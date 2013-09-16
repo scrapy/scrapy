@@ -32,11 +32,8 @@ class HTTP11DownloadHandler(object):
 
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
-        if 'download_maxsize' not in request.meta:
-            request.meta.update({'download_maxsize': self._default_download_maxsize})
-        # always set to warnsize
-        request.meta.update({'download_warnsize': self._default_download_warnsize})
-        agent = ScrapyAgent(contextFactory=self._contextFactory, pool=self._pool)
+        agent = ScrapyAgent(self._default_download_maxsize, self._default_download_warnsize,
+                            contextFactory=self._contextFactory, pool=self._pool,)
         return agent.download_request(request)
 
     def close(self):
@@ -48,7 +45,10 @@ class ScrapyAgent(object):
     _Agent = Agent
     _ProxyAgent = ProxyAgent
 
-    def __init__(self, contextFactory=None, connectTimeout=10, bindAddress=None, pool=None):
+    def __init__(self, download_maxsize, download_warnsize,
+                 contextFactory=None, connectTimeout=10, bindAddress=None, pool=None):
+        self._download_maxsize = download_maxsize
+        self._download_warnsize = download_warnsize
         self._contextFactory = contextFactory
         self._connectTimeout = connectTimeout
         self._bindAddress = bindAddress
@@ -105,8 +105,8 @@ class ScrapyAgent(object):
 
         headers = Headers(txresponse.headers.getAllRawHeaders())
         content_length = headers.get('Content-Length', None)
-        maxsize = request.meta['download_maxsize']
-        warnsize = request.meta['download_warnsize']
+        maxsize = request.meta.get('download_maxsize') or self._download_maxsize
+        warnsize = request.meta.get('download_warnsize') or self._download_warnsize
 
         if warnsize < content_length < maxsize:
             log.msg("Content-length %s larger than DOWNLOAD_WARNSIZE (%s)." % (content_length, warnsize),
@@ -121,7 +121,7 @@ class ScrapyAgent(object):
             txresponse._transport._producer.loseConnection()
 
         d = defer.Deferred(_cancel)
-        txresponse.deliverBody(_ResponseReader(d, txresponse, request))
+        txresponse.deliverBody(_ResponseReader(d, txresponse, request, maxsize, warnsize))
         return d
 
     def _cb_bodydone(self, result, request, url):
@@ -152,13 +152,13 @@ class _RequestBodyProducer(object):
 
 class _ResponseReader(protocol.Protocol):
 
-    def __init__(self, finished, txresponse, request):
+    def __init__(self, finished, txresponse, request, maxsize, warnsize):
         self._finished = finished
         self._txresponse = txresponse
         self._request = request
+        self._maxsize  = maxsize
+        self._warnsize  = warnsize
         self._bodybuf = StringIO()
-        self._maxsize  = request.meta['download_maxsize']
-        self._warnsize  = request.meta['download_warnsize']
         self._bytes_received = 0
 
 
