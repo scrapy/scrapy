@@ -60,6 +60,16 @@ class TranslatorMixinTest(unittest.TestCase):
         for css, xpath in cases:
             self.assertEqual(self.c2x(css), xpath, css)
 
+    def test_attribute_function2(self):
+        cases = [
+            ('::attribute(name)', u'descendant-or-self::*/@name'),
+            ('a::attribute(name)', u'descendant-or-self::a/@name'),
+            ('a ::attribute(name)', u'descendant-or-self::a/descendant-or-self::*/@name'),
+            ('a > ::attribute(name)', u'descendant-or-self::a/*/@name'),
+        ]
+        for css, xpath in cases:
+            self.assertEqual(self.c2x(css), xpath, css)
+
     def test_text_pseudo_element(self):
         cases = [
             (':text', u'descendant-or-self::text()'),
@@ -77,6 +87,22 @@ class TranslatorMixinTest(unittest.TestCase):
         for css, xpath in cases:
             self.assertEqual(self.c2x(css), xpath, css)
 
+    def test_text_pseudo_element2(self):
+        cases = [
+            ('::text', u'descendant-or-self::text()'),
+            ('p::text', u'descendant-or-self::p/text()'),
+            ('p ::text', u'descendant-or-self::p/descendant-or-self::text()'),
+            ('#id::text', u"descendant-or-self::*[@id = 'id']/text()"),
+            ('p#id::text', u"descendant-or-self::p[@id = 'id']/text()"),
+            ('p#id ::text', u"descendant-or-self::p[@id = 'id']/descendant-or-self::text()"),
+            ('p#id > ::text', u"descendant-or-self::p[@id = 'id']/*/text()"),
+            ('p#id ~ ::text', u"descendant-or-self::p[@id = 'id']/following-sibling::*/text()"),
+            ('a[href]::text', u'descendant-or-self::a[@href]/text()'),
+            ('a[href] ::text', u'descendant-or-self::a[@href]/descendant-or-self::text()'),
+            ('p:text, a::text', u"descendant-or-self::p/text() | descendant-or-self::a/text()"),
+        ]
+        for css, xpath in cases:
+            self.assertEqual(self.c2x(css), xpath, css)
 
 class HTMLCSSSelectorTest(unittest.TestCase):
 

@@ -1,5 +1,6 @@
 from cssselect import GenericTranslator, HTMLTranslator
-from cssselect.xpath import XPathExpr, ExpressionError
+from cssselect.xpath import _unicode_safe_getattr, XPathExpr, ExpressionError
+from cssselect.parser import FunctionalPseudoElement
 from scrapy.selector import XPathSelector, HtmlXPathSelector, XmlXPathSelector
 
 
@@ -56,6 +57,33 @@ class TranslatorMixin(object):
                 % function.arguments)
         value = function.arguments[0].value
         return ScrapyXPathExpr.from_xpath(xpath, attribute=value)
+
+    def xpath_pseudo_element(self, xpath, pseudo_element):
+        if isinstance(pseudo_element, FunctionalPseudoElement):
+            method = 'xpath_%s_functional_pseudo_element' % (
+                pseudo_element.name.replace('-', '_'))
+            method = _unicode_safe_getattr(self, method, None)
+            if not method:
+                raise ExpressionError(
+                    "The functional pseudo-element ::%s() is unknown"
+                % pseudo_element.name)
+            xpath = method(xpath, pseudo_element)
+        else:
+            method = 'xpath_%s_simple_pseudo_element' % (
+                pseudo_element.replace('-', '_'))
+            method = _unicode_safe_getattr(self, method, None)
+            if not method:
+                raise ExpressionError(
+                    "The pseudo-element ::%s is unknown"
+                    % pseudo_element)
+            xpath = method(xpath)
+        return xpath
+
+    def xpath_attribute_functional_pseudo_element(self, xpath, arguments):
+        return self.xpath_attribute_function(xpath, arguments)
+
+    def xpath_text_simple_pseudo_element(self, xpath):
+        return self.xpath_text_pseudo(xpath)
 
 
 class ScrapyGenericTranslator(TranslatorMixin, GenericTranslator):
