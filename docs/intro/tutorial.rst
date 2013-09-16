@@ -121,7 +121,7 @@ define the three main, mandatory, attributes:
   objects) and more URLs to follow (as :class:`~scrapy.http.Request` objects).
 
 This is the code for our first Spider; save it in a file named
-``dmoz_spider.py`` under the ``dmoz/spiders`` directory::
+``dmoz_spider.py`` under the ``tutorial/spiders`` directory::
 
    from scrapy.spider import BaseSpider
 
