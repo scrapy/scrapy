@@ -4,3 +4,6 @@ twisted
 boto
 Pillow
 django
+
+# testing requirements
+mock
