@@ -43,7 +43,7 @@ Request objects
     :param body: the request body. If a ``unicode`` is passed, then it's encoded to
       ``str`` using the `encoding` passed (which defaults to ``utf-8``). If
       ``body`` is not given,, an empty string is stored. Regardless of the
-      type of this argument, the final value stored will be a ``str``` (never
+      type of this argument, the final value stored will be a ``str`` (never
       ``unicode`` or ``None``).
     :type body: str or unicode
 
