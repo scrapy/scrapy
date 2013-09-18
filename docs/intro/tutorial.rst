@@ -239,7 +239,13 @@ installed on your system.
 
 To start a shell, you must go to the project's top level directory and run::
 
-   scrapy shell http://www.dmoz.org/Computers/Programming/Languages/Python/Books/
+   scrapy shell "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/"
+
+.. note::
+
+   Remember to always enclose urls with quotes when running Scrapy shell from
+   command-line, otherwise urls containing arguments (ie. ``&`` character)
+   will not work.
 
 This is what the shell looks like::
 
