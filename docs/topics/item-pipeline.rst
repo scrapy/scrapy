@@ -132,9 +132,9 @@ Activating an Item Pipeline component
 =====================================
 
 To activate an Item Pipeline component you must add its class to the
-:setting:`ITEM_PIPELINES` list, like in the following example::
+:setting:`ITEM_PIPELINES` setting, like in the following example::
 
-   ITEM_PIPELINES = [
-       'myproject.pipeline.PricePipeline',
-       'myproject.pipeline.JsonWriterPipeline',
-   ]
+   ITEM_PIPELINES = {
+       'myproject.pipeline.PricePipeline': 300,
+       'myproject.pipeline.JsonWriterPipeline': 800,
+   }

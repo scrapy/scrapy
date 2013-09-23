@@ -453,16 +453,31 @@ and the :ref:`list of available extensions <topics-extensions-ref>`.
 ITEM_PIPELINES
 --------------
 
-Default: ``[]``
+Default: ``{}``
 
-The item pipelines to use (a list of classes).
+A dict containing the item pipelines to use, and their orders. The dict is
+empty by default order values are arbitrary but it's customary to define them
+in the 0-1000 range.
+
+Lists are supported in :setting:`ITEM_PIPELINES` for backwards compatibility,
+but they are deprecated.
 
 Example::
 
-   ITEM_PIPELINES = [
-       'mybot.pipeline.validate.ValidateMyItem',
-       'mybot.pipeline.validate.StoreMyItem'
-   ]
+   ITEM_PIPELINES = {
+       'mybot.pipeline.validate.ValidateMyItem': 300,
+       'mybot.pipeline.validate.StoreMyItem': 800,
+   }
+
+.. setting:: ITEM_PIPELINES_BASE
+
+ITEM_PIPELINES_BASE
+-------------------
+
+Default: ``{}``
+
+A dict containing the pipelines enabled by default in Scrapy. You should never
+modify this setting in your project, modify :setting:`ITEM_PIPELINES` instead.
 
 .. setting:: LOG_ENABLED
 
