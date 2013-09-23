@@ -8,6 +8,7 @@ Release notes
 
 - Request/Response url/body attributes are now immutable (modifying them had
   been deprecated for a long time)
+- :setting:`ITEM_PIPELINES` is now defined as a dict (instead of a list)
 
 0.18.2 (released 2013-09-03)
 ----------------------------

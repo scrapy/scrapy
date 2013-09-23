@@ -150,8 +150,8 @@ HTTPCACHE_POLICY = 'scrapy.contrib.httpcache.DummyPolicy'
 
 ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'
 
-# Item pipelines are typically set in specific commands settings
-ITEM_PIPELINES = []
+ITEM_PIPELINES = {}
+ITEM_PIPELINES_BASE = {}
 
 LOG_ENABLED = True
 LOG_ENCODING = 'utf-8'
