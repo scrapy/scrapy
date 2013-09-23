@@ -212,8 +212,8 @@ class MyPipeline(object):
         fname = abspath(join(self.proj_mod_path, 'settings.py'))
         with open(fname, 'a') as f:
             f.write("""
-ITEM_PIPELINES = ['{0}.pipelines.MyPipeline']
-""".format(self.project_name))
+ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
+""" % self.project_name)
 
     def test_spider_arguments(self):
         p = self.proc('parse', '--spider', self.spider_name, '-a', 'test_arg=1',

@@ -88,7 +88,7 @@ Enabling your Images Pipeline
 To enable your images pipeline you must first add it to your project
 :setting:`ITEM_PIPELINES` setting::
 
-    ITEM_PIPELINES = ['scrapy.contrib.pipeline.images.ImagesPipeline']
+    ITEM_PIPELINES = {'scrapy.contrib.pipeline.images.ImagesPipeline': 1}
 
 And set the :setting:`IMAGES_STORE` setting to a valid directory that will be
 used for storing the downloaded images. Otherwise the pipeline will remain
