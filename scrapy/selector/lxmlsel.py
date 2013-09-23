@@ -56,10 +56,11 @@ class XPathSelector(object_ref):
     def re(self, regex):
         return extract_regex(regex, self.extract())
 
-    def extract(self):
+    def extract(self, method=None, with_tail=False):
         try:
-            return etree.tostring(self._root, method=self._tostring_method, \
-                encoding=unicode, with_tail=False)
+            method = method or self._tostring_method
+            return etree.tostring(self._root, method=method, \
+                encoding=unicode, with_tail=with_tail)
         except (AttributeError, TypeError):
             if self._root is True:
                 return u'1'
