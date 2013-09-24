@@ -16,6 +16,7 @@ class SelectorList(list):
     def extract(self):
         return [x.extract() for x in self]
 
+    @deprecated(use_instead='SelectorList.extract')
     def extract_unquoted(self):
         return [x.extract_unquoted() for x in self]
 
