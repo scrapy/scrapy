@@ -708,8 +708,7 @@ Default: ``'scrapy.core.scheduler.Scheduler'``
 
 The scheduler to use for crawling.
 
-.. setting:: SPIDER_MIDDLEWARES
-
+.. setting:: SPIDER_CONTRACTS
 
 SPIDER_CONTRACTS
 ----------------
@@ -718,6 +717,8 @@ Default:: ``{}``
 
 A dict containing the scrapy contracts enabled in your project, used for
 testing spiders. For more info see :ref:`topics-contracts`.
+
+.. setting:: SPIDER_CONTRACTS_BASE
 
 SPIDER_CONTRACTS_BASE
 ---------------------
@@ -733,6 +734,8 @@ Default::
 A dict containing the scrapy contracts enabled by default in Scrapy. You should
 never modify this setting in your project, modify :setting:`SPIDER_CONTRACTS`
 instead. For more info see :ref:`topics-contracts`.
+
+.. setting:: SPIDER_MIDDLEWARES
 
 SPIDER_MIDDLEWARES
 ------------------
