@@ -151,7 +151,7 @@ class ScrapyAgent(object):
         return self._Agent(reactor, contextFactory=self._contextFactory,
             connectTimeout=timeout, bindAddress=bindaddress, pool=self._pool)
 
-    def download_request(self, request):    
+    def download_request(self, request):
         timeout = request.meta.get('download_timeout') or self._connectTimeout
         agent = self._get_agent(request, timeout)
 
