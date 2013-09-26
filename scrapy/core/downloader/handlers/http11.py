@@ -39,8 +39,10 @@ class HTTP11DownloadHandler(object):
 
 class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     """An endpoint that tunnels through proxies to allow HTTPS downloads. To
-    accomplish that, this endpoint sends an HTTP CONNECT to the proxy. The
-    HTTP CONNECT is always sent when using this endpoint, I think this could
+    accomplish that, this endpoint sends an HTTP CONNECT to the proxy. If the
+    proxy fails to open the tunnel this endpoint will behave as a
+    L{TCP4ClientEndpoint}.
+    The HTTP CONNECT is always sent when using this endpoint, I think this could
     be improved as the CONNECT will be redundant if the connection associated
     with this endpoint comes from the pool and a CONNECT has already been issued
     for it.
@@ -75,27 +77,53 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         """Processes the response from the proxy. If the tunnel is successfully
         created, notifies the client that we are ready to send requests.
         """
+        # Restore the protocol dataReceived method.
+        self._protocol.dataReceived = self._protocolDataReceived
         if bytes.find('200 Connection established') > 0:
             # The tunnel is ready, switch transport to TLS.
             self._protocol.transport.startTLS(self._contextFactory,
                                               self._protocolFactory)
-            # Restore the protocol dataReceived method.
-            self._protocol.dataReceived = self._protocolDataReceived
             # Trigger the callback with the protocol as the value.
             self._tunnelReadyDeferred.callback(self._protocol)
         else:
-            # Not sure if this is the best way to handle this error.
-            raise SSLError
+            # The proxy could not open the tunnel and will drop the connection;
+            # (we need to check if this is common to every proxy). In order to
+            # allow the client to send the request and get a response from the
+            # proxy, we will intercept the connectionLost message and restore
+            # the connection.
+            self._protocolConnectionLost = self._protocol.connectionLost
+            self._protocol.connectionLost = self.connectionLost
 
-    def connect(self, protocolFactory):
+    def connectFailed(self, reason):
+        """Propagates the errback to the appropriate deferred."""
+        self._tunnelReadyDeferred.errback(reason)
+
+    def connectionLost(self, reason):
+        """Restores the connection to the proxy server but does not request
+        for it to open a tunnel.
+        """
+        # Restore and call the protocol connection lost method.
+        self._protocol.connectionLost = self._protocolConnectionLost
+        self._protocol.connectionLost(reason)
+        # Restore the connection to the proxy but don't open the tunnel.
+        self.connect(self._protocolFactory, False)
+
+    def connect(self, protocolFactory, openTunnel=True):
         # Store the protocol factory as we will need it to switch to TLS.
         self._protocolFactory = protocolFactory
         connectDeferred = super(TunnelingTCP4ClientEndpoint,
                                 self).connect(protocolFactory)
-        # Add a callback to open the tunnel when the connection is ready.
-        connectDeferred.addCallback(self.requestTunnel)
-        # Return a deferred that will be triggered when the tunnel is ready.
-        return self._tunnelReadyDeferred
+        if openTunnel:
+            # Add a callback to open the tunnel when the connection is ready.
+            connectDeferred.addCallback(self.requestTunnel)
+            connectDeferred.addErrback(self.connectFailed)
+            # Return a deferred that will be triggered when the tunnel is ready.
+            return self._tunnelReadyDeferred
+        else:
+            def cbCallback(protocol):
+                self._tunnelReadyDeferred.callback(protocol)
+            connectDeferred.addCallback(cbCallback)
+            return connectDeferred
 
 
 class TunnelingAgent(Agent):
