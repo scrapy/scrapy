@@ -58,13 +58,14 @@ Here is an example, using the `testspiders`_ project:
 
     from twisted.internet import reactor
     from scrapy.crawler import Crawler
-    from scrapy.settings import Settings
     from scrapy import log
     from testspiders.spiders.followall import FollowAllSpider
+    from scrapy.utils.project import get_project_settings
 
     def setup_crawler(domain):
         spider = FollowAllSpider(domain=domain)
-        crawler = Crawler(Settings())
+        settings = get_project_settings()
+        crawler = Crawler(settings)
         crawler.configure()
         crawler.crawl(spider)
         crawler.start()
