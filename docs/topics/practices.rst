@@ -142,3 +142,24 @@ If you are still unable to prevent your bot getting banned, consider contacting
 .. _testspiders: https://github.com/scrapinghub/testspiders
 .. _Twisted Reactor Overview: http://twistedmatrix.com/documents/current/core/howto/reactor-basics.html
 .. _Crawlera: http://crawlera.com
+
+.. _dynamic-item-classes:
+
+Dynamic Creation of Item Classes
+================================
+
+For applications in which the structure of item classs is to be determined by 
+user input, or other changing conditions, you can dynamically create item
+classes instead of manually coding them.
+
+::
+
+
+	from scrapy.item import DictItem, Field
+
+	def create_item_class(class_name,field_list):
+	    field_dict = {}
+	    for field_name in field_list:
+	        field_dict[field_name] = Field()
+
+	    return type(class_name,DictItem,field_dict)
