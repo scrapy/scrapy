@@ -148,7 +148,7 @@ If you are still unable to prevent your bot getting banned, consider contacting
 Dynamic Creation of Item Classes
 ================================
 
-For applications in which the structure of item classs is to be determined by 
+For applications in which the structure of item class is to be determined by 
 user input, or other changing conditions, you can dynamically create item
 classes instead of manually coding them.
 
