@@ -100,3 +100,47 @@ models, but bear in mind that Django ORM may not scale well if you scrape a lot
 of items (ie. millions) with Scrapy. This is because a relational backend is
 often not a good choice for a write intensive application (such as a web
 crawler), specially if the database is highly normalized and with many indices.
+
+Django settings set up
+======================
+
+To use the Django models outside the Django application you need to set up the
+``DJANGO_SETTINGS_MODULE`` environment variable and --in most cases-- modify
+the ``PYTHONPATH`` environment variable to be able to import the settings
+module.
+
+There are many ways to do this depending on your use case and preferences.
+Below is detailed one of the simplest ways to do it.
+
+Suppose your Django project is named ``mysite``, is located in the path
+``/home/projects/mysite`` and you have created an app ``myapp`` with the model
+``Person``. That means your directory structure is something like this::
+
+    /home/projects/mysite
+    ├── manage.py
+    ├── myapp
+    │   ├── __init__.py
+    │   ├── models.py
+    │   ├── tests.py
+    │   └── views.py
+    └── mysite
+        ├── __init__.py
+        ├── settings.py
+        ├── urls.py
+        └── wsgi.py
+
+Then you need to add ``/home/projects/mysite`` to the ``PYTHONPATH``
+environment variable and set up the environment variable
+``DJANGO_SETTINGS_MODULE`` to ``mysite.settings``. That can be done in your
+Scrapy's settings file by adding the lines below::
+
+  import sys
+  sys.path.append('/home/projects/mysite')
+
+  import os
+  os.environ['DJANGO_SETTINGS_MODULE'] = 'mysite.settings'
+
+Notice that we modify the ``sys.path`` variable instead the ``PYTHONPATH``
+environment variable as we are already within the python runtime. If everything
+is right, you should be able to start the ``scrapy shell`` command and import
+the model ``Person`` (i.e. ``from myapp.models import Person``).
