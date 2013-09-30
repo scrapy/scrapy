@@ -138,9 +138,10 @@ class ScrapyAgent(object):
         bindaddress = request.meta.get('bindaddress') or self._bindAddress
         proxy = request.meta.get('proxy')
         if proxy:
-            _, _, proxyHost, proxyPort, _ = _parse(proxy)
+            _, _, proxyHost, proxyPort, proxyParams = _parse(proxy)
             scheme = _parse(request.url)[0]
-            if  scheme == 'https':
+            skipConnectTunnel = proxyParams.find('noconnect') >= 0
+            if  scheme == 'https' and not skipConnectTunnel:
                 proxyConf = (proxyHost, proxyPort,
                              request.headers.get('Proxy-Authorization', None))
                 return self._TunnelingAgent(reactor, proxyConf,
