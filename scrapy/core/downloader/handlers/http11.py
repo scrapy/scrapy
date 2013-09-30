@@ -3,12 +3,13 @@
 from time import time
 from cStringIO import StringIO
 from urlparse import urldefrag
+from re import match
 
 from zope.interface import implements
-from twisted.internet import defer, reactor, protocol, ssl
+from twisted.internet import defer, reactor, protocol
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import IBodyProducer
-from twisted.internet.error import TimeoutError, SSLError
+from twisted.internet.error import TimeoutError
 from twisted.web.http import PotentialDataLoss
 from scrapy.xlib.tx import Agent, ProxyAgent, ResponseDone, \
     HTTPConnectionPool, TCP4ClientEndpoint
@@ -37,93 +38,64 @@ class HTTP11DownloadHandler(object):
         return self._pool.closeCachedConnections()
 
 
+class TunnelError(Exception):
+    """An HTTP CONNECT tunnel could not be established by the proxy."""
+
+
 class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     """An endpoint that tunnels through proxies to allow HTTPS downloads. To
-    accomplish that, this endpoint sends an HTTP CONNECT to the proxy. If the
-    proxy fails to open the tunnel this endpoint will behave as a
-    L{TCP4ClientEndpoint}.
+    accomplish that, this endpoint sends an HTTP CONNECT to the proxy.
     The HTTP CONNECT is always sent when using this endpoint, I think this could
     be improved as the CONNECT will be redundant if the connection associated
     with this endpoint comes from the pool and a CONNECT has already been issued
     for it.
     """
 
-    def __init__(self, reactor, host, port, proxyHost, proxyPort,
-                contextFactory, timeout=30, bindAddress=None):
+    def __init__(self, reactor, host, port, proxyConf, contextFactory,
+                 timeout=30, bindAddress=None):
+        proxyHost, proxyPort = proxyConf
         super(TunnelingTCP4ClientEndpoint, self).__init__(reactor, proxyHost,
             proxyPort, timeout, bindAddress)
         self._tunnelReadyDeferred = defer.Deferred()
-        # Although we will connect to the proxy, we need the host and port of
-        # the destination server in order to send the HTTP CONNECT.
         self._tunneledHost = host
         self._tunneledPort = port
         self._contextFactory = contextFactory
 
     def requestTunnel(self, protocol):
         """Asks the proxy to open a tunnel."""
-        # Ask for the proxy to open the tunnel.
-        protocol.transport.write('CONNECT %s:%s HTTP/1.1\n\n' %
-                                 (self._tunneledHost, self._tunneledPort))
-        # This hack is not so nice. Substitute the dataReceived method
-        # temporarily to intercept the response from the proxy.
+        tunnelReq = 'CONNECT %s:%s HTTP/1.1\n\n' % (self._tunneledHost,
+                                                   self._tunneledPort)
+        protocol.transport.write(tunnelReq)
         self._protocolDataReceived = protocol.dataReceived
         protocol.dataReceived = self.processProxyResponse
-        # Store the protocol because we will have to pass it when triggering the
-        # deferred returned in the connect method.
         self._protocol = protocol
         return protocol
 
     def processProxyResponse(self, bytes):
         """Processes the response from the proxy. If the tunnel is successfully
-        created, notifies the client that we are ready to send requests.
+        created, notifies the client that we are ready to send requests. If not
+        raises a TunnelError.
         """
-        # Restore the protocol dataReceived method.
         self._protocol.dataReceived = self._protocolDataReceived
-        if bytes.find('200 Connection established') > 0:
-            # The tunnel is ready, switch transport to TLS.
+        if match('HTTP/1\.. 200', bytes):
             self._protocol.transport.startTLS(self._contextFactory,
                                               self._protocolFactory)
-            # Trigger the callback with the protocol as the value.
             self._tunnelReadyDeferred.callback(self._protocol)
         else:
-            # The proxy could not open the tunnel and will drop the connection;
-            # (we need to check if this is common to every proxy). In order to
-            # allow the client to send the request and get a response from the
-            # proxy, we will intercept the connectionLost message and restore
-            # the connection.
-            self._protocolConnectionLost = self._protocol.connectionLost
-            self._protocol.connectionLost = self.connectionLost
+            self._tunnelReadyDeferred.errback(
+                TunnelError('Could not open CONNECT tunnel.'))
 
     def connectFailed(self, reason):
         """Propagates the errback to the appropriate deferred."""
         self._tunnelReadyDeferred.errback(reason)
 
-    def connectionLost(self, reason):
-        """Restores the connection to the proxy server but does not request
-        for it to open a tunnel.
-        """
-        # Restore and call the protocol connection lost method.
-        self._protocol.connectionLost = self._protocolConnectionLost
-        self._protocol.connectionLost(reason)
-        # Restore the connection to the proxy but don't open the tunnel.
-        self.connect(self._protocolFactory, False)
-
-    def connect(self, protocolFactory, openTunnel=True):
-        # Store the protocol factory as we will need it to switch to TLS.
+    def connect(self, protocolFactory):
         self._protocolFactory = protocolFactory
         connectDeferred = super(TunnelingTCP4ClientEndpoint,
                                 self).connect(protocolFactory)
-        if openTunnel:
-            # Add a callback to open the tunnel when the connection is ready.
-            connectDeferred.addCallback(self.requestTunnel)
-            connectDeferred.addErrback(self.connectFailed)
-            # Return a deferred that will be triggered when the tunnel is ready.
-            return self._tunnelReadyDeferred
-        else:
-            def cbCallback(protocol):
-                self._tunnelReadyDeferred.callback(protocol)
-            connectDeferred.addCallback(cbCallback)
-            return connectDeferred
+        connectDeferred.addCallback(self.requestTunnel)
+        connectDeferred.addErrback(self.connectFailed)
+        return self._tunnelReadyDeferred
 
 
 class TunnelingAgent(Agent):
@@ -134,17 +106,16 @@ class TunnelingAgent(Agent):
     proxy involved.
     """
 
-    def __init__(self, reactor, proxyHost, proxyPort, contextFactory=None,
+    def __init__(self, reactor, proxyConf, contextFactory=None,
                  connectTimeout=None, bindAddress=None, pool=None):
         super(TunnelingAgent, self).__init__(reactor, contextFactory,
             connectTimeout, bindAddress, pool)
-        self._proxyHost = proxyHost
-        self._proxyPort = proxyPort
+        self._proxyConf = proxyConf
 
     def _getEndpoint(self, scheme, host, port):
         return TunnelingTCP4ClientEndpoint(self._reactor, host, port,
-            self._proxyHost, self._proxyPort, self._contextFactory,
-            self._connectTimeout, self._bindAddress)
+            self._proxyConf, self._contextFactory, self._connectTimeout,
+            self._bindAddress)
 
 
 class ScrapyAgent(object):
@@ -153,8 +124,7 @@ class ScrapyAgent(object):
     _ProxyAgent = ProxyAgent
     _TunnelingAgent = TunnelingAgent
 
-    def __init__(self, contextFactory=None, connectTimeout=10, bindAddress=None,
-                 pool=None):
+    def __init__(self, contextFactory=None, connectTimeout=10, bindAddress=None, pool=None):
         self._contextFactory = contextFactory
         self._connectTimeout = connectTimeout
         self._bindAddress = bindAddress
@@ -167,8 +137,8 @@ class ScrapyAgent(object):
             _, _, proxyHost, proxyPort, _ = _parse(proxy)
             scheme = _parse(request.url)[0]
             if  scheme == 'https':
-                # We need to tunnel the proxy using an HTTP CONNECT.
-                return self._TunnelingAgent(reactor, proxyHost, proxyPort,
+                proxyConf = (proxyHost, proxyPort)
+                return self._TunnelingAgent(reactor, proxyConf,
                     contextFactory=self._contextFactory, connectTimeout=timeout,
                     bindAddress=bindaddress, pool=self._pool)
             else:
