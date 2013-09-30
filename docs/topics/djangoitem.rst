@@ -27,6 +27,7 @@ Let's see some examples:
 Creating a Django model for the examples::
    
    from django.db import models
+
    class Person(models.Model):
        name = models.CharField(max_length=255)
        age = models.IntegerField()
@@ -34,14 +35,15 @@ Creating a Django model for the examples::
 Defining a basic :class:`DjangoItem`::
 
    from scrapy.contrib.djangoitem import DjangoItem 
+
    class PersonItem(DjangoItem):
        django_model = Person
        
 :class:`DjangoItem` work just like :class:`~scrapy.item.Item`::
 
-   p = PersonItem()
-   p['name'] = 'John'
-   p['age'] = '22'
+   >>> p = PersonItem()
+   >>> p['name'] = 'John'
+   >>> p['age'] = '22'
 
 To obtain the Django model from the item, we call the extra method
 :meth:`~DjangoItem.save` of the :class:`DjangoItem`::
@@ -72,10 +74,12 @@ As said before, we can add other fields to the item::
        django_model = Person
        sex = Field()
 
-   p = PersonItem()
-   p['name'] = 'John'
-   p['age'] = '22'
-   p['sex'] = 'M'
+::
+
+   >>> p = PersonItem()
+   >>> p['name'] = 'John'
+   >>> p['age'] = '22'
+   >>> p['sex'] = 'M'
 
 .. note:: fields added to the item won't be taken into account when doing a :meth:`~DjangoItem.save`
 
