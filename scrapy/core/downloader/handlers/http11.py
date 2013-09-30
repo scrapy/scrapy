@@ -53,7 +53,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
 
     def __init__(self, reactor, host, port, proxyConf, contextFactory,
                  timeout=30, bindAddress=None):
-        proxyHost, proxyPort = proxyConf
+        proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
         super(TunnelingTCP4ClientEndpoint, self).__init__(reactor, proxyHost,
             proxyPort, timeout, bindAddress)
         self._tunnelReadyDeferred = defer.Deferred()
@@ -63,8 +63,12 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
 
     def requestTunnel(self, protocol):
         """Asks the proxy to open a tunnel."""
-        tunnelReq = 'CONNECT %s:%s HTTP/1.1\n\n' % (self._tunneledHost,
-                                                   self._tunneledPort)
+        tunnelReq = 'CONNECT %s:%s HTTP/1.1\n' % (self._tunneledHost,
+                                                  self._tunneledPort)
+        if self._proxyAuthHeader:
+            tunnelReq += 'Proxy-Authorization: %s \n\n' % self._proxyAuthHeader
+        else:
+            tunnelReq += '\n'
         protocol.transport.write(tunnelReq)
         self._protocolDataReceived = protocol.dataReceived
         protocol.dataReceived = self.processProxyResponse
@@ -137,7 +141,8 @@ class ScrapyAgent(object):
             _, _, proxyHost, proxyPort, _ = _parse(proxy)
             scheme = _parse(request.url)[0]
             if  scheme == 'https':
-                proxyConf = (proxyHost, proxyPort)
+                proxyConf = (proxyHost, proxyPort,
+                             request.headers.get('Proxy-Authorization', None))
                 return self._TunnelingAgent(reactor, proxyConf,
                     contextFactory=self._contextFactory, connectTimeout=timeout,
                     bindAddress=bindaddress, pool=self._pool)
