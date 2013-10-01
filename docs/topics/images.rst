@@ -250,9 +250,6 @@ Here are the methods that you should override in your custom Images Pipeline:
 
         * ``checksum`` - a `MD5 hash`_ of the image contents
 
-      .. _Twisted Failure: http://twistedmatrix.com/documents/8.2.0/api/twisted.python.failure.Failure.html
-      .. _MD5 hash: http://en.wikipedia.org/wiki/MD5
-
       The list of tuples received by :meth:`~item_completed` is
       guaranteed to retain the same order of the requests returned from the
       :meth:`~get_media_requests` method.
@@ -322,3 +319,5 @@ above::
             item['image_paths'] = image_paths
             return item
 
+.. _Twisted Failure: http://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
+.. _MD5 hash: http://en.wikipedia.org/wiki/MD5
