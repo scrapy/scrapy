@@ -4,7 +4,7 @@ Scrapy web services extension
 See docs/topics/webservice.rst
 """
 
-from twisted.web import server, error
+from twisted.web import server, resource
 
 from scrapy.exceptions import NotConfigured
 from scrapy import log, signals
@@ -45,7 +45,7 @@ class JsonRpcResource(JsonResource):
             newtarget = getattr(target, name)
             return JsonRpcResource(self.crawler, newtarget)
         except AttributeError:
-            return error.NoResource("No such child resource.")
+            return resource.ErrorPage(404, "No Such Resource", "No such child resource.")
 
     def get_target(self):
         return self._target
