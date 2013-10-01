@@ -114,8 +114,6 @@ Request objects
        as first parameter.
     :type errback: callable
 
-    .. _Twisted Failure: http://twistedmatrix.com/documents/8.2.0/api/twisted.python.failure.Failure.html
-
     .. attribute:: Request.url
 
         A string containing the URL of this request. Keep in mind that this
@@ -541,3 +539,5 @@ XmlResponse objects
     The :class:`XmlResponse` class is a subclass of :class:`TextResponse` which
     adds encoding auto-discovering support by looking into the XML declaration
     line.  See :attr:`TextResponse.encoding`.
+
+.. _Twisted Failure: http://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html
