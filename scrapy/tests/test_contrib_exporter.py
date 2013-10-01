@@ -185,6 +185,14 @@ class CsvItemExporterTest(BaseItemExporterTest):
         ie.finish_exporting()
         self.assertEqual(output.getvalue(), '"Mary,Paul",John\r\n')
 
+    def test_delimiter(self):
+        output = StringIO()
+        ie = CsvItemExporter(output, delimiter=';')
+        ie.start_exporting()
+        ie.export_item(self.i)
+        ie.finish_exporting()
+        self.assertEqual(output.getvalue(), 'age;name\r\n22;John\xc2\xa3\r\n')
+
 class XmlItemExporterTest(BaseItemExporterTest):
 
     def _get_exporter(self, **kwargs):
