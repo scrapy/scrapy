@@ -223,6 +223,14 @@ Those are:
 * ``dont_merge_cookies`` (see ``cookies`` parameter of :class:`Request` constructor)
 * :reqmeta:`cookiejar`
 * :reqmeta:`redirect_urls`
+* :reqmeta:`bindaddress`
+
+.. reqmeta:: bindaddress
+
+bindaddress
+-----------
+
+The IP of the outgoing IP address to use for the performing the request.
 
 .. _topics-request-response-ref-request-subclasses:
 
