@@ -1,9 +1,11 @@
-import sys, time, random, urllib
+import sys, time, random, urllib, os
 from subprocess import Popen, PIPE
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
-from twisted.internet import reactor, defer
+from twisted.internet import reactor, defer, ssl
 from scrapy import twisted_version
+
+import OpenSSL.SSL
 
 
 if twisted_version < (11, 0, 0):
@@ -181,6 +183,11 @@ if __name__ == "__main__":
     root = Root()
     factory = Site(root)
     port = reactor.listenTCP(8998, factory)
+    myContextFactory = ssl.DefaultOpenSSLContextFactory(
+         os.path.join(os.path.dirname(__file__), 'keys/cert2.pem'),
+         os.path.join(os.path.dirname(__file__), 'keys/cert2.pem'),
+         )
+    port = reactor.listenSSL(8999, factory, myContextFactory)
 
     def print_listening():
         h = port.getHost()
