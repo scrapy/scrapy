@@ -1,5 +1,7 @@
 """Download handlers for http and https schemes"""
 
+import re
+
 from time import time
 from cStringIO import StringIO
 from urlparse import urldefrag
@@ -37,10 +39,97 @@ class HTTP11DownloadHandler(object):
         return self._pool.closeCachedConnections()
 
 
+class TunnelError(Exception):
+    """An HTTP CONNECT tunnel could not be established by the proxy."""
+
+
+class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
+    """An endpoint that tunnels through proxies to allow HTTPS downloads. To
+    accomplish that, this endpoint sends an HTTP CONNECT to the proxy.
+    The HTTP CONNECT is always sent when using this endpoint, I think this could
+    be improved as the CONNECT will be redundant if the connection associated
+    with this endpoint comes from the pool and a CONNECT has already been issued
+    for it.
+    """
+
+    _responseMatcher = re.compile('HTTP/1\.. 200')
+
+    def __init__(self, reactor, host, port, proxyConf, contextFactory,
+                 timeout=30, bindAddress=None):
+        proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
+        super(TunnelingTCP4ClientEndpoint, self).__init__(reactor, proxyHost,
+            proxyPort, timeout, bindAddress)
+        self._tunnelReadyDeferred = defer.Deferred()
+        self._tunneledHost = host
+        self._tunneledPort = port
+        self._contextFactory = contextFactory
+
+    def requestTunnel(self, protocol):
+        """Asks the proxy to open a tunnel."""
+        tunnelReq = 'CONNECT %s:%s HTTP/1.1\n' % (self._tunneledHost,
+                                                  self._tunneledPort)
+        if self._proxyAuthHeader:
+            tunnelReq += 'Proxy-Authorization: %s \n\n' % self._proxyAuthHeader
+        else:
+            tunnelReq += '\n'
+        protocol.transport.write(tunnelReq)
+        self._protocolDataReceived = protocol.dataReceived
+        protocol.dataReceived = self.processProxyResponse
+        self._protocol = protocol
+        return protocol
+
+    def processProxyResponse(self, bytes):
+        """Processes the response from the proxy. If the tunnel is successfully
+        created, notifies the client that we are ready to send requests. If not
+        raises a TunnelError.
+        """
+        self._protocol.dataReceived = self._protocolDataReceived
+        if  TunnelingTCP4ClientEndpoint._responseMatcher.match(bytes):
+            self._protocol.transport.startTLS(self._contextFactory,
+                                              self._protocolFactory)
+            self._tunnelReadyDeferred.callback(self._protocol)
+        else:
+            self._tunnelReadyDeferred.errback(
+                TunnelError('Could not open CONNECT tunnel.'))
+
+    def connectFailed(self, reason):
+        """Propagates the errback to the appropriate deferred."""
+        self._tunnelReadyDeferred.errback(reason)
+
+    def connect(self, protocolFactory):
+        self._protocolFactory = protocolFactory
+        connectDeferred = super(TunnelingTCP4ClientEndpoint,
+                                self).connect(protocolFactory)
+        connectDeferred.addCallback(self.requestTunnel)
+        connectDeferred.addErrback(self.connectFailed)
+        return self._tunnelReadyDeferred
+
+
+class TunnelingAgent(Agent):
+    """An agent that uses a L{TunnelingTCP4ClientEndpoint} to make HTTPS
+    downloads. It may look strange that we have chosen to subclass Agent and not
+    ProxyAgent but consider that after the tunnel is opened the proxy is
+    transparent to the client; thus the agent should behave like there is no
+    proxy involved.
+    """
+
+    def __init__(self, reactor, proxyConf, contextFactory=None,
+                 connectTimeout=None, bindAddress=None, pool=None):
+        super(TunnelingAgent, self).__init__(reactor, contextFactory,
+            connectTimeout, bindAddress, pool)
+        self._proxyConf = proxyConf
+
+    def _getEndpoint(self, scheme, host, port):
+        return TunnelingTCP4ClientEndpoint(self._reactor, host, port,
+            self._proxyConf, self._contextFactory, self._connectTimeout,
+            self._bindAddress)
+
+
 class ScrapyAgent(object):
 
     _Agent = Agent
     _ProxyAgent = ProxyAgent
+    _TunnelingAgent = TunnelingAgent
 
     def __init__(self, contextFactory=None, connectTimeout=10, bindAddress=None, pool=None):
         self._contextFactory = contextFactory
@@ -52,10 +141,19 @@ class ScrapyAgent(object):
         bindaddress = request.meta.get('bindaddress') or self._bindAddress
         proxy = request.meta.get('proxy')
         if proxy:
-            scheme, _, host, port, _ = _parse(proxy)
-            endpoint = TCP4ClientEndpoint(reactor, host, port, timeout=timeout,
-                                          bindAddress=bindaddress)
-            return self._ProxyAgent(endpoint)
+            _, _, proxyHost, proxyPort, proxyParams = _parse(proxy)
+            scheme = _parse(request.url)[0]
+            omitConnectTunnel = proxyParams.find('noconnect') >= 0
+            if  scheme == 'https' and not omitConnectTunnel:
+                proxyConf = (proxyHost, proxyPort,
+                             request.headers.get('Proxy-Authorization', None))
+                return self._TunnelingAgent(reactor, proxyConf,
+                    contextFactory=self._contextFactory, connectTimeout=timeout,
+                    bindAddress=bindaddress, pool=self._pool)
+            else:
+                endpoint = TCP4ClientEndpoint(reactor, proxyHost, proxyPort,
+                    timeout=timeout, bindAddress=bindaddress)
+                return self._ProxyAgent(endpoint)
 
         return self._Agent(reactor, contextFactory=self._contextFactory,
             connectTimeout=timeout, bindAddress=bindaddress, pool=self._pool)
