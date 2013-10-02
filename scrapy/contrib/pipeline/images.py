@@ -33,6 +33,8 @@ class ImagesPipeline(FilesPipeline):
     MIN_WIDTH = 0
     MIN_HEIGHT = 0
     THUMBS = {}
+    DEFAULT_IMAGES_URLS_FIELD = 'image_urls'
+    DEFAULT_IMAGES_RESULT_FIELD = 'images'
 
     @classmethod
     def from_settings(cls, settings):
@@ -43,6 +45,9 @@ class ImagesPipeline(FilesPipeline):
         s3store = cls.STORE_SCHEMES['s3']
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
+
+        cls.IMAGES_URLS_FIELD = settings.get('IMAGES_URLS_FIELD', cls.DEFAULT_IMAGES_URLS_FIELD)
+        cls.IMAGES_RESULT_FIELD = settings.get('IMAGES_RESULT_FIELD', cls.DEFAULT_IMAGES_RESULT_FIELD)
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri)
 
@@ -103,7 +108,7 @@ class ImagesPipeline(FilesPipeline):
         return 'thumbs/%s/%s.jpg' % (thumb_id, image_guid)
 
     def get_media_requests(self, item, info):
-        return [Request(x) for x in item.get('image_urls', [])]
+        return [Request(x) for x in item.get(self.IMAGES_URLS_FIELD, [])]
 
     # backwards compatibility
     def image_key(self, url):
@@ -111,6 +116,6 @@ class ImagesPipeline(FilesPipeline):
         return 'full/%s.jpg' % (media_guid)
 
     def item_completed(self, results, item, info):
-        if 'images' in item.fields:
-            item['images'] = [x for ok, x in results if ok]
+        if self.IMAGES_RESULT_FIELD in item.fields:
+            item[self.IMAGES_RESULT_FIELD] = [x for ok, x in results if ok]
         return item
