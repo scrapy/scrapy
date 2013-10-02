@@ -1,9 +1,10 @@
 """Download handlers for http and https schemes"""
 
+import re
+
 from time import time
 from cStringIO import StringIO
 from urlparse import urldefrag
-from re import match
 
 from zope.interface import implements
 from twisted.internet import defer, reactor, protocol
@@ -51,6 +52,8 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     for it.
     """
 
+    _responseMatcher = re.compile('HTTP/1\.. 200')
+
     def __init__(self, reactor, host, port, proxyConf, contextFactory,
                  timeout=30, bindAddress=None):
         proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
@@ -81,7 +84,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         raises a TunnelError.
         """
         self._protocol.dataReceived = self._protocolDataReceived
-        if match('HTTP/1\.. 200', bytes):
+        if  TunnelingTCP4ClientEndpoint._responseMatcher.match(bytes):
             self._protocol.transport.startTLS(self._contextFactory,
                                               self._protocolFactory)
             self._tunnelReadyDeferred.callback(self._protocol)
@@ -140,8 +143,8 @@ class ScrapyAgent(object):
         if proxy:
             _, _, proxyHost, proxyPort, proxyParams = _parse(proxy)
             scheme = _parse(request.url)[0]
-            skipConnectTunnel = proxyParams.find('noconnect') >= 0
-            if  scheme == 'https' and not skipConnectTunnel:
+            omitConnectTunnel = proxyParams.find('noconnect') >= 0
+            if  scheme == 'https' and not omitConnectTunnel:
                 proxyConf = (proxyHost, proxyPort,
                              request.headers.get('Proxy-Authorization', None))
                 return self._TunnelingAgent(reactor, proxyConf,
