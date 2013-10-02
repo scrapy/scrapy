@@ -5,6 +5,8 @@ from shutil import rmtree
 
 from twisted.trial import unittest
 
+from scrapy.item import Item, Field
+from scrapy.settings import Settings
 
 skip = False
 try:
@@ -82,7 +84,39 @@ class ImagesPipelineTestCase(unittest.TestCase):
         self.assertEquals(converted.mode, 'RGB')
         self.assertEquals(converted.getcolors(), [(10000, (205, 230, 255))])
 
+class ImagesPipelineTestCaseFields(unittest.TestCase):
 
+    def test_item_fields_default(self):
+        from scrapy.contrib.pipeline.images import ImagesPipeline
+        class TestItem(Item):
+            name = Field()
+            image_urls = Field()
+            images = Field()
+        url = 'http://www.example.com/images/1.jpg'
+        item = TestItem({'name': 'item1', 'image_urls': [url]})
+        pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': 's3://example/images/'}))
+        requests = list(pipeline.get_media_requests(item, None))
+        self.assertEqual(requests[0].url, url)
+        results = [(True, {'url': url})]
+        pipeline.item_completed(results, item, None)
+        self.assertEqual(item['images'], [results[0][1]])
+        
+    def test_item_fields_override_settings(self):
+        from scrapy.contrib.pipeline.images import ImagesPipeline
+        class TestItem(Item):
+            name = Field()
+            image = Field()
+            stored_image = Field()
+        url = 'http://www.example.com/images/1.jpg'
+        item = TestItem({'name': 'item1', 'image': [url]})
+        pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': 's3://example/images/',
+                'IMAGES_URLS_FIELD': 'image', 'IMAGES_RESULT_FIELD': 'stored_image'}))
+        requests = list(pipeline.get_media_requests(item, None))
+        self.assertEqual(requests[0].url, url)
+        results = [(True, {'url': url})]
+        pipeline.item_completed(results, item, None)
+        self.assertEqual(item['stored_image'], [results[0][1]])
+ 
 def _create_image(format, *a, **kw):
     buf = StringIO()
     Image.new(*a, **kw).save(buf, format)

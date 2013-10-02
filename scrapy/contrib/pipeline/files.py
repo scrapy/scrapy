@@ -141,6 +141,8 @@ class FilesPipeline(MediaPipeline):
         'file': FSFilesStore,
         's3': S3FilesStore,
     }
+    DEFAULT_FILES_URLS_FIELD = 'file_urls'
+    DEFAULT_FILES_RESULT_FIELD = 'files'
 
     def __init__(self, store_uri, download_func=None):
         if not store_uri:
@@ -154,6 +156,8 @@ class FilesPipeline(MediaPipeline):
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
 
+        cls.FILES_URLS_FIELD = settings.get('FILES_URLS_FIELD', cls.DEFAULT_FILES_URLS_FIELD)
+        cls.FILES_RESULT_FIELD = settings.get('FILES_RESULT_FIELD', cls.DEFAULT_FILES_RESULT_FIELD)
         cls.EXPIRES = settings.getint('FILES_EXPIRES', 90)
         store_uri = settings['FILES_STORE']
         return cls(store_uri)
@@ -248,7 +252,7 @@ class FilesPipeline(MediaPipeline):
 
     ### Overridable Interface
     def get_media_requests(self, item, info):
-        return [Request(x) for x in item.get('file_urls', [])]
+        return [Request(x) for x in item.get(self.FILES_URLS_FIELD, [])]
 
     def file_key(self, url):
         media_guid = hashlib.sha1(url).hexdigest()
@@ -263,6 +267,6 @@ class FilesPipeline(MediaPipeline):
         return checksum
 
     def item_completed(self, results, item, info):
-        if 'files' in item.fields:
-            item['files'] = [x for ok, x in results if ok]
+        if self.FILES_RESULT_FIELD in item.fields:
+            item[self.FILES_RESULT_FIELD] = [x for ok, x in results if ok]
         return item
