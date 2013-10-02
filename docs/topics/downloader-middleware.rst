@@ -63,9 +63,9 @@ single Python class that defines one or more of the following methods:
       This method is called for each request that goes through the download
       middleware.
 
-      :meth:`process_request` should return either ``None``, a
-      :class:`~scrapy.http.Response` object, or a :class:`~scrapy.http.Request`
-      object.
+      :meth:`process_request` should either return ``None``, return a
+      :class:`~scrapy.http.Response` object, or raise an
+      :exc:`~scrapy.exceptions.IgnoreRequest` exception
 
       If it returns ``None``, Scrapy will continue processing this request, executing all
       other middlewares until, finally, the appropriate downloader handler is called
