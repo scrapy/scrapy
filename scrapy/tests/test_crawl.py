@@ -1,13 +1,13 @@
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 from scrapy.utils.test import get_crawler, get_testlog
-from scrapy.tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider
+from scrapy.tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
+    BrokenStartRequestsSpider
 from scrapy.tests.mockserver import MockServer
 
 
 def docrawl(spider, settings=None):
     crawler = get_crawler(settings)
-    crawler.configure()
     crawler.crawl(spider)
     return crawler.start()
 
@@ -89,6 +89,29 @@ class CrawlTestCase(TestCase):
         spider = SimpleSpider("http://localhost666/status?n=503")
         yield docrawl(spider)
         self._assert_retried()
+
+    @defer.inlineCallbacks
+    def test_start_requests_bug_before_yield(self):
+        spider = BrokenStartRequestsSpider(fail_before_yield=1)
+        yield docrawl(spider)
+        errors = self.flushLoggedErrors(ZeroDivisionError)
+        self.assertEqual(len(errors), 1)
+
+    @defer.inlineCallbacks
+    def test_start_requests_bug_yielding(self):
+        spider = BrokenStartRequestsSpider(fail_yielding=1)
+        yield docrawl(spider)
+        errors = self.flushLoggedErrors(ZeroDivisionError)
+        self.assertEqual(len(errors), 1)
+
+    @defer.inlineCallbacks
+    def test_start_requests_lazyness(self):
+        settings = {"CONCURRENT_REQUESTS": 1}
+        spider = BrokenStartRequestsSpider()
+        yield docrawl(spider, settings)
+        #self.assertTrue(False, spider.seedsseen)
+        #self.assertTrue(spider.seedsseen.index(None) < spider.seedsseen.index(99),
+        #                spider.seedsseen)
 
     @defer.inlineCallbacks
     def test_unbounded_response(self):
