@@ -471,8 +471,11 @@ Returns a html header where the text found in the content.
 
 Usage examples::
 
-    $ scrapy probe 'http://localhost/index.php' 'QWERTY'
-    [ ... probe starts ... ]
+    $ scrapy probe 'http://www.example.com/some/page.html' 'var sFeatures'
+    {'Accept-Charset': '*;q=0.7', 
+    'Accept-Language': 'en', 
+    'Accept': 'application/xhtml+xml', 
+    'User-Agent': 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'}
 
 .. command:: bench
 
