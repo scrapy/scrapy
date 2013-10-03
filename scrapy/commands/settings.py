@@ -25,9 +25,7 @@ class Command(ScrapyCommand):
             help="print setting value, intepreted as an float")
 
     def run(self, args, opts):
-        crawler = self.crawler_process.create_crawler()
-        crawler.configure()
-        settings = crawler.settings
+        settings = self.crawler_process.settings
         if opts.get:
             print settings.get(opts.get)
         elif opts.getbool:

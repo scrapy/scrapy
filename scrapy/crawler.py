@@ -19,17 +19,20 @@ class Crawler(object):
         self.settings = settings
         self.signals = SignalManager(self)
         self.stats = load_object(settings['STATS_CLASS'])(self)
-
+        self._start_requests = lambda: ()
+        self._spider = None
+        # TODO: move SpiderManager to CrawlerProcess
         spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
         self.spiders = spman_cls.from_crawler(self)
-        self._scheduled = {}
 
     def install(self):
+        # TODO: remove together with scrapy.project.crawler usage
         import scrapy.project
         assert not hasattr(scrapy.project, 'crawler'), "crawler already installed"
         scrapy.project.crawler = self
 
     def uninstall(self):
+        # TODO: remove together with scrapy.project.crawler usage
         import scrapy.project
         assert hasattr(scrapy.project, 'crawler'), "crawler not installed"
         del scrapy.project.crawler
@@ -45,19 +48,13 @@ class Crawler(object):
         self.engine = ExecutionEngine(self, self._spider_closed)
 
     def crawl(self, spider, requests=None):
+        assert self._spider is None, 'Spider already attached'
+        self._spider = spider
         spider.set_crawler(self)
-        if self.configured and self.engine.running:
-            assert not self._scheduled
-            return self._schedule(spider, requests)
-        elif requests is None:
-            self._scheduled[spider] = None
+        if requests is None:
+            self._start_requests = spider.start_requests
         else:
-            self._scheduled.setdefault(spider, []).append(requests)
-
-    def _schedule(self, spider, batches=()):
-        requests = chain.from_iterable(batches) \
-            if batches else spider.start_requests()
-        return self.engine.open_spider(spider, requests)
+            self._start_requests = lambda: requests
 
     def _spider_closed(self, spider=None):
         if not self.engine.open_spiders:
@@ -66,47 +63,40 @@ class Crawler(object):
     @defer.inlineCallbacks
     def start(self):
         yield defer.maybeDeferred(self.configure)
-
-        for spider, batches in self._scheduled.iteritems():
-            yield self._schedule(spider, batches)
-
+        if self._spider:
+            yield self.engine.open_spider(self._spider, self._start_requests())
         yield defer.maybeDeferred(self.engine.start)
 
     @defer.inlineCallbacks
     def stop(self):
-        if self.engine.running:
+        if self.configured and self.engine.running:
             yield defer.maybeDeferred(self.engine.stop)
 
 
-class ProcessMixin(object):
-    """ Mixin which provides automatic control of the Twisted reactor and
-        installs some convenient signals for shutting it down
-    """
+class CrawlerProcess(object):
+    """ A class to run multiple scrapy crawlers in a process sequentially"""
 
-    def __init__(self, *a, **kw):
+    def __init__(self, settings):
         install_shutdown_handlers(self._signal_shutdown)
+        self.settings = settings
+        self.crawlers = {}
+        self.stopping = False
+
+    def create_crawler(self, name=None):
+        if name not in self.crawlers:
+            self.crawlers[name] = Crawler(self.settings)
+
+        return self.crawlers[name]
 
     def start(self):
         if self.start_crawling():
             self.start_reactor()
 
-    def start_reactor(self):
-        if self.settings.getbool('DNSCACHE_ENABLED'):
-            reactor.installResolver(CachingThreadedResolver(reactor))
-        reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
-        reactor.run(installSignalHandlers=False)  # blocking call
-
-    def start_crawling(self):
-        raise NotImplementedError
-
+    @defer.inlineCallbacks
     def stop(self):
-        raise NotImplementedError
-
-    def stop_reactor(self, _=None):
-        try:
-            reactor.stop()
-        except RuntimeError:  # raised if already stopped or in shutdown stage
-            pass
+        self.stopping = True
+        for crawler in self.crawlers.itervalues():
+            yield crawler.stop()
 
     def _signal_shutdown(self, signum, _):
         install_shutdown_handlers(self._signal_kill)
@@ -120,27 +110,26 @@ class ProcessMixin(object):
         signame = signal_names[signum]
         log.msg(format='Received %(signame)s twice, forcing unclean shutdown',
                 level=log.INFO, signame=signame)
-        reactor.callFromThread(self.stop_reactor)
+        reactor.callFromThread(self._stop_reactor)
 
+    # ------------------------------------------------------------------------#
+    # The following public methods can't be considered stable and may change at
+    # any moment.
+    #
+    # start_crawling and start_reactor are called from scrapy.commands.shell
+    # They are splitted because reactor is started on a different thread than IPython shell.
+    #
+    def start_crawling(self):
+        log.scrapy_info(self.settings)
+        return self._start_crawler() is not None
 
-class CrawlerProcess(ProcessMixin):
-    """ A class to run multiple scrapy crawlers in a process sequentially
-    """
+    def start_reactor(self):
+        if self.settings.getbool('DNSCACHE_ENABLED'):
+            reactor.installResolver(CachingThreadedResolver(reactor))
+        reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
+        reactor.run(installSignalHandlers=False)  # blocking call
 
-    def __init__(self, settings):
-        super(CrawlerProcess, self).__init__(settings)
-
-        self.settings = settings
-        self.crawlers = {}
-        self.stopping = False
-
-    def create_crawler(self, name=None):
-        if name not in self.crawlers:
-            self.crawlers[name] = Crawler(self.settings)
-
-        return self.crawlers[name]
-
-    def start_crawler(self):
+    def _start_crawler(self):
         if self.crawlers and not self.stopping:
             name, crawler = self.crawlers.popitem()
 
@@ -151,23 +140,17 @@ class CrawlerProcess(ProcessMixin):
             if sflo:
                 crawler.signals.connect(sflo.stop, signals.engine_stopped)
 
-            crawler.signals.connect(self.check_done, signals.engine_stopped)
+            crawler.signals.connect(self._check_done, signals.engine_stopped)
             crawler.start()
 
             return name, crawler
 
-    def check_done(self, **kwargs):
-        if not self.start_crawler():
-            self.stop_reactor()
+    def _check_done(self, **kwargs):
+        if not self._start_crawler():
+            self._stop_reactor()
 
-    def start_crawling(self):
-        log.scrapy_info(self.settings)
-        return self.start_crawler() is not None
-
-    @defer.inlineCallbacks
-    def stop(self):
-        self.stopping = True
-
-        for crawler in self.crawlers.itervalues():
-            if crawler.configured:
-                yield crawler.stop()
+    def _stop_reactor(self, _=None):
+        try:
+            reactor.stop()
+        except RuntimeError:  # raised if already stopped or in shutdown stage
+            pass

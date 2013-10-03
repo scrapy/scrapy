@@ -103,3 +103,32 @@ class ErrorSpider(FollowAllSpider):
         for request in super(ErrorSpider, self).parse(response):
             yield request
             self.raise_exception()
+
+
+class BrokenStartRequestsSpider(FollowAllSpider):
+
+    fail_before_yield = False
+    fail_yielding = False
+
+    def __init__(self, *a, **kw):
+        super(BrokenStartRequestsSpider, self).__init__(*a, **kw)
+        self.seedsseen = []
+
+    def start_requests(self):
+        if self.fail_before_yield:
+            1 / 0
+
+        for s in xrange(100):
+            qargs = {'total': 10, 'seed': s}
+            url = "http://localhost:8998/follow?%s" % urlencode(qargs, doseq=1)
+            yield Request(url, meta={'seed': s})
+            if self.fail_yielding:
+                2 / 0
+
+        assert self.seedsseen, \
+                'All start requests consumed before any download happened'
+
+    def parse(self, response):
+        self.seedsseen.append(response.meta.get('seed'))
+        for req in super(BrokenStartRequestsSpider, self).parse(response):
+            yield req
