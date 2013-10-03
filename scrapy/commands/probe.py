@@ -2,6 +2,7 @@ import urllib2
 import sys
 import re
 from w3lib.url import is_url
+from urllib2 import HTTPError
 
 from scrapy.exceptions import UsageError
 from scrapy.command import ScrapyCommand
