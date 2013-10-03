@@ -52,7 +52,7 @@ class Command(ScrapyCommand):
 
     def short_desc(self):
         return "Returns a HTTP header where the text found in the content"
-    
+
     def long_desc(self):
         return "probe command will try several of combinations of HTTP headers "\
             "and return a header that page content have search string"
@@ -86,10 +86,12 @@ class Command(ScrapyCommand):
                         # Check if search string is on page
                         if self.verify_if_match(url, header, text):
                             sys.exit()
-    # TODO
-    # To add documentation this function will verefy if generated headers
-    # check if necessary return of just need print the header
-    def verefy_if_math(self, url, header, text):
+        # Send message if not found and exit
+        sys.exit('Not Found set of working headers')
+
+    # Check if the search string is in page, if true print header
+    # and return it
+    def verify_if_match(self, url, header, text):
         try:
             # Build the curent request
             req = urllib2.Request(url, None, header)
