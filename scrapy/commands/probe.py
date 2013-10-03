@@ -41,10 +41,10 @@ class Command(ScrapyCommand):
     ]
 
     def syntax(self):
-        return "[url|text]"
+        return "[url][text]"
 
     def short_desc(self):
-        return "Returns a html header where the text found in the content"
+        return "Returns a HTTP header where the text found in the content"
     
     def long_desc(self):
         return "Scrapy then tries several combinations of HTTP headers \
@@ -54,7 +54,6 @@ class Command(ScrapyCommand):
         ScrapyCommand.add_options(self, parser)
 
     def run(self, args, opts):
-        crawler = self.crawler_process.create_crawler()
         if len(args) != 2 or not is_url(args[0]):
             raise UsageError()
         
