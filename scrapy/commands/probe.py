@@ -88,7 +88,7 @@ class Command(ScrapyCommand):
                         if self.verify_if_match(url, header, text):
                             sys.exit()
         # Send message if not found and exit
-        sys.exit('Not Found set of working headers')
+        sys.exit('Not found set of working headers')
 
     # Check if the search string is in page, if true print header
     # and return it
