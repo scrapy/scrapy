@@ -11,31 +11,38 @@ class Command(ScrapyCommand):
 
     requires_project = False
     default_settings = {'LOG_ENABLED': False}
-    
-    #List of User-Agents
-    UserAgent = ['Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)',
-                  #'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/28.0.1500.71 Chrome/28.0.1500.71 Safari/537.36',
-                  #'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.10) Gecko/20100915 Ubuntu/10.04 (lucid) Firefox/3.6.10'
-                  'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.8.1.6) Gecko/20070725 Firefox/2.0.0.6'
+
+    #List of well known User-Agents
+    userAgent = ['Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)',
+                    'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36' \
+                        ' (KHTML, like Gecko) Chrome/29.0.1547.66 ' \
+                        'Safari/537.36',
+                    'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) ' \
+                        'Gecko/20100101 Firefox/23.0',
+                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) ' \
+                        'AppleWebKit/536.30.1 (KHTML, like Gecko) ' \
+                        'Version/6.0.5 Safari/536.30.1',
+                    'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; ' \
+                        'WOW64; Trident/6.0)',
+                    'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; ' \
+                        'rv:1.8.1.6) Gecko/20070725 Firefox/2.0.0.6'
     ]
-    
-    #List of Accept media type
-    Accept = ['text/html',
-              #'text/*',
-              #'*/*',
-              #'application/xml;q=0.9',
-              #'*/*;q=0.8',
-              'application/xhtml+xml'
+    #List of well known Accept media type
+    accept = ['text/html',
+                'application/xhtml+xml',
+                'text/*',
+                '*/*',
+                'application/xml;q=0.9',
+                '*/*;q=0.8'
+                
     ]
-    
     #List of natural languages that are preferred
-    AcceptLanguage = ['en;q=0.5',
+    acceptLanguage = ['en;q=0.5',
                       'en-us',
                       'en'
     ]
-    
     #List of character sets are acceptable for the response
-    AcceptCharset = ['ISO-8859-1',
+    acceptCharset = ['ISO-8859-1',
                      'utf-8;q=0.7',
                      '*;q=0.7'
     ]
@@ -61,24 +68,23 @@ class Command(ScrapyCommand):
         text = args[1]
         #ready to start build headers
         self.combination_HTTP_headers(url, text)
-            
-    
-    # Builds dictionaries of headers, and sends dictionaries to check 
+
+    # Builds dictionaries of headers, and sends dictionaries to check
     # if content have the search string
     def combination_HTTP_headers(self, url, text):
-        #Build each dictionary to test
-        for charset in self.AcceptCharset:
-            for lag in self.AcceptLanguage:
-                for value_agent in self.UserAgent:
-                    for value_accept in self.Accept:
-                        # Add each vakue of dictionaryto header
-                        headers = {'Accept' : value_accept,
+        # Get common fields parameter
+        for value_charset in self.acceptCharset:
+            for value_charset in self.acceptLanguage:
+                for value_agent in self.userAgent:
+                    for value_accept in self.accept:
+                        # Add each value to dictionaries header 
+                        header = {'Accept' : value_accept,
                                    'User-Agent' : value_agent,
-                                   'Accept-Language' : lag,
-                                   'Accept-Charset' : charset,
+                                   'Accept-Language' : value_charset,
+                                   'Accept-Charset' : value_charset,
                         }
                         # Check if search string is on page
-                        if self.verefy_if_math(url, headers, text):
+                        if self.verify_if_match(url, header, text):
                             sys.exit()
     # TODO
     # To add documentation this function will verefy if generated headers
