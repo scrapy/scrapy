@@ -62,11 +62,9 @@ class Command(ScrapyCommand):
         #ready to start build headers
         self.combination_HTTP_headers(url, text)
             
-  
-    # TODO
-    # change all code to accept agrs
-    # add documentation this function will generate set of header
-    # create a better wait to build headers, to many fors try use a dictionary
+    
+    # Builds dictionaries of headers, and sends dictionaries to check 
+    # if content have the search string
     def combination_HTTP_headers(self, url, text):
         #Build each dictionary to test
         for charset in self.AcceptCharset:
@@ -92,12 +90,11 @@ class Command(ScrapyCommand):
             response = urllib2.urlopen(req)
             # Get page content
             the_page = response.read()
-            # Check if the search string is in page and print the 
-            # header if true and exit
+            # Check if the search string is in page and print the header
             if re.search(text, the_page):
                 print 'Found set of working headers:'
                 print header
                 return header
         except HTTPError, e:
-            print e.code    #print core error from http responce 401
+            print e.code    #print core error from http responce sample 401
             print e.read()  #print cathed error
