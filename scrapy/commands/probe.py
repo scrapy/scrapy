@@ -107,3 +107,4 @@ class Command(ScrapyCommand):
         except HTTPError, e:
             print e.code    #print core error from http responce sample 401
             print e.read()  #print cathed error
+            sys.exit()
