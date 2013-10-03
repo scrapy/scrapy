@@ -138,6 +138,7 @@ Global commands:
 * :command:`fetch`
 * :command:`view`
 * :command:`version`
+* :command:`probe`
 
 Project-only commands:
 
@@ -457,6 +458,21 @@ deploy
 * Requires project: *yes*
 
 Deploy the project into a Scrapyd server. See `Deploying your project`_.
+
+.. command:: crawl
+
+probe
+-----
+
+* Syntax: ``scrapy probe <url> <text>``
+* Requires project: *no*
+
+Returns a html header where the text found in the content. 
+
+Usage examples::
+
+    $ scrapy probe 'http://localhost/index.php' 'QWERTY'
+    [ ... probe starts ... ]
 
 .. command:: bench
 
