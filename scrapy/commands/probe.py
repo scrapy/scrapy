@@ -47,8 +47,8 @@ class Command(ScrapyCommand):
         return "Returns a HTTP header where the text found in the content"
     
     def long_desc(self):
-        return "Scrapy then tries several combinations of HTTP headers \
-            (user-agent, accept, etc) and return a set that works"
+        return "probe command will try several of combinations of HTTP headers "\
+            "and return a header that page content have search string"
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
