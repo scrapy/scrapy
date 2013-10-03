@@ -1,4 +1,5 @@
 import signal
+from itertools import chain
 
 from twisted.internet import reactor, defer
 
@@ -21,8 +22,7 @@ class Crawler(object):
 
         spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
         self.spiders = spman_cls.from_crawler(self)
-
-        self.scheduled = {}
+        self._scheduled = {}
 
     def install(self):
         import scrapy.project
@@ -46,20 +46,17 @@ class Crawler(object):
 
     def crawl(self, spider, requests=None):
         spider.set_crawler(self)
-
         if self.configured and self.engine.running:
-            assert not self.scheduled
-            return self.schedule(spider, requests)
+            assert not self._scheduled
+            return self._schedule(spider, requests)
+        elif requests is None:
+            self._scheduled[spider] = None
         else:
-            self.scheduled.setdefault(spider, []).append(requests)
+            self._scheduled.setdefault(spider, []).append(requests)
 
-    def schedule(self, spider, batches=[]):
-        requests = []
-        for batch in batches:
-            if batch is None:
-                batch = spider.start_requests()
-            requests.extend(batch)
-
+    def _schedule(self, spider, batches=()):
+        requests = chain.from_iterable(batches) \
+            if batches else spider.start_requests()
         return self.engine.open_spider(spider, requests)
 
     def _spider_closed(self, spider=None):
@@ -70,8 +67,8 @@ class Crawler(object):
     def start(self):
         yield defer.maybeDeferred(self.configure)
 
-        for spider, batches in self.scheduled.iteritems():
-            yield self.schedule(spider, batches)
+        for spider, batches in self._scheduled.iteritems():
+            yield self._schedule(spider, batches)
 
         yield defer.maybeDeferred(self.engine.start)
 
