@@ -10,6 +10,15 @@ Release notes
   been deprecated for a long time)
 - :setting:`ITEM_PIPELINES` is now defined as a dict (instead of a list)
 
+0.18.3 (released 2013-10-03)
+----------------------------
+
+- fix regression on lazy evaluation of start requests (:commit:`12693a5`)
+- forms: do not submit reset inputs (:commit:`e429f63`)
+- increase unittest timeouts to decrease travis false positive failures (:commit:`912202e`)
+- backport master fixes to json exporter (:commit:`cfc2d46`)
+- Fix permission and set umask before generating sdist tarball (:commit:`06149e0`)
+
 0.18.2 (released 2013-09-03)
 ----------------------------
 
