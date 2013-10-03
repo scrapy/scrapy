@@ -8,13 +8,11 @@ import urllib2
 import sys
 import re
 
-from w3lib.url import any_to_uri, is_url
 from scrapy.exceptions import UsageError
 from scrapy.command import ScrapyCommand
 from scrapy.http import Request
 from urllib2 import HTTPError
-
-
+from w3lib.url import is_url
 
 
 class Command(ScrapyCommand):
