@@ -20,12 +20,6 @@ class Command(ScrapyCommand):
     requires_project = False
     default_settings = {'LOG_ENABLED': False}
     
-    #Define URL to search
-    url = 'http://localhost/index.php'  #this is just to tests
-
-    #search string
-    text = 'QWERTY' #this is just to tests
-    
     #List of User-Agents
     UserAgent = ['Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)',
                   #'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/28.0.1500.71 Chrome/28.0.1500.71 Safari/537.36',
