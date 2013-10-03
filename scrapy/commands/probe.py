@@ -62,7 +62,6 @@ class Command(ScrapyCommand):
         ScrapyCommand.add_options(self, parser)
 
     def run(self, args, opts):
-        print 'DEBUG IN' 
         crawler = self.crawler_process.create_crawler()
         if len(args) != 2 or not is_url(args[0]):
             raise UsageError()
