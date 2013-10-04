@@ -37,7 +37,6 @@ class Command(ScrapyCommand):
                     '*/*',
                     'application/xml;q=0.9',
                     '*/*;q=0.8'
-                    
         ],
         #List of natural languages that are preferred
         'Accept-Language' : ['en;q=0.5',
