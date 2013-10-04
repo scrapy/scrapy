@@ -82,11 +82,11 @@ class Command(ScrapyCommand):
 
         """
         # Get common fields parameter
-        varNames = sorted(self.headers)
+        var_names = sorted(self.headers)
         # Create all combinations of headers
-        combinations = [dict(zip(varNames, prod)) 
-                        for prod in it.product(*(self.headers[varName] 
-                                                 for varName in varNames))]
+        combinations = [dict(zip(var_names, prod)) 
+                        for prod in it.product(*(self.headers[var_name] 
+                                                 for var_name in var_names))]
         # Check if search string is on page for each header
         for value in combinations:
             if self.verify_if_match(url, value, text):
