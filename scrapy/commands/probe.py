@@ -117,7 +117,7 @@ class Command(ScrapyCommand):
                 print 'Found set of working headers:'
                 print header
                 return header
-        except HTTPError, e:
-            print e.code    #print core error from http responce sample 401
-            print e.read()  #print cathed error
-            sys.exit()
+        except HTTPError, e:   
+            print e.read()  # Print page content
+            # Print core error from http responce sample 401
+            raise ValueError(e.code)
