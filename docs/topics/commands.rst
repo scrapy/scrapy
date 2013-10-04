@@ -459,19 +459,23 @@ deploy
 
 Deploy the project into a Scrapyd server. See `Deploying your project`_.
 
-.. command:: crawl
+.. command:: probe
 
 probe
 -----
 
+.. versionadded:: 0.18
+
 * Syntax: ``scrapy probe <url> <text>``
 * Requires project: *no*
 
-Returns a html header where the text found in the content. 
+Returns a set of HTTP headers for which the text passed as argument is
+found in the content.
 
 Usage examples::
 
     $ scrapy probe 'http://www.example.com/some/page.html' 'var sFeatures'
+    Found set of working headers:
     {'Accept-Charset': '*;q=0.7', 
     'Accept-Language': 'en', 
     'Accept': 'application/xhtml+xml', 
