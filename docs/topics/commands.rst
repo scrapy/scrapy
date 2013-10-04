@@ -147,7 +147,6 @@ Project-only commands:
 * :command:`edit`
 * :command:`parse`
 * :command:`genspider`
-* :command:`server`
 * :command:`deploy`
 * :command:`bench`
 
