@@ -14,7 +14,7 @@ class Command(ScrapyCommand):
     default_settings = {'LOG_ENABLED': False}
 
     #List of well known User-Agents
-    userAgent = ['Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)',
+    user_agent = ['Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)',
                     'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36' \
                         ' (KHTML, like Gecko) Chrome/29.0.1547.66 ' \
                         'Safari/537.36',
@@ -38,12 +38,12 @@ class Command(ScrapyCommand):
                 
     ]
     #List of natural languages that are preferred
-    acceptLanguage = ['en;q=0.5',
+    accept_language = ['en;q=0.5',
                       'en-us',
                       'en'
     ]
     #List of character sets are acceptable for the response
-    acceptCharset = ['ISO-8859-1',
+    accept_charset = ['ISO-8859-1',
                      'utf-8;q=0.7',
                      '*;q=0.7'
     ]
@@ -74,9 +74,9 @@ class Command(ScrapyCommand):
     # if content have the search string
     def combination_HTTP_headers(self, url, text):
         # Get common fields parameter
-        for value_charset in self.acceptCharset:
-            for value_charset in self.acceptLanguage:
-                for value_agent in self.userAgent:
+        for value_charset in self.accept_charset:
+            for value_charset in self.accept_language:
+                for value_agent in self.user_agent:
                     for value_accept in self.accept:
                         # Add each value to dictionaries header 
                         header = {'Accept' : value_accept,
