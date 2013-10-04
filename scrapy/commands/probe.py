@@ -5,6 +5,7 @@ from scrapy.exceptions import UsageError
 from scrapy.command import ScrapyCommand
 from scrapy.http import Request
 from scrapy.spider import BaseSpider
+from scrapy.utils.url import parse_url
 from scrapy import signals, settings
 
 
@@ -57,7 +58,7 @@ class Command(ScrapyCommand):
         "Connection": [
             "keep-alive"
         ],
-        "Host": [""]
+        "Host": []
     }
 
     FOUND_MESSAGE = "Found set of working headers:"
@@ -94,7 +95,7 @@ class Command(ScrapyCommand):
         Builds combinations of HTTP headers, and checks if page content
         has the search string
         """
-        
+        self.headers['Host'].append(parse_url(url).netloc)
         for key, value in settings.default_settings.DEFAULT_REQUEST_HEADERS.items():
             self.headers[key].append(value)
 
