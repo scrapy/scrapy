@@ -1,65 +1,78 @@
-import urllib2
-import sys
-import re
-import itertools as it
+import re, itertools
 from w3lib.url import is_url
-from urllib2 import HTTPError
 
 from scrapy.exceptions import UsageError
 from scrapy.command import ScrapyCommand
+from scrapy.http import Request
+from scrapy.spider import BaseSpider
+from scrapy import signals, settings
 
 
 class Command(ScrapyCommand):
 
     requires_project = False
-    default_settings = {'LOG_ENABLED': False}
+    default_settings = {"LOG_ENABLED": False}
 
+    found = False
     headers = {
         #List of well known User-Agents
-        'User-Agent' : ['Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)',
-                        'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36' \
-                            ' (KHTML, like Gecko) Chrome/29.0.1547.66 ' \
-                            'Safari/537.36',
-                        'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) ' \
-                            'Gecko/20100101 Firefox/23.0',
-                        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) ' \
-                            'AppleWebKit/536.30.1 (KHTML, like Gecko) ' \
-                            'Version/6.0.5 Safari/536.30.1',
-                        'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; ' \
-                            'WOW64; Trident/6.0)',
-                        'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; ' \
-                            'rv:1.8.1.6) Gecko/20070725 Firefox/2.0.0.6'
+        "User-Agent": [
+            "Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)",
+            "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36" \
+                " (KHTML, like Gecko) Chrome/29.0.1547.66 " \
+                "Safari/537.36",
+            "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) " \
+                "Gecko/20100101 Firefox/23.0",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) " \
+                "AppleWebKit/536.30.1 (KHTML, like Gecko) " \
+                "Version/6.0.5 Safari/536.30.1",
+            "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; " \
+                "WOW64; Trident/6.0)",
+            "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; " \
+                "rv:1.8.1.6) Gecko/20070725 Firefox/2.0.0.6",
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 6_1_3 like Mac OS X) AppleWebKit/536.26 " \
+                "(KHTML, like Gecko) Version/6.0 Mobile/10B329 Safari/8536.25",
+            "Mozilla/5.0 (Linux; Android 4.1.2; GT-I9100 Build/JZO54K) AppleWebKit/537.36 " \
+                "(KHTML, like Gecko) Chrome/29.0.1547.72 Mobile Safari/537.36"
         ],
         #List of well known Accept media type
-        'Accept' : ['text/html',
-                    'application/xhtml+xml',
-                    'text/*',
-                    '*/*',
-                    'application/xml;q=0.9',
-                    '*/*;q=0.8'
-                    
+        "Accept": [
+            "application/xml,application/xhtml+xml,text/html;q=0.9," \
+                "text/plain;q=0.8,*/*;q=0.5",
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
         ],
         #List of natural languages that are preferred
-        'Accept-Language' : ['en;q=0.5',
-                          'en-us',
-                          'en'
+        "Accept-Language": [
+            "en-US,en;q=0.8,pt;q=0.6,es;q=0.4,fr;q=0.2"
         ],
         #List of character sets are acceptable for the response
-        'Accept-Charset' : ['ISO-8859-1',
-                         'utf-8;q=0.7',
-                         '*;q=0.7'
-        ]
+        "Accept-Charset": [
+            "ISO-8859-1",
+            "UTF-8",
+            "*"
+        ],
+        "Cache-Control": [
+            "no-cache"
+        ],
+        "Connection": [
+            "keep-alive"
+        ],
+        "Host": [""]
     }
 
+    FOUND_MESSAGE = "Found set of working headers:"
+    NOT_FOUND_MESSAGE = "Set of working headers not found."
+
     def syntax(self):
-        return "[url][text]"
+        return "<url> <text>"
 
     def short_desc(self):
-        return "Returns a HTTP header where the text found in the content"
+        return "Tries several combinations of HTTP headers"
 
     def long_desc(self):
-        return "probe command will try several of combinations of HTTP headers "\
-            "and return a header that page content have search string"
+        return "Tries several combinations of HTTP headers " \
+            "and returns a set for which the text passed as argument is " \
+            "found in the page content"
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
@@ -69,55 +82,40 @@ class Command(ScrapyCommand):
             raise UsageError()
         
         url = args[0]
-        text = args[1]
-        #ready to start build headers
-        self.combination_HTTP_headers(url, text)
+        search_string = args[1]
+        self._combine_HTTP_headers(url, search_string)
 
-    def combination_HTTP_headers(self, url, text):
-        """Builds dictionaries of headers, and sends dictionaries to 
-        check if content have the search string
+    def _engine_stopped(self):
+        if not self.found:
+            print self.NOT_FOUND_MESSAGE
 
-        Keyword arguments:
-        url -- URL to test
-        text -- search string
-
+    def _combine_HTTP_headers(self, url, search_string):
         """
-        # Get common fields parameter
-        varNames = sorted(self.headers)
-        # Create all combinations of headers
-        combinations = [dict(zip(varNames, prod)) 
-                        for prod in it.product(*(self.headers[varName] 
-                                                 for varName in varNames))]
-        # Check if search string is on page for each header
-        for value in combinations:
-            if self.verify_if_match(url, value, text):
-                sys.exit()
-
-        # Send message if not found and exit
-        sys.exit('Not found set of working headers')
-
-    def verify_if_match(self, url, header, text):
-        """Check if the search string is in page, if true print header
-        and return it
+        Builds combinations of HTTP headers, and checks if page content
+        has the search string
+        """
         
-        Keyword arguments:
-        url -- URL to test
-        header -- current HTML header to test
-        text -- search string
-         
-        """
-        try:
-            # Build the curent request
-            req = urllib2.Request(url, None, header)
-            response = urllib2.urlopen(req)
-            # Get page content
-            the_page = response.read()
-            # Check if the search string is in page and print the header
-            if re.search(text, the_page):
-                print 'Found set of working headers:'
-                print header
-                return header
-        except HTTPError, e:   
-            print e.read()  # Print page content
-            # Print core error from http responce sample 401
-            raise ValueError(e.code)
+        for key, value in settings.default_settings.DEFAULT_REQUEST_HEADERS.items():
+            self.headers[key].append(value)
+
+        sorted_headers = sorted(self.headers)
+        combinations = [dict(zip(sorted_headers, prod)) 
+                        for prod in itertools.product(*(self.headers[key]
+                                                      for key in sorted_headers))]
+
+        cb = lambda x: self._verify_if_match(x, search_string)
+        requests = [Request(url, headers=h, callback=cb, dont_filter=True)
+                    for h in combinations]
+
+        spider = BaseSpider('default')
+        self.pcrawler = self.crawler_process.create_crawler()
+        self.pcrawler.signals.connect(self._engine_stopped, signal=signals.engine_stopped)
+        self.pcrawler.crawl(spider, requests)
+        self.crawler_process.start()
+
+    def _verify_if_match(self, response, search_string):
+        if re.search(search_string, response.body) and not self.found:
+            self.found = True
+            print self.FOUND_MESSAGE
+            print response.request.headers
+            self.pcrawler.stop()
