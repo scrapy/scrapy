@@ -1,6 +1,7 @@
 import urllib2
 import sys
 import re
+import itertools as it
 from w3lib.url import is_url
 from urllib2 import HTTPError
 
@@ -13,40 +14,42 @@ class Command(ScrapyCommand):
     requires_project = False
     default_settings = {'LOG_ENABLED': False}
 
-    #List of well known User-Agents
-    user_agent = ['Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)',
-                    'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36' \
-                        ' (KHTML, like Gecko) Chrome/29.0.1547.66 ' \
-                        'Safari/537.36',
-                    'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) ' \
-                        'Gecko/20100101 Firefox/23.0',
-                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) ' \
-                        'AppleWebKit/536.30.1 (KHTML, like Gecko) ' \
-                        'Version/6.0.5 Safari/536.30.1',
-                    'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; ' \
-                        'WOW64; Trident/6.0)',
-                    'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; ' \
-                        'rv:1.8.1.6) Gecko/20070725 Firefox/2.0.0.6'
-    ]
-    #List of well known Accept media type
-    accept = ['text/html',
-                'application/xhtml+xml',
-                'text/*',
-                '*/*',
-                'application/xml;q=0.9',
-                '*/*;q=0.8'
-                
-    ]
-    #List of natural languages that are preferred
-    accept_language = ['en;q=0.5',
-                      'en-us',
-                      'en'
-    ]
-    #List of character sets are acceptable for the response
-    accept_charset = ['ISO-8859-1',
-                     'utf-8;q=0.7',
-                     '*;q=0.7'
-    ]
+    headers = {
+        #List of well known User-Agents
+        'User-Agent' : ['Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)',
+                        'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36' \
+                            ' (KHTML, like Gecko) Chrome/29.0.1547.66 ' \
+                            'Safari/537.36',
+                        'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) ' \
+                            'Gecko/20100101 Firefox/23.0',
+                        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) ' \
+                            'AppleWebKit/536.30.1 (KHTML, like Gecko) ' \
+                            'Version/6.0.5 Safari/536.30.1',
+                        'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; ' \
+                            'WOW64; Trident/6.0)',
+                        'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; ' \
+                            'rv:1.8.1.6) Gecko/20070725 Firefox/2.0.0.6'
+        ],
+        #List of well known Accept media type
+        'Accept' : ['text/html',
+                    'application/xhtml+xml',
+                    'text/*',
+                    '*/*',
+                    'application/xml;q=0.9',
+                    '*/*;q=0.8'
+                    
+        ],
+        #List of natural languages that are preferred
+        'Accept-Language' : ['en;q=0.5',
+                          'en-us',
+                          'en'
+        ],
+        #List of character sets are acceptable for the response
+        'Accept-Charset' : ['ISO-8859-1',
+                         'utf-8;q=0.7',
+                         '*;q=0.7'
+        ]
+    }
 
     def syntax(self):
         return "[url][text]"
@@ -73,26 +76,23 @@ class Command(ScrapyCommand):
     def combination_HTTP_headers(self, url, text):
         """Builds dictionaries of headers, and sends dictionaries to 
         check if content have the search string
-        
+
         Keyword arguments:
         url -- URL to test
         text -- search string
-        
+
         """
         # Get common fields parameter
-        for value_charset in self.accept_charset:
-            for value_charset in self.accept_language:
-                for value_agent in self.user_agent:
-                    for value_accept in self.accept:
-                        # Add each value to dictionaries header 
-                        header = {'Accept' : value_accept,
-                                   'User-Agent' : value_agent,
-                                   'Accept-Language' : value_charset,
-                                   'Accept-Charset' : value_charset,
-                        }
-                        # Check if search string is on page
-                        if self.verify_if_match(url, header, text):
-                            sys.exit()
+        varNames = sorted(self.headers)
+        # Create all combinations of headers
+        combinations = [dict(zip(varNames, prod)) 
+                        for prod in it.product(*(self.headers[varName] 
+                                                 for varName in varNames))]
+        # Check if search string is on page for each header
+        for value in combinations:
+            if self.verify_if_match(url, value, text):
+                sys.exit()
+
         # Send message if not found and exit
         sys.exit('Not found set of working headers')
 
