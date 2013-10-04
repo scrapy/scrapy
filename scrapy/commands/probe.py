@@ -70,9 +70,15 @@ class Command(ScrapyCommand):
         #ready to start build headers
         self.combination_HTTP_headers(url, text)
 
-    # Builds dictionaries of headers, and sends dictionaries to check
-    # if content have the search string
     def combination_HTTP_headers(self, url, text):
+        """Builds dictionaries of headers, and sends dictionaries to 
+        check if content have the search string
+        
+        Keyword arguments:
+        url -- URL to test
+        text -- search string
+        
+        """
         # Get common fields parameter
         for value_charset in self.accept_charset:
             for value_charset in self.accept_language:
@@ -90,9 +96,16 @@ class Command(ScrapyCommand):
         # Send message if not found and exit
         sys.exit('Not found set of working headers')
 
-    # Check if the search string is in page, if true print header
-    # and return it
     def verify_if_match(self, url, header, text):
+        """Check if the search string is in page, if true print header
+        and return it
+        
+        Keyword arguments:
+        url -- URL to test
+        header -- current HTML header to test
+        text -- search string
+         
+        """
         try:
             # Build the curent request
             req = urllib2.Request(url, None, header)
