@@ -77,6 +77,10 @@ class XPathSelector(object_ref):
         for el in self._root.iter('*'):
             if el.tag.startswith('{'):
                 el.tag = el.tag.split('}', 1)[1]
+            # loop on element attributes also
+            for an in el.attrib.keys():
+                if an.startswith('{'):
+                    el.attrib[an.split('}', 1)[1]] = el.attrib.pop(an)
 
     def __nonzero__(self):
         return bool(self.extract())
