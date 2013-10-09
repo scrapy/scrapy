@@ -2,7 +2,8 @@ import unittest
 
 from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler
-from scrapy.spider import BaseSpider
+from scrapy.exceptions import NotConfigured
+
 
 class SettingsTest(unittest.TestCase):
 
@@ -23,6 +24,8 @@ class SettingsTest(unittest.TestCase):
             'TEST_STR': 'value',
             'TEST_DICT1': {'key1': 'val1', 'ke2': 3},
             'TEST_DICT2': '{"key1": "val1", "ke2": 3}',
+            'TEST_CONFIGURED': False,
+            'TEST_CONFIGURED2': None,
         })
         assert settings.getbool('TEST_ENABLED1') is True
         assert settings.getbool('TEST_ENABLED2') is True
@@ -54,6 +57,10 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.getdict('TEST_DICT3'), {})
         self.assertEqual(settings.getdict('TEST_DICT3', {'key1': 5}), {'key1': 5})
         self.assertRaises(ValueError, settings.getdict, 'TEST_LIST1')
+        self.assertEqual(settings.get('TEST_CONFIGURED', required=True), False)
+        self.assertRaises(NotConfigured, settings.get, 'NOT_CONFIGURED', required=True)
+        self.assertEqual(settings.get('TEST_CONFIGURED2'), None)
+        self.assertRaises(NotConfigured, settings.get, 'TEST_CONFIGURED2', required=True)
 
 
 class CrawlerSettingsTest(unittest.TestCase):
