@@ -68,7 +68,7 @@ Defining our Item
 like simple python dicts but provide additional protecting against populating
 undeclared fields, to prevent typos.
 
-They are declared by creating an :class:`scrapy.item.Item` class an defining
+They are declared by creating an :class:`scrapy.item.Item` class and defining
 its attributes as :class:`scrapy.item.Field` objects, like you will in an ORM
 (don't worry if you're not familiar with ORMs, you will see that this is an
 easy task).
