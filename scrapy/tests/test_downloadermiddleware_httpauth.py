@@ -13,6 +13,7 @@ class HttpAuthMiddlewareTest(unittest.TestCase):
     def setUp(self):
         self.mw = HttpAuthMiddleware()
         self.spider = TestSpider('foo')
+        self.mw.spider_opened(self.spider)
 
     def tearDown(self):
         del self.mw
