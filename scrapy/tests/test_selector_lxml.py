@@ -27,6 +27,18 @@ class LxmlXPathSelectorTestCase(test_selector.XPathSelectorTestCase):
         xxs.remove_namespaces()
         self.assertEqual(len(xxs.select("//link")), 2)
 
+    def test_remove_attributes_namespaces(self):
+        xml = """<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns:atom="http://www.w3.org/2005/Atom" xml:lang="en-US" xmlns:media="http://search.yahoo.com/mrss/">
+  <link atom:type="text/html">
+  <link atom:type="application/atom+xml">
+</feed>
+"""
+        xxs = XmlXPathSelector(XmlResponse("http://example.com/feed.atom", body=xml))
+        self.assertEqual(len(xxs.select("//link/@type")), 0)
+        xxs.remove_namespaces()
+        self.assertEqual(len(xxs.select("//link/@type")), 2)
+
 class Libxml2DocumentTest(unittest.TestCase):
 
     def test_caching(self):
