@@ -10,6 +10,13 @@ Release notes
   been deprecated for a long time)
 - :setting:`ITEM_PIPELINES` is now defined as a dict (instead of a list)
 
+0.18.4 (released 2013-10-10)
+----------------------------
+
+- IPython refuses to update the namespace. fix #396 (:commit:`3d32c4f`)
+- Fix AlreadyCalledError replacing a request in shell command. closes #407 (:commit:`b1d8919`)
+- Fix start_requests lazyness and early hangs (:commit:`89faf52`)
+
 0.18.3 (released 2013-10-03)
 ----------------------------
 
