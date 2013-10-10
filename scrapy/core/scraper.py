@@ -9,7 +9,7 @@ from twisted.internet import defer
 from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errback
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.misc import load_object
-from scrapy.exceptions import CloseSpider, DropItem
+from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy import signals
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
@@ -180,16 +180,20 @@ class Scraper(object):
         """Log and silence errors that come from the engine (typically download
         errors that got propagated thru here)
         """
-        if spider_failure is download_failure:
-            errmsg = spider_failure.getErrorMessage()
-            if spider_failure.frames:
-                log.err(spider_failure, 'Error downloading %s' % request,
-                        level=log.ERROR, spider=spider)
-            elif errmsg:
-                log.msg(format='Error downloading %(request)s: %(errmsg)s',
-                        level=log.ERROR, spider=spider, request=request, errmsg=errmsg)
-            return
-        return spider_failure
+        if isinstance(download_failure, Failure) \
+                and not download_failure.check(IgnoreRequest):
+            if download_failure.frames:
+                log.err(download_failure, 'Error downloading %s' % request,
+                        spider=spider)
+            else:
+                errmsg = download_failure.getErrorMessage()
+                if errmsg:
+                    log.msg(format='Error downloading %(request)s: %(errmsg)s',
+                            level=log.ERROR, spider=spider, request=request,
+                            errmsg=errmsg)
+
+        if spider_failure is not download_failure:
+            return spider_failure
 
     def _itemproc_finished(self, output, item, response, spider):
         """ItemProcessor finished for the given ``item`` and returned ``output``
