@@ -45,3 +45,9 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
         _, out, _ = yield self.execute([self.url('/redirect'), '-c', 'response.url'])
         assert out.strip().endswith('/redirected')
 
+    @defer.inlineCallbacks
+    def test_request_replace(self):
+        url = self.url('/text')
+        code = "fetch('{0}') or fetch(response.request.replace(method='POST'))"
+        errcode, out, _ = yield self.execute(['-c', code.format(url)])
+        self.assertEqual(errcode, 0, out)

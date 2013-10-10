@@ -5,7 +5,7 @@ See documentation in docs/topics/shell.rst
 """
 import signal
 
-from twisted.internet import reactor, threads
+from twisted.internet import reactor, threads, defer
 from twisted.python import threadable
 from w3lib.url import any_to_uri
 
@@ -14,7 +14,6 @@ from scrapy.spider import BaseSpider
 from scrapy.selector import XPathSelector, XmlXPathSelector, HtmlXPathSelector
 from scrapy.utils.spider import create_spider_for_request
 from scrapy.utils.misc import load_object
-from scrapy.utils.request import request_deferred
 from scrapy.utils.response import open_in_browser
 from scrapy.utils.console import start_python_console
 from scrapy.settings import Settings
@@ -55,7 +54,7 @@ class Shell(object):
 
     def _schedule(self, request, spider):
         spider = self._open_spider(request, spider)
-        d = request_deferred(request)
+        d = _request_deferred(request)
         d.addCallback(lambda x: (x, spider))
         self.crawler.engine.crawl(request, spider)
         return d
@@ -63,9 +62,12 @@ class Shell(object):
     def _open_spider(self, request, spider):
         if self.spider:
             return self.spider
+
         if spider is None:
-            spider = create_spider_for_request(self.crawler.spiders, request,
-                BaseSpider('default'), log_multiple=True)
+            spider = create_spider_for_request(self.crawler.spiders,
+                                               request,
+                                               BaseSpider('default'),
+                                               log_multiple=True)
         spider.set_crawler(self.crawler)
         self.crawler.engine.open_spider(spider, close_if_idle=False)
         self.spider = spider
@@ -127,3 +129,30 @@ def inspect_response(response, spider=None):
     """Open a shell to inspect the given response"""
     from scrapy.project import crawler
     Shell(crawler).start(response=response, spider=spider)
+
+
+def _request_deferred(request):
+    """Wrap a request inside a Deferred.
+
+    This function is harmful, do not use it until you know what you are doing.
+
+    This returns a Deferred whose first pair of callbacks are the request
+    callback and errback. The Deferred also triggers when the request
+    callback/errback is executed (ie. when the request is downloaded)
+
+    WARNING: Do not call request.replace() until after the deferred is called.
+    """
+    request_callback = request.callback
+    request_errback = request.errback
+    def _restore_callbacks(result):
+        request.callback = request_callback
+        request.errback = request_errback
+        return result
+
+    d = defer.Deferred()
+    d.addBoth(_restore_callbacks)
+    if request.callback:
+        d.addCallbacks(request.callback, request.errback)
+
+    request.callback, request.errback = d.callback, d.errback
+    return d
