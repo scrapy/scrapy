@@ -234,6 +234,16 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.extract_links(response),
                          [Link(url='http://example.org/about.html', text=u'About us\xa3')])
 
+    def test_restrict_xpaths_invlaid_encoding(self):
+        """Try to encode &alpha; with windows-1252"""
+        html = """<html><body>
+        <p><a href="alpha.html">Alpha: &alpha;</a></p>
+        </body></html>"""
+        response = HtmlResponse("http://example.org/greek.html", body=html, encoding='windows-1252')
+        lx = SgmlLinkExtractor(restrict_xpaths="//p[1]")
+        self.assertEqual(lx.extract_links(response),
+                         [Link(url='http://example.org/alpha.html', text=u'Alpha: \u03b1')])
+
     def test_restrict_xpaths_concat_in_handle_data(self):
         """html entities cause SGMLParser to call handle_data hook twice"""
         body = """<html><body><div><a href="/foo">&gt;\xbe\xa9&lt;\xb6\xab</a></body></html>"""
@@ -268,7 +278,6 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
         ])
 
     def test_process_value(self):
-        """Test restrict_xpaths with encodings"""
         html = """
         <a href="javascript:goToPage('../other/page.html','photo','width=600,height=540,scrollbars'); return false">Link text</a>
         <a href="/about.html">About us</a>

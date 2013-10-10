@@ -118,10 +118,14 @@ class SgmlLinkExtractor(BaseSgmlLinkExtractor):
         if self.restrict_xpaths:
             hxs = HtmlXPathSelector(response)
             base_url = get_base_url(response)
-            body = u''.join(f
-                            for x in self.restrict_xpaths
-                            for f in hxs.select(x).extract()
-                            ).encode(response.encoding)
+            body = u''.join(f for x in self.restrict_xpaths
+                              for f in hxs.select(x).extract())
+            try:
+                body = body.encode(response.encoding)
+            except UnicodeEncodeError:
+                # upon error fall back to utf-8 encoding
+                response = response.replace(encoding='utf-8')
+                body = body.encode(response.encoding)
         else:
             body = response.body
 
