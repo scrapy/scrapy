@@ -7,16 +7,15 @@ def get_engine_status(engine):
     global_tests = [
         "time()-engine.start_time",
         "engine.has_capacity()",
-        "len(engine.downloader.slots)",
         "len(engine.downloader.active)",
         "engine.scraper.is_idle()",
     ]
     spider_tests = [
         "engine.spider_is_idle(spider)",
-        "engine.slots[spider].closing",
-        "len(engine.slots[spider].inprogress)",
-        "len(engine.slots[spider].scheduler.dqs or [])",
-        "len(engine.slots[spider].scheduler.mqs)",
+        "engine.slot.closing",
+        "len(engine.slot.inprogress)",
+        "len(engine.slot.scheduler.dqs or [])",
+        "len(engine.slot.scheduler.mqs)",
         "len(engine.scraper.slot.queue)",
         "len(engine.scraper.slot.active)",
         "engine.scraper.slot.active_size",
