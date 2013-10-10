@@ -40,7 +40,6 @@ reference <topics-xpath-selectors-ref>` and :ref:`CSS selector reference
 .. _BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/
 .. _lxml: http://codespeak.net/lxml/
 .. _ElementTree: http://docs.python.org/library/xml.etree.elementtree.html
-.. _libxml2: http://xmlsoft.org/
 .. _cssselect: https://pypi.python.org/pypi/cssselect/
 .. _XPath: http://www.w3.org/TR/xpath
 .. _CSS: http://www.w3.org/TR/selectors

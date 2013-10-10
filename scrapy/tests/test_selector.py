@@ -10,7 +10,7 @@ from twisted.trial import unittest
 from scrapy.http import TextResponse, HtmlResponse, XmlResponse
 from scrapy.selector import XmlXPathSelector, HtmlXPathSelector, \
     XPathSelector
-from scrapy.utils.test import libxml2debug
+
 
 class XPathSelectorTestCase(unittest.TestCase):
 
@@ -18,7 +18,6 @@ class XPathSelectorTestCase(unittest.TestCase):
     hxs_cls = HtmlXPathSelector
     xxs_cls = XmlXPathSelector
 
-    @libxml2debug
     def test_selector_simple(self):
         """Simple selector tests"""
         body = "<p><input name='a'value='1'/><input name='b'value='2'/></p>"
@@ -43,23 +42,20 @@ class XPathSelectorTestCase(unittest.TestCase):
         self.assertEqual([x.extract() for x in xpath.select("concat(//input[@name='a']/@value, //input[@name='b']/@value)")],
                          [u'12'])
 
-    @libxml2debug
     def test_selector_unicode_query(self):
         body = u"<p><input name='\xa9' value='1'/></p>"
         response = TextResponse(url="http://example.com", body=body, encoding='utf8')
         xpath = self.hxs_cls(response)
         self.assertEqual(xpath.select(u'//input[@name="\xa9"]/@value').extract(), [u'1'])
 
-    @libxml2debug
     def test_selector_same_type(self):
         """Test XPathSelector returning the same type in x() method"""
         text = '<p>test<p>'
         assert isinstance(self.xxs_cls(text=text).select("//p")[0],
                           self.xxs_cls)
-        assert isinstance(self.hxs_cls(text=text).select("//p")[0], 
+        assert isinstance(self.hxs_cls(text=text).select("//p")[0],
                           self.hxs_cls)
 
-    @libxml2debug
     def test_selector_boolean_result(self):
         body = "<p><input name='a'value='1'/><input name='b'value='2'/></p>"
         response = TextResponse(url="http://example.com", body=body)
@@ -67,7 +63,6 @@ class XPathSelectorTestCase(unittest.TestCase):
         self.assertEquals(xs.select("//input[@name='a']/@name='a'").extract(), [u'1'])
         self.assertEquals(xs.select("//input[@name='a']/@name='n'").extract(), [u'0'])
 
-    @libxml2debug
     def test_selector_xml_html(self):
         """Test that XML and HTML XPathSelector's behave differently"""
 
@@ -80,7 +75,6 @@ class XPathSelectorTestCase(unittest.TestCase):
         self.assertEqual(self.hxs_cls(text=text).select("//div").extract(),
                          [u'<div><img src="a.jpg"><p>Hello</p></div>'])
 
-    @libxml2debug
     def test_selector_nested(self):
         """Nested selector tests"""
         body = """<body>
@@ -109,13 +103,11 @@ class XPathSelectorTestCase(unittest.TestCase):
         self.assertEqual(divtwo.select("./li").extract(),
                          [])
 
-    @libxml2debug
     def test_dont_strip(self):
         hxs = self.hxs_cls(text='<div>fff: <a href="#">zzz</a></div>')
         self.assertEqual(hxs.select("//text()").extract(),
             [u'fff: ', u'zzz'])
 
-    @libxml2debug
     def test_selector_namespaces_simple(self):
         body = """
         <test xmlns:somens="http://scrapy.org">
@@ -131,7 +123,6 @@ class XPathSelectorTestCase(unittest.TestCase):
         self.assertEqual(x.select("//somens:a/text()").extract(),
                          [u'take this'])
 
-    @libxml2debug
     def test_selector_namespaces_multiple(self):
         body = """<?xml version="1.0" encoding="UTF-8"?>
 <BrowseNode xmlns="http://webservices.amazon.com/AWSECommerceService/2005-10-05"
@@ -155,7 +146,6 @@ class XPathSelectorTestCase(unittest.TestCase):
         self.assertEqual(x.select("//p:SecondTestTag").select("./xmlns:price/text()")[0].extract(), '90')
         self.assertEqual(x.select("//p:SecondTestTag/xmlns:material/text()").extract()[0], 'iron')
 
-    @libxml2debug
     def test_selector_re(self):
         body = """<div>Name: Mary
                     <ul>
@@ -177,14 +167,12 @@ class XPathSelectorTestCase(unittest.TestCase):
         self.assertEqual(x.select("//ul/li").re("Age: (\d+)"),
                          ["10", "20"])
 
-    @libxml2debug
     def test_selector_re_intl(self):
         body = """<div>Evento: cumplea\xc3\xb1os</div>"""
         response = HtmlResponse(url="http://example.com", body=body, encoding='utf-8')
         x = self.hxs_cls(response)
         self.assertEqual(x.select("//div").re("Evento: (\w+)"), [u'cumplea\xf1os'])
 
-    @libxml2debug
     def test_selector_over_text(self):
         hxs = self.hxs_cls(text='<root>lala</root>')
         self.assertEqual(hxs.extract(),
@@ -199,7 +187,6 @@ class XPathSelectorTestCase(unittest.TestCase):
                          [u'<root>lala</root>'])
 
 
-    @libxml2debug
     def test_selector_invalid_xpath(self):
         response = XmlResponse(url="http://example.com", body="<html></html>")
         x = self.hxs_cls(response)
@@ -213,7 +200,6 @@ class XPathSelectorTestCase(unittest.TestCase):
         else:
             raise AssertionError("A invalid XPath does not raise an exception")
 
-    @libxml2debug
     def test_http_header_encoding_precedence(self):
         # u'\xa3'     = pound symbol in unicode
         # u'\xc2\xa3' = pound symbol in utf-8
@@ -233,14 +219,12 @@ class XPathSelectorTestCase(unittest.TestCase):
         self.assertEquals(x.select("//span[@id='blank']/text()").extract(),
                           [u'\xa3'])
 
-    @libxml2debug
     def test_empty_bodies(self):
         # shouldn't raise errors
         r1 = TextResponse('http://www.example.com', body='')
         self.hxs_cls(r1).select('//text()').extract()
         self.xxs_cls(r1).select('//text()').extract()
 
-    @libxml2debug
     def test_null_bytes(self):
         # shouldn't raise errors
         r1 = TextResponse('http://www.example.com', \
@@ -249,7 +233,6 @@ class XPathSelectorTestCase(unittest.TestCase):
         self.hxs_cls(r1).select('//text()').extract()
         self.xxs_cls(r1).select('//text()').extract()
 
-    @libxml2debug
     def test_badly_encoded_body(self):
         # \xe9 alone isn't valid utf8 sequence
         r1 = TextResponse('http://www.example.com', \
@@ -258,7 +241,6 @@ class XPathSelectorTestCase(unittest.TestCase):
         self.hxs_cls(r1).select('//text()').extract()
         self.xxs_cls(r1).select('//text()').extract()
 
-    @libxml2debug
     def test_select_on_unevaluable_nodes(self):
         r = self.hxs_cls(text=u'<span class="big">some text</span>')
         # Text node
@@ -270,7 +252,6 @@ class XPathSelectorTestCase(unittest.TestCase):
         self.assertEquals(x1.extract(), [u'big'])
         self.assertEquals(x1.select('.//text()').extract(), [])
 
-    @libxml2debug
     def test_select_on_text_nodes(self):
         r = self.hxs_cls(text=u'<div><b>Options:</b>opt1</div><div><b>Other</b>opt2</div>')
         x1 = r.select("//div/descendant::text()[preceding-sibling::b[contains(text(), 'Options')]]")
@@ -279,7 +260,6 @@ class XPathSelectorTestCase(unittest.TestCase):
         x1 = r.select("//div/descendant::text()/preceding-sibling::b[contains(text(), 'Options')]")
         self.assertEquals(x1.extract(), [u'<b>Options:</b>'])
 
-    @libxml2debug
     def test_nested_select_on_text_nodes(self):
         # FIXME: does not work with lxml backend [upstream]
         r = self.hxs_cls(text=u'<div><b>Options:</b>opt1</div><div><b>Other</b>opt2</div>')
@@ -289,7 +269,6 @@ class XPathSelectorTestCase(unittest.TestCase):
         self.assertEquals(x2.extract(), [u'<b>Options:</b>'])
     test_nested_select_on_text_nodes.skip = True
 
-    @libxml2debug
     def test_weakref_slots(self):
         """Check that classes are using slots and are weak-referenceable"""
         for cls in [self.xs_cls, self.hxs_cls, self.xxs_cls]:

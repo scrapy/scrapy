@@ -39,6 +39,7 @@ class LxmlXPathSelectorTestCase(test_selector.XPathSelectorTestCase):
         xxs.remove_namespaces()
         self.assertEqual(len(xxs.select("//link/@type")), 2)
 
+
 class Libxml2DocumentTest(unittest.TestCase):
 
     def test_caching(self):
@@ -52,9 +53,6 @@ class Libxml2DocumentTest(unittest.TestCase):
         # make sure it's cached
         assert doc1 is doc2
         assert doc1 is not doc3
-
-        # don't leave documents in memory to avoid wrong libxml2 leaks reports
-        del doc1, doc2, doc3
 
     def test_null_char(self):
         # make sure bodies with null char ('\x00') don't raise a TypeError exception

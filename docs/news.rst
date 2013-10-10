@@ -9,6 +9,8 @@ Release notes
 - Request/Response url/body attributes are now immutable (modifying them had
   been deprecated for a long time)
 - :setting:`ITEM_PIPELINES` is now defined as a dict (instead of a list)
+- Dropped libxml2 selectors backend
+- Dropped support for multiple selectors backends, sticking to lxml only
 
 0.18.4 (released 2013-10-10)
 ----------------------------

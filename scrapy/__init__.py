@@ -31,13 +31,6 @@ else:
     optional_features.add('boto')
 
 try:
-    import libxml2
-except ImportError:
-    pass
-else:
-    optional_features.add('libxml2')
-
-try:
     import django
 except ImportError:
     pass
