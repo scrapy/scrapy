@@ -18,10 +18,10 @@ _fingerprint_cache = weakref.WeakKeyDictionary()
 def request_fingerprint(request, include_headers=None):
     """
     Return the request fingerprint.
-    
+
     The request fingerprint is a hash that uniquely identifies the resource the
     request points to. For example, take the following two urls:
-    
+
     http://www.example.com/query?id=111&cat=222
     http://www.example.com/query?cat=222&id=111
 
@@ -30,13 +30,13 @@ def request_fingerprint(request, include_headers=None):
 
     Another example are cookies used to store session ids. Suppose the
     following page is only accesible to authenticated users:
-    
+
     http://www.example.com/members/offers.html
 
     Lot of sites use a cookie to store the session id, which adds a random
     component to the HTTP Request and thus should be ignored when calculating
-    the fingerprint. 
-    
+    the fingerprint.
+
     For this reason, request headers are ignored by default when calculating
     the fingeprint. If you want to include specific headers use the
     include_headers argument, which is a list of Request headers to include.
@@ -81,15 +81,3 @@ def request_httprepr(request):
     s += request.body
     return s
 
-def request_deferred(request):
-    """Wrap a request inside a Deferred.
-
-    This returns a Deferred whose first pair of callbacks are the request
-    callback and errback. The Deferred also triggers when the request
-    callback/errback is executed (ie. when the request is downloaded)
-    """
-    d = Deferred()
-    if request.callback:
-        d.addCallbacks(request.callback, request.errback)
-    request.callback, request.errback = d.callback, d.errback
-    return d
