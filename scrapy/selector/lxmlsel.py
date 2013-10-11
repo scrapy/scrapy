@@ -10,7 +10,7 @@ __all__ = ['HtmlXPathSelector', 'XmlXPathSelector', 'XPathSelector',
 
 class XPathSelector(Selector):
     __slots__ = ()
-    default_contenttype = 'xml'
+    default_contenttype = 'html'
 
 
 class XmlXPathSelector(XPathSelector):
