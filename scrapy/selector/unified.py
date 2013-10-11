@@ -50,7 +50,7 @@ class Selector(object_ref):
     def __init__(self, response=None, text=None, namespaces=None, contenttype=None,
                  _root=None, _expr=None):
 
-        self.contenttype = ct = self.default_contenttype or _ct(contenttype)
+        self.contenttype = ct = _ct(response, contenttype or self.default_contenttype)
         self._parser = _ctgroup[ct]['_parser']
         self._csstranslator = _ctgroup[ct]['_csstranslator']
         self._tostring_method = _ctgroup[ct]['_tostring_method']
@@ -146,8 +146,11 @@ class SelectorList(list):
     def __getslice__(self, i, j):
         return self.__class__(list.__getslice__(self, i, j))
 
-    def select(self, xpath):
-        return self.__class__(flatten([x.select(xpath) for x in self]))
+    def xpath(self, xpath):
+        return self.__class__(flatten([x.xpath(xpath) for x in self]))
+
+    def css(self, xpath):
+        return self.__class__(flatten([x.css(xpath) for x in self]))
 
     def re(self, regex):
         return flatten([x.re(regex) for x in self])
@@ -155,10 +158,15 @@ class SelectorList(list):
     def extract(self):
         return [x.extract() for x in self]
 
-    @deprecated(use_instead='SelectorList.extract')
+    @deprecated(use_instead='.extract()')
     def extract_unquoted(self):
         return [x.extract_unquoted() for x in self]
 
-    @deprecated(use_instead='SelectorList.select')
+    @deprecated(use_instead='.xpath()')
     def x(self, xpath):
         return self.select(xpath)
+
+    @deprecated(use_instead='.xpath()')
+    def select(self, xpath):
+        return self.xpath(xpath)
+

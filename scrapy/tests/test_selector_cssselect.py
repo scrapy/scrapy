@@ -2,9 +2,9 @@
 Selector tests for cssselect backend
 """
 from twisted.trial import unittest
-from scrapy.http import TextResponse, HtmlResponse, XmlResponse
-from scrapy.selector import CSSSelector, XmlCSSSelector, HtmlCSSSelector
+from scrapy.http import HtmlResponse
 from scrapy.selector.csstranslator import ScrapyHTMLTranslator
+from scrapy.selector import Selector
 from cssselect.parser import SelectorSyntaxError
 from cssselect.xpath import ExpressionError
 
@@ -116,20 +116,20 @@ class TranslatorMixinTest(unittest.TestCase):
 
 class HTMLCSSSelectorTest(unittest.TestCase):
 
-    hcs_cls = HtmlCSSSelector
+    hcs_cls = Selector
 
     def setUp(self):
         self.htmlresponse = HtmlResponse('http://example.com', body=HTMLBODY)
         self.hcs = self.hcs_cls(self.htmlresponse)
 
     def x(self, *a, **kw):
-        return [v.strip() for v in self.hcs.select(*a, **kw).extract() if v.strip()]
+        return [v.strip() for v in self.hcs.css(*a, **kw).extract() if v.strip()]
 
     def test_selector_simple(self):
-        for x in self.hcs.select('input'):
+        for x in self.hcs.css('input'):
             self.assertTrue(isinstance(x, self.hcs.__class__), x)
-        self.assertEqual(self.hcs.select('input').extract(),
-                         [x.extract() for x in self.hcs.select('input')])
+        self.assertEqual(self.hcs.css('input').extract(),
+                         [x.extract() for x in self.hcs.css('input')])
 
     def test_text_pseudo_element(self):
         self.assertEqual(self.x('#p-b2'), [u'<b id="p-b2">guy</b>'])
@@ -147,7 +147,7 @@ class HTMLCSSSelectorTest(unittest.TestCase):
         self.assertEqual(self.x('map[name="dummymap"] ::attr(shape)'), [u'circle', u'default'])
 
     def test_nested_selector(self):
-        self.assertEqual(self.hcs.select('p').select('b::text').extract(),
+        self.assertEqual(self.hcs.css('p').css('b::text').extract(),
                          [u'hi', u'guy'])
-        self.assertEqual(self.hcs.select('div').select('area:last-child').extract(),
+        self.assertEqual(self.hcs.css('div').css('area:last-child').extract(),
                          [u'<area shape="default" id="area-nohref">'])
