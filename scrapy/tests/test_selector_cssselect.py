@@ -4,7 +4,7 @@ Selector tests for cssselect backend
 from twisted.trial import unittest
 from scrapy.http import TextResponse, HtmlResponse, XmlResponse
 from scrapy.selector import CSSSelector, XmlCSSSelector, HtmlCSSSelector
-from scrapy.selector.csssel import ScrapyHTMLTranslator
+from scrapy.selector.csstranslator import ScrapyHTMLTranslator
 from cssselect.parser import SelectorSyntaxError
 from cssselect.xpath import ExpressionError
 
