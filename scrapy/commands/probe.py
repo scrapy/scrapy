@@ -1,4 +1,5 @@
-import re, itertools
+import re
+import itertools
 from w3lib.url import is_url
 
 from scrapy.exceptions import UsageError
