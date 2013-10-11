@@ -11,7 +11,7 @@ from w3lib.url import any_to_uri
 
 from scrapy.item import BaseItem
 from scrapy.spider import BaseSpider
-from scrapy.selector import XPathSelector, XmlXPathSelector, HtmlXPathSelector, XmlCSSSelector, HtmlCSSSelector
+from scrapy.selector import Selector
 from scrapy.utils.spider import create_spider_for_request
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
@@ -24,7 +24,7 @@ from scrapy.exceptions import IgnoreRequest
 class Shell(object):
 
     relevant_classes = (BaseSpider, Request, Response, BaseItem,
-        XPathSelector, Settings)
+                        Selector, Settings)
 
     def __init__(self, crawler, update_vars=None, code=None):
         self.crawler = crawler
@@ -95,14 +95,7 @@ class Shell(object):
         self.vars['spider'] = spider
         self.vars['request'] = request
         self.vars['response'] = response
-        self.vars['xxs'] = XmlXPathSelector(response) \
-            if isinstance(response, XmlResponse) else None
-        self.vars['xcs'] = XmlCSSSelector(response) \
-            if isinstance(response, XmlResponse) else None
-        self.vars['hxs'] = HtmlXPathSelector(response) \
-            if isinstance(response, HtmlResponse) else None
-        self.vars['hcs'] = HtmlCSSSelector(response) \
-            if isinstance(response, HtmlResponse) else None
+        self.vars['ss'] = Selector(response)
         if self.inthread:
             self.vars['fetch'] = self.fetch
         self.vars['view'] = open_in_browser
