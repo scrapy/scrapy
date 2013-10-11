@@ -16,15 +16,15 @@ class SiteTest(object):
         return urlparse.urljoin(self.baseurl, path)
 
 def test_site():
-        r = resource.Resource()
-        r.putChild("text", static.Data("Works", "text/plain"))
-        r.putChild("html", static.Data("<body><p class='one'>Works</p><p class='two'>World</p></body>", "text/html"))
-        r.putChild("enc-gb18030", static.Data("<p>gb18030 encoding</p>", "text/html; charset=gb18030"))
-        r.putChild("redirect", util.Redirect("/redirected"))
-        r.putChild("redirected", static.Data("Redirected here", "text/plain"))
-        r.putChild("probe", static.Data("<body><?php foreach (getallheaders() as $name => $value) { if ($value == 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)') echo 'QWERTY';}?></body>", "text/html"))
-        return server.Site(r)
-    
+    r = resource.Resource()
+    r.putChild("text", static.Data("Works", "text/plain"))
+    r.putChild("html", static.Data("<body><p class='one'>Works</p><p class='two'>World</p></body>", "text/html"))
+    r.putChild("enc-gb18030", static.Data("<p>gb18030 encoding</p>", "text/html; charset=gb18030"))
+    r.putChild("redirect", util.Redirect("/redirected"))
+    r.putChild("redirected", static.Data("Redirected here", "text/plain"))
+    r.putChild("probe", static.Data("<body><?php foreach (getallheaders() as $name => $value) { if ($value == 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)') echo 'QWERTY';}?></body>", "text/html"))
+    return server.Site(r)
+
 
 if __name__ == '__main__':
     port = reactor.listenTCP(0, test_site(), interface="127.0.0.1")
