@@ -11,15 +11,19 @@ from scrapy.utils.python import unicode_to_str
 from scrapy.utils.misc import extract_regex
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.decorator import deprecated
-from .libxml2document import Libxml2Document, xmlDoc_from_html, xmlDoc_from_xml
-from .list import XPathSelectorList
+from scrapy.selector.libxml2document import Libxml2Document, \
+        xmlDoc_from_html, xmlDoc_from_xml
+from scrapy.selector.list import XPathSelectorList
+
 
 __all__ = ['HtmlXPathSelector', 'XmlXPathSelector', 'XPathSelector', \
     'XPathSelectorList']
 
+
 class XPathSelector(object_ref):
 
     __slots__ = ['doc', 'xmlNode', 'expr', '__weakref__']
+    _list_cls = XPathSelectorList
 
     def __init__(self, response=None, text=None, node=None, parent=None, expr=None):
         if parent is not None:
@@ -44,13 +48,13 @@ class XPathSelector(object_ref):
             except libxml2.xpathError:
                 raise ValueError("Invalid XPath: %s" % xpath)
             if hasattr(xpath_result, '__iter__'):
-                return XPathSelectorList([self.__class__(node=node, parent=self, \
-                    expr=xpath) for node in xpath_result])
+                return self._list_cls([self.__class__(node=node,
+                    parent=self, expr=xpath) for node in xpath_result])
             else:
-                return XPathSelectorList([self.__class__(node=xpath_result, \
+                return self._list_cls([self.__class__(node=xpath_result,
                     parent=self, expr=xpath)])
         else:
-            return XPathSelectorList([])
+            return self._list_cls([])
 
     def re(self, regex):
         return extract_regex(regex, self.extract())
@@ -62,7 +66,7 @@ class XPathSelector(object_ref):
             if isinstance(self.xmlNode, libxml2.xmlDoc):
                 data = self.xmlNode.getRootElement().serialize('utf-8')
                 text = unicode(data, 'utf-8', errors='ignore') if data else u''
-            elif isinstance(self.xmlNode, libxml2.xmlAttr): 
+            elif isinstance(self.xmlNode, libxml2.xmlAttr):
                 # serialization doesn't work sometimes for xmlAttr types
                 text = unicode(self.xmlNode.content, 'utf-8', errors='ignore')
             else:

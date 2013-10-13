@@ -9,8 +9,8 @@ from scrapy.utils.trackref import object_ref
 from scrapy.utils.python import unicode_to_str
 from scrapy.utils.decorator import deprecated
 from scrapy.http import TextResponse
-from .lxmldocument import LxmlDocument
-from .list import XPathSelectorList
+from scrapy.selector.lxmldocument import LxmlDocument
+from scrapy.selector.list import XPathSelectorList
 
 
 __all__ = ['HtmlXPathSelector', 'XmlXPathSelector', 'XPathSelector', \
@@ -22,6 +22,7 @@ class XPathSelector(object_ref):
     __slots__ = ['response', 'text', 'namespaces', '_expr', '_root', '__weakref__']
     _parser = etree.HTMLParser
     _tostring_method = 'html'
+    _list_cls = XPathSelectorList
 
     def __init__(self, response=None, text=None, namespaces=None, _root=None, _expr=None):
         if text is not None:
@@ -39,7 +40,7 @@ class XPathSelector(object_ref):
         try:
             xpathev = self._root.xpath
         except AttributeError:
-            return XPathSelectorList([])
+            return self._list_cls([])
 
         try:
             result = xpathev(xpath, namespaces=self.namespaces)
@@ -51,7 +52,7 @@ class XPathSelector(object_ref):
 
         result = [self.__class__(_root=x, _expr=xpath, namespaces=self.namespaces)
                   for x in result]
-        return XPathSelectorList(result)
+        return self._list_cls(result)
 
     def re(self, regex):
         return extract_regex(regex, self.extract())
@@ -90,7 +91,6 @@ class XPathSelector(object_ref):
         return "<%s xpath=%r data=%s>" % (type(self).__name__, self._expr, data)
 
     __repr__ = __str__
-
 
     @deprecated(use_instead='XPathSelector.extract')
     def extract_unquoted(self):
