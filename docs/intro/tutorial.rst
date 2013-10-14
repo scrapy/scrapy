@@ -183,11 +183,12 @@ Introduction to Selectors
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 There are several ways to extract data from web pages. Scrapy uses a mechanism
-based on `XPath`_ expressions called :ref:`XPath selectors <topics-selectors>`.
-For more information about selectors and other extraction mechanisms see the
-:ref:`XPath selectors documentation <topics-selectors>`.
+based on `XPath`_ or `CSS`_ expressions called :ref:`Scrapy Selectors
+<topics-selectors>`.  For more information about selectors and other extraction
+mechanisms see the :ref:`Selectors documentation <topics-selectors>`.
 
 .. _XPath: http://www.w3.org/TR/xpath
+.. _CSS: http://www.w3.org/TR/selectors
 
 Here are some examples of XPath expressions and their meanings:
 
@@ -206,27 +207,28 @@ These are just a couple of simple examples of what you can do with XPath, but
 XPath expressions are indeed much more powerful. To learn more about XPath we
 recommend `this XPath tutorial <http://www.w3schools.com/XPath/default.asp>`_.
 
-For working with XPaths, Scrapy provides a :class:`~scrapy.selector.XPathSelector`
-class, which comes in two flavours, :class:`~scrapy.selector.HtmlXPathSelector`
-(for HTML data) and :class:`~scrapy.selector.XmlXPathSelector` (for XML data). In
-order to use them you must instantiate the desired class with a
-:class:`~scrapy.http.Response` object.
+For working with XPaths, Scrapy provides a :class:`~scrapy.selector.Selector`
+class, it must be instantiated with a :class:`~scrapy.http.HtmlResponse` or
+:class:`~scrapy.http.XmlResponse` object as first argument.
 
 You can see selectors as objects that represent nodes in the document
 structure. So, the first instantiated selectors are associated to the root
 node, or the entire document.
 
-Selectors have three methods (click on the method to see the complete API
+Selectors have four basic methods (click on the method to see the complete API
 documentation).
 
-* :meth:`~scrapy.selector.XPathSelector.select`: returns a list of selectors, each of
+* :meth:`~scrapy.selector.Selector.xpath`: returns a list of selectors, each of
   them representing the nodes selected by the xpath expression given as
-  argument. 
+  argument.
 
-* :meth:`~scrapy.selector.XPathSelector.extract`: returns a unicode string with
-   the data selected by the XPath selector.
+* :meth:`~scrapy.selector.Selector.xpath`: returns a list of selectors, each of
+  them representing the nodes selected by the CSS expression given as argument. 
 
-* :meth:`~scrapy.selector.XPathSelector.re`: returns a list of unicode strings
+* :meth:`~scrapy.selector.Selector.extract`: returns a unicode string with the
+  selected data.
+
+* :meth:`~scrapy.selector.Selector.re`: returns a list of unicode strings
   extracted by applying the regular expression given as argument.
 
 
@@ -253,12 +255,11 @@ This is what the shell looks like::
 
     [s] Available Scrapy objects:
     [s] 2010-08-19 21:45:59-0300 [default] INFO: Spider closed (finished)
-    [s]   hxs        <HtmlXPathSelector (http://www.dmoz.org/Computers/Programming/Languages/Python/Books/) xpath=None>
+    [s]   ss         <Selector (http://www.dmoz.org/Computers/Programming/Languages/Python/Books/) xpath=None>
     [s]   item       Item()
     [s]   request    <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
     [s]   response   <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
     [s]   spider     <BaseSpider 'default' at 0x1b6c2d0>
-    [s]   xxs        <XmlXPathSelector (http://www.dmoz.org/Computers/Programming/Languages/Python/Books/) xpath=None>
     [s] Useful shortcuts:
     [s]   shelp()           Print this help
     [s]   fetch(req_or_url) Fetch a new request or URL and update shell objects
@@ -270,23 +271,24 @@ After the shell loads, you will have the response fetched in a local
 ``response`` variable, so if you type ``response.body`` you will see the body
 of the response, or you can type ``response.headers`` to see its headers.
 
-The shell also instantiates two selectors, one for HTML (in the ``hxs``
-variable) and one for XML (in the ``xxs`` variable) with this response. So let's
-try them::
+The shell also pre-instantiate a selector named ``ss``, it automatically choice
+the best parsing rules (XML vs HTML) based on response's type.
 
-   In [1]: hxs.select('//title')
-   Out[1]: [<HtmlXPathSelector (title) xpath=//title>]
+So let's try it::
 
-   In [2]: hxs.select('//title').extract()
+   In [1]: ss.xpath('//title')
+   Out[1]: [<Selector (title) xpath=//title>]
+
+   In [2]: ss.xpath('//title').extract()
    Out[2]: [u'<title>Open Directory - Computers: Programming: Languages: Python: Books</title>']
 
-   In [3]: hxs.select('//title/text()')
-   Out[3]: [<HtmlXPathSelector (text) xpath=//title/text()>]
+   In [3]: ss.xpath('//title/text()')
+   Out[3]: [<Selector (text) xpath=//title/text()>]
 
-   In [4]: hxs.select('//title/text()').extract()
+   In [4]: ss.xpath('//title/text()').extract()
    Out[4]: [u'Open Directory - Computers: Programming: Languages: Python: Books']
 
-   In [5]: hxs.select('//title/text()').re('(\w+):')
+   In [5]: ss.xpath('//title/text()').re('(\w+):')
    Out[5]: [u'Computers', u'Programming', u'Languages', u'Python']
 
 Extracting the data
@@ -306,29 +308,29 @@ is inside a ``<ul>`` element, in fact the *second* ``<ul>`` element.
 So we can select each ``<li>`` element belonging to the sites list with this
 code::
 
-   hxs.select('//ul/li')
+   ss.xpath('//ul/li')
 
 And from them, the sites descriptions::
 
-   hxs.select('//ul/li/text()').extract()
+   ss.xpath('//ul/li/text()').extract()
 
 The sites titles::
 
-   hxs.select('//ul/li/a/text()').extract()
+   ss.xpath('//ul/li/a/text()').extract()
 
 And the sites links::
 
-   hxs.select('//ul/li/a/@href').extract()
+   ss.xpath('//ul/li/a/@href').extract()
 
-As we said before, each ``select()`` call returns a list of selectors, so we can
-concatenate further ``select()`` calls to dig deeper into a node. We are going to use
+As we said before, each ``.xpath()`` call returns a list of selectors, so we can
+concatenate further ``.xpath()`` calls to dig deeper into a node. We are going to use
 that property here, so::
 
-   sites = hxs.select('//ul/li')
+   sites = ss.xpath('//ul/li')
    for site in sites:
-       title = site.select('a/text()').extract()
-       link = site.select('a/@href').extract()
-       desc = site.select('text()').extract()
+       title = site.xpath('a/text()').extract()
+       link = site.xpath('a/@href').extract()
+       desc = site.xpath('text()').extract()
        print title, link, desc
 
 .. note::
@@ -341,7 +343,7 @@ that property here, so::
 Let's add this code to our spider::
 
    from scrapy.spider import BaseSpider
-   from scrapy.selector import HtmlXPathSelector
+   from scrapy.selector import Selector
 
    class DmozSpider(BaseSpider):
        name = "dmoz"
@@ -352,12 +354,12 @@ Let's add this code to our spider::
        ]
        
        def parse(self, response):
-           hxs = HtmlXPathSelector(response)
-           sites = hxs.select('//ul/li')
+           ss = Selector(response)
+           sites = ss.xpath('//ul/li')
            for site in sites:
-               title = site.select('a/text()').extract()
-               link = site.select('a/@href').extract()
-               desc = site.select('text()').extract()
+               title = site.xpath('a/text()').extract()
+               link = site.xpath('a/@href').extract()
+               desc = site.xpath('text()').extract()
                print title, link, desc
 
 Now try crawling the dmoz.org domain again and you'll see sites being printed
@@ -382,7 +384,7 @@ Spiders are expected to return their scraped data inside
 scraped so far, the final code for our Spider would be like this::
 
    from scrapy.spider import BaseSpider
-   from scrapy.selector import HtmlXPathSelector
+   from scrapy.selector import Selector
 
    from tutorial.items import DmozItem
 
@@ -395,14 +397,14 @@ scraped so far, the final code for our Spider would be like this::
       ]
        
       def parse(self, response):
-          hxs = HtmlXPathSelector(response)
-          sites = hxs.select('//ul/li')
+          ss = Selector(response)
+          sites = ss.xpath('//ul/li')
           items = []
           for site in sites:
               item = DmozItem()
-              item['title'] = site.select('a/text()').extract()
-              item['link'] = site.select('a/@href').extract()
-              item['desc'] = site.select('text()').extract()
+              item['title'] = site.xpath('a/text()').extract()
+              item['link'] = site.xpath('a/@href').extract()
+              item['desc'] = site.xpath('text()').extract()
               items.append(item)
           return items
 

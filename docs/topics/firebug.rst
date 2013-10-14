@@ -107,7 +107,7 @@ Now we're going to write the code to extract data from those pages.
 
 With the help of Firebug, we'll take a look at some page containing links to
 websites (say http://directory.google.com/Top/Arts/Awards/) and find out how we can
-extract those links using :ref:`XPath selectors <topics-selectors>`. We'll also
+extract those links using :ref:`Selectors <topics-selectors>`. We'll also
 use the :ref:`Scrapy shell <topics-shell>` to test those XPath's and make sure
 they work as we expect.
 
@@ -146,16 +146,16 @@ that have that grey colour of the links,
 Finally, we can write our ``parse_category()`` method::
 
     def parse_category(self, response):
-        hxs = HtmlXPathSelector(response)
+        ss = Selector(response)
 
         # The path to website links in directory page
-        links = hxs.select('//td[descendant::a[contains(@href, "#pagerank")]]/following-sibling::td/font')
+        links = ss.xpath('//td[descendant::a[contains(@href, "#pagerank")]]/following-sibling::td/font')
 
         for link in links:
             item = DirectoryItem()
-            item['name'] = link.select('a/text()').extract()
-            item['url'] = link.select('a/@href').extract()
-            item['description'] = link.select('font[2]/text()').extract()
+            item['name'] = link.xpath('a/text()').extract()
+            item['url'] = link.xpath('a/@href').extract()
+            item['description'] = link.xpath('font[2]/text()').extract()
             yield item
 
 
