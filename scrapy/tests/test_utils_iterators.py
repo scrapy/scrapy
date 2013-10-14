@@ -28,7 +28,7 @@ class XmliterTestCase(unittest.TestCase):
         response = XmlResponse(url="http://example.com", body=body)
         attrs = []
         for x in self.xmliter(response, 'product'):
-            attrs.append((x.select("@id").extract(), x.select("name/text()").extract(), x.select("./type/text()").extract()))
+            attrs.append((x.xpath("@id").extract(), x.xpath("name/text()").extract(), x.xpath("./type/text()").extract()))
 
         self.assertEqual(attrs,
                          [(['001'], ['Name 1'], ['Type 1']), (['002'], ['Name 2'], ['Type 2'])])
@@ -36,7 +36,7 @@ class XmliterTestCase(unittest.TestCase):
     def test_xmliter_text(self):
         body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""
 
-        self.assertEqual([x.select("text()").extract() for x in self.xmliter(body, 'product')],
+        self.assertEqual([x.xpath("text()").extract() for x in self.xmliter(body, 'product')],
                          [[u'one'], [u'two']])
 
     def test_xmliter_namespaces(self):
@@ -63,15 +63,15 @@ class XmliterTestCase(unittest.TestCase):
 
         node = my_iter.next()
         node.register_namespace('g', 'http://base.google.com/ns/1.0')
-        self.assertEqual(node.select('title/text()').extract(), ['Item 1'])
-        self.assertEqual(node.select('description/text()').extract(), ['This is item 1'])
-        self.assertEqual(node.select('link/text()').extract(), ['http://www.mydummycompany.com/items/1'])
-        self.assertEqual(node.select('g:image_link/text()').extract(), ['http://www.mydummycompany.com/images/item1.jpg'])
-        self.assertEqual(node.select('g:id/text()').extract(), ['ITEM_1'])
-        self.assertEqual(node.select('g:price/text()').extract(), ['400'])
-        self.assertEqual(node.select('image_link/text()').extract(), [])
-        self.assertEqual(node.select('id/text()').extract(), [])
-        self.assertEqual(node.select('price/text()').extract(), [])
+        self.assertEqual(node.xpath('title/text()').extract(), ['Item 1'])
+        self.assertEqual(node.xpath('description/text()').extract(), ['This is item 1'])
+        self.assertEqual(node.xpath('link/text()').extract(), ['http://www.mydummycompany.com/items/1'])
+        self.assertEqual(node.xpath('g:image_link/text()').extract(), ['http://www.mydummycompany.com/images/item1.jpg'])
+        self.assertEqual(node.xpath('g:id/text()').extract(), ['ITEM_1'])
+        self.assertEqual(node.xpath('g:price/text()').extract(), ['400'])
+        self.assertEqual(node.xpath('image_link/text()').extract(), [])
+        self.assertEqual(node.xpath('id/text()').extract(), [])
+        self.assertEqual(node.xpath('price/text()').extract(), [])
 
     def test_xmliter_exception(self):
         body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""
@@ -123,9 +123,9 @@ class LxmlXmliterTestCase(XmliterTestCase):
 
         namespace_iter = self.xmliter(response, 'image_link', 'http://base.google.com/ns/1.0')
         node = namespace_iter.next()
-        self.assertEqual(node.select('text()').extract(), ['http://www.mydummycompany.com/images/item1.jpg'])
+        self.assertEqual(node.xpath('text()').extract(), ['http://www.mydummycompany.com/images/item1.jpg'])
         node = namespace_iter.next()
-        self.assertEqual(node.select('text()').extract(), ['http://www.mydummycompany.com/images/item2.jpg'])
+        self.assertEqual(node.xpath('text()').extract(), ['http://www.mydummycompany.com/images/item2.jpg'])
 
 
 class UtilsCsvTestCase(unittest.TestCase):

@@ -4,7 +4,7 @@ SGMLParser-based Link extractors
 import re
 from urlparse import urlparse, urljoin
 from w3lib.url import safe_url_string
-from scrapy.selector import HtmlXPathSelector
+from scrapy.selector import Selector
 from scrapy.link import Link
 from scrapy.linkextractor import IGNORED_EXTENSIONS
 from scrapy.utils.misc import arg_to_iter
@@ -116,11 +116,11 @@ class SgmlLinkExtractor(BaseSgmlLinkExtractor):
     def extract_links(self, response):
         base_url = None
         if self.restrict_xpaths:
-            hxs = HtmlXPathSelector(response)
+            ss = Selector(response)
             base_url = get_base_url(response)
             body = u''.join(f
                             for x in self.restrict_xpaths
-                            for f in hxs.select(x).extract()
+                            for f in ss.xpath(x).extract()
                             ).encode(response.encoding)
         else:
             body = response.body

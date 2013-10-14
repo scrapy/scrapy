@@ -1,5 +1,5 @@
 from scrapy.http import Response
-from scrapy.selector import XmlXPathSelector
+from scrapy.selector import Selector
 
 
 def xmliter_lxml(obj, nodename, namespace=None):
@@ -11,10 +11,10 @@ def xmliter_lxml(obj, nodename, namespace=None):
     for _, node in iterable:
         nodetext = etree.tostring(node)
         node.clear()
-        xs = XmlXPathSelector(text=nodetext)
+        xs = Selector(text=nodetext, contenttype='xml')
         if namespace:
             xs.register_namespace('x', namespace)
-        yield xs.select(selxpath)[0]
+        yield xs.xpath(selxpath)[0]
 
 
 class _StreamReader(object):
