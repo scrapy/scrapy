@@ -12,6 +12,19 @@ class XPathSelector(Selector):
     __slots__ = ()
     default_contenttype = 'html'
 
+    def __init__(self, *a, **kw):
+        import warnings
+        from scrapy.exceptions import ScrapyDeprecationWarning
+        warnings.warn('%s is deprecated, instanciate scrapy.selector.Selector '
+                      'instead' % type(self).__name__,
+                      category=ScrapyDeprecationWarning, stacklevel=1)
+        super(XPathSelector, self).__init__(*a, **kw)
+
+    def css(self, *a, **kw):
+        raise RuntimeError('.css() method not available for %s, '
+                           'instanciate scrapy.selector.Selector '
+                           'instead' % type(self).__name__)
+
 
 class XmlXPathSelector(XPathSelector):
     __slots__ = ()
@@ -28,7 +41,7 @@ class XPathSelectorList(SelectorList):
     def __init__(self, *a, **kw):
         import warnings
         from scrapy.exceptions import ScrapyDeprecationWarning
-        warnings.warn('XPathSelectorList is deprecated, use '
+        warnings.warn('XPathSelectorList is deprecated, instanciate '
                       'scrapy.selector.SelectorList instead',
                       category=ScrapyDeprecationWarning, stacklevel=1)
         super(XPathSelectorList, self).__init__(*a, **kw)
