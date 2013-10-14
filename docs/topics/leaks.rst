@@ -89,7 +89,6 @@ subclasses):
 * ``scrapy.item.Item``
 * ``scrapy.selector.Selector``
 * ``scrapy.spider.BaseSpider``
-* ``scrapy.selector.document.Libxml2Document``
 
 A real example
 --------------

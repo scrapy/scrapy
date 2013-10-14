@@ -3,7 +3,7 @@ from scrapy.selector.lxmldocument import LxmlDocument
 from scrapy.http import TextResponse, HtmlResponse
 
 
-class Libxml2DocumentTest(unittest.TestCase):
+class LxmlDocumentTest(unittest.TestCase):
 
     def test_caching(self):
         r1 = HtmlResponse('http://www.example.com', body='<html><head></head><body></body></html>')
