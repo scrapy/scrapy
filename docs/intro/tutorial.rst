@@ -208,7 +208,7 @@ XPath expressions are indeed much more powerful. To learn more about XPath we
 recommend `this XPath tutorial <http://www.w3schools.com/XPath/default.asp>`_.
 
 For working with XPaths, Scrapy provides a :class:`~scrapy.selector.Selector`
-class, it must be instantiated with a :class:`~scrapy.http.HtmlResponse` or
+class, it is instantiated with a :class:`~scrapy.http.HtmlResponse` or
 :class:`~scrapy.http.XmlResponse` object as first argument.
 
 You can see selectors as objects that represent nodes in the document
@@ -271,8 +271,9 @@ After the shell loads, you will have the response fetched in a local
 ``response`` variable, so if you type ``response.body`` you will see the body
 of the response, or you can type ``response.headers`` to see its headers.
 
-The shell also pre-instantiate a selector named ``ss``, it automatically choice
-the best parsing rules (XML vs HTML) based on response's type.
+The shell also pre-instantiate a selector for this response in variable ``ss``,
+the selector automatically chooses the best parsing rules (XML vs HTML) based
+on response's type.
 
 So let's try it::
 
