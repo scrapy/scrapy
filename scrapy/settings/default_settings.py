@@ -185,6 +185,52 @@ METAREFRESH_MAXDELAY = 100
 
 NEWSPIDER_MODULE = ''
 
+PROBE_REQUEST_HEADERS = {
+    #List of well known User-Agents
+    "User-Agent": [
+        "Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36" \
+            " (KHTML, like Gecko) Chrome/29.0.1547.66 " \
+            "Safari/537.36",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) " \
+            "Gecko/20100101 Firefox/23.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_4) " \
+            "AppleWebKit/536.30.1 (KHTML, like Gecko) " \
+            "Version/6.0.5 Safari/536.30.1",
+        "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; " \
+            "WOW64; Trident/6.0)",
+        "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; " \
+            "rv:1.8.1.6) Gecko/20070725 Firefox/2.0.0.6",
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 6_1_3 like Mac OS X) AppleWebKit/536.26 " \
+            "(KHTML, like Gecko) Version/6.0 Mobile/10B329 Safari/8536.25",
+        "Mozilla/5.0 (Linux; Android 4.1.2; GT-I9100 Build/JZO54K) AppleWebKit/537.36 " \
+            "(KHTML, like Gecko) Chrome/29.0.1547.72 Mobile Safari/537.36"
+    ],
+    #List of well known Accept media type
+    "Accept": [
+        "application/xml,application/xhtml+xml,text/html;q=0.9," \
+            "text/plain;q=0.8,*/*;q=0.5",
+        "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+    ],
+    #List of natural languages that are preferred
+    "Accept-Language": [
+        "en-US,en;q=0.8,pt;q=0.6,es;q=0.4,fr;q=0.2"
+    ],
+    #List of character sets are acceptable for the response
+    "Accept-Charset": [
+        "ISO-8859-1",
+        "UTF-8",
+        "*"
+    ],
+    "Cache-Control": [
+        "no-cache"
+    ],
+    "Connection": [
+        "keep-alive"
+    ],
+    "Host": []
+}
+
 RANDOMIZE_DOWNLOAD_DELAY = True
 
 REDIRECT_ENABLED = True

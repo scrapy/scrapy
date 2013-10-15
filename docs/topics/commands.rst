@@ -474,7 +474,7 @@ found in the content.
 
 Usage examples::
 
-    $ scrapy probe 'http://www.example.com/some/page.html' 'var sFeatures'
+    $ scrapy probe 'http://www.example.com/some/page.html' 'domain'
     Found set of working headers:
     {'Accept-Charset': '*;q=0.7', 
     'Accept-Language': 'en', 
