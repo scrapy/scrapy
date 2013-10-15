@@ -231,11 +231,11 @@ Another example returning multiples Requests and Items from a single callback::
         ]
 
         def parse(self, response):
-            ss = Selector(response)
-            for h3 in ss.xpath('//h3').extract():
+            sel = Selector(response)
+            for h3 in sel.xpath('//h3').extract():
                 yield MyItem(title=h3)
 
-            for url in ss.xpath('//a/@href').extract():
+            for url in sel.xpath('//a/@href').extract():
                 yield Request(url, callback=self.parse)
 
 .. module:: scrapy.contrib.spiders
@@ -334,11 +334,11 @@ Let's now take a look at an example CrawlSpider with rules::
         def parse_item(self, response):
             self.log('Hi, this is an item page! %s' % response.url)
 
-            ss = Selector(response)
+            sel = Selector(response)
             item = Item()
-            item['id'] = ss.xpath('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
-            item['name'] = ss.xpath('//td[@id="item_name"]/text()').extract()
-            item['description'] = ss.xpath('//td[@id="item_description"]/text()').extract()
+            item['id'] = sel.xpath('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
+            item['name'] = sel.xpath('//td[@id="item_name"]/text()').extract()
+            item['description'] = sel.xpath('//td[@id="item_description"]/text()').extract()
             return item
 
 

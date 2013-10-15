@@ -83,7 +83,7 @@ Those objects are:
  * ``response`` - a :class:`~scrapy.http.Response` object containing the last
    fetched page
 
- * ``ss`` - a :class:`~scrapy.selector.Selector` object constructed
+ * ``sel`` - a :class:`~scrapy.selector.Selector` object constructed
    with the last response fetched
 
  * ``settings`` - the current :ref:`Scrapy settings <topics-settings>`
@@ -111,7 +111,7 @@ list of available objects and useful shortcuts (you'll notice that these lines
 all start with the ``[s]`` prefix)::
 
     [s] Available objects
-    [s]   ss        <Selector (http://scrapy.org) xpath=None>
+    [s]   sel       <Selector (http://scrapy.org) xpath=None>
     [s]   item      Item()
     [s]   request   <http://scrapy.org>
     [s]   response  <http://scrapy.org>
@@ -126,12 +126,12 @@ all start with the ``[s]`` prefix)::
 
 After that, we can star playing with the objects::
 
-    >>> ss.xpath("//h2/text()").extract()[0]
+    >>> sel.xpath("//h2/text()").extract()[0]
     u'Welcome to Scrapy'
 
     >>> fetch("http://slashdot.org")
     [s] Available Scrapy objects:
-    [s]   ss         <Selector (http://slashdot.org) xpath=None>
+    [s]   sel        <Selector (http://slashdot.org) xpath=None>
     [s]   item       JobItem()
     [s]   request    <GET http://slashdot.org>
     [s]   response   <200 http://slashdot.org>
@@ -142,7 +142,7 @@ After that, we can star playing with the objects::
     [s]   fetch(req_or_url) Fetch request (or URL) and update local objects
     [s]   view(response)    View response in a browser
 
-    >>> ss.xpath("//h2/text()").extract()
+    >>> sel.xpath("//h2/text()").extract()
     [u'News for nerds, stuff that matters']
 
     >>> request = request.replace(method="POST")
@@ -180,7 +180,7 @@ When you run the spider, you will get something similar to this::
     2009-08-27 19:15:25-0300 [example.com] DEBUG: Crawled <http://www.example.com/> (referer: <None>)
     2009-08-27 19:15:26-0300 [example.com] DEBUG: Crawled <http://www.example.com/products.php> (referer: <http://www.example.com/>)
     [s] Available objects
-    [s]   ss        <Selector (http://www.example.com/products.php) xpath=None>
+    [s]   sel       <Selector (http://www.example.com/products.php) xpath=None>
     ...
 
     >>> response.url
@@ -188,7 +188,7 @@ When you run the spider, you will get something similar to this::
 
 Then, you can check if the extraction code is working::
 
-    >>> ss.xpath('//h1')
+    >>> sel.xpath('//h1')
     []
 
 Nope, it doesn't. So you can open the response in your web browser and see if

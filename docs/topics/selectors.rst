@@ -62,13 +62,13 @@ body is what they're going to be "selecting"::
     class MySpider(BaseSpider):
         # ...
         def parse(self, response):
-            ss = Selector(response)
+            sel = Selector(response)
             # Using XPath query
-            print ss.xpath('//p')
+            print sel.xpath('//p')
             # Using CSS query
-            print ss.css('p')
+            print sel.css('p')
             # Nesting queries
-            print ss.xpath('//div[@foo="bar"]').css('span#bold')
+            print sel.xpath('//div[@foo="bar"]').css('span#bold')
 
 
 Using selectors
@@ -94,7 +94,7 @@ First, let's open the shell::
     scrapy shell http://doc.scrapy.org/en/latest/_static/selectors-sample1.html
 
 Then, after the shell loads, you'll have a selector already instantiated and
-ready to use in ``ss`` shell variable.
+ready to use in ``sel`` shell variable.
 
 Since we're dealing with HTML, the selector will automatically use an HTML parser.
 
@@ -104,7 +104,7 @@ So, by looking at the :ref:`HTML code <topics-selectors-htmlcode>` of that
 page, let's construct an XPath (using an HTML selector) for selecting the text
 inside the title tag::
 
-    >>> ss.xpath('//title/text()')
+    >>> sel.xpath('//title/text()')
     [<Selector (text) xpath=//title/text()>]
 
 As you can see, the ``.xpath()`` method returns an
@@ -114,45 +114,45 @@ selectors. This API can be used quickly for extracting nested data.
 To actually extract the textual data, you must call the selector ``.extract()``
 method, as follows::
 
-    >>> ss.xpath('//title/text()').extract()
+    >>> sel.xpath('//title/text()').extract()
     [u'Example website']
 
 Notice that CSS selectors can select text or attribute nodes using CSS3
 pseudo-elements::
 
-    >>> ss.css('title::text').extract()
+    >>> sel.css('title::text').extract()
     [u'Example website']
 
 Now we're going to get the base URL and some image links::
 
-    >>> ss.xpath('//base/@href').extract()
+    >>> sel.xpath('//base/@href').extract()
     [u'http://example.com/']
 
-    >>> ss.css('base::attr(href)').extract()
+    >>> sel.css('base::attr(href)').extract()
     [u'http://example.com/']
 
-    >>> ss.xpath('//a[contains(@href, "image")]/@href').extract()
+    >>> sel.xpath('//a[contains(@href, "image")]/@href').extract()
     [u'image1.html',
      u'image2.html',
      u'image3.html',
      u'image4.html',
      u'image5.html']
 
-    >>> ss.css('a[href*=image]::attr(href)').extract()
+    >>> sel.css('a[href*=image]::attr(href)').extract()
     [u'image1.html',
      u'image2.html',
      u'image3.html',
      u'image4.html',
      u'image5.html']
 
-    >>> ss.xpath('//a[contains(@href, "image")]/img/@src').extract()
+    >>> sel.xpath('//a[contains(@href, "image")]/img/@src').extract()
     [u'image1_thumb.jpg',
      u'image2_thumb.jpg',
      u'image3_thumb.jpg',
      u'image4_thumb.jpg',
      u'image5_thumb.jpg']
 
-    >>> ss.css('a[href*=image] img::attr(src)').extract()
+    >>> sel.css('a[href*=image] img::attr(src)').extract()
     [u'image1_thumb.jpg',
      u'image2_thumb.jpg',
      u'image3_thumb.jpg',
@@ -168,7 +168,7 @@ The selection methods (``.xpath()`` or ``.css()``) returns a list of selectors
 of the same type, so you can call the selection methods for those selectors
 too. Here's an example::
 
-    >>> links = ss.xpath('//a[contains(@href, "image")]')
+    >>> links = sel.xpath('//a[contains(@href, "image")]')
     >>> links.extract()
     [u'<a href="image1.html">Name: My image 1 <br><img src="image1_thumb.jpg"></a>',
      u'<a href="image2.html">Name: My image 2 <br><img src="image2_thumb.jpg"></a>',
@@ -197,7 +197,7 @@ can't construct nested ``.re()`` calls.
 Here's an example used to extract images names from the :ref:`HTML code
 <topics-selectors-htmlcode>` above::
 
-    >>> ss.xpath('//a[contains(@href, "image")]/text()').re(r'Name:\s*(.*)')
+    >>> sel.xpath('//a[contains(@href, "image")]/text()').re(r'Name:\s*(.*)')
     [u'My image 1',
      u'My image 2',
      u'My image 3',
@@ -216,7 +216,7 @@ with ``/``, that XPath will be absolute to the document and not relative to the
 For example, suppose you want to extract all ``<p>`` elements inside ``<div>``
 elements. First, you would get all ``<div>`` elements::
 
-    >>> divs = ss.xpath('//div')
+    >>> divs = sel.xpath('//div')
 
 At first, you may be tempted to use the following approach, which is wrong, as
 it actually extracts all ``<p>`` elements from the document, not only those

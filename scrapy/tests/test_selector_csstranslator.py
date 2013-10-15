@@ -120,16 +120,16 @@ class CSSSelectorTest(unittest.TestCase):
 
     def setUp(self):
         self.htmlresponse = HtmlResponse('http://example.com', body=HTMLBODY)
-        self.ss = self.sscls(self.htmlresponse)
+        self.sel = self.sscls(self.htmlresponse)
 
     def x(self, *a, **kw):
-        return [v.strip() for v in self.ss.css(*a, **kw).extract() if v.strip()]
+        return [v.strip() for v in self.sel.css(*a, **kw).extract() if v.strip()]
 
     def test_selector_simple(self):
-        for x in self.ss.css('input'):
-            self.assertTrue(isinstance(x, self.ss.__class__), x)
-        self.assertEqual(self.ss.css('input').extract(),
-                         [x.extract() for x in self.ss.css('input')])
+        for x in self.sel.css('input'):
+            self.assertTrue(isinstance(x, self.sel.__class__), x)
+        self.assertEqual(self.sel.css('input').extract(),
+                         [x.extract() for x in self.sel.css('input')])
 
     def test_text_pseudo_element(self):
         self.assertEqual(self.x('#p-b2'), [u'<b id="p-b2">guy</b>'])
@@ -147,7 +147,7 @@ class CSSSelectorTest(unittest.TestCase):
         self.assertEqual(self.x('map[name="dummymap"] ::attr(shape)'), [u'circle', u'default'])
 
     def test_nested_selector(self):
-        self.assertEqual(self.ss.css('p').css('b::text').extract(),
+        self.assertEqual(self.sel.css('p').css('b::text').extract(),
                          [u'hi', u'guy'])
-        self.assertEqual(self.ss.css('div').css('area:last-child').extract(),
+        self.assertEqual(self.sel.css('div').css('area:last-child').extract(),
                          [u'<area shape="default" id="area-nohref">'])

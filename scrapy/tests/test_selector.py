@@ -16,31 +16,31 @@ class SelectorTestCase(unittest.TestCase):
         """Simple selector tests"""
         body = "<p><input name='a'value='1'/><input name='b'value='2'/></p>"
         response = TextResponse(url="http://example.com", body=body)
-        ss = self.sscls(response)
+        sel = self.sscls(response)
 
-        xl = ss.xpath('//input')
+        xl = sel.xpath('//input')
         self.assertEqual(2, len(xl))
         for x in xl:
             assert isinstance(x, self.sscls)
 
-        self.assertEqual(ss.xpath('//input').extract(),
-                         [x.extract() for x in ss.xpath('//input')])
+        self.assertEqual(sel.xpath('//input').extract(),
+                         [x.extract() for x in sel.xpath('//input')])
 
-        self.assertEqual([x.extract() for x in ss.xpath("//input[@name='a']/@name")],
+        self.assertEqual([x.extract() for x in sel.xpath("//input[@name='a']/@name")],
                          [u'a'])
-        self.assertEqual([x.extract() for x in ss.xpath("number(concat(//input[@name='a']/@value, //input[@name='b']/@value))")],
+        self.assertEqual([x.extract() for x in sel.xpath("number(concat(//input[@name='a']/@value, //input[@name='b']/@value))")],
                          [u'12.0'])
 
-        self.assertEqual(ss.xpath("concat('xpath', 'rules')").extract(),
+        self.assertEqual(sel.xpath("concat('xpath', 'rules')").extract(),
                          [u'xpathrules'])
-        self.assertEqual([x.extract() for x in ss.xpath("concat(//input[@name='a']/@value, //input[@name='b']/@value)")],
+        self.assertEqual([x.extract() for x in sel.xpath("concat(//input[@name='a']/@value, //input[@name='b']/@value)")],
                          [u'12'])
 
     def test_select_unicode_query(self):
         body = u"<p><input name='\xa9' value='1'/></p>"
         response = TextResponse(url="http://example.com", body=body, encoding='utf8')
-        ss = self.sscls(response)
-        self.assertEqual(ss.xpath(u'//input[@name="\xa9"]/@value').extract(), [u'1'])
+        sel = self.sscls(response)
+        self.assertEqual(sel.xpath(u'//input[@name="\xa9"]/@value').extract(), [u'1'])
 
     def test_list_elements_type(self):
         """Test Selector returning the same type in selection methods"""
@@ -69,14 +69,14 @@ class SelectorTestCase(unittest.TestCase):
 
     def test_flavor_detection(self):
         text = '<div><img src="a.jpg"><p>Hello</div>'
-        ss = self.sscls(XmlResponse('http://example.com', body=text))
-        self.assertEqual(ss.contenttype, 'xml')
-        self.assertEqual(ss.xpath("//div").extract(),
+        sel = self.sscls(XmlResponse('http://example.com', body=text))
+        self.assertEqual(sel.contenttype, 'xml')
+        self.assertEqual(sel.xpath("//div").extract(),
                          [u'<div><img src="a.jpg"><p>Hello</p></img></div>'])
 
-        ss = self.sscls(HtmlResponse('http://example.com', body=text))
-        self.assertEqual(ss.contenttype, 'html')
-        self.assertEqual(ss.xpath("//div").extract(),
+        sel = self.sscls(HtmlResponse('http://example.com', body=text))
+        self.assertEqual(sel.contenttype, 'html')
+        self.assertEqual(sel.xpath("//div").extract(),
                          [u'<div><img src="a.jpg"><p>Hello</p></div>'])
 
     def test_nested_selectors(self):
@@ -110,13 +110,13 @@ class SelectorTestCase(unittest.TestCase):
                     <div id=1>not<span>me</span></div>
                     <div class="dos"><p>text</p><a href='#'>foo</a></div>
                </body>'''
-        ss = self.sscls(text=body)
-        self.assertEqual(ss.xpath('//div[@id="1"]').css('span::text').extract(), [u'me'])
-        self.assertEqual(ss.css('#1').xpath('./span/text()').extract(), [u'me'])
+        sel = self.sscls(text=body)
+        self.assertEqual(sel.xpath('//div[@id="1"]').css('span::text').extract(), [u'me'])
+        self.assertEqual(sel.css('#1').xpath('./span/text()').extract(), [u'me'])
 
     def test_dont_strip(self):
-        hxs = self.sscls(text='<div>fff: <a href="#">zzz</a></div>')
-        self.assertEqual(hxs.xpath("//text()").extract(), [u'fff: ', u'zzz'])
+        sel = self.sscls(text='<div>fff: <a href="#">zzz</a></div>')
+        self.assertEqual(sel.xpath("//text()").extract(), [u'fff: ', u'zzz'])
 
     def test_namespaces_simple(self):
         body = """
@@ -279,10 +279,10 @@ class SelectorTestCase(unittest.TestCase):
   <link type="application/atom+xml">
 </feed>
 """
-        xxs = self.sscls(XmlResponse("http://example.com/feed.atom", body=xml))
-        self.assertEqual(len(xxs.xpath("//link")), 0)
-        xxs.remove_namespaces()
-        self.assertEqual(len(xxs.xpath("//link")), 2)
+        sel = self.sscls(XmlResponse("http://example.com/feed.atom", body=xml))
+        self.assertEqual(len(sel.xpath("//link")), 0)
+        sel.remove_namespaces()
+        self.assertEqual(len(sel.xpath("//link")), 2)
 
     def test_remove_attributes_namespaces(self):
         xml = """<?xml version="1.0" encoding="UTF-8"?>
@@ -291,10 +291,10 @@ class SelectorTestCase(unittest.TestCase):
   <link atom:type="application/atom+xml">
 </feed>
 """
-        xxs = self.sscls(XmlResponse("http://example.com/feed.atom", body=xml))
-        self.assertEqual(len(xxs.xpath("//link/@type")), 0)
-        xxs.remove_namespaces()
-        self.assertEqual(len(xxs.xpath("//link/@type")), 2)
+        sel = self.sscls(XmlResponse("http://example.com/feed.atom", body=xml))
+        self.assertEqual(len(sel.xpath("//link/@type")), 0)
+        sel.remove_namespaces()
+        self.assertEqual(len(sel.xpath("//link/@type")), 2)
 
 
 class DeprecatedXpathSelectorTest(unittest.TestCase):

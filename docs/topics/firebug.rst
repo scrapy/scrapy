@@ -146,10 +146,10 @@ that have that grey colour of the links,
 Finally, we can write our ``parse_category()`` method::
 
     def parse_category(self, response):
-        ss = Selector(response)
+        sel = Selector(response)
 
         # The path to website links in directory page
-        links = ss.xpath('//td[descendant::a[contains(@href, "#pagerank")]]/following-sibling::td/font')
+        links = sel.xpath('//td[descendant::a[contains(@href, "#pagerank")]]/following-sibling::td/font')
 
         for link in links:
             item = DirectoryItem()

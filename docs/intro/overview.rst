@@ -143,12 +143,12 @@ Finally, here's the spider code::
         rules = [Rule(SgmlLinkExtractor(allow=['/tor/\d+']), 'parse_torrent')]
         
         def parse_torrent(self, response):
-            ss = Selector(response)
+            sel = Selector(response)
             torrent = TorrentItem()
             torrent['url'] = response.url
-            torrent['name'] = ss.xpath("//h1/text()").extract()
-            torrent['description'] = ss.xpath("//div[@id='description']").extract()
-            torrent['size'] = ss.xpath("//div[@id='info-left']/p[2]/text()[2]").extract()
+            torrent['name'] = sel.xpath("//h1/text()").extract()
+            torrent['description'] = sel.xpath("//div[@id='description']").extract()
+            torrent['size'] = sel.xpath("//div[@id='info-left']/p[2]/text()[2]").extract()
             return torrent
 
 For brevity's sake, we intentionally left out the import statements. The

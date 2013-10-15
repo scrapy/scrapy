@@ -255,7 +255,7 @@ This is what the shell looks like::
 
     [s] Available Scrapy objects:
     [s] 2010-08-19 21:45:59-0300 [default] INFO: Spider closed (finished)
-    [s]   ss         <Selector (http://www.dmoz.org/Computers/Programming/Languages/Python/Books/) xpath=None>
+    [s]   sel        <Selector (http://www.dmoz.org/Computers/Programming/Languages/Python/Books/) xpath=None>
     [s]   item       Item()
     [s]   request    <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
     [s]   response   <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
@@ -271,25 +271,25 @@ After the shell loads, you will have the response fetched in a local
 ``response`` variable, so if you type ``response.body`` you will see the body
 of the response, or you can type ``response.headers`` to see its headers.
 
-The shell also pre-instantiate a selector for this response in variable ``ss``,
+The shell also pre-instantiate a selector for this response in variable ``sel``,
 the selector automatically chooses the best parsing rules (XML vs HTML) based
 on response's type.
 
 So let's try it::
 
-   In [1]: ss.xpath('//title')
+   In [1]: sel.xpath('//title')
    Out[1]: [<Selector (title) xpath=//title>]
 
-   In [2]: ss.xpath('//title').extract()
+   In [2]: sel.xpath('//title').extract()
    Out[2]: [u'<title>Open Directory - Computers: Programming: Languages: Python: Books</title>']
 
-   In [3]: ss.xpath('//title/text()')
+   In [3]: sel.xpath('//title/text()')
    Out[3]: [<Selector (text) xpath=//title/text()>]
 
-   In [4]: ss.xpath('//title/text()').extract()
+   In [4]: sel.xpath('//title/text()').extract()
    Out[4]: [u'Open Directory - Computers: Programming: Languages: Python: Books']
 
-   In [5]: ss.xpath('//title/text()').re('(\w+):')
+   In [5]: sel.xpath('//title/text()').re('(\w+):')
    Out[5]: [u'Computers', u'Programming', u'Languages', u'Python']
 
 Extracting the data
@@ -309,25 +309,25 @@ is inside a ``<ul>`` element, in fact the *second* ``<ul>`` element.
 So we can select each ``<li>`` element belonging to the sites list with this
 code::
 
-   ss.xpath('//ul/li')
+   sel.xpath('//ul/li')
 
 And from them, the sites descriptions::
 
-   ss.xpath('//ul/li/text()').extract()
+   sel.xpath('//ul/li/text()').extract()
 
 The sites titles::
 
-   ss.xpath('//ul/li/a/text()').extract()
+   sel.xpath('//ul/li/a/text()').extract()
 
 And the sites links::
 
-   ss.xpath('//ul/li/a/@href').extract()
+   sel.xpath('//ul/li/a/@href').extract()
 
 As we said before, each ``.xpath()`` call returns a list of selectors, so we can
 concatenate further ``.xpath()`` calls to dig deeper into a node. We are going to use
 that property here, so::
 
-   sites = ss.xpath('//ul/li')
+   sites = sel.xpath('//ul/li')
    for site in sites:
        title = site.xpath('a/text()').extract()
        link = site.xpath('a/@href').extract()
@@ -355,8 +355,8 @@ Let's add this code to our spider::
        ]
        
        def parse(self, response):
-           ss = Selector(response)
-           sites = ss.xpath('//ul/li')
+           sel = Selector(response)
+           sites = sel.xpath('//ul/li')
            for site in sites:
                title = site.xpath('a/text()').extract()
                link = site.xpath('a/@href').extract()
@@ -398,8 +398,8 @@ scraped so far, the final code for our Spider would be like this::
       ]
        
       def parse(self, response):
-          ss = Selector(response)
-          sites = ss.xpath('//ul/li')
+          sel = Selector(response)
+          sites = sel.xpath('//ul/li')
           items = []
           for site in sites:
               item = DmozItem()

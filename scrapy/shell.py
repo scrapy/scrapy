@@ -17,7 +17,7 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
 from scrapy.utils.console import start_python_console
 from scrapy.settings import Settings
-from scrapy.http import Request, Response, HtmlResponse, XmlResponse
+from scrapy.http import Request, Response
 from scrapy.exceptions import IgnoreRequest
 
 
@@ -95,7 +95,7 @@ class Shell(object):
         self.vars['spider'] = spider
         self.vars['request'] = request
         self.vars['response'] = response
-        self.vars['ss'] = Selector(response)
+        self.vars['sel'] = Selector(response)
         if self.inthread:
             self.vars['fetch'] = self.fetch
         self.vars['view'] = open_in_browser
