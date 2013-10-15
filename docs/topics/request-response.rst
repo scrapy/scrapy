@@ -33,6 +33,15 @@ Request objects
     :param url: the URL of this request
     :type url: string
 
+    :param callback: the function that will be called with the response of this
+       request (once its downloaded) as its first parameter. For more information
+       see :ref:`topics-request-response-ref-request-callback-arguments` below.
+       If a Request doesn't specify a callback, the spider's
+       :meth:`~scrapy.spider.BaseSpider.parse` method will be used.
+       Note that if exceptions are raised during processing, errback is called instead.
+
+    :type callback: callable
+
     :param method: the HTTP method of this request. Defaults to ``'GET'``.
     :type method: string
 
@@ -100,13 +109,6 @@ Request objects
        request multiple times, to ignore the duplicates filter. Use it with
        care, or you will get into crawling loops. Default to ``False``.
     :type dont_filter: boolean
-
-    :param callback: the function that will be called with the response of this
-       request (once its downloaded) as its first parameter. For more information
-       see :ref:`topics-request-response-ref-request-callback-arguments` below.
-       If a Request doesn't specify a callback, the spider's
-       :meth:`~scrapy.spider.BaseSpider.parse` method will be used.
-    :type callback: callable
 
     :param errback: a function that will be called if any exception was
        raised while processing the request. This includes pages that failed
