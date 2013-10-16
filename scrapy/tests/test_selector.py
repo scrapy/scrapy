@@ -59,23 +59,23 @@ class SelectorTestCase(unittest.TestCase):
         """Test that XML and HTML Selector's behave differently"""
         # some text which is parsed differently by XML and HTML flavors
         text = '<div><img src="a.jpg"><p>Hello</div>'
-        hs = self.sscls(text=text, contenttype='html')
+        hs = self.sscls(text=text, type='html')
         self.assertEqual(hs.xpath("//div").extract(),
                          [u'<div><img src="a.jpg"><p>Hello</p></div>'])
 
-        xs = self.sscls(text=text, contenttype='xml')
+        xs = self.sscls(text=text, type='xml')
         self.assertEqual(xs.xpath("//div").extract(),
                          [u'<div><img src="a.jpg"><p>Hello</p></img></div>'])
 
     def test_flavor_detection(self):
         text = '<div><img src="a.jpg"><p>Hello</div>'
         sel = self.sscls(XmlResponse('http://example.com', body=text))
-        self.assertEqual(sel.contenttype, 'xml')
+        self.assertEqual(sel.type, 'xml')
         self.assertEqual(sel.xpath("//div").extract(),
                          [u'<div><img src="a.jpg"><p>Hello</p></img></div>'])
 
         sel = self.sscls(HtmlResponse('http://example.com', body=text))
-        self.assertEqual(sel.contenttype, 'html')
+        self.assertEqual(sel.type, 'html')
         self.assertEqual(sel.xpath("//div").extract(),
                          [u'<div><img src="a.jpg"><p>Hello</p></div>'])
 
@@ -183,7 +183,7 @@ class SelectorTestCase(unittest.TestCase):
     def test_selector_over_text(self):
         hs = self.sscls(text='<root>lala</root>')
         self.assertEqual(hs.extract(), u'<html><body><root>lala</root></body></html>')
-        xs = self.sscls(text='<root>lala</root>', contenttype='xml')
+        xs = self.sscls(text='<root>lala</root>', type='xml')
         self.assertEqual(xs.extract(), u'<root>lala</root>')
         self.assertEqual(xs.xpath('.').extract(), [u'<root>lala</root>'])
 

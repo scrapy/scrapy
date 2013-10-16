@@ -71,11 +71,11 @@ class XMLFeedSpider(BaseSpider):
         if self.iterator == 'iternodes':
             nodes = self._iternodes(response)
         elif self.iterator == 'xml':
-            selector = Selector(response, contenttype='xml')
+            selector = Selector(response, type='xml')
             self._register_namespaces(selector)
             nodes = selector.xpath('//%s' % self.itertag)
         elif self.iterator == 'html':
-            selector = Selector(response, contenttype='html')
+            selector = Selector(response, type='html')
             self._register_namespaces(selector)
             nodes = selector.xpath('//%s' % self.itertag)
         else:

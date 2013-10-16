@@ -249,18 +249,34 @@ Built-in Selectors reference
 .. module:: scrapy.selector
    :synopsis: Selector class
 
-.. class:: Selector(response, contenttype=None)
+.. class:: Selector(response=None, text=None, type=None)
 
-  An instance of :class:`Selector` is a wrapper over ``response`` to select
+  An instance of :class:`Selector` is a wrapper over response to select
   certain parts of its content.
 
   ``response`` is a :class:`~scrapy.http.HtmlResponse` or
   :class:`~scrapy.http.XmlResponse` object that will be used for selecting and
   extracting data.
 
-  ``contenttype`` tells what parser and selection flavor is used to parse the
-  response body. It defaults to ``"html"`` for :class:`~scrapy.http.HtmlResponse`
-  and ``"xml"`` for :class:`~scrapy.http.XmlResponse`.
+  ``text`` is a unicode string or utf-8 encoded text for cases when a
+  ``response`` isn't available. Using ``text`` and ``response`` together is
+  undefined behavior.
+
+  ``type`` defines the selector type, it can be ``"html"``, ``"xml"`` or ``None`` (default).
+
+    If ``type`` is ``None``, the selector automatically chooses the best type
+    based on ``response`` type (see below), or defaults to ``"html"`` in case it
+    is used together with ``text``.
+
+    If ``type`` is ``None`` and a ``response`` is passed, the selector type is
+    inferred from the response type as follow:
+
+        * ``"html"`` for :class:`~scrapy.http.HtmlResponse` type
+        * ``"xml"`` for :class:`~scrapy.http.XmlResponse` type
+        * ``"html"`` for anything else
+
+   Otherwise, if ``type`` is set, the selector type will be forced and no
+   detection will occur.
 
   .. method:: xpath(query)
 

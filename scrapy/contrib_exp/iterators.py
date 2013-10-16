@@ -11,7 +11,7 @@ def xmliter_lxml(obj, nodename, namespace=None):
     for _, node in iterable:
         nodetext = etree.tostring(node)
         node.clear()
-        xs = Selector(text=nodetext, contenttype='xml')
+        xs = Selector(text=nodetext, type='xml')
         if namespace:
             xs.register_namespace('x', namespace)
         yield xs.xpath(selxpath)[0]

@@ -10,7 +10,7 @@ __all__ = ['HtmlXPathSelector', 'XmlXPathSelector', 'XPathSelector',
 
 class XPathSelector(Selector):
     __slots__ = ()
-    default_contenttype = 'html'
+    _default_type = 'html'
 
     def __init__(self, *a, **kw):
         import warnings
@@ -28,12 +28,12 @@ class XPathSelector(Selector):
 
 class XmlXPathSelector(XPathSelector):
     __slots__ = ()
-    default_contenttype = 'xml'
+    _default_type = 'xml'
 
 
 class HtmlXPathSelector(XPathSelector):
     __slots__ = ()
-    default_contenttype = 'html'
+    _default_type = 'html'
 
 
 class XPathSelectorList(SelectorList):

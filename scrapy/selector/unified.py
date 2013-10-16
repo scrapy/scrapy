@@ -25,38 +25,37 @@ _ctgroup = {
 }
 
 
-def _ct(response, ct):
-    if ct is None:
+def _st(response, st):
+    if st is None:
         return 'xml' if isinstance(response, XmlResponse) else 'html'
-    elif ct in ('xml', 'html'):
-        return ct
+    elif st in ('xml', 'html'):
+        return st
     else:
-        raise ValueError('Invalid contenttype: %s' % ct)
+        raise ValueError('Invalid type: %s' % st)
 
 
-def _response_from_text(text, ct):
-    rt = XmlResponse if ct == 'xml' else HtmlResponse
+def _response_from_text(text, st):
+    rt = XmlResponse if st == 'xml' else HtmlResponse
     return rt(url='about:blank', encoding='utf-8',
               body=unicode_to_str(text, 'utf-8'))
 
 
 class Selector(object_ref):
 
-    __slots__ = ['response', 'text', 'namespaces', 'contenttype', '_expr', '_root',
+    __slots__ = ['response', 'text', 'namespaces', 'type', '_expr', '_root',
                  '__weakref__', '_parser', '_csstranslator', '_tostring_method']
 
-    default_contenttype = None
+    _default_type = None
 
-    def __init__(self, response=None, text=None, namespaces=None, contenttype=None,
+    def __init__(self, response=None, text=None, type=None, namespaces=None,
                  _root=None, _expr=None):
-
-        self.contenttype = ct = _ct(response, contenttype or self.default_contenttype)
-        self._parser = _ctgroup[ct]['_parser']
-        self._csstranslator = _ctgroup[ct]['_csstranslator']
-        self._tostring_method = _ctgroup[ct]['_tostring_method']
+        self.type = st = _st(response, type or self._default_type)
+        self._parser = _ctgroup[st]['_parser']
+        self._csstranslator = _ctgroup[st]['_csstranslator']
+        self._tostring_method = _ctgroup[st]['_tostring_method']
 
         if text is not None:
-            response = _response_from_text(text, ct)
+            response = _response_from_text(text, st)
 
         if response is not None:
             _root = LxmlDocument(response, self._parser)
@@ -82,7 +81,7 @@ class Selector(object_ref):
 
         result = [self.__class__(_root=x, _expr=query,
                                  namespaces=self.namespaces,
-                                 contenttype=self.contenttype)
+                                 type=self.type)
                   for x in result]
         return SelectorList(result)
 
@@ -169,4 +168,3 @@ class SelectorList(list):
     @deprecated(use_instead='.xpath()')
     def select(self, xpath):
         return self.xpath(xpath)
-
