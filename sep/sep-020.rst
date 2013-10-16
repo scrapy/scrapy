@@ -91,9 +91,9 @@ This is a working code sample that covers just the basics.
             """ Pull the text label out of selected markup
 
             :param entity: Found markup
-            :type entity: HtmlXPathSelector
+            :type entity: Selector
             """
-            label = ' '.join(entity.select('.//text()').extract())
+            label = ' '.join(entity.xpath('.//text()').extract())
             label = label.encode('ascii', 'xmlcharrefreplace') if label else ''
             label = label.strip('&#160;') if '&#160;' in label else label
             label = label.strip(':') if ':' in label else label
@@ -108,7 +108,7 @@ This is a working code sample that covers just the basics.
             :return: The list of selectors
             :rtype: list
             """
-            return self.selector.select(self.base_xpath + xpath)
+            return self.selector.xpath(self.base_xpath + xpath)
 
         def parse_dl(self, xpath=u'//dl'):
             """ Look for the specified definition list pattern and store all found
@@ -120,7 +120,7 @@ This is a working code sample that covers just the basics.
             for term in self._get_entities(xpath + '/dt'):
                 label = self._get_label(term)
                 if label and label not in self.ignore:
-                    value = term.select('following-sibling::dd[1]//text()')
+                    value = term.xpath('following-sibling::dd[1]//text()')
                     if value:
                         self.add_value(label, value.extract(),
                             MapCompose(lambda v: v.strip()))

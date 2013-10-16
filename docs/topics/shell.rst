@@ -9,10 +9,10 @@ scraping code very quickly, without having to run the spider. It's meant to be
 used for testing data extraction code, but you can actually use it for testing
 any kind of code as it is also a regular Python shell.
 
-The shell is used for testing XPath expressions and see how they work and what
-data they extract from the web pages you're trying to scrape. It allows you to
-interactively test your XPaths while you're writing your spider, without having
-to run the spider to test every change.
+The shell is used for testing XPath or CSS expressions and see how they work
+and what data they extract from the web pages you're trying to scrape. It
+allows you to interactively test your expressions while you're writing your
+spider, without having to run the spider to test every change.
 
 Once you get familiarized with the Scrapy shell, you'll see that it's an
 invaluable tool for developing and debugging your spiders.
@@ -66,7 +66,7 @@ Available Scrapy objects
 
 The Scrapy shell automatically creates some convenient objects from the
 downloaded page, like the :class:`~scrapy.http.Response` object and the
-:class:`~scrapy.selector.XPathSelector` objects (for both HTML and XML
+:class:`~scrapy.selector.Selector` objects (for both HTML and XML
 content).
 
 Those objects are:
@@ -83,10 +83,7 @@ Those objects are:
  * ``response`` - a :class:`~scrapy.http.Response` object containing the last
    fetched page
 
- * ``hxs`` - a :class:`~scrapy.selector.HtmlXPathSelector` object constructed
-   with the last response fetched
-
- * ``xxs`` - a :class:`~scrapy.selector.XmlXPathSelector` object constructed
+ * ``sel`` - a :class:`~scrapy.selector.Selector` object constructed
    with the last response fetched
 
  * ``settings`` - the current :ref:`Scrapy settings <topics-settings>`
@@ -114,13 +111,12 @@ list of available objects and useful shortcuts (you'll notice that these lines
 all start with the ``[s]`` prefix)::
 
     [s] Available objects
-    [s]   hxs       <HtmlXPathSelector (http://scrapy.org) xpath=None>
+    [s]   sel       <Selector (http://scrapy.org) xpath=None>
     [s]   item      Item()
     [s]   request   <http://scrapy.org>
     [s]   response  <http://scrapy.org>
     [s]   settings  <Settings 'mybot.settings'>
     [s]   spider    <scrapy.spider.models.BaseSpider object at 0x2bed9d0>
-    [s]   xxs       <XmlXPathSelector (http://scrapy.org) xpath=None>
     [s] Useful shortcuts:
     [s]   shelp()           Prints this help.
     [s]   fetch(req_or_url) Fetch a new request or URL and update objects
@@ -130,24 +126,23 @@ all start with the ``[s]`` prefix)::
 
 After that, we can star playing with the objects::
 
-    >>> hxs.select("//h2/text()").extract()[0]
+    >>> sel.xpath("//h2/text()").extract()[0]
     u'Welcome to Scrapy'
 
     >>> fetch("http://slashdot.org")
     [s] Available Scrapy objects:
-    [s]   hxs        <HtmlXPathSelector (http://slashdot.org) xpath=None>
+    [s]   sel        <Selector (http://slashdot.org) xpath=None>
     [s]   item       JobItem()
     [s]   request    <GET http://slashdot.org>
     [s]   response   <200 http://slashdot.org>
     [s]   settings   <Settings 'jobsbot.settings'>
     [s]   spider     <BaseSpider 'default' at 0x3c44a10>
-    [s]   xxs        <XmlXPathSelector (http://slashdot.org) xpath=None>
     [s] Useful shortcuts:
     [s]   shelp()           Shell help (print this help)
     [s]   fetch(req_or_url) Fetch request (or URL) and update local objects
     [s]   view(response)    View response in a browser
 
-    >>> hxs.select("//h2/text()").extract()
+    >>> sel.xpath("//h2/text()").extract()
     [u'News for nerds, stuff that matters']
 
     >>> request = request.replace(method="POST")
@@ -185,7 +180,7 @@ When you run the spider, you will get something similar to this::
     2009-08-27 19:15:25-0300 [example.com] DEBUG: Crawled <http://www.example.com/> (referer: <None>)
     2009-08-27 19:15:26-0300 [example.com] DEBUG: Crawled <http://www.example.com/products.php> (referer: <http://www.example.com/>)
     [s] Available objects
-    [s]   hxs       <HtmlXPathSelector (http://www.example.com/products.php) xpath=None>
+    [s]   sel       <Selector (http://www.example.com/products.php) xpath=None>
     ...
 
     >>> response.url
@@ -193,7 +188,7 @@ When you run the spider, you will get something similar to this::
 
 Then, you can check if the extraction code is working::
 
-    >>> hxs.select('//h1')
+    >>> sel.xpath('//h1')
     []
 
 Nope, it doesn't. So you can open the response in your web browser and see if

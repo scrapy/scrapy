@@ -216,7 +216,7 @@ Let's see an example::
 
 Another example returning multiples Requests and Items from a single callback::
 
-    from scrapy.selector import HtmlXPathSelector
+    from scrapy.selector import Selector
     from scrapy.spider import BaseSpider
     from scrapy.http import Request
     from myproject.items import MyItem
@@ -231,11 +231,11 @@ Another example returning multiples Requests and Items from a single callback::
         ]
 
         def parse(self, response):
-            hxs = HtmlXPathSelector(response)
-            for h3 in hxs.select('//h3').extract():
+            sel = Selector(response)
+            for h3 in sel.xpath('//h3').extract():
                 yield MyItem(title=h3)
 
-            for url in hxs.select('//a/@href').extract():
+            for url in sel.xpath('//a/@href').extract():
                 yield Request(url, callback=self.parse)
 
 .. module:: scrapy.contrib.spiders
@@ -314,7 +314,7 @@ Let's now take a look at an example CrawlSpider with rules::
 
     from scrapy.contrib.spiders import CrawlSpider, Rule
     from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
-    from scrapy.selector import HtmlXPathSelector
+    from scrapy.selector import Selector
     from scrapy.item import Item
 
     class MySpider(CrawlSpider):
@@ -334,11 +334,11 @@ Let's now take a look at an example CrawlSpider with rules::
         def parse_item(self, response):
             self.log('Hi, this is an item page! %s' % response.url)
 
-            hxs = HtmlXPathSelector(response)
+            sel = Selector(response)
             item = Item()
-            item['id'] = hxs.select('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
-            item['name'] = hxs.select('//td[@id="item_name"]/text()').extract()
-            item['description'] = hxs.select('//td[@id="item_description"]/text()').extract()
+            item['id'] = sel.xpath('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
+            item['name'] = sel.xpath('//td[@id="item_name"]/text()').extract()
+            item['description'] = sel.xpath('//td[@id="item_description"]/text()').extract()
             return item
 
 
@@ -366,15 +366,15 @@ XMLFeedSpider
 
         A string which defines the iterator to use. It can be either:
 
-           - ``'iternodes'`` - a fast iterator based on regular expressions 
+           - ``'iternodes'`` - a fast iterator based on regular expressions
 
-           - ``'html'`` - an iterator which uses HtmlXPathSelector. Keep in mind
-             this uses DOM parsing and must load all DOM in memory which could be a
-             problem for big feeds
+           - ``'html'`` - an iterator which uses :class:`~scrapy.selector.Selector`.
+             Keep in mind this uses DOM parsing and must load all DOM in memory
+             which could be a problem for big feeds
 
-           - ``'xml'`` - an iterator which uses XmlXPathSelector. Keep in mind
-             this uses DOM parsing and must load all DOM in memory which could be a
-             problem for big feeds
+           - ``'xml'`` - an iterator which uses :class:`~scrapy.selector.Selector`.
+             Keep in mind this uses DOM parsing and must load all DOM in memory
+             which could be a problem for big feeds
 
         It defaults to: ``'iternodes'``.
 
@@ -390,7 +390,7 @@ XMLFeedSpider
         available in that document that will be processed with this spider. The
         ``prefix`` and ``uri`` will be used to automatically register
         namespaces using the
-        :meth:`~scrapy.selector.XPathSelector.register_namespace` method.
+        :meth:`~scrapy.selector.Selector.register_namespace` method.
 
         You can then specify nodes with namespaces in the :attr:`itertag`
         attribute.
@@ -416,9 +416,10 @@ XMLFeedSpider
     .. method:: parse_node(response, selector)
        
         This method is called for the nodes matching the provided tag name
-        (``itertag``).  Receives the response and an XPathSelector for each node.
-        Overriding this method is mandatory. Otherwise, you spider won't work.
-        This method must return either a :class:`~scrapy.item.Item` object, a
+        (``itertag``).  Receives the response and an
+        :class:`~scrapy.selector.Selector` for each node.  Overriding this
+        method is mandatory. Otherwise, you spider won't work.  This method
+        must return either a :class:`~scrapy.item.Item` object, a
         :class:`~scrapy.http.Request` object, or an iterable containing any of
         them.
 
@@ -451,9 +452,9 @@ These spiders are pretty easy to use, let's have a look at one example::
             log.msg('Hi, this is a <%s> node!: %s' % (self.itertag, ''.join(node.extract())))
 
             item = Item()
-            item['id'] = node.select('@id').extract()
-            item['name'] = node.select('name').extract()
-            item['description'] = node.select('description').extract()
+            item['id'] = node.xpath('@id').extract()
+            item['name'] = node.xpath('name').extract()
+            item['description'] = node.xpath('description').extract()
             return item
 
 Basically what we did up there was to create a spider that downloads a feed from

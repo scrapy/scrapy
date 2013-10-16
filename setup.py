@@ -122,6 +122,6 @@ try:
 except ImportError:
     from distutils.core import setup
 else:
-    setup_args['install_requires'] = ['Twisted>=10.0.0', 'w3lib>=1.2', 'queuelib', 'lxml', 'pyOpenSSL']
+    setup_args['install_requires'] = ['Twisted>=10.0.0', 'w3lib>=1.2', 'queuelib', 'lxml', 'pyOpenSSL', 'cssselect>0.8']
 
 setup(**setup_args)

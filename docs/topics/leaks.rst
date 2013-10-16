@@ -67,7 +67,7 @@ alias to the :func:`~scrapy.utils.trackref.print_live_refs` function::
 
     ExampleSpider                       1   oldest: 15s ago
     HtmlResponse                       10   oldest: 1s ago
-    XPathSelector                       2   oldest: 0s ago
+    Selector                            2   oldest: 0s ago
     FormRequest                       878   oldest: 7s ago
 
 As you can see, that report also shows the "age" of the oldest object in each
@@ -87,9 +87,8 @@ subclasses):
 * ``scrapy.http.Request``
 * ``scrapy.http.Response``
 * ``scrapy.item.Item``
-* ``scrapy.selector.XPathSelector``
+* ``scrapy.selector.Selector``
 * ``scrapy.spider.BaseSpider``
-* ``scrapy.selector.document.Libxml2Document``
 
 A real example
 --------------
@@ -117,7 +116,7 @@ references::
 
     SomenastySpider                     1   oldest: 15s ago
     HtmlResponse                     3890   oldest: 265s ago
-    XPathSelector                       2   oldest: 0s ago
+    Selector                            2   oldest: 0s ago
     Request                          3878   oldest: 250s ago
 
 The fact that there are so many live responses (and that they're so old) is

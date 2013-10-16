@@ -9,7 +9,7 @@ from scrapy.item import BaseItem
 from scrapy.http import Request
 from scrapy.utils.iterators import xmliter, csviter
 from scrapy.utils.spider import iterate_spider_output
-from scrapy.selector import XmlXPathSelector, HtmlXPathSelector
+from scrapy.selector import Selector
 from scrapy.exceptions import NotConfigured, NotSupported
 
 
@@ -52,7 +52,7 @@ class XMLFeedSpider(BaseSpider):
 
     def parse_nodes(self, response, nodes):
         """This method is called for the nodes matching the provided tag name
-        (itertag). Receives the response and an XPathSelector for each node.
+        (itertag). Receives the response and an Selector for each node.
         Overriding this method is mandatory. Otherwise, you spider won't work.
         This method must return either a BaseItem, a Request, or a list
         containing any of them.
@@ -71,13 +71,13 @@ class XMLFeedSpider(BaseSpider):
         if self.iterator == 'iternodes':
             nodes = self._iternodes(response)
         elif self.iterator == 'xml':
-            selector = XmlXPathSelector(response)
+            selector = Selector(response, type='xml')
             self._register_namespaces(selector)
-            nodes = selector.select('//%s' % self.itertag)
+            nodes = selector.xpath('//%s' % self.itertag)
         elif self.iterator == 'html':
-            selector = HtmlXPathSelector(response)
+            selector = Selector(response, type='html')
             self._register_namespaces(selector)
-            nodes = selector.select('//%s' % self.itertag)
+            nodes = selector.xpath('//%s' % self.itertag)
         else:
             raise NotSupported('Unsupported node iterator')
 

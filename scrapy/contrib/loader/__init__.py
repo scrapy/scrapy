@@ -8,7 +8,7 @@ from collections import defaultdict
 import re
 
 from scrapy.item import Item
-from scrapy.selector import HtmlXPathSelector
+from scrapy.selector import Selector
 from scrapy.utils.misc import arg_to_iter, extract_regex
 from scrapy.utils.python import flatten
 from .common import wrap_loader_context
@@ -116,7 +116,7 @@ class ItemLoader(object):
 
 class XPathItemLoader(ItemLoader):
 
-    default_selector_class = HtmlXPathSelector
+    default_selector_class = Selector
 
     def __init__(self, item=None, selector=None, response=None, **context):
         if selector is None and response is None:
@@ -142,5 +142,4 @@ class XPathItemLoader(ItemLoader):
 
     def _get_values(self, xpaths, **kw):
         xpaths = arg_to_iter(xpaths)
-        return flatten([self.selector.select(xpath).extract() for xpath in xpaths])
-
+        return flatten([self.selector.xpath(xpath).extract() for xpath in xpaths])

@@ -4,7 +4,7 @@ from scrapy.contrib.loader import ItemLoader, XPathItemLoader
 from scrapy.contrib.loader.processor import Join, Identity, TakeFirst, \
     Compose, MapCompose
 from scrapy.item import Item, Field
-from scrapy.selector import HtmlXPathSelector
+from scrapy.selector import Selector
 from scrapy.http import HtmlResponse
 
 
@@ -379,7 +379,7 @@ class XPathItemLoaderTest(unittest.TestCase):
         self.assertRaises(RuntimeError, XPathItemLoader)
 
     def test_constructor_with_selector(self):
-        sel = HtmlXPathSelector(text=u"<html><body><div>marta</div></body></html>")
+        sel = Selector(text=u"<html><body><div>marta</div></body></html>")
         l = TestXPathItemLoader(selector=sel)
         self.assert_(l.selector is sel)
         l.add_xpath('name', '//div/text()')

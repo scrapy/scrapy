@@ -248,7 +248,6 @@ Memory debugger extension
 An extension for debugging memory usage. It collects information about:
 
 * objects uncollected by the Python garbage collector
-* libxml2 memory leaks
 * objects left alive that shouldn't. For more info, see :ref:`topics-leaks-trackrefs`
 
 To enable this extension, turn on the :setting:`MEMDEBUG_ENABLED` setting. The

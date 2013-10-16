@@ -31,7 +31,7 @@ using the Item class specified in the :attr:`ItemLoader.default_item_class`
 attribute.
 
 Then, you start collecting values into the Item Loader, typically using
-:ref:`XPath Selectors <topics-selectors>`. You can add more than one value to
+:ref:`Selectors <topics-selectors>`. You can add more than one value to
 the same item field; the Item Loader will know how to "join" those values later
 using a proper processing function.
 
@@ -352,14 +352,14 @@ ItemLoader objects
 
     The :class:`XPathItemLoader` class extends the :class:`ItemLoader` class
     providing more convenient mechanisms for extracting data from web pages
-    using :ref:`XPath selectors <topics-selectors>`.
+    using :ref:`selectors <topics-selectors>`.
 
     :class:`XPathItemLoader` objects accept two more additional parameters in
     their constructors:
 
     :param selector: The selector to extract data from, when using the
         :meth:`add_xpath` or :meth:`replace_xpath` method.
-    :type selector: :class:`~scrapy.selector.XPathSelector` object
+    :type selector: :class:`~scrapy.selector.Selector` object
 
     :param response: The response used to construct the selector using the
         :attr:`default_selector_class`, unless the selector argument is given,
@@ -418,7 +418,7 @@ ItemLoader objects
 
     .. attribute:: selector
 
-        The :class:`~scrapy.selector.XPathSelector` object to extract data from.
+        The :class:`~scrapy.selector.Selector` object to extract data from.
         It's either the selector given in the constructor or one created from
         the response given in the constructor using the
         :attr:`default_selector_class`. This attribute is meant to be
@@ -592,7 +592,7 @@ Here is a list of all built-in processors:
     work with single values (instead of iterables). For this reason the
     :class:`MapCompose` processor is typically used as input processor, since
     data is often extracted using the
-    :meth:`~scrapy.selector.XPathSelector.extract` method of :ref:`selectors
+    :meth:`~scrapy.selector.Selector.extract` method of :ref:`selectors
     <topics-selectors>`, which returns a list of unicode strings.
 
     The example below should clarify how it works::
