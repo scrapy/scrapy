@@ -370,22 +370,22 @@ Here's a couple of :class:`Selector` examples to illustrate several concepts.
 In all cases, we assume there is already an :class:`Selector` instantiated with
 a :class:`~scrapy.http.HtmlResponse` object like this::
 
-      x = Selector(html_response)
+      sel = Selector(html_response)
 
 1. Select all ``<h1>`` elements from a HTML response body, returning a list of
    :class:`Selector` objects (ie. a :class:`SelectorList` object)::
 
-      x.xpath("//h1")
+      sel.xpath("//h1")
 
 2. Extract the text of all ``<h1>`` elements from a HTML response body,
    returning a list of unicode strings::
 
-      x.xpath("//h1").extract()         # this includes the h1 tag
-      x.xpath("//h1/text()").extract()  # this excludes the h1 tag
+      sel.xpath("//h1").extract()         # this includes the h1 tag
+      sel.xpath("//h1/text()").extract()  # this excludes the h1 tag
 
 3. Iterate over all ``<p>`` tags and print their class attribute::
 
-      for node in x.xpath("//p"):
+      for node in sel.xpath("//p"):
       ...    print node.xpath("@class").extract()
 
 Selector examples on XML response
@@ -395,18 +395,18 @@ Here's a couple of examples to illustrate several concepts. In both cases we
 assume there is already an :class:`Selector` instantiated with a
 :class:`~scrapy.http.XmlResponse` object like this::
 
-      x = Selector(xml_response)
+      sel = Selector(xml_response)
 
 1. Select all ``<product>`` elements from a XML response body, returning a list
    of :class:`Selector` objects (ie. a :class:`SelectorList` object)::
 
-      x.xpath("//product")
+      sel.xpath("//product")
 
 2. Extract all prices from a `Google Base XML feed`_ which requires registering
    a namespace::
 
-      x.register_namespace("g", "http://base.google.com/ns/1.0")
-      x.xpath("//g:price").extract()
+      sel.register_namespace("g", "http://base.google.com/ns/1.0")
+      sel.xpath("//g:price").extract()
 
 .. _removing-namespaces:
 
@@ -427,14 +427,14 @@ First, we open the shell with the url we want to scrape::
 Once in the shell we can try selecting all ``<link>`` objects and see that it
 doesn't work (because the Atom XML namespace is obfuscating those nodes)::
 
-    >>> xxs.xpath("//link")
+    >>> sel.xpath("//link")
     []
 
 But once we call the :meth:`Selector.remove_namespaces` method, all
 nodes can be accessed directly by their names::
 
-    >>> xxs.remove_namespaces()
-    >>> xxs.xpath("//link")
+    >>> sel.remove_namespaces()
+    >>> sel.xpath("//link")
     [<Selector xpath='//link' data=u'<link xmlns="http://www.w3.org/2005/Atom'>,
      <Selector xpath='//link' data=u'<link xmlns="http://www.w3.org/2005/Atom'>,
      ...
