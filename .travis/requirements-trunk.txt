@@ -1,0 +1,3 @@
+-r requirements-latest.txt
+git+https://github.com/scrapy/w3lib#egg=w3lib
+git+https://github.com/scrapy/queuelib#egg=queuelib

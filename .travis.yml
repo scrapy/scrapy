@@ -11,6 +11,8 @@ matrix:
           env: BUILDENV=precise
         - python: "2.7"
           env: BUILDENV=latest
+        - python: "2.7"
+          env: BUILDENV=trunk
         - python: "pypy"
           env: BUILDENV=latest
     allow_failures:
