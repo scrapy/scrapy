@@ -1,5 +1,4 @@
 import signal
-from itertools import chain
 
 from twisted.internet import reactor, defer
 
