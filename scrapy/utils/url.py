@@ -10,7 +10,8 @@ import urlparse
 import urllib
 import cgi
 
-from w3lib.url import add_or_replace_parameter, safe_url_string
+# scrapy.utils.url was moved to w3lib.url and import * ensures this move doesn't break old code
+from w3lib.url import *
 from scrapy.utils.python import unicode_to_str
 
 
