@@ -5,10 +5,12 @@ library.
 Some of the functions that used to be imported from this module have been moved
 to the w3lib.url module. Always import those from there instead.
 """
+import posixpath
 import urlparse
 import urllib
 import cgi
 
+# scrapy.utils.url was moved to w3lib.url and import * ensures this move doesn't break old code
 from w3lib.url import *
 from scrapy.utils.python import unicode_to_str
 
