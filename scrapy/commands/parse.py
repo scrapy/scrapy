@@ -68,7 +68,7 @@ class Command(ScrapyCommand):
         else:
             items = self.items.get(lvl, [])
 
-        print "# Scraped Items ", "-"*60
+        print("# Scraped Items ", "-"*60)
         display.pprint([dict(x) for x in items], colorize=colour)
 
     def print_requests(self, lvl=None, colour=True):
@@ -81,7 +81,7 @@ class Command(ScrapyCommand):
         else:
             requests = self.requests.get(lvl, [])
 
-        print "# Requests ", "-"*65
+        print("# Requests ", "-"*65)
         display.pprint(requests, colorize=colour)
 
     def print_results(self, opts):
@@ -89,13 +89,13 @@ class Command(ScrapyCommand):
 
         if opts.verbose:
             for level in xrange(1, self.max_level+1):
-                print '\n>>> DEPTH LEVEL: %s <<<' % level
+                print('\n>>> DEPTH LEVEL: %s <<<' % level)
                 if not opts.noitems:
                     self.print_items(level, colour)
                 if not opts.nolinks:
                     self.print_requests(level, colour)
         else:
-            print '\n>>> STATUS DEPTH LEVEL %s <<<' % self.max_level
+            print('\n>>> STATUS DEPTH LEVEL %s <<<' % self.max_level)
             if not opts.noitems:
                 self.print_items(colour=colour)
             if not opts.nolinks:

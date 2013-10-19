@@ -77,7 +77,7 @@ class Scheduler(object):
         try:
             reqd = request_to_dict(request, self.spider)
             self.dqs.push(reqd, -request.priority)
-        except ValueError, e: # non serializable request
+        except ValueError as e: # non serializable request
             if self.logunser:
                 log.msg(format="Unable to serialize request: %(request)s - reason: %(reason)s",
                         level=log.ERROR, spider=self.spider,

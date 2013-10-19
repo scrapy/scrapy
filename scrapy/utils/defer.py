@@ -40,7 +40,7 @@ def mustbe_deferred(f, *args, **kw):
     # FIXME: Hack to avoid introspecting tracebacks. This to speed up
     # processing of IgnoreRequest errors which are, by far, the most common
     # exception in Scrapy - see #125
-    except IgnoreRequest, e:
+    except IgnoreRequest as e:
         return defer_fail(failure.Failure(e))
     except:
         return defer_fail(failure.Failure())

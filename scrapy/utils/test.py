@@ -13,7 +13,7 @@ def assert_aws_environ():
     """
     try:
         import boto
-    except ImportError, e:
+    except ImportError as e:
         raise SkipTest(str(e))
 
     if 'AWS_ACCESS_KEY_ID' not in os.environ:

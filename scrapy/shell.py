@@ -48,7 +48,7 @@ class Shell(object):
         else:
             self.populate_vars()
         if self.code:
-            print eval(self.code, globals(), self.vars)
+            print(eval(self.code, globals(), self.vars))
         else:
             start_python_console(self.vars)
 
@@ -116,7 +116,7 @@ class Shell(object):
         self.p("  view(response)    View response in a browser")
 
     def p(self, line=''):
-        print "[s] %s" % line
+        print("[s] %s" % line)
 
     def _is_relevant(self, value):
         return isinstance(value, self.relevant_classes)

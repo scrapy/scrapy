@@ -20,4 +20,4 @@ def pformat(obj, *args, **kwargs):
     return _colorize(pformat_(obj), kwargs.pop('colorize', True))
 
 def pprint(obj, *args, **kwargs):
-    print pformat(obj, *args, **kwargs)
+    print(pformat(obj, *args, **kwargs))

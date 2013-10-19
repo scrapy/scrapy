@@ -33,12 +33,6 @@ __author__ = "Patrick K. O'Brien <pobrien@orbtech.com>"
 __cvsid__ = "$Id: dispatcher.py,v 1.1.1.1 2006/07/07 15:59:38 mcfletch Exp $"
 __version__ = "$Revision: 1.1.1.1 $"[11:-2]
 
-try:
-	True
-except NameError:
-	True = 1==1
-	False = 1==0
-
 class _Parameter:
 	"""Used to represent default parameter values."""
 	def __repr__(self):
@@ -379,13 +373,13 @@ def _removeReceiver(receiver):
 	backKey = id(receiver)
 	try:
 		backSet = sendersBack.pop(backKey)
-	except KeyError, err:
+	except KeyError as err:
 		return False 
 	else:
 		for senderkey in backSet:
 			try:
 				signals = connections[senderkey].keys()
-			except KeyError,err:
+			except KeyError as err:
 				pass
 			else:
 				for signal in signals:
@@ -396,7 +390,7 @@ def _removeReceiver(receiver):
 					else:
 						try:
 							receivers.remove( receiver )
-						except Exception, err:
+						except Exception as err:
 							pass
 					_cleanupConnections(senderkey, signal)
 

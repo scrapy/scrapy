@@ -53,7 +53,7 @@ def jsonrpc_server_call(target, jsonrpc_request, json_decoder=None):
 
     try:
         req = json_decoder.decode(jsonrpc_request)
-    except Exception, e:
+    except Exception as e:
         return jsonrpc_error(None, jsonrpc_errors.PARSE_ERROR, 'Parse error', \
             traceback.format_exc())
 
@@ -72,7 +72,7 @@ def jsonrpc_server_call(target, jsonrpc_request, json_decoder=None):
     kw = dict([(str(k), v) for k, v in kw.items()]) # convert kw keys to str
     try:
         return jsonrpc_result(id, method(*a, **kw))
-    except Exception, e:
+    except Exception as e:
         return jsonrpc_error(id, jsonrpc_errors.INTERNAL_ERROR, str(e), \
             traceback.format_exc())
 

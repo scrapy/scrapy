@@ -18,7 +18,7 @@ class DownloadHandlers(object):
             cls = load_object(clspath)
             try:
                 dh = cls(crawler.settings)
-            except NotConfigured, ex:
+            except NotConfigured as ex:
                 self._notconfigured[scheme] = str(ex)
             else:
                 self._handlers[scheme] = dh

@@ -29,9 +29,9 @@ def get_commands():
 
 def cmd_help(args, opts):
     """help - list available commands"""
-    print "Available commands:"
+    print("Available commands:")
     for _, func in sorted(get_commands().items()):
-        print "  ", func.__doc__
+        print("  ", func.__doc__)
 
 def cmd_stop(args, opts):
     """stop <spider> - stop a running spider"""
@@ -40,29 +40,29 @@ def cmd_stop(args, opts):
 def cmd_list_running(args, opts):
     """list-running - list running spiders"""
     for x in json_get(opts, 'crawler/engine/open_spiders'):
-        print x
+        print(x)
 
 def cmd_list_available(args, opts):
     """list-available - list name of available spiders"""
     for x in jsonrpc_call(opts, 'crawler/spiders', 'list'):
-        print x
+        print(x)
 
 def cmd_list_resources(args, opts):
     """list-resources - list available web service resources"""
     for x in json_get(opts, '')['resources']:
-        print x
+        print(x)
 
 def cmd_get_spider_stats(args, opts):
     """get-spider-stats <spider> - get stats of a running spider"""
     stats = jsonrpc_call(opts, 'stats', 'get_stats', args[0])
     for name, value in stats.items():
-        print "%-40s %s" % (name, value)
+        print("%-40s %s" % (name, value))
 
 def cmd_get_global_stats(args, opts):
     """get-global-stats - get global stats"""
     stats = jsonrpc_call(opts, 'stats', 'get_stats')
     for name, value in stats.items():
-        print "%-40s %s" % (name, value)
+        print("%-40s %s" % (name, value))
 
 def get_wsurl(opts, path):
     return urljoin("http://%s:%s/"% (opts.host, opts.port), path)
@@ -101,12 +101,12 @@ def main():
     try:
         cmd(args, opts)
     except IndexError:
-        print cmd.__doc__
-    except JsonRpcError, e:
-        print str(e)
+        print(cmd.__doc__)
+    except JsonRpcError as e:
+        print(str(e))
         if e.data:
-            print "Server Traceback below:"
-            print e.data
+            print("Server Traceback below:")
+            print(e.data)
 
 
 if __name__ == '__main__':

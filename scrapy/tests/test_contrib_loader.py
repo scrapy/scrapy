@@ -227,13 +227,13 @@ class ItemLoaderTest(unittest.TestCase):
         il.add_value('name', [u'$10'])
         try:
             float('$10')
-        except Exception, e:
+        except Exception as e:
             expected_exc_str = str(e)
 
         exc = None
         try:
             il.load_item()
-        except Exception, e:
+        except Exception as e:
             exc = e
         assert isinstance(exc, ValueError)
         s = str(exc)

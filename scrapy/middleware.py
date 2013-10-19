@@ -34,7 +34,7 @@ class MiddlewareManager(object):
                 else:
                     mw = mwcls()
                 middlewares.append(mw)
-            except NotConfigured, e:
+            except NotConfigured as e:
                 if e.args:
                     clsname = clspath.split('.')[-1]
                     log.msg(format="Disabled %(clsname)s: %(eargs)s",

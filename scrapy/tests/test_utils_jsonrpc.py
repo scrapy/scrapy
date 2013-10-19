@@ -59,7 +59,7 @@ class JsonRpcUtilsTestCase(unittest.TestCase):
         raised = False
         try:
             jsonrpc_client_call('url', 'test', _urllib=ul)
-        except JsonRpcError, e:
+        except JsonRpcError as e:
             raised = True
             self.assertEqual(e.code, 123)
             self.assertEqual(e.message, 'hello')

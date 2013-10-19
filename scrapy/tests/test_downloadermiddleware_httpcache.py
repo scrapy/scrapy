@@ -242,9 +242,9 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 assert isinstance(result, Response)
                 return result
         except Exception:
-            print 'Request', request
-            print 'Response', response
-            print 'Result', result
+            print('Request', request)
+            print('Response', response)
+            print('Result', result)
             raise
 
     def test_request_cacheability(self):

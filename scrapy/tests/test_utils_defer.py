@@ -53,7 +53,7 @@ class DeferUtilsTest(unittest.TestCase):
         gotexc = False
         try:
             yield process_chain([cb1, cb_fail, cb3], 'res', 'v1', 'v2')
-        except TypeError, e:
+        except TypeError as e:
             gotexc = True
         self.failUnless(gotexc)
 

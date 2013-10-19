@@ -392,7 +392,7 @@ class HTTPClientParser(HTTPParser):
             proto, strnumber = strversion.split('/')
             major, minor = strnumber.split('.')
             major, minor = int(major), int(minor)
-        except ValueError, e:
+        except ValueError as e:
             raise BadResponseVersion(str(e), strversion)
         if major < 0 or minor < 0:
             raise BadResponseVersion("version may not be negative", strversion)

@@ -27,14 +27,14 @@ def get_engine_status(engine):
     for test in global_tests:
         try:
             status['global'] += [(test, eval(test))]
-        except Exception, e:
+        except Exception as e:
             status['global'] += [(test, "%s (exception)" % type(e).__name__)]
     for spider in engine.slots.keys():
         x = []
         for test in spider_tests:
             try:
                 x += [(test, eval(test))]
-            except Exception, e:
+            except Exception as e:
                 x += [(test, "%s (exception)" % type(e).__name__)]
             status['spiders'][spider] = x
     return status
@@ -52,5 +52,5 @@ def format_engine_status(engine=None):
     return s
 
 def print_engine_status(engine):
-    print format_engine_status(engine)
+    print(format_engine_status(engine))
 

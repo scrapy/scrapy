@@ -72,7 +72,7 @@ class Command(ScrapyCommand):
 
         if opts.list_targets:
             for name, target in _get_targets().items():
-                print "%-20s %s" % (name, target['url'])
+                print("%-20s %s" % (name, target['url']))
             return
 
         if opts.list_projects:
@@ -81,7 +81,7 @@ class Command(ScrapyCommand):
             _add_auth_header(req, target)
             f = urllib2.urlopen(req)
             projects = json.loads(f.read())['projects']
-            print os.linesep.join(projects)
+            print(os.linesep.join(projects))
             return
 
         tmpdir = None
@@ -208,12 +208,12 @@ def _http_post(request):
     try:
         f = urllib2.urlopen(request)
         _log("Server response (%s):" % f.code)
-        print f.read()
+        print(f.read())
         return True
-    except urllib2.HTTPError, e:
+    except urllib2.HTTPError as e:
         _log("Deploy failed (%s):" % e.code)
-        print e.read()
-    except urllib2.URLError, e:
+        print(e.read())
+    except urllib2.URLError as e:
         _log("Deploy failed: %s" % e)
 
 def _build_egg():

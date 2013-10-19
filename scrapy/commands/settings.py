@@ -27,12 +27,12 @@ class Command(ScrapyCommand):
     def run(self, args, opts):
         settings = self.crawler_process.settings
         if opts.get:
-            print settings.get(opts.get)
+            print(settings.get(opts.get))
         elif opts.getbool:
-            print settings.getbool(opts.getbool)
+            print(settings.getbool(opts.getbool))
         elif opts.getint:
-            print settings.getint(opts.getint)
+            print(settings.getint(opts.getint))
         elif opts.getfloat:
-            print settings.getfloat(opts.getfloat)
+            print(settings.getfloat(opts.getfloat))
         elif opts.getlist:
-            print settings.getlist(opts.getlist)
+            print(settings.getlist(opts.getlist))

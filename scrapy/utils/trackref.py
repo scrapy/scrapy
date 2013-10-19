@@ -42,7 +42,7 @@ def format_live_refs(ignore=NoneType):
     return s
 
 def print_live_refs(*a, **kw):
-    print format_live_refs(*a, **kw)
+    print(format_live_refs(*a, **kw))
 
 def get_oldest(class_name):
     for cls, wdict in live_refs.iteritems():

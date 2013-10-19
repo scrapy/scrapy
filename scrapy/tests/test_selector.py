@@ -193,7 +193,7 @@ class SelectorTestCase(unittest.TestCase):
         xpath = "//test[@foo='bar]"
         try:
             x.xpath(xpath)
-        except ValueError, e:
+        except ValueError as e:
             assert xpath in str(e), "Exception message does not contain invalid xpath"
         except Exception:
             raise AssertionError("A invalid XPath does not raise ValueError")

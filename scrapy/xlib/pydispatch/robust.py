@@ -50,7 +50,7 @@ def sendRobust(
 				*arguments,
 				**named
 			)
-		except Exception, err:
+		except Exception as err:
 			responses.append((receiver, err))
 		else:
 			responses.append((receiver, response))

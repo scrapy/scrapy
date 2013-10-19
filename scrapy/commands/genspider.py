@@ -49,7 +49,7 @@ class Command(ScrapyCommand):
         if opts.dump:
             template_file = self._find_template(opts.dump)
             if template_file:
-                print open(template_file, 'r').read()
+                print(open(template_file, 'r').read())
             return
         if len(args) != 2:
             raise UsageError()
@@ -58,7 +58,7 @@ class Command(ScrapyCommand):
         module = sanitize_module_name(name)
 
         if self.settings.get('BOT_NAME') == module:
-            print "Cannot create a spider with the same name as your project"
+            print("Cannot create a spider with the same name as your project")
             return
 
         try:
@@ -69,8 +69,8 @@ class Command(ScrapyCommand):
         else:
             # if spider already exists and not --force then halt
             if not opts.force:
-                print "Spider %r already exists in module:" % name
-                print "  %s" % spider.__module__
+                print("Spider %r already exists in module:" % name)
+                print("  %s" % spider.__module__)
                 return
         template_file = self._find_template(opts.template)
         if template_file:
@@ -94,22 +94,22 @@ class Command(ScrapyCommand):
         spider_file = "%s.py" % join(spiders_dir, module)
         shutil.copyfile(template_file, spider_file)
         render_templatefile(spider_file, **tvars)
-        print "Created spider %r using template %r in module:" % (name, \
-            template_name)
-        print "  %s.%s" % (spiders_module.__name__, module)
+        print("Created spider %r using template %r in module:" % (name, \
+            template_name))
+        print("  %s.%s" % (spiders_module.__name__, module))
 
     def _find_template(self, template):
         template_file = join(self.templates_dir, '%s.tmpl' % template)
         if exists(template_file):
             return template_file
-        print "Unable to find template: %s\n" % template
-        print 'Use "scrapy genspider --list" to see all available templates.'
+        print("Unable to find template: %s\n" % template)
+        print('Use "scrapy genspider --list" to see all available templates.')
 
     def _list_templates(self):
-        print "Available templates:"
+        print("Available templates:")
         for filename in sorted(os.listdir(self.templates_dir)):
             if filename.endswith('.tmpl'):
-                print "  %s" % splitext(filename)[0]
+                print("  %s" % splitext(filename)[0])
 
     @property
     def templates_dir(self):
