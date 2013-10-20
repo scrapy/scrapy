@@ -56,7 +56,7 @@ Settings attribute.
 
 Example::
 
-    scrapy crawl domain.com -s LOG_FILE=scrapy.log
+    scrapy crawl myspider -s LOG_FILE=scrapy.log
 
 2. Project settings module
 --------------------------
