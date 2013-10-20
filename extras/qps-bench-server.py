@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 from time import time
 from collections import deque
 from twisted.web.server import Site, NOT_DONE_YET

@@ -11,6 +11,7 @@ command).
 
 """
 
+from __future__ import print_function
 import sys, optparse, urllib, json
 from urlparse import urljoin
 

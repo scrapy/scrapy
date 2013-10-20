@@ -3,6 +3,7 @@ Scrapy Shell
 
 See documentation in docs/topics/shell.rst
 """
+from __future__ import print_function
 import signal
 
 from twisted.internet import reactor, threads, defer

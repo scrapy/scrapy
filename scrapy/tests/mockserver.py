@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys, time, random, urllib, os
 from subprocess import Popen, PIPE
 from twisted.web.server import Site, NOT_DONE_YET

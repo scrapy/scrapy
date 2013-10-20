@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.job import job_dir

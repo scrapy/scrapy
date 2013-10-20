@@ -1,5 +1,6 @@
 """Some debugging functions for working with the Scrapy engine"""
 
+from __future__ import print_function
 from time import time # used in global tests code
 
 def get_engine_status(engine):

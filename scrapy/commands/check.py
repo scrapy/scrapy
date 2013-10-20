@@ -1,3 +1,4 @@
+from __future__ import print_function
 from collections import defaultdict
 from functools import wraps
 from unittest import TextTestRunner

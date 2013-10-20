@@ -1,3 +1,4 @@
+from __future__ import print_function
 from w3lib.url import is_url
 from scrapy.command import ScrapyCommand
 from scrapy.http import Request

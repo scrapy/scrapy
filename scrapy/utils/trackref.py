@@ -9,6 +9,7 @@ and no performance penalty at all when disabled (as object_ref becomes just an
 alias to object in that case).
 """
 
+from __future__ import print_function
 import weakref, os
 from collections import defaultdict
 from time import time
