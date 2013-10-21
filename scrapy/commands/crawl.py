@@ -10,7 +10,7 @@ class Command(ScrapyCommand):
         return "[options] <spider>"
 
     def short_desc(self):
-        return "Start crawling from a spider"
+        return "Run a spider"
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)

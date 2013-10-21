@@ -55,7 +55,7 @@ some usage help and the available commands::
       scrapy <command> [options] [args]
 
     Available commands:
-      crawl         Start crawling a spider or URL
+      crawl         Run a spider
       fetch         Fetch a URL using the Scrapy downloader
     [...]
 
