@@ -63,6 +63,7 @@ class StartprojectTest(ProjectTest):
 
         self.assertEqual(1, self.call('startproject', self.project_name))
         self.assertEqual(1, self.call('startproject', 'wrong---project---name'))
+        self.assertEqual(1, self.call('startproject', 'sys'))
 
 
 class CommandTest(ProjectTest):
