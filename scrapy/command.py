@@ -1,7 +1,6 @@
 """
 Base class for Scrapy commands
 """
-
 import os
 import warnings
 from optparse import OptionGroup
@@ -9,6 +8,7 @@ from twisted.python import failure
 
 from scrapy.utils.conf import arglist_to_dict
 from scrapy.exceptions import UsageError, ScrapyDeprecationWarning
+
 
 class ScrapyCommand(object):
 
@@ -21,7 +21,7 @@ class ScrapyCommand(object):
     exitcode = 0
 
     def __init__(self):
-        self.settings = None # set in scrapy.cmdline
+        self.settings = None  # set in scrapy.cmdline
 
     def set_crawler(self, crawler):
         assert not hasattr(self, '_crawler'), "crawler already set"
@@ -38,12 +38,14 @@ class ScrapyCommand(object):
 
             old_start = crawler.start
             self.crawler_process.started = False
+
             def wrapped_start():
                 if self.crawler_process.started:
                     old_start()
                 else:
                     self.crawler_process.started = True
                     self.crawler_process.start()
+
             crawler.start = wrapped_start
 
             self.set_crawler(crawler)
@@ -81,22 +83,22 @@ class ScrapyCommand(object):
         Populate option parse with options available for this command
         """
         group = OptionGroup(parser, "Global Options")
-        group.add_option("--logfile", metavar="FILE", \
+        group.add_option("--logfile", metavar="FILE",
             help="log file. if omitted stderr will be used")
-        group.add_option("-L", "--loglevel", metavar="LEVEL", \
-            default=None, \
+        group.add_option("-L", "--loglevel", metavar="LEVEL", default=None,
             help="log level (default: %s)" % self.settings['LOG_LEVEL'])
-        group.add_option("--nolog", action="store_true", \
+        group.add_option("--nolog", action="store_true",
             help="disable logging completely")
-        group.add_option("--profile", metavar="FILE", default=None, \
+        group.add_option("--profile", metavar="FILE", default=None,
             help="write python cProfile stats to FILE")
-        group.add_option("--lsprof", metavar="FILE", default=None, \
+        group.add_option("--lsprof", metavar="FILE", default=None,
             help="write lsprof profiling stats to FILE")
-        group.add_option("--pidfile", metavar="FILE", \
+        group.add_option("--pidfile", metavar="FILE",
             help="write process ID to FILE")
-        group.add_option("-s", "--set", action="append", default=[], metavar="NAME=VALUE", \
+        group.add_option("-s", "--set", action="append", default=[], metavar="NAME=VALUE",
             help="set/override setting (may be repeated)")
         group.add_option("--pdb", action="store_true", help="enable pdb on failure")
+
         parser.add_option_group(group)
 
     def process_options(self, args, opts):

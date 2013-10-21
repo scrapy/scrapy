@@ -137,7 +137,7 @@ Finally, here's the spider code::
 
     class MininovaSpider(CrawlSpider):
 
-        name = 'mininova.org'
+        name = 'mininova'
         allowed_domains = ['mininova.org']
         start_urls = ['http://www.mininova.org/today']
         rules = [Rule(SgmlLinkExtractor(allow=['/tor/\d+']), 'parse_torrent')]
@@ -160,7 +160,7 @@ Run the spider to extract the data
 Finally, we'll run the spider to crawl the site an output file
 ``scraped_data.json`` with the scraped data in JSON format::
 
-    scrapy crawl mininova.org -o scraped_data.json -t json
+    scrapy crawl mininova -o scraped_data.json -t json
 
 This uses :ref:`feed exports <topics-feed-exports>` to generate the JSON file.
 You can easily change the export format (XML or CSV, for example) or the
