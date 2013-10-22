@@ -34,7 +34,7 @@ class TelnetConsole(protocol.ServerFactory):
             raise NotConfigured
         self.crawler = crawler
         self.noisy = False
-        self.portrange = map(int, crawler.settings.getlist('TELNETCONSOLE_PORT'))
+        self.portrange = [int(x) for x in crawler.settings.getlist('TELNETCONSOLE_PORT')]
         self.host = crawler.settings['TELNETCONSOLE_HOST']
         self.crawler.signals.connect(self.start_listening, signals.engine_started)
         self.crawler.signals.connect(self.stop_listening, signals.engine_stopped)

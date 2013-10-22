@@ -63,12 +63,14 @@ class FilesPipelineTestCase(unittest.TestCase):
             mock.patch.object(FilesPipeline, 'get_media_requests',
                               return_value=[_prepare_request_object(item_url)])
         ]
-        map(lambda p: p.start(), patchers)
+        for p in patchers:
+            p.start()
 
         result = yield self.pipeline.process_item(item, None)
         self.assertEqual(result['files'][0]['checksum'], 'abc')
 
-        map(lambda p: p.stop(), patchers)
+        for p in patchers:
+            p.stop()
 
     @defer.inlineCallbacks
     def test_file_expired(self):
@@ -82,12 +84,14 @@ class FilesPipelineTestCase(unittest.TestCase):
                               return_value=[_prepare_request_object(item_url)]),
             mock.patch.object(FilesPipeline, 'inc_stats', return_value=True)
         ]
-        map(lambda p: p.start(), patchers)
+        for p in patchers:
+            p.start()
 
         result = yield self.pipeline.process_item(item, None)
         self.assertNotEqual(result['files'][0]['checksum'], 'abc')
 
-        map(lambda p: p.stop(), patchers)
+        for p in patchers:
+            p.stop()
 
 class FilesPipelineTestCaseFields(unittest.TestCase):
 

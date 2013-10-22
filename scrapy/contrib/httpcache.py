@@ -15,7 +15,7 @@ class DummyPolicy(object):
 
     def __init__(self, settings):
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
-        self.ignore_http_codes = map(int, settings.getlist('HTTPCACHE_IGNORE_HTTP_CODES'))
+        self.ignore_http_codes = [int(x) for x in settings.getlist('HTTPCACHE_IGNORE_HTTP_CODES')]
 
     def should_cache_request(self, request):
         return urlparse_cached(request).scheme not in self.ignore_schemes
