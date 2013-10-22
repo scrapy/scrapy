@@ -69,7 +69,7 @@ class WebService(server.Site):
             raise NotConfigured
         self.crawler = crawler
         logfile = crawler.settings['WEBSERVICE_LOGFILE']
-        self.portrange = map(int, crawler.settings.getlist('WEBSERVICE_PORT'))
+        self.portrange = [int(x) for x in crawler.settings.getlist('WEBSERVICE_PORT')]
         self.host = crawler.settings['WEBSERVICE_HOST']
         root = RootResource(crawler)
         reslist = build_component_list(crawler.settings['WEBSERVICE_RESOURCES_BASE'], \

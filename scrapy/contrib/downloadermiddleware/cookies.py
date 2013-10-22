@@ -81,7 +81,7 @@ class CookiesMiddleware(object):
         else:
             cookie_list = request.cookies
 
-        cookies = map(self._format_cookie, cookie_list)
+        cookies = [self._format_cookie(x) for x in cookie_list]
         headers = {'Set-Cookie': cookies}
         response = Response(request.url, headers=headers)
 
