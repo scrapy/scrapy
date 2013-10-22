@@ -20,6 +20,7 @@ from scrapy.utils.console import start_python_console
 from scrapy.settings import Settings
 from scrapy.http import Request, Response, HtmlResponse, XmlResponse
 from scrapy.exceptions import IgnoreRequest
+from scrapy import settings
 
 
 class Shell(object):
@@ -36,11 +37,11 @@ class Shell(object):
         self.code = code
         self.vars = {}
 
-    def start(self, url=None, request=None, response=None, spider=None):
+    def start(self, url=None, request=None, response=None, spider=None, post=None):
         # disable accidental Ctrl-C key press from shutting down the engine
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         if url:
-            self.fetch(url, spider)
+            self.fetch(url, spider, post)
         elif request:
             self.fetch(request, spider)
         elif response:
@@ -71,13 +72,20 @@ class Shell(object):
         self.spider = spider
         return spider
 
-    def fetch(self, request_or_url, spider=None):
+    def fetch(self, request_or_url, spider=None, post=None):
         if isinstance(request_or_url, Request):
             request = request_or_url
             url = request.url
         else:
+            header = settings.default_settings.DEFAULT_REQUEST_HEADERS
+            method_type = "Get"
             url = any_to_uri(request_or_url)
-            request = Request(url, dont_filter=True)
+            if post:
+                method_type = "Post"
+                header['Content-Type'] = "application/x-www-form-urlencoded"
+
+            request = Request(url, method=method_type, headers=header,
+                              body=post, dont_filter=True)
             request.meta['handle_httpstatus_all'] = True
         response = None
         try:

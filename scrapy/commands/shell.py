@@ -30,6 +30,7 @@ class Command(ScrapyCommand):
             help="evaluate the code in the shell, print the result and exit")
         parser.add_option("--spider", dest="spider",
             help="use this spider")
+        parser.add_option("--post", dest="post", help="make a post request")
 
     def update_vars(self, vars):
         """You can use this function to update the Scrapy objects that will be
@@ -47,7 +48,7 @@ class Command(ScrapyCommand):
         self._start_crawler_thread()
 
         shell = Shell(crawler, update_vars=self.update_vars, code=opts.code)
-        shell.start(url=url, spider=spider)
+        shell.start(url=url, spider=spider, post=opts.post)
 
     def _start_crawler_thread(self):
         t = Thread(target=self.crawler_process.start_reactor)
