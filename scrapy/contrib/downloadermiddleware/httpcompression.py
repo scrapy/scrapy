@@ -9,13 +9,17 @@ from scrapy.exceptions import NotConfigured
 class HttpCompressionMiddleware(object):
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
-    
+
     @classmethod
-    def from_crawler(cls, crawler):
-        if not crawler.settings.getbool('COMPRESSION_ENABLED'):
+    def from_settings(cls, settings):
+        if not settings.getbool('COMPRESSION_ENABLED'):
             raise NotConfigured
         return cls()
-    
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls.from_settings(crawler.settings)
+
     def process_request(self, request, spider):
         request.headers.setdefault('Accept-Encoding', 'x-gzip,gzip,deflate')
 
