@@ -93,7 +93,7 @@ def iter_errback(iterable, errback, *a, **kw):
     it = iter(iterable)
     while 1:
         try:
-            yield it.next()
+            yield next(it)
         except StopIteration:
             break
         except:

@@ -810,7 +810,7 @@ def _tokenize(description):
             current = ''
             ops = nextOps[n]
         elif n == '\\':
-            current += description.next()
+            current += next(description)
         else:
             current += n
     yield _STRING, current
