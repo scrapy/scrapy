@@ -3,3 +3,5 @@ w3lib>=1.2
 queuelib
 lxml
 pyOpenSSL
+cssselect
+mock
