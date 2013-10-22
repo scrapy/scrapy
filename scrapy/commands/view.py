@@ -15,6 +15,7 @@ class Command(fetch.Command):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--spider", dest="spider",
             help="use this spider")
+        parser.add_option("--post", dest="post", help="make a post request")
 
     def _print_response(self, response, opts):
         open_in_browser(response)
