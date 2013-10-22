@@ -108,7 +108,7 @@ class ExecutionEngine(object):
 
         if slot.start_requests and not self._needs_backout(spider):
             try:
-                request = slot.start_requests.next()
+                request = next(slot.start_requests)
             except StopIteration:
                 slot.start_requests = None
             except Exception, exc:

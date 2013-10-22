@@ -61,7 +61,7 @@ class XmliterTestCase(unittest.TestCase):
         response = XmlResponse(url='http://mydummycompany.com', body=body)
         my_iter = self.xmliter(response, 'item')
 
-        node = my_iter.next()
+        node = next(my_iter)
         node.register_namespace('g', 'http://base.google.com/ns/1.0')
         self.assertEqual(node.xpath('title/text()').extract(), ['Item 1'])
         self.assertEqual(node.xpath('description/text()').extract(), ['This is item 1'])
@@ -77,10 +77,10 @@ class XmliterTestCase(unittest.TestCase):
         body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""
 
         iter = self.xmliter(body, 'product')
-        iter.next()
-        iter.next()
+        next(iter)
+        next(iter)
 
-        self.assertRaises(StopIteration, iter.next)
+        self.assertRaises(StopIteration, next, iter)
 
     def test_xmliter_encoding(self):
         body = '<?xml version="1.0" encoding="ISO-8859-9"?>\n<xml>\n    <item>Some Turkish Characters \xd6\xc7\xde\xdd\xd0\xdc \xfc\xf0\xfd\xfe\xe7\xf6</item>\n</xml>\n\n'
@@ -122,9 +122,9 @@ class LxmlXmliterTestCase(XmliterTestCase):
         self.assertEqual(len(list(no_namespace_iter)), 0)
 
         namespace_iter = self.xmliter(response, 'image_link', 'http://base.google.com/ns/1.0')
-        node = namespace_iter.next()
+        node = next(namespace_iter)
         self.assertEqual(node.xpath('text()').extract(), ['http://www.mydummycompany.com/images/item1.jpg'])
-        node = namespace_iter.next()
+        node = next(namespace_iter)
         self.assertEqual(node.xpath('text()').extract(), ['http://www.mydummycompany.com/images/item2.jpg'])
 
 
@@ -205,12 +205,12 @@ class UtilsCsvTestCase(unittest.TestCase):
 
         response = TextResponse(url="http://example.com/", body=body)
         iter = csviter(response)
-        iter.next()
-        iter.next()
-        iter.next()
-        iter.next()
+        next(iter)
+        next(iter)
+        next(iter)
+        next(iter)
 
-        self.assertRaises(StopIteration, iter.next)
+        self.assertRaises(StopIteration, next, iter)
 
     def test_csviter_encoding(self):
         body1 = get_testdata('feeds', 'feed-sample4.csv')

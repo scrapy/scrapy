@@ -121,7 +121,7 @@ class UtilsPythonTestCase(unittest.TestCase):
     def test_weakkeycache(self):
         class _Weakme(object): pass
         _values = count()
-        wk = WeakKeyCache(lambda k: _values.next())
+        wk = WeakKeyCache(lambda k: next(_values))
         k = _Weakme()
         v = wk[k]
         self.assertEqual(v, wk[k])
