@@ -111,7 +111,7 @@ class ExecutionEngine(object):
                 request = next(slot.start_requests)
             except StopIteration:
                 slot.start_requests = None
-            except Exception, exc:
+            except Exception as exc:
                 log.err(None, 'Obtaining request from start requests', \
                         spider=spider)
             else:

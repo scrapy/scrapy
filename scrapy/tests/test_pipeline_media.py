@@ -1,3 +1,4 @@
+from __future__ import print_function
 from twisted.trial import unittest
 from twisted.python.failure import Failure
 from twisted.internet import reactor

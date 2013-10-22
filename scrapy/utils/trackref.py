@@ -9,6 +9,7 @@ and no performance penalty at all when disabled (as object_ref becomes just an
 alias to object in that case).
 """
 
+from __future__ import print_function
 import weakref, os
 from collections import defaultdict
 from time import time
@@ -42,7 +43,7 @@ def format_live_refs(ignore=NoneType):
     return s
 
 def print_live_refs(*a, **kw):
-    print format_live_refs(*a, **kw)
+    print(format_live_refs(*a, **kw))
 
 def get_oldest(class_name):
     for cls, wdict in live_refs.iteritems():

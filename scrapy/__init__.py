@@ -1,6 +1,7 @@
 """
 Scrapy - a screen scraping framework written in Python
 """
+from __future__ import print_function
 import pkgutil
 __version__ = pkgutil.get_data(__package__, 'VERSION').strip()
 version_info = tuple(__version__.split('.')[:3])
@@ -8,7 +9,7 @@ version_info = tuple(__version__.split('.')[:3])
 import sys, os, warnings
 
 if sys.version_info < (2, 6):
-    print "Scrapy %s requires Python 2.6 or above" % __version__
+    print("Scrapy %s requires Python 2.6 or above" % __version__)
     sys.exit(1)
 
 # ignore noisy twisted deprecation warnings

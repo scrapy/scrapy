@@ -81,7 +81,7 @@ class ItemLoader(object):
         proc = wrap_loader_context(proc, self.context)
         try:
             return proc(self._values[field_name])
-        except Exception, e:
+        except Exception as e:
             raise ValueError("Error with output processor: field=%r value=%r error='%s: %s'" % \
                 (field_name, self._values[field_name], type(e).__name__, str(e)))
 

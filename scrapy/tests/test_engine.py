@@ -10,6 +10,7 @@ module with the ``runserver`` argument::
     python test_engine.py runserver
 """
 
+from __future__ import print_function
 import sys, os, re, urlparse
 
 from twisted.internet import reactor, defer
@@ -65,8 +66,8 @@ def start_test_site(debug=False):
 
     port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
     if debug:
-        print "Test server running at http://localhost:%d/ - hit Ctrl-C to finish." \
-            % port.getHost().port
+        print("Test server running at http://localhost:%d/ - hit Ctrl-C to finish." \
+            % port.getHost().port)
     return port
 
 

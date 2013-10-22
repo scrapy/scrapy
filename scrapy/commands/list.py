@@ -1,3 +1,4 @@
+from __future__ import print_function
 from scrapy.command import ScrapyCommand
 
 class Command(ScrapyCommand):
@@ -11,4 +12,4 @@ class Command(ScrapyCommand):
     def run(self, args, opts):
         crawler = self.crawler_process.create_crawler()
         for s in crawler.spiders.list():
-            print s
+            print(s)

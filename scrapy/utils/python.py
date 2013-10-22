@@ -274,6 +274,6 @@ def retry_on_eintr(function, *args, **kw):
     while True:
         try:
             return function(*args, **kw)
-        except IOError, e:
+        except IOError as e:
             if e.errno != errno.EINTR:
                 raise

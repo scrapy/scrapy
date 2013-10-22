@@ -67,7 +67,7 @@ class Command(ScrapyCommand):
             raise UsageError("File not found: %s\n" % filename)
         try:
             module = _import_file(filename)
-        except (ImportError, ValueError), e:
+        except (ImportError, ValueError) as e:
             raise UsageError("Unable to load %r: %s\n" % (filename, e))
         spclasses = list(iter_spider_classes(module))
         if not spclasses:

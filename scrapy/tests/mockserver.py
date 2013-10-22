@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys, time, random, urllib, os
 from subprocess import Popen, PIPE
 from twisted.web.server import Site, NOT_DONE_YET
@@ -190,7 +191,7 @@ if __name__ == "__main__":
     def print_listening():
         httpHost = httpPort.getHost()
         httpsHost = httpsPort.getHost()
-        print "Mock server running at http://%s:%d and https://%s:%d" % (
-            httpHost.host, httpHost.port, httpsHost.host, httpsHost.port)
+        print("Mock server running at http://%s:%d and https://%s:%d" % (
+            httpHost.host, httpHost.port, httpsHost.host, httpsHost.port))
     reactor.callWhenRunning(print_listening)
     reactor.run()

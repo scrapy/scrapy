@@ -41,7 +41,7 @@ class S3DownloadHandler(object):
 
         try:
             self.conn = _S3Connection(aws_access_key_id, aws_secret_access_key)
-        except Exception, ex:
+        except Exception as ex:
             raise NotConfigured(str(ex))
         self._download_http = httpdownloadhandler(settings).download_request
 

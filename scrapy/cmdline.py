@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import optparse
 import cProfile
@@ -59,34 +60,34 @@ def _pop_command_name(argv):
 
 def _print_header(settings, inproject):
     if inproject:
-        print "Scrapy %s - project: %s\n" % (scrapy.__version__, \
-            settings['BOT_NAME'])
+        print("Scrapy %s - project: %s\n" % (scrapy.__version__, \
+            settings['BOT_NAME']))
     else:
-        print "Scrapy %s - no active project\n" % scrapy.__version__
+        print("Scrapy %s - no active project\n" % scrapy.__version__)
 
 def _print_commands(settings, inproject):
     _print_header(settings, inproject)
-    print "Usage:"
-    print "  scrapy <command> [options] [args]\n"
-    print "Available commands:"
+    print("Usage:")
+    print("  scrapy <command> [options] [args]\n")
+    print("Available commands:")
     cmds = _get_commands_dict(settings, inproject)
     for cmdname, cmdclass in sorted(cmds.iteritems()):
-        print "  %-13s %s" % (cmdname, cmdclass.short_desc())
+        print("  %-13s %s" % (cmdname, cmdclass.short_desc()))
     if not inproject:
-        print
-        print "  [ more ]      More commands available when run from project directory"
-    print
-    print 'Use "scrapy <command> -h" to see more info about a command'
+        print()
+        print("  [ more ]      More commands available when run from project directory")
+    print()
+    print('Use "scrapy <command> -h" to see more info about a command')
 
 def _print_unknown_command(settings, cmdname, inproject):
     _print_header(settings, inproject)
-    print "Unknown command: %s\n" % cmdname
-    print 'Use "scrapy" to see available commands'
+    print("Unknown command: %s\n" % cmdname)
+    print('Use "scrapy" to see available commands')
 
 def _run_print_help(parser, func, *a, **kw):
     try:
         func(*a, **kw)
-    except UsageError, e:
+    except UsageError as e:
         if str(e):
             parser.error(str(e))
         if e.print_help:

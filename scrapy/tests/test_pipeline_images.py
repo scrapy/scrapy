@@ -11,7 +11,7 @@ from scrapy.settings import Settings
 skip = False
 try:
     from PIL import Image
-except ImportError, e:
+except ImportError as e:
     skip = 'Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow'
 else:
     encoders = set(('jpeg_encoder', 'jpeg_decoder'))

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import urlparse
 
 from twisted.internet import reactor
@@ -27,5 +28,5 @@ def test_site():
 
 if __name__ == '__main__':
     port = reactor.listenTCP(0, test_site(), interface="127.0.0.1")
-    print "http://localhost:%d/" % port.getHost().port
+    print("http://localhost:%d/" % port.getHost().port)
     reactor.run()

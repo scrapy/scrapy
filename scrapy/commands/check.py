@@ -1,3 +1,4 @@
+from __future__ import print_function
 from collections import defaultdict
 from functools import wraps
 from unittest import TextTestRunner
@@ -64,9 +65,9 @@ class Command(ScrapyCommand):
         # start checks
         if opts.list:
             for spider, methods in sorted(contract_reqs.iteritems()):
-                print spider
+                print(spider)
                 for method in sorted(methods):
-                    print '  * %s' % method
+                    print('  * %s' % method)
         else:
             self.crawler_process.start()
             self.results.printErrors()

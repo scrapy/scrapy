@@ -4,7 +4,7 @@ class ScrapyUtilsTest(unittest.TestCase):
     def test_required_openssl_version(self):
         try:
             module = __import__('OpenSSL', {}, {}, [''])
-        except ImportError, ex:
+        except ImportError as ex:
             raise unittest.SkipTest("OpenSSL is not available")
 
         if hasattr(module, '__version__'):
