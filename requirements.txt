@@ -3,3 +3,4 @@ w3lib>=1.2
 queuelib
 lxml
 pyOpenSSL
+cssselect>=0.9

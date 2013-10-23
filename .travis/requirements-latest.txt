@@ -4,6 +4,7 @@ twisted
 boto
 Pillow
 django
+cssselect
 
 # testing requirements
 mock
