@@ -20,3 +20,10 @@ class FetchTest(ProcessTest, SiteTest, unittest.TestCase):
         out = out.replace('\r', '') # required on win32
         assert 'Server: TwistedWeb' in out
         assert 'Content-Type: text/plain' in out
+
+    @defer.inlineCallbacks
+    def test_post(self):
+        _, out, _ = yield self.execute([self.url('/post'), '--post', 'Name=test'])
+        out = out.replace('\r', '') # required on win32
+        expect = '<html><body>You submitted: test</body></html>'
+        self.assertEqual(out.strip(), expect)
