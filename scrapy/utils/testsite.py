@@ -2,6 +2,13 @@ import urlparse
 
 from twisted.internet import reactor
 from twisted.web import server, resource, static, util
+import cgi
+
+
+class SimplePostPage(resource.Resource):
+    def render_POST(self, request):
+        return """<html><body>You submitted: %s</body></html>""" % (cgi.escape(request.args["Name"][0]),)
+
 
 class SiteTest(object):
 
@@ -22,6 +29,7 @@ def test_site():
     r.putChild("enc-gb18030", static.Data("<p>gb18030 encoding</p>", "text/html; charset=gb18030"))
     r.putChild("redirect", util.Redirect("/redirected"))
     r.putChild("redirected", static.Data("Redirected here", "text/plain"))
+    r.putChild("post", SimplePostPage())
     return server.Site(r)
     
 
