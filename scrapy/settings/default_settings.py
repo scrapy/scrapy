@@ -15,6 +15,7 @@ Scrapy developers, if you add a setting here remember to:
 
 import os
 import sys
+from importlib import import_module
 from os.path import join, abspath, dirname
 
 BOT_NAME = 'scrapybot'
@@ -229,7 +230,7 @@ TEMPLATES_DIR = abspath(join(dirname(__file__), '..', 'templates'))
 
 URLLENGTH_LIMIT = 2083
 
-USER_AGENT = 'Scrapy/%s (+http://scrapy.org)' % __import__('scrapy').__version__
+USER_AGENT = 'Scrapy/%s (+http://scrapy.org)' % import_module('scrapy').__version__
 
 TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_PORT = [6023, 6073]
