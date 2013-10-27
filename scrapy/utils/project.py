@@ -1,7 +1,9 @@
 import os
-from os.path import join, dirname, abspath, isabs, exists
 import cPickle as pickle
 import warnings
+
+from importlib import import_module
+from os.path import join, dirname, abspath, isabs, exists
 
 from scrapy.utils.conf import closest_scrapy_cfg, get_config, init_env
 from scrapy.settings import CrawlerSettings
@@ -14,7 +16,7 @@ def inside_project():
     scrapy_module = os.environ.get('SCRAPY_SETTINGS_MODULE')
     if scrapy_module is not None:
         try:
-            __import__(scrapy_module)
+            import_module(scrapy_module)
         except ImportError as exc:
             warnings.warn("Cannot import scrapy settings module %s: %s" % (scrapy_module, exc))
         else:
@@ -53,7 +55,7 @@ def get_project_settings():
         init_env(project)
     settings_module_path = os.environ.get(ENVVAR)
     if settings_module_path:
-        settings_module = __import__(settings_module_path, {}, {}, [''])
+        settings_module = import_module(settings_module_path)
     else:
         settings_module = None
     settings = CrawlerSettings(settings_module)
