@@ -1,5 +1,6 @@
 import sys
 import os
+from importlib import import_module
 
 from scrapy.utils.spider import iter_spider_classes
 from scrapy.command import ScrapyCommand
@@ -15,7 +16,7 @@ def _import_file(filepath):
     if dirname:
         sys.path = [dirname] + sys.path
     try:
-        module = __import__(fname, {}, {}, [''])
+        module = import_module(fname)
     finally:
         if dirname:
             sys.path.pop(0)
