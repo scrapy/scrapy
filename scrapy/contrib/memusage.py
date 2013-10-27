@@ -6,6 +6,7 @@ See documentation in docs/topics/extensions.rst
 
 import socket
 from pprint import pformat
+from importlib import import_module
 
 from twisted.internet import task
 
@@ -20,7 +21,8 @@ class MemoryUsage(object):
         if not crawler.settings.getbool('MEMUSAGE_ENABLED'):
             raise NotConfigured
         try:
-            self.resource = __import__('resource')
+            # stdlib's resource module is only availabe on unix platforms.
+            self.resource = import_module('resource')
         except ImportError:
             raise NotConfigured
 
