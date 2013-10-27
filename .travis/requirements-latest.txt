@@ -1,5 +1,6 @@
 pyOpenSSL
 lxml
+cssselect
 twisted
 boto
 Pillow
