@@ -37,11 +37,11 @@ class Shell(object):
         self.code = code
         self.vars = {}
 
-    def start(self, url=None, request=None, response=None, spider=None, post=None):
+    def start(self, url=None, request=None, response=None, spider=None, post_body=None):
         # disable accidental Ctrl-C key press from shutting down the engine
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         if url:
-            self.fetch(url, spider, post)
+            self.fetch(url, spider, post_body)
         elif request:
             self.fetch(request, spider)
         elif response:
@@ -72,7 +72,7 @@ class Shell(object):
         self.spider = spider
         return spider
 
-    def fetch(self, request_or_url, spider=None, post=None):
+    def fetch(self, request_or_url, spider=None, post_body=None):
         if isinstance(request_or_url, Request):
             request = request_or_url
             url = request.url
@@ -80,12 +80,12 @@ class Shell(object):
             header = settings.default_settings.DEFAULT_REQUEST_HEADERS
             method_type = "Get"
             url = any_to_uri(request_or_url)
-            if post:
+            if post_body:
                 method_type = "Post"
                 header['Content-Type'] = "application/x-www-form-urlencoded"
 
             request = Request(url, method=method_type, headers=header,
-                              body=post, dont_filter=True)
+                              body=post_body, dont_filter=True)
             request.meta['handle_httpstatus_all'] = True
         response = None
         try:

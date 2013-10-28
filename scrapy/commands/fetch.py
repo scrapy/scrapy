@@ -49,9 +49,7 @@ class Command(ScrapyCommand):
         method_type = "Get"
         header = settings.default_settings.DEFAULT_REQUEST_HEADERS
         if opts.post:
-            #set post content Type
             header['Content-Type'] = "application/x-www-form-urlencoded"
-            #set request type
             method_type = "Post"
         request = Request(args[0], headers=header, method=method_type, 
                           body=opts.post, callback=cb, dont_filter=True)
