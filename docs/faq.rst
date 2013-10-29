@@ -29,13 +29,14 @@ comparing `jinja2`_ to `Django`_.
 What Python versions does Scrapy support?
 -----------------------------------------
 
-Scrapy runs in Python 2.6 and 2.7.
+Scrapy is supported under Python 2.7 only.
+Python 2.6 support was dropped starting at Scrapy 0.20.
 
-Does Scrapy work with Python 3.0?
+Does Scrapy work with Python 3?
 ---------------------------------
 
-No, and there are no plans to port Scrapy to Python 3.0 yet. At the moment,
-Scrapy works with Python 2.6 and 2.7.
+No, but there are plans to support Python 3.3+.
+At the moment, Scrapy works with Python 2.7.
 
 .. seealso:: :ref:`faq-python-versions`.
 

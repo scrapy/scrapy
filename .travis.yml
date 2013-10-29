@@ -5,8 +5,6 @@ matrix:
     exclude:
         - env: TRAVISBUG="#1027"
     include:
-        - python: "2.6"
-          env: BUILDENV=lucid
         - python: "2.7"
           env: BUILDENV=precise
         - python: "2.7"

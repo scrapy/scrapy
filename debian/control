@@ -2,7 +2,7 @@ Source: scrapy-SUFFIX
 Section: python
 Priority: optional
 Maintainer: Scrapinghub Team <info@scrapinghub.com>
-Build-Depends: debhelper (>= 7.0.50), python (>=2.6), python-twisted, python-w3lib, python-lxml
+Build-Depends: debhelper (>= 7.0.50), python (>=2.7), python-twisted, python-w3lib, python-lxml
 Standards-Version: 3.8.4
 Homepage: http://scrapy.org/
 
