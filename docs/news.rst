@@ -12,6 +12,7 @@ Release notes
 - Dropped libxml2 selectors backend
 - Dropped support for multiple selectors backends, sticking to lxml only
 - Selector Unified API with support for CSS expressions (:issue:`395` and :issue:`426`)
+- Dropped Python 2.6 support
 
 0.18.4 (released 2013-10-10)
 ----------------------------

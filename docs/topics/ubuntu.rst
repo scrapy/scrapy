@@ -12,8 +12,8 @@ those in Ubuntu, and more stable too since they're continuously built from
 fixes.
 
 To use the packages, just add the following line to your
-``/etc/apt/sources.list``, and then run ``aptitude update`` and ``aptitude
-install scrapy-0.13``::
+``/etc/apt/sources.list``, and then run ``aptitude update`` and
+``apt-get install scrapy-0.18``::
 
     deb http://archive.scrapy.org/ubuntu DISTRO main
 
@@ -22,8 +22,7 @@ with command::
 
     lsb_release -cs
 
-Supported Ubuntu releases are: ``karmic``, ``lucid``, ``maverick``, ``natty``,
-``oneiric``, ``precise``, ``quantal``, ``raring``.
+Supported Ubuntu releases are: ``precise``, ``quantal``, ``raring``.
 
 For Ubuntu Raring (13.04)::
 
@@ -36,26 +35,6 @@ For Ubuntu Quantal (12.10)::
 For Ubuntu Precise (12.04)::
 
     deb http://archive.scrapy.org/ubuntu precise main
-
-For Ubuntu Oneiric (11.10)::
-
-    deb http://archive.scrapy.org/ubuntu oneiric main
-
-For Ubuntu Natty (11.04)::
-
-    deb http://archive.scrapy.org/ubuntu natty main
-
-For Ubuntu Maverick (10.10)::
-
-    deb http://archive.scrapy.org/ubuntu maverick main
-
-For Ubuntu Lucid (10.04)::
-
-    deb http://archive.scrapy.org/ubuntu lucid main
-
-For Ubuntu Karmic (9.10)::
-
-    deb http://archive.scrapy.org/ubuntu karmic main
 
 .. warning:: Please note that these packages are updated frequently, and so if
    you find you can't download the packages, try updating your apt package
