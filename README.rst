@@ -21,7 +21,7 @@ http://scrapy.org
 Requirements
 ============
 
-* Python 2.6 or up
+* Python 2.7
 * Works on Linux, Windows, Mac OSX, BSD
 
 Install

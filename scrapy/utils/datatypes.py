@@ -6,8 +6,7 @@ This module must not depend on any module outside the Standard Library.
 """
 
 import copy
-
-from scrapy.utils.py27 import OrderedDict
+from collections import OrderedDict
 
 
 class MultiValueDictKeyError(KeyError):
@@ -57,7 +56,7 @@ class MultiValueDict(dict):
         return self.__class__(dict.items(self))
 
     def __deepcopy__(self, memo=None):
-        if memo is None: 
+        if memo is None:
             memo = {}
         result = self.__class__()
         memo[id(self)] = result

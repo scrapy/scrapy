@@ -63,8 +63,6 @@ class TestDefaultHeadersMiddleware(TestCase):
 
 
     def test_no_proxy(self):
-        if sys.version_info < (2, 6):
-            raise SkipTest('no_proxy is not supported in python < 2.6')
         os.environ['http_proxy'] = http_proxy = 'https://proxy.for.http:3128'
         mw = HttpProxyMiddleware()
 

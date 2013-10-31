@@ -9,7 +9,7 @@ Pre-requisites
 
 The installation steps assume that you have the following things installed:
 
-* `Python`_ 2.6 or 2.7
+* `Python`_ 2.7
 * `lxml`_. Most Linux distributions ships prepackaged versions of lxml. Otherwise refer to http://lxml.de/installation.html
 * `OpenSSL`_. This comes preinstalled in all operating systems except Windows (see :ref:`intro-install-platform-notes`)
 * `pip`_ or `easy_install`_ Python package managers
