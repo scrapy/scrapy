@@ -14,7 +14,8 @@ import weakref, os
 from collections import defaultdict
 from time import time
 from operator import itemgetter
-from types import NoneType
+
+NoneType = type(None)
 
 live_refs = defaultdict(weakref.WeakKeyDictionary)
 

@@ -4,6 +4,8 @@ Scrapy - a screen scraping framework written in Python
 from __future__ import print_function
 import pkgutil
 __version__ = pkgutil.get_data(__package__, 'VERSION').strip()
+if not isinstance(__version__, str):
+    __version__ = __version__.decode('ascii')
 version_info = tuple(__version__.split('.')[:3])
 
 import sys, os, warnings
