@@ -80,6 +80,7 @@ class CrawlerProcess(object):
         self.settings = settings
         self.crawlers = {}
         self.stopping = False
+        self._started = None
 
     def create_crawler(self, name=None):
         if name not in self.crawlers:
@@ -94,8 +95,8 @@ class CrawlerProcess(object):
     @defer.inlineCallbacks
     def stop(self):
         self.stopping = True
-        for crawler in self.crawlers.itervalues():
-            yield crawler.stop()
+        if self._active_crawler:
+            yield self._active_crawler.stop()
 
     def _signal_shutdown(self, signum, _):
         install_shutdown_handlers(self._signal_kill)
@@ -129,20 +130,20 @@ class CrawlerProcess(object):
         reactor.run(installSignalHandlers=False)  # blocking call
 
     def _start_crawler(self):
-        if self.crawlers and not self.stopping:
-            name, crawler = self.crawlers.popitem()
+        if not self.crawlers or self.stopping:
+            return
 
-            sflo = log.start_from_crawler(crawler)
-            crawler.configure()
-            crawler.install()
-            crawler.signals.connect(crawler.uninstall, signals.engine_stopped)
-            if sflo:
-                crawler.signals.connect(sflo.stop, signals.engine_stopped)
-
-            crawler.signals.connect(self._check_done, signals.engine_stopped)
-            crawler.start()
-
-            return name, crawler
+        name, crawler = self.crawlers.popitem()
+        self._active_crawler = crawler
+        sflo = log.start_from_crawler(crawler)
+        crawler.configure()
+        crawler.install()
+        crawler.signals.connect(crawler.uninstall, signals.engine_stopped)
+        if sflo:
+            crawler.signals.connect(sflo.stop, signals.engine_stopped)
+        crawler.signals.connect(self._check_done, signals.engine_stopped)
+        crawler.start()
+        return name, crawler
 
     def _check_done(self, **kwargs):
         if not self._start_crawler():
