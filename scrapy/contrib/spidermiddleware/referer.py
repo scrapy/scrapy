@@ -9,10 +9,14 @@ from scrapy.exceptions import NotConfigured
 class RefererMiddleware(object):
 
     @classmethod
-    def from_crawler(cls, crawler):
-        if not crawler.settings.getbool('REFERER_ENABLED'):
+    def from_settings(cls, settings):
+        if not settings.getbool('REFERER_ENABLED'):
             raise NotConfigured
         return cls()
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls.from_settings(crawler.settings)
 
     def process_spider_output(self, response, result, spider):
         def _set_referer(r):

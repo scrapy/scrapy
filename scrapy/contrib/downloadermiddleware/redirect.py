@@ -18,8 +18,12 @@ class BaseRedirectMiddleware(object):
         self.priority_adjust = settings.getint('REDIRECT_PRIORITY_ADJUST')
 
     @classmethod
+    def from_settings(cls, settings):
+        return cls(settings)
+
+    @classmethod
     def from_crawler(cls, crawler):
-        return cls(crawler.settings)
+        return cls.from_settings(crawler.settings)
 
     def _redirect(self, redirected, request, spider, reason):
         ttl = request.meta.setdefault('redirect_ttl', self.max_redirect_times)

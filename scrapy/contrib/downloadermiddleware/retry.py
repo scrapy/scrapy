@@ -46,8 +46,12 @@ class RetryMiddleware(object):
         self.priority_adjust = settings.getint('RETRY_PRIORITY_ADJUST')
 
     @classmethod
+    def from_settings(cls, settings):
+        return cls(settings)
+
+    @classmethod
     def from_crawler(cls, crawler):
-        return cls(crawler.settings)
+        return cls.from_settings(crawler.settings)
 
     def process_response(self, request, response, spider):
         if 'dont_retry' in request.meta:
