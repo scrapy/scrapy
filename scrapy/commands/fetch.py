@@ -46,11 +46,11 @@ class Command(ScrapyCommand):
         if len(args) != 1 or not is_url(args[0]):
             raise UsageError()
         cb = lambda x: self._print_response(x, opts)
-        method_type = "Get"
+        method_type = "GET"
         header = settings.default_settings.DEFAULT_REQUEST_HEADERS
         if opts.post:
             header['Content-Type'] = "application/x-www-form-urlencoded"
-            method_type = "Post"
+            method_type = "POST"
         request = Request(args[0], headers=header, method=method_type, 
                           body=opts.post, callback=cb, dont_filter=True)
         request.meta['handle_httpstatus_all'] = True

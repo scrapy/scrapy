@@ -78,10 +78,10 @@ class Shell(object):
             url = request.url
         else:
             header = settings.default_settings.DEFAULT_REQUEST_HEADERS
-            method_type = "Get"
+            method_type = "GET"
             url = any_to_uri(request_or_url)
             if post_body:
-                method_type = "Post"
+                method_type = "POST"
                 header['Content-Type'] = "application/x-www-form-urlencoded"
 
             request = Request(url, method=method_type, headers=header,
