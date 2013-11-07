@@ -27,6 +27,8 @@ class Command(ScrapyCommand):
         parser.add_option("--headers", dest="headers", action="store_true", \
             help="print response HTTP headers instead of body")
         parser.add_option("--post", dest="post", help="make a post request")
+        parser.add_option("--content-type", dest="content_type", \
+                  help="define Content-Type of HTTP request")
 
     def _print_headers(self, headers, prefix):
         for key, values in headers.items():
@@ -51,7 +53,9 @@ class Command(ScrapyCommand):
         request = Request(args[0], method=method_type, 
                           body=opts.post, callback=cb, dont_filter=True)
         request.meta['handle_httpstatus_all'] = True
-        if opts.post:
+        if opts.content_type:
+            request.headers['Content-Type'] = opts.content_type
+        elif opts.post:
             request.headers['Content-Type'] = "application/x-www-form-urlencoded"
 
         crawler = self.crawler_process.create_crawler()
