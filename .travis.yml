@@ -11,7 +11,7 @@ matrix:
         - env: TOX_ENV=pypy
 
 install:
-    - pip install -M tox
+    - ./.travis-install.sh
 
 script:
     - tox -e $TOX_ENV
