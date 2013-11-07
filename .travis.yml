@@ -1,20 +1,20 @@
 language: python
 python: 2.7
 env:
-    - TOX_ENV=py27
-    - TOX_ENV=precise
-    - TOX_ENV=trunk
-    - TOX_ENV=pypy
+    - TOXENV=py27
+    - TOXENV=precise
+    - TOXENV=trunk
+    - TOXENV=pypy
 
 matrix:
     allow_failures:
-        - env: TOX_ENV=pypy
+        - env: TOXENV=pypy
 
 install:
-    - ./.travis-install.sh
+    - ./.travis-workarounds.sh
+    - pip install -M tox
 
-script:
-    - tox -e $TOX_ENV
+script: tox
 
 notifications:
     irc:
