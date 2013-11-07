@@ -2,6 +2,8 @@
 
 import re
 import hashlib
+
+from importlib import import_module
 from pkgutil import iter_modules
 
 from w3lib.html import remove_entities
@@ -35,7 +37,7 @@ def load_object(path):
 
     module, name = path[:dot], path[dot+1:]
     try:
-        mod = __import__(module, {}, {}, [''])
+        mod = import_module(module)
     except ImportError as e:
         raise ImportError("Error loading object '%s': %s" % (path, e))
 
@@ -55,7 +57,7 @@ def walk_modules(path, load=False):
     """
 
     mods = []
-    mod = __import__(path, {}, {}, [''])
+    mod = import_module(path)
     mods.append(mod)
     if hasattr(mod, '__path__'):
         for _, subpath, ispkg in iter_modules(mod.__path__):
@@ -63,7 +65,7 @@ def walk_modules(path, load=False):
             if ispkg:
                 mods += walk_modules(fullpath)
             else:
-                submod = __import__(fullpath, {}, {}, [''])
+                submod = import_module(fullpath)
                 mods.append(submod)
     return mods
 

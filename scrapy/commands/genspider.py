@@ -2,6 +2,8 @@ from __future__ import print_function
 import os
 import shutil
 import string
+
+from importlib import import_module
 from os.path import join, dirname, abspath, exists, splitext
 
 import scrapy
@@ -90,7 +92,7 @@ class Command(ScrapyCommand):
             'classname': '%sSpider' % ''.join([s.capitalize() \
                 for s in module.split('_')])
         }
-        spiders_module = __import__(self.settings['NEWSPIDER_MODULE'], {}, {}, [''])
+        spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
         spiders_dir = abspath(dirname(spiders_module.__file__))
         spider_file = "%s.py" % join(spiders_dir, module)
         shutil.copyfile(template_file, spider_file)

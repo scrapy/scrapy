@@ -1,6 +1,7 @@
 from __future__ import print_function
 import os
 import cPickle as pickle
+from importlib import import_module
 from time import time
 from weakref import WeakKeyDictionary
 from email.utils import mktime_tz, parsedate_tz
@@ -164,7 +165,7 @@ class DbmCacheStorage(object):
     def __init__(self, settings):
         self.cachedir = data_path(settings['HTTPCACHE_DIR'], createdir=True)
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
-        self.dbmodule = __import__(settings['HTTPCACHE_DBM_MODULE'], {}, {}, [''])
+        self.dbmodule = import_module(settings['HTTPCACHE_DBM_MODULE'])
         self.db = None
 
     def open_spider(self, spider):
