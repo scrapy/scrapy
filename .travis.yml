@@ -1,26 +1,21 @@
 language: python
+python: 2.7
 env:
-    TRAVISBUG="#1027"
+    - TOX_ENV=py27
+    - TOX_ENV=precise
+    - TOX_ENV=trunk
+    - TOX_ENV=pypy
+
 matrix:
-    exclude:
-        - env: TRAVISBUG="#1027"
-    include:
-        - python: "2.7"
-          env: BUILDENV=precise
-        - python: "2.7"
-          env: BUILDENV=latest
-        - python: "2.7"
-          env: BUILDENV=trunk
-        - python: "pypy"
-          env: BUILDENV=latest
     allow_failures:
-        - python: "pypy"
-          env: BUILDENV=latest
+        - env: TOX_ENV=pypy
+
 install:
-    - pip install --use-mirrors -r .travis/requirements-$BUILDENV.txt
-    - pip install --use-mirrors .
+    - pip install -M tox
+
 script:
-    - trial scrapy
+    - tox -e $TOX_ENV
+
 notifications:
     irc:
         channels:

@@ -1,9 +1,0 @@
-pyOpenSSL
-lxml
-twisted
-boto
-Pillow
-django
-
-# testing requirements
-mock
