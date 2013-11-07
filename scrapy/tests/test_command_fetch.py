@@ -27,3 +27,16 @@ class FetchTest(ProcessTest, SiteTest, unittest.TestCase):
         out = out.replace('\r', '') # required on win32
         expect = '<html><body>You submitted: test</body></html>'
         self.assertEqual(out.strip(), expect)
+
+    @defer.inlineCallbacks
+    def test_post_content_type(self):
+        _, out, _ = yield self.execute([self.url('/post'), '--post', 'Name=test', '--content-type', 'application/x-www-form-urlencoded'])
+        out = out.replace('\r', '') # required on win32
+        expect = '<html><body>You submitted: test</body></html>'
+        self.assertEqual(out.strip(), expect)
+        
+    @defer.inlineCallbacks
+    def test_post_content_type_headers(self):
+        _, out, _ = yield self.execute([self.url('/text'), '--post', 'Name=test', '--content-type', 'application/xml', '--headers'])
+        out = out.replace('\r', '') # required on win32
+        assert 'Content-Type: application/xml' in out
