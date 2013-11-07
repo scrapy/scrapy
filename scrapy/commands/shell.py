@@ -8,7 +8,8 @@ from threading import Thread
 
 from scrapy.command import ScrapyCommand
 from scrapy.shell import Shell
-
+from scrapy.http import Request
+from scrapy import settings
 
 class Command(ScrapyCommand):
 
@@ -48,7 +49,16 @@ class Command(ScrapyCommand):
         self._start_crawler_thread()
 
         shell = Shell(crawler, update_vars=self.update_vars, code=opts.code)
-        shell.start(url=url, spider=spider, post_body=opts.post)
+        
+        if opts.post:
+            header = settings.default_settings.DEFAULT_REQUEST_HEADERS
+            header['Content-Type'] = "application/x-www-form-urlencoded"            
+            
+            request = Request(url, method="POST", headers=header,
+                              body=opts.post, dont_filter=True)
+            shell.start(request=request, spider=spider)
+        else:
+            shell.start(url=url, spider=spider)
 
     def _start_crawler_thread(self):
         t = Thread(target=self.crawler_process.start_reactor)
