@@ -5,7 +5,6 @@ from scrapy.http import Request
 from scrapy.spider import BaseSpider
 from scrapy.exceptions import UsageError
 from scrapy.utils.spider import create_spider_for_request
-from scrapy import settings
 
 class Command(ScrapyCommand):
 
@@ -47,13 +46,13 @@ class Command(ScrapyCommand):
             raise UsageError()
         cb = lambda x: self._print_response(x, opts)
         method_type = "GET"
-        header = settings.default_settings.DEFAULT_REQUEST_HEADERS
         if opts.post:
-            header['Content-Type'] = "application/x-www-form-urlencoded"
             method_type = "POST"
-        request = Request(args[0], headers=header, method=method_type, 
+        request = Request(args[0], method=method_type, 
                           body=opts.post, callback=cb, dont_filter=True)
         request.meta['handle_httpstatus_all'] = True
+        if opts.post:
+            request.headers['Content-Type'] = "application/x-www-form-urlencoded"
 
         crawler = self.crawler_process.create_crawler()
         spider = None
