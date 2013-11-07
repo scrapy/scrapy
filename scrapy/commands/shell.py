@@ -9,7 +9,6 @@ from threading import Thread
 from scrapy.command import ScrapyCommand
 from scrapy.shell import Shell
 from scrapy.http import Request
-from scrapy import settings
 
 class Command(ScrapyCommand):
 
