@@ -1,6 +1,6 @@
 Twisted>=10.0.0
-w3lib>=1.2
-queuelib
 lxml
 pyOpenSSL
 cssselect>=0.9
+w3lib>=1.2
+queuelib
