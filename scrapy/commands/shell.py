@@ -51,11 +51,9 @@ class Command(ScrapyCommand):
         shell = Shell(crawler, update_vars=self.update_vars, code=opts.code)
         
         if opts.post:
-            header = settings.default_settings.DEFAULT_REQUEST_HEADERS
-            header['Content-Type'] = "application/x-www-form-urlencoded"            
-            
-            request = Request(url, method="POST", headers=header,
-                              body=opts.post, dont_filter=True)
+            request = Request(url, method="POST", body=opts.post,
+                              dont_filter=True)
+            request.headers['Content-Type'] = "application/x-www-form-urlencoded"  
             shell.start(request=request, spider=spider)
         else:
             shell.start(url=url, spider=spider)
