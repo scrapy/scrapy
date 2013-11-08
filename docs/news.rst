@@ -8,38 +8,40 @@ Release notes
 
 - soon...
 
-0.20 (2013-11-08)
------------------
+0.20.0 (released 2013-11-08)
+----------------------------
+
+Enhancements
+~~~~~~~~~~~~
 
 - New Selector's API including CSS selectors (:issue:`395` and :issue:`426`),
-- Add `cssselect`_ python package as install dependency
 - Request/Response url/body attributes are now immutable
   (modifying them had been deprecated for a long time)
 - :setting:`ITEM_PIPELINES` is now defined as a dict (instead of a list)
-- Drop libxml2 and multi selector's backend support, `lxml`_ is required from now on.
 - Sitemap spider can fetch alternate URLs (:issue:`360`)
 - `Selector.remove_namespaces()` now remove namespaces from element's attributes. (:issue:`416`)
-- Dropped Python 2.6 support (:issue:`448`)
 - Paved the road for Python 3.3+ (:issue:`435`, :issue:`436`, :issue:`431`, :issue:`452`)
 - New item exporter using native python types with nesting support (:issue:`366`)
-- Tuned HTTP1.1 pool size so it matches concurrency defined by settings (:commit:`b43b5f575`)
+- Tune HTTP1.1 pool size so it matches concurrency defined by settings (:commit:`b43b5f575`)
 - scrapy.mail.MailSender now can connect over TLS or upgrade using STARTTLS (:issue:`327`)
 - New FilesPipeline with functionality factored out from ImagesPipeline (:issue:`370`, :issue:`409`)
 - Recommend Pillow instead of PIL for image handling (:issue:`317`)
 - Added debian packages for Ubuntu quantal and raring (:commit:`86230c0`)
-- Increased minimum required Twisted version to 10.0.0, dropped Twisted 8.0 support.
 - Mock server (used for tests) can listen for HTTPS requests (:issue:`410`)
 - Remove multi spider support from multiple core components
   (:issue:`422`, :issue:`421`, :issue:`420`, :issue:`419`, :issue:`423`, :issue:`418`)
 - Travis-CI now tests Scrapy changes against development versions of `w3lib` and `queuelib` python packages.
 - Add pypy 2.1 to continous integration tests (:commit:`ecfa7431`)
 - Pylinted, pep8 and removed old-style exceptions from source (:issue:`430`, :issue:`432`)
-- Running test suite now requires `mock` python library (:issue:`390`)
 - Use importlib for parametric imports (:issue:`445`)
 - Handle a regression introduced in Python 2.7.5 that affects XmlItemExporter (:issue:`372`)
 - Bugfix crawling shutdown on SIGINT (:issue:`450`)
 - Do not submit `reset` type inputs in FormRequest.from_response (:commit:`b326b87`)
 - Do not silence download errors when request errback raises an exception (:commit:`684cfc0`)
+
+Bugfixes
+~~~~~~~~
+
 - Fix tests under Django 1.6 (:commit:`b6bed44c`)
 - Lot of bugfixes to retry middleware under disconnections using HTTP 1.1 download handler
 - Fix inconsistencies among Twisted releases (:issue:`406`)
@@ -52,6 +54,47 @@ Release notes
 - Document `bindaddress` request meta (:commit:`37c24e01d7`)
 - Improve `Request` class documentation (:issue:`226`)
 
+Other
+~~~~~
+
+- Dropped Python 2.6 support (:issue:`448`)
+- Add `cssselect`_ python package as install dependency
+- Drop libxml2 and multi selector's backend support, `lxml`_ is required from now on.
+- Minimum Twisted version increased to 10.0.0, dropped Twisted 8.0 support.
+- Running test suite now requires `mock` python library (:issue:`390`)
+
+
+Thanks
+~~~~~~
+
+Thanks to everyone who contribute to this release!
+
+List of contributors sorted by number of commits::
+
+     69 Daniel Graña <dangra@...>
+     37 Pablo Hoffman <pablo@...>
+     13 Mikhail Korobov <kmike84@...>
+      9 Alex Cepoi <alex.cepoi@...>
+      9 alexanderlukanin13 <alexander.lukanin.13@...>
+      8 Rolando Espinoza La fuente <darkrho@...>
+      8 Lukasz Biedrycki <lukasz.biedrycki@...>
+      6 Nicolas Ramirez <nramirez.uy@...>
+      3 Paul Tremberth <paul.tremberth@...>
+      2 Martin Olveyra <molveyra@...>
+      2 Stefan <misc@...>
+      2 Rolando Espinoza <darkrho@...>
+      2 Loren Davie <loren@...>
+      2 irgmedeiros <irgmedeiros@...>
+      1 Stefan Koch <taikano@...>
+      1 Stefan <cct@...>
+      1 scraperdragon <dragon@...>
+      1 Kumara Tharmalingam <ktharmal@...>
+      1 Francesco Piccinno <stack.box@...>
+      1 Marcos Campal <duendex@...>
+      1 Dragon Dave <dragon@...>
+      1 Capi Etheriel <barraponto@...>
+      1 cacovsky <amarquesferraz@...>
+      1 Berend Iwema <berend@...>
 
 0.18.4 (released 2013-10-10)
 ----------------------------
@@ -622,3 +665,4 @@ First release of Scrapy.
 .. _ClientForm: http://wwwsearch.sourceforge.net/old/ClientForm/
 .. _resource: http://docs.python.org/library/resource.html
 .. _queuelib: https://github.com/scrapy/queuelib
+.. _cssselect: https://github.com/SimonSapin/cssselect
