@@ -16,6 +16,8 @@ class Command(fetch.Command):
         parser.add_option("--spider", dest="spider",
             help="use this spider")
         parser.add_option("--post", dest="post", help="make a post request")
+        parser.add_option("--data-binary", dest="data_binary", help="load file to post request")
+        parser.add_option("--data-urlencode", dest="data_urlencode", help="urlencode data")
         parser.add_option("--content-type", dest="content_type", \
                   help="define Content-Type of HTTP request")
 
