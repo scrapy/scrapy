@@ -1,11 +1,11 @@
 from w3lib.url import is_url
+from urllib import quote
 
 from scrapy.command import ScrapyCommand
 from scrapy.http import Request
 from scrapy.spider import BaseSpider
 from scrapy.exceptions import UsageError
 from scrapy.utils.spider import create_spider_for_request
-from urllib import quote
 
 class Command(ScrapyCommand):
 
