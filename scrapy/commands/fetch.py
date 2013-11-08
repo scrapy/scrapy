@@ -5,6 +5,7 @@ from scrapy.http import Request
 from scrapy.spider import BaseSpider
 from scrapy.exceptions import UsageError
 from scrapy.utils.spider import create_spider_for_request
+from urllib import quote
 
 class Command(ScrapyCommand):
 
@@ -28,6 +29,7 @@ class Command(ScrapyCommand):
             help="print response HTTP headers instead of body")
         parser.add_option("--post", dest="post", help="make a post request")
         parser.add_option("--data-binary", dest="data_binary", help="load file to post request")
+        parser.add_option("--data-urlencode", dest="data_urlencode", help="urlencode data")
         parser.add_option("--content-type", dest="content_type", \
                   help="define Content-Type of HTTP request")
 
@@ -49,7 +51,14 @@ class Command(ScrapyCommand):
             raise UsageError()
         cb = lambda x: self._print_response(x, opts)
         method_type = "GET"
-        
+
+        if opts.data_urlencode:
+            #if string start @ is a file and load file content
+            if opts.data_urlencode[0] == '@':
+                opts.data_urlencode =  open(opts.data_urlencode[1:], 'r').read()
+            opts.post = opts.data_urlencode[:opts.data_urlencode.index('=')+1] + \
+                quote(opts.data_urlencode[opts.data_urlencode.index('=')+1:], safe='')
+
         if opts.data_binary:
             if opts.data_binary[0] == '@':
                 opts.post = open(opts.data_binary[1:], 'r').read()
