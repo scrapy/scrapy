@@ -40,3 +40,11 @@ class FetchTest(ProcessTest, SiteTest, unittest.TestCase):
         _, out, _ = yield self.execute([self.url('/text'), '--post', 'Name=test', '--content-type', 'application/xml', '--headers'])
         out = out.replace('\r', '') # required on win32
         assert 'Content-Type: application/xml' in out
+        
+    @defer.inlineCallbacks
+    def test_data_binary(self):
+        _, out, _ = yield self.execute([self.url('/post'), '--data-binary', '@scrapy/tests/sample_data/data.txt'])
+        out = out.replace('\r', '') # required on win32
+        expect = '<html><body>You submitted: Test</body></html>'
+        self.assertEqual(out.strip(), expect)
+
