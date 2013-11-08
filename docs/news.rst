@@ -3,8 +3,13 @@
 Release notes
 =============
 
-0.20 (2013-11-08)
+0.21 (not released yet)
 -----------------------
+
+- soon...
+
+0.20 (2013-11-08)
+-----------------
 
 - New Selector's API including CSS selectors (:issue:`395` and :issue:`426`),
 - Add `cssselect`_ python package as install dependency
