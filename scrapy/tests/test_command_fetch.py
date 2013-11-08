@@ -47,4 +47,10 @@ class FetchTest(ProcessTest, SiteTest, unittest.TestCase):
         out = out.replace('\r', '') # required on win32
         expect = '<html><body>You submitted: Test</body></html>'
         self.assertEqual(out.strip(), expect)
-
+        
+    @defer.inlineCallbacks
+    def test_data_urlencode(self):
+        _, out, _ = yield self.execute([self.url('/post'), '--data-urlencode', 'Name=Test@=test'])
+        out = out.replace('\r', '') # required on win32
+        expect = '<html><body>You submitted: Test@=test</body></html>'
+        self.assertEqual(out.strip(), expect)
