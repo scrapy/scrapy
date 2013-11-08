@@ -27,6 +27,7 @@ class Command(ScrapyCommand):
         parser.add_option("--headers", dest="headers", action="store_true", \
             help="print response HTTP headers instead of body")
         parser.add_option("--post", dest="post", help="make a post request")
+        parser.add_option("--data-binary", dest="data_binary", help="load file to post request")
         parser.add_option("--content-type", dest="content_type", \
                   help="define Content-Type of HTTP request")
 
@@ -48,6 +49,13 @@ class Command(ScrapyCommand):
             raise UsageError()
         cb = lambda x: self._print_response(x, opts)
         method_type = "GET"
+        
+        if opts.data_binary:
+            if opts.data_binary[0] == '@':
+                opts.post = open(opts.data_binary[1:], 'r').read()
+            else:
+                opts.post = opts.data_binary
+
         if opts.post:
             method_type = "POST"
         request = Request(args[0], method=method_type, 
