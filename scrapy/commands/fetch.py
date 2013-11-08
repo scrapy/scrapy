@@ -60,6 +60,7 @@ class Command(ScrapyCommand):
                 quote(opts.data_urlencode[opts.data_urlencode.index('=')+1:], safe='')
 
         if opts.data_binary:
+            #if string start @ is a file and load file content
             if opts.data_binary[0] == '@':
                 opts.post = open(opts.data_binary[1:], 'r').read()
             else:
