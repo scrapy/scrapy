@@ -82,8 +82,8 @@ def process_parallel(callbacks, input, *a, **kw):
     callbacks
     """
     dfds = [defer.succeed(input).addCallback(x, *a, **kw) for x in callbacks]
-    d = defer.gatherResults(dfds)
-    d.addErrback(lambda _: _.value.subFailure)
+    d = defer.DeferredList(dfds, fireOnOneErrback=1, consumeErrors=1)
+    d.addCallbacks(lambda r: [x[1] for x in r], lambda f: f.value.subFailure)
     return d
 
 def iter_errback(iterable, errback, *a, **kw):
