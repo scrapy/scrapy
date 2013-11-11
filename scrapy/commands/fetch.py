@@ -29,11 +29,14 @@ class Command(ScrapyCommand):
             help="use this spider")
         parser.add_option("--headers", dest="headers", action="store_true", \
             help="print response HTTP headers instead of body")
-        parser.add_option("-d", "--data", dest="data", help="HTTP POST data. See more options below")
+        parser.add_option("-d", "--data", dest="data", \
+                          help="HTTP POST data. See more options below")
         
         group = OptionGroup(parser, "HTTP POST Options")
-        group.add_option("--data-binary", metavar="FILE", dest="data_binary", help="HTTP POST binary data found in FILE")
-        group.add_option("--data-urlencode", dest="data_urlencode", help="HTTP POST data url encoded")
+        group.add_option("--data-binary", metavar="FILE", dest="data_binary", \
+                         help="HTTP POST binary data found in FILE")
+        group.add_option("--data-urlencode", dest="data_urlencode", \
+                         help="HTTP POST data url encoded")
         group.add_option("--data-content-type", dest="content_type", \
                   help="define Content-Type header of the HTTP POST request")
         parser.add_option_group(group)
