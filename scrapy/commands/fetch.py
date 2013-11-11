@@ -74,8 +74,6 @@ class Command(ScrapyCommand):
             request.headers['Content-Type'] = "application/x-www-form-urlencoded"
             if opts.content_type:
                 request.headers['Content-Type'] = opts.content_type
-            elif content_type:
-                request.headers['Content-Type'] = content_type
         elif opts.content_type:
             raise UsageError("This option only works when sending POST data")
         else:
