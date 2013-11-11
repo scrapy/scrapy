@@ -1,3 +1,6 @@
+from optparse import OptionGroup
+from mimetypes import guess_type
+
 from scrapy.command import ScrapyCommand
 from scrapy.commands import fetch
 from scrapy.utils.response import open_in_browser
@@ -15,11 +18,17 @@ class Command(fetch.Command):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--spider", dest="spider",
             help="use this spider")
-        parser.add_option("--post", dest="post", help="make a post request")
-        parser.add_option("--data-binary", dest="data_binary", help="load file to post request")
-        parser.add_option("--data-urlencode", dest="data_urlencode", help="urlencode data")
-        parser.add_option("--content-type", dest="content_type", \
-                  help="define Content-Type of HTTP request")
+        parser.add_option("-d", "--data", dest="data", \
+                          help="HTTP POST data. See more options below")
+        
+        group = OptionGroup(parser, "HTTP POST Options")
+        group.add_option("--data-binary", metavar="FILE", dest="data_binary", \
+                         help="HTTP POST binary data found in FILE")
+        group.add_option("--data-urlencode", dest="data_urlencode", \
+                         help="HTTP POST data url encoded")
+        group.add_option("--data-content-type", dest="content_type", \
+                  help="define Content-Type header of the HTTP POST request")
+        parser.add_option_group(group)
 
     def _print_response(self, response, opts):
         open_in_browser(response)
