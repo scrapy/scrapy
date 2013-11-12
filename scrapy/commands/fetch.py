@@ -55,6 +55,8 @@ class Command(ScrapyCommand):
             print response.body
 
     def run(self, args, opts):
+        content_type = None
+        
         if len(args) != 1 or not is_url(args[0]):
             raise UsageError()
         cb = lambda x: self._print_response(x, opts)
@@ -75,8 +77,11 @@ class Command(ScrapyCommand):
                               body=data, callback=cb, dont_filter=True)
             
             request.headers['Content-Type'] = "application/x-www-form-urlencoded"
+
             if opts.content_type:
                 request.headers['Content-Type'] = opts.content_type
+            elif content_type:
+                request.headers['Content-Type'] = content_type
         elif opts.content_type:
             raise UsageError("This option only works when sending POST data")
         else:
