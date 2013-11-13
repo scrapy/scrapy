@@ -10,8 +10,8 @@ from optparse import OptionGroup
 from mimetypes import guess_type
 
 from scrapy.command import ScrapyCommand
-from scrapy.shell import Shell
 from scrapy.http import Request
+from scrapy.shell import Shell
 
 
 class Command(ScrapyCommand):
@@ -64,6 +64,7 @@ class Command(ScrapyCommand):
         shell = Shell(crawler, update_vars=self.update_vars, code=opts.code)
 
         if opts.data or opts.data_binary or opts.data_urlencode:
+            content_type = None
             if opts.data:
                 data = opts.data
             elif opts.data_urlencode:
@@ -82,6 +83,8 @@ class Command(ScrapyCommand):
 
             if opts.content_type:
                 request.headers['Content-Type'] = opts.content_type
+            elif content_type:
+                request.headers['Content-Type'] = content_type
             shell.start(request=request, spider=spider)
 
         elif opts.content_type:

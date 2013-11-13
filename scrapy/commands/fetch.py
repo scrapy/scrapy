@@ -55,13 +55,12 @@ class Command(ScrapyCommand):
             print response.body
 
     def run(self, args, opts):
-        content_type = None
-        
         if len(args) != 1 or not is_url(args[0]):
             raise UsageError()
         cb = lambda x: self._print_response(x, opts)
         
         if opts.data or opts.data_binary or opts.data_urlencode:
+            content_type = None
             if opts.data:
                 data = opts.data
             elif opts.data_urlencode:
@@ -86,7 +85,7 @@ class Command(ScrapyCommand):
             raise UsageError("This option only works when sending POST data")
         else:
             request = Request(args[0], callback=cb, dont_filter=True)
-
+        
         request.meta['handle_httpstatus_all'] = True
         
         crawler = self.crawler_process.create_crawler()
