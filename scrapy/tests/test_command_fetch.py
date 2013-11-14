@@ -47,7 +47,7 @@ class FetchTest(ProcessTest, SiteTest, unittest.TestCase):
     @defer.inlineCallbacks
     def test_data_binary(self):
         _, out, _ = yield self.execute([self.url('/post'), '--data-binary', \
-                                        'scrapy/tests/sample_data/data.txt'])
+                                        'scrapy/tests/sample_data/data'])
         out = out.replace('\r', '') # required on win32
         expect = '<html><body>You submitted: Test</body></html>'
         self.assertEqual(out.strip(), expect)
