@@ -84,7 +84,7 @@ Next, you go inside the new project directory::
 
     cd myproject
 
-And you're ready to use use the ``scrapy`` command to manage and control your
+And you're ready to use the ``scrapy`` command to manage and control your
 project from there.
 
 Controlling projects
