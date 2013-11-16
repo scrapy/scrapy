@@ -1,6 +1,6 @@
 import unittest
 
-from scrapy.contrib.loader import ItemLoader, XPathItemLoader
+from scrapy.contrib.loader import ItemLoader
 from scrapy.contrib.loader.processor import Join, Identity, TakeFirst, \
     Compose, MapCompose
 from scrapy.item import Item, Field
@@ -38,7 +38,7 @@ def processor_with_args(value, other=None, loader_context=None):
     return value
 
 
-class ItemLoaderTest(unittest.TestCase):
+class BasicItemLoaderTest(unittest.TestCase):
 
     def test_load_item_using_default_loader(self):
         i = TestItem()
@@ -367,37 +367,78 @@ class ProcessorsTest(unittest.TestCase):
                          [u'HELLO', u'THIS', u'IS', u'SCRAPY'])
 
 
-class TestXPathItemLoader(XPathItemLoader):
-    default_item_class = TestItem
-    name_in = MapCompose(lambda v: v.title())
+class SelectortemLoaderTest(unittest.TestCase):
+    response = HtmlResponse(url="", body="""
+    <html>
+    <body>
+    <div id="id">marta</div>
+    <p>paragraph</p>
+    <a href="http://www.scrapy.org">homepage</a>
+    <img src="/images/logo.png" width="244" height="65" alt="Scrapy">
+    </body>
+    </html>
+    """)
 
-
-class XPathItemLoaderTest(unittest.TestCase):
-    response = HtmlResponse(url="", body='<html><body><div id="id">marta</div><p>paragraph</p></body></html>')
+    def test_constructor(self):
+        l = TestItemLoader()
+        self.assertEqual(l.selector, None)
 
     def test_constructor_errors(self):
-        self.assertRaises(RuntimeError, XPathItemLoader)
+        l = TestItemLoader()
+        self.assertRaises(RuntimeError, l.add_xpath, 'url', '//a/@href')
+        self.assertRaises(RuntimeError, l.replace_xpath, 'url', '//a/@href')
+        self.assertRaises(RuntimeError, l.get_xpath, '//a/@href')
+        self.assertRaises(RuntimeError, l.add_css, 'name', '#name::text')
+        self.assertRaises(RuntimeError, l.replace_css, 'name', '#name::text')
+        self.assertRaises(RuntimeError, l.get_css, '#name::text')
 
     def test_constructor_with_selector(self):
         sel = Selector(text=u"<html><body><div>marta</div></body></html>")
-        l = TestXPathItemLoader(selector=sel)
+        l = TestItemLoader(selector=sel)
         self.assert_(l.selector is sel)
+
         l.add_xpath('name', '//div/text()')
+        self.assertEqual(l.get_output_value('name'), [u'Marta'])
+
+    def test_constructor_with_selector_css(self):
+        sel = Selector(text=u"<html><body><div>marta</div></body></html>")
+        l = TestItemLoader(selector=sel)
+        self.assert_(l.selector is sel)
+
+        l.add_css('name', 'div::text')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
 
     def test_constructor_with_response(self):
-        l = TestXPathItemLoader(response=self.response)
+        l = TestItemLoader(response=self.response)
         self.assert_(l.selector)
+
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
 
+    def test_constructor_with_response_css(self):
+        l = TestItemLoader(response=self.response)
+        self.assert_(l.selector)
+
+        l.add_css('name', 'div::text')
+        self.assertEqual(l.get_output_value('name'), [u'Marta'])
+
+        l.add_css('url', 'a::attr(href)')
+        self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
+
+        # combining/accumulating CSS selectors and XPath expressions
+        l.add_xpath('name', '//div/text()')
+        self.assertEqual(l.get_output_value('name'), [u'Marta', u'Marta'])
+
+        l.add_xpath('url', '//img/@src')
+        self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org', u'/images/logo.png'])
+
     def test_add_xpath_re(self):
-        l = TestXPathItemLoader(response=self.response)
+        l = TestItemLoader(response=self.response)
         l.add_xpath('name', '//div/text()', re='ma')
         self.assertEqual(l.get_output_value('name'), [u'Ma'])
 
     def test_replace_xpath(self):
-        l = TestXPathItemLoader(response=self.response)
+        l = TestItemLoader(response=self.response)
         self.assert_(l.selector)
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
@@ -408,7 +449,7 @@ class XPathItemLoaderTest(unittest.TestCase):
         self.assertEqual(l.get_output_value('name'), [u'Paragraph', 'Marta'])
 
     def test_get_xpath(self):
-        l = TestXPathItemLoader(response=self.response)
+        l = TestItemLoader(response=self.response)
         self.assertEqual(l.get_xpath('//p/text()'), [u'paragraph'])
         self.assertEqual(l.get_xpath('//p/text()', TakeFirst()), u'paragraph')
         self.assertEqual(l.get_xpath('//p/text()', TakeFirst(), re='pa'), u'pa')
@@ -416,19 +457,73 @@ class XPathItemLoaderTest(unittest.TestCase):
         self.assertEqual(l.get_xpath(['//p/text()', '//div/text()']), [u'paragraph', 'marta'])
 
     def test_replace_xpath_multi_fields(self):
-        l = TestXPathItemLoader(response=self.response)
+        l = TestItemLoader(response=self.response)
         l.add_xpath(None, '//div/text()', TakeFirst(), lambda x: {'name': x})
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
         l.replace_xpath(None, '//p/text()', TakeFirst(), lambda x: {'name': x})
         self.assertEqual(l.get_output_value('name'), [u'Paragraph'])
 
     def test_replace_xpath_re(self):
-        l = TestXPathItemLoader(response=self.response)
+        l = TestItemLoader(response=self.response)
         self.assert_(l.selector)
         l.add_xpath('name', '//div/text()')
         self.assertEqual(l.get_output_value('name'), [u'Marta'])
         l.replace_xpath('name', '//div/text()', re='ma')
         self.assertEqual(l.get_output_value('name'), [u'Ma'])
+
+    def test_add_css_re(self):
+        l = TestItemLoader(response=self.response)
+        l.add_css('name', 'div::text', re='ma')
+        self.assertEqual(l.get_output_value('name'), [u'Ma'])
+
+        l.add_css('url', 'a::attr(href)', re='http://(.+)')
+        self.assertEqual(l.get_output_value('url'), [u'www.scrapy.org'])
+
+    def test_replace_css(self):
+        l = TestItemLoader(response=self.response)
+        self.assert_(l.selector)
+        l.add_css('name', 'div::text')
+        self.assertEqual(l.get_output_value('name'), [u'Marta'])
+        l.replace_css('name', 'p::text')
+        self.assertEqual(l.get_output_value('name'), [u'Paragraph'])
+
+        l.replace_css('name', ['p::text', 'div::text'])
+        self.assertEqual(l.get_output_value('name'), [u'Paragraph', 'Marta'])
+
+        l.add_css('url', 'a::attr(href)', re='http://(.+)')
+        self.assertEqual(l.get_output_value('url'), [u'www.scrapy.org'])
+        l.replace_css('url', 'img::attr(src)')
+        self.assertEqual(l.get_output_value('url'), [u'/images/logo.png'])
+
+    def test_get_css(self):
+        l = TestItemLoader(response=self.response)
+        self.assertEqual(l.get_css('p::text'), [u'paragraph'])
+        self.assertEqual(l.get_css('p::text', TakeFirst()), u'paragraph')
+        self.assertEqual(l.get_css('p::text', TakeFirst(), re='pa'), u'pa')
+
+        self.assertEqual(l.get_css(['p::text', 'div::text']), [u'paragraph', 'marta'])
+        self.assertEqual(l.get_css(['a::attr(href)', 'img::attr(src)']),
+            [u'http://www.scrapy.org', u'/images/logo.png'])
+
+    def test_replace_css_multi_fields(self):
+        l = TestItemLoader(response=self.response)
+        l.add_css(None, 'div::text', TakeFirst(), lambda x: {'name': x})
+        self.assertEqual(l.get_output_value('name'), [u'Marta'])
+        l.replace_css(None, 'p::text', TakeFirst(), lambda x: {'name': x})
+        self.assertEqual(l.get_output_value('name'), [u'Paragraph'])
+
+        l.add_css(None, 'a::attr(href)', TakeFirst(), lambda x: {'url': x})
+        self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
+        l.replace_css(None, 'img::attr(src)', TakeFirst(), lambda x: {'url': x})
+        self.assertEqual(l.get_output_value('url'), [u'/images/logo.png'])
+
+    def test_replace_css_re(self):
+        l = TestItemLoader(response=self.response)
+        self.assert_(l.selector)
+        l.add_css('url', 'a::attr(href)')
+        self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
+        l.replace_css('url', 'a::attr(href)', re='http://www\.(.+)')
+        self.assertEqual(l.get_output_value('url'), [u'scrapy.org'])
 
 
 if __name__ == "__main__":
