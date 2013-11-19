@@ -18,8 +18,13 @@ from scrapy.http import Response, HtmlResponse, TextResponse
 def body_or_str(obj, unicode=True):
     assert isinstance(obj, (Response, basestring)), \
         "obj must be Response or basestring, not %s" % type(obj).__name__
-    if isinstance(obj, Response):
+    if isinstance(obj, TextResponse):
         return obj.body_as_unicode() if unicode else obj.body
+    elif isinstance(obj, Response):
+        body = obj.body
+        if isinstance(body, str):
+            return body.decode('utf-8') if unicode else body
+        return body if unicode else body.encode('utf-8')
     elif isinstance(obj, str):
         return obj.decode('utf-8') if unicode else obj
     else:
