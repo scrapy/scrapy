@@ -1,12 +1,13 @@
 import os
 from twisted.trial import unittest
 
-from scrapy.utils.iterators import csviter, xmliter
+from scrapy.utils.iterators import csviter, xmliter, _body_or_str
 from scrapy.contrib_exp.iterators import xmliter_lxml
 from scrapy.http import XmlResponse, TextResponse, Response
 from scrapy.tests import get_testdata
 
 FOOBAR_NL = u"foo" + os.linesep + u"bar"
+
 
 class XmliterTestCase(unittest.TestCase):
 
@@ -173,7 +174,6 @@ class UtilsCsvTestCase(unittest.TestCase):
                           {u'id': u'3', u'name': u'multi',   u'value': FOOBAR_NL},
                           {u'id': u'4', u'name': u'empty',   u'value': u''}])
 
-
     def test_csviter_headers(self):
         sample = get_testdata('feeds', 'feed-sample3.csv').splitlines()
         headers, body = sample[0].split(','), '\n'.join(sample[1:])
@@ -227,6 +227,30 @@ class UtilsCsvTestCase(unittest.TestCase):
         self.assertEqual([row for row in csv],
             [{u'id': u'1', u'name': u'cp852', u'value': u'test'},
              {u'id': u'2', u'name': u'something', u'value': u'\u255a\u2569\u2569\u2569\u2550\u2550\u2557'}])
+
+
+class TestHelper(unittest.TestCase):
+    bbody = b'utf8-body'
+    ubody = bbody.decode('utf8')
+    txtresponse = TextResponse(url='http://example.org/', body=bbody, encoding='utf-8')
+    response = Response(url='http://example.org/', body=bbody)
+
+    def test_body_or_str(self):
+        for obj in (self.bbody, self.ubody, self.txtresponse, self.response):
+            r1 = _body_or_str(obj)
+            self._assert_type_and_value(r1, self.ubody, obj)
+            r2 = _body_or_str(obj, unicode=True)
+            self._assert_type_and_value(r2, self.ubody, obj)
+            r3 = _body_or_str(obj, unicode=False)
+            self._assert_type_and_value(r3, self.bbody, obj)
+            self.assertTrue(type(r1) is type(r2))
+            self.assertTrue(type(r1) is not type(r3))
+
+
+    def _assert_type_and_value(self, a, b, obj):
+        self.assertTrue(type(a) is type(b),
+                        'Got {}, expected {} for {!r}'.format(type(a), type(b), obj))
+        self.assertEqual(a, b)
 
 
 if __name__ == "__main__":

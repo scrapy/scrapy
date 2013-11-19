@@ -71,8 +71,13 @@ def _body_or_str(obj, unicode=True):
     assert isinstance(obj, (Response, basestring)), \
         "obj must be Response or basestring, not %s" % type(obj).__name__
     if isinstance(obj, Response):
-        return obj.body_as_unicode() if unicode else obj.body
-    elif isinstance(obj, str):
-        return obj.decode('utf-8') if unicode else obj
-    else:
+        if not unicode:
+            return obj.body
+        elif isinstance(obj, TextResponse):
+            return obj.body_as_unicode()
+        else:
+            return obj.body.decode('utf-8')
+    elif type(obj) is type(u''):
         return obj if unicode else obj.encode('utf-8')
+    else:
+        return obj.decode('utf-8') if unicode else obj

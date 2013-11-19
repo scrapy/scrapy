@@ -3,32 +3,12 @@ import unittest
 import urlparse
 
 from scrapy.http import Response, TextResponse, HtmlResponse
-from scrapy.utils.response import body_or_str, response_httprepr, open_in_browser, \
-    get_meta_refresh
+from scrapy.utils.response import response_httprepr, open_in_browser, get_meta_refresh
 
 __doctests__ = ['scrapy.utils.response']
 
 class ResponseUtilsTest(unittest.TestCase):
     dummy_response = TextResponse(url='http://example.org/', body='dummy_response')
-
-    def test_body_or_str_input(self):
-        self.assertTrue(isinstance(body_or_str(self.dummy_response), basestring))
-        self.assertTrue(isinstance(body_or_str('text'), basestring))
-        self.assertRaises(Exception, body_or_str, 2)
-
-    def test_body_or_str_extraction(self):
-        self.assertEqual(body_or_str(self.dummy_response), 'dummy_response')
-        self.assertEqual(body_or_str('text'), 'text')
-
-    def test_body_or_str_encoding(self):
-        self.assertTrue(isinstance(body_or_str(self.dummy_response, unicode=False), str))
-        self.assertTrue(isinstance(body_or_str(self.dummy_response, unicode=True), unicode))
-
-        self.assertTrue(isinstance(body_or_str('text', unicode=False), str))
-        self.assertTrue(isinstance(body_or_str('text', unicode=True), unicode))
-
-        self.assertTrue(isinstance(body_or_str(u'text', unicode=False), str))
-        self.assertTrue(isinstance(body_or_str(u'text', unicode=True), unicode))
 
     def test_response_httprepr(self):
         r1 = Response("http://www.example.com")
