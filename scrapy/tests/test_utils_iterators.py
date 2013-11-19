@@ -94,10 +94,6 @@ class XmliterTestCase(unittest.TestCase):
 
 class LxmlXmliterTestCase(XmliterTestCase):
     xmliter = staticmethod(xmliter_lxml)
-    try:
-        import lxml
-    except ImportError:
-        skip = "lxml not available"
 
     def test_xmliter_iterate_namespace(self):
         body = """\
