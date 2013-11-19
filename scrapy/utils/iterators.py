@@ -1,11 +1,10 @@
 import re, csv
 from cStringIO import StringIO
 
-from scrapy.http import TextResponse
+from scrapy.http import TextResponse, Response
 from scrapy.selector import Selector
 from scrapy import log
 from scrapy.utils.python import re_rsearch, str_to_unicode
-from scrapy.utils.response import body_or_str
 
 
 def xmliter(obj, nodename):
@@ -19,7 +18,7 @@ def xmliter(obj, nodename):
     """
     HEADER_START_RE = re.compile(r'^(.*?)<\s*%s(?:\s|>)' % nodename, re.S)
     HEADER_END_RE = re.compile(r'<\s*/%s\s*>' % nodename, re.S)
-    text = body_or_str(obj)
+    text = _body_or_str(obj)
 
     header_start = re.search(HEADER_START_RE, text)
     header_start = header_start.group(1).strip() if header_start else ''
@@ -49,7 +48,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None):
     def _getrow(csv_r):
         return [str_to_unicode(field, encoding) for field in next(csv_r)]
 
-    lines = StringIO(body_or_str(obj, unicode=False))
+    lines = StringIO(_body_or_str(obj, unicode=False))
     if delimiter:
         csv_r = csv.reader(lines, delimiter=delimiter)
     else:
@@ -67,3 +66,13 @@ def csviter(obj, delimiter=None, headers=None, encoding=None):
         else:
             yield dict(zip(headers, row))
 
+
+def _body_or_str(obj, unicode=True):
+    assert isinstance(obj, (Response, basestring)), \
+        "obj must be Response or basestring, not %s" % type(obj).__name__
+    if isinstance(obj, Response):
+        return obj.body_as_unicode() if unicode else obj.body
+    elif isinstance(obj, str):
+        return obj.decode('utf-8') if unicode else obj
+    else:
+        return obj if unicode else obj.encode('utf-8')
