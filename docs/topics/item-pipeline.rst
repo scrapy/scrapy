@@ -140,5 +140,6 @@ To activate an Item Pipeline component you must add its class to the
    }
 
 The integer values you assign to classes in this setting determine the
-order they run in. It's customary to define them in the 0-1000 range.
+order they run in- items go through pipelines from order number low to
+high. It's customary to define these numbers in the 0-1000 range.
 
