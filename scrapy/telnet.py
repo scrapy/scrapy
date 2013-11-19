@@ -59,13 +59,10 @@ class TelnetConsole(protocol.ServerFactory):
 
     def _get_telnet_vars(self):
         # Note: if you add entries here also update topics/telnetconsole.rst
-        slots = self.crawler.engine.slots
-        if len(slots) == 1:
-            spider, slot = slots.items()[0]
         telnet_vars = {
             'engine': self.crawler.engine,
-            'spider': spider,
-            'slot': slot,
+            'spider': self.crawler.engine.spider,
+            'slot': self.crawler.engine.slot,
             'crawler': self.crawler,
             'extensions': self.crawler.extensions,
             'stats': self.crawler.stats,
