@@ -138,3 +138,8 @@ To activate an Item Pipeline component you must add its class to the
        'myproject.pipeline.PricePipeline': 300,
        'myproject.pipeline.JsonWriterPipeline': 800,
    }
+
+The integer values you assign to classes in this setting determine the
+order they run in- items go through pipelines from order number low to
+high. It's customary to define these numbers in the 0-1000 range.
+
