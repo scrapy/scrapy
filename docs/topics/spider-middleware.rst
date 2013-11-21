@@ -223,13 +223,22 @@ this::
         handle_httpstatus_list = [404]
 
 .. reqmeta:: handle_httpstatus_list
+.. reqmeta:: handle_httpstatus_all
 
 The ``handle_httpstatus_list`` key of :attr:`Request.meta
 <scrapy.http.Request.meta>` can also be used to specify which response codes to
-allow on a per-request basis.
+allow on a per-request basis. In the same fashion, the ``handle_httpstatus_all`` key of :attr:`Request.meta
+<scrapy.http.Request.meta>` is a shortcut for allowing all status codes.
 
 Keep in mind, however, that it's usually a bad idea to handle non-200
 responses, unless you really know what you're doing.
+
+This middleware can also be configured using two equivalent settings::
+
+    * :setting:`HANDLE_HTTPSTATUS_LIST`
+    * :setting:`HANDLE_HTTPSTATUS_ALL`
+
+You must be aware of the precedence order: request meta attribute overrides spider attribute, and the last overrides the setting.
 
 For more information see: `HTTP Status Code Definitions`_.
 
