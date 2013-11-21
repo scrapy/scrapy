@@ -50,7 +50,7 @@ class HttpCompressionTest(TestCase):
         request = Request('http://scrapytest.org')
         assert 'Accept-Encoding' not in request.headers
         self.mw.process_request(request, self.spider)
-        self.assertEqual(request.headers.get('Accept-Encoding'), 'x-gzip,gzip,deflate')
+        self.assertEqual(request.headers.get('Accept-Encoding'), 'gzip,deflate')
 
     def test_process_response_gzip(self):
         response = self._getresponse('gzip')
