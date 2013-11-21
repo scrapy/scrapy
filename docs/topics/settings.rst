@@ -448,6 +448,24 @@ built-in extensions.
 For more information See the :ref:`extensions user guide  <topics-extensions>`
 and the :ref:`list of available extensions <topics-extensions-ref>`.
 
+.. setting:: HANDLE_HTTPSTATUS_LIST
+
+HANDLE_HTTPSTATUS_LIST
+----------------------
+
+Default: ``[]``
+
+Process responses with non-200 status codes contained in this list.
+
+.. setting:: HANDLE_HTTPSTATUS_ALL
+
+HANDLE_HTTPSTATUS_ALL
+---------------------
+
+Default: ``False``
+
+Process all non-200 status codes.
+
 .. setting:: ITEM_PIPELINES
 
 ITEM_PIPELINES
