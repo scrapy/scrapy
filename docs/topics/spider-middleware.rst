@@ -214,7 +214,8 @@ status codes are in the 200-300 range.
 
 If you still want to process response codes outside that range, you can
 specify which response codes the spider is able to handle using the
-``handle_httpstatus_list`` spider attribute.
+``handle_httpstatus_list`` spider attribute or
+:setting:`HTTPERROR_ALLOWED_CODES` setting.
 
 For example, if you want your spider to handle 404 responses you can do
 this::
@@ -234,6 +235,27 @@ responses, unless you really know what you're doing.
 For more information see: `HTTP Status Code Definitions`_.
 
 .. _HTTP Status Code Definitions: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+
+HttpErrorMiddleware settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. setting:: HTTPERROR_ALLOWED_CODES
+
+HTTPERROR_ALLOWED_CODES
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``[]``
+
+Pass all responses with non-200 status codes contained in this list.
+
+.. setting:: HTTPERROR_ALLOW_ALL
+
+HTTPERROR_ALLOW_ALL
+^^^^^^^^^^^^^^^^^^^
+
+Default: ``False``
+
+Pass all responses, regardless of its status code.
 
 OffsiteMiddleware
 -----------------

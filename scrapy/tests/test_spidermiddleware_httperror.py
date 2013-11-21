@@ -48,7 +48,7 @@ class TestHttpErrorMiddlewareSettings(TestCase):
 
     def setUp(self):
         self.spider = BaseSpider('foo')
-        self.mw = HttpErrorMiddleware(Settings({'HANDLE_HTTPSTATUS_LIST': (402,)}))
+        self.mw = HttpErrorMiddleware(Settings({'HTTPERROR_ALLOWED_CODES': (402,)}))
         self.req = Request('http://scrapytest.org')
 
         self.res200 = Response('http://scrapytest.org', status=200)
@@ -90,7 +90,7 @@ class TestHttpErrorMiddlewareHandleAll(TestCase):
 
     def setUp(self):
         self.spider = BaseSpider('foo')
-        self.mw = HttpErrorMiddleware(Settings({'HANDLE_HTTPSTATUS_ALL': True}))
+        self.mw = HttpErrorMiddleware(Settings({'HTTPERROR_ALLOW_ALL': True}))
         self.req = Request('http://scrapytest.org')
 
         self.res200 = Response('http://scrapytest.org', status=200)
