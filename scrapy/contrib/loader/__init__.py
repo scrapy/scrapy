@@ -11,16 +11,23 @@ from scrapy.item import Item
 from scrapy.selector import Selector
 from scrapy.utils.misc import arg_to_iter, extract_regex
 from scrapy.utils.python import flatten
+from scrapy.utils.decorator import deprecated
 from .common import wrap_loader_context
 from .processor import Identity
+
 
 class ItemLoader(object):
 
     default_item_class = Item
     default_input_processor = Identity()
     default_output_processor = Identity()
+    default_selector_class = Selector
 
-    def __init__(self, item=None, **context):
+    def __init__(self, item=None, selector=None, response=None, **context):
+        if selector is None and response is not None:
+            selector = self.default_selector_class(response)
+        self.selector = selector
+        context.update(selector=selector, response=response)
         if item is None:
             item = self.default_item_class()
         self.item = context['item'] = item
@@ -114,32 +121,56 @@ class ItemLoader(object):
             value = default
         return value
 
-class XPathItemLoader(ItemLoader):
-
-    default_selector_class = Selector
-
-    def __init__(self, item=None, selector=None, response=None, **context):
-        if selector is None and response is None:
-            raise RuntimeError("%s must be instantiated with a selector " \
-                "or response" % self.__class__.__name__)
-        if selector is None:
-            selector = self.default_selector_class(response)
-        self.selector = selector
-        context.update(selector=selector, response=response)
-        super(XPathItemLoader, self).__init__(item, **context)
+    def _check_selector_method(self):
+        if self.selector is None:
+            raise RuntimeError("To use XPath or CSS selectors, "
+                "%s must be instantiated with a selector "
+                "or a response" % self.__class__.__name__)
 
     def add_xpath(self, field_name, xpath, *processors, **kw):
-        values = self._get_values(xpath, **kw)
+        values = self._get_xpathvalues(xpath, **kw)
         self.add_value(field_name, values, *processors, **kw)
 
     def replace_xpath(self, field_name, xpath, *processors, **kw):
-        values = self._get_values(xpath, **kw)
+        values = self._get_xpathvalues(xpath, **kw)
         self.replace_value(field_name, values, *processors, **kw)
 
     def get_xpath(self, xpath, *processors, **kw):
-        values = self._get_values(xpath, **kw)
+        values = self._get_xpathvalues(xpath, **kw)
         return self.get_value(values, *processors, **kw)
 
+    @deprecated(use_instead='._get_xpathvalues()')
     def _get_values(self, xpaths, **kw):
+        return self._get_xpathvalues(xpaths, **kw)
+
+    def _get_xpathvalues(self, xpaths, **kw):
+        self._check_selector_method()
         xpaths = arg_to_iter(xpaths)
         return flatten([self.selector.xpath(xpath).extract() for xpath in xpaths])
+
+    def add_css(self, field_name, css, *processors, **kw):
+        values = self._get_cssvalues(css, **kw)
+        self.add_value(field_name, values, *processors, **kw)
+
+    def replace_css(self, field_name, css, *processors, **kw):
+        values = self._get_cssvalues(css, **kw)
+        self.replace_value(field_name, values, *processors, **kw)
+
+    def get_css(self, css, *processors, **kw):
+        values = self._get_cssvalues(css, **kw)
+        return self.get_value(values, *processors, **kw)
+
+    def _get_cssvalues(self, csss, **kw):
+        self._check_selector_method()
+        csss = arg_to_iter(csss)
+        return flatten([self.selector.css(css).extract() for css in csss])
+
+
+class XPathItemLoader(ItemLoader):
+    def __init__(self, *a, **kw):
+        import warnings
+        from scrapy.exceptions import ScrapyDeprecationWarning
+        warnings.warn('%s is deprecated, instanciate scrapy.contrib.loader.ItemLoader '
+                      'instead' % type(self).__name__,
+                      category=ScrapyDeprecationWarning, stacklevel=1)
+        super(XPathItemLoader, self).__init__(*a, **kw)
