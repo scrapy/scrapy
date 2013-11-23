@@ -13,7 +13,7 @@ from .lxmldocument import LxmlDocument
 from .csstranslator import ScrapyHTMLTranslator, ScrapyGenericTranslator
 
 
-__all__ = ['Selector', 'SelectorList']
+__all__ = ['Selector', 'SelectorList', 'XPath', 'CSS']
 
 _ctgroup = {
     'html': {'_parser': etree.HTMLParser,
@@ -38,6 +38,31 @@ def _response_from_text(text, st):
     rt = XmlResponse if st == 'xml' else HtmlResponse
     return rt(url='about:blank', encoding='utf-8',
               body=unicode_to_str(text, 'utf-8'))
+
+
+class XPath(object_ref):
+
+    def __init__(self, xpath, type=None, namespaces=None):
+        self.xpath = xpath
+        self.namespaces = namespaces
+        try:
+            self._compiled_xpath = etree.XPath(xpath, namespaces=namespaces)
+        except etree.XPathError:
+            raise ValueError("Invalid XPath: %s" % xpath)
+
+    def __call__(self, document):
+        return self._compiled_xpath(document)
+
+
+class CSS(XPath):
+
+    _csstranslator_type = 'html'
+
+    def __init__(self, css, *args, **kwargs):
+        self.css = css
+        self._csstranslator = _ctgroup[self._csstranslator_type]['_csstranslator']
+        super(CSS, self).__init__(
+            self._csstranslator.css_to_xpath(css), *args, **kwargs)
 
 
 class Selector(object_ref):
@@ -71,10 +96,13 @@ class Selector(object_ref):
         except AttributeError:
             return SelectorList([])
 
-        try:
-            result = xpathev(query, namespaces=self.namespaces)
-        except etree.XPathError:
-            raise ValueError("Invalid XPath: %s" % query)
+        if isinstance(query, (XPath, CSS)):
+            result = query(self._root)
+        else:
+            try:
+                result = xpathev(query, namespaces=self.namespaces)
+            except etree.XPathError:
+                raise ValueError("Invalid XPath: %s" % query)
 
         if type(result) is not list:
             result = [result]
@@ -86,7 +114,10 @@ class Selector(object_ref):
         return SelectorList(result)
 
     def css(self, query):
-        return self.xpath(self._css2xpath(query))
+        if isinstance(query, CSS):
+            return self.xpath(query)
+        else:
+            return self.xpath(self._css2xpath(query))
 
     def _css2xpath(self, query):
         return self._csstranslator.css_to_xpath(query)
