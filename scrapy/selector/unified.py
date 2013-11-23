@@ -45,12 +45,20 @@ class XPath(object_ref):
     def __init__(self, xpath, type=None, namespaces=None):
         self.xpath = xpath
         self.namespaces = namespaces
-        try:
-            self._compiled_xpath = etree.XPath(xpath, namespaces=namespaces)
-        except etree.XPathError:
-            raise ValueError("Invalid XPath: %s" % xpath)
+        self._compiled_xpath = None
+
+    def register_namespace(self, prefix, uri):
+        if self.namespaces is None:
+            self.namespaces = {}
+        self.namespaces[prefix] = uri
 
     def __call__(self, document):
+        if self._compiled_xpath is None:
+            try:
+                self._compiled_xpath = etree.XPath(self.xpath,
+                    namespaces=self.namespaces)
+            except etree.XPathError:
+                raise ValueError("Invalid XPath: %s" % self.xpath)
         return self._compiled_xpath(document)
 
 

@@ -444,9 +444,15 @@ class CompiledSelectorTestCase(unittest.TestCase):
         """
 
         response = XmlResponse(url="http://example.com", body=body)
+
         xp_somens_a_text = XPath("//somens:a/text()",
             namespaces={"somens":"http://scrapy.org"})
         x = self.sscls(response)
+        self.assertEqual(x.xpath(xp_somens_a_text).extract(),
+                         [u'take this'])
+
+        xp_somens_a_text = XPath("//somens:a/text()")
+        xp_somens_a_text.register_namespace("somens", "http://scrapy.org")
         self.assertEqual(x.xpath(xp_somens_a_text).extract(),
                          [u'take this'])
 
@@ -534,8 +540,9 @@ class CompiledSelectorTestCase(unittest.TestCase):
         response = XmlResponse(url="http://example.com", body="<html></html>")
         x = self.sscls(response)
         xpath = "//test[@foo='bar]"
+        xp = XPath(xpath)
         try:
-            XPath(xpath)
+            x.xpath(xp)
         except ValueError as e:
             assert xpath in str(e), "Exception message does not contain invalid xpath"
         except Exception as e:
