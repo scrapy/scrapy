@@ -7,8 +7,18 @@ See documentation in docs/topics/request-response.rst
 
 import urllib
 import lxml.html
+import lxml.etree
 from scrapy.http.request import Request
 from scrapy.utils.python import unicode_to_str
+
+_xp_form = lxml.etree.XPath('//form')
+_xp_form_name = lxml.etree.XPath('//form[@name=$name]')
+_xp_form_inputs = lxml.etree.XPath('descendant::textarea'
+                        '|descendant::select'
+                        '|descendant::input[@type!="submit" and @type!="image" and @type!="reset"'
+                        'and ((@type!="checkbox" and @type!="radio") or @checked)]')
+_xp_option_selected = lxml.etree.XPath('.//option[@selected]')
+_xp_input_submit = lxml.etree.XPath('.//input[@type="submit"]')
 
 
 class FormRequest(Request):
@@ -50,18 +60,19 @@ def _get_form(response, formname, formnumber, formxpath):
     """Find the form element """
     from scrapy.selector.lxmldocument import LxmlDocument
     root = LxmlDocument(response, lxml.html.HTMLParser)
-    forms = root.xpath('//form')
+    forms = _xp_form(root)
     if not forms:
         raise ValueError("No <form> element found in %s" % response)
 
     if formname is not None:
-        f = root.xpath('//form[@name="%s"]' % formname)
+        f = _xp_form_name(root, name = formname)
         if f:
             return f[0]
 
     # Get form element from xpath, if not found, go up
     if formxpath is not None:
-        nodes = root.xpath(formxpath)
+        xp_form_xpath = lxml.etree.XPath(formxpath)
+        nodes = xp_form_xpath(root)
         if nodes:
             el = nodes[0]
             while True:
@@ -89,10 +100,7 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
     except (ValueError, TypeError):
         raise ValueError('formdata should be a dict or iterable of tuples')
 
-    inputs = form.xpath('descendant::textarea'
-                        '|descendant::select'
-                        '|descendant::input[@type!="submit" and @type!="image" and @type!="reset"'
-                        'and ((@type!="checkbox" and @type!="radio") or @checked)]')
+    inputs = _xp_form_inputs(form)
     values = [(k, u'' if v is None else v) \
               for k, v in (_value(e) for e in inputs) \
               if k and k not in formdata]
@@ -122,7 +130,7 @@ def _select_value(ele, n, v):
     elif v is not None and multiple:
         # This is a workround to bug in lxml fixed 2.3.1
         # fix https://github.com/lxml/lxml/commit/57f49eed82068a20da3db8f1b18ae00c1bab8b12#L1L1139
-        selected_options = ele.xpath('.//option[@selected]')
+        selected_options = _xp_option_selected(ele)
         v = [(o.get('value') or o.text or u'').strip() for o in selected_options]
     return n, v
 
@@ -133,7 +141,7 @@ def _get_clickable(clickdata, form):
     if the latter is given. If not, it returns the first
     clickable element found
     """
-    clickables = [el for el in form.xpath('.//input[@type="submit"]')]
+    clickables = [el for el in _xp_input_submit(form)]
     if not clickables:
         return
 
