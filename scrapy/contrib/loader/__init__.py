@@ -129,9 +129,15 @@ class ItemLoader(object):
                 "%s must be instantiated with a selector "
                 "or a response" % self.__class__.__name__)
 
-    def set_selector(self, selector):
-        self.selector = selector
-        self.context.update(selector=selector)
+    def reset(self, selector=None, response=None):
+        if response is not None:
+            if selector is None:
+                selector = self.default_selector_class(response)
+            self.selector = selector
+            self.context.update(selector=selector, response=response)
+        elif selector is not None:
+            self.selector = selector
+            self.context.update(selector=selector)
 
     def add_xpath(self, field_name, xpath, *processors, **kw):
         values = self._get_xpathvalues(xpath, **kw)
