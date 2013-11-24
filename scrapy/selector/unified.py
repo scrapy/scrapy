@@ -57,9 +57,12 @@ class XPath(object_ref):
             try:
                 self._compiled_xpath = etree.XPath(self.xpath,
                     namespaces=self.namespaces)
-            except etree.XPathError:
-                raise ValueError("Invalid XPath: %s" % self.xpath)
-        return self._compiled_xpath(document)
+            except etree.XPathError as e:
+                raise ValueError("Invalid XPath: %s -- %s" % (self.xpath, str(e)))
+        try:
+            return self._compiled_xpath(document)
+        except etree.XPathEvalError as e:
+            raise ValueError("Invalid XPath: %s -- %s" % (self.xpath, str(e)))
 
 
 class CSS(XPath):
@@ -109,8 +112,8 @@ class Selector(object_ref):
         else:
             try:
                 result = xpathev(query, namespaces=self.namespaces)
-            except etree.XPathError:
-                raise ValueError("Invalid XPath: %s" % query)
+            except etree.XPathError as e:
+                raise ValueError("Invalid XPath: %s -- %s" % (query, str(e)))
 
         if type(result) is not list:
             result = [result]
