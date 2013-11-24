@@ -3,6 +3,7 @@ XPath selectors based on lxml
 """
 
 from lxml import etree
+import copy
 
 from scrapy.utils.misc import extract_regex
 from scrapy.utils.trackref import object_ref
@@ -46,6 +47,45 @@ class Selector(object_ref):
                  '__weakref__', '_parser', '_csstranslator', '_tostring_method']
 
     _default_type = None
+    _default_namespaces = {
+        "regexp": "http://exslt.org/regular-expressions",
+
+        # supported in libxslt:
+        # set:difference
+        # set:has-same-node
+        # set:intersection
+        # set:leading
+        # set:trailing
+        "set": "http://exslt.org/sets",
+
+        # supported in libxslt:
+        # math:abs()
+        # math:acos()
+        # math:asin()
+        # math:atan()
+        # math:atan2()
+        # math:constant()
+        # math:cos()
+        # math:exp()
+        # math:highest()
+        # math:log()
+        # math:lowest()
+        # math:max()
+        # math:min()
+        # math:power()
+        # math:random()
+        # math:sin()
+        # math:sqrt()
+        # math:tan()
+        "math": "http://exslt.org/math",
+
+        # supported in libxslt:
+        # str:align
+        # str:concat
+        # str:padding
+        # str:tokenize
+        "str": "http://exslt.org/strings",
+    }
 
     def __init__(self, response=None, text=None, type=None, namespaces=None,
                  _root=None, _expr=None):
@@ -61,7 +101,9 @@ class Selector(object_ref):
             _root = LxmlDocument(response, self._parser)
 
         self.response = response
-        self.namespaces = namespaces
+        ns = copy.copy(self._default_namespaces)
+        ns.update(namespaces or {})
+        self.namespaces = ns
         self._root = _root
         self._expr = _expr
 

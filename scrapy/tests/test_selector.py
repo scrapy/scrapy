@@ -333,3 +333,52 @@ class DeprecatedXpathSelectorTest(unittest.TestCase):
             self.assertEqual(xs.select("//div").extract(),
                              [u'<div><img src="a.jpg"><p>Hello</p></img></div>'])
             self.assertRaises(RuntimeError, xs.css, 'div')
+
+
+
+class ExsltTestCase(unittest.TestCase):
+
+    sscls = Selector
+
+    def test_regexp(self):
+        """EXSLT regular expression tests"""
+        body = """
+        <p><input name='a' value='1'/><input name='b' value='2'/></p>
+        <div class="links">
+        <a href="/first.html">first link</a>
+        <a href="/second.html">second link</a>
+        <a href="http://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.xml">EXSLT match example</a>
+        </div>
+        """
+        response = TextResponse(url="http://example.com", body=body)
+        sel = self.sscls(response)
+
+        # regexp:test()
+        self.assertEqual(sel.xpath('//input[regexp:test(@name, "[A-Z]+", "i")]').extract(),
+                         [x.extract() for x in sel.xpath('//input[regexp:test(@name, "[A-Z]+", "i")]')])
+        self.assertEqual([x.extract() for x in sel.xpath('//a[regexp:test(@href, "\.html$")]/text()')],
+                         [u'first link', u'second link'])
+        self.assertEqual([x.extract() for x in sel.xpath('//a[regexp:test(@href, "first")]/text()')],
+                         [u'first link'])
+        self.assertEqual([x.extract() for x in sel.xpath('//a[regexp:test(@href, "second")]/text()')],
+                         [u'second link'])
+
+        # regexp:match() is rather special: it returns a node-set of <match> nodes
+        #[u'<match>http://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.xml</match>',
+        #u'<match>http</match>',
+        #u'<match>www.bayes.co.uk</match>',
+        #u'<match></match>',
+        #u'<match>/xml/index.xml?/xml/utils/rechecker.xml</match>']
+        self.assertEqual(sel.xpath(''
+            'regexp:match(//a[regexp:test(@href, "\.xml$")]/@href,'
+            '"(\w+):\/\/([^/:]+)(:\d*)?([^# ]*)")/text()').extract(),
+                         [u'http://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.xml',
+                             u'http',
+                             u'www.bayes.co.uk',
+                             u'',
+                             u'/xml/index.xml?/xml/utils/rechecker.xml'])
+
+        # regexp:replace()
+        self.assertEqual(sel.xpath('regexp:replace(//a[regexp:test(@href, "\.xml$")]/@href,'
+            '"(\w+)://(.+)(\.xml)", "","https://\\2.html")').extract(),
+                         [u'https://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.html'])
