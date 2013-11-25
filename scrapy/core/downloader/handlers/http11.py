@@ -67,7 +67,8 @@ class ScrapyAgent(object):
         # request details
         url = urldefrag(request.url)[0]
         method = request.method
-        headers = TxHeaders(request.headers)
+        headers = TxHeaders(dict((k, filter(lambda h: h is not None, v)) for k, v in request.headers.items()
+                            if v is not None and filter(lambda h: h is not None, v)))
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
 
         start_time = time()
