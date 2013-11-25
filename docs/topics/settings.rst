@@ -389,6 +389,29 @@ Default: ``180``
 
 The amount of time (in secs) that the downloader will wait before timing out.
 
+.. setting:: DOWNLOAD_MAXSIZE
+
+DOWNLOAD_MAXSIZE
+----------------
+
+Default: `1073741824` (1024Mb)
+
+The maximum response size (in bytes) that downloader will download.
+
+You can also set the maximum size per request in Request's meta attribute. For example,
+to limit the response size to 1 Mb::
+
+    Request(url='http://www.example.com', meta={'download_maxsize': 1024 * 1024})
+
+.. setting:: DOWNLOAD_MAXSIZE
+
+DOWNLOAD_WARNSIZE
+----------------
+
+Default: `33554432` (32Mb)
+
+The response size (in bytes) that downloader will start to warn.
+
 .. setting:: DUPEFILTER_CLASS
 
 DUPEFILTER_CLASS

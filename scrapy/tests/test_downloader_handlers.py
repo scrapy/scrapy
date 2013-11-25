@@ -142,11 +142,6 @@ class HttpTestCase(unittest.TestCase):
         request = Request(self.getURL('host'), headers={'Host': 'example.com'})
         return self.download_request(request, BaseSpider('foo')).addCallback(_test)
 
-        d = self.download_request(request, BaseSpider('foo'))
-        d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEquals, 'example.com')
-        return d
-
     def test_payload(self):
         body = '1'*100 # PayloadResource requires body length to be 100
         request = Request(self.getURL('payload'), method='POST', body=body)
@@ -172,6 +167,12 @@ class Http11TestCase(HttpTestCase):
     if 'http11' not in optional_features:
         skip = 'HTTP1.1 not supported in twisted < 11.1.0'
 
+    @defer.inlineCallbacks
+    def test_download_maxsize(self):
+        meta = {'download_maxsize': 2}
+        request = Request(self.getURL('hang-after-headers'), meta=meta)
+        d = self.download_request(request, BaseSpider('foo'))
+        yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
 
 class UriResource(resource.Resource):
     """Return the full uri that was requested"""
