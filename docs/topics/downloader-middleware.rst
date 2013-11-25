@@ -63,21 +63,29 @@ single Python class that defines one or more of the following methods:
       This method is called for each request that goes through the download
       middleware.
 
-      :meth:`process_request` should return either ``None``, a
-      :class:`~scrapy.http.Response` object, or a :class:`~scrapy.http.Request`
-      object.
+      :meth:`process_request` should either: return ``None``, return a
+      :class:`~scrapy.http.Response` object, return a :class:`~scrapy.http.Request`
+      object, or raise :exc:`~scrapy.exceptions.IgnoreRequest`.
 
       If it returns ``None``, Scrapy will continue processing this request, executing all
       other middlewares until, finally, the appropriate downloader handler is called
       the request performed (and its response downloaded).
 
       If it returns a :class:`~scrapy.http.Response` object, Scrapy won't bother
-      calling ANY other request or exception middleware, or the appropriate
-      download function; it'll return that Response. Response middleware is
-      always called on every Response.
+      calling *any* other :meth:`process_request` or :meth:`process_exception` methods,
+      or the appropriate download function; it'll return that response. The :meth:`process_response`
+      methods of installed middleware is always called on every response.
+
+      If it returns a :class:`~scrapy.http.Request` object, Scrapy will stop calling
+      process_request methods and reschedule the returned request. Once the newly returned
+      request is performed, the appropriate middleware chain will be called on
+      the downloaded response.
 
       If it raises an :exc:`~scrapy.exceptions.IgnoreRequest` exception, the
-      entire request will be dropped completely and its callback never called.
+      :meth:`process_exception` methods of installed downloader middleware will be called.
+      If none of them handle the exception, the errback function of the request
+      (``Request.errback``) is called. If no code handles the raised exception, it is
+      ignored and not logged (unlike other exceptions).
 
       :param request: the request being processed
       :type request: :class:`~scrapy.http.Request` object
@@ -87,19 +95,21 @@ single Python class that defines one or more of the following methods:
 
    .. method:: process_response(request, response, spider)
 
-      :meth:`process_response` should return either a :class:`~scrapy.http.Response`
-      object, a :class:`~scrapy.http.Request` object or 
+      :meth:`process_response` should either: return a :class:`~scrapy.http.Response`
+      object, return a :class:`~scrapy.http.Request` object or 
       raise a :exc:`~scrapy.exceptions.IgnoreRequest` exception.
 
       If it returns a :class:`~scrapy.http.Response` (it could be the same given
       response, or a brand-new one), that response will continue to be processed
-      with the :meth:`process_response` of the next middleware in the pipeline.
+      with the :meth:`process_response` of the next middleware in the chain.
 
-      If it returns a :class:`~scrapy.http.Request` object, the returned request will be
-      rescheduled to be downloaded in the future.
+      If it returns a :class:`~scrapy.http.Request` object, the middleware chain is
+      halted and the returned request is rescheduled to be downloaded in the future.
+      This is the same behavior as if a request is returned from :meth:`process_request`.
 
-      If it raises an :exc:`~scrapy.exceptions.IgnoreRequest` exception, the
-      response will be dropped completely and its callback never called.
+      If it raises an :exc:`~scrapy.exceptions.IgnoreRequest` exception, the errback
+      function of the request (``Request.errback``) is called. If no code handles the raised
+      exception, it is ignored and not logged (unlike other exceptions).
 
       :param request: the request that originated the response
       :type request: is a :class:`~scrapy.http.Request` object
@@ -114,23 +124,23 @@ single Python class that defines one or more of the following methods:
 
       Scrapy calls :meth:`process_exception` when a download handler
       or a :meth:`process_request` (from a downloader middleware) raises an
-      exception.
+      exception (including an :exc:`~scrapy.exceptions.IgnoreRequest` exception)
 
-      :meth:`process_exception` should return either ``None``,
-      :class:`~scrapy.http.Response` or :class:`~scrapy.http.Request` object.
+      :meth:`process_exception` should return: either ``None``,
+      a :class:`~scrapy.http.Response` object, or a :class:`~scrapy.http.Request` object.
 
       If it returns ``None``, Scrapy will continue processing this exception,
-      executing any other exception middleware, until no middleware is left and
-      the default exception handling kicks in.
+      executing any other :meth:`process_exception` methods of installed middleware,
+      until no middleware is left and the default exception handling kicks in.
 
-      If it returns a :class:`~scrapy.http.Response` object, the response middleware
-      kicks in, and won't bother calling any other exception middleware.
+      If it returns a :class:`~scrapy.http.Response` object, the :meth:`process_response`
+      method chain of installed middleware is started, and Scrapy won't bother calling
+      any other :meth:`process_exception` methods of middleware.
 
       If it returns a :class:`~scrapy.http.Request` object, the returned request is
-      used to instruct an immediate redirection.
-      The original request won't finish until the redirected
-      request is completed. This stops the :meth:`process_exception`
-      middleware the same as returning Response would do.
+      rescheduled to be downloaded in the future. This stops the execution of
+      :meth:`process_exception` methods of the middleware the same as returning a
+      response would.
 
       :param request: the request that generated the exception
       :type request: is a :class:`~scrapy.http.Request` object
