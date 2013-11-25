@@ -17,7 +17,9 @@ class Headers(CaselessDict):
 
     def normvalue(self, value):
         """Headers must not be unicode"""
-        if not hasattr(value, '__iter__'):
+        if value is None:
+            value = []
+        elif not hasattr(value, '__iter__'):
             value = [value]
         return [x.encode(self.encoding) if isinstance(x, unicode) else x \
             for x in value]
