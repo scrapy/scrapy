@@ -8,6 +8,12 @@ Release notes
 
 - soon...
 
+0.20.1 (released 2013-11-28)
+----------------------------
+
+- include_package_data is required to build wheels from published sources (:commit:`5ba1ad5`)
+- process_parallel was leaking the failures on its internal deferreds.  closes #458 (:commit:`419a780`)
+
 0.20.0 (released 2013-11-08)
 ----------------------------
 
