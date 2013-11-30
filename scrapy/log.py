@@ -77,7 +77,7 @@ def _adapt_eventdict(eventDict, log_level=INFO, encoding='utf-8', prepend_level=
 
     spider = ev.get('spider')
     if spider:
-        ev['system'] = spider.name
+        ev['system'] = unicode_to_str(spider.name, encoding)
 
     lvlname = level_names.get(level, 'NOLEVEL')
     message = ev.get('message')
