@@ -222,7 +222,7 @@ documentation).
   them representing the nodes selected by the xpath expression given as
   argument.
 
-* :meth:`~scrapy.selector.Selector.xpath`: returns a list of selectors, each of
+* :meth:`~scrapy.selector.Selector.css`: returns a list of selectors, each of
   them representing the nodes selected by the CSS expression given as argument. 
 
 * :meth:`~scrapy.selector.Selector.extract`: returns a unicode string with the
