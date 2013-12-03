@@ -42,6 +42,8 @@ class ProxyConnectTestCase(TestCase):
         self._oldenv = os.environ.copy()
         self._proxy = HTTPSProxy(8888)
         self._proxy.start()
+        # Wait for the proxy to start.
+        time.sleep(1.0)
         os.environ['http_proxy'] = 'http://scrapy:scrapy@localhost:8888'
         os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:8888'
 
