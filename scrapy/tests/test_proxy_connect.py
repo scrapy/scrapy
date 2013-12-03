@@ -26,9 +26,11 @@ class HTTPSProxy(controller.Master, Thread):
     def __init__(self, port):
         password_manager = http_auth.PassManSingleUser('scrapy', 'scrapy')
         authenticator = http_auth.BasicProxyAuth(password_manager, "mitmproxy")
+        cert_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+            'keys', 'mitmproxy-ca.pem')
         server = proxy.ProxyServer(proxy.ProxyConfig(
             authenticator = authenticator,
-            cacert = os.path.expanduser("~/.mitmproxy/mitmproxy-ca.pem")),
+            cacert = cert_path),
             port)
         Thread.__init__(self)
         controller.Master.__init__(self, server)
