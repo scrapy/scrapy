@@ -74,7 +74,8 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
                         self.current_link = link
 
     def unknown_endtag(self, tag):
-        self.current_link = None
+        if self.scan_tag(tag):
+            self.current_link = None
 
     def handle_data(self, data):
         if self.current_link:
