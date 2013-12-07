@@ -37,7 +37,7 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
                 link.url = link.url.encode(response_encoding)
             link.url = urljoin(base_url, link.url)
             link.url = safe_url_string(link.url, response_encoding)
-            link.text = str_to_unicode(link.text, response_encoding, errors='replace')
+            link.text = str_to_unicode(link.text, response_encoding, errors='replace').strip()
             ret.append(link)
 
         return ret
@@ -79,7 +79,7 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
 
     def handle_data(self, data):
         if self.current_link:
-            self.current_link.text = self.current_link.text + data.strip()
+            self.current_link.text = self.current_link.text + data
 
     def matches(self, url):
         """This extractor matches with any url, since
