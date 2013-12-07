@@ -123,6 +123,7 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
             Link(url='http://example.com/sample2.html', text=u'sample 2'),
             Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
             Link(url='http://www.google.com/something', text=u''),
+            Link(url='http://example.com/innertag.html', text=u'inner tag'),
         ])
 
         lx = SgmlLinkExtractor(allow=('sample', ))
