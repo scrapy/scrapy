@@ -8,6 +8,12 @@ Release notes
 
 - soon...
 
+0.20.2 (released 2013-12-09)
+----------------------------
+
+- Update CrawlSpider Template with Selector changes (:commit:`6d1457d`)
+- fix method name in tutorial. closes GH-480 (:commit:`b4fc359`
+
 0.20.1 (released 2013-11-28)
 ----------------------------
 
