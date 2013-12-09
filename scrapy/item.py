@@ -32,6 +32,9 @@ class ItemMeta(type):
 
         cls = type.__new__(mcs, class_name, bases, new_attrs)
         cls.fields = cls.fields.copy()
+        for e in cls.__mro__[::-1]:
+           if hasattr(e, 'fields'):
+               cls.fields.update(e.fields)
         cls.fields.update(fields)
         return cls
 
