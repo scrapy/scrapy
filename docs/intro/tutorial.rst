@@ -363,6 +363,8 @@ Let's add this code to our spider::
                desc = site.xpath('text()').extract()
                print title, link, desc
 
+Notice we import our Selector class from scrapy.selector and instantiate a 
+new Selector object.  We can now specify our XPaths just as we did in the shell.
 Now try crawling the dmoz.org domain again and you'll see sites being printed
 in your output, run::
 
