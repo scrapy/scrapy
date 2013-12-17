@@ -267,10 +267,32 @@ class FilesPipeline(MediaPipeline):
         return item
 
     def file_path(self, request, response=None, info=None):
-        return self.file_key(request.url)
+        ## start of deprecation warning block (can be removed in the future)
+        def _warn():
+            from scrapy.exceptions import ScrapyDeprecationWarning
+            import warnings
+            warnings.warn('FilesPipeline.file_key(url) method is deprecated, please use '
+                          'file_path(request, response=None, info=None) instead',
+                          category=ScrapyDeprecationWarning, stacklevel=1)
+
+        # check if called from file_key with url as first argument
+        if isinstance(request, unicode) or isinstance(request, str):
+            _warn()
+            url = request
+        else:
+            url = request.url
+
+        # detect if file_key() method has been overridden
+        if not hasattr(self.file_key, '_overridden'):
+            _warn()
+            return self.file_key(url)
+        ## end of deprecation warning block
+
+        media_guid = hashlib.sha1(url).hexdigest()  # change to request.url after deprecation
+        media_ext = os.path.splitext(url)[1]  # change to request.url after deprecation
+        return 'full/%s%s' % (media_guid, media_ext)
 
     # deprecated
     def file_key(self, url):
-        media_guid = hashlib.sha1(url).hexdigest()
-        media_ext = os.path.splitext(url)[1]
-        return 'full/%s%s' % (media_guid, media_ext)
+        return self.file_path(url)
+    file_key._overridden = False

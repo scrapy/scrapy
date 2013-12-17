@@ -109,21 +109,69 @@ class ImagesPipeline(FilesPipeline):
         return item
 
     def file_path(self, request, response=None, info=None):
-        return self.file_key(request.url)
+        ## start of deprecation warning block (can be removed in the future)
+        def _warn():
+            from scrapy.exceptions import ScrapyDeprecationWarning
+            import warnings
+            warnings.warn('ImagesPipeline.image_key(url) and file_key(url) methods are deprecated, '
+                          'please use file_path(request, response=None, info=None) instead',
+                          category=ScrapyDeprecationWarning, stacklevel=1)
+
+        # check if called from image_key or file_key with url as first argument
+        if isinstance(request, unicode) or isinstance(request, str):
+            _warn()
+            url = request
+        else:
+            url = request.url
+
+        # detect if file_key() or image_key() methods have been overridden
+        if not hasattr(self.file_key, '_overridden'):
+            _warn()
+            return self.file_key(url)
+        elif not hasattr(self.image_key, '_overridden'):
+            _warn()
+            return self.image_key(url)
+        ## end of deprecation warning block
+
+        image_guid = hashlib.sha1(url).hexdigest()  # change to request.url after deprecation
+        return 'full/%s.jpg' % (image_guid)
 
     def thumb_path(self, request, thumb_id, response=None, info=None):
-        return self.thumb_key(request.url)
+        ## start of deprecation warning block (can be removed in the future)
+        def _warn():
+            from scrapy.exceptions import ScrapyDeprecationWarning
+            import warnings
+            warnings.warn('ImagesPipeline.thumb_key(url) method is deprecated, please use '
+                          'thumb_path(request, thumb_id, response=None, info=None) instead',
+                          category=ScrapyDeprecationWarning, stacklevel=1)
+
+        # check if called from thumb_key with url as first argument
+        if isinstance(request, unicode) or isinstance(request, str):
+            _warn()
+            url = request
+        else:
+            url = request.url
+
+        # detect if thumb_key() method has been overridden
+        if not hasattr(self.thumb_key, '_overridden'):
+            _warn()
+            return self.thumb_key(url, thumb_id)
+        ## end of deprecation warning block
+
+        thumb_guid = hashlib.sha1(url).hexdigest()  # change to request.url after deprecation
+        return 'thumbs/%s/%s.jpg' % (thumb_id, thumb_guid)
 
     # deprecated
     def file_key(self, url):
         return self.image_key(url)
+    file_key._overridden = False
 
     # deprecated
     def image_key(self, url):
-        image_guid = hashlib.sha1(url).hexdigest()
-        return 'full/%s.jpg' % (image_guid)
+        return self.file_path(url)
+    image_key._overridden = False
 
     # deprecated
     def thumb_key(self, url, thumb_id):
-        thumb_guid = hashlib.sha1(url).hexdigest()
-        return 'thumbs/%s/%s.jpg' % (thumb_id, thumb_guid)
+        return self.thumb_path(url, thumb_id)
+    thumb_key._overridden = False
