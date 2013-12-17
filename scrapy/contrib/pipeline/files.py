@@ -33,14 +33,14 @@ class FSFilesStore(object):
         self._mkdir(self.basedir)
         self.created_directories = defaultdict(set)
 
-    def persist_file(self, key, buf, info, meta=None, headers=None):
-        absolute_path = self._get_filesystem_path(key)
+    def persist_file(self, path, buf, info, meta=None, headers=None):
+        absolute_path = self._get_filesystem_path(path)
         self._mkdir(os.path.dirname(absolute_path), info)
         with open(absolute_path, 'wb') as f:
             f.write(buf.getvalue())
 
-    def stat_file(self, key, info):
-        absolute_path = self._get_filesystem_path(key)
+    def stat_file(self, path, info):
+        absolute_path = self._get_filesystem_path(path)
         try:
             last_modified = os.path.getmtime(absolute_path)
         except:  # FIXME: catching everything!
@@ -51,8 +51,8 @@ class FSFilesStore(object):
 
         return {'last_modified': last_modified, 'checksum': checksum}
 
-    def _get_filesystem_path(self, key):
-        path_comps = key.split('/')
+    def _get_filesystem_path(self, path):
+        path_comps = path.split('/')
         return os.path.join(self.basedir, *path_comps)
 
     def _mkdir(self, dirname, domain=None):
@@ -77,7 +77,7 @@ class S3FilesStore(object):
         assert uri.startswith('s3://')
         self.bucket, self.prefix = uri[5:].split('/', 1)
 
-    def stat_file(self, key, info):
+    def stat_file(self, path, info):
         def _onsuccess(boto_key):
             checksum = boto_key.etag.strip('"')
             last_modified = boto_key.last_modified
@@ -85,7 +85,7 @@ class S3FilesStore(object):
             modified_stamp = int(rfc822.mktime_tz(modified_tuple))
             return {'checksum': checksum, 'last_modified': modified_stamp}
 
-        return self._get_boto_key(key).addCallback(_onsuccess)
+        return self._get_boto_key(path).addCallback(_onsuccess)
 
     def _get_boto_bucket(self):
         from boto.s3.connection import S3Connection
@@ -94,15 +94,15 @@ class S3FilesStore(object):
         c = S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=False)
         return c.get_bucket(self.bucket, validate=False)
 
-    def _get_boto_key(self, key):
+    def _get_boto_key(self, path):
         b = self._get_boto_bucket()
-        key_name = '%s%s' % (self.prefix, key)
+        key_name = '%s%s' % (self.prefix, path)
         return threads.deferToThread(b.get_key, key_name)
 
-    def persist_file(self, key, buf, info, meta=None, headers=None):
+    def persist_file(self, path, buf, info, meta=None, headers=None):
         """Upload file to S3 storage"""
         b = self._get_boto_bucket()
-        key_name = '%s%s' % (self.prefix, key)
+        key_name = '%s%s' % (self.prefix, path)
         k = b.new_key(key_name)
         if meta:
             for metakey, metavalue in meta.iteritems():
@@ -191,10 +191,10 @@ class FilesPipeline(MediaPipeline):
             self.inc_stats(info.spider, 'uptodate')
 
             checksum = result.get('checksum', None)
-            return {'url': request.url, 'path': key, 'checksum': checksum}
+            return {'url': request.url, 'path': path, 'checksum': checksum}
 
-        key = self.file_key(request.url)
-        dfd = defer.maybeDeferred(self.store.stat_file, key, info)
+        path = self.file_path(request, info=info)
+        dfd = defer.maybeDeferred(self.store.stat_file, path, info)
         dfd.addCallbacks(_onsuccess, lambda _: None)
         dfd.addErrback(log.err, self.__class__.__name__ + '.store.stat_file')
         return dfd
@@ -232,7 +232,7 @@ class FilesPipeline(MediaPipeline):
         self.inc_stats(info.spider, status)
 
         try:
-            key = self.file_key(request.url)
+            path = self.file_path(request, response=response, info=info)
             checksum = self.file_downloaded(response, request, info)
         except FileException as exc:
             whyfmt = 'File (error): Error processing image from %(request)s referred in <%(referer)s>: %(errormsg)s'
@@ -244,7 +244,7 @@ class FilesPipeline(MediaPipeline):
             log.err(None, whyfmt % {'request': request, 'referer': referer}, spider=info.spider)
             raise FileException(str(exc))
 
-        return {'url': request.url, 'path': key, 'checksum': checksum}
+        return {'url': request.url, 'path': path, 'checksum': checksum}
 
     def inc_stats(self, spider, status):
         spider.crawler.stats.inc_value('file_count', spider=spider)
@@ -254,15 +254,10 @@ class FilesPipeline(MediaPipeline):
     def get_media_requests(self, item, info):
         return [Request(x) for x in item.get(self.FILES_URLS_FIELD, [])]
 
-    def file_key(self, url):
-        media_guid = hashlib.sha1(url).hexdigest()
-        media_ext = os.path.splitext(url)[1]
-        return 'full/%s%s' % (media_guid, media_ext)
-
     def file_downloaded(self, response, request, info):
-        key = self.file_key(request.url)
+        path = self.file_path(request)
         buf = StringIO(response.body)
-        self.store.persist_file(key, buf, info)
+        self.store.persist_file(path, buf, info)
         checksum = md5sum(buf)
         return checksum
 
@@ -270,3 +265,12 @@ class FilesPipeline(MediaPipeline):
         if self.FILES_RESULT_FIELD in item.fields:
             item[self.FILES_RESULT_FIELD] = [x for ok, x in results if ok]
         return item
+
+    def file_path(self, request, response=None, info=None):
+        return self.file_key(request.url)
+
+    # deprecated
+    def file_key(self, url):
+        media_guid = hashlib.sha1(url).hexdigest()
+        media_ext = os.path.splitext(url)[1]
+        return 'full/%s%s' % (media_guid, media_ext)
