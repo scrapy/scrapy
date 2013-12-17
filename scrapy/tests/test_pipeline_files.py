@@ -30,18 +30,18 @@ class FilesPipelineTestCase(unittest.TestCase):
         rmtree(self.tempdir)
 
     def test_file_path(self):
-        image_path = self.pipeline.file_key
-        self.assertEqual(image_path("https://dev.mydeco.com/mydeco.pdf"),
+        image_path = self.pipeline.file_path
+        self.assertEqual(image_path(Request("https://dev.mydeco.com/mydeco.pdf")),
                          'full/c9b564df929f4bc635bdd19fde4f3d4847c757c5.pdf')
-        self.assertEqual(image_path("http://www.maddiebrown.co.uk///catalogue-items//image_54642_12175_95307.txt"),
+        self.assertEqual(image_path(Request("http://www.maddiebrown.co.uk///catalogue-items//image_54642_12175_95307.txt")),
                          'full/4ce274dd83db0368bafd7e406f382ae088e39219.txt')
-        self.assertEqual(image_path("https://dev.mydeco.com/two/dirs/with%20spaces%2Bsigns.doc"),
+        self.assertEqual(image_path(Request("https://dev.mydeco.com/two/dirs/with%20spaces%2Bsigns.doc")),
                          'full/94ccc495a17b9ac5d40e3eabf3afcb8c2c9b9e1a.doc')
-        self.assertEqual(image_path("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg"),
+        self.assertEqual(image_path(Request("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg")),
                          'full/4507be485f38b0da8a0be9eb2e1dfab8a19223f2.jpg')
-        self.assertEqual(image_path("http://www.dorma.co.uk/images/product_details/2532/"),
+        self.assertEqual(image_path(Request("http://www.dorma.co.uk/images/product_details/2532/")),
                          'full/97ee6f8a46cbbb418ea91502fd24176865cf39b2')
-        self.assertEqual(image_path("http://www.dorma.co.uk/images/product_details/2532"),
+        self.assertEqual(image_path(Request("http://www.dorma.co.uk/images/product_details/2532")),
                          'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1')
 
     def test_fs_store(self):
@@ -93,6 +93,7 @@ class FilesPipelineTestCase(unittest.TestCase):
         for p in patchers:
             p.stop()
 
+
 class FilesPipelineTestCaseFields(unittest.TestCase):
 
     def test_item_fields_default(self):
@@ -109,7 +110,7 @@ class FilesPipelineTestCaseFields(unittest.TestCase):
         results = [(True, {'url': url})]
         pipeline.item_completed(results, item, None)
         self.assertEqual(item['files'], [results[0][1]])
-        
+
     def test_item_fields_override_settings(self):
         from scrapy.contrib.pipeline.files import FilesPipeline
         class TestItem(Item):
@@ -125,7 +126,8 @@ class FilesPipelineTestCaseFields(unittest.TestCase):
         results = [(True, {'url': url})]
         pipeline.item_completed(results, item, None)
         self.assertEqual(item['stored_file'], [results[0][1]])
- 
+
+
 class ItemWithFiles(Item):
     file_urls = Field()
     files = Field()

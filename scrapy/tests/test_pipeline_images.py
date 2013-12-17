@@ -6,6 +6,7 @@ from shutil import rmtree
 from twisted.trial import unittest
 
 from scrapy.item import Item, Field
+from scrapy.http import Request
 from scrapy.settings import Settings
 
 skip = False
@@ -37,31 +38,31 @@ class ImagesPipelineTestCase(unittest.TestCase):
         rmtree(self.tempdir)
 
     def test_image_path(self):
-        image_path = self.pipeline.file_key
-        self.assertEqual(image_path("https://dev.mydeco.com/mydeco.gif"),
+        image_path = self.pipeline.file_path
+        self.assertEqual(image_path(Request("https://dev.mydeco.com/mydeco.gif")),
                          'full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
-        self.assertEqual(image_path("http://www.maddiebrown.co.uk///catalogue-items//image_54642_12175_95307.jpg"),
+        self.assertEqual(image_path(Request("http://www.maddiebrown.co.uk///catalogue-items//image_54642_12175_95307.jpg")),
                          'full/0ffcd85d563bca45e2f90becd0ca737bc58a00b2.jpg')
-        self.assertEqual(image_path("https://dev.mydeco.com/two/dirs/with%20spaces%2Bsigns.gif"),
+        self.assertEqual(image_path(Request("https://dev.mydeco.com/two/dirs/with%20spaces%2Bsigns.gif")),
                          'full/b250e3a74fff2e4703e310048a5b13eba79379d2.jpg')
-        self.assertEqual(image_path("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg"),
+        self.assertEqual(image_path(Request("http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg")),
                          'full/4507be485f38b0da8a0be9eb2e1dfab8a19223f2.jpg')
-        self.assertEqual(image_path("http://www.dorma.co.uk/images/product_details/2532/"),
+        self.assertEqual(image_path(Request("http://www.dorma.co.uk/images/product_details/2532/")),
                          'full/97ee6f8a46cbbb418ea91502fd24176865cf39b2.jpg')
-        self.assertEqual(image_path("http://www.dorma.co.uk/images/product_details/2532"),
+        self.assertEqual(image_path(Request("http://www.dorma.co.uk/images/product_details/2532")),
                          'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg')
 
     def test_thumbnail_name(self):
-        thumbnail_name = self.pipeline.thumb_key
+        thumb_path = self.pipeline.thumb_path
         name = '50'
-        self.assertEqual(thumbnail_name("/tmp/foo.jpg", name),
-                         'thumbs/50/271f172bb4727281011c80fe763e93a47bb6b3fe.jpg')
-        self.assertEqual(thumbnail_name("foo.png", name),
-                         'thumbs/50/0945c699b5580b99e4f40dffc009699b2b6830a7.jpg')
-        self.assertEqual(thumbnail_name("/tmp/foo", name),
-                         'thumbs/50/469150566bd728fc90b4adf6495202fd70ec3537.jpg')
-        self.assertEqual(thumbnail_name("/tmp/some.name/foo", name),
-                         'thumbs/50/92dac2a6a2072c5695a5dff1f865b3cb70c657bb.jpg')
+        self.assertEqual(thumb_path(Request("file:///tmp/foo.jpg"), name),
+                         'thumbs/50/38a86208c36e59d4404db9e37ce04be863ef0335.jpg')
+        self.assertEqual(thumb_path(Request("file://foo.png"), name),
+                         'thumbs/50/e55b765eba0ec7348e50a1df496040449071b96a.jpg')
+        self.assertEqual(thumb_path(Request("file:///tmp/foo"), name),
+                         'thumbs/50/0329ad83ebb8e93ea7c7906d46e9ed55f7349a50.jpg')
+        self.assertEqual(thumb_path(Request("file:///tmp/some.name/foo"), name),
+                         'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg')
 
     def test_convert_image(self):
         SIZE = (100, 100)
@@ -84,6 +85,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
         self.assertEquals(converted.mode, 'RGB')
         self.assertEquals(converted.getcolors(), [(10000, (205, 230, 255))])
 
+
 class ImagesPipelineTestCaseFields(unittest.TestCase):
 
     def test_item_fields_default(self):
@@ -100,7 +102,7 @@ class ImagesPipelineTestCaseFields(unittest.TestCase):
         results = [(True, {'url': url})]
         pipeline.item_completed(results, item, None)
         self.assertEqual(item['images'], [results[0][1]])
-        
+
     def test_item_fields_override_settings(self):
         from scrapy.contrib.pipeline.images import ImagesPipeline
         class TestItem(Item):
@@ -116,7 +118,8 @@ class ImagesPipelineTestCaseFields(unittest.TestCase):
         results = [(True, {'url': url})]
         pipeline.item_completed(results, item, None)
         self.assertEqual(item['stored_image'], [results[0][1]])
- 
+
+
 def _create_image(format, *a, **kw):
     buf = StringIO()
     Image.new(*a, **kw).save(buf, format)
