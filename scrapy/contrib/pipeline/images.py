@@ -118,7 +118,7 @@ class ImagesPipeline(FilesPipeline):
                           category=ScrapyDeprecationWarning, stacklevel=1)
 
         # check if called from image_key or file_key with url as first argument
-        if isinstance(request, unicode) or isinstance(request, str):
+        if not isinstance(request, Request):
             _warn()
             url = request
         else:
@@ -146,7 +146,7 @@ class ImagesPipeline(FilesPipeline):
                           category=ScrapyDeprecationWarning, stacklevel=1)
 
         # check if called from thumb_key with url as first argument
-        if isinstance(request, unicode) or isinstance(request, str):
+        if not isinstance(request, Request):
             _warn()
             url = request
         else:

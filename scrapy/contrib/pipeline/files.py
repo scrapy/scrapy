@@ -276,7 +276,7 @@ class FilesPipeline(MediaPipeline):
                           category=ScrapyDeprecationWarning, stacklevel=1)
 
         # check if called from file_key with url as first argument
-        if isinstance(request, unicode) or isinstance(request, str):
+        if not isinstance(request, Request):
             _warn()
             url = request
         else:
