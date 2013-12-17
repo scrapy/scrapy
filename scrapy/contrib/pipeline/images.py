@@ -125,10 +125,10 @@ class ImagesPipeline(FilesPipeline):
             url = request.url
 
         # detect if file_key() or image_key() methods have been overridden
-        if not hasattr(self.file_key, '_overridden'):
+        if not hasattr(self.file_key, '_base'):
             _warn()
             return self.file_key(url)
-        elif not hasattr(self.image_key, '_overridden'):
+        elif not hasattr(self.image_key, '_base'):
             _warn()
             return self.image_key(url)
         ## end of deprecation warning block
@@ -153,7 +153,7 @@ class ImagesPipeline(FilesPipeline):
             url = request.url
 
         # detect if thumb_key() method has been overridden
-        if not hasattr(self.thumb_key, '_overridden'):
+        if not hasattr(self.thumb_key, '_base'):
             _warn()
             return self.thumb_key(url, thumb_id)
         ## end of deprecation warning block
@@ -164,14 +164,14 @@ class ImagesPipeline(FilesPipeline):
     # deprecated
     def file_key(self, url):
         return self.image_key(url)
-    file_key._overridden = False
+    file_key._base = True
 
     # deprecated
     def image_key(self, url):
         return self.file_path(url)
-    image_key._overridden = False
+    image_key._base = True
 
     # deprecated
     def thumb_key(self, url, thumb_id):
         return self.thumb_path(url, thumb_id)
-    thumb_key._overridden = False
+    thumb_key._base = True

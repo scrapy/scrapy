@@ -283,7 +283,7 @@ class FilesPipeline(MediaPipeline):
             url = request.url
 
         # detect if file_key() method has been overridden
-        if not hasattr(self.file_key, '_overridden'):
+        if not hasattr(self.file_key, '_base'):
             _warn()
             return self.file_key(url)
         ## end of deprecation warning block
@@ -295,4 +295,4 @@ class FilesPipeline(MediaPipeline):
     # deprecated
     def file_key(self, url):
         return self.file_path(url)
-    file_key._overridden = False
+    file_key._base = True
