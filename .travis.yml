@@ -1,23 +1,19 @@
 language: python
 python: 2.7
 env:
-    - TOXENV=py27
-    - TOXENV=precise
-    - TOXENV=trunk
-    - TOXENV=pypy
-
+- TOXENV=py27
+- TOXENV=precise
+- TOXENV=trunk
+- TOXENV=pypy
 matrix:
-    allow_failures:
-        - env: TOXENV=pypy
-
+  allow_failures:
+  - env: TOXENV=pypy
 install:
-    - pip install -M tox
-
+  - pip install -M tox
 script: tox
-
 notifications:
-    irc:
-        channels:
-            - "irc.freenode.org#scrapy"
-        use_notice: true
-        skip_join: true
+  irc:
+    use_notice: true
+    skip_join: true
+    channels:
+    - "irc.freenode.org#scrapy"
