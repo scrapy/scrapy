@@ -2,7 +2,7 @@ import unittest
 
 from scrapy.contrib.downloadermiddleware.ajaxcrawlable import AjaxCrawlableMiddleware
 from scrapy.spider import BaseSpider
-from scrapy.http import Request, HtmlResponse
+from scrapy.http import Request, HtmlResponse, Response
 from scrapy.utils.test import get_crawler
 
 __doctests__ = ['scrapy.contrib.downloadermiddleware.ajaxcrawlable']
@@ -25,6 +25,12 @@ class AjaxCrawlableMiddlewareTest(unittest.TestCase):
         req, resp = self._req_resp('http://example.com/', {'method': 'HEAD'})
         resp2 = self.mw.process_response(req, resp, self.spider)
         self.assertEqual(resp, resp2)
+
+    def test_binary_response(self):
+        req = Request('http://example.com/')
+        resp = Response('http://example.com/', body=b'foobar\x00\x01\x02', request=req)
+        resp2 = self.mw.process_response(req, resp, self.spider)
+        self.assertIs(resp, resp2)
 
     def test_ajax_crawlable(self):
         req, resp = self._req_resp(
@@ -49,4 +55,4 @@ class AjaxCrawlableMiddlewareTest(unittest.TestCase):
     def test_noncrawlable_body(self):
         req, resp = self._req_resp('http://example.com/', {}, {'body': '<html></html>'})
         resp2 = self.mw.process_response(req, resp, self.spider)
-        assert resp2 is resp
+        self.assertIs(resp, resp2)
