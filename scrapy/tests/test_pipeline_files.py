@@ -48,9 +48,9 @@ class FilesPipelineTestCase(unittest.TestCase):
         assert isinstance(self.pipeline.store, FSFilesStore)
         self.assertEqual(self.pipeline.store.basedir, self.tempdir)
 
-        key = 'some/image/key.jpg'
-        path = os.path.join(self.tempdir, 'some', 'image', 'key.jpg')
-        self.assertEqual(self.pipeline.store._get_filesystem_path(key), path)
+        path = 'some/image/key.jpg'
+        fullpath = os.path.join(self.tempdir, 'some', 'image', 'key.jpg')
+        self.assertEqual(self.pipeline.store._get_filesystem_path(path), fullpath)
 
     @defer.inlineCallbacks
     def test_file_not_expired(self):
