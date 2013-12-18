@@ -13,16 +13,17 @@ class AjaxCrawlableMiddleware(object):
     For more info see https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
     """
 
-    # XXX: Google parses at least first 100k bytes; scrapy's redirect
-    # middleware parses first 4k. 4k turns out to be insufficient
-    # for this middleware, and parsing 100k could be slow.
-    _lookup_bytes = 32768
-
     enabled_setting = 'AJAXCRAWLABLE_ENABLED'
 
     def __init__(self, settings):
         if not settings.getbool(self.enabled_setting):
             raise NotConfigured
+
+        # XXX: Google parses at least first 100k bytes; scrapy's redirect
+        # middleware parses first 4k. 4k turns out to be insufficient
+        # for this middleware, and parsing 100k could be slow.
+        # We use something in between (32K) by default.
+        self.lookup_bytes = settings.getint('AJAXCRAWLABLE_MAXSIZE', 32768)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -57,7 +58,7 @@ class AjaxCrawlableMiddleware(object):
         Return True if a page without hash fragment could be "AJAX crawlable"
         according to https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
         """
-        body = response.body_as_unicode()[:self._lookup_bytes]
+        body = response.body_as_unicode()[:self.lookup_bytes]
         return _has_ajaxcrawlable_meta(body)
 
 
