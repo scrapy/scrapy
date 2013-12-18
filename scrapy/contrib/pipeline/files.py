@@ -255,7 +255,7 @@ class FilesPipeline(MediaPipeline):
         return [Request(x) for x in item.get(self.FILES_URLS_FIELD, [])]
 
     def file_downloaded(self, response, request, info):
-        path = self.file_path(request)
+        path = self.file_path(request, response=response, info=info)
         buf = StringIO(response.body)
         self.store.persist_file(path, buf, info)
         checksum = md5sum(buf)
