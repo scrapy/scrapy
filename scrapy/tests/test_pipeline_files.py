@@ -45,6 +45,10 @@ class FilesPipelineTestCase(unittest.TestCase):
                          'full/97ee6f8a46cbbb418ea91502fd24176865cf39b2')
         self.assertEqual(file_path(Request("http://www.dorma.co.uk/images/product_details/2532")),
                          'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1')
+        self.assertEqual(file_path(Request("http://www.dorma.co.uk/images/product_details/2532"),
+                                   response=Response("http://www.dorma.co.uk/images/product_details/2532"),
+                                   info=object()),
+                         'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1')
 
     def test_fs_store(self):
         assert isinstance(self.pipeline.store, FSFilesStore)

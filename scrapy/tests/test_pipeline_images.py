@@ -8,7 +8,7 @@ from shutil import rmtree
 from twisted.trial import unittest
 
 from scrapy.item import Item, Field
-from scrapy.http import Request
+from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.contrib.pipeline.images import ImagesPipeline
 
@@ -53,6 +53,10 @@ class ImagesPipelineTestCase(unittest.TestCase):
                          'full/97ee6f8a46cbbb418ea91502fd24176865cf39b2.jpg')
         self.assertEqual(file_path(Request("http://www.dorma.co.uk/images/product_details/2532")),
                          'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg')
+        self.assertEqual(file_path(Request("http://www.dorma.co.uk/images/product_details/2532"),
+                                   response=Response("http://www.dorma.co.uk/images/product_details/2532"),
+                                   info=object()),
+                         'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg')
 
     def test_thumbnail_name(self):
         thumb_path = self.pipeline.thumb_path
@@ -64,6 +68,10 @@ class ImagesPipelineTestCase(unittest.TestCase):
         self.assertEqual(thumb_path(Request("file:///tmp/foo"), name),
                          'thumbs/50/0329ad83ebb8e93ea7c7906d46e9ed55f7349a50.jpg')
         self.assertEqual(thumb_path(Request("file:///tmp/some.name/foo"), name),
+                         'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg')
+        self.assertEqual(thumb_path(Request("file:///tmp/some.name/foo"), name,
+                                    response=Response("file:///tmp/some.name/foo"),
+                                    info=object()),
                          'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg')
 
     def test_convert_image(self):
