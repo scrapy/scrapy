@@ -795,6 +795,7 @@ UserAgentMiddleware
    In order for a spider to override the default user agent, its `user_agent`
    attribute must be set.
 
+.. _ajaxcrawlable-middleware:
 
 AjaxCrawlableMiddleware
 -----------------------
@@ -823,7 +824,7 @@ AjaxCrawlableMiddleware Settings
 AJAXCRAWLABLE_ENABLED
 ^^^^^^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.17
+.. versionadded:: 0.21
 
 Default: ``False``
 
