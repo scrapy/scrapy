@@ -75,7 +75,17 @@ def _has_ajaxcrawlable_meta(text):
     >>> _has_ajaxcrawlable_meta('<html></html>')
     False
     """
+
+    # Stripping scripts and comments is slow (about 20x slower than
+    # just checking if a string is in text); this is a quick fail-fast
+    # path that should work for most pages.
+    if 'fragment' not in text:
+        return False
+    if 'content' not in text:
+        return False
+
     text = _script_re.sub(u'', text)
     text = _noscript_re.sub(u'', text)
     text = html.remove_comments(html.remove_entities(text))
     return _ajax_crawlable_re.search(text) is not None
+
