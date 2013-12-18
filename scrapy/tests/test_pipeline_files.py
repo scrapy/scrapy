@@ -1,6 +1,8 @@
 import mock
 import os
 import time
+import hashlib
+import warnings
 from tempfile import mkdtemp
 from shutil import rmtree
 
@@ -94,6 +96,44 @@ class FilesPipelineTestCase(unittest.TestCase):
             p.stop()
 
 
+class DeprecatedFilesPipeline(FilesPipeline):
+    def file_key(self, url):
+        media_guid = hashlib.sha1(url).hexdigest()
+        media_ext = os.path.splitext(url)[1]
+        return 'empty/%s%s' % (media_guid, media_ext)
+
+
+class DeprecatedFilesPipelineTestCase(unittest.TestCase):
+    def setUp(self):
+        self.tempdir = mkdtemp()
+
+    def init_pipeline(self, pipeline_class):
+        self.pipeline = pipeline_class.from_settings(Settings({'FILES_STORE': self.tempdir}))
+        self.pipeline.download_func = _mocked_download_func
+        self.pipeline.open_spider(None)
+
+    def test_default_file_key_method(self):
+        self.init_pipeline(FilesPipeline)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            self.assertEqual(self.pipeline.file_key("https://dev.mydeco.com/mydeco.pdf"),
+                             'full/c9b564df929f4bc635bdd19fde4f3d4847c757c5.pdf')
+            self.assertEqual(len(w), 1)
+            self.assertTrue('file_key(url) method is deprecated' in str(w[-1].message))
+
+    def test_overridden_file_key_method(self):
+        self.init_pipeline(DeprecatedFilesPipeline)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            self.assertEqual(self.pipeline.file_path(Request("https://dev.mydeco.com/mydeco.pdf")),
+                             'empty/c9b564df929f4bc635bdd19fde4f3d4847c757c5.pdf')
+            self.assertEqual(len(w), 1)
+            self.assertTrue('file_key(url) method is deprecated' in str(w[-1].message))
+
+    def tearDown(self):
+        rmtree(self.tempdir)
+
+
 class FilesPipelineTestCaseFields(unittest.TestCase):
 
     def test_item_fields_default(self):
@@ -143,6 +183,7 @@ def _prepare_request_object(item_url):
     return Request(
         item_url,
         meta={'response': Response(item_url, status=200, body='data')})
+
 
 if __name__ == "__main__":
     unittest.main()
