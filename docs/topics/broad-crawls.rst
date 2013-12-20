@@ -122,8 +122,9 @@ To disable redirects use::
 Enable crawling of "Ajax Crawlable Pages"
 =========================================
 
-Some pages (up to 1%) declare themselves as `ajax crawlable`_. This means they
-provide plain HTML version of content that is usually available only via AJAX.
+Some pages (up to 1%, based on empirical data from year 2013) declare
+themselves as `ajax crawlable`_. This means they provide plain HTML
+version of content that is usually available only via AJAX.
 Pages can indicate it in two ways:
 
 1) by using ``#!`` in URL - this is the default way;
