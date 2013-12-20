@@ -13,10 +13,8 @@ class AjaxCrawlableMiddleware(object):
     For more info see https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
     """
 
-    enabled_setting = 'AJAXCRAWLABLE_ENABLED'
-
     def __init__(self, settings):
-        if not settings.getbool(self.enabled_setting):
+        if not settings.getbool('AJAXCRAWLABLE_ENABLED'):
             raise NotConfigured
 
         # XXX: Google parses at least first 100k bytes; scrapy's redirect
