@@ -2,12 +2,12 @@ import re, csv
 from cStringIO import StringIO
 
 from scrapy.http import TextResponse, Response
-from scrapy.selector import Selector
+from scrapy.selector import Selector, XPath
 from scrapy import log
 from scrapy.utils.python import re_rsearch, str_to_unicode
 
 
-def xmliter(obj, nodename):
+def xmliter(obj, nodename, ns_prefix=None, ns_name=None):
     """Return a iterator of Selector's over all nodes of a XML document,
        given tha name of the node to iterate. Useful for parsing XML feeds.
 
@@ -28,7 +28,13 @@ def xmliter(obj, nodename):
     r = re.compile(r"<%s[\s>].*?</%s>" % (nodename, nodename), re.DOTALL)
     for match in r.finditer(text):
         nodetext = header_start + match.group() + header_end
-        yield Selector(text=nodetext, type='xml').xpath('//' + nodename)[0]
+        sel = Selector(text=nodetext, type='xml')
+        if ns_prefix and ns_name:
+            sel.register_namespace(ns_prefix, ns_name)
+            res = sel.xpath('//%s:%s' % (ns_prefix, nodename))[0]
+        else:
+            res = sel.xpath('//' + nodename)[0]
+        yield res
 
 
 def csviter(obj, delimiter=None, headers=None, encoding=None):

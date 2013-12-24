@@ -9,7 +9,7 @@ from scrapy.item import BaseItem
 from scrapy.http import Request
 from scrapy.utils.iterators import xmliter, csviter
 from scrapy.utils.spider import iterate_spider_output
-from scrapy.selector import Selector
+from scrapy.selector import Selector, XPath
 from scrapy.exceptions import NotConfigured, NotSupported
 
 
@@ -25,7 +25,19 @@ class XMLFeedSpider(BaseSpider):
 
     iterator = 'iternodes'
     itertag = 'item'
+    itertag_ns_prefix = None
+    itertag_ns_name = None
     namespaces = ()
+
+    def __init__(self, *a, **kw):
+        super(XMLFeedSpider, self).__init__(*a, **kw)
+        if self.itertag_ns_prefix and self.itertag_ns_name:
+            self._xp_itertag = XPath('//%s:%s' % (
+                self.itertag_ns_prefix, self.itertag))
+        else:
+            self._xp_itertag = XPath('//%s' % self.itertag)
+        for (prefix, uri) in self.namespaces:
+            self._xp_itertag.register_namespace(prefix, uri)
 
     def process_results(self, response, results):
         """This overridable method is called for each result (item or request)
@@ -69,22 +81,22 @@ class XMLFeedSpider(BaseSpider):
 
         response = self.adapt_response(response)
         if self.iterator == 'iternodes':
-            nodes = self._iternodes(response)
+            nodes = self._iternodes(response, self.itertag_ns_prefix, self.itertag_ns_name)
         elif self.iterator == 'xml':
             selector = Selector(response, type='xml')
             self._register_namespaces(selector)
-            nodes = selector.xpath('//%s' % self.itertag)
+            nodes = selector.xpath(self._xp_itertag)
         elif self.iterator == 'html':
             selector = Selector(response, type='html')
             self._register_namespaces(selector)
-            nodes = selector.xpath('//%s' % self.itertag)
+            nodes = selector.xpath(self._xp_itertag)
         else:
             raise NotSupported('Unsupported node iterator')
 
         return self.parse_nodes(response, nodes)
 
-    def _iternodes(self, response):
-        for node in xmliter(response, self.itertag):
+    def _iternodes(self, response, ns_prefix=None, ns_name=None):
+        for node in xmliter(response, self.itertag, ns_prefix, ns_name):
             self._register_namespaces(node)
             yield node
 

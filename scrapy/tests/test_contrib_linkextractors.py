@@ -4,6 +4,7 @@ from scrapy.http import HtmlResponse
 from scrapy.link import Link
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor, BaseSgmlLinkExtractor
 from scrapy.tests import get_testdata
+from scrapy.selector import XPath
 
 
 class LinkExtractorTestCase(unittest.TestCase):
@@ -103,6 +104,12 @@ class LinkExtractorTestCase(unittest.TestCase):
 
 
 class SgmlLinkExtractorTestCase(unittest.TestCase):
+
+    xp_div = XPath("//div")
+    xp_subwrapper = XPath('//div[@id="subwrapper"]')
+    xp_links = XPath("//div[@class='links']")
+    xp_p = XPath("//p")
+
     def setUp(self):
         body = get_testdata('link_extractor', 'sgml_linkextractor.html')
         self.response = HtmlResponse(url='http://example.com/index', body=body)
@@ -217,6 +224,11 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
             Link(url='http://example.com/sample2.html', text=u'sample 2'),
         ])
 
+        lx = SgmlLinkExtractor(restrict_xpaths=(self.xp_subwrapper, ))
+        self.assertEqual([link for link in lx.extract_links(self.response)], [
+            Link(url='http://example.com/sample1.html', text=u''),
+            Link(url='http://example.com/sample2.html', text=u'sample 2'),
+        ])
     def test_restrict_xpaths_encoding(self):
         """Test restrict_xpaths with encodings"""
         html = """<html><head><title>Page title<title>
@@ -234,11 +246,21 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.extract_links(response),
                          [Link(url='http://example.org/about.html', text=u'About us\xa3')])
 
+        lx = SgmlLinkExtractor(restrict_xpaths=self.xp_links)
+        self.assertEqual(lx.extract_links(response),
+                         [Link(url='http://example.org/about.html', text=u'About us\xa3')])
+
     def test_restrict_xpaths_concat_in_handle_data(self):
         """html entities cause SGMLParser to call handle_data hook twice"""
         body = """<html><body><div><a href="/foo">&gt;\xbe\xa9&lt;\xb6\xab</a></body></html>"""
         response = HtmlResponse("http://example.org", body=body, encoding='gb18030')
         lx = SgmlLinkExtractor(restrict_xpaths="//div")
+        self.assertEqual(lx.extract_links(response),
+                         [Link(url='http://example.org/foo', text=u'>\u4eac<\u4e1c',
+                               fragment='', nofollow=False)])
+
+        xp = XPath("//div")
+        lx = SgmlLinkExtractor(restrict_xpaths=self.xp_div)
         self.assertEqual(lx.extract_links(response),
                          [Link(url='http://example.org/foo', text=u'>\u4eac<\u4e1c',
                                fragment='', nofollow=False)])
@@ -255,6 +277,11 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
         body = """<html><body><div><a href="?page=2">BinB</a></body></html>"""
         response = HtmlResponse("http://known.fm/AC%2FDC/", body=body, encoding='utf8')
         lx = SgmlLinkExtractor(restrict_xpaths="//div")
+        self.assertEqual(lx.extract_links(response), [
+            Link(url='http://known.fm/AC%2FDC/?page=2', text=u'BinB', fragment='', nofollow=False),
+        ])
+
+        lx = SgmlLinkExtractor(restrict_xpaths=self.xp_div)
         self.assertEqual(lx.extract_links(response), [
             Link(url='http://known.fm/AC%2FDC/?page=2', text=u'BinB', fragment='', nofollow=False),
         ])
@@ -293,6 +320,9 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.extract_links(response),
                          [Link(url='http://otherdomain.com/base/item/12.html', text='Item 12')])
 
+        lx = SgmlLinkExtractor(restrict_xpaths=self.xp_p)
+        self.assertEqual(lx.extract_links(response),
+                         [Link(url='http://otherdomain.com/base/item/12.html', text='Item 12')])
 
 if __name__ == "__main__":
     unittest.main()
