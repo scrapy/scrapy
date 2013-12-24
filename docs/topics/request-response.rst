@@ -57,7 +57,8 @@ Request objects
     :type body: str or unicode
 
     :param headers: the headers of this request. The dict values can be strings
-       (for single valued headers) or lists (for multi-valued headers).
+       (for single valued headers) or lists (for multi-valued headers). If
+       ``None`` is passed as value, the HTTP header will not be sent at all.
     :type headers: dict
 
     :param cookies: the request cookies. These can be sent in two forms.
