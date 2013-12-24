@@ -119,3 +119,11 @@ class HeadersTest(unittest.TestCase):
         h1.setlistdefault('header2', ['value2', 'value3'])
         self.assertEqual(h1.getlist('header1'), ['value1'])
         self.assertEqual(h1.getlist('header2'), ['value2', 'value3'])
+
+    def test_none_value(self):
+        h1 = Headers()
+        h1['foo'] = 'bar'
+        h1['foo'] = None
+        h1.setdefault('foo', 'bar')
+        self.assertEqual(h1.get('foo'), None)
+        self.assertEqual(h1.getlist('foo'), [])

@@ -132,3 +132,22 @@ class BrokenStartRequestsSpider(FollowAllSpider):
         self.seedsseen.append(response.meta.get('seed'))
         for req in super(BrokenStartRequestsSpider, self).parse(response):
             yield req
+
+
+class SingleRequestSpider(MetaSpider):
+
+    seed = None
+
+    def start_requests(self):
+        if isinstance(self.seed, Request):
+            yield self.seed.replace(callback=self.parse, errback=self.on_error)
+        else:
+            yield Request(self.seed, callback=self.parse, errback=self.on_error)
+
+    def parse(self, response):
+        self.meta.setdefault('responses', []).append(response)
+        if 'next' in response.meta:
+            return response.meta['next']
+
+    def on_error(self, failure):
+        self.meta['failure'] = failure

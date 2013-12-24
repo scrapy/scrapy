@@ -1,5 +1,5 @@
 from __future__ import print_function
-import sys, time, random, urllib, os
+import sys, time, random, urllib, os, json
 from subprocess import Popen, PIPE
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
@@ -119,6 +119,16 @@ class Raw(LeafResource):
         request.finish()
 
 
+class Echo(LeafResource):
+
+    def render_GET(self, request):
+        output = {
+            'headers': dict(request.requestHeaders.getAllRawHeaders()),
+            'body': request.content.read(),
+        }
+        return json.dumps(output)
+
+
 class Partial(LeafResource):
 
     def render_GET(self, request):
@@ -156,6 +166,7 @@ class Root(Resource):
         self.putChild("partial", Partial())
         self.putChild("drop", Drop())
         self.putChild("raw", Raw())
+        self.putChild("echo", Echo())
 
     def getChild(self, name, request):
         return self
