@@ -66,7 +66,7 @@ Proxy downloader middleware. See
 :class:`~scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware`.
 
 Can Scrapy execute JavaScript while scraping the web?
------------------------------------
+-----------------------------------------------------
 
 No. Scrapy can not execute JavaScript itself but you can use `Splash`_ to execute JavaScript and make it work with Scrapy.
 
