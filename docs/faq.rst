@@ -65,6 +65,13 @@ Yes. Support for HTTP proxies is provided (since Scrapy 0.8) through the HTTP
 Proxy downloader middleware. See
 :class:`~scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware`.
 
+Can Scrapy execute JavaScript while scraping the web?
+-----------------------------------
+
+No. Scrapy can not execute JavaScript itself but you can use `Splash`_ to execute JavaScript and make it work with Scrapy.
+
+.. _Splash: https://github.com/scrapinghub/splash
+
 How can I scrape an item with attributes in different pages?
 ------------------------------------------------------------
 
