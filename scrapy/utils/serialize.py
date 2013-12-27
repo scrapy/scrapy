@@ -5,7 +5,7 @@ import json
 
 from twisted.internet import defer
 
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
 
@@ -42,7 +42,7 @@ class SpiderReferencer(object):
 
     def encode_references(self, obj):
         """Look for Spider objects and replace them with spider references"""
-        if isinstance(obj, BaseSpider):
+        if isinstance(obj, Spider):
             return self.get_reference_from_spider(obj)
         elif isinstance(obj, dict):
             d = {}

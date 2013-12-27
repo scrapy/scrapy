@@ -21,7 +21,7 @@ from scrapy import signals
 from scrapy.utils.test import get_crawler
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.tests import tests_datadir
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.item import Item, Field
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 from scrapy.http import Request
@@ -32,7 +32,7 @@ class TestItem(Item):
     url = Field()
     price = Field()
 
-class TestSpider(BaseSpider):
+class TestSpider(Spider):
     name = "scrapytest.org"
     allowed_domains = ["scrapytest.org", "localhost"]
 

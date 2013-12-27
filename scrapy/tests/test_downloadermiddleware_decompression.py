@@ -1,7 +1,7 @@
 from unittest import TestCase, main
 from scrapy.http import Response, XmlResponse
 from scrapy.contrib_exp.downloadermiddleware.decompression import DecompressionMiddleware
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.tests import get_testdata
 from scrapy.utils.test import assert_samelines
 
@@ -22,7 +22,7 @@ class DecompressionMiddlewareTest(TestCase):
 
     def setUp(self):
         self.mw = DecompressionMiddleware()
-        self.spider = BaseSpider('foo')
+        self.spider = Spider('foo')
 
     def test_known_compression_formats(self):
         for fmt in self.test_formats:

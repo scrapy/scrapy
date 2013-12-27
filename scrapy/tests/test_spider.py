@@ -5,15 +5,15 @@ from cStringIO import StringIO
 
 from twisted.trial import unittest
 
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.http import Response, TextResponse, XmlResponse, HtmlResponse
 from scrapy.contrib.spiders.init import InitSpider
 from scrapy.contrib.spiders import CrawlSpider, XMLFeedSpider, CSVFeedSpider, SitemapSpider
 
 
-class BaseSpiderTest(unittest.TestCase):
+class SpiderTest(unittest.TestCase):
 
-    spider_class = BaseSpider
+    spider_class = Spider
 
     def setUp(self):
         warnings.simplefilter("always")
@@ -43,12 +43,12 @@ class BaseSpiderTest(unittest.TestCase):
         self.assertRaises(ValueError, self.spider_class, somearg='foo')
 
 
-class InitSpiderTest(BaseSpiderTest):
+class InitSpiderTest(SpiderTest):
 
     spider_class = InitSpider
 
 
-class XMLFeedSpiderTest(BaseSpiderTest):
+class XMLFeedSpiderTest(SpiderTest):
 
     spider_class = XMLFeedSpider
 
@@ -92,17 +92,17 @@ class XMLFeedSpiderTest(BaseSpiderTest):
             ], iterator)
 
 
-class CSVFeedSpiderTest(BaseSpiderTest):
+class CSVFeedSpiderTest(SpiderTest):
 
     spider_class = CSVFeedSpider
 
 
-class CrawlSpiderTest(BaseSpiderTest):
+class CrawlSpiderTest(SpiderTest):
 
     spider_class = CrawlSpider
 
 
-class SitemapSpiderTest(BaseSpiderTest):
+class SitemapSpiderTest(SpiderTest):
 
     spider_class = SitemapSpider
 

@@ -14,11 +14,11 @@ def iter_spider_classes(module):
     """
     # this needs to be imported here until get rid of the spider manager
     # singleton in scrapy.spider.spiders
-    from scrapy.spider import BaseSpider
+    from scrapy.spider import Spider
 
     for obj in vars(module).itervalues():
         if inspect.isclass(obj) and \
-           issubclass(obj, BaseSpider) and \
+           issubclass(obj, Spider) and \
            obj.__module__ == module.__name__ and \
            getattr(obj, 'name', None):
             yield obj

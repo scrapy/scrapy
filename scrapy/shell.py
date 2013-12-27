@@ -11,7 +11,7 @@ from twisted.python import threadable
 from w3lib.url import any_to_uri
 
 from scrapy.item import BaseItem
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.selector import Selector
 from scrapy.utils.spider import create_spider_for_request
 from scrapy.utils.misc import load_object
@@ -24,7 +24,7 @@ from scrapy.exceptions import IgnoreRequest
 
 class Shell(object):
 
-    relevant_classes = (BaseSpider, Request, Response, BaseItem,
+    relevant_classes = (Spider, Request, Response, BaseItem,
                         Selector, Settings)
 
     def __init__(self, crawler, update_vars=None, code=None):
@@ -67,7 +67,7 @@ class Shell(object):
         if spider is None:
             spider = create_spider_for_request(self.crawler.spiders,
                                                request,
-                                               BaseSpider('default'),
+                                               Spider('default'),
                                                log_multiple=True)
         spider.set_crawler(self.crawler)
         self.crawler.engine.open_spider(spider, close_if_idle=False)

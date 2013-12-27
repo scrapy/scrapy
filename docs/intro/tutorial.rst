@@ -97,18 +97,18 @@ of domains).
 They define an initial list of URLs to download, how to follow links, and how
 to parse the contents of those pages to extract :ref:`items <topics-items>`.
 
-To create a Spider, you must subclass :class:`scrapy.spider.BaseSpider`, and
+To create a Spider, you must subclass :class:`scrapy.spider.Spider`, and
 define the three main, mandatory, attributes:
 
-* :attr:`~scrapy.spider.BaseSpider.name`: identifies the Spider. It must be
+* :attr:`~scrapy.spider.Spider.name`: identifies the Spider. It must be
   unique, that is, you can't set the same name for different Spiders.
 
-* :attr:`~scrapy.spider.BaseSpider.start_urls`: is a list of URLs where the
+* :attr:`~scrapy.spider.Spider.start_urls`: is a list of URLs where the
   Spider will begin to crawl from.  So, the first pages downloaded will be those
   listed here. The subsequent URLs will be generated successively from data
   contained in the start URLs.
 
-* :meth:`~scrapy.spider.BaseSpider.parse` is a method of the spider, which will
+* :meth:`~scrapy.spider.Spider.parse` is a method of the spider, which will
   be called with the downloaded :class:`~scrapy.http.Response` object of each
   start URL. The response is passed to the method as the first and only
   argument.
@@ -116,16 +116,16 @@ define the three main, mandatory, attributes:
   This method is responsible for parsing the response data and extracting
   scraped data (as scraped items) and more URLs to follow.
 
-  The :meth:`~scrapy.spider.BaseSpider.parse` method is in charge of processing
+  The :meth:`~scrapy.spider.Spider.parse` method is in charge of processing
   the response and returning scraped data (as :class:`~scrapy.item.Item`
   objects) and more URLs to follow (as :class:`~scrapy.http.Request` objects).
 
 This is the code for our first Spider; save it in a file named
 ``dmoz_spider.py`` under the ``tutorial/spiders`` directory::
 
-   from scrapy.spider import BaseSpider
+   from scrapy.spider import Spider
 
-   class DmozSpider(BaseSpider):
+   class DmozSpider(Spider):
        name = "dmoz"
        allowed_domains = ["dmoz.org"]
        start_urls = [
@@ -174,7 +174,7 @@ the spider as their callback function.
 
 These Requests are scheduled, then executed, and
 :class:`scrapy.http.Response` objects are returned and then fed back to the
-spider, through the :meth:`~scrapy.spider.BaseSpider.parse` method.
+spider, through the :meth:`~scrapy.spider.Spider.parse` method.
 
 Extracting Items
 ----------------
@@ -259,7 +259,7 @@ This is what the shell looks like::
     [s]   item       Item()
     [s]   request    <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
     [s]   response   <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
-    [s]   spider     <BaseSpider 'default' at 0x1b6c2d0>
+    [s]   spider     <Spider 'default' at 0x1b6c2d0>
     [s] Useful shortcuts:
     [s]   shelp()           Print this help
     [s]   fetch(req_or_url) Fetch a new request or URL and update shell objects
@@ -343,10 +343,10 @@ that property here, so::
 
 Let's add this code to our spider::
 
-   from scrapy.spider import BaseSpider
+   from scrapy.spider import Spider
    from scrapy.selector import Selector
 
-   class DmozSpider(BaseSpider):
+   class DmozSpider(Spider):
        name = "dmoz"
        allowed_domains = ["dmoz.org"]
        start_urls = [
@@ -386,12 +386,12 @@ Spiders are expected to return their scraped data inside
 :class:`~scrapy.item.Item` objects. So, in order to return the data we've
 scraped so far, the final code for our Spider would be like this::
 
-   from scrapy.spider import BaseSpider
+   from scrapy.spider import Spider
    from scrapy.selector import Selector
 
    from tutorial.items import DmozItem
 
-   class DmozSpider(BaseSpider):
+   class DmozSpider(Spider):
       name = "dmoz"
       allowed_domains = ["dmoz.org"]
       start_urls = [

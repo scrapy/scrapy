@@ -1,6 +1,6 @@
-import unittest 
+import unittest
 
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.statscol import StatsCollector, DummyStatsCollector
 from scrapy.utils.test import get_crawler
 
@@ -8,7 +8,7 @@ class StatsCollectorTest(unittest.TestCase):
 
     def setUp(self):
         self.crawler = get_crawler()
-        self.spider = BaseSpider('foo')
+        self.spider = Spider('foo')
 
     def test_collector(self):
         stats = StatsCollector(self.crawler)

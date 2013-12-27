@@ -1,6 +1,6 @@
 import unittest
 
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.http import Request, Response
 from scrapy.item import Item, Field
 from scrapy.logformatter import LogFormatter
@@ -18,7 +18,7 @@ class LoggingContribTest(unittest.TestCase):
 
     def setUp(self):
         self.formatter = LogFormatter()
-        self.spider = BaseSpider('default')
+        self.spider = Spider('default')
 
     def test_crawled(self):
         req = Request("http://www.example.com")

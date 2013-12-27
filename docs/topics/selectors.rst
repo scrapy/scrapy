@@ -56,10 +56,10 @@ Scrapy selectors are instances of :class:`~scrapy.selector.Selector` class
 constructed by passing a `Response` object as first argument, the response's
 body is what they're going to be "selecting"::
 
-    from scrapy.spider import BaseSpider
+    from scrapy.spider import Spider
     from scrapy.selector import Selector
 
-    class MySpider(BaseSpider):
+    class MySpider(Spider):
         # ...
         def parse(self, response):
             sel = Selector(response)

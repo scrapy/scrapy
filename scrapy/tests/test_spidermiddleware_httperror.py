@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from scrapy.http import Response, Request
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.contrib.spidermiddleware.httperror import HttpErrorMiddleware, HttpError
 from scrapy.settings import Settings
 
@@ -9,7 +9,7 @@ from scrapy.settings import Settings
 class TestHttpErrorMiddleware(TestCase):
 
     def setUp(self):
-        self.spider = BaseSpider('foo')
+        self.spider = Spider('foo')
         self.mw = HttpErrorMiddleware(Settings({}))
         self.req = Request('http://scrapytest.org')
 
@@ -47,7 +47,7 @@ class TestHttpErrorMiddlewareSettings(TestCase):
     """Similar test, but with settings"""
 
     def setUp(self):
-        self.spider = BaseSpider('foo')
+        self.spider = Spider('foo')
         self.mw = HttpErrorMiddleware(Settings({'HTTPERROR_ALLOWED_CODES': (402,)}))
         self.req = Request('http://scrapytest.org')
 
@@ -89,7 +89,7 @@ class TestHttpErrorMiddlewareSettings(TestCase):
 class TestHttpErrorMiddlewareHandleAll(TestCase):
 
     def setUp(self):
-        self.spider = BaseSpider('foo')
+        self.spider = Spider('foo')
         self.mw = HttpErrorMiddleware(Settings({'HTTPERROR_ALLOW_ALL': True}))
         self.req = Request('http://scrapytest.org')
 

@@ -6,7 +6,7 @@ from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python import log as txlog
 
 from scrapy.http import Request, Response
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.utils.request import request_fingerprint
 from scrapy.contrib.pipeline.media import MediaPipeline
 from scrapy.utils.signal import disconnect_all
@@ -24,7 +24,7 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
     pipeline_class = MediaPipeline
 
     def setUp(self):
-        self.spider = BaseSpider('media.com')
+        self.spider = Spider('media.com')
         self.pipe = self.pipeline_class(download_func=_mocked_download_func)
         self.pipe.open_spider(self.spider)
         self.info = self.pipe.spiderinfo

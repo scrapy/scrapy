@@ -9,7 +9,7 @@ import copy
 
 from scrapy.http import Request, HtmlResponse
 from scrapy.utils.spider import iterate_spider_output
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 
 def identity(x):
     return x
@@ -27,7 +27,7 @@ class Rule(object):
         else:
             self.follow = follow
 
-class CrawlSpider(BaseSpider):
+class CrawlSpider(Spider):
 
     rules = ()
 

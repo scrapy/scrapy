@@ -3,7 +3,7 @@ from datetime import datetime
 from twisted.trial import unittest
 
 from scrapy.contrib.spiderstate import SpiderState
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 
 
 class SpiderStateTest(unittest.TestCase):
@@ -11,7 +11,7 @@ class SpiderStateTest(unittest.TestCase):
     def test_store_load(self):
         jobdir = self.mktemp()
         os.mkdir(jobdir)
-        spider = BaseSpider(name='default')
+        spider = Spider(name='default')
         dt = datetime.now()
 
         ss = SpiderState(jobdir)
@@ -20,7 +20,7 @@ class SpiderStateTest(unittest.TestCase):
         spider.state['dt'] = dt
         ss.spider_closed(spider)
 
-        spider2 = BaseSpider(name='default')
+        spider2 = Spider(name='default')
         ss2 = SpiderState(jobdir)
         ss2.spider_opened(spider2)
         self.assertEqual(spider.state, {'one': 1, 'dt': dt})
@@ -28,8 +28,8 @@ class SpiderStateTest(unittest.TestCase):
 
     def test_state_attribute(self):
         # state attribute must be present if jobdir is not set, to provide a
-        # consistent interface 
-        spider = BaseSpider(name='default')
+        # consistent interface
+        spider = Spider(name='default')
         ss = SpiderState()
         ss.spider_opened(spider)
         self.assertEqual(spider.state, {})

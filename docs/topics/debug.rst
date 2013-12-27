@@ -7,7 +7,7 @@ Debugging Spiders
 This document explains the most common techniques for debugging spiders.
 Consider the following scrapy spider below::
 
-    class MySpider(BaseSpider):
+    class MySpider(Spider):
         name = 'myspider'
         start_urls = (
             'http://example.com/page1',

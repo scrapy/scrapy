@@ -1,9 +1,9 @@
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.utils.spider import iterate_spider_output
 
-class InitSpider(BaseSpider):
+class InitSpider(Spider):
     """Base Spider with initialization facilities"""
-    
+
     def start_requests(self):
         self._postinit_reqs = super(InitSpider, self).start_requests()
         return iterate_spider_output(self.init_request())

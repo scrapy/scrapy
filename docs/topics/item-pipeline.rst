@@ -37,7 +37,7 @@ single Python class that must implement the following method:
    :type item: :class:`~scrapy.item.Item` object
 
    :param spider: the spider which scraped the item
-   :type spider: :class:`~scrapy.spider.BaseSpider` object
+   :type spider: :class:`~scrapy.spider.Spider` object
 
 Additionally, they may also implement the following methods:
 
@@ -46,14 +46,14 @@ Additionally, they may also implement the following methods:
    This method is called when the spider is opened.
 
    :param spider: the spider which was opened
-   :type spider: :class:`~scrapy.spider.BaseSpider` object
+   :type spider: :class:`~scrapy.spider.Spider` object
 
 .. method:: close_spider(spider)
 
    This method is called when the spider is closed.
 
    :param spider: the spider which was closed
-   :type spider: :class:`~scrapy.spider.BaseSpider` object
+   :type spider: :class:`~scrapy.spider.Spider` object
 
 
 Item pipeline example

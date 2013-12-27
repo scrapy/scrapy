@@ -4,7 +4,7 @@ from twisted.python import log as txlog, failure
 from twisted.trial import unittest
 
 from scrapy import log
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.settings import default_settings
 
 class LogTest(unittest.TestCase):
@@ -41,7 +41,7 @@ class ScrapyFileLogObserverTest(unittest.TestCase):
         self.assertEqual(self.logged(), "[scrapy] INFO: Hello")
 
     def test_msg_spider(self):
-        spider = BaseSpider("myspider")
+        spider = Spider("myspider")
         log.msg("Hello", spider=spider)
         self.assertEqual(self.logged(), "[myspider] INFO: Hello")
 
@@ -58,7 +58,7 @@ class ScrapyFileLogObserverTest(unittest.TestCase):
         self.assertEqual(self.logged(), "[scrapy] NOLEVEL: Hello")
 
     def test_msg_level_spider(self):
-        spider = BaseSpider("myspider")
+        spider = Spider("myspider")
         log.msg("Hello", spider=spider, level=log.WARNING)
         self.assertEqual(self.logged(), "[myspider] WARNING: Hello")
 
