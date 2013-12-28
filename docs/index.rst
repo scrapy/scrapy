@@ -58,7 +58,6 @@ Basic concepts
    topics/commands
    topics/items
    topics/spiders
-   topics/link-extractors
    topics/selectors
    topics/loaders
    topics/shell
