@@ -200,6 +200,11 @@ performed to any single IP. If non-zero, the
 used instead. In other words, concurrency limits will be applied per IP, not
 per domain.
 
+This setting also affects :setting:`DOWNLOAD_DELAY`:
+if :setting:`CONCURRENT_REQUESTS_PER_IP` is non-zero, download delay is
+enforced per IP, not per domain.
+
+
 .. setting:: DEFAULT_ITEM_CLASS
 
 DEFAULT_ITEM_CLASS
@@ -339,18 +344,22 @@ DOWNLOAD_DELAY
 Default: ``0``
 
 The amount of time (in secs) that the downloader should wait before downloading
-consecutive pages from the same spider. This can be used to throttle the
+consecutive pages from the same website. This can be used to throttle the
 crawling speed to avoid hitting servers too hard. Decimal numbers are
 supported.  Example::
 
-    DOWNLOAD_DELAY = 0.25    # 250 ms of delay 
+    DOWNLOAD_DELAY = 0.25    # 250 ms of delay
 
 This setting is also affected by the :setting:`RANDOMIZE_DOWNLOAD_DELAY`
 setting (which is enabled by default). By default, Scrapy doesn't wait a fixed
 amount of time between requests, but uses a random interval between 0.5 and 1.5
 * :setting:`DOWNLOAD_DELAY`.
 
-You can also change this setting per spider.
+When :setting:`CONCURRENT_REQUESTS_PER_IP` is non-zero, delays are enforced
+per ip address instead of per domain.
+
+You can also change this setting per spider by setting ``download_delay``
+spider attribute.
 
 .. setting:: DOWNLOAD_HANDLERS
 
@@ -644,7 +653,7 @@ Default: ``True``
 
 If enabled, Scrapy will wait a random amount of time (between 0.5 and 1.5
 * :setting:`DOWNLOAD_DELAY`) while fetching requests from the same
-spider.
+website.
 
 This randomization decreases the chance of the crawler being detected (and
 subsequently blocked) by sites which analyze requests looking for statistically
