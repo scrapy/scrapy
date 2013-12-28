@@ -5,10 +5,11 @@ from cStringIO import StringIO
 
 from twisted.trial import unittest
 
-from scrapy.spider import Spider
+from scrapy.spider import Spider, BaseSpider
 from scrapy.http import Response, TextResponse, XmlResponse, HtmlResponse
 from scrapy.contrib.spiders.init import InitSpider
 from scrapy.contrib.spiders import CrawlSpider, XMLFeedSpider, CSVFeedSpider, SitemapSpider
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 
 class SpiderTest(unittest.TestCase):
@@ -133,6 +134,20 @@ class SitemapSpiderTest(SpiderTest):
 
         r = Response(url="http://www.example.com/sitemap.xml.gz", body=self.GZBODY)
         self.assertEqual(spider._get_sitemap_body(r), self.BODY)
+
+
+class BaseSpiderDeprecationTest(unittest.TestCase):
+
+    def test_basespider_is_deprecated(self):
+        with warnings.catch_warnings(record=True) as w:
+
+            class MySpider(BaseSpider):
+                pass
+
+            self.assertEqual(len(w), 1)
+            self.assertEqual(w[0].category, ScrapyDeprecationWarning)
+            self.assertEqual(w[0].lineno, inspect.getsourcelines(MySpider)[1])
+
 
 if __name__ == '__main__':
     unittest.main()

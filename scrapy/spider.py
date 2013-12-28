@@ -67,9 +67,8 @@ class Spider(object_ref):
 
 class BaseSpider(Spider):
     __metaclass__ = warn_when_subclassed(
-        4,  # == len([object, object_ref, Spider, BaseSpider])
-        "scrapy.spider.BaseSpider was deprecated. "
-        "Please inherit from scrapy.spider.Spider."
+        superclass=Spider,
+        message="scrapy.spider.BaseSpider was deprecated. Please inherit from scrapy.spider.Spider."
     )
 
 
