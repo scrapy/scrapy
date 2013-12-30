@@ -157,7 +157,8 @@ def get_func_args(func, stripself=False):
     elif inspect.ismethoddescriptor(func):
         return []
     elif isinstance(func, partial):
-        return get_func_args(func.func)
+        return [x for x in get_func_args(func.func)[len(func.args):]
+                if not (func.keywords and x in func.keywords)]
     elif hasattr(func, '__call__'):
         if inspect.isroutine(func):
             return []
