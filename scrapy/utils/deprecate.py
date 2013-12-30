@@ -12,7 +12,9 @@ def attribute(obj, oldattr, newattr, version='0.12'):
         (cname, oldattr, version, cname, newattr), ScrapyDeprecationWarning, stacklevel=3)
 
 
-def create_deprecated_class(name, new_class, warn_category=ScrapyDeprecationWarning, message=None):
+def create_deprecated_class(name, new_class, clsdict=None,
+                            warn_category=ScrapyDeprecationWarning,
+                            warn_message=None):
     """
     Return a "deprecated" class that causes its subclasses to issue a warning.
     Subclasses of ``new_class`` are considered subclasses of this class.
@@ -39,15 +41,15 @@ def create_deprecated_class(name, new_class, warn_category=ScrapyDeprecationWarn
     deprecated = {}
     class DeprecatedClass(type):
 
-        def __init__(cls, name, bases, clsdict):
+        def __init__(cls, name, bases, clsdict_):
             if 'cls' in deprecated:
-                if message is not None:
-                    msg = message
+                if warn_message is not None:
+                    msg = warn_message
                 else:
                     msg = "Base class {0} of {1} was deprecated. Please inherit from {2}."\
                             .format(_clspath(deprecated['cls']), _clspath(cls), _clspath(new_class))
                 warnings.warn(msg, warn_category, stacklevel=2)
-            super(DeprecatedClass, cls).__init__(name, bases, clsdict)
+            super(DeprecatedClass, cls).__init__(name, bases, clsdict_)
 
         # see http://www.python.org/dev/peps/pep-3119/#overloading-isinstance-and-issubclass
         # and http://docs.python.org/2/reference/datamodel.html#customizing-instance-and-subclass-checks
@@ -64,7 +66,8 @@ def create_deprecated_class(name, new_class, warn_category=ScrapyDeprecationWarn
             candidates = {cls, new_class}
             return any(c in candidates for c in mro)
 
-    deprecated_cls = DeprecatedClass(name, (new_class,), {})
+    clsdict = clsdict if clsdict is not None else {}
+    deprecated_cls = DeprecatedClass(name, (new_class,), clsdict)
     deprecated['cls'] = deprecated_cls
 
     frm = inspect.stack()[1]

@@ -25,7 +25,8 @@ class WarnWhenSubclassedTest(unittest.TestCase):
 
     def test_warning_on_subclassing(self):
         with warnings.catch_warnings(record=True) as w:
-            Deprecated = create_deprecated_class('Deprecated', NewName, MyWarning)
+            Deprecated = create_deprecated_class('Deprecated', NewName,
+                                                 warn_category=MyWarning)
 
             class UserClass(Deprecated):
                 pass
@@ -108,3 +109,9 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         assert isinstance(OutdatedUserClass2(), DeprecatedName)
         assert not isinstance(UnrelatedClass(), DeprecatedName)
         assert not isinstance(OldStyleClass(), DeprecatedName)
+
+    def test_clsdict(self):
+        with warnings.catch_warnings(record=True):
+            Deprecated = create_deprecated_class('Deprecated', NewName, {'foo': 'bar'})
+
+        self.assertEqual(Deprecated.foo, 'bar')
