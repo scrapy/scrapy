@@ -25,8 +25,8 @@ We highly recommend you install `IPython`_, specially if you're working on
 Unix systems (where `IPython`_ excels). See the `IPython installation guide`_
 for more info.
 
-.. _IPython: http://ipython.scipy.org/
-.. _IPython installation guide: http://ipython.scipy.org/doc/rel-0.9.1/html/install/index.html
+.. _IPython: http://ipython.org/
+.. _IPython installation guide: http://ipython.org/install.html
 
 Launch the shell
 ================
@@ -41,7 +41,7 @@ Where the ``<url>`` is the URL you want to scrape.
 Using the shell
 ===============
 
-The Scrapy shell is just a regular Python console (or `IPython` console if you
+The Scrapy shell is just a regular Python console (or `IPython`_ console if you
 have it available) which provides some additional shortcut functions for
 convenience.
 
@@ -59,10 +59,10 @@ Available Shortcuts
    Note, however,that this will create a temporary file in your computer,
    which won't be removed automatically.
 
-.. _<base> tag: http://www.w3schools.com/TAGS/tag_base.asp
+.. _<base> tag: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
 
 Available Scrapy objects
--------------------------
+------------------------
 
 The Scrapy shell automatically creates some convenient objects from the
 downloaded page, like the :class:`~scrapy.http.Response` object and the
@@ -76,8 +76,8 @@ Those objects are:
    the current URL
 
  * ``request`` - a :class:`~scrapy.http.Request` object of the last fetched
-   page. You can modify this request using :meth:`~scrapy.http.Request.replace` or
-   fetch a new request (without leaving the shell) using the ``fetch``
+   page. You can modify this request using :meth:`~scrapy.http.Request.replace`
+   or fetch a new request (without leaving the shell) using the ``fetch``
    shortcut.
 
  * ``response`` - a :class:`~scrapy.http.Response` object containing the last
@@ -104,7 +104,7 @@ shell works.
 
 First, we launch the shell::
 
-    scrapy shell http://scrapy.org --nolog
+    scrapy shell 'http://scrapy.org' --nolog
 
 Then, the shell fetches the URL (using the Scrapy downloader) and prints the
 list of available objects and useful shortcuts (you'll notice that these lines
@@ -150,7 +150,7 @@ After that, we can star playing with the objects::
     >>> fetch(request)
     2009-04-03 00:57:39-0300 [default] ERROR: Downloading <http://slashdot.org> from <None>: 405 Method Not Allowed
 
-    >>> 
+    >>>
 
 .. _topics-shell-inspect-response:
 
