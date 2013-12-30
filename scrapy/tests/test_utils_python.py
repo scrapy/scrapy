@@ -1,3 +1,4 @@
+import functools
 import operator
 import unittest
 from itertools import count
@@ -174,12 +175,14 @@ class UtilsPythonTestCase(unittest.TestCase):
                 pass
 
         a = A(1, 2, 3)
+        partial_f1 = functools.partial(f1, None)
         cal = Callable()
 
         self.assertEqual(get_func_args(f1), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(f2), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(A), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(a.method), ['a', 'b', 'c'])
+        self.assertEqual(get_func_args(partial_f1), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(cal), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(object), [])
 
