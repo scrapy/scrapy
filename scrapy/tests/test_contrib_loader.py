@@ -1,4 +1,5 @@
 import unittest
+from functools import partial
 
 from scrapy.contrib.loader import ItemLoader
 from scrapy.contrib.loader.processor import Join, Identity, TakeFirst, \
@@ -331,6 +332,29 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.get_output_value('name'), u'Mart')
         item = il.load_item()
         self.assertEqual(item['name'], u'Mart')
+
+    def test_partial_processor(self):
+        def join(values, sep=None, loader_context=None, ignored=None):
+            if sep is not None:
+                return sep.join(values)
+            elif loader_context and 'sep' in loader_context:
+                return loader_context['sep'].join(values)
+            else:
+                return ''.join(values)
+
+        class TestItemLoader(NameItemLoader):
+            name_out = Compose(partial(join, sep='+'))
+            url_out = Compose(partial(join, loader_context={'sep': '.'}))
+            summary_out = Compose(partial(join, ignored='foo'))
+
+        il = TestItemLoader()
+        il.add_value('name', [u'rabbit', u'hole'])
+        il.add_value('url', [u'rabbit', u'hole'])
+        il.add_value('summary', [u'rabbit', u'hole'])
+        item = il.load_item()
+        self.assertEqual(item['name'], u'rabbit+hole')
+        self.assertEqual(item['url'], u'rabbit.hole')
+        self.assertEqual(item['summary'], u'rabbithole')
 
 
 class ProcessorsTest(unittest.TestCase):
