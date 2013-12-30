@@ -10,7 +10,7 @@ import re
 import inspect
 import weakref
 import errno
-from functools import wraps
+from functools import partial, wraps
 from sgmllib import SGMLParser
 
 
@@ -156,6 +156,9 @@ def get_func_args(func, stripself=False):
         return get_func_args(func.__func__, True)
     elif inspect.ismethoddescriptor(func):
         return []
+    elif isinstance(func, partial):
+        return [x for x in get_func_args(func.func)[len(func.args):]
+                if not (func.keywords and x in func.keywords)]
     elif hasattr(func, '__call__'):
         if inspect.isroutine(func):
             return []
