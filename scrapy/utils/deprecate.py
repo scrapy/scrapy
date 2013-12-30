@@ -4,6 +4,7 @@ import warnings
 import inspect
 from scrapy.exceptions import ScrapyDeprecationWarning
 
+
 def attribute(obj, oldattr, newattr, version='0.12'):
     cname = obj.__class__.__name__
     warnings.warn("%s.%s attribute is deprecated and will be no longer supported "
@@ -11,15 +12,12 @@ def attribute(obj, oldattr, newattr, version='0.12'):
         (cname, oldattr, version, cname, newattr), ScrapyDeprecationWarning, stacklevel=3)
 
 
-def deprecated_base_class(new_class, message=None, category=ScrapyDeprecationWarning):
+def create_deprecated_class(name, new_class, warn_category=ScrapyDeprecationWarning, message=None):
     """
-    Return a metaclass that causes classes to issue a warning when
-    they are subclassed.
+    Return a "deprecated" class that causes its subclasses to issue a warning.
+    Subclasses of ``new_class`` are considered subclasses of this class.
 
-    In addition to that, subclasses of ``new_class`` are considered subclasses
-    of a class this metaclass is applied to.
-
-    It can be used to rename a base class of some user classes, e.g. if we
+    It can be used to rename a base class in a library. For example, if we
     have
 
         class OldName(SomeClass):
@@ -30,30 +28,26 @@ def deprecated_base_class(new_class, message=None, category=ScrapyDeprecationWar
         class NewName(SomeClass):
             # ...
 
-        class OldName(NewName):
-            __metaclass__ = deprecated_base_class(NewName, "OldName is deprecated. Please inherit from NewName.")
+        OldName = create_deprecated_class('OldName', NewName)
 
     Then, if user class inherits from OldName, warning is issued. Also, if
     some code uses ``issubclass(sub, OldName)`` or ``isinstance(sub(), OldName)``
     checks they'll still return True if sub is a subclass of NewName instead of
     OldName.
     """
-    class Metaclass(type):
+
+    deprecated = {}
+    class DeprecatedClass(type):
+
         def __init__(cls, name, bases, clsdict):
-
-            if not issubclass(cls, new_class):
-                raise ValueError("first parameter of `warn_when_subclassed` must be a superclass of %s" % cls)
-
-            warn_message = message
-            if warn_message is None:
-                # XXX: how to get a name of deprecated base class?
-                cls_name = cls.__module__ + '.' + name
-                new_name = new_class.__module__ + '.' + new_class.__name__
-                warn_message = "Base class of %s was deprecated. Please inherit from %s." % (cls_name, new_name)
-
-            if len(cls.mro()) > len(new_class.mro()) + 1:
-                warnings.warn(warn_message, category, stacklevel=2)
-            super(Metaclass, cls).__init__(name, bases, clsdict)
+            if 'cls' in deprecated:
+                if message is not None:
+                    msg = message
+                else:
+                    msg = "Base class {0} of {1} was deprecated. Please inherit from {2}."\
+                            .format(_clspath(deprecated['cls']), _clspath(cls), _clspath(new_class))
+                warnings.warn(msg, warn_category, stacklevel=2)
+            super(DeprecatedClass, cls).__init__(name, bases, clsdict)
 
         # see http://www.python.org/dev/peps/pep-3119/#overloading-isinstance-and-issubclass
         # and http://docs.python.org/2/reference/datamodel.html#customizing-instance-and-subclass-checks
@@ -70,5 +64,16 @@ def deprecated_base_class(new_class, message=None, category=ScrapyDeprecationWar
             candidates = {cls, new_class}
             return any(c in candidates for c in mro)
 
-    return Metaclass
+    deprecated_cls = DeprecatedClass(name, (new_class,), {})
+    deprecated['cls'] = deprecated_cls
 
+    frm = inspect.stack()[1]
+    parent_module = inspect.getmodule(frm[0])
+    if parent_module is not None:
+        deprecated_cls.__module__ = parent_module.__name__
+
+    return deprecated_cls
+
+
+def _clspath(cls):
+    return '{}.{}'.format(cls.__module__, cls.__name__)

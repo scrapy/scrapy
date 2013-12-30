@@ -7,7 +7,7 @@ from scrapy import log
 from scrapy.http import Request
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
-from scrapy.utils.deprecate import deprecated_base_class
+from scrapy.utils.deprecate import create_deprecated_class
 
 
 class Spider(object_ref):
@@ -65,8 +65,7 @@ class Spider(object_ref):
     __repr__ = __str__
 
 
-class BaseSpider(Spider):
-    __metaclass__ = deprecated_base_class(Spider, "scrapy.spider.BaseSpider was deprecated. Please inherit from scrapy.spider.Spider.")
+BaseSpider = create_deprecated_class('BaseSpider', Spider)
 
 
 class ObsoleteClass(object):

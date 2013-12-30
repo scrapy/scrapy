@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import inspect
 import unittest
 import warnings
-from scrapy.utils.deprecate import deprecated_base_class
+from scrapy.utils.deprecate import create_deprecated_class
 
 class MyWarning(UserWarning):
     pass
@@ -19,17 +19,13 @@ class WarnWhenSubclassedTest(unittest.TestCase):
 
     def test_no_warning_on_definition(self):
         with warnings.catch_warnings(record=True) as w:
-
-            class Deprecated(NewName):
-                __metaclass__ = deprecated_base_class(NewName, "message")
+            Deprecated = create_deprecated_class('Deprecated', NewName)
 
         self.assertEqual(w, [])
 
     def test_warning_on_subclassing(self):
         with warnings.catch_warnings(record=True) as w:
-
-            class Deprecated(NewName):
-                __metaclass__ = deprecated_base_class(NewName, "message", MyWarning)
+            Deprecated = create_deprecated_class('Deprecated', NewName, MyWarning)
 
             class UserClass(Deprecated):
                 pass
@@ -37,28 +33,28 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         self.assertEqual(len(w), 1)
         msg = w[0]
         assert issubclass(msg.category, MyWarning)
-        self.assertEqual(str(msg.message), "message")
+        self.assertEqual(
+            str(msg.message),
+            "Base class scrapy.tests.test_utils_deprecate.Deprecated of "
+            "scrapy.tests.test_utils_deprecate.UserClass was deprecated. "
+            "Please inherit from scrapy.tests.test_utils_deprecate.NewName."
+        )
         self.assertEqual(msg.lineno, inspect.getsourcelines(UserClass)[1])
 
     def test_warning_auto_message(self):
         with warnings.catch_warnings(record=True) as w:
-
-            class Deprecated(NewName):
-                __metaclass__ = deprecated_base_class(NewName)
+            Deprecated = create_deprecated_class('Deprecated', NewName)
 
             class UserClass2(Deprecated):
                 pass
 
         msg = str(w[0].message)
         self.assertIn("scrapy.tests.test_utils_deprecate.NewName", msg)
-        # this doesn't work:
-        # self.assertIn("scrapy.tests.test_utils_deprecate.Deprecated", msg)
+        self.assertIn("scrapy.tests.test_utils_deprecate.Deprecated", msg)
 
     def test_issubclass(self):
         with warnings.catch_warnings(record=True):
-
-            class DeprecatedName(NewName):
-                __metaclass__ = deprecated_base_class(NewName, "message", MyWarning)
+            DeprecatedName = create_deprecated_class('DeprecatedName', NewName)
 
             class UpdatedUserClass1(NewName):
                 pass
@@ -88,9 +84,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
 
     def test_isinstance(self):
         with warnings.catch_warnings(record=True):
-
-            class DeprecatedName(NewName):
-                __metaclass__ = deprecated_base_class(NewName, "message", MyWarning)
+            DeprecatedName = create_deprecated_class('DeprecatedName', NewName)
 
             class UpdatedUserClass2(NewName):
                 pass
@@ -114,14 +108,3 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         assert isinstance(OutdatedUserClass2(), DeprecatedName)
         assert not isinstance(UnrelatedClass(), DeprecatedName)
         assert not isinstance(OldStyleClass(), DeprecatedName)
-
-    def test_invalid_usage(self):
-
-        class SomeClass(object):
-            pass
-
-        def define_invalid():
-            class DeprecatedName(NewName):
-                __metaclass__ = deprecated_base_class(SomeClass)
-
-        self.assertRaises(ValueError, define_invalid)
