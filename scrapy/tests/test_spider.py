@@ -2,6 +2,7 @@ import gzip
 import inspect
 import warnings
 from cStringIO import StringIO
+from scrapy.utils.trackref import object_ref
 
 from twisted.trial import unittest
 
@@ -141,12 +142,54 @@ class BaseSpiderDeprecationTest(unittest.TestCase):
     def test_basespider_is_deprecated(self):
         with warnings.catch_warnings(record=True) as w:
 
-            class MySpider(BaseSpider):
+            class MySpider1(BaseSpider):
                 pass
 
             self.assertEqual(len(w), 1)
             self.assertEqual(w[0].category, ScrapyDeprecationWarning)
-            self.assertEqual(w[0].lineno, inspect.getsourcelines(MySpider)[1])
+            self.assertEqual(w[0].lineno, inspect.getsourcelines(MySpider1)[1])
+
+    def test_basespider_issubclass(self):
+        class MySpider2(Spider):
+            pass
+
+        class MySpider2a(MySpider2):
+            pass
+
+        class Foo(object):
+            pass
+
+        class Foo2(object_ref):
+            pass
+
+        assert issubclass(MySpider2, BaseSpider)
+        assert issubclass(MySpider2a, BaseSpider)
+        assert not issubclass(Foo, BaseSpider)
+        assert not issubclass(Foo2, BaseSpider)
+
+    def test_basespider_isinstance(self):
+        class MySpider3(Spider):
+            name = 'myspider3'
+
+        class MySpider3a(MySpider3):
+            pass
+
+        class Foo(object):
+            pass
+
+        class Foo2(object_ref):
+            pass
+
+        assert isinstance(MySpider3(), BaseSpider)
+        assert isinstance(MySpider3a(), BaseSpider)
+        assert not isinstance(Foo(), BaseSpider)
+        assert not isinstance(Foo2(), BaseSpider)
+
+    def test_crawl_spider(self):
+        assert issubclass(CrawlSpider, Spider)
+        assert issubclass(CrawlSpider, BaseSpider)
+        assert isinstance(CrawlSpider(name='foo'), Spider)
+        assert isinstance(CrawlSpider(name='foo'), BaseSpider)
 
 
 if __name__ == '__main__':
