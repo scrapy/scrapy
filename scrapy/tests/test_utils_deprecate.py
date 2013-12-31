@@ -42,6 +42,27 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         )
         self.assertEqual(msg.lineno, inspect.getsourcelines(UserClass)[1])
 
+    def test_warning_on_instance(self):
+        with warnings.catch_warnings(record=True) as w:
+            Deprecated = create_deprecated_class('Deprecated', NewName,
+                                                 warn_category=MyWarning)
+
+            class UserClass(Deprecated):
+                pass
+
+            _, lineno = Deprecated(), inspect.getlineno(inspect.currentframe())
+            _ = UserClass()
+
+        self.assertEqual(len(w), 2)
+        msg = w[1]
+        assert issubclass(msg.category, MyWarning)
+        self.assertEqual(
+            str(msg.message),
+            "scrapy.tests.test_utils_deprecate.Deprecated is deprecated, "
+            "instanciate scrapy.tests.test_utils_deprecate.NewName instead."
+        )
+        self.assertEqual(msg.lineno, lineno)
+
     def test_warning_auto_message(self):
         with warnings.catch_warnings(record=True) as w:
             Deprecated = create_deprecated_class('Deprecated', NewName)

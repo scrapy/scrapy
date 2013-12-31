@@ -14,11 +14,16 @@ def attribute(obj, oldattr, newattr, version='0.12'):
 
 def create_deprecated_class(name, new_class, clsdict=None,
                             warn_category=ScrapyDeprecationWarning,
-                            warn_message="{cls} inherits from deprecated class {old}, "\
-                                         "please inherit from {new}."):
+                            subclass_warn_message="{cls} inherits from "\
+                                    "deprecated class {old}, please inherit "\
+                                    "from {new}.",
+                            instance_warn_message="{cls} is deprecated, "\
+                                    "instanciate {new} instead."):
     """
     Return a "deprecated" class that causes its subclasses to issue a warning.
     Subclasses of ``new_class`` are considered subclasses of this class.
+    It also warns when the deprecated class is instanciated, but do not when
+    its subclasses are instanciated.
 
     It can be used to rename a base class in a library. For example, if we
     have
@@ -50,10 +55,11 @@ def create_deprecated_class(name, new_class, clsdict=None,
             return cls
 
         def __init__(cls, name, bases, clsdict_):
-            if cls is not cls.__class__.deprecated_class:
-                msg = warn_message.format(cls=_clspath(cls),
-                                        old=_clspath(cls.__class__.deprecated_class),
-                                        new=_clspath(new_class))
+            old = cls.__class__.deprecated_class
+            if cls is not old:
+                msg = subclass_warn_message.format(cls=_clspath(cls),
+                                                   old=_clspath(old),
+                                                   new=_clspath(new_class))
                 warnings.warn(msg, warn_category, stacklevel=2)
             super(DeprecatedClass, cls).__init__(name, bases, clsdict_)
 
@@ -71,6 +77,13 @@ def create_deprecated_class(name, new_class, clsdict=None,
             mro = getattr(sub, '__mro__', ())
             candidates = {cls, new_class}
             return any(c in candidates for c in mro)
+
+        def __call__(cls, *args, **kwargs):
+            if cls is cls.__class__.deprecated_class:
+                msg = instance_warn_message.format(cls=_clspath(cls),
+                                                   new=_clspath(new_class))
+                warnings.warn(msg, warn_category, stacklevel=2)
+            return super(DeprecatedClass, cls).__call__(*args, **kwargs)
 
     deprecated_cls = DeprecatedClass(name, (new_class,), clsdict or {})
     frm = inspect.stack()[1]
