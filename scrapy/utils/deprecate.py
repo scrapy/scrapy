@@ -14,7 +14,8 @@ def attribute(obj, oldattr, newattr, version='0.12'):
 
 def create_deprecated_class(name, new_class, clsdict=None,
                             warn_category=ScrapyDeprecationWarning,
-                            warn_message=None):
+                            warn_message="{cls} inherits from deprecated class {old}, "\
+                                         "please inherit from {new}."):
     """
     Return a "deprecated" class that causes its subclasses to issue a warning.
     Subclasses of ``new_class`` are considered subclasses of this class.
@@ -38,16 +39,21 @@ def create_deprecated_class(name, new_class, clsdict=None,
     OldName.
     """
 
-    deprecated = {}
     class DeprecatedClass(type):
 
+        deprecated_class = None
+
+        def __new__(metacls, name, bases, clsdict_):
+            cls = super(DeprecatedClass, metacls).__new__(metacls, name, bases, clsdict_)
+            if metacls.deprecated_class is None:
+                metacls.deprecated_class = cls
+            return cls
+
         def __init__(cls, name, bases, clsdict_):
-            if 'cls' in deprecated:
-                if warn_message is not None:
-                    msg = warn_message
-                else:
-                    msg = "Base class {0} of {1} was deprecated. Please inherit from {2}."\
-                            .format(_clspath(deprecated['cls']), _clspath(cls), _clspath(new_class))
+            if cls is not cls.__class__.deprecated_class:
+                msg = warn_message.format(cls=_clspath(cls),
+                                        old=_clspath(cls.__class__.deprecated_class),
+                                        new=_clspath(new_class))
                 warnings.warn(msg, warn_category, stacklevel=2)
             super(DeprecatedClass, cls).__init__(name, bases, clsdict_)
 
@@ -66,10 +72,7 @@ def create_deprecated_class(name, new_class, clsdict=None,
             candidates = {cls, new_class}
             return any(c in candidates for c in mro)
 
-    clsdict = clsdict if clsdict is not None else {}
-    deprecated_cls = DeprecatedClass(name, (new_class,), clsdict)
-    deprecated['cls'] = deprecated_cls
-
+    deprecated_cls = DeprecatedClass(name, (new_class,), clsdict or {})
     frm = inspect.stack()[1]
     parent_module = inspect.getmodule(frm[0])
     if parent_module is not None:

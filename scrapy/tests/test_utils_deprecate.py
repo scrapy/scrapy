@@ -36,9 +36,9 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         assert issubclass(msg.category, MyWarning)
         self.assertEqual(
             str(msg.message),
-            "Base class scrapy.tests.test_utils_deprecate.Deprecated of "
-            "scrapy.tests.test_utils_deprecate.UserClass was deprecated. "
-            "Please inherit from scrapy.tests.test_utils_deprecate.NewName."
+            "scrapy.tests.test_utils_deprecate.UserClass inherits from "
+            "deprecated class scrapy.tests.test_utils_deprecate.Deprecated, "
+            "please inherit from scrapy.tests.test_utils_deprecate.NewName."
         )
         self.assertEqual(msg.lineno, inspect.getsourcelines(UserClass)[1])
 
