@@ -5,7 +5,7 @@ This module implements the FormRequest class which is a more covenient class
 See documentation in docs/topics/request-response.rst
 """
 
-import urllib
+import urllib, urlparse
 import lxml.html
 from scrapy.http.request import Request
 from scrapy.utils.python import unicode_to_str
@@ -35,10 +35,14 @@ class FormRequest(Request):
         kwargs.setdefault('encoding', response.encoding)
         form = _get_form(response, formname, formnumber, formxpath)
         formdata = _get_inputs(form, formdata, dont_click, clickdata, response)
-        url = form.action or form.base_url
+        url = _get_form_url(form, kwargs.pop('url', None))
         method = kwargs.pop('method', form.method)
-        return cls(url, method=method, formdata=formdata, **kwargs)
+        return cls(url=url, method=method, formdata=formdata, **kwargs)
 
+def _get_form_url(form, url):
+    if url is None:
+        return form.action or form.base_url
+    return urlparse.urljoin(form.base_url, url)
 
 def _urlencode(seq, enc):
     values = [(unicode_to_str(k, enc), unicode_to_str(v, enc))

@@ -282,6 +282,18 @@ class FormRequestTest(RequestTest):
         request = FormRequest.from_response(response, method='POST')
         self.assertEqual(request.method, 'POST')
 
+    def test_from_response_override_url(self):
+        response = _buildresponse(
+                '''<html><body>
+                <form action="/app"></form>
+                </body></html>''')
+        request = FormRequest.from_response(response)
+        self.assertEqual(request.url, 'http://example.com/app')
+        request = FormRequest.from_response(response, url='http://foo.bar/absolute')
+        self.assertEqual(request.url, 'http://foo.bar/absolute')
+        request = FormRequest.from_response(response, url='/relative')
+        self.assertEqual(request.url, 'http://example.com/relative')
+
     def test_from_response_submit_first_clickable(self):
         response = _buildresponse(
             """<form action="get.php" method="GET">
