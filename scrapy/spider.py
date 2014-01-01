@@ -3,14 +3,14 @@ Base class for Scrapy spiders
 
 See documentation in docs/topics/spiders.rst
 """
-
 from scrapy import log
 from scrapy.http import Request
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
+from scrapy.utils.deprecate import create_deprecated_class
 
 
-class BaseSpider(object_ref):
+class Spider(object_ref):
     """Base class for scrapy spiders. All spiders must inherit from this
     class.
     """
@@ -63,6 +63,9 @@ class BaseSpider(object_ref):
         return "<%s %r at 0x%0x>" % (type(self).__name__, self.name, id(self))
 
     __repr__ = __str__
+
+
+BaseSpider = create_deprecated_class('BaseSpider', Spider)
 
 
 class ObsoleteClass(object):

@@ -77,7 +77,7 @@ item_scraped
     :type response: :class:`~scrapy.http.Response` object
 
     :param spider: the spider which scraped the item
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
+    :type spider: :class:`~scrapy.spider.Spider` object
 
 item_dropped
 ------------
@@ -94,7 +94,7 @@ item_dropped
     :type item: :class:`~scrapy.item.Item` object
 
     :param spider: the spider which scraped the item
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
+    :type spider: :class:`~scrapy.spider.Spider` object
 
     :param exception: the exception (which must be a
         :exc:`~scrapy.exceptions.DropItem` subclass) which caused the item
@@ -113,7 +113,7 @@ spider_closed
     This signal supports returning deferreds from their handlers.
 
     :param spider: the spider which has been closed
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
+    :type spider: :class:`~scrapy.spider.Spider` object
 
     :param reason: a string which describes the reason why the spider was closed. If
         it was closed because the spider has completed scraping, the reason
@@ -137,7 +137,7 @@ spider_opened
     This signal supports returning deferreds from their handlers.
 
     :param spider: the spider which has been opened
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
+    :type spider: :class:`~scrapy.spider.Spider` object
 
 spider_idle
 -----------
@@ -161,7 +161,7 @@ spider_idle
     This signal does not support returning deferreds from their handlers.
 
     :param spider: the spider which has gone idle
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
+    :type spider: :class:`~scrapy.spider.Spider` object
 
 spider_error
 ------------
@@ -178,7 +178,7 @@ spider_error
     :type response: :class:`~scrapy.http.Response` object
 
     :param spider: the spider which raised the exception
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
+    :type spider: :class:`~scrapy.spider.Spider` object
 
 
 response_received
@@ -199,7 +199,7 @@ response_received
     :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider for which the response is intended
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
+    :type spider: :class:`~scrapy.spider.Spider` object
 
 response_downloaded
 -------------------
@@ -218,6 +218,6 @@ response_downloaded
     :type request: :class:`~scrapy.http.Request` object
 
     :param spider: the spider for which the response is intended
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
+    :type spider: :class:`~scrapy.spider.Spider` object
 
 .. _Failure: http://twistedmatrix.com/documents/current/api/twisted.python.failure.Failure.html

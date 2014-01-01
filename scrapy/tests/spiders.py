@@ -5,13 +5,13 @@ Some spiders used for testing and benchmarking
 import time
 from urllib import urlencode
 
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.http import Request
 from scrapy.item import Item
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 
 
-class MetaSpider(BaseSpider):
+class MetaSpider(Spider):
 
     name = 'meta'
 

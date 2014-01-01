@@ -1,8 +1,8 @@
 from unittest import TestCase
 
-from scrapy.contrib.spidermiddleware.depth import DepthMiddleware 
+from scrapy.contrib.spidermiddleware.depth import DepthMiddleware
 from scrapy.http import Response, Request
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.statscol import StatsCollector
 from scrapy.utils.test import get_crawler
 
@@ -10,7 +10,7 @@ from scrapy.utils.test import get_crawler
 class TestDepthMiddleware(TestCase):
 
     def setUp(self):
-        self.spider = BaseSpider('scrapytest.org')
+        self.spider = Spider('scrapytest.org')
 
         self.stats = StatsCollector(get_crawler())
         self.stats.open_spider(self.spider)

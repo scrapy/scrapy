@@ -22,7 +22,7 @@ from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.http import Request
 from scrapy.settings import Settings
 from scrapy import optional_features
@@ -45,11 +45,11 @@ class FileTestCase(unittest.TestCase):
 
         request = Request(path_to_file_uri(self.tmpname + '^'))
         assert request.url.upper().endswith('%5E')
-        return self.download_request(request, BaseSpider('foo')).addCallback(_test)
+        return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_non_existent(self):
         request = Request('file://%s' % self.mktemp())
-        d = self.download_request(request, BaseSpider('foo'))
+        d = self.download_request(request, Spider('foo'))
         return self.assertFailure(d, IOError)
 
 
@@ -87,35 +87,35 @@ class HttpTestCase(unittest.TestCase):
 
     def test_download(self):
         request = Request(self.getURL('file'))
-        d = self.download_request(request, BaseSpider('foo'))
+        d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEquals, "0123456789")
         return d
 
     def test_download_head(self):
         request = Request(self.getURL('file'), method='HEAD')
-        d = self.download_request(request, BaseSpider('foo'))
+        d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEquals, '')
         return d
 
     def test_redirect_status(self):
         request = Request(self.getURL('redirect'))
-        d = self.download_request(request, BaseSpider('foo'))
+        d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.status)
         d.addCallback(self.assertEquals, 302)
         return d
 
     def test_redirect_status_head(self):
         request = Request(self.getURL('redirect'), method='HEAD')
-        d = self.download_request(request, BaseSpider('foo'))
+        d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.status)
         d.addCallback(self.assertEquals, 302)
         return d
 
     @defer.inlineCallbacks
     def test_timeout_download_from_spider(self):
-        spider = BaseSpider('foo')
+        spider = Spider('foo')
         meta = {'download_timeout': 0.2}
         # client connects but no data is received
         request = Request(self.getURL('wait'), meta=meta)
@@ -132,7 +132,7 @@ class HttpTestCase(unittest.TestCase):
             self.assertEquals(request.headers, {})
 
         request = Request(self.getURL('host'))
-        return self.download_request(request, BaseSpider('foo')).addCallback(_test)
+        return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_host_header_seted_in_request_headers(self):
         def _test(response):
@@ -140,9 +140,9 @@ class HttpTestCase(unittest.TestCase):
             self.assertEquals(request.headers.get('Host'), 'example.com')
 
         request = Request(self.getURL('host'), headers={'Host': 'example.com'})
-        return self.download_request(request, BaseSpider('foo')).addCallback(_test)
+        return self.download_request(request, Spider('foo')).addCallback(_test)
 
-        d = self.download_request(request, BaseSpider('foo'))
+        d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEquals, 'example.com')
         return d
@@ -150,7 +150,7 @@ class HttpTestCase(unittest.TestCase):
     def test_payload(self):
         body = '1'*100 # PayloadResource requires body length to be 100
         request = Request(self.getURL('payload'), method='POST', body=body)
-        d = self.download_request(request, BaseSpider('foo'))
+        d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEquals, body)
         return d
@@ -211,7 +211,7 @@ class HttpProxyTestCase(unittest.TestCase):
 
         http_proxy = self.getURL('')
         request = Request('http://example.com', meta={'proxy': http_proxy})
-        return self.download_request(request, BaseSpider('foo')).addCallback(_test)
+        return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_download_with_proxy_https_noconnect(self):
         def _test(response):
@@ -221,7 +221,7 @@ class HttpProxyTestCase(unittest.TestCase):
 
         http_proxy = '%s?noconnect' % self.getURL('')
         request = Request('https://example.com', meta={'proxy': http_proxy})
-        return self.download_request(request, BaseSpider('foo')).addCallback(_test)
+        return self.download_request(request, Spider('foo')).addCallback(_test)
 
     def test_download_without_proxy(self):
         def _test(response):
@@ -230,7 +230,7 @@ class HttpProxyTestCase(unittest.TestCase):
             self.assertEquals(response.body, '/path/to/resource')
 
         request = Request(self.getURL('path/to/resource'))
-        return self.download_request(request, BaseSpider('foo')).addCallback(_test)
+        return self.download_request(request, Spider('foo')).addCallback(_test)
 
 
 class DeprecatedHttpProxyTestCase(unittest.TestCase):
@@ -270,7 +270,7 @@ class S3TestCase(unittest.TestCase):
                 self.AWS_SECRET_ACCESS_KEY, \
                 httpdownloadhandler=HttpDownloadHandlerMock)
         self.download_request = s3reqh.download_request
-        self.spider = BaseSpider('foo')
+        self.spider = Spider('foo')
 
     def test_request_signing1(self):
         # gets an object from the johnsmith bucket.

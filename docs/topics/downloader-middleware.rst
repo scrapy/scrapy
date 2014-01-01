@@ -91,7 +91,7 @@ single Python class that defines one or more of the following methods:
       :type request: :class:`~scrapy.http.Request` object
 
       :param spider: the spider for which this request is intended
-      :type spider: :class:`~scrapy.spider.BaseSpider` object
+      :type spider: :class:`~scrapy.spider.Spider` object
 
    .. method:: process_response(request, response, spider)
 
@@ -118,7 +118,7 @@ single Python class that defines one or more of the following methods:
       :type response: :class:`~scrapy.http.Response` object
 
       :param spider: the spider for which this response is intended
-      :type spider: :class:`~scrapy.spider.BaseSpider` object
+      :type spider: :class:`~scrapy.spider.Spider` object
 
    .. method:: process_exception(request, exception, spider)
 
@@ -149,7 +149,7 @@ single Python class that defines one or more of the following methods:
       :type exception: an ``Exception`` object
 
       :param spider: the spider for which this request is intended
-      :type spider: :class:`~scrapy.spider.BaseSpider` object
+      :type spider: :class:`~scrapy.spider.Spider` object
 
 .. _topics-downloader-middleware-ref:
 

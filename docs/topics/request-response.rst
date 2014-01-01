@@ -37,7 +37,7 @@ Request objects
        request (once its downloaded) as its first parameter. For more information
        see :ref:`topics-request-response-ref-request-callback-arguments` below.
        If a Request doesn't specify a callback, the spider's
-       :meth:`~scrapy.spider.BaseSpider.parse` method will be used.
+       :meth:`~scrapy.spider.Spider.parse` method will be used.
        Note that if exceptions are raised during processing, errback is called instead.
 
     :type callback: callable
@@ -342,7 +342,7 @@ automatically pre-populated and only override a couple of them, such as the
 user name and password. You can use the :meth:`FormRequest.from_response`
 method for this job. Here's an example spider which uses it::
 
-    class LoginSpider(BaseSpider):
+    class LoginSpider(Spider):
         name = 'example.com'
         start_urls = ['http://www.example.com/users/login.php']
 

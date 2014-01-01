@@ -2,7 +2,7 @@ from twisted.trial.unittest import TestCase
 from twisted.python.failure import Failure
 
 from scrapy.http import Request, Response
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.utils.test import get_crawler
 
@@ -13,7 +13,7 @@ class ManagerTestCase(TestCase):
 
     def setUp(self):
         self.crawler = get_crawler(self.settings_dict)
-        self.spider = BaseSpider('foo')
+        self.spider = Spider('foo')
         self.spider.set_crawler(self.crawler)
         self.mwman = DownloaderMiddlewareManager.from_crawler(self.crawler)
         # some mw depends on stats collector

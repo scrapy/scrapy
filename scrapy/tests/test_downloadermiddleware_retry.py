@@ -6,7 +6,7 @@ from twisted.internet.error import TimeoutError as ServerTimeoutError, \
 from scrapy import optional_features
 from scrapy.contrib.downloadermiddleware.retry import RetryMiddleware
 from scrapy.xlib.tx import ResponseFailed
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.http import Request, Response
 from scrapy.utils.test import get_crawler
 
@@ -14,7 +14,7 @@ from scrapy.utils.test import get_crawler
 class RetryTest(unittest.TestCase):
     def setUp(self):
         crawler = get_crawler()
-        self.spider = BaseSpider('foo')
+        self.spider = Spider('foo')
         self.mw = RetryMiddleware.from_crawler(crawler)
         self.mw.max_retry_times = 2
 

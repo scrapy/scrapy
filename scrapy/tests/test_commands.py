@@ -130,9 +130,9 @@ class RunSpiderCommandTest(CommandTest):
         with open(fname, 'w') as f:
             f.write("""
 from scrapy import log
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 
-class MySpider(BaseSpider):
+class MySpider(Spider):
     name = 'myspider'
 
     def start_requests(self):
@@ -153,7 +153,7 @@ class MySpider(BaseSpider):
         with open(fname, 'w') as f:
             f.write("""
 from scrapy import log
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 """)
         p = self.proc('runspider', fname)
         log = p.stderr.read()
@@ -184,10 +184,10 @@ class ParseCommandTest(CommandTest):
         with open(fname, 'w') as f:
             f.write("""
 from scrapy import log
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.item import Item
 
-class MySpider(BaseSpider):
+class MySpider(Spider):
     name = '{0}'
 
     def parse(self, response):

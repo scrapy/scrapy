@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from scrapy.http import Response, Request
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.contrib.spidermiddleware.offsite import OffsiteMiddleware
 
 
@@ -13,7 +13,7 @@ class TestOffsiteMiddleware(TestCase):
         self.mw.spider_opened(self.spider)
 
     def _get_spider(self):
-        return BaseSpider('foo', allowed_domains=['scrapytest.org', 'scrapy.org'])
+        return Spider('foo', allowed_domains=['scrapytest.org', 'scrapy.org'])
 
     def test_process_spider_output(self):
         res = Response('http://scrapytest.org')
@@ -33,7 +33,7 @@ class TestOffsiteMiddleware(TestCase):
 class TestOffsiteMiddleware2(TestOffsiteMiddleware):
 
     def _get_spider(self):
-        return BaseSpider('foo', allowed_domains=None)
+        return Spider('foo', allowed_domains=None)
 
     def test_process_spider_output(self):
         res = Response('http://scrapytest.org')
@@ -44,5 +44,5 @@ class TestOffsiteMiddleware2(TestOffsiteMiddleware):
 class TestOffsiteMiddleware3(TestOffsiteMiddleware2):
 
     def _get_spider(self):
-        return BaseSpider('foo')
+        return Spider('foo')
 

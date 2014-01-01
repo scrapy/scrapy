@@ -7,7 +7,7 @@ import email.utils
 from contextlib import contextmanager
 
 from scrapy.http import Response, HtmlResponse, Request
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.settings import Settings
 from scrapy.exceptions import IgnoreRequest
 from scrapy.utils.test import get_crawler
@@ -24,7 +24,7 @@ class _BaseTest(unittest.TestCase):
         self.today = email.utils.formatdate()
         self.tomorrow = email.utils.formatdate(time.time() + 86400)
         self.crawler = get_crawler()
-        self.spider = BaseSpider('example.com')
+        self.spider = Spider('example.com')
         self.tmpdir = tempfile.mkdtemp()
         self.request = Request('http://www.example.com',
                                headers={'User-Agent': 'test'})

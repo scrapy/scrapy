@@ -1,12 +1,12 @@
 import re
 
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.http import Request, XmlResponse
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 from scrapy.utils.gz import gunzip, is_gzipped
 from scrapy import log
 
-class SitemapSpider(BaseSpider):
+class SitemapSpider(Spider):
 
     sitemap_urls = ()
     sitemap_rules = [('', 'parse')]

@@ -190,9 +190,9 @@ Usage example::
       xmlfeed
 
     $ scrapy genspider -d basic
-    from scrapy.spider import BaseSpider
+    from scrapy.spider import Spider
 
-    class $classname(BaseSpider):
+    class $classname(Spider):
         name = "$name"
         allowed_domains = ["$domain"]
         start_urls = (

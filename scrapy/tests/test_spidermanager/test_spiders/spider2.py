@@ -1,5 +1,5 @@
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 
-class Spider2(BaseSpider):
+class Spider2(Spider):
     name = "spider2"
     allowed_domains = ["scrapy2.org", "scrapy3.org"]
