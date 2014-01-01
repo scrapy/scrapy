@@ -1,14 +1,14 @@
 from unittest import TestCase
 
 from scrapy.http import Response, Request
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.contrib.downloadermiddleware.cookies import CookiesMiddleware
 
 
 class CookiesMiddlewareTest(TestCase):
 
     def setUp(self):
-        self.spider = BaseSpider('foo')
+        self.spider = Spider('foo')
         self.mw = CookiesMiddleware()
 
     def tearDown(self):

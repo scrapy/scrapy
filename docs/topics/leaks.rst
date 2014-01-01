@@ -88,7 +88,7 @@ subclasses):
 * ``scrapy.http.Response``
 * ``scrapy.item.Item``
 * ``scrapy.selector.Selector``
-* ``scrapy.spider.BaseSpider``
+* ``scrapy.spider.Spider``
 
 A real example
 --------------
@@ -150,8 +150,8 @@ difficult to read. For this reason, that function has a ``ignore`` argument
 which can be used to ignore a particular class (and all its subclases). For
 example, using::
 
-    >>> from scrapy.spider import BaseSpider
-    >>> prefs(ignore=BaseSpider)
+    >>> from scrapy.spider import Spider
+    >>> prefs(ignore=Spider)
 
 Won't show any live references to spiders.
 

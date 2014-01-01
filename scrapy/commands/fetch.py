@@ -3,7 +3,7 @@ from w3lib.url import is_url
 
 from scrapy.command import ScrapyCommand
 from scrapy.http import Request
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.exceptions import UsageError
 from scrapy.utils.spider import create_spider_for_request
 
@@ -54,6 +54,6 @@ class Command(ScrapyCommand):
             spider = crawler.spiders.create(opts.spider)
         else:
             spider = create_spider_for_request(crawler.spiders, request, \
-                default_spider=BaseSpider('default'))
+                default_spider=Spider('default'))
         crawler.crawl(spider, [request])
         self.crawler_process.start()

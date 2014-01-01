@@ -1,7 +1,7 @@
 import unittest
 
 from scrapy.http import Request
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.utils.reqser import request_to_dict, request_from_dict
 
 class RequestSerializationTest(unittest.TestCase):
@@ -67,7 +67,7 @@ class RequestSerializationTest(unittest.TestCase):
         self.assertRaises(ValueError, request_to_dict, r)
 
 
-class TestSpider(BaseSpider):
+class TestSpider(Spider):
     name = 'test'
     def parse_item(self, response):
         pass

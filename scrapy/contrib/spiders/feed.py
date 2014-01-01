@@ -4,7 +4,7 @@ for scraping from an XML feed.
 
 See documentation in docs/topics/spiders.rst
 """
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.item import BaseItem
 from scrapy.http import Request
 from scrapy.utils.iterators import xmliter, csviter
@@ -13,7 +13,7 @@ from scrapy.selector import Selector
 from scrapy.exceptions import NotConfigured, NotSupported
 
 
-class XMLFeedSpider(BaseSpider):
+class XMLFeedSpider(Spider):
     """
     This class intends to be the base class for spiders that scrape
     from XML feeds.
@@ -92,7 +92,7 @@ class XMLFeedSpider(BaseSpider):
         for (prefix, uri) in self.namespaces:
             selector.register_namespace(prefix, uri)
 
-class CSVFeedSpider(BaseSpider):
+class CSVFeedSpider(Spider):
     """Spider for parsing CSV feeds.
     It receives a CSV file in a response; iterates through each of its rows,
     and calls parse_row with a dict containing each field's data.

@@ -1,6 +1,6 @@
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 
-class Spider4(BaseSpider):
+class Spider4(Spider):
     name = "spider4"
 
     @classmethod

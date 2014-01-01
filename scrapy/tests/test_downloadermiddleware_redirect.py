@@ -1,7 +1,7 @@
 import unittest
 
 from scrapy.contrib.downloadermiddleware.redirect import RedirectMiddleware, MetaRefreshMiddleware
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response, HtmlResponse
 from scrapy.utils.test import get_crawler
@@ -11,7 +11,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
 
     def setUp(self):
         crawler = get_crawler()
-        self.spider = BaseSpider('foo')
+        self.spider = Spider('foo')
         self.mw = RedirectMiddleware.from_crawler(crawler)
 
     def test_priority_adjust(self):
@@ -124,7 +124,7 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
 
     def setUp(self):
         crawler = get_crawler()
-        self.spider = BaseSpider('foo')
+        self.spider = Spider('foo')
         self.mw = MetaRefreshMiddleware.from_crawler(crawler)
 
     def _body(self, interval=5, url='http://example.org/newpage'):

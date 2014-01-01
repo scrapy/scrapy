@@ -72,7 +72,7 @@ content).
 Those objects are:
 
  * ``spider`` - the Spider which is known to handle the URL, or a
-   :class:`~scrapy.spider.BaseSpider` object if there is no spider found for
+   :class:`~scrapy.spider.Spider` object if there is no spider found for
    the current URL
 
  * ``request`` - a :class:`~scrapy.http.Request` object of the last fetched
@@ -116,7 +116,7 @@ all start with the ``[s]`` prefix)::
     [s]   request   <http://scrapy.org>
     [s]   response  <http://scrapy.org>
     [s]   settings  <Settings 'mybot.settings'>
-    [s]   spider    <scrapy.spider.models.BaseSpider object at 0x2bed9d0>
+    [s]   spider    <Spider 'default' at 0x2bed9d0>
     [s] Useful shortcuts:
     [s]   shelp()           Prints this help.
     [s]   fetch(req_or_url) Fetch a new request or URL and update objects
@@ -136,7 +136,7 @@ After that, we can star playing with the objects::
     [s]   request    <GET http://slashdot.org>
     [s]   response   <200 http://slashdot.org>
     [s]   settings   <Settings 'jobsbot.settings'>
-    [s]   spider     <BaseSpider 'default' at 0x3c44a10>
+    [s]   spider     <Spider 'default' at 0x3c44a10>
     [s] Useful shortcuts:
     [s]   shelp()           Shell help (print this help)
     [s]   fetch(req_or_url) Fetch request (or URL) and update local objects
@@ -165,7 +165,7 @@ This can be achieved by using the ``scrapy.shell.inspect_response`` function.
 
 Here's an example of how you would call it from your spider::
 
-    class MySpider(BaseSpider):
+    class MySpider(Spider):
         ...
 
         def parse(self, response):

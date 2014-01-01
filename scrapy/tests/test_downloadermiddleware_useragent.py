@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.http import Request
 from scrapy.contrib.downloadermiddleware.useragent import UserAgentMiddleware
 from scrapy.utils.test import get_crawler
@@ -10,7 +10,7 @@ class UserAgentMiddlewareTest(TestCase):
 
     def get_spider_and_mw(self, default_useragent):
         crawler = get_crawler({'USER_AGENT': default_useragent})
-        spider = BaseSpider('foo')
+        spider = Spider('foo')
         spider.set_crawler(crawler)
         return spider, UserAgentMiddleware.from_crawler(crawler)
 

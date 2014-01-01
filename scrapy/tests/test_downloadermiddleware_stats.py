@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from scrapy.contrib.downloadermiddleware.stats import DownloaderStats
 from scrapy.http import Request, Response
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.utils.test import get_crawler
 
 
@@ -10,7 +10,7 @@ class TestDownloaderStats(TestCase):
 
     def setUp(self):
         self.crawler = get_crawler()
-        self.spider = BaseSpider('scrapytest.org')
+        self.spider = Spider('scrapytest.org')
         self.mw = DownloaderStats(self.crawler.stats)
 
         self.crawler.stats.open_spider(self.spider)

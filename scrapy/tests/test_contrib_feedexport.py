@@ -6,7 +6,7 @@ from twisted.trial import unittest
 from twisted.internet import defer
 from w3lib.url import path_to_file_uri
 
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.contrib.feedexport import IFeedStorage, FileFeedStorage, FTPFeedStorage, S3FeedStorage, StdoutFeedStorage
 from scrapy.utils.test import assert_aws_environ
 
@@ -38,7 +38,7 @@ class FileFeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def _assert_stores(self, storage, path):
-        spider = BaseSpider("default")
+        spider = Spider("default")
         file = storage.open(spider)
         file.write("content")
         yield storage.store(file)
@@ -59,7 +59,7 @@ class FTPFeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def _assert_stores(self, storage, path):
-        spider = BaseSpider("default")
+        spider = Spider("default")
         file = storage.open(spider)
         file.write("content")
         yield storage.store(file)
@@ -81,7 +81,7 @@ class S3FeedStorageTest(unittest.TestCase):
         from boto import connect_s3
         storage = S3FeedStorage(uri)
         verifyObject(IFeedStorage, storage)
-        file = storage.open(BaseSpider("default"))
+        file = storage.open(Spider("default"))
         file.write("content")
         yield storage.store(file)
         u = urlparse.urlparse(uri)
@@ -94,7 +94,7 @@ class StdoutFeedStorageTest(unittest.TestCase):
     def test_store(self):
         out = StringIO()
         storage = StdoutFeedStorage('stdout:', _stdout=out)
-        file = storage.open(BaseSpider("default"))
+        file = storage.open(Spider("default"))
         file.write("content")
         yield storage.store(file)
         self.assertEqual(out.getvalue(), "content")

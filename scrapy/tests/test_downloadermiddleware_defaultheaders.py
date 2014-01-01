@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from scrapy.contrib.downloadermiddleware.defaultheaders import DefaultHeadersMiddleware
 from scrapy.http import Request
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.utils.test import get_crawler
 
 
@@ -10,7 +10,7 @@ class TestDefaultHeadersMiddleware(TestCase):
 
     def get_defaults_spider_mw(self):
         crawler = get_crawler()
-        spider = BaseSpider('foo')
+        spider = Spider('foo')
         spider.set_crawler(crawler)
         defaults = dict([(k, [v]) for k, v in \
             crawler.settings.get('DEFAULT_REQUEST_HEADERS').iteritems()])
