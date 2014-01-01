@@ -170,7 +170,7 @@ class XPathItemLoader(ItemLoader):
     def __init__(self, *a, **kw):
         import warnings
         from scrapy.exceptions import ScrapyDeprecationWarning
-        warnings.warn('%s is deprecated, instanciate scrapy.contrib.loader.ItemLoader '
+        warnings.warn('%s is deprecated, instantiate scrapy.contrib.loader.ItemLoader '
                       'instead' % type(self).__name__,
                       category=ScrapyDeprecationWarning, stacklevel=1)
         super(XPathItemLoader, self).__init__(*a, **kw)

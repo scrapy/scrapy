@@ -18,12 +18,12 @@ def create_deprecated_class(name, new_class, clsdict=None,
                                     "deprecated class {old}, please inherit "\
                                     "from {new}.",
                             instance_warn_message="{cls} is deprecated, "\
-                                    "instanciate {new} instead."):
+                                    "instantiate {new} instead."):
     """
     Return a "deprecated" class that causes its subclasses to issue a warning.
     Subclasses of ``new_class`` are considered subclasses of this class.
-    It also warns when the deprecated class is instanciated, but do not when
-    its subclasses are instanciated.
+    It also warns when the deprecated class is instantiated, but do not when
+    its subclasses are instantiated.
 
     It can be used to rename a base class in a library. For example, if we
     have

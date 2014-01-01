@@ -59,7 +59,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         self.assertEqual(
             str(msg.message),
             "scrapy.tests.test_utils_deprecate.Deprecated is deprecated, "
-            "instanciate scrapy.tests.test_utils_deprecate.NewName instead."
+            "instantiate scrapy.tests.test_utils_deprecate.NewName instead."
         )
         self.assertEqual(msg.lineno, lineno)
 
