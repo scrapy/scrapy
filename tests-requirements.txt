@@ -1,0 +1,9 @@
+# Remove PIL dependency once a new mitmproxy version is released
+# with bugfix: https://github.com/mitmproxy/mitmproxy/pull/197
+--allow-external PIL
+--allow-unverified PIL
+PIL>=1.1.7
+
+# Tests requirements
+mock
+mitmproxy
