@@ -1,47 +1,50 @@
 """
 XPath selectors based on lxml
 """
+from scrapy.utils.deprecate import create_deprecated_class
 from .unified import Selector, SelectorList
 
 
 __all__ = ['HtmlXPathSelector', 'XmlXPathSelector', 'XPathSelector',
            'XPathSelectorList']
 
+def _xpathselector_css(self, *a, **kw):
+    raise RuntimeError('.css() method not available for %s, '
+                        'instantiate scrapy.selector.Selector '
+                        'instead' % type(self).__name__)
 
-class XPathSelector(Selector):
-    __slots__ = ()
-    _default_type = 'html'
+XPathSelector = create_deprecated_class(
+    'XPathSelector',
+    Selector,
+    {
+        '__slots__': (),
+        '_default_type': 'html',
+        'css': _xpathselector_css,
+    },
+    new_class_path='scrapy.selector.Selector',
+    old_class_path='scrapy.selector.XPathSelector',
+)
 
-    def __init__(self, *a, **kw):
-        import warnings
-        from scrapy.exceptions import ScrapyDeprecationWarning
-        warnings.warn('%s is deprecated, instantiate scrapy.selector.Selector '
-                      'instead' % type(self).__name__,
-                      category=ScrapyDeprecationWarning, stacklevel=1)
-        super(XPathSelector, self).__init__(*a, **kw)
+XmlXPathSelector = create_deprecated_class(
+    'XmlXPathSelector',
+    XPathSelector,
+    clsdict={
+        '__slots__': (),
+        '_default_type': 'xml',
+    },
+    new_class_path='scrapy.selector.Selector',
+    old_class_path='scrapy.selector.XmlXPathSelector',
+)
 
-    def css(self, *a, **kw):
-        raise RuntimeError('.css() method not available for %s, '
-                           'instantiate scrapy.selector.Selector '
-                           'instead' % type(self).__name__)
+HtmlXPathSelector = create_deprecated_class(
+    'HtmlXPathSelector',
+    XPathSelector,
+    clsdict={
+        '__slots__': (),
+        '_default_type': 'html',
+    },
+    new_class_path='scrapy.selector.Selector',
+    old_class_path='scrapy.selector.HtmlXPathSelector',
+)
 
-
-class XmlXPathSelector(XPathSelector):
-    __slots__ = ()
-    _default_type = 'xml'
-
-
-class HtmlXPathSelector(XPathSelector):
-    __slots__ = ()
-    _default_type = 'html'
-
-
-class XPathSelectorList(SelectorList):
-
-    def __init__(self, *a, **kw):
-        import warnings
-        from scrapy.exceptions import ScrapyDeprecationWarning
-        warnings.warn('XPathSelectorList is deprecated, instantiate '
-                      'scrapy.selector.SelectorList instead',
-                      category=ScrapyDeprecationWarning, stacklevel=1)
-        super(XPathSelectorList, self).__init__(*a, **kw)
+XPathSelectorList = create_deprecated_class('XPathSelectorList', SelectorList)
