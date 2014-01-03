@@ -112,7 +112,6 @@ already processed. Let say that our items have an unique id, but our spider
 returns multiples items with the same id::
 
 
-    from scrapy import signals
     from scrapy.exceptions import DropItem
 
     class DuplicatesPipeline(object):
