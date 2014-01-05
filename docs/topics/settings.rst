@@ -200,6 +200,24 @@ performed to any single IP. If non-zero, the
 used instead. In other words, concurrency limits will be applied per IP, not
 per domain.
 
+.. setting:: COOKIES_ENABLED
+
+COOKIES_ENABLED
+--------------------------
+
+Default: ``True``
+
+Whether the crawler use the cookies received in the responses
+
+.. setting:: COOKIES_DEBUG
+
+COOKIES_DEBUG
+--------------------------
+
+Default: ``False``
+
+Enable the cookies debugging
+
 .. setting:: DEFAULT_ITEM_CLASS
 
 DEFAULT_ITEM_CLASS
