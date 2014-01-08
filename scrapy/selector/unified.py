@@ -3,7 +3,6 @@ XPath selectors based on lxml
 """
 
 from lxml import etree
-import copy
 
 from scrapy.utils.misc import extract_regex
 from scrapy.utils.trackref import object_ref
@@ -101,9 +100,9 @@ class Selector(object_ref):
             _root = LxmlDocument(response, self._parser)
 
         self.response = response
-        ns = copy.copy(self._default_namespaces)
-        ns.update(namespaces or {})
-        self.namespaces = ns
+        self.namespaces = dict(self._default_namespaces)
+        if namespaces is not None:
+            self.namespaces.update(namespaces)
         self._root = _root
         self._expr = _expr
 
