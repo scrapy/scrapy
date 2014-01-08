@@ -14,6 +14,7 @@ def attribute(obj, oldattr, newattr, version='0.12'):
 
 def create_deprecated_class(name, new_class, clsdict=None,
                             warn_category=ScrapyDeprecationWarning,
+                            warn_once=False,
                             subclass_warn_message="{cls} inherits from "\
                                     "deprecated class {old}, please inherit "\
                                     "from {new}.",
@@ -47,6 +48,8 @@ def create_deprecated_class(name, new_class, clsdict=None,
     class DeprecatedClass(type):
 
         deprecated_class = None
+        warned_on_subclass = False
+        warned_on_instance = False
 
         def __new__(metacls, name, bases, clsdict_):
             cls = super(DeprecatedClass, metacls).__new__(metacls, name, bases, clsdict_)
@@ -55,8 +58,10 @@ def create_deprecated_class(name, new_class, clsdict=None,
             return cls
 
         def __init__(cls, name, bases, clsdict_):
-            old = cls.__class__.deprecated_class
-            if cls is not old:
+            meta = cls.__class__
+            old = meta.deprecated_class
+            if (cls is not old) and not (warn_once and meta.warned_on_subclass):
+                meta.warned_on_subclass = True
                 msg = subclass_warn_message.format(cls=_clspath(cls),
                                                    old=_clspath(old),
                                                    new=_clspath(new_class))
@@ -79,7 +84,10 @@ def create_deprecated_class(name, new_class, clsdict=None,
             return any(c in candidates for c in mro)
 
         def __call__(cls, *args, **kwargs):
-            if cls is cls.__class__.deprecated_class:
+            meta = cls.__class__
+            old = meta.deprecated_class
+            if (cls is old) and not (warn_once and meta.warned_on_instance):
+                meta.warned_on_instance = True
                 msg = instance_warn_message.format(cls=_clspath(cls),
                                                    new=_clspath(new_class))
                 warnings.warn(msg, warn_category, stacklevel=2)

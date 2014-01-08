@@ -63,6 +63,49 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         )
         self.assertEqual(msg.lineno, lineno)
 
+    def test_warning_shown_everytime(self):
+        Deprecated = create_deprecated_class('Deprecated', NewName,
+                                             warn_category=MyWarning)
+        with warnings.catch_warnings(record=True) as w:
+            class U1(Deprecated):
+                pass
+
+            class U2(Deprecated):
+                pass
+
+        self.assertEqual(len(w), 2)
+        assert issubclass(w[0].category, MyWarning)
+        assert issubclass(w[1].category, MyWarning)
+
+        with warnings.catch_warnings(record=True) as w:
+            _i1 = Deprecated()
+            _i2 = Deprecated()
+
+        self.assertEqual(len(w), 2)
+        assert issubclass(w[0].category, MyWarning)
+        assert issubclass(w[1].category, MyWarning)
+
+    def test_warning_shown_once(self):
+        Deprecated = create_deprecated_class('Deprecated', NewName,
+                                             warn_once=True,
+                                             warn_category=MyWarning)
+        with warnings.catch_warnings(record=True) as w:
+            class U1(Deprecated):
+                pass
+
+            class U2(Deprecated):
+                pass
+
+        self.assertEqual(len(w), 1)
+        assert issubclass(w[0].category, MyWarning)
+
+        with warnings.catch_warnings(record=True) as w:
+            _i1 = Deprecated()
+            _i2 = Deprecated()
+
+        self.assertEqual(len(w), 1)
+        assert issubclass(w[0].category, MyWarning)
+
     def test_warning_auto_message(self):
         with warnings.catch_warnings(record=True) as w:
             Deprecated = create_deprecated_class('Deprecated', NewName)
