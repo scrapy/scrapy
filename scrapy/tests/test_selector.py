@@ -382,3 +382,58 @@ class ExsltTestCase(unittest.TestCase):
         self.assertEqual(sel.xpath('regexp:replace(//a[regexp:test(@href, "\.xml$")]/@href,'
             '"(\w+)://(.+)(\.xml)", "","https://\\2.html")').extract(),
                          [u'https://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.html'])
+
+    def test_set(self):
+        """EXSLT set manipulation tests"""
+        # microdata example from http://schema.org/Event
+        body="""
+        <div itemscope itemtype="http://schema.org/Event">
+          <a itemprop="url" href="nba-miami-philidelphia-game3.html">
+          NBA Eastern Conference First Round Playoff Tickets:
+          <span itemprop="name"> Miami Heat at Philadelphia 76ers - Game 3 (Home Game 1) </span>
+          </a>
+
+          <meta itemprop="startDate" content="2016-04-21T20:00">
+            Thu, 04/21/16
+            8:00 p.m.
+
+          <div itemprop="location" itemscope itemtype="http://schema.org/Place">
+            <a itemprop="url" href="wells-fargo-center.html">
+            Wells Fargo Center
+            </a>
+            <div itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
+              <span itemprop="addressLocality">Philadelphia</span>,
+              <span itemprop="addressRegion">PA</span>
+            </div>
+          </div>
+
+          <div itemprop="offers" itemscope itemtype="http://schema.org/AggregateOffer">
+            Priced from: <span itemprop="lowPrice">$35</span>
+            <span itemprop="offerCount">1938</span> tickets left
+          </div>
+        </div>
+        """
+        response = TextResponse(url="http://example.com", body=body)
+        sel = self.sscls(response)
+
+        self.assertEqual(
+            sel.xpath('''//div[@itemtype="http://schema.org/Event"]
+                            //@itemprop''').extract(),
+            [u'url',
+             u'name',
+             u'startDate',
+             u'location',
+             u'url',
+             u'address',
+             u'addressLocality',
+             u'addressRegion',
+             u'offers',
+             u'lowPrice',
+             u'offerCount']
+)
+        self.assertEqual(sel.xpath('''
+                set:difference(//div[@itemtype="http://schema.org/Event"]
+                                    //@itemprop,
+                               //div[@itemtype="http://schema.org/Event"]
+                                    //*[@itemscope]/*/@itemprop)''').extract(),
+            [u'url', u'name', u'startDate', u'location', u'offers'])
