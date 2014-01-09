@@ -135,6 +135,9 @@ For more information about XPath see the `XPath reference`_.
 
 Finally, here's the spider code::
 
+    from scrapy.contrib.spiders import CrawlSpider, Rule, SgmlLinkExtractor
+    from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor, Selector
+
     class MininovaSpider(CrawlSpider):
 
         name = 'mininova'
