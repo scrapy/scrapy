@@ -146,10 +146,10 @@ def scrapy_info(settings):
             settings['BOT_NAME']))
 
         msg("Optional features available: %s" % ", ".join(scrapy.optional_features),
-            level=DEBUG)
+            level=INFO)
 
         d = dict(overridden_settings(settings))
-        msg(format="Overridden settings: %(settings)r", settings=d, level=DEBUG)
+        msg(format="Overridden settings: %(settings)r", settings=d, level=INFO)
 
         sflo.stop()
 
