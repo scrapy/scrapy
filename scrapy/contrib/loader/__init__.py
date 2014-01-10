@@ -12,6 +12,7 @@ from scrapy.selector import Selector
 from scrapy.utils.misc import arg_to_iter, extract_regex
 from scrapy.utils.python import flatten
 from scrapy.utils.decorator import deprecated
+from scrapy.utils.deprecate import create_deprecated_class
 from .common import wrap_loader_context
 from .processor import Identity
 
@@ -166,11 +167,4 @@ class ItemLoader(object):
         return flatten([self.selector.css(css).extract() for css in csss])
 
 
-class XPathItemLoader(ItemLoader):
-    def __init__(self, *a, **kw):
-        import warnings
-        from scrapy.exceptions import ScrapyDeprecationWarning
-        warnings.warn('%s is deprecated, instantiate scrapy.contrib.loader.ItemLoader '
-                      'instead' % type(self).__name__,
-                      category=ScrapyDeprecationWarning, stacklevel=1)
-        super(XPathItemLoader, self).__init__(*a, **kw)
+XPathItemLoader = create_deprecated_class('XPathItemLoader', ItemLoader)
