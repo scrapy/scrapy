@@ -46,6 +46,25 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         )
         self.assertEqual(w[0].lineno, inspect.getsourcelines(UserClass)[1])
 
+    def test_custom_class_paths(self):
+        Deprecated = create_deprecated_class('Deprecated', NewName,
+                                             new_class_path='foo.NewClass',
+                                             old_class_path='bar.OldClass',
+                                             warn_category=MyWarning)
+
+        with warnings.catch_warnings(record=True) as w:
+            class UserClass(Deprecated):
+                pass
+
+            _ = Deprecated()
+
+        w = self._mywarnings(w)
+        self.assertEqual(len(w), 2)
+        self.assertIn('foo.NewClass', str(w[0].message))
+        self.assertIn('bar.OldClass', str(w[0].message))
+        self.assertIn('foo.NewClass', str(w[1].message))
+        self.assertIn('bar.OldClass', str(w[1].message))
+
     def test_subclassing_warns_only_on_direct_childs(self):
         Deprecated = create_deprecated_class('Deprecated', NewName,
                                              warn_once=False,

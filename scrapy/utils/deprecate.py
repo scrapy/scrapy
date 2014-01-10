@@ -15,6 +15,8 @@ def attribute(obj, oldattr, newattr, version='0.12'):
 def create_deprecated_class(name, new_class, clsdict=None,
                             warn_category=ScrapyDeprecationWarning,
                             warn_once=True,
+                            old_class_path=None,
+                            new_class_path=None,
                             subclass_warn_message="{cls} inherits from "\
                                     "deprecated class {old}, please inherit "\
                                     "from {new}.",
@@ -62,8 +64,8 @@ def create_deprecated_class(name, new_class, clsdict=None,
             if old in bases and not (warn_once and meta.warned_on_subclass):
                 meta.warned_on_subclass = True
                 msg = subclass_warn_message.format(cls=_clspath(cls),
-                                                   old=_clspath(old),
-                                                   new=_clspath(new_class))
+                                                   old=_clspath(old, old_class_path),
+                                                   new=_clspath(new_class, new_class_path))
                 if warn_once:
                     msg += ' (warning only on first subclass, there may be others)'
                 warnings.warn(msg, warn_category, stacklevel=2)
@@ -88,8 +90,8 @@ def create_deprecated_class(name, new_class, clsdict=None,
             meta = cls.__class__
             old = meta.deprecated_class
             if cls is old:
-                msg = instance_warn_message.format(cls=_clspath(cls),
-                                                   new=_clspath(new_class))
+                msg = instance_warn_message.format(cls=_clspath(cls, old_class_path),
+                                                   new=_clspath(new_class, new_class_path))
                 warnings.warn(msg, warn_category, stacklevel=2)
             return super(DeprecatedClass, cls).__call__(*args, **kwargs)
 
@@ -102,5 +104,7 @@ def create_deprecated_class(name, new_class, clsdict=None,
     return deprecated_cls
 
 
-def _clspath(cls):
+def _clspath(cls, forced=None):
+    if forced is not None:
+        return forced
     return '{}.{}'.format(cls.__module__, cls.__name__)
