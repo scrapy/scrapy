@@ -99,11 +99,13 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         self.assertEqual(len(w), 1)
         assert issubclass(w[0].category, MyWarning)
 
+        # warns once instantations in the same lineno
         with warnings.catch_warnings(record=True) as w:
-            _i1 = Deprecated()
-            _i2 = Deprecated()
+            for _ in range(10):
+                _i1 = Deprecated()
+                _i2 = Deprecated()
 
-        self.assertEqual(len(w), 1)
+        self.assertEqual(len(w), 2)
         assert issubclass(w[0].category, MyWarning)
 
     def test_warning_auto_message(self):
