@@ -14,7 +14,7 @@ def attribute(obj, oldattr, newattr, version='0.12'):
 
 def create_deprecated_class(name, new_class, clsdict=None,
                             warn_category=ScrapyDeprecationWarning,
-                            warn_once=False,
+                            warn_once=True,
                             subclass_warn_message="{cls} inherits from "\
                                     "deprecated class {old}, please inherit "\
                                     "from {new}.",
@@ -64,6 +64,8 @@ def create_deprecated_class(name, new_class, clsdict=None,
                 msg = subclass_warn_message.format(cls=_clspath(cls),
                                                    old=_clspath(old),
                                                    new=_clspath(new_class))
+                if warn_once:
+                    msg += ' (warning only on first subclass, there may be others)'
                 warnings.warn(msg, warn_category, stacklevel=2)
             super(DeprecatedClass, cls).__init__(name, bases, clsdict_)
 
