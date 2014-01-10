@@ -201,3 +201,27 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         Meta1 = type('Meta1', (type,), {})
         New = Meta1('New', (), {})
         Deprecated = create_deprecated_class('Deprecated', New)
+
+    def test_deprecate_subclass_of_deprecated_class(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            Deprecated = create_deprecated_class('Deprecated', NewName,
+                                                 warn_category=MyWarning)
+            AlsoDeprecated = create_deprecated_class('AlsoDeprecated', Deprecated,
+                                                     new_class_path='foo.Bar',
+                                                     warn_category=MyWarning)
+
+        w = self._mywarnings(w)
+        self.assertEqual(len(w), 0, str(map(str, w)))
+
+        with warnings.catch_warnings(record=True) as w:
+            AlsoDeprecated()
+            class UserClass(AlsoDeprecated):
+                pass
+
+        w = self._mywarnings(w)
+        self.assertEqual(len(w), 2)
+        self.assertIn('AlsoDeprecated', str(w[0].message))
+        self.assertIn('foo.Bar', str(w[0].message))
+        self.assertIn('AlsoDeprecated', str(w[1].message))
+        self.assertIn('foo.Bar', str(w[1].message))

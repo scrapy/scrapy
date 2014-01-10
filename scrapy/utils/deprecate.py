@@ -87,8 +87,7 @@ def create_deprecated_class(name, new_class, clsdict=None,
             return any(c in candidates for c in mro)
 
         def __call__(cls, *args, **kwargs):
-            meta = cls.__class__
-            old = meta.deprecated_class
+            old = DeprecatedClass.deprecated_class
             if cls is old:
                 msg = instance_warn_message.format(cls=_clspath(cls, old_class_path),
                                                    new=_clspath(new_class, new_class_path))
