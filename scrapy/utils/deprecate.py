@@ -59,7 +59,7 @@ def create_deprecated_class(name, new_class, clsdict=None,
         def __init__(cls, name, bases, clsdict_):
             meta = cls.__class__
             old = meta.deprecated_class
-            if (cls is not old) and not (warn_once and meta.warned_on_subclass):
+            if old in bases and not (warn_once and meta.warned_on_subclass):
                 meta.warned_on_subclass = True
                 msg = subclass_warn_message.format(cls=_clspath(cls),
                                                    old=_clspath(old),

@@ -31,6 +31,9 @@ class WarnWhenSubclassedTest(unittest.TestCase):
             class UserClass(Deprecated):
                 pass
 
+            class NoWarnOnMe(UserClass):
+                pass
+
         self.assertEqual(len(w), 1)
         msg = w[0]
         assert issubclass(msg.category, MyWarning)
