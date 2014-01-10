@@ -177,3 +177,8 @@ class WarnWhenSubclassedTest(unittest.TestCase):
             Deprecated = create_deprecated_class('Deprecated', NewName, {'foo': 'bar'})
 
         self.assertEqual(Deprecated.foo, 'bar')
+
+    def test_deprecate_a_class_with_custom_metaclass(self):
+        Meta1 = type('Meta1', (type,), {})
+        New = Meta1('New', (), {})
+        Deprecated = create_deprecated_class('Deprecated', New)
