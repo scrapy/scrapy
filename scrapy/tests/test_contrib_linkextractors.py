@@ -1,5 +1,6 @@
 import re
 import unittest
+from scrapy.contrib.linkextractors.regex import RegexLinkExtractor
 from scrapy.http import HtmlResponse
 from scrapy.link import Link
 from scrapy.contrib.linkextractors.htmlparser import HtmlParserLinkExtractor
@@ -309,6 +310,24 @@ class HtmlParserLinkExtractorTestCase(unittest.TestCase):
             Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
             Link(url='http://example.com/sample3.html', text='sample 3 repetition'),
             Link(url='http://www.google.com/something', text=''),
+        ])
+
+
+class RegexLinkExtractorTestCase(unittest.TestCase):
+
+    def setUp(self):
+        body = get_testdata('link_extractor', 'sgml_linkextractor.html')
+        self.response = HtmlResponse(url='http://example.com/index', body=body)
+
+    def test_extraction(self):
+        # Default arguments
+        lx = RegexLinkExtractor()
+        # Note that RegexLinkExtractor returns links in arbitrary order,
+        # so we need to sort them for comparison
+        self.assertEqual(sorted(lx.extract_links(self.response), key=lambda x: x.url), [
+            Link(url='http://example.com/sample2.html', text=u'sample 2'),
+            Link(url='http://example.com/sample3.html', text=u'sample 3 repetition'),
+            Link(url='http://www.google.com/something', text=u''),
         ])
 
 
