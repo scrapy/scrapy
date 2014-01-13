@@ -169,7 +169,7 @@ Review scraped data
 If you check the ``scraped_data.json`` file after the process finishes, you'll
 see the scraped items there::
 
-    [{"url": "http://www.mininova.org/tor/2676093", "name": ["Flight of Apollo 11 (1969)"], "description": ["Short documentary made for Plymouth ..."], "size": ["150.62 megabyte"]},
+    [{"url": "http://www.mininova.org/tor/2676093", "name": ["Darwin - The Evolution Of An Exhibition"], "description": ["Short documentary made for Plymouth ..."], "size": ["150.62 megabyte"]},
     # ... other items ...
     ]
 
