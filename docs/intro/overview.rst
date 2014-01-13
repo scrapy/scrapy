@@ -14,7 +14,7 @@ precisely, `web scraping`_), it can also be used to extract data using APIs
 crawler.
 
 The purpose of this document is to introduce you to the concepts behind Scrapy
-so you can get an idea of how it works and decide if Scrapy is what you need. 
+so you can get an idea of how it works and decide if Scrapy is what you need.
 
 When you're ready to start a project, you can :ref:`start with the tutorial
 <intro-tutorial>`.
@@ -32,7 +32,7 @@ files added today in the `Mininova`_ site.
 The list of all torrents added today can be found on this page:
 
     http://www.mininova.org/today
-    
+
 .. _intro-overview-item:
 
 Define the data you want to scrape
@@ -65,7 +65,7 @@ that to construct the regular expression for the links to follow: ``/tor/\d+``.
 We'll use `XPath`_ for selecting the data to extract from the web page HTML
 source. Let's take one of those torrent pages:
 
-    http://www.mininova.org/tor/2657665
+    http://www.mininova.org/tor/2676093
 
 And look at the page HTML source to construct the XPath to select the data we
 want which is: torrent name, description and size.
@@ -75,7 +75,7 @@ want which is: torrent name, description and size.
 By looking at the page HTML source we can see that the file name is contained
 inside a ``<h1>`` tag::
 
-   <h1>Home[2009][Eng]XviD-ovd</h1>
+   <h1>Darwin - The Evolution Of An Exhibition</h1>
 
 .. highlight:: none
 
@@ -90,13 +90,7 @@ And the description is contained inside a ``<div>`` tag with ``id="description"`
    <h2>Description:</h2>
 
    <div id="description">
-   "HOME" - a documentary film by Yann Arthus-Bertrand
-   <br/>
-   <br/>
-   ***
-   <br/>
-   <br/>
-   "We are living in exceptional times. Scientists tell us that we have 10 years to change the way we live, avert the depletion of natural resources and the catastrophic evolution of the Earth's climate.
+   Short documentary made for Plymouth City Museum and Art Gallery regarding the setup of an exhibit about Charles Darwin in conjunction with the 200th anniversary of his birth.
 
    ...
 
@@ -120,7 +114,7 @@ tag with ``id=specifications``::
 
    <p>
    <strong>Total size:</strong>
-   699.79&nbsp;megabyte</p>
+   150.62&nbsp;megabyte</p>
 
 
 .. highlight:: none
@@ -141,7 +135,7 @@ Finally, here's the spider code::
         allowed_domains = ['mininova.org']
         start_urls = ['http://www.mininova.org/today']
         rules = [Rule(SgmlLinkExtractor(allow=['/tor/\d+']), 'parse_torrent')]
-        
+
         def parse_torrent(self, response):
             sel = Selector(response)
             torrent = TorrentItem()
@@ -175,7 +169,7 @@ Review scraped data
 If you check the ``scraped_data.json`` file after the process finishes, you'll
 see the scraped items there::
 
-    [{"url": "http://www.mininova.org/tor/2657665", "name": ["Home[2009][Eng]XviD-ovd"], "description": ["HOME - a documentary film by ..."], "size": ["699.69 megabyte"]},
+    [{"url": "http://www.mininova.org/tor/2676093", "name": ["Flight of Apollo 11 (1969)"], "description": ["Short documentary made for Plymouth ..."], "size": ["150.62 megabyte"]},
     # ... other items ...
     ]
 
