@@ -290,7 +290,7 @@ Set operations
 These can be handy for excluding parts of a document tree before
 extracting text elements for example.
 
-Example extracting midrodata (sample content taken from http://schema.org/Product)
+Example extracting microdata (sample content taken from http://schema.org/Product)
 with groups of itemscopes and corresponding itemprops::
 
     >>> doc = """
