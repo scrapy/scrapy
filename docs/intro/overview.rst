@@ -137,7 +137,7 @@ Finally, here's the spider code::
 
     from scrapy.contrib.spiders import CrawlSpider, Rule
     from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
-    from scrapy.selectors import Selector
+    from scrapy.selector import Selector
 
     class MininovaSpider(CrawlSpider):
 
