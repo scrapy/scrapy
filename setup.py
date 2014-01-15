@@ -129,6 +129,7 @@ else:
         'lxml',
         'pyOpenSSL',
         'cssselect>=0.9',
+        'six>=1.5.2',
     ]
 
 setup(**setup_args)
