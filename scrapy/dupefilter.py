@@ -15,9 +15,6 @@ class BaseDupeFilter(object):
     def request_seen(self, request):
         return False
 
-    def request_fingerprint(self, request):
-        pass
-
     def open(self):  # can return deferred
         pass
 
@@ -52,9 +49,6 @@ class RFPDupeFilter(BaseDupeFilter):
             self.file.write(fp + os.linesep)
 
     def request_fingerprint(self, request):
-        """Override this method to implement a different duplicate check.
-
-        """
         return request_fingerprint(request)
 
     def close(self, reason):
