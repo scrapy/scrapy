@@ -55,35 +55,7 @@ class Selector(object_ref):
         # set:intersection
         # set:leading
         # set:trailing
-        "set": "http://exslt.org/sets",
-
-        # supported in libxslt:
-        # math:abs()
-        # math:acos()
-        # math:asin()
-        # math:atan()
-        # math:atan2()
-        # math:constant()
-        # math:cos()
-        # math:exp()
-        # math:highest()
-        # math:log()
-        # math:lowest()
-        # math:max()
-        # math:min()
-        # math:power()
-        # math:random()
-        # math:sin()
-        # math:sqrt()
-        # math:tan()
-        "math": "http://exslt.org/math",
-
-        # supported in libxslt:
-        # str:align
-        # str:concat
-        # str:padding
-        # str:tokenize
-        "str": "http://exslt.org/strings",
+        "set": "http://exslt.org/sets"
     }
 
     def __init__(self, response=None, text=None, type=None, namespaces=None,

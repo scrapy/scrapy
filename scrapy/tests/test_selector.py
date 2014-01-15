@@ -335,7 +335,6 @@ class DeprecatedXpathSelectorTest(unittest.TestCase):
             self.assertRaises(RuntimeError, xs.css, 'div')
 
 
-
 class ExsltTestCase(unittest.TestCase):
 
     sscls = Selector
@@ -354,14 +353,26 @@ class ExsltTestCase(unittest.TestCase):
         sel = self.sscls(response)
 
         # regexp:test()
-        self.assertEqual(sel.xpath('//input[regexp:test(@name, "[A-Z]+", "i")]').extract(),
-                         [x.extract() for x in sel.xpath('//input[regexp:test(@name, "[A-Z]+", "i")]')])
-        self.assertEqual([x.extract() for x in sel.xpath('//a[regexp:test(@href, "\.html$")]/text()')],
-                         [u'first link', u'second link'])
-        self.assertEqual([x.extract() for x in sel.xpath('//a[regexp:test(@href, "first")]/text()')],
-                         [u'first link'])
-        self.assertEqual([x.extract() for x in sel.xpath('//a[regexp:test(@href, "second")]/text()')],
-                         [u'second link'])
+        self.assertEqual(
+            sel.xpath(
+                '//input[regexp:test(@name, "[A-Z]+", "i")]').extract(),
+            [x.extract() for x in sel.xpath('//input[regexp:test(@name, "[A-Z]+", "i")]')])
+        self.assertEqual(
+            [x.extract()
+             for x in sel.xpath(
+                 '//a[regexp:test(@href, "\.html$")]/text()')],
+            [u'first link', u'second link'])
+        self.assertEqual(
+            [x.extract()
+             for x in sel.xpath(
+                 '//a[regexp:test(@href, "first")]/text()')],
+            [u'first link'])
+        self.assertEqual(
+            [x.extract()
+             for x in sel.xpath(
+                 '//a[regexp:test(@href, "second")]/text()')],
+            [u'second link'])
+
 
         # regexp:match() is rather special: it returns a node-set of <match> nodes
         #[u'<match>http://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.xml</match>',
@@ -369,19 +380,22 @@ class ExsltTestCase(unittest.TestCase):
         #u'<match>www.bayes.co.uk</match>',
         #u'<match></match>',
         #u'<match>/xml/index.xml?/xml/utils/rechecker.xml</match>']
-        self.assertEqual(sel.xpath(''
-            'regexp:match(//a[regexp:test(@href, "\.xml$")]/@href,'
-            '"(\w+):\/\/([^/:]+)(:\d*)?([^# ]*)")/text()').extract(),
-                         [u'http://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.xml',
-                             u'http',
-                             u'www.bayes.co.uk',
-                             u'',
-                             u'/xml/index.xml?/xml/utils/rechecker.xml'])
+        self.assertEqual(
+            sel.xpath('regexp:match(//a[regexp:test(@href, "\.xml$")]/@href,'
+                      '"(\w+):\/\/([^/:]+)(:\d*)?([^# ]*)")/text()').extract(),
+            [u'http://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.xml',
+             u'http',
+             u'www.bayes.co.uk',
+             u'',
+             u'/xml/index.xml?/xml/utils/rechecker.xml'])
+
+
 
         # regexp:replace()
-        self.assertEqual(sel.xpath('regexp:replace(//a[regexp:test(@href, "\.xml$")]/@href,'
-            '"(\w+)://(.+)(\.xml)", "","https://\\2.html")').extract(),
-                         [u'https://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.html'])
+        self.assertEqual(
+            sel.xpath('regexp:replace(//a[regexp:test(@href, "\.xml$")]/@href,'
+                      '"(\w+)://(.+)(\.xml)", "","https://\\2.html")').extract(),
+            [u'https://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.html'])
 
     def test_set(self):
         """EXSLT set manipulation tests"""
@@ -430,10 +444,11 @@ class ExsltTestCase(unittest.TestCase):
              u'offers',
              u'lowPrice',
              u'offerCount']
-)
+        )
+
         self.assertEqual(sel.xpath('''
                 set:difference(//div[@itemtype="http://schema.org/Event"]
                                     //@itemprop,
                                //div[@itemtype="http://schema.org/Event"]
                                     //*[@itemscope]/*/@itemprop)''').extract(),
-            [u'url', u'name', u'startDate', u'location', u'offers'])
+                         [u'url', u'name', u'startDate', u'location', u'offers'])

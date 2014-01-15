@@ -252,8 +252,6 @@ prefix  namespace                               usage
 ======  ====================================    =======================
 regexp  http://exslt.org/regular-expressions    `regular expressions`_
 set     http://exslt.org/sets                   `set manipulation`_
-str     http://exslt.org/strings                `string manipulations`_
-math    http://exslt.org/math                   `mathematical operations`_
 ======  ====================================    =======================
 
 Regular expressions
@@ -379,22 +377,9 @@ Here we first iterate over ``itemscope`` elements, and for each one,
 we look for all ``itemprops`` elements and exclude those that are themselves
 inside another ``itemscope``.
 
-Maths
-~~~~~
-
-Not that useful in practice, but you never know.
-
-String manipulation
-~~~~~~~~~~~~~~~~~~~
-
-In practive, Python's string manipulation outside XPath is usually more
-powerful.
-
 .. _EXSLT: http://www.exslt.org/
 .. _regular expressions: http://www.exslt.org/regexp/index.html
 .. _set manipulation: http://www.exslt.org/set/index.html
-.. _mathematical operations: http://www.exslt.org/math/index.html
-.. _string manipulations: http://www.exslt.org/str/index.html
 
 .. _topics-selectors-ref:
 
