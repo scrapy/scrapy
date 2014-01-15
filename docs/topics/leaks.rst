@@ -32,20 +32,13 @@ and that effectively bounds the lifetime of those referenced objects to the
 lifetime of the Request. This is, by far, the most common cause of memory leaks
 in Scrapy projects, and a quite difficult one to debug for newcomers.
 
-In big projects, the spiders are typically written by different people and some
-of those spiders could be "leaking" and thus affecting the rest of the other
-(well-written) spiders when they get to run concurrently, which, in turn,
-affects the whole crawling process. 
-
-At the same time, it's hard to avoid the reasons that cause these leaks
-without restricting the power of the framework, so we have decided not to
-restrict the functionally but provide useful tools for debugging these leaks,
-which quite often consist in an answer to the question: *which spider is leaking?*.
-
 The leak could also come from a custom middleware, pipeline or extension that
 you have written, if you are not releasing the (previously allocated) resources
-properly. For example, if you're allocating resources on
-:signal:`spider_opened` but not releasing them on :signal:`spider_closed`.
+properly.
+
+It's hard to avoid the reasons that cause these leaks
+without restricting the power of the framework, so we have decided not to
+restrict the functionally but provide useful tools for debugging these leaks.
 
 .. _topics-leaks-trackrefs:
 
@@ -54,7 +47,7 @@ Debugging memory leaks with ``trackref``
 
 ``trackref`` is a module provided by Scrapy to debug the most common cases of
 memory leaks. It basically tracks the references to all live Requests,
-Responses, Item and Selector objects. 
+Responses, Item and Selector objects.
 
 You can enter the telnet console and inspect how many objects (of the classes
 mentioned above) are currently alive using the ``prefs()`` function which is an
@@ -71,12 +64,7 @@ alias to the :func:`~scrapy.utils.trackref.print_live_refs` function::
     FormRequest                       878   oldest: 7s ago
 
 As you can see, that report also shows the "age" of the oldest object in each
-class. 
-
-If you do have leaks, chances are you can figure out which spider is leaking by
-looking at the oldest request or response. You can get the oldest object of
-each class using the :func:`~scrapy.utils.trackref.get_oldest` function like
-this (from the telnet console).
+class.
 
 Which objects are tracked?
 --------------------------
@@ -84,17 +72,16 @@ Which objects are tracked?
 The objects tracked by ``trackrefs`` are all from these classes (and all its
 subclasses):
 
-* ``scrapy.http.Request``
-* ``scrapy.http.Response``
-* ``scrapy.item.Item``
-* ``scrapy.selector.Selector``
-* ``scrapy.spider.Spider``
+* :class:`scrapy.http.Request`
+* :class:`scrapy.http.Response`
+* :class:`scrapy.item.Item`
+* :class:`scrapy.selector.Selector`
+* :class:`scrapy.spider.Spider`
 
 A real example
 --------------
 
 Let's see a concrete example of an hypothetical case of memory leaks.
-
 Suppose we have some spider with a line similar to this one::
 
     return Request("http://www.somenastyspider.com/product.php?pid=%d" % product_id,
@@ -104,7 +91,7 @@ That line is passing a response reference inside a request which effectively
 ties the response lifetime to the requests' one, and that would definitely
 cause memory leaks.
 
-Let's see how we can discover which one is the nasty spider (without knowing it
+Let's see how we can discover the cause (without knowing it
 a-priori, of course) by using the ``trackref`` tool.
 
 After the crawler is running for a few minutes and we notice its memory usage
@@ -121,39 +108,27 @@ references::
 
 The fact that there are so many live responses (and that they're so old) is
 definitely suspicious, as responses should have a relatively short lifetime
-compared to Requests. So let's check the oldest response::
+compared to Requests. The number of responses is similar to the number
+of requests, so it looks like they are tied in a some way. We can now go
+and check the code of the spider to discover the nasty line that is
+generating the leaks (passing response references inside requests).
+
+Sometimes extra information about live objects can be helpful.
+Let's check the oldest response::
 
     >>> from scrapy.utils.trackref import get_oldest
     >>> r = get_oldest('HtmlResponse')
     >>> r.url
     'http://www.somenastyspider.com/product.php?pid=123'
 
-There it is. By looking at the URL of the oldest response we can see it belongs
-to the ``somenastyspider.com`` spider. We can now go and check the code of that
-spider to discover the nasty line that is generating the leaks (passing
-response references inside requests).
-
 If you want to iterate over all objects, instead of getting the oldest one, you
-can use the :func:`iter_all` function::
+can use the :func:`scrapy.utils.trackref.iter_all` function::
 
     >>> from scrapy.utils.trackref import iter_all
     >>> [r.url for r in iter_all('HtmlResponse')]
     ['http://www.somenastyspider.com/product.php?pid=123',
      'http://www.somenastyspider.com/product.php?pid=584',
     ...
-
-Too many spiders?
------------------
-
-If your project has too many spiders, the output of ``prefs()`` can be
-difficult to read. For this reason, that function has a ``ignore`` argument
-which can be used to ignore a particular class (and all its subclases). For
-example, using::
-
-    >>> from scrapy.spider import Spider
-    >>> prefs(ignore=Spider)
-
-Won't show any live references to spiders.
 
 .. module:: scrapy.utils.trackref
    :synopsis: Track references of live objects
@@ -198,15 +173,13 @@ leaks, but it only keeps track of the objects that are more likely to cause
 memory leaks (Requests, Responses, Items, and Selectors). However, there are
 other cases where the memory leaks could come from other (more or less obscure)
 objects. If this is your case, and you can't find your leaks using ``trackref``,
-you still have another resource: the `Guppy library`_. 
+you still have another resource: the `Guppy library`_.
 
 .. _Guppy library: http://pypi.python.org/pypi/guppy
 
-If you use ``setuptools``, you can install Guppy with the following command::
+If you use ``pip``, you can install Guppy with the following command::
 
-    easy_install guppy
-
-.. _setuptools: http://pypi.python.org/pypi/setuptools
+    pip install guppy
 
 The telnet console also comes with a built-in shortcut (``hpy``) for accessing
 Guppy heap objects. Here's an example to view all Python objects available in
@@ -279,7 +252,8 @@ completely. To quote the paper:
     to move to a compacting garbage collector, which is able to move objects in
     memory. This would require significant changes to the Python interpreter.*
 
-This problem will be fixed in future Scrapy releases, where we plan to adopt a
-new process model and run spiders in a pool of recyclable sub-processes.
-
 .. _this paper: http://evanjones.ca/memoryallocator/
+
+To keep memory consumption reasonable you can split the job into several
+smaller jobs or enable :ref:`persistent job queue <topics-jobs>`
+and stop/start spider from time to time.
