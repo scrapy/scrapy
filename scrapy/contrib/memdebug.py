@@ -21,13 +21,13 @@ class MemoryDebugger(object):
         if not crawler.settings.getbool('MEMDEBUG_ENABLED'):
             raise NotConfigured
         o = cls(crawler.stats)
-        crawler.signals.connect(o.engine_stopped, signals.engine_stopped)
+        crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o
 
-    def engine_stopped(self):
+    def spider_closed(self, spider, reason):
         gc.collect()
-        self.stats.set_value('memdebug/gc_garbage_count', len(gc.garbage))
+        self.stats.set_value('memdebug/gc_garbage_count', len(gc.garbage), spider=spider)
         for cls, wdict in live_refs.iteritems():
             if not wdict:
                 continue
-            self.stats.set_value('memdebug/live_refs/%s' % cls.__name__, len(wdict))
+            self.stats.set_value('memdebug/live_refs/%s' % cls.__name__, len(wdict), spider=spider)
