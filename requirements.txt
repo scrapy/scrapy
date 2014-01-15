@@ -4,3 +4,4 @@ pyOpenSSL
 cssselect>=0.9
 w3lib>=1.2
 queuelib
+six>=1.5.2
