@@ -280,7 +280,10 @@ Example selecting links in list item with a "class" attribute ending with a digi
     [u'link1.html', u'link2.html', u'link4.html', u'link5.html']
     >>>
 
-
+.. warning:: C library ``libxslt`` doesn't natively support EXSLT regular
+    expressions so `lxml`_'s implementation uses hooks to Python's ``re`` module.
+    Thus, using regexp functions in your XPath expressions may add a small
+    performance penalty.
 
 Set operations
 ~~~~~~~~~~~~~~
