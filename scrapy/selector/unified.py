@@ -85,7 +85,8 @@ class Selector(object_ref):
             return SelectorList([])
 
         try:
-            result = xpathev(query, namespaces=self.namespaces)
+            result = xpathev(query, namespaces=self.namespaces,
+                             smart_strings=False)
         except etree.XPathError:
             raise ValueError("Invalid XPath: %s" % query)
 
