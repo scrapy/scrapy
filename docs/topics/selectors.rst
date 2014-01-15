@@ -250,7 +250,7 @@ and come with these pre-registered namespaces to use in XPath expressions:
 ======  ====================================    =======================
 prefix  namespace                               usage
 ======  ====================================    =======================
-regexp  http://exslt.org/regular-expressions    `regular expressions`_
+re      http://exslt.org/regular-expressions    `regular expressions`_
 set     http://exslt.org/sets                   `set manipulation`_
 ======  ====================================    =======================
 
@@ -276,7 +276,7 @@ Example selecting links in list item with a "class" attribute ending with a digi
     >>> sel = Selector(text=doc, type="html")
     >>> sel.xpath('//li//@href').extract()
     [u'link1.html', u'link2.html', u'link3.html', u'link4.html', u'link5.html']
-    >>> sel.xpath('//li[regexp:test(@class, "item-\d$")]//@href').extract()
+    >>> sel.xpath('//li[re:test(@class, "item-\d$")]//@href').extract()
     [u'link1.html', u'link2.html', u'link4.html', u'link5.html']
     >>>
 

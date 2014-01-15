@@ -352,36 +352,36 @@ class ExsltTestCase(unittest.TestCase):
         response = TextResponse(url="http://example.com", body=body)
         sel = self.sscls(response)
 
-        # regexp:test()
+        # re:test()
         self.assertEqual(
             sel.xpath(
-                '//input[regexp:test(@name, "[A-Z]+", "i")]').extract(),
-            [x.extract() for x in sel.xpath('//input[regexp:test(@name, "[A-Z]+", "i")]')])
+                '//input[re:test(@name, "[A-Z]+", "i")]').extract(),
+            [x.extract() for x in sel.xpath('//input[re:test(@name, "[A-Z]+", "i")]')])
         self.assertEqual(
             [x.extract()
              for x in sel.xpath(
-                 '//a[regexp:test(@href, "\.html$")]/text()')],
+                 '//a[re:test(@href, "\.html$")]/text()')],
             [u'first link', u'second link'])
         self.assertEqual(
             [x.extract()
              for x in sel.xpath(
-                 '//a[regexp:test(@href, "first")]/text()')],
+                 '//a[re:test(@href, "first")]/text()')],
             [u'first link'])
         self.assertEqual(
             [x.extract()
              for x in sel.xpath(
-                 '//a[regexp:test(@href, "second")]/text()')],
+                 '//a[re:test(@href, "second")]/text()')],
             [u'second link'])
 
 
-        # regexp:match() is rather special: it returns a node-set of <match> nodes
+        # re:match() is rather special: it returns a node-set of <match> nodes
         #[u'<match>http://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.xml</match>',
         #u'<match>http</match>',
         #u'<match>www.bayes.co.uk</match>',
         #u'<match></match>',
         #u'<match>/xml/index.xml?/xml/utils/rechecker.xml</match>']
         self.assertEqual(
-            sel.xpath('regexp:match(//a[regexp:test(@href, "\.xml$")]/@href,'
+            sel.xpath('re:match(//a[re:test(@href, "\.xml$")]/@href,'
                       '"(\w+):\/\/([^/:]+)(:\d*)?([^# ]*)")/text()').extract(),
             [u'http://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.xml',
              u'http',
@@ -391,9 +391,9 @@ class ExsltTestCase(unittest.TestCase):
 
 
 
-        # regexp:replace()
+        # re:replace()
         self.assertEqual(
-            sel.xpath('regexp:replace(//a[regexp:test(@href, "\.xml$")]/@href,'
+            sel.xpath('re:replace(//a[re:test(@href, "\.xml$")]/@href,'
                       '"(\w+)://(.+)(\.xml)", "","https://\\2.html")').extract(),
             [u'https://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.html'])
 

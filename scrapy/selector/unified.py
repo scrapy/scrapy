@@ -47,7 +47,7 @@ class Selector(object_ref):
 
     _default_type = None
     _default_namespaces = {
-        "regexp": "http://exslt.org/regular-expressions",
+        "re": "http://exslt.org/regular-expressions",
 
         # supported in libxslt:
         # set:difference
