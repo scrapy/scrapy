@@ -40,7 +40,9 @@ This adjusts download delays and concurrency based on the following rules:
 
 .. note:: The AutoThrottle extension honours the standard Scrapy settings for
    concurrency and delay. This means that it will never set a download delay
-   lower than :setting:`DOWNLOAD_DELAY` or a concurrency higher than :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (or :setting:`CONCURRENT_REQUESTS_PER_IP`, depending on which one you use).
+   lower than :setting:`DOWNLOAD_DELAY` or a concurrency higher than
+   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`
+   (or :setting:`CONCURRENT_REQUESTS_PER_IP`, depending on which one you use).
 
 Settings
 ========
