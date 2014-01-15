@@ -1,8 +1,9 @@
 from __future__ import print_function
 import os
-from scrapy.utils.request import request_fingerprint
-from scrapy.utils.job import job_dir
+
 from scrapy import log
+from scrapy.utils.job import job_dir
+from scrapy.utils.request import request_fingerprint
 
 
 class BaseDupeFilter(object):
@@ -17,11 +18,12 @@ class BaseDupeFilter(object):
     def open(self):  # can return deferred
         pass
 
-    def close(self, reason): # can return a deferred
+    def close(self, reason):  # can return a deferred
         pass
 
-    def log(self, request, spider): # log that a request has been filtered
+    def log(self, request, spider):  # log that a request has been filtered
         pass
+
 
 class RFPDupeFilter(BaseDupeFilter):
     """Request Fingerprint duplicates filter"""
@@ -39,12 +41,15 @@ class RFPDupeFilter(BaseDupeFilter):
         return cls(job_dir(settings))
 
     def request_seen(self, request):
-        fp = request_fingerprint(request)
+        fp = self.request_fingerprint(request)
         if fp in self.fingerprints:
             return True
         self.fingerprints.add(fp)
         if self.file:
             self.file.write(fp + os.linesep)
+
+    def request_fingerprint(self, request):
+        return request_fingerprint(request)
 
     def close(self, reason):
         if self.file:
