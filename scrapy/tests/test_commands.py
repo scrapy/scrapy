@@ -1,4 +1,3 @@
-import optparse
 import os
 import sys
 import subprocess
@@ -8,7 +7,6 @@ from shutil import rmtree
 from tempfile import mkdtemp
 
 from twisted.trial import unittest
-from scrapy.settings import CrawlerSettings
 
 from scrapy.utils.python import retry_on_eintr
 from scrapy.utils.test import get_testenv
@@ -237,28 +235,3 @@ class BenchCommandTest(CommandTest):
                 '-s', 'CLOSESPIDER_TIMEOUT=0.01')
         log = p.stderr.read()
         self.assert_('INFO: Crawled' in log, log)
-
-
-class CommandMockTest(object):
-    """This class is used to test commands and improve code coverage
-    without invoking actual command subprocess.
-
-    Subclass must:
-    1. Define Command = CommandClassToTest in class scope.
-    2. Call super.setUp() and super.tearDown() if methods are overridden.
-    3. Call run_command(argv) in test methods.
-    """
-
-    def setUp(self):
-        self.cmd = self.__class__.Command()
-        self.cmd.settings = CrawlerSettings(object())
-        self.parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(), conflict_handler='resolve')
-        self.cmd.add_options(self.parser)
-
-    def tearDown(self):
-        pass
-
-    def run_command(self, argv):
-        opts, args = self.parser.parse_args(argv)
-        self.cmd.process_options(args, opts)
-        self.cmd.run(args, opts)
