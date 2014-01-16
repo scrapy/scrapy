@@ -132,12 +132,12 @@ Pages can indicate it in two ways:
    "main", "index" website pages.
 
 Scrapy handles (1) automatically; to handle (2) enable
-:ref:`AjaxCrawlableMiddleware <ajaxcrawlable-middleware>`::
+:ref:`AjaxCrawlMiddleware <ajaxcrawl-middleware>`::
 
-    AJAXCRAWLABLE_ENABLED = True
+    AJAXCRAWL_ENABLED = True
 
 When doing broad crawls it's common to crawl a lot of "index" web pages;
-AjaxCrawlableMiddleware helps to crawl them correctly.
+AjaxCrawlMiddleware helps to crawl them correctly.
 It is turned OFF by default because it has some performance overhead,
 and enabling it for focused crawls doesn't make much sense.
 

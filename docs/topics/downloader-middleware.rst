@@ -797,14 +797,14 @@ UserAgentMiddleware
    In order for a spider to override the default user agent, its `user_agent`
    attribute must be set.
 
-.. _ajaxcrawlable-middleware:
+.. _ajaxcrawl-middleware:
 
-AjaxCrawlableMiddleware
------------------------
+AjaxCrawlMiddleware
+-------------------
 
-.. module:: scrapy.contrib.downloadermiddleware.ajaxcrawlable
+.. module:: scrapy.contrib.downloadermiddleware.ajaxcrawl
 
-.. class:: AjaxCrawlableMiddleware
+.. class:: AjaxCrawlMiddleware
 
    Middleware that finds 'AJAX crawlable' page variants based
    on meta-fragment html tag. See
@@ -815,22 +815,22 @@ AjaxCrawlableMiddleware
 
        Scrapy finds 'AJAX crawlable' pages for URLs like
        ``'http://example.com/!#foo=bar'`` even without this middleware.
-       AjaxCrawlableMiddleware is necessary when URL doesn't contain ``'!#'``.
+       AjaxCrawlMiddleware is necessary when URL doesn't contain ``'!#'``.
        This is often a case for 'index' or 'main' website pages.
 
-AjaxCrawlableMiddleware Settings
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+AjaxCrawlMiddleware Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. setting:: AJAXCRAWLABLE_ENABLED
+.. setting:: AJAXCRAWL_ENABLED
 
-AJAXCRAWLABLE_ENABLED
-^^^^^^^^^^^^^^^^^^^^^
+AJAXCRAWL_ENABLED
+^^^^^^^^^^^^^^^^^
 
 .. versionadded:: 0.21
 
 Default: ``False``
 
-Whether the AjaxCrawlableMiddleware will be enabled. You may want to
+Whether the AjaxCrawlMiddleware will be enabled. You may want to
 enable it for :ref:`broad crawls <topics-broad-crawls>`.
 
 

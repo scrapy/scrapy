@@ -7,21 +7,21 @@ from scrapy.http import HtmlResponse
 from scrapy.utils.response import _noscript_re, _script_re
 from w3lib import html
 
-class AjaxCrawlableMiddleware(object):
+class AjaxCrawlMiddleware(object):
     """
     Handle 'AJAX crawlable' pages marked as crawlable via meta tag.
     For more info see https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
     """
 
     def __init__(self, settings):
-        if not settings.getbool('AJAXCRAWLABLE_ENABLED'):
+        if not settings.getbool('AJAXCRAWL_ENABLED'):
             raise NotConfigured
 
         # XXX: Google parses at least first 100k bytes; scrapy's redirect
         # middleware parses first 4k. 4k turns out to be insufficient
         # for this middleware, and parsing 100k could be slow.
         # We use something in between (32K) by default.
-        self.lookup_bytes = settings.getint('AJAXCRAWLABLE_MAXSIZE', 32768)
+        self.lookup_bytes = settings.getint('AJAXCRAWL_MAXSIZE', 32768)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -43,13 +43,13 @@ class AjaxCrawlableMiddleware(object):
             return response
 
         # scrapy already handles #! links properly
-        ajax_crawlable = request.replace(url=request.url+'#!')
-        log.msg(format="Downloading AJAX crawlable %(ajax_crawlable)s instead of %(request)s",
-                level=log.DEBUG, spider=spider, ajax_crawlable=ajax_crawlable,
-                request=request)
+        ajax_crawl_request = request.replace(url=request.url+'#!')
+        log.msg(format="Downloading AJAX crawlable %(ajax_crawl_request)s instead of %(request)s",
+                level=log.DEBUG, spider=spider,
+                ajax_crawl_request=ajax_crawl_request, request=request)
 
-        ajax_crawlable.meta['ajax_crawlable'] = True
-        return ajax_crawlable
+        ajax_crawl_request.meta['ajax_crawlable'] = True
+        return ajax_crawl_request
 
     def _has_ajax_crawlable_variant(self, response):
         """

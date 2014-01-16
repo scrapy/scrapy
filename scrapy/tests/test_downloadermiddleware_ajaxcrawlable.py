@@ -1,17 +1,17 @@
 import unittest
 
-from scrapy.contrib.downloadermiddleware.ajaxcrawlable import AjaxCrawlableMiddleware
+from scrapy.contrib.downloadermiddleware.ajaxcrawl import AjaxCrawlMiddleware
 from scrapy.spider import BaseSpider
 from scrapy.http import Request, HtmlResponse, Response
 from scrapy.utils.test import get_crawler
 
-__doctests__ = ['scrapy.contrib.downloadermiddleware.ajaxcrawlable']
+__doctests__ = ['scrapy.contrib.downloadermiddleware.ajaxcrawl']
 
-class AjaxCrawlableMiddlewareTest(unittest.TestCase):
+class AjaxCrawlMiddlewareTest(unittest.TestCase):
     def setUp(self):
         self.spider = BaseSpider('foo')
-        crawler = get_crawler({'AJAXCRAWLABLE_ENABLED': True})
-        self.mw = AjaxCrawlableMiddleware.from_crawler(crawler)
+        crawler = get_crawler({'AJAXCRAWL_ENABLED': True})
+        self.mw = AjaxCrawlMiddleware.from_crawler(crawler)
 
     def _ajaxcrawlable_body(self):
         return '<html><head><meta name="fragment" content="!"/></head><body></body></html>'
@@ -32,7 +32,7 @@ class AjaxCrawlableMiddlewareTest(unittest.TestCase):
         resp2 = self.mw.process_response(req, resp, self.spider)
         self.assertIs(resp, resp2)
 
-    def test_ajax_crawlable(self):
+    def test_ajaxcrawl(self):
         req, resp = self._req_resp(
             'http://example.com/',
             {'meta': {'foo': 'bar'}},
@@ -42,7 +42,7 @@ class AjaxCrawlableMiddlewareTest(unittest.TestCase):
         self.assertEqual(req2.url, 'http://example.com/?_escaped_fragment_=')
         self.assertEqual(req2.meta['foo'], 'bar')
 
-    def test_ajax_crawlable_loop(self):
+    def test_ajaxcrawl_loop(self):
         req, resp = self._req_resp('http://example.com/', {}, {'body': self._ajaxcrawlable_body()})
         req2 = self.mw.process_response(req, resp, self.spider)
         resp2 = HtmlResponse(req2.url, body=resp.body, request=req2)
