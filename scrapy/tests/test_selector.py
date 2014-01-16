@@ -400,3 +400,122 @@ class DeprecatedXpathSelectorTest(unittest.TestCase):
             self.assertEqual(xs.select("//div").extract(),
                              [u'<div><img src="a.jpg"><p>Hello</p></img></div>'])
             self.assertRaises(RuntimeError, xs.css, 'div')
+
+
+class ExsltTestCase(unittest.TestCase):
+
+    sscls = Selector
+
+    def test_regexp(self):
+        """EXSLT regular expression tests"""
+        body = """
+        <p><input name='a' value='1'/><input name='b' value='2'/></p>
+        <div class="links">
+        <a href="/first.html">first link</a>
+        <a href="/second.html">second link</a>
+        <a href="http://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.xml">EXSLT match example</a>
+        </div>
+        """
+        response = TextResponse(url="http://example.com", body=body)
+        sel = self.sscls(response)
+
+        # re:test()
+        self.assertEqual(
+            sel.xpath(
+                '//input[re:test(@name, "[A-Z]+", "i")]').extract(),
+            [x.extract() for x in sel.xpath('//input[re:test(@name, "[A-Z]+", "i")]')])
+        self.assertEqual(
+            [x.extract()
+             for x in sel.xpath(
+                 '//a[re:test(@href, "\.html$")]/text()')],
+            [u'first link', u'second link'])
+        self.assertEqual(
+            [x.extract()
+             for x in sel.xpath(
+                 '//a[re:test(@href, "first")]/text()')],
+            [u'first link'])
+        self.assertEqual(
+            [x.extract()
+             for x in sel.xpath(
+                 '//a[re:test(@href, "second")]/text()')],
+            [u'second link'])
+
+
+        # re:match() is rather special: it returns a node-set of <match> nodes
+        #[u'<match>http://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.xml</match>',
+        #u'<match>http</match>',
+        #u'<match>www.bayes.co.uk</match>',
+        #u'<match></match>',
+        #u'<match>/xml/index.xml?/xml/utils/rechecker.xml</match>']
+        self.assertEqual(
+            sel.xpath('re:match(//a[re:test(@href, "\.xml$")]/@href,'
+                      '"(\w+):\/\/([^/:]+)(:\d*)?([^# ]*)")/text()').extract(),
+            [u'http://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.xml',
+             u'http',
+             u'www.bayes.co.uk',
+             u'',
+             u'/xml/index.xml?/xml/utils/rechecker.xml'])
+
+
+
+        # re:replace()
+        self.assertEqual(
+            sel.xpath('re:replace(//a[re:test(@href, "\.xml$")]/@href,'
+                      '"(\w+)://(.+)(\.xml)", "","https://\\2.html")').extract(),
+            [u'https://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.html'])
+
+    def test_set(self):
+        """EXSLT set manipulation tests"""
+        # microdata example from http://schema.org/Event
+        body="""
+        <div itemscope itemtype="http://schema.org/Event">
+          <a itemprop="url" href="nba-miami-philidelphia-game3.html">
+          NBA Eastern Conference First Round Playoff Tickets:
+          <span itemprop="name"> Miami Heat at Philadelphia 76ers - Game 3 (Home Game 1) </span>
+          </a>
+
+          <meta itemprop="startDate" content="2016-04-21T20:00">
+            Thu, 04/21/16
+            8:00 p.m.
+
+          <div itemprop="location" itemscope itemtype="http://schema.org/Place">
+            <a itemprop="url" href="wells-fargo-center.html">
+            Wells Fargo Center
+            </a>
+            <div itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
+              <span itemprop="addressLocality">Philadelphia</span>,
+              <span itemprop="addressRegion">PA</span>
+            </div>
+          </div>
+
+          <div itemprop="offers" itemscope itemtype="http://schema.org/AggregateOffer">
+            Priced from: <span itemprop="lowPrice">$35</span>
+            <span itemprop="offerCount">1938</span> tickets left
+          </div>
+        </div>
+        """
+        response = TextResponse(url="http://example.com", body=body)
+        sel = self.sscls(response)
+
+        self.assertEqual(
+            sel.xpath('''//div[@itemtype="http://schema.org/Event"]
+                            //@itemprop''').extract(),
+            [u'url',
+             u'name',
+             u'startDate',
+             u'location',
+             u'url',
+             u'address',
+             u'addressLocality',
+             u'addressRegion',
+             u'offers',
+             u'lowPrice',
+             u'offerCount']
+        )
+
+        self.assertEqual(sel.xpath('''
+                set:difference(//div[@itemtype="http://schema.org/Event"]
+                                    //@itemprop,
+                               //div[@itemtype="http://schema.org/Event"]
+                                    //*[@itemscope]/*/@itemprop)''').extract(),
+                         [u'url', u'name', u'startDate', u'location', u'offers'])

@@ -240,6 +240,149 @@ XPath specification.
 
 .. _Location Paths: http://www.w3.org/TR/xpath#location-paths
 
+Using EXSLT extensions
+----------------------
+
+Being built atop `lxml`_, Scrapy selectors also support some `EXSLT`_ extensions
+and come with these pre-registered namespaces to use in XPath expressions:
+
+
+======  ====================================    =======================
+prefix  namespace                               usage
+======  ====================================    =======================
+re      http://exslt.org/regular-expressions    `regular expressions`_
+set     http://exslt.org/sets                   `set manipulation`_
+======  ====================================    =======================
+
+Regular expressions
+~~~~~~~~~~~~~~~~~~~
+
+The ``test()`` function for example can prove quite useful when XPath's
+``starts-with()`` or ``contains()`` are not sufficient.
+
+Example selecting links in list item with a "class" attribute ending with a digit::
+
+    >>> doc = """
+    ... <div>
+    ...     <ul>
+    ...         <li class="item-0"><a href="link1.html">first item</a></li>
+    ...         <li class="item-1"><a href="link2.html">second item</a></li>
+    ...         <li class="item-inactive"><a href="link3.html">third item</a></li>
+    ...         <li class="item-1"><a href="link4.html">fourth item</a></li>
+    ...         <li class="item-0"><a href="link5.html">fifth item</a></li>
+    ...     </ul>
+    ... </div>
+    ... """
+    >>> sel = Selector(text=doc, type="html")
+    >>> sel.xpath('//li//@href').extract()
+    [u'link1.html', u'link2.html', u'link3.html', u'link4.html', u'link5.html']
+    >>> sel.xpath('//li[re:test(@class, "item-\d$")]//@href').extract()
+    [u'link1.html', u'link2.html', u'link4.html', u'link5.html']
+    >>>
+
+.. warning:: C library ``libxslt`` doesn't natively support EXSLT regular
+    expressions so `lxml`_'s implementation uses hooks to Python's ``re`` module.
+    Thus, using regexp functions in your XPath expressions may add a small
+    performance penalty.
+
+Set operations
+~~~~~~~~~~~~~~
+
+These can be handy for excluding parts of a document tree before
+extracting text elements for example.
+
+Example extracting microdata (sample content taken from http://schema.org/Product)
+with groups of itemscopes and corresponding itemprops::
+
+    >>> doc = """
+    ... <div itemscope itemtype="http://schema.org/Product">
+    ...   <span itemprop="name">Kenmore White 17" Microwave</span>
+    ...   <img src="kenmore-microwave-17in.jpg" alt='Kenmore 17" Microwave' />
+    ...   <div itemprop="aggregateRating"
+    ...     itemscope itemtype="http://schema.org/AggregateRating">
+    ...    Rated <span itemprop="ratingValue">3.5</span>/5
+    ...    based on <span itemprop="reviewCount">11</span> customer reviews
+    ...   </div>
+    ...
+    ...   <div itemprop="offers" itemscope itemtype="http://schema.org/Offer">
+    ...     <span itemprop="price">$55.00</span>
+    ...     <link itemprop="availability" href="http://schema.org/InStock" />In stock
+    ...   </div>
+    ...
+    ...   Product description:
+    ...   <span itemprop="description">0.7 cubic feet countertop microwave.
+    ...   Has six preset cooking categories and convenience features like
+    ...   Add-A-Minute and Child Lock.</span>
+    ...
+    ...   Customer reviews:
+    ...
+    ...   <div itemprop="review" itemscope itemtype="http://schema.org/Review">
+    ...     <span itemprop="name">Not a happy camper</span> -
+    ...     by <span itemprop="author">Ellie</span>,
+    ...     <meta itemprop="datePublished" content="2011-04-01">April 1, 2011
+    ...     <div itemprop="reviewRating" itemscope itemtype="http://schema.org/Rating">
+    ...       <meta itemprop="worstRating" content = "1">
+    ...       <span itemprop="ratingValue">1</span>/
+    ...       <span itemprop="bestRating">5</span>stars
+    ...     </div>
+    ...     <span itemprop="description">The lamp burned out and now I have to replace
+    ...     it. </span>
+    ...   </div>
+    ...
+    ...   <div itemprop="review" itemscope itemtype="http://schema.org/Review">
+    ...     <span itemprop="name">Value purchase</span> -
+    ...     by <span itemprop="author">Lucas</span>,
+    ...     <meta itemprop="datePublished" content="2011-03-25">March 25, 2011
+    ...     <div itemprop="reviewRating" itemscope itemtype="http://schema.org/Rating">
+    ...       <meta itemprop="worstRating" content = "1"/>
+    ...       <span itemprop="ratingValue">4</span>/
+    ...       <span itemprop="bestRating">5</span>stars
+    ...     </div>
+    ...     <span itemprop="description">Great microwave for the price. It is small and
+    ...     fits in my apartment.</span>
+    ...   </div>
+    ...   ...
+    ... </div>
+    ... """
+    >>>
+    >>> for scope in sel.xpath('//div[@itemscope]'):
+    ...     print "current scope:", scope.xpath('@itemtype').extract()
+    ...     props = scope.xpath('''
+    ...                 set:difference(./descendant::*/@itemprop,
+    ...                                .//*[@itemscope]/*/@itemprop)''')
+    ...     print "    properties:", props.extract()
+    ...     print
+    ...
+    current scope: [u'http://schema.org/Product']
+        properties: [u'name', u'aggregateRating', u'offers', u'description', u'review', u'review']
+
+    current scope: [u'http://schema.org/AggregateRating']
+        properties: [u'ratingValue', u'reviewCount']
+
+    current scope: [u'http://schema.org/Offer']
+        properties: [u'price', u'availability']
+
+    current scope: [u'http://schema.org/Review']
+        properties: [u'name', u'author', u'datePublished', u'reviewRating', u'description']
+
+    current scope: [u'http://schema.org/Rating']
+        properties: [u'worstRating', u'ratingValue', u'bestRating']
+
+    current scope: [u'http://schema.org/Review']
+        properties: [u'name', u'author', u'datePublished', u'reviewRating', u'description']
+
+    current scope: [u'http://schema.org/Rating']
+        properties: [u'worstRating', u'ratingValue', u'bestRating']
+
+    >>>
+
+Here we first iterate over ``itemscope`` elements, and for each one,
+we look for all ``itemprops`` elements and exclude those that are themselves
+inside another ``itemscope``.
+
+.. _EXSLT: http://www.exslt.org/
+.. _regular expressions: http://www.exslt.org/regexp/index.html
+.. _set manipulation: http://www.exslt.org/set/index.html
 
 .. _topics-selectors-ref:
 
