@@ -109,10 +109,8 @@ class WarnWhenSubclassedTest(unittest.TestCase):
                 pass
 
         with warnings.catch_warnings(record=True) as w:
-            # warns only once on instantations in the same lineno
-            for _ in range(10):
-                _, lineno = Deprecated(), inspect.getlineno(inspect.currentframe())
-                _ = UserClass()  # subclass instances don't warn
+            _, lineno = Deprecated(), inspect.getlineno(inspect.currentframe())
+            _ = UserClass()  # subclass instances don't warn
 
         w = self._mywarnings(w)
         self.assertEqual(len(w), 1)
