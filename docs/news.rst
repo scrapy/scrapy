@@ -6,7 +6,51 @@ Release notes
 0.21 (not released yet)
 -----------------------
 
-- soon...
+- ...
+
+0.22.0 (released 2014-01-16)
+----------------------------
+
+Enhancements
+~~~~~~~~~~~~
+
+- [**Backwards incompatible**] Switched HTTPCacheMiddleware backend to filesystem (:issue:`541`)
+  To restore old backend set `HTTPCACHE_STORAGE` to `scrapy.contrib.httpcache.DbmCacheStorage`
+- Proxy https:// urls using CONNECT method (:issue:`392`, :issue:`397`)
+- Add a middleware to crawl ajax crawleable pages as defined by google (:issue:`343`)
+- Rename scrapy.spider.BaseSpider to scrapy.spider.Spider (:issue:`510`, :issue:`519`)
+- Selectors registers EXSLT namespaces by default (:issue:`472`)
+- Unify item loaders similar to selectors renaming (:issue:`461`)
+- Make `RFPDupeFilter` class easily subclassable (:issue:`533`)
+- Improve test coverage and forthcoming Python 3 support (:issue:`525`)
+- Promote startup info on settings and middleware to INFO level (:issue:`520`)
+- Support partials in `get_func_args` util (:issue:`506`, issue:`504`)
+- Allow running indiviual tests via tox (:issue:`503`)
+- Update extensions ignored by link extractors (:issue:`498`)
+- Add middleware methods to get files/images/thumbs paths (:issue:`490`)
+- Improve offsite middleware tests (:issue:`478`)
+- Add a way to skip default Referer header set by RefererMiddleware (:issue:`475`)
+- Do not send `x-gzip` in default `Accept-Encoding` header (:issue:`469`)
+- Suppport defining http error handling using settings (:issue:`466`)
+- Use moderm python idioms wherever you find legacies (:issue:`497`)
+- Improve and correct documentation
+  (:issue:`527`, :issue:`524`, :issue:`521`, :issue:`517`, :issue:`512`, :issue:`505`,
+  :issue:`502`, :issue:`489`, :issue:`465`, :issue:`460`, :issue:`425`, :issue:`536`)
+
+Fixes
+~~~~~
+
+- Update Selector class imports in CrawlSpider template (:issue:`484`)
+- Fix unexistent reference to `engine.slots` (:issue:`464`)
+- Do not try to call `body_as_unicode()` on a non-TextResponse instance (:issue:`462`)
+- Warn when subclassing XPathItemLoader, previously it only warned on
+  instantation. (:issue:`523`)
+- Warn when subclassing XPathSelector, previously it only warned on
+  instantation. (:issue:`537`)
+- Multiple fixes to memory stats (:issue:`531`, :issue:`530`, :issue:`529`)
+- Fix overriding url in `FormRequest.from_response()` (:issue:`507`)
+- Fix tests runner under pip 1.5 (:issue:`513`)
+- Fix logging error when spider name is unicode (:issue:`479`)
 
 0.20.2 (released 2013-12-09)
 ----------------------------
