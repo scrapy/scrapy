@@ -118,3 +118,27 @@ crawler to dedicate too many resources on any specific domain.
 To disable redirects use::
 
     REDIRECT_ENABLED = False
+
+Enable crawling of "Ajax Crawlable Pages"
+=========================================
+
+Some pages (up to 1%, based on empirical data from year 2013) declare
+themselves as `ajax crawlable`_. This means they provide plain HTML
+version of content that is usually available only via AJAX.
+Pages can indicate it in two ways:
+
+1) by using ``#!`` in URL - this is the default way;
+2) by using a special meta tag - this way is used on
+   "main", "index" website pages.
+
+Scrapy handles (1) automatically; to handle (2) enable
+:ref:`AjaxCrawlableMiddleware <ajaxcrawlable-middleware>`::
+
+    AJAXCRAWLABLE_ENABLED = True
+
+When doing broad crawls it's common to crawl a lot of "index" web pages;
+AjaxCrawlableMiddleware helps to crawl them correctly.
+It is turned OFF by default because it has some performance overhead,
+and enabling it for focused crawls doesn't make much sense.
+
+.. _ajax crawlable: https://developers.google.com/webmasters/ajax-crawling/docs/getting-started

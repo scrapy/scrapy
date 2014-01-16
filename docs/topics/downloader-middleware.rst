@@ -96,7 +96,7 @@ single Python class that defines one or more of the following methods:
    .. method:: process_response(request, response, spider)
 
       :meth:`process_response` should either: return a :class:`~scrapy.http.Response`
-      object, return a :class:`~scrapy.http.Request` object or 
+      object, return a :class:`~scrapy.http.Request` object or
       raise a :exc:`~scrapy.exceptions.IgnoreRequest` exception.
 
       If it returns a :class:`~scrapy.http.Response` (it could be the same given
@@ -794,6 +794,42 @@ UserAgentMiddleware
 
    In order for a spider to override the default user agent, its `user_agent`
    attribute must be set.
+
+.. _ajaxcrawlable-middleware:
+
+AjaxCrawlableMiddleware
+-----------------------
+
+.. module:: scrapy.contrib.downloadermiddleware.ajaxcrawlable
+
+.. class:: AjaxCrawlableMiddleware
+
+   Middleware that finds 'AJAX crawlable' page variants based
+   on meta-fragment html tag. See
+   https://developers.google.com/webmasters/ajax-crawling/docs/getting-started
+   for more info.
+
+   .. note::
+
+       Scrapy finds 'AJAX crawlable' pages for URLs like
+       ``'http://example.com/!#foo=bar'`` even without this middleware.
+       AjaxCrawlableMiddleware is necessary when URL doesn't contain ``'!#'``.
+       This is often a case for 'index' or 'main' website pages.
+
+AjaxCrawlableMiddleware Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. setting:: AJAXCRAWLABLE_ENABLED
+
+AJAXCRAWLABLE_ENABLED
+^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 0.21
+
+Default: ``False``
+
+Whether the AjaxCrawlableMiddleware will be enabled. You may want to
+enable it for :ref:`broad crawls <topics-broad-crawls>`.
 
 
 .. _DBM: http://en.wikipedia.org/wiki/Dbm

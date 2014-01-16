@@ -18,6 +18,8 @@ import sys
 from importlib import import_module
 from os.path import join, abspath, dirname
 
+AJAXCRAWLABLE_ENABLED = False
+
 BOT_NAME = 'scrapybot'
 
 CLOSESPIDER_TIMEOUT = 0
@@ -79,6 +81,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': 400,
     'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware': 500,
     'scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware': 550,
+    'scrapy.contrib.downloadermiddleware.ajaxcrawlable.AjaxCrawlableMiddleware': 560,
     'scrapy.contrib.downloadermiddleware.redirect.MetaRefreshMiddleware': 580,
     'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 590,
     'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware': 600,
