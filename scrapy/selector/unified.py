@@ -57,6 +57,7 @@ class Selector(object_ref):
         # set:trailing
         "set": "http://exslt.org/sets"
     }
+    _lxml_smart_strings = False
 
     def __init__(self, response=None, text=None, type=None, namespaces=None,
                  _root=None, _expr=None):
@@ -86,7 +87,7 @@ class Selector(object_ref):
 
         try:
             result = xpathev(query, namespaces=self.namespaces,
-                             smart_strings=False)
+                             smart_strings=self._lxml_smart_strings)
         except etree.XPathError:
             raise ValueError("Invalid XPath: %s" % query)
 
