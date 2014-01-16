@@ -281,6 +281,8 @@ HttpAuthMiddleware
 
     Example::
 
+        from scrapy.contrib.spiders import CrawlSpider
+
         class SomeIntranetSiteSpider(CrawlSpider):
 
             http_user = 'someuser'

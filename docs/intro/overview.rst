@@ -129,6 +129,10 @@ For more information about XPath see the `XPath reference`_.
 
 Finally, here's the spider code::
 
+    from scrapy.contrib.spiders import CrawlSpider, Rule
+    from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
+    from scrapy.selector import Selector
+
     class MininovaSpider(CrawlSpider):
 
         name = 'mininova'
@@ -145,8 +149,7 @@ Finally, here's the spider code::
             torrent['size'] = sel.xpath("//div[@id='info-left']/p[2]/text()[2]").extract()
             return torrent
 
-For brevity's sake, we intentionally left out the import statements. The
-Torrent item is :ref:`defined above <intro-overview-item>`.
+The ``TorrentItem`` class is :ref:`defined above <intro-overview-item>`.
 
 Run the spider to extract the data
 ==================================
