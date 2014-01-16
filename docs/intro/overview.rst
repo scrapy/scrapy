@@ -155,8 +155,7 @@ Finally, here's the spider code::
             torrent['size'] = sel.xpath("//div[@id='info-left']/p[2]/text()[2]").extract()
             return torrent
 
-For brevity's sake, we intentionally left out the import statements. The
-Torrent item is :ref:`defined above <intro-overview-item>`.
+The ``TorrentItem`` class is :ref:`defined above <intro-overview-item>`.
 
 Run the spider to extract the data
 ==================================
