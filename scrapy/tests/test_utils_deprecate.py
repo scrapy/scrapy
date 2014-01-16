@@ -17,51 +17,109 @@ class NewName(SomeBaseClass):
 
 class WarnWhenSubclassedTest(unittest.TestCase):
 
+    def _mywarnings(self, w, category=MyWarning):
+        return [x for x in w if x.category is MyWarning]
+
     def test_no_warning_on_definition(self):
         with warnings.catch_warnings(record=True) as w:
             Deprecated = create_deprecated_class('Deprecated', NewName)
 
+        w = self._mywarnings(w)
         self.assertEqual(w, [])
 
-    def test_warning_on_subclassing(self):
-        with warnings.catch_warnings(record=True) as w:
-            Deprecated = create_deprecated_class('Deprecated', NewName,
-                                                 warn_category=MyWarning)
+    def test_subclassing_warning_message(self):
+        Deprecated = create_deprecated_class('Deprecated', NewName,
+                                             warn_category=MyWarning)
 
+        with warnings.catch_warnings(record=True) as w:
             class UserClass(Deprecated):
                 pass
 
+        w = self._mywarnings(w)
         self.assertEqual(len(w), 1)
-        msg = w[0]
-        assert issubclass(msg.category, MyWarning)
         self.assertEqual(
-            str(msg.message),
+            str(w[0].message),
             "scrapy.tests.test_utils_deprecate.UserClass inherits from "
             "deprecated class scrapy.tests.test_utils_deprecate.Deprecated, "
             "please inherit from scrapy.tests.test_utils_deprecate.NewName."
+            " (warning only on first subclass, there may be others)"
         )
-        self.assertEqual(msg.lineno, inspect.getsourcelines(UserClass)[1])
+        self.assertEqual(w[0].lineno, inspect.getsourcelines(UserClass)[1])
 
-    def test_warning_on_instance(self):
+    def test_custom_class_paths(self):
+        Deprecated = create_deprecated_class('Deprecated', NewName,
+                                             new_class_path='foo.NewClass',
+                                             old_class_path='bar.OldClass',
+                                             warn_category=MyWarning)
+
         with warnings.catch_warnings(record=True) as w:
-            Deprecated = create_deprecated_class('Deprecated', NewName,
-                                                 warn_category=MyWarning)
-
             class UserClass(Deprecated):
                 pass
 
-            _, lineno = Deprecated(), inspect.getlineno(inspect.currentframe())
-            _ = UserClass()
+            _ = Deprecated()
 
+        w = self._mywarnings(w)
         self.assertEqual(len(w), 2)
-        msg = w[1]
-        assert issubclass(msg.category, MyWarning)
+        self.assertIn('foo.NewClass', str(w[0].message))
+        self.assertIn('bar.OldClass', str(w[0].message))
+        self.assertIn('foo.NewClass', str(w[1].message))
+        self.assertIn('bar.OldClass', str(w[1].message))
+
+    def test_subclassing_warns_only_on_direct_childs(self):
+        Deprecated = create_deprecated_class('Deprecated', NewName,
+                                             warn_once=False,
+                                             warn_category=MyWarning)
+
+        with warnings.catch_warnings(record=True) as w:
+            class UserClass(Deprecated):
+                pass
+
+            class NoWarnOnMe(UserClass):
+                pass
+
+        w = self._mywarnings(w)
+        self.assertEqual(len(w), 1)
+        self.assertIn('UserClass', str(w[0].message))
+
+    def test_subclassing_warns_once_by_default(self):
+        Deprecated = create_deprecated_class('Deprecated', NewName,
+                                             warn_category=MyWarning)
+
+        with warnings.catch_warnings(record=True) as w:
+            class UserClass(Deprecated):
+                pass
+
+            class FooClass(Deprecated):
+                pass
+
+            class BarClass(Deprecated):
+                pass
+
+        w = self._mywarnings(w)
+        self.assertEqual(len(w), 1)
+        self.assertIn('UserClass', str(w[0].message))
+
+    def test_warning_on_instance(self):
+        Deprecated = create_deprecated_class('Deprecated', NewName,
+                                             warn_category=MyWarning)
+
+        # ignore subclassing warnings
+        with warnings.catch_warnings(record=True):
+            class UserClass(Deprecated):
+                pass
+
+        with warnings.catch_warnings(record=True) as w:
+            _, lineno = Deprecated(), inspect.getlineno(inspect.currentframe())
+            _ = UserClass()  # subclass instances don't warn
+
+        w = self._mywarnings(w)
+        self.assertEqual(len(w), 1)
         self.assertEqual(
-            str(msg.message),
+            str(w[0].message),
             "scrapy.tests.test_utils_deprecate.Deprecated is deprecated, "
             "instantiate scrapy.tests.test_utils_deprecate.NewName instead."
         )
-        self.assertEqual(msg.lineno, lineno)
+        self.assertEqual(w[0].lineno, lineno)
 
     def test_warning_auto_message(self):
         with warnings.catch_warnings(record=True) as w:
@@ -136,3 +194,32 @@ class WarnWhenSubclassedTest(unittest.TestCase):
             Deprecated = create_deprecated_class('Deprecated', NewName, {'foo': 'bar'})
 
         self.assertEqual(Deprecated.foo, 'bar')
+
+    def test_deprecate_a_class_with_custom_metaclass(self):
+        Meta1 = type('Meta1', (type,), {})
+        New = Meta1('New', (), {})
+        Deprecated = create_deprecated_class('Deprecated', New)
+
+    def test_deprecate_subclass_of_deprecated_class(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            Deprecated = create_deprecated_class('Deprecated', NewName,
+                                                 warn_category=MyWarning)
+            AlsoDeprecated = create_deprecated_class('AlsoDeprecated', Deprecated,
+                                                     new_class_path='foo.Bar',
+                                                     warn_category=MyWarning)
+
+        w = self._mywarnings(w)
+        self.assertEqual(len(w), 0, str(map(str, w)))
+
+        with warnings.catch_warnings(record=True) as w:
+            AlsoDeprecated()
+            class UserClass(AlsoDeprecated):
+                pass
+
+        w = self._mywarnings(w)
+        self.assertEqual(len(w), 2)
+        self.assertIn('AlsoDeprecated', str(w[0].message))
+        self.assertIn('foo.Bar', str(w[0].message))
+        self.assertIn('AlsoDeprecated', str(w[1].message))
+        self.assertIn('foo.Bar', str(w[1].message))
