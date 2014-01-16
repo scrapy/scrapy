@@ -1,4 +1,5 @@
 import re
+import inspect
 import warnings
 import weakref
 from twisted.trial import unittest
@@ -301,17 +302,83 @@ class DeprecatedXpathSelectorTest(unittest.TestCase):
 
     text = '<div><img src="a.jpg"><p>Hello</div>'
 
-    def test_warnings(self):
-        for cls in XPathSelector, HtmlXPathSelector, XPathSelector:
-            with warnings.catch_warnings(record=True) as w:
-                warnings.simplefilter('always')
-                hs = cls(text=self.text)
-                assert len(w) == 1, w
-                assert issubclass(w[0].category, ScrapyDeprecationWarning)
-                assert 'deprecated' in str(w[-1].message)
-                hs.select("//div").extract()
-                assert issubclass(w[1].category, ScrapyDeprecationWarning)
-                assert 'deprecated' in str(w[-1].message)
+    def test_warnings_xpathselector(self):
+        cls = XPathSelector
+        with warnings.catch_warnings(record=True) as w:
+            class UserClass(cls):
+                pass
+
+            # subclassing must issue a warning
+            self.assertEqual(len(w), 1, str(cls))
+            self.assertIn('scrapy.selector.Selector', str(w[0].message))
+
+            # subclass instance doesn't issue a warning
+            usel = UserClass(text=self.text)
+            self.assertEqual(len(w), 1)
+
+            # class instance must issue a warning
+            sel = cls(text=self.text)
+            self.assertEqual(len(w), 2, str((cls, [x.message for x in w])))
+            self.assertIn('scrapy.selector.Selector', str(w[1].message))
+
+            # subclass and instance checks
+            self.assertTrue(issubclass(cls, Selector))
+            self.assertTrue(isinstance(sel, Selector))
+            self.assertTrue(isinstance(usel, Selector))
+
+    def test_warnings_xmlxpathselector(self):
+        cls = XmlXPathSelector
+        with warnings.catch_warnings(record=True) as w:
+            class UserClass(cls):
+                pass
+
+            # subclassing must issue a warning
+            self.assertEqual(len(w), 1, str(cls))
+            self.assertIn('scrapy.selector.Selector', str(w[0].message))
+
+            # subclass instance doesn't issue a warning
+            usel = UserClass(text=self.text)
+            self.assertEqual(len(w), 1)
+
+            # class instance must issue a warning
+            sel = cls(text=self.text)
+            self.assertEqual(len(w), 2, str((cls, [x.message for x in w])))
+            self.assertIn('scrapy.selector.Selector', str(w[1].message))
+
+            # subclass and instance checks
+            self.assertTrue(issubclass(cls, Selector))
+            self.assertTrue(issubclass(cls, XPathSelector))
+            self.assertTrue(isinstance(sel, Selector))
+            self.assertTrue(isinstance(usel, Selector))
+            self.assertTrue(isinstance(sel, XPathSelector))
+            self.assertTrue(isinstance(usel, XPathSelector))
+
+    def test_warnings_htmlxpathselector(self):
+        cls = HtmlXPathSelector
+        with warnings.catch_warnings(record=True) as w:
+            class UserClass(cls):
+                pass
+
+            # subclassing must issue a warning
+            self.assertEqual(len(w), 1, str(cls))
+            self.assertIn('scrapy.selector.Selector', str(w[0].message))
+
+            # subclass instance doesn't issue a warning
+            usel = UserClass(text=self.text)
+            self.assertEqual(len(w), 1)
+
+            # class instance must issue a warning
+            sel = cls(text=self.text)
+            self.assertEqual(len(w), 2, str((cls, [x.message for x in w])))
+            self.assertIn('scrapy.selector.Selector', str(w[1].message))
+
+            # subclass and instance checks
+            self.assertTrue(issubclass(cls, Selector))
+            self.assertTrue(issubclass(cls, XPathSelector))
+            self.assertTrue(isinstance(sel, Selector))
+            self.assertTrue(isinstance(usel, Selector))
+            self.assertTrue(isinstance(sel, XPathSelector))
+            self.assertTrue(isinstance(usel, XPathSelector))
 
     def test_xpathselector(self):
         with warnings.catch_warnings(record=True):
