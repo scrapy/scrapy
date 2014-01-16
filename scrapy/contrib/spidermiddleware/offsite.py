@@ -35,7 +35,7 @@ class OffsiteMiddleware(object):
 
     def should_follow(self, request, spider):
         regex = self.host_regex
-        # hostanme can be None for wrong urls (like javascript links)
+        # hostname can be None for wrong urls (like javascript links)
         host = urlparse_cached(request).hostname or ''
         return bool(regex.search(host))
 
