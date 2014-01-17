@@ -3,11 +3,6 @@
 Release notes
 =============
 
-0.21 (not released yet)
------------------------
-
-- ...
-
 0.22.0 (released 2014-01-16)
 ----------------------------
 
@@ -19,7 +14,7 @@ Enhancements
 - Proxy https:// urls using CONNECT method (:issue:`392`, :issue:`397`)
 - Add a middleware to crawl ajax crawleable pages as defined by google (:issue:`343`)
 - Rename scrapy.spider.BaseSpider to scrapy.spider.Spider (:issue:`510`, :issue:`519`)
-- Selectors registers EXSLT namespaces by default (:issue:`472`)
+- Selectors register EXSLT namespaces by default (:issue:`472`)
 - Unify item loaders similar to selectors renaming (:issue:`461`)
 - Make `RFPDupeFilter` class easily subclassable (:issue:`533`)
 - Improve test coverage and forthcoming Python 3 support (:issue:`525`)
@@ -31,7 +26,7 @@ Enhancements
 - Improve offsite middleware tests (:issue:`478`)
 - Add a way to skip default Referer header set by RefererMiddleware (:issue:`475`)
 - Do not send `x-gzip` in default `Accept-Encoding` header (:issue:`469`)
-- Suppport defining http error handling using settings (:issue:`466`)
+- Support defining http error handling using settings (:issue:`466`)
 - Use moderm python idioms wherever you find legacies (:issue:`497`)
 - Improve and correct documentation
   (:issue:`527`, :issue:`524`, :issue:`521`, :issue:`517`, :issue:`512`, :issue:`505`,
@@ -44,9 +39,9 @@ Fixes
 - Fix unexistent reference to `engine.slots` (:issue:`464`)
 - Do not try to call `body_as_unicode()` on a non-TextResponse instance (:issue:`462`)
 - Warn when subclassing XPathItemLoader, previously it only warned on
-  instantation. (:issue:`523`)
+  instantiation. (:issue:`523`)
 - Warn when subclassing XPathSelector, previously it only warned on
-  instantation. (:issue:`537`)
+  instantiation. (:issue:`537`)
 - Multiple fixes to memory stats (:issue:`531`, :issue:`530`, :issue:`529`)
 - Fix overriding url in `FormRequest.from_response()` (:issue:`507`)
 - Fix tests runner under pip 1.5 (:issue:`513`)
