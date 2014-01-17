@@ -11,6 +11,11 @@ Release notes
 0.22.0 (released 2014-01-16)
 ----------------------------
 
+**Backward Incompatible changes**:
+
+- Switched HTTPCacheMiddleware backend to filesystem (:issue:`541`)
+  To restore old backend set `HTTPCACHE_STORAGE` to `scrapy.contrib.httpcache.DbmCacheStorage`
+
 Enhancements
 ~~~~~~~~~~~~
 
