@@ -102,6 +102,7 @@ setup_args = {
     'cmdclass': cmdclasses,
     'data_files': data_files,
     'scripts': scripts,
+    'include_package_data': True,
     'classifiers': [
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
@@ -128,6 +129,7 @@ else:
         'lxml',
         'pyOpenSSL',
         'cssselect>=0.9',
+        'six>=1.5.2',
     ]
 
 setup(**setup_args)

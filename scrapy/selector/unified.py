@@ -46,6 +46,17 @@ class Selector(object_ref):
                  '__weakref__', '_parser', '_csstranslator', '_tostring_method']
 
     _default_type = None
+    _default_namespaces = {
+        "re": "http://exslt.org/regular-expressions",
+
+        # supported in libxslt:
+        # set:difference
+        # set:has-same-node
+        # set:intersection
+        # set:leading
+        # set:trailing
+        "set": "http://exslt.org/sets"
+    }
 
     def __init__(self, response=None, text=None, type=None, namespaces=None,
                  _root=None, _expr=None):
@@ -61,7 +72,9 @@ class Selector(object_ref):
             _root = LxmlDocument(response, self._parser)
 
         self.response = response
-        self.namespaces = namespaces
+        self.namespaces = dict(self._default_namespaces)
+        if namespaces is not None:
+            self.namespaces.update(namespaces)
         self._root = _root
         self._expr = _expr
 

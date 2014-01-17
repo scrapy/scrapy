@@ -17,10 +17,10 @@ For spiders, the scraping cycle goes through something like this:
    those requests.
 
    The first requests to perform are obtained by calling the
-   :meth:`~scrapy.spider.BaseSpider.start_requests` method which (by default)
+   :meth:`~scrapy.spider.Spider.start_requests` method which (by default)
    generates :class:`~scrapy.http.Request` for the URLs specified in the
-   :attr:`~scrapy.spider.BaseSpider.start_urls` and the
-   :attr:`~scrapy.spider.BaseSpider.parse` method as callback function for the
+   :attr:`~scrapy.spider.Spider.start_urls` and the
+   :attr:`~scrapy.spider.Spider.parse` method as callback function for the
    Requests.
 
 2. In the callback function, you parse the response (web page) and return either
@@ -58,7 +58,7 @@ Spider arguments are passed through the :command:`crawl` command using the
 
 Spiders receive arguments in their constructors::
 
-    class MySpider(BaseSpider):
+    class MySpider(Spider):
         name = 'myspider'
 
         def __init__(self, category=None, *args, **kwargs):
@@ -93,10 +93,10 @@ with a ``TestItem`` declared in a ``myproject.items`` module::
 .. module:: scrapy.spider
    :synopsis: Spiders base class, spider manager and spider middleware
 
-BaseSpider
-----------
+Spider
+------
 
-.. class:: BaseSpider()
+.. class:: Spider()
 
    This is the simplest spider, and the one from which every other spider
    must inherit from (either the ones that come bundled with Scrapy, or the ones
@@ -178,7 +178,7 @@ BaseSpider
 
        The ``parse`` method is in charge of processing the response and returning
        scraped data and/or more URLs to follow. Other Requests callbacks have
-       the same requirements as the :class:`BaseSpider` class.
+       the same requirements as the :class:`Spider` class.
 
        This method, as well as any other Request callback, must return an
        iterable of :class:`~scrapy.http.Request` and/or
@@ -194,15 +194,15 @@ BaseSpider
        spider. For more information see :ref:`topics-logging`.
 
 
-BaseSpider example
-~~~~~~~~~~~~~~~~~~
+Spider example
+~~~~~~~~~~~~~~
 
 Let's see an example::
 
     from scrapy import log # This module is useful for printing out debug information
-    from scrapy.spider import BaseSpider
+    from scrapy.spider import Spider
 
-    class MySpider(BaseSpider):
+    class MySpider(Spider):
         name = 'example.com'
         allowed_domains = ['example.com']
         start_urls = [
@@ -217,11 +217,11 @@ Let's see an example::
 Another example returning multiples Requests and Items from a single callback::
 
     from scrapy.selector import Selector
-    from scrapy.spider import BaseSpider
+    from scrapy.spider import Spider
     from scrapy.http import Request
     from myproject.items import MyItem
 
-    class MySpider(BaseSpider):
+    class MySpider(Spider):
         name = 'example.com'
         allowed_domains = ['example.com']
         start_urls = [
@@ -252,8 +252,8 @@ CrawlSpider
    it's generic enough for several cases, so you can start from it and override it
    as needed for more custom functionality, or just implement your own spider.
 
-   Apart from the attributes inherited from BaseSpider (that you must
-   specify), this class supports a new attribute: 
+   Apart from the attributes inherited from Spider (that you must
+   specify), this class supports a new attribute:
 
    .. attribute:: rules
 

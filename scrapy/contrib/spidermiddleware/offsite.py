@@ -35,7 +35,7 @@ class OffsiteMiddleware(object):
 
     def should_follow(self, request, spider):
         regex = self.host_regex
-        # hostanme can be None for wrong urls (like javascript links)
+        # hostname can be None for wrong urls (like javascript links)
         host = urlparse_cached(request).hostname or ''
         return bool(regex.search(host))
 
@@ -44,8 +44,7 @@ class OffsiteMiddleware(object):
         allowed_domains = getattr(spider, 'allowed_domains', None)
         if not allowed_domains:
             return re.compile('') # allow all by default
-        domains = [d.replace('.', r'\.') for d in allowed_domains]
-        regex = r'^(.*\.)?(%s)$' % '|'.join(domains)
+        regex = r'^(.*\.)?(%s)$' % '|'.join(re.escape(d) for d in allowed_domains)
         return re.compile(regex)
 
     def spider_opened(self, spider):

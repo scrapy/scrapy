@@ -3,7 +3,7 @@ from os.path import join, abspath, dirname
 from cStringIO import StringIO
 from gzip import GzipFile
 
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.http import Response, Request, HtmlResponse
 from scrapy.contrib.downloadermiddleware.httpcompression import HttpCompressionMiddleware
 from scrapy.tests import tests_datadir
@@ -22,7 +22,7 @@ FORMAT = {
 class HttpCompressionTest(TestCase):
 
     def setUp(self):
-        self.spider = BaseSpider('foo')
+        self.spider = Spider('foo')
         self.mw = HttpCompressionMiddleware()
 
     def _getresponse(self, coding):
@@ -50,7 +50,7 @@ class HttpCompressionTest(TestCase):
         request = Request('http://scrapytest.org')
         assert 'Accept-Encoding' not in request.headers
         self.mw.process_request(request, self.spider)
-        self.assertEqual(request.headers.get('Accept-Encoding'), 'x-gzip,gzip,deflate')
+        self.assertEqual(request.headers.get('Accept-Encoding'), 'gzip,deflate')
 
     def test_process_response_gzip(self):
         response = self._getresponse('gzip')

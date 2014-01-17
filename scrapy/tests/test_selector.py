@@ -1,4 +1,5 @@
 import re
+import inspect
 import warnings
 import weakref
 from twisted.trial import unittest
@@ -301,17 +302,83 @@ class DeprecatedXpathSelectorTest(unittest.TestCase):
 
     text = '<div><img src="a.jpg"><p>Hello</div>'
 
-    def test_warnings(self):
-        for cls in XPathSelector, HtmlXPathSelector, XPathSelector:
-            with warnings.catch_warnings(record=True) as w:
-                warnings.simplefilter('always')
-                hs = cls(text=self.text)
-                assert len(w) == 1, w
-                assert issubclass(w[0].category, ScrapyDeprecationWarning)
-                assert 'deprecated' in str(w[-1].message)
-                hs.select("//div").extract()
-                assert issubclass(w[1].category, ScrapyDeprecationWarning)
-                assert 'deprecated' in str(w[-1].message)
+    def test_warnings_xpathselector(self):
+        cls = XPathSelector
+        with warnings.catch_warnings(record=True) as w:
+            class UserClass(cls):
+                pass
+
+            # subclassing must issue a warning
+            self.assertEqual(len(w), 1, str(cls))
+            self.assertIn('scrapy.selector.Selector', str(w[0].message))
+
+            # subclass instance doesn't issue a warning
+            usel = UserClass(text=self.text)
+            self.assertEqual(len(w), 1)
+
+            # class instance must issue a warning
+            sel = cls(text=self.text)
+            self.assertEqual(len(w), 2, str((cls, [x.message for x in w])))
+            self.assertIn('scrapy.selector.Selector', str(w[1].message))
+
+            # subclass and instance checks
+            self.assertTrue(issubclass(cls, Selector))
+            self.assertTrue(isinstance(sel, Selector))
+            self.assertTrue(isinstance(usel, Selector))
+
+    def test_warnings_xmlxpathselector(self):
+        cls = XmlXPathSelector
+        with warnings.catch_warnings(record=True) as w:
+            class UserClass(cls):
+                pass
+
+            # subclassing must issue a warning
+            self.assertEqual(len(w), 1, str(cls))
+            self.assertIn('scrapy.selector.Selector', str(w[0].message))
+
+            # subclass instance doesn't issue a warning
+            usel = UserClass(text=self.text)
+            self.assertEqual(len(w), 1)
+
+            # class instance must issue a warning
+            sel = cls(text=self.text)
+            self.assertEqual(len(w), 2, str((cls, [x.message for x in w])))
+            self.assertIn('scrapy.selector.Selector', str(w[1].message))
+
+            # subclass and instance checks
+            self.assertTrue(issubclass(cls, Selector))
+            self.assertTrue(issubclass(cls, XPathSelector))
+            self.assertTrue(isinstance(sel, Selector))
+            self.assertTrue(isinstance(usel, Selector))
+            self.assertTrue(isinstance(sel, XPathSelector))
+            self.assertTrue(isinstance(usel, XPathSelector))
+
+    def test_warnings_htmlxpathselector(self):
+        cls = HtmlXPathSelector
+        with warnings.catch_warnings(record=True) as w:
+            class UserClass(cls):
+                pass
+
+            # subclassing must issue a warning
+            self.assertEqual(len(w), 1, str(cls))
+            self.assertIn('scrapy.selector.Selector', str(w[0].message))
+
+            # subclass instance doesn't issue a warning
+            usel = UserClass(text=self.text)
+            self.assertEqual(len(w), 1)
+
+            # class instance must issue a warning
+            sel = cls(text=self.text)
+            self.assertEqual(len(w), 2, str((cls, [x.message for x in w])))
+            self.assertIn('scrapy.selector.Selector', str(w[1].message))
+
+            # subclass and instance checks
+            self.assertTrue(issubclass(cls, Selector))
+            self.assertTrue(issubclass(cls, XPathSelector))
+            self.assertTrue(isinstance(sel, Selector))
+            self.assertTrue(isinstance(usel, Selector))
+            self.assertTrue(isinstance(sel, XPathSelector))
+            self.assertTrue(isinstance(usel, XPathSelector))
 
     def test_xpathselector(self):
         with warnings.catch_warnings(record=True):
@@ -333,3 +400,122 @@ class DeprecatedXpathSelectorTest(unittest.TestCase):
             self.assertEqual(xs.select("//div").extract(),
                              [u'<div><img src="a.jpg"><p>Hello</p></img></div>'])
             self.assertRaises(RuntimeError, xs.css, 'div')
+
+
+class ExsltTestCase(unittest.TestCase):
+
+    sscls = Selector
+
+    def test_regexp(self):
+        """EXSLT regular expression tests"""
+        body = """
+        <p><input name='a' value='1'/><input name='b' value='2'/></p>
+        <div class="links">
+        <a href="/first.html">first link</a>
+        <a href="/second.html">second link</a>
+        <a href="http://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.xml">EXSLT match example</a>
+        </div>
+        """
+        response = TextResponse(url="http://example.com", body=body)
+        sel = self.sscls(response)
+
+        # re:test()
+        self.assertEqual(
+            sel.xpath(
+                '//input[re:test(@name, "[A-Z]+", "i")]').extract(),
+            [x.extract() for x in sel.xpath('//input[re:test(@name, "[A-Z]+", "i")]')])
+        self.assertEqual(
+            [x.extract()
+             for x in sel.xpath(
+                 '//a[re:test(@href, "\.html$")]/text()')],
+            [u'first link', u'second link'])
+        self.assertEqual(
+            [x.extract()
+             for x in sel.xpath(
+                 '//a[re:test(@href, "first")]/text()')],
+            [u'first link'])
+        self.assertEqual(
+            [x.extract()
+             for x in sel.xpath(
+                 '//a[re:test(@href, "second")]/text()')],
+            [u'second link'])
+
+
+        # re:match() is rather special: it returns a node-set of <match> nodes
+        #[u'<match>http://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.xml</match>',
+        #u'<match>http</match>',
+        #u'<match>www.bayes.co.uk</match>',
+        #u'<match></match>',
+        #u'<match>/xml/index.xml?/xml/utils/rechecker.xml</match>']
+        self.assertEqual(
+            sel.xpath('re:match(//a[re:test(@href, "\.xml$")]/@href,'
+                      '"(\w+):\/\/([^/:]+)(:\d*)?([^# ]*)")/text()').extract(),
+            [u'http://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.xml',
+             u'http',
+             u'www.bayes.co.uk',
+             u'',
+             u'/xml/index.xml?/xml/utils/rechecker.xml'])
+
+
+
+        # re:replace()
+        self.assertEqual(
+            sel.xpath('re:replace(//a[re:test(@href, "\.xml$")]/@href,'
+                      '"(\w+)://(.+)(\.xml)", "","https://\\2.html")').extract(),
+            [u'https://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.html'])
+
+    def test_set(self):
+        """EXSLT set manipulation tests"""
+        # microdata example from http://schema.org/Event
+        body="""
+        <div itemscope itemtype="http://schema.org/Event">
+          <a itemprop="url" href="nba-miami-philidelphia-game3.html">
+          NBA Eastern Conference First Round Playoff Tickets:
+          <span itemprop="name"> Miami Heat at Philadelphia 76ers - Game 3 (Home Game 1) </span>
+          </a>
+
+          <meta itemprop="startDate" content="2016-04-21T20:00">
+            Thu, 04/21/16
+            8:00 p.m.
+
+          <div itemprop="location" itemscope itemtype="http://schema.org/Place">
+            <a itemprop="url" href="wells-fargo-center.html">
+            Wells Fargo Center
+            </a>
+            <div itemprop="address" itemscope itemtype="http://schema.org/PostalAddress">
+              <span itemprop="addressLocality">Philadelphia</span>,
+              <span itemprop="addressRegion">PA</span>
+            </div>
+          </div>
+
+          <div itemprop="offers" itemscope itemtype="http://schema.org/AggregateOffer">
+            Priced from: <span itemprop="lowPrice">$35</span>
+            <span itemprop="offerCount">1938</span> tickets left
+          </div>
+        </div>
+        """
+        response = TextResponse(url="http://example.com", body=body)
+        sel = self.sscls(response)
+
+        self.assertEqual(
+            sel.xpath('''//div[@itemtype="http://schema.org/Event"]
+                            //@itemprop''').extract(),
+            [u'url',
+             u'name',
+             u'startDate',
+             u'location',
+             u'url',
+             u'address',
+             u'addressLocality',
+             u'addressRegion',
+             u'offers',
+             u'lowPrice',
+             u'offerCount']
+        )
+
+        self.assertEqual(sel.xpath('''
+                set:difference(//div[@itemtype="http://schema.org/Event"]
+                                    //@itemprop,
+                               //div[@itemtype="http://schema.org/Event"]
+                                    //*[@itemscope]/*/@itemprop)''').extract(),
+                         [u'url', u'name', u'startDate', u'location', u'offers'])

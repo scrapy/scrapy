@@ -26,7 +26,7 @@ This page shows different usage scenarios for the two new proposed API for popul
  * {{{__setitem__(field_name, selector_or_value)}}}
    * set field value
  * {{{__getitem__(field_name)}}}
-   * return the "computed" value of a field (the one that would be set to the item). returns None if not set. 
+   * return the "computed" value of a field (the one that would be set to the item). returns None if not set.
  * {{{get_item()}}}
    * return the item populated with the data provided so far
 
@@ -39,7 +39,7 @@ This page shows different usage scenarios for the two new proposed API for popul
  * {{{replace_value(field_name, selector_or_value, **adaptor_args)}}}
    * replace existing field value
  * {{{get_value(field_name)}}}
-   * return the "computed" value of a field (the one that would be set to the item). returns None if not set. 
+   * return the "computed" value of a field (the one that would be set to the item). returns None if not set.
  * {{{get_item()}}}
    * return the item populated with the data provided so far
 
@@ -192,7 +192,7 @@ il.add_value('headline', x.x('//h1[@class="headline"]'))
 
 {{{
 #!python
-# Only approach is passing arguments when instanciating the form
+# Only approach is passing arguments when instantiating the form
 ia = NewsForm(response, default_unit='cm')
 ia['width'] = x.x('//p[@class="width"]')
 }}}

@@ -1,6 +1,6 @@
 import unittest
 
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.utils.url import url_is_from_any_domain, url_is_from_spider, canonicalize_url
 
 __doctests__ = ['scrapy.utils.url']
@@ -26,14 +26,14 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertFalse(url_is_from_any_domain(url+'.testdomain.com', ['testdomain.com']))
 
     def test_url_is_from_spider(self):
-        spider = BaseSpider(name='example.com')
+        spider = Spider(name='example.com')
         self.assertTrue(url_is_from_spider('http://www.example.com/some/page.html', spider))
         self.assertTrue(url_is_from_spider('http://sub.example.com/some/page.html', spider))
         self.assertFalse(url_is_from_spider('http://www.example.org/some/page.html', spider))
         self.assertFalse(url_is_from_spider('http://www.example.net/some/page.html', spider))
 
     def test_url_is_from_spider_class_attributes(self):
-        class MySpider(BaseSpider):
+        class MySpider(Spider):
             name = 'example.com'
         self.assertTrue(url_is_from_spider('http://www.example.com/some/page.html', MySpider))
         self.assertTrue(url_is_from_spider('http://sub.example.com/some/page.html', MySpider))
@@ -41,7 +41,7 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertFalse(url_is_from_spider('http://www.example.net/some/page.html', MySpider))
 
     def test_url_is_from_spider_with_allowed_domains(self):
-        spider = BaseSpider(name='example.com', allowed_domains=['example.org', 'example.net'])
+        spider = Spider(name='example.com', allowed_domains=['example.org', 'example.net'])
         self.assertTrue(url_is_from_spider('http://www.example.com/some/page.html', spider))
         self.assertTrue(url_is_from_spider('http://sub.example.com/some/page.html', spider))
         self.assertTrue(url_is_from_spider('http://example.com/some/page.html', spider))
@@ -49,14 +49,14 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertTrue(url_is_from_spider('http://www.example.net/some/page.html', spider))
         self.assertFalse(url_is_from_spider('http://www.example.us/some/page.html', spider))
 
-        spider = BaseSpider(name='example.com', allowed_domains=set(('example.com', 'example.net')))
+        spider = Spider(name='example.com', allowed_domains=set(('example.com', 'example.net')))
         self.assertTrue(url_is_from_spider('http://www.example.com/some/page.html', spider))
 
-        spider = BaseSpider(name='example.com', allowed_domains=('example.com', 'example.net'))
+        spider = Spider(name='example.com', allowed_domains=('example.com', 'example.net'))
         self.assertTrue(url_is_from_spider('http://www.example.com/some/page.html', spider))
 
     def test_url_is_from_spider_with_allowed_domains_class_attributes(self):
-        class MySpider(BaseSpider):
+        class MySpider(Spider):
             name = 'example.com'
             allowed_domains = ('example.org', 'example.net')
         self.assertTrue(url_is_from_spider('http://www.example.com/some/page.html', MySpider))

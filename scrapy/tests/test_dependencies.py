@@ -1,9 +1,10 @@
+from importlib import import_module
 from twisted.trial import unittest
 
 class ScrapyUtilsTest(unittest.TestCase):
     def test_required_openssl_version(self):
         try:
-            module = __import__('OpenSSL', {}, {}, [''])
+            module = import_module('OpenSSL')
         except ImportError as ex:
             raise unittest.SkipTest("OpenSSL is not available")
 

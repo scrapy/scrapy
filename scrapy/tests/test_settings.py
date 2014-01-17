@@ -2,7 +2,7 @@ import unittest
 
 from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 
 class SettingsTest(unittest.TestCase):
 

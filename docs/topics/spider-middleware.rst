@@ -81,7 +81,7 @@ single Python class that defines one or more of the following methods:
         :type response: :class:`~scrapy.http.Response` object
 
         :param spider: the spider for which this response is intended
-        :type spider: :class:`~scrapy.spider.BaseSpider` object
+        :type spider: :class:`~scrapy.spider.Spider` object
 
 
     .. method:: process_spider_output(response, result, spider)
@@ -101,7 +101,7 @@ single Python class that defines one or more of the following methods:
           :class:`~scrapy.item.Item` objects
 
         :param spider: the spider whose result is being processed
-        :type spider: :class:`~scrapy.item.BaseSpider` object
+        :type spider: :class:`~scrapy.item.Spider` object
 
 
     .. method:: process_spider_exception(response, exception, spider)
@@ -129,7 +129,7 @@ single Python class that defines one or more of the following methods:
         :type exception: `Exception`_ object
 
         :param spider: the spider which raised the exception
-        :type spider: :class:`scrapy.spider.BaseSpider` object
+        :type spider: :class:`scrapy.spider.Spider` object
 
     .. method:: process_start_requests(start_requests, spider)
 
@@ -156,7 +156,7 @@ single Python class that defines one or more of the following methods:
         :type start_requests: an iterable of :class:`~scrapy.http.Request`
 
         :param spider: the spider to whom the start requests belong
-        :type spider: :class:`~scrapy.item.BaseSpider` object
+        :type spider: :class:`~scrapy.item.Spider` object
 
 
 .. _Exception: http://docs.python.org/library/exceptions.html#exceptions.Exception
@@ -214,7 +214,8 @@ status codes are in the 200-300 range.
 
 If you still want to process response codes outside that range, you can
 specify which response codes the spider is able to handle using the
-``handle_httpstatus_list`` spider attribute.
+``handle_httpstatus_list`` spider attribute or
+:setting:`HTTPERROR_ALLOWED_CODES` setting.
 
 For example, if you want your spider to handle 404 responses you can do
 this::
@@ -235,6 +236,27 @@ For more information see: `HTTP Status Code Definitions`_.
 
 .. _HTTP Status Code Definitions: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 
+HttpErrorMiddleware settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. setting:: HTTPERROR_ALLOWED_CODES
+
+HTTPERROR_ALLOWED_CODES
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``[]``
+
+Pass all responses with non-200 status codes contained in this list.
+
+.. setting:: HTTPERROR_ALLOW_ALL
+
+HTTPERROR_ALLOW_ALL
+^^^^^^^^^^^^^^^^^^^
+
+Default: ``False``
+
+Pass all responses, regardless of its status code.
+
 OffsiteMiddleware
 -----------------
 
@@ -246,7 +268,7 @@ OffsiteMiddleware
    Filters out Requests for URLs outside the domains covered by the spider.
 
    This middleware filters out every request whose host names aren't in the
-   spider's :attr:`~scrapy.spider.BaseSpider.allowed_domains` attribute.
+   spider's :attr:`~scrapy.spider.Spider.allowed_domains` attribute.
 
    When your spider returns a request for a domain not belonging to those
    covered by the spider, this middleware will log a debug message similar to
@@ -261,7 +283,7 @@ OffsiteMiddleware
    will be printed (but only for the first request filtered).
 
    If the spider doesn't define an
-   :attr:`~scrapy.spider.BaseSpider.allowed_domains` attribute, or the
+   :attr:`~scrapy.spider.Spider.allowed_domains` attribute, or the
    attribute is empty, the offsite middleware will allow all requests.
 
    If the request has the :attr:`~scrapy.http.Request.dont_filter` attribute

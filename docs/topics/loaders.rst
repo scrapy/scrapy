@@ -39,15 +39,15 @@ Here is a typical Item Loader usage in a :ref:`Spider <topics-spiders>`, using
 the :ref:`Product item <topics-items-declaring>` declared in the :ref:`Items
 chapter <topics-items>`::
 
-    from scrapy.contrib.loader import XPathItemLoader
+    from scrapy.contrib.loader import ItemLoader
     from myproject.items import Product
 
     def parse(self, response):
-        l = XPathItemLoader(item=Product(), response=response)
+        l = ItemLoader(item=Product(), response=response)
         l.add_xpath('name', '//div[@class="product_name"]')
         l.add_xpath('name', '//div[@class="product_title"]')
         l.add_xpath('price', '//p[@id="price"]')
-        l.add_xpath('stock', '//p[@id="stock"]')
+        l.add_css('stock', 'p#stock]')
         l.add_value('last_updated', 'today') # you can also use literal values
         return l.load_item()
 
@@ -58,17 +58,18 @@ extracted from two different XPath locations in the page:
 2. ``//div[@class="product_title"]``
 
 In other words, data is being collected by extracting it from two XPath
-locations, using the :meth:`~XPathItemLoader.add_xpath` method. This is the
+locations, using the :meth:`~ItemLoader.add_xpath` method. This is the
 data that will be assigned to the ``name`` field later.
 
-Afterwords, similar calls are used for ``price`` and ``stock`` fields, and
-finally the ``last_update`` field is populated directly with a literal value
+Afterwords, similar calls are used for ``price`` and ``stock`` fields
+(the later using a CSS selector with the :meth:`~ItemLoader.add_css` method),
+and finally the ``last_update`` field is populated directly with a literal value
 (``today``) using a different method: :meth:`~ItemLoader.add_value`.
 
 Finally, when all data is collected, the :meth:`ItemLoader.load_item` method is
 called which actually populates and returns the item populated with the data
-previously extracted and collected with the :meth:`~XPathItemLoader.add_xpath`
-and :meth:`~ItemLoader.add_value` calls.
+previously extracted and collected with the :meth:`~ItemLoader.add_xpath`,
+:meth:`~ItemLoader.add_css`, and :meth:`~ItemLoader.add_value` calls.
 
 .. _topics-loaders-processors:
 
@@ -77,7 +78,7 @@ Input and Output processors
 
 An Item Loader contains one input processor and one output processor for each
 (item) field. The input processor processes the extracted data as soon as it's
-received (through the :meth:`~XPathItemLoader.add_xpath` or
+received (through the :meth:`~ItemLoader.add_xpath`, :meth:`~ItemLoader.add_css` or
 :meth:`~ItemLoader.add_value` methods) and the result of the input processor is
 collected and kept inside the ItemLoader. After collecting all data, the
 :meth:`ItemLoader.load_item` method is called to populate and get the populated
@@ -89,11 +90,12 @@ assigned to the item.
 Let's see an example to illustrate how the input and output processors are
 called for a particular field (the same applies for any other field)::
 
-    l = XPathItemLoader(Product(), some_xpath_selector)
+    l = ItemLoader(Product(), some_selector)
     l.add_xpath('name', xpath1) # (1)
     l.add_xpath('name', xpath2) # (2)
-    l.add_value('name', 'test') # (3)
-    return l.load_item() # (4)
+    l.add_css('name', css) # (3)
+    l.add_value('name', 'test') # (4)
+    return l.load_item() # (5)
 
 So what happens is:
 
@@ -105,16 +107,23 @@ So what happens is:
    processor* used in (1). The result of the input processor is appended to the
    data collected in (1) (if any).
 
-3. This case is similar to the previous ones, except that the value to be
-   collected is assigned directly, instead of being extracted from a XPath.
+3. This case is similar to the previous ones, except that the data is extracted
+   from the ``css`` CSS selector, and passed through the same *input
+   processor* used in (1) and (2). The result of the input processor is appended to the
+   data collected in (1) and (2) (if any).
+
+4. This case is also similar to the previous ones, except that the value to be
+   collected is assigned directly, instead of being extracted from a XPath
+   expression or a CSS selector.
    However, the value is still passed through the input processors. In this
    case, since the value is not iterable it is converted to an iterable of a
    single element before passing it to the input processor, because input
    processor always receive iterables.
 
-4. The data collected in (1) and (2) is passed through the *output processor* of
-   the ``name`` field. The result of the output processor is the value assigned to
-   the ``name`` field in the item.
+5. The data collected in steps (1), (2), (3) and (4) is passed through
+   the *output processor* of the ``name`` field.
+   The result of the output processor is the value assigned to the ``name``
+   field in the item.
 
 It's worth noticing that processors are just callable objects, which are called
 with the data to be parsed, and return a parsed value. So you can use any
@@ -246,14 +255,35 @@ There are several ways to modify Item Loader context values:
 ItemLoader objects
 ==================
 
-.. class:: ItemLoader([item], \**kwargs)
+.. class:: ItemLoader([item, selector, response], \**kwargs)
 
     Return a new Item Loader for populating the given Item. If no item is
     given, one is instantiated automatically using the class in
     :attr:`default_item_class`.
 
-    The item and the remaining keyword arguments are assigned to the Loader
-    context (accessible through the :attr:`context` attribute).
+    When instantiated with a `selector` or a `response` parameters
+    the :class:`ItemLoader` class provides convenient mechanisms for extracting
+    data from web pages using :ref:`selectors <topics-selectors>`.
+
+    :param item: The item instance to populate using subsequent calls to
+        :meth:`~ItemLoader.add_xpath`, :meth:`~ItemLoader.add_css`,
+        or :meth:`~ItemLoader.add_value`.
+    :type item: :class:`~scrapy.item.Item` object
+
+    :param selector: The selector to extract data from, when using the
+        :meth:`add_xpath` (resp. :meth:`add_css`) or :meth:`replace_xpath`
+        (resp. :meth:`replace_css`) method.
+    :type selector: :class:`~scrapy.selector.Selector` object
+
+    :param response: The response used to construct the selector using the
+        :attr:`default_selector_class`, unless the selector argument is given,
+        in which case this argument is ignored.
+    :type response: :class:`~scrapy.http.Response` object
+
+    The item, selector, response and the remaining keyword arguments are
+    assigned to the Loader context (accessible through the :attr:`context` attribute).
+
+    :class:`ItemLoader` instances have the following methods:
 
     .. method:: get_value(value, \*processors, \**kwargs)
 
@@ -299,6 +329,91 @@ ItemLoader objects
 
         Similar to :meth:`add_value` but replaces the collected data with the
         new value instead of adding it.
+    .. method:: get_xpath(xpath, \*processors, \**kwargs)
+
+        Similar to :meth:`ItemLoader.get_value` but receives an XPath instead of a
+        value, which is used to extract a list of unicode strings from the
+        selector associated with this :class:`ItemLoader`.
+
+        :param xpath: the XPath to extract data from
+        :type xpath: str
+
+        :param re: a regular expression to use for extracting data from the
+            selected XPath region
+        :type re: str or compiled regex
+
+        Examples::
+
+            # HTML snippet: <p class="product-name">Color TV</p>
+            loader.get_xpath('//p[@class="product-name"]')
+            # HTML snippet: <p id="price">the price is $1200</p>
+            loader.get_xpath('//p[@id="price"]', TakeFirst(), re='the price is (.*)')
+
+    .. method:: add_xpath(field_name, xpath, \*processors, \**kwargs)
+
+        Similar to :meth:`ItemLoader.add_value` but receives an XPath instead of a
+        value, which is used to extract a list of unicode strings from the
+        selector associated with this :class:`ItemLoader`.
+
+        See :meth:`get_xpath` for ``kwargs``.
+
+        :param xpath: the XPath to extract data from
+        :type xpath: str
+
+        Examples::
+
+            # HTML snippet: <p class="product-name">Color TV</p>
+            loader.add_xpath('name', '//p[@class="product-name"]')
+            # HTML snippet: <p id="price">the price is $1200</p>
+            loader.add_xpath('price', '//p[@id="price"]', re='the price is (.*)')
+
+    .. method:: replace_xpath(field_name, xpath, \*processors, \**kwargs)
+
+        Similar to :meth:`add_xpath` but replaces collected data instead of
+        adding it.
+
+    .. method:: get_css(css, \*processors, \**kwargs)
+
+        Similar to :meth:`ItemLoader.get_value` but receives a CSS selector
+        instead of a value, which is used to extract a list of unicode strings
+        from the selector associated with this :class:`ItemLoader`.
+
+        :param css: the CSS selector to extract data from
+        :type css: str
+
+        :param re: a regular expression to use for extracting data from the
+            selected CSS region
+        :type re: str or compiled regex
+
+        Examples::
+
+            # HTML snippet: <p class="product-name">Color TV</p>
+            loader.get_css('p.product-name')
+            # HTML snippet: <p id="price">the price is $1200</p>
+            loader.get_css('p#price', TakeFirst(), re='the price is (.*)')
+
+    .. method:: add_css(field_name, css, \*processors, \**kwargs)
+
+        Similar to :meth:`ItemLoader.add_value` but receives a CSS selector
+        instead of a value, which is used to extract a list of unicode strings
+        from the selector associated with this :class:`ItemLoader`.
+
+        See :meth:`get_css` for ``kwargs``.
+
+        :param css: the CSS selector to extract data from
+        :type css: str
+
+        Examples::
+
+            # HTML snippet: <p class="product-name">Color TV</p>
+            loader.add_css('name', 'p.product-name')
+            # HTML snippet: <p id="price">the price is $1200</p>
+            loader.add_css('price', 'p#price', re='the price is (.*)')
+
+    .. method:: replace_css(field_name, css, \*processors, \**kwargs)
+
+        Similar to :meth:`add_css` but replaces collected data instead of
+        adding it.
 
     .. method:: load_item()
 
@@ -324,6 +439,8 @@ ItemLoader objects
 
         Return the output processor for the given field.
 
+    :class:`ItemLoader` instances have the following attributes:
+
     .. attribute:: item
 
         The :class:`~scrapy.item.Item` object being parsed by this Item Loader.
@@ -348,71 +465,10 @@ ItemLoader objects
         The default output processor to use for those fields which don't specify
         one.
 
-.. class:: XPathItemLoader([item, selector, response], \**kwargs)
-
-    The :class:`XPathItemLoader` class extends the :class:`ItemLoader` class
-    providing more convenient mechanisms for extracting data from web pages
-    using :ref:`selectors <topics-selectors>`.
-
-    :class:`XPathItemLoader` objects accept two more additional parameters in
-    their constructors:
-
-    :param selector: The selector to extract data from, when using the
-        :meth:`add_xpath` or :meth:`replace_xpath` method.
-    :type selector: :class:`~scrapy.selector.Selector` object
-
-    :param response: The response used to construct the selector using the
-        :attr:`default_selector_class`, unless the selector argument is given,
-        in which case this argument is ignored.
-    :type response: :class:`~scrapy.http.Response` object
-
-    .. method:: get_xpath(xpath, \*processors, \**kwargs)
-
-        Similar to :meth:`ItemLoader.get_value` but receives an XPath instead of a
-        value, which is used to extract a list of unicode strings from the
-        selector associated with this :class:`XPathItemLoader`.
-
-        :param xpath: the XPath to extract data from
-        :type xpath: str
-
-        :param re: a regular expression to use for extracting data from the
-            selected XPath region
-        :type re: str or compiled regex
-
-        Examples::
-
-            # HTML snippet: <p class="product-name">Color TV</p>
-            loader.get_xpath('//p[@class="product-name"]')
-            # HTML snippet: <p id="price">the price is $1200</p>
-            loader.get_xpath('//p[@id="price"]', TakeFirst(), re='the price is (.*)')
-
-    .. method:: add_xpath(field_name, xpath, \*processors, \**kwargs)
-
-        Similar to :meth:`ItemLoader.add_value` but receives an XPath instead of a
-        value, which is used to extract a list of unicode strings from the
-        selector associated with this :class:`XPathItemLoader`.
-
-        See :meth:`get_xpath` for ``kwargs``.
-
-        :param xpath: the XPath to extract data from
-        :type xpath: str
-
-        Examples::
-
-            # HTML snippet: <p class="product-name">Color TV</p>
-            loader.add_xpath('name', '//p[@class="product-name"]')
-            # HTML snippet: <p id="price">the price is $1200</p>
-            loader.add_xpath('price', '//p[@id="price"]', re='the price is (.*)')
-
-    .. method:: replace_xpath(field_name, xpath, \*processors, \**kwargs)
-
-        Similar to :meth:`add_xpath` but replaces collected data instead of
-        adding it.
-
     .. attribute:: default_selector_class
 
         The class used to construct the :attr:`selector` of this
-        :class:`XPathItemLoader`, if only a response is given in the constructor.
+        :class:`ItemLoader`, if only a response is given in the constructor.
         If a selector is given in the constructor this attribute is ignored.
         This attribute is sometimes overridden in subclasses.
 

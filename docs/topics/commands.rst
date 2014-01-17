@@ -84,7 +84,7 @@ Next, you go inside the new project directory::
 
     cd myproject
 
-And you're ready to use use the ``scrapy`` command to manage and control your
+And you're ready to use the ``scrapy`` command to manage and control your
 project from there.
 
 Controlling projects
@@ -190,9 +190,9 @@ Usage example::
       xmlfeed
 
     $ scrapy genspider -d basic
-    from scrapy.spider import BaseSpider
+    from scrapy.spider import Spider
 
-    class $classname(BaseSpider):
+    class $classname(Spider):
         name = "$name"
         allowed_domains = ["$domain"]
         start_urls = (

@@ -17,7 +17,7 @@ class HttpCompressionMiddleware(object):
         return cls()
     
     def process_request(self, request, spider):
-        request.headers.setdefault('Accept-Encoding', 'x-gzip,gzip,deflate')
+        request.headers.setdefault('Accept-Encoding', 'gzip,deflate')
 
     def process_response(self, request, response, spider):
         if isinstance(response, Response):

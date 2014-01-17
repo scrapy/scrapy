@@ -15,7 +15,10 @@ Scrapy developers, if you add a setting here remember to:
 
 import os
 import sys
+from importlib import import_module
 from os.path import join, abspath, dirname
+
+AJAXCRAWL_ENABLED = False
 
 BOT_NAME = 'scrapybot'
 
@@ -78,6 +81,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
     'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': 400,
     'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware': 500,
     'scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware': 550,
+    'scrapy.contrib.downloadermiddleware.ajaxcrawl.AjaxCrawlMiddleware': 560,
     'scrapy.contrib.downloadermiddleware.redirect.MetaRefreshMiddleware': 580,
     'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 590,
     'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware': 600,
@@ -229,7 +233,7 @@ TEMPLATES_DIR = abspath(join(dirname(__file__), '..', 'templates'))
 
 URLLENGTH_LIMIT = 2083
 
-USER_AGENT = 'Scrapy/%s (+http://scrapy.org)' % __import__('scrapy').__version__
+USER_AGENT = 'Scrapy/%s (+http://scrapy.org)' % import_module('scrapy').__version__
 
 TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_PORT = [6023, 6073]

@@ -5,9 +5,9 @@ from twisted.trial.unittest import TestCase, SkipTest
 from scrapy.contrib.downloadermiddleware.httpproxy import HttpProxyMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, Request
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 
-spider = BaseSpider('foo')
+spider = Spider('foo')
 
 class TestDefaultHeadersMiddleware(TestCase):
 

@@ -37,7 +37,7 @@ single Python class that must implement the following method:
    :type item: :class:`~scrapy.item.Item` object
 
    :param spider: the spider which scraped the item
-   :type spider: :class:`~scrapy.spider.BaseSpider` object
+   :type spider: :class:`~scrapy.spider.Spider` object
 
 Additionally, they may also implement the following methods:
 
@@ -46,14 +46,14 @@ Additionally, they may also implement the following methods:
    This method is called when the spider is opened.
 
    :param spider: the spider which was opened
-   :type spider: :class:`~scrapy.spider.BaseSpider` object
+   :type spider: :class:`~scrapy.spider.Spider` object
 
 .. method:: close_spider(spider)
 
    This method is called when the spider is closed.
 
    :param spider: the spider which was closed
-   :type spider: :class:`~scrapy.spider.BaseSpider` object
+   :type spider: :class:`~scrapy.spider.Spider` object
 
 
 Item pipeline example
@@ -112,7 +112,6 @@ already processed. Let say that our items have an unique id, but our spider
 returns multiples items with the same id::
 
 
-    from scrapy import signals
     from scrapy.exceptions import DropItem
 
     class DuplicatesPipeline(object):
@@ -138,3 +137,8 @@ To activate an Item Pipeline component you must add its class to the
        'myproject.pipeline.PricePipeline': 300,
        'myproject.pipeline.JsonWriterPipeline': 800,
    }
+
+The integer values you assign to classes in this setting determine the
+order they run in- items go through pipelines from order number low to
+high. It's customary to define these numbers in the 0-1000 range.
+

@@ -14,7 +14,7 @@ interface.
 
 The only public method that every LinkExtractor has is ``extract_links``,
 which receives a :class:`~scrapy.http.Response` object and returns a list
-of links. Link Extractors are meant to be instantiated once and their
+of :class:`scrapy.link.Link` objects. Link Extractors are meant to be instantiated once and their
 ``extract_links`` method called several times with different responses, to
 extract links to follow. 
 

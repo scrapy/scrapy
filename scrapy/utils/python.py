@@ -10,7 +10,7 @@ import re
 import inspect
 import weakref
 import errno
-from functools import wraps
+from functools import partial, wraps
 from sgmllib import SGMLParser
 
 
@@ -53,13 +53,13 @@ def flatten(x):
 
 def unique(list_, key=lambda x: x):
     """efficient function to uniquify a list preserving item order"""
-    seen = {}
+    seen = set()
     result = []
     for item in list_:
         seenkey = key(item)
-        if seenkey in seen: 
+        if seenkey in seen:
             continue
-        seen[seenkey] = 1
+        seen.add(seenkey)
         result.append(item)
     return result
 
@@ -70,7 +70,7 @@ def str_to_unicode(text, encoding=None, errors='strict'):
     object without the risk of double-decoding problems (which can happen if
     you don't use the default 'ascii' encoding)
     """
-    
+
     if encoding is None:
         encoding = 'utf-8'
     if isinstance(text, str):
@@ -156,6 +156,9 @@ def get_func_args(func, stripself=False):
         return get_func_args(func.__func__, True)
     elif inspect.ismethoddescriptor(func):
         return []
+    elif isinstance(func, partial):
+        return [x for x in get_func_args(func.func)[len(func.args):]
+                if not (func.keywords and x in func.keywords)]
     elif hasattr(func, '__call__'):
         if inspect.isroutine(func):
             return []

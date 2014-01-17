@@ -1,3 +1,4 @@
+import functools
 import operator
 import unittest
 from itertools import count
@@ -64,7 +65,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         assert not isbinarytext("hello")
 
         # utf-16 strings contain null bytes
-        assert not isbinarytext(u"hello".encode('utf-16')) 
+        assert not isbinarytext(u"hello".encode('utf-16'))
 
         # one with encoding
         assert not isbinarytext("<div>Price \xa3</div>")
@@ -175,11 +176,17 @@ class UtilsPythonTestCase(unittest.TestCase):
 
         a = A(1, 2, 3)
         cal = Callable()
+        partial_f1 = functools.partial(f1, None)
+        partial_f2 = functools.partial(f1, b=None)
+        partial_f3 = functools.partial(partial_f2, None)
 
         self.assertEqual(get_func_args(f1), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(f2), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(A), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(a.method), ['a', 'b', 'c'])
+        self.assertEqual(get_func_args(partial_f1), ['b', 'c'])
+        self.assertEqual(get_func_args(partial_f2), ['a', 'c'])
+        self.assertEqual(get_func_args(partial_f3), ['c'])
         self.assertEqual(get_func_args(cal), ['a', 'b', 'c'])
         self.assertEqual(get_func_args(object), [])
 

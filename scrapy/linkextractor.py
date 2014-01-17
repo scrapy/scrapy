@@ -17,8 +17,8 @@ IGNORED_EXTENSIONS = [
     'm4a',
 
     # office suites
-    'xls', 'ppt', 'doc', 'docx', 'odt', 'ods', 'odg', 'odp',
+    'xls', 'xlsx', 'ppt', 'pptx', 'doc', 'docx', 'odt', 'ods', 'odg', 'odp',
 
     # other
-    'css', 'pdf', 'doc', 'exe', 'bin', 'rss', 'zip', 'rar',
+    'css', 'pdf', 'exe', 'bin', 'rss', 'zip', 'rar',
 ]

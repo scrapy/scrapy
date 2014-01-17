@@ -7,11 +7,11 @@ usage:
 
 """
 
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.http import Request
 
 
-class QPSSpider(BaseSpider):
+class QPSSpider(Spider):
 
     name = 'qps'
     benchurl = 'http://localhost:8880/'

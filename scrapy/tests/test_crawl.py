@@ -1,9 +1,11 @@
+import json
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 from scrapy.utils.test import get_crawler, get_testlog
 from scrapy.tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
-    BrokenStartRequestsSpider
+    BrokenStartRequestsSpider, SingleRequestSpider
 from scrapy.tests.mockserver import MockServer
+from scrapy.http import Request
 
 
 def docrawl(spider, settings=None):
@@ -158,3 +160,31 @@ with multiples lines
         log = get_testlog()
         self.assertEqual(log.count("Retrying"), 2)
         self.assertEqual(log.count("Gave up retrying"), 1)
+
+    @defer.inlineCallbacks
+    def test_referer_header(self):
+        """Referer header is set by RefererMiddleware unless it is already set"""
+        req0 = Request('http://localhost:8998/echo?headers=1&body=0', dont_filter=1)
+        req1 = req0.replace()
+        req2 = req0.replace(headers={'Referer': None})
+        req3 = req0.replace(headers={'Referer': 'http://example.com'})
+        req0.meta['next'] = req1
+        req1.meta['next'] = req2
+        req2.meta['next'] = req3
+        spider = SingleRequestSpider(seed=req0)
+        yield docrawl(spider)
+        # basic asserts in case of weird communication errors
+        self.assertIn('responses', spider.meta)
+        self.assertNotIn('failures', spider.meta)
+        # start requests doesn't set Referer header
+        echo0 = json.loads(spider.meta['responses'][2].body)
+        self.assertNotIn('Referer', echo0['headers'])
+        # following request sets Referer to start request url
+        echo1 = json.loads(spider.meta['responses'][1].body)
+        self.assertEqual(echo1['headers'].get('Referer'), [req0.url])
+        # next request avoids Referer header
+        echo2 = json.loads(spider.meta['responses'][2].body)
+        self.assertNotIn('Referer', echo2['headers'])
+        # last request explicitly sets a Referer header
+        echo3 = json.loads(spider.meta['responses'][3].body)
+        self.assertEqual(echo3['headers'].get('Referer'), ['http://example.com'])

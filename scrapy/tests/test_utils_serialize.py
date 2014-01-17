@@ -6,7 +6,7 @@ from decimal import Decimal
 from twisted.internet import defer
 
 from scrapy.utils.serialize import SpiderReferencer, ScrapyJSONEncoder, ScrapyJSONDecoder
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.http import Request, Response
 
 
@@ -21,8 +21,8 @@ class CrawlerMock(object):
 class BaseTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.spider1 = BaseSpider('name1')
-        self.spider2 = BaseSpider('name2')
+        self.spider1 = Spider('name1')
+        self.spider2 = Spider('name2')
         open_spiders = set([self.spider1, self.spider2])
         crawler = CrawlerMock(open_spiders)
         self.spref = SpiderReferencer(crawler)
@@ -43,7 +43,7 @@ class SpiderReferencerTestCase(BaseTestCase):
         sp1 = self.spref.get_spider_from_reference(ref1)
         sp2 = self.spref.get_spider_from_reference(ref2)
         sp1_ = self.spref.get_spider_from_reference(ref1)
-        assert isinstance(sp1, BaseSpider)
+        assert isinstance(sp1, Spider)
         assert sp1 is not sp2
         assert sp1 is sp1_
 

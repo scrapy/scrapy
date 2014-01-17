@@ -2,18 +2,20 @@ import gzip
 import inspect
 import warnings
 from cStringIO import StringIO
+from scrapy.utils.trackref import object_ref
 
 from twisted.trial import unittest
 
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider, BaseSpider
 from scrapy.http import Response, TextResponse, XmlResponse, HtmlResponse
 from scrapy.contrib.spiders.init import InitSpider
 from scrapy.contrib.spiders import CrawlSpider, XMLFeedSpider, CSVFeedSpider, SitemapSpider
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 
-class BaseSpiderTest(unittest.TestCase):
+class SpiderTest(unittest.TestCase):
 
-    spider_class = BaseSpider
+    spider_class = Spider
 
     def setUp(self):
         warnings.simplefilter("always")
@@ -43,12 +45,12 @@ class BaseSpiderTest(unittest.TestCase):
         self.assertRaises(ValueError, self.spider_class, somearg='foo')
 
 
-class InitSpiderTest(BaseSpiderTest):
+class InitSpiderTest(SpiderTest):
 
     spider_class = InitSpider
 
 
-class XMLFeedSpiderTest(BaseSpiderTest):
+class XMLFeedSpiderTest(SpiderTest):
 
     spider_class = XMLFeedSpider
 
@@ -92,17 +94,17 @@ class XMLFeedSpiderTest(BaseSpiderTest):
             ], iterator)
 
 
-class CSVFeedSpiderTest(BaseSpiderTest):
+class CSVFeedSpiderTest(SpiderTest):
 
     spider_class = CSVFeedSpider
 
 
-class CrawlSpiderTest(BaseSpiderTest):
+class CrawlSpiderTest(SpiderTest):
 
     spider_class = CrawlSpider
 
 
-class SitemapSpiderTest(BaseSpiderTest):
+class SitemapSpiderTest(SpiderTest):
 
     spider_class = SitemapSpider
 
@@ -133,6 +135,62 @@ class SitemapSpiderTest(BaseSpiderTest):
 
         r = Response(url="http://www.example.com/sitemap.xml.gz", body=self.GZBODY)
         self.assertEqual(spider._get_sitemap_body(r), self.BODY)
+
+
+class BaseSpiderDeprecationTest(unittest.TestCase):
+
+    def test_basespider_is_deprecated(self):
+        with warnings.catch_warnings(record=True) as w:
+
+            class MySpider1(BaseSpider):
+                pass
+
+            self.assertEqual(len(w), 1)
+            self.assertEqual(w[0].category, ScrapyDeprecationWarning)
+            self.assertEqual(w[0].lineno, inspect.getsourcelines(MySpider1)[1])
+
+    def test_basespider_issubclass(self):
+        class MySpider2(Spider):
+            pass
+
+        class MySpider2a(MySpider2):
+            pass
+
+        class Foo(object):
+            pass
+
+        class Foo2(object_ref):
+            pass
+
+        assert issubclass(MySpider2, BaseSpider)
+        assert issubclass(MySpider2a, BaseSpider)
+        assert not issubclass(Foo, BaseSpider)
+        assert not issubclass(Foo2, BaseSpider)
+
+    def test_basespider_isinstance(self):
+        class MySpider3(Spider):
+            name = 'myspider3'
+
+        class MySpider3a(MySpider3):
+            pass
+
+        class Foo(object):
+            pass
+
+        class Foo2(object_ref):
+            pass
+
+        assert isinstance(MySpider3(), BaseSpider)
+        assert isinstance(MySpider3a(), BaseSpider)
+        assert not isinstance(Foo(), BaseSpider)
+        assert not isinstance(Foo2(), BaseSpider)
+
+    def test_crawl_spider(self):
+        assert issubclass(CrawlSpider, Spider)
+        assert issubclass(CrawlSpider, BaseSpider)
+        assert isinstance(CrawlSpider(name='foo'), Spider)
+        assert isinstance(CrawlSpider(name='foo'), BaseSpider)
+
 
 if __name__ == '__main__':
     unittest.main()

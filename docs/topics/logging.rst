@@ -43,7 +43,7 @@ Logging from Spiders
 ====================
 
 The recommended way to log from spiders is by using the Spider
-:meth:`~scrapy.spider.BaseSpider.log` method, which already populates the
+:meth:`~scrapy.spider.Spider.log` method, which already populates the
 ``spider`` argument of the :func:`scrapy.log.msg` function. The other arguments
 are passed directly to the :func:`~scrapy.log.msg` function.
 
@@ -83,10 +83,10 @@ scrapy.log module
     :param level: the log level for this message. See
         :ref:`topics-logging-levels`.
 
-    :param spider: the spider to use for logging this message. This parameter 
+    :param spider: the spider to use for logging this message. This parameter
         should always be used when logging things related to a particular
         spider.
-    :type spider: :class:`~scrapy.spider.BaseSpider` object
+    :type spider: :class:`~scrapy.spider.Spider` object
 
 .. data:: CRITICAL
 

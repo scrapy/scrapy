@@ -13,17 +13,15 @@ from twisted.web import http
 from twisted.web.http import RESPONSES
 from w3lib import html
 
-from scrapy.http import Response, HtmlResponse, TextResponse
+from scrapy.http import HtmlResponse, TextResponse
+from scrapy.utils.decorator import deprecated
 
-def body_or_str(obj, unicode=True):
-    assert isinstance(obj, (Response, basestring)), \
-        "obj must be Response or basestring, not %s" % type(obj).__name__
-    if isinstance(obj, Response):
-        return obj.body_as_unicode() if unicode else obj.body
-    elif isinstance(obj, str):
-        return obj.decode('utf-8') if unicode else obj
-    else:
-        return obj if unicode else obj.encode('utf-8')
+
+@deprecated
+def body_or_str(*a, **kw):
+    from scrapy.utils.iterators import _body_or_str
+    return _body_or_str(*a, **kw)
+
 
 _baseurl_cache = weakref.WeakKeyDictionary()
 def get_base_url(response):

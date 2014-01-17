@@ -3,9 +3,10 @@ MemoryUsage extension
 
 See documentation in docs/topics/extensions.rst
 """
-
+import sys
 import socket
 from pprint import pformat
+from importlib import import_module
 
 from twisted.internet import task
 
@@ -15,12 +16,13 @@ from scrapy.mail import MailSender
 from scrapy.utils.engine import get_engine_status
 
 class MemoryUsage(object):
-    
+
     def __init__(self, crawler):
         if not crawler.settings.getbool('MEMUSAGE_ENABLED'):
             raise NotConfigured
         try:
-            self.resource = __import__('resource')
+            # stdlib's resource module is only availabe on unix platforms.
+            self.resource = import_module('resource')
         except ImportError:
             raise NotConfigured
 
@@ -39,7 +41,11 @@ class MemoryUsage(object):
         return cls(crawler)
 
     def get_virtual_size(self):
-        return self.resource.getrusage(self.resource.RUSAGE_SELF).ru_maxrss * 1024
+        size = self.resource.getrusage(self.resource.RUSAGE_SELF).ru_maxrss
+        if sys.platform != 'darwin':
+            # on Mac OS X ru_maxrss is in bytes, on Linux it is in KB
+            size *= 1024
+        return size
 
     def engine_started(self):
         self.crawler.stats.set_value('memusage/startup', self.get_virtual_size())
