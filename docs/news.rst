@@ -19,19 +19,19 @@ Enhancements
 - Rename scrapy.spider.BaseSpider to scrapy.spider.Spider (:issue:`510`, :issue:`519`)
 - Selectors registers EXSLT namespaces by default (:issue:`472`)
 - Unify item loaders similar to selectors renaming (:issue:`461`)
-- Make DupeFilter class easily subclassable (:issue:`533`)
-- Improved test coverage and forthcoming Python 3 support (:issue:`525`)
+- Make `RFPDupeFilter` class easily subclassable (:issue:`533`)
+- Improve test coverage and forthcoming Python 3 support (:issue:`525`)
 - Promote startup info on settings and middleware to INFO level (:issue:`520`)
-- Util `get_func_args` now can inspect partials (:issue:`506`, issue:`504`)
+- Support partials in `get_func_args` util (:issue:`506`, issue:`504`)
 - Allow running indiviual tests via tox (:issue:`503`)
 - Update extensions ignored by link extractors (:issue:`498`)
-- New middleware methods to get files/images/thumbs paths (:issue:`490`)
+- Add middleware methods to get files/images/thumbs paths (:issue:`490`)
 - Improve offsite middleware tests (:issue:`478`)
 - Add a way to skip default Referer header set by RefererMiddleware (:issue:`475`)
 - Do not send `x-gzip` in default `Accept-Encoding` header (:issue:`469`)
 - Suppport defining http error handling using settings (:issue:`466`)
 - Use moderm python idioms wherever you find legacies (:issue:`497`)
-- Improved and corrected lot of documentation
+- Improve and correct documentation
   (:issue:`527`, :issue:`524`, :issue:`521`, :issue:`517`, :issue:`512`, :issue:`505`,
   :issue:`502`, :issue:`489`, :issue:`465`, :issue:`460`, :issue:`425`, :issue:`536`)
 
