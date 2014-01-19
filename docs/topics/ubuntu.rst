@@ -11,39 +11,27 @@ those in Ubuntu, and more stable too since they're continuously built from
 `Github repo`_ (master & stable branches) and so they contain the latest bug
 fixes.
 
-To use the packages, just add the following line to your
-``/etc/apt/sources.list``, and then run ``aptitude update`` and
-``apt-get install scrapy-0.22``::
+To use the packages:
 
-    deb http://archive.scrapy.org/ubuntu DISTRO main
+1. Import the GPG key used to sign Scrapy packages into APT keyring.
 
-Replacing ``DISTRO`` with the name of your Ubuntu release, which you can get
-with command::
+    sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 627220E7
 
-    lsb_release -cs
+2. Create `/etc/apt/sources.list.d/scrapy.list` file using the following command.
 
-Supported Ubuntu releases are: ``precise``, ``quantal``, ``raring``.
+    echo 'deb http://archive.scrapy.org/ubuntu scrapy main' | sudo tee /etc/apt/sources.list.d/scrapy.list
 
-For Ubuntu Raring (13.04)::
+3. Update package lists and install `scrapy-VERSION`, replace `VERSION` by a
+   known Scrapy version (i.e.: `scrapy-0.22`)
 
-    deb http://archive.scrapy.org/ubuntu raring main
-
-For Ubuntu Quantal (12.10)::
-
-    deb http://archive.scrapy.org/ubuntu quantal main
-
-For Ubuntu Precise (12.04)::
-
-    deb http://archive.scrapy.org/ubuntu precise main
+    sudo apt-get update sudo apt-get install scrapy-VERSION
 
 .. warning:: Please note that these packages are updated frequently, and so if
    you find you can't download the packages, try updating your apt package
-   lists first, e.g., with ``apt-get update`` or ``aptitude update``.
+   lists first, e.g., with ``apt-get update``.
 
-The public GPG key used to sign these packages can be imported into you APT
-keyring as follows::
-
-    curl -s http://archive.scrapy.org/ubuntu/archive.key | sudo apt-key add -
+.. warning:: `python-scrapy` is a different package provided by official debian
+   repositories, it's very outdated and it isn't supported by Scrapy team.
 
 .. _Scrapinghub: http://scrapinghub.com/
 .. _Github repo: https://github.com/scrapy/scrapy
