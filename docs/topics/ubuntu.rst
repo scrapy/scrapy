@@ -26,9 +26,7 @@ To use the packages:
 
     sudo apt-get update && sudo apt-get install scrapy-VERSION
 
-.. warning:: Please note that these packages are updated frequently, and so if
-   you find you can't download the packages, try updating your apt package
-   lists first, e.g., with ``apt-get update``.
+.. note:: Repeat step 3 if you are trying to upgrade Scrapy.
 
 .. warning:: `python-scrapy` is a different package provided by official debian
    repositories, it's very outdated and it isn't supported by Scrapy team.
