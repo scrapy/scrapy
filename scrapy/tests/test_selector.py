@@ -322,23 +322,15 @@ class SelectorTestCase(unittest.TestCase):
         # only when smart_strings are on
         x = self.sscls(response)
         li_text = x.xpath('//li/text()')
-        self.assertIs(
-            any(map(lambda e: hasattr(e._root, 'getparent'), li_text)),
-            False)
+        self.assertFalse(any(map(lambda e: hasattr(e._root, 'getparent'), li_text)))
         div_class = x.xpath('//div/@class')
-        self.assertIs(
-            any(map(lambda e: hasattr(e._root, 'getparent'), div_class)),
-            False)
+        self.assertFalse(any(map(lambda e: hasattr(e._root, 'getparent'), div_class)))
 
         x = SmartStringsSelector(response)
         li_text = x.xpath('//li/text()')
-        self.assertIs(
-            all(map(lambda e: hasattr(e._root, 'getparent'), li_text)),
-            True)
+        self.assertTrue(all(map(lambda e: hasattr(e._root, 'getparent'), li_text)))
         div_class = x.xpath('//div/@class')
-        self.assertIs(
-            all(map(lambda e: hasattr(e._root, 'getparent'), div_class)),
-            True)
+        self.assertTrue(all(map(lambda e: hasattr(e._root, 'getparent'), div_class)))
 
 
 class DeprecatedXpathSelectorTest(unittest.TestCase):
