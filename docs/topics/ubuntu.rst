@@ -24,7 +24,7 @@ To use the packages:
 3. Update package lists and install `scrapy-VERSION`, replace `VERSION` by a
    known Scrapy version (i.e.: `scrapy-0.22`)
 
-    sudo apt-get update sudo apt-get install scrapy-VERSION
+    sudo apt-get update && sudo apt-get install scrapy-VERSION
 
 .. warning:: Please note that these packages are updated frequently, and so if
    you find you can't download the packages, try updating your apt package
