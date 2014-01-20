@@ -13,7 +13,7 @@ fixes.
 
 To use the packages, just add the following line to your
 ``/etc/apt/sources.list``, and then run ``aptitude update`` and
-``apt-get install scrapy-0.18``::
+``apt-get install scrapy-0.22``::
 
     deb http://archive.scrapy.org/ubuntu DISTRO main
 
