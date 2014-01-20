@@ -13,16 +13,16 @@ fixes.
 
 To use the packages:
 
-1. Import the GPG key used to sign Scrapy packages into APT keyring.
+1. Import the GPG key used to sign Scrapy packages into APT keyring::
 
     sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 627220E7
 
-2. Create `/etc/apt/sources.list.d/scrapy.list` file using the following command.
+2. Create `/etc/apt/sources.list.d/scrapy.list` file using the following command::
 
     echo 'deb http://archive.scrapy.org/ubuntu scrapy main' | sudo tee /etc/apt/sources.list.d/scrapy.list
 
 3. Update package lists and install `scrapy-VERSION`, replace `VERSION` by a
-   known Scrapy version (i.e.: `scrapy-0.22`)
+   known Scrapy version (i.e.: `scrapy-0.22`::
 
     sudo apt-get update && sudo apt-get install scrapy-VERSION
 
