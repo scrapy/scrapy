@@ -47,7 +47,7 @@ These mechanisms are described in more detail below.
 
 Global overrides are the ones that take most precedence, and are usually
 populated by command-line options. You can also override one (or more) settings
-from command line using the ``-s`` (or ``--set``) command line option. 
+from command line using the ``-s`` (or ``--set``) command line option.
 
 For more information see the :attr:`~scrapy.settings.Settings.overrides`
 Settings attribute.
@@ -115,7 +115,7 @@ Built-in settings reference
 ===========================
 
 Here's a list of all available Scrapy settings, in alphabetical order, along
-with their default values and the scope where they apply. 
+with their default values and the scope where they apply.
 
 The scope, where available, shows where the setting is being used, if it's tied
 to any particular component. In that case the module of that component will be
@@ -303,7 +303,7 @@ orders. For more info see :ref:`topics-downloader-middleware-setting`.
 DOWNLOADER_MIDDLEWARES_BASE
 ---------------------------
 
-Default:: 
+Default::
 
     {
         'scrapy.contrib.downloadermiddleware.robotstxt.RobotsTxtMiddleware': 100,
@@ -376,7 +376,7 @@ See `DOWNLOAD_HANDLERS_BASE` for example format.
 DOWNLOAD_HANDLERS_BASE
 ----------------------
 
-Default:: 
+Default::
 
     {
         'file': 'scrapy.core.downloader.handlers.file.FileDownloadHandler',
@@ -387,7 +387,7 @@ Default::
 
 A dict containing the request download handlers enabled by default in Scrapy.
 You should never modify this setting in your project, modify
-:setting:`DOWNLOAD_HANDLERS` instead. 
+:setting:`DOWNLOAD_HANDLERS` instead.
 
 .. setting:: DOWNLOAD_TIMEOUT
 
@@ -410,7 +410,17 @@ The class used to detect and filter duplicate requests.
 The default (``RFPDupeFilter``) filters based on request fingerprint using
 the ``scrapy.utils.request.request_fingerprint`` function.
 
-.. setting:: jDITOR
+.. setting:: DUPEFILTER_DEBUG
+
+DUPEFILTER_DEBUG
+----------------
+
+Default: ``False``
+
+By default, ``RFPDupeFilter`` only logs the first duplicate request.
+Setting :setting:`DUPEFILTER_DEBUG` to ``True`` will make it log all duplicate requests.
+
+.. setting:: EDITOR
 
 EDITOR
 ------
@@ -428,7 +438,7 @@ EXTENSIONS
 
 Default:: ``{}``
 
-A dict containing the extensions enabled in your project, and their orders. 
+A dict containing the extensions enabled in your project, and their orders.
 
 .. setting:: EXTENSIONS_BASE
 
@@ -452,7 +462,7 @@ Default::
 
 The list of available extensions. Keep in mind that some of them need to
 be enabled through a setting. By default, this setting contains all stable
-built-in extensions. 
+built-in extensions.
 
 For more information See the :ref:`extensions user guide  <topics-extensions>`
 and the :ref:`list of available extensions <topics-extensions-ref>`.
@@ -869,7 +879,7 @@ USER_AGENT
 
 Default: ``"Scrapy/VERSION (+http://scrapy.org)"``
 
-The default User-Agent to use when crawling, unless overridden. 
+The default User-Agent to use when crawling, unless overridden.
 
 .. _Amazon web services: http://aws.amazon.com/
 .. _breadth-first order: http://en.wikipedia.org/wiki/Breadth-first_search
