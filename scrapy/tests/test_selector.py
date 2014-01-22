@@ -297,6 +297,41 @@ class SelectorTestCase(unittest.TestCase):
         sel.remove_namespaces()
         self.assertEqual(len(sel.xpath("//link/@type")), 2)
 
+    def test_smart_strings(self):
+        """Lxml smart strings return values"""
+
+        class SmartStringsSelector(Selector):
+            _lxml_smart_strings = True
+
+        body = """<body>
+                    <div class='one'>
+                      <ul>
+                        <li>one</li><li>two</li>
+                      </ul>
+                    </div>
+                    <div class='two'>
+                      <ul>
+                        <li>four</li><li>five</li><li>six</li>
+                      </ul>
+                    </div>
+                  </body>"""
+
+        response = HtmlResponse(url="http://example.com", body=body)
+
+        # .getparent() is available for text nodes and attributes
+        # only when smart_strings are on
+        x = self.sscls(response)
+        li_text = x.xpath('//li/text()')
+        self.assertFalse(any(map(lambda e: hasattr(e._root, 'getparent'), li_text)))
+        div_class = x.xpath('//div/@class')
+        self.assertFalse(any(map(lambda e: hasattr(e._root, 'getparent'), div_class)))
+
+        x = SmartStringsSelector(response)
+        li_text = x.xpath('//li/text()')
+        self.assertTrue(all(map(lambda e: hasattr(e._root, 'getparent'), li_text)))
+        div_class = x.xpath('//div/@class')
+        self.assertTrue(all(map(lambda e: hasattr(e._root, 'getparent'), div_class)))
+
 
 class DeprecatedXpathSelectorTest(unittest.TestCase):
 
