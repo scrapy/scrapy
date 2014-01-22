@@ -1,40 +1,45 @@
 """
 Scrapy - a screen scraping framework written in Python
 """
-from __future__ import print_function
+
+__all__ = ['__version__', 'version_info', 'optional_features', 'twisted_version']
+
+# Scrapy version
 import pkgutil
-__version__ = pkgutil.get_data(__package__, 'VERSION').strip()
-if not isinstance(__version__, str):
-    __version__ = __version__.decode('ascii')
+__version__ = pkgutil.get_data(__package__, 'VERSION').decode('ascii').strip()
 version_info = tuple(int(v) for v in __version__.split('.')[:3])
+del pkgutil
 
-import sys, os, warnings
-
+# Check minimum required Python version
+import sys
 if sys.version_info < (2, 7):
     print("Scrapy %s requires Python 2.7" % __version__)
     sys.exit(1)
+del sys
 
-# ignore noisy twisted deprecation warnings
+# Ignore noisy twisted deprecation warnings
+import warnings
 warnings.filterwarnings('ignore', category=DeprecationWarning, module='twisted')
+del warnings
 
-# monkey patches to fix external library issues
-from scrapy.xlib import urlparse_monkeypatches
+# Apply monkey patches to fix issues in external libraries
+import _monkeypatches
+del _monkeypatches
 
 # WARNING: optional_features set is deprecated and will be removed soon. Do not use.
 optional_features = set()
-
 # TODO: backwards compatibility, remove for Scrapy 0.20
 optional_features.add('ssl')
-
 try:
     import boto
+    del boto
 except ImportError:
     pass
 else:
     optional_features.add('boto')
-
 try:
     import django
+    del django
 except ImportError:
     pass
 else:
