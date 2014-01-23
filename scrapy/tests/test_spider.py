@@ -7,9 +7,11 @@ from scrapy.utils.trackref import object_ref
 from twisted.trial import unittest
 
 from scrapy.spider import Spider, BaseSpider
-from scrapy.http import Response, TextResponse, XmlResponse, HtmlResponse
+from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlResponse
 from scrapy.contrib.spiders.init import InitSpider
-from scrapy.contrib.spiders import CrawlSpider, XMLFeedSpider, CSVFeedSpider, SitemapSpider
+from scrapy.contrib.spiders import CrawlSpider, Rule, XMLFeedSpider, \
+    CSVFeedSpider, SitemapSpider
+from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 
@@ -101,7 +103,92 @@ class CSVFeedSpiderTest(SpiderTest):
 
 class CrawlSpiderTest(SpiderTest):
 
+    test_body = """<html><head><title>Page title<title>
+    <body>
+    <p><a href="item/12.html">Item 12</a></p>
+    <div class='links'>
+    <p><a href="/about.html">About us</a></p>
+    </div>
+    <div>
+    <p><a href="/nofollow.html">This shouldn't be followed</a></p>
+    </div>
+    </body></html>"""
     spider_class = CrawlSpider
+
+    def test_process_links(self):
+
+        response = HtmlResponse("http://example.org/somepage/index.html",
+            body=self.test_body)
+
+        class _CrawlSpider(self.spider_class):
+            name="test"
+            allowed_domains=['example.org']
+            rules = (
+                Rule(SgmlLinkExtractor(), process_links="dummy_process_links"),
+            )
+
+            def dummy_process_links(self, links):
+                return links
+
+        spider = _CrawlSpider()
+        output = list(spider._requests_to_follow(response))
+        self.assertEqual(len(output), 3)
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
+        self.assertEquals([r.url for r in output],
+                          ['http://example.org/somepage/item/12.html',
+                           'http://example.org/about.html',
+                           'http://example.org/nofollow.html'])
+
+    def test_process_links_filter(self):
+
+        response = HtmlResponse("http://example.org/somepage/index.html",
+            body=self.test_body)
+
+        class _CrawlSpider(self.spider_class):
+            import re
+
+            name="test"
+            allowed_domains=['example.org']
+            rules = (
+                Rule(SgmlLinkExtractor(), process_links="filter_process_links"),
+            )
+            _test_regex = re.compile('nofollow')
+            def filter_process_links(self, links):
+                return [link for link in links
+                        if not self._test_regex.search(link.url)]
+
+        spider = _CrawlSpider()
+        output = list(spider._requests_to_follow(response))
+        self.assertEqual(len(output), 2)
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
+        self.assertEquals([r.url for r in output],
+                          ['http://example.org/somepage/item/12.html',
+                           'http://example.org/about.html'])
+
+    def test_process_links_generator(self):
+
+        response = HtmlResponse("http://example.org/somepage/index.html",
+            body=self.test_body)
+
+        class _CrawlSpider(self.spider_class):
+            name="test"
+            allowed_domains=['example.org']
+            rules = (
+                Rule(SgmlLinkExtractor(), process_links="dummy_process_links"),
+            )
+
+            def dummy_process_links(self, links):
+                for link in links:
+                    yield link
+
+        spider = _CrawlSpider()
+        output = list(spider._requests_to_follow(response))
+        self.assertEqual(len(output), 3)
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
+        self.assertEquals([r.url for r in output],
+                          ['http://example.org/somepage/item/12.html',
+                           'http://example.org/about.html',
+                           'http://example.org/nofollow.html'])
 
 
 class SitemapSpiderTest(SpiderTest):
