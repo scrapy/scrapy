@@ -71,6 +71,8 @@ content).
 
 Those objects are:
 
+ * ``crawler`` - the current :class:`~scrapy.crawler.Crawler` object.
+
  * ``spider`` - the Spider which is known to handle the URL, or a
    :class:`~scrapy.spider.Spider` object if there is no spider found for
    the current URL
@@ -110,16 +112,17 @@ Then, the shell fetches the URL (using the Scrapy downloader) and prints the
 list of available objects and useful shortcuts (you'll notice that these lines
 all start with the ``[s]`` prefix)::
 
-    [s] Available objects
-    [s]   sel       <Selector (http://scrapy.org) xpath=None>
-    [s]   item      Item()
-    [s]   request   <http://scrapy.org>
-    [s]   response  <http://scrapy.org>
-    [s]   settings  <Settings 'mybot.settings'>
-    [s]   spider    <Spider 'default' at 0x2bed9d0>
+    [s] Available Scrapy objects:
+    [s]   crawler    <scrapy.crawler.Crawler object at 0x1e16b50>
+    [s]   item       {}
+    [s]   request    <GET http://scrapy.org>
+    [s]   response   <200 http://scrapy.org>
+    [s]   sel        <Selector xpath=None data=u'<html>\n  <head>\n    <meta charset="utf-8'>
+    [s]   settings   <CrawlerSettings module=None>
+    [s]   spider     <Spider 'default' at 0x20c6f50>
     [s] Useful shortcuts:
-    [s]   shelp()           Prints this help.
-    [s]   fetch(req_or_url) Fetch a new request or URL and update objects
+    [s]   shelp()           Shell help (print this help)
+    [s]   fetch(req_or_url) Fetch request (or URL) and update local objects
     [s]   view(response)    View response in a browser
 
     >>>
@@ -131,24 +134,27 @@ After that, we can star playing with the objects::
 
     >>> fetch("http://slashdot.org")
     [s] Available Scrapy objects:
-    [s]   sel        <Selector (http://slashdot.org) xpath=None>
-    [s]   item       JobItem()
+    [s]   crawler    <scrapy.crawler.Crawler object at 0x1a13b50>
+    [s]   item       {}
     [s]   request    <GET http://slashdot.org>
     [s]   response   <200 http://slashdot.org>
-    [s]   settings   <Settings 'jobsbot.settings'>
-    [s]   spider     <Spider 'default' at 0x3c44a10>
+    [s]   sel        <Selector xpath=None data=u'<html lang="en">\n<head>\n\n\n\n\n<script id="'>
+    [s]   settings   <CrawlerSettings module=None>
+    [s]   spider     <Spider 'default' at 0x20c6f50>
     [s] Useful shortcuts:
     [s]   shelp()           Shell help (print this help)
     [s]   fetch(req_or_url) Fetch request (or URL) and update local objects
     [s]   view(response)    View response in a browser
 
-    >>> sel.xpath("//h2/text()").extract()
-    [u'News for nerds, stuff that matters']
+    >>> sel.xpath('//title/text()').extract()
+    [u'Slashdot: News for nerds, stuff that matters']
 
     >>> request = request.replace(method="POST")
 
     >>> fetch(request)
-    2009-04-03 00:57:39-0300 [default] ERROR: Downloading <http://slashdot.org> from <None>: 405 Method Not Allowed
+    [s] Available Scrapy objects:
+    [s]   crawler    <scrapy.crawler.Crawler object at 0x1e16b50>
+    ...
 
     >>>
 
@@ -165,47 +171,54 @@ This can be achieved by using the ``scrapy.shell.inspect_response`` function.
 
 Here's an example of how you would call it from your spider::
 
+    from scrapy.spider import Spider
+
+
     class MySpider(Spider):
-        ...
+        name = "myspider"
+        start_urls = [
+            "http://example.com",
+            "http://example.org",
+            "http://example.net",
+        ]
 
         def parse(self, response):
-            if response.url == 'http://www.example.com/products.php':
+            # We want to inspect one specific response.
+            if ".org" in response.url:
                 from scrapy.shell import inspect_response
                 inspect_response(response)
 
-            # ... your parsing code ..
+            # Rest of parsing code.
 
 When you run the spider, you will get something similar to this::
 
-    2009-08-27 19:15:25-0300 [example.com] DEBUG: Crawled <http://www.example.com/> (referer: <None>)
-    2009-08-27 19:15:26-0300 [example.com] DEBUG: Crawled <http://www.example.com/products.php> (referer: <http://www.example.com/>)
-    [s] Available objects
-    [s]   sel       <Selector (http://www.example.com/products.php) xpath=None>
+    2014-01-23 17:48:31-0400 [myspider] DEBUG: Crawled (200) <GET http://example.com> (referer: None)
+    2014-01-23 17:48:31-0400 [myspider] DEBUG: Crawled (200) <GET http://example.org> (referer: None)
+    [s] Available Scrapy objects:
+    [s]   crawler    <scrapy.crawler.Crawler object at 0x1e16b50>
     ...
 
     >>> response.url
-    'http://www.example.com/products.php'
+    'http://example.org'
 
 Then, you can check if the extraction code is working::
 
-    >>> sel.xpath('//h1')
+    >>> sel.xpath('//h1[@class="fn"]')
     []
 
 Nope, it doesn't. So you can open the response in your web browser and see if
 it's the response you were expecting::
 
     >>> view(response)
-    >>>
+    True
 
 Finally you hit Ctrl-D (or Ctrl-Z in Windows) to exit the shell and resume the
 crawling::
 
     >>> ^D
-    2009-08-27 19:15:25-0300 [example.com] DEBUG: Crawled <http://www.example.com/product.php?id=1> (referer: <None>)
-    2009-08-27 19:15:25-0300 [example.com] DEBUG: Crawled <http://www.example.com/product.php?id=2> (referer: <None>)
-    # ...
+    2014-01-23 17:50:03-0400 [myspider] DEBUG: Crawled (200) <GET http://example.net> (referer: None)
+    ...
 
 Note that you can't use the ``fetch`` shortcut here since the Scrapy engine is
 blocked by the shell. However, after you leave the shell, the spider will
 continue crawling where it stopped, as shown above.
-
