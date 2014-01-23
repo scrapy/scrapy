@@ -1,18 +1,17 @@
-"""
-Item Loader
+"""Item Loader
 
 See documentation in docs/topics/loaders.rst
-"""
 
+"""
 from collections import defaultdict
-import re
 
 from scrapy.item import Item
 from scrapy.selector import Selector
-from scrapy.utils.misc import arg_to_iter, extract_regex
-from scrapy.utils.python import flatten
 from scrapy.utils.decorator import deprecated
 from scrapy.utils.deprecate import create_deprecated_class
+from scrapy.utils.misc import arg_to_iter, extract_regex
+from scrapy.utils.python import flatten
+
 from .common import wrap_loader_context
 from .processor import Identity
 
