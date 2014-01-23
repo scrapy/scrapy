@@ -1,9 +1,10 @@
-"""
-Scrapy Shell
+"""Scrapy Shell
 
 See documentation in docs/topics/shell.rst
+
 """
 from __future__ import print_function
+
 import signal
 
 from twisted.internet import reactor, threads, defer
@@ -11,16 +12,16 @@ from twisted.python import threadable
 from w3lib.url import any_to_uri
 
 from scrapy.crawler import Crawler
+from scrapy.exceptions import IgnoreRequest
+from scrapy.http import Request, Response
 from scrapy.item import BaseItem
-from scrapy.spider import Spider
 from scrapy.selector import Selector
-from scrapy.utils.spider import create_spider_for_request
+from scrapy.settings import Settings
+from scrapy.spider import Spider
+from scrapy.utils.console import start_python_console
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
-from scrapy.utils.console import start_python_console
-from scrapy.settings import Settings
-from scrapy.http import Request, Response
-from scrapy.exceptions import IgnoreRequest
+from scrapy.utils.spider import create_spider_for_request
 
 
 class Shell(object):
