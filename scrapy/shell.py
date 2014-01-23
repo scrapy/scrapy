@@ -10,6 +10,7 @@ from twisted.internet import reactor, threads, defer
 from twisted.python import threadable
 from w3lib.url import any_to_uri
 
+from scrapy.crawler import Crawler
 from scrapy.item import BaseItem
 from scrapy.spider import Spider
 from scrapy.selector import Selector
@@ -24,7 +25,7 @@ from scrapy.exceptions import IgnoreRequest
 
 class Shell(object):
 
-    relevant_classes = (Spider, Request, Response, BaseItem,
+    relevant_classes = (Crawler, Spider, Request, Response, BaseItem,
                         Selector, Settings)
 
     def __init__(self, crawler, update_vars=None, code=None):
@@ -91,6 +92,7 @@ class Shell(object):
         self.populate_vars(response, request, spider)
 
     def populate_vars(self, response=None, request=None, spider=None):
+        self.vars['crawler'] = self.crawler
         self.vars['item'] = self.item_class()
         self.vars['settings'] = self.crawler.settings
         self.vars['spider'] = spider
