@@ -57,6 +57,35 @@ class BasicItemLoaderTest(unittest.TestCase):
         item = il.load_item()
         self.assertEqual(item['name'], [u'Marta'])
 
+    def test_load_item_ignore_none_field_values(self):
+        def validate_sku(value):
+            # Let's assume a SKU is only digits.
+            if value.isdigit():
+                return value
+
+        class MyLoader(ItemLoader):
+            name_out = Compose(lambda vs: vs[0])  # take first which allows empty values
+            price_out = Compose(TakeFirst(), float)
+            sku_out = Compose(TakeFirst(), validate_sku)
+
+        valid_fragment = u'SKU: 1234'
+        invalid_fragment = u'SKU: not available'
+        sku_re = 'SKU: (.+)'
+
+        il = MyLoader(item={})
+        # Should not return "sku: None".
+        il.add_value('sku', [invalid_fragment], re=sku_re)
+        # Should not ignore empty values.
+        il.add_value('name', u'')
+        il.add_value('price', [u'0'])
+        self.assertEqual(il.load_item(), {
+            'name': u'',
+            'price': 0.0,
+        })
+
+        il.replace_value('sku', [valid_fragment], re=sku_re)
+        self.assertEqual(il.load_item()['sku'], u'1234')
+
     def test_add_value(self):
         il = TestItemLoader()
         il.add_value('name', u'marta')
