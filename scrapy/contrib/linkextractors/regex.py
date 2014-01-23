@@ -7,7 +7,7 @@ from scrapy.link import Link
 from .sgml import SgmlLinkExtractor
 
 linkre = re.compile(
-        "<a\s.*?href=(\"[.#]+?\"|\'[.#]+?\'|[^\s]+?)(>|\s.*?>)(.*?)<[/ ]?a>", 
+        "<a\s.*?href=(\"[.#]+?\"|\'[.#]+?\'|[^\s]+?)(>|\s.*?>)(.*?)<[/ ]?a>",
         re.DOTALL | re.IGNORECASE)
 
 def clean_link(link_text):
@@ -25,6 +25,8 @@ class RegexLinkExtractor(SgmlLinkExtractor):
         clean_text = lambda t: replace_escape_chars(remove_tags(t.decode(response_encoding))).strip()
 
         links_text = linkre.findall(response_text)
-        urlstext = set([(clean_url(url), clean_text(text)) for url, _, text in links_text])
+        urlstext = set([(clean_url(url).encode(response_encoding), clean_text(text))
+                        for url, _, text in links_text])
+
 
         return [Link(url, text) for url, text in urlstext]
