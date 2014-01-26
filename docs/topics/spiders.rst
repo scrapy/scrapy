@@ -573,6 +573,9 @@ SitemapSpider
     It supports nested sitemaps and discovering sitemap urls from
     `robots.txt`_.
 
+    Furthermore, sitemaps often include additional information eg. publishing dates or titles of news articles. This additional data can be found in the response.meta (see examples below).
+
+
     .. attribute:: sitemap_urls
 
         A list of urls pointing to the sitemaps whose urls you want to crawl.
@@ -698,6 +701,41 @@ Combine SitemapSpider with other sources of urls::
 
         def parse_other(self, response):
             pass # ... scrape other here ...
+
+Additional sitemap data can be accessed through the response.meta dictionary. The follwoing sitemap element:::
+
+    <url>
+        <loc>http://arstechnica.com/gadgets/2013/08/microsoftgoogle-bring-back-the-good-youtube-windows-phone-app/</loc>
+        <news:news>
+            <news:publication>
+                <news:name>Ars Technica</news:name>
+                <news:language>en</news:language>
+            </news:publication>
+            <news:publication_date>2013-08-14T01:00:40+00:00</news:publication_date>
+            <news:title>Microsoft/Google bring back the good YouTube Windows Phone app</news:title>
+            <news:keywords>Gear &amp; Gadgets</news:keywords>
+        </news:news>
+        <lastmod>2013-08-14T16:01:19+00:00</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>1.0</priority>
+    </url>
+
+Which will be translated to the following dictionary accessible within the spider:::
+
+    >>> response.meta
+    {'priority': ['1.0'],
+                    'loc': ['http://arstechnica.com/gadgets/2013/08/microsoftgoogle-bring-back-the-good-youtube-windows-phone-app/'],
+                    'lastmod': ['2013-08-14T16:01:19+00:00'],
+                    'changefreq': ['daily'],
+                    'repeatedentry': ['repeated 1', 'repeated 2'],
+                    'news:news': [{'news:publication':
+                                  [{'news:name': ['Ars Technica'],
+                                    'news:language': ['en']}],
+                                  'news:keywords': ['Gear & Gadgets'],
+                                  'news:publication_date':
+                                  ['2013-08-14T01:00:40+00:00'],
+                                   'news:title': ['Microsoft/Google bring back the good YouTube Windows Phone app']}]}
+
 
 .. _Sitemaps: http://www.sitemaps.org
 .. _Sitemap index files: http://www.sitemaps.org/protocol.php#index

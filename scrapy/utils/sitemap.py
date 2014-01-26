@@ -19,17 +19,7 @@ class Sitemap(object):
 
     def __iter__(self):
         for elem in self._root.getchildren():
-            d = {}
-            for el in elem.getchildren():
-                tag = el.tag
-                name = tag.split('}', 1)[1] if '}' in tag else tag
-
-                if name == 'link':
-                    if 'href' in el.attrib:
-                        d.setdefault('alternate', []).append(el.get('href'))
-                else:
-                    d[name] = el.text.strip() if el.text else ''
-
+            d = element_to_dict(elem)
             if 'loc' in d:
                 yield d
 
@@ -41,3 +31,24 @@ def sitemap_urls_from_robots(robots_text):
     for line in robots_text.splitlines():
         if line.lstrip().startswith('Sitemap:'):
             yield line.split(':', 1)[1].strip()
+
+
+def element_to_dict(et):
+    """convert a given etree element to a python dictionary.
+    This function is tailored for converting sitemap entries only"""
+    dic = {}
+    for el in et:
+        tag = el.tag
+        name = tag.split('}', 1)[1] if '}' in tag else tag
+        if name == 'link':
+            if 'href' in el.attrib:
+                dic.setdefault('alternate', []).append(el.get('href'))
+        # Recursive for ancestors
+        if len(el) == 0:
+            if el.text and el.text.strip():
+                dic.setdefault(name, []).append(el.text.strip())
+        else:
+            sub_dic = element_to_dict(el)
+            if sub_dic:
+                dic.setdefault(name, []).append(sub_dic)
+    return dic

@@ -1,6 +1,7 @@
 import unittest
 
-from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
+from scrapy.utils.sitemap import (Sitemap, sitemap_urls_from_robots,
+                                  element_to_dict)
 
 class SitemapTest(unittest.TestCase):
 
@@ -22,7 +23,7 @@ class SitemapTest(unittest.TestCase):
 </urlset>""")
         assert s.type == 'urlset'
         self.assertEqual(list(s),
-            [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'}, {'priority': '0.8', 'loc': 'http://www.example.com/Special-Offers.html', 'lastmod': '2009-08-16', 'changefreq': 'weekly'}])
+                         [{'priority': ['1'], 'loc': ['http://www.example.com/'], 'lastmod': ['2009-08-16'], 'changefreq': ['daily']}, {'priority': ['0.8'], 'loc': ['http://www.example.com/Special-Offers.html'], 'lastmod': ['2009-08-16'], 'changefreq': ['weekly']}])
 
     def test_sitemap_index(self):
         s = Sitemap(b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -37,7 +38,7 @@ class SitemapTest(unittest.TestCase):
    </sitemap>
 </sitemapindex>""")
         assert s.type == 'sitemapindex'
-        self.assertEqual(list(s), [{'loc': 'http://www.example.com/sitemap1.xml.gz', 'lastmod': '2004-10-01T18:23:17+00:00'}, {'loc': 'http://www.example.com/sitemap2.xml.gz', 'lastmod': '2005-01-01'}])
+        self.assertEqual(list(s), [{'loc': ['http://www.example.com/sitemap1.xml.gz'], 'lastmod': ['2004-10-01T18:23:17+00:00']}, {'loc': ['http://www.example.com/sitemap2.xml.gz'], 'lastmod': ['2005-01-01']}])
 
     def test_sitemap_strip(self):
         """Assert we can deal with trailing spaces inside <loc> tags - we've
@@ -58,9 +59,9 @@ class SitemapTest(unittest.TestCase):
 </urlset>
 """)
         self.assertEqual(list(s),
-            [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
-             {'loc': 'http://www.example.com/2', 'lastmod': ''},
-            ])
+            [{'priority': ['1'], 'loc': ['http://www.example.com/'], 'lastmod': ['2009-08-16'], 'changefreq': ['daily']},
+             {'loc': ['http://www.example.com/2']},
+         ])
 
     def test_sitemap_wrong_ns(self):
         """We have seen sitemaps with wrongs ns. Presumably, Google still works
@@ -80,8 +81,8 @@ class SitemapTest(unittest.TestCase):
 </urlset>
 """)
         self.assertEqual(list(s),
-            [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
-             {'loc': 'http://www.example.com/2', 'lastmod': ''},
+            [{'priority': ['1'], 'loc': ['http://www.example.com/'], 'lastmod': ['2009-08-16'], 'changefreq': ['daily']},
+             {'loc': ['http://www.example.com/2']},
             ])
 
     def test_sitemap_wrong_ns2(self):
@@ -103,9 +104,9 @@ class SitemapTest(unittest.TestCase):
 """)
         assert s.type == 'urlset'
         self.assertEqual(list(s),
-            [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
-             {'loc': 'http://www.example.com/2', 'lastmod': ''},
-            ])
+            [{'priority': ['1'], 'loc': ['http://www.example.com/'], 'lastmod': ['2009-08-16'], 'changefreq': ['daily']},
+             {'loc': ['http://www.example.com/2']},
+         ])
 
     def test_sitemap_urls_from_robots(self):
         robots = """User-agent: *
@@ -154,9 +155,9 @@ Disallow: /forum/active/
 </sitemapindex>
 """)
         self.assertEqual(list(s), [
-            {'lastmod': '2013-07-15', 'loc': 'http://www.example.com/sitemap1.xml'},
-            {'lastmod': '2013-07-15', 'loc': 'http://www.example.com/sitemap2.xml'},
-            {'lastmod': '2013-07-15', 'loc': 'http://www.example.com/sitemap3.xml'},
+            {'lastmod': ['2013-07-15'], 'loc': ['http://www.example.com/sitemap1.xml']},
+             {'lastmod': ['2013-07-15'], 'loc': ['http://www.example.com/sitemap2.xml']},
+             {'lastmod': ['2013-07-15'], 'loc': ['http://www.example.com/sitemap3.xml']},
         ])
 
     def test_comment(self):
@@ -170,7 +171,7 @@ Disallow: /forum/active/
     </urlset>""")
 
         self.assertEqual(list(s), [
-            {'loc': 'http://www.example.com/'}
+            {'loc': ['http://www.example.com/']}
         ])
 
     def test_alternate(self):
@@ -190,7 +191,7 @@ Disallow: /forum/active/
     </urlset>""")
 
         self.assertEqual(list(s), [
-            {'loc': 'http://www.example.com/english/',
+            {'loc': ['http://www.example.com/english/'],
              'alternate': ['http://www.example.com/deutsch/', 'http://www.example.com/schweiz-deutsch/', 'http://www.example.com/english/']
             }
         ])
@@ -210,6 +211,40 @@ Disallow: /forum/active/
 
         self.assertEqual(list(s), [{'loc': 'http://127.0.0.1:8000/'}])
 
+    def test_element_to_dict(self):
+        import lxml.etree
+        content = """<url>
+        <loc>http://arstechnica.com/gadgets/2013/08/microsoftgoogle-bring-back-the-good-youtube-windows-phone-app/</loc>
+        <news:news>
+            <news:publication>
+                <news:name>Ars Technica</news:name>
+                <news:language>en</news:language>
+            </news:publication>
+            <news:publication_date>2013-08-14T01:00:40+00:00</news:publication_date>
+            <news:title>Microsoft/Google bring back the good YouTube Windows Phone app</news:title>
+            <news:keywords>Gear &amp; Gadgets</news:keywords>
+        </news:news>
+        <lastmod>2013-08-14T16:01:19+00:00</lastmod>
+        <changefreq>daily</changefreq>
+        <repeatedentry>repeated 1</repeatedentry>
+        <repeatedentry>repeated 2</repeatedentry>
+        <priority>1.0</priority>
+    </url>"""
+        parser = lxml.etree.XMLParser(recover=True)
+        doc = lxml.etree.XML(content, parser)
+        expected = {'priority': ['1.0'],
+                    'loc': ['http://arstechnica.com/gadgets/2013/08/microsoftgoogle-bring-back-the-good-youtube-windows-phone-app/'],
+                    'lastmod': ['2013-08-14T16:01:19+00:00'],
+                    'changefreq': ['daily'],
+                    'repeatedentry': ['repeated 1', 'repeated 2'],
+                    'news:news': [{'news:publication':
+                                  [{'news:name': ['Ars Technica'],
+                                    'news:language': ['en']}],
+                                  'news:keywords': ['Gear & Gadgets'],
+                                  'news:publication_date':
+                                  ['2013-08-14T01:00:40+00:00'],
+                                   'news:title': ['Microsoft/Google bring back the good YouTube Windows Phone app']}]}
+        self.assertEqual(element_to_dict(doc), expected)
 
 if __name__ == '__main__':
     unittest.main()
