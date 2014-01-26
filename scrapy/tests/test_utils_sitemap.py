@@ -1,6 +1,6 @@
 import unittest
 
-from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
+from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots, xml_to_dict
 
 class SitemapTest(unittest.TestCase):
 
@@ -59,7 +59,7 @@ class SitemapTest(unittest.TestCase):
 """)
         self.assertEqual(list(s),
             [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
-             {'loc': 'http://www.example.com/2', 'lastmod': ''},
+             {'loc': 'http://www.example.com/2'},
             ])
 
     def test_sitemap_wrong_ns(self):
@@ -81,7 +81,7 @@ class SitemapTest(unittest.TestCase):
 """)
         self.assertEqual(list(s),
             [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
-             {'loc': 'http://www.example.com/2', 'lastmod': ''},
+             {'loc': 'http://www.example.com/2'},
             ])
 
     def test_sitemap_wrong_ns2(self):
@@ -104,7 +104,7 @@ class SitemapTest(unittest.TestCase):
         assert s.type == 'urlset'
         self.assertEqual(list(s),
             [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
-             {'loc': 'http://www.example.com/2', 'lastmod': ''},
+             {'loc': 'http://www.example.com/2'},
             ])
 
     def test_sitemap_urls_from_robots(self):
@@ -195,6 +195,45 @@ Disallow: /forum/active/
             }
         ])
 
+    def test_xml_to_dict(self):
+        import lxml.etree
+        content = """<url>
+        <loc>http://arstechnica.com/gadgets/2013/08/microsoftgoogle-bring-back-the-good-youtube-windows-phone-app/</loc>
+        <news:news>
+            <news:publication>
+                <news:name>Ars Technica</news:name>
+                <news:language>en</news:language>
+            </news:publication>
+            <news:publication_date>2013-08-14T01:00:40+00:00</news:publication_date>
+            <news:title>Microsoft/Google bring back the good YouTube Windows Phone app</news:title>
+            <news:keywords>Gear &amp; Gadgets</news:keywords>
+        </news:news>
+        <lastmod>2013-08-14T16:01:19+00:00</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>1.0</priority>
+    </url>"""
+        parser = lxml.etree.XMLParser(recover=True)
+        doc = lxml.etree.XML(content, parser)
+        expected = {'priority': '1.0',
+                    'loc': 'http://arstechnica.com/gadgets/2013/08/microsoftgoogle-bring-back-the-good-youtube-windows-phone-app/',
+                    'lastmod': '2013-08-14T16:01:19+00:00',
+                    'changefreq': 'daily',
+                    'news:news': {'news:publication':
+                                  {'news:name': 'Ars Technica',
+                                   'news:language': 'en'},
+                                  'news:keywords': 'Gear & Gadgets',
+                                  'news:publication_date':
+                                  '2013-08-14T01:00:40+00:00',
+                                  'news:title': 'Microsoft/Google bring back the good YouTube Windows Phone app'}}
+        self.assertEqual(xml_to_dict(doc), expected)
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
+
+
+
+
+
