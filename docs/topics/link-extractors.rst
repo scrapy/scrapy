@@ -52,6 +52,8 @@ SgmlLinkExtractor
 
     :param allow: (Absolute) urls which *do not match* any of the regular expressions
         will not be extracted. If not given (or empty), it won't exclude any links.
+        Note that `allow` is not a whitelist: any urls matching both an `allow` 
+        expression and a `deny` expression will not be extracted.
     :type allow: a regular expression (or a list of regular expressions)
 
     :param deny: (Absolute) urls which *match* any of the regular expression
