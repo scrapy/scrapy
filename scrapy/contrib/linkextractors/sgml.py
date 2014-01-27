@@ -121,7 +121,7 @@ class SgmlLinkExtractor(BaseSgmlLinkExtractor):
             body = u''.join(f
                             for x in self.restrict_xpaths
                             for f in sel.xpath(x).extract()
-                            ).encode(response.encoding)
+                            ).encode(response.encoding, errors='xmlcharrefreplace')
         else:
             body = response.body
 

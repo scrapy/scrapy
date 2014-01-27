@@ -236,6 +236,13 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.extract_links(response),
                          [Link(url='http://example.org/about.html', text=u'About us\xa3')])
 
+    def test_restrict_xpaths_with_html_entities(self):
+        html = '<html><body><p><a href="/&hearts;/you?c=&euro;">text</a></p></body></html>'
+        response = HtmlResponse("http://example.org/somepage/index.html", body=html, encoding='iso8859-15')
+        links = SgmlLinkExtractor(restrict_xpaths='//p').extract_links(response)
+        self.assertEqual(links,
+                         [Link(url='http://example.org/%E2%99%A5/you?c=%E2%82%AC', text=u'text')])
+
     def test_restrict_xpaths_concat_in_handle_data(self):
         """html entities cause SGMLParser to call handle_data hook twice"""
         body = """<html><body><div><a href="/foo">&gt;\xbe\xa9&lt;\xb6\xab</a></body></html>"""
