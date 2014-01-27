@@ -50,18 +50,15 @@ SgmlLinkExtractor
     extracted. All those filters are configured through these constructor
     parameters:
 
-    :param allow: a single regular expression (or list of regular expressions)
-        that the (absolute) urls must match in order to be extracted. If not
-        given (or empty), it will match all links.
-    :type allow: a regular expression (or list of)
+    :param allow: (Absolute) urls which *do not match* any of the regular expressions
+        will not be extracted. If not given (or empty), it won't exclude any links.
+    :type allow: a regular expression (or a list of regular expressions)
 
-    :param deny: a single regular expression (or list of regular expressions)
-        that the (absolute) urls must match in order to be excluded (ie. not
-        extracted). It has precedence over the ``allow`` parameter. If not
-        given (or empty) it won't exclude any links.
-    :type deny: a regular expression (or list of)
+    :param deny: (Absolute) urls which *match* any of the regular expression
+        will not be extracted. If not given (or empty), it won't exclude any links.
+    :type deny: a regular expression (or a list of regular expressions)
 
-    :param allow_domains: a single value or a list of string containing
+    :param allow_domains: a single value or a list of strings containing
         domains which will be considered for extracting the links
     :type allow_domains: str or list
 
