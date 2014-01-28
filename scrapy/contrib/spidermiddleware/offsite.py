@@ -13,9 +13,12 @@ from scrapy import log
 
 class OffsiteMiddleware(object):
 
+    def __init__(self, stats=False):
+        self.stats_enabled = stats
+
     @classmethod
     def from_crawler(cls, crawler):
-        o = cls()
+        o = cls(stats=True)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         return o
 
@@ -30,6 +33,15 @@ class OffsiteMiddleware(object):
                         self.domains_seen.add(domain)
                         log.msg(format="Filtered offsite request to %(domain)r: %(request)s",
                                 level=log.DEBUG, spider=spider, domain=domain, request=x)
+
+                        if self.stats_enabled:
+                            spider.crawler.stats.inc_value('offsite/domains',
+                                spider=spider)
+
+                    if self.stats_enabled:
+                        spider.crawler.stats.inc_value('offsite/filtered',
+                            spider=spider)
+
             else:
                 yield x
 
