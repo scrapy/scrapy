@@ -1,30 +1,32 @@
-"""
-Scrapy Shell
+"""Scrapy Shell
 
 See documentation in docs/topics/shell.rst
+
 """
 from __future__ import print_function
+
 import signal
 
 from twisted.internet import reactor, threads, defer
 from twisted.python import threadable
 from w3lib.url import any_to_uri
 
+from scrapy.crawler import Crawler
+from scrapy.exceptions import IgnoreRequest
+from scrapy.http import Request, Response
 from scrapy.item import BaseItem
-from scrapy.spider import Spider
 from scrapy.selector import Selector
-from scrapy.utils.spider import create_spider_for_request
+from scrapy.settings import Settings
+from scrapy.spider import Spider
+from scrapy.utils.console import start_python_console
 from scrapy.utils.misc import load_object
 from scrapy.utils.response import open_in_browser
-from scrapy.utils.console import start_python_console
-from scrapy.settings import Settings
-from scrapy.http import Request, Response
-from scrapy.exceptions import IgnoreRequest
+from scrapy.utils.spider import create_spider_for_request
 
 
 class Shell(object):
 
-    relevant_classes = (Spider, Request, Response, BaseItem,
+    relevant_classes = (Crawler, Spider, Request, Response, BaseItem,
                         Selector, Settings)
 
     def __init__(self, crawler, update_vars=None, code=None):
@@ -91,6 +93,7 @@ class Shell(object):
         self.populate_vars(response, request, spider)
 
     def populate_vars(self, response=None, request=None, spider=None):
+        self.vars['crawler'] = self.crawler
         self.vars['item'] = self.item_class()
         self.vars['settings'] = self.crawler.settings
         self.vars['spider'] = spider

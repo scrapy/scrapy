@@ -147,15 +147,17 @@ To put our spider to work, go to the project's top level directory and run::
 The ``crawl dmoz`` command runs the spider for the ``dmoz.org`` domain. You
 will get an output similar to this::
 
-   2008-08-20 03:51:13-0300 [scrapy] INFO: Started project: dmoz
-   2008-08-20 03:51:13-0300 [tutorial] INFO: Enabled extensions: ...
-   2008-08-20 03:51:13-0300 [tutorial] INFO: Enabled downloader middlewares: ...
-   2008-08-20 03:51:13-0300 [tutorial] INFO: Enabled spider middlewares: ...
-   2008-08-20 03:51:13-0300 [tutorial] INFO: Enabled item pipelines: ...
-   2008-08-20 03:51:14-0300 [dmoz] INFO: Spider opened
-   2008-08-20 03:51:14-0300 [dmoz] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/> (referer: <None>)
-   2008-08-20 03:51:14-0300 [dmoz] DEBUG: Crawled <http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> (referer: <None>)
-   2008-08-20 03:51:14-0300 [dmoz] INFO: Spider closed (finished)
+    2014-01-23 18:13:07-0400 [scrapy] INFO: Scrapy started (bot: tutorial)
+    2014-01-23 18:13:07-0400 [scrapy] INFO: Optional features available: ...
+    2014-01-23 18:13:07-0400 [scrapy] INFO: Overridden settings: {}
+    2014-01-23 18:13:07-0400 [scrapy] INFO: Enabled extensions: ...
+    2014-01-23 18:13:07-0400 [scrapy] INFO: Enabled downloader middlewares: ...
+    2014-01-23 18:13:07-0400 [scrapy] INFO: Enabled spider middlewares: ...
+    2014-01-23 18:13:07-0400 [scrapy] INFO: Enabled item pipelines: ...
+    2014-01-23 18:13:07-0400 [dmoz] INFO: Spider opened
+    2014-01-23 18:13:08-0400 [dmoz] DEBUG: Crawled (200) <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/> (referer: None)
+    2014-01-23 18:13:09-0400 [dmoz] DEBUG: Crawled (200) <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> (referer: None)
+    2014-01-23 18:13:09-0400 [dmoz] INFO: Closing spider (finished)
 
 Pay attention to the lines containing ``[dmoz]``, which corresponds to our
 spider. You can see a log line for each URL defined in ``start_urls``. Because
@@ -253,16 +255,18 @@ This is what the shell looks like::
 
     [ ... Scrapy log here ... ]
 
+    2014-01-23 17:11:42-0400 [default] DEBUG: Crawled (200) <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> (referer: None)
     [s] Available Scrapy objects:
-    [s] 2010-08-19 21:45:59-0300 [default] INFO: Spider closed (finished)
-    [s]   sel        <Selector (http://www.dmoz.org/Computers/Programming/Languages/Python/Books/) xpath=None>
-    [s]   item       Item()
+    [s]   crawler    <scrapy.crawler.Crawler object at 0x3636b50>
+    [s]   item       {}
     [s]   request    <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
     [s]   response   <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
-    [s]   spider     <Spider 'default' at 0x1b6c2d0>
+    [s]   sel        <Selector xpath=None data=u'<html>\r\n<head>\r\n<meta http-equiv="Conten'>
+    [s]   settings   <CrawlerSettings module=None>
+    [s]   spider     <Spider 'default' at 0x3cebf50>
     [s] Useful shortcuts:
-    [s]   shelp()           Print this help
-    [s]   fetch(req_or_url) Fetch a new request or URL and update shell objects
+    [s]   shelp()           Shell help (print this help)
+    [s]   fetch(req_or_url) Fetch request (or URL) and update local objects
     [s]   view(response)    View response in a browser
 
     In [1]: 
@@ -278,13 +282,13 @@ on response's type.
 So let's try it::
 
    In [1]: sel.xpath('//title')
-   Out[1]: [<Selector (title) xpath=//title>]
+   Out[1]: [<Selector xpath='//title' data=u'<title>Open Directory - Computers: Progr'>]
 
    In [2]: sel.xpath('//title').extract()
    Out[2]: [u'<title>Open Directory - Computers: Programming: Languages: Python: Books</title>']
 
    In [3]: sel.xpath('//title/text()')
-   Out[3]: [<Selector (text) xpath=//title/text()>]
+   Out[3]: [<Selector xpath='//title/text()' data=u'Open Directory - Computers: Programming:'>]
 
    In [4]: sel.xpath('//title/text()').extract()
    Out[4]: [u'Open Directory - Computers: Programming: Languages: Python: Books']
