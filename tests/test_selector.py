@@ -55,6 +55,23 @@ class SelectorTestCase(unittest.TestCase):
             ["<Selector xpath=u'//input[@value=\"\\xa9\"]/@value' data=u'\\xa9'>"]
         )
 
+    def test_extract_first(self):
+        """Test if extract_first() returns first element"""
+        body = '<ul><li id="1">1</li><li id="2">2</li></ul>'
+        response = TextResponse(url="http://example.com", body=body)
+        sel = self.sscls(response)
+
+        self.assertEqual(sel.xpath('//ul/li/text()').extract_first(),
+                         sel.xpath('//ul/li/text()').extract()[0])
+
+        self.assertEqual(sel.xpath('//ul/li[@id="1"]/text()').extract_first(),
+                         sel.xpath('//ul/li[@id="1"]/text()').extract()[0])
+
+        self.assertEqual(sel.xpath('//ul/li[2]/text()').extract_first(),
+                         sel.xpath('//ul/li/text()').extract()[1])
+
+        self.assertEqual(sel.xpath('/ul/li[@id="doesnt-exist"]/text()').extract_first(), None)
+
     def test_select_unicode_query(self):
         body = u"<p><input name='\xa9' value='1'/></p>"
         response = TextResponse(url="http://example.com", body=body, encoding='utf8')
