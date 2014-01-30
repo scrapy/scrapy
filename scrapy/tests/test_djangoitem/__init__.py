@@ -24,21 +24,24 @@ if 'django' in optional_features:
 
 class DjangoItemTest(unittest.TestCase):
 
+    def assertSortedEqual(self, first, second, msg=None):
+        return self.assertEqual(sorted(first), sorted(second), msg)
+
     def setUp(self):
         if 'django' not in optional_features:
             raise unittest.SkipTest("Django is not available")
 
     def test_base(self):
         i = BasePersonItem()
-        self.assertEqual(i.fields.keys(), ['age', 'name'])
+        self.assertSortedEqual(i.fields.keys(), ['age', 'name'])
 
     def test_new_fields(self):
         i = NewFieldPersonItem()
-        self.assertEqual(i.fields.keys(), ['age', 'other', 'name'])
+        self.assertSortedEqual(i.fields.keys(), ['age', 'other', 'name'])
 
     def test_override_field(self):
         i = OverrideFieldPersonItem()
-        self.assertEqual(i.fields.keys(), ['age', 'name'])
+        self.assertSortedEqual(i.fields.keys(), ['age', 'name'])
 
     def test_custom_primary_key_field(self):
         """
@@ -46,11 +49,11 @@ class DjangoItemTest(unittest.TestCase):
         in the field list.
         """
         i = IdentifiedPersonItem()
-        self.assertEqual(i.fields.keys(), ['age', 'identifier', 'name'])
+        self.assertSortedEqual(i.fields.keys(), ['age', 'identifier', 'name'])
 
     def test_save(self):
         i = BasePersonItem()
-        self.assertEqual(i.fields.keys(), ['age', 'name'])
+        self.assertSortedEqual(i.fields.keys(), ['age', 'name'])
 
         i['name'] = 'John'
         i['age'] = '22'

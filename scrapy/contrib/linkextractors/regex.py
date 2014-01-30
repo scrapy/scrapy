@@ -25,8 +25,6 @@ class RegexLinkExtractor(SgmlLinkExtractor):
         clean_text = lambda t: replace_escape_chars(remove_tags(t.decode(response_encoding))).strip()
 
         links_text = linkre.findall(response_text)
-        urlstext = set([(clean_url(url).encode(response_encoding), clean_text(text))
-                        for url, _, text in links_text])
-
-
-        return [Link(url, text) for url, text in urlstext]
+        return [Link(clean_url(url).encode(response_encoding),
+                     clean_text(text))
+                for url, _, text in links_text]
