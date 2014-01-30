@@ -179,8 +179,8 @@ class SelectorList(list):
         return [x.extract() for x in self]
 
     def extract_first(self):
-        for x in self.extract():
-            return x
+        for x in self:
+            return x.extract()
 
     @deprecated(use_instead='.extract()')
     def extract_unquoted(self):
