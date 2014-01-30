@@ -139,6 +139,16 @@ method, as follows::
     >>> response.xpath('//title/text()').extract()
     [u'Example website']
 
+If you want to extract only first matched element, you must call the selector ``.extract_first()``
+
+    >>> sel.xpath('//ul/li').extract_first()
+    u'First list element'
+
+It returns ``None`` if no element was found:
+
+    >>> sel.xpath('//ul/li[999]').extract_first()
+    None
+
 Notice that CSS selectors can select text or attribute nodes using CSS3
 pseudo-elements::
 
