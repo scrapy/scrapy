@@ -1,5 +1,7 @@
 import unittest, json, cPickle as pickle
 from cStringIO import StringIO
+import lxml.etree
+import re
 
 from scrapy.item import Item, Field
 from scrapy.utils.python import str_to_unicode
@@ -139,8 +141,13 @@ class CsvItemExporterTest(BaseItemExporterTest):
     def _get_exporter(self, **kwargs):
         return CsvItemExporter(self.output, **kwargs)
 
+    def assertCsvEqual(self, first, second, msg=None):
+        csvsplit = lambda csv: [sorted(re.split(r'(,|\s+)', line))
+                                for line in csv.splitlines(True)]
+        return self.assertEqual(csvsplit(first), csvsplit(second), msg)
+
     def _check_output(self):
-        self.assertEqual(self.output.getvalue(), 'age,name\r\n22,John\xc2\xa3\r\n')
+        self.assertCsvEqual(self.output.getvalue(), 'age,name\r\n22,John\xc2\xa3\r\n')
 
     def test_header(self):
         output = StringIO()
@@ -148,14 +155,14 @@ class CsvItemExporterTest(BaseItemExporterTest):
         ie.start_exporting()
         ie.export_item(self.i)
         ie.finish_exporting()
-        self.assertEqual(output.getvalue(), 'age,name\r\n22,John\xc2\xa3\r\n')
+        self.assertCsvEqual(output.getvalue(), 'age,name\r\n22,John\xc2\xa3\r\n')
 
         output = StringIO()
         ie = CsvItemExporter(output, fields_to_export=['age'])
         ie.start_exporting()
         ie.export_item(self.i)
         ie.finish_exporting()
-        self.assertEqual(output.getvalue(), 'age\r\n22\r\n')
+        self.assertCsvEqual(output.getvalue(), 'age\r\n22\r\n')
 
         output = StringIO()
         ie = CsvItemExporter(output)
@@ -163,14 +170,14 @@ class CsvItemExporterTest(BaseItemExporterTest):
         ie.export_item(self.i)
         ie.export_item(self.i)
         ie.finish_exporting()
-        self.assertEqual(output.getvalue(), 'age,name\r\n22,John\xc2\xa3\r\n22,John\xc2\xa3\r\n')
+        self.assertCsvEqual(output.getvalue(), 'age,name\r\n22,John\xc2\xa3\r\n22,John\xc2\xa3\r\n')
 
         output = StringIO()
         ie = CsvItemExporter(output, include_headers_line=False)
         ie.start_exporting()
         ie.export_item(self.i)
         ie.finish_exporting()
-        self.assertEqual(output.getvalue(), '22,John\xc2\xa3\r\n')
+        self.assertCsvEqual(output.getvalue(), '22,John\xc2\xa3\r\n')
 
     def test_join_multivalue(self):
         class TestItem2(Item):
@@ -183,16 +190,29 @@ class CsvItemExporterTest(BaseItemExporterTest):
         ie.start_exporting()
         ie.export_item(i)
         ie.finish_exporting()
-        self.assertEqual(output.getvalue(), '"Mary,Paul",John\r\n')
+        self.assertCsvEqual(output.getvalue(), '"Mary,Paul",John\r\n')
 
 class XmlItemExporterTest(BaseItemExporterTest):
 
     def _get_exporter(self, **kwargs):
         return XmlItemExporter(self.output, **kwargs)
 
+    def assertXmlEquivalent(self, first, second, msg=None):
+        def xmltuple(elem):
+            children = list(elem.iterchildren())
+            if children:
+                return [(child.tag, sorted(xmltuple(child)))
+                        for child in children]
+            else:
+                return [(elem.tag, [(elem.text, ())])]
+        def xmlsplit(xmlcontent):
+            doc = lxml.etree.fromstring(xmlcontent)
+            return xmltuple(doc)
+        return self.assertEqual(xmlsplit(first), xmlsplit(second), msg)
+
     def _check_output(self):
         expected_value = '<?xml version="1.0" encoding="utf-8"?>\n<items><item><age>22</age><name>John\xc2\xa3</name></item></items>'
-        self.assertEqual(self.output.getvalue(), expected_value)
+        self.assertXmlEquivalent(self.output.getvalue(), expected_value)
 
     def test_multivalued_fields(self):
         output = StringIO()
@@ -202,7 +222,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
         ie.export_item(item)
         ie.finish_exporting()
         expected_value = '<?xml version="1.0" encoding="utf-8"?>\n<items><item><name><value>John\xc2\xa3</value><value>Doe</value></name></item></items>'
-        self.assertEqual(output.getvalue(), expected_value)
+        self.assertXmlEquivalent(output.getvalue(), expected_value)
 
     def test_nested_item(self):
         output = StringIO()
@@ -224,7 +244,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
                     '</age>'\
                     '<name>buz</name>'\
                 '</item></items>'
-        self.assertEqual(output.getvalue(), expected_value)
+        self.assertXmlEquivalent(output.getvalue(), expected_value)
 
     def test_nested_list_item(self):
         output = StringIO()
@@ -243,7 +263,8 @@ class XmlItemExporterTest(BaseItemExporterTest):
                     '</age>'\
                     '<name>buz</name>'\
                 '</item></items>'
-        self.assertEqual(output.getvalue(), expected_value)
+        self.assertXmlEquivalent(output.getvalue(), expected_value)
+
 
 class JsonLinesItemExporterTest(BaseItemExporterTest):
 

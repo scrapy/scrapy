@@ -184,6 +184,9 @@ class FormRequestTest(RequestTest):
 
     request_class = FormRequest
 
+    def assertSortedEqual(self, first, second, msg=None):
+        return self.assertEqual(sorted(first), sorted(second), msg)
+
     def test_empty_formdata(self):
         r1 = self.request_class("http://www.example.com", formdata={})
         self.assertEqual(r1.body, '')
@@ -194,7 +197,8 @@ class FormRequestTest(RequestTest):
         r2 = self.request_class("http://www.example.com", formdata=data)
         self.assertEqual(r2.method, 'POST')
         self.assertEqual(r2.encoding, 'utf-8')
-        self.assertEqual(r2.body, 'price=%C2%A3+100&one=two')
+        self.assertSortedEqual(r2.body.split('&'),
+                               'price=%C2%A3+100&one=two'.split('&'))
         self.assertEqual(r2.headers['Content-Type'], 'application/x-www-form-urlencoded')
 
     def test_custom_encoding(self):
@@ -207,7 +211,8 @@ class FormRequestTest(RequestTest):
         # using multiples values for a single key
         data = {'price': u'\xa3 100', 'colours': ['red', 'blue', 'green']}
         r3 = self.request_class("http://www.example.com", formdata=data)
-        self.assertEqual(r3.body, 'colours=red&colours=blue&colours=green&price=%C2%A3+100')
+        self.assertSortedEqual(r3.body.split('&'),
+            'colours=red&colours=blue&colours=green&price=%C2%A3+100'.split('&'))
 
     def test_from_response_post(self):
         response = _buildresponse(

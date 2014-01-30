@@ -312,12 +312,11 @@ class HtmlParserLinkExtractorTestCase(unittest.TestCase):
     def test_extraction(self):
         # Default arguments
         lx = HtmlParserLinkExtractor()
-        self.assertEqual([link for link in lx.extract_links(self.response)], [
-            Link(url='http://example.com/sample2.html', text=u'sample 2'),
-            Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
-            Link(url='http://example.com/sample3.html', text='sample 3 repetition'),
-            Link(url='http://www.google.com/something', text=''),
-        ])
+        self.assertEqual(lx.extract_links(self.response),
+                         [Link(url='http://example.com/sample2.html', text=u'sample 2'),
+                          Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
+                          Link(url='http://example.com/sample3.html', text=u'sample 3 repetition'),
+                          Link(url='http://www.google.com/something', text=u''),])
 
 
 class RegexLinkExtractorTestCase(unittest.TestCase):
@@ -329,13 +328,10 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
     def test_extraction(self):
         # Default arguments
         lx = RegexLinkExtractor()
-        # Note that RegexLinkExtractor returns links in arbitrary order,
-        # so we need to sort them for comparison
-        self.assertEqual(sorted(lx.extract_links(self.response), key=lambda x: x.url), [
-            Link(url='http://example.com/sample2.html', text=u'sample 2'),
-            Link(url='http://example.com/sample3.html', text=u'sample 3 repetition'),
-            Link(url='http://www.google.com/something', text=u''),
-        ])
+        self.assertEqual(lx.extract_links(self.response),
+                         [Link(url='http://example.com/sample2.html', text=u'sample 2'),
+                          Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
+                          Link(url='http://www.google.com/something', text=u''),])
 
 
 if __name__ == "__main__":
