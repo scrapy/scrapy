@@ -505,7 +505,7 @@ Don't cache responses with these URI schemes.
 HTTPCACHE_STORAGE
 ^^^^^^^^^^^^^^^^^
 
-Default: ``'scrapy.contrib.httpcache.DbmCacheStorage'``
+Default: ``'scrapy.contrib.httpcache.FilesystemCacheStorage'``
 
 The class which implements the cache storage backend.
 
