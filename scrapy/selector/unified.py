@@ -155,7 +155,23 @@ class Selector(object_ref):
         return self.extract()
 
 
-class SelectorList(list):
+class GetItemMixin(object):
+
+    def get(self, index):
+        """Returns the element at given index or None."""
+        try:
+            return self[index]
+        except IndexError:
+            pass
+
+
+class ResultList(GetItemMixin, list):
+    """A convenient list class with handy shortcuts."""
+
+
+class SelectorList(GetItemMixin, list):
+
+    result_cls = ResultList
 
     def __getslice__(self, i, j):
         return self.__class__(list.__getslice__(self, i, j))
@@ -167,10 +183,10 @@ class SelectorList(list):
         return self.__class__(flatten([x.css(xpath) for x in self]))
 
     def re(self, regex):
-        return flatten([x.re(regex) for x in self])
+        return self.result_cls(flatten([x.re(regex) for x in self]))
 
     def extract(self):
-        return [x.extract() for x in self]
+        return self.result_cls(x.extract() for x in self)
 
     @deprecated(use_instead='.extract()')
     def extract_unquoted(self):
