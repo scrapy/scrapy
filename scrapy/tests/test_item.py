@@ -5,6 +5,9 @@ from scrapy.item import Item, Field
 
 class ItemTest(unittest.TestCase):
 
+    def assertSortedEqual(self, first, second, msg=None):
+        return self.assertEqual(sorted(first), sorted(second), msg)
+
     def test_simple(self):
         class TestItem(Item):
             name = Field()
@@ -108,8 +111,8 @@ class ItemTest(unittest.TestCase):
 
         i['keys'] = u'Keys'
         i['values'] = u'Values'
-        self.assertEqual(i.keys(), ['keys', 'values', 'name'])
-        self.assertEqual(i.values(), [u'Keys', u'Values', u'John'])
+        self.assertSortedEqual(i.keys(), ['keys', 'values', 'name'])
+        self.assertSortedEqual(i.values(), [u'Keys', u'Values', u'John'])
 
     def test_metaclass_inheritance(self):
         class BaseItem(Item):

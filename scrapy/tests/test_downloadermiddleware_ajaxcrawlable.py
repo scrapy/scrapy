@@ -1,7 +1,7 @@
 import unittest
 
 from scrapy.contrib.downloadermiddleware.ajaxcrawl import AjaxCrawlMiddleware
-from scrapy.spider import BaseSpider
+from scrapy.spider import Spider
 from scrapy.http import Request, HtmlResponse, Response
 from scrapy.utils.test import get_crawler
 
@@ -9,7 +9,7 @@ __doctests__ = ['scrapy.contrib.downloadermiddleware.ajaxcrawl']
 
 class AjaxCrawlMiddlewareTest(unittest.TestCase):
     def setUp(self):
-        self.spider = BaseSpider('foo')
+        self.spider = Spider('foo')
         crawler = get_crawler({'AJAXCRAWL_ENABLED': True})
         self.mw = AjaxCrawlMiddleware.from_crawler(crawler)
 

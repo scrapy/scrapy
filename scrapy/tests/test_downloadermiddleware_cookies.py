@@ -1,4 +1,5 @@
 from unittest import TestCase
+import re
 
 from scrapy.http import Response, Request
 from scrapy.spider import Spider
@@ -6,6 +7,12 @@ from scrapy.contrib.downloadermiddleware.cookies import CookiesMiddleware
 
 
 class CookiesMiddlewareTest(TestCase):
+
+    def assertCookieValEqual(self, first, second, msg=None):
+        cookievaleq = lambda cv: re.split(';\s*', cv)
+        return self.assertEqual(
+            sorted(cookievaleq(first)),
+            sorted(cookievaleq(second)), msg)
 
     def setUp(self):
         self.spider = Spider('foo')
@@ -86,7 +93,8 @@ class CookiesMiddlewareTest(TestCase):
 
         req2 = Request('http://scrapytest.org/sub1/')
         assert self.mw.process_request(req2, self.spider) is None
-        self.assertEquals(req2.headers.get('Cookie'), "C1=value1; galleta=salada")
+
+        self.assertCookieValEqual(req2.headers.get('Cookie'), "C1=value1; galleta=salada")
 
     def test_cookiejar_key(self):
         req = Request('http://scrapytest.org/', cookies={'galleta': 'salada'}, meta={'cookiejar': "store1"})
@@ -99,8 +107,7 @@ class CookiesMiddlewareTest(TestCase):
 
         req2 = Request('http://scrapytest.org/', meta=res.meta)
         assert self.mw.process_request(req2, self.spider) is None
-        self.assertEquals(req2.headers.get('Cookie'), 'C1=value1; galleta=salada')
-
+        self.assertCookieValEqual(req2.headers.get('Cookie'),'C1=value1; galleta=salada')
 
         req3 = Request('http://scrapytest.org/', cookies={'galleta': 'dulce'}, meta={'cookiejar': "store2"})
         assert self.mw.process_request(req3, self.spider) is None
@@ -112,7 +119,7 @@ class CookiesMiddlewareTest(TestCase):
 
         req4 = Request('http://scrapytest.org/', meta=res2.meta)
         assert self.mw.process_request(req4, self.spider) is None
-        self.assertEquals(req4.headers.get('Cookie'), 'C2=value2; galleta=dulce')
+        self.assertCookieValEqual(req4.headers.get('Cookie'), 'C2=value2; galleta=dulce')
 
         #cookies from hosts with port
         req5_1 = Request('http://scrapytest.org:1104/')

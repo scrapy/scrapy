@@ -4,6 +4,10 @@ import copy
 from scrapy.http import Headers
 
 class HeadersTest(unittest.TestCase):
+
+    def assertSortedEqual(self, first, second, msg=None):
+        return self.assertEqual(sorted(first), sorted(second), msg)
+
     def test_basics(self):
         h = Headers({'Content-Type': 'text/html', 'Content-Length': 1234})
         assert h['Content-Type']
@@ -75,13 +79,13 @@ class HeadersTest(unittest.TestCase):
         idict = {'Content-Type': 'text/html', 'X-Forwarded-For': ['ip1', 'ip2']}
 
         h = Headers(idict)
-        self.assertEqual(dict(h), {'Content-Type': ['text/html'], 'X-Forwarded-For': ['ip1', 'ip2']})
-        self.assertEqual(h.keys(), ['X-Forwarded-For', 'Content-Type'])
-        self.assertEqual(h.items(), [('X-Forwarded-For', ['ip1', 'ip2']), ('Content-Type', ['text/html'])])
-        self.assertEqual(list(h.iteritems()),
-                [('X-Forwarded-For', ['ip1', 'ip2']), ('Content-Type', ['text/html'])])
+        self.assertDictEqual(dict(h),
+                             {'Content-Type': ['text/html'], 'X-Forwarded-For': ['ip1', 'ip2']})
+        self.assertSortedEqual(h.keys(), ['X-Forwarded-For', 'Content-Type'])
+        self.assertSortedEqual(h.items(), [('X-Forwarded-For', ['ip1', 'ip2']), ('Content-Type', ['text/html'])])
+        self.assertSortedEqual(h.iteritems(), [('X-Forwarded-For', ['ip1', 'ip2']), ('Content-Type', ['text/html'])])
 
-        self.assertEqual(h.values(), ['ip2', 'text/html'])
+        self.assertSortedEqual(h.values(), ['ip2', 'text/html'])
 
     def test_update(self):
         h = Headers()

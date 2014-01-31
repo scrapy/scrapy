@@ -169,7 +169,9 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
         protocol = client.ScrapyHTTPPageGetter()
         protocol.factory = factory
         protocol.makeConnection(transport)
-        self.assertEqual(transport.value(), testvalue)
+        self.assertEqual(
+            set(transport.value().splitlines()),
+            set(testvalue.splitlines()))
         return testvalue
 
     def test_non_standard_line_endings(self):
