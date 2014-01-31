@@ -3,13 +3,15 @@ from unittest import TestCase
 from scrapy.http import Response, Request
 from scrapy.spider import Spider
 from scrapy.contrib.spidermiddleware.offsite import OffsiteMiddleware
+from scrapy.utils.test import get_crawler
 
 
 class TestOffsiteMiddleware(TestCase):
 
     def setUp(self):
         self.spider = self._get_spider()
-        self.mw = OffsiteMiddleware()
+        crawler = get_crawler()
+        self.mw = OffsiteMiddleware.from_crawler(crawler)
         self.mw.spider_opened(self.spider)
 
     def _get_spider(self):
