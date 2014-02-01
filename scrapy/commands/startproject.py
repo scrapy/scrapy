@@ -43,13 +43,17 @@ class Command(ScrapyCommand):
         elif exists(project_name):
             print("Error: directory %r already exists" % project_name)
             sys.exit(1)
-
-        moduletpl = join(TEMPLATES_PATH, 'module')
-        copytree(moduletpl, join(project_name, project_name), ignore=IGNORE)
-        shutil.copy(join(TEMPLATES_PATH, 'scrapy.cfg'), project_name)
-        for paths in TEMPLATES_TO_RENDER:
-            path = join(*paths)
-            tplfile = join(project_name,
-                string.Template(path).substitute(project_name=project_name))
-            render_templatefile(tplfile, project_name=project_name,
-                ProjectName=string_camelcase(project_name))
+        try:
+            __import__(project_name, [], 0)
+            print "Error: Project name can't be %r, choose another project name" % project_name
+            sys.exit(1)
+        except ImportError:
+            moduletpl = join(TEMPLATES_PATH, 'module')
+            copytree(moduletpl, join(project_name, project_name), ignore=IGNORE)
+            shutil.copy(join(TEMPLATES_PATH, 'scrapy.cfg'), project_name)
+            for paths in TEMPLATES_TO_RENDER:
+                path = join(*paths)
+                tplfile = join(project_name,
+                    string.Template(path).substitute(project_name=project_name))
+                render_templatefile(tplfile, project_name=project_name,
+                    ProjectName=string_camelcase(project_name))
