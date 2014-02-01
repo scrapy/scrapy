@@ -48,10 +48,10 @@ This will create a ``tutorial`` directory with the following contents::
            pipelines.py
            settings.py
            spiders/
-               __init__.py 
-               ... 
+               __init__.py
+               ...
 
-These are basically: 
+These are basically:
 
 * ``scrapy.cfg``: the project configuration file
 * ``tutorial/``: the project's python module, you'll later import your code from
@@ -84,7 +84,7 @@ items.py, found in the ``tutorial`` directory. Our Item class looks like this::
         title = Field()
         link = Field()
         desc = Field()
-        
+
 This may seem complicated at first, but defining the item allows you to use other handy
 components of Scrapy that need to know how your item looks like.
 
@@ -92,7 +92,7 @@ Our first Spider
 ================
 
 Spiders are user-written classes used to scrape information from a domain (or group
-of domains). 
+of domains).
 
 They define an initial list of URLs to download, how to follow links, and how
 to parse the contents of those pages to extract :ref:`items <topics-items>`.
@@ -112,7 +112,7 @@ define the three main, mandatory, attributes:
   be called with the downloaded :class:`~scrapy.http.Response` object of each
   start URL. The response is passed to the method as the first and only
   argument.
- 
+
   This method is responsible for parsing the response data and extracting
   scraped data (as scraped items) and more URLs to follow.
 
@@ -132,7 +132,7 @@ This is the code for our first Spider; save it in a file named
            "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
            "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
        ]
-        
+
        def parse(self, response):
            filename = response.url.split("/")[-2]
            open(filename, 'wb').write(response.body)
@@ -225,7 +225,7 @@ documentation).
   argument.
 
 * :meth:`~scrapy.selector.Selector.css`: returns a list of selectors, each of
-  them representing the nodes selected by the CSS expression given as argument. 
+  them representing the nodes selected by the CSS expression given as argument.
 
 * :meth:`~scrapy.selector.Selector.extract`: returns a unicode string with the
   selected data.
@@ -269,7 +269,7 @@ This is what the shell looks like::
     [s]   fetch(req_or_url) Fetch request (or URL) and update local objects
     [s]   view(response)    View response in a browser
 
-    In [1]: 
+    In [1]:
 
 After the shell loads, you will have the response fetched in a local
 ``response`` variable, so if you type ``response.body`` you will see the body
@@ -299,7 +299,7 @@ So let's try it::
 Extracting the data
 ^^^^^^^^^^^^^^^^^^^
 
-Now, let's try to extract some real information from those pages. 
+Now, let's try to extract some real information from those pages.
 
 You could type ``response.body`` in the console, and inspect the source code to
 figure out the XPaths you need to use. However, inspecting the raw HTML code
@@ -357,7 +357,7 @@ Let's add this code to our spider::
            "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
            "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
        ]
-       
+
        def parse(self, response):
            sel = Selector(response)
            sites = sel.xpath('//ul/li')
@@ -367,7 +367,7 @@ Let's add this code to our spider::
                desc = site.xpath('text()').extract()
                print title, link, desc
 
-Notice we import our Selector class from scrapy.selector and instantiate a 
+Notice we import our Selector class from scrapy.selector and instantiate a
 new Selector object.  We can now specify our XPaths just as we did in the shell.
 Now try crawling the dmoz.org domain again and you'll see sites being printed
 in your output, run::
@@ -390,30 +390,30 @@ Spiders are expected to return their scraped data inside
 :class:`~scrapy.item.Item` objects. So, in order to return the data we've
 scraped so far, the final code for our Spider would be like this::
 
-   from scrapy.spider import Spider
-   from scrapy.selector import Selector
+    from scrapy.spider import Spider
+    from scrapy.selector import Selector
 
-   from tutorial.items import DmozItem
+    from tutorial.items import DmozItem
 
-   class DmozSpider(Spider):
-      name = "dmoz"
-      allowed_domains = ["dmoz.org"]
-      start_urls = [
-          "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
-          "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
-      ]
-       
-      def parse(self, response):
-          sel = Selector(response)
-          sites = sel.xpath('//ul/li')
-          items = []
-          for site in sites:
-              item = DmozItem()
-              item['title'] = site.xpath('a/text()').extract()
-              item['link'] = site.xpath('a/@href').extract()
-              item['desc'] = site.xpath('text()').extract()
-              items.append(item)
-          return items
+    class DmozSpider(Spider):
+        name = "dmoz"
+        allowed_domains = ["dmoz.org"]
+        start_urls = [
+            "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
+            "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
+        ]
+
+        def parse(self, response):
+            sel = Selector(response)
+            sites = sel.xpath('//ul/li')
+            items = []
+            for site in sites:
+                item = DmozItem()
+                item['title'] = site.xpath('a/text()').extract()
+                item['link'] = site.xpath('a/@href').extract()
+                item['desc'] = site.xpath('text()').extract()
+                items.append(item)
+            return items
 
 .. note:: You can find a fully-functional variant of this spider in the dirbot_
    project available at https://github.com/scrapy/dirbot
@@ -449,7 +449,7 @@ pipeline if you just want to store the scraped items.
 
 Next steps
 ==========
-           
+
 This tutorial covers only the basics of Scrapy, but there's a lot of other
 features not mentioned here. Check the :ref:`topics-whatelse` section in
 :ref:`intro-overview` chapter for a quick overview of the most important ones.
