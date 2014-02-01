@@ -3,7 +3,7 @@ import sys
 import string
 import re
 import shutil
-from os.path import join, exists
+from os.path import join, exists, abspath
 from shutil import copytree, ignore_patterns
 
 import scrapy
@@ -53,3 +53,8 @@ class Command(ScrapyCommand):
                 string.Template(path).substitute(project_name=project_name))
             render_templatefile(tplfile, project_name=project_name,
                 ProjectName=string_camelcase(project_name))
+        print("New Scrapy project %r created in:" % project_name)
+        print("    %s\n" % abspath(project_name))
+        print("You can start your first spider with:")
+        print("    cd %s" % project_name)
+        print("    scrapy genspider example example.com")

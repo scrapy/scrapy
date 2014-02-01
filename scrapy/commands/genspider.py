@@ -40,7 +40,7 @@ class Command(ScrapyCommand):
             help="Edit spider after creating it")
         parser.add_option("-d", "--dump", dest="dump", metavar="TEMPLATE",
             help="Dump template to standard output")
-        parser.add_option("-t", "--template", dest="template", default="crawl",
+        parser.add_option("-t", "--template", dest="template", default="basic",
             help="Uses a custom template.")
         parser.add_option("--force", dest="force", action="store_true",
             help="If the spider already exists, overwrite it with the template")
