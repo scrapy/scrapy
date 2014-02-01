@@ -317,7 +317,8 @@ class HtmlParserLinkExtractorTestCase(unittest.TestCase):
                          [Link(url='http://example.com/sample2.html', text=u'sample 2'),
                           Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
                           Link(url='http://example.com/sample3.html', text=u'sample 3 repetition'),
-                          Link(url='http://www.google.com/something', text=u''),])
+                          Link(url='http://www.google.com/something', text=u''),
+                          Link(url='http://example.com/innertag.html', text=u'inner tag'),])
 
 
 class RegexLinkExtractorTestCase(unittest.TestCase):
@@ -332,7 +333,8 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
         self.assertEqual(lx.extract_links(self.response),
                          [Link(url='http://example.com/sample2.html', text=u'sample 2'),
                           Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
-                          Link(url='http://www.google.com/something', text=u''),])
+                          Link(url='http://www.google.com/something', text=u''),
+                          Link(url='http://example.com/innertag.html', text=u'inner tag'),])
 
 
 if __name__ == "__main__":
