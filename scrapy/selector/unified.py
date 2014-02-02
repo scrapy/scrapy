@@ -6,7 +6,7 @@ from lxml import etree
 
 from scrapy.utils.misc import extract_regex
 from scrapy.utils.trackref import object_ref
-from scrapy.utils.python import unicode_to_str, flatten
+from scrapy.utils.python import unicode_to_str, flatten, iflatten
 from scrapy.utils.decorator import deprecated
 from scrapy.http import HtmlResponse, XmlResponse
 from .lxmldocument import LxmlDocument
@@ -174,6 +174,10 @@ class SelectorList(list):
 
     def re(self, regex):
         return flatten([x.re(regex) for x in self])
+
+    def re_first(self, regex):
+        for el in iflatten((x.re(regex) for x in self)):
+            return el
 
     def extract(self):
         return [x.extract() for x in self]

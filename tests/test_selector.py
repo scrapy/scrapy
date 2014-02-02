@@ -72,6 +72,24 @@ class SelectorTestCase(unittest.TestCase):
 
         self.assertEqual(sel.xpath('/ul/li[@id="doesnt-exist"]/text()').extract_first(), None)
 
+    def test_re_first(self):
+        """Test if re_first() returns first matched element"""
+        body = '<ul><li id="1">1</li><li id="2">2</li></ul>'
+        response = TextResponse(url="http://example.com", body=body)
+        sel = self.sscls(response)
+
+        self.assertEqual(sel.xpath('//ul/li/text()').re_first('\d'),
+                         sel.xpath('//ul/li/text()').re('\d')[0])
+
+        self.assertEqual(sel.xpath('//ul/li[@id="1"]/text()').re_first('\d'),
+                         sel.xpath('//ul/li[@id="1"]/text()').re('\d')[0])
+
+        self.assertEqual(sel.xpath('//ul/li[2]/text()').re_first('\d'),
+                         sel.xpath('//ul/li/text()').re('\d')[1])
+
+        self.assertEqual(sel.xpath('/ul/li/text()').re_first('\w+'), None)
+        self.assertEqual(sel.xpath('/ul/li[@id="doesnt-exist"]/text()').re_first('\d'), None)
+
     def test_select_unicode_query(self):
         body = u"<p><input name='\xa9' value='1'/></p>"
         response = TextResponse(url="http://example.com", body=body, encoding='utf8')
