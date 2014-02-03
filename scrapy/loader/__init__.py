@@ -11,9 +11,8 @@ from scrapy.utils.decorator import deprecated
 from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.misc import arg_to_iter, extract_regex
 from scrapy.utils.python import flatten
-
-from .common import wrap_loader_context
-from .processor import Identity
+from scrapy.loader.common import wrap_loader_context
+from scrapy.loader.processor import *
 
 
 class ItemLoader(object):

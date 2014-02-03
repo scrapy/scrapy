@@ -1,9 +1,6 @@
 import unittest
 from functools import partial
-
-from scrapy.contrib.loader import ItemLoader
-from scrapy.contrib.loader.processor import Join, Identity, TakeFirst, \
-    Compose, MapCompose
+from scrapy.loader import ItemLoader, Join, Identity, TakeFirst, Compose, MapCompose
 from scrapy.item import Item, Field
 from scrapy.selector import Selector
 from scrapy.http import HtmlResponse
