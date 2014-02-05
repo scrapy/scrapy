@@ -145,6 +145,9 @@ class WarnWhenSubclassedTest(unittest.TestCase):
             class OutdatedUserClass1(DeprecatedName):
                 pass
 
+            class OutdatedUserClass1a(DeprecatedName):
+                pass
+
             class UnrelatedClass(object):
                 pass
 
@@ -159,6 +162,8 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         assert not issubclass(UnrelatedClass, DeprecatedName)
         assert not issubclass(OldStyleClass, DeprecatedName)
         assert not issubclass(OldStyleClass, DeprecatedName)
+        assert not issubclass(OutdatedUserClass1, OutdatedUserClass1a)
+        assert not issubclass(OutdatedUserClass1a, OutdatedUserClass1)
 
         self.assertRaises(TypeError, issubclass, object(), DeprecatedName)
 
@@ -175,6 +180,9 @@ class WarnWhenSubclassedTest(unittest.TestCase):
             class OutdatedUserClass2(DeprecatedName):
                 pass
 
+            class OutdatedUserClass2a(DeprecatedName):
+                pass
+
             class UnrelatedClass(object):
                 pass
 
@@ -186,6 +194,9 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         assert isinstance(UpdatedUserClass2(), DeprecatedName)
         assert isinstance(UpdatedUserClass2a(), DeprecatedName)
         assert isinstance(OutdatedUserClass2(), DeprecatedName)
+        assert isinstance(OutdatedUserClass2a(), DeprecatedName)
+        assert not isinstance(OutdatedUserClass2a(), OutdatedUserClass2)
+        assert not isinstance(OutdatedUserClass2(), OutdatedUserClass2a)
         assert not isinstance(UnrelatedClass(), DeprecatedName)
         assert not isinstance(OldStyleClass(), DeprecatedName)
 
