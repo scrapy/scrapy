@@ -79,12 +79,18 @@ def create_deprecated_class(name, new_class, clsdict=None,
                        for c in {type(inst), inst.__class__})
 
         def __subclasscheck__(cls, sub):
+            if cls is not DeprecatedClass.deprecated_class:
+                # we should do the magic only if second `issubclass` argument
+                # is the deprecated class itself - subclasses of the
+                # deprecated class should not use custom `__subclasscheck__`
+                # method.
+                return super(DeprecatedClass, cls).__subclasscheck__(sub)
+
             if not inspect.isclass(sub):
                 raise TypeError("issubclass() arg 1 must be a class")
 
             mro = getattr(sub, '__mro__', ())
-            candidates = {cls, new_class}
-            return any(c in candidates for c in mro)
+            return any(c in {cls, new_class} for c in mro)
 
         def __call__(cls, *args, **kwargs):
             old = DeprecatedClass.deprecated_class
