@@ -1,6 +1,7 @@
 import unittest
 
-from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots, xml_to_dict
+from scrapy.utils.sitemap import (Sitemap, sitemap_urls_from_robots,
+                                  element_to_dict)
 
 class SitemapTest(unittest.TestCase):
 
@@ -195,7 +196,7 @@ Disallow: /forum/active/
             }
         ])
 
-    def test_xml_to_dict(self):
+    def test_element_to_dict(self):
         import lxml.etree
         content = """<url>
         <loc>http://arstechnica.com/gadgets/2013/08/microsoftgoogle-bring-back-the-good-youtube-windows-phone-app/</loc>
@@ -225,7 +226,7 @@ Disallow: /forum/active/
                                   'news:publication_date':
                                   '2013-08-14T01:00:40+00:00',
                                   'news:title': 'Microsoft/Google bring back the good YouTube Windows Phone app'}}
-        self.assertEqual(xml_to_dict(doc), expected)
+        self.assertEqual(element_to_dict(doc), expected)
 
 if __name__ == '__main__':
     unittest.main()

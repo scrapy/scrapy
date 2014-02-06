@@ -19,7 +19,7 @@ class Sitemap(object):
 
     def __iter__(self):
         for elem in self._root.getchildren():
-            d = xml_to_dict(elem)
+            d = element_to_dict(elem)
             if 'loc' in d:
                 yield d
 
@@ -33,9 +33,11 @@ def sitemap_urls_from_robots(robots_text):
             yield line.split(':', 1)[1].strip()
 
 
-def xml_to_dict(doc):
+def element_to_dict(et):
+    """convert a given etree element to a python dictionary.
+    This function is tailored for converting sitemap entries only"""
     dic = {}
-    for el in doc:
+    for el in et:
         tag = el.tag
         name = tag.split('}', 1)[1] if '}' in tag else tag
         if name == 'link':
@@ -46,7 +48,7 @@ def xml_to_dict(doc):
             if el.text and el.text.strip():
                 dic[name] = el.text.strip()
         else:
-            sub_dic = xml_to_dict(el)
+            sub_dic = element_to_dict(el)
             if sub_dic:
                 dic[name] = sub_dic
     return dic
