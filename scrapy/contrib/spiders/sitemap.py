@@ -70,9 +70,9 @@ def regex(x):
 
 def iterloc(it, alt=False):
     for d in it:
-        yield d['loc']
+        yield d['loc'][0]
 
         # Also consider alternate URLs (xhtml:link rel="alternate")
         if alt and 'alternate' in d:
             for l in d['alternate']:
-                yield l
+                yield l[0]

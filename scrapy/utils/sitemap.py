@@ -46,9 +46,9 @@ def element_to_dict(et):
         # Recursive for ancestors
         if len(el) == 0:
             if el.text and el.text.strip():
-                dic[name] = el.text.strip()
+                dic.setdefault(name, []).append(el.text.strip())
         else:
             sub_dic = element_to_dict(el)
             if sub_dic:
-                dic[name] = sub_dic
+                dic.setdefault(name, []).append(sub_dic)
     return dic
