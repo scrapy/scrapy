@@ -3,13 +3,17 @@ from __future__ import absolute_import
 import inspect
 import unittest
 import warnings
+import mock
 from scrapy.utils.deprecate import create_deprecated_class
+
 
 class MyWarning(UserWarning):
     pass
 
+
 class SomeBaseClass(object):
     pass
+
 
 class NewName(SomeBaseClass):
     pass
@@ -234,3 +238,12 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         self.assertIn('foo.Bar', str(w[0].message))
         self.assertIn('AlsoDeprecated', str(w[1].message))
         self.assertIn('foo.Bar', str(w[1].message))
+
+    def test_inspect_stack(self):
+        with mock.patch('inspect.stack', side_effect=IndexError):
+            with warnings.catch_warnings(record=True) as w:
+                DeprecatedName = create_deprecated_class('DeprecatedName', NewName)
+                class SubClass(DeprecatedName):
+                    pass
+
+        self.assertIn("Error detecting parent module", str(w[0].message))
