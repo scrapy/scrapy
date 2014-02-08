@@ -1,4 +1,6 @@
 import json
+import socket
+import mock
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 from scrapy.utils.test import get_crawler, get_testlog
@@ -88,9 +90,11 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_retry_dns_error(self):
-        spider = SimpleSpider("http://localhost666/status?n=503")
-        yield docrawl(spider)
-        self._assert_retried()
+        with mock.patch('socket.gethostbyname',
+                        side_effect=socket.gaierror(-5, 'No address associated with hostname')):
+            spider = SimpleSpider("http://example.com/")
+            yield docrawl(spider)
+            self._assert_retried()
 
     @defer.inlineCallbacks
     def test_start_requests_bug_before_yield(self):
