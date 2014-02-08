@@ -3,6 +3,35 @@
 Release notes
 =============
 
+0.22.1 (released 2014-01-17)
+----------------------------
+
+- localhost666 can resolve under certain circumstances (:commit:`2ec2279`)
+- test inspect.stack failure (:commit:`cc3eda3`)
+- Handle cases when inspect.stack() fails (:commit:`8cb44f9`)
+- Fix wrong checks on subclassing of deprecated classes. closes #581 (:commit:`46d98d6`)
+- Docs: 4-space indent for final spider example (:commit:`13846de`)
+- Fix HtmlParserLinkExtractor and tests after #485 merge (:commit:`368a946`)
+- BaseSgmlLinkExtractor: Fixed the missing space when the link has an inner tag (:commit:`b566388`)
+- BaseSgmlLinkExtractor: Added unit test of a link with an inner tag (:commit:`c1cb418`)
+- BaseSgmlLinkExtractor: Fixed unknown_endtag() so that it only set current_link=None when the end tag match the opening tag (:commit:`7e4d627`)
+- Fix tests for Travis-CI build (:commit:`76c7e20`)
+- replace unencodeable codepoints with html entities. fixes #562 and #285 (:commit:`5f87b17`)
+- RegexLinkExtractor: encode URL unicode value when creating Links (:commit:`d0ee545`)
+- Updated the tutorial crawl output with latest output. (:commit:`8da65de`)
+- Updated shell docs with the crawler reference and fixed the actual shell output. (:commit:`875b9ab`)
+- PEP8 minor edits. (:commit:`f89efaf`)
+- Expose current crawler in the scrapy shell. (:commit:`5349cec`)
+- Unused re import and PEP8 minor edits. (:commit:`387f414`)
+- Ignore None's values when using the ItemLoader. (:commit:`0632546`)
+- DOC Fixed HTTPCACHE_STORAGE typo in the default value which is now Filesystem instead Dbm. (:commit:`cde9a8c`)
+- show ubuntu setup instructions as literal code (:commit:`fb5c9c5`)
+- Update Ubuntu installation instructions (:commit:`70fb105`)
+- Merge pull request #550 from stray-leone/patch-1 (:commit:`6f70b6a`)
+- modify the version of scrapy ubuntu package (:commit:`725900d`)
+- fix 0.22.0 release date (:commit:`af0219a`)
+- fix typos in news.rst and remove (not released yet) header (:commit:`b7f58f4`)
+
 0.22.0 (released 2014-01-17)
 ----------------------------
 
