@@ -25,7 +25,7 @@ default exports), continue reading below.
 In order to use an Item Exporter, you  must instantiate it with its required
 args. Each Item Exporter requires different arguments, so check each exporter
 documentation to be sure, in :ref:`topics-exporters-reference`. After you have
-instantiated you exporter, you have to:
+instantiated your exporter, you have to:
 
 1. call the method :meth:`~BaseItemExporter.start_exporting` in order to
 signal the beginning of the exporting process
@@ -109,10 +109,10 @@ Example::
 2. Overriding the serialize_field() method
 ------------------------------------------
 
-You can also override the :meth:`~BaseItemExporter.serialize` method to
+You can also override the :meth:`~BaseItemExporter.serialize_field()` method to
 customize how your field value will be exported.
 
-Make sure you call the base class :meth:`~BaseItemExporter.serialize` method
+Make sure you call the base class :meth:`~BaseItemExporter.serialize_field()` method
 after your custom code. 
 
 Example::
