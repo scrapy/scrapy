@@ -656,3 +656,16 @@ Combine SitemapSpider with other sources of urls::
 .. _robots.txt: http://www.robotstxt.org/
 .. _TLD: http://en.wikipedia.org/wiki/Top-level_domain
 .. _Scrapyd documentation: http://scrapyd.readthedocs.org/
+
+ThriftySitemapSpider
+--------------------
+
+.. class:: ThriftySitemapSpider
+
+Sometimes, when site has a tree of huge sitemaps and your spider works in a limited memory environment,
+it may crash with out of memory error.
+
+ThriftySitemapSpider works exactly the same way as SitemapSpider but doesn't aggressively allocate
+memory huge sitemaps, processing them one by one.
+
+You may use it as a parent class for your spider, instead of SitemapSpider
