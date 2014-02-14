@@ -192,3 +192,18 @@ with multiples lines
         # last request explicitly sets a Referer header
         echo3 = json.loads(spider.meta['responses'][3].body)
         self.assertEqual(echo3['headers'].get('Referer'), ['http://example.com'])
+
+    @defer.inlineCallbacks
+    def test_engine_status(self):
+        from scrapy.utils.engine import get_engine_status
+        est = []
+
+        def cb(response):
+            est.append(get_engine_status(spider.crawler.engine))
+
+        spider = SingleRequestSpider(seed='http://localhost:8998/', callback_func=cb)
+        yield docrawl(spider)
+        self.assertEqual(len(est), 1, est)
+        s = dict(est[0])
+        self.assertEqual(s['engine.spider.name'], spider.name)
+        self.assertEqual(s['len(engine.scraper.slot.active)'], 1)

@@ -5,14 +5,13 @@ from time import time # used in global tests code
 
 def get_engine_status(engine):
     """Return a report of the current engine status"""
-    global_tests = [
+    tests = [
         "time()-engine.start_time",
         "engine.has_capacity()",
         "len(engine.downloader.active)",
         "engine.scraper.is_idle()",
-    ]
-    spider_tests = [
-        "engine.spider_is_idle(spider)",
+        "engine.spider.name",
+        "engine.spider_is_idle(engine.spider)",
         "engine.slot.closing",
         "len(engine.slot.inprogress)",
         "len(engine.slot.scheduler.dqs or [])",
@@ -24,34 +23,23 @@ def get_engine_status(engine):
         "engine.scraper.slot.needs_backout()",
     ]
 
-    status = {'global': [], 'spiders': {}}
-    for test in global_tests:
+    checks = []
+    for test in tests:
         try:
-            status['global'] += [(test, eval(test))]
+            checks += [(test, eval(test))]
         except Exception as e:
-            status['global'] += [(test, "%s (exception)" % type(e).__name__)]
-    for spider in engine.slots.keys():
-        x = []
-        for test in spider_tests:
-            try:
-                x += [(test, eval(test))]
-            except Exception as e:
-                x += [(test, "%s (exception)" % type(e).__name__)]
-            status['spiders'][spider] = x
-    return status
+            checks += [(test, "%s (exception)" % type(e).__name__)]
+
+    return checks
 
 def format_engine_status(engine=None):
-    status = get_engine_status(engine)
+    checks = get_engine_status(engine)
     s = "Execution engine status\n\n"
-    for test, result in status['global']:
+    for test, result in checks:
         s += "%-47s : %s\n" % (test, result)
     s += "\n"
-    for spider, tests in status['spiders'].items():
-        s += "Spider: %s\n" % spider
-        for test, result in tests:
-            s += "  %-50s : %s\n" % (test, result)
+
     return s
 
 def print_engine_status(engine):
     print(format_engine_status(engine))
-

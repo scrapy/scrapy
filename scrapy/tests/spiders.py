@@ -137,6 +137,8 @@ class BrokenStartRequestsSpider(FollowAllSpider):
 class SingleRequestSpider(MetaSpider):
 
     seed = None
+    callback_func = None
+    errback_func = None
 
     def start_requests(self):
         if isinstance(self.seed, Request):
@@ -146,8 +148,12 @@ class SingleRequestSpider(MetaSpider):
 
     def parse(self, response):
         self.meta.setdefault('responses', []).append(response)
+        if callable(self.callback_func):
+            return self.callback_func(response)
         if 'next' in response.meta:
             return response.meta['next']
 
     def on_error(self, failure):
         self.meta['failure'] = failure
+        if callable(self.errback_func):
+            return self.errback_func(failure)
