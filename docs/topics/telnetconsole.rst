@@ -83,24 +83,21 @@ using the telnet console::
     >>> est()
     Execution engine status
 
-    time()-engine.start_time                        : 9.24237799644
+    time()-engine.start_time                        : 8.62972998619
     engine.has_capacity()                           : False
-    engine.downloader.is_idle()                     : False
-    len(engine.downloader.slots)                    : 2
     len(engine.downloader.active)                   : 16
     engine.scraper.is_idle()                        : False
-
-    Spider: <GayotSpider 'gayotcom' at 0x2dc2b10>
-      engine.spider_is_idle(spider)                      : False
-      engine.slots[spider].closing                       : False
-      len(engine.slots[spider].inprogress)               : 21
-      len(engine.slots[spider].scheduler.dqs or [])      : 0
-      len(engine.slots[spider].scheduler.mqs)            : 4453
-      len(engine.scraper.slot.queue)                     : 0
-      len(engine.scraper.slot.active)                    : 5
-      engine.scraper.slot.active_size                    : 1515069
-      engine.scraper.slot.itemproc_size                  : 0
-      engine.scraper.slot.needs_backout()                : False
+    engine.spider.name                              : followall
+    engine.spider_is_idle(engine.spider)            : False
+    engine.slot.closing                             : False
+    len(engine.slot.inprogress)                     : 16
+    len(engine.slot.scheduler.dqs or [])            : 0
+    len(engine.slot.scheduler.mqs)                  : 92
+    len(engine.scraper.slot.queue)                  : 0
+    len(engine.scraper.slot.active)                 : 0
+    engine.scraper.slot.active_size                 : 0
+    engine.scraper.slot.itemproc_size               : 0
+    engine.scraper.slot.needs_backout()             : False
 
 
 Pause, resume and stop the Scrapy engine
