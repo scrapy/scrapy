@@ -3,7 +3,14 @@
 Release notes
 =============
 
-0.22.1 (released 2014-01-17)
+0.22.2 (released 2014-02-14)
+----------------------------
+
+- fix a reference to unexistent engine.slots. closes #593 (:commit:`13c099a`)
+- downloaderMW doc typo (spiderMW doc copy remnant) (:commit:`8ae11bf`)
+- Correct typos (:commit:`1346037`)
+
+0.22.1 (released 2014-02-08)
 ----------------------------
 
 - localhost666 can resolve under certain circumstances (:commit:`2ec2279`)
