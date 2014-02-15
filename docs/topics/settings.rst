@@ -408,7 +408,9 @@ Default: ``'scrapy.dupefilter.RFPDupeFilter'``
 The class used to detect and filter duplicate requests.
 
 The default (``RFPDupeFilter``) filters based on request fingerprint using
-the ``scrapy.utils.request.request_fingerprint`` function.
+the ``scrapy.utils.request.request_fingerprint`` function. In order to change
+the way duplicates are checked you could subclass ``RFPDupeFilter`` and
+override its ``request_fingerprint`` method.
 
 .. setting:: DUPEFILTER_DEBUG
 
