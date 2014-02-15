@@ -134,8 +134,8 @@ To activate an Item Pipeline component you must add its class to the
 :setting:`ITEM_PIPELINES` setting, like in the following example::
 
    ITEM_PIPELINES = {
-       'myproject.pipeline.PricePipeline': 300,
-       'myproject.pipeline.JsonWriterPipeline': 800,
+       'myproject.pipelines.PricePipeline': 300,
+       'myproject.pipelines.JsonWriterPipeline': 800,
    }
 
 The integer values you assign to classes in this setting determine the
