@@ -1,11 +1,12 @@
 from scrapy.spider import Spider
 
+
 class $classname(Spider):
     name = "$name"
     allowed_domains = ["$domain"]
     start_urls = (
         'http://www.$domain/',
-        )
+    )
 
     def parse(self, response):
-        pass 
+        pass
