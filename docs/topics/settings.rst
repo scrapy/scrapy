@@ -474,8 +474,8 @@ but they are deprecated.
 Example::
 
    ITEM_PIPELINES = {
-       'mybot.pipeline.validate.ValidateMyItem': 300,
-       'mybot.pipeline.validate.StoreMyItem': 800,
+       'mybot.pipelines.validate.ValidateMyItem': 300,
+       'mybot.pipelines.validate.StoreMyItem': 800,
    }
 
 .. setting:: ITEM_PIPELINES_BASE
