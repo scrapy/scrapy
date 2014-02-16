@@ -17,7 +17,7 @@ There are many ways to contribute to Scrapy. Here are some of them:
   `Writing patches`_ and `Submitting patches`_ below for details on how to
   write and submit a patch.
 
-* Join the `scrapy-developers`_ mailing list and share your ideas on how to
+* Join the `scrapy-users`_ mailing list and share your ideas on how to
   improve Scrapy. We're always open to suggestions.
 
 Reporting bugs
@@ -79,14 +79,17 @@ Remember to explain what was fixed or the new functionality (what it is, why
 it's needed, etc). The more info you include, the easier will be for core
 developers to understand and accept your patch.
 
-You can also discuss the new functionality (or bug fix) in `scrapy-developers`_
-first, before creating the patch, but it's always good to have a patch ready to
-illustrate your arguments and show that you have put some additional thought
-into the subject.
+You can also discuss the new functionality (or bug fix) before creating the
+patch, but it's always good to have a patch ready to illustrate your arguments
+and show that you have put some additional thought into the subject. A good
+starting point is to send a pull request on Github. It can be simple enough to
+illustrate your idea, and leave documentation/tests for later, after the idea
+has been validated and proven useful. Alternatively, you can send an email to
+`scrapy-users`_ to discuss your idea first.
 
 Finally, try to keep aesthetic changes (:pep:`8` compliance, unused imports
-removal, etc) in separate commits than functional changes, to make the pull
-request easier to review.
+removal, etc) in separate commits than functional changes. This will make pull
+requests easier to review and more likely to get merged.
 
 Coding style
 ============
@@ -109,7 +112,7 @@ Scrapy contrib shares a similar rationale as Django contrib, which is explained
 in `this post <http://jacobian.org/writing/what-is-django-contrib/>`_. If you
 are working on a new functionality, please follow that rationale to decide
 whether it should be a Scrapy contrib. If unsure, you can ask in
-`scrapy-developers`_.
+`scrapy-users`_.
 
 Documentation policies
 ======================
@@ -163,7 +166,6 @@ And their unit-tests are in::
 
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
 .. _scrapy-users: http://groups.google.com/group/scrapy-users
-.. _scrapy-developers: http://groups.google.com/group/scrapy-developers
 .. _Twisted unit-testing framework: http://twistedmatrix.com/documents/current/core/development/policy/test-standard.html
 .. _AUTHORS: https://github.com/scrapy/scrapy/blob/master/AUTHORS
 .. _scrapy/tests: https://github.com/scrapy/scrapy/tree/master/scrapy/tests
