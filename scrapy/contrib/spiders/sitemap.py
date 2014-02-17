@@ -1,10 +1,15 @@
 import re
+from scrapy.exceptions import DontCloseSpider
 
+from scrapy import signals
 from scrapy.spider import Spider
 from scrapy.http import Request, XmlResponse
+from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 from scrapy.utils.gz import gunzip, is_gzipped
 from scrapy import log
+from scrapy.xlib.pydispatch import dispatcher
+
 
 class SitemapSpider(Spider):
 
@@ -74,3 +79,52 @@ def iterloc(it, alt=False):
         if alt and 'alternate' in d:
             for l in d['alternate']:
                 yield l
+
+
+class ThriftySitemapSpider(SitemapSpider):
+
+    def __init__(self, *a, **kw):
+        super(ThriftySitemapSpider, self).__init__(*a, **kw)
+        self.scheduled_requests = []
+        dispatcher.connect(self.spider_idle,
+                           signal=signals.spider_idle)
+        dispatcher.connect(self.spider_closed,
+                           signal=signals.spider_closed)
+
+    def _parse_sitemap(self, response):
+        result = super(ThriftySitemapSpider, self)._parse_sitemap(response)
+
+        for req in arg_to_iter(result):
+            if not isinstance(req, Request):
+                yield req
+                continue
+
+            original_cb = req.callback
+
+            if original_cb == self._parse_sitemap:
+                self.scheduled_requests.append(req)
+                continue
+
+            yield req
+
+    def spider_closed(self, spider):
+        if spider is self:
+            self.log("Remaining sitemap_requests: %d" % len(self.scheduled_requests), level=log.WARNING)
+
+    def spider_idle(self, spider):
+        if spider is not self:
+            return
+
+        try:
+            r = self.scheduled_requests.pop()
+        except IndexError:
+            #queue is exhausted
+            return
+
+        if isinstance(r, Request):
+            self.crawler.engine.schedule(r, self)
+        else:
+            self.log("Not request object of type %s scheduled: %s" % (str(type(r)), str(r)), level=log.WARNING)
+
+        if len(self.scheduled_requests):
+            raise DontCloseSpider("Pending sitemap requests left")

@@ -2,6 +2,7 @@ import gzip
 import inspect
 import warnings
 from cStringIO import StringIO
+from scrapy.contrib.spiders.sitemap import ThriftySitemapSpider
 from scrapy.utils.trackref import object_ref
 
 from twisted.trial import unittest
@@ -135,6 +136,29 @@ class SitemapSpiderTest(SpiderTest):
 
         r = Response(url="http://www.example.com/sitemap.xml.gz", body=self.GZBODY)
         self.assertEqual(spider._get_sitemap_body(r), self.BODY)
+
+
+class ThriftySitemapSpiderTest(SitemapSpiderTest):
+    spider_class = ThriftySitemapSpider
+
+    SITEMAP_BODY = """<?xml version="1.0" encoding="UTF-8" ?>
+               <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+                <sitemap>
+                   <loc>http://www.example.com/sitemap_1.xml</loc>
+                </sitemap>
+                <sitemap>
+                    <loc>http://www.example.com/sitemap_2.xml</loc>
+                </sitemap>
+               </sitemapindex>
+            """
+
+
+    def test_scheduled_requests(self):
+        spider = self.spider_class("example.com")
+        r = XmlResponse(url="http://www.example.com/", body=self.SITEMAP_BODY)
+        reqs = [req for req in spider._parse_sitemap(r)]
+        self.assertTrue(len(reqs) == 0)
+        self.assertTrue(len(spider.scheduled_requests) == 2)
 
 
 class BaseSpiderDeprecationTest(unittest.TestCase):
