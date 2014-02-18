@@ -52,8 +52,8 @@ class CrawlSpider(Spider):
             links = [l for l in rule.link_extractor.extract_links(response) if l not in seen]
             if links and rule.process_links:
                 links = rule.process_links(links)
-            seen = seen.union(links)
             for link in links:
+                seen.add(link)
                 r = Request(url=link.url, callback=self._response_downloaded)
                 r.meta.update(rule=n, link_text=link.text)
                 yield rule.process_request(r)
