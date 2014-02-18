@@ -99,7 +99,6 @@ class Shell(object):
         self.vars['spider'] = spider
         self.vars['request'] = request
         self.vars['response'] = response
-        
         if isinstance(response, (XmlResponse, HtmlResponse)):
             self.vars['sel'] = Selector(response)
         if self.inthread:
