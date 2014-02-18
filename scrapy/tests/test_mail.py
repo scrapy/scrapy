@@ -1,6 +1,6 @@
-from cStringIO import StringIO
 import unittest
 
+from cStringIO import StringIO
 from scrapy.mail import MailSender
 
 class MailSenderTest(unittest.TestCase):
@@ -19,6 +19,15 @@ class MailSenderTest(unittest.TestCase):
         self.assertEqual(msg['to'], 'test@scrapy.org')
         self.assertEqual(msg['subject'], 'subject')
         self.assertEqual(msg.get_payload(), 'body')
+        self.assertEqual(msg.get('Content-Type'), 'text/plain')
+
+    def test_send_html(self):
+        mailsender = MailSender(debug=True)
+        mailsender.send(to=['test@scrapy.org'], subject='subject', body='<p>body</p>', mimetype='text/html', _callback=self._catch_mail_sent)
+
+        msg = self.catched_msg['msg']
+        self.assertEqual(msg.get_payload(), '<p>body</p>')
+        self.assertEqual(msg.get('Content-Type'), 'text/html')
 
     def test_send_attach(self):
         attach = StringIO()

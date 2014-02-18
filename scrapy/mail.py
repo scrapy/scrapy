@@ -35,11 +35,11 @@ class MailSender(object):
             settings['MAIL_PASS'], settings.getint('MAIL_PORT'),
             settings.getbool('MAIL_TLS'), settings.getbool('MAIL_SSL'))
 
-    def send(self, to, subject, body, cc=None, attachs=(), _callback=None):
+    def send(self, to, subject, body, cc=None, attachs=(), mimetype='text/plain', _callback=None):
         if attachs:
             msg = MIMEMultipart()
         else:
-            msg = MIMENonMultipart('text', 'plain')
+            msg = MIMENonMultipart(*mimetype.split('/', 1))
         msg['From'] = self.mailfrom
         msg['To'] = COMMASPACE.join(to)
         msg['Date'] = formatdate(localtime=True)

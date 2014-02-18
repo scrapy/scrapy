@@ -76,7 +76,7 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
         :param settings: the e-mail recipients
         :type settings: :class:`scrapy.settings.Settings` object
 
-    .. method:: send(to, subject, body, cc=None, attachs=())
+    .. method:: send(to, subject, body, cc=None, attachs=(), mimetype='text/plain')
 
         Send email to the given recipients.
 
@@ -98,6 +98,9 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
           attachment and ``file_object`` is a readable file object with the
           contents of the attachment
         :type attachs: iterable
+
+        :param mimetype: the MIME type of the e-mail
+        :type mimetype: str
 
 
 .. _topics-email-settings:
