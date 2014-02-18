@@ -13,7 +13,7 @@ from w3lib.url import any_to_uri
 
 from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest
-from scrapy.http import Request, Response, TextResponse
+from scrapy.http import Request, Response, XmlResponse, HtmlResponse
 from scrapy.item import BaseItem
 from scrapy.selector import Selector
 from scrapy.settings import Settings
@@ -100,7 +100,7 @@ class Shell(object):
         self.vars['request'] = request
         self.vars['response'] = response
         
-        if isinstance(response, TextResponse):
+        if isinstance(response, (XmlResponse, HtmlResponse)):
             self.vars['sel'] = Selector(response)
         if self.inthread:
             self.vars['fetch'] = self.fetch
