@@ -4,6 +4,7 @@ Module for processing Sitemaps.
 Note: The main purpose of this module is to provide support for the
 SitemapSpider, its API is subject to change without notice.
 """
+from io import BytesIO
 import lxml.etree
 
 
@@ -12,13 +13,15 @@ class Sitemap(object):
     (type=sitemapindex) files"""
 
     def __init__(self, xmltext):
-        xmlp = lxml.etree.XMLParser(recover=True, remove_comments=True)
-        self._root = lxml.etree.fromstring(xmltext, parser=xmlp)
-        rt = self._root.tag
-        self.type = self._root.tag.split('}', 1)[1] if '}' in rt else rt
+        self.xml_iterator = lxml.etree.iterparse(BytesIO(xmltext), remove_comments=True, events=("start", "end"))
+        _, self.root = self.xml_iterator.next()
+        rt = self.root.tag
+        self.type = rt.split('}', 1)[1] if '}' in rt else rt
+
+
 
     def __iter__(self):
-        for elem in self._root.getchildren():
+        for event, elem in self.xml_iterator:
             d = {}
             for el in elem.getchildren():
                 tag = el.tag
@@ -30,6 +33,7 @@ class Sitemap(object):
                 else:
                     d[name] = el.text.strip() if el.text else ''
 
+            elem.clear()
             if 'loc' in d:
                 yield d
 
