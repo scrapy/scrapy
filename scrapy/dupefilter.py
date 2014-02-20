@@ -28,19 +28,19 @@ class BaseDupeFilter(object):
 class RFPDupeFilter(BaseDupeFilter):
     """Request Fingerprint duplicates filter"""
 
-    def __init__(self, path=None, verbose_log=False):
+    def __init__(self, path=None, debug=False):
         self.file = None
         self.fingerprints = set()
         self.logdupes = True
-        self.verbose_log = verbose_log
+        self.debug = debug
         if path:
             self.file = open(os.path.join(path, 'requests.seen'), 'a+')
             self.fingerprints.update(x.rstrip() for x in self.file)
 
     @classmethod
     def from_settings(cls, settings):
-        verbose_log = settings.getbool('DUPEFILTER_DEBUG')
-        return cls(job_dir(settings), verbose_log)
+        debug = settings.getbool('DUPEFILTER_DEBUG')
+        return cls(job_dir(settings), debug)
 
     def request_seen(self, request):
         fp = self.request_fingerprint(request)
@@ -58,7 +58,7 @@ class RFPDupeFilter(BaseDupeFilter):
             self.file.close()
 
     def log(self, request, spider):
-        if self.verbose_log:
+        if self.debug:
             fmt = "Filtered duplicate request: %(request)s"
             log.msg(format=fmt, request=request, level=log.DEBUG, spider=spider)
         elif self.logdupes:
