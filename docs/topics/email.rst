@@ -14,7 +14,7 @@ interfering with the non-blocking IO of the crawler. It also provides a
 simple API for sending attachments and it's very easy to configure, with a few
 :ref:`settings <topics-email-settings>`.
 
-.. _smtplib: http://docs.python.org/library/smtplib.html
+.. _smtplib: http://docs.python.org/2/library/smtplib.html
 .. _Twisted non-blocking IO: http://twistedmatrix.com/projects/core/documentation/howto/async.html
 
 Quick example

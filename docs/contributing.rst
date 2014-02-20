@@ -165,7 +165,7 @@ And their unit-tests are in::
     scrapy.tests.test_contrib_loader
 
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
-.. _scrapy-users: http://groups.google.com/group/scrapy-users
+.. _scrapy-users: https://groups.google.com/forum/#!forum/scrapy-users
 .. _Twisted unit-testing framework: http://twistedmatrix.com/documents/current/core/development/policy/test-standard.html
 .. _AUTHORS: https://github.com/scrapy/scrapy/blob/master/AUTHORS
 .. _scrapy/tests: https://github.com/scrapy/scrapy/tree/master/scrapy/tests

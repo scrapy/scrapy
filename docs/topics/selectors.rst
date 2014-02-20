@@ -38,7 +38,7 @@ For a complete reference of the selectors API see
 
 .. _BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/
 .. _lxml: http://codespeak.net/lxml/
-.. _ElementTree: http://docs.python.org/library/xml.etree.elementtree.html
+.. _ElementTree: http://docs.python.org/2/library/xml.etree.elementtree.html
 .. _cssselect: https://pypi.python.org/pypi/cssselect/
 .. _XPath: http://www.w3.org/TR/xpath
 .. _CSS: http://www.w3.org/TR/selectors

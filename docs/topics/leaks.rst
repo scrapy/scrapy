@@ -200,7 +200,7 @@ other cases where the memory leaks could come from other (more or less obscure)
 objects. If this is your case, and you can't find your leaks using ``trackref``,
 you still have another resource: the `Guppy library`_. 
 
-.. _Guppy library: http://pypi.python.org/pypi/guppy
+.. _Guppy library: https://pypi.python.org/pypi/guppy
 
 If you use ``setuptools``, you can install Guppy with the following command::
 
@@ -263,9 +263,9 @@ though neither Scrapy nor your project are leaking memory. This is due to a
 (not so well) known problem of Python, which may not return released memory to
 the operating system in some cases. For more information on this issue see:
 
-* `Python Memory Management <http://evanjones.ca/python-memory.html>`_
-* `Python Memory Management Part 2 <http://evanjones.ca/python-memory-part2.html>`_
-* `Python Memory Management Part 3 <http://evanjones.ca/python-memory-part3.html>`_
+* `Python Memory Management <http://www.evanjones.ca/python-memory.html>`_
+* `Python Memory Management Part 2 <http://www.evanjones.ca/python-memory-part2.html>`_
+* `Python Memory Management Part 3 <http://www.evanjones.ca/python-memory-part3.html>`_
 
 The improvements proposed by Evan Jones, which are detailed in `this paper`_,
 got merged in Python 2.5, but this only reduces the problem, it doesn't fix it
@@ -282,4 +282,4 @@ completely. To quote the paper:
 This problem will be fixed in future Scrapy releases, where we plan to adopt a
 new process model and run spiders in a pool of recyclable sub-processes.
 
-.. _this paper: http://evanjones.ca/memoryallocator/
+.. _this paper: http://www.evanjones.ca/memoryallocator/
