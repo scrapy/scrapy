@@ -2,6 +2,7 @@ import gzip
 import inspect
 import warnings
 from cStringIO import StringIO
+from scrapy.utils.sitemap import Sitemap
 from scrapy.utils.trackref import object_ref
 
 from twisted.trial import unittest
@@ -189,6 +190,30 @@ class CrawlSpiderTest(SpiderTest):
                           ['http://example.org/somepage/item/12.html',
                            'http://example.org/about.html',
                            'http://example.org/nofollow.html'])
+
+class SitemapTest(unittest.TestCase):
+
+    BODY = '''<?xml version="1.0" encoding="UTF-8" ?>
+    <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <sitemap>
+      <loc>http://www.example.com/sitemap_foo.xml.gz</loc>
+      <lastmod>2012-07-12T12:00:00+00:00</lastmod>
+    </sitemap>
+    <sitemap><loc>http://www.example.com/sitemap_bar.xml</loc></sitemap>
+    </sitemapindex>
+    '''
+
+
+    def test_sitemap(self):
+        sitemap = Sitemap(self.BODY)
+        self.assertEqual(sitemap.type, 'sitemapindex')
+        locs = [loc for loc in sitemap]
+
+        self.assertEqual(len(locs), 2)
+        urls = [loc['loc'] for loc in locs]
+
+        self.assertTrue('http://www.example.com/sitemap_foo.xml.gz' in urls)
+        self.assertTrue('http://www.example.com/sitemap_bar.xml' in urls)
 
 
 class SitemapSpiderTest(SpiderTest):
