@@ -49,6 +49,7 @@ class MailSender(object):
             rcpts.extend(cc)
             msg['Cc'] = COMMASPACE.join(cc)
 
+
         if attachs:
             msg.attach(MIMEText(body))
             for attach_name, mimetype, f in attachs:
@@ -68,6 +69,15 @@ class MailSender(object):
             log.msg(format='Debug mail sent OK: To=%(mailto)s Cc=%(mailcc)s Subject="%(mailsubject)s" Attachs=%(mailattachs)d',
                     level=log.DEBUG, mailto=to, mailcc=cc, mailsubject=subject, mailattachs=len(attachs))
             return
+
+#      body_msg = msg.attach(MIMEText(body))
+
+        my_msg = msg.as_string().encode('ascii')
+        if encoding['my_msg'] == 'ascii':
+            dfd = self._sendmail(rcpts, msg.as_string())
+        else:
+            part1 = MIMEText(body_msg, "plain", "utf-8")        
+
 
         dfd = self._sendmail(rcpts, msg.as_string())
         dfd.addCallbacks(self._sent_ok, self._sent_failed,
