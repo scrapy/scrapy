@@ -168,7 +168,6 @@ LOG_UNSERIALIZABLE_REQUESTS = False
 
 LOGSTATS_INTERVAL = 60.0
 
-MAIL_DEBUG = False
 MAIL_HOST = 'localhost'
 MAIL_PORT = 25
 MAIL_FROM = 'scrapy@localhost'
