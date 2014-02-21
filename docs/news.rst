@@ -750,6 +750,6 @@ First release of Scrapy.
 .. _w3lib.encoding: https://github.com/scrapy/w3lib/blob/master/w3lib/encoding.py
 .. _lxml: http://lxml.de/
 .. _ClientForm: http://wwwsearch.sourceforge.net/old/ClientForm/
-.. _resource: http://docs.python.org/2/library/resource.html
+.. _resource: http://docs.python.org/library/resource.html
 .. _queuelib: https://github.com/scrapy/queuelib
 .. _cssselect: https://github.com/SimonSapin/cssselect

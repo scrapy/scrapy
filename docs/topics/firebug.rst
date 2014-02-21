@@ -24,7 +24,7 @@ Project`_ used in the :ref:`tutorial <intro-tutorial>` but with a different
 face.
 
 .. _Firebug: http://getfirebug.com
-.. _Google Directory: http://www.google.co.in/?gfe_rd=ctrl&ei=DGMGU7-BMYHrrAf2nIHgAg&gws_rd=cr
+.. _Google Directory: https://www.google.co.in/
 .. _Open Directory Project: http://www.dmoz.org
 
 Firebug comes with a very useful feature called `Inspect Element`_ which allows
@@ -60,7 +60,7 @@ Getting links to follow
 
 By looking at the category URLs we can see they share a pattern:
 
-    http://www.google.co.in/?gfe_rd=ctrl&ei=DGMGU7-BMYHrrAf2nIHgAg&gws_rd=crCategory/Subcategory/Another_Subcategory
+    http://directory.google.com/Category/Subcategory/Another_Subcategory
     
 Once we know that, we are able to construct a regular expression to follow
 those links. For example, the following one::
@@ -87,7 +87,7 @@ This is how the spider would look so far::
    class GoogleDirectorySpider(CrawlSpider):
        name = 'directory.google.com'
        allowed_domains = ['directory.google.com']
-       start_urls = ['http://www.google.co.in/?gfe_rd=ctrl&ei=DGMGU7-BMYHrrAf2nIHgAg&gws_rd=cr']
+       start_urls = ['http://directory.google.com/']
 
        rules = (
            Rule(SgmlLinkExtractor(allow='directory\.google\.com/[A-Z][a-zA-Z_/]+$'),
@@ -106,7 +106,7 @@ Extracting the data
 Now we're going to write the code to extract data from those pages. 
 
 With the help of Firebug, we'll take a look at some page containing links to
-websites (say http://www.google.co.in/?gfe_rd=ctrl&ei=DGMGU7-BMYHrrAf2nIHgAg&gws_rd=crTop/Arts/Awards/) and find out how we can
+websites (say http://directory.google.com/Top/Arts/Awards/) and find out how we can
 extract those links using :ref:`Selectors <topics-selectors>`. We'll also
 use the :ref:`Scrapy shell <topics-shell>` to test those XPath's and make sure
 they work as we expect.
