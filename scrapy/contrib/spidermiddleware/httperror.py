@@ -4,7 +4,7 @@ HttpError Spider Middleware
 See documentation in docs/topics/spider-middleware.rst
 """
 from scrapy.exceptions import IgnoreRequest
-
+from scrapy import log
 
 class HttpError(IgnoreRequest):
     """A non-200 response was filtered"""
@@ -38,6 +38,9 @@ class HttpErrorMiddleware(object):
             allowed_statuses = getattr(spider, 'handle_httpstatus_list', self.handle_httpstatus_list)
         if response.status in allowed_statuses:
             return
+        log.msg(format="Ignoring HTTP response code: not handled or not allowed: %(status_code)d",
+                            level=log.DEBUG, spider=spider,
+                            status_code=response.status)
         raise HttpError(response, 'Ignoring non-200 response')
 
     def process_spider_exception(self, response, exception, spider):
