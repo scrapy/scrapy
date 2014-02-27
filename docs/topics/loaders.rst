@@ -631,10 +631,10 @@ Here is a list of all built-in processors:
     this processor is the way internal results are passed among functions,
     which is as follows:
 
-    The input value of this processor is *iterated* and each element is passed
-    to the first function, and the result of that function (for each element)
-    is concatenated to construct a new iterable, which is then passed to the
-    second function, and so on, until the last function is applied for each
+    The input value of this processor is *iterated* and the first function is
+    applied to each element. The results of these function calls (one for each element)
+    are concatenated to construct a new iterable, which is then used to apply the
+    second function, and so on, until the last function is applied to each
     value of the list of values collected so far. The output values of the last
     function are concatenated together to produce the output of this processor.
 
