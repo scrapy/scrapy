@@ -65,10 +65,10 @@ Defining our Item
 =================
 
 `Items` are containers that will be loaded with the scraped data; they work
-like simple python dicts but provide additional protecting against populating
+like simple python dicts but provide additional protection against populating
 undeclared fields, to prevent typos.
 
-They are declared by creating an :class:`scrapy.item.Item` class and defining
+They are declared by creating a :class:`scrapy.item.Item` class and defining
 its attributes as :class:`scrapy.item.Field` objects, like you will in an ORM
 (don't worry if you're not familiar with ORMs, you will see that this is an
 easy task).
@@ -76,7 +76,7 @@ easy task).
 We begin by modeling the item that we will use to hold the sites data obtained
 from dmoz.org, as we want to capture the name, url and description of the
 sites, we define fields for each of these three attributes. To do that, we edit
-items.py, found in the ``tutorial`` directory. Our Item class looks like this::
+``items.py``, found in the ``tutorial`` directory. Our Item class looks like this::
 
     from scrapy.item import Item, Field
 
@@ -86,7 +86,7 @@ items.py, found in the ``tutorial`` directory. Our Item class looks like this::
         desc = Field()
 
 This may seem complicated at first, but defining the item allows you to use other handy
-components of Scrapy that need to know how your item looks like.
+components of Scrapy that need to know how your item looks.
 
 Our first Spider
 ================
@@ -97,8 +97,8 @@ of domains).
 They define an initial list of URLs to download, how to follow links, and how
 to parse the contents of those pages to extract :ref:`items <topics-items>`.
 
-To create a Spider, you must subclass :class:`scrapy.spider.Spider`, and
-define the three main, mandatory, attributes:
+To create a Spider, you must subclass :class:`scrapy.spider.Spider` and
+define the three main mandatory attributes:
 
 * :attr:`~scrapy.spider.Spider.name`: identifies the Spider. It must be
   unique, that is, you can't set the same name for different Spiders.
@@ -162,7 +162,7 @@ will get an output similar to this::
 Pay attention to the lines containing ``[dmoz]``, which corresponds to our
 spider. You can see a log line for each URL defined in ``start_urls``. Because
 these URLs are the starting ones, they have no referrers, which is shown at the
-end of the log line, where it says ``(referer: <None>)``.
+end of the log line, where it says ``(referer: None)``.
 
 But more interesting, as our ``parse`` method instructs, two files have been
 created: *Books* and *Resources*, with the content of both URLs.
@@ -210,15 +210,15 @@ XPath expressions are indeed much more powerful. To learn more about XPath we
 recommend `this XPath tutorial <http://www.w3schools.com/XPath/default.asp>`_.
 
 For working with XPaths, Scrapy provides a :class:`~scrapy.selector.Selector`
-class, it is instantiated with a :class:`~scrapy.http.HtmlResponse` or
+class, which is instantiated with a :class:`~scrapy.http.HtmlResponse` or
 :class:`~scrapy.http.XmlResponse` object as first argument.
 
 You can see selectors as objects that represent nodes in the document
-structure. So, the first instantiated selectors are associated to the root
+structure. So, the first instantiated selectors are associated with the root
 node, or the entire document.
 
 Selectors have four basic methods (click on the method to see the complete API
-documentation).
+documentation):
 
 * :meth:`~scrapy.selector.Selector.xpath`: returns a list of selectors, each of
   them representing the nodes selected by the xpath expression given as
@@ -275,7 +275,7 @@ After the shell loads, you will have the response fetched in a local
 ``response`` variable, so if you type ``response.body`` you will see the body
 of the response, or you can type ``response.headers`` to see its headers.
 
-The shell also pre-instantiate a selector for this response in variable ``sel``,
+The shell also pre-instantiates a selector for this response in variable ``sel``,
 the selector automatically chooses the best parsing rules (XML vs HTML) based
 on response's type.
 
@@ -327,7 +327,7 @@ And the sites links::
 
    sel.xpath('//ul/li/a/@href').extract()
 
-As we said before, each ``.xpath()`` call returns a list of selectors, so we can
+As we've said before, each ``.xpath()`` call returns a list of selectors, so we can
 concatenate further ``.xpath()`` calls to dig deeper into a node. We are going to use
 that property here, so::
 
@@ -418,7 +418,7 @@ scraped so far, the final code for our Spider would be like this::
 .. note:: You can find a fully-functional variant of this spider in the dirbot_
    project available at https://github.com/scrapy/dirbot
 
-Now doing a crawl on the dmoz.org domain yields ``DmozItem``'s::
+Now doing a crawl on the dmoz.org domain yields ``DmozItem`` objects::
 
    [dmoz] DEBUG: Scraped from <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
         {'desc': [u' - By David Mertz; Addison Wesley. Book in progress, full text, ASCII format. Asks for feedback. [author website, Gnosis Software, Inc.\n],
@@ -445,7 +445,7 @@ However, if you want to perform more complex things with the scraped items, you
 can write an :ref:`Item Pipeline <topics-item-pipeline>`. As with Items, a
 placeholder file for Item Pipelines has been set up for you when the project is
 created, in ``tutorial/pipelines.py``. Though you don't need to implement any item
-pipeline if you just want to store the scraped items.
+pipelines if you just want to store the scraped items.
 
 Next steps
 ==========

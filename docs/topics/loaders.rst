@@ -227,7 +227,7 @@ value and extracts a length from it::
         return parsed_length
 
 By accepting a ``loader_context`` argument the function is explicitly telling
-the Item Loader that is able to receive an Item Loader context, so the Item
+the Item Loader that it's able to receive an Item Loader context, so the Item
 Loader passes the currently active context when calling it, and the processor
 function (``parse_length`` in this case) can thus use them.
 
@@ -245,7 +245,7 @@ There are several ways to modify Item Loader context values:
       loader = ItemLoader(product, unit='cm')
 
 3. On Item Loader declaration, for those input/output processors that support
-   instatiating them with a Item Loader context. :class:`~processor.MapCompose` is one of
+   instantiating them with an Item Loader context. :class:`~processor.MapCompose` is one of
    them::
 
        class ProductLoader(ItemLoader):
@@ -486,7 +486,7 @@ Reusing and extending Item Loaders
 ==================================
 
 As your project grows bigger and acquires more and more spiders, maintenance
-becomes a fundamental problem, specially when you have to deal with many
+becomes a fundamental problem, especially when you have to deal with many
 different parsing rules for each spider, having a lot of exceptions, but also
 wanting to reuse the common processors.
 
@@ -497,7 +497,7 @@ support traditional Python class inheritance for dealing with differences of
 specific spiders (or groups of spiders).
 
 Suppose, for example, that some particular site encloses their product names in
-three dashes (ie. ``---Plasma TV---``) and you don't want to end up scraping
+three dashes (e.g. ``---Plasma TV---``) and you don't want to end up scraping
 those dashes in the final product names.
 
 Here's how you can remove those dashes by reusing and extending the default
@@ -567,7 +567,7 @@ Here is a list of all built-in processors:
 
 .. class:: TakeFirst
 
-    Return the first non-null/non-empty value from the values received,
+    Returns the first non-null/non-empty value from the values received,
     so it's typically used as an output processor to single-valued fields.
     It doesn't receive any constructor arguments, nor accept Loader contexts.
 
@@ -604,8 +604,8 @@ Here is a list of all built-in processors:
     function, and so on, until the last function returns the output value of
     this processor.
 
-    By default, stop process on None value. This behaviour can be changed by
-    passing keyword argument stop_on_none=False.
+    By default, stop process on ``None`` value. This behaviour can be changed by
+    passing keyword argument ``stop_on_none=False``.
 
     Example::
 
@@ -631,10 +631,10 @@ Here is a list of all built-in processors:
     this processor is the way internal results are passed among functions,
     which is as follows:
 
-    The input value of this processor is *iterated* and each element is passed
-    to the first function, and the result of that function (for each element)
-    is concatenated to construct a new iterable, which is then passed to the
-    second function, and so on, until the last function is applied for each
+    The input value of this processor is *iterated* and the first function is
+    applied to each element. The results of these function calls (one for each element)
+    are concatenated to construct a new iterable, which is then used to apply the
+    second function, and so on, until the last function is applied to each
     value of the list of values collected so far. The output values of the last
     function are concatenated together to produce the output of this processor.
 
