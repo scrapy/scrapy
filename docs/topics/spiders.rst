@@ -4,11 +4,11 @@
 Spiders
 =======
 
-Spiders are classes which define how a certain site (or group of sites) will be
-scraped, including how to perform the crawl (ie. follow links) and how to
-extract structured data from their pages (ie. scraping items). In other words,
+Spiders are classes which define how a certain site (or a group of sites) will be
+scraped, including how to perform the crawl (i.e. follow links) and how to
+extract structured data from their pages (i.e. scraping items). In other words,
 Spiders are the place where you define the custom behaviour for crawling and
-parsing pages for a particular site (or, in some cases, group of sites).
+parsing pages for a particular site (or, in some cases, a group of sites).
 
 For spiders, the scraping cycle goes through something like this:
 
@@ -105,7 +105,7 @@ Spider
    method ``parse`` for each of the resulting responses.
 
    .. attribute:: name
-      
+
        A string which defines the name for this spider. The spider name is how
        the spider is located (and instantiated) by Scrapy, so it must be
        unique. However, nothing prevents you from instantiating more than one
@@ -113,7 +113,7 @@ Spider
        and it's required.
 
        If the spider scrapes a single domain, a common practice is to name the
-       spider after the domain, or without the `TLD`_. So, for example, a
+       spider after the domain, with or without the `TLD`_. So, for example, a
        spider that crawls ``mywebsite.com`` would often be called
        ``mywebsite``.
 
@@ -134,8 +134,8 @@ Spider
    .. method:: start_requests()
 
        This method must return an iterable with the first Requests to crawl for
-       this spider. 
-       
+       this spider.
+
        This is the method called by Scrapy when the spider is opened for
        scraping when no particular URLs are specified. If particular URLs are
        specified, the :meth:`make_requests_from_url` is used instead to create
@@ -150,7 +150,7 @@ Spider
        a POST request, you could do::
 
            def start_requests(self):
-               return [FormRequest("http://www.example.com/login", 
+               return [FormRequest("http://www.example.com/login",
                                    formdata={'user': 'john', 'pass': 'secret'},
                                    callback=self.logged_in)]
 
@@ -214,7 +214,7 @@ Let's see an example::
         def parse(self, response):
             self.log('A response from %s just arrived!' % response.url)
 
-Another example returning multiples Requests and Items from a single callback::
+Another example returning multiple Requests and Items from a single callback::
 
     from scrapy.selector import Selector
     from scrapy.spider import Spider
@@ -267,10 +267,10 @@ CrawlSpider
    .. method:: parse_start_url(response)
 
       This method is called for the start_urls responses. It allows to parse
-      the initial responses and must return either a 
-      :class:`~scrapy.item.Item` object, a :class:`~scrapy.http.Request` 
+      the initial responses and must return either a
+      :class:`~scrapy.item.Item` object, a :class:`~scrapy.http.Request`
       object, or an iterable containing any of them.
-       
+
 Crawling rules
 ~~~~~~~~~~~~~~
 
@@ -278,7 +278,7 @@ Crawling rules
 
    ``link_extractor`` is a :ref:`Link Extractor <topics-link-extractors>` object which
    defines how links will be extracted from each crawled page.
-      
+
    ``callback`` is a callable or a string (in which case a method from the spider
    object with that name will be used) to be called for each link extracted with
    the specified link_extractor. This callback receives a response as its first
@@ -291,7 +291,7 @@ Crawling rules
        the crawl spider will no longer work.
 
    ``cb_kwargs`` is a dict containing the keyword arguments to be passed to the
-   callback function
+   callback function.
 
    ``follow`` is a boolean which specifies if links should be followed from each
    response extracted with this rule. If ``callback`` is None ``follow`` defaults
@@ -300,7 +300,7 @@ Crawling rules
    ``process_links`` is a callable, or a string (in which case a method from the
    spider object with that name will be used) which will be called for each list
    of links extracted from each response using the specified ``link_extractor``.
-   This is mainly used for filtering purposes. 
+   This is mainly used for filtering purposes.
 
    ``process_request`` is a callable, or a string (in which case a method from
    the spider object with that name will be used) which will be called with
@@ -321,7 +321,7 @@ Let's now take a look at an example CrawlSpider with rules::
         name = 'example.com'
         allowed_domains = ['example.com']
         start_urls = ['http://www.example.com']
-        
+
         rules = (
             # Extract links matching 'category.php' (but not matching 'subsection.php') 
             # and follow links from them (since no callback means follow=True by default).
@@ -360,7 +360,7 @@ XMLFeedSpider
     iterator may be useful when parsing XML with bad markup.
 
     To set the iterator and the tag name, you must define the following class
-    attributes:  
+    attributes:
 
     .. attribute:: iterator
 
@@ -396,7 +396,7 @@ XMLFeedSpider
         attribute.
 
         Example::
-            
+
             class YourSpider(XMLFeedSpider):
 
                 namespaces = [('n', 'http://www.sitemaps.org/schemas/sitemap/0.9')]

@@ -47,11 +47,11 @@ Item Fields
 
 :class:`Field` objects are used to specify metadata for each field. For
 example, the serializer function for the ``last_updated`` field illustrated in
-the example above. 
+the example above.
 
 You can specify any kind of metadata for each field. There is no restriction on
 the values accepted by :class:`Field` objects. For this same
-reason, there isn't a reference list of all available metadata keys. Each key
+reason, there is no reference list of all available metadata keys. Each key
 defined in :class:`Field` objects could be used by a different components, and
 only those components know about it. You can also define and use any other
 :class:`Field` key in your project too, for your own needs. The main goal of
@@ -62,9 +62,9 @@ documentation to see which metadata keys are used by each component.
 
 It's important to note that the :class:`Field` objects used to declare the item
 do not stay assigned as class attributes. Instead, they can be accessed through
-the :attr:`Item.fields` attribute. 
+the :attr:`Item.fields` attribute.
 
-And that's all you need to know about declaring items. 
+And that's all you need to know about declaring items.
 
 Working with Items
 ==================

@@ -7,8 +7,8 @@ Command line tool
 .. versionadded:: 0.10
 
 Scrapy is controlled through the ``scrapy`` command-line tool, to be referred
-here as the "Scrapy tool" to differentiate it from their sub-commands which we
-just call "commands", or "Scrapy commands".
+here as the "Scrapy tool" to differentiate it from the sub-commands, which we
+just call "commands" or "Scrapy commands".
 
 The Scrapy tool provides several commands, for multiple purposes, and each one
 accepts a different set of arguments and options.
@@ -214,7 +214,7 @@ crawl
 * Syntax: ``scrapy crawl <spider>``
 * Requires project: *yes*
 
-Start crawling a spider. 
+Start crawling using a spider.
 
 Usage examples::
 
@@ -297,13 +297,13 @@ Downloads the given URL using the Scrapy downloader and writes the contents to
 standard output.
 
 The interesting thing about this command is that it fetches the page how the
-the spider would download it. For example, if the spider has an ``USER_AGENT``
+spider would download it. For example, if the spider has an ``USER_AGENT``
 attribute which overrides the User Agent, it will use that one.
 
-So this command can be used to "see" how your spider would fetch certain page.
+So this command can be used to "see" how your spider would fetch a certain page.
 
 If used outside a project, no particular per-spider behaviour would be applied
-and it will just use the default Scrapy downloder settings.
+and it will just use the default Scrapy downloader settings.
 
 Usage examples::
 
@@ -346,7 +346,7 @@ shell
 * Syntax: ``scrapy shell [url]``
 * Requires project: *no*
 
-Starts the Scrapy shell for the given URL (if given) or empty if not URL is
+Starts the Scrapy shell for the given URL (if given) or empty if no URL is
 given. See :ref:`topics-shell` for more info.
 
 Usage example::
@@ -362,7 +362,7 @@ parse
 * Syntax: ``scrapy parse <url> [options]``
 * Requires project: *yes*
 
-Fetches the given URL and parses with the spider that handles it, using the
+Fetches the given URL and parses it with the spider that handles it, using the
 method passed with the ``--callback`` option, or ``parse`` if not given.
 
 Supported options:
@@ -371,7 +371,7 @@ Supported options:
   response
 
 * ``--rules`` or ``-r``: use :class:`~scrapy.contrib.spiders.CrawlSpider`
-  rules to discover the callback (ie. spider method) to use for parsing the
+  rules to discover the callback (i.e. spider method) to use for parsing the
   response
 
 * ``--noitems``: don't show scraped items
@@ -467,7 +467,7 @@ bench
 * Syntax: ``scrapy bench``
 * Requires project: *no*
 
-Run quick benchmark test. :ref:`benchmarking`.
+Run a quick benchmark test. :ref:`benchmarking`.
 
 Custom project commands
 =======================
@@ -484,7 +484,7 @@ COMMANDS_MODULE
 
 Default: ``''`` (empty string)
 
-A module to use for looking custom Scrapy commands. This is used to add custom
+A module to use for looking up custom Scrapy commands. This is used to add custom
 commands for your Scrapy project.
 
 Example::
