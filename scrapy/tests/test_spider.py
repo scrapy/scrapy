@@ -136,6 +136,36 @@ class SitemapSpiderTest(SpiderTest):
         r = Response(url="http://www.example.com/sitemap.xml.gz", body=self.GZBODY)
         self.assertEqual(spider._get_sitemap_body(r), self.BODY)
 
+    def test_parse_sitemap(self):
+        spider = self.spider_class("example.com")
+        BODY = '''<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>http://www.example.com/english/</loc>
+    <xhtml:link 
+                 rel="alternate"
+                 hreflang="de"
+                 href="http://www.example.com/deutsch/"
+                 />
+    <xhtml:link 
+                 rel="alternate"
+                 hreflang="de-ch"
+                 href="http://www.example.com/schweiz-deutsch/"
+                 />
+    <xhtml:link 
+                 rel="alternate"
+                 hreflang="en"
+                 href="http://www.example.com/english/"
+                 />
+  </url>
+</urlset>'''
+        r = XmlResponse(url="http://www.example.com/", body=BODY)
+        spider.sitemap_alternate_links = False
+        self.assertEqual(len(list(spider._parse_sitemap(r))), 1)
+        spider.sitemap_alternate_links = True
+        self.assertEqual(len(list(spider._parse_sitemap(r))), 4)
+
 
 class BaseSpiderDeprecationTest(unittest.TestCase):
 

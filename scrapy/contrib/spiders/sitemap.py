@@ -42,11 +42,13 @@ class SitemapSpider(Spider):
                     if any(x.search(loc) for x in self._follow):
                         yield Request(loc, callback=self._parse_sitemap)
             elif s.type == 'urlset':
-                for loc in iterloc(s):
-                    for r, c in self._cbs:
-                        if r.search(loc):
-                            yield Request(loc, callback=c)
-                            break
+                for d in s:
+                    # iterate over all locations in d
+                    for loc in iterloc([d], self.sitemap_alternate_links):
+                        for r, c in self._cbs:
+                            if r.search(loc):
+                                yield Request(loc, callback=c, meta=d)
+                                break
 
     def _get_sitemap_body(self, response):
         """Return the sitemap body contained in the given response, or None if the
@@ -68,7 +70,7 @@ def regex(x):
 
 def iterloc(it, alt=False):
     for d in it:
-        yield d['loc']
+        yield d['loc'][0]
 
         # Also consider alternate URLs (xhtml:link rel="alternate")
         if alt and 'alternate' in d:
