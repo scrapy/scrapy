@@ -279,15 +279,6 @@ Default: ``True``
 
 Whether to enable DNS in-memory cache.
 
-.. setting:: DOWNLOADER_DEBUG
-
-DOWNLOADER_DEBUG
-----------------
-
-Default: ``False``
-
-Whether to enable the Downloader debugging mode.
-
 .. setting:: DOWNLOADER_MIDDLEWARES
 
 DOWNLOADER_MIDDLEWARES
