@@ -350,7 +350,7 @@ supported.  Example::
 
     DOWNLOAD_DELAY = 0.25    # 250 ms of delay
 
-This setting is also impacts the :setting:`RANDOMIZE_DOWNLOAD_DELAY`
+This setting also impacts the :setting:`RANDOMIZE_DOWNLOAD_DELAY`
 setting (which is enabled by default, but does not yield any delay). By default, 
 Scrapy can use a random interval for requests between 0.5 and 1.5 secs.
 
