@@ -214,19 +214,19 @@ class FilesPipeline(MediaPipeline):
         referer = request.headers.get('Referer')
 
         if response.status != 200:
-            log.msg(format='File (code: %(status)s): Error downloading image from %(request)s referred in <%(referer)s>',
+            log.msg(format='File (code: %(status)s): Error downloading file from %(request)s referred in <%(referer)s>',
                     level=log.WARNING, spider=info.spider,
                     status=response.status, request=request, referer=referer)
             raise FileException('download-error')
 
         if not response.body:
-            log.msg(format='File (empty-content): Empty image from %(request)s referred in <%(referer)s>: no-content',
+            log.msg(format='File (empty-content): Empty file from %(request)s referred in <%(referer)s>: no-content',
                     level=log.WARNING, spider=info.spider,
                     request=request, referer=referer)
             raise FileException('empty-content')
 
         status = 'cached' if 'cached' in response.flags else 'downloaded'
-        log.msg(format='File (%(status)s): Downloaded image from %(request)s referred in <%(referer)s>',
+        log.msg(format='File (%(status)s): Downloaded file from %(request)s referred in <%(referer)s>',
                 level=log.DEBUG, spider=info.spider,
                 status=status, request=request, referer=referer)
         self.inc_stats(info.spider, status)
@@ -235,12 +235,12 @@ class FilesPipeline(MediaPipeline):
             path = self.file_path(request, response=response, info=info)
             checksum = self.file_downloaded(response, request, info)
         except FileException as exc:
-            whyfmt = 'File (error): Error processing image from %(request)s referred in <%(referer)s>: %(errormsg)s'
+            whyfmt = 'File (error): Error processing file from %(request)s referred in <%(referer)s>: %(errormsg)s'
             log.msg(format=whyfmt, level=log.WARNING, spider=info.spider,
                     request=request, referer=referer, errormsg=str(exc))
             raise
         except Exception as exc:
-            whyfmt = 'File (unknown-error): Error processing image from %(request)s referred in <%(referer)s>'
+            whyfmt = 'File (unknown-error): Error processing file from %(request)s referred in <%(referer)s>'
             log.err(None, whyfmt % {'request': request, 'referer': referer}, spider=info.spider)
             raise FileException(str(exc))
 
