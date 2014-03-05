@@ -13,6 +13,7 @@ def start_python_console(namespace=None, noipython=False, banner=''):
                 raise ImportError()
 
             try:
+                import IPython
                 if IPython.version_info[0] >= 1:
                     from IPython.terminal.embed import InteractiveShellEmbed
                 else:
