@@ -17,9 +17,6 @@ There are many ways to contribute to Scrapy. Here are some of them:
   `Writing patches`_ and `Submitting patches`_ below for details on how to
   write and submit a patch.
 
-* Join the `scrapy-developers`_ mailing list and share your ideas on how to
-  improve Scrapy. We're always open to suggestions.
-
 Reporting bugs
 ==============
 
