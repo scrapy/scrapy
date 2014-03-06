@@ -172,7 +172,7 @@ the :ref:`topics-signals-ref` to know which ones.
 What does the response status code 999 means?
 ---------------------------------------------
 
-999 is a custom reponse status code used by Yahoo sites to throttle requests.
+999 is a custom response status code used by Yahoo sites to throttle requests.
 Try slowing down the crawling speed by using a download delay of ``2`` (or
 higher) in your spider::
 

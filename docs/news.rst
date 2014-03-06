@@ -63,7 +63,7 @@ Enhancements
 - Add a way to skip default Referer header set by RefererMiddleware (:issue:`475`)
 - Do not send `x-gzip` in default `Accept-Encoding` header (:issue:`469`)
 - Support defining http error handling using settings (:issue:`466`)
-- Use moderm python idioms wherever you find legacies (:issue:`497`)
+- Use modern python idioms wherever you find legacies (:issue:`497`)
 - Improve and correct documentation
   (:issue:`527`, :issue:`524`, :issue:`521`, :issue:`517`, :issue:`512`, :issue:`505`,
   :issue:`502`, :issue:`489`, :issue:`465`, :issue:`460`, :issue:`425`, :issue:`536`)
@@ -118,7 +118,7 @@ Enhancements
 - Remove multi spider support from multiple core components
   (:issue:`422`, :issue:`421`, :issue:`420`, :issue:`419`, :issue:`423`, :issue:`418`)
 - Travis-CI now tests Scrapy changes against development versions of `w3lib` and `queuelib` python packages.
-- Add pypy 2.1 to continous integration tests (:commit:`ecfa7431`)
+- Add pypy 2.1 to continuous integration tests (:commit:`ecfa7431`)
 - Pylinted, pep8 and removed old-style exceptions from source (:issue:`430`, :issue:`432`)
 - Use importlib for parametric imports (:issue:`445`)
 - Handle a regression introduced in Python 2.7.5 that affects XmlItemExporter (:issue:`372`)
@@ -188,7 +188,7 @@ List of contributors sorted by number of commits::
 
 - IPython refuses to update the namespace. fix #396 (:commit:`3d32c4f`)
 - Fix AlreadyCalledError replacing a request in shell command. closes #407 (:commit:`b1d8919`)
-- Fix start_requests lazyness and early hangs (:commit:`89faf52`)
+- Fix start_requests laziness and early hangs (:commit:`89faf52`)
 
 0.18.3 (released 2013-10-03)
 ----------------------------
@@ -330,7 +330,7 @@ contributors sorted by number of commits::
 
 - fixes spelling errors in documentation (:commit:`6d2b3aa`)
 - add doc about disabling an extension. refs #132 (:commit:`c90de33`)
-- Fixed error message formatting. log.err() doesn't support cool formatting and when error occured, the message was:    "ERROR: Error processing %(item)s" (:commit:`c16150c`)
+- Fixed error message formatting. log.err() doesn't support cool formatting and when error occurred, the message was:    "ERROR: Error processing %(item)s" (:commit:`c16150c`)
 - lint and improve images pipeline error logging (:commit:`56b45fc`)
 - fixed doc typos (:commit:`243be84`)
 - add documentation topics: Broad Crawls & Common Practies (:commit:`1fbb715`)
