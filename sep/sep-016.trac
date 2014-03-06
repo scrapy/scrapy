@@ -111,7 +111,7 @@ class MySpider(LegSpider):
     }
 
     def parse_product(self, response):
-        # parse reponse and populate item
+        # parse response and populate item
         return item
 }}}
 
