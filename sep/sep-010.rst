@@ -19,52 +19,52 @@ Operations
 Get list of available spiders
 -----------------------------
 
-   GET /spiders/all
+``GET /spiders/all``
 
 Get list of closed spiders
 --------------------------
 
-   GET /spiders/closed
+``GET /spiders/closed``
 
 Get list of scheduled spiders
 -----------------------------
 
-   GET /spiders/scheduled
+``GET /spiders/scheduled``
 
 .. note:: contains closed
 
 Get list of running spiders
 ---------------------------
 
-   GET /spiders/opened
+``GET /spiders/opened``
 
 - returns list of dicts containing spider ``id`` and ``domain_name``
 
 Schedule spider
 ---------------
 
-   POST /spiders
+``POST /spiders``
 
 - args: ``schedule=example.com``
 
 Close spider
 ------------
 
-   POST /spider/1238/close
+``POST /spider/1238/close``
 
 Get global stats
 ----------------
 
-   GET /stats
+``GET /stats``
 
 .. note:: spider-specific not included
 
 Get spider-specific stats
 -------------------------
 
-   GET /spider/1238/stats/
+``GET /spider/1238/stats/``
 
 Get engine status
 -----------------
 
-   GET /engine/status
+``GET /engine/status``
