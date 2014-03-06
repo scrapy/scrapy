@@ -45,7 +45,7 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
     def _process_links(self, links):
         """ Normalize and filter extracted links
 
-        The subclass should override it if neccessary
+        The subclass should override it if necessary
         """
         links = unique_list(links, key=lambda link: link.url) if self.unique else links
         return links

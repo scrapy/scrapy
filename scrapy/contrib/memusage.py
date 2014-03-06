@@ -21,7 +21,7 @@ class MemoryUsage(object):
         if not crawler.settings.getbool('MEMUSAGE_ENABLED'):
             raise NotConfigured
         try:
-            # stdlib's resource module is only availabe on unix platforms.
+            # stdlib's resource module is only available on unix platforms.
             self.resource = import_module('resource')
         except ImportError:
             raise NotConfigured

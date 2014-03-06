@@ -849,7 +849,7 @@ class IReactorMulticast(Interface):
     UDP socket methods that support multicast.
 
     IMPORTANT: This is an experimental new interface. It may change
-    without backwards compatability. Suggestions are welcome.
+    without backwards compatibility. Suggestions are welcome.
     """
 
     def listenMulticast(port, protocol, interface='', maxPacketSize=8192,

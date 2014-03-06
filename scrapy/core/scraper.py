@@ -121,7 +121,7 @@ class Scraper(object):
         return dfd
 
     def _scrape2(self, request_result, request, spider):
-        """Handle the diferent cases of request's result been a Response or a
+        """Handle the different cases of request's result been a Response or a
         Failure"""
         if not isinstance(request_result, Failure):
             return self.spidermw.scrape_response(self.call_spider, \
