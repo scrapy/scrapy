@@ -285,6 +285,69 @@ class FilesystemCacheStorage(object):
             return pickle.load(f)
 
 
+class LeveldbCacheStorage(object):
+
+    def __init__(self, settings):
+        import leveldb
+        self._leveldb = leveldb
+        self.cachedir = data_path(settings['HTTPCACHE_DIR'], createdir=True)
+        self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
+        self.db = None
+
+    def open_spider(self, spider):
+        dbpath = os.path.join(self.cachedir, '%s.leveldb' % spider.name)
+        self.db = self._leveldb.LevelDB(dbpath)
+
+    def close_spider(self, spider):
+        del self.db
+
+    def retrieve_response(self, spider, request):
+        data = self._read_data(spider, request)
+        if data is None:
+            return  # not cached
+        url = data['url']
+        status = data['status']
+        headers = Headers(data['headers'])
+        body = data['body']
+        respcls = responsetypes.from_args(headers=headers, url=url)
+        response = respcls(url=url, headers=headers, status=status, body=body)
+        return response
+
+    def store_response(self, spider, request, response):
+        key = self._request_key(request)
+        data = {
+            'status': response.status,
+            'url': response.url,
+            'headers': dict(response.headers),
+            'body': response.body,
+        }
+        batch = self._leveldb.WriteBatch()
+        batch.Put('%s_data' % key, pickle.dumps(data, protocol=2))
+        batch.Put('%s_time' % key, str(time()))
+        self.db.Write(batch)
+
+    def _read_data(self, spider, request):
+        key = self._request_key(request)
+        try:
+            ts = self.db.Get('%s_time' % key)
+        except KeyError:
+            return  # not found or invalid entry
+
+        if 0 < self.expiration_secs < time() - float(ts):
+            return  # expired
+
+        try:
+            data = self.db.Get('%s_data' % key)
+        except KeyError:
+            return  # invalid entry
+        else:
+            return pickle.loads(data)
+
+    def _request_key(self, request):
+        return request_fingerprint(request)
+
+
+
 def parse_cachecontrol(header):
     """Parse Cache-Control header
 
