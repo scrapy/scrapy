@@ -19,29 +19,29 @@ When you use Selectors in Scrapy, your final goal is to "extract" the data that
 you've selected, as the [http://doc.scrapy.org/en/latest/topics/selectors.html
 XPath Selectors documentation] says (bolding by me):
 
-   "When you’re scraping web pages, the most common task you need to perform is
-   to **extract** data from the HTML source."
+   When you’re scraping web pages, the most common task you need to perform is
+   to **extract** data from the HTML source.
 
 ..
 
-   "Scrapy comes with its own mechanism for **extracting** data. They’re called
+   Scrapy comes with its own mechanism for **extracting** data. They’re called
    ``XPath`` selectors (or just “selectors”, for short) because they “select”
-   certain parts of the HTML document specified by ``XPath`` expressions."
+   certain parts of the HTML document specified by ``XPath`` expressions.
 
 ..
 
-   "To actually **extract** the textual data you must call the selector
-   ``extract()`` method, as follows"
+   To actually **extract** the textual data you must call the selector
+   ``extract()`` method, as follows
 
 ..
 
-   "Selectors also have a ``re()`` method for **extracting** data using regular
-   expressions."
+   Selectors also have a ``re()`` method for **extracting** data using regular
+   expressions.
 
 ..
 
-   "For example, suppose you want to **extract** all <p> elements inside <div>
-   elements. First you get would get all <div> elements"
+   For example, suppose you want to **extract** all <p> elements inside <div>
+   elements. First you get would get all <div> elements
 
 Rationale
 =========
