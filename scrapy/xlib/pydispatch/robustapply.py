@@ -27,7 +27,7 @@ def function(receiver):
         # an instance-method...
         return receiver, receiver.im_func.func_code, 1
     elif not hasattr(receiver, 'func_code'):
-        raise ValueError('unknown reciever type %s %s'%(receiver, type(receiver)))
+        raise ValueError('unknown receiver type %s %s'%(receiver, type(receiver)))
 
     return receiver, receiver.func_code, 0
 

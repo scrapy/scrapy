@@ -109,7 +109,7 @@ p['variants'] = [v1, Variant(name="lolo", price=Decimal("150")]
 p['variants'] = [v1, {'name': 'lolo', 'price': Decimal("150")] 
 # this fails because it can't instantiate a Variant 
 p['variants'] = [v1, 'test']
-# this fails beacuse 'coco' is not a valid value for price
+# this fails because 'coco' is not a valid value for price
 p['variants'] = [v1, {'name': 'lolo', 'price': 'coco'] 
 }}}
 

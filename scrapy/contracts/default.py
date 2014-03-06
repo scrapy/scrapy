@@ -57,12 +57,12 @@ class ReturnsContract(Contract):
             self.max_bound = float('inf')
 
     def post_process(self, output):
-        occurences = 0
+        occurrences = 0
         for x in output:
             if isinstance(x, self.obj_type):
-                occurences += 1
+                occurrences += 1
 
-        assertion = (self.min_bound <= occurences <= self.max_bound)
+        assertion = (self.min_bound <= occurrences <= self.max_bound)
 
         if not assertion:
             if self.min_bound == self.max_bound:
@@ -71,7 +71,7 @@ class ReturnsContract(Contract):
                 expected = '%s..%s' % (self.min_bound, self.max_bound)
 
             raise ContractFail("Returned %s %s, expected %s" % \
-                (occurences, self.obj_name, expected))
+                (occurrences, self.obj_name, expected))
 
 
 class ScrapesContract(Contract):

@@ -411,7 +411,7 @@ Response objects
 
     .. attribute:: Response.body
 
-        A str containing the body of this Response. Keep in mind that Reponse.body
+        A str containing the body of this Response. Keep in mind that Response.body
         is always a str. If you want the unicode version use
         :meth:`TextResponse.body_as_unicode` (only available in
         :class:`TextResponse` and subclasses).

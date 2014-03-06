@@ -33,7 +33,7 @@ These flaws will be corrected by the changes proposed in this SEP.
 Matcher Objects (aka Matcher) are responsible for determining if given request or response matches an arbitrary criteria.
 The Matcher receives as argument the request or the response, giving a powerful access to all request/response attributes.
 
-In the current !CrawlSpider, the Rule Object has the responsability to determine the callback of given extractor,
+In the current !CrawlSpider, the Rule Object has the responsibility to determine the callback of given extractor,
 and the link extractor contains the url pattern (aka regex). Now the Matcher will contain only the pattern or criteria
 to determine which request/response will execute any action. See below Spider Rules.
 
