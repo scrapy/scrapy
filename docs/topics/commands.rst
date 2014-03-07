@@ -367,8 +367,14 @@ method passed with the ``--callback`` option, or ``parse`` if not given.
 
 Supported options:
 
+* ``--spider=SPIDER``: bypass spider autodetection and force use of specific spider
+
+* ``--a NAME=VALUE``: set spider argument (may be repeated)
+
 * ``--callback`` or ``-c``: spider method to use as callback for parsing the
   response
+
+* ``--pipelines``: process items through pipelines
 
 * ``--rules`` or ``-r``: use :class:`~scrapy.contrib.spiders.CrawlSpider`
   rules to discover the callback (i.e. spider method) to use for parsing the
@@ -377,6 +383,8 @@ Supported options:
 * ``--noitems``: don't show scraped items
 
 * ``--nolinks``: don't show extracted links
+
+* ``--nocolour``: avoid using pygments to colorize the output
 
 * ``--depth`` or ``-d``: depth level for which the requests should be followed
   recursively (default: 1)
