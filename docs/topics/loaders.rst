@@ -325,7 +325,7 @@ ItemLoader objects
             loader.add_value('name', u'name: foo', TakeFirst(), re='name: (.+)')
             loader.add_value(None, {'name': u'foo', 'sex': u'male'})
 
-    .. method:: replace_value(field_name, value)
+    .. method:: replace_value(field_name, value, \*processors, \**kwargs)
 
         Similar to :meth:`add_value` but replaces the collected data with the
         new value instead of adding it.
