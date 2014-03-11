@@ -6,6 +6,8 @@ higher than 2.5 which used to be the lowest version supported by Scrapy.
 
 """
 import os
+import sys
+import gc
 import re
 import inspect
 import weakref
@@ -280,3 +282,8 @@ def retry_on_eintr(function, *args, **kw):
         except IOError as e:
             if e.errno != errno.EINTR:
                 raise
+
+
+def find_biggest_obj():
+    return reduce(lambda a, o: a if sys.getsizeof(a) > sys.getsizeof(o) else o,
+                  gc.get_objects(), object())
