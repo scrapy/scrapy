@@ -125,6 +125,6 @@ links:
 * `Twisted - hello, asynchronous programming`_
 
 .. _Twisted: http://twistedmatrix.com/trac/
-.. _Asynchronous Programming with Twisted: http://twistedmatrix.com/projects/core/documentation/howto/async.html
+.. _Asynchronous Programming with Twisted: http://twistedmatrix.com/documents/8.2.0/core/howto/async.html
 .. _Twisted - hello, asynchronous programming: http://jessenoller.com/2009/02/11/twisted-hello-asynchronous-programming/
 
