@@ -305,9 +305,9 @@ fields with form data from :class:`Response` objects.
 
        :param clickdata: attributes to lookup the control clicked. If it's not
          given, the form data will be submitted simulating a click on the
-         first clickable element. In addition to xml attributes, the control
-         can be identified by its index relative to other submittable inputs
-         inside the form, via the ``nr`` attribute.
+         first clickable element. In addition to html attributes, the control
+         can be identified by its zero-based index relative to other
+         submittable inputs inside the form, via the ``nr`` attribute.
        :type clickdata: dict
 
        :param dont_click: If True, the form data will be submitted without
