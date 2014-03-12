@@ -448,8 +448,8 @@ class FormRequestTest(RequestTest):
             """)
         req = self.request_class.from_response(response, clickdata={'nr': 1})
         fs = _qs(req)
-        self.assertTrue('clickable2' in fs, fs)
-        self.assertFalse('clickable1' in fs, fs)
+        self.assertIn('clickable2', fs)
+        self.assertNotIn('clickable1', fs)
 
     def test_from_response_invalid_nr_index_clickdata(self):
         response = _buildresponse(
