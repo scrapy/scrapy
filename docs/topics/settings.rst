@@ -380,6 +380,15 @@ A dict containing the request download handlers enabled by default in Scrapy.
 You should never modify this setting in your project, modify
 :setting:`DOWNLOAD_HANDLERS` instead.
 
+If you want to disable any of the above download handlers you must define them
+in your project's :setting:`DOWNLOAD_HANDLERS` setting and assign `None`
+as their value.  For example, if you want to disable the file download
+handler::
+
+    DOWNLOAD_HANDLERS = {
+        'file': None,
+    }
+
 .. setting:: DOWNLOAD_TIMEOUT
 
 DOWNLOAD_TIMEOUT
