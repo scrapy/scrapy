@@ -15,6 +15,7 @@ from twisted.protocols.ftp import FTPClient, ConnectionLost
 from w3lib.url import path_to_file_uri
 
 from scrapy import twisted_version
+from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler, HttpDownloadHandler
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
@@ -26,6 +27,40 @@ from scrapy.spider import Spider
 from scrapy.http import Request
 from scrapy.settings import Settings
 from scrapy import optional_features
+from scrapy.utils.test import get_crawler
+from scrapy.exceptions import NotConfigured
+
+
+class DummyDH(object):
+
+    def __init__(self, settings):
+        pass
+
+
+class OffDH(object):
+
+    def __init__(self, crawler):
+        raise NotConfigured
+
+
+class LoadTestCase(unittest.TestCase):
+
+    def test_enabled_handler(self):
+        handlers = {'scheme': 'scrapy.tests.test_downloader_handlers.DummyDH'}
+        dh = DownloadHandlers(get_crawler({'DOWNLOAD_HANDLERS': handlers}))
+        self.assertIn('scheme', dh._handlers)
+        self.assertNotIn('scheme', dh._notconfigured)
+
+    def test_not_configured_handler(self):
+        handlers = {'scheme': 'scrapy.tests.test_downloader_handlers.OffDH'}
+        dh = DownloadHandlers(get_crawler({'DOWNLOAD_HANDLERS': handlers}))
+        self.assertNotIn('scheme', dh._handlers)
+        self.assertIn('scheme', dh._notconfigured)
+
+    def test_disabled_handler(self):
+        handlers = {'scheme': None}
+        dh = DownloadHandlers(get_crawler({'DOWNLOAD_HANDLERS': handlers}))
+        self.assertNotIn('scheme', dh._handlers)
 
 
 class FileTestCase(unittest.TestCase):
