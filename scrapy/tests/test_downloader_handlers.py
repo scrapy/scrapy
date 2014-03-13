@@ -33,7 +33,7 @@ from scrapy.exceptions import NotConfigured
 
 class DummyDH(object):
 
-    def __init__(self, settings):
+    def __init__(self, crawler):
         pass
 
 
@@ -61,6 +61,7 @@ class LoadTestCase(unittest.TestCase):
         handlers = {'scheme': None}
         dh = DownloadHandlers(get_crawler({'DOWNLOAD_HANDLERS': handlers}))
         self.assertNotIn('scheme', dh._handlers)
+        self.assertNotIn('scheme', dh._notconfigured)
 
 
 class FileTestCase(unittest.TestCase):
