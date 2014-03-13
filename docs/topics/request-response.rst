@@ -266,7 +266,7 @@ fields with form data from :class:`Response` objects.
     The :class:`FormRequest` objects support the following class method in
     addition to the standard :class:`Request` methods:
 
-    .. classmethod:: FormRequest.from_response(response, [formname=None, formnumber=0, formdata=None, formxpath=None, dont_click=False, ...])
+    .. classmethod:: FormRequest.from_response(response, [formname=None, formnumber=0, formdata=None, formxpath=None, clickdata=None, dont_click=False, ...])
 
        Returns a new :class:`FormRequest` object with its form field values
        pre-populated with those found in the HTML ``<form>`` element contained
@@ -302,6 +302,13 @@ fields with form data from :class:`Response` objects.
           already present in the response ``<form>`` element, its value is
           overridden by the one passed in this parameter.
        :type formdata: dict
+
+       :param clickdata: attributes to lookup the control clicked. If it's not
+         given, the form data will be submitted simulating a click on the
+         first clickable element. In addition to html attributes, the control
+         can be identified by its zero-based index relative to other
+         submittable inputs inside the form, via the ``nr`` attribute.
+       :type clickdata: dict
 
        :param dont_click: If True, the form data will be submitted without
          clicking in any element.
