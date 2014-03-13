@@ -439,6 +439,27 @@ class FormRequestTest(RequestTest):
         self.assertRaises(ValueError, self.request_class.from_response,
                           response, clickdata={'nonexistent': 'notme'})
 
+    def test_from_response_nr_index_clickdata(self):
+        response = _buildresponse(
+            """<form>
+            <input type="submit" name="clickable1" value="clicked1">
+            <input type="submit" name="clickable2" value="clicked2">
+            </form>
+            """)
+        req = self.request_class.from_response(response, clickdata={'nr': 1})
+        fs = _qs(req)
+        self.assertIn('clickable2', fs)
+        self.assertNotIn('clickable1', fs)
+
+    def test_from_response_invalid_nr_index_clickdata(self):
+        response = _buildresponse(
+            """<form>
+            <input type="submit" name="clickable" value="clicked">
+            </form>
+            """)
+        self.assertRaises(ValueError, self.request_class.from_response,
+                          response, clickdata={'nr': 1})
+
     def test_from_response_errors_noform(self):
         response = _buildresponse("""<html></html>""")
         self.assertRaises(ValueError, self.request_class.from_response, response)
