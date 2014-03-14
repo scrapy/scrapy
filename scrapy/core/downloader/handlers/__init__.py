@@ -15,6 +15,10 @@ class DownloadHandlers(object):
         handlers = crawler.settings.get('DOWNLOAD_HANDLERS_BASE')
         handlers.update(crawler.settings.get('DOWNLOAD_HANDLERS', {}))
         for scheme, clspath in handlers.iteritems():
+            # Allow to disable a handler just like any other
+            # component (extension, middlware, etc).
+            if clspath is None:
+                continue
             cls = load_object(clspath)
             try:
                 dh = cls(crawler.settings)
