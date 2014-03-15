@@ -6,13 +6,14 @@ higher than 2.5 which used to be the lowest version supported by Scrapy.
 
 """
 import os
+import re
 import sys
 import gc
-import re
 import inspect
 import weakref
 import errno
 from functools import partial, wraps
+from operator import itemgetter
 from sgmllib import SGMLParser
 
 
@@ -284,6 +285,18 @@ def retry_on_eintr(function, *args, **kw):
                 raise
 
 
-def find_biggest_obj():
-    return reduce(lambda a, o: a if sys.getsizeof(a) > sys.getsizeof(o) else o,
-                  gc.get_objects(), object())
+def find_biggest_objects(n=1, ignore=None):
+    """Returns the biggest first n objects."""
+    ignore = ignore or []
+    res = []
+    minimum = 0
+    for obj in gc.get_objects():
+        if hasattr(obj, '__class__') and obj.__class__.__name__ in ignore:
+            continue
+        sz = sys.getsizeof(obj)
+        if len(res) < n or sz > minimum:
+            res.append((obj, sz))
+            res = sorted(res, key=itemgetter(1), reverse=True)
+            res = res[:n]
+            minimum = min([_sz for _, _sz in res])
+    return [obj for obj, _ in res]

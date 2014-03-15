@@ -15,7 +15,7 @@ from scrapy import log, signals
 from scrapy.utils.trackref import print_live_refs
 from scrapy.utils.engine import print_engine_status
 from scrapy.utils.reactor import listen_tcp
-from scrapy.utils.python import find_biggest_obj
+from scrapy.utils.python import find_biggest_objects
 
 
 try:
@@ -76,7 +76,7 @@ class TelnetConsole(protocol.ServerFactory):
             'hpy': hpy,
             'help': "This is Scrapy telnet console. For more info see: " \
                 "http://doc.scrapy.org/en/latest/topics/telnetconsole.html",
-            'find_biggest_obj': find_biggest_obj,
+            'find_biggest_objects': find_biggest_objects,
         }
         self.crawler.signals.send_catch_log(update_telnet_vars, telnet_vars=telnet_vars)
         return telnet_vars
