@@ -90,6 +90,40 @@ subclasses):
 * ``scrapy.selector.Selector``
 * ``scrapy.spider.Spider``
 
+Which objects are taking the most of memory?
+--------------------------------------------
+
+Sometimes you may wonder about which objects are taking too much memory,
+especially if ``prefs()`` command shows nothing wrong.
+
+``find_biggest_objects()`` returns the first biggest n objects that are tracked
+by python garbage collector.
+
+Returned list is sorted by object size. The first element is the biggest
+object in terms of size. ``sys.getsizeof()`` function is used as size measurement
+function.
+
+.. note::
+
+    Returned list references the objects, it is containing. As long as your
+    telnet session lives or returned list is not deleted, the biggest objects are
+    guaranteed to live in the process even they are released from their origin.
+
+find_biggest_objects command is an alias to
+``scrapy.utils.python.find_biggest_objects`` function.
+
+.. function:: find_biggest_objects(n=1, ignore=None)
+
+    Returns the first biggest n objects.
+
+    :param n: The first n object.
+    :type n: Int
+
+    :param ignore: Class name(s) to be ignored.
+    :type ignore: class or classes tuple.
+
+    :rtype: List of objects.
+
 A real example
 --------------
 
