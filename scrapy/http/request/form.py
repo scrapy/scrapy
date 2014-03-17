@@ -41,8 +41,8 @@ class FormRequest(Request):
 
 def _get_form_url(form, url):
     if url is None:
-        return form.action or form.base_url
-    return urlparse.urljoin(form.base_url, url)
+        return urllib.unquote(form.action or form.base_url)
+    return urllib.unquote(urlparse.urljoin(form.base_url, url))
 
 def _urlencode(seq, enc):
     values = [(unicode_to_str(k, enc), unicode_to_str(v, enc))

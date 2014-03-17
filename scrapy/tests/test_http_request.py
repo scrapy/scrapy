@@ -673,6 +673,14 @@ class FormRequestTest(RequestTest):
         self.assertRaises(ValueError, self.request_class.from_response,
                           response, formxpath="//form/input[@name='abc']")
 
+    def test_from_response_piped_url(self):
+        response = _buildresponse(
+            body='<html><body><form></form></body></html>',
+            url='http://www.example.com/?a=|'
+        )
+        req = self.request_class.from_response(response)
+        self.assertEqual(req.url, "http://www.example.com/?a=%7C")
+
 def _buildresponse(body, **kwargs):
     kwargs.setdefault('body', body)
     kwargs.setdefault('url', 'http://example.com')
