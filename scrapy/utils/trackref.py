@@ -10,10 +10,12 @@ alias to object in that case).
 """
 
 from __future__ import print_function
-import weakref, os
+import weakref
+import os
 from collections import defaultdict
 from time import time
 from operator import itemgetter
+
 
 NoneType = type(None)
 
@@ -39,8 +41,8 @@ def format_live_refs(ignore=NoneType):
         if issubclass(cls, ignore):
             continue
         oldest = min(wdict.itervalues())
-        s += "%-30s %6d   oldest: %ds ago" % (cls.__name__, len(wdict), \
-            now-oldest) + os.linesep
+        s += "%-30s %6d   oldest: %ds ago" % (cls.__name__, len(wdict),
+                                              now-oldest) + os.linesep
     return s
 
 def print_live_refs(*a, **kw):

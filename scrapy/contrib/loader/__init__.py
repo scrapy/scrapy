@@ -11,7 +11,6 @@ from scrapy.utils.decorator import deprecated
 from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.misc import arg_to_iter, extract_regex
 from scrapy.utils.python import flatten
-
 from .common import wrap_loader_context
 from .processor import Identity
 
@@ -100,15 +99,15 @@ class ItemLoader(object):
     def get_input_processor(self, field_name):
         proc = getattr(self, '%s_in' % field_name, None)
         if not proc:
-            proc = self._get_item_field_attr(field_name, 'input_processor', \
-                self.default_input_processor)
+            proc = self._get_item_field_attr(field_name, 'input_processor',
+                                             self.default_input_processor)
         return proc
 
     def get_output_processor(self, field_name):
         proc = getattr(self, '%s_out' % field_name, None)
         if not proc:
-            proc = self._get_item_field_attr(field_name, 'output_processor', \
-                self.default_output_processor)
+            proc = self._get_item_field_attr(field_name, 'output_processor',
+                                             self.default_output_processor)
         return proc
 
     def _process_input_value(self, field_name, value):

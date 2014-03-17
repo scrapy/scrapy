@@ -4,6 +4,7 @@ import unittest
 
 from scrapy.utils.test import get_testenv
 
+
 class CmdlineTest(unittest.TestCase):
 
     def setUp(self):
@@ -17,15 +18,15 @@ class CmdlineTest(unittest.TestCase):
         return comm[0].strip()
 
     def test_default_settings(self):
-        self.assertEqual(self._execute('settings', '--get', 'TEST1'), \
+        self.assertEqual(self._execute('settings', '--get', 'TEST1'),
                          'default')
 
     def test_override_settings_using_set_arg(self):
-        self.assertEqual(self._execute('settings', '--get', 'TEST1', '-s', 'TEST1=override'), \
+        self.assertEqual(self._execute('settings', '--get', 'TEST1', '-s', 'TEST1=override'),
                          'override')
 
     def test_override_settings_using_envvar(self):
         self.env['SCRAPY_TEST1'] = 'override'
-        self.assertEqual(self._execute('settings', '--get', 'TEST1'), \
+        self.assertEqual(self._execute('settings', '--get', 'TEST1'),
                          'override')
 

@@ -122,7 +122,7 @@ def re_rsearch(pattern, text, chunk_size=1024):
     for chunk, offset in _chunk_iter():
         matches = [match for match in pattern.finditer(chunk)]
         if matches:
-            return (offset + matches[-1].span()[0], offset + matches[-1].span()[1])
+            return offset + matches[-1].span()[0], offset + matches[-1].span()[1]
     return None
 
 def memoizemethod_noargs(method):
@@ -137,7 +137,7 @@ def memoizemethod_noargs(method):
         return cache[self]
     return new_method
 
-_BINARYCHARS = set(map(chr, range(32))) - set(["\0", "\t", "\n", "\r"])
+_BINARYCHARS = set(map(chr, range(32))) - {"\0", "\t", "\n", "\r"}
 
 def isbinarytext(text):
     """Return True if the given text is considered binary, or false

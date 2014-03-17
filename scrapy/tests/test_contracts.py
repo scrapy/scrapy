@@ -1,7 +1,6 @@
 from unittest import TextTestRunner
 
 from twisted.trial import unittest
-
 from scrapy.spider import Spider
 from scrapy.http import Request
 from scrapy.item import Item, Field

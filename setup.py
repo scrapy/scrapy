@@ -9,6 +9,7 @@ from subprocess import Popen, PIPE
 import os
 import sys
 
+
 class osx_install_data(install_data):
     # On MacOS, the platform-specific lib dir is /System/Library/Framework/Python/.../
     # which is wrong. Python 2.5 supplied with MacOS 10.5 has an Apple-specific fix
@@ -22,10 +23,12 @@ class osx_install_data(install_data):
         self.set_undefined_options('install', ('install_lib', 'install_dir'))
         install_data.finalize_options(self)
 
+
 if sys.platform == "darwin":
     cmdclasses = {'install_data': osx_install_data}
 else:
     cmdclasses = {'install_data': install_data}
+
 
 def fullsplit(path, result=None):
     """
@@ -54,8 +57,10 @@ root_dir = os.path.dirname(__file__)
 if root_dir != '':
     os.chdir(root_dir)
 
+
 def is_not_module(filename):
     return os.path.splitext(filename)[1] not in ['.py', '.pyc', '.pyo']
+
 
 for scrapy_dir in ['scrapy']:
     for dirpath, dirnames, filenames in os.walk(scrapy_dir):
@@ -86,7 +91,6 @@ if os.environ.get('SCRAPY_VERSION_FROM_GIT'):
         f.write(v.strip())
 with open(os.path.join(os.path.dirname(__file__), 'scrapy/VERSION')) as f:
     version = f.read().strip()
-
 
 setup_args = {
     'name': 'Scrapy',

@@ -1,7 +1,6 @@
 """Download handlers for http and https schemes"""
 
 import re
-
 from time import time
 from cStringIO import StringIO
 from urlparse import urldefrag
@@ -14,7 +13,6 @@ from twisted.internet.error import TimeoutError
 from twisted.web.http import PotentialDataLoss
 from scrapy.xlib.tx import Agent, ProxyAgent, ResponseDone, \
     HTTPConnectionPool, TCP4ClientEndpoint
-
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import _parse

@@ -5,13 +5,10 @@ requests in Scrapy.
 See documentation in docs/topics/request-response.rst
 """
 
-import copy
-
 from w3lib.url import safe_url_string
 
 from scrapy.http.headers import Headers
 from scrapy.utils.trackref import object_ref
-from scrapy.utils.decorator import deprecated
 from scrapy.utils.url import escape_ajax
 from scrapy.http.common import obsolete_setter
 
@@ -97,8 +94,8 @@ class Request(object_ref):
         """Create a new Request with the same attributes except for those
         given new values.
         """
-        for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta', \
-                'encoding', 'priority', 'dont_filter', 'callback', 'errback']:
+        for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta',
+                  'encoding', 'priority', 'dont_filter', 'callback', 'errback']:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)

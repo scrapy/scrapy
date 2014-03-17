@@ -4,7 +4,9 @@ garbage collection to lxml element tree documents.
 """
 
 import weakref
+
 from lxml import etree
+
 from scrapy.utils.trackref import object_ref
 
 

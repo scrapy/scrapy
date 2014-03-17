@@ -9,7 +9,6 @@ import pprint
 from twisted.conch import manhole, telnet
 from twisted.conch.insults import insults
 from twisted.internet import protocol
-
 from scrapy.exceptions import NotConfigured
 from scrapy import log, signals
 from scrapy.utils.trackref import print_live_refs
@@ -72,8 +71,8 @@ class TelnetConsole(protocol.ServerFactory):
             'p': pprint.pprint,
             'prefs': print_live_refs,
             'hpy': hpy,
-            'help': "This is Scrapy telnet console. For more info see: " \
-                "http://doc.scrapy.org/en/latest/topics/telnetconsole.html",
+            'help': "This is Scrapy telnet console. For more info see: "
+                    "http://doc.scrapy.org/en/latest/topics/telnetconsole.html",
         }
         self.crawler.signals.send_catch_log(update_telnet_vars, telnet_vars=telnet_vars)
         return telnet_vars

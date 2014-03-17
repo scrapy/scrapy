@@ -1,4 +1,3 @@
-import mock
 import os
 import time
 import hashlib
@@ -6,9 +5,9 @@ import warnings
 from tempfile import mkdtemp
 from shutil import rmtree
 
+import mock
 from twisted.trial import unittest
 from twisted.internet import defer
-
 from scrapy.contrib.pipeline.files import FilesPipeline, FSFilesStore
 from scrapy.item import Item, Field
 from scrapy.http import Request, Response

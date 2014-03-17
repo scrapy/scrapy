@@ -1,10 +1,12 @@
-import unittest, json
+import unittest
+import json
 from cStringIO import StringIO
 
 from scrapy.utils.jsonrpc import jsonrpc_client_call, jsonrpc_server_call, \
     JsonRpcError, jsonrpc_errors
 from scrapy.utils.serialize import ScrapyJSONDecoder
 from scrapy.tests.test_utils_serialize import CrawlerMock
+
 
 class urllib_mock(object):
     def __init__(self, result=None, error=None):
@@ -103,15 +105,15 @@ class JsonRpcUtilsTestCase(unittest.TestCase):
         assert r['id'] == 2
         self.assertEqual(r['result'], ([], {}))
 
-        r = jsonrpc_server_call(t, '{"method": "call", "params": [456, 123], "id": 3}', \
-            self.json_decoder)
+        r = jsonrpc_server_call(t, '{"method": "call", "params": [456, 123], "id": 3}',
+                                self.json_decoder)
         assert 'result' in r
         assert r['jsonrpc'] == '2.0'
         assert r['id'] == 3
         self.assertEqual(r['result'], ([456, 123], {}))
 
-        r = jsonrpc_server_call(t, '{"method": "call", "params": {"data": 789}, "id": 3}', \
-            self.json_decoder)
+        r = jsonrpc_server_call(t, '{"method": "call", "params": {"data": 789}, "id": 3}',
+                                self.json_decoder)
         assert 'result' in r
         assert r['jsonrpc'] == '2.0'
         assert r['id'] == 3

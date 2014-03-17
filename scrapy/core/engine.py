@@ -9,7 +9,6 @@ from time import time
 
 from twisted.internet import defer
 from twisted.python.failure import Failure
-
 from scrapy import log, signals
 from scrapy.core.downloader import Downloader
 from scrapy.core.scraper import Scraper
@@ -64,8 +63,8 @@ class ExecutionEngine(object):
         self.scraper = Scraper(crawler)
         self._concurrent_spiders = self.settings.getint('CONCURRENT_SPIDERS', 1)
         if self._concurrent_spiders != 1:
-            warnings.warn("CONCURRENT_SPIDERS settings is deprecated, use " \
-                "Scrapyd max_proc config instead", ScrapyDeprecationWarning)
+            warnings.warn("CONCURRENT_SPIDERS settings is deprecated, use "
+                          "Scrapyd max_proc config instead", ScrapyDeprecationWarning)
         self._spider_closed_callback = spider_closed_callback
 
     @defer.inlineCallbacks
@@ -112,7 +111,7 @@ class ExecutionEngine(object):
             except StopIteration:
                 slot.start_requests = None
             except Exception as exc:
-                log.err(None, 'Obtaining request from start requests', \
+                log.err(None, 'Obtaining request from start requests',
                         spider=spider)
             else:
                 self.crawl(request, spider)
@@ -199,8 +198,8 @@ class ExecutionEngine(object):
                 response.request = request # tie request to response received
                 logkws = self.logformatter.crawled(request, response, spider)
                 log.msg(spider=spider, **logkws)
-                self.signals.send_catch_log(signal=signals.response_received, \
-                    response=response, request=request, spider=spider)
+                self.signals.send_catch_log(signal=signals.response_received,
+                                            response=response, request=request, spider=spider)
             return response
 
         def _on_complete(_):
@@ -237,8 +236,8 @@ class ExecutionEngine(object):
         next loop and this function is guaranteed to be called (at least) once
         again for this spider.
         """
-        res = self.signals.send_catch_log(signal=signals.spider_idle, \
-            spider=spider, dont_log=DontCloseSpider)
+        res = self.signals.send_catch_log(signal=signals.spider_idle,
+                                          spider=spider, dont_log=DontCloseSpider)
         if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) \
                 for _, x in res):
             self.slot.nextcall.schedule(5)
@@ -268,8 +267,8 @@ class ExecutionEngine(object):
 
         # XXX: spider_stats argument was added for backwards compatibility with
         # stats collection refactoring added in 0.15. it should be removed in 0.17.
-        dfd.addBoth(lambda _: self.signals.send_catch_log_deferred(signal=signals.spider_closed, \
-            spider=spider, reason=reason, spider_stats=self.crawler.stats.get_stats()))
+        dfd.addBoth(lambda _: self.signals.send_catch_log_deferred(signal=signals.spider_closed,
+                                                                   spider=spider, reason=reason, spider_stats=self.crawler.stats.get_stats()))
         dfd.addErrback(log.err, spider=spider)
 
         dfd.addBoth(lambda _: self.crawler.stats.close_spider(spider, reason=reason))

@@ -19,6 +19,7 @@ from scrapy.utils.http import basic_auth_header
 from scrapy.utils.python import retry_on_eintr
 from scrapy.utils.conf import get_config, closest_scrapy_cfg
 
+
 _SETUP_PY_TEMPLATE = \
 """# Automatically created by: scrapy deploy
 
@@ -52,12 +53,12 @@ class Command(ScrapyCommand):
             help="the project name in the target")
         parser.add_option("-v", "--version",
             help="the version to deploy. Defaults to current timestamp")
-        parser.add_option("-l", "--list-targets", action="store_true", \
-            help="list available targets")
+        parser.add_option("-l", "--list-targets", action="store_true",
+                          help="list available targets")
         parser.add_option("-d", "--debug", action="store_true",
             help="debug mode (do not remove build dir)")
-        parser.add_option("-L", "--list-projects", metavar="TARGET", \
-            help="list available projects on TARGET")
+        parser.add_option("-L", "--list-projects", metavar="TARGET",
+                          help="list available projects on TARGET")
         parser.add_option("--egg", metavar="FILE",
             help="use the given egg, instead of building it")
         parser.add_option("--build-egg", metavar="FILE",
@@ -197,7 +198,7 @@ def _add_auth_header(request, target):
     if 'username' in target:
         u, p = target.get('username'), target.get('password', '')
         request.add_header('Authorization', basic_auth_header(u, p))
-    else: # try netrc
+    else:  # try netrc
         try:
             host = urlparse(target['url']).hostname
             a = netrc.netrc().authenticators(host)

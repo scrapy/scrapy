@@ -1,5 +1,7 @@
 import warnings
+
 from scrapy.exceptions import ScrapyDeprecationWarning
+
 
 DEPRECATED_SETTINGS = [
     ('TRACK_REFS', 'no longer needed (trackref is always enabled)'),

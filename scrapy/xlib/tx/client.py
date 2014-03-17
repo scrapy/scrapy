@@ -52,7 +52,7 @@ class _URL(tuple):
 
     At some point this should be replaced with a better URL implementation.
     """
-    def __new__(self, scheme, host, port, path):
+    def __new__(cls, scheme, host, port, path):
         return tuple.__new__(_URL, (scheme, host, port, path))
 
 
@@ -811,7 +811,7 @@ class _FakeUrllib2Response(object):
 
     def info(self):
         class _Meta(object):
-            def getheaders(zelf, name):
+            def getheaders(self, name):
                 return self.response.headers.getRawHeaders(name, [])
         return _Meta()
 

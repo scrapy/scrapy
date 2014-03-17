@@ -8,8 +8,8 @@ from scrapy.http.cookies import WrappedRequest, WrappedResponse
 class WrappedRequestTest(TestCase):
 
     def setUp(self):
-        self.request = Request("http://www.example.com/page.html", \
-            headers={"Content-Type": "text/html"})
+        self.request = Request("http://www.example.com/page.html",
+                               headers={"Content-Type": "text/html"})
         self.wrapped = WrappedRequest(self.request)
 
     def test_get_full_url(self):

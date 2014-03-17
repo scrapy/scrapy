@@ -4,7 +4,6 @@ from urlparse import urlparse, urlunparse, urldefrag
 from twisted.web.client import HTTPClientFactory
 from twisted.web.http import HTTPClient
 from twisted.internet import defer
-
 from scrapy.http import Headers
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.responsetypes import responsetypes
@@ -73,9 +72,9 @@ class ScrapyHTTPPageGetter(HTTPClient):
 
     def timeout(self):
         self.transport.loseConnection()
-        self.factory.noPage(\
-                defer.TimeoutError("Getting %s took longer than %s seconds." % \
-                (self.factory.url, self.factory.timeout)))
+        self.factory.noPage(
+            defer.TimeoutError("Getting %s took longer than %s seconds." %
+                               (self.factory.url, self.factory.timeout)))
 
 
 class ScrapyHTTPClientFactory(HTTPClientFactory):

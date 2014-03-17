@@ -1,12 +1,13 @@
 """
 Selector tests for cssselect backend
 """
+from cssselect.parser import SelectorSyntaxError
+from cssselect.xpath import ExpressionError
+
 from twisted.trial import unittest
 from scrapy.http import HtmlResponse
 from scrapy.selector.csstranslator import ScrapyHTMLTranslator
 from scrapy.selector import Selector
-from cssselect.parser import SelectorSyntaxError
-from cssselect.xpath import ExpressionError
 
 
 HTMLBODY = '''

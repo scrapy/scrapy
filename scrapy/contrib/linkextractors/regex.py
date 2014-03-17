@@ -6,6 +6,7 @@ from w3lib.html import remove_tags, remove_entities, replace_escape_chars
 from scrapy.link import Link
 from .sgml import SgmlLinkExtractor
 
+
 linkre = re.compile(
         "<a\s.*?href=(\"[.#]+?\"|\'[.#]+?\'|[^\s]+?)(>|\s.*?>)(.*?)<[/ ]?a>",
         re.DOTALL | re.IGNORECASE)

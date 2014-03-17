@@ -7,10 +7,10 @@ from __future__ import print_function
 
 import signal
 
-from twisted.internet import reactor, threads, defer
-from twisted.python import threadable
 from w3lib.url import any_to_uri
 
+from twisted.internet import reactor, threads, defer
+from twisted.python import threadable
 from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response

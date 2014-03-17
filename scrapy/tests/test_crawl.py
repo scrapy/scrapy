@@ -1,5 +1,6 @@
 import json
 import socket
+
 import mock
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase

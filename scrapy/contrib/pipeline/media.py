@@ -1,8 +1,8 @@
 from __future__ import print_function
 from collections import defaultdict
+
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
-
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy import log
 from scrapy.utils.request import request_fingerprint

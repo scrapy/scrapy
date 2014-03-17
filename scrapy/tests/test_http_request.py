@@ -1,7 +1,6 @@
-import cgi
 import unittest
 import xmlrpclib
-from urlparse import urlparse
+from urlparse import urlparse, parse_qs
 
 from scrapy.http import Request, FormRequest, XmlRpcRequest, Headers, HtmlResponse
 
@@ -228,8 +227,8 @@ class FormRequestTest(RequestTest):
         self.assertEqual(req.headers['Content-type'], 'application/x-www-form-urlencoded')
         self.assertEqual(req.url, "http://www.example.com/this/post.php")
         fs = _qs(req)
-        self.assertEqual(set(fs["test"]), set(["val1", "val2"]))
-        self.assertEqual(set(fs["one"]), set(["two", "three"]))
+        self.assertEqual(set(fs["test"]), {"val1", "val2"})
+        self.assertEqual(set(fs["one"]), {"two", "three"})
         self.assertEqual(fs['test2'], ['xxx'])
         self.assertEqual(fs['six'], ['seven'])
 
@@ -261,8 +260,8 @@ class FormRequestTest(RequestTest):
         self.assertEqual(urlparse(r1.url).hostname, "www.example.com")
         self.assertEqual(urlparse(r1.url).path, "/this/get.php")
         fs = _qs(r1)
-        self.assertEqual(set(fs['test']), set(['val1', 'val2']))
-        self.assertEqual(set(fs['one']), set(['two', 'three']))
+        self.assertEqual(set(fs['test']), {'val1', 'val2'})
+        self.assertEqual(set(fs['one']), {'two', 'three'})
         self.assertEqual(fs['test2'], ['xxx'])
         self.assertEqual(fs['six'], ['seven'])
 
@@ -322,8 +321,8 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="two" value="3">
             <input type="submit" name="clickable2" value="clicked2">
             </form>""")
-        req = self.request_class.from_response(response, formdata={'two': '2'}, \
-                                              clickdata={'name': 'clickable2'})
+        req = self.request_class.from_response(response, formdata={'two': '2'},
+                                               clickdata={'name': 'clickable2'})
         fs = _qs(req)
         self.assertEqual(fs['clickable2'], ['clicked2'])
         self.assertFalse('clickable1' in fs, fs)
@@ -361,8 +360,8 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="one" value="clicked1">
             <input type="hidden" name="two" value="clicked2">
             </form>""")
-        req = self.request_class.from_response(response, \
-                clickdata={'name': 'clickable', 'value': 'clicked2'})
+        req = self.request_class.from_response(response,
+                                               clickdata={'name': 'clickable', 'value': 'clicked2'})
         fs = _qs(req)
         self.assertEqual(fs['clickable'], ['clicked2'])
         self.assertEqual(fs['one'], ['clicked1'])
@@ -376,8 +375,8 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="poundsign" value="\u00a3">
             <input type="hidden" name="eurosign" value="\u20ac">
             </form>""")
-        req = self.request_class.from_response(response, \
-                clickdata={'name': u'price in \u00a3'})
+        req = self.request_class.from_response(response,
+                                               clickdata={'name': u'price in \u00a3'})
         fs = _qs(req)
         self.assertTrue(fs[u'price in \u00a3'.encode('utf-8')])
 
@@ -392,8 +391,8 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="field2" value="value2">
             </form>
             """)
-        req = self.request_class.from_response(response, formname='form2', \
-                clickdata={'name': 'clickable'})
+        req = self.request_class.from_response(response, formname='form2',
+                                               clickdata={'name': 'clickable'})
         fs = _qs(req)
         self.assertEqual(fs['clickable'], ['clicked2'])
         self.assertEqual(fs['field2'], ['value2'])
@@ -401,8 +400,8 @@ class FormRequestTest(RequestTest):
 
     def test_from_response_override_clickable(self):
         response = _buildresponse('''<form><input type="submit" name="clickme" value="one"> </form>''')
-        req = self.request_class.from_response(response, \
-                formdata={'clickme': 'two'}, clickdata={'name': 'clickme'})
+        req = self.request_class.from_response(response,
+                                               formdata={'clickme': 'two'}, clickdata={'name': 'clickme'})
         fs = _qs(req)
         self.assertEqual(fs['clickme'], ['two'])
 
@@ -529,7 +528,7 @@ class FormRequestTest(RequestTest):
             <form name="form2" action="post.php" method="POST">
             <input type="hidden" name="two" value="2">
             </form>""")
-        self.assertRaises(IndexError, self.request_class.from_response, \
+        self.assertRaises(IndexError, self.request_class.from_response,
                           response, formname="form3", formnumber=2)
 
     def test_from_response_select(self):
@@ -650,7 +649,7 @@ class FormRequestTest(RequestTest):
             </form>''')
         req = self.request_class.from_response(res)
         fs = _qs(req)
-        self.assertEqual(set(fs), set(['h2', 'i2', 'i1', 'i3', 'h1', 'i5', 'i4']))
+        self.assertEqual(set(fs), {'h2', 'i2', 'i1', 'i3', 'h1', 'i5', 'i4'})
 
     def test_from_response_xpath(self):
         response = _buildresponse(
@@ -684,7 +683,7 @@ def _qs(req):
         qs = req.body
     else:
         qs = req.url.partition('?')[2]
-    return cgi.parse_qs(qs, True)
+    return parse_qs(qs, True)
 
 
 class XmlRpcRequestTest(RequestTest):

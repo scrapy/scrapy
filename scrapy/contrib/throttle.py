@@ -1,4 +1,5 @@
 import logging
+
 from scrapy.exceptions import NotConfigured
 from scrapy import signals
 

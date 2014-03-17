@@ -3,6 +3,7 @@ import unittest
 
 from scrapy.utils.datatypes import CaselessDict
 
+
 __doctests__ = ['scrapy.utils.datatypes']
 
 class CaselessDictTest(unittest.TestCase):

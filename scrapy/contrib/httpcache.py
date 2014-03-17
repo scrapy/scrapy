@@ -5,7 +5,9 @@ from importlib import import_module
 from time import time
 from weakref import WeakKeyDictionary
 from email.utils import mktime_tz, parsedate_tz
+
 from w3lib.http import headers_raw_to_dict, headers_dict_to_raw
+
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint

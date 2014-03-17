@@ -23,8 +23,8 @@ def iter_spider_classes(module):
            getattr(obj, 'name', None):
             yield obj
 
-def create_spider_for_request(spidermanager, request, default_spider=None, \
-        log_none=False, log_multiple=False, **spider_kwargs):
+def create_spider_for_request(spidermanager, request, default_spider=None,
+                              log_none=False, log_multiple=False, **spider_kwargs):
     """Create a spider to handle the given Request.
 
     This will look for the spiders that can handle the given request (using

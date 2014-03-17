@@ -8,7 +8,7 @@ if not isinstance(__version__, str):
     __version__ = __version__.decode('ascii')
 version_info = tuple(__version__.split('.')[:3])
 
-import sys, os, warnings
+import sys, warnings
 
 if sys.version_info < (2, 7):
     print("Scrapy %s requires Python 2.7" % __version__)

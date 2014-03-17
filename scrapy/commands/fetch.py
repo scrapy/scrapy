@@ -1,4 +1,5 @@
 from __future__ import print_function
+
 from w3lib.url import is_url
 
 from scrapy.command import ScrapyCommand
@@ -25,8 +26,8 @@ class Command(ScrapyCommand):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--spider", dest="spider",
             help="use this spider")
-        parser.add_option("--headers", dest="headers", action="store_true", \
-            help="print response HTTP headers instead of body")
+        parser.add_option("--headers", dest="headers", action="store_true",
+                          help="print response HTTP headers instead of body")
 
     def _print_headers(self, headers, prefix):
         for key, values in headers.items():
@@ -53,7 +54,7 @@ class Command(ScrapyCommand):
         if opts.spider:
             spider = crawler.spiders.create(opts.spider)
         else:
-            spider = create_spider_for_request(crawler.spiders, request, \
-                default_spider=Spider('default'))
+            spider = create_spider_for_request(crawler.spiders, request,
+                                               default_spider=Spider('default'))
         crawler.crawl(spider, [request])
         self.crawler_process.start()

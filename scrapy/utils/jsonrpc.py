@@ -9,6 +9,8 @@ import traceback
 
 from scrapy.utils.serialize import ScrapyJSONDecoder
 
+
+
 # JSON-RPC 2.0 errors, as defined in:
 class jsonrpc_errors:
     PARSE_ERROR = -32700
@@ -54,8 +56,8 @@ def jsonrpc_server_call(target, jsonrpc_request, json_decoder=None):
     try:
         req = json_decoder.decode(jsonrpc_request)
     except Exception as e:
-        return jsonrpc_error(None, jsonrpc_errors.PARSE_ERROR, 'Parse error', \
-            traceback.format_exc())
+        return jsonrpc_error(None, jsonrpc_errors.PARSE_ERROR, 'Parse error',
+                             traceback.format_exc())
 
     try:
         id, methname = req['id'], req['method']
@@ -73,8 +75,8 @@ def jsonrpc_server_call(target, jsonrpc_request, json_decoder=None):
     try:
         return jsonrpc_result(id, method(*a, **kw))
     except Exception as e:
-        return jsonrpc_error(id, jsonrpc_errors.INTERNAL_ERROR, str(e), \
-            traceback.format_exc())
+        return jsonrpc_error(id, jsonrpc_errors.INTERNAL_ERROR, str(e),
+                             traceback.format_exc())
 
 def jsonrpc_error(id, code, message, data=None):
     """Create JSON-RPC error response"""

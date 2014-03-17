@@ -1,14 +1,16 @@
-import os, urlparse
+import os
+import urlparse
 from cStringIO import StringIO
+
+from w3lib.url import path_to_file_uri
 
 from zope.interface.verify import verifyObject
 from twisted.trial import unittest
 from twisted.internet import defer
-from w3lib.url import path_to_file_uri
-
 from scrapy.spider import Spider
 from scrapy.contrib.feedexport import IFeedStorage, FileFeedStorage, FTPFeedStorage, S3FeedStorage, StdoutFeedStorage
 from scrapy.utils.test import assert_aws_environ
+
 
 class FileFeedStorageTest(unittest.TestCase):
 

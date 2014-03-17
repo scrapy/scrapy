@@ -3,8 +3,8 @@ This module contains some assorted functions used in tests
 """
 
 import os
-
 from importlib import import_module
+
 from twisted.trial.unittest import SkipTest
 
 
