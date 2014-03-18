@@ -67,3 +67,10 @@ def assert_samelines(testcase, text1, text2, msg=None):
     line endings between platforms
     """
     testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
+
+def docrawl(spider, settings=None):
+    """Configure and start Crawler; return the result of crawler.start()"""
+    crawler = get_crawler(settings)
+    crawler.configure()
+    crawler.crawl(spider)
+    return crawler.start()

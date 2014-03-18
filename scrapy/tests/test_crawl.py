@@ -3,17 +3,11 @@ import socket
 import mock
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
-from scrapy.utils.test import get_crawler, get_testlog
+from scrapy.utils.test import docrawl, get_testlog
 from scrapy.tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
     BrokenStartRequestsSpider, SingleRequestSpider
 from scrapy.tests.mockserver import MockServer
 from scrapy.http import Request
-
-
-def docrawl(spider, settings=None):
-    crawler = get_crawler(settings)
-    crawler.crawl(spider)
-    return crawler.start()
 
 
 class CrawlTestCase(TestCase):

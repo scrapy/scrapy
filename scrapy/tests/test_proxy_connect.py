@@ -8,16 +8,11 @@ from netlib import http_auth
 
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
-from scrapy.utils.test import get_crawler, get_testlog
+from scrapy.utils.test import get_testlog, docrawl
 from scrapy.tests.spiders import SimpleSpider
 from scrapy.tests.mockserver import MockServer
 
 
-def docrawl(spider, settings=None):
-    crawler = get_crawler(settings)
-    crawler.configure()
-    crawler.crawl(spider)
-    return crawler.start()
 
 
 
