@@ -4,6 +4,7 @@ import optparse
 import cProfile
 import inspect
 import pkg_resources
+from collections import defaultdict
 
 import scrapy
 from scrapy.crawler import CrawlerProcess
@@ -25,7 +26,7 @@ def _iter_command_classes(module_name):
                 yield obj
 
 def _get_commands_from_module(module, inproject):
-    d = {}
+    d = defaultdict(object)
     for cmd in _iter_command_classes(module):
         if inproject or not cmd.requires_project:
             cmdname = cmd.__module__.split('.')[-1]
@@ -33,7 +34,7 @@ def _get_commands_from_module(module, inproject):
     return d
 
 def _get_commands_from_entry_points(inproject, group='scrapy.commands'):
-    cmds = {}
+    cmds = defaultdict(object)
     for entry_point in pkg_resources.iter_entry_points(group):
         obj = entry_point.load()
         if inspect.isclass(obj):
