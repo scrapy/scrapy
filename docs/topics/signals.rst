@@ -63,7 +63,7 @@ item_scraped
 ------------
 
 .. signal:: item_scraped
-.. function:: item_scraped(item, response, spider)
+.. function:: item_scraped(item, spider, response)
 
     Sent when an item has been scraped, after it has passed all the
     :ref:`topics-item-pipeline` stages (without being dropped).
@@ -73,11 +73,11 @@ item_scraped
     :param item: the item scraped
     :type item: :class:`~scrapy.item.Item` object
 
-    :param response: the response from where the item was scraped
-    :type response: :class:`~scrapy.http.Response` object
-
     :param spider: the spider which scraped the item
     :type spider: :class:`~scrapy.spider.Spider` object
+
+    :param response: the response from where the item was scraped
+    :type response: :class:`~scrapy.http.Response` object
 
 item_dropped
 ------------

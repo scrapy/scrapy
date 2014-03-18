@@ -39,7 +39,7 @@ class BaseRedirectMiddleware(object):
         else:
             log.msg(format="Discarding %(request)s: max redirections reached",
                     level=log.DEBUG, spider=spider, request=request)
-            raise IgnoreRequest
+            raise IgnoreRequest("max redirections reached")
 
     def _redirect_request_using_get(self, request, redirect_url):
         redirected = request.replace(url=redirect_url, method='GET', body='')
