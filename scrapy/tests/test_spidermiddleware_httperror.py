@@ -6,17 +6,22 @@ from scrapy.contrib.spidermiddleware.httperror import HttpErrorMiddleware, HttpE
 from scrapy.settings import Settings
 
 
+def _responses(request, status_codes):
+    responses = []
+    for code in status_codes:
+        response = Response(request.url, status=code)
+        response.request = request
+        responses.append(response)
+    return responses
+
+
 class TestHttpErrorMiddleware(TestCase):
 
     def setUp(self):
         self.spider = Spider('foo')
         self.mw = HttpErrorMiddleware(Settings({}))
         self.req = Request('http://scrapytest.org')
-
-        self.res200 = Response('http://scrapytest.org', status=200)
-        self.res200.request = self.req
-        self.res404 = Response('http://scrapytest.org', status=404)
-        self.res404.request = self.req
+        self.res200, self.res404 = _responses(self.req, [200, 404])
 
     def test_process_spider_input(self):
         self.assertEquals(None,
@@ -50,13 +55,7 @@ class TestHttpErrorMiddlewareSettings(TestCase):
         self.spider = Spider('foo')
         self.mw = HttpErrorMiddleware(Settings({'HTTPERROR_ALLOWED_CODES': (402,)}))
         self.req = Request('http://scrapytest.org')
-
-        self.res200 = Response('http://scrapytest.org', status=200)
-        self.res200.request = self.req
-        self.res404 = Response('http://scrapytest.org', status=404)
-        self.res404.request = self.req
-        self.res402 = Response('http://scrapytest.org', status=402)
-        self.res402.request = self.req
+        self.res200, self.res404, self.res402 = _responses(self.req, [200, 404, 402])
 
     def test_process_spider_input(self):
         self.assertEquals(None,
@@ -92,13 +91,7 @@ class TestHttpErrorMiddlewareHandleAll(TestCase):
         self.spider = Spider('foo')
         self.mw = HttpErrorMiddleware(Settings({'HTTPERROR_ALLOW_ALL': True}))
         self.req = Request('http://scrapytest.org')
-
-        self.res200 = Response('http://scrapytest.org', status=200)
-        self.res200.request = self.req
-        self.res404 = Response('http://scrapytest.org', status=404)
-        self.res404.request = self.req
-        self.res402 = Response('http://scrapytest.org', status=402)
-        self.res402.request = self.req
+        self.res200, self.res404, self.res402 = _responses(self.req, [200, 404, 402])
 
     def test_process_spider_input(self):
         self.assertEquals(None,
