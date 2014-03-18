@@ -655,4 +655,4 @@ Combine SitemapSpider with other sources of urls::
 .. _Sitemap index files: http://www.sitemaps.org/protocol.html#index
 .. _robots.txt: http://www.robotstxt.org/
 .. _TLD: http://en.wikipedia.org/wiki/Top-level_domain
-.. _Scrapyd documentation: http://scrapyd.readthedocs.org/en/latest/en/latest/
+.. _Scrapyd documentation: http://scrapyd.readthedocs.org/

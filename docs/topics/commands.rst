@@ -491,4 +491,4 @@ Example::
 
     COMMANDS_MODULE = 'mybot.commands'
 
-.. _Deploying your project: http://scrapyd.readthedocs.org/en/latest/en/latest/en/latest/#deploying-your-project
+.. _Deploying your project: http://scrapyd.readthedocs.org/en/latest/deploy.html
