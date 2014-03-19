@@ -23,7 +23,7 @@ class Slot(object):
 
     def __init__(self, start_requests, close_if_idle, nextcall, scheduler):
         self.closing = False
-        self.inprogress = set() # requests in progress
+        self.inprogress = set()  # requests in progress
         self.start_requests = iter(start_requests)
         self.close_if_idle = close_if_idle
         self.nextcall = nextcall
@@ -62,10 +62,11 @@ class ExecutionEngine(object):
         self.scheduler_cls = load_object(self.settings['SCHEDULER'])
         self.downloader = Downloader(crawler)
         self.scraper = Scraper(crawler)
-        self._concurrent_spiders = self.settings.getint('CONCURRENT_SPIDERS', 1)
+        self._concurrent_spiders = self.settings.getint(
+            'CONCURRENT_SPIDERS', 1)
         if self._concurrent_spiders != 1:
-            warnings.warn("CONCURRENT_SPIDERS settings is deprecated, use " \
-                "Scrapyd max_proc config instead", ScrapyDeprecationWarning)
+            warnings.warn("CONCURRENT_SPIDERS settings is deprecated, use "
+                          "Scrapyd max_proc config instead", ScrapyDeprecationWarning)
         self._spider_closed_callback = spider_closed_callback
 
     @defer.inlineCallbacks
@@ -112,7 +113,7 @@ class ExecutionEngine(object):
             except StopIteration:
                 slot.start_requests = None
             except Exception as exc:
-                log.err(None, 'Obtaining request from start requests', \
+                log.err(None, 'Obtaining request from start requests',
                         spider=spider)
             else:
                 self.crawl(request, spider)
@@ -175,7 +176,7 @@ class ExecutionEngine(object):
 
     def schedule(self, request, spider):
         self.signals.send_catch_log(signal=signals.request_scheduled,
-                request=request, spider=spider)
+                                    request=request, spider=spider)
         return self.slot.scheduler.enqueue_request(request)
 
     def download(self, request, spider):
@@ -188,19 +189,20 @@ class ExecutionEngine(object):
     def _downloaded(self, response, slot, request, spider):
         slot.remove_request(request)
         return self.download(response, spider) \
-                if isinstance(response, Request) else response
+            if isinstance(response, Request) else response
 
     def _download(self, request, spider):
         slot = self.slot
         slot.add_request(request)
+
         def _on_success(response):
             assert isinstance(response, (Response, Request))
             if isinstance(response, Response):
-                response.request = request # tie request to response received
+                response.request = request  # tie request to response received
                 logkws = self.logformatter.crawled(request, response, spider)
                 log.msg(spider=spider, **logkws)
-                self.signals.send_catch_log(signal=signals.response_received, \
-                    response=response, request=request, spider=spider)
+                self.signals.send_catch_log(signal=signals.response_received,
+                                            response=response, request=request, spider=spider)
             return response
 
         def _on_complete(_):
@@ -237,9 +239,9 @@ class ExecutionEngine(object):
         next loop and this function is guaranteed to be called (at least) once
         again for this spider.
         """
-        res = self.signals.send_catch_log(signal=signals.spider_idle, \
-            spider=spider, dont_log=DontCloseSpider)
-        if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) \
+        res = self.signals.send_catch_log(signal=signals.spider_idle,
+                                          spider=spider, dont_log=DontCloseSpider)
+        if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider)
                 for _, x in res):
             self.slot.nextcall.schedule(5)
             return
@@ -253,7 +255,8 @@ class ExecutionEngine(object):
         slot = self.slot
         if slot.closing:
             return slot.closing
-        log.msg(format="Closing spider (%(reason)s)", reason=reason, spider=spider)
+        log.msg(format="Closing spider (%(reason)s)",
+                reason=reason, spider=spider)
 
         dfd = slot.close()
 
@@ -267,15 +270,18 @@ class ExecutionEngine(object):
         dfd.addErrback(log.err, spider=spider)
 
         # XXX: spider_stats argument was added for backwards compatibility with
-        # stats collection refactoring added in 0.15. it should be removed in 0.17.
-        dfd.addBoth(lambda _: self.signals.send_catch_log_deferred(signal=signals.spider_closed, \
-            spider=spider, reason=reason, spider_stats=self.crawler.stats.get_stats()))
+        # stats collection refactoring added in 0.15. it should be removed in
+        # 0.17.
+        dfd.addBoth(lambda _: self.signals.send_catch_log_deferred(signal=signals.spider_closed,
+                                                                   spider=spider, reason=reason, spider_stats=self.crawler.stats.get_stats()))
         dfd.addErrback(log.err, spider=spider)
 
-        dfd.addBoth(lambda _: self.crawler.stats.close_spider(spider, reason=reason))
+        dfd.addBoth(
+            lambda _: self.crawler.stats.close_spider(spider, reason=reason))
         dfd.addErrback(log.err, spider=spider)
 
-        dfd.addBoth(lambda _: log.msg(format="Spider closed (%(reason)s)", reason=reason, spider=spider))
+        dfd.addBoth(lambda _: log.msg(
+            format="Spider closed (%(reason)s)", reason=reason, spider=spider))
 
         dfd.addBoth(lambda _: setattr(self, 'slot', None))
         dfd.addErrback(log.err, spider=spider)
@@ -288,7 +294,8 @@ class ExecutionEngine(object):
         return dfd
 
     def _close_all_spiders(self):
-        dfds = [self.close_spider(s, reason='shutdown') for s in self.open_spiders]
+        dfds = [self.close_spider(s, reason='shutdown')
+                for s in self.open_spiders]
         dlist = defer.DeferredList(dfds)
         return dlist
 

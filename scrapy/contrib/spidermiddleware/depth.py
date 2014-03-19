@@ -7,6 +7,7 @@ See documentation in docs/topics/spider-middleware.rst
 from scrapy import log
 from scrapy.http import Request
 
+
 class DepthMiddleware(object):
 
     def __init__(self, maxdepth, stats=None, verbose_stats=False, prio=1):
@@ -37,8 +38,10 @@ class DepthMiddleware(object):
                     return False
                 elif self.stats:
                     if self.verbose_stats:
-                        self.stats.inc_value('request_depth_count/%s' % depth, spider=spider)
-                    self.stats.max_value('request_depth_max', depth, spider=spider)
+                        self.stats.inc_value(
+                            'request_depth_count/%s' % depth, spider=spider)
+                    self.stats.max_value(
+                        'request_depth_max', depth, spider=spider)
             return True
 
         # base case (depth=0)

@@ -8,6 +8,7 @@ from scrapy import log
 from scrapy.http import Request
 from scrapy.exceptions import NotConfigured
 
+
 class UrlLengthMiddleware(object):
 
     def __init__(self, maxlength):

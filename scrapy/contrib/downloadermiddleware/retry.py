@@ -20,8 +20,8 @@ About HTTP errors to consider:
 
 from twisted.internet.defer import TimeoutError as UserTimeoutError
 from twisted.internet.error import TimeoutError as ServerTimeoutError, \
-        DNSLookupError, ConnectionRefusedError, ConnectionDone, ConnectError, \
-        ConnectionLost, TCPTimedOutError
+    DNSLookupError, ConnectionRefusedError, ConnectionDone, ConnectError, \
+    ConnectionLost, TCPTimedOutError
 
 from scrapy import log
 from scrapy.exceptions import NotConfigured
@@ -42,7 +42,8 @@ class RetryMiddleware(object):
         if not settings.getbool('RETRY_ENABLED'):
             raise NotConfigured
         self.max_retry_times = settings.getint('RETRY_TIMES')
-        self.retry_http_codes = set(int(x) for x in settings.getlist('RETRY_HTTP_CODES'))
+        self.retry_http_codes = set(int(x)
+                                    for x in settings.getlist('RETRY_HTTP_CODES'))
         self.priority_adjust = settings.getint('RETRY_PRIORITY_ADJUST')
 
     @classmethod

@@ -7,7 +7,9 @@ from scrapy.http import HtmlResponse
 from scrapy.utils.response import _noscript_re, _script_re
 from w3lib import html
 
+
 class AjaxCrawlMiddleware(object):
+
     """
     Handle 'AJAX crawlable' pages marked as crawlable via meta tag.
     For more info see https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
@@ -43,7 +45,7 @@ class AjaxCrawlMiddleware(object):
             return response
 
         # scrapy already handles #! links properly
-        ajax_crawl_request = request.replace(url=request.url+'#!')
+        ajax_crawl_request = request.replace(url=request.url + '#!')
         log.msg(format="Downloading AJAX crawlable %(ajax_crawl_request)s instead of %(request)s",
                 level=log.DEBUG, spider=spider,
                 ajax_crawl_request=ajax_crawl_request, request=request)
@@ -61,7 +63,10 @@ class AjaxCrawlMiddleware(object):
 
 
 # XXX: move it to w3lib?
-_ajax_crawlable_re = re.compile(ur'<meta\s+name=["\']fragment["\']\s+content=["\']!["\']/?>')
+_ajax_crawlable_re = re.compile(
+    ur'<meta\s+name=["\']fragment["\']\s+content=["\']!["\']/?>')
+
+
 def _has_ajaxcrawlable_meta(text):
     """
     >>> _has_ajaxcrawlable_meta('<html><head><meta name="fragment"  content="!"/></head><body></body></html>')
@@ -86,4 +91,3 @@ def _has_ajaxcrawlable_meta(text):
     text = _noscript_re.sub(u'', text)
     text = html.remove_comments(html.remove_entities(text))
     return _ajax_crawlable_re.search(text) is not None
-

@@ -17,7 +17,8 @@ def deprecated(use_instead=None):
             message = "Call to deprecated function %s." % func.__name__
             if use_instead:
                 message += " Use %s instead." % use_instead
-            warnings.warn(message, category=ScrapyDeprecationWarning, stacklevel=2)
+            warnings.warn(
+                message, category=ScrapyDeprecationWarning, stacklevel=2)
             return func(*args, **kwargs)
         return wrapped
 
@@ -33,6 +34,7 @@ def defers(func):
     def wrapped(*a, **kw):
         return defer.maybeDeferred(func, *a, **kw)
     return wrapped
+
 
 def inthread(func):
     """Decorator to call a function in a thread and return a deferred with the

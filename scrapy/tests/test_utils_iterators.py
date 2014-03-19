@@ -29,7 +29,8 @@ class XmliterTestCase(unittest.TestCase):
         response = XmlResponse(url="http://example.com", body=body)
         attrs = []
         for x in self.xmliter(response, 'product'):
-            attrs.append((x.xpath("@id").extract(), x.xpath("name/text()").extract(), x.xpath("./type/text()").extract()))
+            attrs.append((x.xpath("@id").extract(), x.xpath(
+                "name/text()").extract(), x.xpath("./type/text()").extract()))
 
         self.assertEqual(attrs,
                          [(['001'], ['Name 1'], ['Type 1']), (['002'], ['Name 2'], ['Type 2'])])
@@ -65,9 +66,12 @@ class XmliterTestCase(unittest.TestCase):
         node = next(my_iter)
         node.register_namespace('g', 'http://base.google.com/ns/1.0')
         self.assertEqual(node.xpath('title/text()').extract(), ['Item 1'])
-        self.assertEqual(node.xpath('description/text()').extract(), ['This is item 1'])
-        self.assertEqual(node.xpath('link/text()').extract(), ['http://www.mydummycompany.com/items/1'])
-        self.assertEqual(node.xpath('g:image_link/text()').extract(), ['http://www.mydummycompany.com/images/item1.jpg'])
+        self.assertEqual(
+            node.xpath('description/text()').extract(), ['This is item 1'])
+        self.assertEqual(
+            node.xpath('link/text()').extract(), ['http://www.mydummycompany.com/items/1'])
+        self.assertEqual(node.xpath('g:image_link/text()').extract(),
+                         ['http://www.mydummycompany.com/images/item1.jpg'])
         self.assertEqual(node.xpath('g:id/text()').extract(), ['ITEM_1'])
         self.assertEqual(node.xpath('g:price/text()').extract(), ['400'])
         self.assertEqual(node.xpath('image_link/text()').extract(), [])
@@ -118,15 +122,19 @@ class LxmlXmliterTestCase(XmliterTestCase):
         no_namespace_iter = self.xmliter(response, 'image_link')
         self.assertEqual(len(list(no_namespace_iter)), 0)
 
-        namespace_iter = self.xmliter(response, 'image_link', 'http://base.google.com/ns/1.0')
+        namespace_iter = self.xmliter(
+            response, 'image_link', 'http://base.google.com/ns/1.0')
         node = next(namespace_iter)
-        self.assertEqual(node.xpath('text()').extract(), ['http://www.mydummycompany.com/images/item1.jpg'])
+        self.assertEqual(node.xpath('text()').extract(), [
+                         'http://www.mydummycompany.com/images/item1.jpg'])
         node = next(namespace_iter)
-        self.assertEqual(node.xpath('text()').extract(), ['http://www.mydummycompany.com/images/item2.jpg'])
+        self.assertEqual(node.xpath('text()').extract(), [
+                         'http://www.mydummycompany.com/images/item2.jpg'])
 
 
 class UtilsCsvTestCase(unittest.TestCase):
-    sample_feeds_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data', 'feeds')
+    sample_feeds_dir = os.path.join(
+        os.path.abspath(os.path.dirname(__file__)), 'sample_data', 'feeds')
     sample_feed_path = os.path.join(sample_feeds_dir, 'feed-sample3.csv')
     sample_feed2_path = os.path.join(sample_feeds_dir, 'feed-sample4.csv')
     sample_feed3_path = os.path.join(sample_feeds_dir, 'feed-sample5.csv')
@@ -139,14 +147,18 @@ class UtilsCsvTestCase(unittest.TestCase):
         result = [row for row in csv]
         self.assertEqual(result,
                          [{u'id': u'1', u'name': u'alpha',   u'value': u'foobar'},
-                          {u'id': u'2', u'name': u'unicode', u'value': u'\xfan\xedc\xf3d\xe9\u203d'},
-                          {u'id': u'3', u'name': u'multi',   u'value': FOOBAR_NL},
+                          {u'id': u'2', u'name': u'unicode',
+                              u'value': u'\xfan\xedc\xf3d\xe9\u203d'},
+                          {u'id': u'3', u'name': u'multi',
+                              u'value': FOOBAR_NL},
                           {u'id': u'4', u'name': u'empty',   u'value': u''}])
 
         # explicit type check cuz' we no like stinkin' autocasting! yarrr
         for result_row in result:
-            self.assert_(all((isinstance(k, unicode) for k in result_row.keys())))
-            self.assert_(all((isinstance(v, unicode) for v in result_row.values())))
+            self.assert_(all((isinstance(k, unicode)
+                         for k in result_row.keys())))
+            self.assert_(all((isinstance(v, unicode)
+                         for v in result_row.values())))
 
     def test_csviter_delimiter(self):
         body = get_testdata('feeds', 'feed-sample3.csv').replace(',', '\t')
@@ -155,8 +167,10 @@ class UtilsCsvTestCase(unittest.TestCase):
 
         self.assertEqual([row for row in csv],
                          [{u'id': u'1', u'name': u'alpha',   u'value': u'foobar'},
-                          {u'id': u'2', u'name': u'unicode', u'value': u'\xfan\xedc\xf3d\xe9\u203d'},
-                          {u'id': u'3', u'name': u'multi',   u'value': FOOBAR_NL},
+                          {u'id': u'2', u'name': u'unicode',
+                              u'value': u'\xfan\xedc\xf3d\xe9\u203d'},
+                          {u'id': u'3', u'name': u'multi',
+                              u'value': FOOBAR_NL},
                           {u'id': u'4', u'name': u'empty',   u'value': u''}])
 
     def test_csviter_delimiter_binary_response_assume_utf8_encoding(self):
@@ -166,8 +180,10 @@ class UtilsCsvTestCase(unittest.TestCase):
 
         self.assertEqual([row for row in csv],
                          [{u'id': u'1', u'name': u'alpha',   u'value': u'foobar'},
-                          {u'id': u'2', u'name': u'unicode', u'value': u'\xfan\xedc\xf3d\xe9\u203d'},
-                          {u'id': u'3', u'name': u'multi',   u'value': FOOBAR_NL},
+                          {u'id': u'2', u'name': u'unicode',
+                              u'value': u'\xfan\xedc\xf3d\xe9\u203d'},
+                          {u'id': u'3', u'name': u'multi',
+                              u'value': FOOBAR_NL},
                           {u'id': u'4', u'name': u'empty',   u'value': u''}])
 
     def test_csviter_headers(self):
@@ -179,8 +195,10 @@ class UtilsCsvTestCase(unittest.TestCase):
 
         self.assertEqual([row for row in csv],
                          [{u'id': u'1', u'name': u'alpha',   u'value': u'foobar'},
-                          {u'id': u'2', u'name': u'unicode', u'value': u'\xfan\xedc\xf3d\xe9\u203d'},
-                          {u'id': u'3', u'name': u'multi',   u'value': u'foo\nbar'},
+                          {u'id': u'2', u'name': u'unicode',
+                              u'value': u'\xfan\xedc\xf3d\xe9\u203d'},
+                          {u'id': u'3', u'name': u'multi',
+                              u'value': u'foo\nbar'},
                           {u'id': u'4', u'name': u'empty',   u'value': u''}])
 
     def test_csviter_falserow(self):
@@ -192,8 +210,10 @@ class UtilsCsvTestCase(unittest.TestCase):
 
         self.assertEqual([row for row in csv],
                          [{u'id': u'1', u'name': u'alpha',   u'value': u'foobar'},
-                          {u'id': u'2', u'name': u'unicode', u'value': u'\xfan\xedc\xf3d\xe9\u203d'},
-                          {u'id': u'3', u'name': u'multi',   u'value': FOOBAR_NL},
+                          {u'id': u'2', u'name': u'unicode',
+                              u'value': u'\xfan\xedc\xf3d\xe9\u203d'},
+                          {u'id': u'3', u'name': u'multi',
+                              u'value': FOOBAR_NL},
                           {u'id': u'4', u'name': u'empty',   u'value': u''}])
 
     def test_csviter_exception(self):
@@ -212,23 +232,26 @@ class UtilsCsvTestCase(unittest.TestCase):
         body1 = get_testdata('feeds', 'feed-sample4.csv')
         body2 = get_testdata('feeds', 'feed-sample5.csv')
 
-        response = TextResponse(url="http://example.com/", body=body1, encoding='latin1')
+        response = TextResponse(
+            url="http://example.com/", body=body1, encoding='latin1')
         csv = csviter(response)
         self.assertEqual([row for row in csv],
-            [{u'id': u'1', u'name': u'latin1', u'value': u'test'},
-             {u'id': u'2', u'name': u'something', u'value': u'\xf1\xe1\xe9\xf3'}])
+                         [{u'id': u'1', u'name': u'latin1', u'value': u'test'},
+                          {u'id': u'2', u'name': u'something', u'value': u'\xf1\xe1\xe9\xf3'}])
 
-        response = TextResponse(url="http://example.com/", body=body2, encoding='cp852')
+        response = TextResponse(
+            url="http://example.com/", body=body2, encoding='cp852')
         csv = csviter(response)
         self.assertEqual([row for row in csv],
-            [{u'id': u'1', u'name': u'cp852', u'value': u'test'},
-             {u'id': u'2', u'name': u'something', u'value': u'\u255a\u2569\u2569\u2569\u2550\u2550\u2557'}])
+                         [{u'id': u'1', u'name': u'cp852', u'value': u'test'},
+                          {u'id': u'2', u'name': u'something', u'value': u'\u255a\u2569\u2569\u2569\u2550\u2550\u2557'}])
 
 
 class TestHelper(unittest.TestCase):
     bbody = b'utf8-body'
     ubody = bbody.decode('utf8')
-    txtresponse = TextResponse(url='http://example.org/', body=bbody, encoding='utf-8')
+    txtresponse = TextResponse(
+        url='http://example.org/', body=bbody, encoding='utf-8')
     response = Response(url='http://example.org/', body=bbody)
 
     def test_body_or_str(self):
@@ -241,7 +264,6 @@ class TestHelper(unittest.TestCase):
             self._assert_type_and_value(r3, self.bbody, obj)
             self.assertTrue(type(r1) is type(r2))
             self.assertTrue(type(r1) is not type(r3))
-
 
     def _assert_type_and_value(self, a, b, obj):
         self.assertTrue(type(a) is type(b),

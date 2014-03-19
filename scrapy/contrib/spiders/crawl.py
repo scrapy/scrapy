@@ -11,8 +11,10 @@ from scrapy.http import Request, HtmlResponse
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.spider import Spider
 
+
 def identity(x):
     return x
+
 
 class Rule(object):
 
@@ -26,6 +28,7 @@ class Rule(object):
             self.follow = False if callback else True
         else:
             self.follow = follow
+
 
 class CrawlSpider(Spider):
 
@@ -49,7 +52,8 @@ class CrawlSpider(Spider):
             return
         seen = set()
         for n, rule in enumerate(self._rules):
-            links = [l for l in rule.link_extractor.extract_links(response) if l not in seen]
+            links = [l for l in rule.link_extractor.extract_links(
+                response) if l not in seen]
             if links and rule.process_links:
                 links = rule.process_links(links)
             for link in links:
@@ -88,4 +92,5 @@ class CrawlSpider(Spider):
 
     def set_crawler(self, crawler):
         super(CrawlSpider, self).set_crawler(crawler)
-        self._follow_links = crawler.settings.getbool('CRAWLSPIDER_FOLLOW_LINKS', True)
+        self._follow_links = crawler.settings.getbool(
+            'CRAWLSPIDER_FOLLOW_LINKS', True)

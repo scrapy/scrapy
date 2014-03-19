@@ -30,7 +30,8 @@ class BaseItemExporter(object):
         self.export_empty_fields = options.pop('export_empty_fields', False)
         self.encoding = options.pop('encoding', 'utf-8')
         if not dont_fail and options:
-            raise TypeError("Unexpected options: %s" % ', '.join(options.keys()))
+            raise TypeError("Unexpected options: %s" %
+                            ', '.join(options.keys()))
 
     def export_item(self, item):
         raise NotImplementedError
@@ -69,7 +70,8 @@ class BaseItemExporter(object):
         for field_name in field_iter:
             if field_name in item:
                 field = item.fields[field_name]
-                value = self.serialize_field(field, field_name, item[field_name])
+                value = self.serialize_field(
+                    field, field_name, item[field_name])
             else:
                 value = default_value
 
@@ -228,6 +230,7 @@ class PprintItemExporter(BaseItemExporter):
 
 
 class PythonItemExporter(BaseItemExporter):
+
     """The idea behind this exporter is to have a mechanism to serialize items
     to built-in python types so any serialization library (like
     json, msgpack, binc, etc) can be used on top of it. Its main goal is to

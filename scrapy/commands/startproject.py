@@ -22,6 +22,7 @@ TEMPLATES_TO_RENDER = (
 
 IGNORE = ignore_patterns('*.pyc', '.svn')
 
+
 class Command(ScrapyCommand):
 
     requires_project = False
@@ -37,8 +38,8 @@ class Command(ScrapyCommand):
             raise UsageError()
         project_name = args[0]
         if not re.search(r'^[_a-zA-Z]\w*$', project_name):
-            print('Error: Project names must begin with a letter and contain only\n' \
-                'letters, numbers and underscores')
+            print('Error: Project names must begin with a letter and contain only\n'
+                  'letters, numbers and underscores')
             sys.exit(1)
         elif exists(project_name):
             print("Error: directory %r already exists" % project_name)
@@ -50,9 +51,9 @@ class Command(ScrapyCommand):
         for paths in TEMPLATES_TO_RENDER:
             path = join(*paths)
             tplfile = join(project_name,
-                string.Template(path).substitute(project_name=project_name))
+                           string.Template(path).substitute(project_name=project_name))
             render_templatefile(tplfile, project_name=project_name,
-                ProjectName=string_camelcase(project_name))
+                                ProjectName=string_camelcase(project_name))
         print("New Scrapy project %r created in:" % project_name)
         print("    %s\n" % abspath(project_name))
         print("You can start your first spider with:")

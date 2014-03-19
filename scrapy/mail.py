@@ -16,10 +16,11 @@ from twisted.mail.smtp import ESMTPSenderFactory
 
 from scrapy import log
 
+
 class MailSender(object):
 
     def __init__(self, smtphost='localhost', mailfrom='scrapy@localhost',
-            smtpuser=None, smtppass=None, smtpport=25, smtptls=False, smtpssl=False, debug=False):
+                 smtpuser=None, smtppass=None, smtpport=25, smtptls=False, smtpssl=False, debug=False):
         self.smtphost = smtphost
         self.smtpport = smtpport
         self.smtpuser = smtpuser
@@ -32,8 +33,8 @@ class MailSender(object):
     @classmethod
     def from_settings(cls, settings):
         return cls(settings['MAIL_HOST'], settings['MAIL_FROM'], settings['MAIL_USER'],
-            settings['MAIL_PASS'], settings.getint('MAIL_PORT'),
-            settings.getbool('MAIL_TLS'), settings.getbool('MAIL_SSL'))
+                   settings['MAIL_PASS'], settings.getint('MAIL_PORT'),
+                   settings.getbool('MAIL_TLS'), settings.getbool('MAIL_SSL'))
 
     def send(self, to, subject, body, cc=None, attachs=(), mimetype='text/plain', _callback=None):
         if attachs:
@@ -55,14 +56,15 @@ class MailSender(object):
                 part = MIMEBase(*mimetype.split('/'))
                 part.set_payload(f.read())
                 Encoders.encode_base64(part)
-                part.add_header('Content-Disposition', 'attachment; filename="%s"' \
-                    % attach_name)
+                part.add_header('Content-Disposition', 'attachment; filename="%s"'
+                                % attach_name)
                 msg.attach(part)
         else:
             msg.set_payload(body)
 
         if _callback:
-            _callback(to=to, subject=subject, body=body, cc=cc, attach=attachs, msg=msg)
+            _callback(
+                to=to, subject=subject, body=body, cc=cc, attach=attachs, msg=msg)
 
         if self.debug:
             log.msg(format='Debug mail sent OK: To=%(mailto)s Cc=%(mailcc)s Subject="%(mailsubject)s" Attachs=%(mailattachs)d',
@@ -71,8 +73,8 @@ class MailSender(object):
 
         dfd = self._sendmail(rcpts, msg.as_string())
         dfd.addCallbacks(self._sent_ok, self._sent_failed,
-            callbackArgs=[to, cc, subject, len(attachs)],
-            errbackArgs=[to, cc, subject, len(attachs)])
+                         callbackArgs=[to, cc, subject, len(attachs)],
+                         errbackArgs=[to, cc, subject, len(attachs)])
         reactor.addSystemEventTrigger('before', 'shutdown', lambda: dfd)
         return dfd
 
@@ -92,13 +94,14 @@ class MailSender(object):
     def _sendmail(self, to_addrs, msg):
         msg = StringIO(msg)
         d = defer.Deferred()
-        factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom, \
-            to_addrs, msg, d, heloFallback=True, requireAuthentication=False, \
-            requireTransportSecurity=self.smtptls)
+        factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom,
+                                     to_addrs, msg, d, heloFallback=True, requireAuthentication=False,
+                                     requireTransportSecurity=self.smtptls)
         factory.noisy = False
 
         if self.smtpssl:
-            reactor.connectSSL(self.smtphost, self.smtpport, factory, ssl.ClientContextFactory())
+            reactor.connectSSL(
+                self.smtphost, self.smtpport, factory, ssl.ClientContextFactory())
         else:
             reactor.connectTCP(self.smtphost, self.smtpport, factory)
 

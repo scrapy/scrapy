@@ -1,8 +1,11 @@
-import os, cPickle as pickle
+import os
+import cPickle as pickle
 
 from scrapy import signals
 
+
 class SpiderState(object):
+
     """Store and load spider state during a scraping job"""
 
     def __init__(self, jobdir=None):
@@ -11,8 +14,10 @@ class SpiderState(object):
     @classmethod
     def from_crawler(cls, crawler):
         obj = cls(crawler.settings.get('JOBDIR'))
-        crawler.signals.connect(obj.spider_closed, signal=signals.spider_closed)
-        crawler.signals.connect(obj.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(
+            obj.spider_closed, signal=signals.spider_closed)
+        crawler.signals.connect(
+            obj.spider_opened, signal=signals.spider_opened)
         return obj
 
     def spider_closed(self, spider):

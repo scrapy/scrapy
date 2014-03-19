@@ -11,8 +11,10 @@ class AutoThrottle(object):
             raise NotConfigured
 
         self.debug = crawler.settings.getbool("AUTOTHROTTLE_DEBUG")
-        crawler.signals.connect(self._spider_opened, signal=signals.spider_opened)
-        crawler.signals.connect(self._response_downloaded, signal=signals.response_downloaded)
+        crawler.signals.connect(
+            self._spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(
+            self._response_downloaded, signal=signals.response_downloaded)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -48,7 +50,8 @@ class AutoThrottle(object):
             size = len(response.body)
             conc = len(slot.transferring)
             msg = "slot: %s | conc:%2d | delay:%5d ms (%+d) | latency:%5d ms | size:%6d bytes" % \
-                  (key, conc, slot.delay * 1000, diff * 1000, latency * 1000, size)
+                  (key, conc, slot.delay * 1000,
+                   diff * 1000, latency * 1000, size)
             spider.log(msg, level=logging.INFO)
 
     def _get_slot(self, request, spider):
@@ -59,7 +62,8 @@ class AutoThrottle(object):
         """Define delay adjustment policy"""
         # If latency is bigger than old delay, then use latency instead of mean.
         # It works better with problematic sites
-        new_delay = min(max(self.mindelay, latency, (slot.delay + latency) / 2.0), self.maxdelay)
+        new_delay = min(
+            max(self.mindelay, latency, (slot.delay + latency) / 2.0), self.maxdelay)
 
         # Dont adjust delay if response status != 200 and new delay is smaller
         # than old one, as error pages (and redirections) are usually small and

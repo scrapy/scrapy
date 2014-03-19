@@ -7,6 +7,7 @@ from scrapy.xlib.pydispatch import dispatcher
 from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
 from scrapy import log
 
+
 class SendCatchLogTest(unittest.TestCase):
 
     @defer.inlineCallbacks
@@ -22,8 +23,8 @@ class SendCatchLogTest(unittest.TestCase):
         txlog.addObserver(log_received)
         dispatcher.connect(self.error_handler, signal=test_signal)
         dispatcher.connect(self.ok_handler, signal=test_signal)
-        result = yield defer.maybeDeferred(self._get_result, test_signal, arg='test', \
-            handlers_called=handlers_called)
+        result = yield defer.maybeDeferred(self._get_result, test_signal, arg='test',
+                                           handlers_called=handlers_called)
 
         assert self.error_handler in handlers_called
         assert self.ok_handler in handlers_called
@@ -42,7 +43,7 @@ class SendCatchLogTest(unittest.TestCase):
 
     def error_handler(self, arg, handlers_called):
         handlers_called.add(self.error_handler)
-        a = 1/0
+        a = 1 / 0
 
     def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
@@ -68,6 +69,7 @@ class SendCatchLogDeferredTest2(SendCatchLogTest):
     def _get_result(self, signal, *a, **kw):
         return send_catch_log_deferred(signal, *a, **kw)
 
+
 class SendCatchLogTest2(unittest.TestCase):
 
     def test_error_logged_if_deferred_not_supported(self):
@@ -78,7 +80,8 @@ class SendCatchLogTest2(unittest.TestCase):
         dispatcher.connect(test_handler, test_signal)
         send_catch_log(test_signal)
         self.failUnless(log_events)
-        self.failUnless("Cannot return deferreds from signal handler" in str(log_events))
+        self.failUnless(
+            "Cannot return deferreds from signal handler" in str(log_events))
         txlog.removeObserver(log_events.append)
         self.flushLoggedErrors()
         dispatcher.disconnect(test_handler, test_signal)

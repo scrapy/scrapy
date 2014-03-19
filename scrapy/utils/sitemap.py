@@ -8,6 +8,7 @@ import lxml.etree
 
 
 class Sitemap(object):
+
     """Class to parse Sitemap (type=urlset) and Sitemap Index
     (type=sitemapindex) files"""
 

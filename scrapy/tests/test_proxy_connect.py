@@ -13,19 +13,16 @@ from scrapy.tests.spiders import SimpleSpider
 from scrapy.tests.mockserver import MockServer
 
 
-
-
-
 class HTTPSProxy(controller.Master, Thread):
 
     def __init__(self, port):
         password_manager = http_auth.PassManSingleUser('scrapy', 'scrapy')
         authenticator = http_auth.BasicProxyAuth(password_manager, "mitmproxy")
         cert_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-            'keys', 'mitmproxy-ca.pem')
+                                 'keys', 'mitmproxy-ca.pem')
         server = proxy.ProxyServer(proxy.ProxyConfig(
-            authenticator = authenticator,
-            cacert = cert_path),
+            authenticator=authenticator,
+            cacert=cert_path),
             port)
         Thread.__init__(self)
         controller.Master.__init__(self, server)
@@ -57,7 +54,8 @@ class ProxyConnectTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_https_noconnect(self):
-        os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:8888?noconnect'
+        os.environ[
+            'https_proxy'] = 'http://scrapy:scrapy@localhost:8888?noconnect'
         spider = SimpleSpider("https://localhost:8999/status?n=200")
         yield docrawl(spider)
         self._assert_got_response_code(200)
@@ -81,7 +79,8 @@ class ProxyConnectTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_https_noconnect_auth_error(self):
-        os.environ['https_proxy'] = 'http://wrong:wronger@localhost:8888?noconnect'
+        os.environ[
+            'https_proxy'] = 'http://wrong:wronger@localhost:8888?noconnect'
         spider = SimpleSpider("https://localhost:8999/status?n=200")
         yield docrawl(spider)
         self._assert_got_response_code(407)

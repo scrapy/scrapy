@@ -12,19 +12,22 @@ from PIL import Image
 from scrapy.utils.misc import md5sum
 from scrapy.http import Request
 from scrapy.exceptions import DropItem
-#TODO: from scrapy.contrib.pipeline.media import MediaPipeline
+# TODO: from scrapy.contrib.pipeline.media import MediaPipeline
 from scrapy.contrib.pipeline.files import FileException, FilesPipeline
 
 
 class NoimagesDrop(DropItem):
+
     """Product with no images exception"""
 
 
 class ImageException(FileException):
+
     """General image error exception"""
 
 
 class ImagesPipeline(FilesPipeline):
+
     """Abstract pipeline that implement the image thumbnail generation logic
 
     """
@@ -46,8 +49,10 @@ class ImagesPipeline(FilesPipeline):
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
 
-        cls.IMAGES_URLS_FIELD = settings.get('IMAGES_URLS_FIELD', cls.DEFAULT_IMAGES_URLS_FIELD)
-        cls.IMAGES_RESULT_FIELD = settings.get('IMAGES_RESULT_FIELD', cls.DEFAULT_IMAGES_RESULT_FIELD)
+        cls.IMAGES_URLS_FIELD = settings.get(
+            'IMAGES_URLS_FIELD', cls.DEFAULT_IMAGES_URLS_FIELD)
+        cls.IMAGES_RESULT_FIELD = settings.get(
+            'IMAGES_RESULT_FIELD', cls.DEFAULT_IMAGES_RESULT_FIELD)
         store_uri = settings['IMAGES_STORE']
         return cls(store_uri)
 
@@ -80,7 +85,8 @@ class ImagesPipeline(FilesPipeline):
         yield path, image, buf
 
         for thumb_id, size in self.THUMBS.iteritems():
-            thumb_path = self.thumb_path(request, thumb_id, response=response, info=info)
+            thumb_path = self.thumb_path(
+                request, thumb_id, response=response, info=info)
             thumb_image, thumb_buf = self.convert_image(image, size)
             yield thumb_path, thumb_image, thumb_buf
 
@@ -109,7 +115,7 @@ class ImagesPipeline(FilesPipeline):
         return item
 
     def file_path(self, request, response=None, info=None):
-        ## start of deprecation warning block (can be removed in the future)
+        # start of deprecation warning block (can be removed in the future)
         def _warn():
             from scrapy.exceptions import ScrapyDeprecationWarning
             import warnings
@@ -131,13 +137,14 @@ class ImagesPipeline(FilesPipeline):
         elif not hasattr(self.image_key, '_base'):
             _warn()
             return self.image_key(url)
-        ## end of deprecation warning block
+        # end of deprecation warning block
 
-        image_guid = hashlib.sha1(url).hexdigest()  # change to request.url after deprecation
+        # change to request.url after deprecation
+        image_guid = hashlib.sha1(url).hexdigest()
         return 'full/%s.jpg' % (image_guid)
 
     def thumb_path(self, request, thumb_id, response=None, info=None):
-        ## start of deprecation warning block (can be removed in the future)
+        # start of deprecation warning block (can be removed in the future)
         def _warn():
             from scrapy.exceptions import ScrapyDeprecationWarning
             import warnings
@@ -156,9 +163,10 @@ class ImagesPipeline(FilesPipeline):
         if not hasattr(self.thumb_key, '_base'):
             _warn()
             return self.thumb_key(url, thumb_id)
-        ## end of deprecation warning block
+        # end of deprecation warning block
 
-        thumb_guid = hashlib.sha1(url).hexdigest()  # change to request.url after deprecation
+        # change to request.url after deprecation
+        thumb_guid = hashlib.sha1(url).hexdigest()
         return 'thumbs/%s/%s.jpg' % (thumb_id, thumb_guid)
 
     # deprecated

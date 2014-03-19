@@ -1,6 +1,7 @@
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy.utils import signal
 
+
 class SignalManager(object):
 
     def __init__(self, sender=dispatcher.Anonymous):

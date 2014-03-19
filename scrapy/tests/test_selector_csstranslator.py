@@ -57,7 +57,8 @@ class TranslatorMixinTest(unittest.TestCase):
         cases = [
             ('::attr(name)', u'descendant-or-self::*/@name'),
             ('a::attr(href)', u'descendant-or-self::a/@href'),
-            ('a ::attr(img)', u'descendant-or-self::a/descendant-or-self::*/@img'),
+            ('a ::attr(img)',
+             u'descendant-or-self::a/descendant-or-self::*/@img'),
             ('a > ::attr(class)', u'descendant-or-self::a/*/@class'),
         ]
         for css, xpath in cases:
@@ -79,12 +80,16 @@ class TranslatorMixinTest(unittest.TestCase):
             ('p ::text', u'descendant-or-self::p/descendant-or-self::text()'),
             ('#id::text', u"descendant-or-self::*[@id = 'id']/text()"),
             ('p#id::text', u"descendant-or-self::p[@id = 'id']/text()"),
-            ('p#id ::text', u"descendant-or-self::p[@id = 'id']/descendant-or-self::text()"),
+            ('p#id ::text',
+             u"descendant-or-self::p[@id = 'id']/descendant-or-self::text()"),
             ('p#id > ::text', u"descendant-or-self::p[@id = 'id']/*/text()"),
-            ('p#id ~ ::text', u"descendant-or-self::p[@id = 'id']/following-sibling::*/text()"),
+            ('p#id ~ ::text',
+             u"descendant-or-self::p[@id = 'id']/following-sibling::*/text()"),
             ('a[href]::text', u'descendant-or-self::a[@href]/text()'),
-            ('a[href] ::text', u'descendant-or-self::a[@href]/descendant-or-self::text()'),
-            ('p::text, a::text', u"descendant-or-self::p/text() | descendant-or-self::a/text()"),
+            ('a[href] ::text',
+             u'descendant-or-self::a[@href]/descendant-or-self::text()'),
+            ('p::text, a::text',
+             u"descendant-or-self::p/text() | descendant-or-self::a/text()"),
         ]
         for css, xpath in cases:
             self.assertEqual(self.c2x(css), xpath, css)
@@ -136,15 +141,19 @@ class CSSSelectorTest(unittest.TestCase):
         self.assertEqual(self.x('#p-b2::text'), [u'guy'])
         self.assertEqual(self.x('#p-b2 ::text'), [u'guy'])
         self.assertEqual(self.x('#paragraph::text'), [u'lorem ipsum text'])
-        self.assertEqual(self.x('#paragraph ::text'), [u'lorem ipsum text', u'hi', u'there', u'guy'])
+        self.assertEqual(
+            self.x('#paragraph ::text'), [u'lorem ipsum text', u'hi', u'there', u'guy'])
         self.assertEqual(self.x('p::text'), [u'lorem ipsum text'])
-        self.assertEqual(self.x('p ::text'), [u'lorem ipsum text', u'hi', u'there', u'guy'])
+        self.assertEqual(
+            self.x('p ::text'), [u'lorem ipsum text', u'hi', u'there', u'guy'])
 
     def test_attribute_function(self):
         self.assertEqual(self.x('#p-b2::attr(id)'), [u'p-b2'])
         self.assertEqual(self.x('.cool-footer::attr(class)'), [u'cool-footer'])
-        self.assertEqual(self.x('.cool-footer ::attr(id)'), [u'foobar-div', u'foobar-span'])
-        self.assertEqual(self.x('map[name="dummymap"] ::attr(shape)'), [u'circle', u'default'])
+        self.assertEqual(
+            self.x('.cool-footer ::attr(id)'), [u'foobar-div', u'foobar-span'])
+        self.assertEqual(
+            self.x('map[name="dummymap"] ::attr(shape)'), [u'circle', u'default'])
 
     def test_nested_selector(self):
         self.assertEqual(self.sel.css('p').css('b::text').extract(),

@@ -8,6 +8,7 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.job import job_dir
 from scrapy import log
 
+
 class Scheduler(object):
 
     def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None, logunser=False, stats=None):
@@ -53,17 +54,20 @@ class Scheduler(object):
             self.stats.inc_value('scheduler/enqueued/disk', spider=self.spider)
         else:
             self._mqpush(request)
-            self.stats.inc_value('scheduler/enqueued/memory', spider=self.spider)
+            self.stats.inc_value(
+                'scheduler/enqueued/memory', spider=self.spider)
         self.stats.inc_value('scheduler/enqueued', spider=self.spider)
 
     def next_request(self):
         request = self.mqs.pop()
         if request:
-            self.stats.inc_value('scheduler/dequeued/memory', spider=self.spider)
+            self.stats.inc_value(
+                'scheduler/dequeued/memory', spider=self.spider)
         else:
             request = self._dqpop()
             if request:
-                self.stats.inc_value('scheduler/dequeued/disk', spider=self.spider)
+                self.stats.inc_value(
+                    'scheduler/dequeued/disk', spider=self.spider)
         if request:
             self.stats.inc_value('scheduler/dequeued', spider=self.spider)
         return request
@@ -77,7 +81,7 @@ class Scheduler(object):
         try:
             reqd = request_to_dict(request, self.spider)
             self.dqs.push(reqd, -request.priority)
-        except ValueError as e: # non serializable request
+        except ValueError as e:  # non serializable request
             if self.logunser:
                 log.msg(format="Unable to serialize request: %(request)s - reason: %(reason)s",
                         level=log.ERROR, spider=self.spider,

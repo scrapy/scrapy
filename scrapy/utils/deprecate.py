@@ -8,8 +8,8 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 def attribute(obj, oldattr, newattr, version='0.12'):
     cname = obj.__class__.__name__
     warnings.warn("%s.%s attribute is deprecated and will be no longer supported "
-        "in Scrapy %s, use %s.%s attribute instead" % \
-        (cname, oldattr, version, cname, newattr), ScrapyDeprecationWarning, stacklevel=3)
+                  "in Scrapy %s, use %s.%s attribute instead" %
+                  (cname, oldattr, version, cname, newattr), ScrapyDeprecationWarning, stacklevel=3)
 
 
 def create_deprecated_class(name, new_class, clsdict=None,
@@ -17,11 +17,11 @@ def create_deprecated_class(name, new_class, clsdict=None,
                             warn_once=True,
                             old_class_path=None,
                             new_class_path=None,
-                            subclass_warn_message="{cls} inherits from "\
-                                    "deprecated class {old}, please inherit "\
-                                    "from {new}.",
-                            instance_warn_message="{cls} is deprecated, "\
-                                    "instantiate {new} instead."):
+                            subclass_warn_message="{cls} inherits from "
+                            "deprecated class {old}, please inherit "
+                            "from {new}.",
+                            instance_warn_message="{cls} is deprecated, "
+                            "instantiate {new} instead."):
     """
     Return a "deprecated" class that causes its subclasses to issue a warning.
     Subclasses of ``new_class`` are considered subclasses of this class.
@@ -53,7 +53,8 @@ def create_deprecated_class(name, new_class, clsdict=None,
         warned_on_subclass = False
 
         def __new__(metacls, name, bases, clsdict_):
-            cls = super(DeprecatedClass, metacls).__new__(metacls, name, bases, clsdict_)
+            cls = super(DeprecatedClass, metacls).__new__(
+                metacls, name, bases, clsdict_)
             if metacls.deprecated_class is None:
                 metacls.deprecated_class = cls
             return cls
@@ -64,7 +65,8 @@ def create_deprecated_class(name, new_class, clsdict=None,
             if old in bases and not (warn_once and meta.warned_on_subclass):
                 meta.warned_on_subclass = True
                 msg = subclass_warn_message.format(cls=_clspath(cls),
-                                                   old=_clspath(old, old_class_path),
+                                                   old=_clspath(
+                                                       old, old_class_path),
                                                    new=_clspath(new_class, new_class_path))
                 if warn_once:
                     msg += ' (warning only on first subclass, there may be others)'

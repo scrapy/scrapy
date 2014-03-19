@@ -15,9 +15,10 @@ from scrapy.utils.decorator import deprecated
 from scrapy.utils.url import escape_ajax
 from scrapy.http.common import obsolete_setter
 
+
 class Request(object_ref):
 
-    def __init__(self, url, callback=None, method='GET', headers=None, body=None, 
+    def __init__(self, url, callback=None, method='GET', headers=None, body=None,
                  cookies=None, meta=None, encoding='utf-8', priority=0,
                  dont_filter=False, errback=None):
 
@@ -25,7 +26,8 @@ class Request(object_ref):
         self.method = str(method).upper()
         self._set_url(url)
         self._set_body(body)
-        assert isinstance(priority, int), "Request priority not an integer: %r" % priority
+        assert isinstance(
+            priority, int), "Request priority not an integer: %r" % priority
         self.priority = priority
 
         assert callback or not errback, "Cannot use errback without a callback"
@@ -53,10 +55,11 @@ class Request(object_ref):
         elif isinstance(url, unicode):
             if self.encoding is None:
                 raise TypeError('Cannot convert unicode url - %s has no encoding' %
-                    type(self).__name__)
+                                type(self).__name__)
             self._set_url(url.encode(self.encoding))
         else:
-            raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
+            raise TypeError(
+                'Request url must be str or unicode, got %s:' % type(url).__name__)
         if ':' not in self._url:
             raise ValueError('Missing scheme in request url: %s' % self._url)
 
@@ -71,12 +74,13 @@ class Request(object_ref):
         elif isinstance(body, unicode):
             if self.encoding is None:
                 raise TypeError('Cannot convert unicode body - %s has no encoding' %
-                    type(self).__name__)
+                                type(self).__name__)
             self._body = body.encode(self.encoding)
         elif body is None:
             self._body = ''
         else:
-            raise TypeError("Request body must either str or unicode. Got: '%s'" % type(body).__name__)
+            raise TypeError(
+                "Request body must either str or unicode. Got: '%s'" % type(body).__name__)
 
     body = property(_get_body, obsolete_setter(_set_body, 'body'))
 
@@ -97,8 +101,8 @@ class Request(object_ref):
         """Create a new Request with the same attributes except for those
         given new values.
         """
-        for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta', \
-                'encoding', 'priority', 'dont_filter', 'callback', 'errback']:
+        for x in ['url', 'method', 'headers', 'body', 'cookies', 'meta',
+                  'encoding', 'priority', 'dont_filter', 'callback', 'errback']:
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)

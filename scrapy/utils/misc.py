@@ -10,6 +10,7 @@ from w3lib.html import remove_entities
 from scrapy.utils.python import flatten
 from scrapy.item import BaseItem
 
+
 def arg_to_iter(arg):
     """Convert an argument to an iterable. The argument can be a None, single
     value, or an iterable.
@@ -23,6 +24,7 @@ def arg_to_iter(arg):
     else:
         return [arg]
 
+
 def load_object(path):
     """Load an object given its absolute object path, and return it.
 
@@ -35,7 +37,7 @@ def load_object(path):
     except ValueError:
         raise ValueError("Error loading object '%s': not a full path" % path)
 
-    module, name = path[:dot], path[dot+1:]
+    module, name = path[:dot], path[dot + 1:]
     try:
         mod = import_module(module)
     except ImportError as e:
@@ -44,9 +46,11 @@ def load_object(path):
     try:
         obj = getattr(mod, name)
     except AttributeError:
-        raise NameError("Module '%s' doesn't define any object named '%s'" % (module, name))
+        raise NameError(
+            "Module '%s' doesn't define any object named '%s'" % (module, name))
 
     return obj
+
 
 def walk_modules(path, load=False):
     """Loads a module and all its submodules from a the given module path and
@@ -69,6 +73,7 @@ def walk_modules(path, load=False):
                 mods.append(submod)
     return mods
 
+
 def extract_regex(regex, text, encoding='utf-8'):
     """Extract a list of unicode strings from the given text/encoding using the following policies:
 
@@ -90,6 +95,7 @@ def extract_regex(regex, text, encoding='utf-8'):
         return [remove_entities(s, keep=['lt', 'amp']) for s in strings]
     else:
         return [remove_entities(unicode(s, encoding), keep=['lt', 'amp']) for s in strings]
+
 
 def md5sum(file):
     """Calculate the md5 checksum of a file-like object without reading its

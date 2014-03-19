@@ -7,19 +7,24 @@ from scrapy.utils.defer import mustbe_deferred, process_chain, \
 
 
 class MustbeDeferredTest(unittest.TestCase):
+
     def test_success_function(self):
         steps = []
+
         def _append(v):
             steps.append(v)
             return steps
 
         dfd = mustbe_deferred(_append, 1)
-        dfd.addCallback(self.assertEqual, [1, 2]) # it is [1] with maybeDeferred
-        steps.append(2) # add another value, that should be catched by assertEqual
+        # it is [1] with maybeDeferred
+        dfd.addCallback(self.assertEqual, [1, 2])
+        # add another value, that should be catched by assertEqual
+        steps.append(2)
         return dfd
 
     def test_unfired_deferred(self):
         steps = []
+
         def _append(v):
             steps.append(v)
             dfd = defer.Deferred()
@@ -27,18 +32,29 @@ class MustbeDeferredTest(unittest.TestCase):
             return dfd
 
         dfd = mustbe_deferred(_append, 1)
-        dfd.addCallback(self.assertEqual, [1, 2]) # it is [1] with maybeDeferred
-        steps.append(2) # add another value, that should be catched by assertEqual
+        # it is [1] with maybeDeferred
+        dfd.addCallback(self.assertEqual, [1, 2])
+        # add another value, that should be catched by assertEqual
+        steps.append(2)
         return dfd
+
 
 def cb1(value, arg1, arg2):
     return "(cb1 %s %s %s)" % (value, arg1, arg2)
+
+
 def cb2(value, arg1, arg2):
     return defer.succeed("(cb2 %s %s %s)" % (value, arg1, arg2))
+
+
 def cb3(value, arg1, arg2):
     return "(cb3 %s %s %s)" % (value, arg1, arg2)
+
+
 def cb_fail(value, arg1, arg2):
     return Failure(TypeError())
+
+
 def eb1(failure, arg1, arg2):
     return "(eb1 %s %s %s)" % (failure.value.__class__.__name__, arg1, arg2)
 
@@ -64,12 +80,14 @@ class DeferUtilsTest(unittest.TestCase):
 
         fail = Failure(ZeroDivisionError())
         x = yield process_chain_both([eb1, cb2, cb3], [eb1, None, None], fail, 'v1', 'v2')
-        self.assertEqual(x, "(cb3 (cb2 (eb1 ZeroDivisionError v1 v2) v1 v2) v1 v2)")
+        self.assertEqual(
+            x, "(cb3 (cb2 (eb1 ZeroDivisionError v1 v2) v1 v2) v1 v2)")
 
     @defer.inlineCallbacks
     def test_process_parallel(self):
         x = yield process_parallel([cb1, cb2, cb3], 'res', 'v1', 'v2')
-        self.assertEqual(x, ['(cb1 res v1 v2)', '(cb2 res v1 v2)', '(cb3 res v1 v2)'])
+        self.assertEqual(
+            x, ['(cb1 res v1 v2)', '(cb2 res v1 v2)', '(cb3 res v1 v2)'])
 
     def test_process_parallel_failure(self):
         d = process_parallel([cb1, cb_fail, cb3], 'res', 'v1', 'v2')
@@ -94,7 +112,7 @@ class IterErrbackTest(unittest.TestCase):
         def iterbad():
             for x in xrange(10):
                 if x == 5:
-                    a = 1/0
+                    a = 1 / 0
                 yield x
 
         errors = []

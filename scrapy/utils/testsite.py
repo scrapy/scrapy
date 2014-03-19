@@ -4,6 +4,7 @@ import urlparse
 from twisted.internet import reactor
 from twisted.web import server, resource, static, util
 
+
 class SiteTest(object):
 
     def setUp(self):
@@ -16,15 +17,18 @@ class SiteTest(object):
     def url(self, path):
         return urlparse.urljoin(self.baseurl, path)
 
+
 def test_site():
     r = resource.Resource()
     r.putChild("text", static.Data("Works", "text/plain"))
-    r.putChild("html", static.Data("<body><p class='one'>Works</p><p class='two'>World</p></body>", "text/html"))
-    r.putChild("enc-gb18030", static.Data("<p>gb18030 encoding</p>", "text/html; charset=gb18030"))
+    r.putChild("html", static.Data(
+        "<body><p class='one'>Works</p><p class='two'>World</p></body>", "text/html"))
+    r.putChild(
+        "enc-gb18030", static.Data("<p>gb18030 encoding</p>", "text/html; charset=gb18030"))
     r.putChild("redirect", util.Redirect("/redirected"))
     r.putChild("redirected", static.Data("Redirected here", "text/plain"))
     return server.Site(r)
-    
+
 
 if __name__ == '__main__':
     port = reactor.listenTCP(0, test_site(), interface="127.0.0.1")

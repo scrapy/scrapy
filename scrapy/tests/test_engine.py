@@ -11,7 +11,10 @@ module with the ``runserver`` argument::
 """
 
 from __future__ import print_function
-import sys, os, re, urlparse
+import sys
+import os
+import re
+import urlparse
 
 from twisted.internet import reactor, defer
 from twisted.web import server, static, util
@@ -27,10 +30,12 @@ from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 from scrapy.http import Request
 from scrapy.utils.signal import disconnect_all
 
+
 class TestItem(Item):
     name = Field()
     url = Field()
     price = Field()
+
 
 class TestSpider(Spider):
     name = "scrapytest.org"
@@ -58,6 +63,7 @@ class TestSpider(Spider):
             item['price'] = m.group(1)
         return item
 
+
 def start_test_site(debug=False):
     root_dir = os.path.join(tests_datadir, "test_site")
     r = static.File(root_dir)
@@ -66,12 +72,13 @@ def start_test_site(debug=False):
 
     port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
     if debug:
-        print("Test server running at http://localhost:%d/ - hit Ctrl-C to finish." \
-            % port.getHost().port)
+        print("Test server running at http://localhost:%d/ - hit Ctrl-C to finish."
+              % port.getHost().port)
     return port
 
 
 class CrawlerRun(object):
+
     """A class to run the crawler and keep track of events occurred"""
 
     def __init__(self):
@@ -96,8 +103,10 @@ class CrawlerRun(object):
         self.crawler.install()
         self.crawler.configure()
         self.crawler.signals.connect(self.item_scraped, signals.item_scraped)
-        self.crawler.signals.connect(self.request_scheduled, signals.request_scheduled)
-        self.crawler.signals.connect(self.response_downloaded, signals.response_downloaded)
+        self.crawler.signals.connect(
+            self.request_scheduled, signals.request_scheduled)
+        self.crawler.signals.connect(
+            self.response_downloaded, signals.response_downloaded)
         self.crawler.crawl(self.spider)
         self.crawler.start()
 
@@ -154,7 +163,8 @@ class EngineTest(unittest.TestCase):
                            "/item1.html", "/item2.html", "/item999.html"]
         urls_visited = set([rp[0].url for rp in self.run.respplug])
         urls_expected = set([self.run.geturl(p) for p in must_be_visited])
-        assert urls_expected <= urls_visited, "URLs not visited: %s" % list(urls_expected - urls_visited)
+        assert urls_expected <= urls_visited, "URLs not visited: %s" % list(
+            urls_expected - urls_visited)
 
     def _assert_scheduled_requests(self):
         self.assertEqual(6, len(self.run.reqplug))
@@ -197,7 +207,8 @@ class EngineTest(unittest.TestCase):
                          self.run.signals_catched[signals.spider_opened])
         self.assertEqual({'spider': self.run.spider},
                          self.run.signals_catched[signals.spider_idle])
-        self.run.signals_catched[signals.spider_closed].pop('spider_stats', None) # XXX: remove for scrapy 0.17
+        self.run.signals_catched[signals.spider_closed].pop(
+            'spider_stats', None)  # XXX: remove for scrapy 0.17
         self.assertEqual({'spider': self.run.spider, 'reason': 'finished'},
                          self.run.signals_catched[signals.spider_closed])
 

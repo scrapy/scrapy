@@ -30,8 +30,8 @@ class ScrapyCommand(object):
     @property
     def crawler(self):
         warnings.warn("Command's default `crawler` is deprecated and will be removed. "
-            "Use `create_crawler` method to instatiate crawlers.",
-            ScrapyDeprecationWarning)
+                      "Use `create_crawler` method to instatiate crawlers.",
+                      ScrapyDeprecationWarning)
 
         if not hasattr(self, '_crawler'):
             crawler = self.crawler_process.create_crawler()
@@ -84,20 +84,21 @@ class ScrapyCommand(object):
         """
         group = OptionGroup(parser, "Global Options")
         group.add_option("--logfile", metavar="FILE",
-            help="log file. if omitted stderr will be used")
+                         help="log file. if omitted stderr will be used")
         group.add_option("-L", "--loglevel", metavar="LEVEL", default=None,
-            help="log level (default: %s)" % self.settings['LOG_LEVEL'])
+                         help="log level (default: %s)" % self.settings['LOG_LEVEL'])
         group.add_option("--nolog", action="store_true",
-            help="disable logging completely")
+                         help="disable logging completely")
         group.add_option("--profile", metavar="FILE", default=None,
-            help="write python cProfile stats to FILE")
+                         help="write python cProfile stats to FILE")
         group.add_option("--lsprof", metavar="FILE", default=None,
-            help="write lsprof profiling stats to FILE")
+                         help="write lsprof profiling stats to FILE")
         group.add_option("--pidfile", metavar="FILE",
-            help="write process ID to FILE")
+                         help="write process ID to FILE")
         group.add_option("-s", "--set", action="append", default=[], metavar="NAME=VALUE",
-            help="set/override setting (may be repeated)")
-        group.add_option("--pdb", action="store_true", help="enable pdb on failure")
+                         help="set/override setting (may be repeated)")
+        group.add_option(
+            "--pdb", action="store_true", help="enable pdb on failure")
 
         parser.add_option_group(group)
 
@@ -105,7 +106,8 @@ class ScrapyCommand(object):
         try:
             self.settings.overrides.update(arglist_to_dict(opts.set))
         except ValueError:
-            raise UsageError("Invalid -s value, use -s NAME=VALUE", print_help=False)
+            raise UsageError(
+                "Invalid -s value, use -s NAME=VALUE", print_help=False)
 
         if opts.logfile:
             self.settings.overrides['LOG_ENABLED'] = True

@@ -10,7 +10,8 @@ import urlparse
 import urllib
 import cgi
 
-# scrapy.utils.url was moved to w3lib.url and import * ensures this move doesn't break old code
+# scrapy.utils.url was moved to w3lib.url and import * ensures this move
+# doesn't break old code
 from w3lib.url import *
 from scrapy.utils.python import unicode_to_str
 
@@ -28,7 +29,7 @@ def url_is_from_any_domain(url, domains):
 def url_is_from_spider(url, spider):
     """Return True if the url belongs to the given spider"""
     return url_is_from_any_domain(url,
-        [spider.name] + list(getattr(spider, 'allowed_domains', [])))
+                                  [spider.name] + list(getattr(spider, 'allowed_domains', [])))
 
 
 def url_has_any_extension(url, extensions):
@@ -36,7 +37,7 @@ def url_has_any_extension(url, extensions):
 
 
 def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
-        encoding=None):
+                     encoding=None):
     """Canonicalize the given url by applying the following procedures:
 
     - sort query arguments, first by key, then by value

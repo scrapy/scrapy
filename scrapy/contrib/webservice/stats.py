@@ -1,5 +1,6 @@
 from scrapy.webservice import JsonRpcResource
 
+
 class StatsResource(JsonRpcResource):
 
     ws_name = 'stats'

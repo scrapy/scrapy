@@ -34,10 +34,13 @@ class TelnetConsole(protocol.ServerFactory):
             raise NotConfigured
         self.crawler = crawler
         self.noisy = False
-        self.portrange = [int(x) for x in crawler.settings.getlist('TELNETCONSOLE_PORT')]
+        self.portrange = [int(x)
+                          for x in crawler.settings.getlist('TELNETCONSOLE_PORT')]
         self.host = crawler.settings['TELNETCONSOLE_HOST']
-        self.crawler.signals.connect(self.start_listening, signals.engine_started)
-        self.crawler.signals.connect(self.stop_listening, signals.engine_stopped)
+        self.crawler.signals.connect(
+            self.start_listening, signals.engine_started)
+        self.crawler.signals.connect(
+            self.stop_listening, signals.engine_stopped)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -55,7 +58,7 @@ class TelnetConsole(protocol.ServerFactory):
     def protocol(self):
         telnet_vars = self._get_telnet_vars()
         return telnet.TelnetTransport(telnet.TelnetBootstrapProtocol,
-            insults.ServerProtocol, manhole.Manhole, telnet_vars)
+                                      insults.ServerProtocol, manhole.Manhole, telnet_vars)
 
     def _get_telnet_vars(self):
         # Note: if you add entries here also update topics/telnetconsole.rst
@@ -72,8 +75,9 @@ class TelnetConsole(protocol.ServerFactory):
             'p': pprint.pprint,
             'prefs': print_live_refs,
             'hpy': hpy,
-            'help': "This is Scrapy telnet console. For more info see: " \
-                "http://doc.scrapy.org/en/latest/topics/telnetconsole.html",
+            'help': "This is Scrapy telnet console. For more info see: "
+            "http://doc.scrapy.org/en/latest/topics/telnetconsole.html",
         }
-        self.crawler.signals.send_catch_log(update_telnet_vars, telnet_vars=telnet_vars)
+        self.crawler.signals.send_catch_log(
+            update_telnet_vars, telnet_vars=telnet_vars)
         return telnet_vars

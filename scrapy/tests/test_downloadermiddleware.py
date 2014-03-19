@@ -47,6 +47,7 @@ class ManagerTestCase(TestCase):
 
 
 class DefaultsTest(ManagerTestCase):
+
     """Tests default behavior with default settings"""
 
     def test_request_response(self):

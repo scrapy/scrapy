@@ -43,7 +43,7 @@ class TestCloseSpider(TestCase):
         reason = spider.meta['close_reason']
         self.assertEqual(reason, 'closespider_errorcount')
         key = 'spider_exceptions/{name}'\
-                .format(name=spider.exception_cls.__name__)
+            .format(name=spider.exception_cls.__name__)
         errorcount = spider.crawler.stats.get_value(key)
         self.assertTrue(errorcount >= close_on)
 

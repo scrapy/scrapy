@@ -19,7 +19,8 @@ class HttpProxyMiddleware(object):
 
     def _get_proxy(self, url, orig_type):
         proxy_type, user, password, hostport = _parse_proxy(url)
-        proxy_url = urlunparse((proxy_type or orig_type, hostport, '', '', '', ''))
+        proxy_url = urlunparse(
+            (proxy_type or orig_type, hostport, '', '', '', ''))
 
         if user and password:
             user_pass = '%s:%s' % (unquote(user), unquote(password))

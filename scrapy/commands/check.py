@@ -32,9 +32,9 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-l", "--list", dest="list", action="store_true",
-            help="only list contracts, without checking them")
+                          help="only list contracts, without checking them")
         parser.add_option("-v", "--verbose", dest="verbose", default=1, action="count",
-            help="print all contract hooks")
+                          help="print all contract hooks")
 
     def run(self, args, opts):
         # load contracts

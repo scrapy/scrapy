@@ -8,10 +8,11 @@ from .unified import Selector, SelectorList
 __all__ = ['HtmlXPathSelector', 'XmlXPathSelector', 'XPathSelector',
            'XPathSelectorList']
 
+
 def _xpathselector_css(self, *a, **kw):
     raise RuntimeError('.css() method not available for %s, '
-                        'instantiate scrapy.selector.Selector '
-                        'instead' % type(self).__name__)
+                       'instantiate scrapy.selector.Selector '
+                       'instead' % type(self).__name__)
 
 XPathSelector = create_deprecated_class(
     'XPathSelector',

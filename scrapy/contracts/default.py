@@ -7,6 +7,7 @@ from . import Contract
 
 # contracts
 class UrlContract(Contract):
+
     """ Contract to set the url of the request (mandatory)
         @url http://scrapy.org
     """
@@ -19,6 +20,7 @@ class UrlContract(Contract):
 
 
 class ReturnsContract(Contract):
+
     """ Contract to check the output of a callback
 
         general form:
@@ -70,11 +72,12 @@ class ReturnsContract(Contract):
             else:
                 expected = '%s..%s' % (self.min_bound, self.max_bound)
 
-            raise ContractFail("Returned %s %s, expected %s" % \
-                (occurrences, self.obj_name, expected))
+            raise ContractFail("Returned %s %s, expected %s" %
+                               (occurrences, self.obj_name, expected))
 
 
 class ScrapesContract(Contract):
+
     """ Contract to check presence of fields in scraped items
         @scrapes page_name page_body
     """

@@ -32,7 +32,8 @@ class RequestTest(unittest.TestCase):
 
         meta = {"lala": "lolo"}
         headers = {"caca": "coco"}
-        r = self.request_class("http://www.example.com", meta=meta, headers=headers, body="a body")
+        r = self.request_class(
+            "http://www.example.com", meta=meta, headers=headers, body="a body")
 
         assert r.meta is not meta
         self.assertEqual(r.meta, meta)
@@ -45,7 +46,7 @@ class RequestTest(unittest.TestCase):
     def test_headers(self):
         # Different ways of setting headers attribute
         url = 'http://www.scrapy.org'
-        headers = {'Accept':'gzip', 'Custom-Header':'nothing to tell you'}
+        headers = {'Accept': 'gzip', 'Custom-Header': 'nothing to tell you'}
         r = self.request_class(url=url, headers=headers)
         p = self.request_class(url=url, headers=r.headers)
 
@@ -84,8 +85,10 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r.url, "http://www.scrapy.org/blank%20space")
 
         # url encoding
-        r1 = self.request_class(url=u"http://www.scrapy.org/price/\xa3", encoding="utf-8")
-        r2 = self.request_class(url=u"http://www.scrapy.org/price/\xa3", encoding="latin1")
+        r1 = self.request_class(
+            url=u"http://www.scrapy.org/price/\xa3", encoding="utf-8")
+        r2 = self.request_class(
+            url=u"http://www.scrapy.org/price/\xa3", encoding="latin1")
         self.assertEqual(r1.url, "http://www.scrapy.org/price/%C2%A3")
         self.assertEqual(r2.url, "http://www.scrapy.org/price/%A3")
 
@@ -95,23 +98,29 @@ class RequestTest(unittest.TestCase):
 
         r2 = self.request_class(url="http://www.example.com/", body="")
         assert isinstance(r2.body, str)
-        self.assertEqual(r2.encoding, 'utf-8') # default encoding
+        self.assertEqual(r2.encoding, 'utf-8')  # default encoding
 
-        r3 = self.request_class(url="http://www.example.com/", body=u"Price: \xa3100", encoding='utf-8')
+        r3 = self.request_class(
+            url="http://www.example.com/", body=u"Price: \xa3100", encoding='utf-8')
         assert isinstance(r3.body, str)
         self.assertEqual(r3.body, "Price: \xc2\xa3100")
 
-        r4 = self.request_class(url="http://www.example.com/", body=u"Price: \xa3100", encoding='latin1')
+        r4 = self.request_class(
+            url="http://www.example.com/", body=u"Price: \xa3100", encoding='latin1')
         assert isinstance(r4.body, str)
         self.assertEqual(r4.body, "Price: \xa3100")
 
     def test_ajax_url(self):
         # ascii url
-        r = self.request_class(url="http://www.example.com/ajax.html#!key=value")
-        self.assertEqual(r.url, "http://www.example.com/ajax.html?_escaped_fragment_=key=value")
+        r = self.request_class(
+            url="http://www.example.com/ajax.html#!key=value")
+        self.assertEqual(
+            r.url, "http://www.example.com/ajax.html?_escaped_fragment_=key=value")
         # unicode url
-        r = self.request_class(url=u"http://www.example.com/ajax.html#!key=value")
-        self.assertEqual(r.url, "http://www.example.com/ajax.html?_escaped_fragment_=key=value")
+        r = self.request_class(
+            url=u"http://www.example.com/ajax.html#!key=value")
+        self.assertEqual(
+            r.url, "http://www.example.com/ajax.html?_escaped_fragment_=key=value")
 
     def test_copy(self):
         """Test Request copy"""
@@ -119,7 +128,8 @@ class RequestTest(unittest.TestCase):
         def somecallback():
             pass
 
-        r1 = self.request_class("http://www.example.com", callback=somecallback, errback=somecallback)
+        r1 = self.request_class(
+            "http://www.example.com", callback=somecallback, errback=somecallback)
         r1.meta['foo'] = 'bar'
         r2 = r1.copy()
 
@@ -160,11 +170,14 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r1.url, r2.url)
         self.assertEqual((r1.method, r2.method), ("GET", "POST"))
         self.assertEqual((r1.body, r2.body), ('', "New body"))
-        self.assertEqual((r1.headers, r2.headers), (self.default_headers, hdrs))
+        self.assertEqual(
+            (r1.headers, r2.headers), (self.default_headers, hdrs))
 
         # Empty attributes (which may fail if not compared properly)
-        r3 = self.request_class("http://www.example.com", meta={'a': 1}, dont_filter=True)
-        r4 = r3.replace(url="http://www.example.com/2", body='', meta={}, dont_filter=False)
+        r3 = self.request_class(
+            "http://www.example.com", meta={'a': 1}, dont_filter=True)
+        r4 = r3.replace(
+            url="http://www.example.com/2", body='', meta={}, dont_filter=False)
         self.assertEqual(r4.url, "http://www.example.com/2")
         self.assertEqual(r4.body, '')
         self.assertEqual(r4.meta, {})
@@ -176,7 +189,8 @@ class RequestTest(unittest.TestCase):
 
     def test_immutable_attributes(self):
         r = self.request_class("http://example.com")
-        self.assertRaises(AttributeError, setattr, r, 'url', 'http://example2.com')
+        self.assertRaises(
+            AttributeError, setattr, r, 'url', 'http://example2.com')
         self.assertRaises(AttributeError, setattr, r, 'body', 'xxx')
 
 
@@ -199,11 +213,13 @@ class FormRequestTest(RequestTest):
         self.assertEqual(r2.encoding, 'utf-8')
         self.assertSortedEqual(r2.body.split('&'),
                                'price=%C2%A3+100&one=two'.split('&'))
-        self.assertEqual(r2.headers['Content-Type'], 'application/x-www-form-urlencoded')
+        self.assertEqual(
+            r2.headers['Content-Type'], 'application/x-www-form-urlencoded')
 
     def test_custom_encoding(self):
         data = {'price': u'\xa3 100'}
-        r3 = self.request_class("http://www.example.com", formdata=data, encoding='latin1')
+        r3 = self.request_class(
+            "http://www.example.com", formdata=data, encoding='latin1')
         self.assertEqual(r3.encoding, 'latin1')
         self.assertEqual(r3.body, 'price=%A3+100')
 
@@ -212,7 +228,7 @@ class FormRequestTest(RequestTest):
         data = {'price': u'\xa3 100', 'colours': ['red', 'blue', 'green']}
         r3 = self.request_class("http://www.example.com", formdata=data)
         self.assertSortedEqual(r3.body.split('&'),
-            'colours=red&colours=blue&colours=green&price=%C2%A3+100'.split('&'))
+                               'colours=red&colours=blue&colours=green&price=%C2%A3+100'.split('&'))
 
     def test_from_response_post(self):
         response = _buildresponse(
@@ -223,9 +239,10 @@ class FormRequestTest(RequestTest):
             </form>""",
             url="http://www.example.com/this/list.html")
         req = self.request_class.from_response(response,
-                formdata={'one': ['two', 'three'], 'six': 'seven'})
+                                               formdata={'one': ['two', 'three'], 'six': 'seven'})
         self.assertEqual(req.method, 'POST')
-        self.assertEqual(req.headers['Content-type'], 'application/x-www-form-urlencoded')
+        self.assertEqual(
+            req.headers['Content-type'], 'application/x-www-form-urlencoded')
         self.assertEqual(req.url, "http://www.example.com/this/post.php")
         fs = _qs(req)
         self.assertEqual(set(fs["test"]), set(["val1", "val2"]))
@@ -241,10 +258,12 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="test2" value="xxx">
             </form>""")
         req = self.request_class.from_response(response,
-                formdata={'one': ['two', 'three'], 'six': 'seven'},
-                headers={"Accept-Encoding": "gzip,deflate"})
+                                               formdata={
+                                                   'one': ['two', 'three'], 'six': 'seven'},
+                                               headers={"Accept-Encoding": "gzip,deflate"})
         self.assertEqual(req.method, 'POST')
-        self.assertEqual(req.headers['Content-type'], 'application/x-www-form-urlencoded')
+        self.assertEqual(
+            req.headers['Content-type'], 'application/x-www-form-urlencoded')
         self.assertEqual(req.headers['Accept-Encoding'], 'gzip,deflate')
 
     def test_from_response_get(self):
@@ -256,7 +275,7 @@ class FormRequestTest(RequestTest):
             </form>""",
             url="http://www.example.com/this/list.html")
         r1 = self.request_class.from_response(response,
-                formdata={'one': ['two', 'three'], 'six': 'seven'})
+                                              formdata={'one': ['two', 'three'], 'six': 'seven'})
         self.assertEqual(r1.method, 'GET')
         self.assertEqual(urlparse(r1.url).hostname, "www.example.com")
         self.assertEqual(urlparse(r1.url).path, "/this/get.php")
@@ -279,7 +298,7 @@ class FormRequestTest(RequestTest):
 
     def test_from_response_override_method(self):
         response = _buildresponse(
-                '''<html><body>
+            '''<html><body>
                 <form action="/app"></form>
                 </body></html>''')
         request = FormRequest.from_response(response)
@@ -289,12 +308,13 @@ class FormRequestTest(RequestTest):
 
     def test_from_response_override_url(self):
         response = _buildresponse(
-                '''<html><body>
+            '''<html><body>
                 <form action="/app"></form>
                 </body></html>''')
         request = FormRequest.from_response(response)
         self.assertEqual(request.url, 'http://example.com/app')
-        request = FormRequest.from_response(response, url='http://foo.bar/absolute')
+        request = FormRequest.from_response(
+            response, url='http://foo.bar/absolute')
         self.assertEqual(request.url, 'http://foo.bar/absolute')
         request = FormRequest.from_response(response, url='/relative')
         self.assertEqual(request.url, 'http://example.com/relative')
@@ -322,8 +342,8 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="two" value="3">
             <input type="submit" name="clickable2" value="clicked2">
             </form>""")
-        req = self.request_class.from_response(response, formdata={'two': '2'}, \
-                                              clickdata={'name': 'clickable2'})
+        req = self.request_class.from_response(response, formdata={'two': '2'},
+                                               clickdata={'name': 'clickable2'})
         fs = _qs(req)
         self.assertEqual(fs['clickable2'], ['clicked2'])
         self.assertFalse('clickable1' in fs, fs)
@@ -361,8 +381,8 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="one" value="clicked1">
             <input type="hidden" name="two" value="clicked2">
             </form>""")
-        req = self.request_class.from_response(response, \
-                clickdata={'name': 'clickable', 'value': 'clicked2'})
+        req = self.request_class.from_response(response,
+                                               clickdata={'name': 'clickable', 'value': 'clicked2'})
         fs = _qs(req)
         self.assertEqual(fs['clickable'], ['clicked2'])
         self.assertEqual(fs['one'], ['clicked1'])
@@ -376,8 +396,8 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="poundsign" value="\u00a3">
             <input type="hidden" name="eurosign" value="\u20ac">
             </form>""")
-        req = self.request_class.from_response(response, \
-                clickdata={'name': u'price in \u00a3'})
+        req = self.request_class.from_response(response,
+                                               clickdata={'name': u'price in \u00a3'})
         fs = _qs(req)
         self.assertTrue(fs[u'price in \u00a3'.encode('utf-8')])
 
@@ -392,17 +412,18 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="field2" value="value2">
             </form>
             """)
-        req = self.request_class.from_response(response, formname='form2', \
-                clickdata={'name': 'clickable'})
+        req = self.request_class.from_response(response, formname='form2',
+                                               clickdata={'name': 'clickable'})
         fs = _qs(req)
         self.assertEqual(fs['clickable'], ['clicked2'])
         self.assertEqual(fs['field2'], ['value2'])
         self.assertFalse('field1' in fs, fs)
 
     def test_from_response_override_clickable(self):
-        response = _buildresponse('''<form><input type="submit" name="clickme" value="one"> </form>''')
-        req = self.request_class.from_response(response, \
-                formdata={'clickme': 'two'}, clickdata={'name': 'clickme'})
+        response = _buildresponse(
+            '''<form><input type="submit" name="clickme" value="one"> </form>''')
+        req = self.request_class.from_response(response,
+                                               formdata={'clickme': 'two'}, clickdata={'name': 'clickme'})
         fs = _qs(req)
         self.assertEqual(fs['clickme'], ['two'])
 
@@ -462,13 +483,15 @@ class FormRequestTest(RequestTest):
 
     def test_from_response_errors_noform(self):
         response = _buildresponse("""<html></html>""")
-        self.assertRaises(ValueError, self.request_class.from_response, response)
+        self.assertRaises(
+            ValueError, self.request_class.from_response, response)
 
     def test_from_response_invalid_html5(self):
         response = _buildresponse("""<!DOCTYPE html><body></html><form>"""
                                   """<input type="text" name="foo" value="xxx">"""
                                   """</form></body></html>""")
-        req = self.request_class.from_response(response, formdata={'bar': 'buz'})
+        req = self.request_class.from_response(
+            response, formdata={'bar': 'buz'})
         fs = _qs(req)
         self.assertEqual(fs, {'foo': ['xxx'], 'bar': ['buz']})
 
@@ -479,7 +502,8 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="test" value="val2">
             <input type="hidden" name="test2" value="xxx">
             </form>""")
-        self.assertRaises(IndexError, self.request_class.from_response, response, formnumber=1)
+        self.assertRaises(
+            IndexError, self.request_class.from_response, response, formnumber=1)
 
     def test_from_response_noformname(self):
         response = _buildresponse(
@@ -487,9 +511,10 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="one" value="1">
             <input type="hidden" name="two" value="2">
             </form>""")
-        r1 = self.request_class.from_response(response, formdata={'two':'3'})
+        r1 = self.request_class.from_response(response, formdata={'two': '3'})
         self.assertEqual(r1.method, 'POST')
-        self.assertEqual(r1.headers['Content-type'], 'application/x-www-form-urlencoded')
+        self.assertEqual(
+            r1.headers['Content-type'], 'application/x-www-form-urlencoded')
         fs = _qs(r1)
         self.assertEqual(fs, {'one': ['1'], 'two': ['3']})
 
@@ -529,7 +554,7 @@ class FormRequestTest(RequestTest):
             <form name="form2" action="post.php" method="POST">
             <input type="hidden" name="two" value="2">
             </form>""")
-        self.assertRaises(IndexError, self.request_class.from_response, \
+        self.assertRaises(IndexError, self.request_class.from_response,
                           response, formname="form3", formnumber=2)
 
     def test_from_response_select(self):
@@ -561,7 +586,8 @@ class FormRequestTest(RequestTest):
             </form>''')
         req = self.request_class.from_response(res)
         fs = _qs(req)
-        self.assertEqual(fs, {'i1': ['i1v2'], 'i2': ['i2v1'], 'i4': ['i4v2', 'i4v3']})
+        self.assertEqual(
+            fs, {'i1': ['i1v2'], 'i2': ['i2v1'], 'i4': ['i4v2', 'i4v3']})
 
     def test_from_response_radio(self):
         res = _buildresponse(
@@ -650,7 +676,8 @@ class FormRequestTest(RequestTest):
             </form>''')
         req = self.request_class.from_response(res)
         fs = _qs(req)
-        self.assertEqual(set(fs), set(['h2', 'i2', 'i1', 'i3', 'h1', 'i5', 'i4']))
+        self.assertEqual(
+            set(fs), set(['h2', 'i2', 'i1', 'i3', 'h1', 'i5', 'i4']))
 
     def test_from_response_xpath(self):
         response = _buildresponse(
@@ -662,22 +689,26 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="three" value="3">
             <input type="hidden" name="four" value="4">
             </form>""")
-        r1 = self.request_class.from_response(response, formxpath="//form[@action='post.php']")
+        r1 = self.request_class.from_response(
+            response, formxpath="//form[@action='post.php']")
         fs = _qs(r1)
         self.assertEqual(fs['one'], ['1'])
 
-        r1 = self.request_class.from_response(response, formxpath="//form/input[@name='four']")
+        r1 = self.request_class.from_response(
+            response, formxpath="//form/input[@name='four']")
         fs = _qs(r1)
         self.assertEqual(fs['three'], ['3'])
 
         self.assertRaises(ValueError, self.request_class.from_response,
                           response, formxpath="//form/input[@name='abc']")
 
+
 def _buildresponse(body, **kwargs):
     kwargs.setdefault('body', body)
     kwargs.setdefault('url', 'http://example.com')
     kwargs.setdefault('encoding', 'utf-8')
     return HtmlResponse(**kwargs)
+
 
 def _qs(req):
     if req.method == 'POST':

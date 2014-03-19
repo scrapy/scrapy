@@ -1,5 +1,6 @@
 from scrapy.webservice import JsonRpcResource
 
+
 class CrawlerResource(JsonRpcResource):
 
     ws_name = 'crawler'

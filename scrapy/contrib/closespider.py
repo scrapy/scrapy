@@ -21,19 +21,24 @@ class CloseSpider(object):
             'itemcount': crawler.settings.getint('CLOSESPIDER_ITEMCOUNT'),
             'pagecount': crawler.settings.getint('CLOSESPIDER_PAGECOUNT'),
             'errorcount': crawler.settings.getint('CLOSESPIDER_ERRORCOUNT'),
-            }
+        }
 
         self.counter = defaultdict(int)
 
         if self.close_on.get('errorcount'):
-            crawler.signals.connect(self.error_count, signal=signals.spider_error)
+            crawler.signals.connect(
+                self.error_count, signal=signals.spider_error)
         if self.close_on.get('pagecount'):
-            crawler.signals.connect(self.page_count, signal=signals.response_received)
+            crawler.signals.connect(
+                self.page_count, signal=signals.response_received)
         if self.close_on.get('timeout'):
-            crawler.signals.connect(self.spider_opened, signal=signals.spider_opened)
+            crawler.signals.connect(
+                self.spider_opened, signal=signals.spider_opened)
         if self.close_on.get('itemcount'):
-            crawler.signals.connect(self.item_scraped, signal=signals.item_scraped)
-        crawler.signals.connect(self.spider_closed, signal=signals.spider_closed)
+            crawler.signals.connect(
+                self.item_scraped, signal=signals.item_scraped)
+        crawler.signals.connect(
+            self.spider_closed, signal=signals.spider_closed)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -50,9 +55,9 @@ class CloseSpider(object):
             self.crawler.engine.close_spider(spider, 'closespider_pagecount')
 
     def spider_opened(self, spider):
-        self.task = reactor.callLater(self.close_on['timeout'], \
-            self.crawler.engine.close_spider, spider, \
-            reason='closespider_timeout')
+        self.task = reactor.callLater(self.close_on['timeout'],
+                                      self.crawler.engine.close_spider, spider,
+                                      reason='closespider_timeout')
 
     def item_scraped(self, item, spider):
         self.counter['itemcount'] += 1

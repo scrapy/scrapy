@@ -34,7 +34,8 @@ class ImagesPipelineTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tempdir = mkdtemp()
-        self.pipeline = ImagesPipeline(self.tempdir, download_func=_mocked_download_func)
+        self.pipeline = ImagesPipeline(
+            self.tempdir, download_func=_mocked_download_func)
 
     def tearDown(self):
         rmtree(self.tempdir)
@@ -54,7 +55,8 @@ class ImagesPipelineTestCase(unittest.TestCase):
         self.assertEqual(file_path(Request("http://www.dorma.co.uk/images/product_details/2532")),
                          'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg')
         self.assertEqual(file_path(Request("http://www.dorma.co.uk/images/product_details/2532"),
-                                   response=Response("http://www.dorma.co.uk/images/product_details/2532"),
+                                   response=Response(
+                                       "http://www.dorma.co.uk/images/product_details/2532"),
                                    info=object()),
                          'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg')
 
@@ -70,7 +72,8 @@ class ImagesPipelineTestCase(unittest.TestCase):
         self.assertEqual(thumb_path(Request("file:///tmp/some.name/foo"), name),
                          'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg')
         self.assertEqual(thumb_path(Request("file:///tmp/some.name/foo"), name,
-                                    response=Response("file:///tmp/some.name/foo"),
+                                    response=Response(
+                                        "file:///tmp/some.name/foo"),
                                     info=object()),
                          'thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg')
 
@@ -97,6 +100,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
 
 
 class DeprecatedImagesPipeline(ImagesPipeline):
+
     def file_key(self, url):
         return self.image_key(url)
 
@@ -110,11 +114,13 @@ class DeprecatedImagesPipeline(ImagesPipeline):
 
 
 class DeprecatedImagesPipelineTestCase(unittest.TestCase):
+
     def setUp(self):
         self.tempdir = mkdtemp()
 
     def init_pipeline(self, pipeline_class):
-        self.pipeline = pipeline_class(self.tempdir, download_func=_mocked_download_func)
+        self.pipeline = pipeline_class(
+            self.tempdir, download_func=_mocked_download_func)
         self.pipeline.open_spider(None)
 
     def test_default_file_key_method(self):
@@ -124,7 +130,8 @@ class DeprecatedImagesPipelineTestCase(unittest.TestCase):
             self.assertEqual(self.pipeline.file_key("https://dev.mydeco.com/mydeco.gif"),
                              'full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
             self.assertEqual(len(w), 1)
-            self.assertTrue('image_key(url) and file_key(url) methods are deprecated' in str(w[-1].message))
+            self.assertTrue(
+                'image_key(url) and file_key(url) methods are deprecated' in str(w[-1].message))
 
     def test_default_image_key_method(self):
         self.init_pipeline(ImagesPipeline)
@@ -133,7 +140,8 @@ class DeprecatedImagesPipelineTestCase(unittest.TestCase):
             self.assertEqual(self.pipeline.image_key("https://dev.mydeco.com/mydeco.gif"),
                              'full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
             self.assertEqual(len(w), 1)
-            self.assertTrue('image_key(url) and file_key(url) methods are deprecated' in str(w[-1].message))
+            self.assertTrue(
+                'image_key(url) and file_key(url) methods are deprecated' in str(w[-1].message))
 
     def test_overridden_file_key_method(self):
         self.init_pipeline(DeprecatedImagesPipeline)
@@ -142,7 +150,8 @@ class DeprecatedImagesPipelineTestCase(unittest.TestCase):
             self.assertEqual(self.pipeline.file_path(Request("https://dev.mydeco.com/mydeco.gif")),
                              'empty/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg')
             self.assertEqual(len(w), 1)
-            self.assertTrue('image_key(url) and file_key(url) methods are deprecated' in str(w[-1].message))
+            self.assertTrue(
+                'image_key(url) and file_key(url) methods are deprecated' in str(w[-1].message))
 
     def test_default_thumb_key_method(self):
         self.init_pipeline(ImagesPipeline)
@@ -151,7 +160,8 @@ class DeprecatedImagesPipelineTestCase(unittest.TestCase):
             self.assertEqual(self.pipeline.thumb_key("file:///tmp/foo.jpg", 50),
                              'thumbs/50/38a86208c36e59d4404db9e37ce04be863ef0335.jpg')
             self.assertEqual(len(w), 1)
-            self.assertTrue('thumb_key(url) method is deprecated' in str(w[-1].message))
+            self.assertTrue(
+                'thumb_key(url) method is deprecated' in str(w[-1].message))
 
     def test_overridden_thumb_key_method(self):
         self.init_pipeline(DeprecatedImagesPipeline)
@@ -160,7 +170,8 @@ class DeprecatedImagesPipelineTestCase(unittest.TestCase):
             self.assertEqual(self.pipeline.thumb_path(Request("file:///tmp/foo.jpg"), 50),
                              'thumbsup/50/38a86208c36e59d4404db9e37ce04be863ef0335.jpg')
             self.assertEqual(len(w), 1)
-            self.assertTrue('thumb_key(url) method is deprecated' in str(w[-1].message))
+            self.assertTrue(
+                'thumb_key(url) method is deprecated' in str(w[-1].message))
 
     def tearDown(self):
         rmtree(self.tempdir)
@@ -170,13 +181,15 @@ class ImagesPipelineTestCaseFields(unittest.TestCase):
 
     def test_item_fields_default(self):
         from scrapy.contrib.pipeline.images import ImagesPipeline
+
         class TestItem(Item):
             name = Field()
             image_urls = Field()
             images = Field()
         url = 'http://www.example.com/images/1.jpg'
         item = TestItem({'name': 'item1', 'image_urls': [url]})
-        pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': 's3://example/images/'}))
+        pipeline = ImagesPipeline.from_settings(
+            Settings({'IMAGES_STORE': 's3://example/images/'}))
         requests = list(pipeline.get_media_requests(item, None))
         self.assertEqual(requests[0].url, url)
         results = [(True, {'url': url})]
@@ -185,6 +198,7 @@ class ImagesPipelineTestCaseFields(unittest.TestCase):
 
     def test_item_fields_override_settings(self):
         from scrapy.contrib.pipeline.images import ImagesPipeline
+
         class TestItem(Item):
             name = Field()
             image = Field()
@@ -192,7 +206,7 @@ class ImagesPipelineTestCaseFields(unittest.TestCase):
         url = 'http://www.example.com/images/1.jpg'
         item = TestItem({'name': 'item1', 'image': [url]})
         pipeline = ImagesPipeline.from_settings(Settings({'IMAGES_STORE': 's3://example/images/',
-                'IMAGES_URLS_FIELD': 'image', 'IMAGES_RESULT_FIELD': 'stored_image'}))
+                                                          'IMAGES_URLS_FIELD': 'image', 'IMAGES_RESULT_FIELD': 'stored_image'}))
         requests = list(pipeline.get_media_requests(item, None))
         self.assertEqual(requests[0].url, url)
         results = [(True, {'url': url})]

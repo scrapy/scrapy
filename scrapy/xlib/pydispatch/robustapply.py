@@ -8,6 +8,7 @@ those which are acceptable.
 
 import inspect
 
+
 def function(receiver):
     """Get function-like callable object for given receiver
 
@@ -23,33 +24,35 @@ def function(receiver):
            hasattr(receiver.__call__, 'im_code'):
             receiver = receiver.__call__
 
-    if hasattr( receiver, 'im_func' ):
+    if hasattr(receiver, 'im_func'):
         # an instance-method...
         return receiver, receiver.im_func.func_code, 1
     elif not hasattr(receiver, 'func_code'):
-        raise ValueError('unknown receiver type %s %s'%(receiver, type(receiver)))
+        raise ValueError('unknown receiver type %s %s' %
+                         (receiver, type(receiver)))
 
     return receiver, receiver.func_code, 0
+
 
 def robustApply(receiver, *arguments, **named):
     """Call receiver with arguments and an appropriate subset of named
     """
     receiver, codeObject, startIndex = function(receiver)
-    acceptable = codeObject.co_varnames[startIndex+len(arguments):codeObject.co_argcount]
-    for name in codeObject.co_varnames[startIndex:startIndex+len(arguments)]:
+    acceptable = codeObject.co_varnames[
+        startIndex + len(arguments):codeObject.co_argcount]
+    for name in codeObject.co_varnames[startIndex:startIndex + len(arguments)]:
         if named.has_key(name):
             raise TypeError(
-                """Argument %r specified both positionally and as a keyword for calling %r"""% (
+                """Argument %r specified both positionally and as a keyword for calling %r""" % (
                     name, receiver,
                 )
             )
 
     if not (codeObject.co_flags & 8):
-        # fc does not have a **kwds type parameter, therefore 
+        # fc does not have a **kwds type parameter, therefore
         # remove unacceptable arguments.
         for arg in named.keys():
             if arg not in acceptable:
                 del named[arg]
 
     return receiver(*arguments, **named)
-

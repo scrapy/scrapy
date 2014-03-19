@@ -4,6 +4,7 @@ from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler
 from scrapy.spider import Spider
 
+
 class SettingsTest(unittest.TestCase):
 
     def test_get(self):
@@ -43,16 +44,20 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.getlist('TEST_LIST1'), ['one', 'two'])
         self.assertEqual(settings.getlist('TEST_LIST2'), ['one', 'two'])
         self.assertEqual(settings.getlist('TEST_LISTx'), [])
-        self.assertEqual(settings.getlist('TEST_LISTx', ['default']), ['default'])
+        self.assertEqual(
+            settings.getlist('TEST_LISTx', ['default']), ['default'])
         self.assertEqual(settings['TEST_STR'], 'value')
         self.assertEqual(settings.get('TEST_STR'), 'value')
         self.assertEqual(settings['TEST_STRx'], None)
         self.assertEqual(settings.get('TEST_STRx'), None)
         self.assertEqual(settings.get('TEST_STRx', 'default'), 'default')
-        self.assertEqual(settings.getdict('TEST_DICT1'), {'key1': 'val1', 'ke2': 3})
-        self.assertEqual(settings.getdict('TEST_DICT2'), {'key1': 'val1', 'ke2': 3})
+        self.assertEqual(
+            settings.getdict('TEST_DICT1'), {'key1': 'val1', 'ke2': 3})
+        self.assertEqual(
+            settings.getdict('TEST_DICT2'), {'key1': 'val1', 'ke2': 3})
         self.assertEqual(settings.getdict('TEST_DICT3'), {})
-        self.assertEqual(settings.getdict('TEST_DICT3', {'key1': 5}), {'key1': 5})
+        self.assertEqual(
+            settings.getdict('TEST_DICT3', {'key1': 5}), {'key1': 5})
         self.assertRaises(ValueError, settings.getdict, 'TEST_LIST1')
 
 
@@ -79,4 +84,3 @@ class CrawlerSettingsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

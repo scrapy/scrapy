@@ -9,6 +9,7 @@ from scrapy.xlib.pydispatch.robustapply import robustApply
 
 from scrapy import log
 
+
 def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
     """Like pydispatcher.robust.sendRobust but it also logs errors and returns
     Failures instead of exceptions.
@@ -19,7 +20,7 @@ def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
         try:
             response = robustApply(receiver, signal=signal, sender=sender,
-                *arguments, **named)
+                                   *arguments, **named)
             if isinstance(response, Deferred):
                 log.msg(format="Cannot return deferreds from signal handler: %(receiver)s",
                         level=log.ERROR, spider=spider, receiver=receiver)
@@ -27,12 +28,13 @@ def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
             result = Failure()
         except Exception:
             result = Failure()
-            log.err(result, "Error caught on signal handler: %s" % receiver, \
-                spider=spider)
+            log.err(result, "Error caught on signal handler: %s" % receiver,
+                    spider=spider)
         else:
             result = response
         responses.append((receiver, result))
     return responses
+
 
 def send_catch_log_deferred(signal=Any, sender=Anonymous, *arguments, **named):
     """Like send_catch_log but supports returning deferreds on signal handlers.
@@ -41,8 +43,8 @@ def send_catch_log_deferred(signal=Any, sender=Anonymous, *arguments, **named):
     """
     def logerror(failure, recv):
         if dont_log is None or not isinstance(failure.value, dont_log):
-            log.err(failure, "Error caught on signal handler: %s" % recv, \
-                spider=spider)
+            log.err(failure, "Error caught on signal handler: %s" % recv,
+                    spider=spider)
         return failure
 
     dont_log = named.pop('dont_log', None)
@@ -50,13 +52,14 @@ def send_catch_log_deferred(signal=Any, sender=Anonymous, *arguments, **named):
     dfds = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
         d = maybeDeferred(robustApply, receiver, signal=signal, sender=sender,
-                *arguments, **named)
+                          *arguments, **named)
         d.addErrback(logerror, receiver)
         d.addBoth(lambda result: (receiver, result))
         dfds.append(d)
     d = DeferredList(dfds)
     d.addCallback(lambda out: [x[1] for x in out])
     return d
+
 
 def disconnect_all(signal=Any, sender=Any):
     """Disconnect all signal handlers. Useful for cleaning up after running

@@ -3,6 +3,7 @@
 from functools import partial
 from scrapy.utils.python import get_func_args
 
+
 def wrap_loader_context(function, context):
     """Wrap functions that receive loader_context to contain the context
     "pre-loaded" and expose a interface that receives only one argument

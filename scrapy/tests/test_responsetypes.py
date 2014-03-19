@@ -3,6 +3,7 @@ from scrapy.responsetypes import responsetypes
 
 from scrapy.http import Response, TextResponse, XmlResponse, HtmlResponse, Headers
 
+
 class ResponseTypesTest(unittest.TestCase):
 
     def test_from_filename(self):
@@ -43,19 +44,22 @@ class ResponseTypesTest(unittest.TestCase):
     def test_from_body(self):
         mappings = [
             ('\x03\x02\xdf\xdd\x23', Response),
-            ('Some plain text\ndata with tabs\t and null bytes\0', TextResponse),
+            ('Some plain text\ndata with tabs\t and null bytes\0',
+             TextResponse),
             ('<html><head><title>Hello</title></head>', HtmlResponse),
             ('<?xml version="1.0" encoding="utf-8"', XmlResponse),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_body(source)
             assert retcls is cls, "%s ==> %s != %s" % (source, retcls, cls)
-        
+
     def test_from_headers(self):
         mappings = [
             ({'Content-Type': ['text/html; charset=utf-8']}, HtmlResponse),
-            ({'Content-Type': ['application/octet-stream'], 'Content-Disposition': ['attachment; filename=data.txt']}, TextResponse),
-            ({'Content-Type': ['text/html; charset=utf-8'], 'Content-Encoding': ['gzip']}, Response),
+            ({'Content-Type': ['application/octet-stream'],
+             'Content-Disposition': ['attachment; filename=data.txt']}, TextResponse),
+            ({'Content-Type': ['text/html; charset=utf-8'],
+             'Content-Encoding': ['gzip']}, Response),
         ]
         for source, cls in mappings:
             source = Headers(source)
@@ -63,12 +67,15 @@ class ResponseTypesTest(unittest.TestCase):
             assert retcls is cls, "%s ==> %s != %s" % (source, retcls, cls)
 
     def test_from_args(self):
-        # TODO: add more tests that check precedence between the different arguments
+        # TODO: add more tests that check precedence between the different
+        # arguments
         mappings = [
             ({'url': 'http://www.example.com/data.csv'}, TextResponse),
             # headers takes precedence over url
-            ({'headers': Headers({'Content-Type': ['text/html; charset=utf-8']}), 'url': 'http://www.example.com/item/'}, HtmlResponse),
-            ({'headers': Headers({'Content-Disposition': ['attachment; filename="data.xml.gz"']}), 'url': 'http://www.example.com/page/'}, Response),
+            ({'headers': Headers(
+                {'Content-Type': ['text/html; charset=utf-8']}), 'url': 'http://www.example.com/item/'}, HtmlResponse),
+            ({'headers': Headers({'Content-Disposition':
+             ['attachment; filename="data.xml.gz"']}), 'url': 'http://www.example.com/page/'}, Response),
 
 
         ]
@@ -78,7 +85,8 @@ class ResponseTypesTest(unittest.TestCase):
 
     def test_custom_mime_types_loaded(self):
         # check that mime.types files shipped with scrapy are loaded
-        self.assertEqual(responsetypes.mimetypes.guess_type('x.scrapytest')[0], 'x-scrapy/test')
+        self.assertEqual(
+            responsetypes.mimetypes.guess_type('x.scrapytest')[0], 'x-scrapy/test')
 
 if __name__ == "__main__":
     unittest.main()

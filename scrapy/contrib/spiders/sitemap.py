@@ -6,6 +6,7 @@ from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 from scrapy.utils.gz import gunzip, is_gzipped
 from scrapy import log
 
+
 class SitemapSpider(Spider):
 
     sitemap_urls = ()
@@ -61,10 +62,12 @@ class SitemapSpider(Spider):
         elif response.url.endswith('.xml.gz'):
             return gunzip(response.body)
 
+
 def regex(x):
     if isinstance(x, basestring):
         return re.compile(x)
     return x
+
 
 def iterloc(it, alt=False):
     for d in it:

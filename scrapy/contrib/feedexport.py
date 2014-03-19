@@ -4,7 +4,9 @@ Feed Exports extension
 See documentation in docs/topics/feed-exports.rst
 """
 
-import sys, os, posixpath
+import sys
+import os
+import posixpath
 from tempfile import TemporaryFile
 from datetime import datetime
 from urlparse import urlparse
@@ -22,6 +24,7 @@ from scrapy.utils.python import get_func_args
 
 
 class IFeedStorage(Interface):
+
     """Interface that all Feed Storages must implement"""
 
     def __init__(uri):
@@ -62,6 +65,7 @@ class StdoutFeedStorage(object):
     def store(self, file):
         pass
 
+
 class FileFeedStorage(object):
 
     implements(IFeedStorage)
@@ -77,6 +81,7 @@ class FileFeedStorage(object):
 
     def store(self, file):
         file.close()
+
 
 class S3FeedStorage(BlockingFeedStorage):
 
@@ -124,12 +129,14 @@ class FTPFeedStorage(BlockingFeedStorage):
 
 
 class SpiderSlot(object):
+
     def __init__(self, file, exporter, storage, uri):
         self.file = file
         self.exporter = exporter
         self.storage = storage
         self.uri = uri
         self.itemcount = 0
+
 
 class FeedExporter(object):
 
@@ -156,7 +163,7 @@ class FeedExporter(object):
             import warnings
             from scrapy.exceptions import ScrapyDeprecationWarning
             warnings.warn("%s must receive a settings object as first constructor argument." % cls.__name__,
-                ScrapyDeprecationWarning, stacklevel=2)
+                          ScrapyDeprecationWarning, stacklevel=2)
             o = cls()
         else:
             o = cls(crawler.settings)
@@ -178,8 +185,8 @@ class FeedExporter(object):
         if not slot.itemcount and not self.store_empty:
             return
         slot.exporter.finish_exporting()
-        logfmt = "%%s %s feed (%d items) in: %s" % (self.format, \
-            slot.itemcount, slot.uri)
+        logfmt = "%%s %s feed (%d items) in: %s" % (self.format,
+                                                    slot.itemcount, slot.uri)
         d = defer.maybeDeferred(slot.storage.store, slot.file)
         d.addCallback(lambda _: log.msg(logfmt % "Stored", spider=spider))
         d.addErrback(log.err, logfmt % "Error storing", spider=spider)
@@ -228,7 +235,8 @@ class FeedExporter(object):
         params = {}
         for k in dir(spider):
             params[k] = getattr(spider, k)
-        ts = datetime.utcnow().replace(microsecond=0).isoformat().replace(':', '-')
+        ts = datetime.utcnow().replace(
+            microsecond=0).isoformat().replace(':', '-')
         params['time'] = ts
         self._uripar(params, spider)
         return params

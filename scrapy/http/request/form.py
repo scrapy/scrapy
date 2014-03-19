@@ -5,7 +5,8 @@ This module implements the FormRequest class which is a more covenient class
 See documentation in docs/topics/request-response.rst
 """
 
-import urllib, urlparse
+import urllib
+import urlparse
 import lxml.html
 from scrapy.http.request import Request
 from scrapy.utils.python import unicode_to_str
@@ -21,13 +22,16 @@ class FormRequest(Request):
         super(FormRequest, self).__init__(*args, **kwargs)
 
         if formdata:
-            items = formdata.iteritems() if isinstance(formdata, dict) else formdata
+            items = formdata.iteritems() if isinstance(
+                formdata, dict) else formdata
             querystr = _urlencode(items, self.encoding)
             if self.method == 'POST':
-                self.headers.setdefault('Content-Type', 'application/x-www-form-urlencoded')
+                self.headers.setdefault(
+                    'Content-Type', 'application/x-www-form-urlencoded')
                 self._set_body(querystr)
             else:
-                self._set_url(self.url + ('&' if '?' in self.url else '?') + querystr)
+                self._set_url(
+                    self.url + ('&' if '?' in self.url else '?') + querystr)
 
     @classmethod
     def from_response(cls, response, formname=None, formnumber=0, formdata=None,
@@ -39,16 +43,19 @@ class FormRequest(Request):
         method = kwargs.pop('method', form.method)
         return cls(url=url, method=method, formdata=formdata, **kwargs)
 
+
 def _get_form_url(form, url):
     if url is None:
         return form.action or form.base_url
     return urlparse.urljoin(form.base_url, url)
+
 
 def _urlencode(seq, enc):
     values = [(unicode_to_str(k, enc), unicode_to_str(v, enc))
               for k, vs in seq
               for v in (vs if hasattr(vs, '__iter__') else [vs])]
     return urllib.urlencode(values, doseq=1)
+
 
 def _get_form(response, formname, formnumber, formxpath):
     """Find the form element """
@@ -83,9 +90,10 @@ def _get_form(response, formname, formnumber, formxpath):
             form = forms[formnumber]
         except IndexError:
             raise IndexError("Form number %d not found in %s" %
-                                (formnumber, response))
+                             (formnumber, response))
         else:
             return form
+
 
 def _get_inputs(form, formdata, dont_click, clickdata, response):
     try:
@@ -97,8 +105,8 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
                         '|descendant::select'
                         '|descendant::input[@type!="submit" and @type!="image" and @type!="reset"'
                         'and ((@type!="checkbox" and @type!="radio") or @checked)]')
-    values = [(k, u'' if v is None else v) \
-              for k, v in (_value(e) for e in inputs) \
+    values = [(k, u'' if v is None else v)
+              for k, v in (_value(e) for e in inputs)
               if k and k not in formdata]
 
     if not dont_click:
@@ -109,12 +117,14 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
     values.extend(formdata.iteritems())
     return values
 
+
 def _value(ele):
     n = ele.name
     v = ele.value
     if ele.tag == 'select':
         return _select_value(ele, n, v)
     return n, v
+
 
 def _select_value(ele, n, v):
     multiple = ele.multiple
@@ -125,9 +135,11 @@ def _select_value(ele, n, v):
         return (n, o[0]) if o else (None, None)
     elif v is not None and multiple:
         # This is a workround to bug in lxml fixed 2.3.1
-        # fix https://github.com/lxml/lxml/commit/57f49eed82068a20da3db8f1b18ae00c1bab8b12#L1L1139
+        # fix
+        # https://github.com/lxml/lxml/commit/57f49eed82068a20da3db8f1b18ae00c1bab8b12#L1L1139
         selected_options = ele.xpath('.//option[@selected]')
-        v = [(o.get('value') or o.text or u'').strip() for o in selected_options]
+        v = [(o.get('value') or o.text or u'').strip()
+             for o in selected_options]
     return n, v
 
 
@@ -169,4 +181,5 @@ def _get_clickable(clickdata, form):
         raise ValueError("Multiple elements found (%r) matching the criteria "
                          "in clickdata: %r" % (el, clickdata))
     else:
-        raise ValueError('No clickable element matching clickdata: %r' % (clickdata,))
+        raise ValueError(
+            'No clickable element matching clickdata: %r' % (clickdata,))

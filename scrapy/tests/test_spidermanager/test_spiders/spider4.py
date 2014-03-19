@@ -1,5 +1,6 @@
 from scrapy.spider import Spider
 
+
 class Spider4(Spider):
     name = "spider4"
 

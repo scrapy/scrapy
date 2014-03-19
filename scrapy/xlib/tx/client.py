@@ -39,6 +39,7 @@ from .iweb import IResponse, UNKNOWN_LENGTH, IBodyProducer
 
 
 class PartialDownloadError(error.Error):
+
     """
     Page was only partially downloaded, we got disconnected in middle.
 
@@ -47,14 +48,15 @@ class PartialDownloadError(error.Error):
 
 
 class _URL(tuple):
+
     """
     A parsed URL.
 
     At some point this should be replaced with a better URL implementation.
     """
+
     def __new__(self, scheme, host, port, path):
         return tuple.__new__(_URL, (scheme, host, port, path))
-
 
     def __init__(self, scheme, host, port, path):
         self.scheme = scheme
@@ -145,24 +147,28 @@ try:
     from twisted.internet.ssl import ClientContextFactory
 except ImportError:
     class WebClientContextFactory(object):
+
         """
         A web context factory which doesn't work because the necessary SSL
         support is missing.
         """
+
         def getContext(self, hostname, port):
             raise NotImplementedError("SSL support unavailable")
 else:
     class WebClientContextFactory(ClientContextFactory):
+
         """
         A web context factory which ignores the hostname and port and does no
         certificate verification.
         """
+
         def getContext(self, hostname, port):
             return ClientContextFactory.getContext(self)
 
 
-
 class _WebToNormalContextFactory(object):
+
     """
     Adapt a web context factory to a normal context factory.
 
@@ -175,11 +181,11 @@ class _WebToNormalContextFactory(object):
     @ivar _port: The port number which will be passed to
         C{_webContext.getContext}.
     """
+
     def __init__(self, webContext, hostname, port):
         self._webContext = webContext
         self._hostname = hostname
         self._port = port
-
 
     def getContext(self):
         """
@@ -189,9 +195,9 @@ class _WebToNormalContextFactory(object):
         return self._webContext.getContext(self._hostname, self._port)
 
 
-
 @implementer(IBodyProducer)
 class FileBodyProducer(object):
+
     """
     L{FileBodyProducer} produces bytes from an input file object incrementally
     and writes them to a consumer.
@@ -223,7 +229,6 @@ class FileBodyProducer(object):
         self._readSize = readSize
         self.length = self._determineLength(inputFile)
 
-
     def _determineLength(self, fObj):
         """
         Determine how many bytes can be read out of C{fObj} (assuming it is not
@@ -241,7 +246,6 @@ class FileBodyProducer(object):
         seek(originalPosition, self._SEEK_SET)
         return end - originalPosition
 
-
     def stopProducing(self):
         """
         Permanently stop writing bytes from the file to the consumer by
@@ -249,7 +253,6 @@ class FileBodyProducer(object):
         """
         self._inputFile.close()
         self._task.stop()
-
 
     def startProducing(self, consumer):
         """
@@ -261,6 +264,7 @@ class FileBodyProducer(object):
         """
         self._task = self._cooperate(self._writeloop(consumer))
         d = self._task.whenDone()
+
         def maybeStopped(reason):
             # IBodyProducer.startProducing's Deferred isn't support to fire if
             # stopProducing is called.
@@ -268,7 +272,6 @@ class FileBodyProducer(object):
             return defer.Deferred()
         d.addCallbacks(lambda ignored: None, maybeStopped)
         return d
-
 
     def _writeloop(self, consumer):
         """
@@ -283,14 +286,12 @@ class FileBodyProducer(object):
             consumer.write(bytes)
             yield None
 
-
     def pauseProducing(self):
         """
         Temporarily suspend copying bytes from the input file to the consumer
         by pausing the L{CooperativeTask} which drives that activity.
         """
         self._task.pause()
-
 
     def resumeProducing(self):
         """
@@ -301,8 +302,8 @@ class FileBodyProducer(object):
         self._task.resume()
 
 
-
 class _HTTP11ClientFactory(protocol.Factory):
+
     """
     A factory for L{HTTP11ClientProtocol}, used by L{HTTPConnectionPool}.
 
@@ -311,16 +312,16 @@ class _HTTP11ClientFactory(protocol.Factory):
 
     @since: 11.1
     """
+
     def __init__(self, quiescentCallback):
         self._quiescentCallback = quiescentCallback
-
 
     def buildProtocol(self, addr):
         return HTTP11ClientProtocol(self._quiescentCallback)
 
 
-
 class _RetryingHTTP11ClientProtocol(object):
+
     """
     A wrapper for L{HTTP11ClientProtocol} that automatically retries requests.
 
@@ -333,7 +334,6 @@ class _RetryingHTTP11ClientProtocol(object):
     def __init__(self, clientProtocol, newConnection):
         self._clientProtocol = clientProtocol
         self._newConnection = newConnection
-
 
     def _shouldRetry(self, method, exception, bodyProducer):
         """
@@ -358,7 +358,6 @@ class _RetryingHTTP11ClientProtocol(object):
             return False
         return True
 
-
     def request(self, request):
         """
         Do a request, and retry once (with a new connection) it it fails in
@@ -380,8 +379,8 @@ class _RetryingHTTP11ClientProtocol(object):
         return d
 
 
-
 class HTTPConnectionPool(object):
+
     """
     A pool of persistent HTTP connections.
 
@@ -431,7 +430,6 @@ class HTTPConnectionPool(object):
         self._connections = {}
         self._timeouts = {}
 
-
     def getConnection(self, key, endpoint):
         """
         Supply a connection, newly created or retrieved from the pool, to be
@@ -469,7 +467,6 @@ class HTTPConnectionPool(object):
 
         return self._newConnection(key, endpoint)
 
-
     def _newConnection(self, key, endpoint):
         """
         Create a new connection.
@@ -481,7 +478,6 @@ class HTTPConnectionPool(object):
         factory = self._factory(quiescentCallback)
         return endpoint.connect(factory)
 
-
     def _removeConnection(self, key, connection):
         """
         Remove a connection from the cache and disconnect it.
@@ -489,7 +485,6 @@ class HTTPConnectionPool(object):
         connection.transport.loseConnection()
         self._connections[key].remove(connection)
         del self._timeouts[connection]
-
 
     def _putConnection(self, key, connection):
         """
@@ -516,7 +511,6 @@ class HTTPConnectionPool(object):
                                       key, connection)
         self._timeouts[connection] = cid
 
-
     def closeCachedConnections(self):
         """
         Close all persistent connections and remove them from the pool.
@@ -535,8 +529,8 @@ class HTTPConnectionPool(object):
         return defer.gatherResults(results).addCallback(lambda ign: None)
 
 
-
 class _AgentBase(object):
+
     """
     Base class offering common facilities for L{Agent}-type classes.
 
@@ -552,7 +546,6 @@ class _AgentBase(object):
         self._reactor = reactor
         self._pool = pool
 
-
     def _computeHostValue(self, scheme, host, port):
         """
         Compute the string to use for the value of the I{Host} header, based on
@@ -561,7 +554,6 @@ class _AgentBase(object):
         if (scheme, port) in (('http', 80), ('https', 443)):
             return host
         return '%s:%d' % (host, port)
-
 
     def _requestWithEndpoint(self, key, endpoint, method, parsedURI,
                              headers, bodyProducer, requestPath):
@@ -573,12 +565,14 @@ class _AgentBase(object):
         if headers is None:
             headers = Headers()
         if not headers.hasHeader('host'):
-            #headers = headers.copy()  # not supported in twisted <= 11.1, and it doesn't affects us
+            # headers = headers.copy()  # not supported in twisted <= 11.1, and
+            # it doesn't affects us
             headers.addRawHeader(
                 'host', self._computeHostValue(parsedURI.scheme, parsedURI.host,
                                                parsedURI.port))
 
         d = self._pool.getConnection(key, endpoint)
+
         def cbConnected(proto):
             return proto.request(
                 Request(method, requestPath, headers, bodyProducer,
@@ -587,8 +581,8 @@ class _AgentBase(object):
         return d
 
 
-
 class Agent(_AgentBase):
+
     """
     L{Agent} is a very basic HTTP client.  It supports I{HTTP} and I{HTTPS}
     scheme URIs (but performs no certificate checking by default).
@@ -616,7 +610,6 @@ class Agent(_AgentBase):
         self._connectTimeout = connectTimeout
         self._bindAddress = bindAddress
 
-
     def _wrapContextFactory(self, host, port):
         """
         Create and return a normal context factory wrapped around
@@ -633,7 +626,6 @@ class Agent(_AgentBase):
             C{reactor.connectSSL}.
         """
         return _WebToNormalContextFactory(self._contextFactory, host, port)
-
 
     def _getEndpoint(self, scheme, host, port):
         """
@@ -664,7 +656,6 @@ class Agent(_AgentBase):
                                       **kwargs)
         else:
             raise SchemeNotSupported("Unsupported scheme: %r" % (scheme,))
-
 
     def request(self, method, uri, headers=None, bodyProducer=None):
         """
@@ -702,8 +693,8 @@ class Agent(_AgentBase):
                                          headers, bodyProducer, parsedURI.path)
 
 
-
 class ProxyAgent(_AgentBase):
+
     """
     An HTTP agent able to cross HTTP proxies.
 
@@ -717,7 +708,6 @@ class ProxyAgent(_AgentBase):
             from twisted.internet import reactor
         _AgentBase.__init__(self, reactor, pool)
         self._proxyEndpoint = endpoint
-
 
     def request(self, method, uri, headers=None, bodyProducer=None):
         """
@@ -735,8 +725,8 @@ class ProxyAgent(_AgentBase):
                                          uri)
 
 
-
 class _FakeUrllib2Request(object):
+
     """
     A fake C{urllib2.Request} object for C{cookielib} to work with.
 
@@ -756,24 +746,21 @@ class _FakeUrllib2Request(object):
 
     @since: 11.1
     """
+
     def __init__(self, uri):
         self.uri = uri
         self.headers = Headers()
         self.type, rest = splittype(self.uri)
         self.host, rest = splithost(rest)
 
-
     def has_header(self, header):
         return self.headers.hasHeader(header)
-
 
     def add_unredirected_header(self, name, value):
         self.headers.addRawHeader(name, value)
 
-
     def get_full_url(self):
         return self.uri
-
 
     def get_header(self, name, default=None):
         headers = self.headers.getRawHeaders(name, default)
@@ -781,22 +768,19 @@ class _FakeUrllib2Request(object):
             return headers[0]
         return None
 
-
     def get_host(self):
         return self.host
 
-
     def get_type(self):
         return self.type
-
 
     def is_unverifiable(self):
         # In theory this shouldn't be hardcoded.
         return False
 
 
-
 class _FakeUrllib2Response(object):
+
     """
     A fake C{urllib2.Response} object for C{cookielib} to work with.
 
@@ -805,19 +789,20 @@ class _FakeUrllib2Response(object):
 
     @since: 11.1
     """
+
     def __init__(self, response):
         self.response = response
 
-
     def info(self):
         class _Meta(object):
+
             def getheaders(zelf, name):
                 return self.response.headers.getRawHeaders(name, [])
         return _Meta()
 
 
-
 class CookieAgent(object):
+
     """
     L{CookieAgent} extends the basic L{Agent} to add RFC-compliant
     handling of HTTP cookies.  Cookies are written to and extracted
@@ -835,10 +820,10 @@ class CookieAgent(object):
 
     @since: 11.1
     """
+
     def __init__(self, agent, cookieJar):
         self._agent = agent
         self.cookieJar = cookieJar
-
 
     def request(self, method, uri, headers=None, bodyProducer=None):
         """
@@ -869,7 +854,6 @@ class CookieAgent(object):
         d.addCallback(self._extractCookies, lastRequest)
         return d
 
-
     def _extractCookies(self, response, request):
         """
         Extract response cookies and store them in the cookie jar.
@@ -884,8 +868,8 @@ class CookieAgent(object):
         return response
 
 
-
 class GzipDecoder(proxyForInterface(IResponse)):
+
     """
     A wrapper for a L{Response} instance which handles gzip'ed body.
 
@@ -898,7 +882,6 @@ class GzipDecoder(proxyForInterface(IResponse)):
         self.original = response
         self.length = UNKNOWN_LENGTH
 
-
     def deliverBody(self, protocol):
         """
         Override C{deliverBody} to wrap the given C{protocol} with
@@ -907,8 +890,8 @@ class GzipDecoder(proxyForInterface(IResponse)):
         self.original.deliverBody(_GzipProtocol(protocol, self.original))
 
 
-
 class _GzipProtocol(proxyForInterface(IProtocol)):
+
     """
     A L{Protocol} implementation which wraps another one, transparently
     decompressing received data.
@@ -926,7 +909,6 @@ class _GzipProtocol(proxyForInterface(IProtocol)):
         self._response = response
         self._zlibDecompress = zlib.decompressobj(16 + zlib.MAX_WBITS)
 
-
     def dataReceived(self, data):
         """
         Decompress C{data} with the zlib decompressor, forwarding the raw data
@@ -938,7 +920,6 @@ class _GzipProtocol(proxyForInterface(IProtocol)):
             raise ResponseFailed([failure.Failure()], self._response)
         if rawData:
             self.original.dataReceived(rawData)
-
 
     def connectionLost(self, reason):
         """
@@ -954,8 +935,8 @@ class _GzipProtocol(proxyForInterface(IProtocol)):
         self.original.connectionLost(reason)
 
 
-
 class ContentDecoderAgent(object):
+
     """
     An L{Agent} wrapper to handle encoded content.
 
@@ -977,7 +958,6 @@ class ContentDecoderAgent(object):
         self._decoders = dict(decoders)
         self._supported = ','.join([decoder[0] for decoder in decoders])
 
-
     def request(self, method, uri, headers=None, bodyProducer=None):
         """
         Send a client request which declares supporting compressed content.
@@ -991,7 +971,6 @@ class ContentDecoderAgent(object):
         headers.addRawHeader('accept-encoding', self._supported)
         deferred = self._agent.request(method, uri, headers, bodyProducer)
         return deferred.addCallback(self._handleResponse)
-
 
     def _handleResponse(self, response):
         """
@@ -1017,8 +996,8 @@ class ContentDecoderAgent(object):
         return response
 
 
-
 class RedirectAgent(object):
+
     """
     An L{Agent} wrapper which handles HTTP redirects.
 
@@ -1035,7 +1014,6 @@ class RedirectAgent(object):
         self._agent = agent
         self._redirectLimit = redirectLimit
 
-
     def request(self, method, uri, headers=None, bodyProducer=None):
         """
         Send a client request following HTTP redirects.
@@ -1045,7 +1023,6 @@ class RedirectAgent(object):
         deferred = self._agent.request(method, uri, headers, bodyProducer)
         return deferred.addCallback(
             self._handleResponse, method, uri, headers, 0)
-
 
     def _handleRedirect(self, response, method, uri, headers, redirectCount):
         """
@@ -1068,7 +1045,6 @@ class RedirectAgent(object):
         return deferred.addCallback(
             self._handleResponse, method, uri, headers, redirectCount + 1)
 
-
     def _handleResponse(self, response, method, uri, headers, redirectCount):
         """
         Handle the response, making another request if it indicates a redirect.
@@ -1086,8 +1062,8 @@ class RedirectAgent(object):
         return response
 
 
-
 class _ReadBodyProtocol(protocol.Protocol):
+
     """
     Protocol that collects data sent to it.
 
@@ -1118,13 +1094,11 @@ class _ReadBodyProtocol(protocol.Protocol):
         self.message = message
         self.dataBuffer = []
 
-
     def dataReceived(self, data):
         """
         Accumulate some more bytes from the response.
         """
         self.dataBuffer.append(data)
-
 
     def connectionLost(self, reason):
         """
@@ -1139,7 +1113,6 @@ class _ReadBodyProtocol(protocol.Protocol):
                                      b''.join(self.dataBuffer)))
         else:
             self.deferred.errback(reason)
-
 
 
 def readBody(response):
@@ -1157,7 +1130,6 @@ def readBody(response):
     d = defer.Deferred()
     response.deliverBody(_ReadBodyProtocol(response.code, response.phrase, d))
     return d
-
 
 
 __all__ = [
