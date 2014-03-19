@@ -2,25 +2,10 @@ import sys
 import os
 from importlib import import_module
 
-from scrapy.utils.spider import iter_spider_classes
 from scrapy.command import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.conf import arglist_to_dict
-
-def _import_file(filepath):
-    abspath = os.path.abspath(filepath)
-    dirname, file = os.path.split(abspath)
-    fname, fext = os.path.splitext(file)
-    if fext != '.py':
-        raise ValueError("Not a Python source file: %s" % abspath)
-    if dirname:
-        sys.path = [dirname] + sys.path
-    try:
-        module = import_module(fname)
-    finally:
-        if dirname:
-            sys.path.pop(0)
-    return module
+from scrapy.utils.iterators import iter_classes
 
 class Command(ScrapyCommand):
 
@@ -66,11 +51,7 @@ class Command(ScrapyCommand):
         filename = args[0]
         if not os.path.exists(filename):
             raise UsageError("File not found: %s\n" % filename)
-        try:
-            module = _import_file(filename)
-        except (ImportError, ValueError) as e:
-            raise UsageError("Unable to load %r: %s\n" % (filename, e))
-        spclasses = list(iter_spider_classes(module))
+        spclasses = list(iter_classes(filename, "scrapy.spider", "Spider", is_file=True))
         if not spclasses:
             raise UsageError("No spider found in file: %s\n" % filename)
         spider = spclasses.pop()(**opts.spargs)

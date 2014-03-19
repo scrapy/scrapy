@@ -8,7 +8,7 @@ from zope.interface import implements
 from scrapy import signals
 from scrapy.interfaces import ISpiderManager
 from scrapy.utils.misc import walk_modules
-from scrapy.utils.spider import iter_spider_classes
+from scrapy.utils.iterators import iter_classes
 
 
 class SpiderManager(object):
@@ -18,12 +18,11 @@ class SpiderManager(object):
     def __init__(self, spider_modules):
         self.spider_modules = spider_modules
         self._spiders = {}
-        for name in self.spider_modules:
-            for module in walk_modules(name):
-                self._load_spiders(module)
+        for module_name in self.spider_modules:
+            self._load_spiders(module_name)
 
-    def _load_spiders(self, module):
-        for spcls in iter_spider_classes(module):
+    def _load_spiders(self, module_name):
+        for spcls in iter_classes(module_name, "scrapy.spider", "Spider"):
             self._spiders[spcls.name] = spcls
 
     @classmethod
