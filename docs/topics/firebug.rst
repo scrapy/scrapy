@@ -24,7 +24,7 @@ Project`_ used in the :ref:`tutorial <intro-tutorial>` but with a different
 face.
 
 .. _Firebug: http://getfirebug.com
-.. _Google Directory: https://www.google.co.in/
+.. _Google Directory: http://directory.google.com/
 .. _Open Directory Project: http://www.dmoz.org
 
 Firebug comes with a very useful feature called `Inspect Element`_ which allows
