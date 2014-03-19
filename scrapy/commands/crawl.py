@@ -19,8 +19,8 @@ class Command(ScrapyCommand):
                           help="set spider argument (may be repeated)")
         parser.add_option("-o", "--output", metavar="FILE",
                           help="dump scraped items into FILE (use - for stdout)")
-        parser.add_option("-t", "--output-format", metavar="FORMAT", default="jsonlines",
-                          help="format to use for dumping items with -o (default: %default)")
+        parser.add_option("-t", "--output-format", metavar="FORMAT",
+                          help="format to use for dumping items with -o")
 
     def process_options(self, args, opts):
         ScrapyCommand.process_options(self, args, opts)
