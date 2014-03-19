@@ -48,16 +48,43 @@ def load_object(path):
 
     return obj
 
-def walk_modules(path, load=False):
+def _import_file(filepath):
+    abspath = os.path.abspath(filepath)
+    dirname, file = os.path.split(abspath)
+    fname, fext = os.path.splitext(file)
+    if fext != '.py':
+        raise ValueError("Not a Python source file: %s" % abspath)
+    if dirname:
+        sys.path = [dirname] + sys.path
+    try:
+        module = import_module(fname)
+    finally:
+        if dirname:
+            sys.path.pop(0)
+    return module
+
+def walk_modules(path, load=False, is_file=False):
     """Loads a module and all its submodules from a the given module path and
     returns them. If *any* module throws an exception while importing, that
     exception is thrown back.
 
+    If is_file is turned on, it treats path as a filename and it might throw errors.
+    If the file is a accesible valid python module, it acts as usual. 
+
     For example: walk_modules('scrapy.utils')
+                 walk_modules('~/scrapy/scrapy/utils/spider.py', is_file=True)
     """
 
     mods = []
-    mod = import_module(path)
+
+    if is_file:
+        try:
+            mod = _import_file(path)
+        except (ImportError, ValueError) as e:
+            raise UsageError("Unable to load %r: %s\n" % (filename, e))
+    else
+        mod = import_module(path)
+
     mods.append(mod)
     if hasattr(mod, '__path__'):
         for _, subpath, ispkg in iter_modules(mod.__path__):

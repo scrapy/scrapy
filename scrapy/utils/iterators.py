@@ -1,10 +1,31 @@
 import re, csv
 from cStringIO import StringIO
+from importlib import import_module
 
 from scrapy.http import TextResponse, Response
 from scrapy.selector import Selector
 from scrapy import log
 from scrapy.utils.python import re_rsearch, str_to_unicode
+
+def iter_classes(module_name, parent_module_name, parent_name, is_file=False):
+    """Return an iterator over all classes defined in the given module
+    that can be instantiated (i.e. have a name)
+
+    obj can be:
+    - a module name string
+    - a file name string pointing to a module
+    """
+
+    parent_module = import_module(parent_module_name)
+    parent_class = getattr(module, parent_name)()
+
+    for module in walk_modules(module_name, is_file=is_file):
+        for obj in vars(module).itervalues():
+            if inspect.isclass(obj) and \
+                issubclass(obj, parent_class) and \
+                obj.__module__ == module.__name__ and \
+                getattr(obj, 'name', None):
+                    yield obj
 
 
 def xmliter(obj, nodename):

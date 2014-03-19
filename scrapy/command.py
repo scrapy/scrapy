@@ -20,8 +20,9 @@ class ScrapyCommand(object):
 
     exitcode = 0
 
-    def __init__(self):
+    def __init__(self, name='None'):
         self.settings = None  # set in scrapy.cmdline
+        self.name = 'None'
 
     def set_crawler(self, crawler):
         assert not hasattr(self, '_crawler'), "crawler already set"
