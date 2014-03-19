@@ -17,7 +17,7 @@ def iter_classes(module_name, parent_module_name, parent_name, is_file=False):
     """
 
     parent_module = import_module(parent_module_name)
-    parent_class = getattr(module, parent_name)()
+    parent_class = getattr(parent_module, parent_name)()
 
     for module in walk_modules(module_name, is_file=is_file):
         for obj in vars(module).itervalues():
