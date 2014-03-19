@@ -39,7 +39,9 @@ from twisted.internet.protocol import Protocol, ClientCreator
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
 
+
 class ReceivedDataProtocol(Protocol):
+
     def __init__(self, filename=None):
         self.__filename = filename
         self.body = open(filename, "w") if filename else StringIO()
@@ -57,6 +59,8 @@ class ReceivedDataProtocol(Protocol):
         self.body.close() if self.filename else self.body.reset()
 
 _CODE_RE = re.compile("\d+")
+
+
 class FTPDownloadHandler(object):
 
     CODE_MAPPING = {
@@ -70,26 +74,27 @@ class FTPDownloadHandler(object):
     def download_request(self, request, spider):
         parsed_url = urlparse(request.url)
         creator = ClientCreator(reactor, FTPClient, request.meta["ftp_user"],
-                                    request.meta["ftp_password"],
-                                    passive=request.meta.get("ftp_passive", 1))
+                                request.meta["ftp_password"],
+                                passive=request.meta.get("ftp_passive", 1))
         return creator.connectTCP(parsed_url.hostname, parsed_url.port or 21).addCallback(self.gotClient,
-                                request, parsed_url.path)
+                                                                                          request, parsed_url.path)
 
     def gotClient(self, client, request, filepath):
         self.client = client
         protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
         return client.retrieveFile(filepath, protocol)\
-                .addCallbacks(callback=self._build_response,
-                        callbackArgs=(request, protocol),
-                        errback=self._failed,
-                        errbackArgs=(request,))
-    
+            .addCallbacks(callback=self._build_response,
+                          callbackArgs=(request, protocol),
+                          errback=self._failed,
+                          errbackArgs=(request,))
+
     def _build_response(self, result, request, protocol):
         self.result = result
         respcls = responsetypes.from_args(url=request.url)
         protocol.close()
         body = protocol.filename or protocol.body.read()
-        headers = {"local filename": protocol.filename or '', "size": protocol.size}
+        headers = {
+            "local filename": protocol.filename or '', "size": protocol.size}
         return respcls(url=request.url, status=200, body=body, headers=headers)
 
     def _failed(self, result, request):
@@ -98,7 +103,7 @@ class FTPDownloadHandler(object):
             m = _CODE_RE.search(message)
             if m:
                 ftpcode = m.group()
-                httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
+                httpcode = self.CODE_MAPPING.get(
+                    ftpcode, self.CODE_MAPPING["default"])
                 return Response(url=request.url, status=httpcode, body=message)
         raise result.type(result.value)
-

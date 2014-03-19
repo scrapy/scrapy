@@ -11,6 +11,7 @@ from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy import log
 
+
 class OffsiteMiddleware(object):
 
     def __init__(self, stats):
@@ -48,8 +49,9 @@ class OffsiteMiddleware(object):
         """Override this method to implement a different offsite policy"""
         allowed_domains = getattr(spider, 'allowed_domains', None)
         if not allowed_domains:
-            return re.compile('') # allow all by default
-        regex = r'^(.*\.)?(%s)$' % '|'.join(re.escape(d) for d in allowed_domains)
+            return re.compile('')  # allow all by default
+        regex = r'^(.*\.)?(%s)$' % '|'.join(re.escape(d)
+                                            for d in allowed_domains)
         return re.compile(regex)
 
     def spider_opened(self, spider):

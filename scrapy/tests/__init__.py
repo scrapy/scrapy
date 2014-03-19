@@ -10,7 +10,9 @@ If you're in windows use runtests.bat instead.
 
 import os
 
-tests_datadir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data')
+tests_datadir = os.path.join(
+    os.path.abspath(os.path.dirname(__file__)), 'sample_data')
+
 
 def get_testdata(*paths):
     """Return test data"""

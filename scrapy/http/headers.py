@@ -3,6 +3,7 @@ from scrapy.utils.datatypes import CaselessDict
 
 
 class Headers(CaselessDict):
+
     """Case insensitive http headers dictionary"""
 
     def __init__(self, seq=None, encoding='utf-8'):
@@ -21,8 +22,8 @@ class Headers(CaselessDict):
             value = []
         elif not hasattr(value, '__iter__'):
             value = [value]
-        return [x.encode(self.encoding) if isinstance(x, unicode) else x \
-            for x in value]
+        return [x.encode(self.encoding) if isinstance(x, unicode) else x
+                for x in value]
 
     def __getitem__(self, key):
         try:
@@ -70,5 +71,3 @@ class Headers(CaselessDict):
     def __copy__(self):
         return self.__class__(self)
     copy = __copy__
-
-

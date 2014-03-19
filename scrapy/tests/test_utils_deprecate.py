@@ -206,7 +206,8 @@ class WarnWhenSubclassedTest(unittest.TestCase):
 
     def test_clsdict(self):
         with warnings.catch_warnings(record=True):
-            Deprecated = create_deprecated_class('Deprecated', NewName, {'foo': 'bar'})
+            Deprecated = create_deprecated_class(
+                'Deprecated', NewName, {'foo': 'bar'})
 
         self.assertEqual(Deprecated.foo, 'bar')
 
@@ -229,6 +230,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
 
         with warnings.catch_warnings(record=True) as w:
             AlsoDeprecated()
+
             class UserClass(AlsoDeprecated):
                 pass
 
@@ -242,7 +244,9 @@ class WarnWhenSubclassedTest(unittest.TestCase):
     def test_inspect_stack(self):
         with mock.patch('inspect.stack', side_effect=IndexError):
             with warnings.catch_warnings(record=True) as w:
-                DeprecatedName = create_deprecated_class('DeprecatedName', NewName)
+                DeprecatedName = create_deprecated_class(
+                    'DeprecatedName', NewName)
+
                 class SubClass(DeprecatedName):
                     pass
 

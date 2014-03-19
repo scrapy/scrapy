@@ -36,7 +36,8 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def _test_delay(self, delay, randomize):
-        settings = {"DOWNLOAD_DELAY": delay, 'RANDOMIZE_DOWNLOAD_DELAY': randomize}
+        settings = {
+            "DOWNLOAD_DELAY": delay, 'RANDOMIZE_DOWNLOAD_DELAY': randomize}
         spider = FollowAllSpider(maxlatency=delay * 2)
         yield docrawl(spider, settings)
         t = spider.times
@@ -110,13 +111,14 @@ class CrawlTestCase(TestCase):
         spider = BrokenStartRequestsSpider()
         yield docrawl(spider, settings)
         #self.assertTrue(False, spider.seedsseen)
-        #self.assertTrue(spider.seedsseen.index(None) < spider.seedsseen.index(99),
+        # self.assertTrue(spider.seedsseen.index(None) < spider.seedsseen.index(99),
         #                spider.seedsseen)
 
     @defer.inlineCallbacks
     def test_unbounded_response(self):
         # Completeness of responses without Content-Length or Transfer-Encoding
-        # can not be determined, we treat them as valid but flagged as "partial"
+        # can not be determined, we treat them as valid but flagged as
+        # "partial"
         from urllib import urlencode
         query = urlencode({'raw': '''\
 HTTP/1.1 200 OK
@@ -162,7 +164,8 @@ with multiples lines
     @defer.inlineCallbacks
     def test_referer_header(self):
         """Referer header is set by RefererMiddleware unless it is already set"""
-        req0 = Request('http://localhost:8998/echo?headers=1&body=0', dont_filter=1)
+        req0 = Request(
+            'http://localhost:8998/echo?headers=1&body=0', dont_filter=1)
         req1 = req0.replace()
         req2 = req0.replace(headers={'Referer': None})
         req3 = req0.replace(headers={'Referer': 'http://example.com'})
@@ -185,7 +188,8 @@ with multiples lines
         self.assertNotIn('Referer', echo2['headers'])
         # last request explicitly sets a Referer header
         echo3 = json.loads(spider.meta['responses'][3].body)
-        self.assertEqual(echo3['headers'].get('Referer'), ['http://example.com'])
+        self.assertEqual(
+            echo3['headers'].get('Referer'), ['http://example.com'])
 
     @defer.inlineCallbacks
     def test_engine_status(self):
@@ -195,7 +199,8 @@ with multiples lines
         def cb(response):
             est.append(get_engine_status(spider.crawler.engine))
 
-        spider = SingleRequestSpider(seed='http://localhost:8998/', callback_func=cb)
+        spider = SingleRequestSpider(
+            seed='http://localhost:8998/', callback_func=cb)
         yield docrawl(spider)
         self.assertEqual(len(est), 1, est)
         s = dict(est[0])

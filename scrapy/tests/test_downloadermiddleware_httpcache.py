@@ -85,7 +85,8 @@ class _BaseTest(unittest.TestCase):
         self.assertEqual(request1.url, request2.url)
         assert not 'If-None-Match' in request1.headers
         assert not 'If-Modified-Since' in request1.headers
-        assert any(h in request2.headers for h in ('If-None-Match', 'If-Modified-Since'))
+        assert any(h in request2.headers for h in (
+            'If-None-Match', 'If-Modified-Since'))
         self.assertEqual(request1.body, request2.body)
 
 
@@ -162,7 +163,8 @@ class DummyPolicyTest(_BaseTest):
 
     def test_middleware_ignore_missing(self):
         with self._middleware(HTTPCACHE_IGNORE_MISSING=True) as mw:
-            self.assertRaises(IgnoreRequest, mw.process_request, self.request, self.spider)
+            self.assertRaises(
+                IgnoreRequest, mw.process_request, self.request, self.spider)
             mw.process_response(self.request, self.response, self.spider)
             response = mw.process_request(self.request, self.spider)
             assert isinstance(response, HtmlResponse)
@@ -216,7 +218,8 @@ class DummyPolicyTest(_BaseTest):
             assert mw.process_request(self.request, self.spider) is None
             mw.process_response(self.request, self.response, self.spider)
 
-            assert mw.storage.retrieve_response(self.spider, self.request) is None
+            assert mw.storage.retrieve_response(
+                self.spider, self.request) is None
             assert mw.process_request(self.request, self.spider) is None
 
         # test response is cached
@@ -285,8 +288,11 @@ class RFC2616PolicyTest(DefaultStorageTest):
             (False, 304, {'Cache-Control': 'max-age=3600'}),
             # Always obey no-store cache control
             (False, 200, {'Cache-Control': 'no-store'}),
-            (False, 200, {'Cache-Control': 'no-store, max-age=300'}),  # invalid
-            (False, 200, {'Cache-Control': 'no-store', 'Expires': self.tomorrow}),  # invalid
+            # invalid
+            (False, 200, {'Cache-Control': 'no-store, max-age=300'}),
+            # invalid
+            (False, 200, {
+             'Cache-Control': 'no-store', 'Expires': self.tomorrow}),
             # Ignore responses missing expiration and/or validation headers
             (False, 200, {}),
             (False, 302, {}),
@@ -308,7 +314,8 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 res0 = Response(req0.url, status=status, headers=headers)
                 res1 = self._process_requestresponse(mw, req0, res0)
                 res304 = res0.replace(status=304)
-                res2 = self._process_requestresponse(mw, req0, res304 if shouldcache else res0)
+                res2 = self._process_requestresponse(
+                    mw, req0, res304 if shouldcache else res0)
                 self.assertEqualResponse(res1, res0)
                 self.assertEqualResponse(res2, res0)
                 resc = mw.storage.retrieve_response(self.spider, req0)
@@ -340,9 +347,12 @@ class RFC2616PolicyTest(DefaultStorageTest):
                    }),
             # Default missing Date header to right now
             (200, {'Expires': self.tomorrow}),
-            # Firefox - Expires if age is greater than 10% of (Date - Last-Modified)
-            (200, {'Date': self.today, 'Last-Modified': self.yesterday, 'Age': str(86400 / 10 - 1)}),
-            # Firefox - Set one year maxage to permanent redirects missing expiration info
+            # Firefox - Expires if age is greater than 10% of (Date -
+            # Last-Modified)
+            (200, {'Date': self.today, 'Last-Modified': self.yesterday,
+             'Age': str(86400 / 10 - 1)}),
+            # Firefox - Set one year maxage to permanent redirects missing
+            # expiration info
             (300, {}), (301, {}), (308, {}),
         ]
         with self._middleware() as mw:
@@ -361,16 +371,20 @@ class RFC2616PolicyTest(DefaultStorageTest):
     def test_cached_and_stale(self):
         sampledata = [
             (200, {'Date': self.today, 'Expires': self.yesterday}),
-            (200, {'Date': self.today, 'Expires': self.yesterday, 'Last-Modified': self.yesterday}),
+            (200, {'Date': self.today, 'Expires': self.yesterday,
+             'Last-Modified': self.yesterday}),
             (200, {'Expires': self.yesterday}),
             (200, {'Expires': self.yesterday, 'ETag': 'foo'}),
-            (200, {'Expires': self.yesterday, 'Last-Modified': self.yesterday}),
+            (200, {
+             'Expires': self.yesterday, 'Last-Modified': self.yesterday}),
             (200, {'Expires': self.tomorrow, 'Age': '86405'}),
             (200, {'Cache-Control': 'max-age=86400', 'Age': '86405'}),
-            # no-cache forces expiration, also revalidation if validators exists
+            # no-cache forces expiration, also revalidation if validators
+            # exists
             (200, {'Cache-Control': 'no-cache'}),
             (200, {'Cache-Control': 'no-cache', 'ETag': 'foo'}),
-            (200, {'Cache-Control': 'no-cache', 'Last-Modified': self.yesterday}),
+            (200, {'Cache-Control': 'no-cache',
+             'Last-Modified': self.yesterday}),
         ]
         with self._middleware() as mw:
             for idx, (status, headers) in enumerate(sampledata):

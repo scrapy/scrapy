@@ -1,4 +1,5 @@
-import re, csv
+import re
+import csv
 from cStringIO import StringIO
 
 from scrapy.http import TextResponse, Response
@@ -44,7 +45,9 @@ def csviter(obj, delimiter=None, headers=None, encoding=None):
     headers is an iterable that when provided offers the keys
     for the returned dictionaries, if not the first row is used.
     """
-    encoding = obj.encoding if isinstance(obj, TextResponse) else encoding or 'utf-8'
+    encoding = obj.encoding if isinstance(
+        obj, TextResponse) else encoding or 'utf-8'
+
     def _getrow(csv_r):
         return [str_to_unicode(field, encoding) for field in next(csv_r)]
 

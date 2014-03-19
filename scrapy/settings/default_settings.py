@@ -173,7 +173,8 @@ MAIL_PASS = None
 MAIL_USER = None
 
 MEMDEBUG_ENABLED = False        # enable memory debugging
-MEMDEBUG_NOTIFY = []            # send memory debugging report by mail at engine shutdown
+# send memory debugging report by mail at engine shutdown
+MEMDEBUG_NOTIFY = []
 
 MEMUSAGE_ENABLED = False
 MEMUSAGE_LIMIT_MB = 0

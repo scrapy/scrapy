@@ -19,7 +19,8 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
         FixedSGMLParser.__init__(self)
         self.scan_tag = tag if callable(tag) else lambda t: t == tag
         self.scan_attr = attr if callable(attr) else lambda a: a == attr
-        self.process_value = (lambda v: v) if process_value is None else process_value
+        self.process_value = (
+            lambda v: v) if process_value is None else process_value
         self.current_link = None
         self.unique = unique
 
@@ -31,13 +32,15 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
 
         ret = []
         if base_url is None:
-            base_url = urljoin(response_url, self.base_url) if self.base_url else response_url
+            base_url = urljoin(
+                response_url, self.base_url) if self.base_url else response_url
         for link in self.links:
             if isinstance(link.url, unicode):
                 link.url = link.url.encode(response_encoding)
             link.url = urljoin(base_url, link.url)
             link.url = safe_url_string(link.url, response_encoding)
-            link.text = str_to_unicode(link.text, response_encoding, errors='replace').strip()
+            link.text = str_to_unicode(
+                link.text, response_encoding, errors='replace').strip()
             ret.append(link)
 
         return ret
@@ -47,12 +50,14 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
 
         The subclass should override it if necessary
         """
-        links = unique_list(links, key=lambda link: link.url) if self.unique else links
+        links = unique_list(
+            links, key=lambda link: link.url) if self.unique else links
         return links
 
     def extract_links(self, response):
         # wrapper needed to allow to work directly with text
-        links = self._extract_links(response.body, response.url, response.encoding)
+        links = self._extract_links(
+            response.body, response.url, response.encoding)
         links = self._process_links(links)
         return links
 
@@ -69,7 +74,8 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
                 if self.scan_attr(attr):
                     url = self.process_value(value)
                     if url is not None:
-                        link = Link(url=url, nofollow=True if dict(attrs).get('rel') == 'nofollow' else False)
+                        link = Link(
+                            url=url, nofollow=True if dict(attrs).get('rel') == 'nofollow' else False)
                         self.links.append(link)
                         self.current_link = link
 
@@ -89,7 +95,8 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
 _re_type = type(re.compile("", 0))
 
 _matches = lambda url, regexs: any((r.search(url) for r in regexs))
-_is_valid_url = lambda url: url.split('://', 1)[0] in set(['http', 'https', 'file'])
+_is_valid_url = lambda url: url.split(
+    '://', 1)[0] in set(['http', 'https', 'file'])
 
 
 class SgmlLinkExtractor(BaseSgmlLinkExtractor):
@@ -97,8 +104,10 @@ class SgmlLinkExtractor(BaseSgmlLinkExtractor):
     def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(),
                  tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True, process_value=None,
                  deny_extensions=None):
-        self.allow_res = [x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(allow)]
-        self.deny_res = [x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(deny)]
+        self.allow_res = [
+            x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(allow)]
+        self.deny_res = [
+            x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(deny)]
         self.allow_domains = set(arg_to_iter(allow_domains))
         self.deny_domains = set(arg_to_iter(deny_domains))
         self.restrict_xpaths = tuple(arg_to_iter(restrict_xpaths))
@@ -126,7 +135,8 @@ class SgmlLinkExtractor(BaseSgmlLinkExtractor):
         else:
             body = response.body
 
-        links = self._extract_links(body, response.url, response.encoding, base_url)
+        links = self._extract_links(
+            body, response.url, response.encoding, base_url)
         links = self._process_links(links)
         return links
 
@@ -145,9 +155,11 @@ class SgmlLinkExtractor(BaseSgmlLinkExtractor):
         if self.allow_domains:
             allowed &= url_is_from_any_domain(parsed_url, self.allow_domains)
         if self.deny_domains:
-            allowed &= not url_is_from_any_domain(parsed_url, self.deny_domains)
+            allowed &= not url_is_from_any_domain(
+                parsed_url, self.deny_domains)
         if self.deny_extensions:
-            allowed &= not url_has_any_extension(parsed_url, self.deny_extensions)
+            allowed &= not url_has_any_extension(
+                parsed_url, self.deny_extensions)
         if allowed and self.canonicalize:
             link.url = canonicalize_url(parsed_url)
         return allowed
@@ -158,6 +170,8 @@ class SgmlLinkExtractor(BaseSgmlLinkExtractor):
         if self.deny_domains and url_is_from_any_domain(url, self.deny_domains):
             return False
 
-        allowed = [regex.search(url) for regex in self.allow_res] if self.allow_res else [True]
-        denied = [regex.search(url) for regex in self.deny_res] if self.deny_res else []
+        allowed = [regex.search(url)
+                   for regex in self.allow_res] if self.allow_res else [True]
+        denied = [regex.search(url)
+                  for regex in self.deny_res] if self.deny_res else []
         return any(allowed) and not any(denied)

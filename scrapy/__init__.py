@@ -8,19 +8,23 @@ if not isinstance(__version__, str):
     __version__ = __version__.decode('ascii')
 version_info = tuple(__version__.split('.')[:3])
 
-import sys, os, warnings
+import sys
+import os
+import warnings
 
 if sys.version_info < (2, 7):
     print("Scrapy %s requires Python 2.7" % __version__)
     sys.exit(1)
 
 # ignore noisy twisted deprecation warnings
-warnings.filterwarnings('ignore', category=DeprecationWarning, module='twisted')
+warnings.filterwarnings(
+    'ignore', category=DeprecationWarning, module='twisted')
 
 # monkey patches to fix external library issues
 from scrapy.xlib import urlparse_monkeypatches
 
-# WARNING: optional_features set is deprecated and will be removed soon. Do not use.
+# WARNING: optional_features set is deprecated and will be removed soon.
+# Do not use.
 optional_features = set()
 
 # TODO: backwards compatibility, remove for Scrapy 0.20

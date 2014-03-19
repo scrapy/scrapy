@@ -2,6 +2,7 @@ from scrapy.command import ScrapyCommand
 from scrapy.tests.spiders import FollowAllSpider
 from scrapy.tests.mockserver import MockServer
 
+
 class Command(ScrapyCommand):
 
     default_settings = {

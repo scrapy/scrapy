@@ -8,9 +8,10 @@ from scrapy.utils.datatypes import LocalCache
 
 dnscache = LocalCache(10000)
 
+
 class CachingThreadedResolver(ThreadedResolver):
 
-    def getHostByName(self, name, timeout = (1, 3, 11, 45)):
+    def getHostByName(self, name, timeout=(1, 3, 11, 45)):
         if name in dnscache:
             return defer.succeed(dnscache[name])
         d = ThreadedResolver.getHostByName(self, name, timeout)

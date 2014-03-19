@@ -10,6 +10,7 @@ from scrapy import signals
 
 
 class HttpAuthMiddleware(object):
+
     """Set Basic HTTP Authorization header
     (http_user and http_pass spider class attributes)"""
 

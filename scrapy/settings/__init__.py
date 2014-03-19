@@ -46,7 +46,9 @@ class Settings(object):
             value = json.loads(value)
         if isinstance(value, dict):
             return value
-        raise ValueError("Cannot convert value for setting '%s' to dict: '%s'" % (name, value))
+        raise ValueError(
+            "Cannot convert value for setting '%s' to dict: '%s'" % (name, value))
+
 
 class CrawlerSettings(Settings):
 
@@ -74,6 +76,7 @@ def iter_default_settings():
     for name in dir(default_settings):
         if name.isupper():
             yield name, getattr(default_settings, name)
+
 
 def overridden_settings(settings):
     """Return a dict of the settings that have been overridden"""

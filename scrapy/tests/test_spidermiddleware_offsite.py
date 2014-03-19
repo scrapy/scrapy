@@ -25,11 +25,11 @@ class TestOffsiteMiddleware(TestCase):
                        Request('http://sub.scrapy.org/1'),
                        Request('http://offsite.tld/letmepass', dont_filter=True)]
         offsite_reqs = [Request('http://scrapy2.org'),
-                       Request('http://offsite.tld/'),
-                       Request('http://offsite.tld/scrapytest.org'),
-                       Request('http://offsite.tld/rogue.scrapytest.org'),
-                       Request('http://rogue.scrapytest.org.haha.com'),
-                       Request('http://roguescrapytest.org')]
+                        Request('http://offsite.tld/'),
+                        Request('http://offsite.tld/scrapytest.org'),
+                        Request('http://offsite.tld/rogue.scrapytest.org'),
+                        Request('http://rogue.scrapytest.org.haha.com'),
+                        Request('http://roguescrapytest.org')]
         reqs = onsite_reqs + offsite_reqs
 
         out = list(self.mw.process_spider_output(res, reqs, self.spider))
@@ -47,8 +47,8 @@ class TestOffsiteMiddleware2(TestOffsiteMiddleware):
         out = list(self.mw.process_spider_output(res, reqs, self.spider))
         self.assertEquals(out, reqs)
 
+
 class TestOffsiteMiddleware3(TestOffsiteMiddleware2):
 
     def _get_spider(self):
         return Spider('foo')
-

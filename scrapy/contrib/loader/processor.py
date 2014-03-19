@@ -8,6 +8,7 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.datatypes import MergeDict
 from .common import wrap_loader_context
 
+
 class MapCompose(object):
 
     def __init__(self, *functions, **default_loader_context):
@@ -20,7 +21,8 @@ class MapCompose(object):
             context = MergeDict(loader_context, self.default_loader_context)
         else:
             context = self.default_loader_context
-        wrapped_funcs = [wrap_loader_context(f, context) for f in self.functions]
+        wrapped_funcs = [
+            wrap_loader_context(f, context) for f in self.functions]
         for func in wrapped_funcs:
             next_values = []
             for v in values:
@@ -41,7 +43,8 @@ class Compose(object):
             context = MergeDict(loader_context, self.default_loader_context)
         else:
             context = self.default_loader_context
-        wrapped_funcs = [wrap_loader_context(f, context) for f in self.functions]
+        wrapped_funcs = [
+            wrap_loader_context(f, context) for f in self.functions]
         for func in wrapped_funcs:
             if value is None and self.stop_on_none:
                 break

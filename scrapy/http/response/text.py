@@ -25,7 +25,7 @@ class TextResponse(Response):
         if isinstance(url, unicode):
             if self.encoding is None:
                 raise TypeError('Cannot convert unicode url - %s has no encoding' %
-                    type(self).__name__)
+                                type(self).__name__)
             self._url = url.encode(self.encoding)
         else:
             super(TextResponse, self)._set_url(url)
@@ -35,7 +35,7 @@ class TextResponse(Response):
         if isinstance(body, unicode):
             if self.encoding is None:
                 raise TypeError('Cannot convert unicode body - %s has no encoding' %
-                    type(self).__name__)
+                                type(self).__name__)
             self._body = body.encode(self._encoding)
         else:
             super(TextResponse, self)._set_body(body)
@@ -70,9 +70,9 @@ class TextResponse(Response):
     def _body_inferred_encoding(self):
         if self._cached_benc is None:
             content_type = self.headers.get('Content-Type')
-            benc, ubody = html_to_unicode(content_type, self.body, \
-                    auto_detect_fun=self._auto_detect_fun, \
-                    default_encoding=self._DEFAULT_ENCODING)
+            benc, ubody = html_to_unicode(content_type, self.body,
+                                          auto_detect_fun=self._auto_detect_fun,
+                                          default_encoding=self._DEFAULT_ENCODING)
             self._cached_benc = benc
             self._cached_ubody = ubody
         return self._cached_benc

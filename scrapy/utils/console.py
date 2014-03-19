@@ -8,7 +8,7 @@ def start_python_console(namespace=None, noipython=False, banner=''):
         namespace = {}
 
     try:
-        try: # use IPython if available
+        try:  # use IPython if available
             if noipython:
                 raise ImportError()
 
@@ -22,7 +22,7 @@ def start_python_console(namespace=None, noipython=False, banner=''):
             sh(global_ns={}, local_ns=namespace)
         except ImportError:
             import code
-            try: # readline module is only available on unix systems
+            try:  # readline module is only available on unix systems
                 import readline
             except ImportError:
                 pass
@@ -30,5 +30,5 @@ def start_python_console(namespace=None, noipython=False, banner=''):
                 import rlcompleter
                 readline.parse_and_bind("tab:complete")
             code.interact(banner=banner, local=namespace)
-    except SystemExit: # raised when using exit() in python code.interact
+    except SystemExit:  # raised when using exit() in python code.interact
         pass

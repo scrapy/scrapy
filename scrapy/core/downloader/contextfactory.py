@@ -3,6 +3,7 @@ from twisted.internet.ssl import ClientContextFactory
 
 
 class ScrapyClientContextFactory(ClientContextFactory):
+
     "A SSL context factory which is more permissive against SSL bugs."
     # see https://github.com/scrapy/scrapy/issues/82
     # and https://github.com/scrapy/scrapy/issues/26

@@ -14,6 +14,7 @@ class MediaPipeline(object):
     LOG_FAILED_RESULTS = True
 
     class SpiderInfo(object):
+
         def __init__(self, spider):
             self.spider = spider
             self.downloading = set()
@@ -97,7 +98,7 @@ class MediaPipeline(object):
         for wad in info.waiting.pop(fp):
             defer_result(result).chainDeferred(wad)
 
-    ### Overridable Interface
+    # Overridable Interface
     def media_to_download(self, request, info):
         """Check request before starting download"""
         pass
@@ -117,7 +118,8 @@ class MediaPipeline(object):
     def item_completed(self, results, item, info):
         """Called per item when all media requests has been processed"""
         if self.LOG_FAILED_RESULTS:
-            msg = '%s found errors proessing %s' % (self.__class__.__name__, item)
+            msg = '%s found errors proessing %s' % (
+                self.__class__.__name__, item)
             for ok, value in results:
                 if not ok:
                     log.err(value, msg, spider=info.spider)

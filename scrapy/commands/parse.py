@@ -9,6 +9,7 @@ from scrapy.utils.spider import iterate_spider_output, create_spider_for_request
 from scrapy.exceptions import UsageError
 from scrapy import log
 
+
 class Command(ScrapyCommand):
 
     requires_project = True
@@ -27,33 +28,34 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("--spider", dest="spider", default=None, \
-            help="use this spider without looking for one")
-        parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE", \
-            help="set spider argument (may be repeated)")
-        parser.add_option("--pipelines", action="store_true", \
-            help="process items through pipelines")
-        parser.add_option("--nolinks", dest="nolinks", action="store_true", \
-            help="don't show links to follow (extracted requests)")
-        parser.add_option("--noitems", dest="noitems", action="store_true", \
-            help="don't show scraped items")
-        parser.add_option("--nocolour", dest="nocolour", action="store_true", \
-            help="avoid using pygments to colorize the output")
-        parser.add_option("-r", "--rules", dest="rules", action="store_true", \
-            help="use CrawlSpider rules to discover the callback")
-        parser.add_option("-c", "--callback", dest="callback", \
-            help="use this callback for parsing, instead looking for a callback")
-        parser.add_option("-d", "--depth", dest="depth", type="int", default=1, \
-            help="maximum depth for parsing requests [default: %default]")
-        parser.add_option("-v", "--verbose", dest="verbose", action="store_true", \
-            help="print each depth level one by one")
-
+        parser.add_option("--spider", dest="spider", default=None,
+                          help="use this spider without looking for one")
+        parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
+                          help="set spider argument (may be repeated)")
+        parser.add_option("--pipelines", action="store_true",
+                          help="process items through pipelines")
+        parser.add_option("--nolinks", dest="nolinks", action="store_true",
+                          help="don't show links to follow (extracted requests)")
+        parser.add_option("--noitems", dest="noitems", action="store_true",
+                          help="don't show scraped items")
+        parser.add_option("--nocolour", dest="nocolour", action="store_true",
+                          help="avoid using pygments to colorize the output")
+        parser.add_option("-r", "--rules", dest="rules", action="store_true",
+                          help="use CrawlSpider rules to discover the callback")
+        parser.add_option("-c", "--callback", dest="callback",
+                          help="use this callback for parsing, instead looking for a callback")
+        parser.add_option("-d", "--depth", dest="depth", type="int", default=1,
+                          help="maximum depth for parsing requests [default: %default]")
+        parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
+                          help="print each depth level one by one")
 
     @property
     def max_level(self):
         levels = self.items.keys() + self.requests.keys()
-        if levels: return max(levels)
-        else: return 0
+        if levels:
+            return max(levels)
+        else:
+            return 0
 
     def add_items(self, lvl, new_items):
         old_items = self.items.get(lvl, [])
@@ -69,7 +71,7 @@ class Command(ScrapyCommand):
         else:
             items = self.items.get(lvl, [])
 
-        print("# Scraped Items ", "-"*60)
+        print("# Scraped Items ", "-" * 60)
         display.pprint([dict(x) for x in items], colorize=colour)
 
     def print_requests(self, lvl=None, colour=True):
@@ -82,14 +84,14 @@ class Command(ScrapyCommand):
         else:
             requests = self.requests.get(lvl, [])
 
-        print("# Requests ", "-"*65)
+        print("# Requests ", "-" * 65)
         display.pprint(requests, colorize=colour)
 
     def print_results(self, opts):
         colour = not opts.nocolour
 
         if opts.verbose:
-            for level in xrange(1, self.max_level+1):
+            for level in xrange(1, self.max_level + 1):
                 print('\n>>> DEPTH LEVEL: %s <<<' % level)
                 if not opts.noitems:
                     self.print_items(level, colour)
@@ -101,7 +103,6 @@ class Command(ScrapyCommand):
                 self.print_items(colour=colour)
             if not opts.nolinks:
                 self.print_requests(colour=colour)
-
 
     def run_callback(self, response, cb):
         items, requests = [], []
@@ -126,12 +127,14 @@ class Command(ScrapyCommand):
     def set_spider(self, url, opts):
         if opts.spider:
             try:
-                self.spider = self.pcrawler.spiders.create(opts.spider, **opts.spargs)
+                self.spider = self.pcrawler.spiders.create(
+                    opts.spider, **opts.spargs)
             except KeyError:
                 log.msg(format='Unable to find spider: %(spider)s',
                         level=log.ERROR, spider=opts.spider)
         else:
-            self.spider = create_spider_for_request(self.pcrawler.spiders, Request(url), **opts.spargs)
+            self.spider = create_spider_for_request(
+                self.pcrawler.spiders, Request(url), **opts.spargs)
             if not self.spider:
                 log.msg(format='Unable to find spider for: %(url)s',
                         level=log.ERROR, url=url)
@@ -198,7 +201,8 @@ class Command(ScrapyCommand):
         try:
             opts.spargs = arglist_to_dict(opts.spargs)
         except ValueError:
-            raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
+            raise UsageError(
+                "Invalid -a value, use -a NAME=VALUE", print_help=False)
 
     def run(self, args, opts):
         # parse arguments

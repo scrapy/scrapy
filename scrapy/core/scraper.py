@@ -18,6 +18,7 @@ from scrapy import log
 
 
 class Slot(object):
+
     """Scraper slot (one per running spider)"""
 
     MIN_RESPONSE_SIZE = 1024
@@ -57,6 +58,7 @@ class Slot(object):
     def needs_backout(self):
         return self.active_size > self.max_active_size
 
+
 class Scraper(object):
 
     def __init__(self, crawler):
@@ -94,14 +96,15 @@ class Scraper(object):
     def enqueue_scrape(self, response, request, spider):
         slot = self.slot
         dfd = slot.add_response_request(response, request)
+
         def finish_scraping(_):
             slot.finish_response(response, request)
             self._check_if_closing(spider, slot)
             self._scrape_next(spider, slot)
             return _
         dfd.addBoth(finish_scraping)
-        dfd.addErrback(log.err, 'Scraper bug processing %s' % request, \
-            spider=spider)
+        dfd.addErrback(log.err, 'Scraper bug processing %s' % request,
+                       spider=spider)
         self._scrape_next(spider, slot)
         return dfd
 
@@ -115,7 +118,8 @@ class Scraper(object):
         callback/errback"""
         assert isinstance(response, (Response, Failure))
 
-        dfd = self._scrape2(response, request, spider) # returns spiders processed output
+        # returns spiders processed output
+        dfd = self._scrape2(response, request, spider)
         dfd.addErrback(self.handle_spider_error, request, response, spider)
         dfd.addCallback(self.handle_spider_output, request, response, spider)
         return dfd
@@ -124,13 +128,13 @@ class Scraper(object):
         """Handle the different cases of request's result been a Response or a
         Failure"""
         if not isinstance(request_result, Failure):
-            return self.spidermw.scrape_response(self.call_spider, \
-                request_result, request, spider)
+            return self.spidermw.scrape_response(self.call_spider,
+                                                 request_result, request, spider)
         else:
             # FIXME: don't ignore errors in spider middleware
             dfd = self.call_spider(request_result, request, spider)
-            return dfd.addErrback(self._log_download_errors, \
-                request_result, request, spider)
+            return dfd.addErrback(self._log_download_errors,
+                                  request_result, request, spider)
 
     def call_spider(self, result, request, spider):
         result.request = request
@@ -143,18 +147,20 @@ class Scraper(object):
         if isinstance(exc, CloseSpider):
             self.crawler.engine.close_spider(spider, exc.reason or 'cancelled')
             return
-        log.err(_failure, "Spider error processing %s" % request, spider=spider)
-        self.signals.send_catch_log(signal=signals.spider_error, failure=_failure, response=response, \
-            spider=spider)
-        self.crawler.stats.inc_value("spider_exceptions/%s" % _failure.value.__class__.__name__, \
-            spider=spider)
+        log.err(_failure, "Spider error processing %s" %
+                request, spider=spider)
+        self.signals.send_catch_log(signal=signals.spider_error, failure=_failure, response=response,
+                                    spider=spider)
+        self.crawler.stats.inc_value("spider_exceptions/%s" % _failure.value.__class__.__name__,
+                                     spider=spider)
 
     def handle_spider_output(self, result, request, response, spider):
         if not result:
             return defer_succeed(None)
-        it = iter_errback(result, self.handle_spider_error, request, response, spider)
+        it = iter_errback(
+            result, self.handle_spider_error, request, response, spider)
         dfd = parallel(it, self.concurrent_items,
-            self._process_spidermw_output, request, response, spider)
+                       self._process_spidermw_output, request, response, spider)
         return dfd
 
     def _process_spidermw_output(self, output, request, response, spider):
@@ -204,13 +210,12 @@ class Scraper(object):
             if isinstance(ex, DropItem):
                 logkws = self.logformatter.dropped(item, ex, response, spider)
                 log.msg(spider=spider, **logkws)
-                return self.signals.send_catch_log_deferred(signal=signals.item_dropped, \
-                    item=item, spider=spider, exception=output.value)
+                return self.signals.send_catch_log_deferred(signal=signals.item_dropped,
+                                                            item=item, spider=spider, exception=output.value)
             else:
                 log.err(output, 'Error processing %s' % item, spider=spider)
         else:
             logkws = self.logformatter.scraped(output, response, spider)
             log.msg(spider=spider, **logkws)
-            return self.signals.send_catch_log_deferred(signal=signals.item_scraped, \
-                item=output, response=response, spider=spider)
-
+            return self.signals.send_catch_log_deferred(signal=signals.item_scraped,
+                                                        item=output, response=response, spider=spider)

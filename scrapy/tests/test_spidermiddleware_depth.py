@@ -36,7 +36,6 @@ class TestDepthMiddleware(TestCase):
 
         rdm = self.stats.get_value('request_depth_max', spider=self.spider)
         self.assertEquals(rdm, 1)
- 
+
     def tearDown(self):
         self.stats.close_spider(self.spider, '')
-

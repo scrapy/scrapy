@@ -1,5 +1,6 @@
 from zope.interface import Interface
 
+
 class ISpiderManager(Interface):
 
     def create(spider_name, **spider_args):

@@ -116,7 +116,8 @@ class Shell(object):
         self.p("Useful shortcuts:")
         self.p("  shelp()           Shell help (print this help)")
         if self.inthread:
-            self.p("  fetch(req_or_url) Fetch request (or URL) and update local objects")
+            self.p(
+                "  fetch(req_or_url) Fetch request (or URL) and update local objects")
         self.p("  view(response)    View response in a browser")
 
     def p(self, line=''):
@@ -145,6 +146,7 @@ def _request_deferred(request):
     """
     request_callback = request.callback
     request_errback = request.errback
+
     def _restore_callbacks(result):
         request.callback = request_callback
         request.errback = request_errback

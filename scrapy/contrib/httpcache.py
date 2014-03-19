@@ -17,7 +17,8 @@ class DummyPolicy(object):
 
     def __init__(self, settings):
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
-        self.ignore_http_codes = [int(x) for x in settings.getlist('HTTPCACHE_IGNORE_HTTP_CODES')]
+        self.ignore_http_codes = [
+            int(x) for x in settings.getlist('HTTPCACHE_IGNORE_HTTP_CODES')]
 
     def should_cache_request(self, request):
         return urlparse_cached(request).scheme not in self.ignore_schemes
@@ -59,7 +60,8 @@ class RFC2616Policy(object):
     def should_cache_response(self, response, request):
         # What is cacheable - http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec14.9.1
         # Response cacheability - http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.4
-        # Status code 206 is not included because cache can not deal with partial contents
+        # Status code 206 is not included because cache can not deal with
+        # partial contents
         cc = self._parse_cachecontrol(response)
         # obey directive "Cache-Control: no-store"
         if 'no-store' in cc:
@@ -89,7 +91,8 @@ class RFC2616Policy(object):
             return False
 
         now = time()
-        freshnesslifetime = self._compute_freshness_lifetime(cachedresponse, request, now)
+        freshnesslifetime = self._compute_freshness_lifetime(
+            cachedresponse, request, now)
         currentage = self._compute_current_age(cachedresponse, request, now)
         if currentage < freshnesslifetime:
             return True
@@ -102,7 +105,8 @@ class RFC2616Policy(object):
 
     def _set_conditional_validators(self, request, cachedresponse):
         if 'Last-Modified' in cachedresponse.headers:
-            request.headers['If-Modified-Since'] = cachedresponse.headers['Last-Modified']
+            request.headers[
+                'If-Modified-Since'] = cachedresponse.headers['Last-Modified']
 
         if 'ETag' in cachedresponse.headers:
             request.headers['If-None-Match'] = cachedresponse.headers['ETag']

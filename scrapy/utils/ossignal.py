@@ -12,6 +12,7 @@ for signame in dir(signal):
         if isinstance(signum, int):
             signal_names[signum] = signame
 
+
 def install_shutdown_handlers(function, override_sigint=True):
     """Install the given function as a signal handler for all common shutdown
     signals (such as SIGINT, SIGTERM, etc). If override_sigint is ``False`` the

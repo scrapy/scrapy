@@ -1,4 +1,5 @@
-import os, urlparse
+import os
+import urlparse
 from cStringIO import StringIO
 
 from zope.interface.verify import verifyObject
@@ -9,6 +10,7 @@ from w3lib.url import path_to_file_uri
 from scrapy.spider import Spider
 from scrapy.contrib.feedexport import IFeedStorage, FileFeedStorage, FTPFeedStorage, S3FeedStorage, StdoutFeedStorage
 from scrapy.utils.test import assert_aws_environ
+
 
 class FileFeedStorageTest(unittest.TestCase):
 
@@ -85,8 +87,10 @@ class S3FeedStorageTest(unittest.TestCase):
         file.write("content")
         yield storage.store(file)
         u = urlparse.urlparse(uri)
-        key = connect_s3().get_bucket(u.hostname, validate=False).get_key(u.path)
+        key = connect_s3().get_bucket(
+            u.hostname, validate=False).get_key(u.path)
         self.failUnlessEqual(key.get_contents_as_string(), "content")
+
 
 class StdoutFeedStorageTest(unittest.TestCase):
 

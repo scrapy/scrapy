@@ -52,6 +52,7 @@ class ContractsManager(object):
 
 
 class Contract(object):
+
     """ Abstract class for contracts """
 
     def __init__(self, method, *args):
@@ -63,6 +64,7 @@ class Contract(object):
         spider = method.__self__.name
 
         class ContractTestCase(TestCase):
+
             def __str__(_self):
                 return "[%s] %s (@%s %s)" % (spider, method.__name__, self.name, hook)
 

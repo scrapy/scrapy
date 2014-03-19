@@ -24,7 +24,8 @@ class FilesPipelineTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tempdir = mkdtemp()
-        self.pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': self.tempdir}))
+        self.pipeline = FilesPipeline.from_settings(
+            Settings({'FILES_STORE': self.tempdir}))
         self.pipeline.download_func = _mocked_download_func
         self.pipeline.open_spider(None)
 
@@ -46,7 +47,8 @@ class FilesPipelineTestCase(unittest.TestCase):
         self.assertEqual(file_path(Request("http://www.dorma.co.uk/images/product_details/2532")),
                          'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1')
         self.assertEqual(file_path(Request("http://www.dorma.co.uk/images/product_details/2532"),
-                                   response=Response("http://www.dorma.co.uk/images/product_details/2532"),
+                                   response=Response(
+                                       "http://www.dorma.co.uk/images/product_details/2532"),
                                    info=object()),
                          'full/244e0dd7d96a3b7b01f54eded250c9e272577aa1')
 
@@ -56,7 +58,8 @@ class FilesPipelineTestCase(unittest.TestCase):
 
         path = 'some/image/key.jpg'
         fullpath = os.path.join(self.tempdir, 'some', 'image', 'key.jpg')
-        self.assertEqual(self.pipeline.store._get_filesystem_path(path), fullpath)
+        self.assertEqual(
+            self.pipeline.store._get_filesystem_path(path), fullpath)
 
     @defer.inlineCallbacks
     def test_file_not_expired(self):
@@ -101,6 +104,7 @@ class FilesPipelineTestCase(unittest.TestCase):
 
 
 class DeprecatedFilesPipeline(FilesPipeline):
+
     def file_key(self, url):
         media_guid = hashlib.sha1(url).hexdigest()
         media_ext = os.path.splitext(url)[1]
@@ -108,11 +112,13 @@ class DeprecatedFilesPipeline(FilesPipeline):
 
 
 class DeprecatedFilesPipelineTestCase(unittest.TestCase):
+
     def setUp(self):
         self.tempdir = mkdtemp()
 
     def init_pipeline(self, pipeline_class):
-        self.pipeline = pipeline_class.from_settings(Settings({'FILES_STORE': self.tempdir}))
+        self.pipeline = pipeline_class.from_settings(
+            Settings({'FILES_STORE': self.tempdir}))
         self.pipeline.download_func = _mocked_download_func
         self.pipeline.open_spider(None)
 
@@ -123,7 +129,8 @@ class DeprecatedFilesPipelineTestCase(unittest.TestCase):
             self.assertEqual(self.pipeline.file_key("https://dev.mydeco.com/mydeco.pdf"),
                              'full/c9b564df929f4bc635bdd19fde4f3d4847c757c5.pdf')
             self.assertEqual(len(w), 1)
-            self.assertTrue('file_key(url) method is deprecated' in str(w[-1].message))
+            self.assertTrue(
+                'file_key(url) method is deprecated' in str(w[-1].message))
 
     def test_overridden_file_key_method(self):
         self.init_pipeline(DeprecatedFilesPipeline)
@@ -132,7 +139,8 @@ class DeprecatedFilesPipelineTestCase(unittest.TestCase):
             self.assertEqual(self.pipeline.file_path(Request("https://dev.mydeco.com/mydeco.pdf")),
                              'empty/c9b564df929f4bc635bdd19fde4f3d4847c757c5.pdf')
             self.assertEqual(len(w), 1)
-            self.assertTrue('file_key(url) method is deprecated' in str(w[-1].message))
+            self.assertTrue(
+                'file_key(url) method is deprecated' in str(w[-1].message))
 
     def tearDown(self):
         rmtree(self.tempdir)
@@ -142,13 +150,15 @@ class FilesPipelineTestCaseFields(unittest.TestCase):
 
     def test_item_fields_default(self):
         from scrapy.contrib.pipeline.files import FilesPipeline
+
         class TestItem(Item):
             name = Field()
             file_urls = Field()
             files = Field()
         url = 'http://www.example.com/files/1.txt'
         item = TestItem({'name': 'item1', 'file_urls': [url]})
-        pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/'}))
+        pipeline = FilesPipeline.from_settings(
+            Settings({'FILES_STORE': 's3://example/files/'}))
         requests = list(pipeline.get_media_requests(item, None))
         self.assertEqual(requests[0].url, url)
         results = [(True, {'url': url})]
@@ -157,6 +167,7 @@ class FilesPipelineTestCaseFields(unittest.TestCase):
 
     def test_item_fields_override_settings(self):
         from scrapy.contrib.pipeline.files import FilesPipeline
+
         class TestItem(Item):
             name = Field()
             files = Field()
@@ -164,7 +175,7 @@ class FilesPipelineTestCaseFields(unittest.TestCase):
         url = 'http://www.example.com/files/1.txt'
         item = TestItem({'name': 'item1', 'files': [url]})
         pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/',
-                'FILES_URLS_FIELD': 'files', 'FILES_RESULT_FIELD': 'stored_file'}))
+                                                         'FILES_URLS_FIELD': 'files', 'FILES_RESULT_FIELD': 'stored_file'}))
         requests = list(pipeline.get_media_requests(item, None))
         self.assertEqual(requests[0].url, url)
         results = [(True, {'url': url})]

@@ -9,6 +9,7 @@ from subprocess import Popen, PIPE
 import os
 import sys
 
+
 class osx_install_data(install_data):
     # On MacOS, the platform-specific lib dir is /System/Library/Framework/Python/.../
     # which is wrong. Python 2.5 supplied with MacOS 10.5 has an Apple-specific fix
@@ -26,6 +27,7 @@ if sys.platform == "darwin":
     cmdclasses = {'install_data': osx_install_data}
 else:
     cmdclasses = {'install_data': install_data}
+
 
 def fullsplit(path, result=None):
     """
@@ -54,6 +56,7 @@ root_dir = os.path.dirname(__file__)
 if root_dir != '':
     os.chdir(root_dir)
 
+
 def is_not_module(filename):
     return os.path.splitext(filename)[1] not in ['.py', '.pyc', '.pyo']
 
@@ -61,14 +64,17 @@ for scrapy_dir in ['scrapy']:
     for dirpath, dirnames, filenames in os.walk(scrapy_dir):
         # Ignore dirnames that start with '.'
         for i, dirname in enumerate(dirnames):
-            if dirname.startswith('.'): del dirnames[i]
+            if dirname.startswith('.'):
+                del dirnames[i]
         if '__init__.py' in filenames:
             packages.append('.'.join(fullsplit(dirpath)))
             data = [f for f in filenames if is_not_module(f)]
             if data:
-                data_files.append([dirpath, [os.path.join(dirpath, f) for f in data]])
+                data_files.append(
+                    [dirpath, [os.path.join(dirpath, f) for f in data]])
         elif filenames:
-            data_files.append([dirpath, [os.path.join(dirpath, f) for f in filenames]])
+            data_files.append(
+                [dirpath, [os.path.join(dirpath, f) for f in filenames]])
 
 # Small hack for working with bdist_wininst.
 # See http://mail.python.org/pipermail/distutils-sig/2004-August/004134.html

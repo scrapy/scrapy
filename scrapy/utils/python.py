@@ -15,6 +15,7 @@ from sgmllib import SGMLParser
 
 
 class FixedSGMLParser(SGMLParser):
+
     """The SGMLParser that comes with Python has a bug in the convert_charref()
     method. This is the same class with the bug fixed"""
 
@@ -24,7 +25,7 @@ class FixedSGMLParser(SGMLParser):
             n = int(name)
         except ValueError:
             return
-        if not 0 <= n <= 127 : # ASCII ends at 127, not 255
+        if not 0 <= n <= 127:  # ASCII ends at 127, not 255
             return
         return self.convert_codepoint(n)
 
@@ -78,7 +79,9 @@ def str_to_unicode(text, encoding=None, errors='strict'):
     elif isinstance(text, unicode):
         return text
     else:
-        raise TypeError('str_to_unicode must receive a str or unicode object, got %s' % type(text).__name__)
+        raise TypeError(
+            'str_to_unicode must receive a str or unicode object, got %s' % type(text).__name__)
+
 
 def unicode_to_str(text, encoding=None, errors='strict'):
     """Return the str representation of text in the given encoding. Unlike
@@ -94,7 +97,9 @@ def unicode_to_str(text, encoding=None, errors='strict'):
     elif isinstance(text, str):
         return text
     else:
-        raise TypeError('unicode_to_str must receive a unicode or str object, got %s' % type(text).__name__)
+        raise TypeError(
+            'unicode_to_str must receive a unicode or str object, got %s' % type(text).__name__)
+
 
 def re_rsearch(pattern, text, chunk_size=1024):
     """
@@ -118,18 +123,21 @@ def re_rsearch(pattern, text, chunk_size=1024):
             yield (text[offset:], offset)
         yield (text, 0)
 
-    pattern = re.compile(pattern) if isinstance(pattern, basestring) else pattern
+    pattern = re.compile(pattern) if isinstance(
+        pattern, basestring) else pattern
     for chunk, offset in _chunk_iter():
         matches = [match for match in pattern.finditer(chunk)]
         if matches:
             return (offset + matches[-1].span()[0], offset + matches[-1].span()[1])
     return None
 
+
 def memoizemethod_noargs(method):
     """Decorator to cache the result of a method (without arguments) using a
     weak reference to its object
     """
     cache = weakref.WeakKeyDictionary()
+
     @wraps(method)
     def new_method(self, *args, **kwargs):
         if self not in cache:
@@ -139,12 +147,15 @@ def memoizemethod_noargs(method):
 
 _BINARYCHARS = set(map(chr, range(32))) - set(["\0", "\t", "\n", "\r"])
 
+
 def isbinarytext(text):
     """Return True if the given text is considered binary, or false
     otherwise, by looking for binary bytes at their chars
     """
-    assert isinstance(text, str), "text must be str, got '%s'" % type(text).__name__
+    assert isinstance(
+        text, str), "text must be str, got '%s'" % type(text).__name__
     return any(c in _BINARYCHARS for c in text)
+
 
 def get_func_args(func, stripself=False):
     """Return the argument name list of a callable"""
@@ -169,6 +180,7 @@ def get_func_args(func, stripself=False):
     if stripself:
         func_args.pop(0)
     return func_args
+
 
 def get_spec(func):
     """Returns (args, kwargs) tuple for a function
@@ -205,6 +217,7 @@ def get_spec(func):
     args = spec.args[:firstdefault]
     kwargs = dict(zip(spec.args[firstdefault:], defaults))
     return args, kwargs
+
 
 def equal_attributes(obj1, obj2, attributes):
     """Compare two objects attributes"""
@@ -255,6 +268,7 @@ def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
         d[k] = v
     return d
 
+
 def is_writable(path):
     """Return True if the given path can be written (if it exists) or created
     (if it doesn't exist)
@@ -263,6 +277,7 @@ def is_writable(path):
         return os.access(path, os.W_OK)
     else:
         return os.access(os.path.dirname(path), os.W_OK)
+
 
 def setattr_default(obj, name, value):
     """Set attribute value, but only if it's not already set. Similar to

@@ -11,6 +11,7 @@ from scrapy.command import ScrapyCommand
 from scrapy.utils.template import render_templatefile, string_camelcase
 from scrapy.exceptions import UsageError
 
+
 def sanitize_module_name(module_name):
     """Sanitize the given module name, by replacing dashes and points
     with underscores and prefixing it with a letter if it doesn't start
@@ -20,6 +21,7 @@ def sanitize_module_name(module_name):
     if module_name[0] not in string.ascii_letters:
         module_name = "a" + module_name
     return module_name
+
 
 class Command(ScrapyCommand):
 
@@ -35,15 +37,15 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-l", "--list", dest="list", action="store_true",
-            help="List available templates")
+                          help="List available templates")
         parser.add_option("-e", "--edit", dest="edit", action="store_true",
-            help="Edit spider after creating it")
+                          help="Edit spider after creating it")
         parser.add_option("-d", "--dump", dest="dump", metavar="TEMPLATE",
-            help="Dump template to standard output")
+                          help="Dump template to standard output")
         parser.add_option("-t", "--template", dest="template", default="basic",
-            help="Uses a custom template.")
+                          help="Uses a custom template.")
         parser.add_option("--force", dest="force", action="store_true",
-            help="If the spider already exists, overwrite it with the template")
+                          help="If the spider already exists, overwrite it with the template")
 
     def run(self, args, opts):
         if opts.list:
@@ -89,16 +91,16 @@ class Command(ScrapyCommand):
             'module': module,
             'name': name,
             'domain': domain,
-            'classname': '%sSpider' % ''.join([s.capitalize() \
-                for s in module.split('_')])
+            'classname': '%sSpider' % ''.join([s.capitalize()
+                                               for s in module.split('_')])
         }
         spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
         spiders_dir = abspath(dirname(spiders_module.__file__))
         spider_file = "%s.py" % join(spiders_dir, module)
         shutil.copyfile(template_file, spider_file)
         render_templatefile(spider_file, **tvars)
-        print("Created spider %r using template %r in module:" % (name, \
-            template_name))
+        print("Created spider %r using template %r in module:" % (name,
+                                                                  template_name))
         print("  %s.%s" % (spiders_module.__name__, module))
 
     def _find_template(self, template):

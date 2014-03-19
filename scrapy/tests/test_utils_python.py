@@ -9,7 +9,9 @@ from scrapy.utils.python import str_to_unicode, unicode_to_str, \
 
 __doctests__ = ['scrapy.utils.python']
 
+
 class UtilsPythonTestCase(unittest.TestCase):
+
     def test_str_to_unicode(self):
         # converting an utf-8 encoded string to unicode
         self.assertEqual(str_to_unicode('lel\xc3\xb1e'), u'lel\xf1e')
@@ -18,7 +20,8 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(str_to_unicode('lel\xf1e', 'latin-1'), u'lel\xf1e')
 
         # converting a unicode to unicode should return the same object
-        self.assertEqual(str_to_unicode(u'\xf1e\xf1e\xf1e'), u'\xf1e\xf1e\xf1e')
+        self.assertEqual(
+            str_to_unicode(u'\xf1e\xf1e\xf1e'), u'\xf1e\xf1e\xf1e')
 
         # converting a strange object should raise TypeError
         self.assertRaises(TypeError, str_to_unicode, 423)
@@ -120,7 +123,8 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.failIf(equal_attributes(a, b, [compare_z, 'x']))
 
     def test_weakkeycache(self):
-        class _Weakme(object): pass
+        class _Weakme(object):
+            pass
         _values = count()
         wk = WeakKeyCache(lambda k: next(_values))
         k = _Weakme()
@@ -135,7 +139,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         d = {'a': 123, u'b': 'c', u'd': u'e', object(): u'e'}
         d2 = stringify_dict(d, keys_only=False)
         self.failUnlessEqual(d, d2)
-        self.failIf(d is d2) # shouldn't modify in place
+        self.failIf(d is d2)  # shouldn't modify in place
         self.failIf(any(isinstance(x, unicode) for x in d2.keys()))
         self.failIf(any(isinstance(x, unicode) for x in d2.values()))
 
@@ -144,7 +148,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         d = dict(tuples)
         d2 = stringify_dict(tuples, keys_only=False)
         self.failUnlessEqual(d, d2)
-        self.failIf(d is d2) # shouldn't modify in place
+        self.failIf(d is d2)  # shouldn't modify in place
         self.failIf(any(isinstance(x, unicode) for x in d2.keys()), d2.keys())
         self.failIf(any(isinstance(x, unicode) for x in d2.values()))
 
@@ -152,7 +156,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         d = {'a': 123, u'b': 'c', u'd': u'e', object(): u'e'}
         d2 = stringify_dict(d)
         self.failUnlessEqual(d, d2)
-        self.failIf(d is d2) # shouldn't modify in place
+        self.failIf(d is d2)  # shouldn't modify in place
         self.failIf(any(isinstance(x, unicode) for x in d2.keys()))
 
     def test_get_func_args(self):
@@ -163,6 +167,7 @@ class UtilsPythonTestCase(unittest.TestCase):
             pass
 
         class A(object):
+
             def __init__(self, a, b, c):
                 pass
 

@@ -23,6 +23,7 @@ class JsonResource(JsonResource_):
         self.crawler = crawler
         self.json_encoder = ScrapyJSONEncoder(crawler=crawler)
 
+
 class JsonRpcResource(JsonResource):
 
     def __init__(self, crawler, target=None):
@@ -69,11 +70,12 @@ class WebService(server.Site):
             raise NotConfigured
         self.crawler = crawler
         logfile = crawler.settings['WEBSERVICE_LOGFILE']
-        self.portrange = [int(x) for x in crawler.settings.getlist('WEBSERVICE_PORT')]
+        self.portrange = [int(x)
+                          for x in crawler.settings.getlist('WEBSERVICE_PORT')]
         self.host = crawler.settings['WEBSERVICE_HOST']
         root = RootResource(crawler)
-        reslist = build_component_list(crawler.settings['WEBSERVICE_RESOURCES_BASE'], \
-            crawler.settings['WEBSERVICE_RESOURCES'])
+        reslist = build_component_list(crawler.settings['WEBSERVICE_RESOURCES_BASE'],
+                                       crawler.settings['WEBSERVICE_RESOURCES'])
         for res_cls in map(load_object, reslist):
             res = res_cls(crawler)
             root.putChild(res.ws_name, res)
@@ -94,4 +96,3 @@ class WebService(server.Site):
 
     def stop_listening(self):
         self.port.stopListening()
-

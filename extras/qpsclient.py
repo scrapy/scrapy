@@ -19,7 +19,7 @@ class QPSSpider(Spider):
     # Max concurrency is limited by global CONCURRENT_REQUESTS setting
     max_concurrent_requests = 8
     # Requests per second goal
-    qps = None # same as: 1 / download_delay
+    qps = None  # same as: 1 / download_delay
     download_delay = None
     # time in seconds to delay server responses
     latency = None
@@ -41,7 +41,8 @@ class QPSSpider(Spider):
 
         slots = int(self.slots)
         if slots > 1:
-            urls = [url.replace('localhost', '127.0.0.%d' % (x + 1)) for x in xrange(slots)]
+            urls = [url.replace('localhost', '127.0.0.%d' % (x + 1))
+                    for x in xrange(slots)]
         else:
             urls = [url]
 

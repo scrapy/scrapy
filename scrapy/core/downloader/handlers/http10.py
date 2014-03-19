@@ -7,8 +7,10 @@ from scrapy.utils.misc import load_object
 class HTTP10DownloadHandler(object):
 
     def __init__(self, settings):
-        self.HTTPClientFactory = load_object(settings['DOWNLOADER_HTTPCLIENTFACTORY'])
-        self.ClientContextFactory = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
+        self.HTTPClientFactory = load_object(
+            settings['DOWNLOADER_HTTPCLIENTFACTORY'])
+        self.ClientContextFactory = load_object(
+            settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
 
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""

@@ -39,7 +39,8 @@ class HttpCacheMiddleware(object):
             self.stats.inc_value('httpcache/miss', spider=spider)
             if self.ignore_missing:
                 self.stats.inc_value('httpcache/ignore', spider=spider)
-                raise IgnoreRequest("Ignored request not in cache: %s" % request)
+                raise IgnoreRequest(
+                    "Ignored request not in cache: %s" % request)
             return  # first time request
 
         # Return cached response only if not expired
@@ -87,6 +88,8 @@ class HttpCacheMiddleware(object):
 
 
 from scrapy.contrib.httpcache import FilesystemCacheStorage as _FilesystemCacheStorage
+
+
 class FilesystemCacheStorage(_FilesystemCacheStorage):
 
     def __init__(self, *args, **kwargs):

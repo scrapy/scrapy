@@ -7,7 +7,9 @@ from scrapy.utils.test import get_crawler
 
 __doctests__ = ['scrapy.contrib.downloadermiddleware.ajaxcrawl']
 
+
 class AjaxCrawlMiddlewareTest(unittest.TestCase):
+
     def setUp(self):
         self.spider = Spider('foo')
         crawler = get_crawler({'AJAXCRAWL_ENABLED': True})
@@ -28,7 +30,8 @@ class AjaxCrawlMiddlewareTest(unittest.TestCase):
 
     def test_binary_response(self):
         req = Request('http://example.com/')
-        resp = Response('http://example.com/', body=b'foobar\x00\x01\x02', request=req)
+        resp = Response(
+            'http://example.com/', body=b'foobar\x00\x01\x02', request=req)
         resp2 = self.mw.process_response(req, resp, self.spider)
         self.assertIs(resp, resp2)
 
@@ -43,16 +46,19 @@ class AjaxCrawlMiddlewareTest(unittest.TestCase):
         self.assertEqual(req2.meta['foo'], 'bar')
 
     def test_ajaxcrawl_loop(self):
-        req, resp = self._req_resp('http://example.com/', {}, {'body': self._ajaxcrawlable_body()})
+        req, resp = self._req_resp(
+            'http://example.com/', {}, {'body': self._ajaxcrawlable_body()})
         req2 = self.mw.process_response(req, resp, self.spider)
         resp2 = HtmlResponse(req2.url, body=resp.body, request=req2)
         resp3 = self.mw.process_response(req2, resp2, self.spider)
 
         assert isinstance(resp3, HtmlResponse), (resp3.__class__, resp3)
-        self.assertEqual(resp3.request.url, 'http://example.com/?_escaped_fragment_=')
+        self.assertEqual(
+            resp3.request.url, 'http://example.com/?_escaped_fragment_=')
         assert resp3 is resp2
 
     def test_noncrawlable_body(self):
-        req, resp = self._req_resp('http://example.com/', {}, {'body': '<html></html>'})
+        req, resp = self._req_resp(
+            'http://example.com/', {}, {'body': '<html></html>'})
         resp2 = self.mw.process_response(req, resp, self.spider)
         self.assertIs(resp, resp2)

@@ -3,6 +3,7 @@ import copy
 
 from scrapy.http import Headers
 
+
 class HeadersTest(unittest.TestCase):
 
     def assertSortedEqual(self, first, second, msg=None):
@@ -19,7 +20,8 @@ class HeadersTest(unittest.TestCase):
 
         self.assertEqual(h.get('Accept', '*/*'), '*/*')
         self.assertEqual(h.getlist('Accept', '*/*'), ['*/*'])
-        self.assertEqual(h.getlist('Accept', ['text/html', 'images/jpeg']), ['text/html','images/jpeg'])
+        self.assertEqual(
+            h.getlist('Accept', ['text/html', 'images/jpeg']), ['text/html', 'images/jpeg'])
 
     def test_single_value(self):
         h = Headers()
@@ -76,20 +78,24 @@ class HeadersTest(unittest.TestCase):
         assert h.getlist('X-Forwarded-For') is olist
 
     def test_iterables(self):
-        idict = {'Content-Type': 'text/html', 'X-Forwarded-For': ['ip1', 'ip2']}
+        idict = {'Content-Type': 'text/html',
+                 'X-Forwarded-For': ['ip1', 'ip2']}
 
         h = Headers(idict)
         self.assertDictEqual(dict(h),
                              {'Content-Type': ['text/html'], 'X-Forwarded-For': ['ip1', 'ip2']})
         self.assertSortedEqual(h.keys(), ['X-Forwarded-For', 'Content-Type'])
-        self.assertSortedEqual(h.items(), [('X-Forwarded-For', ['ip1', 'ip2']), ('Content-Type', ['text/html'])])
-        self.assertSortedEqual(h.iteritems(), [('X-Forwarded-For', ['ip1', 'ip2']), ('Content-Type', ['text/html'])])
+        self.assertSortedEqual(
+            h.items(), [('X-Forwarded-For', ['ip1', 'ip2']), ('Content-Type', ['text/html'])])
+        self.assertSortedEqual(
+            h.iteritems(), [('X-Forwarded-For', ['ip1', 'ip2']), ('Content-Type', ['text/html'])])
 
         self.assertSortedEqual(h.values(), ['ip2', 'text/html'])
 
     def test_update(self):
         h = Headers()
-        h.update({'Content-Type': 'text/html', 'X-Forwarded-For': ['ip1', 'ip2']})
+        h.update(
+            {'Content-Type': 'text/html', 'X-Forwarded-For': ['ip1', 'ip2']})
         self.assertEqual(h.getlist('Content-Type'), ['text/html'])
         self.assertEqual(h.getlist('X-Forwarded-For'), ['ip1', 'ip2'])
 

@@ -7,6 +7,7 @@ from scrapy.spider import Spider
 from scrapy.exceptions import UsageError
 from scrapy.utils.spider import create_spider_for_request
 
+
 class Command(ScrapyCommand):
 
     requires_project = False
@@ -24,9 +25,9 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--spider", dest="spider",
-            help="use this spider")
-        parser.add_option("--headers", dest="headers", action="store_true", \
-            help="print response HTTP headers instead of body")
+                          help="use this spider")
+        parser.add_option("--headers", dest="headers", action="store_true",
+                          help="print response HTTP headers instead of body")
 
     def _print_headers(self, headers, prefix):
         for key, values in headers.items():
@@ -53,7 +54,7 @@ class Command(ScrapyCommand):
         if opts.spider:
             spider = crawler.spiders.create(opts.spider)
         else:
-            spider = create_spider_for_request(crawler.spiders, request, \
-                default_spider=Spider('default'))
+            spider = create_spider_for_request(crawler.spiders, request,
+                                               default_spider=Spider('default'))
         crawler.crawl(spider, [request])
         self.crawler_process.start()

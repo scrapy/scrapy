@@ -4,9 +4,11 @@ from scrapy.http import Request
 from scrapy.contrib.downloadermiddleware.httpauth import HttpAuthMiddleware
 from scrapy.spider import Spider
 
+
 class TestSpider(Spider):
     http_user = 'foo'
     http_pass = 'bar'
+
 
 class HttpAuthMiddlewareTest(unittest.TestCase):
 
@@ -24,7 +26,8 @@ class HttpAuthMiddlewareTest(unittest.TestCase):
         self.assertEquals(req.headers['Authorization'], 'Basic Zm9vOmJhcg==')
 
     def test_auth_already_set(self):
-        req = Request('http://scrapytest.org/', headers=dict(Authorization='Digest 123'))
+        req = Request(
+            'http://scrapytest.org/', headers=dict(Authorization='Digest 123'))
         assert self.mw.process_request(req, self.spider) is None
         self.assertEquals(req.headers['Authorization'], 'Digest 123')
 

@@ -7,7 +7,9 @@ import lxml.html
 from scrapy.link import Link
 from scrapy.utils.python import unique as unique_list
 
+
 class LxmlParserLinkExtractor(object):
+
     def __init__(self, tag="a", attr="href", process=None, unique=False):
         self.scan_tag = tag if callable(tag) else lambda t: t == tag
         self.scan_attr = attr if callable(attr) else lambda a: a == attr
@@ -26,11 +28,9 @@ class LxmlParserLinkExtractor(object):
                     self.links.append(link)
 
         links = unique_list(self.links, key=lambda link: link.url) \
-                if self.unique else self.links
+            if self.unique else self.links
 
         return links
 
     def extract_links(self, response):
         return self._extract_links(response.body, response.url)
-
-

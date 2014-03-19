@@ -12,6 +12,7 @@ from scrapy.utils.test import get_crawler
 
 
 class RetryTest(unittest.TestCase):
+
     def setUp(self):
         crawler = get_crawler()
         self.spider = Spider('foo')
@@ -32,7 +33,8 @@ class RetryTest(unittest.TestCase):
         assert self.mw.process_response(req, rsp, self.spider) is rsp
 
     def test_dont_retry(self):
-        req = Request('http://www.scrapytest.org/503', meta={'dont_retry': True})
+        req = Request(
+            'http://www.scrapytest.org/503', meta={'dont_retry': True})
         rsp = Response('http://www.scrapytest.org/503', body='', status=503)
 
         # first retry
@@ -40,7 +42,8 @@ class RetryTest(unittest.TestCase):
         assert r is rsp
 
     def test_dont_retry_exc(self):
-        req = Request('http://www.scrapytest.org/503', meta={'dont_retry': True})
+        req = Request(
+            'http://www.scrapytest.org/503', meta={'dont_retry': True})
         rsp = Response('http://www.scrapytest.org/503', body='', status=503)
 
         r = self.mw.process_exception(req, DNSLookupError(), self.spider)

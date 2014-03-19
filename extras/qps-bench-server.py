@@ -27,7 +27,7 @@ class Root(Resource):
         delta = now - self.lasttime
 
         # reset stats on high iter-request times caused by client restarts
-        if delta > 3: # seconds
+        if delta > 3:  # seconds
             self._reset_stats()
             return ''
 
@@ -38,7 +38,8 @@ class Root(Resource):
         if now - self.lastmark >= 3:
             self.lastmark = now
             qps = len(self.tail) / sum(self.tail)
-            print('samplesize={0} concurrent={1} qps={2:0.2f}'.format(len(self.tail), self.concurrent, qps))
+            print('samplesize={0} concurrent={1} qps={2:0.2f}'.format(
+                len(self.tail), self.concurrent, qps))
 
         if 'latency' in request.args:
             latency = float(request.args['latency'][0])

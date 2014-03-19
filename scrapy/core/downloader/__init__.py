@@ -15,6 +15,7 @@ from .handlers import DownloadHandlers
 
 
 class Slot(object):
+
     """Downloader slot"""
 
     def __init__(self, concurrency, delay, settings):
@@ -72,8 +73,10 @@ class Downloader(object):
         self.active = set()
         self.handlers = DownloadHandlers(crawler)
         self.total_concurrency = self.settings.getint('CONCURRENT_REQUESTS')
-        self.domain_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_DOMAIN')
-        self.ip_concurrency = self.settings.getint('CONCURRENT_REQUESTS_PER_IP')
+        self.domain_concurrency = self.settings.getint(
+            'CONCURRENT_REQUESTS_PER_DOMAIN')
+        self.ip_concurrency = self.settings.getint(
+            'CONCURRENT_REQUESTS_PER_IP')
         self.middleware = DownloaderMiddlewareManager.from_crawler(crawler)
         self._slot_gc_loop = task.LoopingCall(self._slot_gc)
         self._slot_gc_loop.start(60)
@@ -133,10 +136,12 @@ class Downloader(object):
         if delay:
             penalty = delay - now + slot.lastseen
             if penalty > 0:
-                slot.latercall = reactor.callLater(penalty, self._process_queue, spider, slot)
+                slot.latercall = reactor.callLater(
+                    penalty, self._process_queue, spider, slot)
                 return
 
-        # Process enqueued requests if there are free slots to transfer for this slot
+        # Process enqueued requests if there are free slots to transfer for
+        # this slot
         while slot.queue and slot.free_transfer_slots() > 0:
             slot.lastseen = now
             request, deferred = slot.queue.popleft()
@@ -148,7 +153,8 @@ class Downloader(object):
                 break
 
     def _download(self, slot, request, spider):
-        # The order is very important for the following deferreds. Do not change!
+        # The order is very important for the following deferreds. Do not
+        # change!
 
         # 1. Create the download deferred
         dfd = mustbe_deferred(self.handlers.download_request, request, spider)

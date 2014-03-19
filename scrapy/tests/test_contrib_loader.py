@@ -64,7 +64,8 @@ class BasicItemLoaderTest(unittest.TestCase):
                 return value
 
         class MyLoader(ItemLoader):
-            name_out = Compose(lambda vs: vs[0])  # take first which allows empty values
+            # take first which allows empty values
+            name_out = Compose(lambda vs: vs[0])
             price_out = Compose(TakeFirst(), float)
             sku_out = Compose(TakeFirst(), validate_sku)
 
@@ -100,7 +101,8 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.get_collected_values('summary'), [{'key': 1}])
 
         il.add_value(None, u'Jim', lambda x: {'name': x})
-        self.assertEqual(il.get_collected_values('name'), [u'Marta', u'Pepe', u'Jim'])
+        self.assertEqual(
+            il.get_collected_values('name'), [u'Marta', u'Pepe', u'Jim'])
 
     def test_add_zero(self):
         il = NameItemLoader()
@@ -121,11 +123,15 @@ class BasicItemLoaderTest(unittest.TestCase):
 
     def test_get_value(self):
         il = NameItemLoader()
-        self.assertEqual(u'FOO', il.get_value([u'foo', u'bar'], TakeFirst(), unicode.upper))
-        self.assertEqual([u'foo', u'bar'], il.get_value([u'name:foo', u'name:bar'], re=u'name:(.*)$'))
-        self.assertEqual(u'foo', il.get_value([u'name:foo', u'name:bar'], TakeFirst(), re=u'name:(.*)$'))
+        self.assertEqual(
+            u'FOO', il.get_value([u'foo', u'bar'], TakeFirst(), unicode.upper))
+        self.assertEqual([u'foo', u'bar'], il.get_value(
+            [u'name:foo', u'name:bar'], re=u'name:(.*)$'))
+        self.assertEqual(u'foo', il.get_value(
+            [u'name:foo', u'name:bar'], TakeFirst(), re=u'name:(.*)$'))
 
-        il.add_value('name', [u'name:foo', u'name:bar'], TakeFirst(), re=u'name:(.*)$')
+        il.add_value(
+            'name', [u'name:foo', u'name:bar'], TakeFirst(), re=u'name:(.*)$')
         self.assertEqual([u'foo'], il.get_collected_values('name'))
         il.replace_value('name', u'name:bar', re=u'name:(.*)$')
         self.assertEqual([u'bar'], il.get_collected_values('name'))
@@ -230,7 +236,8 @@ class BasicItemLoaderTest(unittest.TestCase):
 
     def test_extend_default_input_processors(self):
         class ChildDefaultedItemLoader(DefaultedItemLoader):
-            name_in = MapCompose(DefaultedItemLoader.default_input_processor, unicode.swapcase)
+            name_in = MapCompose(
+                DefaultedItemLoader.default_input_processor, unicode.swapcase)
 
         il = ChildDefaultedItemLoader()
         il.add_value('name', u'marta')
@@ -350,11 +357,13 @@ class BasicItemLoaderTest(unittest.TestCase):
 
     def test_add_value_on_unknown_field(self):
         il = TestItemLoader()
-        self.assertRaises(KeyError, il.add_value, 'wrong_field', [u'lala', u'lolo'])
+        self.assertRaises(
+            KeyError, il.add_value, 'wrong_field', [u'lala', u'lolo'])
 
     def test_compose_processor(self):
         class TestItemLoader(NameItemLoader):
-            name_out = Compose(lambda v: v[0], lambda v: v.title(), lambda v: v[:-1])
+            name_out = Compose(
+                lambda v: v[0], lambda v: v.title(), lambda v: v[:-1])
 
         il = TestItemLoader()
         il.add_value('name', [u'marta', u'other'])
@@ -483,7 +492,8 @@ class SelectortemLoaderTest(unittest.TestCase):
         self.assertEqual(l.get_output_value('name'), [u'Marta', u'Marta'])
 
         l.add_xpath('url', '//img/@src')
-        self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org', u'/images/logo.png'])
+        self.assertEqual(
+            l.get_output_value('url'), [u'http://www.scrapy.org', u'/images/logo.png'])
 
     def test_add_xpath_re(self):
         l = TestItemLoader(response=self.response)
@@ -505,9 +515,11 @@ class SelectortemLoaderTest(unittest.TestCase):
         l = TestItemLoader(response=self.response)
         self.assertEqual(l.get_xpath('//p/text()'), [u'paragraph'])
         self.assertEqual(l.get_xpath('//p/text()', TakeFirst()), u'paragraph')
-        self.assertEqual(l.get_xpath('//p/text()', TakeFirst(), re='pa'), u'pa')
+        self.assertEqual(
+            l.get_xpath('//p/text()', TakeFirst(), re='pa'), u'pa')
 
-        self.assertEqual(l.get_xpath(['//p/text()', '//div/text()']), [u'paragraph', 'marta'])
+        self.assertEqual(
+            l.get_xpath(['//p/text()', '//div/text()']), [u'paragraph', 'marta'])
 
     def test_replace_xpath_multi_fields(self):
         l = TestItemLoader(response=self.response)
@@ -554,9 +566,10 @@ class SelectortemLoaderTest(unittest.TestCase):
         self.assertEqual(l.get_css('p::text', TakeFirst()), u'paragraph')
         self.assertEqual(l.get_css('p::text', TakeFirst(), re='pa'), u'pa')
 
-        self.assertEqual(l.get_css(['p::text', 'div::text']), [u'paragraph', 'marta'])
+        self.assertEqual(
+            l.get_css(['p::text', 'div::text']), [u'paragraph', 'marta'])
         self.assertEqual(l.get_css(['a::attr(href)', 'img::attr(src)']),
-            [u'http://www.scrapy.org', u'/images/logo.png'])
+                         [u'http://www.scrapy.org', u'/images/logo.png'])
 
     def test_replace_css_multi_fields(self):
         l = TestItemLoader(response=self.response)
@@ -567,7 +580,8 @@ class SelectortemLoaderTest(unittest.TestCase):
 
         l.add_css(None, 'a::attr(href)', TakeFirst(), lambda x: {'url': x})
         self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
-        l.replace_css(None, 'img::attr(src)', TakeFirst(), lambda x: {'url': x})
+        l.replace_css(
+            None, 'img::attr(src)', TakeFirst(), lambda x: {'url': x})
         self.assertEqual(l.get_output_value('url'), [u'/images/logo.png'])
 
     def test_replace_css_re(self):

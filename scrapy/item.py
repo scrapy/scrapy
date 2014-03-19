@@ -11,11 +11,13 @@ from scrapy.utils.trackref import object_ref
 
 
 class BaseItem(object_ref):
+
     """Base class for all scraped items."""
     pass
 
 
 class Field(dict):
+
     """Container of field metadata"""
 
 
@@ -54,7 +56,7 @@ class DictItem(DictMixin, BaseItem):
             self._values[key] = value
         else:
             raise KeyError("%s does not support field: %s" %
-                (self.__class__.__name__, key))
+                           (self.__class__.__name__, key))
 
     def __delitem__(self, key):
         del self._values[key]
@@ -67,7 +69,7 @@ class DictItem(DictMixin, BaseItem):
     def __setattr__(self, name, value):
         if not name.startswith('_'):
             raise AttributeError("Use item[%r] = %r to set field value" %
-                (name, value))
+                                 (name, value))
         super(DictItem, self).__setattr__(name, value)
 
     def keys(self):

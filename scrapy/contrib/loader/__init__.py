@@ -39,7 +39,7 @@ class ItemLoader(object):
         if value is None:
             return
         if not field_name:
-            for k,v in value.iteritems():
+            for k, v in value.iteritems():
                 self._add_value(k, v)
         else:
             self._add_value(field_name, value)
@@ -49,7 +49,7 @@ class ItemLoader(object):
         if value is None:
             return
         if not field_name:
-            for k,v in value.iteritems():
+            for k, v in value.iteritems():
                 self._replace_value(k, v)
         else:
             self._replace_value(field_name, value)
@@ -91,8 +91,8 @@ class ItemLoader(object):
         try:
             return proc(self._values[field_name])
         except Exception as e:
-            raise ValueError("Error with output processor: field=%r value=%r error='%s: %s'" % \
-                (field_name, self._values[field_name], type(e).__name__, str(e)))
+            raise ValueError("Error with output processor: field=%r value=%r error='%s: %s'" %
+                             (field_name, self._values[field_name], type(e).__name__, str(e)))
 
     def get_collected_values(self, field_name):
         return self._values[field_name]
@@ -100,15 +100,15 @@ class ItemLoader(object):
     def get_input_processor(self, field_name):
         proc = getattr(self, '%s_in' % field_name, None)
         if not proc:
-            proc = self._get_item_field_attr(field_name, 'input_processor', \
-                self.default_input_processor)
+            proc = self._get_item_field_attr(field_name, 'input_processor',
+                                             self.default_input_processor)
         return proc
 
     def get_output_processor(self, field_name):
         proc = getattr(self, '%s_out' % field_name, None)
         if not proc:
-            proc = self._get_item_field_attr(field_name, 'output_processor', \
-                self.default_output_processor)
+            proc = self._get_item_field_attr(field_name, 'output_processor',
+                                             self.default_output_processor)
         return proc
 
     def _process_input_value(self, field_name, value):
@@ -126,8 +126,8 @@ class ItemLoader(object):
     def _check_selector_method(self):
         if self.selector is None:
             raise RuntimeError("To use XPath or CSS selectors, "
-                "%s must be instantiated with a selector "
-                "or a response" % self.__class__.__name__)
+                               "%s must be instantiated with a selector "
+                               "or a response" % self.__class__.__name__)
 
     def add_xpath(self, field_name, xpath, *processors, **kw):
         values = self._get_xpathvalues(xpath, **kw)

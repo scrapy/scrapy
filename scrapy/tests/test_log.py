@@ -7,6 +7,7 @@ from scrapy import log
 from scrapy.spider import Spider
 from scrapy.settings import default_settings
 
+
 class LogTest(unittest.TestCase):
 
     def test_get_log_level(self):
@@ -15,6 +16,7 @@ class LogTest(unittest.TestCase):
         self.assertEqual(log._get_log_level(log.WARNING), log.WARNING)
         self.assertRaises(ValueError, log._get_log_level, object())
 
+
 class ScrapyFileLogObserverTest(unittest.TestCase):
 
     level = log.INFO
@@ -22,7 +24,8 @@ class ScrapyFileLogObserverTest(unittest.TestCase):
 
     def setUp(self):
         self.f = StringIO()
-        self.sflo = log.ScrapyFileLogObserver(self.f, self.level, self.encoding)
+        self.sflo = log.ScrapyFileLogObserver(
+            self.f, self.level, self.encoding)
         self.sflo.start()
 
     def tearDown(self):
@@ -81,7 +84,7 @@ class ScrapyFileLogObserverTest(unittest.TestCase):
 
     def test_err_noargs(self):
         try:
-            a = 1/0
+            a = 1 / 0
         except:
             log.err()
         self.failUnless('Traceback' in self.logged())

@@ -11,6 +11,7 @@ from scrapy.utils.deprecate import create_deprecated_class
 
 
 class Spider(object_ref):
+
     """Base class for scrapy spiders. All spiders must inherit from this
     class.
     """
@@ -33,7 +34,8 @@ class Spider(object_ref):
         log.msg(message, spider=self, level=level, **kw)
 
     def set_crawler(self, crawler):
-        assert not hasattr(self, '_crawler'), "Spider already bounded to %s" % crawler
+        assert not hasattr(
+            self, '_crawler'), "Spider already bounded to %s" % crawler
         self._crawler = crawler
 
     @property
@@ -69,6 +71,7 @@ BaseSpider = create_deprecated_class('BaseSpider', Spider)
 
 
 class ObsoleteClass(object):
+
     def __init__(self, message):
         self.message = message
 
@@ -78,4 +81,3 @@ class ObsoleteClass(object):
 spiders = ObsoleteClass("""
 "from scrapy.spider import spiders" no longer works - use "from scrapy.project import crawler" and then access crawler.spiders attribute"
 """)
-

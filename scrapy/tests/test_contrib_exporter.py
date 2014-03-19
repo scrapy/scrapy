@@ -1,4 +1,6 @@
-import unittest, json, cPickle as pickle
+import unittest
+import json
+import cPickle as pickle
 from cStringIO import StringIO
 import lxml.etree
 import re
@@ -8,6 +10,7 @@ from scrapy.utils.python import str_to_unicode
 from scrapy.contrib.exporter import BaseItemExporter, PprintItemExporter, \
     PickleItemExporter, CsvItemExporter, XmlItemExporter, JsonLinesItemExporter, \
     JsonItemExporter, PythonItemExporter
+
 
 class TestItem(Item):
     name = Field()
@@ -43,14 +46,15 @@ class BaseItemExporterTest(unittest.TestCase):
         self._check_output()
 
     def test_serialize_field(self):
-        self.assertEqual(self.ie.serialize_field( \
+        self.assertEqual(self.ie.serialize_field(
             self.i.fields['name'], 'name', self.i['name']), 'John\xc2\xa3')
-        self.assertEqual( \
+        self.assertEqual(
             self.ie.serialize_field(self.i.fields['age'], 'age', self.i['age']), '22')
 
     def test_fields_to_export(self):
         ie = self._get_exporter(fields_to_export=['name'])
-        self.assertEqual(list(ie._get_serialized_fields(self.i)), [('name', 'John\xc2\xa3')])
+        self.assertEqual(
+            list(ie._get_serialized_fields(self.i)), [('name', 'John\xc2\xa3')])
 
         ie = self._get_exporter(fields_to_export=['name'], encoding='latin-1')
         name = list(ie._get_serialized_fields(self.i))[0][1]
@@ -68,10 +72,14 @@ class BaseItemExporterTest(unittest.TestCase):
         i = CustomFieldItem(name=u'John\xa3', age='22')
 
         ie = self._get_exporter()
-        self.assertEqual(ie.serialize_field(i.fields['name'], 'name', i['name']), 'John\xc2\xa3')
-        self.assertEqual(ie.serialize_field(i.fields['age'], 'age', i['age']), '24')
+        self.assertEqual(
+            ie.serialize_field(i.fields['name'], 'name', i['name']), 'John\xc2\xa3')
+        self.assertEqual(
+            ie.serialize_field(i.fields['age'], 'age', i['age']), '24')
+
 
 class PythonItemExporterTest(BaseItemExporterTest):
+
     def _get_exporter(self, **kwargs):
         return PythonItemExporter(**kwargs)
 
@@ -82,7 +90,8 @@ class PythonItemExporterTest(BaseItemExporterTest):
         ie = self._get_exporter()
         exported = ie.export_item(i3)
         self.assertEqual(type(exported), dict)
-        self.assertEqual(exported, {'age': {'age': {'age': '22', 'name': u'Joseph'}, 'name': u'Maria'}, 'name': 'Jesus'})
+        self.assertEqual(exported, {'age': {
+                         'age': {'age': '22', 'name': u'Joseph'}, 'name': u'Maria'}, 'name': 'Jesus'})
         self.assertEqual(type(exported['age']), dict)
         self.assertEqual(type(exported['age']['age']), dict)
 
@@ -92,7 +101,8 @@ class PythonItemExporterTest(BaseItemExporterTest):
         i3 = TestItem(name=u'Jesus', age=[i2])
         ie = self._get_exporter()
         exported = ie.export_item(i3)
-        self.assertEqual(exported, {'age': [{'age': [{'age': '22', 'name': u'Joseph'}], 'name': u'Maria'}], 'name': 'Jesus'})
+        self.assertEqual(exported, {'age': [
+                         {'age': [{'age': '22', 'name': u'Joseph'}], 'name': u'Maria'}], 'name': 'Jesus'})
         self.assertEqual(type(exported['age'][0]), dict)
         self.assertEqual(type(exported['age'][0]['age'][0]), dict)
 
@@ -102,9 +112,11 @@ class PythonItemExporterTest(BaseItemExporterTest):
         i3 = TestItem(name=u'Jesus', age=[i2])
         ie = self._get_exporter()
         exported = ie.export_item(i3)
-        self.assertEqual(exported, {'age': [{'age': [{'age': '22', 'name': u'Joseph'}], 'name': u'Maria'}], 'name': 'Jesus'})
+        self.assertEqual(exported, {'age': [
+                         {'age': [{'age': '22', 'name': u'Joseph'}], 'name': u'Maria'}], 'name': 'Jesus'})
         self.assertEqual(type(exported['age'][0]), dict)
         self.assertEqual(type(exported['age'][0]['age'][0]), dict)
+
 
 class PprintItemExporterTest(BaseItemExporterTest):
 
@@ -113,6 +125,7 @@ class PprintItemExporterTest(BaseItemExporterTest):
 
     def _check_output(self):
         self._assert_expected_item(eval(self.output.getvalue()))
+
 
 class PickleItemExporterTest(BaseItemExporterTest):
 
@@ -147,7 +160,8 @@ class CsvItemExporterTest(BaseItemExporterTest):
         return self.assertEqual(csvsplit(first), csvsplit(second), msg)
 
     def _check_output(self):
-        self.assertCsvEqual(self.output.getvalue(), 'age,name\r\n22,John\xc2\xa3\r\n')
+        self.assertCsvEqual(
+            self.output.getvalue(), 'age,name\r\n22,John\xc2\xa3\r\n')
 
     def test_header(self):
         output = StringIO()
@@ -155,7 +169,8 @@ class CsvItemExporterTest(BaseItemExporterTest):
         ie.start_exporting()
         ie.export_item(self.i)
         ie.finish_exporting()
-        self.assertCsvEqual(output.getvalue(), 'age,name\r\n22,John\xc2\xa3\r\n')
+        self.assertCsvEqual(
+            output.getvalue(), 'age,name\r\n22,John\xc2\xa3\r\n')
 
         output = StringIO()
         ie = CsvItemExporter(output, fields_to_export=['age'])
@@ -170,7 +185,8 @@ class CsvItemExporterTest(BaseItemExporterTest):
         ie.export_item(self.i)
         ie.export_item(self.i)
         ie.finish_exporting()
-        self.assertCsvEqual(output.getvalue(), 'age,name\r\n22,John\xc2\xa3\r\n22,John\xc2\xa3\r\n')
+        self.assertCsvEqual(
+            output.getvalue(), 'age,name\r\n22,John\xc2\xa3\r\n22,John\xc2\xa3\r\n')
 
         output = StringIO()
         ie = CsvItemExporter(output, include_headers_line=False)
@@ -192,6 +208,7 @@ class CsvItemExporterTest(BaseItemExporterTest):
         ie.finish_exporting()
         self.assertCsvEqual(output.getvalue(), '"Mary,Paul",John\r\n')
 
+
 class XmlItemExporterTest(BaseItemExporterTest):
 
     def _get_exporter(self, **kwargs):
@@ -205,6 +222,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
                         for child in children]
             else:
                 return [(elem.tag, [(elem.text, ())])]
+
         def xmlsplit(xmlcontent):
             doc = lxml.etree.fromstring(xmlcontent)
             return xmltuple(doc)
@@ -234,16 +252,16 @@ class XmlItemExporterTest(BaseItemExporterTest):
         ie.export_item(i3)
         ie.finish_exporting()
         expected_value = '<?xml version="1.0" encoding="utf-8"?>\n'\
-                '<items><item>'\
-                    '<age>'\
-                        '<age>'\
-                            '<age>22</age>'\
-                            '<name>foo\xc2\xa3hoo</name>'\
-                        '</age>'\
-                        '<name>bar</name>'\
-                    '</age>'\
-                    '<name>buz</name>'\
-                '</item></items>'
+            '<items><item>'\
+            '<age>'\
+            '<age>'\
+            '<age>22</age>'\
+            '<name>foo\xc2\xa3hoo</name>'\
+            '</age>'\
+            '<name>bar</name>'\
+            '</age>'\
+            '<name>buz</name>'\
+            '</item></items>'
         self.assertXmlEquivalent(output.getvalue(), expected_value)
 
     def test_nested_list_item(self):
@@ -256,19 +274,20 @@ class XmlItemExporterTest(BaseItemExporterTest):
         ie.export_item(i3)
         ie.finish_exporting()
         expected_value =  '<?xml version="1.0" encoding="utf-8"?>\n'\
-                '<items><item>'\
-                    '<age>'\
-                        '<value><name>foo</name></value>'\
-                        '<value><name>bar</name></value>'\
-                    '</age>'\
-                    '<name>buz</name>'\
-                '</item></items>'
+            '<items><item>'\
+            '<age>'\
+            '<value><name>foo</name></value>'\
+            '<value><name>bar</name></value>'\
+            '</age>'\
+            '<name>buz</name>'\
+            '</item></items>'
         self.assertXmlEquivalent(output.getvalue(), expected_value)
 
 
 class JsonLinesItemExporterTest(BaseItemExporterTest):
 
-    _expected_nested = {'name': u'Jesus', 'age': {'name': 'Maria', 'age': {'name': 'Joseph', 'age': '22'}}}
+    _expected_nested = {'name': u'Jesus', 'age': {
+        'name': 'Maria', 'age': {'name': 'Joseph', 'age': '22'}}}
 
     def _get_exporter(self, **kwargs):
         return JsonLinesItemExporter(self.output, **kwargs)
@@ -291,7 +310,8 @@ class JsonLinesItemExporterTest(BaseItemExporterTest):
         self.ie = self._get_exporter(sort_keys=True)
         self.test_export_item()
         self._check_output()
-        self.assertRaises(TypeError, self._get_exporter, foo_unknown_keyword_bar=True)
+        self.assertRaises(
+            TypeError, self._get_exporter, foo_unknown_keyword_bar=True)
 
 
 class JsonItemExporterTest(JsonLinesItemExporterTest):
@@ -321,24 +341,27 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         self.ie.export_item(i3)
         self.ie.finish_exporting()
         exported = json.loads(self.output.getvalue())
-        expected = {'name': u'Jesus', 'age': {'name': 'Maria', 'age': dict(i1)}}
+        expected = {
+            'name': u'Jesus', 'age': {'name': 'Maria', 'age': dict(i1)}}
         self.assertEqual(exported, [expected])
+
 
 class CustomItemExporterTest(unittest.TestCase):
 
     def test_exporter_custom_serializer(self):
         class CustomItemExporter(BaseItemExporter):
+
             def serialize_field(self, field, name, value):
                 if name == 'age':
                     return str(int(value) + 1)
                 else:
-                    return super(CustomItemExporter, self).serialize_field(field, \
-                        name, value)
+                    return super(CustomItemExporter, self).serialize_field(field,
+                                                                           name, value)
 
         i = TestItem(name=u'John', age='22')
         ie = CustomItemExporter()
 
-        self.assertEqual( \
+        self.assertEqual(
             ie.serialize_field(i.fields['name'], 'name', i['name']), 'John')
         self.assertEqual(
             ie.serialize_field(i.fields['age'], 'age', i['age']), '23')

@@ -14,6 +14,7 @@ from scrapy.exceptions import NotConfigured, NotSupported
 
 
 class XMLFeedSpider(Spider):
+
     """
     This class intends to be the base class for spiders that scrape
     from XML feeds.
@@ -65,7 +66,8 @@ class XMLFeedSpider(Spider):
 
     def parse(self, response):
         if not hasattr(self, 'parse_node'):
-            raise NotConfigured('You must define parse_node method in order to scrape this XML feed')
+            raise NotConfigured(
+                'You must define parse_node method in order to scrape this XML feed')
 
         response = self.adapt_response(response)
         if self.iterator == 'iternodes':
@@ -92,7 +94,9 @@ class XMLFeedSpider(Spider):
         for (prefix, uri) in self.namespaces:
             selector.register_namespace(prefix, uri)
 
+
 class CSVFeedSpider(Spider):
+
     """Spider for parsing CSV feeds.
     It receives a CSV file in a response; iterates through each of its rows,
     and calls parse_row with a dict containing each field's data.
@@ -101,7 +105,8 @@ class CSVFeedSpider(Spider):
     and the file's headers.
     """
 
-    delimiter = None # When this is None, python's csv module's default delimiter is used
+    # When this is None, python's csv module's default delimiter is used
+    delimiter = None
     headers = None
 
     def process_results(self, response, results):
@@ -128,13 +133,14 @@ class CSVFeedSpider(Spider):
             if isinstance(ret, (BaseItem, Request)):
                 ret = [ret]
             if not isinstance(ret, (list, tuple)):
-                raise TypeError('You cannot return an "%s" object from a spider' % type(ret).__name__)
+                raise TypeError(
+                    'You cannot return an "%s" object from a spider' % type(ret).__name__)
             for result_item in self.process_results(response, ret):
                 yield result_item
 
     def parse(self, response):
         if not hasattr(self, 'parse_row'):
-            raise NotConfigured('You must define parse_row method in order to scrape this CSV feed')
+            raise NotConfigured(
+                'You must define parse_row method in order to scrape this CSV feed')
         response = self.adapt_response(response)
         return self.parse_rows(response)
-

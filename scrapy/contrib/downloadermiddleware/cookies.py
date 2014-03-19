@@ -8,6 +8,7 @@ from scrapy import log
 
 
 class CookiesMiddleware(object):
+
     """This middleware enables working with sites that need cookies"""
 
     def __init__(self, debug=False):
@@ -76,8 +77,8 @@ class CookiesMiddleware(object):
 
     def _get_request_cookies(self, jar, request):
         if isinstance(request.cookies, dict):
-            cookie_list = [{'name': k, 'value': v} for k, v in \
-                    request.cookies.iteritems()]
+            cookie_list = [{'name': k, 'value': v} for k, v in
+                           request.cookies.iteritems()]
         else:
             cookie_list = request.cookies
 

@@ -9,6 +9,7 @@ from scrapy.spider import Spider
 
 spider = Spider('foo')
 
+
 class TestDefaultHeadersMiddleware(TestCase):
 
     failureException = AssertionError
@@ -40,7 +41,7 @@ class TestDefaultHeadersMiddleware(TestCase):
         mw = HttpProxyMiddleware()
 
         for url, proxy in [('http://e.com', http_proxy),
-                ('https://e.com', https_proxy), ('file://tmp/a', None)]:
+                           ('https://e.com', https_proxy), ('file://tmp/a', None)]:
             req = Request(url)
             assert mw.process_request(req, spider) is None
             self.assertEquals(req.url, url)
@@ -52,7 +53,8 @@ class TestDefaultHeadersMiddleware(TestCase):
         req = Request('http://scrapytest.org')
         assert mw.process_request(req, spider) is None
         self.assertEquals(req.meta, {'proxy': 'https://proxy:3128'})
-        self.assertEquals(req.headers.get('Proxy-Authorization'), 'Basic dXNlcjpwYXNz')
+        self.assertEquals(
+            req.headers.get('Proxy-Authorization'), 'Basic dXNlcjpwYXNz')
 
     def test_proxy_already_seted(self):
         os.environ['http_proxy'] = http_proxy = 'https://proxy.for.http:3128'
@@ -60,7 +62,6 @@ class TestDefaultHeadersMiddleware(TestCase):
         req = Request('http://noproxy.com', meta={'proxy': None})
         assert mw.process_request(req, spider) is None
         assert 'proxy' in req.meta and req.meta['proxy'] is None
-
 
     def test_no_proxy(self):
         os.environ['http_proxy'] = http_proxy = 'https://proxy.for.http:3128'
@@ -80,4 +81,3 @@ class TestDefaultHeadersMiddleware(TestCase):
         req = Request('http://noproxy.com')
         assert mw.process_request(req, spider) is None
         assert 'proxy' not in req.meta
-

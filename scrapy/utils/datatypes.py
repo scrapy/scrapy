@@ -12,7 +12,9 @@ from collections import OrderedDict
 class MultiValueDictKeyError(KeyError):
     pass
 
+
 class MultiValueDict(dict):
+
     """
     A subclass of dictionary customized to handle multiple values for the same key.
 
@@ -29,6 +31,7 @@ class MultiValueDict(dict):
     which returns a list for every key, even though most Web forms submit
     single name-value pairs.
     """
+
     def __init__(self, key_to_list_mapping=()):
         dict.__init__(self, key_to_list_mapping)
 
@@ -43,7 +46,8 @@ class MultiValueDict(dict):
         try:
             list_ = dict.__getitem__(self, key)
         except KeyError:
-            raise MultiValueDictKeyError("Key %r not found in %r" % (key, self))
+            raise MultiValueDictKeyError(
+                "Key %r not found in %r" % (key, self))
         try:
             return list_[-1]
         except IndexError:
@@ -61,7 +65,8 @@ class MultiValueDict(dict):
         result = self.__class__()
         memo[id(self)] = result
         for key, value in dict.items(self):
-            dict.__setitem__(result, copy.deepcopy(key, memo), copy.deepcopy(value, memo))
+            dict.__setitem__(
+                result, copy.deepcopy(key, memo), copy.deepcopy(value, memo))
         return result
 
     def get(self, key, default=None):
@@ -121,7 +126,8 @@ class MultiValueDict(dict):
     def update(self, *args, **kwargs):
         "update() extends rather than replaces existing key lists. Also accepts keyword args."
         if len(args) > 1:
-            raise TypeError("update expected at most 1 arguments, got %d" % len(args))
+            raise TypeError(
+                "update expected at most 1 arguments, got %d" % len(args))
         if args:
             other_dict = args[0]
             if isinstance(other_dict, MultiValueDict):
@@ -132,11 +138,14 @@ class MultiValueDict(dict):
                     for key, value in other_dict.items():
                         self.setlistdefault(key, []).append(value)
                 except TypeError:
-                    raise ValueError("MultiValueDict.update() takes either a MultiValueDict or dictionary")
+                    raise ValueError(
+                        "MultiValueDict.update() takes either a MultiValueDict or dictionary")
         for key, value in kwargs.iteritems():
             self.setlistdefault(key, []).append(value)
 
+
 class SiteNode(object):
+
     """Class to represent a site node (page, image or any other file)"""
 
     def __init__(self, url):
@@ -150,12 +159,12 @@ class SiteNode(object):
         node.parent = self
 
     def to_string(self, level=0):
-        s = "%s%s\n" % ('  '*level, self.url)
+        s = "%s%s\n" % ('  ' * level, self.url)
         if self.itemnames:
             for n in self.itemnames:
-                s += "%sScraped: %s\n" % ('  '*(level+1), n)
+                s += "%sScraped: %s\n" % ('  ' * (level + 1), n)
         for node in self.children:
-            s += node.to_string(level+1)
+            s += node.to_string(level + 1)
         return s
 
 
@@ -213,6 +222,7 @@ class CaselessDict(dict):
 
 
 class MergeDict(object):
+
     """
     A simple class for creating new "virtual" dictionaries that actually look
     up values in more than one dictionary, passed in the constructor.
@@ -220,6 +230,7 @@ class MergeDict(object):
     If a key appears in more than one of the given dictionaries, only the
     first occurrence will be used.
     """
+
     def __init__(self, *dicts):
         self.dicts = dicts
 
@@ -266,6 +277,7 @@ class MergeDict(object):
 
 
 class LocalCache(OrderedDict):
+
     """Dictionary with a finite number of keys.
 
     Older items expires first.

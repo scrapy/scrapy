@@ -13,15 +13,18 @@ from zope.interface import Interface, Attribute
 
 
 class IAddress(Interface):
+
     """
     An address, e.g. a TCP C{(host, port)}.
 
     Default implementations are in L{twisted.internet.address}.
     """
 
-### Reactor Interfaces
+# Reactor Interfaces
+
 
 class IConnector(Interface):
+
     """
     Object used to interface between connections and protocols.
 
@@ -54,9 +57,9 @@ class IConnector(Interface):
         """
 
 
-
 class IResolverSimple(Interface):
-    def getHostByName(name, timeout = (1, 3, 11, 45)):
+
+    def getHostByName(name, timeout=(1, 3, 11, 45)):
         """
         Resolve the domain name C{name} into an IP address.
 
@@ -76,8 +79,8 @@ class IResolverSimple(Interface):
         """
 
 
-
 class IResolver(IResolverSimple):
+
     def query(query, timeout=None):
         """
         Dispatch C{query} to the method which can handle its type.
@@ -100,7 +103,6 @@ class IResolver(IResolverSimple):
             C{NotImplementedError}.
         """
 
-
     def lookupAddress(name, timeout=None):
         """
         Perform an A record lookup.
@@ -121,7 +123,6 @@ class IResolver(IResolverSimple):
             exceptions defined in L{twisted.names.error} or with
             C{NotImplementedError}.
         """
-
 
     def lookupAddress6(name, timeout=None):
         """
@@ -144,7 +145,6 @@ class IResolver(IResolverSimple):
             C{NotImplementedError}.
         """
 
-
     def lookupIPV6Address(name, timeout=None):
         """
         Perform an AAAA record lookup.
@@ -165,7 +165,6 @@ class IResolver(IResolverSimple):
             exceptions defined in L{twisted.names.error} or with
             C{NotImplementedError}.
         """
-
 
     def lookupMailExchange(name, timeout=None):
         """
@@ -188,7 +187,6 @@ class IResolver(IResolverSimple):
             C{NotImplementedError}.
         """
 
-
     def lookupNameservers(name, timeout=None):
         """
         Perform an NS record lookup.
@@ -209,7 +207,6 @@ class IResolver(IResolverSimple):
             exceptions defined in L{twisted.names.error} or with
             C{NotImplementedError}.
         """
-
 
     def lookupCanonicalName(name, timeout=None):
         """
@@ -232,7 +229,6 @@ class IResolver(IResolverSimple):
             C{NotImplementedError}.
         """
 
-
     def lookupMailBox(name, timeout=None):
         """
         Perform an MB record lookup.
@@ -253,7 +249,6 @@ class IResolver(IResolverSimple):
             exceptions defined in L{twisted.names.error} or with
             C{NotImplementedError}.
         """
-
 
     def lookupMailGroup(name, timeout=None):
         """
@@ -276,7 +271,6 @@ class IResolver(IResolverSimple):
             C{NotImplementedError}.
         """
 
-
     def lookupMailRename(name, timeout=None):
         """
         Perform an MR record lookup.
@@ -297,7 +291,6 @@ class IResolver(IResolverSimple):
             exceptions defined in L{twisted.names.error} or with
             C{NotImplementedError}.
         """
-
 
     def lookupPointer(name, timeout=None):
         """
@@ -320,7 +313,6 @@ class IResolver(IResolverSimple):
             C{NotImplementedError}.
         """
 
-
     def lookupAuthority(name, timeout=None):
         """
         Perform an SOA record lookup.
@@ -341,7 +333,6 @@ class IResolver(IResolverSimple):
             exceptions defined in L{twisted.names.error} or with
             C{NotImplementedError}.
         """
-
 
     def lookupNull(name, timeout=None):
         """
@@ -364,7 +355,6 @@ class IResolver(IResolverSimple):
             C{NotImplementedError}.
         """
 
-
     def lookupWellKnownServices(name, timeout=None):
         """
         Perform a WKS record lookup.
@@ -385,7 +375,6 @@ class IResolver(IResolverSimple):
             exceptions defined in L{twisted.names.error} or with
             C{NotImplementedError}.
         """
-
 
     def lookupHostInfo(name, timeout=None):
         """
@@ -408,7 +397,6 @@ class IResolver(IResolverSimple):
             C{NotImplementedError}.
         """
 
-
     def lookupMailboxInfo(name, timeout=None):
         """
         Perform an MINFO record lookup.
@@ -429,7 +417,6 @@ class IResolver(IResolverSimple):
             exceptions defined in L{twisted.names.error} or with
             C{NotImplementedError}.
         """
-
 
     def lookupText(name, timeout=None):
         """
@@ -452,7 +439,6 @@ class IResolver(IResolverSimple):
             C{NotImplementedError}.
         """
 
-
     def lookupResponsibility(name, timeout=None):
         """
         Perform an RP record lookup.
@@ -473,7 +459,6 @@ class IResolver(IResolverSimple):
             exceptions defined in L{twisted.names.error} or with
             C{NotImplementedError}.
         """
-
 
     def lookupAFSDatabase(name, timeout=None):
         """
@@ -496,7 +481,6 @@ class IResolver(IResolverSimple):
             C{NotImplementedError}.
         """
 
-
     def lookupService(name, timeout=None):
         """
         Perform an SRV record lookup.
@@ -517,7 +501,6 @@ class IResolver(IResolverSimple):
             exceptions defined in L{twisted.names.error} or with
             C{NotImplementedError}.
         """
-
 
     def lookupAllRecords(name, timeout=None):
         """
@@ -540,8 +523,7 @@ class IResolver(IResolverSimple):
             C{NotImplementedError}.
         """
 
-
-    def lookupSenderPolicy(name, timeout= 10):
+    def lookupSenderPolicy(name, timeout=10):
         """
         Perform a SPF record lookup.
 
@@ -561,7 +543,6 @@ class IResolver(IResolverSimple):
             exceptions defined in L{twisted.names.error} or with
             C{NotImplementedError}.
         """
-
 
     def lookupNamingAuthorityPointer(name, timeout=None):
         """
@@ -583,7 +564,6 @@ class IResolver(IResolverSimple):
             exceptions defined in L{twisted.names.error} or with
             C{NotImplementedError}.
         """
-
 
     def lookupZone(name, timeout=None):
         """
@@ -612,7 +592,6 @@ class IResolver(IResolverSimple):
             exceptions defined in L{twisted.names.error} or with
             C{NotImplementedError}.
         """
-
 
 
 class IReactorTCP(Interface):
@@ -662,6 +641,7 @@ class IReactorTCP(Interface):
                  docs for details.
         """
 
+
 class IReactorSSL(Interface):
 
     def connectSSL(host, port, factory, contextFactory, timeout=30, bindAddress=None):
@@ -703,8 +683,8 @@ class IReactorSSL(Interface):
         """
 
 
-
 class IReactorUNIX(Interface):
+
     """
     UNIX socket methods.
     """
@@ -726,7 +706,6 @@ class IReactorUNIX(Interface):
 
         @return: An object which provides L{IConnector}.
         """
-
 
     def listenUNIX(address, factory, backlog=50, mode=0o666, wantPID=0):
         """
@@ -750,8 +729,8 @@ class IReactorUNIX(Interface):
         """
 
 
-
 class IReactorUNIXDatagram(Interface):
+
     """
     Datagram UNIX socket methods.
     """
@@ -776,7 +755,6 @@ class IReactorUNIXDatagram(Interface):
         @return: An object which provides L{IConnector}.
         """
 
-
     def listenUNIXDatagram(address, protocol, maxPacketSize=8192, mode=0o666):
         """
         Listen on a datagram UNIX socket.
@@ -796,8 +774,8 @@ class IReactorUNIXDatagram(Interface):
         """
 
 
-
 class IReactorWin32Events(Interface):
+
     """
     Win32 Event API methods
 
@@ -818,7 +796,6 @@ class IReactorWin32Events(Interface):
         @return: None
         """
 
-
     def removeEvent(event):
         """
         Remove an event.
@@ -829,8 +806,8 @@ class IReactorWin32Events(Interface):
         """
 
 
-
 class IReactorUDP(Interface):
+
     """
     UDP socket methods.
     """
@@ -843,8 +820,8 @@ class IReactorUDP(Interface):
         """
 
 
-
 class IReactorMulticast(Interface):
+
     """
     UDP socket methods that support multicast.
 
@@ -870,8 +847,8 @@ class IReactorMulticast(Interface):
         """
 
 
-
 class IReactorSocket(Interface):
+
     """
     Methods which allow a reactor to use externally created sockets.
 
@@ -937,7 +914,6 @@ class IReactorSocket(Interface):
             by this reactor, or not supported with the given socket type.
         """
 
-
     def adoptStreamConnection(fileDescriptor, addressFamily, factory):
         """
         Add an existing connected I{SOCK_STREAM} socket to the reactor to
@@ -968,7 +944,6 @@ class IReactorSocket(Interface):
         @raise UnsupportedSocketType: If the given socket type is not supported
             by this reactor, or not supported with the given socket type.
         """
-
 
 
 class IReactorProcess(Interface):
@@ -1057,7 +1032,9 @@ class IReactorProcess(Interface):
                         insufficient system resources to create a new process.
         """
 
+
 class IReactorTime(Interface):
+
     """
     Time methods that a Reactor should implement.
     """
@@ -1068,7 +1045,6 @@ class IReactorTime(Interface):
 
         @return: A number-like object of some sort.
         """
-
 
     def callLater(delay, callable, *args, **kw):
         """
@@ -1089,7 +1065,6 @@ class IReactorTime(Interface):
                  C{reset()} methods.
         """
 
-
     def getDelayedCalls():
         """
         Retrieve all currently scheduled delayed calls.
@@ -1101,6 +1076,7 @@ class IReactorTime(Interface):
 
 
 class IDelayedCall(Interface):
+
     """
     A scheduled call.
 
@@ -1157,7 +1133,9 @@ class IDelayedCall(Interface):
                  called or cancelled.
         """
 
+
 class IReactorThreads(Interface):
+
     """
     Dispatch methods to be run in threads.
 
@@ -1172,12 +1150,10 @@ class IReactorThreads(Interface):
         @rtype: L{twisted.python.threadpool.ThreadPool}
         """
 
-
     def callInThread(callable, *args, **kwargs):
         """
         Run the callable object in a separate thread.
         """
-
 
     def callFromThread(callable, *args, **kw):
         """
@@ -1194,7 +1170,6 @@ class IReactorThreads(Interface):
         the same thread, use L{callLater} with a delay of 0.
         """
 
-
     def suggestThreadPoolSize(size):
         """
         Suggest the size of the internal threadpool used to dispatch functions
@@ -1203,6 +1178,7 @@ class IReactorThreads(Interface):
 
 
 class IReactorCore(Interface):
+
     """
     Core methods that a Reactor must implement.
     """
@@ -1210,7 +1186,6 @@ class IReactorCore(Interface):
     running = Attribute(
         "A C{bool} which is C{True} from I{during startup} to "
         "I{during shutdown} and C{False} the rest of the time.")
-
 
     def resolve(name, timeout=10):
         """
@@ -1334,6 +1309,7 @@ class IReactorCore(Interface):
 
 
 class IReactorPluggableResolver(Interface):
+
     """
     A reactor with a pluggable name resolver interface.
     """
@@ -1350,6 +1326,7 @@ class IReactorPluggableResolver(Interface):
 
 
 class IReactorDaemonize(Interface):
+
     """
     A reactor which provides hooks that need to be called before and after
     daemonization.
@@ -1369,7 +1346,6 @@ class IReactorDaemonize(Interface):
         @return: C{None}.
         """
 
-
     def afterDaemonize():
         """
         Hook to be called immediately after daemonization. This may only be
@@ -1379,8 +1355,8 @@ class IReactorDaemonize(Interface):
         """
 
 
-
 class IReactorFDSet(Interface):
+
     """
     Implement me to be able to use L{IFileDescriptor} type resources.
 
@@ -1454,6 +1430,7 @@ class IReactorFDSet(Interface):
 
 
 class IListeningPort(Interface):
+
     """
     A listening port.
     """
@@ -1484,6 +1461,7 @@ class IListeningPort(Interface):
 
 
 class ILoggingContext(Interface):
+
     """
     Give context information that will be used to log events generated by
     this item.
@@ -1496,8 +1474,8 @@ class ILoggingContext(Interface):
         """
 
 
-
 class IFileDescriptor(ILoggingContext):
+
     """
     An interface representing a UNIX-style numeric file descriptor.
     """
@@ -1513,7 +1491,6 @@ class IFileDescriptor(ILoggingContext):
             is valid, calls to this method on a particular instance must
             return the same value.
         """
-
 
     def connectionLost(reason):
         """
@@ -1534,8 +1511,8 @@ class IFileDescriptor(ILoggingContext):
         """
 
 
-
 class IReadDescriptor(IFileDescriptor):
+
     """
     An L{IFileDescriptor} that can read.
 
@@ -1553,6 +1530,7 @@ class IReadDescriptor(IFileDescriptor):
 
 
 class IWriteDescriptor(IFileDescriptor):
+
     """
     An L{IFileDescriptor} that can write.
 
@@ -1570,12 +1548,14 @@ class IWriteDescriptor(IFileDescriptor):
 
 
 class IReadWriteDescriptor(IReadDescriptor, IWriteDescriptor):
+
     """
     An L{IFileDescriptor} that can both read and write.
     """
 
 
 class IHalfCloseableDescriptor(Interface):
+
     """
     A descriptor that can be half-closed.
     """
@@ -1592,6 +1572,7 @@ class IHalfCloseableDescriptor(Interface):
 
 
 class ISystemHandle(Interface):
+
     """
     An object that wraps a networking OS-specific handle.
     """
@@ -1610,6 +1591,7 @@ class ISystemHandle(Interface):
 
 
 class IConsumer(Interface):
+
     """
     A consumer consumes data from a producer.
     """
@@ -1641,12 +1623,10 @@ class IConsumer(Interface):
         @return: C{None}
         """
 
-
     def unregisterProducer():
         """
         Stop consuming data from a producer, without disconnecting.
         """
-
 
     def write(data):
         """
@@ -1659,8 +1639,8 @@ class IConsumer(Interface):
         """
 
 
-
 class IProducer(Interface):
+
     """
     A producer produces data for a consumer.
 
@@ -1678,6 +1658,7 @@ class IProducer(Interface):
 
 
 class IPushProducer(IProducer):
+
     """
     A push producer, also known as a streaming producer is expected to
     produce (write to this consumer) data on a continuous basis, unless
@@ -1701,7 +1682,9 @@ class IPushProducer(IProducer):
         more data for its consumer.
         """
 
+
 class IPullProducer(IProducer):
+
     """
     A pull producer, also known as a non-streaming producer, is
     expected to produce data each time resumeProducing() is called.
@@ -1716,6 +1699,7 @@ class IPullProducer(IProducer):
         by calling the consumer's write() method a single time with
         produced data.
         """
+
 
 class IProtocol(Interface):
 
@@ -1766,6 +1750,7 @@ class IProtocol(Interface):
 
 
 class IProcessProtocol(Interface):
+
     """
     Interface for process-related event handlers.
     """
@@ -1779,7 +1764,6 @@ class IProcessProtocol(Interface):
             created and associated with this protocol.
         """
 
-
     def childDataReceived(childFD, data):
         """
         Called when data arrives from the child process.
@@ -1792,7 +1776,6 @@ class IProcessProtocol(Interface):
         @param data: The data read from the child's file descriptor.
         """
 
-
     def childConnectionLost(childFD):
         """
         Called when a file descriptor associated with the child process is
@@ -1801,7 +1784,6 @@ class IProcessProtocol(Interface):
         @type childFD: C{int}
         @param childFD: The file descriptor which was closed.
         """
-
 
     def processExited(reason):
         """
@@ -1816,7 +1798,6 @@ class IProcessProtocol(Interface):
         @since: 8.2
         """
 
-
     def processEnded(reason):
         """
         Called when the child process exits and all file descriptors associated
@@ -1830,8 +1811,8 @@ class IProcessProtocol(Interface):
         """
 
 
-
 class IHalfCloseableProtocol(Interface):
+
     """
     Implemented to indicate they want notification of half-closes.
 
@@ -1865,8 +1846,8 @@ class IHalfCloseableProtocol(Interface):
         """
 
 
-
 class IFileDescriptorReceiver(Interface):
+
     """
     Protocols may implement L{IFileDescriptorReceiver} to receive file
     descriptors sent to them.  This is useful in conjunction with
@@ -1884,8 +1865,8 @@ class IFileDescriptorReceiver(Interface):
         """
 
 
-
 class IProtocolFactory(Interface):
+
     """
     Interface for protocol factories.
     """
@@ -1916,6 +1897,7 @@ class IProtocolFactory(Interface):
 
 
 class ITransport(Interface):
+
     """
     I am a transport for bytes.
 
@@ -1977,6 +1959,7 @@ class ITransport(Interface):
 
 
 class ITCPTransport(ITransport):
+
     """
     A TCP based transport.
     """
@@ -1992,7 +1975,6 @@ class ITCPTransport(ITransport):
         producer.
         """
 
-
     def abortConnection():
         """
         Close the connection abruptly.
@@ -2003,7 +1985,6 @@ class ITCPTransport(ITransport):
 
         @since: 11.1
         """
-
 
     def getTcpNoDelay():
         """
@@ -2043,8 +2024,8 @@ class ITCPTransport(ITransport):
         """
 
 
-
 class IUNIXTransport(ITransport):
+
     """
     Transport for stream-oriented unix domain connections.
     """
@@ -2070,8 +2051,8 @@ class IUNIXTransport(ITransport):
         """
 
 
-
 class ITLSTransport(ITCPTransport):
+
     """
     A TCP transport that supports switching to TLS midstream.
 
@@ -2085,7 +2066,9 @@ class ITLSTransport(ITCPTransport):
         @param contextFactory: A context factory (see L{ssl.py<twisted.internet.ssl>})
         """
 
+
 class ISSLTransport(ITCPTransport):
+
     """
     A SSL/TLS based transport.
     """
@@ -2097,6 +2080,7 @@ class ISSLTransport(ITCPTransport):
 
 
 class IProcessTransport(ITransport):
+
     """
     A process transport.
     """
@@ -2171,6 +2155,7 @@ class IProcessTransport(ITransport):
 
 
 class IServiceCollection(Interface):
+
     """
     An object which provides access to a collection of services.
     """
@@ -2194,6 +2179,7 @@ class IServiceCollection(Interface):
 
 
 class IUDPTransport(Interface):
+
     """
     Transport for UDP DatagramProtocols.
     """
@@ -2237,8 +2223,8 @@ class IUDPTransport(Interface):
         """
 
 
-
 class IUNIXDatagramTransport(Interface):
+
     """
     Transport for UDP PacketProtocols.
     """
@@ -2255,6 +2241,7 @@ class IUNIXDatagramTransport(Interface):
 
 
 class IUNIXDatagramConnectedTransport(Interface):
+
     """
     Transport for UDP ConnectedPacketProtocols.
     """
@@ -2276,6 +2263,7 @@ class IUNIXDatagramConnectedTransport(Interface):
 
 
 class IMulticastTransport(Interface):
+
     """
     Additional functionality for multicast UDP.
     """
@@ -2327,6 +2315,7 @@ class IMulticastTransport(Interface):
 
 
 class IStreamClientEndpoint(Interface):
+
     """
     A stream client endpoint is a place that L{ClientFactory} can connect to.
     For example, a remote TCP host/port pair would be a TCP client endpoint.
@@ -2345,8 +2334,8 @@ class IStreamClientEndpoint(Interface):
         """
 
 
-
 class IStreamServerEndpoint(Interface):
+
     """
     A stream server endpoint is a place that a L{Factory} can listen for
     incoming connections.
@@ -2365,8 +2354,8 @@ class IStreamServerEndpoint(Interface):
         """
 
 
-
 class IStreamServerEndpointStringParser(Interface):
+
     """
     An L{IStreamServerEndpointStringParser} is like an
     L{IStreamClientEndpointStringParser}, except for L{IStreamServerEndpoint}s
@@ -2380,7 +2369,6 @@ class IStreamServerEndpointStringParser(Interface):
         """
     )
 
-
     def parseStreamServer(reactor, *args, **kwargs):
         """
         Parse a stream server endpoint from a reactor and string-only arguments
@@ -2393,8 +2381,8 @@ class IStreamServerEndpointStringParser(Interface):
         """
 
 
-
 class IStreamClientEndpointStringParser(Interface):
+
     """
     An L{IStreamClientEndpointStringParser} is a parser which can convert
     a set of string C{*args} and C{**kwargs} into an L{IStreamClientEndpoint}
@@ -2418,7 +2406,6 @@ class IStreamClientEndpointStringParser(Interface):
         C{"foo:bar:baz"} or C{"foo:"}.
         """
     )
-
 
     def parseStreamClient(*args, **kwargs):
         """

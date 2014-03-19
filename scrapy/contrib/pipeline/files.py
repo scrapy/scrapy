@@ -21,6 +21,7 @@ from scrapy.utils.misc import md5sum
 
 
 class FileException(Exception):
+
     """General media error exception"""
 
 
@@ -91,7 +92,8 @@ class S3FilesStore(object):
         from boto.s3.connection import S3Connection
         # disable ssl (is_secure=False) because of this python bug:
         # http://bugs.python.org/issue5103
-        c = S3Connection(self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=False)
+        c = S3Connection(
+            self.AWS_ACCESS_KEY_ID, self.AWS_SECRET_ACCESS_KEY, is_secure=False)
         return c.get_bucket(self.bucket, validate=False)
 
     def _get_boto_key(self, path):
@@ -116,6 +118,7 @@ class S3FilesStore(object):
 
 
 class FilesPipeline(MediaPipeline):
+
     """Abstract pipeline that implement the file downloading
 
     This pipeline tries to minimize network transfers and file processing,
@@ -156,8 +159,10 @@ class FilesPipeline(MediaPipeline):
         s3store.AWS_ACCESS_KEY_ID = settings['AWS_ACCESS_KEY_ID']
         s3store.AWS_SECRET_ACCESS_KEY = settings['AWS_SECRET_ACCESS_KEY']
 
-        cls.FILES_URLS_FIELD = settings.get('FILES_URLS_FIELD', cls.DEFAULT_FILES_URLS_FIELD)
-        cls.FILES_RESULT_FIELD = settings.get('FILES_RESULT_FIELD', cls.DEFAULT_FILES_RESULT_FIELD)
+        cls.FILES_URLS_FIELD = settings.get(
+            'FILES_URLS_FIELD', cls.DEFAULT_FILES_URLS_FIELD)
+        cls.FILES_RESULT_FIELD = settings.get(
+            'FILES_RESULT_FIELD', cls.DEFAULT_FILES_RESULT_FIELD)
         cls.EXPIRES = settings.getint('FILES_EXPIRES', 90)
         store_uri = settings['FILES_STORE']
         return cls(store_uri)
@@ -241,16 +246,18 @@ class FilesPipeline(MediaPipeline):
             raise
         except Exception as exc:
             whyfmt = 'File (unknown-error): Error processing file from %(request)s referred in <%(referer)s>'
-            log.err(None, whyfmt % {'request': request, 'referer': referer}, spider=info.spider)
+            log.err(None, whyfmt %
+                    {'request': request, 'referer': referer}, spider=info.spider)
             raise FileException(str(exc))
 
         return {'url': request.url, 'path': path, 'checksum': checksum}
 
     def inc_stats(self, spider, status):
         spider.crawler.stats.inc_value('file_count', spider=spider)
-        spider.crawler.stats.inc_value('file_status_count/%s' % status, spider=spider)
+        spider.crawler.stats.inc_value(
+            'file_status_count/%s' % status, spider=spider)
 
-    ### Overridable Interface
+    # Overridable Interface
     def get_media_requests(self, item, info):
         return [Request(x) for x in item.get(self.FILES_URLS_FIELD, [])]
 
@@ -267,7 +274,7 @@ class FilesPipeline(MediaPipeline):
         return item
 
     def file_path(self, request, response=None, info=None):
-        ## start of deprecation warning block (can be removed in the future)
+        # start of deprecation warning block (can be removed in the future)
         def _warn():
             from scrapy.exceptions import ScrapyDeprecationWarning
             import warnings
@@ -286,10 +293,12 @@ class FilesPipeline(MediaPipeline):
         if not hasattr(self.file_key, '_base'):
             _warn()
             return self.file_key(url)
-        ## end of deprecation warning block
+        # end of deprecation warning block
 
-        media_guid = hashlib.sha1(url).hexdigest()  # change to request.url after deprecation
-        media_ext = os.path.splitext(url)[1]  # change to request.url after deprecation
+        # change to request.url after deprecation
+        media_guid = hashlib.sha1(url).hexdigest()
+        # change to request.url after deprecation
+        media_ext = os.path.splitext(url)[1]
         return 'full/%s%s' % (media_guid, media_ext)
 
     # deprecated

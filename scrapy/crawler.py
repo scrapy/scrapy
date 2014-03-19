@@ -27,7 +27,8 @@ class Crawler(object):
     def install(self):
         # TODO: remove together with scrapy.project.crawler usage
         import scrapy.project
-        assert not hasattr(scrapy.project, 'crawler'), "crawler already installed"
+        assert not hasattr(
+            scrapy.project, 'crawler'), "crawler already installed"
         scrapy.project.crawler = self
 
     def uninstall(self):
@@ -73,6 +74,7 @@ class Crawler(object):
 
 
 class CrawlerProcess(object):
+
     """ A class to run multiple scrapy crawlers in a process sequentially"""
 
     def __init__(self, settings):

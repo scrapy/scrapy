@@ -11,6 +11,7 @@ from twisted.trial import unittest
 from scrapy.utils.python import retry_on_eintr
 from scrapy.utils.test import get_testenv
 
+
 class ProjectTest(unittest.TestCase):
     project_name = 'testproject'
 
@@ -27,8 +28,8 @@ class ProjectTest(unittest.TestCase):
     def call(self, *new_args, **kwargs):
         out = os.tmpfile()
         args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
-        return subprocess.call(args, stdout=out, stderr=out, cwd=self.cwd, \
-            env=self.env, **kwargs)
+        return subprocess.call(args, stdout=out, stderr=out, cwd=self.cwd,
+                               env=self.env, **kwargs)
 
     def proc(self, *new_args, **kwargs):
         args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
@@ -62,7 +63,8 @@ class StartprojectTest(ProjectTest):
         assert exists(join(self.proj_mod_path, 'spiders', '__init__.py'))
 
         self.assertEqual(1, self.call('startproject', self.project_name))
-        self.assertEqual(1, self.call('startproject', 'wrong---project---name'))
+        self.assertEqual(
+            1, self.call('startproject', 'wrong---project---name'))
 
 
 class CommandTest(ProjectTest):
@@ -89,8 +91,10 @@ class GenspiderCommandTest(CommandTest):
         spname = 'test_spider'
         p = self.proc('genspider', spname, 'test.com', *args)
         out = retry_on_eintr(p.stdout.read)
-        self.assert_("Created spider %r using template %r in module" % (spname, tplname) in out)
-        self.assert_(exists(join(self.proj_mod_path, 'spiders', 'test_spider.py')))
+        self.assert_("Created spider %r using template %r in module" %
+                     (spname, tplname) in out)
+        self.assert_(
+            exists(join(self.proj_mod_path, 'spiders', 'test_spider.py')))
         p = self.proc('genspider', spname, 'test.com', *args)
         out = retry_on_eintr(p.stdout.read)
         self.assert_("Spider %r already exists in module" % spname in out)
@@ -113,13 +117,15 @@ class GenspiderCommandTest(CommandTest):
 
     def test_same_name_as_project(self):
         self.assertEqual(2, self.call('genspider', self.project_name))
-        assert not exists(join(self.proj_mod_path, 'spiders', '%s.py' % self.project_name))
+        assert not exists(
+            join(self.proj_mod_path, 'spiders', '%s.py' % self.project_name))
 
 
 class MiscCommandsTest(CommandTest):
 
     def test_list(self):
         self.assertEqual(0, self.call('list'))
+
 
 class RunSpiderCommandTest(CommandTest):
 
@@ -217,13 +223,13 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
 
     def test_spider_arguments(self):
         p = self.proc('parse', '--spider', self.spider_name, '-a', 'test_arg=1',
-                '-c', 'parse', 'http://scrapinghub.com')
+                      '-c', 'parse', 'http://scrapinghub.com')
         log = p.stderr.read()
         self.assert_("[parse_spider] DEBUG: It Works!" in log, log)
 
     def test_pipelines(self):
         p = self.proc('parse', '--spider', self.spider_name, '--pipelines',
-                '-c', 'parse', 'http://scrapinghub.com')
+                      '-c', 'parse', 'http://scrapinghub.com')
         log = p.stderr.read()
         self.assert_("[scrapy] INFO: It Works!" in log, log)
 
@@ -232,6 +238,6 @@ class BenchCommandTest(CommandTest):
 
     def test_run(self):
         p = self.proc('bench', '-s', 'LOGSTATS_INTERVAL=0.001',
-                '-s', 'CLOSESPIDER_TIMEOUT=0.01')
+                      '-s', 'CLOSESPIDER_TIMEOUT=0.01')
         log = p.stderr.read()
         self.assert_('INFO: Crawled' in log, log)

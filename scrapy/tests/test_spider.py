@@ -118,11 +118,11 @@ class CrawlSpiderTest(SpiderTest):
     def test_process_links(self):
 
         response = HtmlResponse("http://example.org/somepage/index.html",
-            body=self.test_body)
+                                body=self.test_body)
 
         class _CrawlSpider(self.spider_class):
-            name="test"
-            allowed_domains=['example.org']
+            name = "test"
+            allowed_domains = ['example.org']
             rules = (
                 Rule(SgmlLinkExtractor(), process_links="dummy_process_links"),
             )
@@ -142,17 +142,19 @@ class CrawlSpiderTest(SpiderTest):
     def test_process_links_filter(self):
 
         response = HtmlResponse("http://example.org/somepage/index.html",
-            body=self.test_body)
+                                body=self.test_body)
 
         class _CrawlSpider(self.spider_class):
             import re
 
-            name="test"
-            allowed_domains=['example.org']
+            name = "test"
+            allowed_domains = ['example.org']
             rules = (
-                Rule(SgmlLinkExtractor(), process_links="filter_process_links"),
+                Rule(
+                    SgmlLinkExtractor(), process_links="filter_process_links"),
             )
             _test_regex = re.compile('nofollow')
+
             def filter_process_links(self, links):
                 return [link for link in links
                         if not self._test_regex.search(link.url)]
@@ -168,11 +170,11 @@ class CrawlSpiderTest(SpiderTest):
     def test_process_links_generator(self):
 
         response = HtmlResponse("http://example.org/somepage/index.html",
-            body=self.test_body)
+                                body=self.test_body)
 
         class _CrawlSpider(self.spider_class):
-            name="test"
-            allowed_domains=['example.org']
+            name = "test"
+            allowed_domains = ['example.org']
             rules = (
                 Rule(SgmlLinkExtractor(), process_links="dummy_process_links"),
             )
@@ -214,13 +216,16 @@ class SitemapSpiderTest(SpiderTest):
         r = Response(url="http://www.example.com/favicon.ico", body=self.BODY)
         self.assertEqual(spider._get_sitemap_body(r), None)
 
-        r = Response(url="http://www.example.com/sitemap", body=self.GZBODY, headers={"content-type": "application/gzip"})
+        r = Response(url="http://www.example.com/sitemap",
+                     body=self.GZBODY, headers={"content-type": "application/gzip"})
         self.assertEqual(spider._get_sitemap_body(r), self.BODY)
 
-        r = TextResponse(url="http://www.example.com/sitemap.xml", body=self.BODY)
+        r = TextResponse(
+            url="http://www.example.com/sitemap.xml", body=self.BODY)
         self.assertEqual(spider._get_sitemap_body(r), self.BODY)
 
-        r = Response(url="http://www.example.com/sitemap.xml.gz", body=self.GZBODY)
+        r = Response(
+            url="http://www.example.com/sitemap.xml.gz", body=self.GZBODY)
         self.assertEqual(spider._get_sitemap_body(r), self.BODY)
 
 

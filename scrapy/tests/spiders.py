@@ -32,7 +32,8 @@ class FollowAllSpider(MetaSpider):
         super(FollowAllSpider, self).__init__(*args, **kwargs)
         self.urls_visited = []
         self.times = []
-        qargs = {'total': total, 'show': show, 'order': order, 'maxlatency': maxlatency}
+        qargs = {'total': total, 'show': show,
+                 'order': order, 'maxlatency': maxlatency}
         url = "http://localhost:8998/follow?%s" % urlencode(qargs, doseq=1)
         self.start_urls = [url]
 
@@ -126,7 +127,7 @@ class BrokenStartRequestsSpider(FollowAllSpider):
                 2 / 0
 
         assert self.seedsseen, \
-                'All start requests consumed before any download happened'
+            'All start requests consumed before any download happened'
 
     def parse(self, response):
         self.seedsseen.append(response.meta.get('seed'))

@@ -49,6 +49,7 @@ class StackTraceDump(object):
 
 
 class Debugger(object):
+
     def __init__(self):
         try:
             signal.signal(signal.SIGUSR2, self._enter_debugger)

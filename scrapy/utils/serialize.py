@@ -11,6 +11,7 @@ from scrapy.item import BaseItem
 
 
 class SpiderReferencer(object):
+
     """Class to serialize (and deserialize) objects (typically dicts)
     containing references to running spiders (ie. Spider objects). This is
     required because json library fails to serialize dicts containing

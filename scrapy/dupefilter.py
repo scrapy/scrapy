@@ -26,6 +26,7 @@ class BaseDupeFilter(object):
 
 
 class RFPDupeFilter(BaseDupeFilter):
+
     """Request Fingerprint duplicates filter"""
 
     def __init__(self, path=None, debug=False):
@@ -60,12 +61,14 @@ class RFPDupeFilter(BaseDupeFilter):
     def log(self, request, spider):
         if self.debug:
             fmt = "Filtered duplicate request: %(request)s"
-            log.msg(format=fmt, request=request, level=log.DEBUG, spider=spider)
+            log.msg(
+                format=fmt, request=request, level=log.DEBUG, spider=spider)
         elif self.logdupes:
             fmt = ("Filtered duplicate request: %(request)s"
                    " - no more duplicates will be shown"
                    " (see DUPEFILTER_DEBUG to show all duplicates)")
-            log.msg(format=fmt, request=request, level=log.DEBUG, spider=spider)
+            log.msg(
+                format=fmt, request=request, level=log.DEBUG, spider=spider)
             self.logdupes = False
 
         spider.crawler.stats.inc_value('dupefilter/filtered', spider=spider)

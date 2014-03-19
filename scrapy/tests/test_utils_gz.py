@@ -6,6 +6,7 @@ from scrapy.utils.gz import gunzip
 
 SAMPLEDIR = join(tests_datadir, 'compressed')
 
+
 class GzTest(unittest.TestCase):
 
     def test_gunzip_basic(self):

@@ -8,13 +8,19 @@ try:
 except ImportError:
     S3Connection = object
 
+
 class _v19_S3Connection(S3Connection):
+
     """A dummy S3Connection wrapper that doesn't do any syncronous download"""
+
     def _mexe(self, method, bucket, key, headers, *args, **kwargs):
         return headers
 
+
 class _v20_S3Connection(S3Connection):
+
     """A dummy S3Connection wrapper that doesn't do any syncronous download"""
+
     def _mexe(self, http_request, *args, **kwargs):
         http_request.authorize(connection=self)
         return http_request.headers
@@ -29,8 +35,8 @@ else:
 
 class S3DownloadHandler(object):
 
-    def __init__(self, settings, aws_access_key_id=None, aws_secret_access_key=None, \
-            httpdownloadhandler=HTTPDownloadHandler):
+    def __init__(self, settings, aws_access_key_id=None, aws_secret_access_key=None,
+                 httpdownloadhandler=HTTPDownloadHandler):
         if 'boto' not in optional_features:
             raise NotConfigured("missing boto library")
 
@@ -52,11 +58,11 @@ class S3DownloadHandler(object):
         path = p.path + '?' + p.query if p.query else p.path
         url = '%s://%s.s3.amazonaws.com%s' % (scheme, bucket, path)
         signed_headers = self.conn.make_request(
-                method=request.method,
-                bucket=bucket,
-                key=p.path,
-                query_args=p.query,
-                headers=request.headers,
-                data=request.body)
+            method=request.method,
+            bucket=bucket,
+            key=p.path,
+            query_args=p.query,
+            headers=request.headers,
+            data=request.body)
         httpreq = request.replace(url=url, headers=signed_headers)
         return self._download_http(httpreq, spider)

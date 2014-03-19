@@ -4,6 +4,7 @@ from scrapy import signals
 
 
 class UserAgentMiddleware(object):
+
     """This middleware allows spiders to override the user_agent"""
 
     def __init__(self, user_agent='Scrapy'):

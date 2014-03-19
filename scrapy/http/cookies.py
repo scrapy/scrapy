@@ -4,6 +4,7 @@ from scrapy.utils.httpobj import urlparse_cached
 
 
 class CookieJar(object):
+
     def __init__(self, policy=None, check_expired_frequency=10000):
         self.policy = policy or DefaultCookiePolicy()
         self.jar = _CookieJar(self.policy)
@@ -97,7 +98,9 @@ def potential_domain_matches(domain):
         pass
     return matches + ['.' + d for d in matches]
 
+
 class _DummyLock(object):
+
     def acquire(self):
         pass
 
@@ -106,6 +109,7 @@ class _DummyLock(object):
 
 
 class WrappedRequest(object):
+
     """Wraps a scrapy Request class with methods defined by urllib2.Request class to interact with CookieJar class
 
     see http://docs.python.org/library/urllib2.html#urllib2.Request
@@ -147,7 +151,7 @@ class WrappedRequest(object):
 
     def add_unredirected_header(self, name, value):
         self.request.headers.appendlist(name, value)
-        #print 'add_unredirected_header', self.request.headers
+        # print 'add_unredirected_header', self.request.headers
 
 
 class WrappedResponse(object):

@@ -5,6 +5,7 @@ from scrapy import log, signals
 
 
 class LogStats(object):
+
     """Log basic scraping stats periodically"""
 
     def __init__(self, stats, interval=60.0):

@@ -2,6 +2,7 @@ from scrapy.command import ScrapyCommand
 from scrapy.commands import fetch
 from scrapy.utils.response import open_in_browser
 
+
 class Command(fetch.Command):
 
     def short_desc(self):
@@ -14,7 +15,7 @@ class Command(fetch.Command):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--spider", dest="spider",
-            help="use this spider")
+                          help="use this spider")
 
     def _print_response(self, response, opts):
         open_in_browser(response)

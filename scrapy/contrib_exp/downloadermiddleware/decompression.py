@@ -14,6 +14,7 @@ from scrapy.responsetypes import responsetypes
 
 
 class DecompressionMiddleware(object):
+
     """ This middleware tries to recognise and extract the possibly compressed
     responses that may arrive. """
 
@@ -33,7 +34,8 @@ class DecompressionMiddleware(object):
             return
 
         body = tar_file.extractfile(tar_file.members[0]).read()
-        respcls = responsetypes.from_args(filename=tar_file.members[0].name, body=body)
+        respcls = responsetypes.from_args(
+            filename=tar_file.members[0].name, body=body)
         return response.replace(body=body, cls=respcls)
 
     def _is_zip(self, response):

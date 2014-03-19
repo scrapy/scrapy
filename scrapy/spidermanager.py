@@ -49,7 +49,7 @@ class SpiderManager(object):
 
     def find_by_request(self, request):
         return [name for name, cls in self._spiders.iteritems()
-            if cls.handles_request(request)]
+                if cls.handles_request(request)]
 
     def list(self):
         return self._spiders.keys()

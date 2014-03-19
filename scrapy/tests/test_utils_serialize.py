@@ -11,12 +11,16 @@ from scrapy.http import Request, Response
 
 
 class _EngineMock(object):
+
     def __init__(self, open_spiders):
         self.open_spiders = open_spiders
 
+
 class CrawlerMock(object):
+
     def __init__(self, open_spiders):
         self.engine = _EngineMock(open_spiders)
+
 
 class BaseTestCase(unittest.TestCase):
 
@@ -28,6 +32,7 @@ class BaseTestCase(unittest.TestCase):
         self.spref = SpiderReferencer(crawler)
         self.encoder = ScrapyJSONEncoder(spref=self.spref)
         self.decoder = ScrapyJSONDecoder(spref=self.spref)
+
 
 class SpiderReferencerTestCase(BaseTestCase):
 
@@ -53,8 +58,10 @@ class SpiderReferencerTestCase(BaseTestCase):
 
         # must return string as-is if spider id not found
         assert 'lala' == self.spref.get_spider_from_reference('lala')
-        # must raise RuntimeError if spider id is not found and spider is not running
-        self.assertRaises(RuntimeError, self.spref.get_spider_from_reference, 'spider:fffffff')
+        # must raise RuntimeError if spider id is not found and spider is not
+        # running
+        self.assertRaises(
+            RuntimeError, self.spref.get_spider_from_reference, 'spider:fffffff')
 
     def test_encode_decode(self):
         sr = self.spref
@@ -75,8 +82,9 @@ class SpiderReferencerTestCase(BaseTestCase):
             self.assertEqual(sr.encode_references(spiders), refs)
             self.assertEqual(sr.decode_references(refs), spiders)
 
+
 class JsonEncoderTestCase(BaseTestCase):
-    
+
     def test_encode_decode(self):
         sr = self.spref
         sp1 = self.spider1
@@ -130,4 +138,3 @@ class JsonEncoderTestCase(BaseTestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

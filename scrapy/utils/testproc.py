@@ -3,11 +3,12 @@ import os
 
 from twisted.internet import reactor, defer, protocol
 
+
 class ProcessTest(object):
 
     command = None
     prefix = [sys.executable, '-m', 'scrapy.cmdline']
-    cwd = os.getcwd() # trial chdirs to temp dir
+    cwd = os.getcwd()  # trial chdirs to temp dir
 
     def execute(self, args, check_code=True, settings=None):
         env = os.environ.copy()

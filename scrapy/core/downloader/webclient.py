@@ -11,7 +11,8 @@ from scrapy.responsetypes import responsetypes
 
 
 def _parsed_url_args(parsed):
-    path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
+    path = urlunparse(
+        ('', '', parsed.path or '/', parsed.params, parsed.query, ''))
     host = parsed.hostname
     port = parsed.port
     scheme = parsed.scheme
@@ -32,7 +33,7 @@ class ScrapyHTTPPageGetter(HTTPClient):
     delimiter = '\n'
 
     def connectionMade(self):
-        self.headers = Headers() # bucket for response headers
+        self.headers = Headers()  # bucket for response headers
 
         # Method command
         self.sendCommand(self.factory.method, self.factory.path)
@@ -73,12 +74,13 @@ class ScrapyHTTPPageGetter(HTTPClient):
 
     def timeout(self):
         self.transport.loseConnection()
-        self.factory.noPage(\
-                defer.TimeoutError("Getting %s took longer than %s seconds." % \
-                (self.factory.url, self.factory.timeout)))
+        self.factory.noPage(
+            defer.TimeoutError("Getting %s took longer than %s seconds." %
+                               (self.factory.url, self.factory.timeout)))
 
 
 class ScrapyHTTPClientFactory(HTTPClientFactory):
+
     """Scrapy implementation of the HTTPClientFactory overwriting the
     serUrl method to make use of our Url object that cache the parse
     result.
@@ -98,7 +100,8 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
         self.response_headers = None
         self.timeout = request.meta.get('download_timeout') or timeout
         self.start_time = time()
-        self.deferred = defer.Deferred().addCallback(self._build_response, request)
+        self.deferred = defer.Deferred().addCallback(
+            self._build_response, request)
 
         # Fixes Twisted 11.1.0+ support as HTTPClientFactory is expected
         # to have _disconnectedDeferred. See Twisted r32329.
@@ -120,7 +123,7 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
             self.headers.setdefault("Connection", "close")
 
     def _build_response(self, body, request):
-        request.meta['download_latency'] = self.headers_time-self.start_time
+        request.meta['download_latency'] = self.headers_time - self.start_time
         status = int(self.status)
         headers = Headers(self.response_headers)
         respcls = responsetypes.from_args(headers=headers, url=self.url)
@@ -128,7 +131,8 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
 
     def _set_connection_attributes(self, request):
         parsed = urlparse_cached(request)
-        self.scheme, self.netloc, self.host, self.port, self.path = _parsed_url_args(parsed)
+        self.scheme, self.netloc, self.host, self.port, self.path = _parsed_url_args(
+            parsed)
         proxy = request.meta.get('proxy')
         if proxy:
             self.scheme, _, self.host, self.port, _ = _parse(proxy)
@@ -137,4 +141,3 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
     def gotHeaders(self, headers):
         self.headers_time = time()
         self.response_headers = headers
-

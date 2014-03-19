@@ -20,6 +20,7 @@ def assert_aws_environ():
     if 'AWS_ACCESS_KEY_ID' not in os.environ:
         raise SkipTest("AWS keys not found")
 
+
 def get_crawler(settings_dict=None):
     """Return an unconfigured Crawler object. If settings_dict is given, it
     will be used as the settings present in the settings module of the
@@ -37,11 +38,13 @@ def get_crawler(settings_dict=None):
     settings = CrawlerSettings(settings_module)
     return Crawler(settings)
 
+
 def get_pythonpath():
     """Return a PYTHONPATH suitable to use in processes so that they find this
     installation of Scrapy"""
     scrapy_path = import_module('scrapy').__path__[0]
     return os.path.dirname(scrapy_path) + os.pathsep + os.environ.get('PYTHONPATH', '')
+
 
 def get_testenv():
     """Return a OS environment dict suitable to fork processes that need to import
@@ -50,6 +53,7 @@ def get_testenv():
     env = os.environ.copy()
     env['PYTHONPATH'] = get_pythonpath()
     return env
+
 
 def get_testlog():
     """Get Scrapy log of current test, ignoring the rest"""
@@ -69,6 +73,7 @@ def assert_samelines(testcase, text1, text2, msg=None):
     line endings between platforms
     """
     testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
+
 
 def docrawl(spider, settings=None):
     """Configure and start Crawler; return the result of crawler.start()"""
