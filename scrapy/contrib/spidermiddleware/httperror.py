@@ -25,7 +25,7 @@ class HttpErrorMiddleware(object):
         self.handle_httpstatus_list = settings.getlist('HTTPERROR_ALLOWED_CODES')
 
     def process_spider_input(self, response, spider):
-        if 200 <= response.status < 300: # common case
+        if 200 <= response.status < 300:  # common case
             return
         meta = response.meta
         if 'handle_httpstatus_all' in meta:
@@ -38,11 +38,14 @@ class HttpErrorMiddleware(object):
             allowed_statuses = getattr(spider, 'handle_httpstatus_list', self.handle_httpstatus_list)
         if response.status in allowed_statuses:
             return
-        log.msg(format="Ignoring HTTP response code: not handled or not allowed: %(status_code)d",
-                            level=log.DEBUG, spider=spider,
-                            status_code=response.status)
         raise HttpError(response, 'Ignoring non-200 response')
 
     def process_spider_exception(self, response, exception, spider):
         if isinstance(exception, HttpError):
+            log.msg(
+                format="Ignoring response %(response)r: HTTP status code is not handled or not allowed",
+                level=log.DEBUG,
+                spider=spider,
+                response=response
+            )
             return []

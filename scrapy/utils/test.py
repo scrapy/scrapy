@@ -53,11 +53,13 @@ def get_testenv():
 
 def get_testlog():
     """Get Scrapy log of current test, ignoring the rest"""
+    with open("test.log", "rb") as fp:
+        loglines = fp.readlines()
+
     thistest = []
-    loglines = open("test.log").readlines()
-    for l in loglines[::-1]:
-        thistest.append(l)
-        if "[-] -->" in l:
+    for line in loglines[::-1]:
+        thistest.append(line)
+        if "[-] -->" in line:
             break
     return "".join(thistest[::-1])
 
@@ -67,3 +69,10 @@ def assert_samelines(testcase, text1, text2, msg=None):
     line endings between platforms
     """
     testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
+
+def docrawl(spider, settings=None):
+    """Configure and start Crawler; return the result of crawler.start()"""
+    crawler = get_crawler(settings)
+    crawler.configure()
+    crawler.crawl(spider)
+    return crawler.start()
