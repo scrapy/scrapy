@@ -1,6 +1,7 @@
 import re, csv
 from cStringIO import StringIO
 from importlib import import_module
+from utils import walk_modules
 
 from scrapy.http import TextResponse, Response
 from scrapy.selector import Selector
