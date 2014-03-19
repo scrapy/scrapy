@@ -82,7 +82,7 @@ def walk_modules(path, load=False, is_file=False):
             mod = _import_file(path)
         except (ImportError, ValueError) as e:
             raise UsageError("Unable to load %r: %s\n" % (filename, e))
-    else
+    else:
         mod = import_module(path)
 
     mods.append(mod)
