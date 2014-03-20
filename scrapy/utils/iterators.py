@@ -1,11 +1,64 @@
+import inspect
+import os
+import sys
 import re, csv
 from cStringIO import StringIO
+from imp import load_source
+from importlib import import_module
 
+from scrapy import log
 from scrapy.http import TextResponse, Response
 from scrapy.selector import Selector
-from scrapy import log
 from scrapy.utils.python import re_rsearch, str_to_unicode
+from scrapy.utils.misc import walk_modules
+from scrapy.exceptions import UsageError
 
+def iter_classes(module_name, parent_module_name, parent_name, is_file=False):
+    """Return an iterator over all classes defined in the given module
+    that can be instantiated (i.e. have a name)
+
+    obj can be:
+    - a module name string
+    - a file name string pointing to a module
+
+    throws UsageError if there is a problem with loading the file module
+    when is_file argument is True
+    """
+
+    parent_module = import_module(parent_module_name)
+    parent_class = getattr(parent_module, parent_name)
+
+    modules=[]
+    if is_file:
+        try:
+            modules.append(_import_file(module_name))
+        except (ImportError, ValueError) as e:
+            raise UsageError("Unable to load %r: %s\n" % (module_name, e))
+    else:
+        modules.extend(walk_modules(module_name))
+
+    for module in modules:
+        for obj in vars(module).itervalues():
+            if inspect.isclass(obj) and \
+               issubclass(obj, parent_class) and \
+               obj.__module__ == module.__name__:
+                if getattr(obj, "name", None):
+                    yield obj
+            
+def _import_file(filepath):
+    if not os.path.exists(filepath):
+        raise UsageError("File not found: %s\n" % filepath)
+
+    abspath = os.path.abspath(filepath)
+    bname = os.path.basename(filepath)
+    fname, fext = os.path.splitext(bname)
+
+    if fext != '.py':
+        raise ValueError("Not a Python source file: %s" % abspath)
+
+    module = load_source(bname, abspath)
+
+    return module
 
 def xmliter(obj, nodename):
     """Return a iterator of Selector's over all nodes of a XML document,

@@ -8,25 +8,14 @@ import pkg_resources
 import scrapy
 from scrapy.crawler import CrawlerProcess
 from scrapy.xlib import lsprofcalltree
-from scrapy.command import ScrapyCommand
 from scrapy.exceptions import UsageError
-from scrapy.utils.misc import walk_modules
+from scrapy.utils.iterators import iter_classes
 from scrapy.utils.project import inside_project, get_project_settings
 from scrapy.settings.deprecated import check_deprecated_settings
 
-def _iter_command_classes(module_name):
-    # TODO: add `name` attribute to commands and and merge this function with
-    # scrapy.utils.spider.iter_spider_classes
-    for module in walk_modules(module_name):
-        for obj in vars(module).itervalues():
-            if inspect.isclass(obj) and \
-               issubclass(obj, ScrapyCommand) and \
-               obj.__module__ == module.__name__:
-                yield obj
-
 def _get_commands_from_module(module, inproject):
     d = {}
-    for cmd in _iter_command_classes(module):
+    for cmd in iter_classes(module, "scrapy.command", "ScrapyCommand"):
         if inproject or not cmd.requires_project:
             cmdname = cmd.__module__.split('.')[-1]
             d[cmdname] = cmd()

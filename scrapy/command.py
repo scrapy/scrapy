@@ -15,6 +15,8 @@ class ScrapyCommand(object):
     requires_project = False
     crawler_process = None
 
+    name = 'None'
+
     # default settings to be used for this command instead of global defaults
     default_settings = {}
 

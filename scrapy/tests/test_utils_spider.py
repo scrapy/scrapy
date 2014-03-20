@@ -1,7 +1,8 @@
 import unittest
 from scrapy.http import Request
 from scrapy.item import BaseItem
-from scrapy.utils.spider import iterate_spider_output, iter_spider_classes
+from scrapy.utils.spider import iterate_spider_output
+from scrapy.utils.iterators import iter_classes
 
 from scrapy.contrib.spiders import CrawlSpider
 
@@ -29,7 +30,10 @@ class UtilsSpidersTestCase(unittest.TestCase):
 
     def test_iter_spider_classes(self):
         import scrapy.tests.test_utils_spider
-        it = iter_spider_classes(scrapy.tests.test_utils_spider)
+        it = iter_classes("scrapy.tests.test_utils_spider",
+                          "scrapy.spider",
+                          "Spider"
+                          )
         self.assertEqual(set(it), set([MySpider1, MySpider2]))
 
 if __name__ == "__main__":
