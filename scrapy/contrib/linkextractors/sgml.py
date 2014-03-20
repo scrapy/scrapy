@@ -95,7 +95,7 @@ _is_valid_url = lambda url: url.split('://', 1)[0] in set(['http', 'https', 'fil
 class SgmlLinkExtractor(BaseSgmlLinkExtractor):
 
     def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(),
-                 tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True, process_value=None,
+                 tags=('a', 'area'), attrs=('href',), canonicalize=True, unique=True, process_value=None,
                  deny_extensions=None):
         self.allow_res = [x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(allow)]
         self.deny_res = [x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(deny)]
@@ -105,9 +105,9 @@ class SgmlLinkExtractor(BaseSgmlLinkExtractor):
         self.canonicalize = canonicalize
         if deny_extensions is None:
             deny_extensions = IGNORED_EXTENSIONS
-        self.deny_extensions = set(['.' + e for e in deny_extensions])
-        tag_func = lambda x: x in tags
-        attr_func = lambda x: x in attrs
+        self.deny_extensions = {'.' + e for e in arg_to_iter(deny_extensions)}
+        tag_func = lambda x: x in arg_to_iter(tags)
+        attr_func = lambda x: x in arg_to_iter(attrs)
         BaseSgmlLinkExtractor.__init__(self,
                                        tag=tag_func,
                                        attr=attr_func,
