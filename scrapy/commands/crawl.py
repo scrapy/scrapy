@@ -1,3 +1,4 @@
+import os
 from scrapy.command import ScrapyCommand
 from scrapy.utils.conf import arglist_to_dict
 from scrapy.exceptions import UsageError
