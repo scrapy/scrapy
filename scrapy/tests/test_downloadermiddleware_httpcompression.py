@@ -135,3 +135,12 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(newresponse.body, plainbody)
         self.assertEqual(newresponse.encoding, resolve_encoding('gb2312'))
 
+    def test_process_response_gzipped_contenttype(self):
+        response = self._getresponse('gzip')
+        response.headers['Content-Type'] = 'application/gzip'
+        request = response.request
+
+        newresponse = self.mw.process_response(request, response, self.spider)
+        self.assertIs(newresponse, response)
+        self.assertEqual(response.headers['Content-Encoding'], 'gzip')
+        self.assertEqual(response.headers['Content-Type'], 'application/gzip')
