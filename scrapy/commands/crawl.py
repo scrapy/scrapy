@@ -14,12 +14,12 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE", \
-            help="set spider argument (may be repeated)")
-        parser.add_option("-o", "--output", metavar="FILE", \
-            help="dump scraped items into FILE (use - for stdout)")
-        parser.add_option("-t", "--output-format", metavar="FORMAT", default="jsonlines", \
-            help="format to use for dumping items with -o (default: %default)")
+        parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
+                          help="set spider argument (may be repeated)")
+        parser.add_option("-o", "--output", metavar="FILE",
+                          help="dump scraped items into FILE (use - for stdout)")
+        parser.add_option("-t", "--output-format", metavar="FORMAT", default="jsonlines",
+                          help="format to use for dumping items with -o (default: %default)")
 
     def process_options(self, args, opts):
         ScrapyCommand.process_options(self, args, opts)

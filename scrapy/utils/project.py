@@ -1,13 +1,13 @@
 import os
 import cPickle as pickle
 import warnings
-
 from importlib import import_module
 from os.path import join, dirname, abspath, isabs, exists
 
 from scrapy.utils.conf import closest_scrapy_cfg, get_config, init_env
 from scrapy.settings import CrawlerSettings
 from scrapy.exceptions import NotConfigured
+
 
 ENVVAR = 'SCRAPY_SETTINGS_MODULE'
 DATADIR_CFG_SECTION = 'datadir'

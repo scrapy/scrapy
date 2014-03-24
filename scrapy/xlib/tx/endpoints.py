@@ -15,24 +15,14 @@ parsed by the L{clientFromString} and L{serverFromString} functions.
 from __future__ import division, absolute_import
 
 import os
-import socket
-
-from zope.interface import implementer, directlyProvides
 import warnings
 
-from twisted.internet import interfaces, defer, error, fdesc, threads
-from twisted.internet.protocol import (
-        ClientFactory, Protocol, ProcessProtocol, Factory)
+from zope.interface import implementer, directlyProvides
 from twisted.internet.interfaces import IStreamServerEndpointStringParser
 from twisted.internet.interfaces import IStreamClientEndpointStringParser
 from twisted.python.filepath import FilePath
-from twisted.python.failure import Failure
-from twisted.python import log
 from twisted.python.components import proxyForInterface
-
 from twisted.plugin import IPlugin, getPlugins
-from twisted.internet import stdio
-
 from .interfaces import IFileDescriptorReceiver
 
 
@@ -904,7 +894,7 @@ def _parseServer(description, factory, default=None):
         # a plugin exists for the endpointType
         for plugin in getPlugins(IStreamServerEndpointStringParser):
             if plugin.prefix == endpointType:
-                return (plugin, args[1:], kw)
+                return plugin, args[1:], kw
         raise ValueError("Unknown endpoint type: '%s'" % (endpointType,))
     return (endpointType.upper(),) + parser(factory, *args[1:], **kw)
 

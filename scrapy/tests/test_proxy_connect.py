@@ -1,11 +1,9 @@
 import os
-import subprocess
 import time
-
 from threading import Thread
+
 from libmproxy import controller, proxy
 from netlib import http_auth
-
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 from scrapy.utils.test import get_testlog, docrawl

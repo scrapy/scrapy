@@ -10,6 +10,7 @@ from w3lib.url import safe_url_string
 from scrapy.link import Link
 from scrapy.utils.python import unique as unique_list
 
+
 class HtmlParserLinkExtractor(HTMLParser):
 
     def __init__(self, tag="a", attr="href", process=None, unique=False):

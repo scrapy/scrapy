@@ -1,9 +1,8 @@
 import re
-import inspect
 import warnings
 import weakref
+
 from twisted.trial import unittest
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import TextResponse, HtmlResponse, XmlResponse
 from scrapy.selector import Selector
 from scrapy.selector.lxmlsel import XmlXPathSelector, HtmlXPathSelector, XPathSelector
@@ -227,15 +226,15 @@ class SelectorTestCase(unittest.TestCase):
 
     def test_null_bytes(self):
         # shouldn't raise errors
-        r1 = TextResponse('http://www.example.com', \
-                          body='<root>pre\x00post</root>', \
+        r1 = TextResponse('http://www.example.com',
+                          body='<root>pre\x00post</root>',
                           encoding='utf-8')
         self.sscls(r1).xpath('//text()').extract()
 
     def test_badly_encoded_body(self):
         # \xe9 alone isn't valid utf8 sequence
-        r1 = TextResponse('http://www.example.com', \
-                          body='<html><p>an Jos\xe9 de</p><html>', \
+        r1 = TextResponse('http://www.example.com',
+                          body='<html><p>an Jos\xe9 de</p><html>',
                           encoding='utf-8')
         self.sscls(r1).xpath('//text()').extract()
 

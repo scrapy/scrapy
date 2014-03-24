@@ -4,16 +4,18 @@ Feed Exports extension
 See documentation in docs/topics/feed-exports.rst
 """
 
-import sys, os, posixpath
+import sys
+import os
+import posixpath
 from tempfile import TemporaryFile
 from datetime import datetime
 from urlparse import urlparse
 from ftplib import FTP
 
-from zope.interface import Interface, implements
-from twisted.internet import defer, threads
 from w3lib.url import file_uri_to_path
 
+from zope.interface import Interface, implements
+from twisted.internet import defer, threads
 from scrapy import log, signals
 from scrapy.utils.ftp import ftp_makedirs_cwd
 from scrapy.exceptions import NotConfigured
@@ -178,8 +180,8 @@ class FeedExporter(object):
         if not slot.itemcount and not self.store_empty:
             return
         slot.exporter.finish_exporting()
-        logfmt = "%%s %s feed (%d items) in: %s" % (self.format, \
-            slot.itemcount, slot.uri)
+        logfmt = "%%s %s feed (%d items) in: %s" % (self.format,
+                                                    slot.itemcount, slot.uri)
         d = defer.maybeDeferred(slot.storage.store, slot.file)
         d.addCallback(lambda _: log.msg(logfmt % "Stored", spider=spider))
         d.addErrback(log.err, logfmt % "Error storing", spider=spider)

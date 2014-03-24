@@ -6,12 +6,10 @@ import os
 from urlparse import urlparse
 
 from twisted.trial import unittest
-from twisted.web import server, static, error, util
 from twisted.internet import reactor, defer
 from twisted.test.proto_helpers import StringTransport
 from twisted.python.filepath import FilePath
 from twisted.protocols.policies import WrappingFactory
-
 from scrapy.core.downloader import webclient as client
 from scrapy.http import Request, Headers
 
@@ -34,7 +32,7 @@ class ParseUrlTestCase(unittest.TestCase):
 
     def _parse(self, url):
         f = client.ScrapyHTTPClientFactory(Request(url))
-        return (f.scheme, f.netloc, f.host, f.port, f.path)
+        return f.scheme, f.netloc, f.host, f.port, f.path
 
     def testParse(self):
         lip = '127.0.0.1'

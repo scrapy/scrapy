@@ -19,6 +19,7 @@ class IAddress(Interface):
     Default implementations are in L{twisted.internet.address}.
     """
 
+
 ### Reactor Interfaces
 
 class IConnector(Interface):
@@ -54,9 +55,8 @@ class IConnector(Interface):
         """
 
 
-
 class IResolverSimple(Interface):
-    def getHostByName(name, timeout = (1, 3, 11, 45)):
+    def getHostByName(name, timeout=(1, 3, 11, 45)):
         """
         Resolve the domain name C{name} into an IP address.
 
@@ -74,7 +74,6 @@ class IResolverSimple(Interface):
         @raise twisted.internet.defer.TimeoutError: Raised (asynchronously)
         if the name cannot be resolved within the specified timeout period.
         """
-
 
 
 class IResolver(IResolverSimple):
@@ -541,7 +540,7 @@ class IResolver(IResolverSimple):
         """
 
 
-    def lookupSenderPolicy(name, timeout= 10):
+    def lookupSenderPolicy(name, timeout=10):
         """
         Perform a SPF record lookup.
 
@@ -614,9 +613,7 @@ class IResolver(IResolverSimple):
         """
 
 
-
 class IReactorTCP(Interface):
-
     def listenTCP(port, factory, backlog=50, interface=''):
         """
         Connects a given protocol factory to the given numeric TCP/IP port.
@@ -662,8 +659,8 @@ class IReactorTCP(Interface):
                  docs for details.
         """
 
-class IReactorSSL(Interface):
 
+class IReactorSSL(Interface):
     def connectSSL(host, port, factory, contextFactory, timeout=30, bindAddress=None):
         """
         Connect a client Protocol to a remote SSL socket.
@@ -701,7 +698,6 @@ class IReactorSSL(Interface):
 
         @param interface: the hostname to bind to, defaults to '' (all)
         """
-
 
 
 class IReactorUNIX(Interface):
@@ -750,7 +746,6 @@ class IReactorUNIX(Interface):
         """
 
 
-
 class IReactorUNIXDatagram(Interface):
     """
     Datagram UNIX socket methods.
@@ -796,7 +791,6 @@ class IReactorUNIXDatagram(Interface):
         """
 
 
-
 class IReactorWin32Events(Interface):
     """
     Win32 Event API methods
@@ -829,7 +823,6 @@ class IReactorWin32Events(Interface):
         """
 
 
-
 class IReactorUDP(Interface):
     """
     UDP socket methods.
@@ -841,7 +834,6 @@ class IReactorUDP(Interface):
 
         @return: object which provides L{IListeningPort}.
         """
-
 
 
 class IReactorMulticast(Interface):
@@ -868,7 +860,6 @@ class IReactorMulticast(Interface):
         @see: L{twisted.internet.interfaces.IMulticastTransport}
         @see: U{http://twistedmatrix.com/documents/current/core/howto/udp.html}
         """
-
 
 
 class IReactorSocket(Interface):
@@ -970,9 +961,7 @@ class IReactorSocket(Interface):
         """
 
 
-
 class IReactorProcess(Interface):
-
     def spawnProcess(processProtocol, executable, args=(), env={}, path=None,
                      uid=None, gid=None, usePTY=0, childFDs=None):
         """
@@ -1056,6 +1045,7 @@ class IReactorProcess(Interface):
         @raise OSError: Raised with errno C{EAGAIN} or C{ENOMEM} if there are
                         insufficient system resources to create a new process.
         """
+
 
 class IReactorTime(Interface):
     """
@@ -1156,6 +1146,7 @@ class IDelayedCall(Interface):
         @return: True if this call is still active, False if it has been
                  called or cancelled.
         """
+
 
 class IReactorThreads(Interface):
     """
@@ -1379,7 +1370,6 @@ class IReactorDaemonize(Interface):
         """
 
 
-
 class IReactorFDSet(Interface):
     """
     Implement me to be able to use L{IFileDescriptor} type resources.
@@ -1496,7 +1486,6 @@ class ILoggingContext(Interface):
         """
 
 
-
 class IFileDescriptor(ILoggingContext):
     """
     An interface representing a UNIX-style numeric file descriptor.
@@ -1532,7 +1521,6 @@ class IFileDescriptor(ILoggingContext):
                        L{error.ConnectionDone} are of special note, but the
                        failure may be of other classes as well.
         """
-
 
 
 class IReadDescriptor(IFileDescriptor):
@@ -1659,7 +1647,6 @@ class IConsumer(Interface):
         """
 
 
-
 class IProducer(Interface):
     """
     A producer produces data for a consumer.
@@ -1693,6 +1680,7 @@ class IPushProducer(IProducer):
         Tells a producer that it has produced too much data to process for
         the time being, and to stop until resumeProducing() is called.
         """
+
     def resumeProducing():
         """
         Resume producing data.
@@ -1700,6 +1688,7 @@ class IPushProducer(IProducer):
         This tells a producer to re-add itself to the main loop and produce
         more data for its consumer.
         """
+
 
 class IPullProducer(IProducer):
     """
@@ -1717,8 +1706,8 @@ class IPullProducer(IProducer):
         produced data.
         """
 
-class IProtocol(Interface):
 
+class IProtocol(Interface):
     def dataReceived(data):
         """
         Called whenever data is received.
@@ -1830,7 +1819,6 @@ class IProcessProtocol(Interface):
         """
 
 
-
 class IHalfCloseableProtocol(Interface):
     """
     Implemented to indicate they want notification of half-closes.
@@ -1865,7 +1853,6 @@ class IHalfCloseableProtocol(Interface):
         """
 
 
-
 class IFileDescriptorReceiver(Interface):
     """
     Protocols may implement L{IFileDescriptorReceiver} to receive file
@@ -1873,6 +1860,7 @@ class IFileDescriptorReceiver(Interface):
     L{IUNIXTransport}, which allows file descriptors to be sent between
     processes on a single host.
     """
+
     def fileDescriptorReceived(descriptor):
         """
         Called when a file descriptor is received over the connection.
@@ -1882,7 +1870,6 @@ class IFileDescriptorReceiver(Interface):
 
         @return: C{None}
         """
-
 
 
 class IProtocolFactory(Interface):
@@ -2043,11 +2030,11 @@ class ITCPTransport(ITransport):
         """
 
 
-
 class IUNIXTransport(ITransport):
     """
     Transport for stream-oriented unix domain connections.
     """
+
     def sendFileDescriptor(descriptor):
         """
         Send a duplicate of this (file, socket, pipe, etc) descriptor to the
@@ -2070,7 +2057,6 @@ class IUNIXTransport(ITransport):
         """
 
 
-
 class ITLSTransport(ITCPTransport):
     """
     A TCP transport that supports switching to TLS midstream.
@@ -2084,6 +2070,7 @@ class ITLSTransport(ITCPTransport):
 
         @param contextFactory: A context factory (see L{ssl.py<twisted.internet.ssl>})
         """
+
 
 class ISSLTransport(ITCPTransport):
     """
@@ -2237,7 +2224,6 @@ class IUDPTransport(Interface):
         """
 
 
-
 class IUNIXDatagramTransport(Interface):
     """
     Transport for UDP PacketProtocols.
@@ -2345,7 +2331,6 @@ class IStreamClientEndpoint(Interface):
         """
 
 
-
 class IStreamServerEndpoint(Interface):
     """
     A stream server endpoint is a place that a L{Factory} can listen for
@@ -2363,7 +2348,6 @@ class IStreamServerEndpoint(Interface):
         @return: A L{Deferred} that results in an L{IListeningPort} or an
             L{CannotListenError}
         """
-
 
 
 class IStreamServerEndpointStringParser(Interface):
@@ -2391,7 +2375,6 @@ class IStreamServerEndpointStringParser(Interface):
         @return: a stream server endpoint
         @rtype: L{IStreamServerEndpoint}
         """
-
 
 
 class IStreamClientEndpointStringParser(Interface):

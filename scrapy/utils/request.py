@@ -8,7 +8,6 @@ import hashlib
 import weakref
 from urlparse import urlunparse
 
-from twisted.internet.defer import Deferred
 from w3lib.http import basic_auth_header
 
 from scrapy.utils.url import canonicalize_url

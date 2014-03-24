@@ -12,7 +12,6 @@ from collections import defaultdict
 from cStringIO import StringIO
 
 from twisted.internet import defer, threads
-
 from scrapy import log
 from scrapy.contrib.pipeline.media import MediaPipeline
 from scrapy.exceptions import NotConfigured, IgnoreRequest

@@ -13,8 +13,8 @@ class Link(object):
     def __init__(self, url, text='', fragment='', nofollow=False):
         if isinstance(url, unicode):
             import warnings
-            warnings.warn("Do not instantiate Link objects with unicode urls. " \
-                "Assuming utf-8 encoding (which could be wrong)")
+            warnings.warn("Do not instantiate Link objects with unicode urls. "
+                          "Assuming utf-8 encoding (which could be wrong)")
             url = url.encode('utf-8')
         self.url = url
         self.text = text

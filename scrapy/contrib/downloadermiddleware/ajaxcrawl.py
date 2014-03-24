@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import re
+
+from w3lib import html
+
 from scrapy import log
 from scrapy.exceptions import NotConfigured
 from scrapy.http import HtmlResponse
 from scrapy.utils.response import _noscript_re, _script_re
-from w3lib import html
+
 
 class AjaxCrawlMiddleware(object):
     """

@@ -5,7 +5,6 @@ from collections import deque
 
 from twisted.python.failure import Failure
 from twisted.internet import defer
-
 from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errback
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.misc import load_object
@@ -100,8 +99,8 @@ class Scraper(object):
             self._scrape_next(spider, slot)
             return _
         dfd.addBoth(finish_scraping)
-        dfd.addErrback(log.err, 'Scraper bug processing %s' % request, \
-            spider=spider)
+        dfd.addErrback(log.err, 'Scraper bug processing %s' % request,
+                       spider=spider)
         self._scrape_next(spider, slot)
         return dfd
 
@@ -124,13 +123,13 @@ class Scraper(object):
         """Handle the different cases of request's result been a Response or a
         Failure"""
         if not isinstance(request_result, Failure):
-            return self.spidermw.scrape_response(self.call_spider, \
-                request_result, request, spider)
+            return self.spidermw.scrape_response(self.call_spider,
+                                                 request_result, request, spider)
         else:
             # FIXME: don't ignore errors in spider middleware
             dfd = self.call_spider(request_result, request, spider)
-            return dfd.addErrback(self._log_download_errors, \
-                request_result, request, spider)
+            return dfd.addErrback(self._log_download_errors,
+                                  request_result, request, spider)
 
     def call_spider(self, result, request, spider):
         result.request = request
@@ -144,10 +143,10 @@ class Scraper(object):
             self.crawler.engine.close_spider(spider, exc.reason or 'cancelled')
             return
         log.err(_failure, "Spider error processing %s" % request, spider=spider)
-        self.signals.send_catch_log(signal=signals.spider_error, failure=_failure, response=response, \
-            spider=spider)
-        self.crawler.stats.inc_value("spider_exceptions/%s" % _failure.value.__class__.__name__, \
-            spider=spider)
+        self.signals.send_catch_log(signal=signals.spider_error, failure=_failure, response=response,
+                                    spider=spider)
+        self.crawler.stats.inc_value("spider_exceptions/%s" % _failure.value.__class__.__name__,
+                                     spider=spider)
 
     def handle_spider_output(self, result, request, response, spider):
         if not result:
@@ -204,13 +203,13 @@ class Scraper(object):
             if isinstance(ex, DropItem):
                 logkws = self.logformatter.dropped(item, ex, response, spider)
                 log.msg(spider=spider, **logkws)
-                return self.signals.send_catch_log_deferred(signal=signals.item_dropped, \
-                    item=item, spider=spider, exception=output.value)
+                return self.signals.send_catch_log_deferred(signal=signals.item_dropped,
+                                                            item=item, spider=spider, exception=output.value)
             else:
                 log.err(output, 'Error processing %s' % item, spider=spider)
         else:
             logkws = self.logformatter.scraped(output, response, spider)
             log.msg(spider=spider, **logkws)
-            return self.signals.send_catch_log_deferred(signal=signals.item_scraped, \
-                item=output, response=response, spider=spider)
+            return self.signals.send_catch_log_deferred(signal=signals.item_scraped,
+                                                        item=output, response=response, spider=spider)
 

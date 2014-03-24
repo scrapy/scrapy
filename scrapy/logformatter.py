@@ -1,7 +1,6 @@
 import os
 
 from twisted.python.failure import Failure
-
 from scrapy import log
 
 

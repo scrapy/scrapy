@@ -6,7 +6,7 @@ enable this middleware and enable the ROBOTSTXT_OBEY setting.
 
 import robotparser
 
-from scrapy import signals, log
+from scrapy import log
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached

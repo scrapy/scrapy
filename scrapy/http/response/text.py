@@ -7,6 +7,7 @@ See documentation in docs/topics/request-response.rst
 
 from w3lib.encoding import html_to_unicode, resolve_encoding, \
     html_body_declared_encoding, http_content_type_encoding
+
 from scrapy.http.response import Response
 from scrapy.utils.python import memoizemethod_noargs
 
@@ -70,9 +71,9 @@ class TextResponse(Response):
     def _body_inferred_encoding(self):
         if self._cached_benc is None:
             content_type = self.headers.get('Content-Type')
-            benc, ubody = html_to_unicode(content_type, self.body, \
-                    auto_detect_fun=self._auto_detect_fun, \
-                    default_encoding=self._DEFAULT_ENCODING)
+            benc, ubody = html_to_unicode(content_type, self.body,
+                                          auto_detect_fun=self._auto_detect_fun,
+                                          default_encoding=self._DEFAULT_ENCODING)
             self._cached_benc = benc
             self._cached_ubody = ubody
         return self._cached_benc

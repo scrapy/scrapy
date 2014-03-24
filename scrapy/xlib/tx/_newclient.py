@@ -235,9 +235,8 @@ class HTTPParser(LineReceiver):
     # HTTP headers delimited by \n instead of \r\n.
     delimiter = '\n'
 
-    CONNECTION_CONTROL_HEADERS = set([
-            'content-length', 'connection', 'keep-alive', 'te', 'trailers',
-            'transfer-encoding', 'upgrade', 'proxy-connection'])
+    CONNECTION_CONTROL_HEADERS = {'content-length', 'connection', 'keep-alive', 'te', 'trailers', 'transfer-encoding',
+                                  'upgrade', 'proxy-connection'}
 
     def connectionMade(self):
         self.headers = Headers()
@@ -288,13 +287,11 @@ class HTTPParser(LineReceiver):
                 # begun on a previous line.
                 self._partialHeader.append(line)
 
-
     def rawDataReceived(self, data):
         """
         Pass data from the message body to the body decoder object.
         """
         self.bodyDecoder.dataReceived(data)
-
 
     def isConnectionControlHeader(self, name):
         """
@@ -359,7 +356,7 @@ class HTTPClientParser(HTTPParser):
 
     @ivar _everReceivedData: C{True} if any bytes have been received.
     """
-    NO_BODY_CODES = set([NO_CONTENT, NOT_MODIFIED])
+    NO_BODY_CODES = {NO_CONTENT, NOT_MODIFIED}
 
     _transferDecoders = {
         'chunked': _ChunkedTransferDecoder,
@@ -396,7 +393,7 @@ class HTTPClientParser(HTTPParser):
             raise BadResponseVersion(str(e), strversion)
         if major < 0 or minor < 0:
             raise BadResponseVersion("version may not be negative", strversion)
-        return (proto, major, minor)
+        return proto, major, minor
 
 
     def statusReceived(self, status):
@@ -434,7 +431,6 @@ class HTTPClientParser(HTTPParser):
         self.state = DONE
         self.finisher(rest)
 
-
     def isConnectionControlHeader(self, name):
         """
         Content-Length in the response to a HEAD request is an entity header,
@@ -443,7 +439,6 @@ class HTTPClientParser(HTTPParser):
         if self.request.method == 'HEAD' and name == 'content-length':
             return False
         return HTTPParser.isConnectionControlHeader(self, name)
-
 
     def allHeadersReceived(self):
         """
@@ -582,9 +577,7 @@ class Request:
         # In the future, having the protocol version be a parameter to this
         # method would probably be good.  It would be nice if this method
         # weren't limited to issuing HTTP/1.1 requests.
-        requestLines = []
-        requestLines.append(
-            '%s %s HTTP/1.1\r\n' % (self.method, self.uri))
+        requestLines = ['%s %s HTTP/1.1\r\n' % (self.method, self.uri)]
         if not self.persistent:
             requestLines.append('Connection: close\r\n')
         if TEorCL is not None:

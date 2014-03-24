@@ -2,7 +2,6 @@ from cStringIO import StringIO
 
 from twisted.python import log as txlog, failure
 from twisted.trial import unittest
-
 from scrapy import log
 from scrapy.spider import Spider
 from scrapy.settings import default_settings

@@ -2,13 +2,14 @@
 
 import re
 import hashlib
-
 from importlib import import_module
 from pkgutil import iter_modules
 
 from w3lib.html import remove_entities
+
 from scrapy.utils.python import flatten
 from scrapy.item import BaseItem
+
 
 def arg_to_iter(arg):
     """Convert an argument to an iterable. The argument can be a None, single

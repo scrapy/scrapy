@@ -1,5 +1,6 @@
 import re
 import unittest
+
 from scrapy.contrib.linkextractors.regex import RegexLinkExtractor
 from scrapy.http import HtmlResponse
 from scrapy.link import Link
@@ -110,12 +111,12 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
         self.response = HtmlResponse(url='http://example.com/index', body=body)
 
     def test_urls_type(self):
-        '''Test that the resulting urls are regular strings and not a unicode objects'''
+        """Test that the resulting urls are regular strings and not a unicode objects"""
         lx = SgmlLinkExtractor()
         self.assertTrue(all(isinstance(link.url, str) for link in lx.extract_links(self.response)))
 
     def test_extraction(self):
-        '''Test the extractor's behaviour among different situations'''
+        """Test the extractor's behaviour among different situations"""
 
         lx = SgmlLinkExtractor()
         self.assertEqual([link for link in lx.extract_links(self.response)], [
@@ -160,7 +161,7 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
         ])
 
     def test_extraction_using_single_values(self):
-        '''Test the extractor's behaviour among different situations'''
+        """Test the extractor's behaviour among different situations"""
 
         lx = SgmlLinkExtractor(allow='sample')
         self.assertEqual([link for link in lx.extract_links(self.response)], [

@@ -3,7 +3,6 @@ import sys
 import platform
 
 import twisted
-
 import scrapy
 from scrapy.command import ScrapyCommand
 

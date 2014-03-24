@@ -2,10 +2,9 @@ import gzip
 import inspect
 import warnings
 from cStringIO import StringIO
+
 from scrapy.utils.trackref import object_ref
-
 from twisted.trial import unittest
-
 from scrapy.spider import Spider, BaseSpider
 from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlResponse
 from scrapy.contrib.spiders.init import InitSpider

@@ -7,6 +7,7 @@ from scrapy.utils.python import str_to_unicode, unicode_to_str, \
     memoizemethod_noargs, isbinarytext, equal_attributes, \
     WeakKeyCache, stringify_dict, get_func_args
 
+
 __doctests__ = ['scrapy.utils.python']
 
 class UtilsPythonTestCase(unittest.TestCase):

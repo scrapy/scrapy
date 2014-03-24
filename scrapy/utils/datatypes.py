@@ -65,17 +65,17 @@ class MultiValueDict(dict):
         return result
 
     def get(self, key, default=None):
-        "Returns the default value if the requested data doesn't exist"
+        """Returns the default value if the requested data doesn't exist"""
         try:
             val = self[key]
         except KeyError:
             return default
-        if val == []:
+        if not val:
             return default
         return val
 
     def getlist(self, key):
-        "Returns an empty list if the requested data doesn't exist"
+        """Returns an empty list if the requested data doesn't exist"""
         try:
             return dict.__getitem__(self, key)
         except KeyError:
@@ -95,7 +95,7 @@ class MultiValueDict(dict):
         return self.getlist(key)
 
     def appendlist(self, key, value):
-        "Appends an item to the internal list associated with key"
+        """Appends an item to the internal list associated with key"""
         self.setlistdefault(key, [])
         dict.__setitem__(self, key, self.getlist(key) + [value])
 
@@ -107,19 +107,19 @@ class MultiValueDict(dict):
         return [(key, self[key]) for key in self.keys()]
 
     def lists(self):
-        "Returns a list of (key, list) pairs."
+        """Returns a list of (key, list) pairs."""
         return dict.items(self)
 
     def values(self):
-        "Returns a list of the last value on every key list."
+        """Returns a list of the last value on every key list."""
         return [self[key] for key in self.keys()]
 
     def copy(self):
-        "Returns a copy of this object."
+        """Returns a copy of this object."""
         return self.__deepcopy__()
 
     def update(self, *args, **kwargs):
-        "update() extends rather than replaces existing key lists. Also accepts keyword args."
+        """update() extends rather than replaces existing key lists. Also accepts keyword args."""
         if len(args) > 1:
             raise TypeError("update expected at most 1 arguments, got %d" % len(args))
         if args:

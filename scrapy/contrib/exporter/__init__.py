@@ -8,8 +8,10 @@ import pprint
 import marshal
 import cPickle as pickle
 from xml.sax.saxutils import XMLGenerator
+
 from scrapy.utils.serialize import ScrapyJSONEncoder
 from scrapy.item import BaseItem
+
 
 __all__ = ['BaseItemExporter', 'PprintItemExporter', 'PickleItemExporter',
            'CsvItemExporter', 'XmlItemExporter', 'JsonLinesItemExporter',

@@ -1,4 +1,5 @@
-import re, csv
+import re
+import csv
 from cStringIO import StringIO
 
 from scrapy.http import TextResponse, Response

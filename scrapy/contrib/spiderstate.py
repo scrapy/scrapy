@@ -1,6 +1,8 @@
-import os, cPickle as pickle
+import os
+import cPickle as pickle
 
 from scrapy import signals
+
 
 class SpiderState(object):
     """Store and load spider state during a scraping job"""

@@ -5,8 +5,6 @@ responses in Scrapy.
 See documentation in docs/topics/request-response.rst
 """
 
-import copy
-
 from scrapy.http.headers import Headers
 from scrapy.utils.trackref import object_ref
 from scrapy.http.common import obsolete_setter
@@ -26,8 +24,8 @@ class Response(object_ref):
         try:
             return self.request.meta
         except AttributeError:
-            raise AttributeError("Response.meta not available, this response " \
-                "is not tied to any request")
+            raise AttributeError("Response.meta not available, this response "
+                                 "is not tied to any request")
 
     def _get_url(self):
         return self._url
@@ -36,8 +34,8 @@ class Response(object_ref):
         if isinstance(url, str):
             self._url = url
         else:
-            raise TypeError('%s url must be str, got %s:' % (type(self).__name__, \
-                type(url).__name__))
+            raise TypeError('%s url must be str, got %s:' % (type(self).__name__,
+                                                             type(url).__name__))
 
     url = property(_get_url, obsolete_setter(_set_url, 'url'))
 
@@ -48,8 +46,8 @@ class Response(object_ref):
         if isinstance(body, str):
             self._body = body
         elif isinstance(body, unicode):
-            raise TypeError("Cannot assign a unicode body to a raw Response. " \
-                "Use TextResponse, HtmlResponse, etc")
+            raise TypeError("Cannot assign a unicode body to a raw Response. "
+                            "Use TextResponse, HtmlResponse, etc")
         elif body is None:
             self._body = ''
         else:

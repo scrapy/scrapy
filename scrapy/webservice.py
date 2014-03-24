@@ -72,8 +72,8 @@ class WebService(server.Site):
         self.portrange = [int(x) for x in crawler.settings.getlist('WEBSERVICE_PORT')]
         self.host = crawler.settings['WEBSERVICE_HOST']
         root = RootResource(crawler)
-        reslist = build_component_list(crawler.settings['WEBSERVICE_RESOURCES_BASE'], \
-            crawler.settings['WEBSERVICE_RESOURCES'])
+        reslist = build_component_list(crawler.settings['WEBSERVICE_RESOURCES_BASE'],
+                                       crawler.settings['WEBSERVICE_RESOURCES'])
         for res_cls in map(load_object, reslist):
             res = res_cls(crawler)
             root.putChild(res.ws_name, res)

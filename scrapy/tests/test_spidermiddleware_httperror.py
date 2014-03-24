@@ -71,11 +71,11 @@ class TestHttpErrorMiddleware(TestCase):
 
     def test_process_spider_exception(self):
         self.assertEquals([],
-                self.mw.process_spider_exception(self.res404, \
-                        HttpError(self.res404), self.spider))
+                self.mw.process_spider_exception(self.res404,
+                                                 HttpError(self.res404), self.spider))
         self.assertEquals(None,
-                self.mw.process_spider_exception(self.res404, \
-                        Exception(), self.spider))
+                self.mw.process_spider_exception(self.res404,
+                                                 Exception(), self.spider))
 
     def test_handle_httpstatus_list(self):
         res = self.res404.copy()

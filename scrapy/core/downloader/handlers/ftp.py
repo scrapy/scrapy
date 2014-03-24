@@ -35,9 +35,9 @@ from cStringIO import StringIO
 from twisted.internet import reactor
 from twisted.protocols.ftp import FTPClient, CommandFailed
 from twisted.internet.protocol import Protocol, ClientCreator
-
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
+
 
 class ReceivedDataProtocol(Protocol):
     def __init__(self, filename=None):

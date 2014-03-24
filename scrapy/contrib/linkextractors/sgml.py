@@ -3,7 +3,9 @@ SGMLParser-based Link extractors
 """
 import re
 from urlparse import urlparse, urljoin
+
 from w3lib.url import safe_url_string
+
 from scrapy.selector import Selector
 from scrapy.link import Link
 from scrapy.linkextractor import IGNORED_EXTENSIONS
@@ -89,13 +91,13 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
 _re_type = type(re.compile("", 0))
 
 _matches = lambda url, regexs: any((r.search(url) for r in regexs))
-_is_valid_url = lambda url: url.split('://', 1)[0] in set(['http', 'https', 'file'])
+_is_valid_url = lambda url: url.split('://', 1)[0] in {'http', 'https', 'file'}
 
 
 class SgmlLinkExtractor(BaseSgmlLinkExtractor):
 
     def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(),
-                 tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True, process_value=None,
+                 tags=('a', 'area'), attrs='href', canonicalize=True, unique=True, process_value=None,
                  deny_extensions=None):
         self.allow_res = [x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(allow)]
         self.deny_res = [x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(deny)]

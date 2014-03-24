@@ -1,7 +1,8 @@
 import unittest
-
 from cStringIO import StringIO
+
 from scrapy.mail import MailSender
+
 
 class MailSenderTest(unittest.TestCase):
 

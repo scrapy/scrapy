@@ -3,6 +3,7 @@ import os
 
 from twisted.internet import reactor, defer, protocol
 
+
 class ProcessTest(object):
 
     command = None

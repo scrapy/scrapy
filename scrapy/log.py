@@ -8,10 +8,11 @@ import logging
 import warnings
 
 from twisted.python import log
-
 import scrapy
 from scrapy.utils.python import unicode_to_str
 from scrapy.settings import overridden_settings
+
+
 
 # Logging levels
 DEBUG = logging.DEBUG
@@ -142,8 +143,8 @@ def start_from_settings(settings, crawler=None):
 def scrapy_info(settings):
     sflo = start_from_settings(settings)
     if sflo:
-        msg("Scrapy %s started (bot: %s)" % (scrapy.__version__, \
-            settings['BOT_NAME']))
+        msg("Scrapy %s started (bot: %s)" % (scrapy.__version__,
+                                             settings['BOT_NAME']))
 
         msg("Optional features available: %s" % ", ".join(scrapy.optional_features),
             level=INFO)

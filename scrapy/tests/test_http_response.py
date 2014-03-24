@@ -1,6 +1,7 @@
 import unittest
 
 from w3lib.encoding import resolve_encoding
+
 from scrapy.http import Request, Response, TextResponse, HtmlResponse, XmlResponse, Headers
 
 
@@ -250,8 +251,8 @@ class TextResponseTest(BaseResponseTest):
         assert u'SUFFIX' in r.body_as_unicode(), repr(r.body_as_unicode())
 
         # Do not destroy html tags due to encoding bugs
-        r = self.response_class("http://example.com", encoding='utf-8', \
-                body='\xf0<span>value</span>')
+        r = self.response_class("http://example.com", encoding='utf-8',
+                                body='\xf0<span>value</span>')
         assert u'<span>value</span>' in r.body_as_unicode(), repr(r.body_as_unicode())
 
         # FIXME: This test should pass once we stop using BeautifulSoup's UnicodeDammit in TextResponse

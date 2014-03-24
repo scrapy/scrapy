@@ -2,7 +2,6 @@ import warnings
 from functools import wraps
 
 from twisted.internet import defer, threads
-
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 

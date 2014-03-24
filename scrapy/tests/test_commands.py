@@ -7,9 +7,9 @@ from shutil import rmtree
 from tempfile import mkdtemp
 
 from twisted.trial import unittest
-
 from scrapy.utils.python import retry_on_eintr
 from scrapy.utils.test import get_testenv
+
 
 class ProjectTest(unittest.TestCase):
     project_name = 'testproject'
@@ -27,7 +27,7 @@ class ProjectTest(unittest.TestCase):
     def call(self, *new_args, **kwargs):
         out = os.tmpfile()
         args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
-        return subprocess.call(args, stdout=out, stderr=out, cwd=self.cwd, \
+        return subprocess.call(args, stdout=out, stderr=out, cwd=self.cwd,
             env=self.env, **kwargs)
 
     def proc(self, *new_args, **kwargs):

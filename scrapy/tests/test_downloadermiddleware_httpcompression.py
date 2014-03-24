@@ -1,13 +1,14 @@
 from unittest import TestCase
-from os.path import join, abspath, dirname
+from os.path import join
 from cStringIO import StringIO
 from gzip import GzipFile
+
+from w3lib.encoding import resolve_encoding
 
 from scrapy.spider import Spider
 from scrapy.http import Response, Request, HtmlResponse
 from scrapy.contrib.downloadermiddleware.httpcompression import HttpCompressionMiddleware
 from scrapy.tests import tests_datadir
-from w3lib.encoding import resolve_encoding
 
 
 SAMPLEDIR = join(tests_datadir, 'compressed')

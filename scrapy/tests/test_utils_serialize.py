@@ -4,7 +4,6 @@ import json
 from decimal import Decimal
 
 from twisted.internet import defer
-
 from scrapy.utils.serialize import SpiderReferencer, ScrapyJSONEncoder, ScrapyJSONDecoder
 from scrapy.spider import Spider
 from scrapy.http import Request, Response
@@ -23,7 +22,7 @@ class BaseTestCase(unittest.TestCase):
     def setUp(self):
         self.spider1 = Spider('name1')
         self.spider2 = Spider('name2')
-        open_spiders = set([self.spider1, self.spider2])
+        open_spiders = {self.spider1, self.spider2}
         crawler = CrawlerMock(open_spiders)
         self.spref = SpiderReferencer(crawler)
         self.encoder = ScrapyJSONEncoder(spref=self.spref)

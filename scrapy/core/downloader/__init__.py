@@ -4,7 +4,6 @@ from time import time
 from collections import deque
 
 from twisted.internet import reactor, defer, task
-
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.resolver import dnscache

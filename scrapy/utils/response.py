@@ -9,10 +9,10 @@ import weakref
 import webbrowser
 import tempfile
 
-from twisted.web import http
-from twisted.web.http import RESPONSES
 from w3lib import html
 
+from twisted.web import http
+from twisted.web.http import RESPONSES
 from scrapy.http import HtmlResponse, TextResponse
 from scrapy.utils.decorator import deprecated
 
@@ -28,8 +28,8 @@ def get_base_url(response):
     """Return the base url of the given response, joined with the response url"""
     if response not in _baseurl_cache:
         text = response.body_as_unicode()[0:4096]
-        _baseurl_cache[response] = html.get_base_url(text, response.url, \
-            response.encoding)
+        _baseurl_cache[response] = html.get_base_url(text, response.url,
+                                                     response.encoding)
     return _baseurl_cache[response]
 
 _noscript_re = re.compile(u'<noscript>.*?</noscript>', re.IGNORECASE | re.DOTALL)
@@ -41,8 +41,8 @@ def get_meta_refresh(response):
         text = response.body_as_unicode()[0:4096]
         text = _noscript_re.sub(u'', text)
         text = _script_re.sub(u'', text)
-        _metaref_cache[response] = html.get_meta_refresh(text, response.url, \
-            response.encoding)
+        _metaref_cache[response] = html.get_meta_refresh(text, response.url,
+                                                         response.encoding)
     return _metaref_cache[response]
 
 def response_status_message(status):

@@ -1,8 +1,8 @@
 import unittest
+
 from twisted.internet.error import TimeoutError as ServerTimeoutError, \
     DNSLookupError, ConnectionRefusedError, ConnectionDone, ConnectError, \
     ConnectionLost
-
 from scrapy import optional_features
 from scrapy.contrib.downloadermiddleware.retry import RetryMiddleware
 from scrapy.xlib.tx import ResponseFailed

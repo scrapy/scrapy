@@ -12,10 +12,14 @@ command).
 """
 
 from __future__ import print_function
-import sys, optparse, urllib, json
+import sys
+import optparse
+import urllib
+import json
 from urlparse import urljoin
 
 from scrapy.utils.jsonrpc import jsonrpc_client_call, JsonRpcError
+
 
 def get_commands():
     return {
@@ -81,10 +85,10 @@ def parse_opts():
     description = "Scrapy web service control script. Use '%prog help' " \
         "to see the list of available commands."
     op = optparse.OptionParser(usage=usage, description=description)
-    op.add_option("-H", dest="host", default="localhost", \
-        help="Scrapy host to connect to")
-    op.add_option("-P", dest="port", type="int", default=6080, \
-        help="Scrapy port to connect to")
+    op.add_option("-H", dest="host", default="localhost",
+                  help="Scrapy host to connect to")
+    op.add_option("-P", dest="port", type="int", default=6080,
+                  help="Scrapy port to connect to")
     opts, args = op.parse_args()
     if not args:
         op.print_help()

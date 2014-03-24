@@ -1,7 +1,6 @@
 import signal
 
 from twisted.internet import reactor, defer
-
 from scrapy.core.engine import ExecutionEngine
 from scrapy.resolver import CachingThreadedResolver
 from scrapy.extension import ExtensionManager

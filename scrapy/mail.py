@@ -4,17 +4,17 @@ Mail sending helpers
 See documentation in docs/topics/email.rst
 """
 from cStringIO import StringIO
+from email import Encoders
+
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMENonMultipart import MIMENonMultipart
 from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
 from email.Utils import COMMASPACE, formatdate
-from email import Encoders
-
 from twisted.internet import defer, reactor, ssl
 from twisted.mail.smtp import ESMTPSenderFactory
-
 from scrapy import log
+
 
 class MailSender(object):
 
@@ -92,9 +92,9 @@ class MailSender(object):
     def _sendmail(self, to_addrs, msg):
         msg = StringIO(msg)
         d = defer.Deferred()
-        factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom, \
-            to_addrs, msg, d, heloFallback=True, requireAuthentication=False, \
-            requireTransportSecurity=self.smtptls)
+        factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom,
+                                     to_addrs, msg, d, heloFallback=True, requireAuthentication=False,
+                                     requireTransportSecurity=self.smtptls)
         factory.noisy = False
 
         if self.smtpssl:

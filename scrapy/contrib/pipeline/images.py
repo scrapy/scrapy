@@ -12,6 +12,8 @@ from PIL import Image
 from scrapy.utils.misc import md5sum
 from scrapy.http import Request
 from scrapy.exceptions import DropItem
+
+
 #TODO: from scrapy.contrib.pipeline.media import MediaPipeline
 from scrapy.contrib.pipeline.files import FileException, FilesPipeline
 

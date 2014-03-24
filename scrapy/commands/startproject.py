@@ -11,6 +11,7 @@ from scrapy.command import ScrapyCommand
 from scrapy.utils.template import render_templatefile, string_camelcase
 from scrapy.exceptions import UsageError
 
+
 TEMPLATES_PATH = join(scrapy.__path__[0], 'templates', 'project')
 
 TEMPLATES_TO_RENDER = (
@@ -37,8 +38,8 @@ class Command(ScrapyCommand):
             raise UsageError()
         project_name = args[0]
         if not re.search(r'^[_a-zA-Z]\w*$', project_name):
-            print('Error: Project names must begin with a letter and contain only\n' \
-                'letters, numbers and underscores')
+            print('Error: Project names must begin with a letter and contain only\n'
+                  'letters, numbers and underscores')
             sys.exit(1)
         elif exists(project_name):
             print("Error: directory %r already exists" % project_name)

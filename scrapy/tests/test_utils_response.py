@@ -5,6 +5,7 @@ import urlparse
 from scrapy.http import Response, TextResponse, HtmlResponse
 from scrapy.utils.response import response_httprepr, open_in_browser, get_meta_refresh
 
+
 __doctests__ = ['scrapy.utils.response']
 
 class ResponseUtilsTest(unittest.TestCase):
@@ -33,8 +34,8 @@ class ResponseUtilsTest(unittest.TestCase):
         response = HtmlResponse(url, body=body)
         assert open_in_browser(response, _openfunc=browser_open), \
             "Browser not called"
-        self.assertRaises(TypeError, open_in_browser, Response(url, body=body), \
-            debug=True)
+        self.assertRaises(TypeError, open_in_browser, Response(url, body=body),
+                          debug=True)
 
     def test_get_meta_refresh(self):
         r1 = HtmlResponse("http://www.example.com", body="""

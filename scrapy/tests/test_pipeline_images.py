@@ -1,4 +1,3 @@
-import os
 import hashlib
 import warnings
 from cStringIO import StringIO
@@ -6,11 +5,11 @@ from tempfile import mkdtemp
 from shutil import rmtree
 
 from twisted.trial import unittest
-
 from scrapy.item import Item, Field
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.contrib.pipeline.images import ImagesPipeline
+
 
 skip = False
 try:
@@ -18,7 +17,7 @@ try:
 except ImportError as e:
     skip = 'Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow'
 else:
-    encoders = set(('jpeg_encoder', 'jpeg_decoder'))
+    encoders = {'jpeg_encoder', 'jpeg_decoder'}
     if not encoders.issubset(set(Image.core.__dict__)):
         skip = 'Missing JPEG encoders'
 
@@ -102,7 +101,7 @@ class DeprecatedImagesPipeline(ImagesPipeline):
 
     def image_key(self, url):
         image_guid = hashlib.sha1(url).hexdigest()
-        return 'empty/%s.jpg' % (image_guid)
+        return 'empty/%s.jpg' % image_guid
 
     def thumb_key(self, url, thumb_id):
         thumb_guid = hashlib.sha1(url).hexdigest()

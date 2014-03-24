@@ -1,8 +1,9 @@
 import os
-from twisted.trial import unittest
 
+from twisted.trial import unittest
 from scrapy.contrib.djangoitem import DjangoItem, Field
 from scrapy import optional_features
+
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'scrapy.tests.test_djangoitem.settings'
 
@@ -78,7 +79,7 @@ class DjangoItemTest(unittest.TestCase):
         long_name = 'z' * 300
         i = BasePersonItem(name=long_name)
         self.assertFalse(i.is_valid())
-        self.assertEqual(set(i.errors), set(['age', 'name']))
+        self.assertEqual(set(i.errors), {'age', 'name'})
         i = BasePersonItem(name='John')
         self.assertTrue(i.is_valid(exclude=['age']))
         self.assertEqual({}, i.errors)
