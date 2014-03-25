@@ -12,37 +12,35 @@ class Sitemap(object):
     """Class to parse Sitemap (type=urlset) and Sitemap Index
     (type=sitemapindex) files"""
 
+    def _get_tag_without_namespace(self, elem):
+        return elem.tag.split('}', 1)[1] if '}' in elem.tag else elem.tag
+
     def __init__(self, xmltext):
         io = StringIO(xmltext)
 
-        # Skipping emptiness in the beginning of the file
-        pos = xmltext.find('<')
-        io.seek(pos)
+        self.xml_iterator = ET.iterparse(io,
+                                         events=("start", "end", ),
+                                         remove_comments=True,
+                                         recover=True
+                                         )
 
-        # Getting type of sitemap
-        xml_iterator = ET.iterparse(io, events=("start", ),
-                                    remove_comments=True)
-        _, self.root = xml_iterator.next()
-        rt = self.root.tag
-        self.type = rt.split('}', 1)[1] if '}' in rt else rt
-
-        # Rewind the stream to the beginning of xml
-        io.seek(pos)
-
-        self.xml_iterator = ET.iterparse(io, events=("end", ),
-                                         remove_comments=True)
+        _, root = self.xml_iterator.next()
+        self.type = self._get_tag_without_namespace(root)
 
     def __iter__(self):
         for event, elem in self.xml_iterator:
+            if event == "start":
+                continue
 
-            tag = elem.tag.split('}', 1)[1] if '}' in elem.tag else elem.tag
+            tag = self._get_tag_without_namespace(elem)
+
+            #We don't want to dig into element if it's not url or sitemap
             if tag not in ["url", "sitemap"]:
                 continue
 
             d = {}
             for el in elem.getchildren():
-                tag = el.tag
-                name = tag.split('}', 1)[1] if '}' in tag else tag
+                name = self._get_tag_without_namespace(el)
 
                 if name == 'link':
                     if 'href' in el.attrib:
@@ -50,6 +48,7 @@ class Sitemap(object):
                 else:
                     d[name] = el.text.strip() if el.text else ''
 
+            #in the end, when element is fully processed - we just remove it
             elem.clear()
             if 'loc' in d:
                 yield d
