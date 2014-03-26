@@ -38,7 +38,10 @@ class Command(ScrapyCommand):
             if not opts.output_format:
                 opts.output_format = os.path.splitext(opts.output)[1].replace(".", "")
             if opts.output_format not in valid_output_formats:
-                raise UsageError('Invalid/unrecognized output format: %s, Expected %s' % (opts.output_format, valid_output_formats))
+                raise UsageError("Unrecognized output format '%s', set one"
+                                 " using the '-t' switch or as a file extension"
+                                 " from the supported list %s" % (opts.output_format,
+                                                                  tuple(valid_output_formats)))
             self.settings.overrides['FEED_FORMAT'] = opts.output_format
 
     def run(self, args, opts):
