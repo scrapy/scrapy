@@ -12,6 +12,10 @@ FTP connection parameters are passed using the request meta field:
         This helps when downloading very big files to avoid memory issues. In addition, for
         convenience the local file name will also be given in the response body.
 
+Auth credentials can also be passed in the URL, according to generic URI syntax
+(RFC3986, 3.2.), as 'username:password@host'.
+Credentials passed in a request url override their request meta counterpart.
+
 The status of the built html response will be, by default
 - 200 in case of success
 - 404 in case specified file was not found in the server (ftp code 550)
@@ -69,9 +73,10 @@ class FTPDownloadHandler(object):
 
     def download_request(self, request, spider):
         parsed_url = urlparse(request.url)
-        creator = ClientCreator(reactor, FTPClient, request.meta["ftp_user"],
-                                    request.meta["ftp_password"],
-                                    passive=request.meta.get("ftp_passive", 1))
+        username = parsed_url.username or request.meta["ftp_user"]
+        password = parsed_url.password or request.meta["ftp_password"]
+        creator = ClientCreator(reactor, FTPClient, username, password,
+                                passive=request.meta.get("ftp_passive", 1))
         return creator.connectTCP(parsed_url.hostname, parsed_url.port or 21).addCallback(self.gotClient,
                                 request, unquote(parsed_url.path))
 
@@ -101,4 +106,3 @@ class FTPDownloadHandler(object):
                 httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
                 return Response(url=request.url, status=httpcode, body=message)
         raise result.type(result.value)
-
