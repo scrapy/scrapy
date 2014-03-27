@@ -8,31 +8,45 @@ import lxml.etree as ET
 from cStringIO import StringIO
 
 
+def _get_tag_without_namespace(elem):
+    return elem.tag.split('}', 1)[1] if '}' in elem.tag else elem.tag
+
+
 class Sitemap(object):
     """Class to parse Sitemap (type=urlset) and Sitemap Index
     (type=sitemapindex) files"""
 
-    def _get_tag_without_namespace(self, elem):
-        return elem.tag.split('}', 1)[1] if '}' in elem.tag else elem.tag
-
     def __init__(self, xmltext):
         io = StringIO(xmltext)
 
-        self.xml_iterator = ET.iterparse(io,
-                                         events=("start", "end", ),
-                                         remove_comments=True,
-                                         recover=True
-                                         )
+        try:
+            self.xml_iterator = ET.iterparse(io,
+                                             events=("start", "end", ),
+                                             remove_comments=True,
+                                             recover=True,
+                                             )
+        except TypeError:
+            # previous versions of lxml don't support recover= option
+            # workaround:
+            start = xmltext.find('<?xml')
+            if start == -1:
+                raise Exception("Invalid xml file: doesn't start with '<?xml")
+
+            io.seek(start)
+            self.xml_iterator = ET.iterparse(io,
+                                             events=("start", "end", ),
+                                             remove_comments=True,
+                                             )
 
         _, root = self.xml_iterator.next()
-        self.type = self._get_tag_without_namespace(root)
+        self.type = _get_tag_without_namespace(root)
 
     def __iter__(self):
         for event, elem in self.xml_iterator:
             if event == "start":
                 continue
 
-            tag = self._get_tag_without_namespace(elem)
+            tag = _get_tag_without_namespace(elem)
 
             #We don't want to dig into element if it's not url or sitemap
             if tag not in ["url", "sitemap"]:
@@ -40,7 +54,7 @@ class Sitemap(object):
 
             d = {}
             for el in elem.getchildren():
-                name = self._get_tag_without_namespace(el)
+                name = _get_tag_without_namespace(el)
 
                 if name == 'link':
                     if 'href' in el.attrib:
