@@ -69,8 +69,9 @@ SgmlLinkExtractor
         domains which won't be considered for extracting the links
     :type deny_domains: str or list
 
-    :param deny_extensions: a list of extensions that should be ignored when
-        extracting links. If not given, it will default to the
+    :param deny_extensions: a single value or list of strings containing
+        extensions that should be ignored when extracting links. 
+        If not given, it will default to the
         ``IGNORED_EXTENSIONS`` list defined in the `scrapy.linkextractor`_
         module.
     :type deny_extensions: list
@@ -85,7 +86,7 @@ SgmlLinkExtractor
         Defaults to ``('a', 'area')``.
     :type tags: str or list
 
-    :param attrs: list of attributes which should be considered when looking
+    :param attrs: an attribute or list of attributes which should be considered when looking
         for links to extract (only for those tags specified in the ``tags``
         parameter). Defaults to ``('href',)``
     :type attrs: list

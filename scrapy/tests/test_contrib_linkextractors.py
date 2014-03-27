@@ -277,6 +277,11 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
             Link(url='http://example.org/page.html', text=u'asd'),
         ])
 
+        lx = SgmlLinkExtractor(deny_extensions="jpg")
+        self.assertEqual(lx.extract_links(response), [
+            Link(url='http://example.org/page.html', text=u'asd'),
+        ])
+
     def test_process_value(self):
         """Test restrict_xpaths with encodings"""
         html = """
@@ -302,6 +307,67 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
         lx = SgmlLinkExtractor(restrict_xpaths="//p")
         self.assertEqual(lx.extract_links(response),
                          [Link(url='http://otherdomain.com/base/item/12.html', text='Item 12')])
+
+
+    def test_attrs(self):
+        lx = SgmlLinkExtractor(attrs="href")
+        self.assertEqual(lx.extract_links(self.response), [
+            Link(url='http://example.com/sample1.html', text=u''),
+            Link(url='http://example.com/sample2.html', text=u'sample 2'),
+            Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
+            Link(url='http://www.google.com/something', text=u''),
+            Link(url='http://example.com/innertag.html', text=u'inner tag'),
+        ])
+
+        lx = SgmlLinkExtractor(attrs=("href","src"), tags=("a","area","img"), deny_extensions=())
+        self.assertEqual(lx.extract_links(self.response), [
+            Link(url='http://example.com/sample1.html', text=u''),
+            Link(url='http://example.com/sample2.html', text=u'sample 2'),
+            Link(url='http://example.com/sample2.jpg', text=u''),
+            Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
+            Link(url='http://www.google.com/something', text=u''),
+            Link(url='http://example.com/innertag.html', text=u'inner tag'),
+        ])
+
+        lx = SgmlLinkExtractor(attrs=None)
+        self.assertEqual(lx.extract_links(self.response), [])
+
+        html = """<html><area href="sample1.html"></area><a ref="sample2.html">sample text 2</a></html>"""
+        response = HtmlResponse("http://example.com/index.html", body=html)
+        lx = SgmlLinkExtractor(attrs=("href"))
+        self.assertEqual(lx.extract_links(response), [
+            Link(url='http://example.com/sample1.html', text=u''),
+        ])
+
+
+    def test_tags(self):
+        html = """<html><area href="sample1.html"></area><a href="sample2.html">sample 2</a><img src="sample2.jpg"/></html>"""
+        response = HtmlResponse("http://example.com/index.html", body=html)
+
+        lx = SgmlLinkExtractor(tags=None)
+        self.assertEqual(lx.extract_links(response), [])
+
+        lx = SgmlLinkExtractor()
+        self.assertEqual(lx.extract_links(response), [
+            Link(url='http://example.com/sample1.html', text=u''),
+            Link(url='http://example.com/sample2.html', text=u'sample 2'),
+        ])
+
+        lx = SgmlLinkExtractor(tags="area")
+        self.assertEqual(lx.extract_links(response), [
+            Link(url='http://example.com/sample1.html', text=u''),
+        ])
+
+        lx = SgmlLinkExtractor(tags="a")
+        self.assertEqual(lx.extract_links(response), [
+            Link(url='http://example.com/sample2.html', text=u'sample 2'),
+        ])
+
+        lx = SgmlLinkExtractor(tags=("a","img"), attrs=("href", "src"), deny_extensions=())
+        self.assertEqual(lx.extract_links(response), [
+            Link(url='http://example.com/sample2.html', text=u'sample 2'),
+            Link(url='http://example.com/sample2.jpg', text=u''),
+        ])
 
 
 class HtmlParserLinkExtractorTestCase(unittest.TestCase):
