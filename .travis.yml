@@ -9,7 +9,8 @@ matrix:
   allow_failures:
   - env: TOXENV=pypy
 install:
-  - pip install -M tox
+- ./.travis-workarounds.sh
+- pip install tox
 script: tox
 notifications:
   irc:
