@@ -2,7 +2,20 @@
 
 import weakref
 
-from urlparse import urlparse
+
+####
+#   The changes to the following block is targeted at making scrapy available
+#   in both Python 2.7 and Python 3.x . The original code is commented out.
+
+#from urlparse import urlparse
+
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
+
+####
+
 
 _urlparse_cache = weakref.WeakKeyDictionary()
 def urlparse_cached(request_or_response):

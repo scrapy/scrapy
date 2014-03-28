@@ -18,11 +18,35 @@ def _iter_command_classes(module_name):
     # TODO: add `name` attribute to commands and and merge this function with
     # scrapy.utils.spider.iter_spider_classes
     for module in walk_modules(module_name):
-        for obj in vars(module).itervalues():
-            if inspect.isclass(obj) and \
-               issubclass(obj, ScrapyCommand) and \
-               obj.__module__ == module.__name__:
-                yield obj
+
+
+
+####
+#   The changes to the following block is targeted at making scrapy available
+#   in both Python 2.7 and Python 3.x . The original code is commented out.
+
+
+#        for obj in vars(module).itervalues():
+#            if inspect.isclass(obj) and \
+#               issubclass(obj, ScrapyCommand) and \
+#               obj.__module__ == module.__name__:
+#                yield obj
+
+        try:
+            for obj in vars(module).itervalues():
+                if inspect.isclass(obj) and \
+                        issubclass(obj, ScrapyCommand) and \
+                        obj.__module__ == module.__name__:
+                    yield obj
+        except AttributeError:
+            for obj in vars(module).values():
+                if inspect.isclass(obj) and \
+                        issubclass(obj, ScrapyCommand) and \
+                        obj.__module__ == module.__name__:
+                    yield obj
+
+####
+
 
 def _get_commands_from_module(module, inproject):
     d = {}
@@ -71,8 +95,26 @@ def _print_commands(settings, inproject):
     print("  scrapy <command> [options] [args]\n")
     print("Available commands:")
     cmds = _get_commands_dict(settings, inproject)
-    for cmdname, cmdclass in sorted(cmds.iteritems()):
-        print("  %-13s %s" % (cmdname, cmdclass.short_desc()))
+
+
+#### 
+#   The changes to the following block is targeted at making scrapy available
+#   in both Python 2.7 and Python 3.x . The original code is commented out.
+
+#    for cmdname, cmdclass in sorted(cmds.iteritems()):
+#        print("  %-13s %s" % (cmdname, cmdclass.short_desc()))
+
+    try:
+        for cmdname, cmdclass in sorted(cmds.iteritems()):
+            print("  %-13s %s" % (cmdname, cmdclass.short_desc()))
+    except AttributeError:
+        for cmdname, cmdclass in sorted(cmds.items()):
+            print("  %-13s %s" % (cmdname, cmdclass.short_desc()))
+
+####
+
+
+
     if not inproject:
         print()
         print("  [ more ]      More commands available when run from project directory")

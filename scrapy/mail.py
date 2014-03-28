@@ -3,7 +3,24 @@ Mail sending helpers
 
 See documentation in docs/topics/email.rst
 """
-from cStringIO import StringIO
+
+
+####
+#   The changes to the following block is targeted at making scrapy available
+#   in both Python 2.7 and Python 3.x . The original code is commented out.
+
+
+#from cStringIO import StringIO
+
+try:
+    from cStringIO import StringIO
+except ImportError:
+    import io.StringIO as StringIO
+
+####
+
+
+
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMENonMultipart import MIMENonMultipart
 from email.MIMEBase import MIMEBase

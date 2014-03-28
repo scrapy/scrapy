@@ -104,9 +104,37 @@ def _adapt_eventdict(eventDict, log_level=INFO, encoding='utf-8', prepend_level=
     return ev
 
 def _get_log_level(level_name_or_id):
+
+
+
+
+####
+#   The changes to the following block is targeted at making scrapy available
+#   in both Python 2.7 and Python 3.x . The original code is commented out.
+
+    try:
+        baseStringBeingCheckedFor = basestring
+    except NameError:
+        baseStringBeingCheckedFor = str
+
+####
+
+
     if isinstance(level_name_or_id, int):
         return level_name_or_id
-    elif isinstance(level_name_or_id, basestring):
+
+
+
+####
+#   The changes to the following block is targeted at making scrapy available
+#   in both Python 2.7 and Python 3.x . The original code is commented out.
+
+    #elif  isinstance(level_name_or_id, basestring):
+    elif isinstance(level_name_or_id, baseStringBeingCheckedFor):
+
+####
+
+
         return globals()[level_name_or_id]
     else:
         raise ValueError("Unknown log level: %r" % level_name_or_id)

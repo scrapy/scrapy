@@ -5,10 +5,42 @@ import glob
 import tempfile
 import shutil
 import time
-import urllib2
+
+
+
+####
+#   The changes to the following block is targeted at making scrapy available
+#   in both Python 2.7 and Python 3.x . The original code is commented out.
+
+#import urllib2
+
+try:
+    import urllib2
+except ImportError:
+    import urllib.request as urllib2
+
+####
+
+
 import netrc
 import json
-from urlparse import urlparse, urljoin
+
+
+
+####
+#   The changes to the following block is targeted at making scrapy available
+#   in both Python 2.7 and Python 3.x . The original code is commented out.
+
+#from urlparse import urlparse, urljoin
+
+try:
+    from urlparse import urlparse, urljoin
+except ImportError:
+    from urllib.parse import urlparse, urljoin
+
+####
+
+
 from subprocess import Popen, PIPE, check_call
 
 from w3lib.form import encode_multipart

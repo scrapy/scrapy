@@ -1,6 +1,22 @@
 import sys
 import os
-from ConfigParser import SafeConfigParser
+
+
+####
+#   The changes to the following block is targeted at making scrapy available
+#   in both Python 2.7 and Python 3.x . The original code is commented out.
+
+#from ConfigParser import SafeConfigParser
+
+try:
+    from ConfigParser import SafeConfigParser
+except ImportError:
+    from configparser import SafeConfigParser
+
+####
+
+
+
 from operator import itemgetter
 
 def build_component_list(base, custom):

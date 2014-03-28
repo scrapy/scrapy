@@ -5,7 +5,22 @@ See documentation in docs/topics/item.rst
 """
 
 from pprint import pformat
-from UserDict import DictMixin
+
+
+
+####
+#   The changes to the following block is targeted at making scrapy available
+#   in both Python 2.7 and Python 3.x . The original code is commented out.
+
+#from UserDict import DictMixin
+try:
+    from UserDict import DictMixin
+except ImportError:
+    from collections import MutableMapping as DictMixin
+
+####
+
+
 
 from scrapy.utils.trackref import object_ref
 
