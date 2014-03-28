@@ -5,6 +5,7 @@ env:
 - TOXENV=precise
 - TOXENV=trunk
 - TOXENV=pypy
+- TOXENV=py33
 matrix:
   allow_failures:
   - env: TOXENV=pypy
