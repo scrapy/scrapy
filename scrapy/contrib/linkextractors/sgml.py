@@ -2,7 +2,22 @@
 SGMLParser-based Link extractors
 """
 import re
-from urlparse import urlparse, urljoin
+
+
+
+####
+#   The changes to the following block is targeted at making scrapy available
+#   in both Python 2.7 and Python 3.x . The original code is commented out.
+
+#from urlparse import urlparse, urljoin
+try:
+    from urlparse import urlparse, urljoin
+except ImportError:
+    from urllib.parse import urlparse, urljoin
+
+####
+
+
 from w3lib.url import safe_url_string
 from scrapy.selector import Selector
 from scrapy.link import Link

@@ -1,5 +1,20 @@
 import os
-import cPickle as pickle
+
+
+####
+#   The changes to the following block is targeted at making scrapy available
+#   in both Python 2.7 and Python 3.x . The original code is commented out.
+
+#import cPickle as pickle
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+
+####
+
+
 import warnings
 
 from importlib import import_module

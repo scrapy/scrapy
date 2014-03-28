@@ -3,17 +3,32 @@ SpiderManager is the class which locates and manages all website-specific
 spiders
 """
 
-from zope.interface import implements
+####
+#   The changes to the following block is targeted at making scrapy available
+#   in both Python 2.7 and Python 3.x . The original code is commented out.
+
+#from zope.interface import implements
+from zope.interface import implements, implementer
+
+####
+
 
 from scrapy import signals
 from scrapy.interfaces import ISpiderManager
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.spider import iter_spider_classes
 
+####
+#   The changes to the following block is target at making scrapy available
+#   in both Python 2.7 and Python 3.x . The original code is commented out.
 
+@implementer(ISpiderManager)
 class SpiderManager(object):
 
-    implements(ISpiderManager)
+#class SpiderManager(object):
+#    implements(ISpiderManager)
+
+####
 
     def __init__(self, spider_modules):
         self.spider_modules = spider_modules
@@ -48,8 +63,26 @@ class SpiderManager(object):
             return spcls(**spider_kwargs)
 
     def find_by_request(self, request):
-        return [name for name, cls in self._spiders.iteritems()
-            if cls.handles_request(request)]
+
+
+
+####
+#   The changes to the following block is target at making scrapy available
+#   in both Python 2.7 and Python 3.x . The original code is commented out.
+
+#        return [name for name, cls in self._spiders.iteritems()
+#            if cls.handles_request(request)]
+
+        try:
+            return [name for name, cls in self._spiders.iteritems()
+                    if cls.handles_request(request)]
+        except AttributeError:
+            return [name for name, cls in self._spiders.items()
+                    if cls.handles_request(request)]
+
+####
+
+
 
     def list(self):
         return self._spiders.keys()

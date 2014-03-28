@@ -6,7 +6,22 @@ Some of the functions that used to be imported from this module have been moved
 to the w3lib.url module. Always import those from there instead.
 """
 import posixpath
-import urlparse
+
+
+####
+# The changes to the following block is targeted at making scrapy available
+# in both Python 2.7 and Python 3.x . The original code is commented out.
+
+#import urlparse
+try:
+    import urlparse
+except ImportError:
+    from urllib.parse import urlparse
+    from urllib.parse import urldefrag
+
+####
+
+
 import urllib
 import cgi
 
@@ -99,7 +114,24 @@ def escape_ajax(url):
     >>> escape_ajax("www.example.com/ajax.html")
     'www.example.com/ajax.html'
     """
-    defrag, frag = urlparse.urldefrag(url)
+
+
+
+####
+# The changes to the following block is targeted at making scrapy available
+# in both Python 2.7 and Python 3.x . The original code is commented out.
+
+#    defrag, frag = urlparse.urldefrag(url)
+    
+    try:
+        defrag, frag = urlparse.urldefrag(url)
+    except AttributeError:
+        defrag, frag = urldefrag(url)
+
+####
+
+
+
     if not frag.startswith('!'):
         return url
     return add_or_replace_parameter(defrag, '_escaped_fragment_', frag[1:])

@@ -36,10 +36,33 @@ def load_object(path):
         raise ValueError("Error loading object '%s': not a full path" % path)
 
     module, name = path[:dot], path[dot+1:]
+
+
+
+####
+# The changes to the following block is targeted at making scrapy available
+# in both Python 2.7 and Python 3.x . The original code is commented out.
+
+#    try:
+#        mod = import_module(module)
+#    except ImportError as e:
+#        raise ImportError("Error loading object '%s': %s" % (path, e))
+
+
+
+    dictOfReplacedModules = {'cPickle':'pickle', }
     try:
         mod = import_module(module)
-    except ImportError as e:
-        raise ImportError("Error loading object '%s': %s" % (path, e))
+    except:#  ImportError as e:
+        try:
+            mod = import_module(dictOfReplacedModules[module])
+        except Exception as e:
+            raise Exception (e)
+#            raise ImportError("Error loading object '%s': %s" % (path, e))
+
+####
+
+
 
     try:
         obj = getattr(mod, name)

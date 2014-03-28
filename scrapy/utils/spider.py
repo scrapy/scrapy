@@ -16,12 +16,39 @@ def iter_spider_classes(module):
     # singleton in scrapy.spider.spiders
     from scrapy.spider import Spider
 
-    for obj in vars(module).itervalues():
-        if inspect.isclass(obj) and \
-           issubclass(obj, Spider) and \
-           obj.__module__ == module.__name__ and \
-           getattr(obj, 'name', None):
-            yield obj
+
+
+####
+# The changes to the following block is targeted at making scrapy available
+# in both Python 2.7 and Python 3.x . The original code is commented out.
+
+#    for obj in vars(module).itervalues():
+#        if inspect.isclass(obj) and \
+#           issubclass(obj, Spider) and \
+#           obj.__module__ == module.__name__ and \
+#           getattr(obj, 'name', None):
+#            yield obj
+
+
+
+    try:
+        for obj in vars(module).itervalues():
+            if inspect.isclass(obj) and \
+                    issubclass(obj, Spider) and \
+                    obj.__module__ == module.__name__ and \
+                    getattr(obj, 'name', None):
+                yield obj
+    except AttributeError:
+        for obj in vars(module).values():
+            if inspect.isclass(obj) and \
+                    issubclass(obj, Spider) and \
+                    obj.__module__ == module.__name__ and \
+                    getattr(obj, 'name', None):
+                yield obj
+
+####
+
+
 
 def create_spider_for_request(spidermanager, request, default_spider=None, \
         log_none=False, log_multiple=False, **spider_kwargs):

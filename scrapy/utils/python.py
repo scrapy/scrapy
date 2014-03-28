@@ -11,7 +11,24 @@ import inspect
 import weakref
 import errno
 from functools import partial, wraps
-from sgmllib import SGMLParser
+
+
+
+
+####
+#   The changes to the following block is targeted at making scrapy available
+#   in both Python 2.7 and Python 3.x . The original code is commented out.
+
+#from sgmllib import SGMLParser
+
+try:
+    from sgmllib import SGMLParser
+except  ImportError:
+    from html.parser import HTMLParser as SGMLParser
+
+####
+
+
 
 
 class FixedSGMLParser(SGMLParser):

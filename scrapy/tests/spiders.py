@@ -3,7 +3,22 @@ Some spiders used for testing and benchmarking
 """
 
 import time
-from urllib import urlencode
+
+
+####
+#   The changes to the following block is targeted at making scrapy available
+#   in both Python 2.7 and Python 3.x . The original code is commented out.
+
+#from urllib import urlencode
+
+try:
+    from urllib import urlencode
+except ImportError:
+    from urllib.parse import urlencode
+
+####
+
+
 
 from scrapy.spider import Spider
 from scrapy.http import Request
