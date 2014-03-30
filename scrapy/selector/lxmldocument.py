@@ -9,7 +9,9 @@ from scrapy.utils.trackref import object_ref
 
 
 def _factory(response, parser_cls):
-    url = response.url
+    import urllib
+    url = urllib.quote(response.url, "!#$&'()*+,-./0123456789:;=?@ \
+                       ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz~")
     body = response.body_as_unicode().strip().encode('utf8') or '<html/>'
     parser = parser_cls(recover=True, encoding='utf8')
     return etree.fromstring(body, parser=parser, base_url=url)
