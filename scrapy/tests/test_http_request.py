@@ -684,7 +684,7 @@ class FormRequestTest(RequestTest):
     def test_from_response_mixed_characters(self):
         response = _buildresponse(
             body='<html><body><form></form></body></html>',
-            url='https://google.com/?q=http://www.example.com/?a=look+for%2Band%23query'
+            url='http://www.example.com/?a=look+for%2Band%23query'
         )
         req = self.request_class.from_response(response)
         self.assertEqual(req.url, "http://www.example.com/?a=look+for%252Band%2523query")
