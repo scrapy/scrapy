@@ -244,17 +244,17 @@ At first, you may be tempted to use the following approach, which is wrong, as
 it actually extracts all ``<p>`` elements from the document, not only those
 inside ``<div>`` elements::
 
-    >>> for p in divs.xpath('//p')  # this is wrong - gets all <p> from the whole document
+    >>> for p in divs.xpath('//p'):  # this is wrong - gets all <p> from the whole document
     >>>     print p.extract()
 
 This is the proper way to do it (note the dot prefixing the ``.//p`` XPath)::
 
-    >>> for p in divs.xpath('.//p')  # extracts all <p> inside
+    >>> for p in divs.xpath('.//p'):  # extracts all <p> inside
     >>>     print p.extract()
 
 Another common case would be to extract all direct ``<p>`` children::
 
-    >>> for p in divs.xpath('p')
+    >>> for p in divs.xpath('p'):
     >>>     print p.extract()
 
 For more details about relative XPaths see the `Location Paths`_ section in the
