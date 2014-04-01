@@ -12,7 +12,7 @@ class Sitemap(object):
     (type=sitemapindex) files"""
 
     def __init__(self, xmltext):
-        xmlp = lxml.etree.XMLParser(recover=True, remove_comments=True)
+        xmlp = lxml.etree.XMLParser(recover=True, remove_comments=True, resolve_entities=False)
         self._root = lxml.etree.fromstring(xmltext, parser=xmlp)
         rt = self._root.tag
         self.type = self._root.tag.split('}', 1)[1] if '}' in rt else rt
