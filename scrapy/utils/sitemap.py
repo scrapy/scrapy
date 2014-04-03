@@ -4,7 +4,12 @@ Module for processing Sitemaps.
 Note: The main purpose of this module is to provide support for the
 SitemapSpider, its API is subject to change without notice.
 """
-import lxml.etree
+import lxml.etree as ET
+from cStringIO import StringIO
+
+
+def _get_tag_without_namespace(elem):
+    return elem.tag.split('}', 1)[1] if '}' in elem.tag else elem.tag
 
 
 class Sitemap(object):
@@ -12,17 +17,44 @@ class Sitemap(object):
     (type=sitemapindex) files"""
 
     def __init__(self, xmltext):
-        xmlp = lxml.etree.XMLParser(recover=True, remove_comments=True)
-        self._root = lxml.etree.fromstring(xmltext, parser=xmlp)
-        rt = self._root.tag
-        self.type = self._root.tag.split('}', 1)[1] if '}' in rt else rt
+        io = StringIO(xmltext)
+
+        try:
+            self.xml_iterator = ET.iterparse(io,
+                                             events=("start", "end", ),
+                                             remove_comments=True,
+                                             recover=True,
+                                             )
+        except TypeError:
+            # previous versions of lxml don't support recover= option
+            # workaround:
+            start = xmltext.find('<?xml')
+            if start == -1:
+                raise Exception("Invalid xml file: doesn't start with '<?xml")
+
+            io.seek(start)
+            self.xml_iterator = ET.iterparse(io,
+                                             events=("start", "end", ),
+                                             remove_comments=True,
+                                             )
+
+        _, root = self.xml_iterator.next()
+        self.type = _get_tag_without_namespace(root)
 
     def __iter__(self):
-        for elem in self._root.getchildren():
+        for event, elem in self.xml_iterator:
+            if event == "start":
+                continue
+
+            tag = _get_tag_without_namespace(elem)
+
+            #We don't want to dig into element if it's not url or sitemap
+            if tag not in ["url", "sitemap"]:
+                continue
+
             d = {}
             for el in elem.getchildren():
-                tag = el.tag
-                name = tag.split('}', 1)[1] if '}' in tag else tag
+                name = _get_tag_without_namespace(el)
 
                 if name == 'link':
                     if 'href' in el.attrib:
@@ -30,6 +62,8 @@ class Sitemap(object):
                 else:
                     d[name] = el.text.strip() if el.text else ''
 
+            #in the end, when element is fully processed - we just remove it
+            elem.clear()
             if 'loc' in d:
                 yield d
 
