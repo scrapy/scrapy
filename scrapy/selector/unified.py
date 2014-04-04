@@ -15,11 +15,16 @@ from .csstranslator import ScrapyHTMLTranslator, ScrapyGenericTranslator
 
 __all__ = ['Selector', 'SelectorList']
 
+
+class SafeXMLParser(etree.XMLParser):
+    def __init__(self, *args, **kwargs):
+        super(SafeXMLParser, self).__init__(*args, resolve_entities=False, **kwargs)
+
 _ctgroup = {
     'html': {'_parser': etree.HTMLParser,
              '_csstranslator': ScrapyHTMLTranslator(),
              '_tostring_method': 'html'},
-    'xml': {'_parser': etree.XMLParser,
+    'xml': {'_parser': SafeXMLParser,
             '_csstranslator': ScrapyGenericTranslator(),
             '_tostring_method': 'xml'},
 }
