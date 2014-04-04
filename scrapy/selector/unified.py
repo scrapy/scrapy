@@ -18,7 +18,8 @@ __all__ = ['Selector', 'SelectorList']
 
 class SafeXMLParser(etree.XMLParser):
     def __init__(self, *args, **kwargs):
-        super(SafeXMLParser, self).__init__(*args, resolve_entities=False, **kwargs)
+        kwargs.setdefault('resolve_entities', False)
+        super(SafeXMLParser, self).__init__(*args, **kwargs)
 
 _ctgroup = {
     'html': {'_parser': etree.HTMLParser,
