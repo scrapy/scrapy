@@ -297,6 +297,16 @@ class SelectorTestCase(unittest.TestCase):
         sel.remove_namespaces()
         self.assertEqual(len(sel.xpath("//link/@type")), 2)
 
+    def test_xml_entity_expansion(self):
+        malicious_xml = '<?xml version="1.0" encoding="ISO-8859-1"?>'\
+            '<!DOCTYPE foo [ <!ELEMENT foo ANY > <!ENTITY xxe SYSTEM '\
+            '"file:///etc/passwd" >]><foo>&xxe;</foo>'
+
+        response = XmlResponse('http://example.com', body=malicious_xml)
+        sel = self.sscls(response=response)
+
+        self.assertEqual(sel.extract(), '<foo>&xxe;</foo>')
+
 
 class DeprecatedXpathSelectorTest(unittest.TestCase):
 
