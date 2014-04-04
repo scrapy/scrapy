@@ -2,6 +2,12 @@
 import pytest
 from twisted.python import log
 
+from scrapy import optional_features
+
+collect_ignore = ["stats.py"]
+if 'django' not in optional_features:
+    collect_ignore.append("tests/test_djangoitem/models.py")
+
 
 class LogObservers:
     """Class for keeping track of log observers across test modules"""
