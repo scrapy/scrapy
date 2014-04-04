@@ -159,6 +159,21 @@ Disallow: /forum/active/
             {'lastmod': '2013-07-15', 'loc': 'http://www.example.com/sitemap3.xml'},
         ])
 
+    def test_xml_entity_expansion(self):
+        s = Sitemap("""<?xml version="1.0" encoding="utf-8"?>
+          <!DOCTYPE foo [
+          <!ELEMENT foo ANY >
+          <!ENTITY xxe SYSTEM "file:///etc/passwd" >
+          ]>
+          <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+            <url>
+              <loc>http://127.0.0.1:8000/&xxe;</loc>
+            </url>
+          </urlset>
+        """)
+
+        self.assertEqual(list(s), [{'loc': 'http://127.0.0.1:8000/'}])
+
 
 if __name__ == '__main__':
     unittest.main()
