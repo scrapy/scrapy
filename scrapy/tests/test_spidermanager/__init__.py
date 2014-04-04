@@ -27,6 +27,7 @@ class SpiderManagerTest(unittest.TestCase):
 
     def tearDown(self):
         del self.spiderman
+        del sys.modules['test_spiders_xxx']
         sys.path.remove(self.tmpdir)
 
     def test_interface(self):
