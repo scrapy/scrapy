@@ -94,8 +94,7 @@ def extract_regex(regex, text, encoding='utf-8'):
 def md5sum(file):
     """Calculate the md5 checksum of a file-like object without reading its
     whole content in memory.
-
-    >>> from StringIO import StringIO
+    >>> from six.moves import cStringIO as StringIO
     >>> md5sum(StringIO('file content to hash'))
     '784406af91dd5a54fbb9c84c2236595a'
     """

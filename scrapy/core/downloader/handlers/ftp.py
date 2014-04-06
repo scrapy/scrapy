@@ -29,9 +29,8 @@ In case of status 200 request, response.headers will come with two keys:
 """
 
 import re
-from urlparse import urlparse
-from cStringIO import StringIO
-
+from six.moves import cStringIO as StringIO
+from six.moves.urllib.parse import urlparse
 from twisted.internet import reactor
 from twisted.protocols.ftp import FTPClient, CommandFailed
 from twisted.internet.protocol import Protocol, ClientCreator
@@ -101,4 +100,3 @@ class FTPDownloadHandler(object):
                 httpcode = self.CODE_MAPPING.get(ftpcode, self.CODE_MAPPING["default"])
                 return Response(url=request.url, status=httpcode, body=message)
         raise result.type(result.value)
-

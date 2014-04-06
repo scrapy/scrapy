@@ -4,8 +4,8 @@ This module implements the FormRequest class which is a more covenient class
 
 See documentation in docs/topics/request-response.rst
 """
-
-import urllib, urlparse
+import six
+from six.moves.urllib.parse import urljoin, urlencode
 import lxml.html
 from scrapy.http.request import Request
 from scrapy.utils.python import unicode_to_str
@@ -21,7 +21,7 @@ class FormRequest(Request):
         super(FormRequest, self).__init__(*args, **kwargs)
 
         if formdata:
-            items = formdata.iteritems() if isinstance(formdata, dict) else formdata
+            items = six.iteritems(formdata) if isinstance(formdata, dict) else formdata
             querystr = _urlencode(items, self.encoding)
             if self.method == 'POST':
                 self.headers.setdefault('Content-Type', 'application/x-www-form-urlencoded')
@@ -42,13 +42,13 @@ class FormRequest(Request):
 def _get_form_url(form, url):
     if url is None:
         return form.action or form.base_url
-    return urlparse.urljoin(form.base_url, url)
+    return urljoin(form.base_url, url)
 
 def _urlencode(seq, enc):
     values = [(unicode_to_str(k, enc), unicode_to_str(v, enc))
               for k, vs in seq
               for v in (vs if hasattr(vs, '__iter__') else [vs])]
-    return urllib.urlencode(values, doseq=1)
+    return urlencode(values, doseq=1)
 
 def _get_form(response, formname, formnumber, formxpath):
     """Find the form element """
@@ -106,7 +106,7 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
         if clickable and clickable[0] not in formdata and not clickable[0] is None:
             values.append(clickable)
 
-    values.extend(formdata.iteritems())
+    values.extend(six.iteritems(formdata))
     return values
 
 def _value(ele):
@@ -161,7 +161,7 @@ def _get_clickable(clickdata, form):
     # We didn't find it, so now we build an XPath expression out of the other
     # arguments, because they can be used as such
     xpath = u'.//*' + \
-            u''.join(u'[@%s="%s"]' % c for c in clickdata.iteritems())
+            u''.join(u'[@%s="%s"]' % c for c in six.iteritems(clickdata))
     el = form.xpath(xpath)
     if len(el) == 1:
         return (el[0].name, el[0].value)

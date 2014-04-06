@@ -5,7 +5,10 @@ See documentation in docs/topics/item.rst
 """
 
 from pprint import pformat
-from UserDict import DictMixin
+try:
+    from UserDict import DictMixin
+except ImportError:
+    from collections import MutableMapping as DictMixin
 
 from scrapy.utils.trackref import object_ref
 

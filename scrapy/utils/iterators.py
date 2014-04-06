@@ -1,5 +1,5 @@
 import re, csv
-from cStringIO import StringIO
+from six.moves import cStringIO as StringIO
 
 from scrapy.http import TextResponse, Response
 from scrapy.selector import Selector

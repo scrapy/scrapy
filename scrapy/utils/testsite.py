@@ -1,5 +1,5 @@
 from __future__ import print_function
-import urlparse
+from six.moves.urllib.parse import urljoin
 
 from twisted.internet import reactor
 from twisted.web import server, resource, static, util
@@ -14,7 +14,7 @@ class SiteTest(object):
         self.site.stopListening()
 
     def url(self, path):
-        return urlparse.urljoin(self.baseurl, path)
+        return urljoin(self.baseurl, path)
 
 def test_site():
     r = resource.Resource()
@@ -24,7 +24,7 @@ def test_site():
     r.putChild("redirect", util.Redirect("/redirected"))
     r.putChild("redirected", static.Data("Redirected here", "text/plain"))
     return server.Site(r)
-    
+
 
 if __name__ == '__main__':
     port = reactor.listenTCP(0, test_site(), interface="127.0.0.1")

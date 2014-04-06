@@ -1,4 +1,5 @@
-import os, cPickle as pickle
+import os
+from six.moves import cPickle as pickle
 
 from scrapy import signals
 

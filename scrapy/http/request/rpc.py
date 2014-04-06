@@ -4,13 +4,14 @@ This module implements the XmlRpcRequest class which is a more convenient class
 
 See documentation in docs/topics/request-response.rst
 """
-import xmlrpclib
+import six
+from six.moves import xmlrpc_client
 
 from scrapy.http.request import Request
 from scrapy.utils.python import get_func_args
 
+DUMPS_ARGS = get_func_args(xmlrpc_client.dumps)
 
-DUMPS_ARGS = get_func_args(xmlrpclib.dumps)
 
 
 class XmlRpcRequest(Request):
@@ -19,7 +20,7 @@ class XmlRpcRequest(Request):
         encoding = kwargs.get('encoding', None)
         if 'body' not in kwargs and 'params' in kwargs:
             kw = dict((k, kwargs.pop(k)) for k in DUMPS_ARGS if k in kwargs)
-            kwargs['body'] = xmlrpclib.dumps(**kw)
+            kwargs['body'] = xmlrpc_client.dumps(**kw)
 
         # spec defines that requests must use POST method
         kwargs.setdefault('method', 'POST')

@@ -2,7 +2,7 @@
 SGMLParser-based Link extractors
 """
 import re
-from urlparse import urlparse, urljoin
+from six.moves.urllib.parse import urlparse, urljoin
 from w3lib.url import safe_url_string
 from scrapy.selector import Selector
 from scrapy.link import Link

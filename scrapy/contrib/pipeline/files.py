@@ -1,15 +1,18 @@
 """
 Files Pipeline
 """
-
+import six
 import hashlib
 import os
 import os.path
-import rfc822
+if six.PY2:
+    import rfc822
+else:
+    import email.utils as rfc822
 import time
-import urlparse
+from six.moves.urllib.parse import urlparse
 from collections import defaultdict
-from cStringIO import StringIO
+from six.moves import cStringIO as StringIO
 
 from twisted.internet import defer, threads
 
@@ -166,7 +169,7 @@ class FilesPipeline(MediaPipeline):
         if os.path.isabs(uri):  # to support win32 paths like: C:\\some\dir
             scheme = 'file'
         else:
-            scheme = urlparse.urlparse(uri).scheme
+            scheme = urlparse(uri).scheme
         store_cls = self.STORE_SCHEMES[scheme]
         return store_cls(uri)
 

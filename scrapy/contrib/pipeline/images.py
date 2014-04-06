@@ -5,7 +5,7 @@ See documentation in topics/images.rst
 """
 
 import hashlib
-from cStringIO import StringIO
+from six.moves import cStringIO as StringIO
 
 from PIL import Image
 

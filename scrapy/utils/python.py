@@ -6,27 +6,76 @@ higher than 2.5 which used to be the lowest version supported by Scrapy.
 
 """
 import os
+import six
 import re
 import inspect
 import weakref
 import errno
 from functools import partial, wraps
-from sgmllib import SGMLParser
+
+def no_code(x, encoding=None):
+    return x
+
+if six.PY2:
+    from sgmllib import SGMLParser
 
 
-class FixedSGMLParser(SGMLParser):
-    """The SGMLParser that comes with Python has a bug in the convert_charref()
-    method. This is the same class with the bug fixed"""
+    class FixedSGMLParser(SGMLParser):
+        """The SGMLParser that comes with Python has a bug in the convert_charref()
+        method. This is the same class with the bug fixed"""
 
-    def convert_charref(self, name):
-        """This method fixes a bug in Python's SGMLParser."""
-        try:
-            n = int(name)
-        except ValueError:
-            return
-        if not 0 <= n <= 127 : # ASCII ends at 127, not 255
-            return
-        return self.convert_codepoint(n)
+        def convert_charref(self, name):
+            """This method fixes a bug in Python's SGMLParser."""
+            try:
+                n = int(name)
+            except ValueError:
+                return
+            if not 0 <= n <= 127 : # ASCII ends at 127, not 255
+                return
+            return self.convert_codepoint(n)
+    def str_to_unicode(text, encoding=None, errors='strict'):
+        """Return the unicode representation of text in the given encoding. Unlike
+        .encode(encoding) this function can be applied directly to a unicode
+        object without the risk of double-decoding problems (which can happen if
+        you don't use the default 'ascii' encoding)
+        """
+
+        if encoding is None:
+            encoding = 'utf-8'
+        if isinstance(text, str):
+            return text.decode(encoding, errors)
+        elif isinstance(text, unicode):
+            return text
+        else:
+            raise TypeError('str_to_unicode must receive a str or unicode object, got %s' % type(text).__name__)
+
+    def unicode_to_str(text, encoding=None, errors='strict'):
+        """Return the str representation of text in the given encoding. Unlike
+        .encode(encoding) this function can be applied directly to a str
+        object without the risk of double-decoding problems (which can happen if
+        you don't use the default 'ascii' encoding)
+        """
+
+        if encoding is None:
+            encoding = 'utf-8'
+        if isinstance(text, unicode):
+            return text.encode(encoding, errors)
+        elif isinstance(text, str):
+            return text
+        else:
+            raise TypeError('unicode_to_str must receive a unicode or str object, got %s' % type(text).__name__)
+
+    _BINARYCHARS = set(map(chr, range(32))) - set(["\0", "\t", "\n", "\r"])
+
+    def isbinarytext(text):
+        """Return True if the given text is considered binary, or false
+        otherwise, by looking for binary bytes at their chars
+        """
+        assert isinstance(text, str), "text must be str, got '%s'" % type(text).__name__
+        return any(c in _BINARYCHARS for c in text)
+else:
+    unicode_to_str = no_code
+    str_to_unicode = no_code
 
 
 def flatten(x):
@@ -64,37 +113,7 @@ def unique(list_, key=lambda x: x):
     return result
 
 
-def str_to_unicode(text, encoding=None, errors='strict'):
-    """Return the unicode representation of text in the given encoding. Unlike
-    .encode(encoding) this function can be applied directly to a unicode
-    object without the risk of double-decoding problems (which can happen if
-    you don't use the default 'ascii' encoding)
-    """
 
-    if encoding is None:
-        encoding = 'utf-8'
-    if isinstance(text, str):
-        return text.decode(encoding, errors)
-    elif isinstance(text, unicode):
-        return text
-    else:
-        raise TypeError('str_to_unicode must receive a str or unicode object, got %s' % type(text).__name__)
-
-def unicode_to_str(text, encoding=None, errors='strict'):
-    """Return the str representation of text in the given encoding. Unlike
-    .encode(encoding) this function can be applied directly to a str
-    object without the risk of double-decoding problems (which can happen if
-    you don't use the default 'ascii' encoding)
-    """
-
-    if encoding is None:
-        encoding = 'utf-8'
-    if isinstance(text, unicode):
-        return text.encode(encoding, errors)
-    elif isinstance(text, str):
-        return text
-    else:
-        raise TypeError('unicode_to_str must receive a unicode or str object, got %s' % type(text).__name__)
 
 def re_rsearch(pattern, text, chunk_size=1024):
     """
@@ -136,15 +155,6 @@ def memoizemethod_noargs(method):
             cache[self] = method(self, *args, **kwargs)
         return cache[self]
     return new_method
-
-_BINARYCHARS = set(map(chr, range(32))) - set(["\0", "\t", "\n", "\r"])
-
-def isbinarytext(text):
-    """Return True if the given text is considered binary, or false
-    otherwise, by looking for binary bytes at their chars
-    """
-    assert isinstance(text, str), "text must be str, got '%s'" % type(text).__name__
-    return any(c in _BINARYCHARS for c in text)
 
 def get_func_args(func, stripself=False):
     """Return the argument name list of a callable"""
@@ -248,7 +258,7 @@ def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
     dict or a list of tuples, like any dict constructor supports.
     """
     d = {}
-    for k, v in dict(dct_or_tuples).iteritems():
+    for k, v in six.iteritems(dict(dct_or_tuples)):
         k = k.encode(encoding) if isinstance(k, unicode) else k
         if not keys_only:
             v = v.encode(encoding) if isinstance(v, unicode) else v
