@@ -6,12 +6,10 @@ env:
 - TOXENV=trunk
 - TOXENV=pypy
 - TOXENV=py33
-- TOXENV=py34
 matrix:
   allow_failures:
   - env: TOXENV=pypy
   - env: TOXENV=py33
-  - env: TOXENV=py34
 install:
 - ./.travis-workarounds.sh
 - pip install tox
