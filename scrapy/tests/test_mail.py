@@ -1,6 +1,6 @@
 import unittest
 
-from cStringIO import StringIO
+from six.moves import cStringIO as StringIO
 from scrapy.mail import MailSender
 
 class MailSenderTest(unittest.TestCase):

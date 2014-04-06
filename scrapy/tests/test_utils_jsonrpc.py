@@ -1,5 +1,5 @@
 import unittest, json
-from cStringIO import StringIO
+from six.moves import cStringIO as StringIO
 
 from scrapy.utils.jsonrpc import jsonrpc_client_call, jsonrpc_server_call, \
     JsonRpcError, jsonrpc_errors
@@ -119,4 +119,3 @@ class JsonRpcUtilsTestCase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

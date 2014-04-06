@@ -3,9 +3,10 @@ import operator
 import unittest
 from itertools import count
 
-from scrapy.utils.python import str_to_unicode, unicode_to_str, \
-    memoizemethod_noargs, isbinarytext, equal_attributes, \
-    WeakKeyCache, stringify_dict, get_func_args
+from scrapy.utils.python import str_to_unicode, unicode_to_str
+from scrapy.utils.python import memoizemethod_noargs, isbinarytext
+from scrapy.utils.python import equal_attributes, WeakKeyCache
+from scrapy.utils.python import stringify_dict, get_func_args
 
 __doctests__ = ['scrapy.utils.python']
 

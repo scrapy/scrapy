@@ -1,7 +1,7 @@
 import os
 import hashlib
 import warnings
-from cStringIO import StringIO
+from six.moves import cStringIO as StringIO
 from tempfile import mkdtemp
 from shutil import rmtree
 
