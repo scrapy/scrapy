@@ -14,7 +14,7 @@ if six.PY2:
     from email import Encoders
 else:
     from email.mime.multipart import MIMEMultipart
-    from email.mine.nonmultipart import MIMENonMultipart
+    from email.mime.nonmultipart import MIMENonMultipart
     from email.mime.base import MIMEBase
     from email.mime.text import MIMEText
     from email.utils import formatdate
