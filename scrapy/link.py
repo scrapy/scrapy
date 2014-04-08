@@ -4,6 +4,7 @@ This module defines the Link object used in Link extractors.
 For actual link extractors implementation see scrapy.contrib.linkextractor, or
 its documentation in: docs/topics/link-extractors.rst
 """
+import six
 
 class Link(object):
     """Link objects represent an extracted link by the LinkExtractor."""
@@ -11,7 +12,7 @@ class Link(object):
     __slots__ = ['url', 'text', 'fragment', 'nofollow']
 
     def __init__(self, url, text='', fragment='', nofollow=False):
-        if isinstance(url, unicode):
+        if isinstance(url, six.text_type):
             import warnings
             warnings.warn("Do not instantiate Link objects with unicode urls. " \
                 "Assuming utf-8 encoding (which could be wrong)")
@@ -31,4 +32,3 @@ class Link(object):
     def __repr__(self):
         return 'Link(url=%r, text=%r, fragment=%r, nofollow=%r)' % \
             (self.url, self.text, self.fragment, self.nofollow)
-

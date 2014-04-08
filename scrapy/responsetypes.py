@@ -6,7 +6,7 @@ based on different criteria.
 
 from mimetypes import MimeTypes
 from pkgutil import get_data
-from cStringIO import StringIO
+from six.moves import cStringIO as StringIO
 
 from scrapy.http import Response
 from scrapy.utils.misc import load_object

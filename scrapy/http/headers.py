@@ -1,3 +1,4 @@
+import six
 from w3lib.http import headers_dict_to_raw
 from scrapy.utils.datatypes import CaselessDict
 
@@ -11,7 +12,7 @@ class Headers(CaselessDict):
 
     def normkey(self, key):
         """Headers must not be unicode"""
-        if isinstance(key, unicode):
+        if isinstance(key, six.text_type):
             return key.title().encode(self.encoding)
         return key.title()
 
@@ -21,7 +22,7 @@ class Headers(CaselessDict):
             value = []
         elif not hasattr(value, '__iter__'):
             value = [value]
-        return [x.encode(self.encoding) if isinstance(x, unicode) else x \
+        return [x.encode(self.encoding) if isinstance(x, six.text_type) else x \
             for x in value]
 
     def __getitem__(self, key):

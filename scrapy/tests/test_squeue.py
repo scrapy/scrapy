@@ -7,12 +7,12 @@ from scrapy.contrib.loader import ItemLoader
 class TestItem(Item):
     name = Field()
 
-def _test_procesor(x):
+def _test_processor(x):
     return x + x
 
 class TestLoader(ItemLoader):
     default_item_class = TestItem
-    name_out = staticmethod(_test_procesor)
+    name_out = staticmethod(_test_processor)
 
 class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest):
 

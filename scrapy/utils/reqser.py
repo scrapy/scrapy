@@ -1,7 +1,7 @@
 """
 Helper functions for serializing (and deserializing) requests.
 """
-
+import six
 from scrapy.http import Request
 
 def request_to_dict(request, spider=None):
@@ -59,10 +59,16 @@ def request_from_dict(d, spider=None):
 
 
 def _find_method(obj, func):
-    if obj and hasattr(func, 'im_self') and func.im_self is obj:
-        return func.im_func.__name__
+    if six.PY2:
+        if obj and hasattr(func, 'im_self') and func.im_self is obj:
+            return func.im_func.__name__
+        else:
+            raise ValueError("Function %s is not a method of: %s" % (func, obj))
     else:
-        raise ValueError("Function %s is not a method of: %s" % (func, obj))
+        if obj and hasattr(func, '__self__') and func.__self__ is obj:
+            return func.__func__.__name__
+        else:
+            raise ValueError("Function %s is not a method of: %s" % (func, obj))
 
 def _get_method(obj, name):
     name = str(name)

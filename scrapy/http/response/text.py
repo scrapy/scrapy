@@ -4,7 +4,7 @@ discovering (through HTTP headers) to base Response class.
 
 See documentation in docs/topics/request-response.rst
 """
-
+import six
 from w3lib.encoding import html_to_unicode, resolve_encoding, \
     html_body_declared_encoding, http_content_type_encoding
 from scrapy.http.response import Response
@@ -22,7 +22,7 @@ class TextResponse(Response):
         super(TextResponse, self).__init__(*args, **kwargs)
 
     def _set_url(self, url):
-        if isinstance(url, unicode):
+        if isinstance(url, six.text_type):
             if self.encoding is None:
                 raise TypeError('Cannot convert unicode url - %s has no encoding' %
                     type(self).__name__)
@@ -32,7 +32,7 @@ class TextResponse(Response):
 
     def _set_body(self, body):
         self._body = ''
-        if isinstance(body, unicode):
+        if isinstance(body, six.text_type):
             if self.encoding is None:
                 raise TypeError('Cannot convert unicode body - %s has no encoding' %
                     type(self).__name__)

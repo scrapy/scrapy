@@ -4,7 +4,7 @@ responses in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
-
+import six
 import copy
 
 from scrapy.http.headers import Headers
@@ -33,7 +33,7 @@ class Response(object_ref):
         return self._url
 
     def _set_url(self, url):
-        if isinstance(url, str):
+        if isinstance(url, six.binary_type):
             self._url = url
         else:
             raise TypeError('%s url must be str, got %s:' % (type(self).__name__, \
@@ -45,9 +45,9 @@ class Response(object_ref):
         return self._body
 
     def _set_body(self, body):
-        if isinstance(body, str):
+        if isinstance(body, six.binary_type):
             self._body = body
-        elif isinstance(body, unicode):
+        elif isinstance(body, six.text_type):
             raise TypeError("Cannot assign a unicode body to a raw Response. " \
                 "Use TextResponse, HtmlResponse, etc")
         elif body is None:

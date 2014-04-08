@@ -1,7 +1,8 @@
+import six
 import cgi
 import unittest
-import xmlrpclib
-from urlparse import urlparse
+from six.moves import xmlrpc_client
+from six.moves.urllib.parse import urlparse
 
 from scrapy.http import Request, FormRequest, XmlRpcRequest, Headers, HtmlResponse
 
@@ -22,7 +23,7 @@ class RequestTest(unittest.TestCase):
         r = self.request_class('http://www.example.com')
 
         r = self.request_class("http://www.example.com")
-        assert isinstance(r.url, str)
+        assert isinstance(r.url, six.binary_type)
         self.assertEqual(r.url, "http://www.example.com")
         self.assertEqual(r.method, self.default_method)
 
@@ -56,10 +57,10 @@ class RequestTest(unittest.TestCase):
         # headers must not be unicode
         h = Headers({'key1': u'val1', u'key2': 'val2'})
         h[u'newkey'] = u'newval'
-        for k, v in h.iteritems():
-            self.assert_(isinstance(k, str))
+        for k, v in six.iteritems(h):
+            self.assert_(isinstance(k, six.binary_type))
             for s in v:
-                self.assert_(isinstance(s, str))
+                self.assert_(isinstance(s, six.binary_type))
 
     def test_eq(self):
         url = 'http://www.scrapy.org'
@@ -94,15 +95,15 @@ class RequestTest(unittest.TestCase):
         assert r1.body == ''
 
         r2 = self.request_class(url="http://www.example.com/", body="")
-        assert isinstance(r2.body, str)
+        assert isinstance(r2.body, six.binary_type)
         self.assertEqual(r2.encoding, 'utf-8') # default encoding
 
         r3 = self.request_class(url="http://www.example.com/", body=u"Price: \xa3100", encoding='utf-8')
-        assert isinstance(r3.body, str)
+        assert isinstance(r3.body, six.binary_type)
         self.assertEqual(r3.body, "Price: \xc2\xa3100")
 
         r4 = self.request_class(url="http://www.example.com/", body=u"Price: \xa3100", encoding='latin1')
-        assert isinstance(r4.body, str)
+        assert isinstance(r4.body, six.binary_type)
         self.assertEqual(r4.body, "Price: \xa3100")
 
     def test_ajax_url(self):
@@ -172,7 +173,7 @@ class RequestTest(unittest.TestCase):
 
     def test_method_always_str(self):
         r = self.request_class("http://www.example.com", method=u"POST")
-        assert isinstance(r.method, str)
+        assert isinstance(r.method, six.binary_type)
 
     def test_immutable_attributes(self):
         r = self.request_class("http://example.com")
@@ -696,7 +697,7 @@ class XmlRpcRequestTest(RequestTest):
     def _test_request(self, **kwargs):
         r = self.request_class('http://scrapytest.org/rpc2', **kwargs)
         self.assertEqual(r.headers['Content-Type'], 'text/xml')
-        self.assertEqual(r.body, xmlrpclib.dumps(**kwargs))
+        self.assertEqual(r.body, xmlrpc_client.dumps(**kwargs))
         self.assertEqual(r.method, 'POST')
         self.assertEqual(r.encoding, kwargs.get('encoding', 'utf-8'))
         self.assertTrue(r.dont_filter, True)

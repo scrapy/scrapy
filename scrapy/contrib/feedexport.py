@@ -7,10 +7,10 @@ See documentation in docs/topics/feed-exports.rst
 import sys, os, posixpath
 from tempfile import TemporaryFile
 from datetime import datetime
-from urlparse import urlparse
+from six.moves.urllib.parse import urlparse
 from ftplib import FTP
 
-from zope.interface import Interface, implements
+from zope.interface import Interface, implementer
 from twisted.internet import defer, threads
 from w3lib.url import file_uri_to_path
 
@@ -35,9 +35,9 @@ class IFeedStorage(Interface):
         """Store the given file stream"""
 
 
+@implementer(IFeedStorage)
 class BlockingFeedStorage(object):
 
-    implements(IFeedStorage)
 
     def open(self, spider):
         return TemporaryFile(prefix='feed-')
@@ -49,9 +49,9 @@ class BlockingFeedStorage(object):
         raise NotImplementedError
 
 
+@implementer(IFeedStorage)
 class StdoutFeedStorage(object):
 
-    implements(IFeedStorage)
 
     def __init__(self, uri, _stdout=sys.stdout):
         self._stdout = _stdout
@@ -62,9 +62,9 @@ class StdoutFeedStorage(object):
     def store(self, file):
         pass
 
+@implementer(IFeedStorage)
 class FileFeedStorage(object):
 
-    implements(IFeedStorage)
 
     def __init__(self, uri):
         self.path = file_uri_to_path(uri)

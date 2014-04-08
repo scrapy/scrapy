@@ -1,4 +1,4 @@
-from cStringIO import StringIO
+from six.moves import cStringIO as StringIO
 
 from twisted.python import log as txlog, failure
 from twisted.trial import unittest

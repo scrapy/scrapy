@@ -1,5 +1,6 @@
-import os, urlparse
-from cStringIO import StringIO
+import os
+from six.moves.urllib.parse import urlparse
+from six.moves import cStringIO as StringIO
 
 from zope.interface.verify import verifyObject
 from twisted.trial import unittest
@@ -84,7 +85,7 @@ class S3FeedStorageTest(unittest.TestCase):
         file = storage.open(Spider("default"))
         file.write("content")
         yield storage.store(file)
-        u = urlparse.urlparse(uri)
+        u = urlparse(uri)
         key = connect_s3().get_bucket(u.hostname, validate=False).get_key(u.path)
         self.failUnlessEqual(key.get_contents_as_string(), "content")
 

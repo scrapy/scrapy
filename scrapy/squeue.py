@@ -2,7 +2,8 @@
 Scheduler queues
 """
 
-import marshal, cPickle as pickle
+import marshal
+import six.moves.cPickle as pickle
 
 from queuelib import queue
 

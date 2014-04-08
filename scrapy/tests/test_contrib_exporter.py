@@ -1,5 +1,6 @@
-import unittest, json, cPickle as pickle
-from cStringIO import StringIO
+import unittest, json
+import six
+from six.moves import cStringIO as StringIO, cPickle as pickle
 import lxml.etree
 import re
 
@@ -54,7 +55,7 @@ class BaseItemExporterTest(unittest.TestCase):
 
         ie = self._get_exporter(fields_to_export=['name'], encoding='latin-1')
         name = list(ie._get_serialized_fields(self.i))[0][1]
-        assert isinstance(name, str)
+        assert isinstance(name, six.binary_type)
         self.assertEqual(name, 'John\xa3')
 
     def test_field_custom_serializer(self):

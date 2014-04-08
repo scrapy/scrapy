@@ -6,8 +6,7 @@ scrapy.http.Request objects
 from __future__ import print_function
 import hashlib
 import weakref
-from urlparse import urlunparse
-
+from six.moves.urllib.parse import urlunparse
 from twisted.internet.defer import Deferred
 from w3lib.http import basic_auth_header
 
@@ -81,4 +80,3 @@ def request_httprepr(request):
     s += "\r\n"
     s += request.body
     return s
-

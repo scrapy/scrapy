@@ -1,6 +1,5 @@
 from time import time
-from urlparse import urlparse, urlunparse, urldefrag
-
+from six.moves.urllib.parse import urlparse, urlunparse, urldefrag
 from twisted.web.client import HTTPClientFactory
 from twisted.web.http import HTTPClient
 from twisted.internet import defer
@@ -137,4 +136,3 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
     def gotHeaders(self, headers):
         self.headers_time = time()
         self.response_headers = headers
-

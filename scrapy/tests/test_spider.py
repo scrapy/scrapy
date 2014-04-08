@@ -1,7 +1,7 @@
 import gzip
 import inspect
 import warnings
-from cStringIO import StringIO
+from six.moves import cStringIO as StringIO
 from scrapy.utils.trackref import object_ref
 
 from twisted.trial import unittest
