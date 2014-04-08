@@ -66,7 +66,7 @@ convenience:
 | ``hpy``        | for memory debugging (see :ref:`topics-leaks`)                    |
 +----------------+-------------------------------------------------------------------+
 
-.. _pprint.pprint: http://docs.python.org/library/pprint.html#pprint.pprint
+.. _pprint.pprint: http://docs.python.org/2/library/pprint.html#pprint.pprint
 
 Telnet console usage examples
 =============================

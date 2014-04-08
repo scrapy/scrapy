@@ -740,7 +740,7 @@ class _FakeUrllib2Request(object):
     """
     A fake C{urllib2.Request} object for C{cookielib} to work with.
 
-    @see: U{http://docs.python.org/library/urllib2.html#request-objects}
+    @see: U{http://docs.python.org/2/library/urllib2.html#request-objects}
 
     @type uri: C{str}
     @ivar uri: Request URI.

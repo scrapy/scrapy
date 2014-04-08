@@ -96,4 +96,4 @@ But this will::
         somearg = response.meta['somearg']
         print "the argument passed is:", somearg
 
-.. _pickle: http://docs.python.org/library/pickle.html
+.. _pickle: http://docs.python.org/2/library/pickle.html

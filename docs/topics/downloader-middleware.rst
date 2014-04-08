@@ -587,8 +587,8 @@ HttpProxyMiddleware
    * ``https_proxy``
    * ``no_proxy``
 
-.. _urllib: http://docs.python.org/library/urllib.html
-.. _urllib2: http://docs.python.org/library/urllib2.html
+.. _urllib: http://docs.python.org/2/library/urllib.html
+.. _urllib2: http://docs.python.org/2/library/urllib2.html
 
 RedirectMiddleware
 ------------------
@@ -834,5 +834,5 @@ enable it for :ref:`broad crawls <topics-broad-crawls>`.
 
 
 .. _DBM: http://en.wikipedia.org/wiki/Dbm
-.. _anydbm: http://docs.python.org/library/anydbm.html
+.. _anydbm: http://docs.python.org/2/library/anydbm.html
 .. _chunked transfer encoding: http://en.wikipedia.org/wiki/Chunked_transfer_encoding

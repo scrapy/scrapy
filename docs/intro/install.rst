@@ -58,8 +58,8 @@ After installing Python, follow these steps before installing Scrapy:
 
   * pywin32: http://sourceforge.net/projects/pywin32/files/
   * Twisted: http://twistedmatrix.com/trac/wiki/Downloads
-  * zope.interface: download the egg from `zope.interface pypi page <http://pypi.python.org/pypi/zope.interface>`_ and install it by running ``easy_install file.egg``
-  * lxml: http://pypi.python.org/pypi/lxml/
+  * zope.interface: download the egg from `zope.interface pypi page <https://pypi.python.org/pypi/zope.interface>`_ and install it by running ``easy_install file.egg``
+  * lxml: https://pypi.python.org/pypi/lxml/
   * pyOpenSSL: https://launchpad.net/pyopenssl
 
 Finally, this page contains many precompiled Python binary libraries, which may
@@ -80,7 +80,7 @@ fixes.
 
 .. _Python: http://www.python.org
 .. _pip: http://www.pip-installer.org/en/latest/installing.html
-.. _easy_install: http://pypi.python.org/pypi/setuptools
+.. _easy_install: https://pypi.python.org/pypi/setuptools
 .. _Control Panel: http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
 .. _lxml: http://lxml.de/
 .. _OpenSSL: https://pypi.python.org/pypi/pyOpenSSL

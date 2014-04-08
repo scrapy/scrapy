@@ -159,7 +159,7 @@ single Python class that defines one or more of the following methods:
         :type spider: :class:`~scrapy.item.Spider` object
 
 
-.. _Exception: http://docs.python.org/library/exceptions.html#exceptions.Exception
+.. _Exception: http://docs.python.org/2/library/exceptions.html#exceptions.Exception
 
 
 .. _topics-spider-middleware-ref:
