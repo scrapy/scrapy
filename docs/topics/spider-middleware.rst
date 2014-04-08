@@ -129,7 +129,7 @@ single Python class that defines one or more of the following methods:
         :type exception: `Exception`_ object
 
         :param spider: the spider which raised the exception
-        :type spider: :class:`scrapy.spider.Spider` object
+        :type spider: :class:`~scrapy.spider.Spider` object
 
     .. method:: process_start_requests(start_requests, spider)
 

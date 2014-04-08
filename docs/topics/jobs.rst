@@ -81,7 +81,7 @@ So, for example, this won't work::
 
     def some_callback(self, response):
         somearg = 'test'
-        return Request('http://www.example.com', callback=lambda r: self.other_callback(r, somearg))
+        return scrapy.Request('http://www.example.com', callback=lambda r: self.other_callback(r, somearg))
 
     def other_callback(self, response, somearg):
         print "the argument passed is:", somearg
@@ -90,7 +90,7 @@ But this will::
 
     def some_callback(self, response):
         somearg = 'test'
-        return Request('http://www.example.com', meta={'somearg': somearg})
+        return scrapy.Request('http://www.example.com', meta={'somearg': somearg})
 
     def other_callback(self, response):
         somearg = response.meta['somearg']

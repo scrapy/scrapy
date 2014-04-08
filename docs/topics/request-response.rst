@@ -183,8 +183,8 @@ downloaded :class:`Response` object as its first argument.
 Example::
 
     def parse_page1(self, response):
-        return Request("http://www.example.com/some_page.html",
-                          callback=self.parse_page2)
+        return scrapy.Request("http://www.example.com/some_page.html",
+                              callback=self.parse_page2)
 
     def parse_page2(self, response):
         # this would log http://www.example.com/some_page.html
@@ -200,8 +200,8 @@ different fields from different pages::
     def parse_page1(self, response):
         item = MyItem()
         item['main_url'] = response.url
-        request = Request("http://www.example.com/some_page.html",
-                          callback=self.parse_page2)
+        request = scrapy.Request("http://www.example.com/some_page.html",
+                                 callback=self.parse_page2)
         request.meta['item'] = item
         return request
 
@@ -349,14 +349,19 @@ automatically pre-populated and only override a couple of them, such as the
 user name and password. You can use the :meth:`FormRequest.from_response`
 method for this job. Here's an example spider which uses it::
 
-    class LoginSpider(Spider):
+
+    import scrapy
+
+    class LoginSpider(scrapy.Spider):
         name = 'example.com'
         start_urls = ['http://www.example.com/users/login.php']
 
         def parse(self, response):
-            return [FormRequest.from_response(response,
-                        formdata={'username': 'john', 'password': 'secret'},
-                        callback=self.after_login)]
+            return scrapy.FormRequest.from_response(
+                response,
+                formdata={'username': 'john', 'password': 'secret'},
+                callback=self.after_login
+            )
 
         def after_login(self, response):
             # check login succeed before going on

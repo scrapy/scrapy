@@ -58,7 +58,9 @@ Spider arguments are passed through the :command:`crawl` command using the
 
 Spiders receive arguments in their constructors::
 
-    class MySpider(Spider):
+    import scrapy
+
+    class MySpider(scrapy.Spider):
         name = 'myspider'
 
         def __init__(self, category=None, *args, **kwargs):
@@ -82,12 +84,12 @@ rules, crawling from `Sitemaps`_, or parsing a XML/CSV feed.
 For the examples used in the following spiders, we'll assume you have a project
 with a ``TestItem`` declared in a ``myproject.items`` module::
 
-    from scrapy.item import Item
+    import scrapy
 
-    class TestItem(Item):
-        id = Field()
-        name = Field()
-        description = Field()
+    class TestItem(scrapy.Item):
+        id = scrapy.Field()
+        name = scrapy.Field()
+        description = scrapy.Field()
 
 
 .. module:: scrapy.spider
@@ -150,9 +152,9 @@ Spider
        a POST request, you could do::
 
            def start_requests(self):
-               return [FormRequest("http://www.example.com/login",
-                                   formdata={'user': 'john', 'pass': 'secret'},
-                                   callback=self.logged_in)]
+               return [scrapy.FormRequest("http://www.example.com/login",
+                                          formdata={'user': 'john', 'pass': 'secret'},
+                                          callback=self.logged_in)]
 
            def logged_in(self, response):
                # here you would extract links to follow and return Requests for
@@ -199,10 +201,10 @@ Spider example
 
 Let's see an example::
 
-    from scrapy import log # This module is useful for printing out debug information
-    from scrapy.spider import Spider
+    import scrapy
 
-    class MySpider(Spider):
+
+    class MySpider(scrapy.Spider):
         name = 'example.com'
         allowed_domains = ['example.com']
         start_urls = [
@@ -216,12 +218,10 @@ Let's see an example::
 
 Another example returning multiple Requests and Items from a single callback::
 
-    from scrapy.selector import Selector
-    from scrapy.spider import Spider
-    from scrapy.http import Request
+    import scrapy
     from myproject.items import MyItem
 
-    class MySpider(Spider):
+    class MySpider(scrapy.Spider):
         name = 'example.com'
         allowed_domains = ['example.com']
         start_urls = [
@@ -231,12 +231,12 @@ Another example returning multiple Requests and Items from a single callback::
         ]
 
         def parse(self, response):
-            sel = Selector(response)
+            sel = scrapy.Selector(response)
             for h3 in sel.xpath('//h3').extract():
                 yield MyItem(title=h3)
 
             for url in sel.xpath('//a/@href').extract():
-                yield Request(url, callback=self.parse)
+                yield scrapy.Request(url, callback=self.parse)
 
 .. module:: scrapy.contrib.spiders
    :synopsis: Collection of generic spiders
@@ -312,10 +312,9 @@ CrawlSpider example
 
 Let's now take a look at an example CrawlSpider with rules::
 
+    import scrapy
     from scrapy.contrib.spiders import CrawlSpider, Rule
     from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
-    from scrapy.selector import Selector
-    from scrapy.item import Item
 
     class MySpider(CrawlSpider):
         name = 'example.com'
@@ -323,7 +322,7 @@ Let's now take a look at an example CrawlSpider with rules::
         start_urls = ['http://www.example.com']
 
         rules = (
-            # Extract links matching 'category.php' (but not matching 'subsection.php') 
+            # Extract links matching 'category.php' (but not matching 'subsection.php')
             # and follow links from them (since no callback means follow=True by default).
             Rule(SgmlLinkExtractor(allow=('category\.php', ), deny=('subsection\.php', ))),
 
@@ -334,8 +333,8 @@ Let's now take a look at an example CrawlSpider with rules::
         def parse_item(self, response):
             self.log('Hi, this is an item page! %s' % response.url)
 
-            sel = Selector(response)
-            item = Item()
+            sel = scrapy.Selector(response)
+            item = scrapy.Item()
             item['id'] = sel.xpath('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
             item['name'] = sel.xpath('//td[@id="item_name"]/text()').extract()
             item['description'] = sel.xpath('//td[@id="item_description"]/text()').extract()
@@ -414,7 +413,7 @@ XMLFeedSpider
         also returns a response (it could be the same or another one).
 
     .. method:: parse_node(response, selector)
-       
+
         This method is called for the nodes matching the provided tag name
         (``itertag``).  Receives the response and an
         :class:`~scrapy.selector.Selector` for each node.  Overriding this
@@ -424,7 +423,7 @@ XMLFeedSpider
         them.
 
     .. method:: process_results(response, results)
-       
+
         This method is called for each result (item or request) returned by the
         spider, and it's intended to perform any last time processing required
         before returning the results to the framework core, for example setting the
@@ -445,13 +444,13 @@ These spiders are pretty easy to use, let's have a look at one example::
         name = 'example.com'
         allowed_domains = ['example.com']
         start_urls = ['http://www.example.com/feed.xml']
-        iterator = 'iternodes' # This is actually unnecessary, since it's the default value
+        iterator = 'iternodes'  # This is actually unnecessary, since it's the default value
         itertag = 'item'
 
         def parse_node(self, response, node):
             log.msg('Hi, this is a <%s> node!: %s' % (self.itertag, ''.join(node.extract())))
 
-            item = Item()
+            item = TestItem()
             item['id'] = node.xpath('@id').extract()
             item['name'] = node.xpath('name').extract()
             item['description'] = node.xpath('description').extract()
@@ -476,12 +475,12 @@ CSVFeedSpider
        Defaults to ``','`` (comma).
 
    .. attribute:: headers
-      
+
        A list of the rows contained in the file CSV feed which will be used to
        extract fields from it.
 
    .. method:: parse_row(response, row)
-      
+
        Receives a response and a dict (representing each row) with a key for each
        provided (or detected) header of the CSV file.  This spider also gives the
        opportunity to override ``adapt_response`` and ``process_results`` methods
@@ -566,9 +565,9 @@ SitemapSpider
         Specifies if alternate links for one ``url`` should be followed. These
         are links for the same website in another language passed within
         the same ``url`` block.
-        
+
         For example::
-       
+
             <url>
                 <loc>http://example.com/</loc>
                 <xhtml:link rel="alternate" hreflang="de" href="http://example.com/de"/>
@@ -642,7 +641,7 @@ Combine SitemapSpider with other sources of urls::
 
         def start_requests(self):
             requests = list(super(MySpider, self).start_requests())
-            requests += [Request(x, callback=self.parse_other) for x in self.other_urls]
+            requests += [scrapy.Request(x, self.parse_other) for x in self.other_urls]
             return requests
 
         def parse_shop(self, response):
