@@ -188,12 +188,27 @@ Disallow: /forum/active/
             <xhtml:link rel="alternate" hreflang="en"/><!-- wrong tag without href -->
         </url>
     </urlset>""")
-        
+
         self.assertEqual(list(s), [
             {'loc': 'http://www.example.com/english/',
              'alternate': ['http://www.example.com/deutsch/', 'http://www.example.com/schweiz-deutsch/', 'http://www.example.com/english/']
             }
         ])
+
+    def test_xml_entity_expansion(self):
+        s = Sitemap("""<?xml version="1.0" encoding="utf-8"?>
+          <!DOCTYPE foo [
+          <!ELEMENT foo ANY >
+          <!ENTITY xxe SYSTEM "file:///etc/passwd" >
+          ]>
+          <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+            <url>
+              <loc>http://127.0.0.1:8000/&xxe;</loc>
+            </url>
+          </urlset>
+        """)
+
+        self.assertEqual(list(s), [{'loc': 'http://127.0.0.1:8000/'}])
 
 
 if __name__ == '__main__':
