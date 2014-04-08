@@ -290,10 +290,11 @@ def parse_cachecontrol(header):
 
     http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9
 
-    >>> parse_cachecontrol('public, max-age=3600')
-    {'public': None, 'max-age': '3600'}
-    >>> parse_cachecontrol('')
-    {}
+    >>> parse_cachecontrol('public, max-age=3600') == {'public': None,
+    ...                                                'max-age': '3600'}
+    True
+    >>> parse_cachecontrol('') == {}
+    True
 
     """
     directives = {}
