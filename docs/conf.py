@@ -192,3 +192,14 @@ latex_documents = [
 
 # If false, no module index is generated.
 #latex_use_modindex = True
+
+
+# Options for the linkcheck builder
+# ---------------------------------
+
+# A list of regular expressions that match URIs that should not be checked when
+# doing a linkcheck build.
+linkcheck_ignore = [
+    'http://localhost:\d+', 'http://hg.scrapy.org',
+    'http://directory.google.com/'
+]
