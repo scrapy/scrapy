@@ -37,7 +37,7 @@ For a complete reference of the selectors API see
 :ref:`Selector reference <topics-selectors-ref>`
 
 .. _BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/
-.. _lxml: http://codespeak.net/lxml/
+.. _lxml: http://lxml.de/
 .. _ElementTree: http://docs.python.org/library/xml.etree.elementtree.html
 .. _cssselect: https://pypi.python.org/pypi/cssselect/
 .. _XPath: http://www.w3.org/TR/xpath
@@ -247,12 +247,12 @@ Being built atop `lxml`_, Scrapy selectors also support some `EXSLT`_ extensions
 and come with these pre-registered namespaces to use in XPath expressions:
 
 
-======  ====================================    =======================
-prefix  namespace                               usage
-======  ====================================    =======================
-re      http://exslt.org/regular-expressions    `regular expressions`_
-set     http://exslt.org/sets                   `set manipulation`_
-======  ====================================    =======================
+======  =====================================    =======================
+prefix  namespace                                usage
+======  =====================================    =======================
+re      \http://exslt.org/regular-expressions    `regular expressions`_
+set     \http://exslt.org/sets                   `set manipulation`_
+======  =====================================    =======================
 
 Regular expressions
 ~~~~~~~~~~~~~~~~~~~
@@ -594,4 +594,4 @@ of relevance, are:
    case some element names clash between namespaces. These cases are very rare
    though.
 
-.. _Google Base XML feed: http://base.google.com/support/bin/answer.py?hl=en&answer=59461
+.. _Google Base XML feed: https://support.google.com/merchants/answer/160589?hl=en&ref_topic=2473799

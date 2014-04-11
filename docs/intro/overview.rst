@@ -59,7 +59,7 @@ The next thing is to write a Spider which defines the start URL
 for extracting the data from pages.
 
 If we take a look at that page content we'll see that all torrent URLs are like
-http://www.mininova.org/tor/NUMBER where ``NUMBER`` is an integer. We'll use
+``http://www.mininova.org/tor/NUMBER`` where ``NUMBER`` is an integer. We'll use
 that to construct the regular expression for the links to follow: ``/tor/\d+``.
 
 We'll use `XPath`_ for selecting the data to extract from the web page HTML

@@ -20,7 +20,7 @@ In other words, comparing `BeautifulSoup`_ (or `lxml`_) to Scrapy is like
 comparing `jinja2`_ to `Django`_.
 
 .. _BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/
-.. _lxml: http://codespeak.net/lxml/
+.. _lxml: http://lxml.de/
 .. _jinja2: http://jinja.pocoo.org/2/
 .. _Django: http://www.djangoproject.com
 

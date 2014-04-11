@@ -47,7 +47,7 @@ Enhancements
 
 - [**Backwards incompatible**] Switched HTTPCacheMiddleware backend to filesystem (:issue:`541`)
   To restore old backend set `HTTPCACHE_STORAGE` to `scrapy.contrib.httpcache.DbmCacheStorage`
-- Proxy https:// urls using CONNECT method (:issue:`392`, :issue:`397`)
+- Proxy \https:// urls using CONNECT method (:issue:`392`, :issue:`397`)
 - Add a middleware to crawl ajax crawleable pages as defined by google (:issue:`343`)
 - Rename scrapy.spider.BaseSpider to scrapy.spider.Spider (:issue:`510`, :issue:`519`)
 - Selectors register EXSLT namespaces by default (:issue:`472`)
@@ -394,7 +394,7 @@ Scrapy changes:
 - nested items now fully supported in JSON and JSONLines exporters
 - added :reqmeta:`cookiejar` Request meta key to support multiple cookie sessions per spider
 - decoupled encoding detection code to `w3lib.encoding`_, and ported Scrapy code to use that mdule
-- dropped support for Python 2.5. See http://blog.scrapy.org/scrapy-dropping-support-for-python-25
+- dropped support for Python 2.5. See http://blog.scrapinghub.com/2012/02/27/scrapy-0-15-dropping-support-for-python-2-5/
 - dropped support for Twisted 2.5
 - added :setting:`REFERER_ENABLED` setting, to control referer middleware
 - changed default user agent to: ``Scrapy/VERSION (+http://scrapy.org)``
@@ -744,7 +744,7 @@ First release of Scrapy.
 
 .. _AJAX crawleable urls: http://code.google.com/web/ajaxcrawling/docs/getting-started.html
 .. _chunked transfer encoding: http://en.wikipedia.org/wiki/Chunked_transfer_encoding
-.. _w3lib: http://https://github.com/scrapy/w3lib
+.. _w3lib: https://github.com/scrapy/w3lib
 .. _scrapely: https://github.com/scrapy/scrapely
 .. _marshal: http://docs.python.org/library/marshal.html
 .. _w3lib.encoding: https://github.com/scrapy/w3lib/blob/master/w3lib/encoding.py

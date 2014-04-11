@@ -121,10 +121,10 @@ for concurrency.
 For more information about asynchronous programming and Twisted see these
 links:
 
-* `Asynchronous Programming with Twisted`_
+* `Introduction to Deferreds in Twisted`_
 * `Twisted - hello, asynchronous programming`_
 
 .. _Twisted: http://twistedmatrix.com/trac/
-.. _Asynchronous Programming with Twisted: http://twistedmatrix.com/projects/core/documentation/howto/async.html
+.. _Introduction to Deferreds in Twisted: http://twistedmatrix.com/documents/current/core/howto/defer-intro.html
 .. _Twisted - hello, asynchronous programming: http://jessenoller.com/2009/02/11/twisted-hello-asynchronous-programming/
 
