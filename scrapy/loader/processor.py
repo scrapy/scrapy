@@ -6,7 +6,9 @@ See documentation in docs/topics/loaders.rst
 
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.datatypes import MergeDict
-from .common import wrap_loader_context
+from scrapy.loader.common import wrap_loader_context
+
+__all__ = ['MapCompose', 'Compose', 'TakeFirst', 'Identity', 'Join']
 
 class MapCompose(object):
 
