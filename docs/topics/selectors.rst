@@ -53,22 +53,31 @@ Constructing selectors
 .. highlight:: python
 
 Scrapy selectors are instances of :class:`~scrapy.selector.Selector` class
-constructed by passing a :class:`~scrapy.http.Response` object as first
-argument, the response's body is what they're going to be "selecting"::
+constructed by passing **text** or :class:`~scrapy.http.TextResponse`
+object. It automatically chooses the best parsing rules (XML vs HTML) based on
+input type::
 
-    import scrapy
+    >>> from scrapy.selector import Selector
+    >>> from scrapy.http import HtmlResponse
 
-    class MySpider(scrapy.Spider):
-        # ...
-        def parse(self, response):
-            sel = scrapy.Selector(response)
-            # Using XPath query
-            print sel.xpath('//p')
-            # Using CSS query
-            print sel.css('p')
-            # Nesting queries
-            print sel.xpath('//div[@foo="bar"]').css('span#bold')
+Constructing from text::
 
+    >>> body = '<html><body><span>good</span></body></html>'
+    >>> Selector(text=body).xpath('//span/text()').extract()
+    [u'good']
+
+Constructing from response::
+
+    >>> response = HtmlResponse(url='http://example.com', body=body)
+    >>> Selector(response=response).xpath('//span/text()').extract()
+    [u'good']
+
+For convenience, response objects exposes a selector on `.selector` attribute,
+it's totally OK to use this shortcut when possible::
+
+    >>> response.selector.xpath('//span/text()').extract()
+    [u'good']
+    
 
 Using selectors
 ---------------
@@ -92,66 +101,73 @@ First, let's open the shell::
 
     scrapy shell http://doc.scrapy.org/en/latest/_static/selectors-sample1.html
 
-Then, after the shell loads, you'll have a selector already instantiated and
-ready to use in ``sel`` shell variable.
+Then, after the shell loads, you'll have the response available as ``response``
+shell variable, and its attached selector in ``response.selector`` attribute.
 
 Since we're dealing with HTML, the selector will automatically use an HTML parser.
 
 .. highlight:: python
 
 So, by looking at the :ref:`HTML code <topics-selectors-htmlcode>` of that
-page, let's construct an XPath (using an HTML selector) for selecting the text
-inside the title tag::
+page, let's construct an XPath for selecting the text inside the title tag::
 
-    >>> sel.xpath('//title/text()')
+    >>> response.selector.xpath('//title/text()')
     [<Selector (text) xpath=//title/text()>]
 
-As you can see, the ``.xpath()`` method returns an
+Querying responses using XPath and CSS is so common that responses includes two
+convenient shortcuts: ``response.xpath()`` and ``response.css()``::
+
+    >>> response.xpath('//title/text()')
+    [<Selector (text) xpath=//title/text()>]
+    >>> response.css('title::text')
+    [<Selector (text) xpath=//title/text()>]
+    
+As you can see, the ``.xpath()`` and ``.css()`` methods returns an
 :class:`~scrapy.selector.SelectorList` instance, which is a list of new
 selectors. This API can be used quickly for extracting nested data.
 
 To actually extract the textual data, you must call the selector ``.extract()``
 method, as follows::
 
-    >>> sel.xpath('//title/text()').extract()
+    >>> response.xpath('//title/text()').extract()
     [u'Example website']
 
 Notice that CSS selectors can select text or attribute nodes using CSS3
 pseudo-elements::
 
-    >>> sel.css('title::text').extract()
+    >>> response.css('title::text').extract()
     [u'Example website']
 
 Now we're going to get the base URL and some image links::
 
-    >>> sel.xpath('//base/@href').extract()
+    >>> response.xpath('//base/@href').extract()
     [u'http://example.com/']
 
-    >>> sel.css('base::attr(href)').extract()
+    >>> response.css('base::attr(href)').extract()
     [u'http://example.com/']
 
-    >>> sel.xpath('//a[contains(@href, "image")]/@href').extract()
+    >>> response.xpath('//a[contains(@href, "image")]/@href').extract()
     [u'image1.html',
      u'image2.html',
      u'image3.html',
      u'image4.html',
      u'image5.html']
 
-    >>> sel.css('a[href*=image]::attr(href)').extract()
+    >>> response.css('a[href*=image]::attr(href)').extract()
     [u'image1.html',
      u'image2.html',
      u'image3.html',
      u'image4.html',
      u'image5.html']
 
-    >>> sel.xpath('//a[contains(@href, "image")]/img/@src').extract()
+    >>> response.xpath('//a[contains(@href, "image")]/img/@src').extract()
     [u'image1_thumb.jpg',
      u'image2_thumb.jpg',
      u'image3_thumb.jpg',
      u'image4_thumb.jpg',
      u'image5_thumb.jpg']
 
-    >>> sel.css('a[href*=image] img::attr(src)').extract()
+    >>> response.css('a[href*=image] img::attr(src)').extract()
     [u'image1_thumb.jpg',
      u'image2_thumb.jpg',
      u'image3_thumb.jpg',
@@ -167,7 +183,7 @@ The selection methods (``.xpath()`` or ``.css()``) returns a list of selectors
 of the same type, so you can call the selection methods for those selectors
 too. Here's an example::
 
-    >>> links = sel.xpath('//a[contains(@href, "image")]')
+    >>> links = response.xpath('//a[contains(@href, "image")]')
     >>> links.extract()
     [u'<a href="image1.html">Name: My image 1 <br><img src="image1_thumb.jpg"></a>',
      u'<a href="image2.html">Name: My image 2 <br><img src="image2_thumb.jpg"></a>',
@@ -196,7 +212,7 @@ can't construct nested ``.re()`` calls.
 Here's an example used to extract images names from the :ref:`HTML code
 <topics-selectors-htmlcode>` above::
 
-    >>> sel.xpath('//a[contains(@href, "image")]/text()').re(r'Name:\s*(.*)')
+    >>> response.xpath('//a[contains(@href, "image")]/text()').re(r'Name:\s*(.*)')
     [u'My image 1',
      u'My image 2',
      u'My image 3',
@@ -215,7 +231,7 @@ with ``/``, that XPath will be absolute to the document and not relative to the
 For example, suppose you want to extract all ``<p>`` elements inside ``<div>``
 elements. First, you would get all ``<div>`` elements::
 
-    >>> divs = sel.xpath('//div')
+    >>> divs = response.xpath('//div')
 
 At first, you may be tempted to use the following approach, which is wrong, as
 it actually extracts all ``<p>`` elements from the document, not only those
@@ -429,6 +445,10 @@ Built-in Selectors reference
 
       ``query`` is a string containing the XPATH query to apply.
 
+      .. note::
+        
+          For convenience this method can be called as ``response.xpath()``
+
   .. method:: css(query)
 
       Apply the given CSS selector and return a :class:`SelectorList` instance.
@@ -437,6 +457,10 @@ Built-in Selectors reference
 
       In the background, CSS queries are translated into XPath queries using
       `cssselect`_ library and run ``.xpath()`` method.
+
+      .. note::
+        
+          For convenience this method can be called as ``response.css()``
 
   .. method:: extract()
 
@@ -570,14 +594,14 @@ First, we open the shell with the url we want to scrape::
 Once in the shell we can try selecting all ``<link>`` objects and see that it
 doesn't work (because the Atom XML namespace is obfuscating those nodes)::
 
-    >>> sel.xpath("//link")
+    >>> response.xpath("//link")
     []
 
 But once we call the :meth:`Selector.remove_namespaces` method, all
 nodes can be accessed directly by their names::
 
-    >>> sel.remove_namespaces()
-    >>> sel.xpath("//link")
+    >>> response.selector.remove_namespaces()
+    >>> response.xpath("//link")
     [<Selector xpath='//link' data=u'<link xmlns="http://www.w3.org/2005/Atom'>,
      <Selector xpath='//link' data=u'<link xmlns="http://www.w3.org/2005/Atom'>,
      ...

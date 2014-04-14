@@ -129,7 +129,6 @@ For more information about XPath see the `XPath reference`_.
 
 Finally, here's the spider code::
 
-    import scrapy
     from scrapy.contrib.spiders import CrawlSpider, Rule
     from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 
@@ -141,12 +140,11 @@ Finally, here's the spider code::
         rules = [Rule(SgmlLinkExtractor(allow=['/tor/\d+']), 'parse_torrent')]
 
         def parse_torrent(self, response):
-            sel = scrapy.Selector(response)
             torrent = TorrentItem()
             torrent['url'] = response.url
-            torrent['name'] = sel.xpath("//h1/text()").extract()
-            torrent['description'] = sel.xpath("//div[@id='description']").extract()
-            torrent['size'] = sel.xpath("//div[@id='info-left']/p[2]/text()[2]").extract()
+            torrent['name'] = response.xpath("//h1/text()").extract()
+            torrent['description'] = response.xpath("//div[@id='description']").extract()
+            torrent['size'] = response.xpath("//div[@id='info-left']/p[2]/text()[2]").extract()
             return torrent
 
 The ``TorrentItem`` class is :ref:`defined above <intro-overview-item>`.
