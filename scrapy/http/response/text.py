@@ -19,6 +19,7 @@ class TextResponse(Response):
         self._encoding = kwargs.pop('encoding', None)
         self._cached_benc = None
         self._cached_ubody = None
+        self._cached_selector = None
         super(TextResponse, self).__init__(*args, **kwargs)
 
     def _set_url(self, url):
@@ -88,3 +89,19 @@ class TextResponse(Response):
     @memoizemethod_noargs
     def _body_declared_encoding(self):
         return html_body_declared_encoding(self.body)
+
+    @property
+    def selector(self):
+        from scrapy.selector import Selector
+        if self._cached_selector is None:
+            self._cached_selector = Selector(self)
+        return self._cached_selector
+
+    def xpath(self, query):
+        return self.selector.xpath(query)
+
+    def css(self, query):
+        return self.selector.css(query)
+
+    def re(self, regex):
+        return self.selector.re(regex)
