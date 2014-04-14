@@ -6,7 +6,7 @@ import pkgutil
 __version__ = pkgutil.get_data(__package__, 'VERSION').strip()
 if not isinstance(__version__, str):
     __version__ = __version__.decode('ascii')
-version_info = tuple(__version__.split('.')[:3])
+version_info = tuple(int(v) for v in __version__.split('.')[:3])
 
 import sys, os, warnings
 
