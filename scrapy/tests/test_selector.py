@@ -1,5 +1,4 @@
 import re
-import inspect
 import warnings
 import weakref
 from twisted.trial import unittest
