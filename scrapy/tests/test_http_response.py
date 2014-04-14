@@ -294,10 +294,6 @@ class TextResponseTest(BaseResponseTest):
             response.css("title::text").extract(),
             response.selector.css("title::text").extract(),
         )
-        self.assertEqual(
-            response.re("Some (.*)</title>"),
-            response.selector.re("Some (.*)</title>"),
-        )
 
 
 class HtmlResponseTest(TextResponseTest):

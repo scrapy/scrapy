@@ -102,6 +102,3 @@ class TextResponse(Response):
 
     def css(self, query):
         return self.selector.css(query)
-
-    def re(self, regex):
-        return self.selector.re(regex)
