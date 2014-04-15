@@ -15,7 +15,6 @@ from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
-from scrapy.selector import Selector
 from scrapy.settings import Settings
 from scrapy.spider import Spider
 from scrapy.utils.console import start_python_console
@@ -27,7 +26,7 @@ from scrapy.utils.spider import create_spider_for_request
 class Shell(object):
 
     relevant_classes = (Crawler, Spider, Request, Response, BaseItem,
-                        Selector, Settings)
+                        Settings)
 
     def __init__(self, crawler, update_vars=None, code=None):
         self.crawler = crawler
@@ -99,7 +98,6 @@ class Shell(object):
         self.vars['spider'] = spider
         self.vars['request'] = request
         self.vars['response'] = response
-        self.vars['sel'] = Selector(response)
         if self.inthread:
             self.vars['fetch'] = self.fetch
         self.vars['view'] = open_in_browser
