@@ -67,13 +67,13 @@ In order to use the image pipeline you just need to :ref:`enable it
 <topics-images-enabling>` and define an item with the ``image_urls`` and
 ``images`` fields::
 
-    from scrapy.item import Item
+    import scrapy
 
-    class MyItem(Item):
+    class MyItem(scrapy.Item):
 
         # ... other item fields ...
-        image_urls = Field()
-        images = Field()
+        image_urls = scrapy.Field()
+        images = scrapy.Field()
 
 If you need something more complex and want to override the custom images
 pipeline behaviour, see :ref:`topics-images-override`.
@@ -228,7 +228,7 @@ Here are the methods that you should override in your custom Images Pipeline:
 
          def get_media_requests(self, item, info):
              for image_url in item['image_urls']:
-                 yield Request(image_url)
+                 yield scrapy.Request(image_url)
 
       Those requests will be processed by the pipeline and, when they have finished
       downloading, the results will be sent to the
@@ -302,15 +302,15 @@ Custom Images pipeline example
 Here is a full example of the Images Pipeline whose methods are examplified
 above::
 
+    import scrapy
     from scrapy.contrib.pipeline.images import ImagesPipeline
     from scrapy.exceptions import DropItem
-    from scrapy.http import Request
 
     class MyImagesPipeline(ImagesPipeline):
 
         def get_media_requests(self, item, info):
             for image_url in item['image_urls']:
-                yield Request(image_url)
+                yield scrapy.Request(image_url)
 
         def item_completed(self, results, item, info):
             image_paths = [x['path'] for ok, x in results if ok]

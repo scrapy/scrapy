@@ -43,13 +43,13 @@ done through :ref:`Scrapy Items <topics-items>` (Torrent files, in this case).
 
 This would be our Item::
 
-    from scrapy.item import Item, Field
+    import scrapy
 
-    class TorrentItem(Item):
-        url = Field()
-        name = Field()
-        description = Field()
-        size = Field()
+    class TorrentItem(scrapy.Item):
+        url = scrapy.Field()
+        name = scrapy.Field()
+        description = scrapy.Field()
+        size = scrapy.Field()
 
 Write a Spider to extract the data
 ==================================
@@ -129,9 +129,9 @@ For more information about XPath see the `XPath reference`_.
 
 Finally, here's the spider code::
 
+    import scrapy
     from scrapy.contrib.spiders import CrawlSpider, Rule
     from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
-    from scrapy.selector import Selector
 
     class MininovaSpider(CrawlSpider):
 
@@ -141,7 +141,7 @@ Finally, here's the spider code::
         rules = [Rule(SgmlLinkExtractor(allow=['/tor/\d+']), 'parse_torrent')]
 
         def parse_torrent(self, response):
-            sel = Selector(response)
+            sel = scrapy.Selector(response)
             torrent = TorrentItem()
             torrent['url'] = response.url
             torrent['name'] = sel.xpath("//h1/text()").extract()

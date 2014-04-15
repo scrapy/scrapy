@@ -181,18 +181,17 @@ this way. However, there is one more place where you can specify the input and
 output processors to use: in the :ref:`Item Field <topics-items-fields>`
 metadata. Here is an example::
 
-    from scrapy.item import Item, Field
+    import scrapy
     from scrapy.contrib.loader.processor import MapCompose, Join, TakeFirst
-
-    from scrapy.utils.markup import remove_entities
+    from w3lib.html import remove_entities
     from myproject.utils import filter_prices
 
-    class Product(Item):
-        name = Field(
+    class Product(scrapy.Item):
+        name = scrapy.Field(
             input_processor=MapCompose(remove_entities),
             output_processor=Join(),
         )
-        price = Field(
+        price = scrapy.Field(
             default=0,
             input_processor=MapCompose(remove_entities, filter_prices),
             output_processor=TakeFirst(),

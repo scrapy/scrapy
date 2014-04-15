@@ -36,20 +36,20 @@ Creating a project
 Before you start scraping, you will have set up a new Scrapy project. Enter a
 directory where you'd like to store your code and then run::
 
-   scrapy startproject tutorial
+    scrapy startproject tutorial
 
 This will create a ``tutorial`` directory with the following contents::
 
-   tutorial/
-       scrapy.cfg
-       tutorial/
-           __init__.py
-           items.py
-           pipelines.py
-           settings.py
-           spiders/
-               __init__.py
-               ...
+    tutorial/
+        scrapy.cfg
+        tutorial/
+            __init__.py
+            items.py
+            pipelines.py
+            settings.py
+            spiders/
+                __init__.py
+                ...
 
 These are basically:
 
@@ -68,8 +68,8 @@ Defining our Item
 like simple python dicts but provide additional protection against populating
 undeclared fields, to prevent typos.
 
-They are declared by creating a :class:`scrapy.item.Item` class and defining
-its attributes as :class:`scrapy.item.Field` objects, like you will in an ORM
+They are declared by creating a :class:`scrapy.Item <scrapy.item.Item>` class and defining
+its attributes as :class:`scrapy.Field <scrapy.item.Field>` objects, like you will in an ORM
 (don't worry if you're not familiar with ORMs, you will see that this is an
 easy task).
 
@@ -78,12 +78,12 @@ from dmoz.org, as we want to capture the name, url and description of the
 sites, we define fields for each of these three attributes. To do that, we edit
 ``items.py``, found in the ``tutorial`` directory. Our Item class looks like this::
 
-    from scrapy.item import Item, Field
+    import scrapy
 
-    class DmozItem(Item):
-        title = Field()
-        link = Field()
-        desc = Field()
+    class DmozItem(scrapy.Item):
+        title = scrapy.Field()
+        link = scrapy.Field()
+        desc = scrapy.Field()
 
 This may seem complicated at first, but defining the item allows you to use other handy
 components of Scrapy that need to know how your item looks.
@@ -97,7 +97,7 @@ of domains).
 They define an initial list of URLs to download, how to follow links, and how
 to parse the contents of those pages to extract :ref:`items <topics-items>`.
 
-To create a Spider, you must subclass :class:`scrapy.spider.Spider` and
+To create a Spider, you must subclass :class:`scrapy.Spider <scrapy.spider.Spider>` and
 define the three main mandatory attributes:
 
 * :attr:`~scrapy.spider.Spider.name`: identifies the Spider. It must be
@@ -123,19 +123,20 @@ define the three main mandatory attributes:
 This is the code for our first Spider; save it in a file named
 ``dmoz_spider.py`` under the ``tutorial/spiders`` directory::
 
-   from scrapy.spider import Spider
+    import scrapy
 
-   class DmozSpider(Spider):
-       name = "dmoz"
-       allowed_domains = ["dmoz.org"]
-       start_urls = [
-           "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
-           "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
-       ]
+    class DmozSpider(scrapy.Spider):
+        name = "dmoz"
+        allowed_domains = ["dmoz.org"]
+        start_urls = [
+            "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
+            "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
+        ]
 
-       def parse(self, response):
-           filename = response.url.split("/")[-2]
-           open(filename, 'wb').write(response.body)
+        def parse(self, response):
+            filename = response.url.split("/")[-2]
+            with open(filename, 'wb') as f:
+                f.write(response.body)
 
 Crawling
 --------
@@ -170,9 +171,9 @@ created: *Books* and *Resources*, with the content of both URLs.
 What just happened under the hood?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Scrapy creates :class:`scrapy.http.Request` objects for each URL in the
-``start_urls`` attribute of the Spider, and assigns them the ``parse`` method of
-the spider as their callback function.
+Scrapy creates :class:`scrapy.Request <scrapy.http.Request>` objects
+for each URL in the ``start_urls`` attribute of the Spider, and assigns
+them the ``parse`` method of the spider as their callback function.
 
 These Requests are scheduled, then executed, and
 :class:`scrapy.http.Response` objects are returned and then fed back to the
@@ -243,7 +244,7 @@ installed on your system.
 
 To start a shell, you must go to the project's top level directory and run::
 
-   scrapy shell "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/"
+    scrapy shell "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/"
 
 .. note::
 
@@ -281,20 +282,20 @@ on response's type.
 
 So let's try it::
 
-   In [1]: sel.xpath('//title')
-   Out[1]: [<Selector xpath='//title' data=u'<title>Open Directory - Computers: Progr'>]
+    In [1]: sel.xpath('//title')
+    Out[1]: [<Selector xpath='//title' data=u'<title>Open Directory - Computers: Progr'>]
 
-   In [2]: sel.xpath('//title').extract()
-   Out[2]: [u'<title>Open Directory - Computers: Programming: Languages: Python: Books</title>']
+    In [2]: sel.xpath('//title').extract()
+    Out[2]: [u'<title>Open Directory - Computers: Programming: Languages: Python: Books</title>']
 
-   In [3]: sel.xpath('//title/text()')
-   Out[3]: [<Selector xpath='//title/text()' data=u'Open Directory - Computers: Programming:'>]
+    In [3]: sel.xpath('//title/text()')
+    Out[3]: [<Selector xpath='//title/text()' data=u'Open Directory - Computers: Programming:'>]
 
-   In [4]: sel.xpath('//title/text()').extract()
-   Out[4]: [u'Open Directory - Computers: Programming: Languages: Python: Books']
+    In [4]: sel.xpath('//title/text()').extract()
+    Out[4]: [u'Open Directory - Computers: Programming: Languages: Python: Books']
 
-   In [5]: sel.xpath('//title/text()').re('(\w+):')
-   Out[5]: [u'Computers', u'Programming', u'Languages', u'Python']
+    In [5]: sel.xpath('//title/text()').re('(\w+):')
+    Out[5]: [u'Computers', u'Programming', u'Languages', u'Python']
 
 Extracting the data
 ^^^^^^^^^^^^^^^^^^^
@@ -313,30 +314,30 @@ is inside a ``<ul>`` element, in fact the *second* ``<ul>`` element.
 So we can select each ``<li>`` element belonging to the sites list with this
 code::
 
-   sel.xpath('//ul/li')
+    sel.xpath('//ul/li')
 
 And from them, the sites descriptions::
 
-   sel.xpath('//ul/li/text()').extract()
+    sel.xpath('//ul/li/text()').extract()
 
 The sites titles::
 
-   sel.xpath('//ul/li/a/text()').extract()
+    sel.xpath('//ul/li/a/text()').extract()
 
 And the sites links::
 
-   sel.xpath('//ul/li/a/@href').extract()
+    sel.xpath('//ul/li/a/@href').extract()
 
 As we've said before, each ``.xpath()`` call returns a list of selectors, so we can
 concatenate further ``.xpath()`` calls to dig deeper into a node. We are going to use
 that property here, so::
 
-   sites = sel.xpath('//ul/li')
-   for site in sites:
-       title = site.xpath('a/text()').extract()
-       link = site.xpath('a/@href').extract()
-       desc = site.xpath('text()').extract()
-       print title, link, desc
+    sites = sel.xpath('//ul/li')
+    for site in sites:
+        title = site.xpath('a/text()').extract()
+        link = site.xpath('a/@href').extract()
+        desc = site.xpath('text()').extract()
+        print title, link, desc
 
 .. note::
 
@@ -347,55 +348,9 @@ that property here, so::
 
 Let's add this code to our spider::
 
-   from scrapy.spider import Spider
-   from scrapy.selector import Selector
+    import scrapy
 
-   class DmozSpider(Spider):
-       name = "dmoz"
-       allowed_domains = ["dmoz.org"]
-       start_urls = [
-           "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
-           "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
-       ]
-
-       def parse(self, response):
-           sel = Selector(response)
-           sites = sel.xpath('//ul/li')
-           for site in sites:
-               title = site.xpath('a/text()').extract()
-               link = site.xpath('a/@href').extract()
-               desc = site.xpath('text()').extract()
-               print title, link, desc
-
-Notice we import our Selector class from scrapy.selector and instantiate a
-new Selector object.  We can now specify our XPaths just as we did in the shell.
-Now try crawling the dmoz.org domain again and you'll see sites being printed
-in your output, run::
-
-   scrapy crawl dmoz
-
-Using our item
---------------
-
-:class:`~scrapy.item.Item` objects are custom python dicts; you can access the
-values of their fields (attributes of the class we defined earlier) using the
-standard dict syntax like::
-
-   >>> item = DmozItem()
-   >>> item['title'] = 'Example title'
-   >>> item['title']
-   'Example title'
-
-Spiders are expected to return their scraped data inside
-:class:`~scrapy.item.Item` objects. So, in order to return the data we've
-scraped so far, the final code for our Spider would be like this::
-
-    from scrapy.spider import Spider
-    from scrapy.selector import Selector
-
-    from tutorial.items import DmozItem
-
-    class DmozSpider(Spider):
+    class DmozSpider(scrapy.Spider):
         name = "dmoz"
         allowed_domains = ["dmoz.org"]
         start_urls = [
@@ -404,7 +359,51 @@ scraped so far, the final code for our Spider would be like this::
         ]
 
         def parse(self, response):
-            sel = Selector(response)
+            sel = scrapy.Selector(response)
+            sites = sel.xpath('//ul/li')
+            for site in sites:
+                title = site.xpath('a/text()').extract()
+                link = site.xpath('a/@href').extract()
+                desc = site.xpath('text()').extract()
+                print title, link, desc
+
+Notice we import our Selector class from scrapy and instantiate a new
+Selector object.  We can now specify our XPaths just as we did in the shell.
+Now try crawling the dmoz.org domain again and you'll see sites being printed
+in your output, run::
+
+    scrapy crawl dmoz
+
+Using our item
+--------------
+
+:class:`~scrapy.item.Item` objects are custom python dicts; you can access the
+values of their fields (attributes of the class we defined earlier) using the
+standard dict syntax like::
+
+    >>> item = DmozItem()
+    >>> item['title'] = 'Example title'
+    >>> item['title']
+    'Example title'
+
+Spiders are expected to return their scraped data inside
+:class:`~scrapy.item.Item` objects. So, in order to return the data we've
+scraped so far, the final code for our Spider would be like this::
+
+    import scrapy
+
+    from tutorial.items import DmozItem
+
+    class DmozSpider(scrapy.Spider):
+        name = "dmoz"
+        allowed_domains = ["dmoz.org"]
+        start_urls = [
+            "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
+            "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
+        ]
+
+        def parse(self, response):
+            sel = scrapy.Selector(response)
             sites = sel.xpath('//ul/li')
             items = []
             for site in sites:
