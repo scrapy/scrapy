@@ -17,6 +17,12 @@ __all__ = ['HtmlXPathSelector', 'XmlXPathSelector', 'XPathSelector', \
            'XPathSelectorList']
 
 
+class SafeXMLParser(etree.XMLParser):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('resolve_entities', False)
+        super(SafeXMLParser, self).__init__(*args, **kwargs)
+
+
 class XPathSelector(object_ref):
 
     __slots__ = ['response', 'text', 'namespaces', '_expr', '_root', '__weakref__']
@@ -95,7 +101,7 @@ class XPathSelector(object_ref):
 
 class XmlXPathSelector(XPathSelector):
     __slots__ = ()
-    _parser = etree.XMLParser
+    _parser = SafeXMLParser
     _tostring_method = 'xml'
 
 
