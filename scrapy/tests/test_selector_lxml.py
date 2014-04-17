@@ -27,6 +27,16 @@ class LxmlXPathSelectorTestCase(test_selector.XPathSelectorTestCase):
         xxs.remove_namespaces()
         self.assertEqual(len(xxs.select("//link")), 2)
 
+    def test_xml_entity_expansion(self):
+        malicious_xml = '<?xml version="1.0" encoding="ISO-8859-1"?>'\
+            '<!DOCTYPE foo [ <!ELEMENT foo ANY > <!ENTITY xxe SYSTEM '\
+            '"file:///etc/passwd" >]><foo>&xxe;</foo>'
+
+        response = XmlResponse('http://example.com', body=malicious_xml)
+        xxs = XmlXPathSelector(response=response)
+        self.assertEqual(xxs.extract(), '<foo>&xxe;</foo>')
+
+
 class Libxml2DocumentTest(unittest.TestCase):
 
     def test_caching(self):
