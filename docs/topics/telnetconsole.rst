@@ -159,7 +159,7 @@ dynamically assigned port is used.
 TELNETCONSOLE_HOST
 ------------------
 
-Default: ``'0.0.0.0'``
+Default: ``'127.0.0.1'``
 
 The interface the telnet console should listen on
 
