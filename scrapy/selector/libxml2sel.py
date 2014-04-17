@@ -1,6 +1,7 @@
 """
 XPath selectors based on libxml2
 """
+import warnings
 
 from scrapy import optional_features
 if 'libxml2' in optional_features:
@@ -109,6 +110,14 @@ class XPathSelector(object_ref):
 
 class XmlXPathSelector(XPathSelector):
     __slots__ = ()
+
+    def __init__(self, response=None, text=None, node=None, parent=None, expr=None):
+        warnings.warn("XmlXPathSelector is insecure when used with libxml2 "
+                      "backend. Please update Scrapy or switch to "
+                      "lxml-based selectors as soon as possible!")
+        super(XmlXPathSelector, self).__init__(response, text, node, parent, expr)
+
+
     _get_libxml2_doc = staticmethod(xmlDoc_from_xml)
 
 
