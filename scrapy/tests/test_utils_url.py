@@ -17,6 +17,10 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertTrue(url_is_from_any_domain(url, ['wheele-bin-art.co.uk']))
         self.assertFalse(url_is_from_any_domain(url, ['art.co.uk']))
 
+        url = 'http://www.Wheele-Bin-Art.co.uk/get/product/123'
+        self.assertTrue(url_is_from_any_domain(url, ['wheele-bin-art.CO.UK']))
+        self.assertTrue(url_is_from_any_domain(url, ['WHEELE-BIN-ART.CO.UK']))
+
         url = 'http://192.169.0.15:8080/mypage.html'
         self.assertTrue(url_is_from_any_domain(url, ['192.169.0.15:8080']))
         self.assertFalse(url_is_from_any_domain(url, ['192.169.0.15']))
