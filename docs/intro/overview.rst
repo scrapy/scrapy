@@ -127,11 +127,20 @@ An XPath expression to select the file size could be::
 
 For more information about XPath see the `XPath reference`_.
 
-Finally, here's the spider code::
+Finally, here's the spider code (save it to a file name mininova.py)::
 
     from scrapy.contrib.spiders import CrawlSpider, Rule
     from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
     from scrapy.selector import Selector
+    from scrapy.item import Item, Field
+
+
+    class TorrentItem(Item):
+        url = Field()
+        name = Field()
+        description = Field()
+        size = Field()
+
 
     class MininovaSpider(CrawlSpider):
 
@@ -149,15 +158,13 @@ Finally, here's the spider code::
             torrent['size'] = sel.xpath("//div[@id='info-left']/p[2]/text()[2]").extract()
             return torrent
 
-The ``TorrentItem`` class is :ref:`defined above <intro-overview-item>`.
-
 Run the spider to extract the data
 ==================================
 
 Finally, we'll run the spider to crawl the site an output file
 ``scraped_data.json`` with the scraped data in JSON format::
 
-    scrapy crawl mininova -o scraped_data.json -t json
+    scrapy runspider -o scraped_data.json -t json mininova.py
 
 This uses :ref:`feed exports <topics-feed-exports>` to generate the JSON file.
 You can easily change the export format (XML or CSV, for example) or the
