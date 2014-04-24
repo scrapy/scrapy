@@ -141,7 +141,7 @@ dynamically assigned port is used.
 WEBSERVICE_HOST
 ---------------
 
-Default: ``'0.0.0.0'``
+Default: ``'127.0.0.1'``
 
 The interface the web service should listen on
 
