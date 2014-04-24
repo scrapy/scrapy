@@ -2,6 +2,7 @@ import unittest
 
 from w3lib.encoding import resolve_encoding
 from scrapy.http import Request, Response, TextResponse, HtmlResponse, XmlResponse, Headers
+from scrapy.selector import Selector
 
 
 class BaseResponseTest(unittest.TestCase):
@@ -111,6 +112,7 @@ class BaseResponseTest(unittest.TestCase):
         r = self.response_class("http://example.com")
         self.assertRaises(AttributeError, setattr, r, 'url', 'http://example2.com')
         self.assertRaises(AttributeError, setattr, r, 'body', 'xxx')
+
 
 class ResponseText(BaseResponseTest):
 
@@ -258,13 +260,48 @@ class TextResponseTest(BaseResponseTest):
         #r = self.response_class("http://www.example.com", body='PREFIX\xe3\xabSUFFIX')
         #assert u'\ufffd' in r.body_as_unicode(), repr(r.body_as_unicode())
 
+    def test_selector(self):
+        body = "<html><head><title>Some page</title><body></body></html>"
+        response = self.response_class("http://www.example.com", body=body)
+
+        self.assertIsInstance(response.selector, Selector)
+        self.assertEqual(response.selector.type, 'html')
+        self.assertIs(response.selector, response.selector)  # property is cached
+        self.assertIs(response.selector.response, response)
+
+        self.assertEqual(
+            response.selector.xpath("//title/text()").extract(),
+            [u'Some page']
+        )
+        self.assertEqual(
+            response.selector.css("title::text").extract(),
+            [u'Some page']
+        )
+        self.assertEqual(
+            response.selector.re("Some (.*)</title>"),
+            [u'page']
+        )
+
+    def test_selector_shortcuts(self):
+        body = "<html><head><title>Some page</title><body></body></html>"
+        response = self.response_class("http://www.example.com", body=body)
+
+        self.assertEqual(
+            response.xpath("//title/text()").extract(),
+            response.selector.xpath("//title/text()").extract(),
+        )
+        self.assertEqual(
+            response.css("title::text").extract(),
+            response.selector.css("title::text").extract(),
+        )
+
 
 class HtmlResponseTest(TextResponseTest):
 
     response_class = HtmlResponse
 
     def test_html_encoding(self):
-        
+
         body = """<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
         </head><body>Price: \xa3100</body></html>'
         """
@@ -327,6 +364,30 @@ class XmlResponseTest(TextResponseTest):
         self._assert_response_values(r5, 'iso-8859-1', body)
         self._assert_response_values(r6, 'iso-8859-1', body2)
         self._assert_response_values(r7, 'utf-8', body2)
+
+    def test_selector(self):
+        body = '<?xml version="1.0" encoding="utf-8"?><xml><elem>value</elem></xml>'
+        response = self.response_class("http://www.example.com", body=body)
+
+        self.assertIsInstance(response.selector, Selector)
+        self.assertEqual(response.selector.type, 'xml')
+        self.assertIs(response.selector, response.selector)  # property is cached
+        self.assertIs(response.selector.response, response)
+
+        self.assertEqual(
+            response.selector.xpath("//elem/text()").extract(),
+            [u'value']
+        )
+
+    def test_selector_shortcuts(self):
+        body = '<?xml version="1.0" encoding="utf-8"?><xml><elem>value</elem></xml>'
+        response = self.response_class("http://www.example.com", body=body)
+
+        self.assertEqual(
+            response.xpath("//elem/text()").extract(),
+            response.selector.xpath("//elem/text()").extract(),
+        )
+
 
 
 if __name__ == "__main__":

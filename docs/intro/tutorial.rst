@@ -175,9 +175,9 @@ Scrapy creates :class:`scrapy.Request <scrapy.http.Request>` objects
 for each URL in the ``start_urls`` attribute of the Spider, and assigns
 them the ``parse`` method of the spider as their callback function.
 
-These Requests are scheduled, then executed, and
-:class:`scrapy.http.Response` objects are returned and then fed back to the
-spider, through the :meth:`~scrapy.spider.Spider.parse` method.
+These Requests are scheduled, then executed, and :class:`scrapy.http.Response`
+objects are returned and then fed back to the spider, through the
+:meth:`~scrapy.spider.Spider.parse` method.
 
 Extracting Items
 ----------------
@@ -210,9 +210,9 @@ These are just a couple of simple examples of what you can do with XPath, but
 XPath expressions are indeed much more powerful. To learn more about XPath we
 recommend `this XPath tutorial <http://www.w3schools.com/XPath/default.asp>`_.
 
-For working with XPaths, Scrapy provides a :class:`~scrapy.selector.Selector`
-class, which is instantiated with a :class:`~scrapy.http.HtmlResponse` or
-:class:`~scrapy.http.XmlResponse` object as first argument.
+For working with XPaths, Scrapy provides :class:`~scrapy.selector.Selector`
+class and convenient shortcuts to avoid instantiating selectors yourself
+everytime you need to select something from a response.
 
 You can see selectors as objects that represent nodes in the document
 structure. So, the first instantiated selectors are associated with the root
@@ -262,7 +262,6 @@ This is what the shell looks like::
     [s]   item       {}
     [s]   request    <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
     [s]   response   <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
-    [s]   sel        <Selector xpath=None data=u'<html>\r\n<head>\r\n<meta http-equiv="Conten'>
     [s]   settings   <CrawlerSettings module=None>
     [s]   spider     <Spider 'default' at 0x3cebf50>
     [s] Useful shortcuts:
@@ -276,25 +275,27 @@ After the shell loads, you will have the response fetched in a local
 ``response`` variable, so if you type ``response.body`` you will see the body
 of the response, or you can type ``response.headers`` to see its headers.
 
-The shell also pre-instantiates a selector for this response in variable ``sel``,
-the selector automatically chooses the best parsing rules (XML vs HTML) based
-on response's type.
+More important, if you type ``response.selector`` you will access a selector
+object you can use to query the response, and convenient shortcuts like
+``response.xpath()`` and ``response.css()`` mapping to
+``response.selector.xpath()`` and ``response.selector.css()``
+
 
 So let's try it::
 
-    In [1]: sel.xpath('//title')
+    In [1]: response.xpath('//title')
     Out[1]: [<Selector xpath='//title' data=u'<title>Open Directory - Computers: Progr'>]
-
-    In [2]: sel.xpath('//title').extract()
+ 
+    In [2]: response.xpath('//title').extract()
     Out[2]: [u'<title>Open Directory - Computers: Programming: Languages: Python: Books</title>']
-
-    In [3]: sel.xpath('//title/text()')
+ 
+    In [3]: response.xpath('//title/text()')
     Out[3]: [<Selector xpath='//title/text()' data=u'Open Directory - Computers: Programming:'>]
-
-    In [4]: sel.xpath('//title/text()').extract()
+ 
+    In [4]: response.xpath('//title/text()').extract()
     Out[4]: [u'Open Directory - Computers: Programming: Languages: Python: Books']
-
-    In [5]: sel.xpath('//title/text()').re('(\w+):')
+ 
+    In [5]: response.xpath('//title/text()').re('(\w+):')
     Out[5]: [u'Computers', u'Programming', u'Languages', u'Python']
 
 Extracting the data
@@ -332,24 +333,23 @@ As we've said before, each ``.xpath()`` call returns a list of selectors, so we 
 concatenate further ``.xpath()`` calls to dig deeper into a node. We are going to use
 that property here, so::
 
-    sites = sel.xpath('//ul/li')
-    for site in sites:
-        title = site.xpath('a/text()').extract()
-        link = site.xpath('a/@href').extract()
-        desc = site.xpath('text()').extract()
+    for sel in response.xpath('//ul/li')
+        title = sel.xpath('a/text()').extract()
+        link = sel.xpath('a/@href').extract()
+        desc = sel.xpath('text()').extract()
         print title, link, desc
 
 .. note::
 
-   For a more detailed description of using nested selectors, see
-   :ref:`topics-selectors-nesting-selectors` and
-   :ref:`topics-selectors-relative-xpaths` in the :ref:`topics-selectors`
-   documentation
+    For a more detailed description of using nested selectors, see
+    :ref:`topics-selectors-nesting-selectors` and
+    :ref:`topics-selectors-relative-xpaths` in the :ref:`topics-selectors`
+    documentation
 
 Let's add this code to our spider::
 
     import scrapy
-
+     
     class DmozSpider(scrapy.Spider):
         name = "dmoz"
         allowed_domains = ["dmoz.org"]
@@ -357,18 +357,14 @@ Let's add this code to our spider::
             "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
             "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
         ]
-
+     
         def parse(self, response):
-            sel = scrapy.Selector(response)
-            sites = sel.xpath('//ul/li')
-            for site in sites:
-                title = site.xpath('a/text()').extract()
-                link = site.xpath('a/@href').extract()
-                desc = site.xpath('text()').extract()
+            for sel in response.xpath('//ul/li'):
+                title = sel.xpath('a/text()').extract()
+                link = sel.xpath('a/@href').extract()
+                desc = sel.xpath('text()').extract()
                 print title, link, desc
 
-Notice we import our Selector class from scrapy and instantiate a new
-Selector object.  We can now specify our XPaths just as we did in the shell.
 Now try crawling the dmoz.org domain again and you'll see sites being printed
 in your output, run::
 
@@ -403,16 +399,12 @@ scraped so far, the final code for our Spider would be like this::
         ]
 
         def parse(self, response):
-            sel = scrapy.Selector(response)
-            sites = sel.xpath('//ul/li')
-            items = []
-            for site in sites:
+            for sel in response.xpath('//ul/li'):
                 item = DmozItem()
-                item['title'] = site.xpath('a/text()').extract()
-                item['link'] = site.xpath('a/@href').extract()
-                item['desc'] = site.xpath('text()').extract()
-                items.append(item)
-            return items
+                item['title'] = sel.xpath('a/text()').extract()
+                item['link'] = sel.xpath('a/@href').extract()
+                item['desc'] = sel.xpath('text()').extract()
+                yield item
 
 .. note:: You can find a fully-functional variant of this spider in the dirbot_
    project available at https://github.com/scrapy/dirbot
