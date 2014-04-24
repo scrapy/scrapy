@@ -526,6 +526,11 @@ TextResponse objects
        4. the encoding inferred by looking at the response body. This is the more
           fragile method but also the last one tried.
 
+    .. attribute:: TextResponse.selector
+
+        A :class:`~scrapy.selector.Selector` instance using the response as
+        target. The selector is lazily instantiated on first access.
+
     :class:`TextResponse` objects support the following methods in addition to
     the standard :class:`Response` ones:
 
@@ -542,6 +547,19 @@ TextResponse objects
         Since, in the latter case, you would be using you system default encoding
         (typically `ascii`) to convert the body to unicode, instead of the response
         encoding.
+
+    .. method:: TextResponse.xpath(query)
+
+        A shortcut to ``TextResponse.selector.xpath(query)``::
+
+            response.xpath('//p')
+
+    .. method:: TextResponse.css(query)
+
+        A shortcut to ``TextResponse.selector.css(query)``::
+
+            response.css('p')
+
 
 HtmlResponse objects
 --------------------
