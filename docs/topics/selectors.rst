@@ -77,7 +77,7 @@ it's totally OK to use this shortcut when possible::
 
     >>> response.selector.xpath('//span/text()').extract()
     [u'good']
-    
+
 
 Using selectors
 ---------------
@@ -199,8 +199,8 @@ too. Here's an example::
      u'<a href="image5.html">Name: My image 5 <br><img src="image5_thumb.jpg"></a>']
 
     >>> for index, link in enumerate(links):
-            args = (index, link.xpath('@href').extract(), link.xpath('img/@src').extract())
-            print 'Link number %d points to url %s and image %s' % args
+    ...     args = (index, link.xpath('@href').extract(), link.xpath('img/@src').extract())
+    ...     print 'Link number %d points to url %s and image %s' % args
 
     Link number 0 points to url [u'image1.html'] and image [u'image1_thumb.jpg']
     Link number 1 points to url [u'image2.html'] and image [u'image2_thumb.jpg']
@@ -245,17 +245,17 @@ it actually extracts all ``<p>`` elements from the document, not only those
 inside ``<div>`` elements::
 
     >>> for p in divs.xpath('//p'):  # this is wrong - gets all <p> from the whole document
-    >>>     print p.extract()
+    ...     print p.extract()
 
 This is the proper way to do it (note the dot prefixing the ``.//p`` XPath)::
 
     >>> for p in divs.xpath('.//p'):  # extracts all <p> inside
-    >>>     print p.extract()
+    ...     print p.extract()
 
 Another common case would be to extract all direct ``<p>`` children::
 
     >>> for p in divs.xpath('p'):
-    >>>     print p.extract()
+    ...     print p.extract()
 
 For more details about relative XPaths see the `Location Paths`_ section in the
 XPath specification.
@@ -375,7 +375,7 @@ with groups of itemscopes and corresponding itemprops::
     ...                                .//*[@itemscope]/*/@itemprop)''')
     ...     print "    properties:", props.extract()
     ...     print
-    ...
+
     current scope: [u'http://schema.org/Product']
         properties: [u'name', u'aggregateRating', u'offers', u'description', u'review', u'review']
 
@@ -453,7 +453,7 @@ Built-in Selectors reference
       ``query`` is a string containing the XPATH query to apply.
 
       .. note::
-        
+
           For convenience this method can be called as ``response.xpath()``
 
   .. method:: css(query)
@@ -466,7 +466,7 @@ Built-in Selectors reference
       `cssselect`_ library and run ``.xpath()`` method.
 
       .. note::
-        
+
           For convenience this method can be called as ``response.css()``
 
   .. method:: extract()
@@ -560,7 +560,7 @@ a :class:`~scrapy.http.HtmlResponse` object like this::
 3. Iterate over all ``<p>`` tags and print their class attribute::
 
       for node in sel.xpath("//p"):
-      ...    print node.xpath("@class").extract()
+          print node.xpath("@class").extract()
 
 Selector examples on XML response
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
