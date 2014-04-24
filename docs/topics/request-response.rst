@@ -76,7 +76,7 @@ Request objects
                                                     'path': '/currency'}])
 
         The latter form allows for customizing the ``domain`` and ``path``
-        attributes of the cookie. These is only useful if the cookies are saved
+        attributes of the cookie. This is only useful if the cookies are saved
         for later requests.
 
         When some site returns cookies (in a response) those are stored in the
