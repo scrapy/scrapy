@@ -121,10 +121,10 @@ for concurrency.
 For more information about asynchronous programming and Twisted see these
 links:
 
-* `Twisted Introduction - Krondo`_
+* `Twisted Introduction`_
 * `Twisted - hello, asynchronous programming`_
 
 .. _Twisted: http://twistedmatrix.com/trac/
-.. _Twisted Introduction - Krondo: http://krondo.com/blog/?page_id=1327/
+.. _Twisted Introduction: http://krondo.com/blog/?page_id=1327/
 .. _Twisted - hello, asynchronous programming: http://jessenoller.com/2009/02/11/twisted-hello-asynchronous-programming/
 
