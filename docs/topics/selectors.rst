@@ -121,10 +121,17 @@ convenient shortcuts: ``response.xpath()`` and ``response.css()``::
     [<Selector (text) xpath=//title/text()>]
     >>> response.css('title::text')
     [<Selector (text) xpath=//title/text()>]
-    
-As you can see, the ``.xpath()`` and ``.css()`` methods returns an
+
+As you can see, ``.xpath()`` and ``.css()`` methods returns an
 :class:`~scrapy.selector.SelectorList` instance, which is a list of new
-selectors. This API can be used quickly for extracting nested data.
+selectors. This API can be used quickly for selecting nested data::
+
+    >>> response.css('img').xpath('@src').extract()
+    [u'image1_thumb.jpg',
+     u'image2_thumb.jpg',
+     u'image3_thumb.jpg',
+     u'image4_thumb.jpg',
+     u'image5_thumb.jpg']
 
 To actually extract the textual data, you must call the selector ``.extract()``
 method, as follows::
