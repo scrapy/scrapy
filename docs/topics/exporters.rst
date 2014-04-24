@@ -96,14 +96,14 @@ value and returns its serialized form.
 
 Example::
 
-      from scrapy.item import Item, Field
+    import scrapy
 
-      def serialize_price(value):
-         return '$ %s' % str(value)
+    def serialize_price(value):
+        return '$ %s' % str(value)
 
-      class Product(Item):
-          name = Field()
-          price = Field(serializer=serialize_price)
+    class Product(scrapy.Item):
+        name = scrapy.Field()
+        price = scrapy.Field(serializer=serialize_price)
 
 
 2. Overriding the serialize_field() method
@@ -113,7 +113,7 @@ You can also override the :meth:`~BaseItemExporter.serialize_field()` method to
 customize how your field value will be exported.
 
 Make sure you call the base class :meth:`~BaseItemExporter.serialize_field()` method
-after your custom code. 
+after your custom code.
 
 Example::
 
@@ -125,7 +125,7 @@ Example::
               if field == 'price':
                   return '$ %s' % str(value)
               return super(Product, self).serialize_field(field, name, value)
-             
+
 .. _topics-exporters-reference:
 
 Built-in Item Exporters reference
@@ -146,7 +146,7 @@ BaseItemExporter
    support for common features used by all (concrete) Item Exporters, such as
    defining what fields to export, whether to export empty fields, or which
    encoding to use.
-   
+
    These features can be configured through the constructor arguments which
    populate their respective instance attributes: :attr:`fields_to_export`,
    :attr:`export_empty_fields`, :attr:`encoding`.
@@ -278,7 +278,7 @@ CsvItemExporter
    :param file: the file-like object to use for exporting the data.
 
    :param include_headers_line: If enabled, makes the exporter output a header
-      line with the field names taken from 
+      line with the field names taken from
       :attr:`BaseItemExporter.fields_to_export` or the first exported item fields.
    :type include_headers_line: boolean
 
@@ -296,7 +296,7 @@ CsvItemExporter
       product,price
       Color TV,1200
       DVD player,200
-      
+
 .. _csv.writer: http://docs.python.org/library/csv.html#csv.writer
 
 PickleItemExporter
@@ -304,7 +304,7 @@ PickleItemExporter
 
 .. class:: PickleItemExporter(file, protocol=0, \**kwargs)
 
-   Exports Items in pickle format to the given file-like object. 
+   Exports Items in pickle format to the given file-like object.
 
    :param file: the file-like object to use for exporting the data.
 

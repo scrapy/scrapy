@@ -25,13 +25,13 @@ Declaring Items
 Items are declared using a simple class definition syntax and :class:`Field`
 objects. Here is an example::
 
-    from scrapy.item import Item, Field
+    import scrapy
 
-    class Product(Item):
-        name = Field()
-        price = Field()
-        stock = Field()
-        last_updated = Field(serializer=str)
+    class Product(scrapy.Item):
+        name = scrapy.Field()
+        price = scrapy.Field()
+        stock = scrapy.Field()
+        last_updated = scrapy.Field(serializer=str)
 
 .. note:: Those familiar with `Django`_ will notice that Scrapy Items are
    declared similar to `Django Models`_, except that Scrapy Items are much
@@ -185,14 +185,14 @@ fields) by declaring a subclass of your original Item.
 For example::
 
     class DiscountedProduct(Product):
-        discount_percent = Field(serializer=str)
-        discount_expiration_date = Field()
+        discount_percent = scrapy.Field(serializer=str)
+        discount_expiration_date = scrapy.Field()
 
 You can also extend field metadata by using the previous field metadata and
 appending more values, or changing existing values, like this::
 
     class SpecificProduct(Product):
-        name = Field(Product.fields['name'], serializer=my_serializer)
+        name = scrapy.Field(Product.fields['name'], serializer=my_serializer)
 
 That adds (or replaces) the ``serializer`` metadata key for the ``name`` field,
 keeping all the previously existing metadata values.
@@ -202,11 +202,11 @@ Item objects
 
 .. class:: Item([arg])
 
-    Return a new Item optionally initialized from the given argument. 
-    
+    Return a new Item optionally initialized from the given argument.
+
     Items replicate the standard `dict API`_, including its constructor. The
     only additional attribute provided by Items is:
-    
+
     .. attribute:: fields
 
         A dictionary containing *all declared fields* for this Item, not only

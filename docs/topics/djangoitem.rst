@@ -20,59 +20,62 @@ and define its ``django_model`` attribute to be a valid Django model. With this
 you will get an item with a field for each Django model field.
 
 In addition, you can define fields that aren't present in the model and even
-override fields that are present in the model defining them in the item. 
+override fields that are present in the model defining them in the item.
 
 Let's see some examples:
 
 Creating a Django model for the examples::
-   
-   from django.db import models
 
-   class Person(models.Model):
-       name = models.CharField(max_length=255)
-       age = models.IntegerField()
+    from django.db import models
+
+    class Person(models.Model):
+        name = models.CharField(max_length=255)
+        age = models.IntegerField()
 
 Defining a basic :class:`DjangoItem`::
 
-   from scrapy.contrib.djangoitem import DjangoItem 
+    from scrapy.contrib.djangoitem import DjangoItem
 
-   class PersonItem(DjangoItem):
-       django_model = Person
-       
+    class PersonItem(DjangoItem):
+        django_model = Person
+
 :class:`DjangoItem` work just like :class:`~scrapy.item.Item`::
 
-   >>> p = PersonItem()
-   >>> p['name'] = 'John'
-   >>> p['age'] = '22'
+    >>> p = PersonItem()
+    >>> p['name'] = 'John'
+    >>> p['age'] = '22'
 
 To obtain the Django model from the item, we call the extra method
 :meth:`~DjangoItem.save` of the :class:`DjangoItem`::
 
-   >>> person = p.save()
-   >>> person.name
-   'John'
-   >>> person.age
-   '22'
-   >>> person.id
-   1
+    >>> person = p.save()
+    >>> person.name
+    'John'
+    >>> person.age
+    '22'
+    >>> person.id
+    1
 
 The model is already saved when we call :meth:`~DjangoItem.save`, we
 can prevent this by calling it with ``commit=False``. We can use
 ``commit=False`` in :meth:`~DjangoItem.save` method to obtain an unsaved model::
 
-   >>> person = p.save(commit=False)
-   >>> person.name
-   'John'
-   >>> person.age
-   '22'
-   >>> person.id
-   None
+    >>> person = p.save(commit=False)
+    >>> person.name
+    'John'
+    >>> person.age
+    '22'
+    >>> person.id
+    None
 
 As said before, we can add other fields to the item::
 
-   class PersonItem(DjangoItem):
-       django_model = Person
-       sex = Field()
+    import scrapy
+    from scrapy.contrib.djangoitem import DjangoItem
+
+    class PersonItem(DjangoItem):
+        django_model = Person
+        sex = scrapy.Field()
 
 ::
 
@@ -85,9 +88,9 @@ As said before, we can add other fields to the item::
 
 And we can override the fields of the model with your own::
 
-   class PersonItem(DjangoItem):
-       django_model = Person
-       name = Field(default='No Name')
+    class PersonItem(DjangoItem):
+        django_model = Person
+        name = scrapy.Field(default='No Name')
 
 This is useful to provide properties to the field, like a default or any other
 property that your project uses.

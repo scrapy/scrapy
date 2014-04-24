@@ -7,7 +7,10 @@ Debugging Spiders
 This document explains the most common techniques for debugging spiders.
 Consider the following scrapy spider below::
 
-    class MySpider(Spider):
+    import scrapy
+    from myproject.items import MyItem
+
+    class MySpider(scrapy.Spider):
         name = 'myspider'
         start_urls = (
             'http://example.com/page1',
@@ -17,13 +20,13 @@ Consider the following scrapy spider below::
         def parse(self, response):
             # collect `item_urls`
             for item_url in item_urls:
-                yield Request(url=item_url, callback=self.parse_item)
+                yield scrapy.Request(item_url, self.parse_item)
 
         def parse_item(self, response):
             item = MyItem()
             # populate `item` fields
-            yield Request(url=item_details_url, meta={'item': item},
-                callback=self.parse_details)
+            # and extract item_details_url
+            yield scrapy.Request(item_details_url, self.parse_details, meta={'item': item})
 
         def parse_details(self, response):
             item = response.meta['item']

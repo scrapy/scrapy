@@ -10,7 +10,7 @@ __all__ = ['HtmlXPathSelector', 'XmlXPathSelector', 'XPathSelector',
 
 def _xpathselector_css(self, *a, **kw):
     raise RuntimeError('.css() method not available for %s, '
-                        'instantiate scrapy.selector.Selector '
+                        'instantiate scrapy.Selector '
                         'instead' % type(self).__name__)
 
 XPathSelector = create_deprecated_class(
@@ -21,7 +21,7 @@ XPathSelector = create_deprecated_class(
         '_default_type': 'html',
         'css': _xpathselector_css,
     },
-    new_class_path='scrapy.selector.Selector',
+    new_class_path='scrapy.Selector',
     old_class_path='scrapy.selector.XPathSelector',
 )
 
@@ -32,7 +32,7 @@ XmlXPathSelector = create_deprecated_class(
         '__slots__': (),
         '_default_type': 'xml',
     },
-    new_class_path='scrapy.selector.Selector',
+    new_class_path='scrapy.Selector',
     old_class_path='scrapy.selector.XmlXPathSelector',
 )
 
@@ -43,7 +43,7 @@ HtmlXPathSelector = create_deprecated_class(
         '__slots__': (),
         '_default_type': 'html',
     },
-    new_class_path='scrapy.selector.Selector',
+    new_class_path='scrapy.Selector',
     old_class_path='scrapy.selector.HtmlXPathSelector',
 )
 

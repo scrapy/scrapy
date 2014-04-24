@@ -53,16 +53,15 @@ Constructing selectors
 .. highlight:: python
 
 Scrapy selectors are instances of :class:`~scrapy.selector.Selector` class
-constructed by passing a `Response` object as first argument, the response's
-body is what they're going to be "selecting"::
+constructed by passing a :class:`~scrapy.http.Response` object as first
+argument, the response's body is what they're going to be "selecting"::
 
-    from scrapy.spider import Spider
-    from scrapy.selector import Selector
+    import scrapy
 
-    class MySpider(Spider):
+    class MySpider(scrapy.Spider):
         # ...
         def parse(self, response):
-            sel = Selector(response)
+            sel = scrapy.Selector(response)
             # Using XPath query
             print sel.xpath('//p')
             # Using CSS query
@@ -262,6 +261,7 @@ The ``test()`` function for example can prove quite useful when XPath's
 
 Example selecting links in list item with a "class" attribute ending with a digit::
 
+    >>> from scrapy import Selector
     >>> doc = """
     ... <div>
     ...     <ul>

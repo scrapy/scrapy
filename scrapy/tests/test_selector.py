@@ -354,7 +354,7 @@ class DeprecatedXpathSelectorTest(unittest.TestCase):
 
             # subclassing must issue a warning
             self.assertEqual(len(w), 1, str(cls))
-            self.assertIn('scrapy.selector.Selector', str(w[0].message))
+            self.assertIn('scrapy.Selector', str(w[0].message))
 
             # subclass instance doesn't issue a warning
             usel = UserClass(text=self.text)
@@ -363,7 +363,7 @@ class DeprecatedXpathSelectorTest(unittest.TestCase):
             # class instance must issue a warning
             sel = cls(text=self.text)
             self.assertEqual(len(w), 2, str((cls, [x.message for x in w])))
-            self.assertIn('scrapy.selector.Selector', str(w[1].message))
+            self.assertIn('scrapy.Selector', str(w[1].message))
 
             # subclass and instance checks
             self.assertTrue(issubclass(cls, Selector))
@@ -378,7 +378,7 @@ class DeprecatedXpathSelectorTest(unittest.TestCase):
 
             # subclassing must issue a warning
             self.assertEqual(len(w), 1, str(cls))
-            self.assertIn('scrapy.selector.Selector', str(w[0].message))
+            self.assertIn('scrapy.Selector', str(w[0].message))
 
             # subclass instance doesn't issue a warning
             usel = UserClass(text=self.text)
@@ -387,7 +387,7 @@ class DeprecatedXpathSelectorTest(unittest.TestCase):
             # class instance must issue a warning
             sel = cls(text=self.text)
             self.assertEqual(len(w), 2, str((cls, [x.message for x in w])))
-            self.assertIn('scrapy.selector.Selector', str(w[1].message))
+            self.assertIn('scrapy.Selector', str(w[1].message))
 
             # subclass and instance checks
             self.assertTrue(issubclass(cls, Selector))
@@ -405,7 +405,7 @@ class DeprecatedXpathSelectorTest(unittest.TestCase):
 
             # subclassing must issue a warning
             self.assertEqual(len(w), 1, str(cls))
-            self.assertIn('scrapy.selector.Selector', str(w[0].message))
+            self.assertIn('scrapy.Selector', str(w[0].message))
 
             # subclass instance doesn't issue a warning
             usel = UserClass(text=self.text)
@@ -414,7 +414,7 @@ class DeprecatedXpathSelectorTest(unittest.TestCase):
             # class instance must issue a warning
             sel = cls(text=self.text)
             self.assertEqual(len(w), 2, str((cls, [x.message for x in w])))
-            self.assertIn('scrapy.selector.Selector', str(w[1].message))
+            self.assertIn('scrapy.Selector', str(w[1].message))
 
             # subclass and instance checks
             self.assertTrue(issubclass(cls, Selector))

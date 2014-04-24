@@ -171,10 +171,10 @@ This can be achieved by using the ``scrapy.shell.inspect_response`` function.
 
 Here's an example of how you would call it from your spider::
 
-    from scrapy.spider import Spider
+    import scrapy
 
 
-    class MySpider(Spider):
+    class MySpider(scrapy.Spider):
         name = "myspider"
         start_urls = [
             "http://example.com",
