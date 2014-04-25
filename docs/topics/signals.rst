@@ -63,7 +63,7 @@ item_scraped
 ------------
 
 .. signal:: item_scraped
-.. function:: item_scraped(item, spider, response)
+.. function:: item_scraped(item, response, spider)
 
     Sent when an item has been scraped, after it has passed all the
     :ref:`topics-item-pipeline` stages (without being dropped).
@@ -83,7 +83,7 @@ item_dropped
 ------------
 
 .. signal:: item_dropped
-.. function:: item_dropped(item, spider, exception)
+.. function:: item_dropped(item, exception, spider)
 
     Sent after an item has been dropped from the :ref:`topics-item-pipeline`
     when some stage raised a :exc:`~scrapy.exceptions.DropItem` exception.
