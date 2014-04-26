@@ -5,7 +5,7 @@ from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 from scrapy.utils.test import docrawl, get_testlog
 from scrapy.tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
-    BrokenStartRequestsSpider, SingleRequestSpider
+    BrokenStartRequestsSpider, SingleRequestSpider, DuplicateStartRequestsSpider
 from scrapy.tests.mockserver import MockServer
 from scrapy.http import Request
 
@@ -112,6 +112,21 @@ class CrawlTestCase(TestCase):
         #self.assertTrue(False, spider.seedsseen)
         #self.assertTrue(spider.seedsseen.index(None) < spider.seedsseen.index(99),
         #                spider.seedsseen)
+
+    @defer.inlineCallbacks
+    def test_start_requests_dupes(self):
+        settings = {"CONCURRENT_REQUESTS": 1}
+        spider = DuplicateStartRequestsSpider(dont_filter=True,
+                                              distinct_urls=2,
+                                              dupe_factor=3)
+        yield docrawl(spider, settings)
+        self.assertEqual(spider.visited, 6)
+
+        spider = DuplicateStartRequestsSpider(dont_filter=False,
+                                              distinct_urls=3,
+                                              dupe_factor=4)
+        yield docrawl(spider, settings)
+        self.assertEqual(spider.visited, 3)
 
     @defer.inlineCallbacks
     def test_unbounded_response(self):

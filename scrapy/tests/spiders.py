@@ -157,3 +157,26 @@ class SingleRequestSpider(MetaSpider):
         self.meta['failure'] = failure
         if callable(self.errback_func):
             return self.errback_func(failure)
+
+
+class DuplicateStartRequestsSpider(Spider):
+    dont_filter = True
+    name = 'duplicatestartrequests'
+    distinct_urls = 2
+    dupe_factor = 3
+
+    def start_requests(self):
+        for i in range(0, self.distinct_urls):
+            for j in range(0, self.dupe_factor):
+                url = "http://localhost:8998/echo?headers=1&body=test%d" % i
+                yield self.make_requests_from_url(url)
+
+    def make_requests_from_url(self, url):
+        return Request(url, dont_filter=self.dont_filter)
+
+    def __init__(self, url="http://localhost:8998", *args, **kwargs):
+        super(DuplicateStartRequestsSpider, self).__init__(*args, **kwargs)
+        self.visited = 0
+
+    def parse(self, response):
+        self.visited += 1
