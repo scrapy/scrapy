@@ -112,6 +112,7 @@ class ExecutionEngine(object):
             except StopIteration:
                 slot.start_requests = None
             except Exception as exc:
+                slot.start_requests = None
                 log.err(None, 'Obtaining request from start requests', \
                         spider=spider)
             else:
@@ -156,7 +157,8 @@ class ExecutionEngine(object):
         scraper_idle = self.scraper.slot.is_idle()
         pending = self.slot.scheduler.has_pending_requests()
         downloading = bool(self.downloader.active)
-        idle = scraper_idle and not (pending or downloading)
+        pending_start_requests = self.slot.start_requests is not None
+        idle = scraper_idle and not (pending or downloading or pending_start_requests)
         return idle
 
     @property
