@@ -83,7 +83,7 @@ item_dropped
 ------------
 
 .. signal:: item_dropped
-.. function:: item_dropped(item, exception, spider)
+.. function:: item_dropped(item, response, exception, spider)
 
     Sent after an item has been dropped from the :ref:`topics-item-pipeline`
     when some stage raised a :exc:`~scrapy.exceptions.DropItem` exception.
@@ -95,6 +95,9 @@ item_dropped
 
     :param spider: the spider which scraped the item
     :type spider: :class:`~scrapy.spider.Spider` object
+
+    :param response: the response from where the item was dropped
+    :type response: :class:`~scrapy.http.Response` object
 
     :param exception: the exception (which must be a
         :exc:`~scrapy.exceptions.DropItem` subclass) which caused the item
