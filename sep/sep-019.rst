@@ -1,7 +1,7 @@
 =======  ===================
 SEP      19
 Title    Per-spider settings
-Author   Pablo Hoffman, Nicolás Ramirez
+Author   Pablo Hoffman, Nicolás Ramirez, Julia Medina
 Created  2013-03-07
 Status   Draft
 =======  ===================
