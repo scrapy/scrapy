@@ -152,7 +152,7 @@ The ``TorrentItem`` class is :ref:`defined above <intro-overview-item>`.
 Run the spider to extract the data
 ==================================
 
-Finally, we'll run the spider to crawl the site an output file
+Finally, we'll run the spider to crawl the site and output the file
 ``scraped_data.json`` with the scraped data in JSON format::
 
     scrapy crawl mininova -o scraped_data.json -t json
