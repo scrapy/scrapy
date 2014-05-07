@@ -102,7 +102,8 @@ Request objects
 
     :param priority: the priority of this request (defaults to ``0``).
        The priority is used by the scheduler to define the order used to process
-       requests.
+       requests.  Requests with a higher priority value will execute earlier.  
+       Negative values are allowed in order to indicate relatively low-priority.
     :type priority: int
 
     :param dont_filter: indicates that this request should not be filtered by
