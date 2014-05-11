@@ -141,3 +141,15 @@ class CookiesMiddlewareTest(TestCase):
         req6 = Request('file:///scrapy/sometempfile')
         assert self.mw.process_request(req6, self.spider) is None
         self.assertEquals(req6.headers.get('Cookie'), None)
+
+    def test_autoclose_cookie_session(self):
+        req_none = Request('http://scrapytest.org/')
+        self.mw.process_request(req_none, self.spider)
+        req_store1 = Request('http://scrapytest.org/',
+                             meta={'cookiejar': 'store1',
+                                   'autoclose_cookie_session': True})
+        self.mw.process_request(req_store1, self.spider)
+        self.assertIn(None, self.mw.jars)
+        self.assertIn('store1', self.mw.jars)
+        del req_store1
+        self.assertNotIn('store1', self.mw.jars)
