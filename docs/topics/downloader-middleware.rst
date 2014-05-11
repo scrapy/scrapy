@@ -210,6 +210,28 @@ passing it along on subsequent requests. For example::
             meta={'cookiejar': response.meta['cookiejar']},
             callback=self.parse_other_page)
 
+.. reqmeta:: autoclose_cookie_session
+
+Autoclosing cookie session
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each cookie session remains in memory even it is not going to be used by spider
+anymore. Enabling :reqmeta:`autoclose_cookie_session` in meta of the Request,
+will make sure that the cookie session will be closed (specifically deleted)
+after all of the requests that are referring to are released by garbage-collector.
+
+In following example the cookie session *'session1'*, will be removed when the
+execution context leaves the 'parse_page' function unless the request's
+reference counter is not intentionally increased.
+
+.. code::
+
+    yield scrapy.Request("http://www.example.com",
+                         meta={'cookiejar': 'session1',
+                               'autoclose_cookie_session': True},
+                         callback=self.parse_page)
+
+
 .. setting:: COOKIES_ENABLED
 
 COOKIES_ENABLED
