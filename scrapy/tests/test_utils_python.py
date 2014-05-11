@@ -5,7 +5,7 @@ from itertools import count
 
 from scrapy.utils.python import str_to_unicode, unicode_to_str, \
     memoizemethod_noargs, isbinarytext, equal_attributes, \
-    WeakKeyCache, stringify_dict, get_func_args
+    WeakKeyCache, stringify_dict, get_func_args, AlertedWeakSet
 
 __doctests__ = ['scrapy.utils.python']
 
@@ -193,6 +193,29 @@ class UtilsPythonTestCase(unittest.TestCase):
         # TODO: how do we fix this to return the actual argument names?
         self.assertEqual(get_func_args(unicode.split), [])
         self.assertEqual(get_func_args(" ".join), [])
+
+    def test_alerted_weak_set(self):
+        class Obj(object):
+            pass
+
+        l = [False]
+        key = 'key'
+
+        def cb(param):
+            if param != key:
+                raise Exception('invalid param: %r' % param)
+            l[0] = True
+        w = AlertedWeakSet(cb, key)
+        self.assertFalse(l[0])
+        o1 = Obj()
+        o2 = Obj()
+        w.add(o1)
+        w.add(o2)
+        del o1
+        self.assertFalse(l[0])
+        del o2
+        self.assertTrue([0])
+
 
 if __name__ == "__main__":
     unittest.main()
