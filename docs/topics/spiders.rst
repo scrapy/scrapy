@@ -195,6 +195,11 @@ Spider
        populating the spider argument with the :attr:`name` of this
        spider. For more information see :ref:`topics-logging`.
 
+   .. method:: closed(reason)
+
+       Called when the spider closes. This method provides a shortcut to
+       signals.connect() for the :signal:`spider_closed` signal.
+
 
 Spider example
 ~~~~~~~~~~~~~~
