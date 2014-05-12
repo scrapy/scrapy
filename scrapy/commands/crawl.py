@@ -20,6 +20,8 @@ class Command(ScrapyCommand):
                           help="set spider argument (may be repeated)")
         parser.add_option("-o", "--output", metavar="FILE",
                           help="dump scraped items into FILE (use - for stdout)")
+        parser.add_option("-O", "--overwrite-output", metavar="FILE",
+                          help="overwrite scraped items into FILE")
         parser.add_option("-t", "--output-format", metavar="FORMAT",
                           help="format to use for dumping items with -o")
 
@@ -29,6 +31,11 @@ class Command(ScrapyCommand):
             opts.spargs = arglist_to_dict(opts.spargs)
         except ValueError:
             raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
+        if opts.overwrite_output:
+            if opts.output:
+                raise UsageError("Please use only one of --output and --overwrite-output")
+            opts.output = opts.overwrite_output
+            self.settings.overrides['FEED_URI_OVERWRITE'] = True
         if opts.output:
             if opts.output == '-':
                 self.settings.overrides['FEED_URI'] = 'stdout:'

@@ -67,13 +67,15 @@ class FileFeedStorage(object):
     implements(IFeedStorage)
 
     def __init__(self, uri):
+        from scrapy.conf import settings
         self.path = file_uri_to_path(uri)
+        self.overwrite = settings['FEED_URI_OVERWRITE']
 
     def open(self, spider):
         dirname = os.path.dirname(self.path)
         if dirname and not os.path.exists(dirname):
             os.makedirs(dirname)
-        return open(self.path, 'ab')
+        return open(self.path, 'wb' if self.overwrite else 'ab')
 
     def store(self, file):
         file.close()
