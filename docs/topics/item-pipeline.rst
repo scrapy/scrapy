@@ -46,7 +46,6 @@ imports, and lines to your __init__ procedure::
    
    class GenericPipeline(object):
       def __init__(self):
-           """setup a unique directory for this scraper run to export to"""
            # boiler pipe required to make spider_opened & spider_closed work
            dispatcher.connect(self.spider_opened, signals.spider_opened)
            dispatcher.connect(self.spider_closed, signals.spider_closed)
