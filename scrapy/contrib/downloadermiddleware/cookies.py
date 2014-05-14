@@ -99,3 +99,4 @@ class CookiesMiddleware(object):
 
     def _close_session(self, cookiejarkey):
         del self.jars[cookiejarkey]
+        del self.autoclose_sessions[cookiejarkey]
