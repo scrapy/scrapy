@@ -291,14 +291,12 @@ class AlertedWeakSet(weakref.WeakSet):
     callback: Callback function which is going to be called when all objects
      this set have references to, released.
 
-    identifier: Identifier to be passed to callback.
-
     Example:
 
         def cb(key):
             print 'set: %s is empty.' % key
 
-        c = AlertedWeakSet(cb, 'id1')
+        c = AlertedWeakSet(lambda: cb('id1'))
         class O(object): pass
         b1 = O()
         b2 = O()
@@ -310,14 +308,14 @@ class AlertedWeakSet(weakref.WeakSet):
 
     prints set: id1 is empty.
     """
-    def __init__(self, callback, identifier, *a, **kw):
+    def __init__(self, callback, *a, **kw):
         super(AlertedWeakSet, self).__init__(*a, **kw)
-        self.cb = callback
-        self.id = identifier
+        assert hasattr(callback, '__call__'), 'Callback must be callable.'
+        self.callback = callback
         self._remove = partial(self._alert, self._remove)
 
     def _alert(self, do_remove, *args):
         do_remove(*args)
         if len(self) == 0:
             # Notify when data is empty.
-            return self.cb(self.id)
+            return self.callback()
