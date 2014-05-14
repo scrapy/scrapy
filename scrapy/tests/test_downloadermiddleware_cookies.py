@@ -151,5 +151,7 @@ class CookiesMiddlewareTest(TestCase):
         self.mw.process_request(req_store1, self.spider)
         self.assertIn(None, self.mw.jars)
         self.assertIn('store1', self.mw.jars)
+        self.assertIn('store1', self.mw.autoclose_sessions)
         del req_store1
         self.assertNotIn('store1', self.mw.jars)
+        self.assertNotIn('store1', self.mw.autoclose_sessions)
