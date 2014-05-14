@@ -197,15 +197,11 @@ class UtilsPythonTestCase(unittest.TestCase):
     def test_alerted_weak_set(self):
         class Obj(object):
             pass
-
         l = [False]
-        key = 'key'
 
-        def cb(param):
-            if param != key:
-                raise Exception('invalid param: %r' % param)
+        def cb():
             l[0] = True
-        w = AlertedWeakSet(cb, key)
+        w = AlertedWeakSet(cb)
         self.assertFalse(l[0])
         o1 = Obj()
         o2 = Obj()
@@ -214,8 +210,11 @@ class UtilsPythonTestCase(unittest.TestCase):
         del o1
         self.assertFalse(l[0])
         del o2
-        self.assertTrue([0])
+        self.assertTrue(l[0])
 
+    def test_alerted_weak_set_invalid_cb(self):
+        with self.assertRaises(Exception):
+            AlertedWeakSet('')
 
 if __name__ == "__main__":
     unittest.main()
