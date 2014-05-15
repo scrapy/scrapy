@@ -92,7 +92,7 @@ class CookiesMiddleware(object):
         return jar.make_cookies(response, request)
 
     def _add_autoclose_session(self, cookiejarkey, obj):
-        if not cookiejarkey in self.autoclose_sessions:
+        if cookiejarkey not in self.autoclose_sessions:
             self.autoclose_sessions[cookiejarkey] = AlertedWeakSet(
                 lambda: self._close_session(cookiejarkey))
         self.autoclose_sessions[cookiejarkey].add(obj)
