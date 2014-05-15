@@ -289,7 +289,7 @@ class AlertedWeakSet(weakref.WeakSet):
     Arguments:
 
     callback: Callback function which is going to be called when all objects
-     this set have references to, released.
+     this set have references are released.
 
     Example:
 
@@ -310,7 +310,7 @@ class AlertedWeakSet(weakref.WeakSet):
     """
     def __init__(self, callback, *a, **kw):
         super(AlertedWeakSet, self).__init__(*a, **kw)
-        assert hasattr(callback, '__call__'), 'Callback must be callable.'
+        assert callable(callback), 'Callback must be callable.'
         self.callback = callback
         self._remove = partial(self._alert, self._remove)
 
