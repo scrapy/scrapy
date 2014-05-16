@@ -7,7 +7,7 @@ See documentation in docs/topics/spiders.rst
 
 import copy
 
-from scrapy.http import Request, HtmlResponse
+from scrapy.http import Request, TextResponse
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.spider import Spider
 
@@ -34,6 +34,7 @@ class CrawlSpider(Spider):
     def __init__(self, *a, **kw):
         super(CrawlSpider, self).__init__(*a, **kw)
         self._compile_rules()
+        self._seen = set()
 
     def parse(self, response):
         return self._parse_response(response, self.parse_start_url, cb_kwargs={}, follow=True)
@@ -45,15 +46,15 @@ class CrawlSpider(Spider):
         return results
 
     def _requests_to_follow(self, response):
-        if not isinstance(response, HtmlResponse):
+        if not isinstance(response, TextResponse):
             return
-        seen = set()
+
         for n, rule in enumerate(self._rules):
-            links = [l for l in rule.link_extractor.extract_links(response) if l not in seen]
+            links = [l for l in rule.link_extractor.extract_links(response) if l.url not in self._seen]
             if links and rule.process_links:
                 links = rule.process_links(links)
             for link in links:
-                seen.add(link)
+                self._seen.add(link.url)
                 r = Request(url=link.url, callback=self._response_downloaded)
                 r.meta.update(rule=n, link_text=link.text)
                 yield rule.process_request(r)
