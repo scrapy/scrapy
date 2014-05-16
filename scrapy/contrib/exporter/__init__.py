@@ -39,6 +39,13 @@ class BaseItemExporter(object):
         serializer = field.get('serializer', self._to_str_if_unicode)
         return serializer(value)
 
+    def __enter__(self):
+        self.start_exporting()
+        return self
+
+    def __exit__(self, *exc_info):
+        self.finish_exporting()
+
     def start_exporting(self):
         pass
 
