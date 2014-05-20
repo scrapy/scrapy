@@ -108,8 +108,8 @@ class RFC2616Policy(object):
             request.headers['If-None-Match'] = cachedresponse.headers['ETag']
 
     def _compute_freshness_lifetime(self, response, request, now):
-        # Reference nsHttpResponseHead::ComputeFresshnessLifetime
-        # http://dxr.mozilla.org/mozilla-central/netwerk/protocol/http/nsHttpResponseHead.cpp.html#l259
+        # Reference nsHttpResponseHead::ComputeFreshnessLifetime
+        # http://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#410
         cc = self._parse_cachecontrol(response)
         if 'max-age' in cc:
             try:
@@ -142,7 +142,7 @@ class RFC2616Policy(object):
 
     def _compute_current_age(self, response, request, now):
         # Reference nsHttpResponseHead::ComputeCurrentAge
-        # http://dxr.mozilla.org/mozilla-central/netwerk/protocol/http/nsHttpResponseHead.cpp.html
+        # http://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#366
         currentage = 0
         # If Date header is not set we assume it is a fast connection, and
         # clock is in sync with the server
