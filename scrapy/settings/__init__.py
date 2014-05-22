@@ -2,6 +2,31 @@ import json
 from . import default_settings
 
 
+class SettingsAttribute(object):
+
+    """Class for storing data related to settings attributes.
+
+    This class is intended for internal usage, you should try Settings class
+    for settings configuration, not this one.
+    """
+
+    def __init__(self, value, priority):
+        self.value = value
+        self.priority = priority
+
+    def set(self, value, priority):
+        """Sets value if priority is higher or equal than current priority."""
+        if priority >= self.priority:
+            self.value = value
+            self.priority = priority
+
+    def __str__(self):
+        return "<SettingsAttribute value={self.value!r} " \
+               "priority={self.priority}>".format(self=self)
+
+    __repr__ = __str__
+
+
 class Settings(object):
 
     def __init__(self, values=None):
