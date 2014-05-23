@@ -71,6 +71,7 @@ class Command(ScrapyCommand):
         else:
             self.crawler_process.start()
             self.results.printErrors()
+            self.exitcode = 0 if self.results.wasSuccessful() else 1
 
     def get_requests(self, spider):
         requests = []
