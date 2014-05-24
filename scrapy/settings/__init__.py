@@ -1,4 +1,6 @@
+import six
 import json
+
 from . import default_settings
 
 
@@ -37,14 +39,18 @@ class SettingsAttribute(object):
 
 class Settings(object):
 
-    def __init__(self, values=None):
-        self.values = values.copy() if values else {}
-        self.global_defaults = default_settings
+    def __init__(self, values=None, priority='project'):
+        self.attributes = {}
+        for name, defvalue in iter_default_settings():
+            self.set(name, defvalue, 'default')
+        if values is not None:
+            self.setdict(values, priority)
 
     def __getitem__(self, opt_name):
-        if opt_name in self.values:
-            return self.values[opt_name]
-        return getattr(self.global_defaults, opt_name, None)
+        value = None
+        if opt_name in self.attributes:
+            value = self.attributes[opt_name].value
+        return value
 
     def get(self, name, default=None):
         return self[name] if self[name] is not None else default
@@ -75,11 +81,24 @@ class Settings(object):
         value = self.get(name)
         if value is None:
             return default or {}
-        if isinstance(value, basestring):
+        if isinstance(value, six.string_types):
             value = json.loads(value)
         if isinstance(value, dict):
             return value
         raise ValueError("Cannot convert value for setting '%s' to dict: '%s'" % (name, value))
+
+    def set(self, name, value, priority='project'):
+        if isinstance(priority, six.string_types):
+            priority = SETTINGS_PRIORITIES[priority]
+        if name not in self.attributes:
+            self.attributes[name] = SettingsAttribute(value, priority)
+        else:
+            self.attributes[name].set(value, priority)
+
+    def setdict(self, values, priority='project'):
+        for name, value in six.iteritems(values):
+            self.set(name, value, priority)
+
 
 class CrawlerSettings(Settings):
 
