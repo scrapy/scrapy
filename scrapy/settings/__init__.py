@@ -2,6 +2,14 @@ import json
 from . import default_settings
 
 
+SETTINGS_PRIORITIES = {
+    'default': 0,
+    'command': 10,
+    'project': 20,
+    'cmdline': 40,
+}
+
+
 class SettingsAttribute(object):
 
     """Class for storing data related to settings attributes.
