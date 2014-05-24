@@ -74,7 +74,7 @@ class CrawlSpider(Spider):
         super(CrawlSpider, self).__init__(*a, **kw)
         self._compile_rules()
 
-    def parse(self, response):
+    def _parse(self, response):
         return self._parse_response(response, self.parse_start_url, cb_kwargs={}, follow=True)
 
     def parse_start_url(self, response):
