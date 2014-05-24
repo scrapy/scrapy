@@ -72,6 +72,9 @@ class Spider(object_ref):
     def make_requests_from_url(self, url):
         return Request(url, dont_filter=True)
 
+    def _parse(self, response):
+        return self.parse(response)
+
     def parse(self, response):
         raise NotImplementedError
 
