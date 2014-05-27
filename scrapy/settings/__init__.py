@@ -1,6 +1,8 @@
 import six
 import json
 
+from scrapy.utils.deprecate import create_deprecated_class
+
 from . import default_settings
 
 
@@ -103,7 +105,7 @@ class Settings(object):
 class CrawlerSettings(Settings):
 
     def __init__(self, settings_module=None, **kw):
-        super(CrawlerSettings, self).__init__(**kw)
+        Settings.__init__(self, **kw)
         self.settings_module = settings_module
         self.overrides = {}
         self.defaults = {}
@@ -115,10 +117,14 @@ class CrawlerSettings(Settings):
             return getattr(self.settings_module, opt_name)
         if opt_name in self.defaults:
             return self.defaults[opt_name]
-        return super(CrawlerSettings, self).__getitem__(opt_name)
+        return Settings.__getitem__(self, opt_name)
 
     def __str__(self):
         return "<CrawlerSettings module=%r>" % self.settings_module
+
+CrawlerSettings = create_deprecated_class(
+    'CrawlerSettings', CrawlerSettings,
+    new_class_path='scrapy.settings.Settings')
 
 
 def iter_default_settings():
