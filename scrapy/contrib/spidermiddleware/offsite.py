@@ -23,6 +23,14 @@ class OffsiteMiddleware(object):
         return o
 
     def process_spider_output(self, response, result, spider):
+        for r in self.process_result(result, spider):
+            yield r
+
+    def process_start_requests(self, start_requests, spider):
+        for r in self.process_result(start_requests, spider):
+            yield r
+
+    def process_result(self, result, spider):
         for x in result:
             if isinstance(x, Request):
                 if x.dont_filter or self.should_follow(x, spider):
