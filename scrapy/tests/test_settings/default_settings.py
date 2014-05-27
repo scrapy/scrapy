@@ -1,0 +1,2 @@
+
+TEST_DEFAULT = 'defvalue'
