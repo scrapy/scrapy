@@ -103,25 +103,92 @@ how you :ref:`configure the downloader middlewares
         Start the crawler. This calls :meth:`configure` if it hasn't been called yet.
         Returns a deferred that is fired when the crawl is finished.
 
+.. _topics-api-settings:
+
 Settings API
 ============
 
 .. module:: scrapy.settings
    :synopsis: Settings manager
 
-.. class:: Settings()
+.. attribute:: SETTINGS_PRIORITIES
 
-    This object that provides access to Scrapy settings.
+    Dictionary that sets the key name and priority level of the default
+    settings priorities used in Scrapy.
 
-    .. attribute:: overrides
+    Each item defines a settings entry point, giving it a code name for
+    identification and an integer priority. Greater priorities take more
+    precedence over lesser ones when setting and retrieving values in the
+    :class:`~scrapy.settings.Settings` class.
 
-       Global overrides are the ones that take most precedence, and are usually
-       populated by command-line options.
+    .. highlight:: python
 
-       Overrides should be populated *before* configuring the Crawler object
+    ::
+
+        SETTINGS_PRIORITIES = {
+            'default': 0,
+            'command': 10,
+            'project': 20,
+            'cmdline': 40,
+        }
+
+    For a detailed explanation on each settings sources, see:
+    :ref:`topics-settings`.
+
+.. class:: Settings(values={}, priority='project')
+
+    This object stores Scrapy settings for the configuration of internal
+    components, and can be used for any further customization.
+
+    After instantiation of this class, the new object will have the global
+    default settings described on :ref:`topics-settings-ref` already
+    populated.
+
+    Additional values can be passed on initialization with the ``values``
+    argument, and they would take the ``priority`` level.  If the latter
+    argument is a string, the priority name will be looked up in
+    :attr:`~scrapy.settings.SETTINGS_PRIORITIES`. Otherwise, a expecific
+    integer should be provided.
+
+    Once the object is created, new settings can be loaded or updated with the
+    :meth:`~scrapy.settings.Settings.set` method, and can be accessed with the
+    square bracket notation of dictionaries, or with the
+    :meth:`~scrapy.settings.Settings.get` method of the instance and its value
+    conversion variants.  When requesting a stored key, the value with the
+    highest priority will be retrieved.
+
+    .. method:: set(name, value, priority='project')
+
+       Store a key/value attribute with a given priority.
+
+       Settings should be populated *before* configuring the Crawler object
        (through the :meth:`~scrapy.crawler.Crawler.configure` method),
-       otherwise they won't have any effect. You don't typically need to worry
-       about overrides unless you are implementing your own Scrapy command.
+       otherwise they won't have any effect.
+
+       :param name: the setting name
+       :type name: string
+
+       :param value: the value to associate with the setting
+       :type value: any
+
+       :param priority: the priority of the setting. Should be a key of
+           :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
+       :type priority: string or int
+
+    .. method:: setdict(values, priority='project')
+
+       Store key/value pairs with a given priority.
+
+       This is a helper function that calls
+       :meth:`~scrapy.settings.Settings.set` for every item of ``values``
+       with the provided ``priority``.
+
+       :param values: the settings names and values
+       :type values: dict
+
+       :param priority: the priority of the settings. Should be a key of
+           :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
+       :type priority: string or int
 
     .. method:: get(name, default=None)
 
