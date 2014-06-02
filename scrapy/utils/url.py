@@ -82,11 +82,11 @@ def escape_ajax(url):
     http://code.google.com/web/ajaxcrawling/docs/getting-started.html
 
     >>> escape_ajax("www.example.com/ajax.html#!key=value")
-    'www.example.com/ajax.html?_escaped_fragment_=key=value'
+    'www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue'
     >>> escape_ajax("www.example.com/ajax.html?k1=v1&k2=v2#!key=value")
-    'www.example.com/ajax.html?k1=v1&k2=v2&_escaped_fragment_=key=value'
+    'www.example.com/ajax.html?k1=v1&k2=v2&_escaped_fragment_=key%3Dvalue'
     >>> escape_ajax("www.example.com/ajax.html?#!key=value")
-    'www.example.com/ajax.html?_escaped_fragment_=key=value'
+    'www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue'
     >>> escape_ajax("www.example.com/ajax.html#!")
     'www.example.com/ajax.html?_escaped_fragment_='
 
