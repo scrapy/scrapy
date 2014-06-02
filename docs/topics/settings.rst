@@ -282,7 +282,7 @@ Whether to enable DNS in-memory cache.
 .. setting:: DOWNLOADER
 
 DOWNLOADER
----------
+----------
 
 Default: ``'scrapy.core.downloader.Downloader'``
 
