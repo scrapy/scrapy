@@ -123,7 +123,7 @@ except ImportError:
     from distutils.core import setup
 else:
     setup_args['install_requires'] = [
-        'Twisted>=10.0.0',
+        'Twisted>=10.0.0,<14.0.0',
         'w3lib>=1.2',
         'queuelib',
         'lxml',
