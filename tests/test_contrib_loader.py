@@ -385,6 +385,15 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(item['url'], u'rabbit.hole')
         self.assertEqual(item['summary'], u'rabbithole')
 
+    def test_empty_values_different_to_None(self):
+        il = ItemLoader(item={})
+        il.empty_float_in = TakeFirst()
+        il.empty_str_in = lambda x: x[0]
+        il.default_output_processor = lambda x: x[0]
+        il.add_value('empty_float', 0.0)
+        il.add_value('empty_str', '')
+        self.assertEqual(il.load_item(), {'empty_float': 0.0, 'empty_str': ''})
+
 
 class ProcessorsTest(unittest.TestCase):
 
