@@ -23,6 +23,12 @@ There are many ways to contribute to Scrapy. Here are some of them:
 Reporting bugs
 ==============
 
+.. note::
+
+    Please report security issues **only** to
+    scrapy-security@googlegroups.com. This is a private list only open to
+    trusted Scrapy developers, and its archives are not public.
+
 Well-written bug reports are very helpful, so keep in mind the following
 guidelines when reporting a new bug.
 
