@@ -11,5 +11,5 @@ class Command(ScrapyCommand):
 
     def run(self, args, opts):
         crawler = self.crawler_process.create_crawler()
-        for s in crawler.spiders.list():
+        for s in sorted(crawler.spiders.list()):
             print(s)
