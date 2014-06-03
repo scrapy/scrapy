@@ -1,22 +1,42 @@
 from __future__ import print_function
+import time
+import sys
 from collections import defaultdict
-from functools import wraps
-from unittest import TextTestRunner
+from unittest import TextTestRunner, TextTestResult as _TextTestResult
 
 from scrapy.command import ScrapyCommand
 from scrapy.contracts import ContractsManager
 from scrapy.utils.misc import load_object
-from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.conf import build_component_list
 
 
-def _generate(cb):
-    """ create a callback which does not return anything """
-    @wraps(cb)
-    def wrapper(response):
-        output = cb(response)
-        output = list(iterate_spider_output(output))
-    return wrapper
+class TextTestResult(_TextTestResult):
+    def printSummary(self, start, stop):
+        write = self.stream.write
+        writeln = self.stream.writeln
+
+        run = self.testsRun
+        plural = "s" if run != 1 else ""
+
+        writeln(self.separator2)
+        writeln("Ran %d contract%s in %.3fs" % (run, plural, stop - start))
+        writeln()
+
+        infos = []
+        if not self.wasSuccessful():
+            write("FAILED")
+            failed, errored = map(len, (self.failures, self.errors))
+            if failed:
+                infos.append("failures=%d" % failed)
+            if errored:
+                infos.append("errors=%d" % errored)
+        else:
+            write("OK")
+
+        if infos:
+            writeln(" (%s)" % (", ".join(infos),))
+        else:
+            write("\n")
 
 
 class Command(ScrapyCommand):
@@ -32,9 +52,9 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-l", "--list", dest="list", action="store_true",
-            help="only list contracts, without checking them")
+                          help="only list contracts, without checking them")
         parser.add_option("-v", "--verbose", dest="verbose", default=1, action="count",
-            help="print all contract hooks")
+                          help="print all contract hooks")
 
     def run(self, args, opts):
         # load contracts
@@ -42,8 +62,9 @@ class Command(ScrapyCommand):
             self.settings['SPIDER_CONTRACTS_BASE'],
             self.settings['SPIDER_CONTRACTS'],
         )
-        self.conman = ContractsManager([load_object(c) for c in contracts])
-        self.results = TextTestRunner(verbosity=opts.verbose)._makeResult()
+        conman = ContractsManager([load_object(c) for c in contracts])
+        runner = TextTestRunner(verbosity=opts.verbose)
+        result = TextTestResult(runner.stream, runner.descriptions, runner.verbosity)
 
         # contract requests
         contract_reqs = defaultdict(list)
@@ -53,7 +74,7 @@ class Command(ScrapyCommand):
 
         for spider in args or spiders.list():
             spider = spiders.create(spider)
-            requests = self.get_requests(spider)
+            requests = self.get_requests(spider, conman, result)
 
             if opts.list:
                 for req in requests:
@@ -69,20 +90,23 @@ class Command(ScrapyCommand):
                 for method in sorted(methods):
                     print('  * %s' % method)
         else:
+            start = time.time()
             self.crawler_process.start()
-            self.results.printErrors()
-            self.exitcode = 0 if self.results.wasSuccessful() else 1
+            stop = time.time()
 
-    def get_requests(self, spider):
+            result.printErrors()
+            result.printSummary(start, stop)
+            self.exitcode = int(not result.wasSuccessful())
+
+    def get_requests(self, spider, conman, result):
         requests = []
 
         for key, value in vars(type(spider)).items():
             if callable(value) and value.__doc__:
                 bound_method = value.__get__(spider, type(spider))
-                request = self.conman.from_method(bound_method, self.results)
+                request = conman.from_method(bound_method, result)
 
                 if request:
-                    request.callback = _generate(request.callback)
                     requests.append(request)
 
         return requests

@@ -48,27 +48,39 @@ class ContractsManager(object):
                 for contract in contracts:
                     request = contract.add_post_hook(request, results)
 
+                self._clean_req(request, method, results)
                 return request
+
+    def _clean_req(self, request, method, results):
+        """ stop the request from returning objects and records any errors """
+
+        cb = request.callback
+
+        @wraps(cb)
+        def cb_wrapper(response):
+            try:
+                output = cb(response)
+                output = list(iterate_spider_output(output))
+            except:
+                case = _create_testcase(method, 'callback')
+                results.addError(case, sys.exc_info())
+
+        def eb_wrapper(failure):
+            case = _create_testcase(method, 'errback')
+            exc_info = failure.value, failure.type, failure.getTracebackObject()
+            results.addError(case, exc_info)
+
+        request.callback = cb_wrapper
+        request.errback = eb_wrapper
 
 
 class Contract(object):
     """ Abstract class for contracts """
 
     def __init__(self, method, *args):
-        self.testcase_pre = self.create_testcase(method, 'pre-hook')
-        self.testcase_post = self.create_testcase(method, 'post-hook')
+        self.testcase_pre = _create_testcase(method, '@%s pre-hook' % self.name)
+        self.testcase_post = _create_testcase(method, '@%s post-hook' % self.name)
         self.args = args
-
-    def create_testcase(self, method, hook):
-        spider = method.__self__.name
-
-        class ContractTestCase(TestCase):
-            def __str__(_self):
-                return "[%s] %s (@%s %s)" % (spider, method.__name__, self.name, hook)
-
-        name = '%s_%s' % (spider, method.__name__)
-        setattr(ContractTestCase, name, lambda x: x)
-        return ContractTestCase(name)
 
     def add_pre_hook(self, request, results):
         if hasattr(self, 'pre_process'):
@@ -119,3 +131,15 @@ class Contract(object):
 
     def adjust_request_args(self, args):
         return args
+
+
+def _create_testcase(method, desc):
+    spider = method.__self__.name
+
+    class ContractTestCase(TestCase):
+        def __str__(_self):
+            return "[%s] %s (%s)" % (spider, method.__name__, desc)
+
+    name = '%s_%s' % (spider, method.__name__)
+    setattr(ContractTestCase, name, lambda x: x)
+    return ContractTestCase(name)
