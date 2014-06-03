@@ -127,6 +127,11 @@ def msg(message=None, _level=INFO, **kw):
     if message is None:
         log.msg(**kw)
     else:
+        # add type conversion for non-str message, e.g. list, dict, etc.
+        if not isinstance(message, basestring):
+            message = str(message)
+        if not isinstance(message, unicode):
+            message = message.decode("unicode_escape").encode("utf-8")
         log.msg(message, **kw)
 
 def err(_stuff=None, _why=None, **kw):
