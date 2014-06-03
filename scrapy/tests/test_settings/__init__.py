@@ -101,6 +101,41 @@ class SettingsTest(unittest.TestCase):
                      mock.call('TEST_2', 'value2', 10)]
             mock_set.assert_has_calls(calls, any_order=True)
 
+    def test_setmodule_only_load_uppercase_vars(self):
+        class ModuleMock():
+            UPPERCASE_VAR = 'value'
+            MIXEDcase_VAR = 'othervalue'
+            lowercase_var = 'anothervalue'
+
+        self.settings.attributes = {}
+        self.settings.setmodule(ModuleMock(), 10)
+        self.assertIn('UPPERCASE_VAR', self.settings.attributes)
+        self.assertNotIn('MIXEDcase_VAR', self.settings.attributes)
+        self.assertNotIn('lowercase_var', self.settings.attributes)
+        self.assertEqual(len(self.settings.attributes), 1)
+
+    def test_setmodule_alias(self):
+        with mock.patch.object(self.settings, 'set') as mock_set:
+            self.settings.setmodule(default_settings, 10)
+            mock_set.assert_called_with('TEST_DEFAULT', 'defvalue', 10)
+
+    def test_setmodule_by_path(self):
+        self.settings.attributes = {}
+        self.settings.setmodule(default_settings, 10)
+        ctrl_attributes = self.settings.attributes.copy()
+
+        self.settings.attributes = {}
+        self.settings.setmodule(
+            'scrapy.tests.test_settings.default_settings', 10)
+
+        self.assertItemsEqual(six.iterkeys(self.settings.attributes),
+                              six.iterkeys(ctrl_attributes))
+
+        for attr, ctrl_attr in zip(six.itervalues(self.settings.attributes),
+                                   six.itervalues(ctrl_attributes)):
+            self.assertEqual(attr.value, ctrl_attr.value)
+            self.assertEqual(attr.priority, ctrl_attr.priority)
+
     def test_get(self):
         test_configuration = {
             'TEST_ENABLED1': '1',

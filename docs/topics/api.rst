@@ -190,6 +190,21 @@ Settings API
            :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
        :type priority: string or int
 
+    .. method:: setmodule(module, priority='project')
+
+       Store settings from a module with a given priority.
+
+       This is a helper function that calls
+       :meth:`~scrapy.settings.Settings.set` for every globally declared
+       uppercase variable of ``module`` with the provided ``priority``.
+
+       :param module: the module or the path of the module
+       :type module: module object or string
+
+       :param priority: the priority of the settings. Should be a key of
+           :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
+       :type priority: string or int
+
     .. method:: get(name, default=None)
 
        Get a setting value without affecting its original type.

@@ -1,5 +1,6 @@
 import six
 import json
+from importlib import import_module
 
 from scrapy.utils.deprecate import create_deprecated_class
 
@@ -43,8 +44,7 @@ class Settings(object):
 
     def __init__(self, values=None, priority='project'):
         self.attributes = {}
-        for name, defvalue in iter_default_settings():
-            self.set(name, defvalue, 'default')
+        self.setmodule(default_settings, priority='default')
         if values is not None:
             self.setdict(values, priority)
 
@@ -100,6 +100,13 @@ class Settings(object):
     def setdict(self, values, priority='project'):
         for name, value in six.iteritems(values):
             self.set(name, value, priority)
+
+    def setmodule(self, module, priority='project'):
+        if isinstance(module, six.string_types):
+            module = import_module(module)
+        for key in dir(module):
+            if key.isupper():
+                self.set(key, getattr(module, key), priority)
 
 
 class CrawlerSettings(Settings):
