@@ -13,8 +13,11 @@ def start_python_console(namespace=None, noipython=False, banner=''):
                 raise ImportError()
 
             try:
-                from IPython.frontend.terminal.embed import InteractiveShellEmbed
-                sh = InteractiveShellEmbed(banner1=banner)
+                try:
+                    from IPython.terminal import embed
+                except ImportError:
+                    from IPython.frontend.terminal import embed
+                sh = embed.InteractiveShellEmbed(banner1=banner)
             except ImportError:
                 from IPython.Shell import IPShellEmbed
                 sh = IPShellEmbed(banner=banner)
