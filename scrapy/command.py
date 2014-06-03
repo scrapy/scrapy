@@ -103,20 +103,21 @@ class ScrapyCommand(object):
 
     def process_options(self, args, opts):
         try:
-            self.settings.overrides.update(arglist_to_dict(opts.set))
+            self.settings.setdict(arglist_to_dict(opts.set),
+                                  priority='cmdline')
         except ValueError:
             raise UsageError("Invalid -s value, use -s NAME=VALUE", print_help=False)
 
         if opts.logfile:
-            self.settings.overrides['LOG_ENABLED'] = True
-            self.settings.overrides['LOG_FILE'] = opts.logfile
+            self.settings.set('LOG_ENABLED', True, priority='cmdline')
+            self.settings.set('LOG_FILE', opts.logfile, priority='cmdline')
 
         if opts.loglevel:
-            self.settings.overrides['LOG_ENABLED'] = True
-            self.settings.overrides['LOG_LEVEL'] = opts.loglevel
+            self.settings.set('LOG_ENABLED', True, priority='cmdline')
+            self.settings.set('LOG_LEVEL', opts.loglevel, priority='cmdline')
 
         if opts.nolog:
-            self.settings.overrides['LOG_ENABLED'] = False
+            self.settings.set('LOG_ENABLED', False, priority='cmdline')
 
         if opts.pidfile:
             with open(opts.pidfile, "w") as f:
