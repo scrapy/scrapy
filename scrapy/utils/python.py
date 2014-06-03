@@ -280,3 +280,42 @@ def retry_on_eintr(function, *args, **kw):
         except IOError as e:
             if e.errno != errno.EINTR:
                 raise
+
+
+class AlertedWeakSet(weakref.WeakSet):
+    """AlertedWeakSet is a WeakSet which sends a notification when the
+    data is exhausted.
+
+    Arguments:
+
+    callback: Callback function which is going to be called when all objects
+     this set have references are released.
+
+    Example:
+
+        def cb(key):
+            print 'set: %s is empty.' % key
+
+        c = AlertedWeakSet(lambda: cb('id1'))
+        class O(object): pass
+        b1 = O()
+        b2 = O()
+        b3 = O()
+        c.add(b1)
+        c.add(b2)
+        c.add(b3)
+        del b1, b2, b3
+
+    prints set: id1 is empty.
+    """
+    def __init__(self, callback, *a, **kw):
+        super(AlertedWeakSet, self).__init__(*a, **kw)
+        assert callable(callback), 'Callback must be callable.'
+        self.callback = callback
+        self._remove = partial(self._alert, self._remove)
+
+    def _alert(self, do_remove, *args):
+        do_remove(*args)
+        if len(self) == 0:
+            # Notify when data is empty.
+            return self.callback()

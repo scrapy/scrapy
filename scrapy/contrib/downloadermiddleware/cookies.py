@@ -4,6 +4,7 @@ from collections import defaultdict
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
+from scrapy.utils.python import AlertedWeakSet
 from scrapy import log
 
 
@@ -12,6 +13,7 @@ class CookiesMiddleware(object):
 
     def __init__(self, debug=False):
         self.jars = defaultdict(CookieJar)
+        self.autoclose_sessions = dict()
         self.debug = debug
 
     @classmethod
@@ -34,6 +36,8 @@ class CookiesMiddleware(object):
         request.headers.pop('Cookie', None)
         jar.add_cookie_header(request)
         self._debug_cookie(request, spider)
+        if 'autoclose_cookie_session' in request.meta:
+            self._add_autoclose_session(cookiejarkey, request)
 
     def process_response(self, request, response, spider):
         if 'dont_merge_cookies' in request.meta:
@@ -86,3 +90,13 @@ class CookiesMiddleware(object):
         response = Response(request.url, headers=headers)
 
         return jar.make_cookies(response, request)
+
+    def _add_autoclose_session(self, cookiejarkey, obj):
+        if cookiejarkey not in self.autoclose_sessions:
+            self.autoclose_sessions[cookiejarkey] = AlertedWeakSet(
+                lambda: self._close_session(cookiejarkey))
+        self.autoclose_sessions[cookiejarkey].add(obj)
+
+    def _close_session(self, cookiejarkey):
+        del self.jars[cookiejarkey]
+        del self.autoclose_sessions[cookiejarkey]
