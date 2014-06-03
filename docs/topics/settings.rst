@@ -279,6 +279,15 @@ Default: ``True``
 
 Whether to enable DNS in-memory cache.
 
+.. setting:: DOWNLOADER
+
+DOWNLOADER
+----------
+
+Default: ``'scrapy.core.downloader.Downloader'``
+
+The downloader to use for crawling.
+
 .. setting:: DOWNLOADER_MIDDLEWARES
 
 DOWNLOADER_MIDDLEWARES

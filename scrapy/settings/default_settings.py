@@ -66,6 +66,8 @@ DOWNLOAD_HANDLERS_BASE = {
 
 DOWNLOAD_TIMEOUT = 180      # 3mins
 
+DOWNLOADER = 'scrapy.core.downloader.Downloader'
+
 DOWNLOADER_HTTPCLIENTFACTORY = 'scrapy.core.downloader.webclient.ScrapyHTTPClientFactory'
 DOWNLOADER_CLIENTCONTEXTFACTORY = 'scrapy.core.downloader.contextfactory.ScrapyClientContextFactory'
 
