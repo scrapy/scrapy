@@ -6,17 +6,17 @@ from twisted.trial import unittest
 from scrapy.contrib.downloadermiddleware.robotstxt import RobotsTxtMiddleware
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response
-from scrapy.settings import CrawlerSettings
+from scrapy.settings import Settings
 
 
 class RobotsTxtMiddlewareTest(unittest.TestCase):
 
     def test(self):
         crawler = mock.MagicMock()
-        crawler.settings = CrawlerSettings()
-        crawler.settings.overrides['USER_AGENT'] = 'CustomAgent'
+        crawler.settings = Settings()
+        crawler.settings.set('USER_AGENT', 'CustomAgent')
         self.assertRaises(NotConfigured, RobotsTxtMiddleware, crawler)
-        crawler.settings.overrides['ROBOTSTXT_OBEY'] = True
+        crawler.settings.set('ROBOTSTXT_OBEY', True)
         crawler.engine.download = mock.MagicMock()
         ROBOTS = re.sub(r'^\s+(?m)', '', '''
         User-Agent: *

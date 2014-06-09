@@ -3,7 +3,7 @@
 class TestExtension(object):
 
     def __init__(self, settings):
-        settings.overrides['TEST1'] = "%s + %s" % (settings['TEST1'], 'started')
+        settings.set('TEST1', "%s + %s" % (settings['TEST1'], 'started'))
 
     @classmethod
     def from_crawler(cls, crawler):
