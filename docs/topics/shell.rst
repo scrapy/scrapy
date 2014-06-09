@@ -118,7 +118,7 @@ all start with the ``[s]`` prefix)::
     [s]   request    <GET http://scrapy.org>
     [s]   response   <200 http://scrapy.org>
     [s]   sel        <Selector xpath=None data=u'<html>\n  <head>\n    <meta charset="utf-8'>
-    [s]   settings   <CrawlerSettings module=None>
+    [s]   settings   <scrapy.settings.Settings object at 0x2bfd650>
     [s]   spider     <Spider 'default' at 0x20c6f50>
     [s] Useful shortcuts:
     [s]   shelp()           Shell help (print this help)
@@ -139,7 +139,7 @@ After that, we can star playing with the objects::
     [s]   request    <GET http://slashdot.org>
     [s]   response   <200 http://slashdot.org>
     [s]   sel        <Selector xpath=None data=u'<html lang="en">\n<head>\n\n\n\n\n<script id="'>
-    [s]   settings   <CrawlerSettings module=None>
+    [s]   settings   <scrapy.settings.Settings object at 0x2bfd650>
     [s]   spider     <Spider 'default' at 0x20c6f50>
     [s] Useful shortcuts:
     [s]   shelp()           Shell help (print this help)
