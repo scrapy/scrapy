@@ -3,6 +3,11 @@
 Release notes
 =============
 
+0.24 (not released yet)
+-----------------------
+
+- telnet console now binds to 127.0.0.1 by default (:issue:`699`)
+
 0.22.2 (released 2014-02-14)
 ----------------------------
 
