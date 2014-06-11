@@ -1,3 +1,4 @@
+import ast
 import json
 from . import default_settings
 
@@ -21,7 +22,11 @@ class Settings(object):
         True is: 1, '1', True
         False is: 0, '0', False, None
         """
-        return bool(int(self.get(name, default)))
+        got = self.get(name, default)
+        try:
+            return bool(int(got))
+        except ValueError:
+            return ast.literal_eval(got) == True
 
     def getint(self, name, default=0):
         return int(self.get(name, default))

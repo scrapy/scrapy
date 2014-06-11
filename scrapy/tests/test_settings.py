@@ -11,9 +11,11 @@ class SettingsTest(unittest.TestCase):
             'TEST_ENABLED1': '1',
             'TEST_ENABLED2': True,
             'TEST_ENABLED3': 1,
+            'TEST_ENABLED4': 'True',
             'TEST_DISABLED1': '0',
             'TEST_DISABLED2': False,
             'TEST_DISABLED3': 0,
+            'TEST_DISABLED4': 'False',
             'TEST_INT1': 123,
             'TEST_INT2': '123',
             'TEST_FLOAT1': 123.45,
@@ -27,11 +29,13 @@ class SettingsTest(unittest.TestCase):
         assert settings.getbool('TEST_ENABLED1') is True
         assert settings.getbool('TEST_ENABLED2') is True
         assert settings.getbool('TEST_ENABLED3') is True
+        assert settings.getbool('TEST_ENABLED4') is True
         assert settings.getbool('TEST_ENABLEDx') is False
         assert settings.getbool('TEST_ENABLEDx', True) is True
         assert settings.getbool('TEST_DISABLED1') is False
         assert settings.getbool('TEST_DISABLED2') is False
         assert settings.getbool('TEST_DISABLED3') is False
+        assert settings.getbool('TEST_DISABLED4') is False
         self.assertEqual(settings.getint('TEST_INT1'), 123)
         self.assertEqual(settings.getint('TEST_INT2'), 123)
         self.assertEqual(settings.getint('TEST_INTx'), 0)
