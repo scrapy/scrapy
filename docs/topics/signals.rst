@@ -183,6 +183,22 @@ spider_error
     :param spider: the spider which raised the exception
     :type spider: :class:`~scrapy.spider.Spider` object
 
+request_scheduled
+-----------------
+
+.. signal:: request_scheduled
+.. function:: request_scheduled(request, spider)
+
+    Sent when the engine schedules a :class:`~scrapy.http.Request` for
+    download.
+
+    The signal does not support returning deferreds from their handlers.
+
+    :param request: the request that reached the scheduler
+    :type request: :class:`~scrapy.http.Request` object
+
+    :param spider: the spider that yielded the request
+    :type spider: :class:`~scrapy.spider.Spider` object
 
 response_received
 -----------------
