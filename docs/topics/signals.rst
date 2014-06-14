@@ -189,8 +189,8 @@ request_scheduled
 .. signal:: request_scheduled
 .. function:: request_scheduled(request, spider)
 
-    Sent when the engine schedules a :class:`~scrapy.http.Request` for
-    download.
+    Sent when the engine schedules a :class:`~scrapy.http.Request`, to be
+    downloaded later.
 
     The signal does not support returning deferreds from their handlers.
 
