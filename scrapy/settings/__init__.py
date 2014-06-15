@@ -19,14 +19,20 @@ class Settings(object):
 
     def getbool(self, name, default=False):
         """
-        True is: 1, '1', True
-        False is: 0, '0', False, None
+        True is: 1, '1', True, 'True' and 'true'
+        False is: 0, '0', False, None, 'False' and 'false'
         """
         got = self.get(name, default)
         try:
             return bool(int(got))
         except ValueError:
-            return ast.literal_eval(got) == True
+            if got in ["True", "true"]:
+                return True
+            if got in ["False", "false"]:
+                return False
+            raise ValueError("Supported values for boolean settings "
+                             "are 0/1, True/False, '0'/'1', "
+                             "'True'/'False' and 'true'/'false'")
 
     def getint(self, name, default=0):
         return int(self.get(name, default))
