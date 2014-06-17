@@ -314,6 +314,21 @@ class FormRequestTest(RequestTest):
         self.assertEqual(fs['one'], ['1'])
         self.assertEqual(fs['two'], ['2'])
 
+    def test_from_response_submit_first_clickable_novalue(self):
+        response = _buildresponse(
+            """<form action="get.php" method="GET">
+            <input type="submit" name="clickable1">
+            <input type="hidden" name="one" value="1">
+            <input type="hidden" name="two" value="3">
+            <input type="submit" name="clickable2">
+            </form>""")
+        req = self.request_class.from_response(response, formdata={'two': '2'})
+        fs = _qs(req)
+        self.assertEqual(fs['clickable1'], [''])
+        self.assertFalse('clickable2' in fs, fs)
+        self.assertEqual(fs['one'], ['1'])
+        self.assertEqual(fs['two'], ['2'])
+
     def test_from_response_submit_not_first_clickable(self):
         response = _buildresponse(
             """<form action="get.php" method="GET">
@@ -326,6 +341,22 @@ class FormRequestTest(RequestTest):
                                               clickdata={'name': 'clickable2'})
         fs = _qs(req)
         self.assertEqual(fs['clickable2'], ['clicked2'])
+        self.assertFalse('clickable1' in fs, fs)
+        self.assertEqual(fs['one'], ['1'])
+        self.assertEqual(fs['two'], ['2'])
+
+    def test_from_response_submit_not_first_clickable_novalue(self):
+        response = _buildresponse(
+            """<form action="get.php" method="GET">
+            <input type="submit" name="clickable1">
+            <input type="hidden" name="one" value="1">
+            <input type="hidden" name="two" value="3">
+            <input type="submit" name="clickable2">
+            </form>""")
+        req = self.request_class.from_response(response, formdata={'two': '2'}, \
+                                              clickdata={'name': 'clickable2'})
+        fs = _qs(req)
+        self.assertEqual(fs['clickable2'], [''])
         self.assertFalse('clickable1' in fs, fs)
         self.assertEqual(fs['one'], ['1'])
         self.assertEqual(fs['two'], ['2'])
