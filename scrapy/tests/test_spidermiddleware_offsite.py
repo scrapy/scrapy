@@ -5,6 +5,7 @@ from scrapy.spider import Spider
 from scrapy.contrib.spidermiddleware.offsite import OffsiteMiddleware
 from scrapy.utils.test import get_crawler
 
+from urlparse import urlparse
 
 class TestOffsiteMiddleware(TestCase):
 
@@ -52,3 +53,15 @@ class TestOffsiteMiddleware3(TestOffsiteMiddleware2):
     def _get_spider(self):
         return Spider('foo')
 
+
+class TestOffsiteMiddleware4(TestOffsiteMiddleware3):
+
+    def _get_spider(self):
+      bad_hostname = urlparse('http:////scrapytest.org').hostname
+      return Spider('foo', allowed_domains=['scrapytest.org', None, bad_hostname])
+
+    def test_process_spider_output(self):
+      res = Response('http://scrapytest.org')
+      reqs = [Request('http://scrapytest.org/1')]
+      out = list(self.mw.process_spider_output(res, reqs, self.spider))
+      self.assertEquals(out, reqs)
