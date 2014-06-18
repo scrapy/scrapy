@@ -45,7 +45,7 @@ def _get_form_url(form, url):
     return urlparse.urljoin(form.base_url, url)
 
 def _urlencode(seq, enc):
-    values = [(unicode_to_str(k, enc), unicode_to_str(v, enc))
+    values = [(unicode_to_str(u'' if k is None else k, enc), unicode_to_str(u'' if v is None else v, enc))
               for k, vs in seq
               for v in (vs if hasattr(vs, '__iter__') else [vs])]
     return urllib.urlencode(values, doseq=1)
