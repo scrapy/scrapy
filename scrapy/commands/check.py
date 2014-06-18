@@ -53,8 +53,8 @@ class Command(ScrapyCommand):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-l", "--list", dest="list", action="store_true",
                           help="only list contracts, without checking them")
-        parser.add_option("-v", "--verbose", dest="verbose", default=1, action="count",
-                          help="print all contract hooks")
+        parser.add_option("-v", "--verbose", dest="verbose", default=False, action='store_true',
+                          help="print contract tests for all spiders")
 
     def run(self, args, opts):
         # load contracts
@@ -63,7 +63,7 @@ class Command(ScrapyCommand):
             self.settings['SPIDER_CONTRACTS'],
         )
         conman = ContractsManager([load_object(c) for c in contracts])
-        runner = TextTestRunner(verbosity=opts.verbose)
+        runner = TextTestRunner(verbosity=2 if opts.verbose else 1)
         result = TextTestResult(runner.stream, runner.descriptions, runner.verbosity)
 
         # contract requests
@@ -75,6 +75,7 @@ class Command(ScrapyCommand):
         for spider in args or spiders.list():
             spider = spiders.create(spider)
             requests = self.get_requests(spider, conman, result)
+            contract_reqs[spider.name] = []
 
             if opts.list:
                 for req in requests:
@@ -86,6 +87,8 @@ class Command(ScrapyCommand):
         # start checks
         if opts.list:
             for spider, methods in sorted(contract_reqs.iteritems()):
+                if not methods and not opts.verbose:
+                    continue
                 print(spider)
                 for method in sorted(methods):
                     print('  * %s' % method)
