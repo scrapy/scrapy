@@ -144,7 +144,7 @@ def _get_clickable(clickdata, form):
     # If we don't have clickdata, we just use the first clickable element
     if clickdata is None:
         el = clickables[0]
-        return (el.name, u'' if el.value is None else el.value)
+        return (el.name, el.value)
 
     # If clickdata is given, we compare it to the clickable elements to find a
     # match. We first look to see if the number is specified in clickdata,
@@ -156,7 +156,7 @@ def _get_clickable(clickdata, form):
         except IndexError:
             pass
         else:
-            return (el.name, u'' if el.value is None else el.value)
+            return (el.name, el.value)
 
     # We didn't find it, so now we build an XPath expression out of the other
     # arguments, because they can be used as such
@@ -164,7 +164,7 @@ def _get_clickable(clickdata, form):
             u''.join(u'[@%s="%s"]' % c for c in clickdata.iteritems())
     el = form.xpath(xpath)
     if len(el) == 1:
-        return (el[0].name, u'' if el[0].value is None else el[0].value)
+        return (el[0].name, el[0].value)
     elif len(el) > 1:
         raise ValueError("Multiple elements found (%r) matching the criteria "
                          "in clickdata: %r" % (el, clickdata))
