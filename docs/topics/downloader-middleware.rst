@@ -422,6 +422,27 @@ In order to use this storage backend, set:
 
 * :setting:`HTTPCACHE_STORAGE` to ``scrapy.contrib.httpcache.DbmCacheStorage``
 
+.. _httpcache-storage-leveldb:
+
+LevelDB storage backend
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: 0.23
+
+A LevelDB_ storage backend is also available for the HTTP cache middleware.
+
+This backend is not recommended for development because only one process can
+access LevelDB databases at the same time, so you can't run a crawl and open
+the scrapy shell in parallel for the same spider.
+
+In order to use this storage backend:
+
+* set :setting:`HTTPCACHE_STORAGE` to ``scrapy.contrib.httpcache.LeveldbCacheStorage``
+* install `LevelDB python bindings`_ like ``pip install leveldb``
+
+.. _LevelDB: http://code.google.com/p/leveldb/
+.. _leveldb python bindings: http://pypi.python.org/pypi/leveldb
+
 
 HTTPCache middleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

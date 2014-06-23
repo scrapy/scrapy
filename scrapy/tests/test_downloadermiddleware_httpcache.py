@@ -5,6 +5,7 @@ import shutil
 import unittest
 import email.utils
 from contextlib import contextmanager
+import pytest
 
 from scrapy.http import Response, HtmlResponse, Request
 from scrapy.spider import Spider
@@ -134,6 +135,12 @@ class DbmStorageWithCustomDbmModuleTest(DbmStorageTest):
 class FilesystemStorageTest(DefaultStorageTest):
 
     storage_class = 'scrapy.contrib.httpcache.FilesystemCacheStorage'
+
+
+class LeveldbStorageTest(DefaultStorageTest):
+
+    pytest.importorskip('leveldb')
+    storage_class = 'scrapy.contrib.httpcache.LeveldbCacheStorage'
 
 
 class DummyPolicyTest(_BaseTest):
