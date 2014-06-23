@@ -4,7 +4,7 @@ enable this middleware and enable the ROBOTSTXT_OBEY setting.
 
 """
 
-import robotparser
+from reppy.cache import RobotsCache
 
 from scrapy import signals, log
 from scrapy.exceptions import NotConfigured, IgnoreRequest
@@ -23,6 +23,8 @@ class RobotsTxtMiddleware(object):
         self._useragent = crawler.settings.get('USER_AGENT')
         self._parsers = {}
         self._spider_netlocs = set()
+        
+        self.robots = RobotsCache()
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -30,25 +32,7 @@ class RobotsTxtMiddleware(object):
 
     def process_request(self, request, spider):
         useragent = self._useragent
-        rp = self.robot_parser(request, spider)
-        if rp and not rp.can_fetch(useragent, request.url):
+        if self.robots and not self.robots.allowed(request.url, useragent):
             log.msg(format="Forbidden by robots.txt: %(request)s",
                     level=log.DEBUG, request=request)
             raise IgnoreRequest
-
-    def robot_parser(self, request, spider):
-        url = urlparse_cached(request)
-        netloc = url.netloc
-        if netloc not in self._parsers:
-            self._parsers[netloc] = None
-            robotsurl = "%s://%s/robots.txt" % (url.scheme, url.netloc)
-            robotsreq = Request(robotsurl, priority=self.DOWNLOAD_PRIORITY)
-            dfd = self.crawler.engine.download(robotsreq, spider)
-            dfd.addCallback(self._parse_robots)
-            self._spider_netlocs.add(netloc)
-        return self._parsers[netloc]
-
-    def _parse_robots(self, response):
-        rp = robotparser.RobotFileParser(response.url)
-        rp.parse(response.body.splitlines())
-        self._parsers[urlparse_cached(response).netloc] = rp
