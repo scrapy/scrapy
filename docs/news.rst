@@ -6,7 +6,82 @@ Release notes
 0.24 (not released yet)
 -----------------------
 
-- telnet console now binds to 127.0.0.1 by default (:issue:`699`)
+Enhancements
+~~~~~~~~~~~~
+
+- Improve Scrapy top-level namespace (:issue:`494`, :issue:`684`)
+- Add selector shortcuts to responses (:issue:`554`, :issue:`690`)
+- Add new lxml based LinkExtractor to replace unmantained SgmlLinkExtractor
+  (:issue:`559`, :issue:`761`, :issue:`763`)
+- Cleanup settings API - part of per-spider settings **GSoC project** (:issue:`737`)
+- Add UTF8 encoding header to templates (:issue:`688`, :issue:`762`)
+- Telnet console now binds to 127.0.0.1 by default (:issue:`699`)
+- Update debian/ubuntu install instructions (:issue:`509`, :issue:`549`)
+- Disable smart strings in lxml XPath evaluations (:issue:`535`)
+- Restore filesystem based cache as default for http
+  cache middleware (:issue:`541`, :issue:`500`, :issue:`571`)
+- Expose current crawler in Scrapy shell (:issue:`557`)
+- Improve testsuite comparing CSV and XML exporters (:issue:`570`)
+- New `offsite/filtered` and `offsite/domains` stats (:issue:`566`)
+- Support process_links as generator in CrawlSpider (:issue:`555`)
+- Verbose logging and new stats counters for DupeFilter (:issue:`553`)
+- Add a mimetype parameter to `MailSender.send()` (:issue:`602`)
+- Generalize file pipeline log messages (:issue:`622`)
+- Replace unencodeable codepoints with html entities in SGMLLinkExtractor (:issue:`565`)
+- Converted SEP documents to rst format (:issue:`629`, :issue:`630`,
+  :issue:`638`, :issue:`632`, :issue:`636`, :issue:`640`, :issue:`635`,
+  :issue:`634`, :issue:`639`, :issue:`637`, :issue:`631`, :issue:`633`,
+  :issue:`641`, :issue:`642`)
+- Tests and docs for clickdata's nr index in FormRequest (:issue:`646`, :issue:`645`)
+- Allow to disable a downloader handler just like any other component (:issue:`650`)
+- Log when a request is discarded after too many redirections (:issue:`654`)
+- Log error responses if they are not handled by spider callbacks
+  (:issue:`612`, :issue:`656`)
+- Add content-type check to http compression mw (:issue:`193`, :issue:`660`)
+- Run pypy tests using latest pypi from ppa (:issue:`674`)
+- Run test suite using pytest instead of trial (:issue:`679`)
+- Build docs and check for dead links in tox environment (:issue:`687`)
+- Make scrapy.version_info a tuple of integers (:issue:`681`, :issue:`692`)
+- Infer exporter's output format from filename extensions
+  (:issue:`546`, :issue:`659`, :issue:`760`)
+- Support case-insensitive domains in `url_is_from_any_domain()` (:issue:`693`)
+- Remove pep8 warnings in project and spider templates (:issue:`698`)
+- Tests and docs for `request_fingerprint` function (:issue:`597`)
+- Update SEP-19 for GSoC project `per-spider settings` (:issue:`705`)
+- Set exit code to non-zero when contracts fails (:issue:`727`)
+- Add a setting to control what class is instanciated as Downloader component
+  (:issue:`738`)
+- Pass response in `item_dropped` signal (:issue:`724`)
+- Improve `scrapy check` contracts command (:issue:`733`, :issue:`752`)
+- Document `spider.closed()` shortcut (:issue:`719`)
+- Document `request_scheduled` signal (:issue:`746`)
+- Add a note about reporting security issues (:issue:`697`)
+- Add LevelDB http cache storage backend (:issue:`626`, :issue:`500`)
+- Sort spider list output of `scrapy list` command (:issue:`742`) 
+- Multiple documentation enhancemens and fixes
+  (:issue:`575`, :issue:`587`, :issue:`590`, :issue:`596`, :issue:`610`,
+  :issue:`617`, :issue:`618`, :issue:`627`, :issue:`613`, :issue:`643`,
+  :issue:`654`, :issue:`675`, :issue:`663`, :issue:`711`, :issue:`714`)
+
+Bugfixes
+~~~~~~~~
+
+- Encode unicode URL value when creating Links in RegexLinkExtractor (:issue:`561`)
+- Ignore None values in ItemLoader processors (:issue:`556`)
+- Fix link text when there is an inner tag in SGMLLinkExtractor and
+  HtmlParserLinkExtractor (:issue:`485`, :issue:`574`)
+- Fix wrong checks on subclassing of deprecated classes
+  (:issue:`581`, :issue:`584`)
+- Handle errors caused by inspect.stack() failures (:issue:`582`)
+- Fix a reference to unexistent engine attribute (:issue:`593`, :issue:`594`)
+- Fix dynamic itemclass example usage of type() (:issue:`603`)
+- Use lucasdemarchi/codespell to fix typos (:issue:`628`)
+- Fix default value of attrs argument in SgmlLinkExtractor to be tuple (:issue:`661`)
+- Fix XXE flaw in sitemap reader (:issue:`676`)
+- Fix engine to support filtered start requests (:issue:`707`)
+- Fix offsite middleware case on urls with no hostnames (:issue:`745`)
+- Testsuite doesn't require PIL anymore (:issue:`585`)
+
 
 0.22.2 (released 2014-02-14)
 ----------------------------
