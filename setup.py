@@ -130,6 +130,7 @@ else:
         'pyOpenSSL',
         'cssselect>=0.9',
         'six>=1.5.2',
+        'robotexclusionrulesparser>=1.6.2,',
     ]
 
 setup(**setup_args)
