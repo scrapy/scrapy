@@ -23,9 +23,9 @@ To use the packages:
 
 3. Update package lists and install the scrapy-|version| package:
 
-.. parsed-literal::
+   .. parsed-literal::
 
-   sudo apt-get update && sudo apt-get install scrapy-|version|
+      sudo apt-get update && sudo apt-get install scrapy-|version|
 
 .. note:: Repeat step 3 if you are trying to upgrade Scrapy.
 
