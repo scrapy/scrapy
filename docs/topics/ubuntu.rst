@@ -21,10 +21,11 @@ To use the packages:
 
     echo 'deb http://archive.scrapy.org/ubuntu scrapy main' | sudo tee /etc/apt/sources.list.d/scrapy.list
 
-3. Update package lists and install `scrapy-VERSION`, replace `VERSION` by a
-   known Scrapy version (i.e.: `scrapy-0.22`::
+3. Update package lists and install the scrapy-|version| package:
 
-    sudo apt-get update && sudo apt-get install scrapy-VERSION
+.. parsed-literal::
+
+   sudo apt-get update && sudo apt-get install scrapy-|version|
 
 .. note:: Repeat step 3 if you are trying to upgrade Scrapy.
 
