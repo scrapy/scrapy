@@ -54,10 +54,13 @@ class Command(ScrapyCommand):
             raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
         if opts.output:
             if opts.output == '-':
-                self.settings.overrides['FEED_URI'] = 'stdout:'
+                self.settings.set('FEED_URI', 'stdout:', priority='cmdline')
             else:
-                self.settings.overrides['FEED_URI'] = opts.output
-            valid_output_formats = self.settings['FEED_EXPORTERS'].keys() + self.settings['FEED_EXPORTERS_BASE'].keys()
+                self.settings.set('FEED_URI', opts.output, priority='cmdline')
+            valid_output_formats = (
+                list(self.settings.getdict('FEED_EXPORTERS').keys()) +
+                list(self.settings.getdict('FEED_EXPORTERS_BASE').keys())
+            )
             if not opts.output_format:
                 opts.output_format = os.path.splitext(opts.output)[1].replace(".", "")
             if opts.output_format not in valid_output_formats:
@@ -65,7 +68,7 @@ class Command(ScrapyCommand):
                                  " using the '-t' switch or as a file extension"
                                  " from the supported list %s" % (opts.output_format,
                                                                   tuple(valid_output_formats)))
-            self.settings.overrides['FEED_FORMAT'] = opts.output_format
+            self.settings.set('FEED_FORMAT', opts.output_format, priority='cmdline')
 
     def run(self, args, opts):
         if len(args) != 1:

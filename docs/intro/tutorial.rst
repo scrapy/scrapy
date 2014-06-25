@@ -262,7 +262,7 @@ This is what the shell looks like::
     [s]   item       {}
     [s]   request    <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
     [s]   response   <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
-    [s]   settings   <CrawlerSettings module=None>
+    [s]   settings   <scrapy.settings.Settings object at 0x3fadc50>
     [s]   spider     <Spider 'default' at 0x3cebf50>
     [s] Useful shortcuts:
     [s]   shelp()           Shell help (print this help)
