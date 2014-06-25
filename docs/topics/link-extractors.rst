@@ -37,26 +37,22 @@ All available link extractors classes bundled with Scrapy are provided in the
 :mod:`scrapy.contrib.linkextractors` module.
 
 If you don't know what link extractor to choose, just use the default which is
-the same than LxmlLinkExtractor (see below)::
+the same as LxmlLinkExtractor (see below)::
 
     from scrapy.contrib.linkextractors import LinkExtractor
 
 
-.. module:: scrapy.contrib.linkextractors.lxmlhtml
-   :synopsis: lxml's HTMLParser-based link extractors
-
-.. module:: scrapy.contrib.linkextractors.sgml
-   :synopsis: SGMLParser-based link extractors
-
 LxmlLinkExtractor
 -----------------
 
+.. module:: scrapy.contrib.linkextractors.lxmlhtml
+   :synopsis: lxml's HTMLParser-based link extractors
+
+
 .. class:: LxmlLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), deny_extensions=None, restrict_xpaths=(), tags=('a', 'area'), attrs=('href',), canonicalize=True, unique=True, process_value=None)
 
-    LxmlLinkExtractor provides the same API as :class:`SgmlLinkExtractor`,
-    and therefore has the same handy filtering options as constructor parameters,
-    but the implementation underneath uses lxml's more robust ``HTMLParser``
-    to parse HTML documents:
+    LxmlLinkExtractor is the recommended link extractor with handy filtering
+    options. It is implemented using lxml's robust HTMLParser.
 
     :param allow: a single regular expression (or list of regular expressions)
         that the (absolute) urls must match in order to be extracted. If not
@@ -111,8 +107,16 @@ LxmlLinkExtractor
         :class:`BaseSgmlLinkExtractor` class constructor
     :type process_value: callable
 
+
 SgmlLinkExtractor
 -----------------
+
+.. module:: scrapy.contrib.linkextractors.sgml
+   :synopsis: SGMLParser-based link extractors
+
+.. warning:: SGMLParser based link extractors are unmantained and its usage is discouraged.
+    It is recommended to migrate to :class:`LxmlLinkExtractor` if you are still
+    using :class:`SgmlLinkExtractor`.
 
 .. class:: SgmlLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), deny_extensions=None, restrict_xpaths=(), tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True, process_value=None)
 
