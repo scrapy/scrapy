@@ -10,3 +10,6 @@ if [[ "${TOXENV}" == "pypy" ]]; then
     # or it'll take precedence over the PPA installed one.
     sudo rm -rf /usr/local/pypy/bin
 fi
+
+# Workaround travis-ci/travis-ci#2065
+pip install -U wheel
