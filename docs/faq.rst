@@ -201,15 +201,15 @@ Simplest way to dump all my scraped items into a JSON/CSV/XML file?
 
 To dump into a JSON file::
 
-    scrapy crawl myspider -o items.json -t json
+    scrapy crawl myspider -o items.json
 
 To dump into a CSV file::
 
-    scrapy crawl myspider -o items.csv -t csv
+    scrapy crawl myspider -o items.csv
 
 To dump into a XML file::
 
-    scrapy crawl myspider -o items.xml -t xml
+    scrapy crawl myspider -o items.xml
 
 For more information see :ref:`topics-feed-exports`
 

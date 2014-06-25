@@ -426,7 +426,7 @@ Storing the scraped data
 The simplest way to store the scraped data is by using the :ref:`Feed exports
 <topics-feed-exports>`, with the following command::
 
-    scrapy crawl dmoz -o items.json -t json
+    scrapy crawl dmoz -o items.json
 
 That will generate a ``items.json`` file containing all scraped items,
 serialized in `JSON`_.

@@ -136,6 +136,7 @@ FEED_EXPORTERS = {}
 FEED_EXPORTERS_BASE = {
     'json': 'scrapy.contrib.exporter.JsonItemExporter',
     'jsonlines': 'scrapy.contrib.exporter.JsonLinesItemExporter',
+    'jl': 'scrapy.contrib.exporter.JsonLinesItemExporter',
     'csv': 'scrapy.contrib.exporter.CsvItemExporter',
     'xml': 'scrapy.contrib.exporter.XmlItemExporter',
     'marshal': 'scrapy.contrib.exporter.MarshalItemExporter',
