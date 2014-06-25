@@ -318,7 +318,7 @@ Let's now take a look at an example CrawlSpider with rules::
 
     import scrapy
     from scrapy.contrib.spiders import CrawlSpider, Rule
-    from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
+    from scrapy.contrib.linkextractors import LinkExtractor
 
     class MySpider(CrawlSpider):
         name = 'example.com'
@@ -328,10 +328,10 @@ Let's now take a look at an example CrawlSpider with rules::
         rules = (
             # Extract links matching 'category.php' (but not matching 'subsection.php')
             # and follow links from them (since no callback means follow=True by default).
-            Rule(SgmlLinkExtractor(allow=('category\.php', ), deny=('subsection\.php', ))),
+            Rule(LinkExtractor(allow=('category\.php', ), deny=('subsection\.php', ))),
 
             # Extract links matching 'item.php' and parse them with the spider's method parse_item
-            Rule(SgmlLinkExtractor(allow=('item\.php', )), callback='parse_item'),
+            Rule(LinkExtractor(allow=('item\.php', )), callback='parse_item'),
         )
 
         def parse_item(self, response):

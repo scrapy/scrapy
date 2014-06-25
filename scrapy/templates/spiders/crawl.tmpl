@@ -1,5 +1,5 @@
 import scrapy
-from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
+from scrapy.contrib.linkextractors import LinkExtractor
 from scrapy.contrib.spiders import CrawlSpider, Rule
 
 from $project_name.items import ${ProjectName}Item
@@ -11,7 +11,7 @@ class $classname(CrawlSpider):
     start_urls = ['http://www.$domain/']
 
     rules = (
-        Rule(SgmlLinkExtractor(allow=r'Items/'), callback='parse_item', follow=True),
+        Rule(LinkExtractor(allow=r'Items/'), callback='parse_item', follow=True),
     )
 
     def parse_item(self, response):
