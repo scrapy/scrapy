@@ -118,6 +118,7 @@ class TunnelingAgent(Agent):
         super(TunnelingAgent, self).__init__(reactor, contextFactory,
             connectTimeout, bindAddress, pool)
         self._proxyConf = proxyConf
+        self._contextFactory = contextFactory
 
     def _getEndpoint(self, scheme, host, port):
         return TunnelingTCP4ClientEndpoint(self._reactor, host, port,
