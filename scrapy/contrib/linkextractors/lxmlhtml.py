@@ -17,6 +17,9 @@ class LxmlParserLinkExtractor(object):
         self.links = []
 
     def _extract_links(self, response_text, response_url):
+        if not response_text:
+            return []
+
         html = lxml.html.fromstring(response_text)
         html.make_links_absolute(response_url)
         for e, a, l, p in html.iterlinks():
