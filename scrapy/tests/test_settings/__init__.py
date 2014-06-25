@@ -1,5 +1,6 @@
 import six
 import unittest
+import warnings
 try:
     from unittest import mock
 except ImportError:
@@ -189,7 +190,15 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.getdict('TEST_DICT3', {'key1': 5}), {'key1': 5})
         self.assertRaises(ValueError, settings.getdict, 'TEST_LIST1')
 
+    def test_deprecated_attribute(self):
+        self.settings.set('BAR', 'fuz', priority='cmdline')
+        with warnings.catch_warnings(record=True) as w:
+            self.settings.overrides['BAR'] = 'foo'
+            self.assertIn("Settings.overrides", str(w[0].message))
+            self.assertEqual(self.settings.get('BAR'), 'foo')
+            self.assertEqual(self.settings.overrides.get('BAR'), 'foo')
+            self.assertIn('BAR', self.settings.overrides)
+
 
 if __name__ == "__main__":
     unittest.main()
-

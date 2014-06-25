@@ -1,8 +1,10 @@
 import six
 import json
+import warnings
 from importlib import import_module
 
 from scrapy.utils.deprecate import create_deprecated_class
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 from . import default_settings
 
@@ -107,6 +109,22 @@ class Settings(object):
         for key in dir(module):
             if key.isupper():
                 self.set(key, getattr(module, key), priority)
+
+    @property
+    def overrides(self):
+        warnings.warn("`Settings.overrides` attribute is deprecated and won't "
+                      "be supported in Scrapy 0.26, use "
+                      "`Settings.set(name, value, priority='cmdline')` instead",
+                      category=ScrapyDeprecationWarning, stacklevel=2)
+        try:
+            o = self._overrides
+        except AttributeError:
+            class _DictProxy(dict):
+                def __setitem__(this, key, value):
+                    super(_DictProxy, this).__setitem__(key, value)
+                    self.set(key, value, priority='cmdline')
+            self._overrides = o = _DictProxy()
+        return o
 
 
 class CrawlerSettings(Settings):
