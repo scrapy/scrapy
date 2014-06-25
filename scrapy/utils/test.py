@@ -22,20 +22,13 @@ def assert_aws_environ():
 
 def get_crawler(settings_dict=None):
     """Return an unconfigured Crawler object. If settings_dict is given, it
-    will be used as the settings present in the settings module of the
-    CrawlerSettings.
+    will be used to populate the crawler settings with a project level
+    priority.
     """
     from scrapy.crawler import Crawler
-    from scrapy.settings import CrawlerSettings
+    from scrapy.settings import Settings
 
-    class SettingsModuleMock(object):
-        pass
-    settings_module = SettingsModuleMock()
-    if settings_dict:
-        for k, v in settings_dict.items():
-            setattr(settings_module, k, v)
-    settings = CrawlerSettings(settings_module)
-    return Crawler(settings)
+    return Crawler(Settings(settings_dict))
 
 def get_pythonpath():
     """Return a PYTHONPATH suitable to use in processes so that they find this

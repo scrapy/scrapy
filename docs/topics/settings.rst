@@ -35,22 +35,23 @@ Settings can be populated using different mechanisms, each of which having a
 different precedence. Here is the list of them in decreasing order of
 precedence:
 
- 1. Global overrides (most precedence)
+ 1. Command line options (most precedence)
  2. Project settings module
  3. Default settings per-command
  4. Default global settings (less precedence)
 
+The population of these settings sources is taken care of internally, but a
+manual handling is possible using API calls. See the
+:ref:`topics-api-settings` topic for reference.
+
 These mechanisms are described in more detail below.
 
-1. Global overrides
--------------------
+1. Command line options
+-----------------------
 
-Global overrides are the ones that take most precedence, and are usually
-populated by command-line options. You can also override one (or more) settings
-from command line using the ``-s`` (or ``--set``) command line option.
-
-For more information see the :attr:`~scrapy.settings.Settings.overrides`
-Settings attribute.
+Arguments provided by the command line are the ones that take most precedence,
+overriding any other options. You can explicitly override one (or more)
+settings using the ``-s`` (or ``--set``) command line option.
 
 .. highlight:: sh
 

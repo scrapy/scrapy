@@ -1,17 +1,58 @@
+import six
 import json
+from importlib import import_module
+
+from scrapy.utils.deprecate import create_deprecated_class
+
 from . import default_settings
+
+
+SETTINGS_PRIORITIES = {
+    'default': 0,
+    'command': 10,
+    'project': 20,
+    'cmdline': 40,
+}
+
+
+class SettingsAttribute(object):
+
+    """Class for storing data related to settings attributes.
+
+    This class is intended for internal usage, you should try Settings class
+    for settings configuration, not this one.
+    """
+
+    def __init__(self, value, priority):
+        self.value = value
+        self.priority = priority
+
+    def set(self, value, priority):
+        """Sets value if priority is higher or equal than current priority."""
+        if priority >= self.priority:
+            self.value = value
+            self.priority = priority
+
+    def __str__(self):
+        return "<SettingsAttribute value={self.value!r} " \
+               "priority={self.priority}>".format(self=self)
+
+    __repr__ = __str__
 
 
 class Settings(object):
 
-    def __init__(self, values=None):
-        self.values = values.copy() if values else {}
-        self.global_defaults = default_settings
+    def __init__(self, values=None, priority='project'):
+        self.attributes = {}
+        self.setmodule(default_settings, priority='default')
+        if values is not None:
+            self.setdict(values, priority)
 
     def __getitem__(self, opt_name):
-        if opt_name in self.values:
-            return self.values[opt_name]
-        return getattr(self.global_defaults, opt_name, None)
+        value = None
+        if opt_name in self.attributes:
+            value = self.attributes[opt_name].value
+        return value
 
     def get(self, name, default=None):
         return self[name] if self[name] is not None else default
@@ -42,16 +83,36 @@ class Settings(object):
         value = self.get(name)
         if value is None:
             return default or {}
-        if isinstance(value, basestring):
+        if isinstance(value, six.string_types):
             value = json.loads(value)
         if isinstance(value, dict):
             return value
         raise ValueError("Cannot convert value for setting '%s' to dict: '%s'" % (name, value))
 
+    def set(self, name, value, priority='project'):
+        if isinstance(priority, six.string_types):
+            priority = SETTINGS_PRIORITIES[priority]
+        if name not in self.attributes:
+            self.attributes[name] = SettingsAttribute(value, priority)
+        else:
+            self.attributes[name].set(value, priority)
+
+    def setdict(self, values, priority='project'):
+        for name, value in six.iteritems(values):
+            self.set(name, value, priority)
+
+    def setmodule(self, module, priority='project'):
+        if isinstance(module, six.string_types):
+            module = import_module(module)
+        for key in dir(module):
+            if key.isupper():
+                self.set(key, getattr(module, key), priority)
+
+
 class CrawlerSettings(Settings):
 
     def __init__(self, settings_module=None, **kw):
-        super(CrawlerSettings, self).__init__(**kw)
+        Settings.__init__(self, **kw)
         self.settings_module = settings_module
         self.overrides = {}
         self.defaults = {}
@@ -63,10 +124,14 @@ class CrawlerSettings(Settings):
             return getattr(self.settings_module, opt_name)
         if opt_name in self.defaults:
             return self.defaults[opt_name]
-        return super(CrawlerSettings, self).__getitem__(opt_name)
+        return Settings.__getitem__(self, opt_name)
 
     def __str__(self):
         return "<CrawlerSettings module=%r>" % self.settings_module
+
+CrawlerSettings = create_deprecated_class(
+    'CrawlerSettings', CrawlerSettings,
+    new_class_path='scrapy.settings.Settings')
 
 
 def iter_default_settings():
