@@ -45,29 +45,25 @@ SgmlLinkExtractor
 .. class:: SgmlLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), deny_extensions=None, restrict_xpaths=(), tags=('a', 'area'), attrs=('href'), canonicalize=True, unique=True, process_value=None)
 
     The SgmlLinkExtractor extends the base :class:`BaseSgmlLinkExtractor` by
-    providing additional filters that you can specify to extract links,
-    including regular expressions patterns that the links must match to be
-    extracted. All those filters are configured through these constructor
+    providing additional filters which exclude links from extraction.
+    All those filters are configured through these constructor
     parameters:
 
-    :param allow: a single regular expression (or list of regular expressions)
-        that the (absolute) urls must match in order to be extracted. If not
-        given (or empty), it will match all links.
-    :type allow: a regular expression (or list of)
+    :param allow: If not empty, absolute urls must match at least one of
+        the regular expressions to be extracted.
+    :type allow: a regular expression (or a list of regular expressions)
 
-    :param deny: a single regular expression (or list of regular expressions)
-        that the (absolute) urls must match in order to be excluded (ie. not
-        extracted). It has precedence over the ``allow`` parameter. If not
-        given (or empty) it won't exclude any links.
-    :type deny: a regular expression (or list of)
+    :param deny: If not empty, absolute urls must not match any of the
+        regular expressions to be extracted.
+    :type deny: a regular expression (or a list of regular expressions)
 
-    :param allow_domains: a single value or a list of string containing
-        domains which will be considered for extracting the links
-    :type allow_domains: str or list
+    :param allow_domains: If not empty, urls must be from at least one
+        of the domains to be extracted.
+    :type allow_domains: string (or a list of string)
 
-    :param deny_domains: a single value or a list of strings containing
-        domains which won't be considered for extracting the links
-    :type deny_domains: str or list
+    :param deny_domains: If not empty, urls must not be from any of the
+        domains to be extracted.
+    :type deny_domains: string (or a list of strings)
 
     :param deny_extensions: a single value or list of strings containing
         extensions that should be ignored when extracting links. 
