@@ -8,7 +8,7 @@ from urllib import urlencode
 from scrapy.spider import Spider
 from scrapy.http import Request
 from scrapy.item import Item
-from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
+from scrapy.contrib.linkextractors import LinkExtractor
 
 
 class MetaSpider(Spider):
@@ -26,7 +26,7 @@ class MetaSpider(Spider):
 class FollowAllSpider(MetaSpider):
 
     name = 'follow'
-    link_extractor = SgmlLinkExtractor()
+    link_extractor = LinkExtractor()
 
     def __init__(self, total=10, show=20, order="rand", maxlatency=0.0, *args, **kwargs):
         super(FollowAllSpider, self).__init__(*args, **kwargs)

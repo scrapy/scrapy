@@ -11,7 +11,7 @@ from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlRespon
 from scrapy.contrib.spiders.init import InitSpider
 from scrapy.contrib.spiders import CrawlSpider, Rule, XMLFeedSpider, \
     CSVFeedSpider, SitemapSpider
-from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
+from scrapy.contrib.linkextractors import LinkExtractor
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 
@@ -124,7 +124,7 @@ class CrawlSpiderTest(SpiderTest):
             name="test"
             allowed_domains=['example.org']
             rules = (
-                Rule(SgmlLinkExtractor(), process_links="dummy_process_links"),
+                Rule(LinkExtractor(), process_links="dummy_process_links"),
             )
 
             def dummy_process_links(self, links):
@@ -150,7 +150,7 @@ class CrawlSpiderTest(SpiderTest):
             name="test"
             allowed_domains=['example.org']
             rules = (
-                Rule(SgmlLinkExtractor(), process_links="filter_process_links"),
+                Rule(LinkExtractor(), process_links="filter_process_links"),
             )
             _test_regex = re.compile('nofollow')
             def filter_process_links(self, links):
@@ -174,7 +174,7 @@ class CrawlSpiderTest(SpiderTest):
             name="test"
             allowed_domains=['example.org']
             rules = (
-                Rule(SgmlLinkExtractor(), process_links="dummy_process_links"),
+                Rule(LinkExtractor(), process_links="dummy_process_links"),
             )
 
             def dummy_process_links(self, links):

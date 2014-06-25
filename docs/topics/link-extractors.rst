@@ -36,6 +36,12 @@ Built-in link extractors reference
 All available link extractors classes bundled with Scrapy are provided in the
 :mod:`scrapy.contrib.linkextractors` module.
 
+If you don't know what link extractor to choose, just use the default which is
+the same than LxmlLinkExtractor (see below)::
+
+    from scrapy.contrib.linkextractors import LinkExtractor
+
+
 .. module:: scrapy.contrib.linkextractors.lxmlhtml
    :synopsis: lxml's HTMLParser-based link extractors
 

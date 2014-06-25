@@ -69,7 +69,7 @@ those links. For example, the following one::
 
 So, based on that regular expression we can create the first crawling rule::
 
-    Rule(SgmlLinkExtractor(allow='directory.google.com/[A-Z][a-zA-Z_/]+$', ),
+    Rule(LinkExtractor(allow='directory.google.com/[A-Z][a-zA-Z_/]+$', ),
         'parse_category',
         follow=True,
     ),
@@ -81,7 +81,7 @@ process and extract data from those pages.
 
 This is how the spider would look so far::
 
-   from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
+   from scrapy.contrib.linkextractors import LinkExtractor
    from scrapy.contrib.spiders import CrawlSpider, Rule
 
    class GoogleDirectorySpider(CrawlSpider):
@@ -90,7 +90,7 @@ This is how the spider would look so far::
        start_urls = ['http://directory.google.com/']
 
        rules = (
-           Rule(SgmlLinkExtractor(allow='directory\.google\.com/[A-Z][a-zA-Z_/]+$'),
+           Rule(LinkExtractor(allow='directory\.google\.com/[A-Z][a-zA-Z_/]+$'),
                'parse_category', follow=True,
            ),
        )
