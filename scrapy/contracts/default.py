@@ -84,6 +84,6 @@ class ScrapesContract(Contract):
     def post_process(self, output):
         for x in output:
             if isinstance(x, (BaseItem, dict)):
-                for arg in self.args:
-                    if not arg in x:
-                        raise ContractFail("'%s' field is missing" % arg)
+                missing = [arg for arg in self.args if arg not in x]
+                if missing:
+                    raise ContractFail("'%s' field is missing" % " ".join(missing))
