@@ -24,10 +24,19 @@ following example::
         with this docstring.
 
         @url http://www.amazon.com/s?field-keywords=selfish+gene
-        @returns items 1 16
+        @url http://www.amazon.com/s?field-keywords=hitchhikers+guide
+        @returns items 16 16
         @returns requests 0 0
         @scrapes Title Author Year Price
+
+        @url http://www.amazon.com/s?field-keywords=scrapy+python
+        @returns items 1 6
         """
+
+Here, we have two batches of contracts (separated by a blank line). In the
+first batch, each of the two urls must return 16 items with Title, Author,
+Year and Price fields. In the second, the url must return between 1 and 6
+items.
 
 This callback is tested using three built-in contracts:
 
@@ -35,9 +44,10 @@ This callback is tested using three built-in contracts:
 
 .. class:: UrlContract
 
-    This contract (``@url``) sets the sample url used when checking other
-    contract conditions for this spider. This contract is mandatory. All
-    callbacks lacking this contract are ignored when running the checks::
+    This contract (``@url``) generates a request with callback the current
+    method, on top of each other contracts will do checks. At least one of the
+    contracts in each batch must create a request, otherwise the whole batch
+    is ignored::
 
     @url url
 
@@ -74,20 +84,24 @@ override three methods:
 
 .. module:: scrapy.contracts
 
-.. class:: Contract(method, \*args)
+.. class:: Contract(method, input_string)
 
     :param method: callback function to which the contract is associated
     :type method: function
 
-    :param args: list of arguments passed into the docstring (whitespace
-        separated)
-    :type args: list
+    :param input_string: string passed in after contract name
+    :type input_string: string
 
-    .. method:: Contract.adjust_request_args(args)
 
-        This receives a ``dict`` as an argument containing default arguments
-        for :class:`~scrapy.http.Request` object. Must return the same or a
-        modified version of it.
+    .. method:: Contract.create_request()
+
+        Creates a :class:`~scrapy.http.Request` object. This can then be
+        subjected to tests using processors below.
+
+    .. method:: Contract.adjust_request(request)
+
+        This receives a :class:`~scrapy.http.Request` object. Must return the
+        same or a modified version of it.
 
     .. method:: Contract.pre_process(response)
 

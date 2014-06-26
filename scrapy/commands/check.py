@@ -104,9 +104,7 @@ class Command(ScrapyCommand):
         for key, value in vars(type(spider)).items():
             if callable(value) and value.__doc__:
                 bound_method = value.__get__(spider, type(spider))
-                request = conman.from_method(bound_method, result)
-
-                if request:
-                    requests.append(request)
+                reqs = conman.from_method(bound_method, result)
+                requests.extend(reqs)
 
         return requests

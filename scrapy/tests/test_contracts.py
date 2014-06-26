@@ -88,49 +88,51 @@ class ContractsManagerTest(unittest.TestCase):
         spider = TestSpider()
 
         # extract contracts correctly
-        contracts = self.conman.extract_contracts(spider.returns_request)
+        contract_batches = list(self.conman.extract_contracts(spider.returns_request))
+        self.assertEqual(len(contract_batches), 1)
+
+        contracts = contract_batches[0]
         self.assertEqual(len(contracts), 2)
         self.assertEqual(frozenset(type(x) for x in contracts),
-            frozenset([UrlContract, ReturnsContract]))
+                         frozenset([UrlContract, ReturnsContract]))
 
         # returns request for valid method
-        request = self.conman.from_method(spider.returns_request, self.results)
-        self.assertNotEqual(request, None)
+        for req in self.conman.from_method(spider.returns_request, self.results):
+            self.assertNotEqual(req, None)
 
         # no request for missing url
-        request = self.conman.from_method(spider.parse_no_url, self.results)
-        self.assertEqual(request, None)
+        for req in self.conman.from_method(spider.parse_no_url, self.results):
+            self.assertEqual(req, None)
 
     def test_returns(self):
         spider = TestSpider()
-        response = ResponseMock()
+        resp = ResponseMock()
 
         # returns_item
-        request = self.conman.from_method(spider.returns_item, self.results)
-        request.callback(response)
-        self.should_succeed()
+        for req in self.conman.from_method(spider.returns_item, self.results):
+            req.callback(resp)
+            self.should_succeed()
 
         # returns_request
-        request = self.conman.from_method(spider.returns_request, self.results)
-        request.callback(response)
-        self.should_succeed()
+        for req in self.conman.from_method(spider.returns_request, self.results):
+            req.callback(resp)
+            self.should_succeed()
 
         # returns_fail
-        request = self.conman.from_method(spider.returns_fail, self.results)
-        request.callback(response)
-        self.should_fail()
+        for req in self.conman.from_method(spider.returns_fail, self.results):
+            req.callback(resp)
+            self.should_fail()
 
     def test_scrapes(self):
         spider = TestSpider()
-        response = ResponseMock()
+        resp = ResponseMock()
 
         # scrapes_item_ok
-        request = self.conman.from_method(spider.scrapes_item_ok, self.results)
-        request.callback(response)
-        self.should_succeed()
+        for req in self.conman.from_method(spider.scrapes_item_ok, self.results):
+            req.callback(resp)
+            self.should_succeed()
 
         # scrapes_item_fail
-        request = self.conman.from_method(spider.scrapes_item_fail,
-                self.results)
-        request.callback(response)
-        self.should_fail()
+        for req in self.conman.from_method(spider.scrapes_item_fail, self.results):
+            req.callback(resp)
+            self.should_fail()
