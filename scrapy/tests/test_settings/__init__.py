@@ -6,7 +6,7 @@ try:
 except ImportError:
     import mock
 
-from scrapy.settings import Settings, SettingsAttribute
+from scrapy.settings import Settings, SettingsAttribute, CrawlerSettings
 from . import default_settings
 
 
@@ -190,7 +190,7 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.getdict('TEST_DICT3', {'key1': 5}), {'key1': 5})
         self.assertRaises(ValueError, settings.getdict, 'TEST_LIST1')
 
-    def test_deprecated_attribute(self):
+    def test_deprecated_attribute_overrides(self):
         self.settings.set('BAR', 'fuz', priority='cmdline')
         with warnings.catch_warnings(record=True) as w:
             self.settings.overrides['BAR'] = 'foo'
@@ -198,6 +198,43 @@ class SettingsTest(unittest.TestCase):
             self.assertEqual(self.settings.get('BAR'), 'foo')
             self.assertEqual(self.settings.overrides.get('BAR'), 'foo')
             self.assertIn('BAR', self.settings.overrides)
+
+    def test_deprecated_attribute_defaults(self):
+        self.settings.set('BAR', 'fuz', priority='default')
+        with warnings.catch_warnings(record=True) as w:
+            self.settings.defaults['BAR'] = 'foo'
+            self.assertIn("Settings.defaults", str(w[0].message))
+            self.assertEqual(self.settings.get('BAR'), 'foo')
+            self.assertEqual(self.settings.defaults.get('BAR'), 'foo')
+            self.assertIn('BAR', self.settings.defaults)
+
+
+class CrawlerSettingsTest(unittest.TestCase):
+
+    def test_deprecated_crawlersettings(self):
+        def _get_settings(settings_dict=None):
+            settings_module = type('SettingsModuleMock', (object,), settings_dict or {})
+            return CrawlerSettings(settings_module)
+
+        with warnings.catch_warnings(record=True) as w:
+            settings = _get_settings()
+            self.assertIn("CrawlerSettings is deprecated", str(w[0].message))
+
+            # test_global_defaults
+            self.assertEqual(settings.getint('DOWNLOAD_TIMEOUT'), 180)
+
+            # test_defaults
+            settings.defaults['DOWNLOAD_TIMEOUT'] = '99'
+            self.assertEqual(settings.getint('DOWNLOAD_TIMEOUT'), 99)
+
+            # test_settings_module
+            settings = _get_settings({'DOWNLOAD_TIMEOUT': '3'})
+            self.assertEqual(settings.getint('DOWNLOAD_TIMEOUT'), 3)
+
+            # test_overrides
+            settings = _get_settings({'DOWNLOAD_TIMEOUT': '3'})
+            settings.overrides['DOWNLOAD_TIMEOUT'] = '15'
+            self.assertEqual(settings.getint('DOWNLOAD_TIMEOUT'), 15)
 
 
 if __name__ == "__main__":

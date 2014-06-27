@@ -126,14 +126,28 @@ class Settings(object):
             self._overrides = o = _DictProxy()
         return o
 
+    @property
+    def defaults(self):
+        warnings.warn("`Settings.defaults` attribute is deprecated and won't "
+                      "be supported in Scrapy 0.26, use "
+                      "`Settings.set(name, value, priority='default')` instead",
+                      category=ScrapyDeprecationWarning, stacklevel=2)
+        try:
+            o = self._defaults
+        except AttributeError:
+            class _DictProxy(dict):
+                def __setitem__(this, key, value):
+                    super(_DictProxy, this).__setitem__(key, value)
+                    self.set(key, value, priority='default')
+            self._defaults = o = _DictProxy()
+        return o
+
 
 class CrawlerSettings(Settings):
 
     def __init__(self, settings_module=None, **kw):
         Settings.__init__(self, **kw)
         self.settings_module = settings_module
-        self.overrides = {}
-        self.defaults = {}
 
     def __getitem__(self, opt_name):
         if opt_name in self.overrides:
