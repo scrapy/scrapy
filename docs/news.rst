@@ -7,7 +7,7 @@ Release notes
 -------------------
 
 - Fix deprecated CrawlerSettings and increase backwards compatibility with
- .defaults attribute (:commit:`8e3f20a`)
+  .defaults attribute (:commit:`8e3f20a`)
 
 
 0.24.0 (2014-06-26)
