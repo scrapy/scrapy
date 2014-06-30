@@ -177,6 +177,9 @@ class SelectorList(list):
 
     def extract(self):
         return [x.extract() for x in self]
+    
+    def join(self, delimiter=''):
+        return delimiter.join([x.extract() for x in self])
 
     @deprecated(use_instead='.extract()')
     def extract_unquoted(self):
