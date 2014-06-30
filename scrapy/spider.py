@@ -3,11 +3,14 @@ Base class for Scrapy spiders
 
 See documentation in docs/topics/spiders.rst
 """
+import warnings
+
 from scrapy import log
 from scrapy.http import Request
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 from scrapy.utils.deprecate import create_deprecated_class
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 
 class Spider(object_ref):
@@ -32,18 +35,24 @@ class Spider(object_ref):
         """
         log.msg(message, spider=self, level=level, **kw)
 
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        spider = cls(*args, **kwargs)
+        spider._set_crawler(crawler)
+        return spider
+
     def set_crawler(self, crawler):
-        assert not hasattr(self, '_crawler'), "Spider already bounded to %s" % crawler
-        self._crawler = crawler
+        warnings.warn("set_crawler is deprecated, instantiate and bound the "
+                      "spider to this crawler with from_crawler method "
+                      "instead.",
+                      category=ScrapyDeprecationWarning, stacklevel=2)
+        assert not hasattr(self, 'crawler'), "Spider already bounded to a " \
+                                             "crawler"
+        self._set_crawler(crawler)
 
-    @property
-    def crawler(self):
-        assert hasattr(self, '_crawler'), "Spider not bounded to any crawler"
-        return self._crawler
-
-    @property
-    def settings(self):
-        return self.crawler.settings
+    def _set_crawler(self, crawler):
+        self.crawler = crawler
+        self.settings = crawler.settings
 
     def start_requests(self):
         for url in self.start_urls:
