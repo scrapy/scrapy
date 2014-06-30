@@ -220,6 +220,30 @@ class CrawlSpiderTest(SpiderTest):
                            'http://example.org/about.html',
                            'http://example.org/nofollow.html'])
 
+    def test_follow_links_attribute_population(self):
+        crawler = get_crawler()
+        spider = self.spider_class.from_crawler(crawler, 'example.com')
+        self.assertTrue(hasattr(spider, '_follow_links'))
+        self.assertTrue(spider._follow_links)
+
+        crawler.settings.set('CRAWLSPIDER_FOLLOW_LINKS', False)
+        spider = self.spider_class.from_crawler(crawler, 'example.com')
+        self.assertTrue(hasattr(spider, '_follow_links'))
+        self.assertFalse(spider._follow_links)
+
+    def test_follow_links_attribute_deprecated_population(self):
+        spider = self.spider_class('example.com')
+        self.assertFalse(hasattr(spider, '_follow_links'))
+
+        spider.set_crawler(get_crawler())
+        self.assertTrue(hasattr(spider, '_follow_links'))
+        self.assertTrue(spider._follow_links)
+
+        spider = self.spider_class('example.com')
+        spider.set_crawler(get_crawler({'CRAWLSPIDER_FOLLOW_LINKS': False}))
+        self.assertTrue(hasattr(spider, '_follow_links'))
+        self.assertFalse(spider._follow_links)
+
 
 class SitemapSpiderTest(SpiderTest):
 
