@@ -139,6 +139,16 @@ method, as follows::
     >>> response.xpath('//title/text()').extract()
     [u'Example website']
 
+If you want to extract only first matched element, you can call the selector ``.extract_first()``
+
+    >>> sel.xpath('//div[@id="images"]/a/text()').extract_first()
+    u'Name: My image 1 '
+
+It returns ``None`` if no element was found:
+
+    >>> sel.xpath('//div/[id="not-exists"]/text()').extract_first() is None
+    True
+
 Notice that CSS selectors can select text or attribute nodes using CSS3
 pseudo-elements::
 
