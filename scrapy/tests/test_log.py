@@ -22,12 +22,12 @@ class ScrapyFileLogObserverTest(unittest.TestCase):
 
     def setUp(self):
         self.f = StringIO()
-        self.sflo = log.ScrapyFileLogObserver(self.f, self.level, self.encoding)
-        self.sflo.start()
+        self.log_observer = log.ScrapyFileLogObserver(self.f, self.level, self.encoding)
+        self.log_observer.start()
 
     def tearDown(self):
         self.flushLoggedErrors()
-        self.sflo.stop()
+        self.log_observer.stop()
 
     def logged(self):
         return self.f.getvalue().strip()[25:]

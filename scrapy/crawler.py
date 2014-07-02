@@ -135,12 +135,12 @@ class CrawlerProcess(object):
 
         name, crawler = self.crawlers.popitem()
         self._active_crawler = crawler
-        sflo = log.start_from_crawler(crawler)
+        log_observer = log.start_from_crawler(crawler)
         crawler.configure()
         crawler.install()
         crawler.signals.connect(crawler.uninstall, signals.engine_stopped)
-        if sflo:
-            crawler.signals.connect(sflo.stop, signals.engine_stopped)
+        if log_observer:
+            crawler.signals.connect(log_observer.stop, signals.engine_stopped)
         crawler.signals.connect(self._check_done, signals.engine_stopped)
         crawler.start()
         return name, crawler
