@@ -1,8 +1,9 @@
 """
 SGMLParser-based Link extractors
 """
-import re
-from urlparse import urlparse, urljoin
+from urlparse import urljoin
+import warnings
+
 from w3lib.url import safe_url_string
 from scrapy.selector import Selector
 from scrapy.link import Link
@@ -10,12 +11,19 @@ from scrapy.linkextractor import FilteringLinkExtractor
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import FixedSGMLParser, unique as unique_list, str_to_unicode
 from scrapy.utils.response import get_base_url
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 
 class BaseSgmlLinkExtractor(FixedSGMLParser):
 
     def __init__(self, tag="a", attr="href", unique=False, process_value=None):
-        FixedSGMLParser.__init__(self)
+        warnings.warn(
+            "BaseSgmlLinkExtractor is deprecated and will be removed in future releases!!! "
+            "Please use scrapy.contrib.linkextractors.LinkExtractor",
+            ScrapyDeprecationWarning
+        )
+        with warnings.catch_warnings(record=True):
+            FixedSGMLParser.__init__(self)
         self.scan_tag = tag if callable(tag) else lambda t: t == tag
         self.scan_attr = attr if callable(attr) else lambda a: a == attr
         self.process_value = (lambda v: v) if process_value is None else process_value
@@ -91,11 +99,21 @@ class SgmlLinkExtractor(FilteringLinkExtractor):
     def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(),
                  tags=('a', 'area'), attrs=('href',), canonicalize=True, unique=True, process_value=None,
                  deny_extensions=None):
+
+        warnings.warn(
+            "SgmlLinkExtractor is deprecated and will be removed in future releases. "
+            "Please use scrapy.contrib.linkextractors.LinkExtractor",
+            ScrapyDeprecationWarning
+        )
+
         tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
         tag_func = lambda x: x in tags
         attr_func = lambda x: x in attrs
-        lx = BaseSgmlLinkExtractor(tag=tag_func, attr=attr_func,
-            unique=unique, process_value=process_value)
+
+        with warnings.catch_warnings(record=True):
+            lx = BaseSgmlLinkExtractor(tag=tag_func, attr=attr_func,
+                unique=unique, process_value=process_value)
+
         super(SgmlLinkExtractor, self).__init__(lx, allow, deny,
             allow_domains, deny_domains, restrict_xpaths, canonicalize,
             deny_extensions)
