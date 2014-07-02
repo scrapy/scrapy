@@ -114,12 +114,12 @@ def _get_log_level(level_name_or_id):
 def start(logfile=None, loglevel='INFO', logstdout=True, logencoding='utf-8', crawler=None):
     loglevel = _get_log_level(loglevel)
     file = open(logfile, 'a') if logfile else sys.stderr
-    sflo = ScrapyFileLogObserver(file, loglevel, logencoding, crawler)
+    log_observer = ScrapyFileLogObserver(file, loglevel, logencoding, crawler)
     _oldshowwarning = warnings.showwarning
-    log.startLoggingWithObserver(sflo.emit, setStdout=logstdout)
+    log.startLoggingWithObserver(log_observer.emit, setStdout=logstdout)
     # restore warnings, wrongly silenced by Twisted
     warnings.showwarning = _oldshowwarning
-    return sflo
+    return log_observer
 
 def msg(message=None, _level=INFO, **kw):
     kw['logLevel'] = kw.pop('level', _level)
@@ -140,9 +140,9 @@ def start_from_settings(settings, crawler=None):
             settings['LOG_ENCODING'], crawler)
 
 def scrapy_info(settings):
-    sflo = start_from_settings(settings)
-    if sflo:
-        msg("Scrapy %s started (bot: %s)" % (scrapy.__version__, \
+    log_observer = start_from_settings(settings)
+    if log_observer:
+        msg("Scrapy %s started (bot: %s)" % (scrapy.__version__,
             settings['BOT_NAME']))
 
         msg("Optional features available: %s" % ", ".join(scrapy.optional_features),
@@ -151,7 +151,7 @@ def scrapy_info(settings):
         d = dict(overridden_settings(settings))
         msg(format="Overridden settings: %(settings)r", settings=d, level=INFO)
 
-        sflo.stop()
+        log_observer.stop()
 
 def start_from_crawler(crawler):
     return start_from_settings(crawler.settings, crawler)
