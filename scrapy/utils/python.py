@@ -10,28 +10,7 @@ import re
 import inspect
 import weakref
 import errno
-import warnings
 from functools import partial, wraps
-
-import six
-
-from scrapy.exceptions import ScrapyDeprecationWarning
-
-
-if six.PY2:
-    from sgmllib import SGMLParser
-
-    class FixedSGMLParser(SGMLParser):
-        """
-        Warning: this class is deprecated and will be removed in future
-        releases. Please use standard `sgmllib.SGMLParser`.
-        """
-        def __init__(self, *args, **kwargs):
-            warnings.warn(
-                "FixedSGMLParser is deprecated and will be removed in future releases.",
-                ScrapyDeprecationWarning
-            )
-            SGMLParser.__init__(self, *args, **kwargs)
 
 
 def flatten(x):
