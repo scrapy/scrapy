@@ -22,28 +22,16 @@ if six.PY2:
     from sgmllib import SGMLParser
 
     class FixedSGMLParser(SGMLParser):
-        """The SGMLParser that comes with Python has a bug in the convert_charref()
-        method. This is the same class with the bug fixed.
-
-        Warning: this class is deprecated and will be removed in future releases.
         """
-
+        Warning: this class is deprecated and will be removed in future
+        releases. Please use standard `sgmllib.SGMLParser`.
+        """
         def __init__(self, *args, **kwargs):
             warnings.warn(
                 "FixedSGMLParser is deprecated and will be removed in future releases.",
                 ScrapyDeprecationWarning
             )
             SGMLParser.__init__(self, *args, **kwargs)
-
-        def convert_charref(self, name):
-            """This method fixes a bug in Python's SGMLParser."""
-            try:
-                n = int(name)
-            except ValueError:
-                return
-            if not 0 <= n <= 127 : # ASCII ends at 127, not 255
-                return
-            return self.convert_codepoint(n)
 
 
 def flatten(x):

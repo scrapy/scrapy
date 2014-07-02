@@ -3,18 +3,19 @@ SGMLParser-based Link extractors
 """
 from urlparse import urljoin
 import warnings
+from sgmllib import SGMLParser
 
 from w3lib.url import safe_url_string
 from scrapy.selector import Selector
 from scrapy.link import Link
 from scrapy.linkextractor import FilteringLinkExtractor
 from scrapy.utils.misc import arg_to_iter
-from scrapy.utils.python import FixedSGMLParser, unique as unique_list, str_to_unicode
+from scrapy.utils.python import unique as unique_list, str_to_unicode
 from scrapy.utils.response import get_base_url
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 
-class BaseSgmlLinkExtractor(FixedSGMLParser):
+class BaseSgmlLinkExtractor(SGMLParser):
 
     def __init__(self, tag="a", attr="href", unique=False, process_value=None):
         warnings.warn(
@@ -22,8 +23,7 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
             "Please use scrapy.contrib.linkextractors.LinkExtractor",
             ScrapyDeprecationWarning
         )
-        with warnings.catch_warnings(record=True):
-            FixedSGMLParser.__init__(self)
+        SGMLParser.__init__(self)
         self.scan_tag = tag if callable(tag) else lambda t: t == tag
         self.scan_attr = attr if callable(attr) else lambda a: a == attr
         self.process_value = (lambda v: v) if process_value is None else process_value
@@ -64,7 +64,7 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
         return links
 
     def reset(self):
-        FixedSGMLParser.reset(self)
+        SGMLParser.reset(self)
         self.links = []
         self.base_url = None
 
