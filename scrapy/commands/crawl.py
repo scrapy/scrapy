@@ -35,7 +35,7 @@ class Command(ScrapyCommand):
             if opts.output:
                 raise UsageError("Please use only one of --output and --overwrite-output")
             opts.output = opts.overwrite_output
-            self.settings.overrides['FEED_URI_OVERWRITE'] = True
+            self.settings.overrides['FEED_OVERWRITE'] = True
         if opts.output:
             if opts.output == '-':
                 self.settings.overrides['FEED_URI'] = 'stdout:'

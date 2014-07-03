@@ -24,7 +24,7 @@ from scrapy.utils.python import get_func_args
 class IFeedStorage(Interface):
     """Interface that all Feed Storages must implement"""
 
-    def __init__(uri):
+    def __init__(uri, settings):
         """Initialize the storage with the parameters given in the URI"""
 
     def open(spider):
@@ -53,7 +53,7 @@ class StdoutFeedStorage(object):
 
     implements(IFeedStorage)
 
-    def __init__(self, uri, _stdout=sys.stdout):
+    def __init__(self, uri, settings, _stdout=sys.stdout):
         self._stdout = _stdout
 
     def open(self, spider):
@@ -66,10 +66,9 @@ class FileFeedStorage(object):
 
     implements(IFeedStorage)
 
-    def __init__(self, uri):
-        from scrapy.conf import settings
+    def __init__(self, uri, settings):
         self.path = file_uri_to_path(uri)
-        self.overwrite = settings['FEED_URI_OVERWRITE']
+        self.overwrite = settings['FEED_OVERWRITE']
 
     def open(self, spider):
         dirname = os.path.dirname(self.path)
@@ -82,8 +81,7 @@ class FileFeedStorage(object):
 
 class S3FeedStorage(BlockingFeedStorage):
 
-    def __init__(self, uri):
-        from scrapy.conf import settings
+    def __init__(self, uri, settings):
         try:
             import boto
         except ImportError:
@@ -107,7 +105,7 @@ class S3FeedStorage(BlockingFeedStorage):
 class FTPFeedStorage(BlockingFeedStorage):
 
     def __init__(self, uri):
-        u = urlparse(uri)
+        u = urlparse(uri, settings)
         self.host = u.hostname
         self.port = int(u.port or '21')
         self.username = u.username
@@ -224,7 +222,7 @@ class FeedExporter(object):
         return self.exporters[self.format](*a, **kw)
 
     def _get_storage(self, uri):
-        return self.storages[urlparse(uri).scheme](uri)
+        return self.storages[urlparse(uri).scheme](uri, self.settings)
 
     def _get_uri_params(self, spider):
         params = {}

@@ -12,38 +12,58 @@ from scrapy.utils.test import assert_aws_environ
 
 class FileFeedStorageTest(unittest.TestCase):
 
+    settings = {"FEED_OVERWRITE": False}
+
     def test_store_file_uri(self):
         path = os.path.abspath(self.mktemp())
         uri = path_to_file_uri(path)
-        return self._assert_stores(FileFeedStorage(uri), path)
+        return self._assert_stores(FileFeedStorage(uri, self.settings), path)
 
     def test_store_file_uri_makedirs(self):
         path = os.path.abspath(self.mktemp())
         path = os.path.join(path, 'more', 'paths', 'file.txt')
         uri = path_to_file_uri(path)
-        return self._assert_stores(FileFeedStorage(uri), path)
+        return self._assert_stores(FileFeedStorage(uri, self.settings), path)
 
     def test_store_direct_path(self):
         path = os.path.abspath(self.mktemp())
-        return self._assert_stores(FileFeedStorage(path), path)
+        return self._assert_stores(FileFeedStorage(path, self.settings), path)
 
     def test_store_direct_path_relative(self):
         path = self.mktemp()
-        return self._assert_stores(FileFeedStorage(path), path)
+        return self._assert_stores(FileFeedStorage(path, self.settings), path)
 
     def test_interface(self):
         path = self.mktemp()
-        st = FileFeedStorage(path)
+        st = FileFeedStorage(path, self.settings)
         verifyObject(IFeedStorage, st)
 
-    @defer.inlineCallbacks
-    def _assert_stores(self, storage, path):
+    def _store(self, path, settings, content="content"):
+        storage = FileFeedStorage(path, settings)
         spider = Spider("default")
         file = storage.open(spider)
         file.write("content")
+        storage.store(file)
+
+    def test_append(self):
+        path = os.path.abspath(self.mktemp())
+        self._store(path, self.settings)
+        return self._assert_stores(FileFeedStorage(path, self.settings), path, verify="contentcontent")
+
+    def test_overwrite(self):
+        path = os.path.abspath(self.mktemp())
+        settings = {"FEED_OVERWRITE": True}
+        self._store(path, settings)
+        return self._assert_stores(FileFeedStorage(path, settings), path)
+
+    @defer.inlineCallbacks
+    def _assert_stores(self, storage, path, content="content", verify="content"):
+        spider = Spider("default")
+        file = storage.open(spider)
+        file.write(content)
         yield storage.store(file)
         self.failUnless(os.path.exists(path))
-        self.failUnlessEqual(open(path).read(), "content")
+        self.failUnlessEqual(open(path).read(), verify)
 
 
 class FTPFeedStorageTest(unittest.TestCase):
@@ -53,7 +73,7 @@ class FTPFeedStorageTest(unittest.TestCase):
         path = os.environ.get('FEEDTEST_FTP_PATH')
         if not (uri and path):
             raise unittest.SkipTest("No FTP server available for testing")
-        st = FTPFeedStorage(uri)
+        st = FTPFeedStorage(uri, settings={})
         verifyObject(IFeedStorage, st)
         return self._assert_stores(st, path)
 
@@ -79,7 +99,7 @@ class S3FeedStorageTest(unittest.TestCase):
         if not uri:
             raise unittest.SkipTest("No S3 URI available for testing")
         from boto import connect_s3
-        storage = S3FeedStorage(uri)
+        storage = S3FeedStorage(uri, settings={})
         verifyObject(IFeedStorage, storage)
         file = storage.open(Spider("default"))
         file.write("content")
@@ -93,7 +113,7 @@ class StdoutFeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store(self):
         out = StringIO()
-        storage = StdoutFeedStorage('stdout:', _stdout=out)
+        storage = StdoutFeedStorage('stdout:', settings={} ,_stdout=out)
         file = storage.open(Spider("default"))
         file.write("content")
         yield storage.store(file)
