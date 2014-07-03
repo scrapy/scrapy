@@ -60,7 +60,8 @@ class ExecutionEngine(object):
         self.running = False
         self.paused = False
         self.scheduler_cls = load_object(self.settings['SCHEDULER'])
-        self.downloader = Downloader(crawler)
+        downloader_cls = load_object(self.settings['DOWNLOADER'])
+        self.downloader = downloader_cls(crawler)
         self.scraper = Scraper(crawler)
         self._concurrent_spiders = self.settings.getint('CONCURRENT_SPIDERS', 1)
         if self._concurrent_spiders != 1:

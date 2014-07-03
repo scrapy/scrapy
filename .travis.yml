@@ -13,12 +13,23 @@ matrix:
   - env: TOXENV=py33
   - env: TOXENV=docs
 install:
-- ./.travis-workarounds.sh
-- pip install tox
+- "./.travis-workarounds.sh"
+- pip install -U tox
 script: tox
 notifications:
   irc:
     use_notice: true
     skip_join: true
     channels:
-    - "irc.freenode.org#scrapy"
+    - irc.freenode.org#scrapy
+deploy:
+  provider: pypi
+  distributions: "sdist bdist_wheel"
+  user: scrapy
+  password:
+    secure: JaAKcy1AXWXDK3LXdjOtKyaVPCSFoCGCnW15g4f65E/8Fsi9ZzDfmBa4Equs3IQb/vs/if2SVrzJSr7arN7r9Z38Iv1mUXHkFAyA3Ym8mThfABBzzcUWEQhIHrCX0Tdlx9wQkkhs+PZhorlmRS4gg5s6DzPaeA2g8SCgmlRmFfA=
+  on:
+    tags: true
+    all_branches: true
+    repo: scrapy/scrapy
+    condition: $TOXENV = py27

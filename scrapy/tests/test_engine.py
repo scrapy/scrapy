@@ -23,7 +23,7 @@ from scrapy.xlib.pydispatch import dispatcher
 from scrapy.tests import tests_datadir
 from scrapy.spider import Spider
 from scrapy.item import Item, Field
-from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
+from scrapy.contrib.linkextractors import LinkExtractor
 from scrapy.http import Request
 from scrapy.utils.signal import disconnect_all
 
@@ -41,7 +41,7 @@ class TestSpider(Spider):
     price_re = re.compile(">Price: \$(.*?)<", re.M)
 
     def parse(self, response):
-        xlink = SgmlLinkExtractor()
+        xlink = LinkExtractor()
         itemre = re.compile(self.itemurl_re)
         for link in xlink.extract_links(response):
             if itemre.search(link.url):

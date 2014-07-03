@@ -108,10 +108,10 @@ class RequestTest(unittest.TestCase):
     def test_ajax_url(self):
         # ascii url
         r = self.request_class(url="http://www.example.com/ajax.html#!key=value")
-        self.assertEqual(r.url, "http://www.example.com/ajax.html?_escaped_fragment_=key=value")
+        self.assertEqual(r.url, "http://www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue")
         # unicode url
         r = self.request_class(url=u"http://www.example.com/ajax.html#!key=value")
-        self.assertEqual(r.url, "http://www.example.com/ajax.html?_escaped_fragment_=key=value")
+        self.assertEqual(r.url, "http://www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue")
 
     def test_copy(self):
         """Test Request copy"""

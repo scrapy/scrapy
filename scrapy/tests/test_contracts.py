@@ -1,4 +1,4 @@
-from unittest import TextTestRunner
+from unittest import TextTestResult
 
 from twisted.trial import unittest
 
@@ -74,8 +74,7 @@ class ContractsManagerTest(unittest.TestCase):
 
     def setUp(self):
         self.conman = ContractsManager(self.contracts)
-        self.results = TextTestRunner()._makeResult()
-        self.results.stream = None
+        self.results = TextTestResult(stream=None, descriptions=False, verbosity=0)
 
     def should_succeed(self):
         self.assertFalse(self.results.failures)
@@ -108,14 +107,12 @@ class ContractsManagerTest(unittest.TestCase):
 
         # returns_item
         request = self.conman.from_method(spider.returns_item, self.results)
-        output = request.callback(response)
-        self.assertEqual([type(x) for x in output], [TestItem])
+        request.callback(response)
         self.should_succeed()
 
         # returns_request
         request = self.conman.from_method(spider.returns_request, self.results)
-        output = request.callback(response)
-        self.assertEqual([type(x) for x in output], [Request])
+        request.callback(response)
         self.should_succeed()
 
         # returns_fail
@@ -129,8 +126,7 @@ class ContractsManagerTest(unittest.TestCase):
 
         # scrapes_item_ok
         request = self.conman.from_method(spider.scrapes_item_ok, self.results)
-        output = request.callback(response)
-        self.assertEqual([type(x) for x in output], [TestItem])
+        request.callback(response)
         self.should_succeed()
 
         # scrapes_item_fail

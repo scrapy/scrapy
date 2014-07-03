@@ -11,22 +11,6 @@ import inspect
 import weakref
 import errno
 from functools import partial, wraps
-from sgmllib import SGMLParser
-
-
-class FixedSGMLParser(SGMLParser):
-    """The SGMLParser that comes with Python has a bug in the convert_charref()
-    method. This is the same class with the bug fixed"""
-
-    def convert_charref(self, name):
-        """This method fixes a bug in Python's SGMLParser."""
-        try:
-            n = int(name)
-        except ValueError:
-            return
-        if not 0 <= n <= 127 : # ASCII ends at 127, not 255
-            return
-        return self.convert_codepoint(n)
 
 
 def flatten(x):

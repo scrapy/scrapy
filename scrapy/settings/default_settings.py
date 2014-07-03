@@ -66,6 +66,8 @@ DOWNLOAD_HANDLERS_BASE = {
 
 DOWNLOAD_TIMEOUT = 180      # 3mins
 
+DOWNLOADER = 'scrapy.core.downloader.Downloader'
+
 DOWNLOADER_HTTPCLIENTFACTORY = 'scrapy.core.downloader.webclient.ScrapyHTTPClientFactory'
 DOWNLOADER_CLIENTCONTEXTFACTORY = 'scrapy.core.downloader.contextfactory.ScrapyClientContextFactory'
 
@@ -135,6 +137,7 @@ FEED_EXPORTERS = {}
 FEED_EXPORTERS_BASE = {
     'json': 'scrapy.contrib.exporter.JsonItemExporter',
     'jsonlines': 'scrapy.contrib.exporter.JsonLinesItemExporter',
+    'jl': 'scrapy.contrib.exporter.JsonLinesItemExporter',
     'csv': 'scrapy.contrib.exporter.CsvItemExporter',
     'xml': 'scrapy.contrib.exporter.XmlItemExporter',
     'marshal': 'scrapy.contrib.exporter.MarshalItemExporter',
@@ -235,12 +238,12 @@ USER_AGENT = 'Scrapy/%s (+http://scrapy.org)' % import_module('scrapy').__versio
 
 TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_PORT = [6023, 6073]
-TELNETCONSOLE_HOST = '0.0.0.0'
+TELNETCONSOLE_HOST = '127.0.0.1'
 
 WEBSERVICE_ENABLED = True
 WEBSERVICE_LOGFILE = None
 WEBSERVICE_PORT = [6080, 7030]
-WEBSERVICE_HOST = '0.0.0.0'
+WEBSERVICE_HOST = '127.0.0.1'
 WEBSERVICE_RESOURCES = {}
 WEBSERVICE_RESOURCES_BASE = {
     'scrapy.contrib.webservice.crawler.CrawlerResource': 1,

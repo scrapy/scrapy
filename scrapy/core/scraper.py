@@ -205,7 +205,7 @@ class Scraper(object):
                 logkws = self.logformatter.dropped(item, ex, response, spider)
                 log.msg(spider=spider, **logkws)
                 return self.signals.send_catch_log_deferred(signal=signals.item_dropped, \
-                    item=item, spider=spider, exception=output.value)
+                    item=item, response=response, spider=spider, exception=output.value)
             else:
                 log.err(output, 'Error processing %s' % item, spider=spider)
         else:
