@@ -7,7 +7,6 @@ See documentation in docs/topics/shell.rst
 from threading import Thread
 
 from scrapy.command import ScrapyCommand
-from scrapy.shell import Shell
 
 
 class Command(ScrapyCommand):
@@ -38,6 +37,7 @@ class Command(ScrapyCommand):
         pass
 
     def run(self, args, opts):
+        from scrapy.shell import Shell
         crawler = self.crawler_process.create_crawler()
 
         url = args[0] if args else None

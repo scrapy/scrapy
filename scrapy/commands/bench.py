@@ -1,6 +1,4 @@
 from scrapy.command import ScrapyCommand
-from scrapy.tests.spiders import FollowAllSpider
-from scrapy.tests.mockserver import MockServer
 
 class Command(ScrapyCommand):
 
@@ -14,6 +12,9 @@ class Command(ScrapyCommand):
         return "Run quick benchmark test"
 
     def run(self, args, opts):
+        from scrapy.tests.spiders import FollowAllSpider
+        from scrapy.tests.mockserver import MockServer
+
         with MockServer():
             spider = FollowAllSpider(total=100000)
             crawler = self.crawler_process.create_crawler()

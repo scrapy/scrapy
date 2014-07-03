@@ -9,8 +9,6 @@ import weakref
 import webbrowser
 import tempfile
 
-from twisted.web import http
-from twisted.web.http import RESPONSES
 from w3lib import html
 
 from scrapy.http import HtmlResponse, TextResponse
@@ -54,6 +52,7 @@ def response_status_message(status):
     >>> response_status_message(404)
     '404 Not Found'
     """
+    from twisted.web import http
     return '%s %s' % (status, http.responses.get(int(status)))
 
 def response_httprepr(response):
@@ -61,6 +60,7 @@ def response_httprepr(response):
     is provided only for reference, since it's not the exact stream of bytes
     that was received (that's not exposed by Twisted).
     """
+    from twisted.web.http import RESPONSES
 
     s = "HTTP/1.1 %d %s\r\n" % (response.status, RESPONSES.get(response.status, ''))
     if response.headers:

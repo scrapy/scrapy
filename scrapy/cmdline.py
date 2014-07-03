@@ -6,7 +6,6 @@ import inspect
 import pkg_resources
 
 import scrapy
-from scrapy.crawler import CrawlerProcess
 from scrapy.xlib import lsprofcalltree
 from scrapy.command import ScrapyCommand
 from scrapy.exceptions import UsageError
@@ -139,6 +138,7 @@ def execute(argv=None, settings=None):
     opts, args = parser.parse_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
 
+    from scrapy.crawler import CrawlerProcess
     cmd.crawler_process = CrawlerProcess(settings)
     _run_print_help(parser, _run_command, cmd, args, opts)
     sys.exit(cmd.exitcode)
