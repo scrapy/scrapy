@@ -36,7 +36,7 @@ class SelectorTestCase(unittest.TestCase):
         self.assertEqual([x.extract() for x in sel.xpath("concat(//input[@name='a']/@value, //input[@name='b']/@value)")],
                          [u'12'])
 
-    def test_representation(self):
+    def test_representation_slice(self):
         body = u"<p><input name='{}' value='\xa9'/></p>".format(50 * 'b')
         response = TextResponse(url="http://example.com", body=body, encoding='utf8')
         sel = self.sscls(response)
