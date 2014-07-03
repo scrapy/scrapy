@@ -43,7 +43,7 @@ class SelectorTestCase(unittest.TestCase):
 
         self.assertEqual(
             map(repr, sel.xpath('//input/@name')),
-            [u"<Selector xpath='//input/@name' data=u'{}'>".format(40 * 'b')]
+            ["<Selector xpath='//input/@name' data=u'{}'>".format(40 * 'b')]
         )
 
     def test_select_unicode_query(self):
