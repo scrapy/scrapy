@@ -17,7 +17,7 @@ and whole crawl workflow.
 In short, you will be able to overwrite settings (on a per-spider basis) by
 implementing a class method in your spider::
 
-    def MySpider(BaseSpider):
+    class MySpider(Spider):
 
         @classmethod
         def custom_settings(cls):
@@ -199,7 +199,7 @@ A new class method ``custom_settings`` is proposed, that could be use to
 override project and default settings before they're used to instantiate the
 crawler::
 
-    def MySpider(BaseSpider):
+    class MySpider(Spider):
 
         @classmethod
         def custom_settings(cls):
