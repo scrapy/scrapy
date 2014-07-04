@@ -333,7 +333,7 @@ As we've said before, each ``.xpath()`` call returns a list of selectors, so we 
 concatenate further ``.xpath()`` calls to dig deeper into a node. We are going to use
 that property here, so::
 
-    for sel in response.xpath('//ul/li')
+    for sel in response.xpath('//ul/li'):
         title = sel.xpath('a/text()').extract()
         link = sel.xpath('a/@href').extract()
         desc = sel.xpath('text()').extract()
