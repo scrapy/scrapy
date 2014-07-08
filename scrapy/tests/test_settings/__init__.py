@@ -199,6 +199,15 @@ class SettingsTest(unittest.TestCase):
             self.assertEqual(self.settings.overrides.get('BAR'), 'foo')
             self.assertIn('BAR', self.settings.overrides)
 
+            self.settings.overrides.update(BAR='bus')
+            self.assertEqual(self.settings.get('BAR'), 'bus')
+            self.assertEqual(self.settings.overrides.get('BAR'), 'bus')
+
+            self.settings.overrides.setdefault('FOO', 'fez')
+            self.assertEqual(self.settings.get('FOO'), 'fez')
+            self.assertEqual(self.settings.overrides.get('FOO'), 'fez')
+
+
     def test_deprecated_attribute_defaults(self):
         self.settings.set('BAR', 'fuz', priority='default')
         with warnings.catch_warnings(record=True) as w:

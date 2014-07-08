@@ -1,6 +1,7 @@
 import six
 import json
 import warnings
+from collections import MutableMapping
 from importlib import import_module
 
 from scrapy.utils.deprecate import create_deprecated_class
@@ -119,11 +120,7 @@ class Settings(object):
         try:
             o = self._overrides
         except AttributeError:
-            class _DictProxy(dict):
-                def __setitem__(this, key, value):
-                    super(_DictProxy, this).__setitem__(key, value)
-                    self.set(key, value, priority='cmdline')
-            self._overrides = o = _DictProxy()
+            self._overrides = o = _DictProxy(self, 'cmdline')
         return o
 
     @property
@@ -135,12 +132,32 @@ class Settings(object):
         try:
             o = self._defaults
         except AttributeError:
-            class _DictProxy(dict):
-                def __setitem__(this, key, value):
-                    super(_DictProxy, this).__setitem__(key, value)
-                    self.set(key, value, priority='default')
-            self._defaults = o = _DictProxy()
+            self._defaults = o = _DictProxy(self, 'default')
         return o
+
+
+class _DictProxy(MutableMapping):
+
+    def __init__(self, settings, priority):
+        self.o = {}
+        self.settings = settings
+        self.priority = priority
+
+    def __len__(self):
+        return len(self.o)
+
+    def __getitem__(self, k):
+        return self.o[k]
+
+    def __setitem__(self, k, v):
+        self.settings.set(k, v, priority=self.priority)
+        self.o[k] = v
+
+    def __delitem__(self, k):
+        del self.o[k]
+
+    def __iter__(self, k, v):
+        return iter(self.o)
 
 
 class CrawlerSettings(Settings):
