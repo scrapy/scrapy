@@ -3,6 +3,14 @@
 Release notes
 =============
 
+0.24.2 (2014-07-08)
+-------------------
+
+- Use a mutable mapping to proxy deprecated settings.overrides and settings.defaults attribute (:commit:`e5e8133`)
+- there is not support for python3 yet (:commit:`3cd6146`)
+- Update python compatible version set to debian packages (:commit:`fa5d76b`)
+- DOC fix formatting in release notes (:commit:`c6a9e20`)
+
 0.24.1 (2014-06-27)
 -------------------
 
