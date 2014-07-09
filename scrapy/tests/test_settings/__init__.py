@@ -203,6 +203,9 @@ class SettingsTest(unittest.TestCase):
             self.assertEqual(self.settings.get('BAR'), 'bus')
             self.assertEqual(self.settings.overrides.get('BAR'), 'bus')
 
+            self.settings.overrides.setdefault('BAR', 'fez')
+            self.assertEqual(self.settings.get('BAR'), 'bus')
+
             self.settings.overrides.setdefault('FOO', 'fez')
             self.assertEqual(self.settings.get('FOO'), 'fez')
             self.assertEqual(self.settings.overrides.get('FOO'), 'fez')
