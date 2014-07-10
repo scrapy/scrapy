@@ -21,7 +21,7 @@ Default structure of Scrapy projects
 Before delving into the command-line tool and its sub-commands, let's first
 understand the directory structure of a Scrapy project.
 
-Even thought it can be modified, all Scrapy projects have the same file
+Though it can be modified, all Scrapy projects have the same file
 structure by default, similar to this::
 
    scrapy.cfg
