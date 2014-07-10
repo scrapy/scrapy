@@ -32,4 +32,4 @@ deploy:
     tags: true
     all_branches: true
     repo: scrapy/scrapy
-    condition: "$TOXENV == py27 && $TRAVIS_TAG =~ ^[0-9]\.[0-9]*[02468]\."
+    condition: "$TOXENV == py27 && $TRAVIS_TAG =~ ^[0-9][.][0-9]*[02468][.]"
