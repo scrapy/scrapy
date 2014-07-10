@@ -1,7 +1,7 @@
 import re
 import unittest
 from scrapy.contrib.linkextractors.regex import RegexLinkExtractor
-from scrapy.http import HtmlResponse
+from scrapy.http import HtmlResponse, XmlResponse
 from scrapy.link import Link
 from scrapy.contrib.linkextractors.htmlparser import HtmlParserLinkExtractor
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor, BaseSgmlLinkExtractor
@@ -419,6 +419,51 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
             Link(url='http://example.com/get?id=2', text=u'Item 2', fragment='', nofollow=False)
         ])
 
+    def test_xhtml(self):
+        xhtml = """
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <title>XHTML document title</title>
+</head>
+<body>
+    <div class='links'>
+    <p><a href="/about.html">About us</a></p>
+    </div>
+    <div>
+    <p><a href="/follow.html">Follow this link</a></p>
+    </div>
+    <div>
+    <p><a href="/nofollow.html" rel="nofollow">Dont follow this one</a></p>
+    </div>
+    <div>
+    <p><a href="/nofollow2.html" rel="blah">Choose to follow or not</a></p>
+    </div>
+</body>
+</html>
+        """
+
+        response = HtmlResponse("http://example.com/index.xhtml", body=xhtml)
+
+        lx = self.extractor_cls()
+        self.assertEqual(lx.extract_links(response),
+                         [Link(url='http://example.com/about.html', text=u'About us', fragment='', nofollow=False),
+                          Link(url='http://example.com/follow.html', text=u'Follow this link', fragment='', nofollow=False),
+                          Link(url='http://example.com/nofollow.html', text=u'Dont follow this one', fragment='', nofollow=True),
+                          Link(url='http://example.com/nofollow2.html', text=u'Choose to follow or not', fragment='', nofollow=False)]
+                        )
+
+        response = XmlResponse("http://example.com/index.xhtml", body=xhtml)
+
+        lx = self.extractor_cls()
+        self.assertEqual(lx.extract_links(response),
+                         [Link(url='http://example.com/about.html', text=u'About us', fragment='', nofollow=False),
+                          Link(url='http://example.com/follow.html', text=u'Follow this link', fragment='', nofollow=False),
+                          Link(url='http://example.com/nofollow.html', text=u'Dont follow this one', fragment='', nofollow=True),
+                          Link(url='http://example.com/nofollow2.html', text=u'Choose to follow or not', fragment='', nofollow=False)]
+                        )
 
 
 class LxmlLinkExtractorTestCase(SgmlLinkExtractorTestCase):
