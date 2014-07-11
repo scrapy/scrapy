@@ -19,7 +19,7 @@ class BaseSgmlLinkExtractor(SGMLParser):
 
     def __init__(self, tag="a", attr="href", unique=False, process_value=None):
         warnings.warn(
-            "BaseSgmlLinkExtractor is deprecated and will be removed in future releases!!! "
+            "BaseSgmlLinkExtractor is deprecated and will be removed in future releases. "
             "Please use scrapy.contrib.linkextractors.LinkExtractor",
             ScrapyDeprecationWarning
         )
