@@ -8,6 +8,10 @@ Scrapy
 .. image:: https://secure.travis-ci.org/scrapy/scrapy.png?branch=master
    :target: http://travis-ci.org/scrapy/scrapy
 
+.. image:: https://pypip.in/wheel/Scrapy/badge.png
+    :target: https://pypi.python.org/pypi/Scrapy/
+    :alt: Wheel Status
+
 Overview
 ========
 
