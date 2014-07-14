@@ -1,6 +1,6 @@
 import sys
 import os
-from ConfigParser import SafeConfigParser
+from six.moves.configparser import SafeConfigParser
 from operator import itemgetter
 
 def build_component_list(base, custom):

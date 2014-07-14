@@ -134,7 +134,7 @@ def connect(receiver, signal=Any, sender=Any, weak=True):
 	if weak:
 		receiver = saferef.safeRef(receiver, onDelete=_removeReceiver)
 	senderkey = id(sender)
-	if connections.has_key(senderkey):
+	if senderkey in connections:
 		signals = connections[senderkey]
 	else:
 		connections[senderkey] = signals = {}
@@ -154,7 +154,7 @@ def connect(receiver, signal=Any, sender=Any, weak=True):
 	receiverID = id(receiver)
 	# get current set, remove any current references to
 	# this receiver in the set, including back-references
-	if signals.has_key(signal):
+	if signal in signals:
 		receivers = signals[signal]
 		_removeOldBackRefs(senderkey, signal, receiver, receivers)
 	else:
@@ -290,7 +290,7 @@ def getAllReceivers( sender = Any, signal = Any ):
 		for receiver in set:
 			if receiver: # filter out dead instance-method weakrefs
 				try:
-					if not receivers.has_key( receiver ):
+					if receiver not in receivers:
 						receivers[receiver] = 1
 						yield receiver
 				except TypeError:
