@@ -4,12 +4,21 @@ Mail sending helpers
 See documentation in docs/topics/email.rst
 """
 from cStringIO import StringIO
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMENonMultipart import MIMENonMultipart
-from email.MIMEBase import MIMEBase
-from email.MIMEText import MIMEText
-from email.Utils import COMMASPACE, formatdate
-from email import Encoders
+import six
+
+from email.utils import COMMASPACE, formatdate
+if six.PY2:
+    from email.MIMEMultipart import MIMEMultipart
+    from email.MIMENonMultipart import MIMENonMultipart
+    from email.MIMEBase import MIMEBase
+    from email.MIMEText import MIMEText
+    from email import Encoders
+else:
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.nonmultipart import MIMENonMultipart
+    from email.mime.base import MIMEBase
+    from email.mime.text import MIMEText
+    from email import encoders as Encoders
 
 from twisted.internet import defer, reactor, ssl
 from twisted.mail.smtp import ESMTPSenderFactory

@@ -4,7 +4,7 @@ This module implements the XmlRpcRequest class which is a more convenient class
 
 See documentation in docs/topics/request-response.rst
 """
-import xmlrpclib
+from six.moves import xmlrpc_client as xmlrpclib
 
 from scrapy.http.request import Request
 from scrapy.utils.python import get_func_args
