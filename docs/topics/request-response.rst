@@ -264,6 +264,11 @@ fields with form data from :class:`Response` objects.
        body of the request.
     :type formdata: dict or iterable of tuples
 
+    :param overwrite: default to ``True``. If a parameter is in both url and 
+    formdata and this parameter is set to True, the function will overwrite the
+    url parameter instead of doing simple concatenation
+    :type overwrite: boolean
+
     The :class:`FormRequest` objects support the following class method in
     addition to the standard :class:`Request` methods:
 

@@ -17,11 +17,16 @@ class FormRequest(Request):
         formdata = kwargs.pop('formdata', None)
         if formdata and kwargs.get('method') is None:
             kwargs['method'] = 'POST'
+        if kwargs.get('overwrite') is None:
+            kwargs['overwrite'] = True
 
         super(FormRequest, self).__init__(*args, **kwargs)
 
         if formdata:
             items = formdata.iteritems() if isinstance(formdata, dict) else formdata
+            if self.method == 'GET' and self.overwrite:
+                self.url, items = _get_baseurl_and_parameters(self.url, items)
+
             querystr = _urlencode(items, self.encoding)
             if self.method == 'POST':
                 self.headers.setdefault('Content-Type', 'application/x-www-form-urlencoded')
@@ -49,6 +54,25 @@ def _urlencode(seq, enc):
               for k, vs in seq
               for v in (vs if hasattr(vs, '__iter__') else [vs])]
     return urllib.urlencode(values, doseq=1)
+
+def _get_baseurl_and_parameters(url, parameters):
+    if not '?' in url:
+        baseUrl = url
+
+    elif url.count('?') > 1:
+        raise ValueError('Invalid URL %s' % url)
+
+    else:
+        baseUrl, paramsURL = url.split('?')
+        for keyValue in paramsURL.split('&'):
+            key, value = keyValue.split('=')
+            if value is None and key in parameters:
+                del parameters[key]
+            elif not key in parameters:
+                parameters[key] = value
+
+    return baseUrl, parameters
+
 
 def _get_form(response, formname, formnumber, formxpath):
     """Find the form element """
