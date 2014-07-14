@@ -1,6 +1,6 @@
 import cgi
 import unittest
-import xmlrpclib
+from six.moves import xmlrpc_client as xmlrpclib
 from six.moves.urllib.parse import urlparse
 
 from scrapy.http import Request, FormRequest, XmlRpcRequest, Headers, HtmlResponse
