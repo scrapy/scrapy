@@ -6,7 +6,7 @@ import csv
 import sys
 import pprint
 import marshal
-import cPickle as pickle
+from six.moves import cPickle as pickle
 from xml.sax.saxutils import XMLGenerator
 from scrapy.utils.serialize import ScrapyJSONEncoder
 from scrapy.item import BaseItem
