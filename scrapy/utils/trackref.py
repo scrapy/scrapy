@@ -10,7 +10,7 @@ alias to object in that case).
 """
 
 from __future__ import print_function
-import weakref, os
+import weakref, os, six
 from collections import defaultdict
 from time import time
 from operator import itemgetter
@@ -33,7 +33,7 @@ class object_ref(object):
 def format_live_refs(ignore=NoneType):
     s = "Live References" + os.linesep + os.linesep
     now = time()
-    for cls, wdict in live_refs.iteritems():
+    for cls, wdict in six.iteritems(live_refs):
         if not wdict:
             continue
         if issubclass(cls, ignore):
@@ -47,12 +47,12 @@ def print_live_refs(*a, **kw):
     print(format_live_refs(*a, **kw))
 
 def get_oldest(class_name):
-    for cls, wdict in live_refs.iteritems():
+    for cls, wdict in six.iteritems(live_refs):
         if cls.__name__ == class_name:
             if wdict:
-                return min(wdict.iteritems(), key=itemgetter(1))[0]
+                return min(six.iteritems(wdict), key=itemgetter(1))[0]
 
 def iter_all(class_name):
-    for cls, wdict in live_refs.iteritems():
+    for cls, wdict in six.iteritems(live_refs):
         if cls.__name__ == class_name:
-            return wdict.iterkeys()
+            return six.iterkeys(wdict)

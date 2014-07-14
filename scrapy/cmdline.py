@@ -71,7 +71,7 @@ def _print_commands(settings, inproject):
     print("  scrapy <command> [options] [args]\n")
     print("Available commands:")
     cmds = _get_commands_dict(settings, inproject)
-    for cmdname, cmdclass in sorted(cmds.iteritems()):
+    for cmdname, cmdclass in sorted(cmds.items()):
         print("  %-13s %s" % (cmdname, cmdclass.short_desc()))
     if not inproject:
         print()

@@ -6,6 +6,7 @@ import csv
 import sys
 import pprint
 import marshal
+import six
 from six.moves import cPickle as pickle
 from xml.sax.saxutils import XMLGenerator
 from scrapy.utils.serialize import ScrapyJSONEncoder
@@ -56,9 +57,9 @@ class BaseItemExporter(object):
             include_empty = self.export_empty_fields
         if self.fields_to_export is None:
             if include_empty:
-                field_iter = item.fields.iterkeys()
+                field_iter = six.iterkeys(item.fields)
             else:
-                field_iter = item.iterkeys()
+                field_iter = six.iterkeys(item)
         else:
             if include_empty:
                 field_iter = self.fields_to_export
@@ -248,7 +249,7 @@ class PythonItemExporter(BaseItemExporter):
         return self._to_str_if_unicode(value)
 
     def _serialize_dict(self, value):
-        for key, val in value.iteritems():
+        for key, val in six.iteritems(value):
             yield key, self._serialize_value(val)
 
     def export_item(self, item):

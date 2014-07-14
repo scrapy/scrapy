@@ -6,6 +6,7 @@ This module must not depend on any module outside the Standard Library.
 """
 
 import copy
+import six
 from collections import OrderedDict
 
 
@@ -133,7 +134,7 @@ class MultiValueDict(dict):
                         self.setlistdefault(key, []).append(value)
                 except TypeError:
                     raise ValueError("MultiValueDict.update() takes either a MultiValueDict or dictionary")
-        for key, value in kwargs.iteritems():
+        for key, value in six.iteritems(kwargs):
             self.setlistdefault(key, []).append(value)
 
 class SiteNode(object):
@@ -200,7 +201,7 @@ class CaselessDict(dict):
         return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))
 
     def update(self, seq):
-        seq = seq.iteritems() if isinstance(seq, dict) else seq
+        seq = seq.items() if isinstance(seq, dict) else seq
         iseq = ((self.normkey(k), self.normvalue(v)) for k, v in seq)
         super(CaselessDict, self).update(iseq)
 

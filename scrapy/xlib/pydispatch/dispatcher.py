@@ -26,7 +26,7 @@ Internal attributes:
 		vs. the original code.)
 """
 from __future__ import generators
-import types, weakref
+import types, weakref, six
 from scrapy.xlib.pydispatch import saferef, robustapply, errors
 
 __author__ = "Patrick K. O'Brien <pobrien@orbtech.com>"
@@ -463,7 +463,7 @@ def _removeOldBackRefs(senderkey, signal, receiver, receivers):
 		found = 0
 		signals = connections.get(signal)
 		if signals is not None:
-			for sig,recs in connections.get(signal,{}).iteritems():
+			for sig, recs in six.iteritems(connections.get(signal,{})):
 				if sig != signal:
 					for rec in recs:
 						if rec is oldReceiver:

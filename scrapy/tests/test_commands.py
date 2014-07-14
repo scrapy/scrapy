@@ -1,6 +1,7 @@
 import os
 import sys
 import subprocess
+import tempfile
 from time import sleep
 from os.path import exists, join, abspath
 from shutil import rmtree
@@ -25,7 +26,7 @@ class ProjectTest(unittest.TestCase):
         rmtree(self.temp_path)
 
     def call(self, *new_args, **kwargs):
-        out = os.tmpfile()
+        out = tempfile.TemporaryFile()
         args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
         return subprocess.call(args, stdout=out, stderr=out, cwd=self.cwd, \
             env=self.env, **kwargs)

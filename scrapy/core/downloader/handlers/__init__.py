@@ -1,6 +1,7 @@
 """Download handlers for different schemes"""
 
 from twisted.internet import defer
+import six
 from scrapy.exceptions import NotSupported, NotConfigured
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
@@ -14,7 +15,7 @@ class DownloadHandlers(object):
         self._notconfigured = {}
         handlers = crawler.settings.get('DOWNLOAD_HANDLERS_BASE')
         handlers.update(crawler.settings.get('DOWNLOAD_HANDLERS', {}))
-        for scheme, clspath in handlers.iteritems():
+        for scheme, clspath in six.iteritems(handlers):
             # Allow to disable a handler just like any other
             # component (extension, middleware, etc).
             if clspath is None:

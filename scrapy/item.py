@@ -6,6 +6,7 @@ See documentation in docs/topics/item.rst
 
 from pprint import pformat
 from UserDict import DictMixin
+import six
 
 from scrapy.utils.trackref import object_ref
 
@@ -24,7 +25,7 @@ class ItemMeta(type):
     def __new__(mcs, class_name, bases, attrs):
         fields = {}
         new_attrs = {}
-        for n, v in attrs.iteritems():
+        for n, v in six.iteritems(attrs):
             if isinstance(v, Field):
                 fields[n] = v
             else:
@@ -43,7 +44,7 @@ class DictItem(DictMixin, BaseItem):
     def __init__(self, *args, **kwargs):
         self._values = {}
         if args or kwargs:  # avoid creating dict for most common case
-            for k, v in dict(*args, **kwargs).iteritems():
+            for k, v in six.iteritems(dict(*args, **kwargs)):
                 self[k] = v
 
     def __getitem__(self, key):
