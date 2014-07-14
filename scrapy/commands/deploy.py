@@ -8,7 +8,7 @@ import time
 import urllib2
 import netrc
 import json
-from urlparse import urlparse, urljoin
+from six.moves.urllib.parse import urlparse, urljoin
 from subprocess import Popen, PIPE, check_call
 
 from w3lib.form import encode_multipart

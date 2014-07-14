@@ -29,7 +29,7 @@ In case of status 200 request, response.headers will come with two keys:
 """
 
 import re
-from urlparse import urlparse
+from six.moves.urllib.parse import urlparse
 from cStringIO import StringIO
 
 from twisted.internet import reactor

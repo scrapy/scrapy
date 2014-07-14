@@ -4,7 +4,7 @@ import re
 
 from time import time
 from cStringIO import StringIO
-from urlparse import urldefrag
+from six.moves.urllib.parse import urldefrag
 
 from zope.interface import implements
 from twisted.internet import defer, reactor, protocol

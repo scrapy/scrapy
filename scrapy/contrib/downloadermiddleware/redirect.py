@@ -1,4 +1,4 @@
-from urlparse import urljoin
+from six.moves.urllib.parse import urljoin
 
 from scrapy import log
 from scrapy.http import HtmlResponse

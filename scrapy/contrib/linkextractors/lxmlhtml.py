@@ -3,7 +3,7 @@ Link extractor based on lxml.html
 """
 
 import re
-from urlparse import urlparse, urljoin
+from six.moves.urllib.parse import urlparse, urljoin
 
 import lxml.etree as etree
 
