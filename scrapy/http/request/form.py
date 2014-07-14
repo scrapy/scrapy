@@ -7,6 +7,7 @@ See documentation in docs/topics/request-response.rst
 
 import urllib, urlparse
 import lxml.html
+import six
 from scrapy.http.request import Request
 from scrapy.utils.python import unicode_to_str
 
@@ -21,7 +22,7 @@ class FormRequest(Request):
         super(FormRequest, self).__init__(*args, **kwargs)
 
         if formdata:
-            items = formdata.iteritems() if isinstance(formdata, dict) else formdata
+            items = formdata.items() if isinstance(formdata, dict) else formdata
             querystr = _urlencode(items, self.encoding)
             if self.method == 'POST':
                 self.headers.setdefault('Content-Type', 'application/x-www-form-urlencoded')
@@ -106,7 +107,7 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
         if clickable and clickable[0] not in formdata and not clickable[0] is None:
             values.append(clickable)
 
-    values.extend(formdata.iteritems())
+    values.extend(formdata.items())
     return values
 
 def _value(ele):
@@ -161,7 +162,7 @@ def _get_clickable(clickdata, form):
     # We didn't find it, so now we build an XPath expression out of the other
     # arguments, because they can be used as such
     xpath = u'.//*' + \
-            u''.join(u'[@%s="%s"]' % c for c in clickdata.iteritems())
+            u''.join(u'[@%s="%s"]' % c for c in six.iteritems(clickdata))
     el = form.xpath(xpath)
     if len(el) == 1:
         return (el[0].name, el[0].value)

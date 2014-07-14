@@ -10,6 +10,7 @@ import time
 import urlparse
 from collections import defaultdict
 from cStringIO import StringIO
+import six
 
 from twisted.internet import defer, threads
 
@@ -105,7 +106,7 @@ class S3FilesStore(object):
         key_name = '%s%s' % (self.prefix, path)
         k = b.new_key(key_name)
         if meta:
-            for metakey, metavalue in meta.iteritems():
+            for metakey, metavalue in six.iteritems(meta):
                 k.set_metadata(metakey, str(metavalue))
         h = self.HEADERS.copy()
         if headers:

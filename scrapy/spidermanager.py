@@ -4,6 +4,7 @@ spiders
 """
 
 from zope.interface import implements
+import six
 
 from scrapy import signals
 from scrapy.interfaces import ISpiderManager
@@ -48,7 +49,7 @@ class SpiderManager(object):
             return spcls(**spider_kwargs)
 
     def find_by_request(self, request):
-        return [name for name, cls in self._spiders.iteritems()
+        return [name for name, cls in six.iteritems(self._spiders)
             if cls.handles_request(request)]
 
     def list(self):

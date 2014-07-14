@@ -10,6 +10,7 @@ import re
 import inspect
 import weakref
 import errno
+import six
 from functools import partial, wraps
 
 
@@ -232,7 +233,7 @@ def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
     dict or a list of tuples, like any dict constructor supports.
     """
     d = {}
-    for k, v in dict(dct_or_tuples).iteritems():
+    for k, v in six.iteritems(dict(dct_or_tuples)):
         k = k.encode(encoding) if isinstance(k, unicode) else k
         if not keys_only:
             v = v.encode(encoding) if isinstance(v, unicode) else v

@@ -110,7 +110,7 @@ class Shell(object):
 
     def print_help(self):
         self.p("Available Scrapy objects:")
-        for k, v in sorted(self.vars.iteritems()):
+        for k, v in sorted(self.vars.items()):
             if self._is_relevant(v):
                 self.p("  %-10s %s" % (k, v))
         self.p("Useful shortcuts:")

@@ -86,7 +86,7 @@ class Command(ScrapyCommand):
 
         # start checks
         if opts.list:
-            for spider, methods in sorted(contract_reqs.iteritems()):
+            for spider, methods in sorted(contract_reqs.items()):
                 if not methods and not opts.verbose:
                     continue
                 print(spider)

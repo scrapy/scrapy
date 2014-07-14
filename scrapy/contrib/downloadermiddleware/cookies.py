@@ -1,4 +1,5 @@
 import os
+import six
 from collections import defaultdict
 
 from scrapy.exceptions import NotConfigured
@@ -77,7 +78,7 @@ class CookiesMiddleware(object):
     def _get_request_cookies(self, jar, request):
         if isinstance(request.cookies, dict):
             cookie_list = [{'name': k, 'value': v} for k, v in \
-                    request.cookies.iteritems()]
+                    six.iteritems(request.cookies)]
         else:
             cookie_list = request.cookies
 
