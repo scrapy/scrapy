@@ -26,10 +26,10 @@ class ProjectTest(unittest.TestCase):
         rmtree(self.temp_path)
 
     def call(self, *new_args, **kwargs):
-        out = tempfile.TemporaryFile()
-        args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
-        return subprocess.call(args, stdout=out, stderr=out, cwd=self.cwd, \
-            env=self.env, **kwargs)
+        with tempfile.TemporaryFile() as out:
+            args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
+            return subprocess.call(args, stdout=out, stderr=out, cwd=self.cwd,
+                env=self.env, **kwargs)
 
     def proc(self, *new_args, **kwargs):
         args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
