@@ -75,7 +75,6 @@ class CaselessDictTest(unittest.TestCase):
         d = CaselessDict()
         d['a'] = 1
         assert 'a' in d
-        assert d.has_key('a')
 
     def test_pop(self):
         d = CaselessDict()
