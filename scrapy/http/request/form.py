@@ -5,7 +5,8 @@ This module implements the FormRequest class which is a more covenient class
 See documentation in docs/topics/request-response.rst
 """
 
-import urllib, urlparse
+import urllib
+from six.moves.urllib.parse import urljoin
 import lxml.html
 import six
 from scrapy.http.request import Request
@@ -43,7 +44,7 @@ class FormRequest(Request):
 def _get_form_url(form, url):
     if url is None:
         return form.action or form.base_url
-    return urlparse.urljoin(form.base_url, url)
+    return urljoin(form.base_url, url)
 
 def _urlencode(seq, enc):
     values = [(unicode_to_str(k, enc), unicode_to_str(v, enc))

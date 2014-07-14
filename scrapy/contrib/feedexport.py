@@ -7,7 +7,7 @@ See documentation in docs/topics/feed-exports.rst
 import sys, os, posixpath
 from tempfile import TemporaryFile
 from datetime import datetime
-from urlparse import urlparse
+from six.moves.urllib.parse import urlparse
 from ftplib import FTP
 
 from zope.interface import Interface, implements

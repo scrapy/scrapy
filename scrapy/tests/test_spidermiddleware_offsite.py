@@ -5,7 +5,7 @@ from scrapy.spider import Spider
 from scrapy.contrib.spidermiddleware.offsite import OffsiteMiddleware
 from scrapy.utils.test import get_crawler
 
-from urlparse import urlparse
+from six.moves.urllib.parse import urlparse
 
 class TestOffsiteMiddleware(TestCase):
 

@@ -11,7 +11,8 @@ module with the ``runserver`` argument::
 """
 
 from __future__ import print_function
-import sys, os, re, urlparse
+import sys, os, re
+from six.moves.urllib.parse import urlparse
 
 from twisted.internet import reactor, defer
 from twisted.web import server, static, util
@@ -117,7 +118,7 @@ class CrawlerRun(object):
         return "http://localhost:%s%s" % (self.portno, path)
 
     def getpath(self, url):
-        u = urlparse.urlparse(url)
+        u = urlparse(url)
         return u.path
 
     def item_scraped(self, item, spider, response):

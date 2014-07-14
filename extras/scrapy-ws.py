@@ -13,7 +13,7 @@ command).
 
 from __future__ import print_function
 import sys, optparse, urllib, json
-from urlparse import urljoin
+from six.moves.urllib.parse import urljoin
 
 from scrapy.utils.jsonrpc import jsonrpc_client_call, JsonRpcError
 

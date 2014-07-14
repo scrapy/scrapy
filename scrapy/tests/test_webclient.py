@@ -3,7 +3,7 @@ from twisted.internet import defer
 Tests borrowed from the twisted.web.client tests.
 """
 import os
-from urlparse import urlparse
+from six.moves.urllib.parse import urlparse
 
 from twisted.trial import unittest
 from twisted.web import server, static, error, util

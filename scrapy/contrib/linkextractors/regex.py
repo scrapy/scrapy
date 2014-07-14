@@ -1,5 +1,5 @@
 import re
-from urlparse import urljoin
+from six.moves.urllib.parse import urljoin
 
 from w3lib.html import remove_tags, remove_entities, replace_escape_chars
 
