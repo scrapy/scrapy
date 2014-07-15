@@ -1,6 +1,6 @@
+import six
 from unittest import TestCase
 from os.path import join, abspath, dirname
-from cStringIO import StringIO
 from gzip import GzipFile
 
 from scrapy.spider import Spider
@@ -104,8 +104,8 @@ class HttpCompressionTest(TestCase):
             'Content-Type': 'text/html',
             'Content-Encoding': 'gzip',
         }
-        f = StringIO()
-        plainbody = """<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=gb2312">"""
+        f = six.BytesIO()
+        plainbody = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=gb2312">"""
         zf = GzipFile(fileobj=f, mode='wb')
         zf.write(plainbody)
         zf.close()
@@ -122,8 +122,8 @@ class HttpCompressionTest(TestCase):
             'Content-Type': 'text/html',
             'Content-Encoding': 'gzip',
         }
-        f = StringIO()
-        plainbody = """<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=gb2312">"""
+        f = six.BytesIO()
+        plainbody = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=gb2312">"""
         zf = GzipFile(fileobj=f, mode='wb')
         zf.write(plainbody)
         zf.close()

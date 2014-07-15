@@ -1,8 +1,8 @@
 import gzip
 import inspect
 import warnings
-from cStringIO import StringIO
 from scrapy.utils.trackref import object_ref
+import six
 
 from twisted.trial import unittest
 
@@ -57,7 +57,7 @@ class XMLFeedSpiderTest(SpiderTest):
     spider_class = XMLFeedSpider
 
     def test_register_namespace(self):
-        body = """<?xml version="1.0" encoding="UTF-8"?>
+        body = b"""<?xml version="1.0" encoding="UTF-8"?>
         <urlset xmlns:x="http://www.google.com/schemas/sitemap/0.84"
                 xmlns:y="http://www.example.com/schemas/extras/1.0">
         <url><x:loc>http://www.example.com/Special-Offers.html</loc><y:updated>2009-08-16</updated><other value="bar" y:custom="fuu"/></url>
@@ -103,7 +103,7 @@ class CSVFeedSpiderTest(SpiderTest):
 
 class CrawlSpiderTest(SpiderTest):
 
-    test_body = """<html><head><title>Page title<title>
+    test_body = b"""<html><head><title>Page title<title>
     <body>
     <p><a href="item/12.html">Item 12</a></p>
     <div class='links'>
@@ -195,8 +195,8 @@ class SitemapSpiderTest(SpiderTest):
 
     spider_class = SitemapSpider
 
-    BODY = "SITEMAP"
-    f = StringIO()
+    BODY = b"SITEMAP"
+    f = six.BytesIO()
     g = gzip.GzipFile(fileobj=f, mode='w+b')
     g.write(BODY)
     g.close()

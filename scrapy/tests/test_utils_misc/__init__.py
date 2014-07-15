@@ -1,7 +1,6 @@
 import sys
 import os
 import unittest
-from cStringIO import StringIO
 
 from scrapy.item import Item, Field
 from scrapy.utils.misc import load_object, arg_to_iter, walk_modules

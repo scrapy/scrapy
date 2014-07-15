@@ -1,6 +1,6 @@
 import unittest, json
+import six
 from six.moves import cPickle as pickle
-from cStringIO import StringIO
 import lxml.etree
 import re
 
@@ -19,7 +19,7 @@ class BaseItemExporterTest(unittest.TestCase):
 
     def setUp(self):
         self.i = TestItem(name=u'John\xa3', age='22')
-        self.output = StringIO()
+        self.output = six.BytesIO()
         self.ie = self._get_exporter()
 
     def _get_exporter(self, **kwargs):
@@ -126,7 +126,7 @@ class PickleItemExporterTest(BaseItemExporterTest):
     def test_export_multiple_items(self):
         i1 = TestItem(name='hello', age='world')
         i2 = TestItem(name='bye', age='world')
-        f = StringIO()
+        f = six.BytesIO()
         ie = PickleItemExporter(f)
         ie.start_exporting()
         ie.export_item(i1)
@@ -151,21 +151,21 @@ class CsvItemExporterTest(BaseItemExporterTest):
         self.assertCsvEqual(self.output.getvalue(), 'age,name\r\n22,John\xc2\xa3\r\n')
 
     def test_header(self):
-        output = StringIO()
+        output = six.BytesIO()
         ie = CsvItemExporter(output, fields_to_export=self.i.fields.keys())
         ie.start_exporting()
         ie.export_item(self.i)
         ie.finish_exporting()
         self.assertCsvEqual(output.getvalue(), 'age,name\r\n22,John\xc2\xa3\r\n')
 
-        output = StringIO()
+        output = six.BytesIO()
         ie = CsvItemExporter(output, fields_to_export=['age'])
         ie.start_exporting()
         ie.export_item(self.i)
         ie.finish_exporting()
         self.assertCsvEqual(output.getvalue(), 'age\r\n22\r\n')
 
-        output = StringIO()
+        output = six.BytesIO()
         ie = CsvItemExporter(output)
         ie.start_exporting()
         ie.export_item(self.i)
@@ -173,7 +173,7 @@ class CsvItemExporterTest(BaseItemExporterTest):
         ie.finish_exporting()
         self.assertCsvEqual(output.getvalue(), 'age,name\r\n22,John\xc2\xa3\r\n22,John\xc2\xa3\r\n')
 
-        output = StringIO()
+        output = six.BytesIO()
         ie = CsvItemExporter(output, include_headers_line=False)
         ie.start_exporting()
         ie.export_item(self.i)
@@ -186,7 +186,7 @@ class CsvItemExporterTest(BaseItemExporterTest):
             friends = Field()
 
         i = TestItem2(name='John', friends=['Mary', 'Paul'])
-        output = StringIO()
+        output = six.BytesIO()
         ie = CsvItemExporter(output, include_headers_line=False)
         ie.start_exporting()
         ie.export_item(i)
@@ -216,7 +216,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
         self.assertXmlEquivalent(self.output.getvalue(), expected_value)
 
     def test_multivalued_fields(self):
-        output = StringIO()
+        output = six.BytesIO()
         item = TestItem(name=[u'John\xa3', u'Doe'])
         ie = XmlItemExporter(output)
         ie.start_exporting()
@@ -226,7 +226,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
         self.assertXmlEquivalent(output.getvalue(), expected_value)
 
     def test_nested_item(self):
-        output = StringIO()
+        output = six.BytesIO()
         i1 = TestItem(name=u'foo\xa3hoo', age='22')
         i2 = TestItem(name=u'bar', age=i1)
         i3 = TestItem(name=u'buz', age=i2)
@@ -248,7 +248,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
         self.assertXmlEquivalent(output.getvalue(), expected_value)
 
     def test_nested_list_item(self):
-        output = StringIO()
+        output = six.BytesIO()
         i1 = TestItem(name=u'foo')
         i2 = TestItem(name=u'bar')
         i3 = TestItem(name=u'buz', age=[i1, i2])

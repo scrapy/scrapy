@@ -1,9 +1,9 @@
 """Download handlers for http and https schemes"""
 
 import re
+import six
 
 from time import time
-from cStringIO import StringIO
 from six.moves.urllib.parse import urldefrag
 
 from zope.interface import implements
@@ -234,7 +234,7 @@ class _ResponseReader(protocol.Protocol):
         self._finished = finished
         self._txresponse = txresponse
         self._request = request
-        self._bodybuf = StringIO()
+        self._bodybuf = six.BytesIO()
 
     def dataReceived(self, bodyBytes):
         self._bodybuf.write(bodyBytes)

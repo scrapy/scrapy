@@ -3,7 +3,7 @@ Mail sending helpers
 
 See documentation in docs/topics/email.rst
 """
-from cStringIO import StringIO
+from six.moves import cStringIO as StringIO
 import six
 
 from email.utils import COMMASPACE, formatdate
