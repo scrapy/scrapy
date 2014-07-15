@@ -3,7 +3,7 @@ import hashlib
 import warnings
 from tempfile import mkdtemp
 from shutil import rmtree
-import six
+from io import BytesIO
 
 from twisted.trial import unittest
 
@@ -201,7 +201,7 @@ class ImagesPipelineTestCaseFields(unittest.TestCase):
 
 
 def _create_image(format, *a, **kw):
-    buf = six.BytesIO()
+    buf = BytesIO()
     Image.new(*a, **kw).save(buf, format)
     buf.seek(0)
     return Image.open(buf)

@@ -1,5 +1,10 @@
 import re, csv, six
 
+try:
+    from cStringIO import StringIO as BytesIO
+except ImportError:
+    from io import BytesIO
+
 from scrapy.http import TextResponse, Response
 from scrapy.selector import Selector
 from scrapy import log
@@ -47,7 +52,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None):
     def _getrow(csv_r):
         return [str_to_unicode(field, encoding) for field in next(csv_r)]
 
-    lines = six.BytesIO(_body_or_str(obj, unicode=False))
+    lines = BytesIO(_body_or_str(obj, unicode=False))
     if delimiter:
         csv_r = csv.reader(lines, delimiter=delimiter)
     else:

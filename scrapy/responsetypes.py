@@ -6,6 +6,7 @@ based on different criteria.
 
 from mimetypes import MimeTypes
 from pkgutil import get_data
+from io import BytesIO
 import six
 
 from scrapy.http import Response
@@ -33,7 +34,7 @@ class ResponseTypes(object):
         self.classes = {}
         self.mimetypes = MimeTypes()
         mimedata = get_data('scrapy', 'mime.types')
-        self.mimetypes.readfp(six.BytesIO(mimedata))
+        self.mimetypes.readfp(BytesIO(mimedata))
         for mimetype, cls in six.iteritems(self.CLASSES):
             self.classes[mimetype] = load_object(cls)
 

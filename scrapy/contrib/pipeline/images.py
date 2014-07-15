@@ -7,6 +7,11 @@ See documentation in topics/images.rst
 import hashlib
 import six
 
+try:
+    from cStringIO import StringIO as BytesIO
+except ImportError:
+    from io import BytesIO
+
 from PIL import Image
 
 from scrapy.utils.misc import md5sum
@@ -69,7 +74,7 @@ class ImagesPipeline(FilesPipeline):
 
     def get_images(self, response, request, info):
         path = self.file_path(request, response=response, info=info)
-        orig_image = Image.open(six.BytesIO(response.body))
+        orig_image = Image.open(BytesIO(response.body))
 
         width, height = orig_image.size
         if width < self.MIN_WIDTH or height < self.MIN_HEIGHT:
@@ -96,7 +101,7 @@ class ImagesPipeline(FilesPipeline):
             image = image.copy()
             image.thumbnail(size, Image.ANTIALIAS)
 
-        buf = six.BytesIO()
+        buf = BytesIO()
         image.save(buf, 'JPEG')
         return image, buf
 

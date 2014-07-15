@@ -11,6 +11,11 @@ from six.moves.urllib.parse import urlparse
 from collections import defaultdict
 import six
 
+try:
+    from cStringIO import StringIO as BytesIO
+except ImportError:
+    from io import BytesIO
+
 from twisted.internet import defer, threads
 
 from scrapy import log
@@ -256,7 +261,7 @@ class FilesPipeline(MediaPipeline):
 
     def file_downloaded(self, response, request, info):
         path = self.file_path(request, response=response, info=info)
-        buf = six.BytesIO(response.body)
+        buf = BytesIO(response.body)
         self.store.persist_file(path, buf, info)
         checksum = md5sum(buf)
         return checksum

@@ -1,6 +1,6 @@
 import unittest
+from io import BytesIO
 
-import six
 from scrapy.mail import MailSender
 
 class MailSenderTest(unittest.TestCase):
@@ -30,7 +30,7 @@ class MailSenderTest(unittest.TestCase):
         self.assertEqual(msg.get('Content-Type'), 'text/html')
 
     def test_send_attach(self):
-        attach = six.BytesIO()
+        attach = BytesIO()
         attach.write(b'content')
         attach.seek(0)
         attachs = [('attachment', 'text/plain', attach)]

@@ -2,7 +2,7 @@ import gzip
 import inspect
 import warnings
 from scrapy.utils.trackref import object_ref
-import six
+from io import BytesIO
 
 from twisted.trial import unittest
 
@@ -196,7 +196,7 @@ class SitemapSpiderTest(SpiderTest):
     spider_class = SitemapSpider
 
     BODY = b"SITEMAP"
-    f = six.BytesIO()
+    f = BytesIO()
     g = gzip.GzipFile(fileobj=f, mode='w+b')
     g.write(BODY)
     g.close()

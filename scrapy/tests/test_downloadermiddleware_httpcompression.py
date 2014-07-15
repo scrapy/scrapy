@@ -1,4 +1,4 @@
-import six
+from io import BytesIO
 from unittest import TestCase
 from os.path import join, abspath, dirname
 from gzip import GzipFile
@@ -104,7 +104,7 @@ class HttpCompressionTest(TestCase):
             'Content-Type': 'text/html',
             'Content-Encoding': 'gzip',
         }
-        f = six.BytesIO()
+        f = BytesIO()
         plainbody = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=gb2312">"""
         zf = GzipFile(fileobj=f, mode='wb')
         zf.write(plainbody)
@@ -122,7 +122,7 @@ class HttpCompressionTest(TestCase):
             'Content-Type': 'text/html',
             'Content-Encoding': 'gzip',
         }
-        f = six.BytesIO()
+        f = BytesIO()
         plainbody = b"""<html><head><title>Some page</title><meta http-equiv="Content-Type" content="text/html; charset=gb2312">"""
         zf = GzipFile(fileobj=f, mode='wb')
         zf.write(plainbody)

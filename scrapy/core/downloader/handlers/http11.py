@@ -1,8 +1,8 @@
 """Download handlers for http and https schemes"""
 
 import re
-import six
 
+from io import BytesIO
 from time import time
 from six.moves.urllib.parse import urldefrag
 
@@ -234,7 +234,7 @@ class _ResponseReader(protocol.Protocol):
         self._finished = finished
         self._txresponse = txresponse
         self._request = request
-        self._bodybuf = six.BytesIO()
+        self._bodybuf = BytesIO()
 
     def dataReceived(self, bodyBytes):
         self._bodybuf.write(bodyBytes)
