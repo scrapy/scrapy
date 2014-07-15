@@ -132,7 +132,7 @@ class PickleItemExporterTest(BaseItemExporterTest):
         ie.export_item(i1)
         ie.export_item(i2)
         ie.finish_exporting()
-        f.reset()
+        f.seek(0)
         self.assertEqual(pickle.load(f), i1)
         self.assertEqual(pickle.load(f), i2)
 

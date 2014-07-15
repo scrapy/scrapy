@@ -54,7 +54,7 @@ class ReceivedDataProtocol(Protocol):
         return self.__filename
 
     def close(self):
-        self.body.close() if self.filename else self.body.reset()
+        self.body.close() if self.filename else self.body.seek(0)
 
 _CODE_RE = re.compile("\d+")
 class FTPDownloadHandler(object):
