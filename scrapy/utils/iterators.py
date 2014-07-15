@@ -81,7 +81,7 @@ def _body_or_str(obj, unicode=True):
             return obj.body_as_unicode()
         else:
             return obj.body.decode('utf-8')
-    elif type(obj) is six.text_type:
+    elif isinstance(obj, six.text_type):
         return obj if unicode else obj.encode('utf-8')
     else:
         return obj.decode('utf-8') if unicode else obj
