@@ -6,6 +6,7 @@ See documentation in docs/topics/spiders.rst
 import warnings
 
 from scrapy import log
+from scrapy import signals
 from scrapy.http import Request
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
@@ -53,6 +54,7 @@ class Spider(object_ref):
     def _set_crawler(self, crawler):
         self.crawler = crawler
         self.settings = crawler.settings
+        crawler.signals.connect(self.close, signals.spider_closed)
 
     def start_requests(self):
         for url in self.start_urls:
@@ -67,6 +69,12 @@ class Spider(object_ref):
     @classmethod
     def handles_request(cls, request):
         return url_is_from_spider(request.url, cls)
+
+    @staticmethod
+    def close(spider, reason):
+        closed = getattr(spider, 'closed', None)
+        if callable(closed):
+            return closed(reason)
 
     def __str__(self):
         return "<%s %r at 0x%0x>" % (type(self).__name__, self.name, id(self))

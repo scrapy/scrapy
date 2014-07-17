@@ -8,6 +8,7 @@ try:
 except ImportError:
     import mock
 
+from scrapy import signals
 from scrapy.spider import Spider, BaseSpider
 from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlResponse
 from scrapy.contrib.spiders.init import InitSpider
@@ -75,6 +76,21 @@ class SpiderTest(unittest.TestCase):
             self.spider_class.from_crawler(get_crawler(), 'example.com',
                                            foo='bar')
             mock_init.assert_called_once_with('example.com', foo='bar')
+
+    def test_closed_signal_call(self):
+        class TestSpider(self.spider_class):
+            closed_called = False
+
+            def closed(self, reason):
+                self.closed_called = True
+
+        crawler = get_crawler()
+        spider = TestSpider.from_crawler(crawler, 'example.com')
+        crawler.signals.send_catch_log(signal=signals.spider_opened,
+                                       spider=spider)
+        crawler.signals.send_catch_log(signal=signals.spider_closed,
+                                       spider=spider, reason=None)
+        self.assertTrue(spider.closed_called)
 
 
 class InitSpiderTest(SpiderTest):
