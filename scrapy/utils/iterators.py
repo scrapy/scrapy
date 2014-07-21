@@ -1,5 +1,9 @@
-import re, csv
-from cStringIO import StringIO
+import re, csv, six
+
+try:
+    from cStringIO import StringIO as BytesIO
+except ImportError:
+    from io import BytesIO
 
 from scrapy.http import TextResponse, Response
 from scrapy.selector import Selector
@@ -48,7 +52,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None):
     def _getrow(csv_r):
         return [str_to_unicode(field, encoding) for field in next(csv_r)]
 
-    lines = StringIO(_body_or_str(obj, unicode=False))
+    lines = BytesIO(_body_or_str(obj, unicode=False))
     if delimiter:
         csv_r = csv.reader(lines, delimiter=delimiter)
     else:
@@ -68,7 +72,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None):
 
 
 def _body_or_str(obj, unicode=True):
-    assert isinstance(obj, (Response, basestring)), \
+    assert isinstance(obj, (Response, six.string_types)), \
         "obj must be Response or basestring, not %s" % type(obj).__name__
     if isinstance(obj, Response):
         if not unicode:
@@ -77,7 +81,7 @@ def _body_or_str(obj, unicode=True):
             return obj.body_as_unicode()
         else:
             return obj.body.decode('utf-8')
-    elif type(obj) is type(u''):
+    elif isinstance(obj, six.text_type):
         return obj if unicode else obj.encode('utf-8')
     else:
         return obj.decode('utf-8') if unicode else obj

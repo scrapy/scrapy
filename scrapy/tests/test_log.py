@@ -1,4 +1,4 @@
-from cStringIO import StringIO
+from io import BytesIO
 
 from twisted.python import log as txlog, failure
 from twisted.trial import unittest
@@ -21,7 +21,7 @@ class ScrapyFileLogObserverTest(unittest.TestCase):
     encoding = 'utf-8'
 
     def setUp(self):
-        self.f = StringIO()
+        self.f = BytesIO()
         self.log_observer = log.ScrapyFileLogObserver(self.f, self.level, self.encoding)
         self.log_observer.start()
 

@@ -1,5 +1,5 @@
 import unittest, json
-from cStringIO import StringIO
+from io import BytesIO
 
 from scrapy.utils.jsonrpc import jsonrpc_client_call, jsonrpc_server_call, \
     JsonRpcError, jsonrpc_errors
@@ -19,7 +19,7 @@ class urllib_mock(object):
     def urlopen(self, url, request):
         self.url = url
         self.request = request
-        return StringIO(self.response)
+        return BytesIO(self.response)
 
 class TestTarget(object):
 

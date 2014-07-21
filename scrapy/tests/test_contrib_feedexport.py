@@ -1,6 +1,6 @@
 import os
+from io import BytesIO
 from six.moves.urllib.parse import urlparse
-from cStringIO import StringIO
 
 from zope.interface.verify import verifyObject
 from twisted.trial import unittest
@@ -62,13 +62,13 @@ class FTPFeedStorageTest(unittest.TestCase):
     def _assert_stores(self, storage, path):
         spider = Spider("default")
         file = storage.open(spider)
-        file.write("content")
+        file.write(b"content")
         yield storage.store(file)
         self.failUnless(os.path.exists(path))
-        self.failUnlessEqual(open(path).read(), "content")
+        self.failUnlessEqual(open(path).read(), b"content")
         # again, to check s3 objects are overwritten
-        yield storage.store(StringIO("new content"))
-        self.failUnlessEqual(open(path).read(), "new content")
+        yield storage.store(BytesIO(b"new content"))
+        self.failUnlessEqual(open(path).read(), b"new content")
 
 
 class S3FeedStorageTest(unittest.TestCase):
@@ -93,9 +93,9 @@ class StdoutFeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_store(self):
-        out = StringIO()
+        out = BytesIO()
         storage = StdoutFeedStorage('stdout:', _stdout=out)
         file = storage.open(Spider("default"))
-        file.write("content")
+        file.write(b"content")
         yield storage.store(file)
-        self.assertEqual(out.getvalue(), "content")
+        self.assertEqual(out.getvalue(), b"content")

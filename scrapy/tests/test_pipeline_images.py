@@ -1,8 +1,7 @@
 import os
 import hashlib
 import warnings
-from cStringIO import StringIO
-from tempfile import mkdtemp
+from tempfile import mkdtemp, TemporaryFile
 from shutil import rmtree
 
 from twisted.trial import unittest
@@ -201,7 +200,7 @@ class ImagesPipelineTestCaseFields(unittest.TestCase):
 
 
 def _create_image(format, *a, **kw):
-    buf = StringIO()
+    buf = TemporaryFile()
     Image.new(*a, **kw).save(buf, format)
     buf.seek(0)
     return Image.open(buf)
