@@ -70,7 +70,7 @@ class DefaultsTest(ManagerTestCase):
         req = Request('http://example.com')
         body = '<p>You are being redirected</p>'
         resp = Response(req.url, status=302, body=body, headers={
-            'Content-Length': len(body),
+            'Content-Length': str(len(body)),
             'Content-Type': 'text/html',
             'Content-Encoding': 'gzip',
             'Location': 'http://example.com/login',
@@ -85,7 +85,7 @@ class DefaultsTest(ManagerTestCase):
         req = Request('http://example.com')
         body = '<p>You are being redirected</p>'
         resp = Response(req.url, status=200, body=body, headers={
-            'Content-Length': len(body),
+            'Content-Length': str(len(body)),
             'Content-Type': 'text/html',
             'Content-Encoding': 'gzip',
             'Location': 'http://example.com/login',
