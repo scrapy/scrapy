@@ -24,7 +24,10 @@ class Slot(object):
     def __init__(self, start_requests, close_if_idle, nextcall, scheduler):
         self.closing = False
         self.inprogress = set() # requests in progress
-        self.start_requests = iter(start_requests)
+        try:
+            self.start_requests = iter(start_requests)
+        except TypeError:
+            self.start_requests = None
         self.close_if_idle = close_if_idle
         self.nextcall = nextcall
         self.scheduler = scheduler

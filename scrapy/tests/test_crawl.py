@@ -129,6 +129,14 @@ class CrawlTestCase(TestCase):
         self.assertEqual(spider.visited, 3)
 
     @defer.inlineCallbacks
+    def test_start_requests_not_iterable(self):
+        spider = SimpleSpider()
+        spider.start_requests = lambda: None
+        yield docrawl(spider)
+        errors = self.flushLoggedErrors()
+        self.assertEqual(len(errors), 0)
+
+    @defer.inlineCallbacks
     def test_unbounded_response(self):
         # Completeness of responses without Content-Length or Transfer-Encoding
         # can not be determined, we treat them as valid but flagged as "partial"
