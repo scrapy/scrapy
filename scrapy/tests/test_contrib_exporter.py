@@ -3,6 +3,7 @@ from io import BytesIO
 from six.moves import cPickle as pickle
 import lxml.etree
 import re
+import types
 
 from scrapy.item import Item, Field
 from scrapy.utils.python import str_to_unicode
@@ -42,6 +43,34 @@ class BaseItemExporterTest(unittest.TestCase):
                 raise
         self.ie.finish_exporting()
         self._check_output()
+
+    def test_raii(self):
+        self._patch_exporter_for_raii_test()
+
+        with self.ie as exporter:
+            try:
+                exporter.export_item(self.i)
+            except NotImplementedError:
+                if self.ie.__class__ is not BaseItemExporter:
+                    raise
+
+        self.assertTrue(getattr(self.ie, '_started_exporting'))
+        self.assertTrue(getattr(self.ie, '_finished_exporting'))
+        self._check_output()
+
+    def _patch_exporter_for_raii_test(self):
+        def _new_start_exporting(self):
+            self._old_start_exporting()
+            self._started_exporting = True
+
+        def _new_finish_exporting(self):
+            self._old_finish_exporting()
+            self._finished_exporting = True
+
+        self.ie._old_start_exporting = self.ie.start_exporting
+        self.ie._old_finish_exporting = self.ie.finish_exporting
+        self.ie.start_exporting = types.MethodType(_new_start_exporting, self.ie)
+        self.ie.finish_exporting = types.MethodType(_new_finish_exporting, self.ie)
 
     def test_serialize_field(self):
         self.assertEqual(self.ie.serialize_field( \

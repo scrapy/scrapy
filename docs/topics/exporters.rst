@@ -69,6 +69,22 @@ Exporter to export scraped items to different files, one per spider::
            self.exporter.export_item(item)
            return item
 
+Alternatively, you can also use `with` statement instead of calling
+:meth:`~BaseItemExporter.start_exporting` and
+:meth:`~BaseItemExporter.finish_exporting` directly.
+
+::
+
+    with SomeExporter() as exporter:
+        exporter.export_item(item)
+
+is equivalent to::
+
+    exporter = SomeExporter()
+    exporter.start_exporting()
+    exporter.export_item(item)
+    exporter.finish_exporting()
+
 
 .. _topics-exporters-field-serialization:
 
