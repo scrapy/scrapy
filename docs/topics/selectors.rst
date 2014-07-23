@@ -439,26 +439,26 @@ Example::
 Converting a *node-set* to string::
 
     >>> sel.xpath('//a//text()').extract() # take a peek at the node-set
-       [u'Click here to go to the ', u'Next Page']
+    [u'Click here to go to the ', u'Next Page']
     >>> sel.xpath("string(//a[1]//text())").extract() # convert it to string
-        [u'Click here to go to the ']
+    [u'Click here to go to the ']
 
 A *node* converted to a string, however, puts together the text of itself plus of all its descendants::
 
     >>> sel.xpath("//a[1]").extract() # select the first node
-        [u'<a href="#">Click here to go to the <strong>Next Page</strong></a>']
+    [u'<a href="#">Click here to go to the <strong>Next Page</strong></a>']
     >>> sel.xpath("string(//a[1])").extract() # convert it to string
-        [u'Click here to go to the Next Page']
+    [u'Click here to go to the Next Page']
 
 So, using the ``.//text()`` node-set won't select anything in this case::
 
     >>> sel.xpath("//a[contains(.//text(), 'Next Page')]").extract()
-        []
+    []
 
 But using the ``.`` to mean the node, works::
 
     >>> sel.xpath("//a[contains(., 'Next Page')]").extract()
-        [u'<a href="#">Click here to go to the <strong>Next Page</strong></a>']
+    [u'<a href="#">Click here to go to the <strong>Next Page</strong></a>']
 
 .. _`XPath string function`: http://www.w3.org/TR/xpath/#section-String-Functions
 
@@ -524,7 +524,7 @@ you can just select by class using CSS and then switch to XPath when needed::
     >>> from scrapy import Selector
     >>> sel = Selector(text='<div class="hero shout"><time datetime="2014-07-23 19:00">Special date</time></div>')
     >>> sel.css('.shout').xpath('./time/@datetime').extract()
-        [u'2014-07-23 19:00']
+    [u'2014-07-23 19:00']
 
 This is cleaner than using the verbose XPath trick shown above. Just remember
 to use the ``.`` in the XPath expressions that will follow.
