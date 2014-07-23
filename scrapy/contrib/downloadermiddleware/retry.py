@@ -18,9 +18,9 @@ About HTTP errors to consider:
   indicate server overload, which would be something we want to retry
 """
 
-from twisted.internet.defer import TimeoutError as UserTimeoutError
-from twisted.internet.error import TimeoutError as ServerTimeoutError, \
-        DNSLookupError, ConnectionRefusedError, ConnectionDone, ConnectError, \
+from twisted.internet import defer
+from twisted.internet.error import TimeoutError, DNSLookupError, \
+        ConnectionRefusedError, ConnectionDone, ConnectError, \
         ConnectionLost, TCPTimedOutError
 
 from scrapy import log
@@ -33,7 +33,7 @@ class RetryMiddleware(object):
 
     # IOError is raised by the HttpCompression middleware when trying to
     # decompress an empty response
-    EXCEPTIONS_TO_RETRY = (ServerTimeoutError, UserTimeoutError, DNSLookupError,
+    EXCEPTIONS_TO_RETRY = (defer.TimeoutError, TimeoutError, DNSLookupError,
                            ConnectionRefusedError, ConnectionDone, ConnectError,
                            ConnectionLost, TCPTimedOutError, ResponseFailed,
                            IOError)
