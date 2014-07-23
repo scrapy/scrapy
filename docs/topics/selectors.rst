@@ -412,55 +412,55 @@ Some XPath tips
 ---------------
 
 Here are some tips that you may find useful when using XPath
-with Scrapy selectors. If you are not much familiar with XPath yet,
+with Scrapy selectors, based on `this post from ScrapingHub's blog`_.
+If you are not much familiar with XPath yet,
 you may want to take a look first at this `XPath tutorial`_.
 
-You can also find `more XPath tips like these here.`_
 
 .. _`XPath tutorial`: http://www.zvon.org/comp/r/tut-XPath_1.html
-.. _`more XPath tips like these here.`: http://blog.scrapinghub.com/2014/07/17/xpath-tips-from-the-web-scraping-trenches/
+.. _`this post from ScrapingHub's blog`: http://blog.scrapinghub.com/2014/07/17/xpath-tips-from-the-web-scraping-trenches/
 
 
 Using text nodes in a condition
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When you need to use the text content as argument to a XPath string function
-like ``contains`` or ``substring-after``, avoid using ``.//text()`` and use
-just ``.`` instead.
+When you need to use the text content as argument to a `XPath string function`_,
+avoid using ``.//text()`` and use just ``.`` instead.
 
-This is because the ``.//text()`` selects several text nodes (a node-set),
-that when converted to string gets only the first element. The ``.`` notation
-selects the whole element, which gets the whole element text,
-including its descendants.
+This is because the expression ``.//text()`` yields a collection of text elements -- a *node-set*.
+And when a node-set is converted to a string, which happens when it is passed as argument to
+a string function like ``contains()`` or ``starts-with()``, it results in the text for the first element only.
 
 Example::
 
     >>> from scrapy import Selector
     >>> sel = Selector(text='<a href="#">Click here to go to the <strong>Next Page</strong></a>')
 
-Using the ``.//text()`` node-set::
+Converting a *node-set* to string::
+
+    >>> sel.xpath('//a//text()').extract() # take a peek at the node-set
+       [u'Click here to go to the ', u'Next Page']
+    >>> sel.xpath("string(//a[1]//text())").extract() # convert it to string
+        [u'Click here to go to the ']
+
+A *node* converted to a string, however, puts together the text of itself plus of all its descendants::
+
+    >>> sel.xpath("//a[1]").extract() # select the first node
+        [u'<a href="#">Click here to go to the <strong>Next Page</strong></a>']
+    >>> sel.xpath("string(//a[1])").extract() # convert it to string
+        [u'Click here to go to the Next Page']
+
+So, using the ``.//text()`` node-set won't select anything in this case::
 
     >>> sel.xpath("//a[contains(.//text(), 'Next Page')]").extract()
         []
 
-Using the node::
+But using the ``.`` to mean the node, works::
 
     >>> sel.xpath("//a[contains(., 'Next Page')]").extract()
         [u'<a href="#">Click here to go to the <strong>Next Page</strong></a>']
 
-You can verify this difference between the conversion to string from a node or
-a *node-set* using the ``string()`` XPath function.
-
-Converting a *node-set* to string::
-
-    >>> sel.xpath("string(//a[1]//text())").extract()
-        [u'Click here to go to the ']
-
-Converting a *node* to string::
-
-    >>> sel.xpath("string(//a[1])").extract()
-        [u'Click here to go to the Next Page']
-
+.. _`XPath string function`: http://www.w3.org/TR/xpath/#section-String-Functions
 
 Beware the difference between //node[1] and (//node)[1]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
