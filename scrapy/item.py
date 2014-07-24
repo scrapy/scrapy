@@ -5,7 +5,8 @@ See documentation in docs/topics/item.rst
 """
 
 from pprint import pformat
-from UserDict import DictMixin
+from collections import MutableMapping
+from abc import ABCMeta
 import six
 
 from scrapy.utils.trackref import object_ref
@@ -20,7 +21,7 @@ class Field(dict):
     """Container of field metadata"""
 
 
-class ItemMeta(type):
+class ItemMeta(ABCMeta):
 
     def __new__(mcs, class_name, bases, attrs):
         fields = {}
@@ -37,7 +38,7 @@ class ItemMeta(type):
         return cls
 
 
-class DictItem(DictMixin, BaseItem):
+class DictItem(MutableMapping, BaseItem):
 
     fields = {}
 
@@ -71,6 +72,19 @@ class DictItem(DictMixin, BaseItem):
                 (name, value))
         super(DictItem, self).__setattr__(name, value)
 
+    def __len__(self):
+        return len(self._values)
+
+    def __iter__(self):
+        for i in getattr(self, "_values", ()):
+            yield i
+
+    def __hash__(self):
+        if hasattr(self, "_values"):
+            return hash(frozenset(self._values.items()))
+        else:
+            return 1
+
     def keys(self):
         return self._values.keys()
 
@@ -81,6 +95,5 @@ class DictItem(DictMixin, BaseItem):
         return self.__class__(self)
 
 
-class Item(DictItem):
-
-    __metaclass__ = ItemMeta
+class Item(six.with_metaclass(ItemMeta, DictItem)):
+    pass
