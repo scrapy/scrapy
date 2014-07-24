@@ -1,6 +1,7 @@
 import unittest
 
 from scrapy.item import Item, Field
+import six
 
 
 class ItemTest(unittest.TestCase):
@@ -52,8 +53,13 @@ class ItemTest(unittest.TestCase):
         i['name'] = u'John Doe'
         i['number'] = 123
         itemrepr = repr(i)
-        self.assertEqual(itemrepr,
-                         "{'name': u'John Doe', 'number': 123}")
+
+        if six.PY2:
+            self.assertEqual(itemrepr,
+                             "{'name': u'John Doe', 'number': 123}")
+        else:
+            self.assertEqual(itemrepr,
+                             "{'name': 'John Doe', 'number': 123}")
 
         i2 = eval(itemrepr)
         self.assertEqual(i2['name'], 'John Doe')
@@ -106,13 +112,13 @@ class ItemTest(unittest.TestCase):
 
         i = TestItem()
         i['name'] = u'John'
-        self.assertEqual(i.keys(), ['name'])
-        self.assertEqual(i.values(), ['John'])
+        self.assertEqual(list(i.keys()), ['name'])
+        self.assertEqual(list(i.values()), ['John'])
 
         i['keys'] = u'Keys'
         i['values'] = u'Values'
-        self.assertSortedEqual(i.keys(), ['keys', 'values', 'name'])
-        self.assertSortedEqual(i.values(), [u'Keys', u'Values', u'John'])
+        self.assertSortedEqual(list(i.keys()), ['keys', 'values', 'name'])
+        self.assertSortedEqual(list(i.values()), [u'Keys', u'Values', u'John'])
 
     def test_metaclass_inheritance(self):
         class BaseItem(Item):
@@ -125,8 +131,8 @@ class ItemTest(unittest.TestCase):
 
         i = TestItem()
         i['keys'] = 3
-        self.assertEqual(i.keys(), ['keys'])
-        self.assertEqual(i.values(), [3])
+        self.assertEqual(list(i.keys()), ['keys'])
+        self.assertEqual(list(i.values()), [3])
 
     def test_to_dict(self):
         class TestItem(Item):
