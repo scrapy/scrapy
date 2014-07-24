@@ -76,14 +76,9 @@ class DictItem(MutableMapping, BaseItem):
         return len(self._values)
 
     def __iter__(self):
-        for i in getattr(self, "_values", ()):
-            yield i
+        return iter(self._values)
 
-    def __hash__(self):
-        if hasattr(self, "_values"):
-            return hash(frozenset(self._values.items()))
-        else:
-            return 1
+    __hash__ = BaseItem.__hash__
 
     def keys(self):
         return self._values.keys()
@@ -95,5 +90,6 @@ class DictItem(MutableMapping, BaseItem):
         return self.__class__(self)
 
 
-class Item(six.with_metaclass(ItemMeta, DictItem)):
+@six.add_metaclass(ItemMeta)
+class Item(DictItem):
     pass
