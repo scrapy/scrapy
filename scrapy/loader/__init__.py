@@ -4,6 +4,7 @@ See documentation in docs/topics/loaders.rst
 
 """
 from collections import defaultdict
+from contextlib import contextmanager
 import six
 
 from scrapy.item import Item
@@ -199,5 +200,19 @@ class ItemLoader(object):
         self._check_selector_method()
         csss = arg_to_iter(csss)
         return flatten(self.selector.css(css).extract() for css in csss)
+
+    @contextmanager
+    def push_selector(self, selector):
+        selector_orig = self.selector
+        self.context['selector'] = self.selector = selector
+        yield
+        self.context['selector'] = self.selector = selector_orig
+
+    def push_xpath(self, xpath):
+        return self.push_selector(self.selector.xpath(xpath))
+
+    def push_css(self, css):
+        return self.push_selector(self.selector.css(css))
+
 
 XPathItemLoader = create_deprecated_class('XPathItemLoader', ItemLoader)

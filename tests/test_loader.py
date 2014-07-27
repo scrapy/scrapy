@@ -612,6 +612,32 @@ class SelectortemLoaderTest(unittest.TestCase):
         l.replace_css('url', 'a::attr(href)', re='http://www\.(.+)')
         self.assertEqual(l.get_output_value('url'), [u'scrapy.org'])
 
+    def test_push_selector(self):
+        l = TestItemLoader(response=self.response)
+        newselector = l.selector.xpath('html')
+        with l.push_selector(newselector):
+            self.assert_(l.selector is newselector)
+        self.assert_(l.selector is not newselector)
+
+    def test_push_xpath(self):
+        l = TestItemLoader(response=self.response)
+        with l.push_xpath('/html/body'):
+            with l.push_xpath('div'):
+                l.add_xpath('name', 'text()')
+            with l.push_xpath('a'):
+                l.add_xpath('url', '@href')
+        self.assertEqual(l.get_output_value('name'), [u'Marta'])
+        self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
+
+    def test_push_css(self):
+        l = TestItemLoader(response=self.response)
+        with l.push_css('#id'):
+            l.add_css('name', '::text')
+        with l.push_css('a'):
+            l.add_css('url', '::attr(href)')
+        self.assertEqual(l.get_output_value('name'), [u'Marta'])
+        self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
+
 
 class SubselectorLoaderTest(unittest.TestCase):
     response = HtmlResponse(url="", encoding='utf-8', body=b"""
