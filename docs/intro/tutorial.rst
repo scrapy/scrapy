@@ -361,7 +361,7 @@ Let's add this code to our spider::
             for sel in response.xpath('//ul/li'):
                 title = sel.select('a/text()').extract()
                 link = sel.select('a/@href').extract()
-                desc = sel.selec('text()').extract()
+                desc = sel.select('text()').extract()
                 print title, link, desc
 
 Now try crawling the dmoz.org domain again and you'll see sites being printed
