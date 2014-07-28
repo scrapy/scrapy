@@ -275,27 +275,26 @@ After the shell loads, you will have the response fetched in a local
 ``response`` variable, so if you type ``response.body`` you will see the body
 of the response, or you can type ``response.headers`` to see its headers.
 
-More important, if you type ``response.selector`` you will access a selector
+More important, if you type ``hxs`` you will access a selector
 object you can use to query the response, and convenient shortcuts like
-``response.xpath()`` and ``response.css()`` mapping to
-``response.selector.xpath()`` and ``response.selector.css()``
+``hxs.select()`` 
 
 
 So let's try it::
 
-    In [1]: response.xpath('//title')
+    In [1]: hxs.select('//title')
     Out[1]: [<Selector xpath='//title' data=u'<title>Open Directory - Computers: Progr'>]
  
-    In [2]: response.xpath('//title').extract()
+    In [2]: hxs.select('//title').extract()
     Out[2]: [u'<title>Open Directory - Computers: Programming: Languages: Python: Books</title>']
  
-    In [3]: response.xpath('//title/text()')
+    In [3]: hxs.select('//title/text()')
     Out[3]: [<Selector xpath='//title/text()' data=u'Open Directory - Computers: Programming:'>]
  
-    In [4]: response.xpath('//title/text()').extract()
+    In [4]: hxs.select('//title/text()').extract()
     Out[4]: [u'Open Directory - Computers: Programming: Languages: Python: Books']
  
-    In [5]: response.xpath('//title/text()').re('(\w+):')
+    In [5]: hxs.select('//title/text()').re('(\w+):')
     Out[5]: [u'Computers', u'Programming', u'Languages', u'Python']
 
 Extracting the data
@@ -315,28 +314,28 @@ is inside a ``<ul>`` element, in fact the *second* ``<ul>`` element.
 So we can select each ``<li>`` element belonging to the sites list with this
 code::
 
-    sel.xpath('//ul/li')
+    hxs.select('//ul/li')
 
 And from them, the sites descriptions::
 
-    sel.xpath('//ul/li/text()').extract()
+    hxs.select('//ul/li/text()').extract()
 
 The sites titles::
 
-    sel.xpath('//ul/li/a/text()').extract()
+    hxs.select('//ul/li/a/text()').extract()
 
 And the sites links::
 
-    sel.xpath('//ul/li/a/@href').extract()
+    hxs.select('//ul/li/a/@href').extract()
 
-As we've said before, each ``.xpath()`` call returns a list of selectors, so we can
-concatenate further ``.xpath()`` calls to dig deeper into a node. We are going to use
+As we've said before, each ``.select()`` call returns a list of selectors, so we can
+concatenate further ``.select()`` calls to dig deeper into a node. We are going to use
 that property here, so::
 
-    for sel in response.xpath('//ul/li'):
-        title = sel.xpath('a/text()').extract()
-        link = sel.xpath('a/@href').extract()
-        desc = sel.xpath('text()').extract()
+    for sel in hxs.select('//ul/li'):
+        title = sel.select('a/text()').extract()
+        link = sel.select('a/@href').extract()
+        desc = sel.select('text()').extract()
         print title, link, desc
 
 .. note::
@@ -360,9 +359,9 @@ Let's add this code to our spider::
      
         def parse(self, response):
             for sel in response.xpath('//ul/li'):
-                title = sel.xpath('a/text()').extract()
-                link = sel.xpath('a/@href').extract()
-                desc = sel.xpath('text()').extract()
+                title = sel.select('a/text()').extract()
+                link = sel.select('a/@href').extract()
+                desc = sel.select('text()').extract()
                 print title, link, desc
 
 Now try crawling the dmoz.org domain again and you'll see sites being printed
@@ -401,9 +400,9 @@ scraped so far, the final code for our Spider would be like this::
         def parse(self, response):
             for sel in response.xpath('//ul/li'):
                 item = DmozItem()
-                item['title'] = sel.xpath('a/text()').extract()
-                item['link'] = sel.xpath('a/@href').extract()
-                item['desc'] = sel.xpath('text()').extract()
+                item['title'] = sel.select('a/text()').extract()
+                item['link'] = sel.select('a/@href').extract()
+                item['desc'] = sel.select('text()').extract()
                 yield item
 
 .. note:: You can find a fully-functional variant of this spider in the dirbot_
