@@ -1,4 +1,4 @@
-bla.. _intro-tutorial:
+.. _intro-tutorial:
 
 ===============
 Scrapy Tutorial
