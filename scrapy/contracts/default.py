@@ -1,3 +1,5 @@
+import re
+
 from scrapy.item import BaseItem
 from scrapy.http import Request
 from scrapy.exceptions import ContractFail
@@ -13,9 +15,8 @@ class UrlContract(Contract):
 
     name = 'url'
 
-    def adjust_request_args(self, args):
-        args['url'] = self.args[0]
-        return args
+    def create_request(self):
+        return Request(url=self.input_string.strip(), callback=self.method)
 
 
 class ReturnsContract(Contract):
@@ -42,17 +43,19 @@ class ReturnsContract(Contract):
     def __init__(self, *args, **kwargs):
         super(ReturnsContract, self).__init__(*args, **kwargs)
 
-        assert len(self.args) in [1, 2, 3]
-        self.obj_name = self.args[0] or None
+        args = re.split(r'\s+', self.input_string)
+        assert len(args) in [1, 2, 3]
+
+        self.obj_name = args[0] or None
         self.obj_type = self.objects[self.obj_name]
 
         try:
-            self.min_bound = int(self.args[1])
+            self.min_bound = int(args[1])
         except IndexError:
             self.min_bound = 1
 
         try:
-            self.max_bound = int(self.args[2])
+            self.max_bound = int(args[2])
         except IndexError:
             self.max_bound = float('inf')
 
@@ -70,8 +73,8 @@ class ReturnsContract(Contract):
             else:
                 expected = '%s..%s' % (self.min_bound, self.max_bound)
 
-            raise ContractFail("Returned %s %s, expected %s" % \
-                (occurrences, self.obj_name, expected))
+            raise ContractFail("Returned %s %s, expected %s" % (occurrences,
+                               self.obj_name, expected))
 
 
 class ScrapesContract(Contract):
@@ -82,8 +85,10 @@ class ScrapesContract(Contract):
     name = 'scrapes'
 
     def post_process(self, output):
+        args = re.split(r'\s+', self.input_string)
+
         for x in output:
             if isinstance(x, BaseItem):
-                for arg in self.args:
+                for arg in args:
                     if not arg in x:
                         raise ContractFail("'%s' field is missing" % arg)

@@ -1,11 +1,12 @@
 import sys
 import re
+import itertools
 from functools import wraps
 from unittest import TestCase
+import warnings
 
-from scrapy.http import Request
 from scrapy.utils.spider import iterate_spider_output
-from scrapy.utils.python import get_spec
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 
 class ContractsManager(object):
@@ -16,31 +17,28 @@ class ContractsManager(object):
             self.contracts[contract.name] = contract
 
     def extract_contracts(self, method):
-        contracts = []
+        batch = []
         for line in method.__doc__.split('\n'):
             line = line.strip()
 
             if line.startswith('@'):
-                name, args = re.match(r'@(\w+)\s*(.*)', line).groups()
-                args = re.split(r'\s+', args)
+                mobj = re.match(r'@(\w+)\s*(.*)', line)
+                if mobj:
+                    name, input_string = mobj.groups()
+                    batch.append(self.contracts[name](method, input_string))
+            elif not line:
+                yield batch
+                batch = []
 
-                contracts.append(self.contracts[name](method, *args))
-
-        return contracts
+        if batch:
+            yield batch
 
     def from_method(self, method, results):
-        contracts = self.extract_contracts(method)
-        if contracts:
-            # calculate request args
-            args, kwargs = get_spec(Request.__init__)
-            kwargs['callback'] = method
-            for contract in contracts:
-                kwargs = contract.adjust_request_args(kwargs)
-
-            # create and prepare request
-            args.remove('self')
-            if set(args).issubset(set(kwargs)):
-                request = Request(**kwargs)
+        for contracts in self.extract_contracts(method):
+            requests = filter(None, (contract.create_request() for contract in contracts))
+            for request in requests:
+                for contract in contracts:
+                    request = contract.adjust_request(request)
 
                 # execute pre and post hooks in order
                 for contract in reversed(contracts):
@@ -49,7 +47,7 @@ class ContractsManager(object):
                     request = contract.add_post_hook(request, results)
 
                 self._clean_req(request, method, results)
-                return request
+                yield request
 
     def _clean_req(self, request, method, results):
         """ stop the request from returning objects and records any errors """
@@ -77,10 +75,24 @@ class ContractsManager(object):
 class Contract(object):
     """ Abstract class for contracts """
 
-    def __init__(self, method, *args):
+    def __init__(self, method, input_string):
         self.testcase_pre = _create_testcase(method, '@%s pre-hook' % self.name)
         self.testcase_post = _create_testcase(method, '@%s post-hook' % self.name)
-        self.args = args
+
+        self.method = method
+        self.input_string = input_string
+
+    @property
+    def args(self):
+        warnings.warn("Contract.args attribute is deprecated and will be no longer supported, "
+            "parse and use the raw Contract.input_string attribute instead", ScrapyDeprecationWarning, stacklevel=3)
+        return re.split(r'\s+', self.input_string)
+
+    def create_request(self):
+        pass
+
+    def adjust_request(self, request):
+        return request
 
     def add_pre_hook(self, request, results):
         if hasattr(self, 'pre_process'):
@@ -128,9 +140,6 @@ class Contract(object):
             request.callback = wrapper
 
         return request
-
-    def adjust_request_args(self, args):
-        return args
 
 
 def _create_testcase(method, desc):
