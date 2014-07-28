@@ -127,7 +127,7 @@ all start with the ``[s]`` prefix)::
 
     >>>
 
-After that, we can star playing with the objects::
+After that, we can start playing with the objects::
 
     >>> sel.xpath("//h2/text()").extract()[0]
     u'Welcome to Scrapy'
