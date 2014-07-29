@@ -264,6 +264,30 @@ Settings API
        :param default: the value to return if no setting is found
        :type default: any
 
+    .. method:: copy()
+
+       Make a deep copy of current settings.
+
+       This method returns a new instance of the :class:`Settings` class,
+       populated with the same values and their priorities.
+
+       Modifications to the new object won't be reflected on the original
+       settings.
+
+    .. method:: freeze()
+
+       Disable further changes to the current settings.
+
+       After calling this method, the present state of the settings will become
+       immutable. Trying to change values through the :meth:`~set` method and
+       its variants won't be possible and will be alerted.
+
+    .. method:: frozencopy()
+
+       Return an immutable copy of the current settings.
+
+       Alias for a :meth:`~freeze` call in the object returned by :meth:`copy`
+
 .. _topics-api-signals:
 
 Signals API
