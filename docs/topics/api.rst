@@ -28,9 +28,10 @@ contains a dictionary of all available extensions and their order similar to
 how you :ref:`configure the downloader middlewares
 <topics-downloader-middleware-setting>`.
 
-.. class:: Crawler(settings)
+.. class:: Crawler(spidercls, settings)
 
     The Crawler object must be instantiated with a
+    :class:`scrapy.spider.Spider` subclass and a
     :class:`scrapy.settings.Settings` object.
 
     .. attribute:: settings
@@ -90,16 +91,18 @@ how you :ref:`configure the downloader middlewares
         or modify the downloader and scheduler behaviour, although this is an
         advanced use and this API is not yet stable.
 
-    .. method:: configure()
+    .. attribute:: spider
 
-        Configure the crawler.
+        Spider currently being crawled. This is an instance of the spider class
+        provided while constructing the crawler, and it is created after the
+        arguments given in the :meth:`crawl` method.
 
-        This loads extensions, middlewares and spiders, leaving the crawler
-        ready to be started. It also configures the execution engine.
+    .. method:: crawl(\*args, \**kwargs)
 
-    .. method:: start()
+        Starts the crawler by instantiating its spider class with the given
+        `args` and `kwargs` arguments, while setting the execution engine in
+        motion.
 
-        Start the crawler. This calls :meth:`configure` if it hasn't been called yet.
         Returns a deferred that is fired when the crawl is finished.
 
 .. _topics-api-settings:

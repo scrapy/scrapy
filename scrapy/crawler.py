@@ -13,16 +13,22 @@ from scrapy import log, signals
 
 class Crawler(object):
 
-    def __init__(self, settings):
-        self.configured = False
+    def __init__(self, spidercls, settings):
+        self.spidercls = spidercls
         self.settings = settings
         self.signals = SignalManager(self)
-        self.stats = load_object(settings['STATS_CLASS'])(self)
-        self._start_requests = lambda: ()
-        self._spider = None
-        # TODO: move SpiderManager to CrawlerProcess
+        self.stats = load_object(self.settings['STATS_CLASS'])(self)
+        lf_cls = load_object(self.settings['LOG_FORMATTER'])
+        self.logformatter = lf_cls.from_crawler(self)
+        self.extensions = ExtensionManager.from_crawler(self)
+
+        # Attribute kept for backward compatibility (Use CrawlerRunner.spiders)
         spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
-        self.spiders = spman_cls.from_crawler(self)
+        self.spiders = spman_cls.from_settings(self.settings)
+
+        self.crawling = False
+        self.spider = None
+        self.engine = None
 
     def install(self):
         # TODO: remove together with scrapy.project.crawler usage
@@ -36,39 +42,31 @@ class Crawler(object):
         assert hasattr(scrapy.project, 'crawler'), "crawler not installed"
         del scrapy.project.crawler
 
-    def configure(self):
-        if self.configured:
-            return
-
-        self.configured = True
-        lf_cls = load_object(self.settings['LOG_FORMATTER'])
-        self.logformatter = lf_cls.from_crawler(self)
-        self.extensions = ExtensionManager.from_crawler(self)
-        self.engine = ExecutionEngine(self, self._spider_closed)
-
-    def crawl(self, spider, requests=None):
-        assert self._spider is None, 'Spider already attached'
-        self._spider = spider
-        spider.set_crawler(self)
-        if requests is None:
-            self._start_requests = spider.start_requests
-        else:
-            self._start_requests = lambda: requests
-
-    def _spider_closed(self, spider=None):
-        if not self.engine.open_spiders:
-            self.stop()
-
     @defer.inlineCallbacks
-    def start(self):
-        yield defer.maybeDeferred(self.configure)
-        if self._spider:
-            yield self.engine.open_spider(self._spider, self._start_requests())
-        yield defer.maybeDeferred(self.engine.start)
+    def crawl(self, *args, **kwargs):
+        assert not self.crawling, "Crawling already taking place"
+        self.crawling = True
+
+        try:
+            self.spider = self._create_spider(*args, **kwargs)
+            self.engine = self._create_engine()
+            start_requests = iter(self.spider.start_requests())
+            yield self.engine.open_spider(self.spider, start_requests)
+            yield defer.maybeDeferred(self.engine.start)
+        except Exception:
+            self.crawling = False
+            raise
+
+    def _create_spider(self, *args, **kwargs):
+        return self.spidercls.from_crawler(self, *args, **kwargs)
+
+    def _create_engine(self):
+        return ExecutionEngine(self, lambda _: self.stop())
 
     @defer.inlineCallbacks
     def stop(self):
-        if self.configured and self.engine.running:
+        if self.crawling:
+            self.crawling = False
             yield defer.maybeDeferred(self.engine.stop)
 
 
