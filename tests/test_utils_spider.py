@@ -28,8 +28,8 @@ class UtilsSpidersTestCase(unittest.TestCase):
         self.assertEqual(list(iterate_spider_output([r, i, o])), [r, i, o])
 
     def test_iter_spider_classes(self):
-        import scrapy.tests.test_utils_spider
-        it = iter_spider_classes(scrapy.tests.test_utils_spider)
+        import tests.test_utils_spider
+        it = iter_spider_classes(tests.test_utils_spider)
         self.assertEqual(set(it), set([MySpider1, MySpider2]))
 
 if __name__ == "__main__":

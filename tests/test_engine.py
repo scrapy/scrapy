@@ -21,7 +21,7 @@ from twisted.trial import unittest
 from scrapy import signals
 from scrapy.utils.test import get_crawler
 from scrapy.xlib.pydispatch import dispatcher
-from scrapy.tests import tests_datadir
+from tests import tests_datadir
 from scrapy.spider import Spider
 from scrapy.item import Item, Field
 from scrapy.contrib.linkextractors import LinkExtractor

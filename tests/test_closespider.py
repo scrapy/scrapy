@@ -1,8 +1,8 @@
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 from scrapy.utils.test import docrawl
-from scrapy.tests.spiders import FollowAllSpider, ItemSpider, ErrorSpider
-from scrapy.tests.mockserver import MockServer
+from tests.spiders import FollowAllSpider, ItemSpider, ErrorSpider
+from tests.mockserver import MockServer
 
 
 class TestCloseSpider(TestCase):

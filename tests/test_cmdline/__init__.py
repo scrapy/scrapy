@@ -8,7 +8,7 @@ class CmdlineTest(unittest.TestCase):
 
     def setUp(self):
         self.env = get_testenv()
-        self.env['SCRAPY_SETTINGS_MODULE'] = 'scrapy.tests.test_cmdline.settings'
+        self.env['SCRAPY_SETTINGS_MODULE'] = 'tests.test_cmdline.settings'
 
     def _execute(self, *new_args, **kwargs):
         args = (sys.executable, '-m', 'scrapy.cmdline') + new_args

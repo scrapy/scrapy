@@ -9,8 +9,8 @@ from netlib import http_auth
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 from scrapy.utils.test import get_testlog, docrawl
-from scrapy.tests.spiders import SimpleSpider
-from scrapy.tests.mockserver import MockServer
+from tests.spiders import SimpleSpider
+from tests.mockserver import MockServer
 
 
 

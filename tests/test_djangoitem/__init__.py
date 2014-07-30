@@ -4,7 +4,7 @@ from twisted.trial import unittest
 from scrapy.contrib.djangoitem import DjangoItem, Field
 from scrapy import optional_features
 
-os.environ['DJANGO_SETTINGS_MODULE'] = 'scrapy.tests.test_djangoitem.settings'
+os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.test_djangoitem.settings'
 
 if 'django' in optional_features:
     from .models import Person, IdentifiedPerson

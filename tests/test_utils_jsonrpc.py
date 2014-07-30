@@ -4,7 +4,7 @@ from io import BytesIO
 from scrapy.utils.jsonrpc import jsonrpc_client_call, jsonrpc_server_call, \
     JsonRpcError, jsonrpc_errors
 from scrapy.utils.serialize import ScrapyJSONDecoder
-from scrapy.tests.test_utils_serialize import CrawlerMock
+from tests.test_utils_serialize import CrawlerMock
 
 class urllib_mock(object):
     def __init__(self, result=None, error=None):

@@ -127,7 +127,7 @@ class SettingsTest(unittest.TestCase):
 
         self.settings.attributes = {}
         self.settings.setmodule(
-            'scrapy.tests.test_settings.default_settings', 10)
+            'tests.test_settings.default_settings', 10)
 
         self.assertItemsEqual(six.iterkeys(self.settings.attributes),
                               six.iterkeys(ctrl_attributes))

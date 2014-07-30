@@ -4,9 +4,9 @@ import mock
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 from scrapy.utils.test import docrawl, get_testlog
-from scrapy.tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
+from tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
     BrokenStartRequestsSpider, SingleRequestSpider, DuplicateStartRequestsSpider
-from scrapy.tests.mockserver import MockServer
+from tests.mockserver import MockServer
 from scrapy.http import Request
 
 

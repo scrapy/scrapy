@@ -4,7 +4,7 @@ from twisted.trial import unittest
 from scrapy.utils.iterators import csviter, xmliter, _body_or_str
 from scrapy.contrib_exp.iterators import xmliter_lxml
 from scrapy.http import XmlResponse, TextResponse, Response
-from scrapy.tests import get_testdata
+from tests import get_testdata
 
 FOOBAR_NL = u"foo" + os.linesep + u"bar"
 

@@ -1,6 +1,6 @@
 from scrapy.command import ScrapyCommand
-from scrapy.tests.spiders import FollowAllSpider
-from scrapy.tests.mockserver import MockServer
+from tests.spiders import FollowAllSpider
+from tests.mockserver import MockServer
 
 class Command(ScrapyCommand):
 

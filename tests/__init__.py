@@ -1,5 +1,5 @@
 """
-scrapy.tests: this package contains all Scrapy unittests
+tests: this package contains all Scrapy unittests
 
 To run all Scrapy unittests go to Scrapy main dir and type: 
 

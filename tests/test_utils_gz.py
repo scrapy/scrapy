@@ -1,7 +1,7 @@
 import unittest
 from os.path import join
 
-from scrapy.tests import tests_datadir
+from tests import tests_datadir
 from scrapy.utils.gz import gunzip
 
 SAMPLEDIR = join(tests_datadir, 'compressed')

@@ -50,7 +50,7 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
     The url passed can be a str or unicode, while the url returned is always a
     str.
 
-    For examples see the tests in scrapy.tests.test_utils_url
+    For examples see the tests in tests/test_utils_url.py
     """
 
     scheme, netloc, path, params, query, fragment = parse_url(url)

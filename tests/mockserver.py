@@ -179,7 +179,7 @@ class MockServer():
 
     def __enter__(self):
         from scrapy.utils.test import get_testenv
-        self.proc = Popen([sys.executable, '-u', '-m', 'scrapy.tests.mockserver'],
+        self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver'],
                           stdout=PIPE, env=get_testenv())
         self.proc.stdout.readline()
 

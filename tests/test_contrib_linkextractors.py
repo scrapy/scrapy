@@ -6,7 +6,7 @@ from scrapy.link import Link
 from scrapy.contrib.linkextractors.htmlparser import HtmlParserLinkExtractor
 from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor, BaseSgmlLinkExtractor
 from scrapy.contrib.linkextractors.lxmlhtml import LxmlLinkExtractor
-from scrapy.tests import get_testdata
+from tests import get_testdata
 
 
 class LinkExtractorTestCase(unittest.TestCase):

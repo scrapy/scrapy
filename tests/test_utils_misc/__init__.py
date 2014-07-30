@@ -16,25 +16,25 @@ class UtilsMiscTestCase(unittest.TestCase):
         self.assertRaises(NameError, load_object, 'scrapy.utils.misc.load_object999')
 
     def test_walk_modules(self):
-        mods = walk_modules('scrapy.tests.test_utils_misc.test_walk_modules')
+        mods = walk_modules('tests.test_utils_misc.test_walk_modules')
         expected = [
-            'scrapy.tests.test_utils_misc.test_walk_modules',
-            'scrapy.tests.test_utils_misc.test_walk_modules.mod',
-            'scrapy.tests.test_utils_misc.test_walk_modules.mod.mod0',
-            'scrapy.tests.test_utils_misc.test_walk_modules.mod1',
+            'tests.test_utils_misc.test_walk_modules',
+            'tests.test_utils_misc.test_walk_modules.mod',
+            'tests.test_utils_misc.test_walk_modules.mod.mod0',
+            'tests.test_utils_misc.test_walk_modules.mod1',
         ]
         self.assertEquals(set([m.__name__ for m in mods]), set(expected))
 
-        mods = walk_modules('scrapy.tests.test_utils_misc.test_walk_modules.mod')
+        mods = walk_modules('tests.test_utils_misc.test_walk_modules.mod')
         expected = [
-            'scrapy.tests.test_utils_misc.test_walk_modules.mod',
-            'scrapy.tests.test_utils_misc.test_walk_modules.mod.mod0',
+            'tests.test_utils_misc.test_walk_modules.mod',
+            'tests.test_utils_misc.test_walk_modules.mod.mod0',
         ]
         self.assertEquals(set([m.__name__ for m in mods]), set(expected))
 
-        mods = walk_modules('scrapy.tests.test_utils_misc.test_walk_modules.mod1')
+        mods = walk_modules('tests.test_utils_misc.test_walk_modules.mod1')
         expected = [
-            'scrapy.tests.test_utils_misc.test_walk_modules.mod1',
+            'tests.test_utils_misc.test_walk_modules.mod1',
         ]
         self.assertEquals(set([m.__name__ for m in mods]), set(expected))
 

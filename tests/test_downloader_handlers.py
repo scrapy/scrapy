@@ -46,13 +46,13 @@ class OffDH(object):
 class LoadTestCase(unittest.TestCase):
 
     def test_enabled_handler(self):
-        handlers = {'scheme': 'scrapy.tests.test_downloader_handlers.DummyDH'}
+        handlers = {'scheme': 'tests.test_downloader_handlers.DummyDH'}
         dh = DownloadHandlers(get_crawler({'DOWNLOAD_HANDLERS': handlers}))
         self.assertIn('scheme', dh._handlers)
         self.assertNotIn('scheme', dh._notconfigured)
 
     def test_not_configured_handler(self):
-        handlers = {'scheme': 'scrapy.tests.test_downloader_handlers.OffDH'}
+        handlers = {'scheme': 'tests.test_downloader_handlers.OffDH'}
         dh = DownloadHandlers(get_crawler({'DOWNLOAD_HANDLERS': handlers}))
         self.assertNotIn('scheme', dh._handlers)
         self.assertIn('scheme', dh._notconfigured)

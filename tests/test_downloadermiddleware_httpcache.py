@@ -120,7 +120,7 @@ class DbmStorageTest(DefaultStorageTest):
 
 class DbmStorageWithCustomDbmModuleTest(DbmStorageTest):
 
-    dbm_module = 'scrapy.tests.mocks.dummydbm'
+    dbm_module = 'tests.mocks.dummydbm'
 
     def _get_settings(self, **new_settings):
         new_settings.setdefault('HTTPCACHE_DBM_MODULE', self.dbm_module)
