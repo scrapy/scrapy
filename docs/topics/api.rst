@@ -105,6 +105,53 @@ how you :ref:`configure the downloader middlewares
 
         Returns a deferred that is fired when the crawl is finished.
 
+.. class:: CrawlerRunner(settings)
+
+    This is a convenient helper class that creates, configures and runs
+    crawlers inside an already setup Twisted `reactor`_.
+
+    The CrawlerRunner object must be instantiated with a
+    :class:`~scrapy.settings.Settings` object.
+
+    This class shouldn't be needed (since Scrapy is responsible of using it
+    accordingly) unless writing scripts that manually handle the crawling
+    process. See :ref:`run-from-script` for an example.
+
+    .. attribute:: crawlers
+
+       Set of :class:`crawlers <scrapy.crawler.Crawler>` created by the
+       :meth:`crawl` method.
+
+    .. attribute:: crawl_deferreds
+
+       Set of the `deferreds`_ return by the :meth:`crawl` method. This
+       collection it's useful for keeping track of current crawling state.
+
+    .. method:: crawl(spidercls, \*args, \**kwargs)
+
+       This method sets up the crawling of the given `spidercls` with the
+       provided arguments.
+
+       It takes care of loading the spider class while configuring and starting
+       a crawler for it.
+
+       Returns a deferred that is fired when the crawl is finished.
+
+       :param spidercls: spider class or spider's name inside the project
+       :type spidercls: :class:`~scrapy.spider.Spider` subclass or str
+
+       :param args: arguments to initializate the spider
+       :type args: list
+
+       :param kwargs: keyword arguments to initializate the spider
+       :type kwargs: dict
+
+    .. method:: stop()
+
+       Stops simultaneously all the crawling jobs taking place.
+
+       Returns a deferred that is fired when they all have ended.
+
 .. _topics-api-settings:
 
 Settings API
@@ -470,3 +517,4 @@ class (which they all inherit from).
 
 .. _deferreds: http://twistedmatrix.com/documents/current/core/howto/defer.html
 .. _deferred: http://twistedmatrix.com/documents/current/core/howto/defer.html
+.. _reactor: http://twistedmatrix.com/documents/current/core/howto/reactor-basics.html

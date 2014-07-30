@@ -1,3 +1,4 @@
+import six
 import signal
 
 from twisted.internet import reactor, defer
@@ -70,31 +71,50 @@ class Crawler(object):
             yield defer.maybeDeferred(self.engine.stop)
 
 
-class CrawlerProcess(object):
-    """ A class to run multiple scrapy crawlers in a process sequentially"""
+class CrawlerRunner(object):
 
     def __init__(self, settings):
-        install_shutdown_handlers(self._signal_shutdown)
         self.settings = settings
-        self.crawlers = {}
-        self.stopping = False
-        self._started = None
+        smcls = load_object(settings['SPIDER_MANAGER_CLASS'])
+        self.spiders = smcls.from_settings(settings.frozencopy())
+        self.crawlers = set()
+        self.crawl_deferreds = set()
 
-    def create_crawler(self, name=None):
-        if name not in self.crawlers:
-            self.crawlers[name] = Crawler(self.settings)
+    def crawl(self, spidercls, *args, **kwargs):
+        crawler = self._create_logged_crawler(spidercls)
+        self.crawlers.add(crawler)
 
-        return self.crawlers[name]
+        crawler.install()
+        crawler.signals.connect(crawler.uninstall, signals.engine_stopped)
 
-    def start(self):
-        if self.start_crawling():
-            self.start_reactor()
+        d = crawler.crawl(*args, **kwargs)
+        self.crawl_deferreds.add(d)
+        return d
 
-    @defer.inlineCallbacks
+    def _create_logged_crawler(self, spidercls):
+        crawler = self._create_crawler(spidercls)
+        log_observer = log.start_from_crawler(crawler)
+        if log_observer:
+            crawler.signals.connect(log_observer.stop, signals.engine_stopped)
+        return crawler
+
+    def _create_crawler(self, spidercls):
+        if isinstance(spidercls, six.string_types):
+            spidercls = self.spiders.load(spidercls)
+        crawler = Crawler(spidercls, self.settings.frozencopy())
+        return crawler
+
     def stop(self):
-        self.stopping = True
-        if self._active_crawler:
-            yield self._active_crawler.stop()
+        return defer.DeferredList(c.stop() for c in self.crawlers)
+
+
+class CrawlerProcess(CrawlerRunner):
+    """A class to run multiple scrapy crawlers in a process simultaneously"""
+
+    def __init__(self, settings):
+        super(CrawlerProcess, self).__init__(settings)
+        install_shutdown_handlers(self._signal_shutdown)
+        self.stopping = False
 
     def _signal_shutdown(self, signum, _):
         install_shutdown_handlers(self._signal_kill)
@@ -110,42 +130,24 @@ class CrawlerProcess(object):
                 level=log.INFO, signame=signame)
         reactor.callFromThread(self._stop_reactor)
 
-    # ------------------------------------------------------------------------#
-    # The following public methods can't be considered stable and may change at
-    # any moment.
-    #
-    # start_crawling and start_reactor are called from scrapy.commands.shell
-    # They are splitted because reactor is started on a different thread than IPython shell.
-    #
-    def start_crawling(self):
-        log.scrapy_info(self.settings)
-        return self._start_crawler() is not None
+    def start(self, stop_after_crawl=True):
+        self._start_logging()
+        self._start_reactor(stop_after_crawl)
 
-    def start_reactor(self):
+    def _start_logging(self):
+        log.scrapy_info(self.settings)
+
+    def _start_reactor(self, stop_after_crawl=True):
+        if stop_after_crawl:
+            d = defer.DeferredList(self.crawl_deferreds)
+            if d.called:
+                # Don't start the reactor if the deferreds are already fired
+                return
+            d.addBoth(lambda _: self._stop_reactor())
         if self.settings.getbool('DNSCACHE_ENABLED'):
             reactor.installResolver(CachingThreadedResolver(reactor))
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
         reactor.run(installSignalHandlers=False)  # blocking call
-
-    def _start_crawler(self):
-        if not self.crawlers or self.stopping:
-            return
-
-        name, crawler = self.crawlers.popitem()
-        self._active_crawler = crawler
-        log_observer = log.start_from_crawler(crawler)
-        crawler.configure()
-        crawler.install()
-        crawler.signals.connect(crawler.uninstall, signals.engine_stopped)
-        if log_observer:
-            crawler.signals.connect(log_observer.stop, signals.engine_stopped)
-        crawler.signals.connect(self._check_done, signals.engine_stopped)
-        crawler.start()
-        return name, crawler
-
-    def _check_done(self, **kwargs):
-        if not self._start_crawler():
-            self._stop_reactor()
 
     def _stop_reactor(self, _=None):
         try:
