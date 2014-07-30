@@ -1,6 +1,5 @@
 from __future__ import print_function
 import time
-import sys
 from collections import defaultdict
 from unittest import TextTestRunner, TextTestResult as _TextTestResult
 
@@ -49,6 +48,14 @@ class Command(ScrapyCommand):
     def short_desc(self):
         return "Check spider contracts"
 
+    def add_arguments(self, parser):
+        super(Command, self).add_arguments(parser)
+        parser.add_argument('spider', nargs='*', help='spider to check contracts')
+        parser.add_argument("-l", "--list", dest="list", action="store_true",
+                          help="only list contracts, without checking them")
+        parser.add_argument("-v", "--verbose", dest="verbose", default=False, action='store_true',
+                          help="print contract tests for all spiders")
+
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-l", "--list", dest="list", action="store_true",
@@ -57,6 +64,12 @@ class Command(ScrapyCommand):
                           help="print contract tests for all spiders")
 
     def run(self, args, opts):
+        # --- backwards compatibility for optparse ---
+        if isinstance(args, list):
+            spider_list = args
+        else:
+            spider_list = args.spider
+
         # load contracts
         contracts = build_component_list(
             self.settings['SPIDER_CONTRACTS_BASE'],
@@ -72,7 +85,7 @@ class Command(ScrapyCommand):
         spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
         spiders = spman_cls.from_settings(self.settings)
 
-        for spider in args or spiders.list():
+        for spider in spider_list or spiders.list():
             spider = spiders.create(spider)
             requests = self.get_requests(spider, conman, result)
             contract_reqs[spider.name] = []

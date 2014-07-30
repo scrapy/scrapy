@@ -46,6 +46,25 @@ class Command(ScrapyCommand):
         return "Deploy the current project into the given Scrapyd server " \
             "(known as target)"
 
+    def add_arguments(self, parser):
+        super(Command, self).add_arguments(parser)
+        parser.add_argument('target', nargs='?', default='default',
+            help='target of the deploy')
+        parser.add_argument("-p", "--project",
+            help="the project name in the target")
+        parser.add_argument("-v", "--version",
+            help="the version to deploy. Defaults to current timestamp")
+        parser.add_argument("-l", "--list-targets", action="store_true", \
+            help="list available targets")
+        parser.add_argument("-d", "--debug", action="store_true",
+            help="debug mode (do not remove build dir)")
+        parser.add_argument("-L", "--list-projects", metavar="TARGET", \
+            help="list available projects on TARGET")
+        parser.add_argument("--egg", metavar="FILE",
+            help="use the given egg, instead of building it")
+        parser.add_argument("--build-egg", metavar="FILE",
+            help="only build the egg, don't deploy it")
+
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-p", "--project",
@@ -92,7 +111,12 @@ class Command(ScrapyCommand):
             _log("Writing egg to %s" % opts.build_egg)
             shutil.copyfile(egg, opts.build_egg)
         else: # buld egg and deploy
-            target_name = _get_target_name(args)
+            # --- backwards compatibility for optparse ---
+            if isinstance(args, list):
+                target_name = _get_target_name(args)
+            else:
+                target_name = args.target
+            # --------------------------------------------
             target = _get_target(target_name)
             project = _get_project(target, opts)
             version = _get_version(target, opts)

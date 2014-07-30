@@ -1,9 +1,10 @@
 from __future__ import print_function
-import sys
-import optparse
+import argparse
 import cProfile
 import inspect
+import optparse
 import pkg_resources
+import sys
 
 import scrapy
 from scrapy.crawler import CrawlerProcess
@@ -51,6 +52,7 @@ def _get_commands_dict(settings, inproject):
     return cmds
 
 def _pop_command_name(argv):
+    # --- backwards compatibility for optparse ---
     i = 0
     for arg in argv[1:]:
         if not arg.startswith('-'):
@@ -58,7 +60,17 @@ def _pop_command_name(argv):
             return arg
         i += 1
 
+
+def _description(settings, inproject):
+    if inproject:
+        desc = 'project: {}'.format(settings.get('BOT_NAME', 'scrapybot'))
+    else:
+        desc = 'no active project.'
+    return 'Scrapy {version} - {desc}'.format(version=scrapy.__version__,
+            desc=desc)
+
 def _print_header(settings, inproject):
+    # --- backwards compatibility for optparse ---
     if inproject:
         print("Scrapy %s - project: %s\n" % (scrapy.__version__, \
             settings['BOT_NAME']))
@@ -66,6 +78,7 @@ def _print_header(settings, inproject):
         print("Scrapy %s - no active project\n" % scrapy.__version__)
 
 def _print_commands(settings, inproject):
+    # --- backwards compatibility for optparse ---
     _print_header(settings, inproject)
     print("Usage:")
     print("  scrapy <command> [options] [args]\n")
@@ -80,6 +93,7 @@ def _print_commands(settings, inproject):
     print('Use "scrapy <command> -h" to see more info about a command')
 
 def _print_unknown_command(settings, cmdname, inproject):
+    # --- backwards compatibility for optparse ---
     _print_header(settings, inproject)
     print("Unknown command: %s\n" % cmdname)
     print('Use "scrapy" to see available commands')
@@ -93,6 +107,33 @@ def _run_print_help(parser, func, *a, **kw):
         if e.print_help:
             parser.print_help()
         sys.exit(2)
+
+
+def _backwards_optparse(cmds, argv, settings, inproject):
+    # --- backwards compatibility for optparse ---
+    cmdname = _pop_command_name(argv)
+    parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(), \
+        conflict_handler='resolve')
+    if not cmdname:
+        _print_commands(settings, inproject)
+        sys.exit(0)
+    elif cmdname not in cmds:
+        _print_unknown_command(settings, cmdname, inproject)
+        sys.exit(2)
+
+    cmd = cmds[cmdname]
+    parser.usage = "scrapy %s %s" % (cmdname, cmd.syntax())
+    parser.description = cmd.long_desc()
+    settings.setdict(cmd.default_settings, priority='command')
+    cmd.settings = settings
+    cmd.add_options(parser)
+    opts, args = parser.parse_args(args=argv[1:])
+    _run_print_help(parser, cmd.process_options, args, opts)
+
+    cmd.crawler_process = CrawlerProcess(settings)
+    _run_print_help(parser, _run_command, cmd, args, opts)
+    sys.exit(cmd.exitcode)
+
 
 def execute(argv=None, settings=None):
     if argv is None:
@@ -117,31 +158,37 @@ def execute(argv=None, settings=None):
         from scrapy import conf
         conf.settings = settings
     # ------------------------------------------------------------------
-
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)
-    cmdname = _pop_command_name(argv)
-    parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(), \
-        conflict_handler='resolve')
-    if not cmdname:
-        _print_commands(settings, inproject)
-        sys.exit(0)
-    elif cmdname not in cmds:
-        _print_unknown_command(settings, cmdname, inproject)
-        sys.exit(2)
 
-    cmd = cmds[cmdname]
-    parser.usage = "scrapy %s %s" % (cmdname, cmd.syntax())
-    parser.description = cmd.long_desc()
-    settings.setdict(cmd.default_settings, priority='command')
-    cmd.settings = settings
-    cmd.add_options(parser)
-    opts, args = parser.parse_args(args=argv[1:])
-    _run_print_help(parser, cmd.process_options, args, opts)
+    # --- backwards compatibility for optparse ---
+    if any('add_arguments' not in vars(cmd.__class__) and \
+            'add_options' in vars(cmd.__class__) for cmd in cmds.values()):
+        _backwards_optparse(cmds, argv, settings, inproject)
+        return
+    # ------------------------------------------------------------------
+
+    parser = argparse.ArgumentParser(prog='scrapy', conflict_handler='resolve',
+            description=_description(settings, inproject))
+    subparsers = parser.add_subparsers(title='commands', metavar='', dest='cmd',
+            description='More commands available when run from project directory.')
+    for name, cmd in cmds.items():
+        xparser = subparsers.add_parser(name, description=cmd.long_desc(),
+                help=cmd.short_desc(), conflict_handler='resolve')
+        cmd.settings = settings
+        cmd.add_arguments(xparser)
+    try:
+        args = parser.parse_args()
+    except Exception as ex:
+        print(ex)
+        raise
+    cmd = cmds[args.cmd]
+    _run_print_help(parser, cmd.process_options, args, args)
 
     cmd.crawler_process = CrawlerProcess(settings)
-    _run_print_help(parser, _run_command, cmd, args, opts)
+    _run_print_help(parser, _run_command, cmd, args, args)
     sys.exit(cmd.exitcode)
+
 
 def _run_command(cmd, args, opts):
     if opts.profile or opts.lsprof:

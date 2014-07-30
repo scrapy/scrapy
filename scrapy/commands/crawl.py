@@ -14,6 +14,16 @@ class Command(ScrapyCommand):
     def short_desc(self):
         return "Run a spider"
 
+    def add_arguments(self, parser):
+        super(Command, self).add_arguments(parser)
+        parser.add_argument('spider', help='spider to run')
+        parser.add_argument('-a', dest="spargs", action="append", default=[], metavar="NAME=VALUE",
+                          help="set spider argument (may be repeated)")
+        parser.add_argument("-o", "--output", metavar="FILE",
+                          help="dump scraped items into FILE (use - for stdout)")
+        parser.add_argument("-t", "--output-format", metavar="FORMAT",
+                          help="format to use for dumping items with -o")
+
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
@@ -48,11 +58,15 @@ class Command(ScrapyCommand):
             self.settings.set('FEED_FORMAT', opts.output_format, priority='cmdline')
 
     def run(self, args, opts):
-        if len(args) < 1:
-            raise UsageError()
-        elif len(args) > 1:
-            raise UsageError("running 'scrapy crawl' with more than one spider is no longer supported")
-        spname = args[0]
+        # --- backwards compatibility for optparse ---
+        if isinstance(args, list):
+            if len(args) < 1:
+                raise UsageError()
+            elif len(args) > 1:
+                raise UsageError("running 'scrapy crawl' with more than one spider is no longer supported")
+            spname = args[0]
+        else:
+            spname = args.spider
 
         crawler = self.crawler_process.create_crawler()
         spider = crawler.spiders.create(spname, **opts.spargs)

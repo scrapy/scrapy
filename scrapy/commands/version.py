@@ -16,6 +16,11 @@ class Command(ScrapyCommand):
     def short_desc(self):
         return "Print Scrapy version"
 
+    def add_arguments(self, parser):
+        super(Command, self).add_arguments(parser)
+        parser.add_argument("--verbose", "-v", dest="verbose", action="store_true",
+            help="also display twisted/python/platform info (useful for bug reports)")
+
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--verbose", "-v", dest="verbose", action="store_true",

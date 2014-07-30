@@ -34,6 +34,10 @@ class Command(ScrapyCommand):
     def short_desc(self):
         return "Create new project"
 
+    def add_arguments(self, parser):
+        super(Command, self).add_arguments(parser)
+        parser.add_argument('project_name', help='project name to retrieve from')
+
     def _is_valid_name(self, project_name):
         def _module_exists(module_name):
             try:
@@ -54,9 +58,13 @@ class Command(ScrapyCommand):
         return False
 
     def run(self, args, opts):
-        if len(args) != 1:
-            raise UsageError()
-        project_name = args[0]
+        # --- backwards compatibility for optparse ---
+        if isinstance(args, list):
+            if len(args) != 1:
+                raise UsageError()
+            project_name = args[0]
+        else:
+            project_name = args.project_name
 
         if not self._is_valid_name(project_name):
             self.exitcode = 1

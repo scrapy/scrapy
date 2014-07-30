@@ -11,10 +11,13 @@ class Command(fetch.Command):
         return "Fetch a URL using the Scrapy downloader and show its " \
             "contents in a browser"
 
+    def add_arguments(self, parser):
+        super(Command, self).add_arguments(parser)
+        parser.add_argument('--spider', dest='spider', help='use this spider')
+
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("--spider", dest="spider",
-            help="use this spider")
+        parser.add_option("--spider", dest="spider", help="use this spider")
 
     def _print_response(self, response, opts):
         open_in_browser(response)

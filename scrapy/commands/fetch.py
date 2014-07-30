@@ -21,6 +21,13 @@ class Command(ScrapyCommand):
         return "Fetch a URL using the Scrapy downloader and print its content " \
             "to stdout. You may want to use --nolog to disable logging"
 
+    def add_arguments(self, parser):
+        super(Command, self).add_arguments(parser)
+        parser.add_argument('url', help='url to fetch')
+        parser.add_argument("--spider", dest="spider", help="use this spider")
+        parser.add_argument("--headers", dest="headers", action="store_true", \
+            help="print response HTTP headers instead of body")
+
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--spider", dest="spider",
@@ -42,10 +49,19 @@ class Command(ScrapyCommand):
             print(response.body)
 
     def run(self, args, opts):
-        if len(args) != 1 or not is_url(args[0]):
-            raise UsageError()
+        # --- backwards compatibility for optparse ---
+        if isinstance(args, list):
+            if len(args) != 1:
+                raise UsageError()
+            url = args[0]
+        else:
+            url = args.url
+
+        if not is_url(url):
+            raise UsageError('{url} is not a valid url.'.format(url=url))
+
         cb = lambda x: self._print_response(x, opts)
-        request = Request(args[0], callback=cb, dont_filter=True)
+        request = Request(url, callback=cb, dont_filter=True)
         request.meta['handle_httpstatus_all'] = True
 
         crawler = self.crawler_process.create_crawler()

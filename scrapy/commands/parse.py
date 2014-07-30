@@ -25,6 +25,30 @@ class Command(ScrapyCommand):
     def short_desc(self):
         return "Parse URL (using its spider) and print the results"
 
+    def add_arguments(self, parser):
+        super(Command, self).add_arguments(parser)
+        parser.add_argument('url', help='url to fetch')
+        parser.add_argument("--spider", dest="spider", default=None, \
+            help="use this spider without looking for one")
+        parser.add_argument("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE", \
+            help="set spider argument (may be repeated)")
+        parser.add_argument("--pipelines", action="store_true", \
+            help="process items through pipelines")
+        parser.add_argument("--nolinks", dest="nolinks", action="store_true", \
+            help="don't show links to follow (extracted requests)")
+        parser.add_argument("--noitems", dest="noitems", action="store_true", \
+            help="don't show scraped items")
+        parser.add_argument("--nocolour", dest="nocolour", action="store_true", \
+            help="avoid using pygments to colorize the output")
+        parser.add_argument("-r", "--rules", dest="rules", action="store_true", \
+            help="use CrawlSpider rules to discover the callback")
+        parser.add_argument("-c", "--callback", dest="callback", \
+            help="use this callback for parsing, instead looking for a callback")
+        parser.add_argument("-d", "--depth", dest="depth", type=int, default=1, \
+            help="maximum depth for parsing requests [default: %default]")
+        parser.add_argument("-v", "--verbose", dest="verbose", action="store_true", \
+            help="print each depth level one by one")
+
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--spider", dest="spider", default=None, \
@@ -47,7 +71,6 @@ class Command(ScrapyCommand):
             help="maximum depth for parsing requests [default: %default]")
         parser.add_option("-v", "--verbose", dest="verbose", action="store_true", \
             help="print each depth level one by one")
-
 
     @property
     def max_level(self):
@@ -201,11 +224,18 @@ class Command(ScrapyCommand):
             raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
 
     def run(self, args, opts):
+        # --- backwards compatibility for optparse ---
         # parse arguments
-        if not len(args) == 1 or not is_url(args[0]):
-            raise UsageError()
+        if isinstance(args, list):
+            if not len(args) == 1:
+                raise UsageError()
+            else:
+                url = args[0]
         else:
-            url = args[0]
+            url = args.url
+
+        if not is_url(url):
+            raise UsageError('{url} is not a valid url.'.format(url=url))
 
         # prepare spider
         self.pcrawler = self.crawler_process.create_crawler()

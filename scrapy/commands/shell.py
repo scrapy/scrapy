@@ -24,6 +24,15 @@ class Command(ScrapyCommand):
     def long_desc(self):
         return "Interactive console for scraping the given url"
 
+    def add_arguments(self, parser):
+        super(Command, self).add_arguments(parser)
+        parser.add_argument('url', nargs='?',
+            help='url to fetch before open the shell')
+        parser.add_argument("-c", dest="code",
+            help="evaluate the code in the shell, print the result and exit")
+        parser.add_argument("--spider", dest="spider",
+            help="use this spider")
+
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-c", dest="code",
@@ -40,7 +49,12 @@ class Command(ScrapyCommand):
     def run(self, args, opts):
         crawler = self.crawler_process.create_crawler()
 
-        url = args[0] if args else None
+        # --- backwards compatibility for optparse ---
+        if isinstance(args, list):
+            url = args[0] if args else None
+        else:
+            url = args.url
+
         spider = crawler.spiders.create(opts.spider) if opts.spider else None
 
         self.crawler_process.start_crawling()

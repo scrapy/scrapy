@@ -37,6 +37,16 @@ class Command(ScrapyCommand):
     def long_desc(self):
         return "Run the spider defined in the given file"
 
+    def add_arguments(self, parser):
+        super(Command, self).add_arguments(parser)
+        parser.add_argument('spider_file', help='path to the spider file')
+        parser.add_argument("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
+                          help="set spider argument (may be repeated)")
+        parser.add_argument("-o", "--output", metavar="FILE",
+                          help="dump scraped items into FILE (use - for stdout)")
+        parser.add_argument("-t", "--output-format", metavar="FORMAT",
+                          help="format to use for dumping items with -o")
+
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
@@ -71,9 +81,14 @@ class Command(ScrapyCommand):
             self.settings.set('FEED_FORMAT', opts.output_format, priority='cmdline')
 
     def run(self, args, opts):
-        if len(args) != 1:
-            raise UsageError()
-        filename = args[0]
+        # --- backwards compatibility for optparse ---
+        if isinstance(args, list):
+            if len(args) != 1:
+                raise UsageError()
+            filename = args[0]
+        else:
+            filename = args.spider_file
+
         if not os.path.exists(filename):
             raise UsageError("File not found: %s\n" % filename)
         try:

@@ -32,6 +32,22 @@ class Command(ScrapyCommand):
     def short_desc(self):
         return "Generate new spider using pre-defined templates"
 
+    def add_arguments(self, parser):
+        super(Command, self).add_arguments(parser)
+        group = parser.add_mutually_exclusive_group(required=True)
+        group.add_argument('name', nargs='?', help='name of the new spider')
+        group.add_argument("-l", "--list", dest="list", action="store_true",
+            help="List available templates")
+        group.add_argument("-d", "--dump", dest="dump", metavar="TEMPLATE",
+            help="Dump template to standard output")
+        parser.add_argument('domain', nargs='?', help='allowed domain for the spider')
+        parser.add_argument("-e", "--edit", dest="edit", action="store_true",
+            help="Edit spider after creating it")
+        parser.add_argument("-t", "--template", dest="template", default="basic",
+            help="Uses a custom template.")
+        parser.add_argument("--force", dest="force", action="store_true",
+            help="If the spider already exists, overwrite it with the template")
+
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-l", "--list", dest="list", action="store_true",
@@ -54,10 +70,17 @@ class Command(ScrapyCommand):
             if template_file:
                 print(open(template_file, 'r').read())
             return
-        if len(args) != 2:
-            raise UsageError()
 
-        name, domain = args[0:2]
+        # --- backwards compatibility for optparse ---
+        if isinstance(args, list):
+            if len(args) != 2:
+                raise UsageError()
+            name, domain = args[0:2]
+        else:
+            name, domain = args.name, args.domain
+            if domain is None:
+                raise UsageError
+
         module = sanitize_module_name(name)
 
         if self.settings.get('BOT_NAME') == module:
