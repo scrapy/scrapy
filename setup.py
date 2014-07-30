@@ -2,7 +2,7 @@
 #
 # It doesn't depend on setuptools, but if setuptools is available it'll use
 # some of its features, like package dependencies.
-
+# arbitrary change to test hook
 from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
 from subprocess import Popen, PIPE
