@@ -4,9 +4,6 @@ env:
 - TOXENV=py27
 - TOXENV=precise
 - TOXENV=py33
-matrix:
-  allow_failures:
-  - env: TOXENV=py33
 install:
 - "./.travis-workarounds.sh"
 - pip install -U tox
