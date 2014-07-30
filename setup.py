@@ -1,4 +1,6 @@
 # Scrapy setup.py script
+#
+#POLL ME
 # It doesn't depend on setuptools, but if setuptools is available it'll use
 # some of its features, like package dependencies.
 # arbitrary change to test hook
