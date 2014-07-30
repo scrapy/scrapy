@@ -30,7 +30,6 @@ tests/test_downloadermiddleware_useragent.py
 tests/test_dupefilter.py
 tests/test_engine.py
 tests/test_http_cookies.py
-tests/test_http_headers.py
 tests/test_http_request.py
 tests/test_http_response.py
 tests/test_link.py
