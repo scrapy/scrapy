@@ -9,8 +9,8 @@ from scrapy.utils.test import get_crawler
 class TestDownloaderStats(TestCase):
 
     def setUp(self):
-        self.crawler = get_crawler()
-        self.spider = Spider('scrapytest.org')
+        self.crawler = get_crawler(Spider)
+        self.spider = self.crawler._create_spider('scrapytest.org')
         self.mw = DownloaderStats(self.crawler.stats)
 
         self.crawler.stats.open_spider(self.spider)

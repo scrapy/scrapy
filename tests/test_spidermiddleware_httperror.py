@@ -3,7 +3,7 @@ from unittest import TestCase
 from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.internet import defer
 
-from scrapy.utils.test import docrawl, get_testlog
+from scrapy.utils.test import get_crawler, get_testlog
 from tests.mockserver import MockServer
 from scrapy.http import Response, Request
 from scrapy.spider import Spider
@@ -165,20 +165,20 @@ class TestHttpErrorMiddlewareIntegrational(TrialTestCase):
 
     @defer.inlineCallbacks
     def test_middleware_works(self):
-        spider = _HttpErrorSpider()
-        yield docrawl(spider)
-        assert not spider.skipped, spider.skipped
-        self.assertEqual(spider.parsed, {'200'})
-        self.assertEqual(spider.failed, {'404', '402', '500'})
+        crawler = get_crawler(_HttpErrorSpider)
+        yield crawler.crawl()
+        assert not crawler.spider.skipped, crawler.spider.skipped
+        self.assertEqual(crawler.spider.parsed, {'200'})
+        self.assertEqual(crawler.spider.failed, {'404', '402', '500'})
 
     @defer.inlineCallbacks
     def test_logging(self):
-        spider = _HttpErrorSpider(bypass_status_codes={402})
-        yield docrawl(spider)
+        crawler = get_crawler(_HttpErrorSpider)
+        yield crawler.crawl(bypass_status_codes={402})
         # print(get_testlog())
-        self.assertEqual(spider.parsed, {'200', '402'})
-        self.assertEqual(spider.skipped, {'402'})
-        self.assertEqual(spider.failed, {'404', '500'})
+        self.assertEqual(crawler.spider.parsed, {'200', '402'})
+        self.assertEqual(crawler.spider.skipped, {'402'})
+        self.assertEqual(crawler.spider.failed, {'404', '500'})
 
         log = get_testlog()
         self.assertIn('Ignoring response <404', log)

@@ -10,9 +10,10 @@ from scrapy.utils.test import get_crawler
 class TestDepthMiddleware(TestCase):
 
     def setUp(self):
-        self.spider = Spider('scrapytest.org')
+        crawler = get_crawler(Spider)
+        self.spider = crawler._create_spider('scrapytest.org')
 
-        self.stats = StatsCollector(get_crawler())
+        self.stats = StatsCollector(crawler)
         self.stats.open_spider(self.spider)
 
         self.mw = DepthMiddleware(1, self.stats, True)

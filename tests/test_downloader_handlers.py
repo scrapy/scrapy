@@ -47,19 +47,22 @@ class LoadTestCase(unittest.TestCase):
 
     def test_enabled_handler(self):
         handlers = {'scheme': 'tests.test_downloader_handlers.DummyDH'}
-        dh = DownloadHandlers(get_crawler({'DOWNLOAD_HANDLERS': handlers}))
+        crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
+        dh = DownloadHandlers(crawler)
         self.assertIn('scheme', dh._handlers)
         self.assertNotIn('scheme', dh._notconfigured)
 
     def test_not_configured_handler(self):
         handlers = {'scheme': 'tests.test_downloader_handlers.OffDH'}
-        dh = DownloadHandlers(get_crawler({'DOWNLOAD_HANDLERS': handlers}))
+        crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
+        dh = DownloadHandlers(crawler)
         self.assertNotIn('scheme', dh._handlers)
         self.assertIn('scheme', dh._notconfigured)
 
     def test_disabled_handler(self):
         handlers = {'scheme': None}
-        dh = DownloadHandlers(get_crawler({'DOWNLOAD_HANDLERS': handlers}))
+        crawler = get_crawler(settings_dict={'DOWNLOAD_HANDLERS': handlers})
+        dh = DownloadHandlers(crawler)
         self.assertNotIn('scheme', dh._handlers)
         self.assertNotIn('scheme', dh._notconfigured)
 

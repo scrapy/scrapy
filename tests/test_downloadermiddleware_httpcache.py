@@ -24,8 +24,8 @@ class _BaseTest(unittest.TestCase):
         self.yesterday = email.utils.formatdate(time.time() - 86400)
         self.today = email.utils.formatdate()
         self.tomorrow = email.utils.formatdate(time.time() + 86400)
-        self.crawler = get_crawler()
-        self.spider = Spider('example.com')
+        self.crawler = get_crawler(Spider)
+        self.spider = self.crawler._create_spider('example.com')
         self.tmpdir = tempfile.mkdtemp()
         self.request = Request('http://www.example.com',
                                headers={'User-Agent': 'test'})

@@ -242,7 +242,8 @@ class CrawlSpiderTest(SpiderTest):
         self.assertTrue(hasattr(spider, '_follow_links'))
         self.assertTrue(spider._follow_links)
 
-        crawler.settings.set('CRAWLSPIDER_FOLLOW_LINKS', False)
+        settings_dict = {'CRAWLSPIDER_FOLLOW_LINKS': False}
+        crawler = get_crawler(settings_dict=settings_dict)
         spider = self.spider_class.from_crawler(crawler, 'example.com')
         self.assertTrue(hasattr(spider, '_follow_links'))
         self.assertFalse(spider._follow_links)
@@ -256,7 +257,8 @@ class CrawlSpiderTest(SpiderTest):
         self.assertTrue(spider._follow_links)
 
         spider = self.spider_class('example.com')
-        spider.set_crawler(get_crawler({'CRAWLSPIDER_FOLLOW_LINKS': False}))
+        settings_dict = {'CRAWLSPIDER_FOLLOW_LINKS': False}
+        spider.set_crawler(get_crawler(settings_dict=settings_dict))
         self.assertTrue(hasattr(spider, '_follow_links'))
         self.assertFalse(spider._follow_links)
 

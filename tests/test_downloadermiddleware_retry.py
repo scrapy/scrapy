@@ -14,8 +14,8 @@ from scrapy.utils.test import get_crawler
 
 class RetryTest(unittest.TestCase):
     def setUp(self):
-        crawler = get_crawler()
-        self.spider = Spider('foo')
+        crawler = get_crawler(Spider)
+        self.spider = crawler._create_spider('foo')
         self.mw = RetryMiddleware.from_crawler(crawler)
         self.mw.max_retry_times = 2
 
