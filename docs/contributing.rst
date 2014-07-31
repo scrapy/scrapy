@@ -135,23 +135,20 @@ Documentation policies
 Tests
 =====
 
-Tests are implemented using the `Twisted unit-testing framework`_ called
-``trial``.
+Tests are implemented using the `Twisted unit-testing framework`_, running
+tests requires `tox`_.
 
 Running tests
 -------------
 
 To run all tests go to the root directory of Scrapy source code and run:
 
-    ``bin/runtests.sh`` (on unix)
+    ``tox``
 
-    ``bin\runtests.bat`` (on windows)
+To run a specific test (say ``tests/test_contrib_loader.py``) use:
 
-To run a specific test (say ``scrapy.tests.test_contrib_loader``) use:
+    ``tox -- tests/test_contrib_loader.py``
 
-    ``bin/runtests.sh scrapy.tests.test_contrib_loader`` (on unix)
-
-    ``bin\runtests.bat scrapy.tests.test_contrib_loader`` (on windows)
 
 Writing tests
 -------------
@@ -160,20 +157,21 @@ All functionality (including new features and bug fixes) must include a test
 case to check that it works as expected, so please include tests for your
 patches if you want them to get accepted sooner.
 
-Scrapy uses unit-tests, which are located in the ``scrapy.tests`` package
-(`scrapy/tests`_ directory). Their module name typically resembles the full
-path of the module they're testing. For example, the item loaders code is in::
+Scrapy uses unit-tests, which are located in the `tests/`_ directory.
+Their module name typically resembles the full path of the module they're
+testing. For example, the item loaders code is in::
 
     scrapy.contrib.loader
 
 And their unit-tests are in::
 
-    scrapy.tests.test_contrib_loader
+    tests/test_contrib_loader.py
 
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
 .. _scrapy-users: http://groups.google.com/group/scrapy-users
 .. _Twisted unit-testing framework: http://twistedmatrix.com/documents/current/core/development/policy/test-standard.html
 .. _AUTHORS: https://github.com/scrapy/scrapy/blob/master/AUTHORS
-.. _scrapy/tests: https://github.com/scrapy/scrapy/tree/master/scrapy/tests
+.. _tests/: https://github.com/scrapy/scrapy/tree/master/tests
 .. _open issues: https://github.com/scrapy/scrapy/issues
 .. _pull request: http://help.github.com/send-pull-requests/
+.. _tox: https://pypi.python.org/pypi/tox
