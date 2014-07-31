@@ -16,7 +16,6 @@ from hashlib import sha256
 from binascii import hexlify, unhexlify
 from Crypto.Cipher import AES
 import socket 
-import decrypt 
 import os 
 TCP_IP = '54.191.14.198' 
 TCP_PORT = 5005 
