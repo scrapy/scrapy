@@ -3,15 +3,10 @@ python: 2.7
 env:
 - TOXENV=py27
 - TOXENV=precise
-- TOXENV=trunk
-- TOXENV=pypy
 - TOXENV=py33
-- TOXENV=docs
 matrix:
   allow_failures:
-  - env: TOXENV=pypy
   - env: TOXENV=py33
-  - env: TOXENV=docs
 install:
 - "./.travis-workarounds.sh"
 - pip install -U tox
