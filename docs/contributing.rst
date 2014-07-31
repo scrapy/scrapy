@@ -147,7 +147,7 @@ To run all tests go to the root directory of Scrapy source code and run:
 
 To run a specific test (say ``tests/test_contrib_loader.py``) use:
 
-    ``tox tests/test_contrib_loader.py``
+    ``tox -- tests/test_contrib_loader.py``
 
 
 Writing tests
