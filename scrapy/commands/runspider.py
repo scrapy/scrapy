@@ -83,8 +83,7 @@ class Command(ScrapyCommand):
         spclasses = list(iter_spider_classes(module))
         if not spclasses:
             raise UsageError("No spider found in file: %s\n" % filename)
-        spider = spclasses.pop()(**opts.spargs)
+        spidercls = spclasses.pop()
 
-        crawler = self.crawler_process.create_crawler()
-        crawler.crawl(spider)
+        self.crawler_process.crawl(spidercls, **opts.spargs)
         self.crawler_process.start()
