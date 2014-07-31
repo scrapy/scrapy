@@ -1,11 +1,7 @@
 """
 tests: this package contains all Scrapy unittests
 
-To run all Scrapy unittests go to Scrapy main dir and type: 
-
-    bin/runtests.sh
-    
-If you're in windows use runtests.bat instead.
+see http://doc.scrapy.org/en/latest/contributing.html#running-tests
 """
 
 import os
