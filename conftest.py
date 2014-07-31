@@ -1,4 +1,4 @@
-
+import six
 import pytest
 from twisted.python import log
 
@@ -8,6 +8,9 @@ collect_ignore = ["scrapy/stats.py"]
 if 'django' not in optional_features:
     collect_ignore.append("tests/test_djangoitem/models.py")
 
+if six.PY3:
+    for fn in open('tests/py3-ignores.txt'):
+        collect_ignore.append(fn.strip())
 
 class LogObservers:
     """Class for keeping track of log observers across test modules"""
