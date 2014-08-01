@@ -46,7 +46,7 @@ class Request(object_ref):
         return self._url
 
     def _set_url(self, url):
-        if isinstance(url, str):
+        if isinstance(url, bytes):
             self._url = escape_ajax(safe_url_string(url))
         elif isinstance(url, six.text_type):
             if self.encoding is None:
@@ -55,7 +55,7 @@ class Request(object_ref):
             self._set_url(url.encode(self.encoding))
         else:
             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
-        if ':' not in self._url:
+        if b':' not in self._url:
             raise ValueError('Missing scheme in request url: %s' % self._url)
 
     url = property(_get_url, obsolete_setter(_set_url, 'url'))
@@ -64,7 +64,7 @@ class Request(object_ref):
         return self._body
 
     def _set_body(self, body):
-        if isinstance(body, str):
+        if isinstance(body, bytes):
             self._body = body
         elif isinstance(body, six.text_type):
             if self.encoding is None:
@@ -72,7 +72,7 @@ class Request(object_ref):
                                 type(self).__name__)
             self._body = body.encode(self.encoding)
         elif body is None:
-            self._body = ''
+            self._body = b''
         else:
             raise TypeError("Request body must either str or unicode. Got: '%s'" % type(body).__name__)
 

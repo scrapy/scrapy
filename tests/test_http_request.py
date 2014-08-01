@@ -17,13 +17,13 @@ class RequestTest(unittest.TestCase):
         # Request requires url in the constructor
         self.assertRaises(Exception, self.request_class)
 
-        # url argument must be basestring
+        # url argument must be a string
         self.assertRaises(TypeError, self.request_class, 123)
         r = self.request_class('http://www.example.com')
 
         r = self.request_class("http://www.example.com")
-        assert isinstance(r.url, str)
-        self.assertEqual(r.url, "http://www.example.com")
+        assert isinstance(r.url, bytes)
+        self.assertEqual(r.url, b"http://www.example.com")
         self.assertEqual(r.method, self.default_method)
 
         assert isinstance(r.headers, Headers)
@@ -32,12 +32,12 @@ class RequestTest(unittest.TestCase):
 
         meta = {"lala": "lolo"}
         headers = {"caca": "coco"}
-        r = self.request_class("http://www.example.com", meta=meta, headers=headers, body="a body")
+        r = self.request_class("http://www.example.com", meta=meta, headers=headers, body=b"a body")
 
         assert r.meta is not meta
         self.assertEqual(r.meta, meta)
         assert r.headers is not headers
-        self.assertEqual(r.headers["caca"], "coco")
+        self.assertEqual(r.headers["caca"], b"coco")
 
     def test_url_no_scheme(self):
         self.assertRaises(ValueError, self.request_class, 'foo')
@@ -45,7 +45,7 @@ class RequestTest(unittest.TestCase):
     def test_headers(self):
         # Different ways of setting headers attribute
         url = 'http://www.scrapy.org'
-        headers = {'Accept':'gzip', 'Custom-Header':'nothing to tell you'}
+        headers = {b'Accept': b'gzip', b'Custom-Header': b'nothing to tell you'}
         r = self.request_class(url=url, headers=headers)
         p = self.request_class(url=url, headers=r.headers)
 
@@ -57,9 +57,9 @@ class RequestTest(unittest.TestCase):
         h = Headers({'key1': u'val1', u'key2': 'val2'})
         h[u'newkey'] = u'newval'
         for k, v in h.iteritems():
-            self.assert_(isinstance(k, str))
+            self.assert_(isinstance(k, bytes))
             for s in v:
-                self.assert_(isinstance(s, str))
+                self.assert_(isinstance(s, bytes))
 
     def test_eq(self):
         url = 'http://www.scrapy.org'
@@ -75,43 +75,43 @@ class RequestTest(unittest.TestCase):
     def test_url(self):
         """Request url tests"""
         r = self.request_class(url="http://www.scrapy.org/path")
-        self.assertEqual(r.url, "http://www.scrapy.org/path")
+        self.assertEqual(r.url, b"http://www.scrapy.org/path")
 
         # url quoting on creation
         r = self.request_class(url="http://www.scrapy.org/blank%20space")
-        self.assertEqual(r.url, "http://www.scrapy.org/blank%20space")
+        self.assertEqual(r.url, b"http://www.scrapy.org/blank%20space")
         r = self.request_class(url="http://www.scrapy.org/blank space")
-        self.assertEqual(r.url, "http://www.scrapy.org/blank%20space")
+        self.assertEqual(r.url, b"http://www.scrapy.org/blank%20space")
 
         # url encoding
         r1 = self.request_class(url=u"http://www.scrapy.org/price/\xa3", encoding="utf-8")
         r2 = self.request_class(url=u"http://www.scrapy.org/price/\xa3", encoding="latin1")
-        self.assertEqual(r1.url, "http://www.scrapy.org/price/%C2%A3")
-        self.assertEqual(r2.url, "http://www.scrapy.org/price/%A3")
+        self.assertEqual(r1.url, b"http://www.scrapy.org/price/%C2%A3")
+        self.assertEqual(r2.url, b"http://www.scrapy.org/price/%A3")
 
     def test_body(self):
         r1 = self.request_class(url="http://www.example.com/")
-        assert r1.body == ''
+        self.assertEqual(r1.body, b'')
 
-        r2 = self.request_class(url="http://www.example.com/", body="")
-        assert isinstance(r2.body, str)
+        r2 = self.request_class(url="http://www.example.com/", body=b"")
+        self.assertIsInstance(r2.body, bytes)
         self.assertEqual(r2.encoding, 'utf-8') # default encoding
 
         r3 = self.request_class(url="http://www.example.com/", body=u"Price: \xa3100", encoding='utf-8')
-        assert isinstance(r3.body, str)
-        self.assertEqual(r3.body, "Price: \xc2\xa3100")
+        self.assertIsInstance(r3.body, bytes)
+        self.assertEqual(r3.body, b"Price: \xc2\xa3100")
 
         r4 = self.request_class(url="http://www.example.com/", body=u"Price: \xa3100", encoding='latin1')
-        assert isinstance(r4.body, str)
-        self.assertEqual(r4.body, "Price: \xa3100")
+        self.assertIsInstance(r4.body, bytes)
+        self.assertEqual(r4.body, b"Price: \xa3100")
 
     def test_ajax_url(self):
         # ascii url
         r = self.request_class(url="http://www.example.com/ajax.html#!key=value")
-        self.assertEqual(r.url, "http://www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue")
+        self.assertEqual(r.url, b"http://www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue")
         # unicode url
         r = self.request_class(url=u"http://www.example.com/ajax.html#!key=value")
-        self.assertEqual(r.url, "http://www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue")
+        self.assertEqual(r.url, b"http://www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue")
 
     def test_copy(self):
         """Test Request copy"""
@@ -156,23 +156,23 @@ class RequestTest(unittest.TestCase):
         """Test Request.replace() method"""
         r1 = self.request_class("http://www.example.com", method='GET')
         hdrs = Headers(dict(r1.headers, key='value'))
-        r2 = r1.replace(method="POST", body="New body", headers=hdrs)
+        r2 = r1.replace(method="POST", body=b"New body", headers=hdrs)
         self.assertEqual(r1.url, r2.url)
         self.assertEqual((r1.method, r2.method), ("GET", "POST"))
-        self.assertEqual((r1.body, r2.body), ('', "New body"))
+        self.assertEqual((r1.body, r2.body), (b'', b"New body"))
         self.assertEqual((r1.headers, r2.headers), (self.default_headers, hdrs))
 
         # Empty attributes (which may fail if not compared properly)
         r3 = self.request_class("http://www.example.com", meta={'a': 1}, dont_filter=True)
         r4 = r3.replace(url="http://www.example.com/2", body='', meta={}, dont_filter=False)
-        self.assertEqual(r4.url, "http://www.example.com/2")
-        self.assertEqual(r4.body, '')
+        self.assertEqual(r4.url, b"http://www.example.com/2")
+        self.assertEqual(r4.body, b'')
         self.assertEqual(r4.meta, {})
         assert r4.dont_filter is False
 
     def test_method_always_str(self):
         r = self.request_class("http://www.example.com", method=u"POST")
-        assert isinstance(r.method, str)
+        assert isinstance(r.method, str)  # "native string"
 
     def test_immutable_attributes(self):
         r = self.request_class("http://example.com")
@@ -189,7 +189,7 @@ class FormRequestTest(RequestTest):
 
     def test_empty_formdata(self):
         r1 = self.request_class("http://www.example.com", formdata={})
-        self.assertEqual(r1.body, '')
+        self.assertEqual(r1.body, b'')
 
     def test_default_encoding(self):
         # using default encoding (utf-8)
@@ -197,22 +197,22 @@ class FormRequestTest(RequestTest):
         r2 = self.request_class("http://www.example.com", formdata=data)
         self.assertEqual(r2.method, 'POST')
         self.assertEqual(r2.encoding, 'utf-8')
-        self.assertSortedEqual(r2.body.split('&'),
-                               'price=%C2%A3+100&one=two'.split('&'))
-        self.assertEqual(r2.headers['Content-Type'], 'application/x-www-form-urlencoded')
+        self.assertSortedEqual(r2.body.split(b'&'),
+                               b'price=%C2%A3+100&one=two'.split(b'&'))
+        self.assertEqual(r2.headers['Content-Type'], b'application/x-www-form-urlencoded')
 
     def test_custom_encoding(self):
         data = {'price': u'\xa3 100'}
         r3 = self.request_class("http://www.example.com", formdata=data, encoding='latin1')
         self.assertEqual(r3.encoding, 'latin1')
-        self.assertEqual(r3.body, 'price=%A3+100')
+        self.assertEqual(r3.body, b'price=%A3+100')
 
     def test_multi_key_values(self):
         # using multiples values for a single key
         data = {'price': u'\xa3 100', 'colours': ['red', 'blue', 'green']}
         r3 = self.request_class("http://www.example.com", formdata=data)
-        self.assertSortedEqual(r3.body.split('&'),
-            'colours=red&colours=blue&colours=green&price=%C2%A3+100'.split('&'))
+        self.assertSortedEqual(r3.body.split(b'&'),
+            b'colours=red&colours=blue&colours=green&price=%C2%A3+100'.split(b'&'))
 
     def test_from_response_post(self):
         response = _buildresponse(
@@ -695,7 +695,7 @@ class XmlRpcRequestTest(RequestTest):
 
     def _test_request(self, **kwargs):
         r = self.request_class('http://scrapytest.org/rpc2', **kwargs)
-        self.assertEqual(r.headers['Content-Type'], 'text/xml')
+        self.assertEqual(r.headers['Content-Type'], b'text/xml')
         self.assertEqual(r.body, xmlrpclib.dumps(**kwargs))
         self.assertEqual(r.method, 'POST')
         self.assertEqual(r.encoding, kwargs.get('encoding', 'utf-8'))

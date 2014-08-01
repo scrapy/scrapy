@@ -58,9 +58,9 @@ def str_to_unicode(text, encoding=None, errors='strict'):
 
     if encoding is None:
         encoding = 'utf-8'
-    if isinstance(text, str):
+    if isinstance(text, bytes):
         return text.decode(encoding, errors)
-    elif isinstance(text, unicode):
+    elif isinstance(text, six.text_type):
         return text
     else:
         raise TypeError('str_to_unicode must receive a str or unicode object, got %s' % type(text).__name__)
@@ -74,9 +74,9 @@ def unicode_to_str(text, encoding=None, errors='strict'):
 
     if encoding is None:
         encoding = 'utf-8'
-    if isinstance(text, unicode):
+    if isinstance(text, six.text_type):
         return text.encode(encoding, errors)
-    elif isinstance(text, str):
+    elif isinstance(text, bytes):
         return text
     else:
         raise TypeError('unicode_to_str must receive a unicode or str object, got %s' % type(text).__name__)
