@@ -10,7 +10,8 @@ if 'django' not in optional_features:
 
 if six.PY3:
     for fn in open('tests/py3-ignores.txt'):
-        collect_ignore.append(fn.strip())
+        if fn.strip():
+            collect_ignore.append(fn.strip())
 
 class LogObservers:
     """Class for keeping track of log observers across test modules"""
