@@ -1,5 +1,5 @@
+import json
 import os
-import subprocess
 import time
 
 from threading import Thread
@@ -9,11 +9,9 @@ from netlib import http_auth
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 from scrapy.utils.test import get_testlog, docrawl
-from tests.spiders import SimpleSpider
+from scrapy.http import Request
+from tests.spiders import SimpleSpider, SingleRequestSpider
 from tests.mockserver import MockServer
-
-
-
 
 
 class HTTPSProxy(controller.Master, Thread):
@@ -78,6 +76,15 @@ class ProxyConnectTestCase(TestCase):
         # he just sees a TunnelError.
         self._assert_got_tunnel_error()
         os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:8888'
+
+    @defer.inlineCallbacks
+    def test_https_tunnel_without_leak_proxy_authorization_header(self):
+        request = Request("https://localhost:8999/echo")
+        spider = SingleRequestSpider(seed=request)
+        yield docrawl(spider)
+        self._assert_got_response_code(200)
+        echo = json.loads(spider.meta['responses'][0].body)
+        self.assertTrue('Proxy-Authorization' not in echo['headers'])
 
     @defer.inlineCallbacks
     def test_https_noconnect_auth_error(self):
