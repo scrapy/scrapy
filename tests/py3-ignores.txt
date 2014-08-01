@@ -28,7 +28,6 @@ tests/test_engine.py
 tests/test_http_cookies.py
 tests/test_http_request.py
 tests/test_http_response.py
-tests/test_link.py
 tests/test_logformatter.py
 tests/test_log.py
 tests/test_mail.py
