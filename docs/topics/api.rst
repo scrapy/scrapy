@@ -252,11 +252,23 @@ Settings API
 
     .. method:: getlist(name, default=None)
 
-       Get a setting value as a list. If the setting original type is a list it
-       will be returned verbatim. If it's a string it will be split by ",".
+       Get a setting value as a list. If the setting original type is a list, a
+       copy of it will be returned. If it's a string it will be split by ",".
 
        For example, settings populated through environment variables set to
        ``'one,two'`` will return a list ['one', 'two'] when using this method.
+
+       :param name: the setting name
+       :type name: string
+
+       :param default: the value to return if no setting is found
+       :type default: any
+
+    .. method:: getdict(name, default=None)
+
+       Get a setting value as a dictionary. If the setting original type is a
+       dictionary, a copy of it will be returned. If it's a string it will
+       evaluated as a json dictionary.
 
        :param name: the setting name
        :type name: string

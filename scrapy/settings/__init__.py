@@ -76,23 +76,16 @@ class Settings(object):
         return float(self.get(name, default))
 
     def getlist(self, name, default=None):
-        value = self.get(name)
-        if value is None:
-            return default or []
-        elif hasattr(value, '__iter__'):
-            return value
-        else:
-            return str(value).split(',')
+        value = self.get(name, default or [])
+        if isinstance(value, six.string_types):
+            value = value.split(',')
+        return list(value)
 
     def getdict(self, name, default=None):
-        value = self.get(name)
-        if value is None:
-            return default or {}
+        value = self.get(name, default or {})
         if isinstance(value, six.string_types):
             value = json.loads(value)
-        if isinstance(value, dict):
-            return value
-        raise ValueError("Cannot convert value for setting '%s' to dict: '%s'" % (name, value))
+        return dict(value)
 
     def set(self, name, value, priority='project'):
         assert not self.frozen, "Trying to modify an immutable Settings object"
