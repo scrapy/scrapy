@@ -426,7 +426,7 @@ class FTPTestCase(unittest.TestCase):
         def _test(r):
             self.assertEqual(r.status, 200)
             self.assertEqual(r.body, 'I have the power!')
-            self.assertEqual(r.headers, {'Local Filename': [''], 'Size': [17]})
+            self.assertEqual(r.headers, {'Local Filename': [''], 'Size': ['17']})
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_notexist(self):
@@ -446,7 +446,7 @@ class FTPTestCase(unittest.TestCase):
 
         def _test(r):
             self.assertEqual(r.body, local_fname)
-            self.assertEqual(r.headers, {'Local Filename': ['/tmp/file.txt'], 'Size': [17]})
+            self.assertEqual(r.headers, {'Local Filename': ['/tmp/file.txt'], 'Size': ['17']})
             self.assertTrue(os.path.exists(local_fname))
             with open(local_fname) as f:
                 self.assertEqual(f.read(), "I have the power!")
