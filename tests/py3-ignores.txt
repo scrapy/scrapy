@@ -64,7 +64,6 @@ tests/test_squeue.py
 tests/test_stats.py
 tests/test_toplevel.py
 tests/test_utils_defer.py
-tests/test_utils_gz.py
 tests/test_utils_httpobj.py
 tests/test_utils_iterators.py
 tests/test_utils_jsonrpc.py
