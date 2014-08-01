@@ -5,7 +5,6 @@ tests/test_command_shell.py
 tests/test_commands.py
 tests/test_command_version.py
 tests/test_contrib_exporter.py
-tests/test_contrib_feedexport.py
 tests/test_contrib_linkextractors.py
 tests/test_contrib_loader.py
 tests/test_crawl.py
@@ -92,7 +91,6 @@ scrapy/contrib/downloadermiddleware/cookies.py
 scrapy/contrib/downloadermiddleware/ajaxcrawl.py
 scrapy/contrib/statsmailer.py
 scrapy/contrib/memusage.py
-scrapy/contrib/feedexport.py
 scrapy/commands/deploy.py
 scrapy/commands/bench.py
 scrapy/telnet.py

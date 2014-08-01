@@ -10,7 +10,7 @@ from datetime import datetime
 from six.moves.urllib.parse import urlparse
 from ftplib import FTP
 
-from zope.interface import Interface, implements
+from zope.interface import Interface, implementer
 from twisted.internet import defer, threads
 from w3lib.url import file_uri_to_path
 
@@ -35,9 +35,8 @@ class IFeedStorage(Interface):
         """Store the given file stream"""
 
 
+@implementer(IFeedStorage)
 class BlockingFeedStorage(object):
-
-    implements(IFeedStorage)
 
     def open(self, spider):
         return TemporaryFile(prefix='feed-')
@@ -49,9 +48,8 @@ class BlockingFeedStorage(object):
         raise NotImplementedError
 
 
+@implementer(IFeedStorage)
 class StdoutFeedStorage(object):
-
-    implements(IFeedStorage)
 
     def __init__(self, uri, _stdout=sys.stdout):
         self._stdout = _stdout
@@ -62,9 +60,9 @@ class StdoutFeedStorage(object):
     def store(self, file):
         pass
 
-class FileFeedStorage(object):
 
-    implements(IFeedStorage)
+@implementer(IFeedStorage)
+class FileFeedStorage(object):
 
     def __init__(self, uri):
         self.path = file_uri_to_path(uri)
@@ -77,6 +75,7 @@ class FileFeedStorage(object):
 
     def store(self, file):
         file.close()
+
 
 class S3FeedStorage(BlockingFeedStorage):
 
@@ -130,6 +129,7 @@ class SpiderSlot(object):
         self.storage = storage
         self.uri = uri
         self.itemcount = 0
+
 
 class FeedExporter(object):
 

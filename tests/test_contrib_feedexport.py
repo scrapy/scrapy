@@ -41,10 +41,11 @@ class FileFeedStorageTest(unittest.TestCase):
     def _assert_stores(self, storage, path):
         spider = Spider("default")
         file = storage.open(spider)
-        file.write("content")
+        file.write(b"content")
         yield storage.store(file)
         self.failUnless(os.path.exists(path))
-        self.failUnlessEqual(open(path).read(), "content")
+        with open(path, 'rb') as fp:
+            self.failUnlessEqual(fp.read(), b"content")
 
 
 class FTPFeedStorageTest(unittest.TestCase):
@@ -65,10 +66,12 @@ class FTPFeedStorageTest(unittest.TestCase):
         file.write(b"content")
         yield storage.store(file)
         self.failUnless(os.path.exists(path))
-        self.failUnlessEqual(open(path).read(), b"content")
+        with open(path, 'rb') as fp:
+            self.failUnlessEqual(fp.read(), b"content")
         # again, to check s3 objects are overwritten
         yield storage.store(BytesIO(b"new content"))
-        self.failUnlessEqual(open(path).read(), b"new content")
+        with open(path, 'rb') as fp:
+            self.failUnlessEqual(fp.read(), b"new content")
 
 
 class S3FeedStorageTest(unittest.TestCase):
