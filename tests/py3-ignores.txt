@@ -57,7 +57,6 @@ tests/test_toplevel.py
 tests/test_utils_defer.py
 tests/test_utils_iterators.py
 tests/test_utils_jsonrpc.py
-tests/test_utils_misc/__init__.py
 tests/test_utils_python.py
 tests/test_utils_reqser.py
 tests/test_utils_request.py
