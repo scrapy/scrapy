@@ -55,7 +55,7 @@ class DeferUtilsTest(unittest.TestCase):
             yield process_chain([cb1, cb_fail, cb3], 'res', 'v1', 'v2')
         except TypeError as e:
             gotexc = True
-        self.failUnless(gotexc)
+        self.assertTrue(gotexc)
 
     @defer.inlineCallbacks
     def test_process_chain_both(self):
@@ -87,7 +87,7 @@ class IterErrbackTest(unittest.TestCase):
 
         errors = []
         out = list(iter_errback(itergood(), errors.append))
-        self.failUnlessEqual(out, range(10))
+        self.assertEqual(out, range(10))
         self.failIf(errors)
 
     def test_iter_errback_bad(self):
@@ -99,6 +99,6 @@ class IterErrbackTest(unittest.TestCase):
 
         errors = []
         out = list(iter_errback(iterbad(), errors.append))
-        self.failUnlessEqual(out, [0, 1, 2, 3, 4])
-        self.failUnlessEqual(len(errors), 1)
-        self.failUnless(isinstance(errors[0].value, ZeroDivisionError))
+        self.assertEqual(out, [0, 1, 2, 3, 4])
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0].value, ZeroDivisionError)
