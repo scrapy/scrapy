@@ -16,7 +16,7 @@ setup(
     maintainer='Pablo Hoffman',
     maintainer_email='pablo@pablohoffman.com',
     license='BSD',
-    packages=find_packages(exclude=['tests']),
+    packages=find_packages(exclude=('tests', 'tests.*')),
     include_package_data=True,
     entry_points={
         'console_scripts': ['scrapy = scrapy.cmdline:execute']
