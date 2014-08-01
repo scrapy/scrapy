@@ -51,7 +51,6 @@ tests/test_spidermanager/test_spiders/spider4.py
 tests/test_spidermiddleware_httperror.py
 tests/test_spidermiddleware_referer.py
 tests/test_spider.py
-tests/test_toplevel.py
 tests/test_utils_defer.py
 tests/test_utils_iterators.py
 tests/test_utils_jsonrpc.py

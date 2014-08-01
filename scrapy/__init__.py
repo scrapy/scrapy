@@ -52,13 +52,9 @@ if twisted_version >= (11, 1, 0):
     optional_features.add('http11')
 
 # Declare top-level shortcuts
-if sys.version_info[0] == 2:
-    # Top-level shortcuts are not ready for Python 3 (like most of Scrapy);
-    # skip them here to make at least some parts of Scrapy
-    # importable in Python 3.
-    from scrapy.spider import Spider
-    from scrapy.http import Request, FormRequest
-    from scrapy.selector import Selector
-    from scrapy.item import Item, Field
+from scrapy.spider import Spider
+from scrapy.http import Request, FormRequest
+from scrapy.selector import Selector
+from scrapy.item import Item, Field
 
 del sys
