@@ -1,7 +1,10 @@
-import sys
 import os
-from six.moves.configparser import SafeConfigParser
+import sys
 from operator import itemgetter
+
+import six
+from six.moves.configparser import SafeConfigParser
+
 
 def build_component_list(base, custom):
     """Compose a component list based on a custom and base dict of components
@@ -12,14 +15,16 @@ def build_component_list(base, custom):
         return custom
     compdict = base.copy()
     compdict.update(custom)
-    return [k for k, v in sorted(compdict.items(), key=itemgetter(1)) \
-        if v is not None]
+    items = (x for x in six.iteritems(compdict) if x[1] is not None)
+    return [x[0] for x in sorted(items, key=itemgetter(1))]
+
 
 def arglist_to_dict(arglist):
     """Convert a list of arguments like ['arg1=val1', 'arg2=val2', ...] to a
     dict
     """
     return dict(x.split('=', 1) for x in arglist)
+
 
 def closest_scrapy_cfg(path='.', prevpath=None):
     """Return the path to the closest scrapy.cfg file by traversing the current
@@ -32,6 +37,7 @@ def closest_scrapy_cfg(path='.', prevpath=None):
     if os.path.exists(cfgfile):
         return cfgfile
     return closest_scrapy_cfg(os.path.dirname(path), path)
+
 
 def init_env(project='default', set_syspath=True):
     """Initialize environment to use command-line tool from inside a project
@@ -47,6 +53,7 @@ def init_env(project='default', set_syspath=True):
         if set_syspath and projdir not in sys.path:
             sys.path.append(projdir)
 
+
 def get_config(use_closest=True):
     """Get Scrapy config file as a SafeConfigParser"""
     sources = get_sources(use_closest)
@@ -54,9 +61,10 @@ def get_config(use_closest=True):
     cfg.read(sources)
     return cfg
 
+
 def get_sources(use_closest=True):
-    sources = ['/etc/scrapy.cfg', r'c:\scrapy\scrapy.cfg', \
-        os.path.expanduser('~/.scrapy.cfg')]
+    sources = ['/etc/scrapy.cfg', r'c:\scrapy\scrapy.cfg',
+               os.path.expanduser('~/.scrapy.cfg')]
     if use_closest:
         sources.append(closest_scrapy_cfg())
     return sources
