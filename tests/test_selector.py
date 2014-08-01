@@ -55,6 +55,19 @@ class SelectorTestCase(unittest.TestCase):
             ["<Selector xpath=u'//input[@value=\"\\xa9\"]/@value' data=u'\\xa9'>"]
         )
 
+    def test_str_method(self):
+        body = u"<p>par1</p><p>par2</p>"
+        response = TextResponse(url="http://example.com/", body=body, encoding='utf8')
+        sel = self.sscls(response)
+        self.assertEqual(
+            u'par1, par2',
+            u', '.join(map(unicode, sel.xpath('//p/text()')))
+        )
+        self.assertEqual(
+            [u'[par1]', u'[par2]'],
+            map('[{}]'.format, sel.xpath('//p/text()'))
+        )
+
     def test_select_unicode_query(self):
         body = u"<p><input name='\xa9' value='1'/></p>"
         response = TextResponse(url="http://example.com", body=body, encoding='utf8')
