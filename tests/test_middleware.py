@@ -75,10 +75,10 @@ class MiddlewareManagerTest(unittest.TestCase):
     def test_enabled(self):
         m1, m2, m3 = M1(), M2(), M3()
         mwman = MiddlewareManager(m1, m2, m3)
-        self.failUnlessEqual(mwman.middlewares, (m1, m2, m3))
+        self.assertEqual(mwman.middlewares, (m1, m2, m3))
 
     def test_enabled_from_settings(self):
         settings = Settings()
         mwman = TestMiddlewareManager.from_settings(settings)
         classes = [x.__class__ for x in mwman.middlewares]
-        self.failUnlessEqual(classes, [M1, M3])
+        self.assertEqual(classes, [M1, M3])

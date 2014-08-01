@@ -87,7 +87,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         a.x = 1
         b.x = 1
         # equal attribute
-        self.failUnless(equal_attributes(a, b, ['x']))
+        self.assertTrue(equal_attributes(a, b, ['x']))
 
         b.y = 2
         # obj1 has no attribute y
@@ -95,7 +95,7 @@ class UtilsPythonTestCase(unittest.TestCase):
 
         a.y = 2
         # equal attributes
-        self.failUnless(equal_attributes(a, b, ['x', 'y']))
+        self.assertTrue(equal_attributes(a, b, ['x', 'y']))
 
         a.y = 1
         # differente attributes
@@ -104,7 +104,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         # test callable
         a.meta = {}
         b.meta = {}
-        self.failUnless(equal_attributes(a, b, ['meta']))
+        self.assertTrue(equal_attributes(a, b, ['meta']))
 
         # compare ['meta']['a']
         a.meta['z'] = 1
@@ -114,7 +114,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         get_meta = operator.attrgetter('meta')
         compare_z = lambda obj: get_z(get_meta(obj))
 
-        self.failUnless(equal_attributes(a, b, [compare_z, 'x']))
+        self.assertTrue(equal_attributes(a, b, [compare_z, 'x']))
         # fail z equality
         a.meta['z'] = 2
         self.failIf(equal_attributes(a, b, [compare_z, 'x']))
@@ -134,7 +134,7 @@ class UtilsPythonTestCase(unittest.TestCase):
     def test_stringify_dict(self):
         d = {'a': 123, u'b': 'c', u'd': u'e', object(): u'e'}
         d2 = stringify_dict(d, keys_only=False)
-        self.failUnlessEqual(d, d2)
+        self.assertEqual(d, d2)
         self.failIf(d is d2) # shouldn't modify in place
         self.failIf(any(isinstance(x, unicode) for x in d2.keys()))
         self.failIf(any(isinstance(x, unicode) for x in d2.values()))
@@ -143,7 +143,7 @@ class UtilsPythonTestCase(unittest.TestCase):
         tuples = [('a', 123), (u'b', 'c'), (u'd', u'e'), (object(), u'e')]
         d = dict(tuples)
         d2 = stringify_dict(tuples, keys_only=False)
-        self.failUnlessEqual(d, d2)
+        self.assertEqual(d, d2)
         self.failIf(d is d2) # shouldn't modify in place
         self.failIf(any(isinstance(x, unicode) for x in d2.keys()), d2.keys())
         self.failIf(any(isinstance(x, unicode) for x in d2.values()))
@@ -151,7 +151,7 @@ class UtilsPythonTestCase(unittest.TestCase):
     def test_stringify_dict_keys_only(self):
         d = {'a': 123, u'b': 'c', u'd': u'e', object(): u'e'}
         d2 = stringify_dict(d)
-        self.failUnlessEqual(d, d2)
+        self.assertEqual(d, d2)
         self.failIf(d is d2) # shouldn't modify in place
         self.failIf(any(isinstance(x, unicode) for x in d2.keys()))
 

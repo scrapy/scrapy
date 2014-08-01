@@ -84,21 +84,21 @@ class ScrapyFileLogObserverTest(unittest.TestCase):
             a = 1/0
         except:
             log.err()
-        self.failUnless('Traceback' in self.logged())
-        self.failUnless('ZeroDivisionError' in self.logged())
+        self.assertIn('Traceback', self.logged())
+        self.assertIn('ZeroDivisionError', self.logged())
 
     def test_err_why(self):
         log.err(TypeError("bad type"), "Wrong type")
         self.assertEqual(self.first_log_line(), "[scrapy] ERROR: Wrong type")
-        self.failUnless('TypeError' in self.logged())
-        self.failUnless('bad type' in self.logged())
+        self.assertIn('TypeError', self.logged())
+        self.assertIn('bad type', self.logged())
 
     def test_error_outside_scrapy(self):
         """Scrapy logger should still print outside errors"""
         txlog.err(TypeError("bad type"), "Wrong type")
         self.assertEqual(self.first_log_line(), "[-] ERROR: Wrong type")
-        self.failUnless('TypeError' in self.logged())
-        self.failUnless('bad type' in self.logged())
+        self.assertIn('TypeError', self.logged())
+        self.assertIn('bad type', self.logged())
 
 # this test fails in twisted trial observer, not in scrapy observer
 #    def test_err_why_encoding(self):
@@ -107,15 +107,15 @@ class ScrapyFileLogObserverTest(unittest.TestCase):
 
     def test_err_exc(self):
         log.err(TypeError("bad type"))
-        self.failUnless('Unhandled Error' in self.logged())
-        self.failUnless('TypeError' in self.logged())
-        self.failUnless('bad type' in self.logged())
+        self.assertIn('Unhandled Error', self.logged())
+        self.assertIn('TypeError', self.logged())
+        self.assertIn('bad type', self.logged())
 
     def test_err_failure(self):
         log.err(failure.Failure(TypeError("bad type")))
-        self.failUnless('Unhandled Error' in self.logged())
-        self.failUnless('TypeError' in self.logged())
-        self.failUnless('bad type' in self.logged())
+        self.assertIn('Unhandled Error', self.logged())
+        self.assertIn('TypeError', self.logged())
+        self.assertIn('bad type', self.logged())
 
 
 class Latin1ScrapyFileLogObserverTest(ScrapyFileLogObserverTest):
