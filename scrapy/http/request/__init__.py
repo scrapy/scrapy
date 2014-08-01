@@ -7,6 +7,7 @@ See documentation in docs/topics/request-response.rst
 
 import copy
 
+import six
 from w3lib.url import safe_url_string
 
 from scrapy.http.headers import Headers
@@ -50,7 +51,7 @@ class Request(object_ref):
     def _set_url(self, url):
         if isinstance(url, str):
             self._url = escape_ajax(safe_url_string(url))
-        elif isinstance(url, unicode):
+        elif isinstance(url, six.text_type):
             if self.encoding is None:
                 raise TypeError('Cannot convert unicode url - %s has no encoding' %
                     type(self).__name__)
@@ -68,7 +69,7 @@ class Request(object_ref):
     def _set_body(self, body):
         if isinstance(body, str):
             self._body = body
-        elif isinstance(body, unicode):
+        elif isinstance(body, six.text_type):
             if self.encoding is None:
                 raise TypeError('Cannot convert unicode body - %s has no encoding' %
                     type(self).__name__)
