@@ -18,6 +18,7 @@ setup(
     license='BSD',
     packages=find_packages(exclude=('tests', 'tests.*')),
     include_package_data=True,
+    zip_safe=False,
     entry_points={
         'console_scripts': ['scrapy = scrapy.cmdline:execute']
     },
