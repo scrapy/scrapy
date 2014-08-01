@@ -4,7 +4,6 @@ tests/test_command_fetch.py
 tests/test_command_shell.py
 tests/test_commands.py
 tests/test_command_version.py
-tests/test_contracts.py
 tests/test_contrib_exporter.py
 tests/test_contrib_feedexport.py
 tests/test_contrib_linkextractors.py
@@ -57,9 +56,7 @@ tests/test_spidermiddleware_depth.py
 tests/test_spidermiddleware_httperror.py
 tests/test_spidermiddleware_offsite.py
 tests/test_spidermiddleware_referer.py
-tests/test_spidermiddleware_urllength.py
 tests/test_spider.py
-tests/test_squeue.py
 tests/test_stats.py
 tests/test_toplevel.py
 tests/test_utils_defer.py
