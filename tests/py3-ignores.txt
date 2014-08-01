@@ -69,7 +69,6 @@ tests/test_utils_request.py
 tests/test_utils_response.py
 tests/test_utils_serialize.py
 tests/test_utils_signal.py
-tests/test_utils_spider.py
 tests/test_utils_template.py
 tests/test_utils_url.py
 tests/test_webclient.py

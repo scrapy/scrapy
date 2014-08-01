@@ -3,7 +3,7 @@ SpiderManager is the class which locates and manages all website-specific
 spiders
 """
 
-from zope.interface import implements
+from zope.interface import implementer
 import six
 
 from scrapy import signals
@@ -12,9 +12,8 @@ from scrapy.utils.misc import walk_modules
 from scrapy.utils.spider import iter_spider_classes
 
 
+@implementer(ISpiderManager)
 class SpiderManager(object):
-
-    implements(ISpiderManager)
 
     def __init__(self, spider_modules):
         self.spider_modules = spider_modules

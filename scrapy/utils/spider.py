@@ -1,5 +1,7 @@
 import inspect
 
+import six
+
 from scrapy import log
 from scrapy.item import BaseItem
 from scrapy.utils.misc import  arg_to_iter
@@ -16,7 +18,7 @@ def iter_spider_classes(module):
     # singleton in scrapy.spider.spiders
     from scrapy.spider import Spider
 
-    for obj in vars(module).itervalues():
+    for obj in six.itervalues(vars(module)):
         if inspect.isclass(obj) and \
            issubclass(obj, Spider) and \
            obj.__module__ == module.__name__ and \
