@@ -5,7 +5,7 @@ from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 class SitemapTest(unittest.TestCase):
 
     def test_sitemap(self):
-        s = Sitemap("""<?xml version="1.0" encoding="UTF-8"?>
+        s = Sitemap(b"""<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.google.com/schemas/sitemap/0.84">
   <url>
     <loc>http://www.example.com/</loc>
@@ -25,7 +25,7 @@ class SitemapTest(unittest.TestCase):
             [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'}, {'priority': '0.8', 'loc': 'http://www.example.com/Special-Offers.html', 'lastmod': '2009-08-16', 'changefreq': 'weekly'}])
 
     def test_sitemap_index(self):
-        s = Sitemap("""<?xml version="1.0" encoding="UTF-8"?>
+        s = Sitemap(b"""<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
    <sitemap>
       <loc>http://www.example.com/sitemap1.xml.gz</loc>
@@ -43,7 +43,7 @@ class SitemapTest(unittest.TestCase):
         """Assert we can deal with trailing spaces inside <loc> tags - we've
         seen those
         """
-        s = Sitemap("""<?xml version="1.0" encoding="UTF-8"?>
+        s = Sitemap(b"""<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.google.com/schemas/sitemap/0.84">
   <url>
     <loc> http://www.example.com/</loc>
@@ -65,7 +65,7 @@ class SitemapTest(unittest.TestCase):
     def test_sitemap_wrong_ns(self):
         """We have seen sitemaps with wrongs ns. Presumably, Google still works
         with these, though is not 100% confirmed"""
-        s = Sitemap("""<?xml version="1.0" encoding="UTF-8"?>
+        s = Sitemap(b"""<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.google.com/schemas/sitemap/0.84">
   <url xmlns="">
     <loc> http://www.example.com/</loc>
@@ -87,7 +87,7 @@ class SitemapTest(unittest.TestCase):
     def test_sitemap_wrong_ns2(self):
         """We have seen sitemaps with wrongs ns. Presumably, Google still works
         with these, though is not 100% confirmed"""
-        s = Sitemap("""<?xml version="1.0" encoding="UTF-8"?>
+        s = Sitemap(b"""<?xml version="1.0" encoding="UTF-8"?>
 <urlset>
   <url xmlns="">
     <loc> http://www.example.com/</loc>
@@ -129,7 +129,7 @@ Disallow: /forum/active/
 
     def test_sitemap_blanklines(self):
         """Assert we can deal with starting blank lines before <xml> tag"""
-        s = Sitemap("""\
+        s = Sitemap(b"""\
 
 <?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -160,7 +160,7 @@ Disallow: /forum/active/
         ])
 
     def test_comment(self):
-        s = Sitemap("""<?xml version="1.0" encoding="UTF-8"?>
+        s = Sitemap(b"""<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
         <url>
@@ -174,7 +174,7 @@ Disallow: /forum/active/
         ])
 
     def test_alternate(self):
-        s = Sitemap("""<?xml version="1.0" encoding="UTF-8"?>
+        s = Sitemap(b"""<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
         <url>
@@ -196,7 +196,7 @@ Disallow: /forum/active/
         ])
 
     def test_xml_entity_expansion(self):
-        s = Sitemap("""<?xml version="1.0" encoding="utf-8"?>
+        s = Sitemap(b"""<?xml version="1.0" encoding="utf-8"?>
           <!DOCTYPE foo [
           <!ELEMENT foo ANY >
           <!ENTITY xxe SYSTEM "file:///etc/passwd" >
