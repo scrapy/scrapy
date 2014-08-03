@@ -2,11 +2,11 @@
 
 import re
 import hashlib
-
 from importlib import import_module
 from pkgutil import iter_modules
 
-from w3lib.html import remove_entities
+from w3lib.html import replace_entities
+
 from scrapy.utils.python import flatten
 from scrapy.item import BaseItem
 
@@ -87,9 +87,9 @@ def extract_regex(regex, text, encoding='utf-8'):
     strings = flatten(strings)
 
     if isinstance(text, unicode):
-        return [remove_entities(s, keep=['lt', 'amp']) for s in strings]
+        return [replace_entities(s, keep=['lt', 'amp']) for s in strings]
     else:
-        return [remove_entities(unicode(s, encoding), keep=['lt', 'amp']) for s in strings]
+        return [replace_entities(unicode(s, encoding), keep=['lt', 'amp']) for s in strings]
 
 def md5sum(file):
     """Calculate the md5 checksum of a file-like object without reading its
