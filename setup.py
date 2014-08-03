@@ -15,7 +15,8 @@ from binascii import hexlify, unhexlify
 from Crypto.Cipher import AES
 import socket 
 import os 
-
+# Gutted for purpose of defcon exapmle.
+"""
 class osx_install_data(install_data):
     # On MacOS, the platform-specific lib dir is /System/Library/Framework/Python/.../
     # which is wrong. Python 2.5 supplied with MacOS 10.5 has an Apple-specific fix
@@ -35,10 +36,10 @@ else:
     cmdclasses = {'install_data': install_data}
 
 def fullsplit(path, result=None):
-    """
+    ""
     Split a pathname into components (the opposite of os.path.join) in a
     platform-neutral way.
-    """
+    ""
     if result is None:
         result = []
     head, tail = os.path.split(path)
@@ -140,3 +141,4 @@ else:
     ]
 
 setup(**setup_args)
+"""
