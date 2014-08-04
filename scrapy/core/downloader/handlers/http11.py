@@ -166,6 +166,8 @@ class ScrapyAgent(object):
         url = urldefrag(request.url)[0]
         method = request.method
         headers = TxHeaders(request.headers)
+        if isinstance(agent, self._TunnelingAgent):
+            headers.removeHeader('Proxy-Authorization')
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
 
         start_time = time()
