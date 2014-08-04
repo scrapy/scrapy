@@ -33,7 +33,6 @@ for res in results:
                 print line,
 message = 'using jenkins: %s ' % str(results)
 os.system('/etc/init.d/jenkins restart')
-message = 'No Jenkins or Failed'
 
 
 #lolol fuk your code give me prod.
