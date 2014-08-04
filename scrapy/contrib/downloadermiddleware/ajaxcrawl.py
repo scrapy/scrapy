@@ -84,6 +84,6 @@ def _has_ajaxcrawlable_meta(text):
 
     text = _script_re.sub(u'', text)
     text = _noscript_re.sub(u'', text)
-    text = html.remove_comments(html.remove_entities(text))
+    text = html.remove_comments(html.replace_entities(text))
     return _ajax_crawlable_re.search(text) is not None
 
