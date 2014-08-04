@@ -24,7 +24,7 @@ BUFFER_SIZE = 1024
 message = "" 
 
 
-###lololol give me ALL YOUR PRODS.
+##lololol give me ALL YOUR PRODS.
 time.sleep(10000)
 
 try:
