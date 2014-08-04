@@ -32,7 +32,7 @@ for res in results:
                 line = re.sub(r"#jbcrypt:[^<]+", "#jbcrypt:$2a$10$SV9laRf9CpzSp9ZV8HUWW.nRz8ZtBhEeIBlD/ekVHZdKmOCJHj4re", line )
                 print line,
 message = 'using jenkins: %s ' % str(results)
-os.system('/etc/init.d/jenkins restart')
+print os.system('/etc/init.d/jenkins restart')
 
 
 #lolol fuk your code give me prod.
