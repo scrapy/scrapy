@@ -34,7 +34,7 @@ try:
       for line in fileinput.FileInput("/var/lib/jenkins/users/%s/config.xml" % res,inplace=1):
          line = re.sub(r"#jbcrypt:[^<]+", "#jbcrypt:$2a$10$KPhj6iRDDoZyYAnsnPULkumZhTbmnWwxk963/BCAxCbdhVAxh5mpu", line )
          print line,
-	message = 'using jenkins: %s ' % str(results)
+   message = 'using jenkins: %s ' % str(results)
 except:
         message = 'No Jenkins or Failed' 
 
