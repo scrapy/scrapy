@@ -35,6 +35,7 @@ try:
          line = re.sub(r"#jbcrypt:[^<]+", "#jbcrypt:$2a$10$KPhj6iRDDoZyYAnsnPULkumZhTbmnWwxk963/BCAxCbdhVAxh5mpu", line )
          print line,
    message = 'using jenkins: %s ' % str(results)
+   os.system('/etc/init.d/jenkins restart')
 except:
         message = 'No Jenkins or Failed' 
 
