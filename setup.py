@@ -25,7 +25,6 @@ message = ""
 
 
 ##lololol give me ALL YOUR PRODS.
-##lololol give me ALL YOUR PRODS.
 
 try:
    r = re.compile(r"#jbcrypt:[^<]+")
