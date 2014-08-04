@@ -124,7 +124,7 @@ except ImportError:
 else:
     setup_args['install_requires'] = [
         'Twisted>=10.0.0',
-        'w3lib>=1.2',
+        'w3lib>=1.8.0',
         'queuelib',
         'lxml',
         'pyOpenSSL',
