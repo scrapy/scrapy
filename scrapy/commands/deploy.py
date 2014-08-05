@@ -27,7 +27,7 @@ from setuptools import setup, find_packages
 setup(
     name         = 'project',
     version      = '1.0',
-    packages     = find_packages(),
+    packages     = find_packages(exclude=%(exclude)s}),
     entry_points = {'scrapy': ['settings = %(settings)s']},
 )
 """
@@ -62,6 +62,8 @@ class Command(ScrapyCommand):
             help="use the given egg, instead of building it")
         parser.add_option("--build-egg", metavar="FILE",
             help="only build the egg, don't deploy it")
+        parser.add_option("--exclude", action="append",
+            help="exclude files from deploy")
 
     def run(self, args, opts):
         try:
@@ -87,13 +89,14 @@ class Command(ScrapyCommand):
 
         tmpdir = None
 
+        target_name = _get_target_name(args)
+        target = _get_target(target_name)
+        exclude = _get_exclude(target, opts)
         if opts.build_egg: # build egg only
-            egg, tmpdir = _build_egg()
+            egg, tmpdir = _build_egg(exclude)
             _log("Writing egg to %s" % opts.build_egg)
             shutil.copyfile(egg, opts.build_egg)
         else: # buld egg and deploy
-            target_name = _get_target_name(args)
-            target = _get_target(target_name)
             project = _get_project(target, opts)
             version = _get_version(target, opts)
             if opts.egg:
@@ -101,7 +104,7 @@ class Command(ScrapyCommand):
                 egg = opts.egg
             else:
                 _log("Packing version %s" % version)
-                egg, tmpdir = _build_egg()
+                egg, tmpdir = _build_egg(exclude)
             if not _upload_egg(target, egg, project, version):
                 self.exitcode = 1
 
@@ -113,6 +116,12 @@ class Command(ScrapyCommand):
 
 def _log(message):
     sys.stderr.write(message + os.linesep)
+
+def _get_exclude(target, opts):
+    exclude = opts.exclude or target.get('exclude', '')
+    if isinstance(exclude, basestring):
+        exclude = tuple(a for a in exclude.split(',') if a != '')
+    return repr(exclude)
 
 def _get_target_name(args):
     if len(args) > 1:
@@ -217,12 +226,12 @@ def _http_post(request):
     except urllib2.URLError as e:
         _log("Deploy failed: %s" % e)
 
-def _build_egg():
+def _build_egg(exclude):
     closest = closest_scrapy_cfg()
     os.chdir(os.path.dirname(closest))
     if not os.path.exists('setup.py'):
         settings = get_config().get('settings', 'default')
-        _create_default_setup_py(settings=settings)
+        _create_default_setup_py(settings=settings, exclude=exclude)
     d = tempfile.mkdtemp(prefix="scrapydeploy-")
     o = open(os.path.join(d, "stdout"), "wb")
     e = open(os.path.join(d, "stderr"), "wb")
