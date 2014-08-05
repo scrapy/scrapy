@@ -23,6 +23,7 @@ setup(
         'console_scripts': ['scrapy = scrapy.cmdline:execute']
     },
     classifiers=[
+        'Framework :: Scrapy',
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
         'Intended Audience :: Developers',
