@@ -44,6 +44,11 @@ class HttpProxyMiddleware(object):
         if scheme in self.proxies:
             self._set_proxy(request, scheme)
 
+    def process_response(self, request, response, spider):
+        if request.meta.get('proxy'):
+            response.flags.append('proxied')
+        return response
+
     def _set_proxy(self, request, scheme):
         creds, proxy = self.proxies[scheme]
         request.meta['proxy'] = proxy
