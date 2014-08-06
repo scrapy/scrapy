@@ -85,12 +85,22 @@ class TranslatorMixinTest(unittest.TestCase):
             ('a[href]::text', u'descendant-or-self::a[@href]/text()'),
             ('a[href] ::text', u'descendant-or-self::a[@href]/descendant-or-self::text()'),
             ('p::text, a::text', u"descendant-or-self::p/text() | descendant-or-self::a/text()"),
+        ]
+        for css, xpath in cases:
+            self.assertEqual(self.c2x(css), xpath, css)
+
+    def test_nth_pseudo_element(self):
+        cases = [
             ('p.red::last', u"descendant-or-self::p[@class and contains(concat(' ', normalize-space(@class), ' '), ' red ')]"
                              "[count(following-sibling::p[@class and contains(concat(' ', normalize-space(@class), ' '), ' red ')])=0]"),
             ('input[type=checkbox]::first', u"descendant-or-self::input[@type = 'checkbox']"
                                              "[count(preceding-sibling::input[@type = 'checkbox'])=0]"),
             ('input[type=checkbox]::nth(3)', u"descendant-or-self::input[@type = 'checkbox']"
                                               "[count(preceding-sibling::input[@type = 'checkbox'])=2]"),
+            ('p > input[type=checkbox]::nth(3)', u"descendant-or-self::p/input[@type = 'checkbox'][3]"),
+            ('div > p.last > ul::nth(3)', u"descendant-or-self::div"
+                                           "/p[@class and contains(concat(' ', normalize-space(@class), ' '), ' last ')]"
+                                           "/ul[3]"),
         ]
         for css, xpath in cases:
             self.assertEqual(self.c2x(css), xpath, css)

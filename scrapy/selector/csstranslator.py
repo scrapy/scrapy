@@ -92,17 +92,32 @@ class TranslatorMixin(object):
             predicate += "[%s]" % xpexpr.condition
         return "count(%s)=%d" % (predicate, count)
 
+    def xpath_first_sibling_predicate(self, xp):
+        if xp.path:
+            return "0"
+        return self.xpath_sibling_predicate(xp, "preceding-sibling", 0)
+
+    def xpath_last_sibling_predicate(self, xp):
+        if xp.path:
+            return "last()"
+        return self.xpath_sibling_predicate(xp, "following-sibling", 0)
+
+    def xpath_nth_sibling_predicate(self, xp, count):
+        if xp.path:
+            return count
+        return self.xpath_sibling_predicate(xp, "preceding-sibling", count-1)
+
     def xpath_first_simple_pseudo_element(self, xpath):
         """Support selecting first child nodes using ::first pseudo-element"""
         xpexpr = ScrapyXPathExpr.from_xpath(xpath)
-        predicate = self.xpath_sibling_predicate(xpexpr, "preceding-sibling", 0)
+        predicate = self.xpath_first_sibling_predicate(xpexpr)
         xpexpr.append_predicate(predicate)
         return xpexpr
 
     def xpath_last_simple_pseudo_element(self, xpath):
         """Support selecting last child nodes using ::last pseudo-element"""
         xpexpr = ScrapyXPathExpr.from_xpath(xpath)
-        predicate = self.xpath_sibling_predicate(xpexpr, "following-sibling", 0)
+        predicate = self.xpath_last_sibling_predicate(xpexpr)
         xpexpr.append_predicate(predicate)
         return xpexpr
 
@@ -112,8 +127,7 @@ class TranslatorMixin(object):
                 "Expected a single string or ident for ::nth(), got %r"
                 % function.arguments)
         xpexpr = ScrapyXPathExpr.from_xpath(xpath)
-        predicate = self.xpath_sibling_predicate(xpexpr, "preceding-sibling",
-            int(function.arguments[0].value)-1)
+        predicate = self.xpath_nth_sibling_predicate(xpexpr, int(function.arguments[0].value))
         xpexpr.append_predicate(predicate)
         return xpexpr
 
