@@ -1,12 +1,15 @@
 from cssselect import GenericTranslator, HTMLTranslator
-from cssselect.xpath import _unicode_safe_getattr, XPathExpr, ExpressionError
+from cssselect.xpath import _unicode, _unicode_safe_getattr, XPathExpr, ExpressionError
 from cssselect.parser import FunctionalPseudoElement
 
 
 class ScrapyXPathExpr(XPathExpr):
 
-    textnode = False
-    attribute = None
+    def __init__(self, *args, **kwargs):
+        super(ScrapyXPathExpr, self).__init__(*args, **kwargs)
+        self.textnode = False
+        self.attribute = None
+        self.predicates = []
 
     @classmethod
     def from_xpath(cls, xpath, textnode=False, attribute=None):
@@ -17,6 +20,8 @@ class ScrapyXPathExpr(XPathExpr):
 
     def __str__(self):
         path = super(ScrapyXPathExpr, self).__str__()
+        if self.predicates:
+            path += "".join("[%s]" % p for p in self.predicates)
         if self.textnode:
             if path == '*':
                 path = 'text()'
@@ -37,6 +42,9 @@ class ScrapyXPathExpr(XPathExpr):
         self.textnode = other.textnode
         self.attribute = other.attribute
         return self
+
+    def append_predicate(self, predicate):
+        self.predicates.append(predicate)
 
 
 class TranslatorMixin(object):
@@ -77,6 +85,37 @@ class TranslatorMixin(object):
     def xpath_text_simple_pseudo_element(self, xpath):
         """Support selecting text nodes using ::text pseudo-element"""
         return ScrapyXPathExpr.from_xpath(xpath, textnode=True)
+
+    def xpath_sibling_predicate(self, xpexpr, axis, count):
+        predicate = "%s::%s" % (axis, _unicode(xpexpr.element))
+        if xpexpr.condition:
+            predicate += "[%s]" % xpexpr.condition
+        return "count(%s)=%d" % (predicate, count)
+
+    def xpath_first_simple_pseudo_element(self, xpath):
+        """Support selecting first child nodes using ::first pseudo-element"""
+        xpexpr = ScrapyXPathExpr.from_xpath(xpath)
+        predicate = self.xpath_sibling_predicate(xpexpr, "preceding-sibling", 0)
+        xpexpr.append_predicate(predicate)
+        return xpexpr
+
+    def xpath_last_simple_pseudo_element(self, xpath):
+        """Support selecting last child nodes using ::last pseudo-element"""
+        xpexpr = ScrapyXPathExpr.from_xpath(xpath)
+        predicate = self.xpath_sibling_predicate(xpexpr, "following-sibling", 0)
+        xpexpr.append_predicate(predicate)
+        return xpexpr
+
+    def xpath_nth_functional_pseudo_element(self, xpath, function):
+        if function.argument_types() not in (['NUMBER'],):
+            raise ExpressionError(
+                "Expected a single string or ident for ::nth(), got %r"
+                % function.arguments)
+        xpexpr = ScrapyXPathExpr.from_xpath(xpath)
+        predicate = self.xpath_sibling_predicate(xpexpr, "preceding-sibling",
+            int(function.arguments[0].value)-1)
+        xpexpr.append_predicate(predicate)
+        return xpexpr
 
 
 class ScrapyGenericTranslator(TranslatorMixin, GenericTranslator):

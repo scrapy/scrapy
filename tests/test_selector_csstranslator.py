@@ -85,6 +85,12 @@ class TranslatorMixinTest(unittest.TestCase):
             ('a[href]::text', u'descendant-or-self::a[@href]/text()'),
             ('a[href] ::text', u'descendant-or-self::a[@href]/descendant-or-self::text()'),
             ('p::text, a::text', u"descendant-or-self::p/text() | descendant-or-self::a/text()"),
+            ('p.red::last', u"descendant-or-self::p[@class and contains(concat(' ', normalize-space(@class), ' '), ' red ')]"
+                             "[count(following-sibling::p[@class and contains(concat(' ', normalize-space(@class), ' '), ' red ')])=0]"),
+            ('input[type=checkbox]::first', u"descendant-or-self::input[@type = 'checkbox']"
+                                             "[count(preceding-sibling::input[@type = 'checkbox'])=0]"),
+            ('input[type=checkbox]::nth(3)', u"descendant-or-self::input[@type = 'checkbox']"
+                                              "[count(preceding-sibling::input[@type = 'checkbox'])=2]"),
         ]
         for css, xpath in cases:
             self.assertEqual(self.c2x(css), xpath, css)
@@ -151,3 +157,11 @@ class CSSSelectorTest(unittest.TestCase):
                          [u'hi', u'guy'])
         self.assertEqual(self.sel.css('div').css('area:last-child').extract(),
                          [u'<area shape="default" id="area-nohref">'])
+
+    def test_nth_pseudo_element(self):
+        self.assertEqual(self.x('b::nth(2)'), [u'<b id="p-b2">guy</b>'])
+
+    def test_last_pseudo_element(self):
+        self.assertEqual(self.x('input[type=checkbox]::last'),
+                         [u'<input type="checkbox" id="checkbox-disabled-checked" disabled checked>',
+                          u'<input type="checkbox" id="checkbox-fieldset-disabled">'])
