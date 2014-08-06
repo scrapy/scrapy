@@ -35,15 +35,16 @@ class ScrapyFileLogObserver(log.FileLogObserver):
     def __init__(self, f, level=INFO, encoding='utf-8', crawler=None):
         self.level = level
         self.encoding = encoding
+        self.crawler = crawler
         if crawler:
-            self.crawler = crawler
             self.emit = self._emit_with_crawler
         else:
             self.emit = self._emit
         log.FileLogObserver.__init__(self, f)
 
     def _emit(self, eventDict):
-        ev = _adapt_eventdict(eventDict, self.level, self.encoding)
+        ev = _adapt_eventdict(eventDict, self.level, self.encoding,
+                              self.crawler)
         if ev is not None:
             log.FileLogObserver.emit(self, ev)
         return ev
@@ -55,7 +56,8 @@ class ScrapyFileLogObserver(log.FileLogObserver):
             sname = 'log_count/%s' % level_names.get(level, level)
             self.crawler.stats.inc_value(sname)
 
-def _adapt_eventdict(eventDict, log_level=INFO, encoding='utf-8', prepend_level=True):
+def _adapt_eventdict(eventDict, log_level=INFO, encoding='utf-8',
+                     crawler=None, prepend_level=True):
     """Adapt Twisted log eventDict making it suitable for logging with a Scrapy
     log observer. It may return None to indicate that the event should be
     ignored by a Scrapy log observer.
@@ -78,6 +80,12 @@ def _adapt_eventdict(eventDict, log_level=INFO, encoding='utf-8', prepend_level=
     spider = ev.get('spider')
     if spider:
         ev['system'] = unicode_to_str(spider.name, encoding)
+    if crawler and (not spider or spider.crawler is not crawler):
+        # ignore events not triggered by own spiders in crawlers' observers
+        return
+    if not crawler and spider:
+        # ignore spiders' events in observers without crawler
+        return
 
     lvlname = level_names.get(level, 'NOLEVEL')
     message = ev.get('message')
@@ -140,18 +148,14 @@ def start_from_settings(settings, crawler=None):
             settings['LOG_ENCODING'], crawler)
 
 def scrapy_info(settings):
-    log_observer = start_from_settings(settings)
-    if log_observer:
-        msg("Scrapy %s started (bot: %s)" % (scrapy.__version__,
-            settings['BOT_NAME']))
+    msg("Scrapy %s started (bot: %s)" % (scrapy.__version__,
+        settings['BOT_NAME']))
 
-        msg("Optional features available: %s" % ", ".join(scrapy.optional_features),
-            level=INFO)
+    msg("Optional features available: %s" % ", ".join(scrapy.optional_features),
+        level=INFO)
 
-        d = dict(overridden_settings(settings))
-        msg(format="Overridden settings: %(settings)r", settings=d, level=INFO)
-
-        log_observer.stop()
+    d = dict(overridden_settings(settings))
+    msg(format="Overridden settings: %(settings)r", settings=d, level=INFO)
 
 def start_from_crawler(crawler):
     return start_from_settings(crawler.settings, crawler)

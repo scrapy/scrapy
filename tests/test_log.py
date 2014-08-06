@@ -6,6 +6,7 @@ from twisted.trial import unittest
 from scrapy import log
 from scrapy.spider import Spider
 from scrapy.settings import default_settings
+from scrapy.utils.test import get_crawler
 
 class LogTest(unittest.TestCase):
 
@@ -40,10 +41,10 @@ class ScrapyFileLogObserverTest(unittest.TestCase):
         log.msg("Hello")
         self.assertEqual(self.logged(), "[scrapy] INFO: Hello")
 
-    def test_msg_spider(self):
+    def test_msg_ignore_spider(self):
         spider = Spider("myspider")
         log.msg("Hello", spider=spider)
-        self.assertEqual(self.logged(), "[myspider] INFO: Hello")
+        self.failIf(self.logged())
 
     def test_msg_level1(self):
         log.msg("Hello", level=log.WARNING)
@@ -56,11 +57,6 @@ class ScrapyFileLogObserverTest(unittest.TestCase):
     def test_msg_wrong_level(self):
         log.msg("Hello", level=9999)
         self.assertEqual(self.logged(), "[scrapy] NOLEVEL: Hello")
-
-    def test_msg_level_spider(self):
-        spider = Spider("myspider")
-        log.msg("Hello", spider=spider, level=log.WARNING)
-        self.assertEqual(self.logged(), "[myspider] WARNING: Hello")
 
     def test_msg_encoding(self):
         log.msg(u"Price: \xa3100")
@@ -131,6 +127,42 @@ class Latin1ScrapyFileLogObserverTest(ScrapyFileLogObserverTest):
 #    def test_err_why_encoding(self):
 #        log.err(TypeError("bad type"), u"\xa3")
 #        self.assertEqual(self.first_log_line(), "[scrapy] ERROR: \xa3")
+
+
+class CrawlerScrapyFileLogObserverTest(unittest.TestCase):
+
+    def setUp(self):
+        self.f = BytesIO()
+        self.crawler = get_crawler(Spider)
+        self.spider = self.crawler.spider = self.crawler._create_spider('test')
+        self.log_observer = log.ScrapyFileLogObserver(self.f, log.INFO,
+                                                      'utf-8', self.crawler)
+        self.log_observer.start()
+
+    def tearDown(self):
+        self.flushLoggedErrors()
+        self.log_observer.stop()
+
+    def logged(self):
+        return self.f.getvalue().strip()[25:]
+
+    def test_msg_basic(self):
+        log.msg("Hello", spider=self.spider)
+        self.assertEqual(self.logged(), "[test] INFO: Hello")
+
+    def test_msg_ignore_scrapy_channel(self):
+        log.msg("Hello")
+        self.failIf(self.logged())
+
+    def test_msg_ignore_another_crawler(self):
+        crawler = get_crawler(Spider)
+        log.msg("Hello", spider=crawler._create_spider('test'))
+        self.failIf(self.logged())
+
+    def test_msg_stats_log(self):
+        assert self.crawler.stats.get_value('log_count/INFO', 0) == 0
+        log.msg("Hello", spider=self.spider)
+        self.assertEqual(self.crawler.stats.get_value('log_count/INFO'), 1)
 
 
 if __name__ == "__main__":

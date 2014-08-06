@@ -128,6 +128,7 @@ class CrawlerProcess(CrawlerRunner):
         signame = signal_names[signum]
         log.msg(format='Received %(signame)s twice, forcing unclean shutdown',
                 level=log.INFO, signame=signame)
+        self._stop_logging()
         reactor.callFromThread(self._stop_reactor)
 
     def start(self, stop_after_crawl=True):
@@ -135,6 +136,7 @@ class CrawlerProcess(CrawlerRunner):
         self._start_reactor(stop_after_crawl)
 
     def _start_logging(self):
+        self.log_observer = log.start_from_settings(self.settings)
         log.scrapy_info(self.settings)
 
     def _start_reactor(self, stop_after_crawl=True):
@@ -148,6 +150,9 @@ class CrawlerProcess(CrawlerRunner):
             reactor.installResolver(CachingThreadedResolver(reactor))
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
         reactor.run(installSignalHandlers=False)  # blocking call
+
+    def _stop_logging(self):
+        self.log_observer.stop()
 
     def _stop_reactor(self, _=None):
         try:
