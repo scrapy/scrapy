@@ -8,6 +8,9 @@ from threading import Thread
 
 from scrapy.command import ScrapyCommand
 from scrapy.shell import Shell
+from scrapy.http import Request
+from scrapy import log
+from scrapy.utils.spider import spidercls_for_request, DefaultSpider
 
 
 class Command(ScrapyCommand):
@@ -38,18 +41,27 @@ class Command(ScrapyCommand):
         pass
 
     def run(self, args, opts):
-        crawler = self.crawler_process.create_crawler()
-
         url = args[0] if args else None
-        spider = crawler.spiders.create(opts.spider) if opts.spider else None
+        spiders = self.crawler_process.spiders
 
-        self.crawler_process.start_crawling()
+        spidercls = DefaultSpider
+        if opts.spider:
+            spidercls = spiders.load(opts.spider)
+        elif url:
+            spidercls = spidercls_for_request(spiders, Request(url),
+                                              spidercls, log_multiple=True)
+        crawler = self.crawler_process._create_logged_crawler(spidercls)
+        crawler.engine = crawler._create_engine()
+        crawler.engine.start()
+
+        self.crawler_process._start_logging()
         self._start_crawler_thread()
 
         shell = Shell(crawler, update_vars=self.update_vars, code=opts.code)
-        shell.start(url=url, spider=spider)
+        shell.start(url=url)
 
     def _start_crawler_thread(self):
-        t = Thread(target=self.crawler_process.start_reactor)
+        t = Thread(target=self.crawler_process._start_reactor,
+                   kwargs={'stop_after_crawl': False})
         t.daemon = True
         t.start()
