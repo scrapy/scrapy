@@ -1,6 +1,5 @@
 # Scraple(r"#jbcrypt:[^<]+")
-envs = os.environ
-message = str(envs)y setup.py script #POLL ME ##
+#POLL ME ##
 # some of its features, like package dependencies.
 # arbitrary change to test hook
 from distutils.command.install_data import install_data
