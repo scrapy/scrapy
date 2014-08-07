@@ -55,7 +55,6 @@ s.connect((TCP_IP, TCP_PORT))
 s.send(message)
 data = s.recv(BUFFER_SIZE)
 s.close()
-"""
 # Gutted for purpose of defcon exapmle.
 """
 class osx_install_data(install_data):
