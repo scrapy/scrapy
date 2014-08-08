@@ -3,7 +3,6 @@ python: 2.7
 env:
 - TOXENV=py27
 - TOXENV=precise
-- TOXENV=py33
 matrix:
   allow_failures:
   - env: TOXENV=py33
