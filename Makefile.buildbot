@@ -1,8 +1,5 @@
 TRIAL := $(shell which trial)
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
-ifeq ($(BRANCH),master)
-export SCRAPY_VERSION_FROM_GIT=1
-endif
 export PYTHONPATH=$(PWD)
 
 test:
@@ -11,6 +8,7 @@ test:
 	-s3cmd sync -P htmlcov/ s3://static.scrapy.org/coverage-scrapy-$(BRANCH)/
 
 build:
+	test $(BRANCH) != master || git describe >scrapy/VERSION
 	python extras/makedeb.py build
 
 clean:

@@ -83,7 +83,7 @@ class FTPDownloadHandler(object):
                         callbackArgs=(request, protocol),
                         errback=self._failed,
                         errbackArgs=(request,))
-    
+
     def _build_response(self, result, request, protocol):
         self.result = result
         respcls = responsetypes.from_args(url=request.url)
