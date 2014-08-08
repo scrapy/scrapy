@@ -31,18 +31,6 @@ class Crawler(object):
         self.spider = None
         self.engine = None
 
-    def install(self):
-        # TODO: remove together with scrapy.project.crawler usage
-        import scrapy.project
-        assert not hasattr(scrapy.project, 'crawler'), "crawler already installed"
-        scrapy.project.crawler = self
-
-    def uninstall(self):
-        # TODO: remove together with scrapy.project.crawler usage
-        import scrapy.project
-        assert hasattr(scrapy.project, 'crawler'), "crawler not installed"
-        del scrapy.project.crawler
-
     @defer.inlineCallbacks
     def crawl(self, *args, **kwargs):
         assert not self.crawling, "Crawling already taking place"
@@ -83,9 +71,6 @@ class CrawlerRunner(object):
     def crawl(self, spidercls, *args, **kwargs):
         crawler = self._create_logged_crawler(spidercls)
         self.crawlers.add(crawler)
-
-        crawler.install()
-        crawler.signals.connect(crawler.uninstall, signals.engine_stopped)
 
         d = crawler.crawl(*args, **kwargs)
         self.crawl_deferreds.add(d)

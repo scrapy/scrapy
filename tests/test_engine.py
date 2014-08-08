@@ -93,7 +93,6 @@ class CrawlerRun(object):
                 dispatcher.connect(self.record_signal, signal)
 
         self.crawler = get_crawler(TestSpider)
-        self.crawler.install()
         self.crawler.signals.connect(self.item_scraped, signals.item_scraped)
         self.crawler.signals.connect(self.request_scheduled, signals.request_scheduled)
         self.crawler.signals.connect(self.response_downloaded, signals.response_downloaded)
@@ -109,7 +108,6 @@ class CrawlerRun(object):
         for name, signal in vars(signals).items():
             if not name.startswith('_'):
                 disconnect_all(signal)
-        self.crawler.uninstall()
         self.deferred.callback(None)
 
     def geturl(self, path):

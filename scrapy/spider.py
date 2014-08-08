@@ -93,6 +93,6 @@ class ObsoleteClass(object):
         raise AttributeError(self.message)
 
 spiders = ObsoleteClass("""
-"from scrapy.spider import spiders" no longer works - use "from scrapy.project import crawler" and then access crawler.spiders attribute"
+"from scrapy.spider import spiders" no longer works - use "from scrapy.spidermanager import SpiderManager" and instantiate it with your project settings"
 """)
 

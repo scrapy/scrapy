@@ -123,10 +123,9 @@ class Shell(object):
         return isinstance(value, self.relevant_classes)
 
 
-def inspect_response(response, spider=None):
+def inspect_response(response, spider):
     """Open a shell to inspect the given response"""
-    from scrapy.project import crawler
-    Shell(crawler).start(response=response, spider=spider)
+    Shell(spider.crawler).start(response=response)
 
 
 def _request_deferred(request):

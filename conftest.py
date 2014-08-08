@@ -4,7 +4,7 @@ from twisted.python import log
 
 from scrapy import optional_features
 
-collect_ignore = ["scrapy/stats.py"]
+collect_ignore = ["scrapy/stats.py", "scrapy/project.py"]
 if 'django' not in optional_features:
     collect_ignore.append("tests/test_djangoitem/models.py")
 
