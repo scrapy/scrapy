@@ -4,31 +4,30 @@
 Installation guide
 ==================
 
-Pre-requisites
-==============
+Installing Scrapy
+=================
+
+.. note:: Check :ref:`intro-install-platform-notes` first.
 
 The installation steps assume that you have the following things installed:
 
 * `Python`_ 2.7
-* `lxml`_. Most Linux distributions ships prepackaged versions of lxml. Otherwise refer to http://lxml.de/installation.html
-* `OpenSSL`_. This comes preinstalled in all operating systems except Windows (see :ref:`intro-install-platform-notes`)
-* `pip`_ or `easy_install`_ Python package managers
 
-Installing Scrapy
-=================
+* `pip`_ and `setuptools`_ Python packages. Nowadays `pip`_ requires and
+  installs `setuptools`_ if not installed.
 
-You can install Scrapy using easy_install or pip (which is the canonical way to
-distribute and install Python packages).
+* `lxml`_. Most Linux distributions ships prepackaged versions of lxml.
+  Otherwise refer to http://lxml.de/installation.html
 
-.. note:: Check :ref:`intro-install-platform-notes` first.
+* `OpenSSL`_. This comes preinstalled in all operating systems, except Windows
+  where the Python installer ships it bundled.
+
+You can install Scrapy using pip (which is the canonical way to install Python
+packages).
 
 To install using pip::
 
    pip install Scrapy
-
-To install using easy_install::
-
-   easy_install Scrapy
 
 .. _intro-install-platform-notes:
 
@@ -38,34 +37,33 @@ Platform specific installation notes
 Windows
 -------
 
-After installing Python, follow these steps before installing Scrapy:
+* Install Python 2.7 from http://python.org/download/
 
-* add the ``C:\python27\Scripts`` and ``C:\python27`` folders to the system
-  path by adding those directories to the ``PATH`` environment variable from
-  the `Control Panel`_.
+  You need to adjust ``PATH`` environment variable to include paths to
+  the Python executable and additional scripts. The following paths need to be
+  added to ``PATH``::
 
-* install OpenSSL by following these steps:
+      C:\Python2.7\;C:\Python2.7\Scripts\;
 
-  1. go to `Win32 OpenSSL page <http://slproweb.com/products/Win32OpenSSL.html>`_
+  To update the ``PATH`` open a Command prompt and run::
 
-  2. download Visual C++ 2008 redistributables for your Windows and architecture
+      c:\python27\python.exe c:\python27\tools\scripts\win_add2path.py
 
-  3. download OpenSSL for your Windows and architecture (the regular version, not the light one)
+  Close the command prompt window and reopen it so changes take effect, run the
+  following command and check it shows the expected Python version::
 
-  4. add the ``c:\openssl-win32\bin`` (or similar) directory to your ``PATH``, the same way you added ``python27`` in the first step`` in the first step
+      python --version
 
-* some binary packages that Scrapy depends on (like Twisted, lxml and pyOpenSSL) require a compiler available to install, and fail if you don't have Visual Studio installed. You can find Windows installers for those in the following links. Make sure you respect your Python version and Windows architecture.
+* Install `pip`_ from https://pip.pypa.io/en/latest/installing.html
 
-  * pywin32: http://sourceforge.net/projects/pywin32/files/
-  * Twisted: http://twistedmatrix.com/trac/wiki/Downloads
-  * zope.interface: download the egg from `zope.interface pypi page <http://pypi.python.org/pypi/zope.interface>`_ and install it by running ``easy_install file.egg``
-  * lxml: http://pypi.python.org/pypi/lxml/
-  * pyOpenSSL: https://launchpad.net/pyopenssl
+  Now open a Command prompt to check ``pip`` is installed correctly:: 
 
-Finally, this page contains many precompiled Python binary libraries, which may
-come handy to fulfill Scrapy dependencies:
+      pip --version
 
-    http://www.lfd.uci.edu/~gohlke/pythonlibs/
+* At this point Python 2.7 and ``pip`` package manager must be working, let's
+  install Scrapy::
+
+      pip install Scrapy
 
 Ubuntu 9.10 or above
 ~~~~~~~~~~~~~~~~~~~~
@@ -77,6 +75,13 @@ Instead, use the official :ref:`Ubuntu Packages <topics-ubuntu>`, which already
 solve all dependencies for you and are continuously updated with the latest bug
 fixes.
 
+Archlinux
+~~~~~~~~~
+
+You can follow the generic instructions or install Scrapy from `AUR Scrapy package`::
+
+    yaourt -S scrapy
+
 
 .. _Python: http://www.python.org
 .. _pip: http://www.pip-installer.org/en/latest/installing.html
@@ -84,3 +89,5 @@ fixes.
 .. _Control Panel: http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
 .. _lxml: http://lxml.de/
 .. _OpenSSL: https://pypi.python.org/pypi/pyOpenSSL
+.. _setuptools: https://pypi.python.org/pypi/setuptools
+.. _AUR Scrapy package: https://aur.archlinux.org/packages/scrapy/
