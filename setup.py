@@ -16,7 +16,7 @@ setup(
     maintainer='Pablo Hoffman',
     maintainer_email='pablo@pablohoffman.com',
     license='BSD',
-    packages=find_packages(exclude=('scrapy.tests', 'scrapy.tests.*')),
+    packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
     entry_points={
