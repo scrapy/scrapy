@@ -3,6 +3,12 @@
 Release notes
 =============
 
+0.24.4 (2014-08-09)
+-------------------
+
+- pem file is used by mockserver and required by scrapy bench (:commit:`5eddc68`)
+- scrapy bench needs scrapy.tests* (:commit:`d6cb999`)
+
 0.24.3 (2014-08-09)
 -------------------
 
