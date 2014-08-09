@@ -3,6 +3,39 @@
 Release notes
 =============
 
+0.24.3 (2014-08-09)
+-------------------
+
+- no need to waste travis-ci time on py3 for 0.24 (:commit:`8e080c1`)
+- Update installation docs (:commit:`1d0c096`)
+- There is a trove classifier for Scrapy framework! (:commit:`4c701d7`)
+- update other places where w3lib version is mentioned (:commit:`d109c13`)
+- Update w3lib requirement to 1.8.0 (:commit:`39d2ce5`)
+- Use w3lib.html.replace_entities() (remove_entities() is deprecated) (:commit:`180d3ad`)
+- set zip_safe=False (:commit:`a51ee8b`)
+- do not ship tests package (:commit:`ee3b371`)
+- scrapy.bat is not needed anymore (:commit:`c3861cf`)
+- Modernize setup.py (:commit:`362e322`)
+- headers can not handle non-string values (:commit:`94a5c65`)
+- fix ftp test cases (:commit:`a274a7f`)
+- The sum up of travis-ci builds are taking like 50min to complete (:commit:`ae1e2cc`)
+- Update shell.rst typo (:commit:`e49c96a`)
+- removes weird indentation in the shell results (:commit:`1ca489d`)
+- improved explanations, clarified blog post as source, added link for XPath string functions in the spec (:commit:`65c8f05`)
+- renamed UserTimeoutError and ServerTimeouterror #583 (:commit:`037f6ab`)
+- adding some xpath tips to selectors docs (:commit:`2d103e0`)
+- fix tests to account for https://github.com/scrapy/w3lib/pull/23 (:commit:`f8d366a`)
+- get_func_args maximum recursion fix #728 (:commit:`81344ea`)
+- Updated input/ouput processor example according to #560. (:commit:`f7c4ea8`)
+- Fixed Python syntax in tutorial. (:commit:`db59ed9`)
+- Add test case for tunneling proxy (:commit:`f090260`)
+- Bugfix for leaking Proxy-Authorization header to remote host when using tunneling (:commit:`d8793af`)
+- Extract links from XHTML documents with MIME-Type "application/xml" (:commit:`ed1f376`)
+- Merge pull request #793 from roysc/patch-1 (:commit:`91a1106`)
+- Fix typo in commands.rst (:commit:`743e1e2`)
+- better testcase for settings.overrides.setdefault (:commit:`e22daaf`)
+- Using CRLF as line marker according to http 1.1 definition (:commit:`5ec430b`)
+
 0.24.2 (2014-07-08)
 -------------------
 
