@@ -5,9 +5,9 @@ from collections import MutableMapping
 from importlib import import_module
 
 from scrapy.utils.deprecate import create_deprecated_class
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 
-from . import default_settings
+from scrapy.settings import default_settings
 
 
 SETTINGS_PRIORITIES = {
@@ -16,6 +16,9 @@ SETTINGS_PRIORITIES = {
     'project': 20,
     'cmdline': 40,
 }
+
+
+_NO_SET = object()
 
 
 class SettingsAttribute(object):
@@ -57,35 +60,43 @@ class Settings(object):
             value = self.attributes[opt_name].value
         return value
 
-    def get(self, name, default=None):
-        return self[name] if self[name] is not None else default
+    def _get_default(self, value, default, required):
+        if not required and value is _NO_SET:
+            return default
+        return value
 
-    def getbool(self, name, default=False):
+    def get(self, name, default=_NO_SET, required=False):
+        value = default if name not in self.attributes else self[name]
+        if required and value is _NO_SET:
+            raise NotConfigured
+        return None if value is _NO_SET else value
+
+    def getbool(self, name, default=_NO_SET, required=False):
         """
         True is: 1, '1', True
         False is: 0, '0', False, None
         """
-        return bool(int(self.get(name, default)))
+        return bool(int(self.get(name, self._get_default(default, False, required), required)))
 
-    def getint(self, name, default=0):
-        return int(self.get(name, default))
+    def getint(self, name, default=_NO_SET, required=False):
+        return int(self.get(name, self._get_default(default, 0, required), required))
 
-    def getfloat(self, name, default=0.0):
-        return float(self.get(name, default))
+    def getfloat(self, name, default=_NO_SET, required=False):
+        return float(self.get(name, self._get_default(default, 0.0, required), required))
 
-    def getlist(self, name, default=None):
-        value = self.get(name)
+    def getlist(self, name, default=_NO_SET, required=False):
+        value = self.get(name, self._get_default(default, [], required), required)
         if value is None:
-            return default or []
+            return []
         elif hasattr(value, '__iter__'):
             return value
         else:
             return str(value).split(',')
 
-    def getdict(self, name, default=None):
-        value = self.get(name)
+    def getdict(self, name, default=_NO_SET, required=False):
+        value = self.get(name, self._get_default(default, {}, required), required)
         if value is None:
-            return default or {}
+            return {}
         if isinstance(value, six.string_types):
             value = json.loads(value)
         if isinstance(value, dict):
