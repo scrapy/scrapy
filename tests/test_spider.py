@@ -10,6 +10,7 @@ except ImportError:
 
 from scrapy import signals
 from scrapy.spider import Spider, BaseSpider
+from scrapy.settings import Settings
 from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlResponse
 from scrapy.contrib.spiders.init import InitSpider
 from scrapy.contrib.spiders import CrawlSpider, Rule, XMLFeedSpider, \
@@ -92,6 +93,16 @@ class SpiderTest(unittest.TestCase):
                                        spider=spider, reason=None)
         self.assertTrue(spider.closed_called)
 
+    def test_update_settings(self):
+        spider_settings = {'TEST1': 'spider', 'TEST2': 'spider'}
+        project_settings = {'TEST1': 'project', 'TEST3': 'project'}
+        self.spider_class.custom_settings = spider_settings
+        settings = Settings(project_settings, priority='project')
+
+        self.spider_class.update_settings(settings)
+        self.assertEqual(settings.get('TEST1'), 'spider')
+        self.assertEqual(settings.get('TEST2'), 'spider')
+        self.assertEqual(settings.get('TEST3'), 'project')
 
 class InitSpiderTest(SpiderTest):
 
