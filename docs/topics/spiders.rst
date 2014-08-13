@@ -133,6 +133,15 @@ Spider
        listed here. The subsequent URLs will be generated successively from data
        contained in the start URLs.
 
+   .. attribute:: custom_settings
+
+      A dictionary of settings that will be overridden from the project wide
+      configuration when running this spider. It must be defined as a class
+      attribute since the settings are updated before instantiation.
+
+      For a list of available built-in settings see:
+      :ref:`topics-settings-ref`.
+
    .. attribute:: crawler
 
       This attribute is set by the :meth:`from_crawler` class method after

@@ -36,9 +36,10 @@ different precedence. Here is the list of them in decreasing order of
 precedence:
 
  1. Command line options (most precedence)
- 2. Project settings module
- 3. Default settings per-command
- 4. Default global settings (less precedence)
+ 2. Settings per-spider
+ 3. Project settings module
+ 4. Default settings per-command
+ 5. Default global settings (less precedence)
 
 The population of these settings sources is taken care of internally, but a
 manual handling is possible using API calls. See the
@@ -59,14 +60,21 @@ Example::
 
     scrapy crawl myspider -s LOG_FILE=scrapy.log
 
-2. Project settings module
+2. Settings per-spider
+----------------------
+
+Spiders (See the :ref:`topics-spiders` chapter for reference) can define their
+own settings that will take precedence and override the project ones. They can
+do so by setting their :attr:`scrapy.spider.Spider.custom_settings` attribute.
+
+3. Project settings module
 --------------------------
 
 The project settings module is the standard configuration file for your Scrapy
 project.  It's where most of your custom settings will be populated. For
 example:: ``myproject.settings``.
 
-3. Default settings per-command
+4. Default settings per-command
 -------------------------------
 
 Each :doc:`Scrapy tool </topics/commands>` command can have its own default
@@ -74,7 +82,7 @@ settings, which override the global default settings. Those custom command
 settings are specified in the ``default_settings`` attribute of the command
 class.
 
-4. Default global settings
+5. Default global settings
 --------------------------
 
 The global defaults are located in the ``scrapy.settings.default_settings``
