@@ -123,9 +123,9 @@ define the three main mandatory attributes:
 This is the code for our first Spider; save it in a file named
 ``dmoz_spider.py`` under the ``tutorial/spiders`` directory::
 
-    import scrapy
+    import scrapy.spider
 
-    class DmozSpider(scrapy.Spider):
+    class DmozSpider(scrapy.spider):
         name = "dmoz"
         allowed_domains = ["dmoz.org"]
         start_urls = [
