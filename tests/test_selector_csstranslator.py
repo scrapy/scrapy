@@ -89,18 +89,27 @@ class TranslatorMixinTest(unittest.TestCase):
         for css, xpath in cases:
             self.assertEqual(self.c2x(css), xpath, css)
 
-    def test_nth_pseudo_element(self):
+    def test_nth_pseudo_class(self):
         cases = [
-            ('p.red::last', u"descendant-or-self::p[@class and contains(concat(' ', normalize-space(@class), ' '), ' red ')]"
-                             "[count(following-sibling::p[@class and contains(concat(' ', normalize-space(@class), ' '), ' red ')])=0]"),
-            ('input[type=checkbox]::first', u"descendant-or-self::input[@type = 'checkbox']"
-                                             "[count(preceding-sibling::input[@type = 'checkbox'])=0]"),
-            ('input[type=checkbox]::nth(3)', u"descendant-or-self::input[@type = 'checkbox']"
-                                              "[count(preceding-sibling::input[@type = 'checkbox'])=2]"),
-            ('p > input[type=checkbox]::nth(3)', u"descendant-or-self::p/input[@type = 'checkbox'][3]"),
-            ('div > p.last > ul::nth(3)', u"descendant-or-self::div"
-                                           "/p[@class and contains(concat(' ', normalize-space(@class), ' '), ' last ')]"
-                                           "/ul[3]"),
+            ('p.red:last', u"descendant-or-self::p"
+                            "[@class and contains(concat(' ', normalize-space(@class), ' '), ' red ')"
+                            " and (count(following-sibling::p[@class and contains(concat(' ', normalize-space(@class), ' '), ' red ')])=0)]"),
+            ('input[type=checkbox]:first', u"descendant-or-self::input"
+                                            "[@type = 'checkbox'"
+                                            " and (count(preceding-sibling::input[@type = 'checkbox'])=0)]"),
+            ('input[type=checkbox]:nth(3)', u"descendant-or-self::input"
+                                             "[@type = 'checkbox'"
+                                             " and (count(preceding-sibling::input[@type = 'checkbox'])=2)]"),
+            ('p input[type=checkbox]:nth(3)', u"descendant-or-self::p"
+                                               "/descendant-or-self::*/input"
+                                               "[@type = 'checkbox'"
+                                               " and (count(preceding-sibling::input[@type = 'checkbox'])=2)]"),
+            ('p > input[type=checkbox]:nth(3)', u"descendant-or-self::p/input"
+                                                 "[@type = 'checkbox'"
+                                                 " and (count(preceding-sibling::input[@type = 'checkbox'])=2)]"),
+            ('div > p.last > ul:nth(3)', u"descendant-or-self::div"
+                                         "/p[@class and contains(concat(' ', normalize-space(@class), ' '), ' last ')]"
+                                         "/ul[count(preceding-sibling::ul)=2]"),
         ]
         for css, xpath in cases:
             self.assertEqual(self.c2x(css), xpath, css)
@@ -168,10 +177,16 @@ class CSSSelectorTest(unittest.TestCase):
         self.assertEqual(self.sel.css('div').css('area:last-child').extract(),
                          [u'<area shape="default" id="area-nohref">'])
 
-    def test_nth_pseudo_element(self):
-        self.assertEqual(self.x('b::nth(2)'), [u'<b id="p-b2">guy</b>'])
+    def test_nth_pseudo_class(self):
+        self.assertEqual(self.x('b:nth(2)'), [u'<b id="p-b2">guy</b>'])
 
-    def test_last_pseudo_element(self):
-        self.assertEqual(self.x('input[type=checkbox]::last'),
+    def test_first_pseudo_class(self):
+        self.assertEqual(self.x('p#paragraph b:first'), [u'<b id="p-b">hi</b>'])
+        self.assertEqual(self.x('map[name=dummymap] > area:first'),
+            [u'<area shape="circle" coords="200,250,25" href="foo.html" id="area-href">'])
+        self.assertEqual(self.x('div:first p:first b:first'), [u'<b id="p-b">hi</b>'])
+
+    def test_last_pseudo_class(self):
+        self.assertEqual(self.x('input[type=checkbox]:last'),
                          [u'<input type="checkbox" id="checkbox-disabled-checked" disabled checked>',
                           u'<input type="checkbox" id="checkbox-fieldset-disabled">'])

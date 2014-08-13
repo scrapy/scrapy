@@ -5,11 +5,8 @@ from cssselect.parser import FunctionalPseudoElement
 
 class ScrapyXPathExpr(XPathExpr):
 
-    def __init__(self, *args, **kwargs):
-        super(ScrapyXPathExpr, self).__init__(*args, **kwargs)
-        self.textnode = False
-        self.attribute = None
-        self.predicates = []
+    textnode = False
+    attribute = None
 
     @classmethod
     def from_xpath(cls, xpath, textnode=False, attribute=None):
@@ -20,8 +17,6 @@ class ScrapyXPathExpr(XPathExpr):
 
     def __str__(self):
         path = super(ScrapyXPathExpr, self).__str__()
-        if self.predicates:
-            path += "".join("[%s]" % p for p in self.predicates)
         if self.textnode:
             if path == '*':
                 path = 'text()'
@@ -34,7 +29,6 @@ class ScrapyXPathExpr(XPathExpr):
             if path.endswith('::*/*'):
                 path = path[:-2]
             path += '/@%s' % self.attribute
-
         return path
 
     def join(self, combiner, other):
@@ -42,9 +36,6 @@ class ScrapyXPathExpr(XPathExpr):
         self.textnode = other.textnode
         self.attribute = other.attribute
         return self
-
-    def append_predicate(self, predicate):
-        self.predicates.append(predicate)
 
 
 class TranslatorMixin(object):
@@ -92,44 +83,30 @@ class TranslatorMixin(object):
             predicate += "[%s]" % xpexpr.condition
         return "count(%s)=%d" % (predicate, count)
 
-    def xpath_first_sibling_predicate(self, xp):
-        if xp.path:
-            return "0"
-        return self.xpath_sibling_predicate(xp, "preceding-sibling", 0)
-
-    def xpath_last_sibling_predicate(self, xp):
-        if xp.path:
-            return "last()"
-        return self.xpath_sibling_predicate(xp, "following-sibling", 0)
-
-    def xpath_nth_sibling_predicate(self, xp, count):
-        if xp.path:
-            return count
-        return self.xpath_sibling_predicate(xp, "preceding-sibling", count-1)
-
-    def xpath_first_simple_pseudo_element(self, xpath):
-        """Support selecting first child nodes using ::first pseudo-class"""
+    def xpath_first_pseudo(self, xpath):
+        """Support selecting first child nodes using :first pseudo-class"""
         xpexpr = ScrapyXPathExpr.from_xpath(xpath)
-        predicate = self.xpath_first_sibling_predicate(xpexpr)
-        xpexpr.append_predicate(predicate)
+        predicate = self.xpath_sibling_predicate(xpexpr, "preceding-sibling", 0)
+        xpexpr.add_condition(predicate)
         return xpexpr
 
-    def xpath_last_simple_pseudo_element(self, xpath):
-        """Support selecting last child nodes using ::last pseudo-class"""
+    def xpath_last_pseudo(self, xpath):
+        """Support selecting last child nodes using :last pseudo-class"""
         xpexpr = ScrapyXPathExpr.from_xpath(xpath)
-        predicate = self.xpath_last_sibling_predicate(xpexpr)
-        xpexpr.append_predicate(predicate)
+        predicate = self.xpath_sibling_predicate(xpexpr, "following-sibling", 0)
+        xpexpr.add_condition(predicate)
         return xpexpr
 
-    def xpath_nth_functional_pseudo_element(self, xpath, function):
+    def xpath_nth_function(self, xpath, function):
         """Support selecting n-th child nodes using ::nth(N) pseudo-class"""
         if function.argument_types() not in (['NUMBER'],):
             raise ExpressionError(
                 "Expected a single number for ::nth(), got %r"
                 % function.arguments)
         xpexpr = ScrapyXPathExpr.from_xpath(xpath)
-        predicate = self.xpath_nth_sibling_predicate(xpexpr, int(function.arguments[0].value))
-        xpexpr.append_predicate(predicate)
+        predicate = self.xpath_sibling_predicate(xpexpr, "preceding-sibling",
+            int(function.arguments[0].value)-1)
+        xpexpr.add_condition(predicate)
         return xpexpr
 
 

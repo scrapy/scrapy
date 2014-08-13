@@ -206,14 +206,14 @@ extensions as pseudo-elements:
 
 Scrapy also extends CSS3 selectors with the following `structural pseudo-classes`_,
 similar to the standard ``:first-child``, ``:last-child`` and ``:nth-child()``:
- * ``::first`` and ``::last`` select first and last elements
+ * ``:first`` and ``:last`` select first and last elements
    satisfying the current selectors. For example, if you wanted to
    select the last row with class "green" from a table, you could use
    ``table tr.green::last``
- * ``::nth(N)`` is similar to the previous ``::first`` except that you can
+ * ``:nth(N)`` is similar to the previous ``:first`` except that you can
    specify the position of the element you want.
    For example, for the 3rd row with class "green" from a table
-   you would use ``table tr.green::nth(3)``
+   you would use ``table tr.green:nth(3)``
 
 .. _structural pseudo-classes: http://www.w3.org/TR/selectors/#structural-pseudos
 
