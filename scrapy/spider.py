@@ -20,6 +20,7 @@ class Spider(object_ref):
     """
 
     name = None
+    custom_settings = {}
 
     def __init__(self, name=None, **kwargs):
         if name is not None:
@@ -65,6 +66,10 @@ class Spider(object_ref):
 
     def parse(self, response):
         raise NotImplementedError
+
+    @classmethod
+    def update_settings(cls, settings):
+        settings.setdict(cls.custom_settings, priority='spider')
 
     @classmethod
     def handles_request(cls, request):
