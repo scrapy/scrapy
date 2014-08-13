@@ -96,7 +96,12 @@ class CrawlerRunner(object):
     def _create_crawler(self, spidercls):
         if isinstance(spidercls, six.string_types):
             spidercls = self.spiders.load(spidercls)
-        crawler = Crawler(spidercls, self.settings.frozencopy())
+
+        crawler_settings = self.settings.copy()
+        spidercls.update_settings(crawler_settings)
+        crawler_settings.freeze()
+
+        crawler = Crawler(spidercls, crawler_settings)
         return crawler
 
     def stop(self):
