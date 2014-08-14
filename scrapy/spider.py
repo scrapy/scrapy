@@ -20,7 +20,7 @@ class Spider(object_ref):
     """
 
     name = None
-    custom_settings = {}
+    custom_settings = None
 
     def __init__(self, name=None, **kwargs):
         if name is not None:
@@ -69,7 +69,7 @@ class Spider(object_ref):
 
     @classmethod
     def update_settings(cls, settings):
-        settings.setdict(cls.custom_settings, priority='spider')
+        settings.setdict(cls.custom_settings or {}, priority='spider')
 
     @classmethod
     def handles_request(cls, request):
