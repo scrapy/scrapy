@@ -88,7 +88,7 @@ class Settings(object):
         return dict(value)
 
     def set(self, name, value, priority='project'):
-        assert not self.frozen, "Trying to modify an immutable Settings object"
+        self._assert_mutability()
         if isinstance(priority, six.string_types):
             priority = SETTINGS_PRIORITIES[priority]
         if name not in self.attributes:
@@ -97,17 +97,21 @@ class Settings(object):
             self.attributes[name].set(value, priority)
 
     def setdict(self, values, priority='project'):
-        assert not self.frozen, "Trying to modify an immutable Settings object"
+        self._assert_mutability()
         for name, value in six.iteritems(values):
             self.set(name, value, priority)
 
     def setmodule(self, module, priority='project'):
-        assert not self.frozen, "Trying to modify an immutable Settings object"
+        self._assert_mutability()
         if isinstance(module, six.string_types):
             module = import_module(module)
         for key in dir(module):
             if key.isupper():
                 self.set(key, getattr(module, key), priority)
+
+    def _assert_mutability(self):
+        if self.frozen:
+            raise TypeError("Trying to modify an immutable Settings object")
 
     def copy(self):
         return copy.deepcopy(self)

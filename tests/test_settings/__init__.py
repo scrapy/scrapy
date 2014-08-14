@@ -213,7 +213,7 @@ class SettingsTest(unittest.TestCase):
 
     def test_freeze(self):
         self.settings.freeze()
-        with self.assertRaises(AssertionError) as cm:
+        with self.assertRaises(TypeError) as cm:
             self.settings.set('TEST_BOOL', False)
             self.assertEqual(str(cm.exception),
                              "Trying to modify an immutable Settings object")
