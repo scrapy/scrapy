@@ -32,16 +32,38 @@ project as example.
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.project import get_project_settings
 
-    # If you aren't inside a Scrapy project, you could use an instance of the
-    # Settings class in scrapy.settings instead of the configuration returned
-    # by get_project_settings
     runner = CrawlerRunner(get_project_settings())
 
-    # 'followall' is the name of one of the spiders of the project. If you
-    # aren't working in a Scrapy project, use the spider class as first
-    # argument instead of its name (or set the SPIDER_MODULES setting so Scrapy
-    # knows where to look at)
+    # 'followall' is the name of one of the spiders of the project.
     d = runner.crawl('followall', domain='scrapinghub.com')
+    d.addBoth(lambda _: reactor.stop())
+    reactor.run() # the script will block here until the crawling is finished
+
+Running spiders outside projects it's not much different. You have to create a
+generic :class:`~scrapy.settings.Settings` object and populate it as needed
+(See :ref:`topics-settings-ref` for the available settings), instead of using
+the configuration returned by `get_project_settings`.
+
+Spiders can still be referenced by their name if :setting:`SPIDER_MODULES` is
+set with the modules where Scrapy should look for spiders.  Otherwise, passing
+the spider class as first argument in the :meth:`CrawlerRunner.crawl
+<scrapy.crawler.CrawlerRunner.crawl>` method is enough.
+
+::
+
+    from twisted.internet import reactor
+    from scrapy.spider import Spider
+    from scrapy.crawler import CrawlerRunner
+    from scrapy.settings import Settings
+
+    class MySpider(Spider):
+        # Your spider definition
+        ...
+
+    settings = Settings({'USER_AGENT': 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)'})
+    runner = CrawlerRunner(settings)
+
+    d = runner.crawl(MySpider)
     d.addBoth(lambda _: reactor.stop())
     reactor.run() # the script will block here until the crawling is finished
 
