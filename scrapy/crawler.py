@@ -126,13 +126,11 @@ class CrawlerProcess(CrawlerRunner):
         self._stop_logging()
         reactor.callFromThread(self._stop_reactor)
 
-    def start(self, stop_after_crawl=True):
-        self._start_logging()
-        self._start_reactor(stop_after_crawl)
-
-    def _start_logging(self):
+    def start(self, stop_after_crawl=True, start_reactor=True):
         self.log_observer = log.start_from_settings(self.settings)
         log.scrapy_info(self.settings)
+        if start_reactor:
+            self._start_reactor(stop_after_crawl)
 
     def _start_reactor(self, stop_after_crawl=True):
         if stop_after_crawl:

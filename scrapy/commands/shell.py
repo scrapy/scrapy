@@ -50,11 +50,15 @@ class Command(ScrapyCommand):
         elif url:
             spidercls = spidercls_for_request(spiders, Request(url),
                                               spidercls, log_multiple=True)
+
+        # The crawler is created this way since the Shell manually handles the
+        # crawling engine, so the set up in the crawl method won't work
         crawler = self.crawler_process._create_logged_crawler(spidercls)
+        # The Shell class needs a persistent engine in the crawler
         crawler.engine = crawler._create_engine()
         crawler.engine.start()
 
-        self.crawler_process._start_logging()
+        self.crawler_process.start(start_reactor=False)
         self._start_crawler_thread()
 
         shell = Shell(crawler, update_vars=self.update_vars, code=opts.code)
