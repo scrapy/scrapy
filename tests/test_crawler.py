@@ -1,7 +1,9 @@
 import warnings
 import unittest
 
-from scrapy.crawler import Crawler
+from twisted.internet import defer
+
+from scrapy.crawler import Crawler, CrawlerRunner
 from scrapy.settings import Settings
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
@@ -22,3 +24,26 @@ class CrawlerTestCase(unittest.TestCase):
 
             self.crawler.spiders
             self.assertEqual(len(w), 1, "Warn deprecated access only once")
+
+
+class CrawlerRunnerTest(unittest.TestCase):
+
+    def setUp(self):
+        self.crawler_runner = CrawlerRunner(Settings())
+
+    @defer.inlineCallbacks
+    def test_populate_spidercls_settings(self):
+        spider_settings = {'TEST1': 'spider', 'TEST2': 'spider'}
+        project_settings = {'TEST1': 'project', 'TEST3': 'project'}
+
+        class CustomSettingsSpider(DefaultSpider):
+            custom_settings = spider_settings
+
+        self.crawler_runner.settings.setdict(project_settings,
+                                             priority='project')
+
+        yield self.crawler_runner.crawl(CustomSettingsSpider)
+        crawler = self.crawler_runner.crawlers.pop()
+        self.assertEqual(crawler.settings.get('TEST1'), 'spider')
+        self.assertEqual(crawler.settings.get('TEST2'), 'spider')
+        self.assertEqual(crawler.settings.get('TEST3'), 'project')
