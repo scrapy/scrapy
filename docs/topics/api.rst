@@ -76,12 +76,6 @@ how you :ref:`configure the downloader middlewares
         For an introduction on extensions and a list of available extensions on
         Scrapy see :ref:`topics-extensions`.
 
-    .. attribute:: spiders
-
-        The spider manager which takes care of loading spiders.
-
-        Most extensions won't need to access this attribute.
-
     .. attribute:: engine
 
         The execution engine, which coordinates the core crawling logic

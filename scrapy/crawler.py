@@ -1,5 +1,6 @@
 import six
 import signal
+import warnings
 
 from twisted.internet import reactor, defer
 
@@ -7,6 +8,7 @@ from scrapy.core.engine import ExecutionEngine
 from scrapy.resolver import CachingThreadedResolver
 from scrapy.extension import ExtensionManager
 from scrapy.signalmanager import SignalManager
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.misc import load_object
 from scrapy import log, signals
@@ -23,13 +25,21 @@ class Crawler(object):
         self.logformatter = lf_cls.from_crawler(self)
         self.extensions = ExtensionManager.from_crawler(self)
 
-        # Attribute kept for backward compatibility (Use CrawlerRunner.spiders)
-        spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
-        self.spiders = spman_cls.from_settings(self.settings)
-
         self.crawling = False
         self.spider = None
         self.engine = None
+
+    @property
+    def spiders(self):
+        if not hasattr(self, '_spiders'):
+            warnings.warn("Crawler.spiders is deprecated, use "
+                          "CrawlerRunner.spiders or instantiate "
+                          "scrapy.spidermanager.SpiderManager with your "
+                          "settings.",
+                          category=ScrapyDeprecationWarning, stacklevel=2)
+            spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
+            self._spiders = spman_cls.from_settings(self.settings)
+        return self._spiders
 
     @defer.inlineCallbacks
     def crawl(self, *args, **kwargs):
