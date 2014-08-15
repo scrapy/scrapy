@@ -463,7 +463,6 @@ Default::
 
     {
         'scrapy.contrib.corestats.CoreStats': 0,
-        'scrapy.webservice.WebService': 0,
         'scrapy.telnet.TelnetConsole': 0,
         'scrapy.contrib.memusage.MemoryUsage': 0,
         'scrapy.contrib.memdebug.MemoryDebugger': 0,
