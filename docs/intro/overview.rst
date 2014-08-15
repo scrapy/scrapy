@@ -236,7 +236,7 @@ scraping easy and efficient, such as:
 * A :ref:`System service <topics-scrapyd>` designed to ease the deployment and
   run of your spiders in production.
 
-* A built-in :ref:`Web service <topics-webservice>` for monitoring and
+* A :ref:`Web service <topics-webservice>` for monitoring and
   controlling your bot
 
 * A :ref:`Telnet console <topics-telnetconsole>` for hooking into a Python

@@ -109,7 +109,6 @@ EXTENSIONS = {}
 
 EXTENSIONS_BASE = {
     'scrapy.contrib.corestats.CoreStats': 0,
-    'scrapy.webservice.WebService': 0,
     'scrapy.telnet.TelnetConsole': 0,
     'scrapy.contrib.memusage.MemoryUsage': 0,
     'scrapy.contrib.memdebug.MemoryDebugger': 0,
@@ -238,17 +237,6 @@ USER_AGENT = 'Scrapy/%s (+http://scrapy.org)' % import_module('scrapy').__versio
 TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_PORT = [6023, 6073]
 TELNETCONSOLE_HOST = '127.0.0.1'
-
-WEBSERVICE_ENABLED = True
-WEBSERVICE_LOGFILE = None
-WEBSERVICE_PORT = [6080, 7030]
-WEBSERVICE_HOST = '127.0.0.1'
-WEBSERVICE_RESOURCES = {}
-WEBSERVICE_RESOURCES_BASE = {
-    'scrapy.contrib.webservice.crawler.CrawlerResource': 1,
-    'scrapy.contrib.webservice.enginestatus.EngineStatusResource': 1,
-    'scrapy.contrib.webservice.stats.StatsResource': 1,
-}
 
 SPIDER_CONTRACTS = {}
 SPIDER_CONTRACTS_BASE = {
