@@ -50,8 +50,12 @@ def _get_form_url(form, url):
 def _urlencode(seq, enc):
     values = [(unicode_to_str(k, enc), unicode_to_str(v, enc))
               for k, vs in seq
-              for v in (vs if hasattr(vs, '__iter__') else [vs])]
-    return urlencode(values, doseq=1)
+              for v in (vs if _iterable(vs) else [vs])]
+    return unicode_to_str(urlencode(values, doseq=1))
+
+
+def _iterable(v):
+    return not isinstance(v, (bytes, six.text_type)) and hasattr(v, '__iter__')
 
 
 def _get_form(response, formname, formnumber, formxpath):

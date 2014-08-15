@@ -7,7 +7,7 @@ from scrapy.utils.httpobj import urlparse_cached
 class HttpobjUtilsTest(unittest.TestCase):
 
     def test_urlparse_cached(self):
-        url = "http://www.example.com/index.html"
+        url = b"http://www.example.com/index.html"
         request1 = Request(url)
         request2 = Request(url)
         req1a = urlparse_cached(request1)
@@ -15,11 +15,11 @@ class HttpobjUtilsTest(unittest.TestCase):
         req2 = urlparse_cached(request2)
         urlp = urlparse(url)
 
-        assert req1a == req2
-        assert req1a == urlp
-        assert req1a is req1b
-        assert req1a is not req2
-        assert req1a is not req2
+        self.assertEqual(req1a, req2)
+        self.assertEqual(req1a, urlp)
+        self.assertIs(req1a, req1b)
+        self.assertIsNot(req1a, req2)
+        self.assertIsNot(req1b, req2)
 
 
 if __name__ == "__main__":

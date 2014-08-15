@@ -100,6 +100,8 @@ def escape_ajax(url):
     'www.example.com/ajax.html'
     """
     defrag, frag = urldefrag(url)
-    if not frag.startswith('!'):
+    prefix, param = (b'!', b'_escaped_fragment_') \
+        if isinstance(url, bytes) else ('!', '_escaped_fragment_')
+    if not frag.startswith(prefix):
         return url
-    return add_or_replace_parameter(defrag, '_escaped_fragment_', frag[1:])
+    return add_or_replace_parameter(defrag, param, frag[1:])

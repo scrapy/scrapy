@@ -4,16 +4,14 @@ responses in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
-
-import copy
-
 from scrapy.http.headers import Headers
 from scrapy.utils.trackref import object_ref
 from scrapy.http.common import obsolete_setter
 
+
 class Response(object_ref):
 
-    def __init__(self, url, status=200, headers=None, body='', flags=None, request=None):
+    def __init__(self, url, status=200, headers=None, body=b'', flags=None, request=None):
         self.headers = Headers(headers or {})
         self.status = int(status)
         self._set_body(body)
@@ -26,18 +24,18 @@ class Response(object_ref):
         try:
             return self.request.meta
         except AttributeError:
-            raise AttributeError("Response.meta not available, this response " \
-                "is not tied to any request")
+            raise AttributeError("Response.meta not available, this response "
+                                 "is not tied to any request")
 
     def _get_url(self):
         return self._url
 
     def _set_url(self, url):
-        if isinstance(url, str):
+        if isinstance(url, bytes):
             self._url = url
         else:
-            raise TypeError('%s url must be str, got %s:' % (type(self).__name__, \
-                type(url).__name__))
+            raise TypeError('{0} url must be bytes, got {1}:'
+                            .format(type(self).__name__, type(url).__name__))
 
     url = property(_get_url, obsolete_setter(_set_url, 'url'))
 
@@ -45,16 +43,13 @@ class Response(object_ref):
         return self._body
 
     def _set_body(self, body):
-        if isinstance(body, str):
+        if body is None:
+            self._body = b''
+        elif isinstance(body, bytes):
             self._body = body
-        elif isinstance(body, unicode):
-            raise TypeError("Cannot assign a unicode body to a raw Response. " \
-                "Use TextResponse, HtmlResponse, etc")
-        elif body is None:
-            self._body = ''
         else:
-            raise TypeError("Response body must either str or unicode. Got: '%s'" \
-                % type(body).__name__)
+            raise TypeError("Response body must be bytes. Got: '{0}'"
+                            .format(type(body).__name__))
 
     body = property(_get_body, obsolete_setter(_set_body, 'body'))
 

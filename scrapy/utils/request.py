@@ -8,14 +8,13 @@ import hashlib
 import weakref
 from six.moves.urllib.parse import urlunparse
 
-from twisted.internet.defer import Deferred
 from w3lib.http import basic_auth_header
 
 from scrapy.utils.url import canonicalize_url
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.python import unicode_to_str
 
 
-_fingerprint_cache = weakref.WeakKeyDictionary()
 def request_fingerprint(request, include_headers=None):
     """
     Return the request fingerprint.
@@ -59,12 +58,15 @@ def request_fingerprint(request, include_headers=None):
                         fp.update(v)
         cache[include_headers] = fp.hexdigest()
     return cache[include_headers]
+_fingerprint_cache = weakref.WeakKeyDictionary()
+
 
 def request_authenticate(request, username, password):
     """Autenticate the given request (in place) using the HTTP basic access
     authentication mechanism (RFC 2617) and the given username and password
     """
     request.headers['Authorization'] = basic_auth_header(username, password)
+
 
 def request_httprepr(request):
     """Return the raw HTTP representation (as string) of the given request.
@@ -73,12 +75,12 @@ def request_httprepr(request):
     by Twisted).
     """
     parsed = urlparse_cached(request)
-    path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
-    s  = "%s %s HTTP/1.1\r\n" % (request.method, path)
-    s += "Host: %s\r\n" % parsed.hostname
-    if request.headers:
-        s += request.headers.to_string() + "\r\n"
-    s += "\r\n"
-    s += request.body
-    return s
-
+    path = urlunparse((b'', b'', parsed.path or b'/', parsed.params, parsed.query, b''))
+    headers = request.headers.to_string()
+    return b''.join((
+        unicode_to_str(request.method), b' ', path, b' HTTP/1.1\r\n',
+        b'Host: ', parsed.hostname, b'\r\n',
+        headers + b'\r\n' if headers else b'',
+        b'\r\n',
+        request.body
+    ))
