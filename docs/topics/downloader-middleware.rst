@@ -634,8 +634,8 @@ settings (see the settings documentation for more info):
 
 .. reqmeta:: dont_redirect
 
-If :attr:`Request.meta <scrapy.http.Request.meta>` contains the
-``dont_redirect`` key, the request will be ignored by this middleware.
+If :attr:`Request.meta <scrapy.http.Request.meta>` has ``dont_redirect``
+key set to True, the request will be ignored by this middleware.
 
 
 RedirectMiddleware settings
@@ -732,8 +732,8 @@ to indicate server overload, which would be something we want to retry.
 
 .. reqmeta:: dont_retry
 
-If :attr:`Request.meta <scrapy.http.Request.meta>` contains the ``dont_retry``
-key, the request will be ignored by this middleware.
+If :attr:`Request.meta <scrapy.http.Request.meta>` has ``dont_retry`` key
+set to True, the request will be ignored by this middleware.
 
 RetryMiddleware Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~

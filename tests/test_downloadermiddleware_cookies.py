@@ -52,7 +52,13 @@ class CookiesMiddlewareTest(TestCase):
         res = Response('http://scrapytest.org/dontmerge', headers={'Set-Cookie': 'dont=mergeme; path=/'})
         assert self.mw.process_response(req, res, self.spider) is res
 
+        # check that cookies are merged back
         req = Request('http://scrapytest.org/mergeme')
+        assert self.mw.process_request(req, self.spider) is None
+        self.assertEquals(req.headers.get('Cookie'), 'C1=value1')
+
+        # check that cookies are merged when dont_merge_cookies is passed as 0
+        req = Request('http://scrapytest.org/mergeme', meta={'dont_merge_cookies': 0})
         assert self.mw.process_request(req, self.spider) is None
         self.assertEquals(req.headers.get('Cookie'), 'C1=value1')
 

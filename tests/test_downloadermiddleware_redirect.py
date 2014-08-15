@@ -50,6 +50,15 @@ class RedirectMiddlewareTest(unittest.TestCase):
         assert isinstance(r, Response)
         assert r is rsp
 
+        # Test that it redirects when dont_redirect is False
+        req = Request(url, meta={'dont_redirect': False})
+        rsp = Response(url2, status=200)
+
+        r = self.mw.process_response(req, rsp, self.spider)
+        assert isinstance(r, Response)
+        assert r is rsp
+
+
     def test_redirect_302(self):
         url = 'http://www.example.com/302'
         url2 = 'http://www.example.com/redirected2'
