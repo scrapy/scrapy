@@ -36,7 +36,6 @@ by a string: the full Python path to the extension's class name. For example::
 
     EXTENSIONS = {
         'scrapy.contrib.corestats.CoreStats': 500,
-        'scrapy.webservice.WebService': 500,
         'scrapy.telnet.TelnetConsole': 500,
     }
 
@@ -177,18 +176,6 @@ Core Stats extension
 
 Enable the collection of core statistics, provided the stats collection is
 enabled (see :ref:`topics-stats`).
-
-.. _topics-extensions-ref-webservice:
-
-Web service extension
-~~~~~~~~~~~~~~~~~~~~~
-
-.. module:: scrapy.webservice
-   :synopsis: Web service
-
-.. class:: scrapy.webservice.WebService
-
-See `topics-webservice`.
 
 .. _topics-extensions-ref-telnetconsole:
 
