@@ -6,6 +6,6 @@ Web Service
 
 webservice has been moved into a separate project.
 
-Its is now hosted at:
+It is hosted at:
 
     https://github.com/scrapy/scrapy-jsonrpc
