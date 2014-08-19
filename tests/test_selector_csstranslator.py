@@ -91,25 +91,21 @@ class TranslatorMixinTest(unittest.TestCase):
 
     def test_nth_pseudo_class(self):
         cases = [
-            ('p.red:last', u"descendant-or-self::p"
-                            "[@class and contains(concat(' ', normalize-space(@class), ' '), ' red ')"
-                            " and (count(following-sibling::p[@class and contains(concat(' ', normalize-space(@class), ' '), ' red ')])=0)]"),
-            ('input[type=checkbox]:first', u"descendant-or-self::input"
-                                            "[@type = 'checkbox'"
-                                            " and (count(preceding-sibling::input[@type = 'checkbox'])=0)]"),
-            ('input[type=checkbox]:nth(3)', u"descendant-or-self::input"
-                                             "[@type = 'checkbox'"
-                                             " and (count(preceding-sibling::input[@type = 'checkbox'])=2)]"),
-            ('p input[type=checkbox]:nth(3)', u"descendant-or-self::p"
-                                               "/descendant-or-self::*/input"
-                                               "[@type = 'checkbox'"
-                                               " and (count(preceding-sibling::input[@type = 'checkbox'])=2)]"),
-            ('p > input[type=checkbox]:nth(3)', u"descendant-or-self::p/input"
-                                                 "[@type = 'checkbox'"
-                                                 " and (count(preceding-sibling::input[@type = 'checkbox'])=2)]"),
-            ('div > p.last > ul:nth(3)', u"descendant-or-self::div"
-                                         "/p[@class and contains(concat(' ', normalize-space(@class), ' '), ' last ')]"
-                                         "/ul[count(preceding-sibling::ul)=2]"),
+            ('p.red:last', u"descendant-or-self::*/p[@class and contains(concat(' ', normalize-space(@class), ' '), ' red ')][position() = last()]"),
+            ('input[type=checkbox]:first', u"descendant-or-self::*/input[@type = 'checkbox'][position() = 1]"),
+            ('input[type=checkbox]:nth(3)', u"descendant-or-self::*/input[@type = 'checkbox'][position() = 3]"),
+            ('p input[type=checkbox]:nth(3)', u"descendant-or-self::p/descendant-or-self::*/input[@type = 'checkbox'][position() = 3]"),
+            ('p > input[type=checkbox]:nth(3)', u"descendant-or-self::p/input[@type = 'checkbox'][position() = 3]"),
+            ('div > p.last > ul:nth(3)', u"descendant-or-self::div/p[@class and contains(concat(' ', normalize-space(@class), ' '), ' last ')]/ul[position() = 3]"),
+            ('div > a:nth(2n)', u"descendant-or-self::div/a[position() mod 2 = 0]"),
+            ('div > a:nth(2n+1)', u"descendant-or-self::div/a[(position() -1) mod 2 = 0]"),
+            ('div > a:nth(2n-1)', u"descendant-or-self::div/a[(position() +1) mod 2 = 0]"),
+            ('div > a:nth(2n+3)', u"descendant-or-self::div/a[(position() -3) mod 2 = 0 and position() >= 3]"),
+            ('input:nth(-n+4)', u"descendant-or-self::*/input[(position() -4) mod -1 = 0 and position() <= 4]"),
+            ('div > a[id*=anchor]:nth-last(2n+1)', u"descendant-or-self::div/a[@id and contains(@id, 'anchor')][(last() - position()) mod 2 = 0 and (position() <= last())]"),
+            ('p#paragraph > input[type=checkbox]:nth-last(-n+2)', u"descendant-or-self::p[@id = 'paragraph']"
+                                                                   "/input[@type = 'checkbox']"
+                                                                         "[((last() - position()) -1) mod -1 = 0 and (position() >= last() -1)]"),
         ]
         for css, xpath in cases:
             self.assertEqual(self.c2x(css), xpath, css)
@@ -179,6 +175,38 @@ class CSSSelectorTest(unittest.TestCase):
 
     def test_nth_pseudo_class(self):
         self.assertEqual(self.x('b:nth(2)'), [u'<b id="p-b2">guy</b>'])
+
+        # even position
+        self.assertEqual(self.x('div > a[id*=anchor]:nth(2n)'),
+            [u'<a id="tag-anchor" rel="tag" href="http://localhost/foo">link</a>'])
+        self.assertEqual(self.x('div > a[id*=anchor]:nth(even)'),
+            [u'<a id="tag-anchor" rel="tag" href="http://localhost/foo">link</a>'])
+        # odd position
+        self.assertEqual(self.x('div > a[id*=anchor]:nth(2n+1)'),
+            [u'<a id="name-anchor" name="foo"></a>',
+             u'<a id="nofollow-anchor" rel="nofollow" href="https://example.org"> link</a>'])
+        self.assertEqual(self.x('div > a[id*=anchor]:nth(odd)'),
+            [u'<a id="name-anchor" name="foo"></a>',
+             u'<a id="nofollow-anchor" rel="nofollow" href="https://example.org"> link</a>'])
+        # position >= 2
+        self.assertEqual(self.x('div > a[id*=anchor]:nth(n+2)'),
+            [u'<a id="tag-anchor" rel="tag" href="http://localhost/foo">link</a>',
+             u'<a id="nofollow-anchor" rel="nofollow" href="https://example.org"> link</a>'])
+        # position >= 2 and position <= 3
+        self.assertEqual(self.x('input[type=checkbox]:nth(n+2):nth(-n+3)'),
+            [u'<input type="checkbox" id="checkbox-disabled" disabled>',
+             u'<input type="checkbox" id="checkbox-checked" checked>'])
+
+        # from last element
+        self.assertEqual(self.x('div > a[id*=anchor]:nth-last(2n)'),
+            [u'<a id="tag-anchor" rel="tag" href="http://localhost/foo">link</a>'])
+        self.assertEqual(self.x('div > a[id*=anchor]:nth-last(2n+1)'),
+            [u'<a id="name-anchor" name="foo"></a>',
+             u'<a id="nofollow-anchor" rel="nofollow" href="https://example.org"> link</a>'])
+        # last 2 elements
+        self.assertEqual(self.x('p#paragraph > input[type=checkbox]:nth-last(-n+2)'),
+            [u'<input type="checkbox" id="checkbox-checked" checked>',
+             u'<input type="checkbox" id="checkbox-disabled-checked" disabled checked>'])
 
     def test_first_pseudo_class(self):
         self.assertEqual(self.x('p#paragraph b:first'), [u'<b id="p-b">hi</b>'])

@@ -209,9 +209,10 @@ similar to the standard ``:first-child``, ``:last-child`` and ``:nth-child()``:
  * ``:first`` and ``:last`` select first and last elements
    satisfying the current selectors. For example, if you wanted to
    select the last row with class "green" from a table, you could use
-   ``table tr.green::last``
- * ``:nth(N)`` is similar to the previous ``:first`` except that you can
-   specify the position of the element you want.
+   ``table tr.green:last``
+ * ``:nth(an+b)`` is similar to the previous ``:first`` except that you can
+   specify the position of the element you want, using the same *an+b*
+   notation as the other standard `structural pseudo-classes`_.
    For example, for the 3rd row with class "green" from a table
    you would use ``table tr.green:nth(3)``
 
