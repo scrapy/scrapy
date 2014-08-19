@@ -5,6 +5,7 @@ discovering (through HTTP headers) to base Response class.
 See documentation in docs/topics/request-response.rst
 """
 
+import six
 from w3lib.encoding import html_to_unicode, resolve_encoding, \
     html_body_declared_encoding, http_content_type_encoding
 from scrapy.http.response import Response
@@ -23,20 +24,19 @@ class TextResponse(Response):
         super(TextResponse, self).__init__(*args, **kwargs)
 
     def _set_url(self, url):
-        if isinstance(url, unicode):
+        if isinstance(url, six.text_type):
             if self.encoding is None:
-                raise TypeError('Cannot convert unicode url - %s has no encoding' %
-                    type(self).__name__)
-            self._url = url.encode(self.encoding)
-        else:
-            super(TextResponse, self)._set_url(url)
+                raise TypeError('Cannot convert unicode url - {0} has no encoding'
+                                .format(type(self).__name__))
+            url = url.encode(self.encoding)
+        super(TextResponse, self)._set_url(url)
 
     def _set_body(self, body):
         self._body = ''
-        if isinstance(body, unicode):
+        if isinstance(body, six.text_type):
             if self.encoding is None:
-                raise TypeError('Cannot convert unicode body - %s has no encoding' %
-                    type(self).__name__)
+                raise TypeError('Cannot convert unicode body - {0} has no encoding'
+                                .format(type(self).__name__))
             self._body = body.encode(self._encoding)
         else:
             super(TextResponse, self)._set_body(body)
@@ -71,9 +71,12 @@ class TextResponse(Response):
     def _body_inferred_encoding(self):
         if self._cached_benc is None:
             content_type = self.headers.get('Content-Type')
-            benc, ubody = html_to_unicode(content_type, self.body, \
-                    auto_detect_fun=self._auto_detect_fun, \
-                    default_encoding=self._DEFAULT_ENCODING)
+            benc, ubody = html_to_unicode(
+                content_type,
+                self.body,
+                auto_detect_fun=self._auto_detect_fun,
+                default_encoding=self._DEFAULT_ENCODING,
+            )
             self._cached_benc = benc
             self._cached_ubody = ubody
         return self._cached_benc

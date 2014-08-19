@@ -8,10 +8,10 @@ from scrapy.spider import Spider
 class TestUrlLengthMiddleware(TestCase):
 
     def test_process_spider_output(self):
-        res = Response('http://scrapytest.org')
+        res = Response(b'http://scrapytest.org')
 
-        short_url_req = Request('http://scrapytest.org/')
-        long_url_req = Request('http://scrapytest.org/this_is_a_long_url')
+        short_url_req = Request(b'http://scrapytest.org/')
+        long_url_req = Request(b'http://scrapytest.org/this_is_a_long_url')
         reqs = [short_url_req, long_url_req]
 
         mw = UrlLengthMiddleware(maxlength=25)

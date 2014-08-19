@@ -5,8 +5,7 @@ This module implements the FormRequest class which is a more covenient class
 See documentation in docs/topics/request-response.rst
 """
 
-import urllib
-from six.moves.urllib.parse import urljoin
+from six.moves.urllib.parse import urljoin, urlencode
 import lxml.html
 import six
 from scrapy.http.request import Request
@@ -29,7 +28,7 @@ class FormRequest(Request):
                 self.headers.setdefault('Content-Type', 'application/x-www-form-urlencoded')
                 self._set_body(querystr)
             else:
-                self._set_url(self.url + ('&' if '?' in self.url else '?') + querystr)
+                self._set_url(self.url + (b'&' if b'?' in self.url else b'?') + querystr)
 
     @classmethod
     def from_response(cls, response, formname=None, formnumber=0, formdata=None,
@@ -51,8 +50,12 @@ def _get_form_url(form, url):
 def _urlencode(seq, enc):
     values = [(unicode_to_str(k, enc), unicode_to_str(v, enc))
               for k, vs in seq
-              for v in (vs if hasattr(vs, '__iter__') else [vs])]
-    return urllib.urlencode(values, doseq=1)
+              for v in (vs if _iterable(vs) else [vs])]
+    return unicode_to_str(urlencode(values, doseq=1))
+
+
+def _iterable(v):
+    return not isinstance(v, (bytes, six.text_type)) and hasattr(v, '__iter__')
 
 
 def _get_form(response, formname, formnumber, formxpath):
