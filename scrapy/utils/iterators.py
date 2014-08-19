@@ -20,19 +20,27 @@ def xmliter(obj, nodename):
     - a unicode string
     - a string encoded as utf-8
     """
-    HEADER_START_RE = re.compile(r'^(.*?)<\s*%s(?:\s|>)' % nodename, re.S)
+    DOCUMENT_HEADER_RE = re.compile(r'<\?xml[^>]+>\s*', re.S)
     HEADER_END_RE = re.compile(r'<\s*/%s\s*>' % nodename, re.S)
+    END_TAG_RE = re.compile(r'<\s*/([^\s>]+)\s*>', re.S)
+    NAMESPACE_RE = re.compile(r'((xmlns[:A-Za-z]*)=[^>\s]+)', re.S)
     text = _body_or_str(obj)
 
-    header_start = re.search(HEADER_START_RE, text)
-    header_start = header_start.group(1).strip() if header_start else ''
-    header_end = re_rsearch(HEADER_END_RE, text)
-    header_end = text[header_end[1]:].strip() if header_end else ''
+    document_header = re.search(DOCUMENT_HEADER_RE, text)
+    document_header = document_header.group().strip() if document_header else ''
+    header_end_idx = re_rsearch(HEADER_END_RE, text)
+    header_end = text[header_end_idx[1]:].strip() if header_end_idx else ''
+    namespaces = {}
+    if header_end:
+        for tagname in reversed(re.findall(END_TAG_RE, header_end)):
+            tag = re.search(r'<\s*%s.*?xmlns[:=][^>]*>' % tagname, text[:header_end_idx[1]], re.S)
+            if tag:
+                namespaces.update(reversed(x) for x in re.findall(NAMESPACE_RE, tag.group()))
 
     r = re.compile(r"<%s[\s>].*?</%s>" % (nodename, nodename), re.DOTALL)
     for match in r.finditer(text):
-        nodetext = header_start + match.group() + header_end
-        yield Selector(text=nodetext, type='xml').xpath('//' + nodename)[0]
+        nodetext = document_header + match.group().replace(nodename, '%s %s' % (nodename, ' '.join(namespaces.values())), 1) + header_end
+        yield Selector(text=nodetext, type='xml')
 
 
 def csviter(obj, delimiter=None, headers=None, encoding=None):

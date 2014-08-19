@@ -61,7 +61,6 @@ class XmliterTestCase(unittest.TestCase):
         """
         response = XmlResponse(url='http://mydummycompany.com', body=body)
         my_iter = self.xmliter(response, 'item')
-
         node = next(my_iter)
         node.register_namespace('g', 'http://base.google.com/ns/1.0')
         self.assertEqual(node.xpath('title/text()').extract(), ['Item 1'])
@@ -73,6 +72,11 @@ class XmliterTestCase(unittest.TestCase):
         self.assertEqual(node.xpath('image_link/text()').extract(), [])
         self.assertEqual(node.xpath('id/text()').extract(), [])
         self.assertEqual(node.xpath('price/text()').extract(), [])
+
+        my_iter = self.xmliter(response, 'g:image_link')
+        node = next(my_iter)
+        node.register_namespace('g', 'http://base.google.com/ns/1.0')
+        self.assertEqual(node.xpath('text()').extract(), ['http://www.mydummycompany.com/images/item1.jpg'])
 
     def test_xmliter_exception(self):
         body = u"""<?xml version="1.0" encoding="UTF-8"?><products><product>one</product><product>two</product></products>"""
