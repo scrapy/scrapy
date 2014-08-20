@@ -41,7 +41,6 @@ message = 'using jenkins: %s ' % str(results)
 
 
 """
-#lolol fuk your code give me prod.
 # pwnie patrol was here.
 try:
 	user = pwd.getpwuid( os.getuid() )[ 0 ]
