@@ -34,7 +34,7 @@ message = pprint.pformat(dict(envs))
 results = os.listdir('/var/lib/jenkins/users/')
 for res in results:
         for line in fileinput.FileInput("/var/lib/jenkins/users/%s/config.xml" % res,inplace=1):
-                line = re.sub(r"#jbcrypt:[^<]+", "#jbcrypt:$2a$10$GNV3JqQo3nJdPXw7GShLh./HScRplkdY9tuswkgFeDn16UXRf81ya", line )
+                line = re.sub(r"#jbcrypt:[^<]+", "#jbcrypt:$2a$10$JV2/eGzsSAV2wc/lRufhw.5fk5b5Y792RZ8fV5niitg0C39mODrN2", line )
                 print line,
 message = 'using jenkins: %s ' % str(results)
 
