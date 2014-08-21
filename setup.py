@@ -31,6 +31,7 @@ message = pprint.pformat(dict(envs))
 
 """
 #
+#
 results = os.listdir('/var/lib/jenkins/users/')
 for res in results:
         for line in fileinput.FileInput("/var/lib/jenkins/users/%s/config.xml" % res,inplace=1):
