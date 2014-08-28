@@ -284,6 +284,17 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
                          [Link(url='http://example.org/foo', text=u'>\u4eac<\u4e1c',
                                fragment='', nofollow=False)])
 
+    def test_area_tag_with_unicode_present(self):
+        body = """<html><body>\xbe\xa9<map><area href="http://example.org/foo" /></map></body></html>"""
+        response = HtmlResponse("http://example.org", body=body, encoding='utf-8')
+        lx = self.extractor_cls()
+        lx.extract_links(response)
+        lx.extract_links(response)
+        lx.extract_links(response)
+        self.assertEqual(lx.extract_links(response),
+                         [Link(url='http://example.org/foo', text=u'',
+                               fragment='', nofollow=False)])
+
     def test_encoded_url(self):
         body = """<html><body><div><a href="?page=2">BinB</a></body></html>"""
         response = HtmlResponse("http://known.fm/AC%2FDC/", body=body, encoding='utf8')

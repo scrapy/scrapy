@@ -59,6 +59,7 @@ class BaseSgmlLinkExtractor(FixedSGMLParser):
         FixedSGMLParser.reset(self)
         self.links = []
         self.base_url = None
+        self.current_link = None
 
     def unknown_starttag(self, tag, attrs):
         if tag == 'base':
