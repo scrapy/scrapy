@@ -32,9 +32,11 @@ level_names = {
 
 class ScrapyFileLogObserver(log.FileLogObserver):
 
-    def __init__(self, f, level=INFO, encoding='utf-8', crawler=None):
+    def __init__(self, f, level=INFO, encoding='utf-8', crawler=None,
+            logstdout=None):
         self.level = level
         self.encoding = encoding
+        self.logstdout = logstdout
         if crawler:
             self.crawler = crawler
             self.emit = self._emit_with_crawler
@@ -43,7 +45,8 @@ class ScrapyFileLogObserver(log.FileLogObserver):
         log.FileLogObserver.__init__(self, f)
 
     def _emit(self, eventDict):
-        ev = _adapt_eventdict(eventDict, self.level, self.encoding)
+        ev = _adapt_eventdict(eventDict, self.level, self.encoding,
+                logstdout=self.logstdout)
         if ev is not None:
             log.FileLogObserver.emit(self, ev)
         return ev
@@ -55,7 +58,9 @@ class ScrapyFileLogObserver(log.FileLogObserver):
             sname = 'log_count/%s' % level_names.get(level, level)
             self.crawler.stats.inc_value(sname)
 
-def _adapt_eventdict(eventDict, log_level=INFO, encoding='utf-8', prepend_level=True):
+
+def _adapt_eventdict(eventDict, log_level=INFO, encoding='utf-8',
+        prepend_level=True, logstdout=None):
     """Adapt Twisted log eventDict making it suitable for logging with a Scrapy
     log observer. It may return None to indicate that the event should be
     ignored by a Scrapy log observer.
@@ -67,8 +72,16 @@ def _adapt_eventdict(eventDict, log_level=INFO, encoding='utf-8', prepend_level=
     if ev['isError']:
         ev.setdefault('logLevel', ERROR)
 
+    if logstdout and 'printed' in ev:
+        if ev['system'] == '-':
+            if ev['isError']:
+                ev['system'] = 'stderr'
+            else:
+                ev.setdefault('logLevel', INFO)
+                ev['system'] = 'stdout'
+
     # ignore non-error messages from outside scrapy
-    if ev.get('system') != 'scrapy' and not ev['isError']:
+    if not (logstdout or ev.get('system') == 'scrapy' or ev['isError']):
         return
 
     level = ev.get('logLevel')
@@ -114,7 +127,7 @@ def _get_log_level(level_name_or_id):
 def start(logfile=None, loglevel='INFO', logstdout=True, logencoding='utf-8', crawler=None):
     loglevel = _get_log_level(loglevel)
     file = open(logfile, 'a') if logfile else sys.stderr
-    log_observer = ScrapyFileLogObserver(file, loglevel, logencoding, crawler)
+    log_observer = ScrapyFileLogObserver(file, loglevel, logencoding, crawler, logstdout)
     _oldshowwarning = warnings.showwarning
     log.startLoggingWithObserver(log_observer.emit, setStdout=logstdout)
     # restore warnings, wrongly silenced by Twisted
@@ -136,8 +149,8 @@ def err(_stuff=None, _why=None, **kw):
 
 def start_from_settings(settings, crawler=None):
     if settings.getbool('LOG_ENABLED'):
-        return start(settings['LOG_FILE'], settings['LOG_LEVEL'], settings['LOG_STDOUT'],
-            settings['LOG_ENCODING'], crawler)
+        return start(settings['LOG_FILE'], settings['LOG_LEVEL'],
+            settings.getbool('LOG_STDOUT'), settings['LOG_ENCODING'], crawler)
 
 def scrapy_info(settings):
     log_observer = start_from_settings(settings)
