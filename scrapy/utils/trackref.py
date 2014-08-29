@@ -2,7 +2,7 @@
 references to live object instances.
 
 If you want live objects for a particular class to be tracked, you only have to
-subclass form object_ref (instead of object).
+subclass from object_ref (instead of object).
 
 About performance: This library has a minimal performance impact when enabled,
 and no performance penalty at all when disabled (as object_ref becomes just an
