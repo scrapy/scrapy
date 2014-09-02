@@ -10,13 +10,13 @@ from scrapy.utils.test import get_crawler
 class TestOffsiteMiddleware(TestCase):
 
     def setUp(self):
-        self.spider = self._get_spider()
-        crawler = get_crawler()
+        crawler = get_crawler(Spider)
+        self.spider = crawler._create_spider(**self._get_spiderargs())
         self.mw = OffsiteMiddleware.from_crawler(crawler)
         self.mw.spider_opened(self.spider)
 
-    def _get_spider(self):
-        return Spider('foo', allowed_domains=['scrapytest.org', 'scrapy.org'])
+    def _get_spiderargs(self):
+        return dict(name='foo', allowed_domains=['scrapytest.org', 'scrapy.org'])
 
     def test_process_spider_output(self):
         res = Response('http://scrapytest.org')
@@ -39,8 +39,8 @@ class TestOffsiteMiddleware(TestCase):
 
 class TestOffsiteMiddleware2(TestOffsiteMiddleware):
 
-    def _get_spider(self):
-        return Spider('foo', allowed_domains=None)
+    def _get_spiderargs(self):
+        return dict(name='foo', allowed_domains=None)
 
     def test_process_spider_output(self):
         res = Response('http://scrapytest.org')
@@ -58,7 +58,7 @@ class TestOffsiteMiddleware4(TestOffsiteMiddleware3):
 
     def _get_spider(self):
       bad_hostname = urlparse('http:////scrapytest.org').hostname
-      return Spider('foo', allowed_domains=['scrapytest.org', None, bad_hostname])
+      return dict(name='foo', allowed_domains=['scrapytest.org', None, bad_hostname])
 
     def test_process_spider_output(self):
       res = Response('http://scrapytest.org')

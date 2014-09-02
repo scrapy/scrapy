@@ -1,5 +1,6 @@
 import six
 import json
+import copy
 import warnings
 from collections import MutableMapping
 from importlib import import_module
@@ -46,6 +47,7 @@ class SettingsAttribute(object):
 class Settings(object):
 
     def __init__(self, values=None, priority='project'):
+        self.frozen = False
         self.attributes = {}
         self.setmodule(default_settings, priority='default')
         if values is not None:
@@ -74,25 +76,19 @@ class Settings(object):
         return float(self.get(name, default))
 
     def getlist(self, name, default=None):
-        value = self.get(name)
-        if value is None:
-            return default or []
-        elif hasattr(value, '__iter__'):
-            return value
-        else:
-            return str(value).split(',')
+        value = self.get(name, default or [])
+        if isinstance(value, six.string_types):
+            value = value.split(',')
+        return list(value)
 
     def getdict(self, name, default=None):
-        value = self.get(name)
-        if value is None:
-            return default or {}
+        value = self.get(name, default or {})
         if isinstance(value, six.string_types):
             value = json.loads(value)
-        if isinstance(value, dict):
-            return value
-        raise ValueError("Cannot convert value for setting '%s' to dict: '%s'" % (name, value))
+        return dict(value)
 
     def set(self, name, value, priority='project'):
+        self._assert_mutability()
         if isinstance(priority, six.string_types):
             priority = SETTINGS_PRIORITIES[priority]
         if name not in self.attributes:
@@ -101,15 +97,32 @@ class Settings(object):
             self.attributes[name].set(value, priority)
 
     def setdict(self, values, priority='project'):
+        self._assert_mutability()
         for name, value in six.iteritems(values):
             self.set(name, value, priority)
 
     def setmodule(self, module, priority='project'):
+        self._assert_mutability()
         if isinstance(module, six.string_types):
             module = import_module(module)
         for key in dir(module):
             if key.isupper():
                 self.set(key, getattr(module, key), priority)
+
+    def _assert_mutability(self):
+        if self.frozen:
+            raise TypeError("Trying to modify an immutable Settings object")
+
+    def copy(self):
+        return copy.deepcopy(self)
+
+    def freeze(self):
+        self.frozen = True
+
+    def frozencopy(self):
+        copy = self.copy()
+        copy.freeze()
+        return copy
 
     @property
     def overrides(self):

@@ -1,11 +1,14 @@
 import gzip
 import inspect
 import warnings
-from scrapy.utils.trackref import object_ref
 from io import BytesIO
-
 from twisted.trial import unittest
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
+from scrapy import signals
 from scrapy.spider import Spider, BaseSpider
 from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlResponse
 from scrapy.contrib.spiders.init import InitSpider
@@ -13,6 +16,8 @@ from scrapy.contrib.spiders import CrawlSpider, Rule, XMLFeedSpider, \
     CSVFeedSpider, SitemapSpider
 from scrapy.contrib.linkextractors import LinkExtractor
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.trackref import object_ref
+from scrapy.utils.test import get_crawler
 
 
 class SpiderTest(unittest.TestCase):
@@ -45,6 +50,47 @@ class SpiderTest(unittest.TestCase):
         """Constructor arguments are assigned to spider attributes"""
         self.assertRaises(ValueError, self.spider_class)
         self.assertRaises(ValueError, self.spider_class, somearg='foo')
+
+    def test_deprecated_set_crawler_method(self):
+        spider = self.spider_class('example.com')
+        crawler = get_crawler()
+        with warnings.catch_warnings(record=True) as w:
+            spider.set_crawler(crawler)
+            self.assertIn("set_crawler", str(w[0].message))
+            self.assertTrue(hasattr(spider, 'crawler'))
+            self.assertIs(spider.crawler, crawler)
+            self.assertTrue(hasattr(spider, 'settings'))
+            self.assertIs(spider.settings, crawler.settings)
+
+    def test_from_crawler_crawler_and_settings_population(self):
+        crawler = get_crawler()
+        spider = self.spider_class.from_crawler(crawler, 'example.com')
+        self.assertTrue(hasattr(spider, 'crawler'))
+        self.assertIs(spider.crawler, crawler)
+        self.assertTrue(hasattr(spider, 'settings'))
+        self.assertIs(spider.settings, crawler.settings)
+
+    def test_from_crawler_init_call(self):
+        with mock.patch.object(self.spider_class, '__init__',
+                               return_value=None) as mock_init:
+            self.spider_class.from_crawler(get_crawler(), 'example.com',
+                                           foo='bar')
+            mock_init.assert_called_once_with('example.com', foo='bar')
+
+    def test_closed_signal_call(self):
+        class TestSpider(self.spider_class):
+            closed_called = False
+
+            def closed(self, reason):
+                self.closed_called = True
+
+        crawler = get_crawler()
+        spider = TestSpider.from_crawler(crawler, 'example.com')
+        crawler.signals.send_catch_log(signal=signals.spider_opened,
+                                       spider=spider)
+        crawler.signals.send_catch_log(signal=signals.spider_closed,
+                                       spider=spider, reason=None)
+        self.assertTrue(spider.closed_called)
 
 
 class InitSpiderTest(SpiderTest):
@@ -189,6 +235,32 @@ class CrawlSpiderTest(SpiderTest):
                           ['http://example.org/somepage/item/12.html',
                            'http://example.org/about.html',
                            'http://example.org/nofollow.html'])
+
+    def test_follow_links_attribute_population(self):
+        crawler = get_crawler()
+        spider = self.spider_class.from_crawler(crawler, 'example.com')
+        self.assertTrue(hasattr(spider, '_follow_links'))
+        self.assertTrue(spider._follow_links)
+
+        settings_dict = {'CRAWLSPIDER_FOLLOW_LINKS': False}
+        crawler = get_crawler(settings_dict=settings_dict)
+        spider = self.spider_class.from_crawler(crawler, 'example.com')
+        self.assertTrue(hasattr(spider, '_follow_links'))
+        self.assertFalse(spider._follow_links)
+
+    def test_follow_links_attribute_deprecated_population(self):
+        spider = self.spider_class('example.com')
+        self.assertFalse(hasattr(spider, '_follow_links'))
+
+        spider.set_crawler(get_crawler())
+        self.assertTrue(hasattr(spider, '_follow_links'))
+        self.assertTrue(spider._follow_links)
+
+        spider = self.spider_class('example.com')
+        settings_dict = {'CRAWLSPIDER_FOLLOW_LINKS': False}
+        spider.set_crawler(get_crawler(settings_dict=settings_dict))
+        self.assertTrue(hasattr(spider, '_follow_links'))
+        self.assertFalse(spider._follow_links)
 
 
 class SitemapSpiderTest(SpiderTest):

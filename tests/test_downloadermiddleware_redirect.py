@@ -10,8 +10,8 @@ from scrapy.utils.test import get_crawler
 class RedirectMiddlewareTest(unittest.TestCase):
 
     def setUp(self):
-        crawler = get_crawler()
-        self.spider = Spider('foo')
+        crawler = get_crawler(Spider)
+        self.spider = crawler._create_spider('foo')
         self.mw = RedirectMiddleware.from_crawler(crawler)
 
     def test_priority_adjust(self):
@@ -132,8 +132,8 @@ class RedirectMiddlewareTest(unittest.TestCase):
 class MetaRefreshMiddlewareTest(unittest.TestCase):
 
     def setUp(self):
-        crawler = get_crawler()
-        self.spider = Spider('foo')
+        crawler = get_crawler(Spider)
+        self.spider = crawler._create_spider('foo')
         self.mw = MetaRefreshMiddleware.from_crawler(crawler)
 
     def _body(self, interval=5, url='http://example.org/newpage'):

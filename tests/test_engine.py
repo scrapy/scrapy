@@ -87,20 +87,17 @@ class CrawlerRun(object):
         self.portno = self.port.getHost().port
 
         start_urls = [self.geturl("/"), self.geturl("/redirect")]
-        self.spider = TestSpider(start_urls=start_urls)
 
         for name, signal in vars(signals).items():
             if not name.startswith('_'):
                 dispatcher.connect(self.record_signal, signal)
 
-        self.crawler = get_crawler()
-        self.crawler.install()
-        self.crawler.configure()
+        self.crawler = get_crawler(TestSpider)
         self.crawler.signals.connect(self.item_scraped, signals.item_scraped)
         self.crawler.signals.connect(self.request_scheduled, signals.request_scheduled)
         self.crawler.signals.connect(self.response_downloaded, signals.response_downloaded)
-        self.crawler.crawl(self.spider)
-        self.crawler.start()
+        self.crawler.crawl(start_urls=start_urls)
+        self.spider = self.crawler.spider
 
         self.deferred = defer.Deferred()
         dispatcher.connect(self.stop, signals.engine_stopped)
@@ -111,7 +108,6 @@ class CrawlerRun(object):
         for name, signal in vars(signals).items():
             if not name.startswith('_'):
                 disconnect_all(signal)
-        self.crawler.uninstall()
         self.deferred.callback(None)
 
     def geturl(self, path):

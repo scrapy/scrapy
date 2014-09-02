@@ -3,9 +3,8 @@ from w3lib.url import is_url
 
 from scrapy.command import ScrapyCommand
 from scrapy.http import Request
-from scrapy.spider import Spider
 from scrapy.exceptions import UsageError
-from scrapy.utils.spider import create_spider_for_request
+from scrapy.utils.spider import spidercls_for_request, DefaultSpider
 
 class Command(ScrapyCommand):
 
@@ -48,12 +47,11 @@ class Command(ScrapyCommand):
         request = Request(args[0], callback=cb, dont_filter=True)
         request.meta['handle_httpstatus_all'] = True
 
-        crawler = self.crawler_process.create_crawler()
-        spider = None
+        spidercls = DefaultSpider
+        spiders = self.crawler_process.spiders
         if opts.spider:
-            spider = crawler.spiders.create(opts.spider)
+            spidercls = spiders.load(opts.spider)
         else:
-            spider = create_spider_for_request(crawler.spiders, request, \
-                default_spider=Spider('default'))
-        crawler.crawl(spider, [request])
+            spidercls = spidercls_for_request(spiders, request, spidercls)
+        self.crawler_process.crawl(spidercls, start_requests=lambda: [request])
         self.crawler_process.start()

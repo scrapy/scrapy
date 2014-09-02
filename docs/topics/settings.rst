@@ -767,6 +767,16 @@ A dict containing the scrapy contracts enabled by default in Scrapy. You should
 never modify this setting in your project, modify :setting:`SPIDER_CONTRACTS`
 instead. For more info see :ref:`topics-contracts`.
 
+.. setting:: SPIDER_MANAGER_CLASS
+
+SPIDER_MANAGER_CLASS
+--------------------
+
+Default: ``'scrapy.spidermanager.SpiderManager'``
+
+The class that will be used for handling spiders, which must implement the
+:ref:`topics-api-spidermanager`.
+
 .. setting:: SPIDER_MIDDLEWARES
 
 SPIDER_MIDDLEWARES

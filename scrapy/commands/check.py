@@ -69,20 +69,18 @@ class Command(ScrapyCommand):
         # contract requests
         contract_reqs = defaultdict(list)
 
-        spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
-        spiders = spman_cls.from_settings(self.settings)
+        spiders = self.crawler_process.spiders
 
-        for spider in args or spiders.list():
-            spider = spiders.create(spider)
-            requests = self.get_requests(spider, conman, result)
-            contract_reqs[spider.name] = []
+        for spidername in args or spiders.list():
+            spidercls = spiders.load(spidername)
+            spidercls.start_requests = lambda s: conman.from_spider(s, result)
 
+            tested_methods = conman.tested_methods_from_spidercls(spidercls)
             if opts.list:
-                for req in requests:
-                    contract_reqs[spider.name].append(req.callback.__name__)
-            elif requests:
-                crawler = self.crawler_process.create_crawler(spider.name)
-                crawler.crawl(spider, requests)
+                for method in tested_methods:
+                    contract_reqs[spidercls.name].append(method)
+            elif tested_methods:
+                self.crawler_process.crawl(spidercls)
 
         # start checks
         if opts.list:
@@ -101,15 +99,3 @@ class Command(ScrapyCommand):
             result.printSummary(start, stop)
             self.exitcode = int(not result.wasSuccessful())
 
-    def get_requests(self, spider, conman, result):
-        requests = []
-
-        for key, value in vars(type(spider)).items():
-            if callable(value) and value.__doc__:
-                bound_method = value.__get__(spider, type(spider))
-                request = conman.from_method(bound_method, result)
-
-                if request:
-                    requests.append(request)
-
-        return requests

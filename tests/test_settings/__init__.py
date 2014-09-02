@@ -190,6 +190,42 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.getdict('TEST_DICT3', {'key1': 5}), {'key1': 5})
         self.assertRaises(ValueError, settings.getdict, 'TEST_LIST1')
 
+    def test_copy(self):
+        values = {
+            'TEST_BOOL': True,
+            'TEST_LIST': ['one', 'two'],
+            'TEST_LIST_OF_LISTS': [['first_one', 'first_two'],
+                                   ['second_one', 'second_two']]
+        }
+        self.settings.setdict(values)
+        copy = self.settings.copy()
+        self.settings.set('TEST_BOOL', False)
+        self.assertTrue(copy.get('TEST_BOOL'))
+
+        test_list = self.settings.get('TEST_LIST')
+        test_list.append('three')
+        self.assertListEqual(copy.get('TEST_LIST'), ['one', 'two'])
+
+        test_list_of_lists = self.settings.get('TEST_LIST_OF_LISTS')
+        test_list_of_lists[0].append('first_three')
+        self.assertListEqual(copy.get('TEST_LIST_OF_LISTS')[0],
+                             ['first_one', 'first_two'])
+
+    def test_freeze(self):
+        self.settings.freeze()
+        with self.assertRaises(TypeError) as cm:
+            self.settings.set('TEST_BOOL', False)
+            self.assertEqual(str(cm.exception),
+                             "Trying to modify an immutable Settings object")
+
+    def test_frozencopy(self):
+        with mock.patch.object(self.settings, 'copy') as mock_copy:
+            with mock.patch.object(mock_copy, 'freeze') as mock_freeze:
+                mock_object = self.settings.frozencopy()
+                mock_copy.assert_call_once()
+                mock_freeze.assert_call_once()
+                self.assertEqual(mock_object, mock_copy.return_value)
+
     def test_deprecated_attribute_overrides(self):
         self.settings.set('BAR', 'fuz', priority='cmdline')
         with warnings.catch_warnings(record=True) as w:

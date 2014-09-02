@@ -9,9 +9,8 @@ from scrapy.utils.test import get_crawler
 class UserAgentMiddlewareTest(TestCase):
 
     def get_spider_and_mw(self, default_useragent):
-        crawler = get_crawler({'USER_AGENT': default_useragent})
-        spider = Spider('foo')
-        spider.set_crawler(crawler)
+        crawler = get_crawler(Spider, {'USER_AGENT': default_useragent})
+        spider = crawler._create_spider('foo')
         return spider, UserAgentMiddleware.from_crawler(crawler)
 
     def test_default_agent(self):

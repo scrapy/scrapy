@@ -1,4 +1,6 @@
+import six
 import signal
+import warnings
 
 from twisted.internet import reactor, defer
 
@@ -6,6 +8,7 @@ from scrapy.core.engine import ExecutionEngine
 from scrapy.resolver import CachingThreadedResolver
 from scrapy.extension import ExtensionManager
 from scrapy.signalmanager import SignalManager
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.misc import load_object
 from scrapy import log, signals
@@ -13,90 +16,100 @@ from scrapy import log, signals
 
 class Crawler(object):
 
-    def __init__(self, settings):
-        self.configured = False
+    def __init__(self, spidercls, settings):
+        self.spidercls = spidercls
         self.settings = settings
         self.signals = SignalManager(self)
-        self.stats = load_object(settings['STATS_CLASS'])(self)
-        self._start_requests = lambda: ()
-        self._spider = None
-        # TODO: move SpiderManager to CrawlerProcess
-        spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
-        self.spiders = spman_cls.from_crawler(self)
-
-    def install(self):
-        # TODO: remove together with scrapy.project.crawler usage
-        import scrapy.project
-        assert not hasattr(scrapy.project, 'crawler'), "crawler already installed"
-        scrapy.project.crawler = self
-
-    def uninstall(self):
-        # TODO: remove together with scrapy.project.crawler usage
-        import scrapy.project
-        assert hasattr(scrapy.project, 'crawler'), "crawler not installed"
-        del scrapy.project.crawler
-
-    def configure(self):
-        if self.configured:
-            return
-
-        self.configured = True
+        self.stats = load_object(self.settings['STATS_CLASS'])(self)
         lf_cls = load_object(self.settings['LOG_FORMATTER'])
         self.logformatter = lf_cls.from_crawler(self)
         self.extensions = ExtensionManager.from_crawler(self)
-        self.engine = ExecutionEngine(self, self._spider_closed)
 
-    def crawl(self, spider, requests=None):
-        assert self._spider is None, 'Spider already attached'
-        self._spider = spider
-        spider.set_crawler(self)
-        if requests is None:
-            self._start_requests = spider.start_requests
-        else:
-            self._start_requests = lambda: requests
+        self.crawling = False
+        self.spider = None
+        self.engine = None
 
-    def _spider_closed(self, spider=None):
-        if not self.engine.open_spiders:
-            self.stop()
+    @property
+    def spiders(self):
+        if not hasattr(self, '_spiders'):
+            warnings.warn("Crawler.spiders is deprecated, use "
+                          "CrawlerRunner.spiders or instantiate "
+                          "scrapy.spidermanager.SpiderManager with your "
+                          "settings.",
+                          category=ScrapyDeprecationWarning, stacklevel=2)
+            spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
+            self._spiders = spman_cls.from_settings(self.settings)
+        return self._spiders
 
     @defer.inlineCallbacks
-    def start(self):
-        yield defer.maybeDeferred(self.configure)
-        if self._spider:
-            yield self.engine.open_spider(self._spider, self._start_requests())
-        yield defer.maybeDeferred(self.engine.start)
+    def crawl(self, *args, **kwargs):
+        assert not self.crawling, "Crawling already taking place"
+        self.crawling = True
+
+        try:
+            self.spider = self._create_spider(*args, **kwargs)
+            self.engine = self._create_engine()
+            start_requests = iter(self.spider.start_requests())
+            yield self.engine.open_spider(self.spider, start_requests)
+            yield defer.maybeDeferred(self.engine.start)
+        except Exception:
+            self.crawling = False
+            raise
+
+    def _create_spider(self, *args, **kwargs):
+        return self.spidercls.from_crawler(self, *args, **kwargs)
+
+    def _create_engine(self):
+        return ExecutionEngine(self, lambda _: self.stop())
 
     @defer.inlineCallbacks
     def stop(self):
-        if self.configured and self.engine.running:
+        if self.crawling:
+            self.crawling = False
             yield defer.maybeDeferred(self.engine.stop)
 
 
-class CrawlerProcess(object):
-    """ A class to run multiple scrapy crawlers in a process sequentially"""
+class CrawlerRunner(object):
 
     def __init__(self, settings):
-        install_shutdown_handlers(self._signal_shutdown)
         self.settings = settings
-        self.crawlers = {}
-        self.stopping = False
-        self._started = None
+        smcls = load_object(settings['SPIDER_MANAGER_CLASS'])
+        self.spiders = smcls.from_settings(settings.frozencopy())
+        self.crawlers = set()
+        self.crawl_deferreds = set()
 
-    def create_crawler(self, name=None):
-        if name not in self.crawlers:
-            self.crawlers[name] = Crawler(self.settings)
+    def crawl(self, spidercls, *args, **kwargs):
+        crawler = self._create_logged_crawler(spidercls)
+        self.crawlers.add(crawler)
 
-        return self.crawlers[name]
+        d = crawler.crawl(*args, **kwargs)
+        self.crawl_deferreds.add(d)
+        return d
 
-    def start(self):
-        if self.start_crawling():
-            self.start_reactor()
+    def _create_logged_crawler(self, spidercls):
+        crawler = self._create_crawler(spidercls)
+        log_observer = log.start_from_crawler(crawler)
+        if log_observer:
+            crawler.signals.connect(log_observer.stop, signals.engine_stopped)
+        return crawler
 
-    @defer.inlineCallbacks
+    def _create_crawler(self, spidercls):
+        if isinstance(spidercls, six.string_types):
+            spidercls = self.spiders.load(spidercls)
+        crawler = Crawler(spidercls, self.settings.frozencopy())
+        return crawler
+
     def stop(self):
-        self.stopping = True
-        if self._active_crawler:
-            yield self._active_crawler.stop()
+        return defer.DeferredList(c.stop() for c in self.crawlers)
+
+
+class CrawlerProcess(CrawlerRunner):
+    """A class to run multiple scrapy crawlers in a process simultaneously"""
+
+    def __init__(self, settings):
+        super(CrawlerProcess, self).__init__(settings)
+        install_shutdown_handlers(self._signal_shutdown)
+        self.stopping = False
 
     def _signal_shutdown(self, signum, _):
         install_shutdown_handlers(self._signal_kill)
@@ -110,44 +123,29 @@ class CrawlerProcess(object):
         signame = signal_names[signum]
         log.msg(format='Received %(signame)s twice, forcing unclean shutdown',
                 level=log.INFO, signame=signame)
+        self._stop_logging()
         reactor.callFromThread(self._stop_reactor)
 
-    # ------------------------------------------------------------------------#
-    # The following public methods can't be considered stable and may change at
-    # any moment.
-    #
-    # start_crawling and start_reactor are called from scrapy.commands.shell
-    # They are splitted because reactor is started on a different thread than IPython shell.
-    #
-    def start_crawling(self):
+    def start(self, stop_after_crawl=True, start_reactor=True):
+        self.log_observer = log.start_from_settings(self.settings)
         log.scrapy_info(self.settings)
-        return self._start_crawler() is not None
+        if start_reactor:
+            self._start_reactor(stop_after_crawl)
 
-    def start_reactor(self):
+    def _start_reactor(self, stop_after_crawl=True):
+        if stop_after_crawl:
+            d = defer.DeferredList(self.crawl_deferreds)
+            if d.called:
+                # Don't start the reactor if the deferreds are already fired
+                return
+            d.addBoth(lambda _: self._stop_reactor())
         if self.settings.getbool('DNSCACHE_ENABLED'):
             reactor.installResolver(CachingThreadedResolver(reactor))
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
         reactor.run(installSignalHandlers=False)  # blocking call
 
-    def _start_crawler(self):
-        if not self.crawlers or self.stopping:
-            return
-
-        name, crawler = self.crawlers.popitem()
-        self._active_crawler = crawler
-        log_observer = log.start_from_crawler(crawler)
-        crawler.configure()
-        crawler.install()
-        crawler.signals.connect(crawler.uninstall, signals.engine_stopped)
-        if log_observer:
-            crawler.signals.connect(log_observer.stop, signals.engine_stopped)
-        crawler.signals.connect(self._check_done, signals.engine_stopped)
-        crawler.start()
-        return name, crawler
-
-    def _check_done(self, **kwargs):
-        if not self._start_crawler():
-            self._stop_reactor()
+    def _stop_logging(self):
+        self.log_observer.stop()
 
     def _stop_reactor(self, _=None):
         try:

@@ -9,8 +9,8 @@ __doctests__ = ['scrapy.contrib.downloadermiddleware.ajaxcrawl']
 
 class AjaxCrawlMiddlewareTest(unittest.TestCase):
     def setUp(self):
-        self.spider = Spider('foo')
-        crawler = get_crawler({'AJAXCRAWL_ENABLED': True})
+        crawler = get_crawler(Spider, {'AJAXCRAWL_ENABLED': True})
+        self.spider = crawler._create_spider('foo')
         self.mw = AjaxCrawlMiddleware.from_crawler(crawler)
 
     def _ajaxcrawlable_body(self):

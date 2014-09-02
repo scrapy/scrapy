@@ -7,8 +7,8 @@ from scrapy.utils.test import get_crawler
 class StatsCollectorTest(unittest.TestCase):
 
     def setUp(self):
-        self.crawler = get_crawler()
-        self.spider = Spider('foo')
+        self.crawler = get_crawler(Spider)
+        self.spider = self.crawler._create_spider('foo')
 
     def test_collector(self):
         stats = StatsCollector(self.crawler)

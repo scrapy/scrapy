@@ -65,15 +65,14 @@ class Command(ScrapyCommand):
             return
 
         try:
-            crawler = self.crawler_process.create_crawler()
-            spider = crawler.spiders.create(name)
+            spidercls = self.crawler_process.spiders.load(name)
         except KeyError:
             pass
         else:
             # if spider already exists and not --force then halt
             if not opts.force:
                 print("Spider %r already exists in module:" % name)
-                print("  %s" % spider.__module__)
+                print("  %s" % spidercls.__module__)
                 return
         template_file = self._find_template(opts.template)
         if template_file:

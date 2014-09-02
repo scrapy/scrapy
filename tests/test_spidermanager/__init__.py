@@ -10,6 +10,7 @@ from twisted.trial import unittest
 # alone
 from scrapy.interfaces import ISpiderManager
 from scrapy.spidermanager import SpiderManager
+from scrapy.settings import Settings
 from scrapy.http import Request
 
 module_dir = os.path.dirname(os.path.abspath(__file__))
@@ -23,7 +24,8 @@ class SpiderManagerTest(unittest.TestCase):
         self.spiders_dir = os.path.join(self.tmpdir, 'test_spiders_xxx')
         shutil.copytree(orig_spiders_dir, self.spiders_dir)
         sys.path.append(self.tmpdir)
-        self.spiderman = SpiderManager(['test_spiders_xxx'])
+        settings = Settings({'SPIDER_MODULES': ['test_spiders_xxx']})
+        self.spiderman = SpiderManager.from_settings(settings)
 
     def tearDown(self):
         del self.spiderman
@@ -35,14 +37,11 @@ class SpiderManagerTest(unittest.TestCase):
 
     def test_list(self):
         self.assertEqual(set(self.spiderman.list()),
-            set(['spider1', 'spider2', 'spider3', 'spider4']))
+            set(['spider1', 'spider2', 'spider3']))
 
-    def test_create(self):
-        spider1 = self.spiderman.create("spider1")
-        self.assertEqual(spider1.__class__.__name__, 'Spider1')
-        spider2 = self.spiderman.create("spider2", foo="bar")
-        self.assertEqual(spider2.__class__.__name__, 'Spider2')
-        self.assertEqual(spider2.foo, 'bar')
+    def test_load(self):
+        spider1 = self.spiderman.load("spider1")
+        self.assertEqual(spider1.__name__, 'Spider1')
 
     def test_find_by_request(self):
         self.assertEqual(self.spiderman.find_by_request(Request('http://scrapy1.org/test')),
@@ -59,13 +58,13 @@ class SpiderManagerTest(unittest.TestCase):
             ['spider3'])
 
     def test_load_spider_module(self):
-        self.spiderman = SpiderManager(['tests.test_spidermanager.test_spiders.spider1'])
+        module = 'tests.test_spidermanager.test_spiders.spider1'
+        settings = Settings({'SPIDER_MODULES': [module]})
+        self.spiderman = SpiderManager.from_settings(settings)
         assert len(self.spiderman._spiders) == 1
 
     def test_load_base_spider(self):
-        self.spiderman = SpiderManager(['tests.test_spidermanager.test_spiders.spider0'])
+        module = 'tests.test_spidermanager.test_spiders.spider0'
+        settings = Settings({'SPIDER_MODULES': [module]})
+        self.spiderman = SpiderManager.from_settings(settings)
         assert len(self.spiderman._spiders) == 0
-
-    def test_load_from_crawler(self):
-        spider = self.spiderman.create('spider4', a='OK')
-        self.assertEqual(spider.a, 'OK')

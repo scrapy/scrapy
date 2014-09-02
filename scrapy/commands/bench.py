@@ -22,9 +22,7 @@ class Command(ScrapyCommand):
 
     def run(self, args, opts):
         with _BenchServer():
-            spider = _BenchSpider(total=100000)
-            crawler = self.crawler_process.create_crawler()
-            crawler.crawl(spider)
+            self.crawler_process.crawl(_BenchSpider, total=100000)
             self.crawler_process.start()
 
 

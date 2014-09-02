@@ -8,7 +8,7 @@ from netlib import http_auth
 
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
-from scrapy.utils.test import get_testlog, docrawl
+from scrapy.utils.test import get_testlog, get_crawler
 from scrapy.http import Request
 from tests.spiders import SimpleSpider, SingleRequestSpider
 from tests.mockserver import MockServer
@@ -49,29 +49,29 @@ class ProxyConnectTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_https_connect_tunnel(self):
-        spider = SimpleSpider("https://localhost:8999/status?n=200")
-        yield docrawl(spider)
+        crawler = get_crawler(SimpleSpider)
+        yield crawler.crawl("https://localhost:8999/status?n=200")
         self._assert_got_response_code(200)
 
     @defer.inlineCallbacks
     def test_https_noconnect(self):
         os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:8888?noconnect'
-        spider = SimpleSpider("https://localhost:8999/status?n=200")
-        yield docrawl(spider)
+        crawler = get_crawler(SimpleSpider)
+        yield crawler.crawl("https://localhost:8999/status?n=200")
         self._assert_got_response_code(200)
         os.environ['https_proxy'] = 'http://scrapy:scrapy@localhost:8888'
 
     @defer.inlineCallbacks
     def test_https_connect_tunnel_error(self):
-        spider = SimpleSpider("https://localhost:99999/status?n=200")
-        yield docrawl(spider)
+        crawler = get_crawler(SimpleSpider)
+        yield crawler.crawl("https://localhost:99999/status?n=200")
         self._assert_got_tunnel_error()
 
     @defer.inlineCallbacks
     def test_https_tunnel_auth_error(self):
         os.environ['https_proxy'] = 'http://wrong:wronger@localhost:8888'
-        spider = SimpleSpider("https://localhost:8999/status?n=200")
-        yield docrawl(spider)
+        crawler = get_crawler(SimpleSpider)
+        yield crawler.crawl("https://localhost:8999/status?n=200")
         # The proxy returns a 407 error code but it does not reach the client;
         # he just sees a TunnelError.
         self._assert_got_tunnel_error()
@@ -80,17 +80,17 @@ class ProxyConnectTestCase(TestCase):
     @defer.inlineCallbacks
     def test_https_tunnel_without_leak_proxy_authorization_header(self):
         request = Request("https://localhost:8999/echo")
-        spider = SingleRequestSpider(seed=request)
-        yield docrawl(spider)
+        crawler = get_crawler(SingleRequestSpider)
+        yield crawler.crawl(seed=request)
         self._assert_got_response_code(200)
-        echo = json.loads(spider.meta['responses'][0].body)
+        echo = json.loads(crawler.spider.meta['responses'][0].body)
         self.assertTrue('Proxy-Authorization' not in echo['headers'])
 
     @defer.inlineCallbacks
     def test_https_noconnect_auth_error(self):
         os.environ['https_proxy'] = 'http://wrong:wronger@localhost:8888?noconnect'
-        spider = SimpleSpider("https://localhost:8999/status?n=200")
-        yield docrawl(spider)
+        crawler = get_crawler(SimpleSpider)
+        yield crawler.crawl("https://localhost:8999/status?n=200")
         self._assert_got_response_code(407)
 
     def _assert_got_response_code(self, code):

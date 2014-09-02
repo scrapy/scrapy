@@ -3,7 +3,7 @@ import socket
 import mock
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
-from scrapy.utils.test import docrawl, get_testlog
+from scrapy.utils.test import get_crawler, get_testlog
 from tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
     BrokenStartRequestsSpider, SingleRequestSpider, DuplicateStartRequestsSpider
 from tests.mockserver import MockServer
@@ -21,9 +21,9 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_follow_all(self):
-        spider = FollowAllSpider()
-        yield docrawl(spider)
-        self.assertEqual(len(spider.urls_visited), 11)  # 10 + start_url
+        crawler = get_crawler(FollowAllSpider)
+        yield crawler.crawl()
+        self.assertEqual(len(crawler.spider.urls_visited), 11)  # 10 + start_url
 
     @defer.inlineCallbacks
     def test_delay(self):
@@ -37,9 +37,9 @@ class CrawlTestCase(TestCase):
     @defer.inlineCallbacks
     def _test_delay(self, delay, randomize):
         settings = {"DOWNLOAD_DELAY": delay, 'RANDOMIZE_DOWNLOAD_DELAY': randomize}
-        spider = FollowAllSpider(maxlatency=delay * 2)
-        yield docrawl(spider, settings)
-        t = spider.times
+        crawler = get_crawler(FollowAllSpider, settings)
+        yield crawler.crawl(maxlatency=delay * 2)
+        t = crawler.spider.times
         totaltime = t[-1] - t[0]
         avgd = totaltime / (len(t) - 1)
         tolerance = 0.6 if randomize else 0.2
@@ -48,85 +48,79 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_timeout_success(self):
-        spider = DelaySpider(n=0.5)
-        yield docrawl(spider)
-        self.assertTrue(spider.t1 > 0)
-        self.assertTrue(spider.t2 > 0)
-        self.assertTrue(spider.t2 > spider.t1)
+        crawler = get_crawler(DelaySpider)
+        yield crawler.crawl(n=0.5)
+        self.assertTrue(crawler.spider.t1 > 0)
+        self.assertTrue(crawler.spider.t2 > 0)
+        self.assertTrue(crawler.spider.t2 > crawler.spider.t1)
 
     @defer.inlineCallbacks
     def test_timeout_failure(self):
-        spider = DelaySpider(n=0.5)
-        yield docrawl(spider, {"DOWNLOAD_TIMEOUT": 0.35})
-        self.assertTrue(spider.t1 > 0)
-        self.assertTrue(spider.t2 == 0)
-        self.assertTrue(spider.t2_err > 0)
-        self.assertTrue(spider.t2_err > spider.t1)
+        crawler = get_crawler(DelaySpider, {"DOWNLOAD_TIMEOUT": 0.35})
+        yield crawler.crawl(n=0.5)
+        self.assertTrue(crawler.spider.t1 > 0)
+        self.assertTrue(crawler.spider.t2 == 0)
+        self.assertTrue(crawler.spider.t2_err > 0)
+        self.assertTrue(crawler.spider.t2_err > crawler.spider.t1)
         # server hangs after receiving response headers
-        spider = DelaySpider(n=0.5, b=1)
-        yield docrawl(spider, {"DOWNLOAD_TIMEOUT": 0.35})
-        self.assertTrue(spider.t1 > 0)
-        self.assertTrue(spider.t2 == 0)
-        self.assertTrue(spider.t2_err > 0)
-        self.assertTrue(spider.t2_err > spider.t1)
+        yield crawler.crawl(n=0.5, b=1)
+        self.assertTrue(crawler.spider.t1 > 0)
+        self.assertTrue(crawler.spider.t2 == 0)
+        self.assertTrue(crawler.spider.t2_err > 0)
+        self.assertTrue(crawler.spider.t2_err > crawler.spider.t1)
 
     @defer.inlineCallbacks
     def test_retry_503(self):
-        spider = SimpleSpider("http://localhost:8998/status?n=503")
-        yield docrawl(spider)
+        crawler = get_crawler(SimpleSpider)
+        yield crawler.crawl("http://localhost:8998/status?n=503")
         self._assert_retried()
 
     @defer.inlineCallbacks
     def test_retry_conn_failed(self):
-        spider = SimpleSpider("http://localhost:65432/status?n=503")
-        yield docrawl(spider)
+        crawler = get_crawler(SimpleSpider)
+        yield crawler.crawl("http://localhost:65432/status?n=503")
         self._assert_retried()
 
     @defer.inlineCallbacks
     def test_retry_dns_error(self):
         with mock.patch('socket.gethostbyname',
                         side_effect=socket.gaierror(-5, 'No address associated with hostname')):
-            spider = SimpleSpider("http://example.com/")
-            yield docrawl(spider)
+            crawler = get_crawler(SimpleSpider)
+            yield crawler.crawl("http://example.com/")
             self._assert_retried()
 
     @defer.inlineCallbacks
     def test_start_requests_bug_before_yield(self):
-        spider = BrokenStartRequestsSpider(fail_before_yield=1)
-        yield docrawl(spider)
+        crawler = get_crawler(BrokenStartRequestsSpider)
+        yield crawler.crawl(fail_before_yield=1)
         errors = self.flushLoggedErrors(ZeroDivisionError)
         self.assertEqual(len(errors), 1)
 
     @defer.inlineCallbacks
     def test_start_requests_bug_yielding(self):
-        spider = BrokenStartRequestsSpider(fail_yielding=1)
-        yield docrawl(spider)
+        crawler = get_crawler(BrokenStartRequestsSpider)
+        yield crawler.crawl(fail_yielding=1)
         errors = self.flushLoggedErrors(ZeroDivisionError)
         self.assertEqual(len(errors), 1)
 
     @defer.inlineCallbacks
     def test_start_requests_lazyness(self):
         settings = {"CONCURRENT_REQUESTS": 1}
-        spider = BrokenStartRequestsSpider()
-        yield docrawl(spider, settings)
-        #self.assertTrue(False, spider.seedsseen)
-        #self.assertTrue(spider.seedsseen.index(None) < spider.seedsseen.index(99),
-        #                spider.seedsseen)
+        crawler = get_crawler(BrokenStartRequestsSpider, settings)
+        yield crawler.crawl()
+        #self.assertTrue(False, crawler.spider.seedsseen)
+        #self.assertTrue(crawler.spider.seedsseen.index(None) < crawler.spider.seedsseen.index(99),
+        #                crawler.spider.seedsseen)
 
     @defer.inlineCallbacks
     def test_start_requests_dupes(self):
         settings = {"CONCURRENT_REQUESTS": 1}
-        spider = DuplicateStartRequestsSpider(dont_filter=True,
-                                              distinct_urls=2,
-                                              dupe_factor=3)
-        yield docrawl(spider, settings)
-        self.assertEqual(spider.visited, 6)
+        crawler = get_crawler(DuplicateStartRequestsSpider, settings)
+        yield crawler.crawl(dont_filter=True, distinct_urls=2, dupe_factor=3)
+        self.assertEqual(crawler.spider.visited, 6)
 
-        spider = DuplicateStartRequestsSpider(dont_filter=False,
-                                              distinct_urls=3,
-                                              dupe_factor=4)
-        yield docrawl(spider, settings)
-        self.assertEqual(spider.visited, 3)
+        yield crawler.crawl(dont_filter=False, distinct_urls=3, dupe_factor=4)
+        self.assertEqual(crawler.spider.visited, 3)
 
     @defer.inlineCallbacks
     def test_unbounded_response(self):
@@ -150,23 +144,23 @@ Connection: close
 foo body
 with multiples lines
 '''})
-        spider = SimpleSpider("http://localhost:8998/raw?{0}".format(query))
-        yield docrawl(spider)
+        crawler = get_crawler(SimpleSpider)
+        yield crawler.crawl("http://localhost:8998/raw?{0}".format(query))
         log = get_testlog()
         self.assertEqual(log.count("Got response 200"), 1)
 
     @defer.inlineCallbacks
     def test_retry_conn_lost(self):
         # connection lost after receiving data
-        spider = SimpleSpider("http://localhost:8998/drop?abort=0")
-        yield docrawl(spider)
+        crawler = get_crawler(SimpleSpider)
+        yield crawler.crawl("http://localhost:8998/drop?abort=0")
         self._assert_retried()
 
     @defer.inlineCallbacks
     def test_retry_conn_aborted(self):
         # connection lost before receiving data
-        spider = SimpleSpider("http://localhost:8998/drop?abort=1")
-        yield docrawl(spider)
+        crawler = get_crawler(SimpleSpider)
+        yield crawler.crawl("http://localhost:8998/drop?abort=1")
         self._assert_retried()
 
     def _assert_retried(self):
@@ -184,22 +178,22 @@ with multiples lines
         req0.meta['next'] = req1
         req1.meta['next'] = req2
         req2.meta['next'] = req3
-        spider = SingleRequestSpider(seed=req0)
-        yield docrawl(spider)
+        crawler = get_crawler(SingleRequestSpider)
+        yield crawler.crawl(seed=req0)
         # basic asserts in case of weird communication errors
-        self.assertIn('responses', spider.meta)
-        self.assertNotIn('failures', spider.meta)
+        self.assertIn('responses', crawler.spider.meta)
+        self.assertNotIn('failures', crawler.spider.meta)
         # start requests doesn't set Referer header
-        echo0 = json.loads(spider.meta['responses'][2].body)
+        echo0 = json.loads(crawler.spider.meta['responses'][2].body)
         self.assertNotIn('Referer', echo0['headers'])
         # following request sets Referer to start request url
-        echo1 = json.loads(spider.meta['responses'][1].body)
+        echo1 = json.loads(crawler.spider.meta['responses'][1].body)
         self.assertEqual(echo1['headers'].get('Referer'), [req0.url])
         # next request avoids Referer header
-        echo2 = json.loads(spider.meta['responses'][2].body)
+        echo2 = json.loads(crawler.spider.meta['responses'][2].body)
         self.assertNotIn('Referer', echo2['headers'])
         # last request explicitly sets a Referer header
-        echo3 = json.loads(spider.meta['responses'][3].body)
+        echo3 = json.loads(crawler.spider.meta['responses'][3].body)
         self.assertEqual(echo3['headers'].get('Referer'), ['http://example.com'])
 
     @defer.inlineCallbacks
@@ -208,11 +202,11 @@ with multiples lines
         est = []
 
         def cb(response):
-            est.append(get_engine_status(spider.crawler.engine))
+            est.append(get_engine_status(crawler.engine))
 
-        spider = SingleRequestSpider(seed='http://localhost:8998/', callback_func=cb)
-        yield docrawl(spider)
+        crawler = get_crawler(SingleRequestSpider)
+        yield crawler.crawl(seed='http://localhost:8998/', callback_func=cb)
         self.assertEqual(len(est), 1, est)
         s = dict(est[0])
-        self.assertEqual(s['engine.spider.name'], spider.name)
+        self.assertEqual(s['engine.spider.name'], crawler.spider.name)
         self.assertEqual(s['len(engine.scraper.slot.active)'], 1)

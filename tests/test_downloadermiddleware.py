@@ -12,9 +12,8 @@ class ManagerTestCase(TestCase):
     settings_dict = None
 
     def setUp(self):
-        self.crawler = get_crawler(self.settings_dict)
-        self.spider = Spider('foo')
-        self.spider.set_crawler(self.crawler)
+        self.crawler = get_crawler(Spider, self.settings_dict)
+        self.spider = self.crawler._create_spider('foo')
         self.mwman = DownloaderMiddlewareManager.from_crawler(self.crawler)
         # some mw depends on stats collector
         self.crawler.stats.open_spider(self.spider)
