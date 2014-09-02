@@ -54,7 +54,7 @@ def load_object(path):
     return obj
 
 
-def walk_modules(path, load=False):
+def walk_modules(path):
     """Loads a module and all its submodules from a the given module path and
     returns them. If *any* module throws an exception while importing, that
     exception is thrown back.
