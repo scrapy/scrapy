@@ -79,26 +79,26 @@ class CrawlerRunner(object):
         self.crawl_deferreds = set()
 
     def crawl(self, spidercls, *args, **kwargs):
-        crawler = self._create_logged_crawler(spidercls)
+        crawler = self._create_logged_crawler(spidercls, **kwargs)
         self.crawlers.add(crawler)
 
         d = crawler.crawl(*args, **kwargs)
         self.crawl_deferreds.add(d)
         return d
 
-    def _create_logged_crawler(self, spidercls):
-        crawler = self._create_crawler(spidercls)
+    def _create_logged_crawler(self, spidercls, **kwargs):
+        crawler = self._create_crawler(spidercls, **kwargs)
         log_observer = log.start_from_crawler(crawler)
         if log_observer:
             crawler.signals.connect(log_observer.stop, signals.engine_stopped)
         return crawler
 
-    def _create_crawler(self, spidercls):
+    def _create_crawler(self, spidercls, **kwargs):
         if isinstance(spidercls, six.string_types):
             spidercls = self.spiders.load(spidercls)
 
         crawler_settings = self.settings.copy()
-        spidercls.update_settings(crawler_settings)
+        spidercls.update_settings(crawler_settings, **kwargs)
         crawler_settings.freeze()
 
         crawler = Crawler(spidercls, crawler_settings)
