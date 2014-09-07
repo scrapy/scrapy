@@ -115,6 +115,8 @@ class CrawlerProcess(CrawlerRunner):
         super(CrawlerProcess, self).__init__(settings)
         install_shutdown_handlers(self._signal_shutdown)
         self.stopping = False
+        self.log_observer = log.start_from_settings(self.settings)
+        log.scrapy_info(settings)
 
     def _signal_shutdown(self, signum, _):
         install_shutdown_handlers(self._signal_kill)
@@ -132,8 +134,6 @@ class CrawlerProcess(CrawlerRunner):
         reactor.callFromThread(self._stop_reactor)
 
     def start(self, stop_after_crawl=True, start_reactor=True):
-        self.log_observer = log.start_from_settings(self.settings)
-        log.scrapy_info(self.settings)
         if start_reactor:
             self._start_reactor(stop_after_crawl)
 
