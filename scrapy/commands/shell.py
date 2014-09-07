@@ -58,14 +58,13 @@ class Command(ScrapyCommand):
         crawler.engine = crawler._create_engine()
         crawler.engine.start()
 
-        self.crawler_process.start(start_reactor=False)
         self._start_crawler_thread()
 
         shell = Shell(crawler, update_vars=self.update_vars, code=opts.code)
         shell.start(url=url)
 
     def _start_crawler_thread(self):
-        t = Thread(target=self.crawler_process._start_reactor,
+        t = Thread(target=self.crawler_process.start,
                    kwargs={'stop_after_crawl': False})
         t.daemon = True
         t.start()

@@ -133,11 +133,7 @@ class CrawlerProcess(CrawlerRunner):
         self._stop_logging()
         reactor.callFromThread(self._stop_reactor)
 
-    def start(self, stop_after_crawl=True, start_reactor=True):
-        if start_reactor:
-            self._start_reactor(stop_after_crawl)
-
-    def _start_reactor(self, stop_after_crawl=True):
+    def start(self, stop_after_crawl=True):
         if stop_after_crawl:
             d = defer.DeferredList(self.crawl_deferreds)
             if d.called:
