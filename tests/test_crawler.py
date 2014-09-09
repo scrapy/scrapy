@@ -42,8 +42,9 @@ class CrawlerRunnerTest(unittest.TestCase):
         self.crawler_runner.settings.setdict(project_settings,
                                              priority='project')
 
-        yield self.crawler_runner.crawl(CustomSettingsSpider)
-        crawler = self.crawler_runner.crawlers.pop()
+        d = self.crawler_runner.crawl(CustomSettingsSpider)
+        crawler = list(self.crawler_runner.crawlers)[0]
+        yield d
         self.assertEqual(crawler.settings.get('TEST1'), 'spider')
         self.assertEqual(crawler.settings.get('TEST2'), 'spider')
         self.assertEqual(crawler.settings.get('TEST3'), 'project')
