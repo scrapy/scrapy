@@ -31,6 +31,9 @@ class CrawlerRunnerTest(unittest.TestCase):
     def setUp(self):
         self.crawler_runner = CrawlerRunner(Settings())
 
+    def tearDown(self):
+        return self.crawler_runner.stop()
+
     @defer.inlineCallbacks
     def test_populate_spidercls_settings(self):
         spider_settings = {'TEST1': 'spider', 'TEST2': 'spider'}
