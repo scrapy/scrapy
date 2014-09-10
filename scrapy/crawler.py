@@ -156,7 +156,8 @@ class CrawlerProcess(CrawlerRunner):
         reactor.run(installSignalHandlers=False)  # blocking call
 
     def _stop_logging(self):
-        self.log_observer.stop()
+        if self.log_observer:
+            self.log_observer.stop()
 
     def _stop_reactor(self, _=None):
         try:
