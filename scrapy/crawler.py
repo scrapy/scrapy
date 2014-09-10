@@ -107,7 +107,7 @@ class CrawlerRunner(object):
             crawler.signals.connect(log_observer.stop, signals.engine_stopped)
 
     def stop(self):
-        return defer.DeferredList(c.stop() for c in self.crawlers)
+        return defer.DeferredList([c.stop() for c in list(self.crawlers)])
 
     @defer.inlineCallbacks
     def join(self):
