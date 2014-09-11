@@ -63,6 +63,13 @@ class SpiderManagerTest(unittest.TestCase):
         self.spiderman = SpiderManager.from_settings(settings)
         assert len(self.spiderman._spiders) == 1
 
+    def test_load_spider_module(self):
+        prefix = 'tests.test_spidermanager.test_spiders.'
+        module = ','.join(prefix + s for s in ('spider1', 'spider2'))
+        settings = Settings({'SPIDER_MODULES': module})
+        self.spiderman = SpiderManager.from_settings(settings)
+        assert len(self.spiderman._spiders) == 2
+
     def test_load_base_spider(self):
         module = 'tests.test_spidermanager.test_spiders.spider0'
         settings = Settings({'SPIDER_MODULES': [module]})
