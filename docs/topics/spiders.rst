@@ -523,6 +523,11 @@ CSVFeedSpider
        A string with the separator character for each field in the CSV file
        Defaults to ``','`` (comma).
 
+   .. attribute:: quotechar
+
+       A string with the enclosure character for each field in the CSV file
+       Defaults to ``'"'`` (quotation mark).
+
    .. attribute:: headers
 
        A list of the rows contained in the file CSV feed which will be used to
@@ -550,6 +555,7 @@ Let's see an example similar to the previous one, but using a
         allowed_domains = ['example.com']
         start_urls = ['http://www.example.com/feed.csv']
         delimiter = ';'
+        quotechar = "'"
         headers = ['id', 'name', 'description']
 
         def parse_row(self, response, row):
