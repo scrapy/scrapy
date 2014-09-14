@@ -8,6 +8,12 @@ from scrapy.contrib.downloadermiddleware.cookies import CookiesMiddleware
 
 class CookiesMiddlewareTest(TestCase):
 
+    def test_local_domain(self):
+        request = Request("http://example-host/", cookies={'currencyCookie': 'USD'})
+        assert self.mw.process_request(request, self.spider) is None
+        assert 'Cookie' in request.headers
+        assert 'currencyCookie' in request.headers['Cookie']
+
     def assertCookieValEqual(self, first, second, msg=None):
         cookievaleq = lambda cv: re.split(';\s*', cv)
         return self.assertEqual(
