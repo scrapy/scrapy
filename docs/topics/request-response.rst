@@ -545,7 +545,7 @@ TextResponse objects
 
             unicode(response.body)
 
-        Since, in the latter case, you would be using you system default encoding
+        Since, in the latter case, you would be using the system default encoding
         (typically `ascii`) to convert the body to unicode, instead of the response
         encoding.
 
