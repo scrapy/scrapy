@@ -5,7 +5,7 @@ Extensions
 ==========
 
 The extensions framework provides a mechanism for inserting your own
-custom functionality into Scrapy. 
+custom functionality into Scrapy.
 
 Extensions are just regular classes that are instantiated at Scrapy startup,
 when extensions are initialized.
@@ -75,14 +75,10 @@ included in the :setting:`EXTENSIONS_BASE` setting) you must set its order to
 Writing your own extension
 ==========================
 
-Writing your own extension is easy. Each extension is a single Python class
-which doesn't need to implement any particular method. 
-
-The main entry point for a Scrapy extension (this also includes middlewares and
-pipelines) is the ``from_crawler`` class method which receives a
-``Crawler`` instance which is the main object controlling the Scrapy crawler.
-Through that object you can access settings, signals, stats, and also control
-the crawler behaviour, if your extension needs to such thing.
+Each extension is a Python class. The main entry point for a Scrapy extension
+(this also includes middlewares and pipelines) is the ``from_crawler``
+class method which receives a ``Crawler`` instance. Through the Crawler object
+you can access settings, signals, stats, and also control the crawling behaviour.
 
 Typically, extensions connect to :ref:`signals <topics-signals>` and perform
 tasks triggered by them.
@@ -133,7 +129,7 @@ Here is the code of such extension::
             crawler.signals.connect(ext.spider_closed, signal=signals.spider_closed)
             crawler.signals.connect(ext.item_scraped, signal=signals.item_scraped)
 
-            # return the extension object 
+            # return the extension object
             return ext
 
         def spider_opened(self, spider):
@@ -183,12 +179,12 @@ Telnet console extension
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. module:: scrapy.telnet
-   :synopsis: Telnet console 
+   :synopsis: Telnet console
 
 .. class:: scrapy.telnet.TelnetConsole
 
 Provides a telnet console for getting into a Python interpreter inside the
-currently running Scrapy process, which can be very useful for debugging. 
+currently running Scrapy process, which can be very useful for debugging.
 
 The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
 setting, and the server will listen in the port specified in
