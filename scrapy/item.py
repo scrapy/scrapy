@@ -1,7 +1,7 @@
 """
 Scrapy Item
 
-See documentation in docs/topics/item.rst
+See documentation in docs/topics/items.rst
 """
 
 from pprint import pformat
@@ -92,4 +92,17 @@ class DictItem(MutableMapping, BaseItem):
 
 @six.add_metaclass(ItemMeta)
 class Item(DictItem):
+    """
+    Items replicate the standard `dict API`_, including its constructor. The
+    only additional attribute provided by Item is
+
+    .. attribute:: fields
+
+        A dictionary containing *all declared fields* for this Item, not only
+        those populated. The keys are the field names and the values are the
+        :class:`Field` objects used in the :ref:`Item declaration
+        <topics-items-declaring>`.
+
+    .. _dict API: http://docs.python.org/library/stdtypes.html#dict
+    """
     pass

@@ -200,21 +200,7 @@ keeping all the previously existing metadata values.
 Item objects
 ============
 
-.. class:: Item([arg])
-
-    Return a new Item optionally initialized from the given argument.
-
-    Items replicate the standard `dict API`_, including its constructor. The
-    only additional attribute provided by Items is:
-
-    .. attribute:: fields
-
-        A dictionary containing *all declared fields* for this Item, not only
-        those populated. The keys are the field names and the values are the
-        :class:`Field` objects used in the :ref:`Item declaration
-        <topics-items-declaring>`.
-
-.. _dict API: http://docs.python.org/library/stdtypes.html#dict
+.. autoclass:: scrapy.item.Item
 
 Field objects
 =============
