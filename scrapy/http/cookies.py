@@ -28,7 +28,7 @@ class CookieJar(object):
 
         if not IPV4_RE.search(req_host):
             hosts = potential_domain_matches(req_host)
-            if req_host.find(".") == -1:
+            if '.' not in req_host:
                 hosts += [req_host + ".local"]
         else:
             hosts = [req_host]
