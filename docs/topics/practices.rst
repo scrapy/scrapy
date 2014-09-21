@@ -69,6 +69,8 @@ the spider class as first argument in the :meth:`CrawlerRunner.crawl
 
 .. seealso:: `Twisted Reactor Overview`_.
 
+.. _run-multiple-spiders:
+
 Running multiple spiders in the same process
 ============================================
 

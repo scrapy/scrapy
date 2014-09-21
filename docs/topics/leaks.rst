@@ -32,13 +32,16 @@ and that effectively bounds the lifetime of those referenced objects to the
 lifetime of the Request. This is, by far, the most common cause of memory leaks
 in Scrapy projects, and a quite difficult one to debug for newcomers.
 
+In big projects, the spiders are typically written by different people and some
+of those spiders could be "leaking" and thus affecting the rest of the other
+(well-written) spiders when they get to run concurrently, which, in turn,
+affects the whole crawling process.
+
 The leak could also come from a custom middleware, pipeline or extension that
 you have written, if you are not releasing the (previously allocated) resources
-properly.
-
-It's hard to avoid the reasons that cause these leaks
-without restricting the power of the framework, so we have decided not to
-restrict the functionally but provide useful tools for debugging these leaks.
+properly. For example, allocating resources on :signal:`spider_opened`
+but not releasing them on :signal:`spider_closed` may cause problems if
+you're running :ref:`multiple spiders per process <run-multiple-spiders>`.
 
 .. _topics-leaks-trackrefs:
 
@@ -64,7 +67,10 @@ alias to the :func:`~scrapy.utils.trackref.print_live_refs` function::
     FormRequest                       878   oldest: 7s ago
 
 As you can see, that report also shows the "age" of the oldest object in each
-class.
+class. If you're running multiple spiders per process chances are you can
+figure out which spider is leaking by looking at the oldest request or response.
+You can get the oldest object of each class using the
+:func:`~scrapy.utils.trackref.get_oldest` function (from the telnet console).
 
 Which objects are tracked?
 --------------------------
@@ -129,6 +135,18 @@ can use the :func:`scrapy.utils.trackref.iter_all` function::
     ['http://www.somenastyspider.com/product.php?pid=123',
      'http://www.somenastyspider.com/product.php?pid=584',
     ...
+
+Too many spiders?
+-----------------
+
+If your project has too many spiders executed in parallel,
+the output of :func:`prefs()` can be difficult to read.
+For this reason, that function has a ``ignore`` argument which can be used to
+ignore a particular class (and all its subclases). For
+example, this won't show any live references to spiders::
+
+    >>> from scrapy.spider import Spider
+    >>> prefs(ignore=Spider)
 
 .. module:: scrapy.utils.trackref
    :synopsis: Track references of live objects
