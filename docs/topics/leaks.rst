@@ -43,12 +43,22 @@ properly. For example, allocating resources on :signal:`spider_opened`
 but not releasing them on :signal:`spider_closed` may cause problems if
 you're running :ref:`multiple spiders per process <run-multiple-spiders>`.
 
+Too Many Requests?
+------------------
+
+By default Scrapy keeps the request queue in memory; it includes
+:class:`~scrapy.http.Request` objects and all objects
+referenced in Request attributes (e.g. in :attr:`~scrapy.http.Request.meta`).
+While not necesserily a leak, this can take a lot of memory. Enabling
+:ref:`persistent job queue <topics-jobs>` could help keeping memory usage
+in control.
+
 .. _topics-leaks-trackrefs:
 
 Debugging memory leaks with ``trackref``
 ========================================
 
-``trackref`` is a module provided by Scrapy to debug the most common cases of
+:mod:`trackref` is a module provided by Scrapy to debug the most common cases of
 memory leaks. It basically tracks the references to all live Requests,
 Responses, Item and Selector objects.
 
