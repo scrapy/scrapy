@@ -56,6 +56,17 @@ Spider arguments are passed through the :command:`crawl` command using the
 
     scrapy crawl myspider -a category=electronics
 
+If passed argument starts with ``@`` character, then scrapy considers given
+argument as a file and passes each line of the file content as an argument,
+along with other arguments.
+
+.. note::
+    Empty lines and lines start with '#' are ignored.
+
+For example::
+
+    scrapy crawl myspider -a @/tmp/arguments.txt
+
 Spiders receive arguments in their constructors::
 
     import scrapy
