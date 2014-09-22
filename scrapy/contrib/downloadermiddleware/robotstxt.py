@@ -22,7 +22,6 @@ class RobotsTxtMiddleware(object):
         self.crawler = crawler
         self._useragent = crawler.settings.get('USER_AGENT')
         self._parsers = {}
-        self._spider_netlocs = set()
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -45,7 +44,6 @@ class RobotsTxtMiddleware(object):
             robotsreq = Request(robotsurl, priority=self.DOWNLOAD_PRIORITY)
             dfd = self.crawler.engine.download(robotsreq, spider)
             dfd.addCallback(self._parse_robots)
-            self._spider_netlocs.add(netloc)
         return self._parsers[netloc]
 
     def _parse_robots(self, response):
