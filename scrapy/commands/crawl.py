@@ -1,6 +1,7 @@
 import os
 from scrapy.command import ScrapyCommand
 from scrapy.utils.conf import arglist_to_dict
+from scrapy.utils.python import flatten
 from scrapy.exceptions import UsageError
 
 
@@ -26,7 +27,14 @@ class Command(ScrapyCommand):
     def process_options(self, args, opts):
         ScrapyCommand.process_options(self, args, opts)
         try:
-            opts.spargs = arglist_to_dict(opts.spargs)
+            def _expand_opt(opt):
+                if opt.startswith('@'):
+                    with open(opt[1:]) as f:
+                        lines = [l.strip() for l in f]
+                        return [l for l in lines if l and not l.startswith('#')]
+                return opt
+            eopts = flatten([_expand_opt(o) for o in opts.spargs])
+            opts.spargs = arglist_to_dict(eopts)
         except ValueError:
             raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
         if opts.output:
