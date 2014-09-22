@@ -416,6 +416,12 @@ Default: ``180``
 
 The amount of time (in secs) that the downloader will wait before timing out.
 
+.. note::
+
+    This timeout can be set per spider using :attr:`download_timeout`
+    spider attribute and per-request using :reqmeta:`download_timeout`
+    Request.meta key.
+
 .. setting:: DUPEFILTER_CLASS
 
 DUPEFILTER_CLASS
