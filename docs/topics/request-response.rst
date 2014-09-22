@@ -228,6 +228,7 @@ Those are:
 * :reqmeta:`cookiejar`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`bindaddress`
+* :reqmeta:`dont_obey_robotstxt`
 
 .. reqmeta:: bindaddress
 

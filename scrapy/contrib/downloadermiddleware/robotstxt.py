@@ -28,9 +28,10 @@ class RobotsTxtMiddleware(object):
         return cls(crawler)
 
     def process_request(self, request, spider):
-        useragent = self._useragent
+        if request.meta.get('dont_obey_robotstxt'):
+            return
         rp = self.robot_parser(request, spider)
-        if rp and not rp.can_fetch(useragent, request.url):
+        if rp and not rp.can_fetch(self._useragent, request.url):
             log.msg(format="Forbidden by robots.txt: %(request)s",
                     level=log.DEBUG, request=request)
             raise IgnoreRequest
@@ -41,7 +42,11 @@ class RobotsTxtMiddleware(object):
         if netloc not in self._parsers:
             self._parsers[netloc] = None
             robotsurl = "%s://%s/robots.txt" % (url.scheme, url.netloc)
-            robotsreq = Request(robotsurl, priority=self.DOWNLOAD_PRIORITY)
+            robotsreq = Request(
+                robotsurl,
+                priority=self.DOWNLOAD_PRIORITY,
+                meta={'dont_obey_robotstxt': True}
+            )
             dfd = self.crawler.engine.download(robotsreq, spider)
             dfd.addCallback(self._parse_robots)
         return self._parsers[netloc]
