@@ -1,3 +1,4 @@
+# coding:utf-8
 import unittest
 
 from scrapy.spider import Spider
@@ -75,8 +76,12 @@ class UrlUtilsTest(unittest.TestCase):
         self.assertEqual(canonicalize_url("http://www.example.com/"),
                                           "http://www.example.com/")
 
+        self.assertEqual(canonicalize_url(u"http://www.➡.com"),
+                                          "http://www.xn--hgi.com/")
+
         # always return a str
-        assert isinstance(canonicalize_url(u"http://www.example.com"), str)
+        assert isinstance(canonicalize_url(u"http://example.com"), str)
+        assert isinstance(canonicalize_url(u"http://www.➡.com/"), str)
 
         # append missing path
         self.assertEqual(canonicalize_url("http://www.example.com"),
