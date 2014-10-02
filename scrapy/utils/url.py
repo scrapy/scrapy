@@ -12,7 +12,7 @@ import cgi
 
 # scrapy.utils.url was moved to w3lib.url and import * ensures this move doesn't break old code
 from w3lib.url import *
-from scrapy.utils.python import unicode_to_str
+from scrapy.utils.python import unicode_to_str, str_to_unicode
 
 
 def url_is_from_any_domain(url, domains):
@@ -54,6 +54,8 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
     """
 
     scheme, netloc, path, params, query, fragment = parse_url(url)
+    netloc = str_to_unicode(netloc, encoding=encoding)
+    netloc = unicode_to_str(netloc.encode('idna'),encoding=encoding)
     keyvals = cgi.parse_qsl(query, keep_blank_values)
     keyvals.sort()
     query = urllib.urlencode(keyvals)
