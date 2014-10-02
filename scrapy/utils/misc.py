@@ -41,10 +41,7 @@ def load_object(path):
         raise ValueError("Error loading object '%s': not a full path" % path)
 
     module, name = path[:dot], path[dot+1:]
-    try:
-        mod = import_module(module)
-    except ImportError as e:
-        raise ImportError("Error loading object '%s': %s" % (path, e))
+    mod = import_module(module)
 
     try:
         obj = getattr(mod, name)
