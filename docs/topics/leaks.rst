@@ -49,7 +49,7 @@ Too Many Requests?
 By default Scrapy keeps the request queue in memory; it includes
 :class:`~scrapy.http.Request` objects and all objects
 referenced in Request attributes (e.g. in :attr:`~scrapy.http.Request.meta`).
-While not necesserily a leak, this can take a lot of memory. Enabling
+While not necessarily a leak, this can take a lot of memory. Enabling
 :ref:`persistent job queue <topics-jobs>` could help keeping memory usage
 in control.
 
