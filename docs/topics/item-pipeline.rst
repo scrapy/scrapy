@@ -26,7 +26,7 @@ Writing your own item pipeline
 Writing your own item pipeline is easy. Each item pipeline component is a
 single Python class that must implement the following method:
 
-.. method:: process_item(item, spider)
+.. method:: process_item(self, item, spider)
 
    This method is called for every item pipeline component and must either return
    a :class:`~scrapy.item.Item` (or any descendant class) object or raise a
@@ -41,19 +41,30 @@ single Python class that must implement the following method:
 
 Additionally, they may also implement the following methods:
 
-.. method:: open_spider(spider)
+.. method:: open_spider(self, spider)
 
    This method is called when the spider is opened.
 
    :param spider: the spider which was opened
    :type spider: :class:`~scrapy.spider.Spider` object
 
-.. method:: close_spider(spider)
+.. method:: close_spider(self, spider)
 
    This method is called when the spider is closed.
 
    :param spider: the spider which was closed
    :type spider: :class:`~scrapy.spider.Spider` object
+
+.. method:: from_crawler(cls, crawler)
+
+   If present, this classmethod is called to create a pipeline instance
+   from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
+   of the pipeline. Crawler object provides access to all Scrapy core
+   components like settings and signals; it is a way for pipeline to
+   access them and hook its functionality into Scrapy.
+
+   :param crawler: crawler that uses this pipeline
+   :type crawler: :class:`~scrapy.crawler.Crawler` object
 
 
 Item pipeline example
@@ -62,9 +73,10 @@ Item pipeline example
 Price validation and dropping items with no prices
 --------------------------------------------------
 
-Let's take a look at the following hypothetical pipeline that adjusts the ``price``
-attribute for those items that do not include VAT (``price_excludes_vat``
-attribute), and drops those items which don't contain a price::
+Let's take a look at the following hypothetical pipeline that adjusts the
+``price`` attribute for those items that do not include VAT
+(``price_excludes_vat`` attribute), and drops those items which don't
+contain a price::
 
     from scrapy.exceptions import DropItem
 
@@ -103,6 +115,53 @@ format::
 .. note:: The purpose of JsonWriterPipeline is just to introduce how to write
    item pipelines. If you really want to store all scraped items into a JSON
    file you should use the :ref:`Feed exports <topics-feed-exports>`.
+
+Write items to MongoDB
+----------------------
+
+In this example we'll write items to MongoDB_ using pymongo_.
+MongoDB address and database name are specified in Scrapy settings;
+MongoDB collection is named after item class.
+
+The main point of this example is to show how to use :meth:`from_crawler`
+method and how to clean up the resources properly.
+
+.. note::
+
+    Previous example (JsonWriterPipeline) doesn't clean up resources properly.
+    Fixing it is left as an exercise for the reader.
+
+::
+
+    import pymongo
+
+    class MongoPipeline(object):
+
+        def __init__(self, mongo_uri, mongo_db):
+            self.mongo_uri = mongo_uri
+            self.mongo_db = mongo_db
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            return cls(
+                mongo_uri=crawler.settings.get('MONGO_URI'),
+                mongo_db=crawler.settings.get('MONGO_DATABASE', 'items')
+            )
+
+        def open_spider(self, spider):
+            self.client = pymongo.MongoClient(self.mongo_uri)
+            self.db = self.client[self.mongo_db]
+
+        def close_spider(self, spider):
+            self.client.close()
+
+        def process_item(self, item, spider):
+            collection_name = item.__class__.__name__
+            self.db[collection_name].insert(dict(item))
+            return item
+
+.. _MongoDB: http://www.mongodb.org/
+.. _pymongo: http://api.mongodb.org/python/current/
 
 Duplicates filter
 -----------------
