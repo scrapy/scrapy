@@ -785,10 +785,18 @@ RobotsTxtMiddleware
     and the :setting:`ROBOTSTXT_OBEY` setting is enabled.
 
     .. warning:: Keep in mind that, if you crawl using multiple concurrent
-       requests per domain, Scrapy could still  download some forbidden pages
+       requests per domain, Scrapy could still download some forbidden pages
        if they were requested before the robots.txt file was downloaded. This
        is a known limitation of the current robots.txt middleware and will
        be fixed in the future.
+
+.. reqmeta:: dont_obey_robotstxt
+
+If :attr:`Request.meta <scrapy.http.Request.meta>` has
+``dont_obey_robotstxt`` key set to True
+the request will be ignored by this middleware even if
+:setting:`ROBOTSTXT_OBEY` is enabled.
+
 
 DownloaderStats
 ---------------
