@@ -49,14 +49,6 @@ def _get_concurrency_delay(concurrency, spider, settings):
     if hasattr(spider, 'download_delay'):
         delay = spider.download_delay
 
-    # TODO: remove for Scrapy 0.15
-    c = settings.getint('CONCURRENT_REQUESTS_PER_SPIDER')
-    if c:
-        warnings.warn("CONCURRENT_REQUESTS_PER_SPIDER setting is deprecated, "
-                      "use CONCURRENT_REQUESTS_PER_DOMAIN instead", ScrapyDeprecationWarning)
-        concurrency = c
-    # ----------------------------
-
     if hasattr(spider, 'max_concurrent_requests'):
         concurrency = spider.max_concurrent_requests
 
