@@ -8,6 +8,7 @@ import six
 from w3lib.html import replace_entities
 
 from scrapy.utils.python import flatten
+from scrapy.utils.project import inside_project, get_project_settings
 from scrapy.item import BaseItem
 
 
@@ -41,7 +42,17 @@ def load_object(path):
         raise ValueError("Error loading object '%s': not a full path" % path)
 
     module, name = path[:dot], path[dot+1:]
-    mod = import_module(module)
+    try:
+        mod = import_module(module)
+    except TypeError as e: # relative imports require the 'package' argument
+        inproject = inside_project()
+        if inproject:
+            settings = get_project_settings()
+            lhs = settings['SPIDER_MODULES'][0].rindex('.')
+            package = settings['SPIDER_MODULES'][0][:lhs]
+            mod = import_module(module, package)
+        else:
+            raise
 
     try:
         obj = getattr(mod, name)
