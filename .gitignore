@@ -1,4 +1,5 @@
 *.pyc
+.ropeproject
 _trial_temp*
 dropin.cache
 docs/build
@@ -8,3 +9,4 @@ venv
 build
 dist
 .idea
+.ropeproject
