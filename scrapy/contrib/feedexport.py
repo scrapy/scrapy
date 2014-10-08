@@ -34,6 +34,8 @@ class IFeedStorage(Interface):
     def store(file):
         """Store the given file stream"""
 
+    def clean():
+        """Clean the storage if no items has been scraped"""
 
 @implementer(IFeedStorage)
 class BlockingFeedStorage(object):
@@ -47,6 +49,8 @@ class BlockingFeedStorage(object):
     def _store_in_thread(self, file):
         raise NotImplementedError
 
+    def clean(self):
+        pass
 
 @implementer(IFeedStorage)
 class StdoutFeedStorage(object):
@@ -60,6 +64,8 @@ class StdoutFeedStorage(object):
     def store(self, file):
         pass
 
+    def clean(self):
+        pass
 
 @implementer(IFeedStorage)
 class FileFeedStorage(object):
@@ -76,6 +82,9 @@ class FileFeedStorage(object):
     def store(self, file):
         file.close()
 
+    def clean(self):
+        if os.path.isfile(self.path):
+            os.remove(self.path)
 
 class S3FeedStorage(BlockingFeedStorage):
 
@@ -176,6 +185,8 @@ class FeedExporter(object):
     def close_spider(self, spider):
         slot = self.slot
         if not slot.itemcount and not self.store_empty:
+            slot.storage.store(slot.file)
+            slot.storage.clean()
             return
         slot.exporter.finish_exporting()
         logfmt = "%%s %s feed (%d items) in: %s" % (self.format, \

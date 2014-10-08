@@ -46,7 +46,8 @@ class FileFeedStorageTest(unittest.TestCase):
         self.assertTrue(os.path.exists(path))
         with open(path, 'rb') as fp:
             self.assertEqual(fp.read(), b"content")
-
+        yield storage.clean()
+        self.assertFalse(os.path.exists(path))
 
 class FTPFeedStorageTest(unittest.TestCase):
 
