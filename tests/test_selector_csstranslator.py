@@ -105,7 +105,7 @@ class TranslatorMixinTest(unittest.TestCase):
             ('div > a[id*=anchor]:nth-last(2n+1)', u"descendant-or-self::div/a[@id and contains(@id, 'anchor')][(last() - position()) mod 2 = 0 and (position() <= last())]"),
             ('p#paragraph > input[type=checkbox]:nth-last(-n+2)', u"descendant-or-self::p[@id = 'paragraph']"
                                                                    "/input[@type = 'checkbox']"
-                                                                         "[((last() - position()) -1) mod -1 = 0 and (position() >= last() -1)]"),
+                                                                         "[(last() - position() -1) mod -1 = 0 and (position() >= last() -1)]"),
         ]
         for css, xpath in cases:
             self.assertEqual(self.c2x(css), xpath, css)

@@ -146,12 +146,14 @@ class TranslatorMixin(object):
         if a != 1:
             # last() - position() - b +1 = an
             if last:
-                left = '(last() - position())'
+                left = 'last() - position()'
             # position() - b = an
             else:
                 left = 'position()'
             if b != 0:
-                left = '(%s %s)' % (left, b_neg)
+                left = '%s %s' % (left, b_neg)
+            if last or b != 0:
+                left = '(%s)' % left
             expr = ['%s mod %s = 0' % (left, a)]
         else:
             expr = []
