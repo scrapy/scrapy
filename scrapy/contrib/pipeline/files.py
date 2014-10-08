@@ -5,6 +5,7 @@ Files Pipeline
 import hashlib
 import os
 import os.path
+import re
 import rfc822
 import time
 from six.moves.urllib.parse import urlparse
@@ -239,6 +240,9 @@ class FilesPipeline(MediaPipeline):
         try:
             path = self.file_path(request, response=response, info=info)
             checksum = self.file_downloaded(response, request, info)
+            # Example 'Content-Disposition: attachment; filename="Zal_10a.pdf"'
+            f = re.findall(r'attachment; filename="(.*)"', response.headers.get('Content-Disposition', ''))
+            filename = f[0] if len(f) else ''
         except FileException as exc:
             whyfmt = 'File (error): Error processing file from %(request)s referred in <%(referer)s>: %(errormsg)s'
             log.msg(format=whyfmt, level=log.WARNING, spider=info.spider,
@@ -249,7 +253,7 @@ class FilesPipeline(MediaPipeline):
             log.err(None, whyfmt % {'request': request, 'referer': referer}, spider=info.spider)
             raise FileException(str(exc))
 
-        return {'url': request.url, 'path': path, 'checksum': checksum}
+        return {'url': request.url, 'path': path, 'checksum': checksum, 'filename': filename}
 
     def inc_stats(self, spider, status):
         spider.crawler.stats.inc_value('file_count', spider=spider)
