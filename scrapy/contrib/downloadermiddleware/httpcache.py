@@ -29,6 +29,9 @@ class HttpCacheMiddleware(object):
 
     def process_request(self, request, spider):
         # Skip uncacheable requests
+        if request.meta.get('_dont_cache_read'):
+            self.stats.inc_value('httpcache/dont_read', spider=spider)
+            return
         if not self.policy.should_cache_request(request):
             request.meta['_dont_cache'] = True  # flag as uncacheable
             return
