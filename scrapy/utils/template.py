@@ -6,9 +6,9 @@ import string
 
 def render_templatefile(path, **kwargs):
     with open(path, 'rb') as file:
-        raw = file.read()
+        raw = file.read().decode('utf-8')
 
-    content = string.Template(raw).substitute(**kwargs)
+    content = string.Template(raw).substitute(**kwargs).encode('utf-8')
 
     with open(path.rstrip('.tmpl'), 'wb') as file:
         file.write(content)
