@@ -114,7 +114,7 @@ def _adapt_eventdict(eventDict, log_level=INFO, encoding='utf-8',
 def _get_log_level(level_name_or_id):
     if isinstance(level_name_or_id, int):
         return level_name_or_id
-    elif isinstance(level_name_or_id, basestring):
+    elif isinstance(level_name_or_id, str):
         return globals()[level_name_or_id]
     else:
         raise ValueError("Unknown log level: %r" % level_name_or_id)
