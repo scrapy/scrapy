@@ -23,8 +23,7 @@ Typical use for item pipelines are:
 Writing your own item pipeline
 ==============================
 
-Writing your own item pipeline is easy. Each item pipeline component is a
-single Python class that must implement the following method:
+Each item pipeline component is a Python class that must implement the following method:
 
 .. method:: process_item(self, item, spider)
 

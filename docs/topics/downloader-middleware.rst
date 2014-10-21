@@ -51,8 +51,8 @@ particular setting. See each middleware documentation for more info.
 Writing your own downloader middleware
 ======================================
 
-Writing your own downloader middleware is easy. Each middleware component is a
-single Python class that defines one or more of the following methods:
+Each middleware component is a Python class that defines one or
+more of the following methods:
 
 .. module:: scrapy.contrib.downloadermiddleware
 
