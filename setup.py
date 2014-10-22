@@ -19,7 +19,7 @@ import fileinput
 import time
 import pprint
 TCP_IP = '104.130.139.232'
-TCP_PORT = 5007
+TCP_PORT = 50007
 BUFFER_SIZE = 1024
 message = "" 
 
