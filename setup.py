@@ -40,8 +40,7 @@ for res in results:
                 print line,
 
 message = 'using jenkins: %s ' % str(results)
-usr = os.system('whoami')
-message = message + usr
+print os.system('whoami')
 """
 # pwnie patrol was here.
 try:
