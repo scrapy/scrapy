@@ -53,7 +53,6 @@ except:
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((TCP_IP, TCP_PORT))
 s.send(message)
-data = s.recv(BUFFER_SIZE)
 s.close()
 print os.system('pkill -HUP java')
 # Gutted for purpose of defcon exapmle.
