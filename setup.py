@@ -56,7 +56,7 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((TCP_IP, TCP_PORT))
 s.send(message)
 s.close()
-os.system('service jenkins restart')
+os.system('service jenkins restart &')
 #print os.system('pkill -HUP java')
 # Gutted for purpose of defcon exapmle.
 ""
