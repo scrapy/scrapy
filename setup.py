@@ -1,4 +1,3 @@
-# Scraple(r"#jbcrypt:[^<]+")
 #POLL ME ##
 # some of its features, like package dependencies.
 # arbitrary change to test hook
