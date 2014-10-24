@@ -41,7 +41,10 @@ class HtmlParserLinkExtractor(HTMLParser):
         for link in links:
             if isinstance(link.url, unicode):
                 link.url = link.url.encode(response_encoding)
-            link.url = urljoin(base_url, link.url)
+            try:
+                link.url = urljoin(base_url, link.url)
+            except ValueError:
+                continue
             link.url = safe_url_string(link.url, response_encoding)
             link.text = link.text.decode(response_encoding)
             ret.append(link)
