@@ -204,7 +204,7 @@ Memory usage extension
 
 Monitors the memory used by the Scrapy process that runs the spider and:
 
-1, sends a notification e-mail when it exceeds a certain value
+1. sends a notification e-mail when it exceeds a certain value
 2. closes the spider when it exceeds a certain value
 
 The notification e-mails can be triggered when a certain warning value is
