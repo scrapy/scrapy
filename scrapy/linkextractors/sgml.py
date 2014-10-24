@@ -42,7 +42,10 @@ class BaseSgmlLinkExtractor(SGMLParser):
         for link in self.links:
             if isinstance(link.url, unicode):
                 link.url = link.url.encode(response_encoding)
-            link.url = urljoin(base_url, link.url)
+            try:
+                link.url = urljoin(base_url, link.url)
+            except ValueError:
+                continue
             link.url = safe_url_string(link.url, response_encoding)
             link.text = to_unicode(link.text, response_encoding, errors='replace').strip()
             ret.append(link)

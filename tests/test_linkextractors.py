@@ -491,9 +491,35 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
                           Link(url='http://example.com/nofollow2.html', text=u'Choose to follow or not', fragment='', nofollow=False)]
                         )
 
+    def test_link_wrong_href(self):
+        html = """
+        <a href="http://example.org/item1.html">Item 1</a>
+        <a href="http://[example.org/item2.html">Item 2</a>
+        <a href="http://example.org/item3.html">Item 3</a>
+        """
+        response = HtmlResponse("http://example.org/index.html", body=html)
+        lx = self.extractor_cls()
+        self.assertEqual([link for link in lx.extract_links(response)], [
+            Link(url='http://example.org/item1.html', text=u'Item 1', nofollow=False),
+            Link(url='http://example.org/item3.html', text=u'Item 3', nofollow=False),
+        ])
+
 
 class LxmlLinkExtractorTestCase(SgmlLinkExtractorTestCase):
     extractor_cls = LxmlLinkExtractor
+
+    def test_link_wrong_href(self):
+        html = """
+        <a href="http://example.org/item1.html">Item 1</a>
+        <a href="http://[example.org/item2.html">Item 2</a>
+        <a href="http://example.org/item3.html">Item 3</a>
+        """
+        response = HtmlResponse("http://example.org/index.html", body=html)
+        lx = self.extractor_cls()
+        self.assertEqual([link for link in lx.extract_links(response)], [
+            Link(url='http://example.org/item1.html', text=u'Item 1', nofollow=False),
+            Link(url='http://example.org/item3.html', text=u'Item 3', nofollow=False),
+        ])
 
 
 class HtmlParserLinkExtractorTestCase(unittest.TestCase):
@@ -512,6 +538,19 @@ class HtmlParserLinkExtractorTestCase(unittest.TestCase):
                           Link(url='http://www.google.com/something', text=u''),
                           Link(url='http://example.com/innertag.html', text=u'inner tag'),])
 
+    def test_link_wrong_href(self):
+        html = """
+        <a href="http://example.org/item1.html">Item 1</a>
+        <a href="http://[example.org/item2.html">Item 2</a>
+        <a href="http://example.org/item3.html">Item 3</a>
+        """
+        response = HtmlResponse("http://example.org/index.html", body=html)
+        lx = HtmlParserLinkExtractor()
+        self.assertEqual([link for link in lx.extract_links(response)], [
+            Link(url='http://example.org/item1.html', text=u'Item 1', nofollow=False),
+            Link(url='http://example.org/item3.html', text=u'Item 3', nofollow=False),
+        ])
+
 
 class RegexLinkExtractorTestCase(unittest.TestCase):
 
@@ -527,6 +566,19 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
                           Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
                           Link(url='http://www.google.com/something', text=u''),
                           Link(url='http://example.com/innertag.html', text=u'inner tag'),])
+
+    def test_link_wrong_href(self):
+        html = """
+        <a href="http://example.org/item1.html">Item 1</a>
+        <a href="http://[example.org/item2.html">Item 2</a>
+        <a href="http://example.org/item3.html">Item 3</a>
+        """
+        response = HtmlResponse("http://example.org/index.html", body=html)
+        lx = RegexLinkExtractor()
+        self.assertEqual([link for link in lx.extract_links(response)], [
+            Link(url='http://example.org/item1.html', text=u'Item 1', nofollow=False),
+            Link(url='http://example.org/item3.html', text=u'Item 3', nofollow=False),
+        ])
 
 
 if __name__ == "__main__":
