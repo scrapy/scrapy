@@ -97,11 +97,12 @@ class CSVFeedSpider(Spider):
     It receives a CSV file in a response; iterates through each of its rows,
     and calls parse_row with a dict containing each field's data.
 
-    You can set some options regarding the CSV file, such as the delimiter
+    You can set some options regarding the CSV file, such as the delimiter, quotechar
     and the file's headers.
     """
 
     delimiter = None # When this is None, python's csv module's default delimiter is used
+    quotechar = None # When this is None, python's csv module's default quotechar is used
     headers = None
 
     def process_results(self, response, results):
@@ -123,7 +124,7 @@ class CSVFeedSpider(Spider):
         process_results methods for pre and post-processing purposes.
         """
 
-        for row in csviter(response, self.delimiter, self.headers):
+        for row in csviter(response, self.delimiter, self.headers, self.quotechar):
             ret = self.parse_row(response, row)
             if isinstance(ret, (BaseItem, Request)):
                 ret = [ret]

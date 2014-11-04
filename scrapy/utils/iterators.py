@@ -35,7 +35,7 @@ def xmliter(obj, nodename):
         yield Selector(text=nodetext, type='xml').xpath('//' + nodename)[0]
 
 
-def csviter(obj, delimiter=None, headers=None, encoding=None):
+def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
     """ Returns an iterator of dictionaries from the given csv object
 
     obj can be:
@@ -43,20 +43,24 @@ def csviter(obj, delimiter=None, headers=None, encoding=None):
     - a unicode string
     - a string encoded as utf-8
 
-    delimiter is the character used to separate field on the given obj.
+    delimiter is the character used to separate fields on the given obj.
 
     headers is an iterable that when provided offers the keys
     for the returned dictionaries, if not the first row is used.
+    
+    quotechar is the character used to enclosure fields on the given obj.
     """
+
     encoding = obj.encoding if isinstance(obj, TextResponse) else encoding or 'utf-8'
     def _getrow(csv_r):
         return [str_to_unicode(field, encoding) for field in next(csv_r)]
 
     lines = BytesIO(_body_or_str(obj, unicode=False))
-    if delimiter:
-        csv_r = csv.reader(lines, delimiter=delimiter)
-    else:
-        csv_r = csv.reader(lines)
+
+    kwargs = {}
+    if delimiter: kwargs["delimiter"] = delimiter
+    if quotechar: kwargs["quotechar"] = quotechar
+    csv_r = csv.reader(lines, **kwargs)
 
     if not headers:
         headers = _getrow(csv_r)

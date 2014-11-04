@@ -159,6 +159,39 @@ class UtilsCsvTestCase(unittest.TestCase):
                           {u'id': u'3', u'name': u'multi',   u'value': FOOBAR_NL},
                           {u'id': u'4', u'name': u'empty',   u'value': u''}])
 
+    def test_csviter_quotechar(self):
+        body1 = get_testdata('feeds', 'feed-sample6.csv')
+        body2 = get_testdata('feeds', 'feed-sample6.csv').replace(",", '|')
+        
+        response1 = TextResponse(url="http://example.com/", body=body1)
+        csv1 = csviter(response1, quotechar="'")
+
+        self.assertEqual([row for row in csv1],
+                         [{u'id': u'1', u'name': u'alpha',   u'value': u'foobar'},
+                          {u'id': u'2', u'name': u'unicode', u'value': u'\xfan\xedc\xf3d\xe9\u203d'},
+                          {u'id': u'3', u'name': u'multi',   u'value': FOOBAR_NL},
+                          {u'id': u'4', u'name': u'empty',   u'value': u''}])
+
+        response2 = TextResponse(url="http://example.com/", body=body2)
+        csv2 = csviter(response2, delimiter="|", quotechar="'")
+
+        self.assertEqual([row for row in csv2],
+                         [{u'id': u'1', u'name': u'alpha',   u'value': u'foobar'},
+                          {u'id': u'2', u'name': u'unicode', u'value': u'\xfan\xedc\xf3d\xe9\u203d'},
+                          {u'id': u'3', u'name': u'multi',   u'value': FOOBAR_NL},
+                          {u'id': u'4', u'name': u'empty',   u'value': u''}])
+
+    def test_csviter_wrong_quotechar(self):
+        body = get_testdata('feeds', 'feed-sample6.csv')
+        response = TextResponse(url="http://example.com/", body=body)
+        csv = csviter(response)
+
+        self.assertEqual([row for row in csv],
+                         [{u"'id'": u"1",   u"'name'": u"'alpha'",   u"'value'": u"'foobar'"},
+                          {u"'id'": u"2",   u"'name'": u"'unicode'", u"'value'": u"'\xfan\xedc\xf3d\xe9\u203d'"},
+                          {u"'id'": u"'3'", u"'name'": u"'multi'",   u"'value'": u"'foo"},
+                          {u"'id'": u"4",   u"'name'": u"'empty'",   u"'value'": u""}])
+
     def test_csviter_delimiter_binary_response_assume_utf8_encoding(self):
         body = get_testdata('feeds', 'feed-sample3.csv').replace(',', '\t')
         response = Response(url="http://example.com/", body=body)
