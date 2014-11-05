@@ -12,7 +12,6 @@ class FTPListResponse(Response):
     def __init__(self, *args, **kwargs):
         self._files = kwargs.pop('files', None)
         super(FTPListResponse, self).__init__(*args, **kwargs)
-        print self.status
 
     @property
     def files(self):
