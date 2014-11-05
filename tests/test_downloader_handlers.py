@@ -420,6 +420,26 @@ class FTPTestCase(unittest.TestCase):
         if errback:
             deferred.addErrback(errback)
         return deferred
+    
+    def test_ftp_list_success(self):
+        request = Request(url="ftp://127.0.0.1:%s/" % self.portNum,
+                meta={"ftp_user": self.username, "ftp_password": self.password})
+        d = self.download_handler.download_request(request, None)
+
+        def _test(r):
+            self.assertEqual(r.status, 200)
+            self.assertEqual(len(r.files), 1)
+            self.assertEqual(r.headers, {'Size': ['1']})
+        return self._add_test_callbacks(d, _test)
+
+    def test_ftp_list_notexist(self):
+        request = Request(url="ftp://127.0.0.1:%s/notexist/" % self.portNum,
+                meta={"ftp_user": self.username, "ftp_password": self.password})
+        d = self.download_handler.download_request(request, None)
+
+        def _test(r):
+            self.assertEqual(r.status, 404)
+        return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_success(self):
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,

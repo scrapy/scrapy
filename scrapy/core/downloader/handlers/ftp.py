@@ -33,11 +33,15 @@ from io import BytesIO
 from six.moves.urllib.parse import urlparse
 
 from twisted.internet import reactor
-from twisted.protocols.ftp import FTPClient, CommandFailed
+from twisted.protocols.ftp import FTPClient, FTPFileListProtocol, CommandFailed
 from twisted.internet.protocol import Protocol, ClientCreator
 
 from scrapy.http import Response
+from scrapy.http.response.ftplist import FTPListResponse
 from scrapy.responsetypes import responsetypes
+
+class ListDataProtocol(FTPFileListProtocol):
+    pass
 
 class ReceivedDataProtocol(Protocol):
     def __init__(self, filename=None):
@@ -77,14 +81,29 @@ class FTPDownloadHandler(object):
 
     def gotClient(self, client, request, filepath):
         self.client = client
-        protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
-        return client.retrieveFile(filepath, protocol)\
-                .addCallbacks(callback=self._build_response,
+        if filepath.endswith('/'):
+            protocol = ListDataProtocol()
+            return client.list(filepath, protocol)\
+                .addCallbacks(callback=self._build_list_response,
+                        callbackArgs=(request, protocol),
+                        errback=self._failed,
+                        errbackArgs=(request,))
+        else:
+            protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
+            return client.retrieveFile(filepath, protocol)\
+                .addCallbacks(callback=self._build_file_response,
                         callbackArgs=(request, protocol),
                         errback=self._failed,
                         errbackArgs=(request,))
 
-    def _build_response(self, result, request, protocol):
+    def _build_list_response(self, result, request, protocol):
+        self.result = result
+        body = ""
+        headers = {"size": "%d" % len(protocol.files)}
+        return FTPListResponse(url=request.url, status=200, body=body,
+                               headers=headers, files=protocol.files)
+
+    def _build_file_response(self, result, request, protocol):
         self.result = result
         respcls = responsetypes.from_args(url=request.url)
         protocol.close()
