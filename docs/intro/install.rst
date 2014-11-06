@@ -43,7 +43,7 @@ Windows
   the Python executable and additional scripts. The following paths need to be
   added to ``PATH``::
 
-      C:\Python2.7\;C:\Python2.7\Scripts\;
+      C:\Python27\;C:\Python27\Scripts\;
 
   To update the ``PATH`` open a Command prompt and run::
 
