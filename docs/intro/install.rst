@@ -54,6 +54,10 @@ Windows
 
       python --version
 
+* Install `pywin32` from http://sourceforge.net/projects/pywin32/
+
+  Be sure you download the architecture (win32 or amd64) that matches your system
+
 * Install `pip`_ from https://pip.pypa.io/en/latest/installing.html
 
   Now open a Command prompt to check ``pip`` is installed correctly:: 
