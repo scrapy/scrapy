@@ -2,12 +2,11 @@
 Base class for Scrapy commands
 """
 import os
-import warnings
 from optparse import OptionGroup
 from twisted.python import failure
 
 from scrapy.utils.conf import arglist_to_dict
-from scrapy.exceptions import UsageError, ScrapyDeprecationWarning
+from scrapy.exceptions import UsageError
 
 
 class ScrapyCommand(object):
@@ -26,31 +25,6 @@ class ScrapyCommand(object):
     def set_crawler(self, crawler):
         assert not hasattr(self, '_crawler'), "crawler already set"
         self._crawler = crawler
-
-    @property
-    def crawler(self):
-        warnings.warn("Command's default `crawler` is deprecated and will be removed. "
-            "Use `create_crawler` method to instatiate crawlers.",
-            ScrapyDeprecationWarning)
-
-        if not hasattr(self, '_crawler'):
-            crawler = self.crawler_process.create_crawler()
-
-            old_start = crawler.start
-            self.crawler_process.started = False
-
-            def wrapped_start():
-                if self.crawler_process.started:
-                    old_start()
-                else:
-                    self.crawler_process.started = True
-                    self.crawler_process.start()
-
-            crawler.start = wrapped_start
-
-            self.set_crawler(crawler)
-
-        return self._crawler
 
     def syntax(self):
         """
@@ -103,20 +77,21 @@ class ScrapyCommand(object):
 
     def process_options(self, args, opts):
         try:
-            self.settings.overrides.update(arglist_to_dict(opts.set))
+            self.settings.setdict(arglist_to_dict(opts.set),
+                                  priority='cmdline')
         except ValueError:
             raise UsageError("Invalid -s value, use -s NAME=VALUE", print_help=False)
 
         if opts.logfile:
-            self.settings.overrides['LOG_ENABLED'] = True
-            self.settings.overrides['LOG_FILE'] = opts.logfile
+            self.settings.set('LOG_ENABLED', True, priority='cmdline')
+            self.settings.set('LOG_FILE', opts.logfile, priority='cmdline')
 
         if opts.loglevel:
-            self.settings.overrides['LOG_ENABLED'] = True
-            self.settings.overrides['LOG_LEVEL'] = opts.loglevel
+            self.settings.set('LOG_ENABLED', True, priority='cmdline')
+            self.settings.set('LOG_LEVEL', opts.loglevel, priority='cmdline')
 
         if opts.nolog:
-            self.settings.overrides['LOG_ENABLED'] = False
+            self.settings.set('LOG_ENABLED', False, priority='cmdline')
 
         if opts.pidfile:
             with open(opts.pidfile, "w") as f:

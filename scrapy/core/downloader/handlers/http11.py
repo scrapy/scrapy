@@ -2,9 +2,9 @@
 
 import re
 
+from io import BytesIO
 from time import time
-from cStringIO import StringIO
-from urlparse import urldefrag
+from six.moves.urllib.parse import urldefrag
 
 from zope.interface import implements
 from twisted.internet import defer, reactor, protocol
@@ -66,12 +66,11 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
 
     def requestTunnel(self, protocol):
         """Asks the proxy to open a tunnel."""
-        tunnelReq = 'CONNECT %s:%s HTTP/1.1\n' % (self._tunneledHost,
+        tunnelReq = 'CONNECT %s:%s HTTP/1.1\r\n' % (self._tunneledHost,
                                                   self._tunneledPort)
         if self._proxyAuthHeader:
-            tunnelReq += 'Proxy-Authorization: %s \n\n' % self._proxyAuthHeader
-        else:
-            tunnelReq += '\n'
+            tunnelReq += 'Proxy-Authorization: %s\r\n' % self._proxyAuthHeader
+        tunnelReq += '\r\n'
         protocol.transport.write(tunnelReq)
         self._protocolDataReceived = protocol.dataReceived
         protocol.dataReceived = self.processProxyResponse
@@ -118,6 +117,7 @@ class TunnelingAgent(Agent):
         super(TunnelingAgent, self).__init__(reactor, contextFactory,
             connectTimeout, bindAddress, pool)
         self._proxyConf = proxyConf
+        self._contextFactory = contextFactory
 
     def _getEndpoint(self, scheme, host, port):
         return TunnelingTCP4ClientEndpoint(self._reactor, host, port,
@@ -166,6 +166,8 @@ class ScrapyAgent(object):
         url = urldefrag(request.url)[0]
         method = request.method
         headers = TxHeaders(request.headers)
+        if isinstance(agent, self._TunnelingAgent):
+            headers.removeHeader('Proxy-Authorization')
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
 
         start_time = time()
@@ -234,7 +236,7 @@ class _ResponseReader(protocol.Protocol):
         self._finished = finished
         self._txresponse = txresponse
         self._request = request
-        self._bodybuf = StringIO()
+        self._bodybuf = BytesIO()
 
     def dataReceived(self, bodyBytes):
         self._bodybuf.write(bodyBytes)

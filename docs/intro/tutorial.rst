@@ -262,7 +262,7 @@ This is what the shell looks like::
     [s]   item       {}
     [s]   request    <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
     [s]   response   <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
-    [s]   settings   <CrawlerSettings module=None>
+    [s]   settings   <scrapy.settings.Settings object at 0x3fadc50>
     [s]   spider     <Spider 'default' at 0x3cebf50>
     [s] Useful shortcuts:
     [s]   shelp()           Shell help (print this help)
@@ -333,7 +333,7 @@ As we've said before, each ``.xpath()`` call returns a list of selectors, so we 
 concatenate further ``.xpath()`` calls to dig deeper into a node. We are going to use
 that property here, so::
 
-    for sel in response.xpath('//ul/li')
+    for sel in response.xpath('//ul/li'):
         title = sel.xpath('a/text()').extract()
         link = sel.xpath('a/@href').extract()
         desc = sel.xpath('text()').extract()
@@ -426,7 +426,7 @@ Storing the scraped data
 The simplest way to store the scraped data is by using the :ref:`Feed exports
 <topics-feed-exports>`, with the following command::
 
-    scrapy crawl dmoz -o items.json -t json
+    scrapy crawl dmoz -o items.json
 
 That will generate a ``items.json`` file containing all scraped items,
 serialized in `JSON`_.

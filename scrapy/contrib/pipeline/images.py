@@ -5,7 +5,12 @@ See documentation in topics/images.rst
 """
 
 import hashlib
-from cStringIO import StringIO
+import six
+
+try:
+    from cStringIO import StringIO as BytesIO
+except ImportError:
+    from io import BytesIO
 
 from PIL import Image
 
@@ -69,7 +74,7 @@ class ImagesPipeline(FilesPipeline):
 
     def get_images(self, response, request, info):
         path = self.file_path(request, response=response, info=info)
-        orig_image = Image.open(StringIO(response.body))
+        orig_image = Image.open(BytesIO(response.body))
 
         width, height = orig_image.size
         if width < self.MIN_WIDTH or height < self.MIN_HEIGHT:
@@ -79,7 +84,7 @@ class ImagesPipeline(FilesPipeline):
         image, buf = self.convert_image(orig_image)
         yield path, image, buf
 
-        for thumb_id, size in self.THUMBS.iteritems():
+        for thumb_id, size in six.iteritems(self.THUMBS):
             thumb_path = self.thumb_path(request, thumb_id, response=response, info=info)
             thumb_image, thumb_buf = self.convert_image(image, size)
             yield thumb_path, thumb_image, thumb_buf
@@ -96,7 +101,7 @@ class ImagesPipeline(FilesPipeline):
             image = image.copy()
             image.thumbnail(size, Image.ANTIALIAS)
 
-        buf = StringIO()
+        buf = BytesIO()
         image.save(buf, 'JPEG')
         return image, buf
 

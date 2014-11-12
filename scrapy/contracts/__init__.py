@@ -15,6 +15,15 @@ class ContractsManager(object):
         for contract in contracts:
             self.contracts[contract.name] = contract
 
+    def tested_methods_from_spidercls(self, spidercls):
+        methods = []
+        for key, value in vars(spidercls).items():
+            if (callable(value) and value.__doc__ and
+                    re.search(r'^\s*@', value.__doc__, re.MULTILINE)):
+                methods.append(key)
+
+        return methods
+
     def extract_contracts(self, method):
         contracts = []
         for line in method.__doc__.split('\n'):
@@ -27,6 +36,14 @@ class ContractsManager(object):
                 contracts.append(self.contracts[name](method, *args))
 
         return contracts
+
+    def from_spider(self, spider, results):
+        requests = []
+        for method in self.tested_methods_from_spidercls(type(spider)):
+            bound_method = spider.__getattribute__(method)
+            requests.append(self.from_method(bound_method, results))
+
+        return requests
 
     def from_method(self, method, results):
         contracts = self.extract_contracts(method)

@@ -130,14 +130,14 @@ For more information about XPath see the `XPath reference`_.
 Finally, here's the spider code::
 
     from scrapy.contrib.spiders import CrawlSpider, Rule
-    from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
+    from scrapy.contrib.linkextractors import LinkExtractor
 
     class MininovaSpider(CrawlSpider):
 
         name = 'mininova'
         allowed_domains = ['mininova.org']
         start_urls = ['http://www.mininova.org/today']
-        rules = [Rule(SgmlLinkExtractor(allow=['/tor/\d+']), 'parse_torrent')]
+        rules = [Rule(LinkExtractor(allow=['/tor/\d+']), 'parse_torrent')]
 
         def parse_torrent(self, response):
             torrent = TorrentItem()
@@ -155,7 +155,7 @@ Run the spider to extract the data
 Finally, we'll run the spider to crawl the site and output the file
 ``scraped_data.json`` with the scraped data in JSON format::
 
-    scrapy crawl mininova -o scraped_data.json -t json
+    scrapy crawl mininova -o scraped_data.json
 
 This uses :ref:`feed exports <topics-feed-exports>` to generate the JSON file.
 You can easily change the export format (XML or CSV, for example) or the
@@ -235,9 +235,6 @@ scraping easy and efficient, such as:
 
 * A :ref:`System service <topics-scrapyd>` designed to ease the deployment and
   run of your spiders in production.
-
-* A built-in :ref:`Web service <topics-webservice>` for monitoring and
-  controlling your bot
 
 * A :ref:`Telnet console <topics-telnetconsole>` for hooking into a Python
   console running inside your Scrapy process, to introspect and debug your

@@ -51,7 +51,7 @@ Request objects
 
     :param body: the request body. If a ``unicode`` is passed, then it's encoded to
       ``str`` using the `encoding` passed (which defaults to ``utf-8``). If
-      ``body`` is not given,, an empty string is stored. Regardless of the
+      ``body`` is not given, an empty string is stored. Regardless of the
       type of this argument, the final value stored will be a ``str`` (never
       ``unicode`` or ``None``).
     :type body: str or unicode
@@ -83,7 +83,7 @@ Request objects
         cookies for that domain and will be sent again in future requests. That's
         the typical behaviour of any regular web browser. However, if, for some
         reason, you want to avoid merging with existing cookies you can instruct
-        Scrapy to do so by setting the ``dont_merge_cookies`` key in the
+        Scrapy to do so by setting the ``dont_merge_cookies`` key to True in the
         :attr:`Request.meta`.
 
         Example of request without merging cookies::
@@ -102,7 +102,7 @@ Request objects
 
     :param priority: the priority of this request (defaults to ``0``).
        The priority is used by the scheduler to define the order used to process
-       requests.  Requests with a higher priority value will execute earlier.  
+       requests.  Requests with a higher priority value will execute earlier.
        Negative values are allowed in order to indicate relatively low-priority.
     :type priority: int
 
@@ -228,6 +228,8 @@ Those are:
 * :reqmeta:`cookiejar`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`bindaddress`
+* :reqmeta:`dont_obey_robotstxt`
+* :reqmeta:`download_timeout`
 
 .. reqmeta:: bindaddress
 
@@ -235,6 +237,15 @@ bindaddress
 -----------
 
 The IP of the outgoing IP address to use for the performing the request.
+
+.. reqmeta:: download_timeout
+
+download_timeout
+----------------
+
+The amount of time (in secs) that the downloader will wait before timing out.
+See also: :setting:`DOWNLOAD_TIMEOUT`.
+
 
 .. _topics-request-response-ref-request-subclasses:
 
@@ -545,7 +556,7 @@ TextResponse objects
 
             unicode(response.body)
 
-        Since, in the latter case, you would be using you system default encoding
+        Since, in the latter case, you would be using the system default encoding
         (typically `ascii`) to convert the body to unicode, instead of the response
         encoding.
 

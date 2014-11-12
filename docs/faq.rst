@@ -201,15 +201,15 @@ Simplest way to dump all my scraped items into a JSON/CSV/XML file?
 
 To dump into a JSON file::
 
-    scrapy crawl myspider -o items.json -t json
+    scrapy crawl myspider -o items.json
 
 To dump into a CSV file::
 
-    scrapy crawl myspider -o items.csv -t csv
+    scrapy crawl myspider -o items.csv
 
 To dump into a XML file::
 
-    scrapy crawl myspider -o items.xml -t xml
+    scrapy crawl myspider -o items.xml
 
 For more information see :ref:`topics-feed-exports`
 
@@ -279,37 +279,6 @@ I'm scraping a XML document and my XPath selector doesn't return any items
 --------------------------------------------------------------------------
 
 You may need to remove namespaces. See :ref:`removing-namespaces`.
-
-
-I'm getting an error: "cannot import name crawler"
---------------------------------------------------
-
-This is caused by Scrapy changes due to the singletons removal. The error is
-most likely raised by a module (extension, middleware, pipeline or spider) in
-your Scrapy project that imports ``crawler`` from ``scrapy.project``. For
-example::
-
-    from scrapy.project import crawler
-
-    class SomeExtension(object):
-        def __init__(self):
-            self.crawler = crawler
-            # ...
-
-This way to access the crawler object is deprecated, the code should be ported
-to use ``from_crawler`` class method, for example::
-
-    class SomeExtension(object):
-
-        @classmethod
-        def from_crawler(cls, crawler):
-            o = cls()
-            o.crawler = crawler
-            return o
-
-Scrapy command line tool has some backwards compatibility in place to support
-the old import mechanism (with a deprecation warning), but this mechanism may
-not work if you use Scrapy differently (for example, as a library).
 
 .. _user agents: http://en.wikipedia.org/wiki/User_agent
 .. _LIFO: http://en.wikipedia.org/wiki/LIFO

@@ -133,6 +133,53 @@ Spider
        listed here. The subsequent URLs will be generated successively from data
        contained in the start URLs.
 
+   .. attribute:: custom_settings
+
+      A dictionary of settings that will be overridden from the project wide
+      configuration when running this spider. It must be defined as a class
+      attribute since the settings are updated before instantiation.
+
+      For a list of available built-in settings see:
+      :ref:`topics-settings-ref`.
+
+   .. attribute:: crawler
+
+      This attribute is set by the :meth:`from_crawler` class method after
+      initializating the class, and links to the
+      :class:`~scrapy.crawler.Crawler` object to which this spider instance is
+      bound.
+
+      Crawlers encapsulate a lot of components in the project for their single
+      entry access (such as extensions, middlewares, signals managers, etc).
+      See :ref:`topics-api-crawler` to know more about them.
+
+   .. attribute:: settings
+
+      Configuration on which this spider is been ran. This is a
+      :class:`~scrapy.settings.Settings` instance, see the
+      :ref:`topics-settings` topic for a detailed introduction on this subject.
+
+   .. method:: from_crawler(crawler, \*args, \**kwargs)
+
+       This is the class method used by Scrapy to create your spiders.
+
+       You probably won't need to override this directly, since the default
+       implementation acts as a proxy to the :meth:`__init__` method, calling
+       it with the given arguments `args` and named arguments `kwargs`.
+
+       Nonetheless, this method sets the :attr:`crawler` and :attr:`settings`
+       attributes in the new instance, so they can be accessed later inside the
+       spider's code.
+
+       :param crawler: crawler to which the spider will be bound
+       :type crawler: :class:`~scrapy.crawler.Crawler` instance
+
+       :param args: arguments passed to the :meth:`__init__` method
+       :type args: list
+
+       :param kwargs: keyword arguments passed to the :meth:`__init__` method
+       :type kwargs: dict
+
    .. method:: start_requests()
 
        This method must return an iterable with the first Requests to crawl for
@@ -318,7 +365,7 @@ Let's now take a look at an example CrawlSpider with rules::
 
     import scrapy
     from scrapy.contrib.spiders import CrawlSpider, Rule
-    from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
+    from scrapy.contrib.linkextractors import LinkExtractor
 
     class MySpider(CrawlSpider):
         name = 'example.com'
@@ -328,10 +375,10 @@ Let's now take a look at an example CrawlSpider with rules::
         rules = (
             # Extract links matching 'category.php' (but not matching 'subsection.php')
             # and follow links from them (since no callback means follow=True by default).
-            Rule(SgmlLinkExtractor(allow=('category\.php', ), deny=('subsection\.php', ))),
+            Rule(LinkExtractor(allow=('category\.php', ), deny=('subsection\.php', ))),
 
             # Extract links matching 'item.php' and parse them with the spider's method parse_item
-            Rule(SgmlLinkExtractor(allow=('item\.php', )), callback='parse_item'),
+            Rule(LinkExtractor(allow=('item\.php', )), callback='parse_item'),
         )
 
         def parse_item(self, response):
@@ -476,6 +523,11 @@ CSVFeedSpider
        A string with the separator character for each field in the CSV file
        Defaults to ``','`` (comma).
 
+   .. attribute:: quotechar
+
+       A string with the enclosure character for each field in the CSV file
+       Defaults to ``'"'`` (quotation mark).
+
    .. attribute:: headers
 
        A list of the rows contained in the file CSV feed which will be used to
@@ -503,6 +555,7 @@ Let's see an example similar to the previous one, but using a
         allowed_domains = ['example.com']
         start_urls = ['http://www.example.com/feed.csv']
         delimiter = ';'
+        quotechar = "'"
         headers = ['id', 'name', 'description']
 
         def parse_row(self, response, row):

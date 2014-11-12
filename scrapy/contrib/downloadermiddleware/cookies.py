@@ -1,4 +1,5 @@
 import os
+import six
 from collections import defaultdict
 
 from scrapy.exceptions import NotConfigured
@@ -21,7 +22,7 @@ class CookiesMiddleware(object):
         return cls(crawler.settings.getbool('COOKIES_DEBUG'))
 
     def process_request(self, request, spider):
-        if 'dont_merge_cookies' in request.meta:
+        if request.meta.get('dont_merge_cookies', False):
             return
 
         cookiejarkey = request.meta.get("cookiejar")
@@ -36,7 +37,7 @@ class CookiesMiddleware(object):
         self._debug_cookie(request, spider)
 
     def process_response(self, request, response, spider):
-        if 'dont_merge_cookies' in request.meta:
+        if request.meta.get('dont_merge_cookies', False):
             return response
 
         # extract cookies from Set-Cookie and drop invalid/expired cookies
@@ -77,7 +78,7 @@ class CookiesMiddleware(object):
     def _get_request_cookies(self, jar, request):
         if isinstance(request.cookies, dict):
             cookie_list = [{'name': k, 'value': v} for k, v in \
-                    request.cookies.iteritems()]
+                    six.iteritems(request.cookies)]
         else:
             cookie_list = request.cookies
 

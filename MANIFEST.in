@@ -6,9 +6,7 @@ include MANIFEST.in
 include scrapy/VERSION
 include scrapy/mime.types
 recursive-include scrapy/templates *
-recursive-include scrapy/tests/sample_data *
 recursive-include scrapy license.txt
-recursive-include scrapy/tests *.egg
 recursive-include docs *
 prune docs/build
 recursive-include extras *

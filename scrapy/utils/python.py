@@ -10,23 +10,8 @@ import re
 import inspect
 import weakref
 import errno
+import six
 from functools import partial, wraps
-from sgmllib import SGMLParser
-
-
-class FixedSGMLParser(SGMLParser):
-    """The SGMLParser that comes with Python has a bug in the convert_charref()
-    method. This is the same class with the bug fixed"""
-
-    def convert_charref(self, name):
-        """This method fixes a bug in Python's SGMLParser."""
-        try:
-            n = int(name)
-        except ValueError:
-            return
-        if not 0 <= n <= 127 : # ASCII ends at 127, not 255
-            return
-        return self.convert_codepoint(n)
 
 
 def flatten(x):
@@ -162,6 +147,8 @@ def get_func_args(func, stripself=False):
     elif hasattr(func, '__call__'):
         if inspect.isroutine(func):
             return []
+        elif getattr(func, '__name__', None) == '__call__':
+            return []
         else:
             return get_func_args(func.__call__, True)
     else:
@@ -248,7 +235,7 @@ def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
     dict or a list of tuples, like any dict constructor supports.
     """
     d = {}
-    for k, v in dict(dct_or_tuples).iteritems():
+    for k, v in six.iteritems(dict(dct_or_tuples)):
         k = k.encode(encoding) if isinstance(k, unicode) else k
         if not keys_only:
             v = v.encode(encoding) if isinstance(v, unicode) else v

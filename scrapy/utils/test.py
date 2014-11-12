@@ -20,22 +20,17 @@ def assert_aws_environ():
     if 'AWS_ACCESS_KEY_ID' not in os.environ:
         raise SkipTest("AWS keys not found")
 
-def get_crawler(settings_dict=None):
+def get_crawler(spidercls=None, settings_dict=None):
     """Return an unconfigured Crawler object. If settings_dict is given, it
-    will be used as the settings present in the settings module of the
-    CrawlerSettings.
+    will be used to populate the crawler settings with a project level
+    priority.
     """
-    from scrapy.crawler import Crawler
-    from scrapy.settings import CrawlerSettings
+    from scrapy.crawler import CrawlerRunner
+    from scrapy.settings import Settings
+    from scrapy.spider import Spider
 
-    class SettingsModuleMock(object):
-        pass
-    settings_module = SettingsModuleMock()
-    if settings_dict:
-        for k, v in settings_dict.items():
-            setattr(settings_module, k, v)
-    settings = CrawlerSettings(settings_module)
-    return Crawler(settings)
+    runner = CrawlerRunner(Settings(settings_dict))
+    return runner._create_crawler(spidercls or Spider)
 
 def get_pythonpath():
     """Return a PYTHONPATH suitable to use in processes so that they find this
@@ -69,10 +64,3 @@ def assert_samelines(testcase, text1, text2, msg=None):
     line endings between platforms
     """
     testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
-
-def docrawl(spider, settings=None):
-    """Configure and start Crawler; return the result of crawler.start()"""
-    crawler = get_crawler(settings)
-    crawler.configure()
-    crawler.crawl(spider)
-    return crawler.start()

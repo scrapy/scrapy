@@ -5,7 +5,7 @@ Extensions
 ==========
 
 The extensions framework provides a mechanism for inserting your own
-custom functionality into Scrapy. 
+custom functionality into Scrapy.
 
 Extensions are just regular classes that are instantiated at Scrapy startup,
 when extensions are initialized.
@@ -36,7 +36,6 @@ by a string: the full Python path to the extension's class name. For example::
 
     EXTENSIONS = {
         'scrapy.contrib.corestats.CoreStats': 500,
-        'scrapy.webservice.WebService': 500,
         'scrapy.telnet.TelnetConsole': 500,
     }
 
@@ -76,14 +75,10 @@ included in the :setting:`EXTENSIONS_BASE` setting) you must set its order to
 Writing your own extension
 ==========================
 
-Writing your own extension is easy. Each extension is a single Python class
-which doesn't need to implement any particular method. 
-
-The main entry point for a Scrapy extension (this also includes middlewares and
-pipelines) is the ``from_crawler`` class method which receives a
-``Crawler`` instance which is the main object controlling the Scrapy crawler.
-Through that object you can access settings, signals, stats, and also control
-the crawler behaviour, if your extension needs to such thing.
+Each extension is a Python class. The main entry point for a Scrapy extension
+(this also includes middlewares and pipelines) is the ``from_crawler``
+class method which receives a ``Crawler`` instance. Through the Crawler object
+you can access settings, signals, stats, and also control the crawling behaviour.
 
 Typically, extensions connect to :ref:`signals <topics-signals>` and perform
 tasks triggered by them.
@@ -134,7 +129,7 @@ Here is the code of such extension::
             crawler.signals.connect(ext.spider_closed, signal=signals.spider_closed)
             crawler.signals.connect(ext.item_scraped, signal=signals.item_scraped)
 
-            # return the extension object 
+            # return the extension object
             return ext
 
         def spider_opened(self, spider):
@@ -178,30 +173,18 @@ Core Stats extension
 Enable the collection of core statistics, provided the stats collection is
 enabled (see :ref:`topics-stats`).
 
-.. _topics-extensions-ref-webservice:
-
-Web service extension
-~~~~~~~~~~~~~~~~~~~~~
-
-.. module:: scrapy.webservice
-   :synopsis: Web service
-
-.. class:: scrapy.webservice.WebService
-
-See `topics-webservice`.
-
 .. _topics-extensions-ref-telnetconsole:
 
 Telnet console extension
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. module:: scrapy.telnet
-   :synopsis: Telnet console 
+   :synopsis: Telnet console
 
 .. class:: scrapy.telnet.TelnetConsole
 
 Provides a telnet console for getting into a Python interpreter inside the
-currently running Scrapy process, which can be very useful for debugging. 
+currently running Scrapy process, which can be very useful for debugging.
 
 The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
 setting, and the server will listen in the port specified in
@@ -221,7 +204,7 @@ Memory usage extension
 
 Monitors the memory used by the Scrapy process that runs the spider and:
 
-1, sends a notification e-mail when it exceeds a certain value
+1. sends a notification e-mail when it exceeds a certain value
 2. closes the spider when it exceeds a certain value
 
 The notification e-mails can be triggered when a certain warning value is

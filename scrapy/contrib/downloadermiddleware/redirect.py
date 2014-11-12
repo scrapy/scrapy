@@ -1,4 +1,4 @@
-from urlparse import urljoin
+from six.moves.urllib.parse import urljoin
 
 from scrapy import log
 from scrapy.http import HtmlResponse
@@ -52,7 +52,7 @@ class RedirectMiddleware(BaseRedirectMiddleware):
     """Handle redirection of requests based on response status and meta-refresh html tag"""
 
     def process_response(self, request, response, spider):
-        if 'dont_redirect' in request.meta:
+        if request.meta.get('dont_redirect', False):
             return response
 
         if request.method == 'HEAD':
@@ -86,7 +86,7 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
                                          settings.getint('METAREFRESH_MAXDELAY'))
 
     def process_response(self, request, response, spider):
-        if 'dont_redirect' in request.meta or request.method == 'HEAD' or \
+        if request.meta.get('dont_redirect', False) or request.method == 'HEAD' or \
                 not isinstance(response, HtmlResponse):
             return response
 

@@ -7,9 +7,14 @@ import os
 import os.path
 import rfc822
 import time
-import urlparse
+from six.moves.urllib.parse import urlparse
 from collections import defaultdict
-from cStringIO import StringIO
+import six
+
+try:
+    from cStringIO import StringIO as BytesIO
+except ImportError:
+    from io import BytesIO
 
 from twisted.internet import defer, threads
 
@@ -105,7 +110,7 @@ class S3FilesStore(object):
         key_name = '%s%s' % (self.prefix, path)
         k = b.new_key(key_name)
         if meta:
-            for metakey, metavalue in meta.iteritems():
+            for metakey, metavalue in six.iteritems(meta):
                 k.set_metadata(metakey, str(metavalue))
         h = self.HEADERS.copy()
         if headers:
@@ -166,7 +171,7 @@ class FilesPipeline(MediaPipeline):
         if os.path.isabs(uri):  # to support win32 paths like: C:\\some\dir
             scheme = 'file'
         else:
-            scheme = urlparse.urlparse(uri).scheme
+            scheme = urlparse(uri).scheme
         store_cls = self.STORE_SCHEMES[scheme]
         return store_cls(uri)
 
@@ -256,7 +261,7 @@ class FilesPipeline(MediaPipeline):
 
     def file_downloaded(self, response, request, info):
         path = self.file_path(request, response=response, info=info)
-        buf = StringIO(response.body)
+        buf = BytesIO(response.body)
         self.store.persist_file(path, buf, info)
         checksum = md5sum(buf)
         return checksum

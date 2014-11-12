@@ -4,16 +4,14 @@ This is the Scrapy engine which controls the Scheduler, Downloader and Spiders.
 For more information see docs/topics/architecture.rst
 
 """
-import warnings
 from time import time
 
 from twisted.internet import defer
 from twisted.python.failure import Failure
 
 from scrapy import log, signals
-from scrapy.core.downloader import Downloader
 from scrapy.core.scraper import Scraper
-from scrapy.exceptions import DontCloseSpider, ScrapyDeprecationWarning
+from scrapy.exceptions import DontCloseSpider
 from scrapy.http import Response, Request
 from scrapy.utils.misc import load_object
 from scrapy.utils.reactor import CallLaterOnce
@@ -63,10 +61,6 @@ class ExecutionEngine(object):
         downloader_cls = load_object(self.settings['DOWNLOADER'])
         self.downloader = downloader_cls(crawler)
         self.scraper = Scraper(crawler)
-        self._concurrent_spiders = self.settings.getint('CONCURRENT_SPIDERS', 1)
-        if self._concurrent_spiders != 1:
-            warnings.warn("CONCURRENT_SPIDERS settings is deprecated, use " \
-                "Scrapyd max_proc config instead", ScrapyDeprecationWarning)
         self._spider_closed_callback = spider_closed_callback
 
     @defer.inlineCallbacks
@@ -269,10 +263,8 @@ class ExecutionEngine(object):
         dfd.addBoth(lambda _: slot.scheduler.close(reason))
         dfd.addErrback(log.err, spider=spider)
 
-        # XXX: spider_stats argument was added for backwards compatibility with
-        # stats collection refactoring added in 0.15. it should be removed in 0.17.
-        dfd.addBoth(lambda _: self.signals.send_catch_log_deferred(signal=signals.spider_closed, \
-            spider=spider, reason=reason, spider_stats=self.crawler.stats.get_stats()))
+        dfd.addBoth(lambda _: self.signals.send_catch_log_deferred(
+            signal=signals.spider_closed, spider=spider, reason=reason))
         dfd.addErrback(log.err, spider=spider)
 
         dfd.addBoth(lambda _: self.crawler.stats.close_spider(spider, reason=reason))

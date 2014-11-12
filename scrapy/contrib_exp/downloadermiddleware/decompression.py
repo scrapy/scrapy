@@ -6,8 +6,14 @@ import bz2
 import gzip
 import zipfile
 import tarfile
-from cStringIO import StringIO
 from tempfile import mktemp
+
+import six
+
+try:
+    from cStringIO import StringIO as BytesIO
+except ImportError:
+    from io import BytesIO
 
 from scrapy import log
 from scrapy.responsetypes import responsetypes
@@ -26,7 +32,7 @@ class DecompressionMiddleware(object):
         }
 
     def _is_tar(self, response):
-        archive = StringIO(response.body)
+        archive = BytesIO(response.body)
         try:
             tar_file = tarfile.open(name=mktemp(), fileobj=archive)
         except tarfile.ReadError:
@@ -37,7 +43,7 @@ class DecompressionMiddleware(object):
         return response.replace(body=body, cls=respcls)
 
     def _is_zip(self, response):
-        archive = StringIO(response.body)
+        archive = BytesIO(response.body)
         try:
             zip_file = zipfile.ZipFile(archive)
         except zipfile.BadZipfile:
@@ -49,7 +55,7 @@ class DecompressionMiddleware(object):
         return response.replace(body=body, cls=respcls)
 
     def _is_gzip(self, response):
-        archive = StringIO(response.body)
+        archive = BytesIO(response.body)
         try:
             body = gzip.GzipFile(fileobj=archive).read()
         except IOError:
@@ -71,7 +77,7 @@ class DecompressionMiddleware(object):
         if not response.body:
             return response
 
-        for fmt, func in self._formats.iteritems():
+        for fmt, func in six.iteritems(self._formats):
             new_response = func(response)
             if new_response:
                 log.msg(format='Decompressed response with format: %(responsefmt)s',

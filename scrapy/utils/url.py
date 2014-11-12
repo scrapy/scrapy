@@ -6,9 +6,9 @@ Some of the functions that used to be imported from this module have been moved
 to the w3lib.url module. Always import those from there instead.
 """
 import posixpath
-import urlparse
+from six.moves.urllib.parse import (ParseResult, urlunparse, urldefrag,
+                                    urlparse, parse_qsl)
 import urllib
-import cgi
 
 # scrapy.utils.url was moved to w3lib.url and import * ensures this move doesn't break old code
 from w3lib.url import *
@@ -50,16 +50,16 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
     The url passed can be a str or unicode, while the url returned is always a
     str.
 
-    For examples see the tests in scrapy.tests.test_utils_url
+    For examples see the tests in tests/test_utils_url.py
     """
 
     scheme, netloc, path, params, query, fragment = parse_url(url)
-    keyvals = cgi.parse_qsl(query, keep_blank_values)
+    keyvals = parse_qsl(query, keep_blank_values)
     keyvals.sort()
     query = urllib.urlencode(keyvals)
     path = safe_url_string(_unquotepath(path)) or '/'
     fragment = '' if not keep_fragments else fragment
-    return urlparse.urlunparse((scheme, netloc.lower(), path, params, query, fragment))
+    return urlunparse((scheme, netloc.lower(), path, params, query, fragment))
 
 
 def _unquotepath(path):
@@ -72,8 +72,8 @@ def parse_url(url, encoding=None):
     """Return urlparsed url from the given argument (which could be an already
     parsed url)
     """
-    return url if isinstance(url, urlparse.ParseResult) else \
-        urlparse.urlparse(unicode_to_str(url, encoding))
+    return url if isinstance(url, ParseResult) else \
+        urlparse(unicode_to_str(url, encoding))
 
 
 def escape_ajax(url):
@@ -99,7 +99,7 @@ def escape_ajax(url):
     >>> escape_ajax("www.example.com/ajax.html")
     'www.example.com/ajax.html'
     """
-    defrag, frag = urlparse.urldefrag(url)
+    defrag, frag = urldefrag(url)
     if not frag.startswith('!'):
         return url
     return add_or_replace_parameter(defrag, '_escaped_fragment_', frag[1:])

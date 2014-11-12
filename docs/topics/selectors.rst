@@ -407,6 +407,129 @@ inside another ``itemscope``.
 .. _regular expressions: http://www.exslt.org/regexp/index.html
 .. _set manipulation: http://www.exslt.org/set/index.html
 
+
+Some XPath tips
+---------------
+
+Here are some tips that you may find useful when using XPath
+with Scrapy selectors, based on `this post from ScrapingHub's blog`_.
+If you are not much familiar with XPath yet,
+you may want to take a look first at this `XPath tutorial`_.
+
+
+.. _`XPath tutorial`: http://www.zvon.org/comp/r/tut-XPath_1.html
+.. _`this post from ScrapingHub's blog`: http://blog.scrapinghub.com/2014/07/17/xpath-tips-from-the-web-scraping-trenches/
+
+
+Using text nodes in a condition
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When you need to use the text content as argument to a `XPath string function`_,
+avoid using ``.//text()`` and use just ``.`` instead.
+
+This is because the expression ``.//text()`` yields a collection of text elements -- a *node-set*.
+And when a node-set is converted to a string, which happens when it is passed as argument to
+a string function like ``contains()`` or ``starts-with()``, it results in the text for the first element only.
+
+Example::
+
+    >>> from scrapy import Selector
+    >>> sel = Selector(text='<a href="#">Click here to go to the <strong>Next Page</strong></a>')
+
+Converting a *node-set* to string::
+
+    >>> sel.xpath('//a//text()').extract() # take a peek at the node-set
+    [u'Click here to go to the ', u'Next Page']
+    >>> sel.xpath("string(//a[1]//text())").extract() # convert it to string
+    [u'Click here to go to the ']
+
+A *node* converted to a string, however, puts together the text of itself plus of all its descendants::
+
+    >>> sel.xpath("//a[1]").extract() # select the first node
+    [u'<a href="#">Click here to go to the <strong>Next Page</strong></a>']
+    >>> sel.xpath("string(//a[1])").extract() # convert it to string
+    [u'Click here to go to the Next Page']
+
+So, using the ``.//text()`` node-set won't select anything in this case::
+
+    >>> sel.xpath("//a[contains(.//text(), 'Next Page')]").extract()
+    []
+
+But using the ``.`` to mean the node, works::
+
+    >>> sel.xpath("//a[contains(., 'Next Page')]").extract()
+    [u'<a href="#">Click here to go to the <strong>Next Page</strong></a>']
+
+.. _`XPath string function`: http://www.w3.org/TR/xpath/#section-String-Functions
+
+Beware the difference between //node[1] and (//node)[1]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``//node[1]`` selects all the nodes occurring first under their respective parents.
+
+``(//node)[1]`` selects all the nodes in the document, and then gets only the first of them.
+
+Example::
+
+    >>> from scrapy import Selector
+    >>> sel = Selector(text="""
+    ....:     <ul class="list">
+    ....:         <li>1</li>
+    ....:         <li>2</li>
+    ....:         <li>3</li>
+    ....:     </ul>
+    ....:     <ul class="list">
+    ....:         <li>4</li>
+    ....:         <li>5</li>
+    ....:         <li>6</li>
+    ....:     </ul>""")
+    >>> xp = lambda x: sel.xpath(x).extract()
+
+This gets all first ``<li>``  elements under whatever it is its parent::
+
+    >>> xp("//li[1]")
+    [u'<li>1</li>', u'<li>4</li>']
+
+And this gets the first ``<li>``  element in the whole document::
+
+    >>> xp("(//li)[1]")
+    [u'<li>1</li>']
+
+This gets all first ``<li>``  elements under an ``<ul>``  parent::
+
+    >>> xp("//ul/li[1]")
+    [u'<li>1</li>', u'<li>4</li>']
+
+And this gets the first ``<li>``  element under an ``<ul>``  parent in the whole document::
+
+    >>> xp("(//ul/li)[1]")
+    [u'<li>1</li>']
+
+When querying by class, consider using CSS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Because an element can contain multiple CSS classes, the XPath way to select elements
+by class is the rather verbose::
+
+    *[contains(concat(' ', normalize-space(@class), ' '), ' someclass ')]
+
+If you use ``@class='someclass'`` you may end up missing elements that have
+other classes, and if you just use ``contains(@class, 'someclass')`` to make up
+for that you may end up with more elements that you want, if they have a different
+class name that shares the string ``someclass``.
+
+As it turns out, Scrapy selectors allow you to chain selectors, so most of the time
+you can just select by class using CSS and then switch to XPath when needed::
+
+    >>> from scrapy import Selector
+    >>> sel = Selector(text='<div class="hero shout"><time datetime="2014-07-23 19:00">Special date</time></div>')
+    >>> sel.css('.shout').xpath('./time/@datetime').extract()
+    [u'2014-07-23 19:00']
+
+This is cleaner than using the verbose XPath trick shown above. Just remember
+to use the ``.`` in the XPath expressions that will follow.
+
+
 .. _topics-selectors-ref:
 
 Built-in Selectors reference

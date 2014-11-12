@@ -1,7 +1,7 @@
 import base64
 from urllib import getproxies, unquote, proxy_bypass
 from urllib2 import _parse_proxy
-from urlparse import urlunparse
+from six.moves.urllib.parse import urlunparse
 
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.exceptions import NotConfigured

@@ -5,7 +5,7 @@ from scrapy.http import Request
 from scrapy.item import BaseItem
 from scrapy.utils import display
 from scrapy.utils.conf import arglist_to_dict
-from scrapy.utils.spider import iterate_spider_output, create_spider_for_request
+from scrapy.utils.spider import iterate_spider_output, spidercls_for_request
 from scrapy.exceptions import UsageError
 from scrapy import log
 
@@ -113,41 +113,45 @@ class Command(ScrapyCommand):
                 requests.append(x)
         return items, requests
 
-    def get_callback_from_rules(self, response):
-        if getattr(self.spider, 'rules', None):
-            for rule in self.spider.rules:
+    def get_callback_from_rules(self, spider, response):
+        if getattr(spider, 'rules', None):
+            for rule in spider.rules:
                 if rule.link_extractor.matches(response.url) and rule.callback:
                     return rule.callback
         else:
             log.msg(format='No CrawlSpider rules found in spider %(spider)r, '
                            'please specify a callback to use for parsing',
-                    level=log.ERROR, spider=self.spider.name)
+                    level=log.ERROR, spider=spider.name)
 
-    def set_spider(self, url, opts):
+    def set_spidercls(self, url, opts):
+        spiders = self.crawler_process.spiders
         if opts.spider:
             try:
-                self.spider = self.pcrawler.spiders.create(opts.spider, **opts.spargs)
+                self.spidercls = spiders.load(opts.spider)
             except KeyError:
                 log.msg(format='Unable to find spider: %(spider)s',
                         level=log.ERROR, spider=opts.spider)
         else:
-            self.spider = create_spider_for_request(self.pcrawler.spiders, Request(url), **opts.spargs)
-            if not self.spider:
+            self.spidercls = spidercls_for_request(spiders, Request(url))
+            if not self.spidercls:
                 log.msg(format='Unable to find spider for: %(url)s',
                         level=log.ERROR, url=url)
 
-    def start_parsing(self, url, opts):
         request = Request(url, opts.callback)
-        request = self.prepare_request(request, opts)
+        _start_requests = lambda s: [self.prepare_request(s, request, opts)]
+        self.spidercls.start_requests = _start_requests
 
-        self.pcrawler.crawl(self.spider, [request])
+
+    def start_parsing(self, url, opts):
+        self.crawler_process.crawl(self.spidercls, **opts.spargs)
+        self.pcrawler = list(self.crawler_process.crawlers)[0]
         self.crawler_process.start()
 
         if not self.first_response:
-            log.msg(format='No response downloaded for: %(request)s',
-                    level=log.ERROR, request=request)
+            log.msg(format='No response downloaded for: %(url)s',
+                    level=log.ERROR, url=url)
 
-    def prepare_request(self, request, opts):
+    def prepare_request(self, spider, request, opts):
         def callback(response):
             # memorize first request
             if not self.first_response:
@@ -157,17 +161,17 @@ class Command(ScrapyCommand):
             cb = response.meta['_callback']
             if not cb:
                 if opts.rules and self.first_response == response:
-                    cb = self.get_callback_from_rules(response)
+                    cb = self.get_callback_from_rules(spider, response)
                 else:
                     cb = 'parse'
 
             if not callable(cb):
-                cb_method = getattr(self.spider, cb, None)
+                cb_method = getattr(spider, cb, None)
                 if callable(cb_method):
                     cb = cb_method
                 else:
                     log.msg(format='Cannot find callback %(callback)r in spider: %(spider)s',
-                            callback=callback, spider=self.spider.name, level=log.ERROR)
+                            callback=callback, spider=spider.name, level=log.ERROR)
                     return
 
             # parse items and requests
@@ -177,7 +181,7 @@ class Command(ScrapyCommand):
             if opts.pipelines:
                 itemproc = self.pcrawler.engine.scraper.itemproc
                 for item in items:
-                    itemproc.process_item(item, self.spider)
+                    itemproc.process_item(item, spider)
             self.add_items(depth, items)
             self.add_requests(depth, requests)
 
@@ -207,10 +211,9 @@ class Command(ScrapyCommand):
         else:
             url = args[0]
 
-        # prepare spider
-        self.pcrawler = self.crawler_process.create_crawler()
-        self.set_spider(url, opts)
+        # prepare spidercls
+        self.set_spidercls(url, opts)
 
-        if self.spider and opts.depth > 0:
+        if self.spidercls and opts.depth > 0:
             self.start_parsing(url, opts)
             self.print_results(opts)

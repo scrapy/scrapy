@@ -13,16 +13,16 @@ def start_python_console(namespace=None, noipython=False, banner=''):
                 raise ImportError()
 
             try:
-                try:
-                    from IPython.terminal import embed
-                except ImportError:
-                    from IPython.frontend.terminal import embed
-                sh = embed.InteractiveShellEmbed(banner1=banner)
+                from IPython.terminal.embed import InteractiveShellEmbed
+                from IPython.terminal.ipapp import load_default_config
             except ImportError:
-                from IPython.Shell import IPShellEmbed
-                sh = IPShellEmbed(banner=banner)
+                from IPython.frontend.terminal.embed import InteractiveShellEmbed
+                from IPython.frontend.terminal.ipapp import load_default_config
 
-            sh(global_ns={}, local_ns=namespace)
+            config = load_default_config()
+            shell = InteractiveShellEmbed(
+                banner1=banner, user_ns=namespace, config=config)
+            shell()
         except ImportError:
             import code
             try: # readline module is only available on unix systems

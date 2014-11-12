@@ -61,7 +61,7 @@ In other words, data is being collected by extracting it from two XPath
 locations, using the :meth:`~ItemLoader.add_xpath` method. This is the
 data that will be assigned to the ``name`` field later.
 
-Afterwords, similar calls are used for ``price`` and ``stock`` fields
+Afterwards, similar calls are used for ``price`` and ``stock`` fields
 (the later using a CSS selector with the :meth:`~ItemLoader.add_css` method),
 and finally the ``last_update`` field is populated directly with a literal value
 (``today``) using a different method: :meth:`~ItemLoader.add_value`.
@@ -182,20 +182,31 @@ output processors to use: in the :ref:`Item Field <topics-items-fields>`
 metadata. Here is an example::
 
     import scrapy
-    from scrapy.contrib.loader.processor import MapCompose, Join, TakeFirst
-    from w3lib.html import remove_entities
-    from myproject.utils import filter_prices
+    from scrapy.contrib.loader.processor import Join, MapCompose, TakeFirst
+    from w3lib.html import remove_tags
+
+    def filter_price(value):
+        if value.isdigit():
+            return value
 
     class Product(scrapy.Item):
         name = scrapy.Field(
-            input_processor=MapCompose(remove_entities),
+            input_processor=MapCompose(remove_tags),
             output_processor=Join(),
         )
         price = scrapy.Field(
-            default=0,
-            input_processor=MapCompose(remove_entities, filter_prices),
+            input_processor=MapCompose(remove_tags, filter_price),
             output_processor=TakeFirst(),
         )
+
+::
+
+    >>> from scrapy.contrib.loader import ItemLoader
+    >>> il = ItemLoader(item=Product())
+    >>> il.add_value('name', [u'Welcome to my', u'<strong>website</strong>'])
+    >>> il.add_value('price', [u'&euro;', u'<span>1000</span>'])
+    >>> il.load_item()
+    {'name': u'Welcome to my website', 'price': u'1000'}
 
 The precedence order, for both input and output processors, is as follows:
 

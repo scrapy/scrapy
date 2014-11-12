@@ -22,17 +22,15 @@ class RobotsTxtMiddleware(object):
         self.crawler = crawler
         self._useragent = crawler.settings.get('USER_AGENT')
         self._parsers = {}
-        self._spider_netlocs = set()
-        
-        self.robots = RobotsCache()
+        self._robots = RobotsCache()
 
     @classmethod
     def from_crawler(cls, crawler):
         return cls(crawler)
 
     def process_request(self, request, spider):
-        useragent = self._useragent
-        if self.robots and not self.robots.allowed(request.url, useragent):
+        if self._robots and not self.robots.allowed(request.url, self._useragent):
             log.msg(format="Forbidden by robots.txt: %(request)s",
                     level=log.DEBUG, request=request)
             raise IgnoreRequest
+

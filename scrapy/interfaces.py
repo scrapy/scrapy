@@ -2,10 +2,12 @@ from zope.interface import Interface
 
 class ISpiderManager(Interface):
 
-    def create(spider_name, **spider_args):
-        """Returns a new Spider instance for the given spider name, and using
-        the given spider arguments. If the spider name is not found, it must
-        raise a KeyError."""
+    def from_settings(settings):
+        """Returns an instance of the class for the given settings"""
+
+    def load(spider_name):
+        """Returns the Spider class for the given spider name. If the spider
+        name is not found, it must raise a KeyError."""
 
     def list():
         """Return a list with the names of all spiders available in the

@@ -35,22 +35,24 @@ Settings can be populated using different mechanisms, each of which having a
 different precedence. Here is the list of them in decreasing order of
 precedence:
 
- 1. Global overrides (most precedence)
- 2. Project settings module
- 3. Default settings per-command
- 4. Default global settings (less precedence)
+ 1. Command line options (most precedence)
+ 2. Settings per-spider
+ 3. Project settings module
+ 4. Default settings per-command
+ 5. Default global settings (less precedence)
+
+The population of these settings sources is taken care of internally, but a
+manual handling is possible using API calls. See the
+:ref:`topics-api-settings` topic for reference.
 
 These mechanisms are described in more detail below.
 
-1. Global overrides
--------------------
+1. Command line options
+-----------------------
 
-Global overrides are the ones that take most precedence, and are usually
-populated by command-line options. You can also override one (or more) settings
-from command line using the ``-s`` (or ``--set``) command line option.
-
-For more information see the :attr:`~scrapy.settings.Settings.overrides`
-Settings attribute.
+Arguments provided by the command line are the ones that take most precedence,
+overriding any other options. You can explicitly override one (or more)
+settings using the ``-s`` (or ``--set``) command line option.
 
 .. highlight:: sh
 
@@ -58,14 +60,21 @@ Example::
 
     scrapy crawl myspider -s LOG_FILE=scrapy.log
 
-2. Project settings module
+2. Settings per-spider
+----------------------
+
+Spiders (See the :ref:`topics-spiders` chapter for reference) can define their
+own settings that will take precedence and override the project ones. They can
+do so by setting their :attr:`scrapy.spider.Spider.custom_settings` attribute.
+
+3. Project settings module
 --------------------------
 
 The project settings module is the standard configuration file for your Scrapy
 project.  It's where most of your custom settings will be populated. For
 example:: ``myproject.settings``.
 
-3. Default settings per-command
+4. Default settings per-command
 -------------------------------
 
 Each :doc:`Scrapy tool </topics/commands>` command can have its own default
@@ -73,7 +82,7 @@ settings, which override the global default settings. Those custom command
 settings are specified in the ``default_settings`` attribute of the command
 class.
 
-4. Default global settings
+5. Default global settings
 --------------------------
 
 The global defaults are located in the ``scrapy.settings.default_settings``
@@ -407,6 +416,12 @@ Default: ``180``
 
 The amount of time (in secs) that the downloader will wait before timing out.
 
+.. note::
+
+    This timeout can be set per spider using :attr:`download_timeout`
+    spider attribute and per-request using :reqmeta:`download_timeout`
+    Request.meta key.
+
 .. setting:: DUPEFILTER_CLASS
 
 DUPEFILTER_CLASS
@@ -462,7 +477,6 @@ Default::
 
     {
         'scrapy.contrib.corestats.CoreStats': 0,
-        'scrapy.webservice.WebService': 0,
         'scrapy.telnet.TelnetConsole': 0,
         'scrapy.contrib.memusage.MemoryUsage': 0,
         'scrapy.contrib.memdebug.MemoryDebugger': 0,
@@ -766,6 +780,16 @@ Default::
 A dict containing the scrapy contracts enabled by default in Scrapy. You should
 never modify this setting in your project, modify :setting:`SPIDER_CONTRACTS`
 instead. For more info see :ref:`topics-contracts`.
+
+.. setting:: SPIDER_MANAGER_CLASS
+
+SPIDER_MANAGER_CLASS
+--------------------
+
+Default: ``'scrapy.spidermanager.SpiderManager'``
+
+The class that will be used for handling spiders, which must implement the
+:ref:`topics-api-spidermanager`.
 
 .. setting:: SPIDER_MIDDLEWARES
 

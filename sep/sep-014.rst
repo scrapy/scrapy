@@ -1,6 +1,6 @@
 =======  ====================================================================
 SEP      14
-Title    CrawlSpiter v2
+Title    CrawlSpider v2
 Author   Insophia Team
 Created  2010-01-22
 Updated  2010-02-04

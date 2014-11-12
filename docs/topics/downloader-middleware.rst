@@ -51,8 +51,8 @@ particular setting. See each middleware documentation for more info.
 Writing your own downloader middleware
 ======================================
 
-Writing your own downloader middleware is easy. Each middleware component is a
-single Python class that defines one or more of the following methods:
+Each middleware component is a Python class that defines one or
+more of the following methods:
 
 .. module:: scrapy.contrib.downloadermiddleware
 
@@ -263,7 +263,14 @@ DownloadTimeoutMiddleware
 .. class:: DownloadTimeoutMiddleware
 
     This middleware sets the download timeout for requests specified in the
-    :setting:`DOWNLOAD_TIMEOUT` setting.
+    :setting:`DOWNLOAD_TIMEOUT` setting or :attr:`download_timeout`
+    spider attribute.
+
+.. note::
+
+    You can also set download timeout per-request using
+    :reqmeta:`download_timeout` Request.meta key; this is supported
+    even when DownloadTimeoutMiddleware is disabled.
 
 HttpAuthMiddleware
 ------------------
@@ -421,6 +428,27 @@ By default, it uses the anydbm_ module, but you can change it with the
 In order to use this storage backend, set:
 
 * :setting:`HTTPCACHE_STORAGE` to ``scrapy.contrib.httpcache.DbmCacheStorage``
+
+.. _httpcache-storage-leveldb:
+
+LevelDB storage backend
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: 0.23
+
+A LevelDB_ storage backend is also available for the HTTP cache middleware.
+
+This backend is not recommended for development because only one process can
+access LevelDB databases at the same time, so you can't run a crawl and open
+the scrapy shell in parallel for the same spider.
+
+In order to use this storage backend:
+
+* set :setting:`HTTPCACHE_STORAGE` to ``scrapy.contrib.httpcache.LeveldbCacheStorage``
+* install `LevelDB python bindings`_ like ``pip install leveldb``
+
+.. _LevelDB: http://code.google.com/p/leveldb/
+.. _leveldb python bindings: http://pypi.python.org/pypi/leveldb
 
 
 HTTPCache middleware settings
@@ -613,8 +641,8 @@ settings (see the settings documentation for more info):
 
 .. reqmeta:: dont_redirect
 
-If :attr:`Request.meta <scrapy.http.Request.meta>` contains the
-``dont_redirect`` key, the request will be ignored by this middleware.
+If :attr:`Request.meta <scrapy.http.Request.meta>` has ``dont_redirect``
+key set to True, the request will be ignored by this middleware.
 
 
 RedirectMiddleware settings
@@ -711,8 +739,8 @@ to indicate server overload, which would be something we want to retry.
 
 .. reqmeta:: dont_retry
 
-If :attr:`Request.meta <scrapy.http.Request.meta>` contains the ``dont_retry``
-key, the request will be ignored by this middleware.
+If :attr:`Request.meta <scrapy.http.Request.meta>` has ``dont_retry`` key
+set to True, the request will be ignored by this middleware.
 
 RetryMiddleware Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -764,10 +792,18 @@ RobotsTxtMiddleware
     and the :setting:`ROBOTSTXT_OBEY` setting is enabled.
 
     .. warning:: Keep in mind that, if you crawl using multiple concurrent
-       requests per domain, Scrapy could still  download some forbidden pages
+       requests per domain, Scrapy could still download some forbidden pages
        if they were requested before the robots.txt file was downloaded. This
        is a known limitation of the current robots.txt middleware and will
        be fixed in the future.
+
+.. reqmeta:: dont_obey_robotstxt
+
+If :attr:`Request.meta <scrapy.http.Request.meta>` has
+``dont_obey_robotstxt`` key set to True
+the request will be ignored by this middleware even if
+:setting:`ROBOTSTXT_OBEY` is enabled.
+
 
 DownloaderStats
 ---------------
