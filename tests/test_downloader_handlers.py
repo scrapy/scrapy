@@ -30,6 +30,8 @@ from scrapy import optional_features
 from scrapy.utils.test import get_crawler
 from scrapy.exceptions import NotConfigured
 
+from tests.mockserver import MockServer
+from tests.spiders import SingleRequestSpider
 
 class DummyDH(object):
 
@@ -210,6 +212,64 @@ class Http11TestCase(HttpTestCase):
     download_handler_cls = HTTP11DownloadHandler
     if 'http11' not in optional_features:
         skip = 'HTTP1.1 not supported in twisted < 11.1.0'
+
+    def test_download_without_maxsize_limit(self):
+        request = Request(self.getURL('file'))
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.body)
+        d.addCallback(self.assertEquals, "0123456789")
+        return d
+
+    @defer.inlineCallbacks
+    def test_download_with_maxsize_per_req(self):
+        meta = {'download_maxsize': 2}
+        request = Request(self.getURL('file'), meta=meta)
+        d = self.download_request(request, Spider('foo'))
+        yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
+
+    @defer.inlineCallbacks
+    def test_download_with_small_maxsize_per_spider(self):
+        request = Request(self.getURL('file'))
+        d = self.download_request(request, Spider('foo', download_maxsize=2))
+        yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
+
+    def test_download_with_large_maxsize_per_spider(self):
+        request = Request(self.getURL('file'))
+        d = self.download_request(request, Spider('foo', download_maxsize=100))
+        d.addCallback(lambda r: r.body)
+        d.addCallback(self.assertEquals, "0123456789")
+        return d
+
+
+class Http11MockServerTestCase(unittest.TestCase):
+    """HTTP 1.1 test case with MockServer"""
+    if 'http11' not in optional_features:
+        skip = 'HTTP1.1 not supported in twisted < 11.1.0'
+
+    def setUp(self):
+        self.mockserver = MockServer()
+        self.mockserver.__enter__()
+
+    def tearDown(self):
+        self.mockserver.__exit__(None, None, None)
+
+    @defer.inlineCallbacks
+    def test_download_with_content_length(self):
+        crawler = get_crawler(SingleRequestSpider)
+        # http://localhost:8998/partial set Content-Length to 1024, use download_maxsize= 1000 to avoid
+        # download it
+        yield crawler.crawl(seed=Request(url='http://localhost:8998/partial', meta={'download_maxsize': 1000}))
+        failure = crawler.spider.meta['failure']
+        self.assertIsInstance(failure.value, defer.CancelledError)
+
+    @defer.inlineCallbacks
+    def test_download(self):
+        crawler = get_crawler(SingleRequestSpider)
+        yield crawler.crawl(seed=Request(url='http://localhost:8998'))
+        failure = crawler.spider.meta.get('failure')
+        self.assertTrue(failure == None)
+        reason = crawler.spider.meta['close_reason']
+        self.assertTrue(reason, 'finished')
 
 
 class UriResource(resource.Resource):

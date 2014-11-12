@@ -9,7 +9,7 @@ from six.moves.urllib.parse import urldefrag
 from zope.interface import implements
 from twisted.internet import defer, reactor, protocol
 from twisted.web.http_headers import Headers as TxHeaders
-from twisted.web.iweb import IBodyProducer
+from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH
 from twisted.internet.error import TimeoutError
 from twisted.web.http import PotentialDataLoss
 from scrapy.xlib.tx import Agent, ProxyAgent, ResponseDone, \
@@ -19,6 +19,7 @@ from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import _parse
 from scrapy.utils.misc import load_object
+from scrapy import log
 
 
 class HTTP11DownloadHandler(object):
@@ -29,10 +30,14 @@ class HTTP11DownloadHandler(object):
         self._pool._factory.noisy = False
         self._contextFactoryClass = load_object(settings['DOWNLOADER_CLIENTCONTEXTFACTORY'])
         self._contextFactory = self._contextFactoryClass()
+        self._default_maxsize = settings.getint('DOWNLOAD_MAXSIZE')
+        self._default_warnsize = settings.getint('DOWNLOAD_WARNSIZE')
 
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
-        agent = ScrapyAgent(contextFactory=self._contextFactory, pool=self._pool)
+        agent = ScrapyAgent(contextFactory=self._contextFactory, pool=self._pool,
+            maxsize=getattr(spider, 'download_maxsize', self._default_maxsize),
+            warnsize=getattr(spider, 'download_warnsize', self._default_warnsize))
         return agent.download_request(request)
 
     def close(self):
@@ -131,11 +136,14 @@ class ScrapyAgent(object):
     _ProxyAgent = ProxyAgent
     _TunnelingAgent = TunnelingAgent
 
-    def __init__(self, contextFactory=None, connectTimeout=10, bindAddress=None, pool=None):
+    def __init__(self, contextFactory=None, connectTimeout=10, bindAddress=None, pool=None,
+                 maxsize=0, warnsize=0):
         self._contextFactory = contextFactory
         self._connectTimeout = connectTimeout
         self._bindAddress = bindAddress
         self._pool = pool
+        self._maxsize = maxsize
+        self._warnsize = warnsize
 
     def _get_agent(self, request, timeout):
         bindaddress = request.meta.get('bindaddress') or self._bindAddress
@@ -197,11 +205,25 @@ class ScrapyAgent(object):
         if txresponse.length == 0:
             return txresponse, '', None
 
+        maxsize = request.meta.get('download_maxsize', self._maxsize)
+        warnsize = request.meta.get('download_warnsize', self._warnsize)
+        expected_size = txresponse.length if txresponse.length != UNKNOWN_LENGTH else -1
+
+        if maxsize and expected_size > maxsize:
+            log.msg("Expected response size (%s) larger than download max size (%s)." % (expected_size, maxsize),
+                    logLevel=log.ERROR)
+            txresponse._transport._producer.loseConnection()
+            raise defer.CancelledError()
+
+        if warnsize and expected_size > warnsize:
+            log.msg("Expected response size (%s) larger than downlod warn size (%s)." % (expected_size, warnsize),
+                    logLevel=log.WARNING)
+
         def _cancel(_):
             txresponse._transport._producer.loseConnection()
 
         d = defer.Deferred(_cancel)
-        txresponse.deliverBody(_ResponseReader(d, txresponse, request))
+        txresponse.deliverBody(_ResponseReader(d, txresponse, request, maxsize, warnsize))
         return d
 
     def _cb_bodydone(self, result, request, url):
@@ -232,14 +254,27 @@ class _RequestBodyProducer(object):
 
 class _ResponseReader(protocol.Protocol):
 
-    def __init__(self, finished, txresponse, request):
+    def __init__(self, finished, txresponse, request, maxsize, warnsize):
         self._finished = finished
         self._txresponse = txresponse
         self._request = request
         self._bodybuf = BytesIO()
+        self._maxsize  = maxsize
+        self._warnsize  = warnsize
+        self._bytes_received = 0
 
     def dataReceived(self, bodyBytes):
         self._bodybuf.write(bodyBytes)
+        self._bytes_received += len(bodyBytes)
+
+        if self._maxsize and self._bytes_received > self._maxsize:
+            log.msg("Received (%s) bytes larger than download max size (%s)." % (self._bytes_received, self._maxsize),
+                    logLevel=log.ERROR)
+            self._finished.cancel()
+
+        if self._warnsize and self._bytes_received > self._warnsize:
+            log.msg("Received (%s) bytes larger than download warn size (%s)." % (self._bytes_received, self._warnsize),
+                    logLevel=log.WARNING)
 
     def connectionLost(self, reason):
         if self._finished.called:
