@@ -5,8 +5,8 @@ Scrapy
 .. image:: https://badge.fury.io/py/Scrapy.png
    :target: http://badge.fury.io/py/Scrapy
 
-.. image:: https://secure.travis-ci.org/scrapy/scrapy.png?branch=master
-   :target: http://travis-ci.org/scrapy/scrapy
+.. image:: https://secure.travis-ci.org/mattfullerton/scrapy.png?branch=master
+   :target: http://travis-ci.org/mattfullerton/scrapy
 
 .. image:: https://pypip.in/wheel/Scrapy/badge.png
     :target: https://pypi.python.org/pypi/Scrapy/
