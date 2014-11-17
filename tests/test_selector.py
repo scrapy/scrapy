@@ -1,6 +1,7 @@
 import re
 import warnings
 import weakref
+import six
 from twisted.trial import unittest
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import TextResponse, HtmlResponse, XmlResponse
@@ -242,17 +243,19 @@ class SelectorTestCase(unittest.TestCase):
         self.assertEqual(xs.xpath('.').extract(), [u'<root>lala</root>'])
 
     def test_invalid_xpath(self):
+        "Test invalid xpath raises ValueError with the invalid xpath"
         response = XmlResponse(url="http://example.com", body="<html></html>")
         x = self.sscls(response)
         xpath = "//test[@foo='bar]"
-        try:
-            x.xpath(xpath)
-        except ValueError as e:
-            assert xpath in str(e), "Exception message does not contain invalid xpath"
-        except Exception:
-            raise AssertionError("A invalid XPath does not raise ValueError")
-        else:
-            raise AssertionError("A invalid XPath does not raise an exception")
+        self.assertRaisesRegexp(ValueError, re.escape(xpath), x.xpath, xpath)
+
+    def test_invalid_xpath_unicode(self):
+        "Test *Unicode* invalid xpath raises ValueError with the invalid xpath"
+        response = XmlResponse(url="http://example.com", body="<html></html>")
+        x = self.sscls(response)
+        xpath = u"//test[@foo='\u0431ar]"
+        encoded = xpath if six.PY3 else xpath.encode('unicode_escape')
+        self.assertRaisesRegexp(ValueError, re.escape(encoded), x.xpath, xpath)
 
     def test_http_header_encoding_precedence(self):
         # u'\xa3'     = pound symbol in unicode
