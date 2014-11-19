@@ -1,9 +1,10 @@
 from __future__ import print_function
 import sys, time, random, urllib, os, json
 from subprocess import Popen, PIPE
-from twisted.web.server import Site, NOT_DONE_YET
-from twisted.web.resource import Resource
+from twisted.web.server import Site, NOT_DONE_YET, GzipEncoderFactory
+from twisted.web.resource import Resource, EncodingResourceWrapper
 from twisted.internet import reactor, defer, ssl
+from twisted.web.test.test_webclient import PayloadResource
 from scrapy import twisted_version
 
 
@@ -167,6 +168,8 @@ class Root(Resource):
         self.putChild("drop", Drop())
         self.putChild("raw", Raw())
         self.putChild("echo", Echo())
+        self.putChild('payload', PayloadResource())
+        self.putChild("xpayload", EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]))
 
     def getChild(self, name, request):
         return self

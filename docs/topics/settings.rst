@@ -427,7 +427,7 @@ The amount of time (in secs) that the downloader will wait before timing out.
 DOWNLOAD_MAXSIZE
 ----------------
 
-Default: `1073741824` (1024Mb)
+Default: `1073741824` (1024MB)
 
 The maximum response size (in bytes) that downloader will download.
 
@@ -439,12 +439,14 @@ If you want to disable it set to 0.
     spider attribute and per-request using :reqmeta:`download_maxsize`
     Request.meta key.
 
+    This feature needs Twisted >= 11.1.
+
 .. setting:: DOWNLOAD_WARNSIZE
 
 DOWNLOAD_WARNSIZE
-----------------
+-----------------
 
-Default: `33554432` (32Mb)
+Default: `33554432` (32MB)
 
 The response size (in bytes) that downloader will start to warn.
 
@@ -455,6 +457,8 @@ If you want to disable it set to 0.
     This size can be set per spider using :attr:`download_warnsize`
     spider attribute and per-request using :reqmeta:`download_warnsize`
     Request.meta key.
+
+    This feature needs Twisted >= 11.1.
 
 .. setting:: DUPEFILTER_CLASS
 

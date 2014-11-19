@@ -221,6 +221,20 @@ class Http11TestCase(HttpTestCase):
         return d
 
     @defer.inlineCallbacks
+    def test_download_with_maxsize(self):
+        request = Request(self.getURL('file'))
+
+        # 10 is minimal size for this request and the limit is only counted on
+        # response body. (regardless of headers)
+        d = self.download_request(request, Spider('foo', download_maxsize=10))
+        d.addCallback(lambda r: r.body)
+        d.addCallback(self.assertEquals, "0123456789")
+        yield d
+
+        d = self.download_request(request, Spider('foo', download_maxsize=9))
+        yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
+
+    @defer.inlineCallbacks
     def test_download_with_maxsize_per_req(self):
         meta = {'download_maxsize': 2}
         request = Request(self.getURL('file'), meta=meta)
@@ -266,6 +280,26 @@ class Http11MockServerTestCase(unittest.TestCase):
     def test_download(self):
         crawler = get_crawler(SingleRequestSpider)
         yield crawler.crawl(seed=Request(url='http://localhost:8998'))
+        failure = crawler.spider.meta.get('failure')
+        self.assertTrue(failure == None)
+        reason = crawler.spider.meta['close_reason']
+        self.assertTrue(reason, 'finished')
+
+    @defer.inlineCallbacks
+    def test_download_gzip_response(self):
+        crawler = get_crawler(SingleRequestSpider)
+        body = '1'*100 # PayloadResource requires body length to be 100
+        request = Request('http://localhost:8998/payload', method='POST', body=body, meta={'download_maxsize': 50})
+        yield crawler.crawl(seed=request)
+        failure = crawler.spider.meta['failure']
+        # download_maxsize < 100, hence the CancelledError
+        self.assertIsInstance(failure.value, defer.CancelledError)
+
+        request.headers.setdefault('Accept-Encoding', 'gzip,deflate')
+        request = request.replace(url='http://localhost:8998/xpayload')
+        yield crawler.crawl(seed=request)
+
+        # download_maxsize = 50 is enough for the gzipped response
         failure = crawler.spider.meta.get('failure')
         self.assertTrue(failure == None)
         reason = crawler.spider.meta['close_reason']
