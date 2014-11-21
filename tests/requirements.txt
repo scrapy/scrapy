@@ -1,4 +1,4 @@
 # Tests requirements
 mock
-mitmproxy >= 0.10
+mitmproxy==0.10.1
 pytest-twisted
