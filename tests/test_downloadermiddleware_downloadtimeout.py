@@ -8,8 +8,8 @@ from scrapy.utils.test import get_crawler
 
 class DownloadTimeoutMiddlewareTest(unittest.TestCase):
 
-    def get_request_spider_mw(self):
-        crawler = get_crawler(Spider)
+    def get_request_spider_mw(self, settings=None):
+        crawler = get_crawler(Spider, settings)
         spider = crawler._create_spider('foo')
         request = Request('http://scrapytest.org/')
         return request, spider, DownloadTimeoutMiddleware.from_crawler(crawler)
@@ -19,6 +19,12 @@ class DownloadTimeoutMiddlewareTest(unittest.TestCase):
         mw.spider_opened(spider)
         assert mw.process_request(req, spider) is None
         self.assertEquals(req.meta.get('download_timeout'), 180)
+
+    def test_string_download_timeout(self):
+        req, spider, mw = self.get_request_spider_mw({'DOWNLOAD_TIMEOUT': '20.1'})
+        mw.spider_opened(spider)
+        assert mw.process_request(req, spider) is None
+        self.assertEquals(req.meta.get('download_timeout'), 20.1)
 
     def test_spider_has_download_timeout(self):
         req, spider, mw = self.get_request_spider_mw()
