@@ -1,4 +1,6 @@
-import re, csv, six
+import re
+import csv
+import six
 
 try:
     from cStringIO import StringIO as BytesIO

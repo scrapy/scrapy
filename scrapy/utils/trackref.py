@@ -10,7 +10,9 @@ alias to object in that case).
 """
 
 from __future__ import print_function
-import weakref, os, six
+import weakref
+import os
+import six
 from collections import defaultdict
 from time import time
 from operator import itemgetter

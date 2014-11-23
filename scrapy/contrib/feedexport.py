@@ -4,7 +4,9 @@ Feed Exports extension
 See documentation in docs/topics/feed-exports.rst
 """
 
-import sys, os, posixpath
+import sys
+import os
+import posixpath
 from tempfile import TemporaryFile
 from datetime import datetime
 from six.moves.urllib.parse import urlparse

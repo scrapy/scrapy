@@ -1,4 +1,7 @@
-import sys, os, glob, shutil
+import sys
+import os
+import glob
+import shutil
 from subprocess import check_call
 from scrapy import version_info
 

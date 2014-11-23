@@ -26,7 +26,9 @@ Internal attributes:
         vs. the original code.)
 """
 from __future__ import generators
-import types, weakref, six
+import types
+import weakref
+import six
 from scrapy.xlib.pydispatch import saferef, robustapply, errors
 
 __author__ = "Patrick K. O'Brien <pobrien@orbtech.com>"

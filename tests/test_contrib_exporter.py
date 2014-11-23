@@ -1,4 +1,5 @@
-import unittest, json
+import unittest
+import json
 from io import BytesIO
 from six.moves import cPickle as pickle
 import lxml.etree

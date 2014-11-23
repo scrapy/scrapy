@@ -1,6 +1,7 @@
 """Refactored "safe reference" from dispatcher.py"""
 from __future__ import print_function
-import weakref, traceback
+import weakref
+import traceback
 
 
 def safeRef(target, onDelete=None):
