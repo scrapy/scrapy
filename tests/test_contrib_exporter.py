@@ -10,6 +10,7 @@ from scrapy.contrib.exporter import BaseItemExporter, PprintItemExporter, \
     PickleItemExporter, CsvItemExporter, XmlItemExporter, JsonLinesItemExporter, \
     JsonItemExporter, PythonItemExporter
 
+
 class TestItem(Item):
     name = Field()
     age = Field()
@@ -72,6 +73,7 @@ class BaseItemExporterTest(unittest.TestCase):
         self.assertEqual(ie.serialize_field(i.fields['name'], 'name', i['name']), 'John\xc2\xa3')
         self.assertEqual(ie.serialize_field(i.fields['age'], 'age', i['age']), '24')
 
+
 class PythonItemExporterTest(BaseItemExporterTest):
     def _get_exporter(self, **kwargs):
         return PythonItemExporter(**kwargs)
@@ -107,6 +109,7 @@ class PythonItemExporterTest(BaseItemExporterTest):
         self.assertEqual(type(exported['age'][0]), dict)
         self.assertEqual(type(exported['age'][0]['age'][0]), dict)
 
+
 class PprintItemExporterTest(BaseItemExporterTest):
 
     def _get_exporter(self, **kwargs):
@@ -114,6 +117,7 @@ class PprintItemExporterTest(BaseItemExporterTest):
 
     def _check_output(self):
         self._assert_expected_item(eval(self.output.getvalue()))
+
 
 class PickleItemExporterTest(BaseItemExporterTest):
 
@@ -192,6 +196,7 @@ class CsvItemExporterTest(BaseItemExporterTest):
         ie.export_item(i)
         ie.finish_exporting()
         self.assertCsvEqual(output.getvalue(), '"Mary,Paul",John\r\n')
+
 
 class XmlItemExporterTest(BaseItemExporterTest):
 
@@ -324,6 +329,7 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         exported = json.loads(self.output.getvalue())
         expected = {'name': u'Jesus', 'age': {'name': 'Maria', 'age': dict(i1)}}
         self.assertEqual(exported, [expected])
+
 
 class CustomItemExporterTest(unittest.TestCase):
 

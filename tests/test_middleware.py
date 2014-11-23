@@ -4,6 +4,7 @@ from scrapy.settings import Settings
 from scrapy.exceptions import NotConfigured
 from scrapy.middleware import MiddlewareManager
 
+
 class M1(object):
 
     def open_spider(self, spider):
@@ -15,6 +16,7 @@ class M1(object):
     def process(self, response, request, spider):
         pass
 
+
 class M2(object):
 
     def open_spider(self, spider):
@@ -24,6 +26,7 @@ class M2(object):
         pass
 
     pass
+
 
 class M3(object):
 
@@ -53,6 +56,7 @@ class TestMiddlewareManager(MiddlewareManager):
         super(TestMiddlewareManager, self)._add_middleware(mw)
         if hasattr(mw, 'process'):
             self.methods['process'].append(mw.process)
+
 
 class MiddlewareManagerTest(unittest.TestCase):
 

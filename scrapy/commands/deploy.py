@@ -32,6 +32,7 @@ setup(
 )
 """
 
+
 class Command(ScrapyCommand):
 
     requires_project = True
@@ -111,8 +112,10 @@ class Command(ScrapyCommand):
             else:
                 shutil.rmtree(tmpdir)
 
+
 def _log(message):
     sys.stderr.write(message + os.linesep)
+
 
 def _get_target_name(args):
     if len(args) > 1:
@@ -122,16 +125,19 @@ def _get_target_name(args):
     elif len(args) < 1:
         return 'default'
 
+
 def _get_project(target, opts):
     project = opts.project or target.get('project')
     if not project:
         raise UsageError("Missing project")
     return project
 
+
 def _get_option(section, option, default=None):
     cfg = get_config()
     return cfg.get(section, option) if cfg.has_option(section, option) \
         else default
+
 
 def _get_targets():
     cfg = get_config()
@@ -146,14 +152,17 @@ def _get_targets():
             targets[x[7:]] = t
     return targets
 
+
 def _get_target(name):
     try:
         return _get_targets()[name]
     except KeyError:
         raise UsageError("Unknown target: %s" % name)
 
+
 def _url(target, action):
     return urljoin(target['url'], action)
+
 
 def _get_version(target, opts):
     version = opts.version or target.get('version')
@@ -174,6 +183,7 @@ def _get_version(target, opts):
     else:
         return str(int(time.time()))
 
+
 def _upload_egg(target, eggpath, project, version):
     with open(eggpath, 'rb') as f:
         eggdata = f.read()
@@ -193,6 +203,7 @@ def _upload_egg(target, eggpath, project, version):
     _log('Deploying to project "%s" in %s' % (project, url))
     return _http_post(req)
 
+
 def _add_auth_header(request, target):
     if 'username' in target:
         u, p = target.get('username'), target.get('password', '')
@@ -205,6 +216,7 @@ def _add_auth_header(request, target):
         except (netrc.NetrcParseError, IOError, TypeError):
             pass
 
+
 def _http_post(request):
     try:
         f = urllib2.urlopen(request)
@@ -216,6 +228,7 @@ def _http_post(request):
         print(e.read())
     except urllib2.URLError as e:
         _log("Deploy failed: %s" % e)
+
 
 def _build_egg():
     closest = closest_scrapy_cfg()
@@ -231,6 +244,7 @@ def _build_egg():
     e.close()
     egg = glob.glob(os.path.join(d, '*.egg'))[0]
     return egg, d
+
 
 def _create_default_setup_py(**kwargs):
     with open('setup.py', 'w') as f:

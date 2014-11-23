@@ -8,6 +8,7 @@ those which are acceptable.
 
 import inspect
 
+
 def function(receiver):
     """Get function-like callable object for given receiver
 
@@ -30,6 +31,7 @@ def function(receiver):
         raise ValueError('unknown receiver type %s %s'%(receiver, type(receiver)))
 
     return receiver, receiver.func_code, 0
+
 
 def robustApply(receiver, *arguments, **named):
     """Call receiver with arguments and an appropriate subset of named

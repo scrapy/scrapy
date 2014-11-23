@@ -9,6 +9,7 @@ from scrapy.spider import Spider
 
 spider = Spider('foo')
 
+
 class TestDefaultHeadersMiddleware(TestCase):
 
     failureException = AssertionError
@@ -60,7 +61,6 @@ class TestDefaultHeadersMiddleware(TestCase):
         req = Request('http://noproxy.com', meta={'proxy': None})
         assert mw.process_request(req, spider) is None
         assert 'proxy' in req.meta and req.meta['proxy'] is None
-
 
     def test_no_proxy(self):
         os.environ['http_proxy'] = http_proxy = 'https://proxy.for.http:3128'

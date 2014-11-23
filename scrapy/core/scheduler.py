@@ -8,6 +8,7 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.job import job_dir
 from scrapy import log
 
+
 class Scheduler(object):
 
     def __init__(self, dupefilter, jobdir=None, dqclass=None, mqclass=None, logunser=False, stats=None):

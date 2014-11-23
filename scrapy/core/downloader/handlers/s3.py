@@ -8,10 +8,12 @@ try:
 except ImportError:
     S3Connection = object
 
+
 class _v19_S3Connection(S3Connection):
     """A dummy S3Connection wrapper that doesn't do any syncronous download"""
     def _mexe(self, method, bucket, key, headers, *args, **kwargs):
         return headers
+
 
 class _v20_S3Connection(S3Connection):
     """A dummy S3Connection wrapper that doesn't do any syncronous download"""

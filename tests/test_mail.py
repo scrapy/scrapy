@@ -3,6 +3,7 @@ from io import BytesIO
 
 from scrapy.mail import MailSender
 
+
 class MailSenderTest(unittest.TestCase):
 
     def test_send(self):

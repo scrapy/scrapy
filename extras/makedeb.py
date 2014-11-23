@@ -2,6 +2,7 @@ import sys, os, glob, shutil
 from subprocess import check_call
 from scrapy import version_info
 
+
 def build(suffix):
     for ifn in glob.glob("debian/scrapy.*"):
         s = open(ifn).read()
@@ -21,12 +22,14 @@ def build(suffix):
         shell=True)
     check_call('debuild -us -uc -b', shell=True)
 
+
 def clean(suffix):
     for f in glob.glob("debian/python-scrapy%s*" % suffix):
         if os.path.isdir(f):
             shutil.rmtree(f)
         else:
             os.remove(f)
+
 
 def main():
     cmd = sys.argv[1]

@@ -33,10 +33,12 @@ __author__ = "Patrick K. O'Brien <pobrien@orbtech.com>"
 __cvsid__ = "$Id: dispatcher.py,v 1.1.1.1 2006/07/07 15:59:38 mcfletch Exp $"
 __version__ = "$Revision: 1.1.1.1 $"[11:-2]
 
+
 class _Parameter:
 	"""Used to represent default parameter values."""
 	def __repr__(self):
 		return self.__class__.__name__
+
 
 class _Any(_Parameter):
 	"""Singleton used to signal either "Any Sender" or "Any Signal"
@@ -47,6 +49,7 @@ class _Any(_Parameter):
 	a particular sender/signal.
 	"""
 Any = _Any()
+
 
 class _Anonymous(_Parameter):
 	"""Singleton used to signal "Anonymous Sender"
@@ -171,7 +174,6 @@ def connect(receiver, signal=Any, sender=Any, weak=True):
 	receivers.append(receiver)
 
 
-
 def disconnect(receiver, signal=Any, sender=Any, weak=True):
 	"""Disconnect receiver from sender for signal
 
@@ -227,6 +229,7 @@ def disconnect(receiver, signal=Any, sender=Any, weak=True):
 		)
 	_cleanupConnections(senderkey, signal)
 
+
 def getReceivers( sender = Any, signal = Any ):
 	"""Get list of receivers from global tables
 
@@ -250,6 +253,7 @@ def getReceivers( sender = Any, signal = Any ):
 	except KeyError:
 		return []
 
+
 def liveReceivers(receivers):
 	"""Filter sequence of receivers to get resolved, live receivers
 
@@ -266,7 +270,6 @@ def liveReceivers(receivers):
 				yield receiver
 		else:
 			yield receiver
-
 
 
 def getAllReceivers( sender = Any, signal = Any ):
@@ -296,6 +299,7 @@ def getAllReceivers( sender = Any, signal = Any ):
 				except TypeError:
 					# dead weakrefs raise TypeError on hash...
 					pass
+
 
 def send(signal=Any, sender=Anonymous, *arguments, **named):
 	"""Send signal from sender to all connected receivers.
@@ -344,6 +348,8 @@ def send(signal=Any, sender=Anonymous, *arguments, **named):
 		)
 		responses.append((receiver, response))
 	return responses
+
+
 def sendExact( signal=Any, sender=Anonymous, *arguments, **named ):
 	"""Send signal only to those receivers registered for exact message
 
@@ -394,6 +400,7 @@ def _removeReceiver(receiver):
 							pass
 					_cleanupConnections(senderkey, signal)
 
+
 def _cleanupConnections(senderkey, signal):
 	"""Delete any empty signals for senderkey. Delete senderkey if empty."""
 	try:
@@ -412,6 +419,7 @@ def _cleanupConnections(senderkey, signal):
 				if not signals:
 					# No more signal connections. Therefore, remove the sender.
 					_removeSender(senderkey)
+
 
 def _removeSender(senderkey):
 	"""Remove senderkey from connections."""
@@ -442,6 +450,7 @@ def _removeBackrefs( senderkey):
 					yield item
 		for receiver in allReceivers():
 			_killBackref( receiver, senderkey )
+
 
 def _removeOldBackRefs(senderkey, signal, receiver, receivers):
 	"""Kill old sendersBack references from receiver

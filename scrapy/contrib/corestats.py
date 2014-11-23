@@ -5,6 +5,7 @@ import datetime
 
 from scrapy import signals
 
+
 class CoreStats(object):
 
     def __init__(self, stats):

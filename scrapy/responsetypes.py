@@ -13,6 +13,7 @@ from scrapy.http import Response
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import isbinarytext
 
+
 class ResponseTypes(object):
 
     CLASSES = {

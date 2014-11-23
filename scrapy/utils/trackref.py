@@ -19,6 +19,7 @@ NoneType = type(None)
 
 live_refs = defaultdict(weakref.WeakKeyDictionary)
 
+
 class object_ref(object):
     """Inherit from this class (instead of object) to a keep a record of live
     instances"""
@@ -29,6 +30,7 @@ class object_ref(object):
         obj = object.__new__(cls)
         live_refs[cls][obj] = time()
         return obj
+
 
 def format_live_refs(ignore=NoneType):
     s = "Live References" + os.linesep + os.linesep
@@ -43,14 +45,17 @@ def format_live_refs(ignore=NoneType):
             now-oldest) + os.linesep
     return s
 
+
 def print_live_refs(*a, **kw):
     print(format_live_refs(*a, **kw))
+
 
 def get_oldest(class_name):
     for cls, wdict in six.iteritems(live_refs):
         if cls.__name__ == class_name:
             if wdict:
                 return min(six.iteritems(wdict), key=itemgetter(1))[0]
+
 
 def iter_all(class_name):
     for cls, wdict in six.iteritems(live_refs):

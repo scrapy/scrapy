@@ -83,7 +83,6 @@ class ParseUrlTestCase(unittest.TestCase):
         self.assertTrue(isinstance(port, int))
 
 
-
 class ScrapyHTTPPageGetterTests(unittest.TestCase):
 
     def test_earlyHeaders(self):
@@ -193,6 +192,7 @@ from twisted.web.test.test_webclient import ForeverTakingResource, \
         ErrorResource, NoLengthResource, HostHeaderResource, \
         PayloadResource, BrokenDownloadResource
 
+
 class WebClientTestCase(unittest.TestCase):
     def _listen(self, site):
         return reactor.listenTCP(0, site, interface="127.0.0.1")
@@ -231,7 +231,6 @@ class WebClientTestCase(unittest.TestCase):
             getPage(self.getURL("host")).addCallback(self.assertEquals, "127.0.0.1:%d" % self.portno),
             getPage(self.getURL("host"), headers={"Host": "www.example.com"}).addCallback(self.assertEquals, "www.example.com")])
 
-
     def test_getPage(self):
         """
         L{client.getPage} returns a L{Deferred} which is called back with
@@ -240,7 +239,6 @@ class WebClientTestCase(unittest.TestCase):
         d = getPage(self.getURL("file"))
         d.addCallback(self.assertEquals, "0123456789")
         return d
-
 
     def test_getPageHead(self):
         """
@@ -254,7 +252,6 @@ class WebClientTestCase(unittest.TestCase):
             _getPage("head").addCallback(self.assertEqual, ""),
             _getPage("HEAD").addCallback(self.assertEqual, "")])
 
-
     def test_timeoutNotTriggering(self):
         """
         When a non-zero timeout is passed to L{getPage} and the page is
@@ -264,7 +261,6 @@ class WebClientTestCase(unittest.TestCase):
         d = getPage(self.getURL("host"), timeout=100)
         d.addCallback(self.assertEquals, "127.0.0.1:%d" % self.portno)
         return d
-
 
     def test_timeoutTriggering(self):
         """

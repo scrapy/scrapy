@@ -3,6 +3,7 @@ import sys, os
 from scrapy.command import ScrapyCommand
 from scrapy.exceptions import UsageError
 
+
 class Command(ScrapyCommand):
 
     requires_project = True

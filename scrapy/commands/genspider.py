@@ -11,6 +11,7 @@ from scrapy.command import ScrapyCommand
 from scrapy.utils.template import render_templatefile, string_camelcase
 from scrapy.exceptions import UsageError
 
+
 def sanitize_module_name(module_name):
     """Sanitize the given module name, by replacing dashes and points
     with underscores and prefixing it with a letter if it doesn't start
@@ -20,6 +21,7 @@ def sanitize_module_name(module_name):
     if module_name[0] not in string.ascii_letters:
         module_name = "a" + module_name
     return module_name
+
 
 class Command(ScrapyCommand):
 

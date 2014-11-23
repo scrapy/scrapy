@@ -503,7 +503,6 @@ class ExsltTestCase(unittest.TestCase):
                  '//a[re:test(@href, "second")]/text()')],
             [u'second link'])
 
-
         # re:match() is rather special: it returns a node-set of <match> nodes
         #[u'<match>http://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.xml</match>',
         #u'<match>http</match>',
@@ -518,8 +517,6 @@ class ExsltTestCase(unittest.TestCase):
              u'www.bayes.co.uk',
              u'',
              u'/xml/index.xml?/xml/utils/rechecker.xml'])
-
-
 
         # re:replace()
         self.assertEqual(

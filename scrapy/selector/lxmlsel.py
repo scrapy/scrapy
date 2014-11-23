@@ -8,6 +8,7 @@ from .unified import Selector, SelectorList
 __all__ = ['HtmlXPathSelector', 'XmlXPathSelector', 'XPathSelector',
            'XPathSelectorList']
 
+
 def _xpathselector_css(self, *a, **kw):
     raise RuntimeError('.css() method not available for %s, '
                         'instantiate scrapy.Selector '

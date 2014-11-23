@@ -30,6 +30,7 @@ level_names = {
     SILENT: "SILENT",
 }
 
+
 class ScrapyFileLogObserver(log.FileLogObserver):
 
     def __init__(self, f, level=INFO, encoding='utf-8', crawler=None):
@@ -55,6 +56,7 @@ class ScrapyFileLogObserver(log.FileLogObserver):
             level = ev['logLevel']
             sname = 'log_count/%s' % level_names.get(level, level)
             self.crawler.stats.inc_value(sname)
+
 
 def _adapt_eventdict(eventDict, log_level=INFO, encoding='utf-8',
                      crawler=None, prepend_level=True):
@@ -111,6 +113,7 @@ def _adapt_eventdict(eventDict, log_level=INFO, encoding='utf-8',
 
     return ev
 
+
 def _get_log_level(level_name_or_id):
     if isinstance(level_name_or_id, int):
         return level_name_or_id
@@ -118,6 +121,7 @@ def _get_log_level(level_name_or_id):
         return globals()[level_name_or_id]
     else:
         raise ValueError("Unknown log level: %r" % level_name_or_id)
+
 
 def start(logfile=None, loglevel='INFO', logstdout=True, logencoding='utf-8', crawler=None):
     loglevel = _get_log_level(loglevel)
@@ -129,6 +133,7 @@ def start(logfile=None, loglevel='INFO', logstdout=True, logencoding='utf-8', cr
     warnings.showwarning = _oldshowwarning
     return log_observer
 
+
 def msg(message=None, _level=INFO, **kw):
     kw['logLevel'] = kw.pop('level', _level)
     kw.setdefault('system', 'scrapy')
@@ -137,15 +142,18 @@ def msg(message=None, _level=INFO, **kw):
     else:
         log.msg(message, **kw)
 
+
 def err(_stuff=None, _why=None, **kw):
     kw['logLevel'] = kw.pop('level', ERROR)
     kw.setdefault('system', 'scrapy')
     log.err(_stuff, _why, **kw)
 
+
 def start_from_settings(settings, crawler=None):
     if settings.getbool('LOG_ENABLED'):
         return start(settings['LOG_FILE'], settings['LOG_LEVEL'], settings['LOG_STDOUT'],
             settings['LOG_ENCODING'], crawler)
+
 
 def scrapy_info(settings):
     msg("Scrapy %s started (bot: %s)" % (scrapy.__version__,
@@ -156,6 +164,7 @@ def scrapy_info(settings):
 
     d = dict(overridden_settings(settings))
     msg(format="Overridden settings: %(settings)r", settings=d, level=INFO)
+
 
 def start_from_crawler(crawler):
     return start_from_settings(crawler.settings, crawler)

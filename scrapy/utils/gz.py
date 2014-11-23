@@ -7,6 +7,7 @@ except ImportError:
 
 from gzip import GzipFile
 
+
 def gunzip(data):
     """Gunzip the given data and return as much data as possible.
 
@@ -30,6 +31,7 @@ def gunzip(data):
             else:
                 raise
     return output
+
 
 def is_gzipped(response):
     """Return True if the response is gzipped, or False otherwise"""

@@ -1,5 +1,6 @@
 from zope.interface import Interface
 
+
 class ISpiderManager(Interface):
 
     def from_settings(settings):

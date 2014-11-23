@@ -7,6 +7,7 @@ See documentation in docs/topics/spider-middleware.rst
 from scrapy import log
 from scrapy.http import Request
 
+
 class DepthMiddleware(object):
 
     def __init__(self, maxdepth, stats=None, verbose_stats=False, prio=1):

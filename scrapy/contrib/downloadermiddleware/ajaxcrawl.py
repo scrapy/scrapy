@@ -7,6 +7,7 @@ from scrapy.http import HtmlResponse
 from scrapy.utils.response import _noscript_re, _script_re
 from w3lib import html
 
+
 class AjaxCrawlMiddleware(object):
     """
     Handle 'AJAX crawlable' pages marked as crawlable via meta tag.
@@ -62,6 +63,8 @@ class AjaxCrawlMiddleware(object):
 
 # XXX: move it to w3lib?
 _ajax_crawlable_re = re.compile(ur'<meta\s+name=["\']fragment["\']\s+content=["\']!["\']/?>')
+
+
 def _has_ajaxcrawlable_meta(text):
     """
     >>> _has_ajaxcrawlable_meta('<html><head><meta name="fragment"  content="!"/></head><body></body></html>')

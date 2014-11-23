@@ -24,6 +24,8 @@ def body_or_str(*a, **kw):
 
 
 _baseurl_cache = weakref.WeakKeyDictionary()
+
+
 def get_base_url(response):
     """Return the base url of the given response, joined with the response url"""
     if response not in _baseurl_cache:
@@ -35,6 +37,8 @@ def get_base_url(response):
 _noscript_re = re.compile(u'<noscript>.*?</noscript>', re.IGNORECASE | re.DOTALL)
 _script_re = re.compile(u'<script.*?>.*?</script>', re.IGNORECASE | re.DOTALL)
 _metaref_cache = weakref.WeakKeyDictionary()
+
+
 def get_meta_refresh(response):
     """Parse the http-equiv refrsh parameter from the given response"""
     if response not in _metaref_cache:
@@ -44,6 +48,7 @@ def get_meta_refresh(response):
         _metaref_cache[response] = html.get_meta_refresh(text, response.url, \
             response.encoding)
     return _metaref_cache[response]
+
 
 def response_status_message(status):
     """Return status code plus status text descriptive message
@@ -55,6 +60,7 @@ def response_status_message(status):
     '404 Not Found'
     """
     return '%s %s' % (status, http.responses.get(int(status)))
+
 
 def response_httprepr(response):
     """Return raw HTTP representation (as string) of the given response. This
@@ -68,6 +74,7 @@ def response_httprepr(response):
     s += "\r\n"
     s += response.body
     return s
+
 
 def open_in_browser(response, _openfunc=webbrowser.open):
     """Open the given response in a local web browser, populating the <base>

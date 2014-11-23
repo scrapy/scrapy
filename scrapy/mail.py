@@ -22,6 +22,7 @@ from twisted.mail.smtp import ESMTPSenderFactory
 
 from scrapy import log
 
+
 class MailSender(object):
 
     def __init__(self, smtphost='localhost', mailfrom='scrapy@localhost',

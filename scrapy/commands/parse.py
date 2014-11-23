@@ -9,6 +9,7 @@ from scrapy.utils.spider import iterate_spider_output, spidercls_for_request
 from scrapy.exceptions import UsageError
 from scrapy import log
 
+
 class Command(ScrapyCommand):
 
     requires_project = True
@@ -47,7 +48,6 @@ class Command(ScrapyCommand):
             help="maximum depth for parsing requests [default: %default]")
         parser.add_option("-v", "--verbose", dest="verbose", action="store_true", \
             help="print each depth level one by one")
-
 
     @property
     def max_level(self):
@@ -102,7 +102,6 @@ class Command(ScrapyCommand):
             if not opts.nolinks:
                 self.print_requests(colour=colour)
 
-
     def run_callback(self, response, cb):
         items, requests = [], []
 
@@ -140,7 +139,6 @@ class Command(ScrapyCommand):
         request = Request(url, opts.callback)
         _start_requests = lambda s: [self.prepare_request(s, request, opts)]
         self.spidercls.start_requests = _start_requests
-
 
     def start_parsing(self, url, opts):
         self.crawler_process.crawl(self.spidercls, **opts.spargs)

@@ -19,6 +19,7 @@ FORMAT = {
         'zlibdeflate': ('html-zlibdeflate.bin', 'deflate'),
         }
 
+
 class HttpCompressionTest(TestCase):
 
     def setUp(self):

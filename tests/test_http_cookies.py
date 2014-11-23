@@ -46,6 +46,7 @@ class WrappedRequestTest(TestCase):
         self.wrapped.add_unredirected_header('hello', 'world')
         self.assertEqual(self.request.headers['hello'], 'world')
 
+
 class WrappedResponseTest(TestCase):
 
     def setUp(self):

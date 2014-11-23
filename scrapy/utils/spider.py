@@ -11,6 +11,7 @@ from scrapy.utils.misc import  arg_to_iter
 def iterate_spider_output(result):
     return [result] if isinstance(result, BaseItem) else arg_to_iter(result)
 
+
 def iter_spider_classes(module):
     """Return an iterator over all spider classes defined in the given module
     that can be instantiated (ie. which have name)
@@ -25,6 +26,7 @@ def iter_spider_classes(module):
            obj.__module__ == module.__name__ and \
            getattr(obj, 'name', None):
             yield obj
+
 
 def spidercls_for_request(spidermanager, request, default_spidercls=None,
                           log_none=False, log_multiple=False):

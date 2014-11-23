@@ -246,7 +246,6 @@ class SettingsTest(unittest.TestCase):
             self.assertEqual(self.settings.get('FOO'), 'fez')
             self.assertEqual(self.settings.overrides.get('FOO'), 'fez')
 
-
     def test_deprecated_attribute_defaults(self):
         self.settings.set('BAR', 'fuz', priority='default')
         with warnings.catch_warnings(record=True) as w:

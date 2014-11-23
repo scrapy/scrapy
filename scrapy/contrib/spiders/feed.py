@@ -92,6 +92,7 @@ class XMLFeedSpider(Spider):
         for (prefix, uri) in self.namespaces:
             selector.register_namespace(prefix, uri)
 
+
 class CSVFeedSpider(Spider):
     """Spider for parsing CSV feeds.
     It receives a CSV file in a response; iterates through each of its rows,

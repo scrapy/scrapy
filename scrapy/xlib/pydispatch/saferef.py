@@ -2,6 +2,7 @@
 from __future__ import print_function
 import weakref, traceback
 
+
 def safeRef(target, onDelete = None):
 	"""Return a *safe* weak reference to a callable target
 
@@ -27,6 +28,7 @@ def safeRef(target, onDelete = None):
 		return weakref.ref(target, onDelete)
 	else:
 		return weakref.ref( target )
+
 
 class BoundMethodWeakref(object):
 	"""'Safe' and reusable weak references to instance methods

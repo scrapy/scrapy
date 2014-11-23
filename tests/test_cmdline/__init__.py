@@ -4,6 +4,7 @@ import unittest
 
 from scrapy.utils.test import get_testenv
 
+
 class CmdlineTest(unittest.TestCase):
 
     def setUp(self):

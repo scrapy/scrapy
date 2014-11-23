@@ -4,9 +4,11 @@ from scrapy.http import Request
 from scrapy.contrib.downloadermiddleware.httpauth import HttpAuthMiddleware
 from scrapy.spider import Spider
 
+
 class TestSpider(Spider):
     http_user = 'foo'
     http_pass = 'bar'
+
 
 class HttpAuthMiddlewareTest(unittest.TestCase):
 

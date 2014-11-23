@@ -11,6 +11,7 @@ from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy import log
 
+
 class OffsiteMiddleware(object):
 
     def __init__(self, stats):

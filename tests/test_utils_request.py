@@ -4,6 +4,7 @@ from scrapy.http import Request
 from scrapy.utils.request import request_fingerprint, _fingerprint_cache, \
     request_authenticate, request_httprepr
 
+
 class UtilsRequestTest(unittest.TestCase):
 
     def test_request_fingerprint(self):

@@ -97,6 +97,7 @@ def potential_domain_matches(domain):
         pass
     return matches + ['.' + d for d in matches]
 
+
 class _DummyLock(object):
     def acquire(self):
         pass

@@ -203,6 +203,7 @@ def iter_default_settings():
         if name.isupper():
             yield name, getattr(default_settings, name)
 
+
 def overridden_settings(settings):
     """Return a dict of the settings that have been overridden"""
     for name, defvalue in iter_default_settings():

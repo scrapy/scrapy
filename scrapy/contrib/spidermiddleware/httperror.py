@@ -6,6 +6,7 @@ See documentation in docs/topics/spider-middleware.rst
 from scrapy.exceptions import IgnoreRequest
 from scrapy import log
 
+
 class HttpError(IgnoreRequest):
     """A non-200 response was filtered"""
 

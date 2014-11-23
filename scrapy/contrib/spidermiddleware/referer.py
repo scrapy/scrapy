@@ -6,6 +6,7 @@ originated it.
 from scrapy.http import Request
 from scrapy.exceptions import NotConfigured
 
+
 class RefererMiddleware(object):
 
     @classmethod

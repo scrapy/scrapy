@@ -16,6 +16,8 @@ from scrapy.utils.httpobj import urlparse_cached
 
 
 _fingerprint_cache = weakref.WeakKeyDictionary()
+
+
 def request_fingerprint(request, include_headers=None):
     """
     Return the request fingerprint.
@@ -60,11 +62,13 @@ def request_fingerprint(request, include_headers=None):
         cache[include_headers] = fp.hexdigest()
     return cache[include_headers]
 
+
 def request_authenticate(request, username, password):
     """Autenticate the given request (in place) using the HTTP basic access
     authentication mechanism (RFC 2617) and the given username and password
     """
     request.headers['Authorization'] = basic_auth_header(username, password)
+
 
 def request_httprepr(request):
     """Return the raw HTTP representation (as string) of the given request.

@@ -87,6 +87,8 @@ class HttpCacheMiddleware(object):
 
 
 from scrapy.contrib.httpcache import FilesystemCacheStorage as _FilesystemCacheStorage
+
+
 class FilesystemCacheStorage(_FilesystemCacheStorage):
 
     def __init__(self, *args, **kwargs):

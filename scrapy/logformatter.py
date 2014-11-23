@@ -9,6 +9,7 @@ SCRAPEDFMT = u"Scraped from %(src)s" + os.linesep + "%(item)s"
 DROPPEDFMT = u"Dropped: %(exception)s" + os.linesep + "%(item)s"
 CRAWLEDFMT = u"Crawled (%(status)s) %(request)s (referer: %(referer)s)%(flags)s"
 
+
 class LogFormatter(object):
     """Class for generating log messages for different actions. All methods
     must return a plain string which doesn't include the log level or the

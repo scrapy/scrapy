@@ -2,6 +2,7 @@ import unittest
 
 from scrapy.utils.http import decode_chunked_transfer
 
+
 class ChunkedTest(unittest.TestCase):
 
     def test_decode_chunked_transfer(self):

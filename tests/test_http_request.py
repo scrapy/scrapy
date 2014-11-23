@@ -673,11 +673,13 @@ class FormRequestTest(RequestTest):
         self.assertRaises(ValueError, self.request_class.from_response,
                           response, formxpath="//form/input[@name='abc']")
 
+
 def _buildresponse(body, **kwargs):
     kwargs.setdefault('body', body)
     kwargs.setdefault('url', 'http://example.com')
     kwargs.setdefault('encoding', 'utf-8')
     return HtmlResponse(**kwargs)
+
 
 def _qs(req):
     if req.method == 'POST':

@@ -11,6 +11,7 @@ from scrapy.spider import Spider
 from scrapy.contrib.feedexport import IFeedStorage, FileFeedStorage, FTPFeedStorage, S3FeedStorage, StdoutFeedStorage
 from scrapy.utils.test import assert_aws_environ
 
+
 class FileFeedStorageTest(unittest.TestCase):
 
     def test_store_file_uri(self):

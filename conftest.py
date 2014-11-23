@@ -13,6 +13,7 @@ if six.PY3:
         if fn.strip():
             collect_ignore.append(fn.strip())
 
+
 class LogObservers:
     """Class for keeping track of log observers across test modules"""
 

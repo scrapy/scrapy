@@ -28,10 +28,12 @@ from scrapy.contrib.linkextractors import LinkExtractor
 from scrapy.http import Request
 from scrapy.utils.signal import disconnect_all
 
+
 class TestItem(Item):
     name = Field()
     url = Field()
     price = Field()
+
 
 class TestSpider(Spider):
     name = "scrapytest.org"
@@ -58,6 +60,7 @@ class TestSpider(Spider):
         if m:
             item['price'] = m.group(1)
         return item
+
 
 def start_test_site(debug=False):
     root_dir = os.path.join(tests_datadir, "test_site")

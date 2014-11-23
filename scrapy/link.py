@@ -7,6 +7,7 @@ its documentation in: docs/topics/link-extractors.rst
 
 import six
 
+
 class Link(object):
     """Link objects represent an extracted link by the LinkExtractor."""
 

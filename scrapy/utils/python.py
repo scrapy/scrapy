@@ -65,6 +65,7 @@ def str_to_unicode(text, encoding=None, errors='strict'):
     else:
         raise TypeError('str_to_unicode must receive a str or unicode object, got %s' % type(text).__name__)
 
+
 def unicode_to_str(text, encoding=None, errors='strict'):
     """Return the str representation of text in the given encoding. Unlike
     .encode(encoding) this function can be applied directly to a str
@@ -80,6 +81,7 @@ def unicode_to_str(text, encoding=None, errors='strict'):
         return text
     else:
         raise TypeError('unicode_to_str must receive a unicode or str object, got %s' % type(text).__name__)
+
 
 def re_rsearch(pattern, text, chunk_size=1024):
     """
@@ -110,6 +112,7 @@ def re_rsearch(pattern, text, chunk_size=1024):
             return (offset + matches[-1].span()[0], offset + matches[-1].span()[1])
     return None
 
+
 def memoizemethod_noargs(method):
     """Decorator to cache the result of a method (without arguments) using a
     weak reference to its object
@@ -124,12 +127,14 @@ def memoizemethod_noargs(method):
 
 _BINARYCHARS = set(map(chr, range(32))) - set(["\0", "\t", "\n", "\r"])
 
+
 def isbinarytext(text):
     """Return True if the given text is considered binary, or false
     otherwise, by looking for binary bytes at their chars
     """
     assert isinstance(text, str), "text must be str, got '%s'" % type(text).__name__
     return any(c in _BINARYCHARS for c in text)
+
 
 def get_func_args(func, stripself=False):
     """Return the argument name list of a callable"""
@@ -156,6 +161,7 @@ def get_func_args(func, stripself=False):
     if stripself:
         func_args.pop(0)
     return func_args
+
 
 def get_spec(func):
     """Returns (args, kwargs) tuple for a function
@@ -192,6 +198,7 @@ def get_spec(func):
     args = spec.args[:firstdefault]
     kwargs = dict(zip(spec.args[firstdefault:], defaults))
     return args, kwargs
+
 
 def equal_attributes(obj1, obj2, attributes):
     """Compare two objects attributes"""
@@ -242,6 +249,7 @@ def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
         d[k] = v
     return d
 
+
 def is_writable(path):
     """Return True if the given path can be written (if it exists) or created
     (if it doesn't exist)
@@ -250,6 +258,7 @@ def is_writable(path):
         return os.access(path, os.W_OK)
     else:
         return os.access(os.path.dirname(path), os.W_OK)
+
 
 def setattr_default(obj, name, value):
     """Set attribute value, but only if it's not already set. Similar to

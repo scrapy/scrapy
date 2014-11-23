@@ -15,6 +15,7 @@ from scrapy.http import Request
 
 module_dir = os.path.dirname(os.path.abspath(__file__))
 
+
 class SpiderManagerTest(unittest.TestCase):
 
     def setUp(self):

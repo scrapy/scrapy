@@ -14,6 +14,7 @@ from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import inside_project, get_project_settings
 from scrapy.settings.deprecated import check_deprecated_settings
 
+
 def _iter_command_classes(module_name):
     # TODO: add `name` attribute to commands and and merge this function with
     # scrapy.utils.spider.iter_spider_classes
@@ -24,6 +25,7 @@ def _iter_command_classes(module_name):
                obj.__module__ == module.__name__:
                 yield obj
 
+
 def _get_commands_from_module(module, inproject):
     d = {}
     for cmd in _iter_command_classes(module):
@@ -31,6 +33,7 @@ def _get_commands_from_module(module, inproject):
             cmdname = cmd.__module__.split('.')[-1]
             d[cmdname] = cmd()
     return d
+
 
 def _get_commands_from_entry_points(inproject, group='scrapy.commands'):
     cmds = {}
@@ -42,6 +45,7 @@ def _get_commands_from_entry_points(inproject, group='scrapy.commands'):
             raise Exception("Invalid entry point %s" % entry_point.name)
     return cmds
 
+
 def _get_commands_dict(settings, inproject):
     cmds = _get_commands_from_module('scrapy.commands', inproject)
     cmds.update(_get_commands_from_entry_points(inproject))
@@ -49,6 +53,7 @@ def _get_commands_dict(settings, inproject):
     if cmds_module:
         cmds.update(_get_commands_from_module(cmds_module, inproject))
     return cmds
+
 
 def _pop_command_name(argv):
     i = 0
@@ -58,12 +63,14 @@ def _pop_command_name(argv):
             return arg
         i += 1
 
+
 def _print_header(settings, inproject):
     if inproject:
         print("Scrapy %s - project: %s\n" % (scrapy.__version__, \
             settings['BOT_NAME']))
     else:
         print("Scrapy %s - no active project\n" % scrapy.__version__)
+
 
 def _print_commands(settings, inproject):
     _print_header(settings, inproject)
@@ -79,10 +86,12 @@ def _print_commands(settings, inproject):
     print()
     print('Use "scrapy <command> -h" to see more info about a command')
 
+
 def _print_unknown_command(settings, cmdname, inproject):
     _print_header(settings, inproject)
     print("Unknown command: %s\n" % cmdname)
     print('Use "scrapy" to see available commands')
+
 
 def _run_print_help(parser, func, *a, **kw):
     try:
@@ -93,6 +102,7 @@ def _run_print_help(parser, func, *a, **kw):
         if e.print_help:
             parser.print_help()
         sys.exit(2)
+
 
 def execute(argv=None, settings=None):
     if argv is None:
@@ -143,11 +153,13 @@ def execute(argv=None, settings=None):
     _run_print_help(parser, _run_command, cmd, args, opts)
     sys.exit(cmd.exitcode)
 
+
 def _run_command(cmd, args, opts):
     if opts.profile or opts.lsprof:
         _run_command_profiled(cmd, args, opts)
     else:
         cmd.run(args, opts)
+
 
 def _run_command_profiled(cmd, args, opts):
     if opts.profile:

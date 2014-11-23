@@ -5,6 +5,7 @@ import pprint
 
 from scrapy import log
 
+
 class StatsCollector(object):
 
     def __init__(self, crawler):
@@ -47,6 +48,7 @@ class StatsCollector(object):
 
     def _persist_stats(self, stats, spider):
         pass
+
 
 class MemoryStatsCollector(StatsCollector):
 

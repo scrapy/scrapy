@@ -7,6 +7,7 @@ from scrapy.xlib.pydispatch import dispatcher
 from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
 from scrapy import log
 
+
 class SendCatchLogTest(unittest.TestCase):
 
     @defer.inlineCallbacks
@@ -67,6 +68,7 @@ class SendCatchLogDeferredTest2(SendCatchLogTest):
 
     def _get_result(self, signal, *a, **kw):
         return send_catch_log_deferred(signal, *a, **kw)
+
 
 class SendCatchLogTest2(unittest.TestCase):
 

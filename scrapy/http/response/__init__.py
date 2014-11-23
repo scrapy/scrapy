@@ -11,6 +11,7 @@ from scrapy.http.headers import Headers
 from scrapy.utils.trackref import object_ref
 from scrapy.http.common import obsolete_setter
 
+
 class Response(object_ref):
 
     def __init__(self, url, status=200, headers=None, body='', flags=None, request=None):

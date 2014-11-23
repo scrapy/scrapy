@@ -6,6 +6,7 @@ from __future__ import print_function
 import sys
 from pprint import pformat as pformat_
 
+
 def _colorize(text, colorize=True):
     if not colorize or not sys.stdout.isatty():
         return text
@@ -17,8 +18,10 @@ def _colorize(text, colorize=True):
     except ImportError:
         return text
 
+
 def pformat(obj, *args, **kwargs):
     return _colorize(pformat_(obj), kwargs.pop('colorize', True))
+
 
 def pprint(obj, *args, **kwargs):
     print(pformat(obj, *args, **kwargs))

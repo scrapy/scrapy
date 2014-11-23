@@ -2,6 +2,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.utils.request import request_httprepr
 from scrapy.utils.response import response_httprepr
 
+
 class DownloaderStats(object):
 
     def __init__(self, stats):

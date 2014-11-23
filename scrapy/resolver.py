@@ -8,6 +8,7 @@ from scrapy.utils.datatypes import LocalCache
 
 dnscache = LocalCache(10000)
 
+
 class CachingThreadedResolver(ThreadedResolver):
 
     def getHostByName(self, name, timeout = (1, 3, 11, 45)):

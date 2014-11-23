@@ -9,6 +9,7 @@ from scrapy.middleware import MiddlewareManager
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.conf import build_component_list
 
+
 class DownloaderMiddlewareManager(MiddlewareManager):
 
     component_name = 'downloader middleware'

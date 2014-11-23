@@ -9,6 +9,7 @@ from scrapy.xlib.pydispatch.robustapply import robustApply
 
 from scrapy import log
 
+
 def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
     """Like pydispatcher.robust.sendRobust but it also logs errors and returns
     Failures instead of exceptions.
@@ -34,6 +35,7 @@ def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
         responses.append((receiver, result))
     return responses
 
+
 def send_catch_log_deferred(signal=Any, sender=Anonymous, *arguments, **named):
     """Like send_catch_log but supports returning deferreds on signal handlers.
     Returns a deferred that gets fired once all signal handlers deferreds were
@@ -57,6 +59,7 @@ def send_catch_log_deferred(signal=Any, sender=Anonymous, *arguments, **named):
     d = DeferredList(dfds)
     d.addCallback(lambda out: [x[1] for x in out])
     return d
+
 
 def disconnect_all(signal=Any, sender=Any):
     """Disconnect all signal handlers. Useful for cleaning up after running

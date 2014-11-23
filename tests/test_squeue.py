@@ -4,15 +4,19 @@ from scrapy.item import Item, Field
 from scrapy.http import Request
 from scrapy.contrib.loader import ItemLoader
 
+
 class TestItem(Item):
     name = Field()
+
 
 def _test_procesor(x):
     return x + x
 
+
 class TestLoader(ItemLoader):
     default_item_class = TestItem
     name_out = staticmethod(_test_procesor)
+
 
 class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest):
 
@@ -34,14 +38,18 @@ class MarshalFifoDiskQueueTest(t.FifoDiskQueueTest):
         q = self.queue()
         self.assertRaises(ValueError, q.push, lambda x: x)
 
+
 class ChunkSize1MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
     chunksize = 1
+
 
 class ChunkSize2MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
     chunksize = 2
 
+
 class ChunkSize3MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
     chunksize = 3
+
 
 class ChunkSize4MarshalFifoDiskQueueTest(MarshalFifoDiskQueueTest):
     chunksize = 4
@@ -81,14 +89,18 @@ class PickleFifoDiskQueueTest(MarshalFifoDiskQueueTest):
         self.assertEqual(r.url, r2.url)
         assert r2.meta['request'] is r2
 
+
 class ChunkSize1PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
     chunksize = 1
+
 
 class ChunkSize2PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
     chunksize = 2
 
+
 class ChunkSize3PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
     chunksize = 3
+
 
 class ChunkSize4PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
     chunksize = 4

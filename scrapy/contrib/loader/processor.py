@@ -8,6 +8,7 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.datatypes import MergeDict
 from .common import wrap_loader_context
 
+
 class MapCompose(object):
 
     def __init__(self, *functions, **default_loader_context):

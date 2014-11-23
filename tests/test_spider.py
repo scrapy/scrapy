@@ -104,6 +104,7 @@ class SpiderTest(unittest.TestCase):
         self.assertEqual(settings.get('TEST2'), 'spider')
         self.assertEqual(settings.get('TEST3'), 'project')
 
+
 class InitSpiderTest(SpiderTest):
 
     spider_class = InitSpider

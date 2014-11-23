@@ -8,6 +8,7 @@ from scrapy.spider import Spider
 from scrapy.settings import default_settings
 from scrapy.utils.test import get_crawler
 
+
 class LogTest(unittest.TestCase):
 
     def test_get_log_level(self):
@@ -15,6 +16,7 @@ class LogTest(unittest.TestCase):
         self.assertEqual(log._get_log_level('WARNING'), log.WARNING)
         self.assertEqual(log._get_log_level(log.WARNING), log.WARNING)
         self.assertRaises(ValueError, log._get_log_level, object())
+
 
 class ScrapyFileLogObserverTest(unittest.TestCase):
 

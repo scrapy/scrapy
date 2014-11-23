@@ -1,5 +1,6 @@
 from scrapy.spider import Spider
 
+
 class Spider3(Spider):
     name = "spider3"
     allowed_domains = ['spider3.com']

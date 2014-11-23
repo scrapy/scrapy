@@ -2,6 +2,7 @@ import unittest
 
 from scrapy.utils.conf import build_component_list, arglist_to_dict
 
+
 class UtilsConfTestCase(unittest.TestCase):
 
     def test_build_component_list(self):

@@ -1,5 +1,6 @@
 """A test extension used to check the settings loading order"""
 
+
 class TestExtension(object):
 
     def __init__(self, settings):

@@ -12,6 +12,7 @@ from twisted.trial import unittest
 from scrapy.utils.python import retry_on_eintr
 from scrapy.utils.test import get_testenv
 
+
 class ProjectTest(unittest.TestCase):
     project_name = 'testproject'
 
@@ -122,6 +123,7 @@ class MiscCommandsTest(CommandTest):
 
     def test_list(self):
         self.assertEqual(0, self.call('list'))
+
 
 class RunSpiderCommandTest(CommandTest):
 

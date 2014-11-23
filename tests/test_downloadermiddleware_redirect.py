@@ -58,7 +58,6 @@ class RedirectMiddlewareTest(unittest.TestCase):
         assert isinstance(r, Response)
         assert r is rsp
 
-
     def test_redirect_302(self):
         url = 'http://www.example.com/302'
         url2 = 'http://www.example.com/redirected2'
@@ -96,7 +95,6 @@ class RedirectMiddlewareTest(unittest.TestCase):
         del rsp.headers['Location']
         assert self.mw.process_response(req, rsp, self.spider) is rsp
 
-
     def test_max_redirect_times(self):
         self.mw.max_redirect_times = 1
         req = Request('http://scrapytest.org/302')
@@ -128,6 +126,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
         self.assertEqual(req2.meta['redirect_urls'], ['http://scrapytest.org/first'])
         self.assertEqual(req3.url, 'http://scrapytest.org/redirected2')
         self.assertEqual(req3.meta['redirect_urls'], ['http://scrapytest.org/first', 'http://scrapytest.org/redirected'])
+
 
 class MetaRefreshMiddlewareTest(unittest.TestCase):
 

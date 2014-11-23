@@ -13,6 +13,7 @@ from collections import OrderedDict
 class MultiValueDictKeyError(KeyError):
     pass
 
+
 class MultiValueDict(dict):
     """
     A subclass of dictionary customized to handle multiple values for the same key.
@@ -136,6 +137,7 @@ class MultiValueDict(dict):
                     raise ValueError("MultiValueDict.update() takes either a MultiValueDict or dictionary")
         for key, value in six.iteritems(kwargs):
             self.setlistdefault(key, []).append(value)
+
 
 class SiteNode(object):
     """Class to represent a site node (page, image or any other file)"""

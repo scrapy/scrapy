@@ -12,6 +12,7 @@ from scrapy.exceptions import NotConfigured
 ENVVAR = 'SCRAPY_SETTINGS_MODULE'
 DATADIR_CFG_SECTION = 'datadir'
 
+
 def inside_project():
     scrapy_module = os.environ.get('SCRAPY_SETTINGS_MODULE')
     if scrapy_module is not None:
@@ -22,6 +23,7 @@ def inside_project():
         else:
             return True
     return bool(closest_scrapy_cfg())
+
 
 def project_data_dir(project='default'):
     """Return the current project data dir, creating it if it doesn't exist"""
@@ -39,6 +41,7 @@ def project_data_dir(project='default'):
         os.makedirs(d)
     return d
 
+
 def data_path(path, createdir=False):
     """If path is relative, return the given path inside the project data dir,
     otherwise return the path unmodified
@@ -48,6 +51,7 @@ def data_path(path, createdir=False):
     if createdir and not exists(path):
         os.makedirs(path)
     return path
+
 
 def get_project_settings():
     if ENVVAR not in os.environ:

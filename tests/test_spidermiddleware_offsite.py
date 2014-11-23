@@ -7,6 +7,7 @@ from scrapy.spider import Spider
 from scrapy.contrib.spidermiddleware.offsite import OffsiteMiddleware
 from scrapy.utils.test import get_crawler
 
+
 class TestOffsiteMiddleware(TestCase):
 
     def setUp(self):
@@ -47,6 +48,7 @@ class TestOffsiteMiddleware2(TestOffsiteMiddleware):
         reqs = [Request('http://a.com/b.html'), Request('http://b.com/1')]
         out = list(self.mw.process_spider_output(res, reqs, self.spider))
         self.assertEquals(out, reqs)
+
 
 class TestOffsiteMiddleware3(TestOffsiteMiddleware2):
 

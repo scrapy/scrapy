@@ -347,7 +347,6 @@ class LeveldbCacheStorage(object):
         return request_fingerprint(request)
 
 
-
 def parse_cachecontrol(header):
     """Parse Cache-Control header
 

@@ -39,6 +39,7 @@ from twisted.internet.protocol import Protocol, ClientCreator
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
 
+
 class ReceivedDataProtocol(Protocol):
     def __init__(self, filename=None):
         self.__filename = filename
@@ -57,6 +58,8 @@ class ReceivedDataProtocol(Protocol):
         self.body.close() if self.filename else self.body.seek(0)
 
 _CODE_RE = re.compile("\d+")
+
+
 class FTPDownloadHandler(object):
 
     CODE_MAPPING = {

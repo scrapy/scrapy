@@ -6,6 +6,7 @@ from scrapy.http import Request
 from scrapy.exceptions import UsageError
 from scrapy.utils.spider import spidercls_for_request, DefaultSpider
 
+
 class Command(ScrapyCommand):
 
     requires_project = False

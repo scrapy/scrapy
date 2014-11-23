@@ -15,6 +15,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.mail import MailSender
 from scrapy.utils.engine import get_engine_status
 
+
 class MemoryUsage(object):
 
     def __init__(self, crawler):

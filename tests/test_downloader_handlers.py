@@ -294,6 +294,7 @@ class HttpDownloadHandlerMock(object):
     def download_request(self, request, spider):
         return request
 
+
 class S3TestCase(unittest.TestCase):
     skip = 'boto' not in optional_features and 'missing boto library'
 
@@ -381,6 +382,7 @@ class S3TestCase(unittest.TestCase):
         httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
                 'AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI=')
+
 
 class FTPTestCase(unittest.TestCase):
 

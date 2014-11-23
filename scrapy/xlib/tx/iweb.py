@@ -71,12 +71,10 @@ class IRequest(Interface):
             was not present in the request.
         """
 
-
     def getCookie(key):
         """
         Get a cookie that was sent from the network.
         """
-
 
     def getAllHeaders():
         """
@@ -86,7 +84,6 @@ class IRequest(Interface):
         Since this method does not return all header information,
         C{requestHeaders.getAllRawHeaders()} may be preferred.
         """
-
 
     def getRequestHostname():
         """
@@ -99,14 +96,12 @@ class IRequest(Interface):
         @rtype: C{str}
         """
 
-
     def getHost():
         """
         Get my originally requesting transport's host.
 
         @return: An L{IAddress<twisted.internet.interfaces.IAddress>}.
         """
-
 
     def getClientIP():
         """
@@ -116,7 +111,6 @@ class IRequest(Interface):
             over a transport where IP addresses do not make sense.
         @rtype: L{str} or C{NoneType}
         """
-
 
     def getClient():
         """
@@ -130,7 +124,6 @@ class IRequest(Interface):
             performing a name lookup on the IP address of the client.
         """
 
-
     def getUser():
         """
         Return the HTTP user sent with this request, if any.
@@ -141,7 +134,6 @@ class IRequest(Interface):
         @rtype: C{str}
         """
 
-
     def getPassword():
         """
         Return the HTTP password sent with this request, if any.
@@ -151,7 +143,6 @@ class IRequest(Interface):
         @returns: the HTTP password, if any
         @rtype: C{str}
         """
-
 
     def isSecure():
         """
@@ -167,7 +158,6 @@ class IRequest(Interface):
         @rtype: C{bool}
         """
 
-
     def getSession(sessionInterface=None):
         """
         Look up the session associated with this request or create a new one if
@@ -178,13 +168,11 @@ class IRequest(Interface):
             if C{sessionInterface} is specified.
         """
 
-
     def URLPath():
         """
         @return: A L{URLPath} instance which identifies the URL for which this
             request is.
         """
-
 
     def prePathURL():
         """
@@ -193,19 +181,16 @@ class IRequest(Interface):
             reached.
         """
 
-
     def rememberRootURL():
         """
         Remember the currently-processed part of the URL for later
         recalling.
         """
 
-
     def getRootURL():
         """
         Get a previously-remembered URL.
         """
-
 
     # Methods for outgoing response
     def finish():
@@ -213,14 +198,12 @@ class IRequest(Interface):
         Indicate that the response to this request is complete.
         """
 
-
     def write(data):
         """
         Write some data to the body of the response to this request.  Response
         headers are written the first time this method is called, after which
         new response headers may not be added.
         """
-
 
     def addCookie(k, v, expires=None, domain=None, path=None, max_age=None, comment=None, secure=None):
         """
@@ -231,12 +214,10 @@ class IRequest(Interface):
         L{twisted.web.server.Session} class for details.
         """
 
-
     def setResponseCode(code, message=None):
         """
         Set the HTTP response code.
         """
-
 
     def setHeader(k, v):
         """
@@ -250,14 +231,12 @@ class IRequest(Interface):
         @param value: The value to set for the named header.
         """
 
-
     def redirect(url):
         """
         Utility function that does a redirect.
 
         The request should have finish() called after this.
         """
-
 
     def setLastModified(when):
         """
@@ -280,7 +259,6 @@ class IRequest(Interface):
             Otherwise, I return a false value.
         """
 
-
     def setETag(etag):
         """
         Set an C{entity tag} for the outgoing response.
@@ -302,7 +280,6 @@ class IRequest(Interface):
             false value.
         """
 
-
     def setHost(host, port, ssl=0):
         """
         Change the host and port the request thinks it's using.
@@ -320,7 +297,6 @@ class IRequest(Interface):
         """
 
 
-
 class ICredentialFactory(Interface):
     """
     A credential factory defines a way to generate a particular kind of
@@ -334,7 +310,6 @@ class ICredentialFactory(Interface):
         "A C{str} giving the name of the authentication scheme with which "
         "this factory is associated.  For example, C{'basic'} or C{'digest'}.")
 
-
     def getChallenge(request):
         """
         Generate a new challenge to be sent to a client.
@@ -347,7 +322,6 @@ class ICredentialFactory(Interface):
         @return: A mapping from C{str} challenge fields to associated C{str}
             values.
         """
-
 
     def decode(response, request):
         """
@@ -365,7 +339,6 @@ class ICredentialFactory(Interface):
         @rtype: L{twisted.cred.credentials.ICredentials} provider
         @return: The credentials represented by the given response.
         """
-
 
 
 class IBodyProducer(IPushProducer):
@@ -415,7 +388,6 @@ class IBodyProducer(IPushProducer):
             before all bytes have been produced.
         """
 
-
     def stopProducing():
         """
         In addition to the standard behavior of
@@ -424,7 +396,6 @@ class IBodyProducer(IPushProducer):
         L{Deferred<twisted.internet.defer.Deferred>} returned by
         C{startProducing} is never fired.
         """
-
 
 
 class IRenderable(Interface):
@@ -446,7 +417,6 @@ class IRenderable(Interface):
             was encountered.
         """
 
-
     def render(request):
         """
         Get the document for this L{IRenderable}.
@@ -457,7 +427,6 @@ class IRenderable(Interface):
 
         @return: An object which can be flattened.
         """
-
 
 
 class ITemplateLoader(Interface):
@@ -475,7 +444,6 @@ class ITemplateLoader(Interface):
         """
 
 
-
 class IResponse(Interface):
     """
     An object representing an HTTP response received from an HTTP server.
@@ -488,16 +456,12 @@ class IResponse(Interface):
         "of the response.  The first element is of type C{str}, the second "
         "and third are of type C{int}.  For example, C{('HTTP', 1, 1)}.")
 
-
     code = Attribute("The HTTP status code of this response, as a C{int}.")
-
 
     phrase = Attribute(
         "The HTTP reason phrase of this response, as a C{str}.")
 
-
     headers = Attribute("The HTTP response L{Headers} of this response.")
-
 
     length = Attribute(
         "The C{int} number of bytes expected to be in the body of this "
@@ -505,7 +469,6 @@ class IResponse(Interface):
         "many bytes to expect.  For I{HEAD} responses, this will be 0; if "
         "the response includes a I{Content-Length} header, it will be "
         "available in C{headers}.")
-
 
     def deliverBody(protocol):
         """
@@ -530,7 +493,6 @@ class IResponse(Interface):
         """
 
 
-
 class _IRequestEncoder(Interface):
     """
     An object encoding data passed to L{IRequest.write}, for example for
@@ -550,7 +512,6 @@ class _IRequestEncoder(Interface):
         @rtype: C{str}
         """
 
-
     def finish():
         """
         Callback called when the request is closing.
@@ -559,7 +520,6 @@ class _IRequestEncoder(Interface):
             C{encode} calls.
         @rtype: C{str}
         """
-
 
 
 class _IRequestEncoderFactory(Interface):
@@ -574,7 +534,6 @@ class _IRequestEncoderFactory(Interface):
         If applicable, returns a L{_IRequestEncoder} instance which will encode
         the request.
         """
-
 
 
 UNKNOWN_LENGTH = u"twisted.web.iweb.UNKNOWN_LENGTH"

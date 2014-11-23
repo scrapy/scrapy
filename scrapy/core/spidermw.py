@@ -9,8 +9,10 @@ from scrapy.middleware import MiddlewareManager
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.conf import build_component_list
 
+
 def _isiterable(possible_iterator):
     return hasattr(possible_iterator, '__iter__')
+
 
 class SpiderMiddlewareManager(MiddlewareManager):
 

@@ -9,6 +9,7 @@ from scrapy.utils.python import str_to_unicode, unicode_to_str, \
 
 __doctests__ = ['scrapy.utils.python']
 
+
 class UtilsPythonTestCase(unittest.TestCase):
     def test_str_to_unicode(self):
         # converting an utf-8 encoded string to unicode

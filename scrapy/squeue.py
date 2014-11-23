@@ -7,6 +7,7 @@ from six.moves import cPickle as pickle
 
 from queuelib import queue
 
+
 def _serializable_queue(queue_class, serialize, deserialize):
 
     class SerializableQueue(queue_class):
@@ -21,6 +22,7 @@ def _serializable_queue(queue_class, serialize, deserialize):
                 return deserialize(s)
 
     return SerializableQueue
+
 
 def _pickle_serialize(obj):
     try:

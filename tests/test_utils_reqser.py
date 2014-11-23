@@ -4,6 +4,7 @@ from scrapy.http import Request
 from scrapy.spider import Spider
 from scrapy.utils.reqser import request_to_dict, request_from_dict
 
+
 class RequestSerializationTest(unittest.TestCase):
 
     def setUp(self):

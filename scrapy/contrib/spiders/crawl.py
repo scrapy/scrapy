@@ -11,8 +11,10 @@ from scrapy.http import Request, HtmlResponse
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.spider import Spider
 
+
 def identity(x):
     return x
+
 
 class Rule(object):
 
@@ -26,6 +28,7 @@ class Rule(object):
             self.follow = False if callback else True
         else:
             self.follow = follow
+
 
 class CrawlSpider(Spider):
 

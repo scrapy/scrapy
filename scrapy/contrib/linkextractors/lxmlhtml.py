@@ -20,6 +20,7 @@ XHTML_NAMESPACE = "http://www.w3.org/1999/xhtml"
 
 _collect_string_content = etree.XPath("string()")
 
+
 def _nons(tag):
     if isinstance(tag, basestring):
         if tag[0] == '{' and tag[1:len(XHTML_NAMESPACE)+1] == XHTML_NAMESPACE:
