@@ -27,7 +27,7 @@ def safeRef(target, onDelete=None):
 	if onDelete is not None:
 		return weakref.ref(target, onDelete)
 	else:
-		return weakref.ref( target )
+		return weakref.ref(target)
 
 
 class BoundMethodWeakref(object):
@@ -65,7 +65,7 @@ class BoundMethodWeakref(object):
 	"""
 	_allInstances = weakref.WeakValueDictionary()
 
-	def __new__( cls, target, onDelete=None, *arguments, **named ):
+	def __new__(cls, target, onDelete=None, *arguments, **named):
 		"""Create new instance or return current instance
 
 		Basically this method of construction allows us to
@@ -80,12 +80,12 @@ class BoundMethodWeakref(object):
 		key = cls.calculateKey(target)
 		current = cls._allInstances.get(key)
 		if current is not None:
-			current.deletionMethods.append( onDelete)
+			current.deletionMethods.append(onDelete)
 			return current
 		else:
-			base = super( BoundMethodWeakref, cls).__new__( cls )
+			base = super(BoundMethodWeakref, cls).__new__(cls)
 			cls._allInstances[key] = base
-			base.__init__( target, onDelete, *arguments, **named)
+			base.__init__(target, onDelete, *arguments, **named)
 			return base
 
 	def __init__(self, target, onDelete=None):
@@ -107,13 +107,13 @@ class BoundMethodWeakref(object):
 			methods = self.deletionMethods[:]
 			del self.deletionMethods[:]
 			try:
-				del self.__class__._allInstances[ self.key ]
+				del self.__class__._allInstances[self.key]
 			except KeyError:
 				pass
 			for function in methods:
 				try:
-					if callable( function ):
-						function( self )
+					if callable(function):
+						function(self)
 				except Exception as e:
 					try:
 						traceback.print_exc()
@@ -122,20 +122,20 @@ class BoundMethodWeakref(object):
 							self, function, e
 						))
 		self.deletionMethods = [onDelete]
-		self.key = self.calculateKey( target )
+		self.key = self.calculateKey(target)
 		self.weakSelf = weakref.ref(target.im_self, remove)
 		self.weakFunc = weakref.ref(target.im_func, remove)
 		self.selfName = target.im_self.__class__.__name__
 		self.funcName = str(target.im_func.__name__)
 
-	def calculateKey( cls, target ):
+	def calculateKey(cls, target):
 		"""Calculate the reference key for this reference
 
 		Currently this is a two-tuple of the id()'s of the
 		target object and the target function respectively.
 		"""
 		return (id(target.im_self), id(target.im_func))
-	calculateKey = classmethod( calculateKey )
+	calculateKey = classmethod(calculateKey)
 
 	def __str__(self):
 		"""Give a friendly representation of the object"""
@@ -146,15 +146,15 @@ class BoundMethodWeakref(object):
 		)
 	__repr__ = __str__
 
-	def __nonzero__( self ):
+	def __nonzero__(self):
 		"""Whether we are still a valid reference"""
 		return self() is not None
 
-	def __cmp__( self, other ):
+	def __cmp__(self, other):
 		"""Compare with another reference"""
 		if not isinstance (other, self.__class__):
-			return cmp( self.__class__, type(other) )
-		return cmp( self.key, other.key)
+			return cmp(self.__class__, type(other))
+		return cmp(self.key, other.key)
 
 	def __call__(self):
 		"""Return a strong reference to the bound method

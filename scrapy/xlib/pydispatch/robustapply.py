@@ -24,7 +24,7 @@ def function(receiver):
            hasattr(receiver.__call__, 'im_code'):
             receiver = receiver.__call__
 
-    if hasattr( receiver, 'im_func' ):
+    if hasattr(receiver, 'im_func'):
         # an instance-method...
         return receiver, receiver.im_func.func_code, 1
     elif not hasattr(receiver, 'func_code'):

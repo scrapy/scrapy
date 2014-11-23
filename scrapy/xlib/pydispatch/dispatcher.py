@@ -133,7 +133,7 @@ def connect(receiver, signal=Any, sender=Any, weak=True):
 	"""
 	if signal is None:
 		raise errors.DispatcherTypeError(
-			'Signal cannot be None (receiver=%r sender=%r)'%( receiver, sender)
+			'Signal cannot be None (receiver=%r sender=%r)'%(receiver, sender)
 		)
 	if weak:
 		receiver = saferef.safeRef(receiver, onDelete=_removeReceiver)
@@ -164,9 +164,9 @@ def connect(receiver, signal=Any, sender=Any, weak=True):
 	else:
 		receivers = signals[signal] = []
 	try:
-		current = sendersBack.get( receiverID )
+		current = sendersBack.get(receiverID)
 		if current is None:
-			sendersBack[ receiverID ] = current = []
+			sendersBack[receiverID] = current = []
 		if senderkey not in current:
 			current.append(senderkey)
 	except:
@@ -203,7 +203,7 @@ def disconnect(receiver, signal=Any, sender=Any, weak=True):
 	"""
 	if signal is None:
 		raise errors.DispatcherTypeError(
-			'Signal cannot be None (receiver=%r sender=%r)'%( receiver, sender)
+			'Signal cannot be None (receiver=%r sender=%r)'%(receiver, sender)
 		)
 	if weak: receiver = saferef.safeRef(receiver)
 	senderkey = id(sender)
@@ -231,7 +231,7 @@ def disconnect(receiver, signal=Any, sender=Any, weak=True):
 	_cleanupConnections(senderkey, signal)
 
 
-def getReceivers( sender=Any, signal=Any ):
+def getReceivers(sender=Any, signal=Any):
 	"""Get list of receivers from global tables
 
 	This utility function allows you to retrieve the
@@ -264,7 +264,7 @@ def liveReceivers(receivers):
 	receivers.
 	"""
 	for receiver in receivers:
-		if isinstance( receiver, WEAKREF_TYPES):
+		if isinstance(receiver, WEAKREF_TYPES):
 			# Dereference the weak reference.
 			receiver = receiver()
 			if receiver is not None:
@@ -273,7 +273,7 @@ def liveReceivers(receivers):
 			yield receiver
 
 
-def getAllReceivers( sender=Any, signal=Any ):
+def getAllReceivers(sender=Any, signal=Any):
 	"""Get list of all receivers from global tables
 
 	This gets all receivers which should receive
@@ -283,13 +283,13 @@ def getAllReceivers( sender=Any, signal=Any ):
 	receivers = {}
 	for set in (
 		# Get receivers that receive *this* signal from *this* sender.
-		getReceivers( sender, signal ),
+		getReceivers(sender, signal),
 		# Add receivers that receive *any* signal from *this* sender.
-		getReceivers( sender, Any ),
+		getReceivers(sender, Any),
 		# Add receivers that receive *this* signal from *any* sender.
-		getReceivers( Any, signal ),
+		getReceivers(Any, signal),
 		# Add receivers that receive *any* signal from *any* sender.
-		getReceivers( Any, Any ),
+		getReceivers(Any, Any),
 	):
 		for receiver in set:
 			if receiver:  # filter out dead instance-method weakrefs
@@ -351,7 +351,7 @@ def send(signal=Any, sender=Anonymous, *arguments, **named):
 	return responses
 
 
-def sendExact( signal=Any, sender=Anonymous, *arguments, **named ):
+def sendExact(signal=Any, sender=Anonymous, *arguments, **named):
 	"""Send signal only to those receivers registered for exact message
 
 	sendExact allows for avoiding Any/Anonymous registered
@@ -396,7 +396,7 @@ def _removeReceiver(receiver):
 						pass
 					else:
 						try:
-							receivers.remove( receiver )
+							receivers.remove(receiver)
 						except Exception as err:
 							pass
 					_cleanupConnections(senderkey, signal)
@@ -437,7 +437,7 @@ def _removeSender(senderkey):
 		pass
 
 
-def _removeBackrefs( senderkey):
+def _removeBackrefs(senderkey):
 	"""Remove all back-references to this senderkey"""
 	try:
 		signals = connections[senderkey]
@@ -446,12 +446,12 @@ def _removeBackrefs( senderkey):
 	else:
 		items = signals.items()
 
-		def allReceivers( ):
+		def allReceivers():
 			for signal, set in items:
 				for item in set:
 					yield item
 		for receiver in allReceivers():
-			_killBackref( receiver, senderkey )
+			_killBackref(receiver, senderkey)
 
 
 def _removeOldBackRefs(senderkey, signal, receiver, receivers):
@@ -481,23 +481,23 @@ def _removeOldBackRefs(senderkey, signal, receiver, receivers):
 							found = 1
 							break
 		if not found:
-			_killBackref( oldReceiver, senderkey )
+			_killBackref(oldReceiver, senderkey)
 			return True
 		return False
 
 
-def _killBackref( receiver, senderkey ):
+def _killBackref(receiver, senderkey):
 	"""Do the actual removal of back reference from receiver to senderkey"""
 	receiverkey = id(receiver)
-	set = sendersBack.get( receiverkey, () )
+	set = sendersBack.get(receiverkey, ())
 	while senderkey in set:
 		try:
-			set.remove( senderkey )
+			set.remove(senderkey)
 		except:
 			break
 	if not set:
 		try:
-			del sendersBack[ receiverkey ]
+			del sendersBack[receiverkey]
 		except KeyError:
 			pass
 	return True
