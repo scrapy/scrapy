@@ -18,7 +18,7 @@ def safeRef(target, onDelete=None):
         if target.im_self is not None:
             # Turn a bound method into a BoundMethodWeakref instance.
             # Keep track of these instances for lookup by disconnect().
-            assert hasattr(target, 'im_func'), """safeRef target %r has im_self, but no im_func, don't know how to create reference"""%( target,)
+            assert hasattr(target, 'im_func'), """safeRef target %r has im_self, but no im_func, don't know how to create reference""" %( target,)
             reference = BoundMethodWeakref(
                 target=target,
                 onDelete=onDelete
@@ -118,7 +118,7 @@ class BoundMethodWeakref(object):
                     try:
                         traceback.print_exc()
                     except AttributeError as err:
-                        print('''Exception during saferef %s cleanup function %s: %s'''%(
+                        print('''Exception during saferef %s cleanup function %s: %s''' %(
                             self, function, e
                         ))
         self.deletionMethods = [onDelete]
@@ -139,7 +139,7 @@ class BoundMethodWeakref(object):
 
     def __str__(self):
         """Give a friendly representation of the object"""
-        return """%s( %s.%s )"""%(
+        return """%s( %s.%s )""" %(
             self.__class__.__name__,
             self.selfName,
             self.funcName,

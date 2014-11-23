@@ -133,7 +133,7 @@ def connect(receiver, signal=Any, sender=Any, weak=True):
     """
     if signal is None:
         raise errors.DispatcherTypeError(
-            'Signal cannot be None (receiver=%r sender=%r)'%(receiver, sender)
+            'Signal cannot be None (receiver=%r sender=%r)' %(receiver, sender)
         )
     if weak:
         receiver = saferef.safeRef(receiver, onDelete=_removeReceiver)
@@ -203,7 +203,7 @@ def disconnect(receiver, signal=Any, sender=Any, weak=True):
     """
     if signal is None:
         raise errors.DispatcherTypeError(
-            'Signal cannot be None (receiver=%r sender=%r)'%(receiver, sender)
+            'Signal cannot be None (receiver=%r sender=%r)' %(receiver, sender)
         )
     if weak: receiver = saferef.safeRef(receiver)
     senderkey = id(sender)

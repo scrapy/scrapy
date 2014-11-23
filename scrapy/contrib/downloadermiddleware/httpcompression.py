@@ -53,4 +53,3 @@ class HttpCompressionMiddleware(object):
                 # http://www.gzip.org/zlib/zlib_faq.html#faq38
                 body = zlib.decompress(body, -15)
         return body
-

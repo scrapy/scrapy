@@ -80,4 +80,3 @@ class TestDefaultHeadersMiddleware(TestCase):
         req = Request('http://noproxy.com')
         assert mw.process_request(req, spider) is None
         assert 'proxy' not in req.meta
-

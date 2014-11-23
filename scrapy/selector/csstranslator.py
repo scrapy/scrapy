@@ -85,4 +85,3 @@ class ScrapyGenericTranslator(TranslatorMixin, GenericTranslator):
 
 class ScrapyHTMLTranslator(TranslatorMixin, HTMLTranslator):
     pass
-

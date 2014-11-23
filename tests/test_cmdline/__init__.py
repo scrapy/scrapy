@@ -29,4 +29,3 @@ class CmdlineTest(unittest.TestCase):
         self.env['SCRAPY_TEST1'] = 'override'
         self.assertEqual(self._execute('settings', '--get', 'TEST1'),
                          'override')
-

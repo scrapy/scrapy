@@ -152,4 +152,3 @@ class CookiesMiddlewareTest(TestCase):
         assert self.mw.process_request(request, self.spider) is None
         self.assertIn('Cookie', request.headers)
         self.assertIn('currencyCookie', request.headers['Cookie'])
-

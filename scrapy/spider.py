@@ -100,4 +100,3 @@ class ObsoleteClass(object):
 spiders = ObsoleteClass("""
 "from scrapy.spider import spiders" no longer works - use "from scrapy.spidermanager import SpiderManager" and instantiate it with your project settings"
 """)
-

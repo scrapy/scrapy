@@ -35,4 +35,3 @@ class TestDownloaderStats(TestCase):
 
     def tearDown(self):
         self.crawler.stats.close_spider(self.spider, '')
-

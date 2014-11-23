@@ -98,4 +98,3 @@ class Command(ScrapyCommand):
             result.printErrors()
             result.printSummary(start, stop)
             self.exitcode = int(not result.wasSuccessful())
-

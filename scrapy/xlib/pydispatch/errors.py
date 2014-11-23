@@ -12,4 +12,3 @@ class DispatcherKeyError(KeyError, DispatcherError):
 
 class DispatcherTypeError(TypeError, DispatcherError):
     """Error raised when inappropriate signal-type specified (None)"""
-
