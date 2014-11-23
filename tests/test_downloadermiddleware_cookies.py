@@ -112,7 +112,7 @@ class CookiesMiddlewareTest(TestCase):
 
         req2 = Request('http://scrapytest.org/', meta=res.meta)
         assert self.mw.process_request(req2, self.spider) is None
-        self.assertCookieValEqual(req2.headers.get('Cookie'),'C1=value1; galleta=salada')
+        self.assertCookieValEqual(req2.headers.get('Cookie'), 'C1=value1; galleta=salada')
 
         req3 = Request('http://scrapytest.org/', cookies={'galleta': 'dulce'}, meta={'cookiejar': "store2"})
         assert self.mw.process_request(req3, self.spider) is None

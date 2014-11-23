@@ -35,7 +35,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             self.methods['process_start_requests'].insert(0, mw.process_start_requests)
 
     def scrape_response(self, scrape_func, response, request, spider):
-        fname = lambda f:'%s.%s' % (f.im_self.__class__.__name__, f.im_func.__name__)
+        fname = lambda f: '%s.%s' % (f.im_self.__class__.__name__, f.im_func.__name__)
 
         def process_spider_input(response):
             for method in self.methods['process_spider_input']:

@@ -360,7 +360,7 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
             Link(url='http://example.com/innertag.html', text=u'inner tag'),
         ])
 
-        lx = self.extractor_cls(attrs=("href","src"), tags=("a","area","img"), deny_extensions=())
+        lx = self.extractor_cls(attrs=("href", "src"), tags=("a", "area", "img"), deny_extensions=())
         self.assertEqual(lx.extract_links(self.response), [
             Link(url='http://example.com/sample1.html', text=u''),
             Link(url='http://example.com/sample2.html', text=u'sample 2'),
@@ -403,7 +403,7 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
             Link(url='http://example.com/sample2.html', text=u'sample 2'),
         ])
 
-        lx = self.extractor_cls(tags=("a","img"), attrs=("href", "src"), deny_extensions=())
+        lx = self.extractor_cls(tags=("a", "img"), attrs=("href", "src"), deny_extensions=())
         self.assertEqual(lx.extract_links(response), [
             Link(url='http://example.com/sample2.html', text=u'sample 2'),
             Link(url='http://example.com/sample2.jpg', text=u''),
@@ -495,7 +495,7 @@ class HtmlParserLinkExtractorTestCase(unittest.TestCase):
                           Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
                           Link(url='http://example.com/sample3.html', text=u'sample 3 repetition'),
                           Link(url='http://www.google.com/something', text=u''),
-                          Link(url='http://example.com/innertag.html', text=u'inner tag'),])
+                          Link(url='http://example.com/innertag.html', text=u'inner tag'), ])
 
 
 class RegexLinkExtractorTestCase(unittest.TestCase):
@@ -511,7 +511,7 @@ class RegexLinkExtractorTestCase(unittest.TestCase):
                          [Link(url='http://example.com/sample2.html', text=u'sample 2'),
                           Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
                           Link(url='http://www.google.com/something', text=u''),
-                          Link(url='http://example.com/innertag.html', text=u'inner tag'),])
+                          Link(url='http://example.com/innertag.html', text=u'inner tag'), ])
 
 
 if __name__ == "__main__":

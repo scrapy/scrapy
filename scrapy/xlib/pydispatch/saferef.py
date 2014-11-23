@@ -3,7 +3,7 @@ from __future__ import print_function
 import weakref, traceback
 
 
-def safeRef(target, onDelete = None):
+def safeRef(target, onDelete=None):
 	"""Return a *safe* weak reference to a callable target
 
 	target -- the object to be weakly referenced, if it's a
@@ -65,7 +65,7 @@ class BoundMethodWeakref(object):
 	"""
 	_allInstances = weakref.WeakValueDictionary()
 
-	def __new__( cls, target, onDelete=None, *arguments,**named ):
+	def __new__( cls, target, onDelete=None, *arguments, **named ):
 		"""Create new instance or return current instance
 
 		Basically this method of construction allows us to
@@ -85,7 +85,7 @@ class BoundMethodWeakref(object):
 		else:
 			base = super( BoundMethodWeakref, cls).__new__( cls )
 			cls._allInstances[key] = base
-			base.__init__( target, onDelete, *arguments,**named)
+			base.__init__( target, onDelete, *arguments, **named)
 			return base
 
 	def __init__(self, target, onDelete=None):
@@ -134,7 +134,7 @@ class BoundMethodWeakref(object):
 		Currently this is a two-tuple of the id()'s of the
 		target object and the target function respectively.
 		"""
-		return (id(target.im_self),id(target.im_func))
+		return (id(target.im_self), id(target.im_func))
 	calculateKey = classmethod( calculateKey )
 
 	def __str__(self):
@@ -152,7 +152,7 @@ class BoundMethodWeakref(object):
 
 	def __cmp__( self, other ):
 		"""Compare with another reference"""
-		if not isinstance (other,self.__class__):
+		if not isinstance (other, self.__class__):
 			return cmp( self.__class__, type(other) )
 		return cmp( self.key, other.key)
 

@@ -162,7 +162,7 @@ class UtilsCsvTestCase(unittest.TestCase):
     def test_csviter_quotechar(self):
         body1 = get_testdata('feeds', 'feed-sample6.csv')
         body2 = get_testdata('feeds', 'feed-sample6.csv').replace(",", '|')
-        
+
         response1 = TextResponse(url="http://example.com/", body=body1)
         csv1 = csviter(response1, quotechar="'")
 

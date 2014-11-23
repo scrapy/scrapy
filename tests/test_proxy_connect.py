@@ -22,8 +22,8 @@ class HTTPSProxy(controller.Master, Thread):
         cert_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                  'keys', 'mitmproxy-ca.pem')
         server = proxy.ProxyServer(proxy.ProxyConfig(
-            authenticator = authenticator,
-            cacert = cert_path),
+            authenticator=authenticator,
+            cacert=cert_path),
             port)
         Thread.__init__(self)
         controller.Master.__init__(self, server)

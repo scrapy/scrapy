@@ -56,7 +56,7 @@ class IConnector(Interface):
 
 
 class IResolverSimple(Interface):
-    def getHostByName(name, timeout = (1, 3, 11, 45)):
+    def getHostByName(name, timeout=(1, 3, 11, 45)):
         """
         Resolve the domain name C{name} into an IP address.
 
@@ -519,7 +519,7 @@ class IResolver(IResolverSimple):
             C{NotImplementedError}.
         """
 
-    def lookupSenderPolicy(name, timeout= 10):
+    def lookupSenderPolicy(name, timeout=10):
         """
         Perform a SPF record lookup.
 

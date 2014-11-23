@@ -26,7 +26,7 @@ def test_site():
     r.putChild("redirect", util.Redirect("/redirected"))
     r.putChild("redirected", static.Data("Redirected here", "text/plain"))
     return server.Site(r)
-    
+
 
 if __name__ == '__main__':
     port = reactor.listenTCP(0, test_site(), interface="127.0.0.1")

@@ -25,7 +25,7 @@ class StatsMailer(object):
         o = cls(crawler.stats, recipients, mail)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o
-        
+
     def spider_closed(self, spider):
         spider_stats = self.stats.get_stats(spider)
         body = "Global stats\n\n"

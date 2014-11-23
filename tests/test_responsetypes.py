@@ -51,7 +51,7 @@ class ResponseTypesTest(unittest.TestCase):
         for source, cls in mappings:
             retcls = responsetypes.from_body(source)
             assert retcls is cls, "%s ==> %s != %s" % (source, retcls, cls)
-        
+
     def test_from_headers(self):
         mappings = [
             ({'Content-Type': ['text/html; charset=utf-8']}, HtmlResponse),
