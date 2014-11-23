@@ -78,7 +78,7 @@ def request_httprepr(request):
     """
     parsed = urlparse_cached(request)
     path = urlunparse(('', '', parsed.path or '/', parsed.params, parsed.query, ''))
-    s  = "%s %s HTTP/1.1\r\n" % (request.method, path)
+    s = "%s %s HTTP/1.1\r\n" % (request.method, path)
     s += "Host: %s\r\n" % parsed.hostname
     if request.headers:
         s += request.headers.to_string() + "\r\n"
