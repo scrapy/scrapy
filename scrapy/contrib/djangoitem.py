@@ -6,7 +6,7 @@ if 'django' in optional_features:
 
 class DjangoItemMeta(ItemMeta):
 
-    def  __new__(mcs, class_name, bases, attrs):
+    def __new__(mcs, class_name, bases, attrs):
         cls = super(DjangoItemMeta, mcs).__new__(mcs, class_name, bases, attrs)
         cls.fields = cls.fields.copy()
 

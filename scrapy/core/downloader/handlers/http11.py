@@ -83,7 +83,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         raises a TunnelError.
         """
         self._protocol.dataReceived = self._protocolDataReceived
-        if  TunnelingTCP4ClientEndpoint._responseMatcher.match(bytes):
+        if TunnelingTCP4ClientEndpoint._responseMatcher.match(bytes):
             self._protocol.transport.startTLS(self._contextFactory,
                                               self._protocolFactory)
             self._tunnelReadyDeferred.callback(self._protocol)
@@ -144,7 +144,7 @@ class ScrapyAgent(object):
             _, _, proxyHost, proxyPort, proxyParams = _parse(proxy)
             scheme = _parse(request.url)[0]
             omitConnectTunnel = proxyParams.find('noconnect') >= 0
-            if  scheme == 'https' and not omitConnectTunnel:
+            if scheme == 'https' and not omitConnectTunnel:
                 proxyConf = (proxyHost, proxyPort,
                              request.headers.get('Proxy-Authorization', None))
                 return self._TunnelingAgent(reactor, proxyConf,

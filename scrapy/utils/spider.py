@@ -5,7 +5,7 @@ import six
 from scrapy import log
 from scrapy.item import BaseItem
 from scrapy.spider import Spider
-from scrapy.utils.misc import  arg_to_iter
+from scrapy.utils.misc import arg_to_iter
 
 
 def iterate_spider_output(result):

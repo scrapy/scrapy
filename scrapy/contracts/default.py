@@ -85,5 +85,5 @@ class ScrapesContract(Contract):
         for x in output:
             if isinstance(x, BaseItem):
                 for arg in self.args:
-                    if not arg in x:
+                    if arg not in x:
                         raise ContractFail("'%s' field is missing" % arg)
