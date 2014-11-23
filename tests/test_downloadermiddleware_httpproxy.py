@@ -41,7 +41,7 @@ class TestDefaultHeadersMiddleware(TestCase):
         mw = HttpProxyMiddleware()
 
         for url, proxy in [('http://e.com', http_proxy),
-                ('https://e.com', https_proxy), ('file://tmp/a', None)]:
+                           ('https://e.com', https_proxy), ('file://tmp/a', None)]:
             req = Request(url)
             assert mw.process_request(req, spider) is None
             self.assertEquals(req.url, url)

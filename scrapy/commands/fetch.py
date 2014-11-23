@@ -24,9 +24,9 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--spider", dest="spider",
-            help="use this spider")
+                          help="use this spider")
         parser.add_option("--headers", dest="headers", action="store_true", \
-            help="print response HTTP headers instead of body")
+                          help="print response HTTP headers instead of body")
 
     def _print_headers(self, headers, prefix):
         for key, values in headers.items():

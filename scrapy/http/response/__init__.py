@@ -28,7 +28,7 @@ class Response(object_ref):
             return self.request.meta
         except AttributeError:
             raise AttributeError("Response.meta not available, this response " \
-                "is not tied to any request")
+                                 "is not tied to any request")
 
     def _get_url(self):
         return self._url
@@ -38,7 +38,7 @@ class Response(object_ref):
             self._url = url
         else:
             raise TypeError('%s url must be str, got %s:' % (type(self).__name__, \
-                type(url).__name__))
+                                                             type(url).__name__))
 
     url = property(_get_url, obsolete_setter(_set_url, 'url'))
 
@@ -50,12 +50,12 @@ class Response(object_ref):
             self._body = body
         elif isinstance(body, unicode):
             raise TypeError("Cannot assign a unicode body to a raw Response. " \
-                "Use TextResponse, HtmlResponse, etc")
+                            "Use TextResponse, HtmlResponse, etc")
         elif body is None:
             self._body = ''
         else:
             raise TypeError("Response body must either str or unicode. Got: '%s'" \
-                % type(body).__name__)
+                            % type(body).__name__)
 
     body = property(_get_body, obsolete_setter(_set_body, 'body'))
 

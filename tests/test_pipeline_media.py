@@ -137,8 +137,8 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(True, rsp)])
         self.assertEqual(self.pipe._mockcalled,
-                ['get_media_requests', 'media_to_download',
-                    'media_downloaded', 'request_callback', 'item_completed'])
+                         ['get_media_requests', 'media_to_download',
+                          'media_downloaded', 'request_callback', 'item_completed'])
 
     @inlineCallbacks
     def test_result_failure(self):
@@ -151,8 +151,8 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(False, fail)])
         self.assertEqual(self.pipe._mockcalled,
-                ['get_media_requests', 'media_to_download',
-                    'media_failed', 'request_errback', 'item_completed'])
+                         ['get_media_requests', 'media_to_download',
+                          'media_failed', 'request_errback', 'item_completed'])
 
     @inlineCallbacks
     def test_mix_of_success_and_failure(self):
@@ -253,4 +253,4 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(True, 'ITSME')])
         self.assertEqual(self.pipe._mockcalled, \
-                ['get_media_requests', 'media_to_download', 'item_completed'])
+                         ['get_media_requests', 'media_to_download', 'item_completed'])

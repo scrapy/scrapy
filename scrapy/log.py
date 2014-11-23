@@ -152,12 +152,12 @@ def err(_stuff=None, _why=None, **kw):
 def start_from_settings(settings, crawler=None):
     if settings.getbool('LOG_ENABLED'):
         return start(settings['LOG_FILE'], settings['LOG_LEVEL'], settings['LOG_STDOUT'],
-            settings['LOG_ENCODING'], crawler)
+                     settings['LOG_ENCODING'], crawler)
 
 
 def scrapy_info(settings):
     msg("Scrapy %s started (bot: %s)" % (scrapy.__version__,
-        settings['BOT_NAME']))
+                                         settings['BOT_NAME']))
 
     msg("Optional features available: %s" % ", ".join(scrapy.optional_features),
         level=INFO)

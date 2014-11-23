@@ -73,8 +73,8 @@ class RetryTest(unittest.TestCase):
 
     def test_twistederrors(self):
         exceptions = [defer.TimeoutError, TCPTimedOutError, TimeoutError,
-                DNSLookupError, ConnectionRefusedError, ConnectionDone,
-                ConnectError, ConnectionLost]
+                      DNSLookupError, ConnectionRefusedError, ConnectionDone,
+                      ConnectError, ConnectionLost]
         if 'http11' in optional_features:
             exceptions.append(ResponseFailed)
 

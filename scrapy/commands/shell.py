@@ -30,9 +30,9 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("-c", dest="code",
-            help="evaluate the code in the shell, print the result and exit")
+                          help="evaluate the code in the shell, print the result and exit")
         parser.add_option("--spider", dest="spider",
-            help="use this spider")
+                          help="use this spider")
 
     def update_vars(self, vars):
         """You can use this function to update the Scrapy objects that will be

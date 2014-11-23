@@ -307,18 +307,18 @@ class S3TestCase(unittest.TestCase):
 
     def setUp(self):
         s3reqh = S3DownloadHandler(Settings(), self.AWS_ACCESS_KEY_ID, \
-                self.AWS_SECRET_ACCESS_KEY, \
-                httpdownloadhandler=HttpDownloadHandlerMock)
+                                   self.AWS_SECRET_ACCESS_KEY, \
+                                   httpdownloadhandler=HttpDownloadHandlerMock)
         self.download_request = s3reqh.download_request
         self.spider = Spider('foo')
 
     def test_request_signing1(self):
         # gets an object from the johnsmith bucket.
         req = Request('s3://johnsmith/photos/puppy.jpg',
-                headers={'Date': 'Tue, 27 Mar 2007 19:36:42 +0000'})
+                      headers={'Date': 'Tue, 27 Mar 2007 19:36:42 +0000'})
         httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
-                'AWS 0PN5J17HBGZHT7JJ3X82:xXjDGYUmKxnwqr5KXNPGldn5LbA=')
+                         'AWS 0PN5J17HBGZHT7JJ3X82:xXjDGYUmKxnwqr5KXNPGldn5LbA=')
 
     def test_request_signing2(self):
         # puts an object into the johnsmith bucket.
@@ -329,59 +329,59 @@ class S3TestCase(unittest.TestCase):
             })
         httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
-                'AWS 0PN5J17HBGZHT7JJ3X82:hcicpDDvL9SsO6AkvxqmIWkmOuQ=')
+                         'AWS 0PN5J17HBGZHT7JJ3X82:hcicpDDvL9SsO6AkvxqmIWkmOuQ=')
 
     def test_request_signing3(self):
         # lists the content of the johnsmith bucket.
         req = Request('s3://johnsmith/?prefix=photos&max-keys=50&marker=puppy', \
-                method='GET', headers={
-                    'User-Agent': 'Mozilla/5.0',
-                    'Date': 'Tue, 27 Mar 2007 19:42:41 +0000',
-                    })
+                      method='GET', headers={
+                          'User-Agent': 'Mozilla/5.0',
+                          'Date': 'Tue, 27 Mar 2007 19:42:41 +0000',
+                          })
         httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
-                'AWS 0PN5J17HBGZHT7JJ3X82:jsRt/rhG+Vtp88HrYL706QhE4w4=')
+                         'AWS 0PN5J17HBGZHT7JJ3X82:jsRt/rhG+Vtp88HrYL706QhE4w4=')
 
     def test_request_signing4(self):
         # fetches the access control policy sub-resource for the 'johnsmith' bucket.
         req = Request('s3://johnsmith/?acl', \
-                method='GET', headers={'Date': 'Tue, 27 Mar 2007 19:44:46 +0000'})
+                      method='GET', headers={'Date': 'Tue, 27 Mar 2007 19:44:46 +0000'})
         httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
-                'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
+                         'AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=')
 
     def test_request_signing5(self):
         # deletes an object from the 'johnsmith' bucket using the
         # path-style and Date alternative.
         req = Request('s3://johnsmith/photos/puppy.jpg', \
-                method='DELETE', headers={
-                    'Date': 'Tue, 27 Mar 2007 21:20:27 +0000',
-                    'x-amz-date': 'Tue, 27 Mar 2007 21:20:26 +0000',
-                    })
+                      method='DELETE', headers={
+                          'Date': 'Tue, 27 Mar 2007 21:20:27 +0000',
+                          'x-amz-date': 'Tue, 27 Mar 2007 21:20:26 +0000',
+                          })
         httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
-                'AWS 0PN5J17HBGZHT7JJ3X82:k3nL7gH3+PadhTEVn5Ip83xlYzk=')
+                         'AWS 0PN5J17HBGZHT7JJ3X82:k3nL7gH3+PadhTEVn5Ip83xlYzk=')
 
     def test_request_signing6(self):
         # uploads an object to a CNAME style virtual hosted bucket with metadata.
         req = Request('s3://static.johnsmith.net:8080/db-backup.dat.gz', \
-                method='PUT', headers={
-                    'User-Agent': 'curl/7.15.5',
-                    'Host': 'static.johnsmith.net:8080',
-                    'Date': 'Tue, 27 Mar 2007 21:06:08 +0000',
-                    'x-amz-acl': 'public-read',
-                    'content-type': 'application/x-download',
-                    'Content-MD5': '4gJE4saaMU4BqNR0kLY+lw==',
-                    'X-Amz-Meta-ReviewedBy': 'joe@johnsmith.net,jane@johnsmith.net',
-                    'X-Amz-Meta-FileChecksum': '0x02661779',
-                    'X-Amz-Meta-ChecksumAlgorithm': 'crc32',
-                    'Content-Disposition': 'attachment; filename=database.dat',
-                    'Content-Encoding': 'gzip',
-                    'Content-Length': '5913339',
-                    })
+                      method='PUT', headers={
+                          'User-Agent': 'curl/7.15.5',
+                          'Host': 'static.johnsmith.net:8080',
+                          'Date': 'Tue, 27 Mar 2007 21:06:08 +0000',
+                          'x-amz-acl': 'public-read',
+                          'content-type': 'application/x-download',
+                          'Content-MD5': '4gJE4saaMU4BqNR0kLY+lw==',
+                          'X-Amz-Meta-ReviewedBy': 'joe@johnsmith.net,jane@johnsmith.net',
+                          'X-Amz-Meta-FileChecksum': '0x02661779',
+                          'X-Amz-Meta-ChecksumAlgorithm': 'crc32',
+                          'Content-Disposition': 'attachment; filename=database.dat',
+                          'Content-Encoding': 'gzip',
+                          'Content-Length': '5913339',
+                          })
         httpreq = self.download_request(req, self.spider)
         self.assertEqual(httpreq.headers['Authorization'], \
-                'AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI=')
+                         'AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI=')
 
 
 class FTPTestCase(unittest.TestCase):
@@ -425,7 +425,7 @@ class FTPTestCase(unittest.TestCase):
 
     def test_ftp_download_success(self):
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
-                meta={"ftp_user": self.username, "ftp_password": self.password})
+                          meta={"ftp_user": self.username, "ftp_password": self.password})
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
@@ -436,7 +436,7 @@ class FTPTestCase(unittest.TestCase):
 
     def test_ftp_download_notexist(self):
         request = Request(url="ftp://127.0.0.1:%s/notexist.txt" % self.portNum,
-                meta={"ftp_user": self.username, "ftp_password": self.password})
+                          meta={"ftp_user": self.username, "ftp_password": self.password})
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
@@ -446,7 +446,7 @@ class FTPTestCase(unittest.TestCase):
     def test_ftp_local_filename(self):
         local_fname = "/tmp/file.txt"
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
-                meta={"ftp_user": self.username, "ftp_password": self.password, "ftp_local_filename": local_fname})
+                          meta={"ftp_user": self.username, "ftp_password": self.password, "ftp_local_filename": local_fname})
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
@@ -460,7 +460,7 @@ class FTPTestCase(unittest.TestCase):
 
     def test_invalid_credentials(self):
         request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
-                meta={"ftp_user": self.username, "ftp_password": 'invalid'})
+                          meta={"ftp_user": self.username, "ftp_password": 'invalid'})
         d = self.download_handler.download_request(request, None)
 
         def _test(r):

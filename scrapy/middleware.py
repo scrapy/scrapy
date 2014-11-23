@@ -64,7 +64,7 @@ class MiddlewareManager(object):
 
     def _process_chain_both(self, cb_methodname, eb_methodname, obj, *args):
         return process_chain_both(self.methods[cb_methodname], \
-            self.methods[eb_methodname], obj, *args)
+                                  self.methods[eb_methodname], obj, *args)
 
     def open_spider(self, spider):
         return self._process_parallel('open_spider', spider)

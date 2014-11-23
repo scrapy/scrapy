@@ -36,7 +36,7 @@ class DownloadHandlers(object):
             handler = self._handlers[scheme].download_request
         except KeyError:
             msg = self._notconfigured.get(scheme, \
-                    'no handler available for that scheme')
+                                          'no handler available for that scheme')
             raise NotSupported("Unsupported URL scheme '%s': %s" % (scheme, msg))
         return handler(request, spider)
 

@@ -76,16 +76,16 @@ class FTPDownloadHandler(object):
                                     request.meta["ftp_password"],
                                     passive=request.meta.get("ftp_passive", 1))
         return creator.connectTCP(parsed_url.hostname, parsed_url.port or 21).addCallback(self.gotClient,
-                                request, parsed_url.path)
+                                                                                          request, parsed_url.path)
 
     def gotClient(self, client, request, filepath):
         self.client = client
         protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
         return client.retrieveFile(filepath, protocol)\
                 .addCallbacks(callback=self._build_response,
-                        callbackArgs=(request, protocol),
-                        errback=self._failed,
-                        errbackArgs=(request,))
+                              callbackArgs=(request, protocol),
+                              errback=self._failed,
+                              errbackArgs=(request,))
 
     def _build_response(self, result, request, protocol):
         self.result = result

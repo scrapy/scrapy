@@ -32,7 +32,7 @@ else:
 class S3DownloadHandler(object):
 
     def __init__(self, settings, aws_access_key_id=None, aws_secret_access_key=None, \
-            httpdownloadhandler=HTTPDownloadHandler):
+                 httpdownloadhandler=HTTPDownloadHandler):
         if 'boto' not in optional_features:
             raise NotConfigured("missing boto library")
 

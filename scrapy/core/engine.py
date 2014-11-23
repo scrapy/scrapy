@@ -172,7 +172,7 @@ class ExecutionEngine(object):
 
     def schedule(self, request, spider):
         self.signals.send_catch_log(signal=signals.request_scheduled,
-                request=request, spider=spider)
+                                    request=request, spider=spider)
         return self.slot.scheduler.enqueue_request(request)
 
     def download(self, request, spider):
@@ -197,7 +197,7 @@ class ExecutionEngine(object):
                 logkws = self.logformatter.crawled(request, response, spider)
                 log.msg(spider=spider, **logkws)
                 self.signals.send_catch_log(signal=signals.response_received, \
-                    response=response, request=request, spider=spider)
+                                            response=response, request=request, spider=spider)
             return response
 
         def _on_complete(_):
@@ -235,7 +235,7 @@ class ExecutionEngine(object):
         again for this spider.
         """
         res = self.signals.send_catch_log(signal=signals.spider_idle, \
-            spider=spider, dont_log=DontCloseSpider)
+                                          spider=spider, dont_log=DontCloseSpider)
         if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) \
                 for _, x in res):
             self.slot.nextcall.schedule(5)

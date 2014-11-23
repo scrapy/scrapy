@@ -10,4 +10,4 @@ if 'scrapy.cmdline' not in sys.modules:
 import warnings
 from scrapy.exceptions import ScrapyDeprecationWarning
 warnings.warn("Module `scrapy.conf` is deprecated, use `crawler.settings` attribute instead",
-    ScrapyDeprecationWarning, stacklevel=2)
+              ScrapyDeprecationWarning, stacklevel=2)

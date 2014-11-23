@@ -78,7 +78,7 @@ class CookiesMiddleware(object):
     def _get_request_cookies(self, jar, request):
         if isinstance(request.cookies, dict):
             cookie_list = [{'name': k, 'value': v} for k, v in \
-                    six.iteritems(request.cookies)]
+                           six.iteritems(request.cookies)]
         else:
             cookie_list = request.cookies
 

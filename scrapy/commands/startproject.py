@@ -68,9 +68,9 @@ class Command(ScrapyCommand):
         for paths in TEMPLATES_TO_RENDER:
             path = join(*paths)
             tplfile = join(project_name,
-                string.Template(path).substitute(project_name=project_name))
+                           string.Template(path).substitute(project_name=project_name))
             render_templatefile(tplfile, project_name=project_name,
-                ProjectName=string_camelcase(project_name))
+                                ProjectName=string_camelcase(project_name))
         print("New Scrapy project %r created in:" % project_name)
         print("    %s\n" % abspath(project_name))
         print("You can start your first spider with:")

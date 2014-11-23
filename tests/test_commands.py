@@ -30,7 +30,7 @@ class ProjectTest(unittest.TestCase):
         with tempfile.TemporaryFile() as out:
             args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
             return subprocess.call(args, stdout=out, stderr=out, cwd=self.cwd,
-                env=self.env, **kwargs)
+                                   env=self.env, **kwargs)
 
     def proc(self, *new_args, **kwargs):
         args = (sys.executable, '-m', 'scrapy.cmdline') + new_args
@@ -221,13 +221,13 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
 
     def test_spider_arguments(self):
         p = self.proc('parse', '--spider', self.spider_name, '-a', 'test_arg=1',
-                '-c', 'parse', 'http://scrapinghub.com')
+                      '-c', 'parse', 'http://scrapinghub.com')
         log = p.stderr.read()
         self.assert_("[parse_spider] DEBUG: It Works!" in log, log)
 
     def test_pipelines(self):
         p = self.proc('parse', '--spider', self.spider_name, '--pipelines',
-                '-c', 'parse', 'http://scrapinghub.com')
+                      '-c', 'parse', 'http://scrapinghub.com')
         log = p.stderr.read()
         self.assert_("[scrapy] INFO: It Works!" in log, log)
 
@@ -236,6 +236,6 @@ class BenchCommandTest(CommandTest):
 
     def test_run(self):
         p = self.proc('bench', '-s', 'LOGSTATS_INTERVAL=0.001',
-                '-s', 'CLOSESPIDER_TIMEOUT=0.01')
+                      '-s', 'CLOSESPIDER_TIMEOUT=0.01')
         log = p.stderr.read()
         self.assert_('INFO: Crawled' in log, log)

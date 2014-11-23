@@ -20,7 +20,7 @@ def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
         try:
             response = robustApply(receiver, signal=signal, sender=sender,
-                *arguments, **named)
+                                   *arguments, **named)
             if isinstance(response, Deferred):
                 log.msg(format="Cannot return deferreds from signal handler: %(receiver)s",
                         level=log.ERROR, spider=spider, receiver=receiver)
@@ -29,7 +29,7 @@ def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
         except Exception:
             result = Failure()
             log.err(result, "Error caught on signal handler: %s" % receiver, \
-                spider=spider)
+                    spider=spider)
         else:
             result = response
         responses.append((receiver, result))
@@ -44,7 +44,7 @@ def send_catch_log_deferred(signal=Any, sender=Anonymous, *arguments, **named):
     def logerror(failure, recv):
         if dont_log is None or not isinstance(failure.value, dont_log):
             log.err(failure, "Error caught on signal handler: %s" % recv, \
-                spider=spider)
+                    spider=spider)
         return failure
 
     dont_log = named.pop('dont_log', None)
@@ -52,7 +52,7 @@ def send_catch_log_deferred(signal=Any, sender=Anonymous, *arguments, **named):
     dfds = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
         d = maybeDeferred(robustApply, receiver, signal=signal, sender=sender,
-                *arguments, **named)
+                          *arguments, **named)
         d.addErrback(logerror, receiver)
         d.addBoth(lambda result: (receiver, result))
         dfds.append(d)

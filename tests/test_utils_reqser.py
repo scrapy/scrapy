@@ -16,15 +16,15 @@ class RequestSerializationTest(unittest.TestCase):
 
     def test_all_attributes(self):
         r = Request("http://www.example.com",
-            callback='parse_item',
-            errback='handle_error',
-            method="POST",
-            body="some body",
-            headers={'content-encoding': 'text/html; charset=latin-1'},
-            cookies={'currency': 'usd'},
-            encoding='latin-1',
-            priority=20,
-            meta={'a': 'b'})
+                    callback='parse_item',
+                    errback='handle_error',
+                    method="POST",
+                    body="some body",
+                    headers={'content-encoding': 'text/html; charset=latin-1'},
+                    cookies={'currency': 'usd'},
+                    encoding='latin-1',
+                    priority=20,
+                    meta={'a': 'b'})
         self._assert_serializes_ok(r)
 
     def test_latin1_body(self):
@@ -55,7 +55,7 @@ class RequestSerializationTest(unittest.TestCase):
 
     def test_callback_serialization(self):
         r = Request("http://www.example.com", callback=self.spider.parse_item, \
-            errback=self.spider.handle_error)
+                    errback=self.spider.handle_error)
         self._assert_serializes_ok(r, spider=self.spider)
 
     def test_unserializable_callback1(self):

@@ -253,7 +253,7 @@ class TextResponseTest(BaseResponseTest):
 
         # Do not destroy html tags due to encoding bugs
         r = self.response_class("http://example.com", encoding='utf-8', \
-                body='\xf0<span>value</span>')
+                                body='\xf0<span>value</span>')
         assert u'<span>value</span>' in r.body_as_unicode(), repr(r.body_as_unicode())
 
         # FIXME: This test should pass once we stop using BeautifulSoup's UnicodeDammit in TextResponse

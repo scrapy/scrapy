@@ -340,7 +340,7 @@ class CustomItemExporterTest(unittest.TestCase):
                     return str(int(value) + 1)
                 else:
                     return super(CustomItemExporter, self).serialize_field(field, \
-                        name, value)
+                                                                           name, value)
 
         i = TestItem(name=u'John', age='22')
         ie = CustomItemExporter()

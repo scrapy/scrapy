@@ -70,11 +70,11 @@ class MiddlewareManagerTest(unittest.TestCase):
     def test_methods(self):
         mwman = TestMiddlewareManager(M1(), M2(), M3())
         self.assertEqual([x.im_class for x in mwman.methods['open_spider']],
-            [M1, M2])
+                         [M1, M2])
         self.assertEqual([x.im_class for x in mwman.methods['close_spider']],
-            [M2, M1])
+                         [M2, M1])
         self.assertEqual([x.im_class for x in mwman.methods['process']],
-            [M1, M3])
+                         [M1, M3])
 
     def test_enabled(self):
         m1, m2, m3 = M1(), M2(), M3()

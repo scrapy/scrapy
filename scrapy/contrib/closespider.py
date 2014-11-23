@@ -51,8 +51,8 @@ class CloseSpider(object):
 
     def spider_opened(self, spider):
         self.task = reactor.callLater(self.close_on['timeout'], \
-            self.crawler.engine.close_spider, spider, \
-            reason='closespider_timeout')
+                                      self.crawler.engine.close_spider, spider, \
+                                      reason='closespider_timeout')
 
     def item_scraped(self, item, spider):
         self.counter['itemcount'] += 1

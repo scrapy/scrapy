@@ -55,7 +55,7 @@ class TelnetConsole(protocol.ServerFactory):
     def protocol(self):
         telnet_vars = self._get_telnet_vars()
         return telnet.TelnetTransport(telnet.TelnetBootstrapProtocol,
-            insults.ServerProtocol, manhole.Manhole, telnet_vars)
+                                      insults.ServerProtocol, manhole.Manhole, telnet_vars)
 
     def _get_telnet_vars(self):
         # Note: if you add entries here also update topics/telnetconsole.rst

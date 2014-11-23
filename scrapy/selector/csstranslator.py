@@ -53,7 +53,7 @@ class TranslatorMixin(object):
             if not method:
                 raise ExpressionError(
                     "The functional pseudo-element ::%s() is unknown"
-                % pseudo_element.name)
+                    % pseudo_element.name)
             xpath = method(xpath, pseudo_element)
         else:
             method = 'xpath_%s_simple_pseudo_element' % (
@@ -72,7 +72,7 @@ class TranslatorMixin(object):
                 "Expected a single string or ident for ::attr(), got %r"
                 % function.arguments)
         return ScrapyXPathExpr.from_xpath(xpath,
-            attribute=function.arguments[0].value)
+                                          attribute=function.arguments[0].value)
 
     def xpath_text_simple_pseudo_element(self, xpath):
         """Support selecting text nodes using ::text pseudo-element"""

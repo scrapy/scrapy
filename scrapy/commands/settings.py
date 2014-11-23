@@ -16,15 +16,15 @@ class Command(ScrapyCommand):
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
         parser.add_option("--get", dest="get", metavar="SETTING", \
-            help="print raw setting value")
+                          help="print raw setting value")
         parser.add_option("--getbool", dest="getbool", metavar="SETTING", \
-            help="print setting value, intepreted as a boolean")
+                          help="print setting value, intepreted as a boolean")
         parser.add_option("--getint", dest="getint", metavar="SETTING", \
-            help="print setting value, intepreted as an integer")
+                          help="print setting value, intepreted as an integer")
         parser.add_option("--getfloat", dest="getfloat", metavar="SETTING", \
-            help="print setting value, intepreted as an float")
+                          help="print setting value, intepreted as an float")
         parser.add_option("--getlist", dest="getlist", metavar="SETTING", \
-            help="print setting value, intepreted as an float")
+                          help="print setting value, intepreted as an float")
 
     def run(self, args, opts):
         settings = self.crawler_process.settings

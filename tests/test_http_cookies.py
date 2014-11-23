@@ -9,7 +9,7 @@ class WrappedRequestTest(TestCase):
 
     def setUp(self):
         self.request = Request("http://www.example.com/page.html", \
-            headers={"Content-Type": "text/html"})
+                               headers={"Content-Type": "text/html"})
         self.wrapped = WrappedRequest(self.request)
 
     def test_get_full_url(self):
@@ -51,7 +51,7 @@ class WrappedResponseTest(TestCase):
 
     def setUp(self):
         self.response = Response("http://www.example.com/page.html", 
-            headers={"Content-TYpe": "text/html"})
+                                 headers={"Content-TYpe": "text/html"})
         self.wrapped = WrappedResponse(self.response)
 
     def test_info(self):

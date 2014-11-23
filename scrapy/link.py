@@ -17,7 +17,7 @@ class Link(object):
         if isinstance(url, six.text_type):
             import warnings
             warnings.warn("Do not instantiate Link objects with unicode urls. "
-                "Assuming utf-8 encoding (which could be wrong)")
+                          "Assuming utf-8 encoding (which could be wrong)")
             url = url.encode('utf-8')
         self.url = url
         self.text = text

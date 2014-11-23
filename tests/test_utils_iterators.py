@@ -248,14 +248,14 @@ class UtilsCsvTestCase(unittest.TestCase):
         response = TextResponse(url="http://example.com/", body=body1, encoding='latin1')
         csv = csviter(response)
         self.assertEqual([row for row in csv],
-            [{u'id': u'1', u'name': u'latin1', u'value': u'test'},
-             {u'id': u'2', u'name': u'something', u'value': u'\xf1\xe1\xe9\xf3'}])
+                         [{u'id': u'1', u'name': u'latin1', u'value': u'test'},
+                          {u'id': u'2', u'name': u'something', u'value': u'\xf1\xe1\xe9\xf3'}])
 
         response = TextResponse(url="http://example.com/", body=body2, encoding='cp852')
         csv = csviter(response)
         self.assertEqual([row for row in csv],
-            [{u'id': u'1', u'name': u'cp852', u'value': u'test'},
-             {u'id': u'2', u'name': u'something', u'value': u'\u255a\u2569\u2569\u2569\u2550\u2550\u2557'}])
+                         [{u'id': u'1', u'name': u'cp852', u'value': u'test'},
+                          {u'id': u'2', u'name': u'something', u'value': u'\u255a\u2569\u2569\u2569\u2550\u2550\u2557'}])
 
 
 class TestHelper(unittest.TestCase):

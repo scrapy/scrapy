@@ -24,7 +24,7 @@ class SendCatchLogTest(unittest.TestCase):
         dispatcher.connect(self.error_handler, signal=test_signal)
         dispatcher.connect(self.ok_handler, signal=test_signal)
         result = yield defer.maybeDeferred(self._get_result, test_signal, arg='test', \
-            handlers_called=handlers_called)
+                                           handlers_called=handlers_called)
 
         assert self.error_handler in handlers_called
         assert self.ok_handler in handlers_called

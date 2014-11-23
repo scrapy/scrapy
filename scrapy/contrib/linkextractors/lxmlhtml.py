@@ -59,7 +59,7 @@ class LxmlParserLinkExtractor(object):
             # to fix relative links after process_value
             url = urljoin(response_url, url)
             link = Link(url, _collect_string_content(el) or u'',
-                nofollow=True if el.get('rel') == 'nofollow' else False)
+                        nofollow=True if el.get('rel') == 'nofollow' else False)
             links.append(link)
 
         return unique_list(links, key=lambda link: link.url) \
@@ -88,11 +88,11 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
         tag_func = lambda x: x in tags
         attr_func = lambda x: x in attrs
         lx = LxmlParserLinkExtractor(tag=tag_func, attr=attr_func,
-            unique=unique, process=process_value)
+                                     unique=unique, process=process_value)
 
         super(LxmlLinkExtractor, self).__init__(lx, allow, deny,
-            allow_domains, deny_domains, restrict_xpaths, canonicalize,
-            deny_extensions)
+                                                allow_domains, deny_domains, restrict_xpaths, canonicalize,
+                                                deny_extensions)
 
     def extract_links(self, response):
         html = Selector(response)

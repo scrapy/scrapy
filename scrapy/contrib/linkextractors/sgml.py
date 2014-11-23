@@ -113,11 +113,11 @@ class SgmlLinkExtractor(FilteringLinkExtractor):
 
         with warnings.catch_warnings(record=True):
             lx = BaseSgmlLinkExtractor(tag=tag_func, attr=attr_func,
-                unique=unique, process_value=process_value)
+                                       unique=unique, process_value=process_value)
 
         super(SgmlLinkExtractor, self).__init__(lx, allow, deny,
-            allow_domains, deny_domains, restrict_xpaths, canonicalize,
-            deny_extensions)
+                                                allow_domains, deny_domains, restrict_xpaths, canonicalize,
+                                                deny_extensions)
 
         # FIXME: was added to fix a RegexLinkExtractor testcase
         self.base_url = None

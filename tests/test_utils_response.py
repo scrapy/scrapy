@@ -35,7 +35,7 @@ class ResponseUtilsTest(unittest.TestCase):
         assert open_in_browser(response, _openfunc=browser_open), \
             "Browser not called"
         self.assertRaises(TypeError, open_in_browser, Response(url, body=body), \
-            debug=True)
+                          debug=True)
 
     def test_get_meta_refresh(self):
         r1 = HtmlResponse("http://www.example.com", body="""

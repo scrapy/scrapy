@@ -71,7 +71,7 @@ class ReturnsContract(Contract):
                 expected = '%s..%s' % (self.min_bound, self.max_bound)
 
             raise ContractFail("Returned %s %s, expected %s" % \
-                (occurrences, self.obj_name, expected))
+                               (occurrences, self.obj_name, expected))
 
 
 class ScrapesContract(Contract):

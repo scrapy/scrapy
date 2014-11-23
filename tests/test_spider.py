@@ -176,7 +176,7 @@ class CrawlSpiderTest(SpiderTest):
     def test_process_links(self):
 
         response = HtmlResponse("http://example.org/somepage/index.html",
-            body=self.test_body)
+                                body=self.test_body)
 
         class _CrawlSpider(self.spider_class):
             name="test"
@@ -200,7 +200,7 @@ class CrawlSpiderTest(SpiderTest):
     def test_process_links_filter(self):
 
         response = HtmlResponse("http://example.org/somepage/index.html",
-            body=self.test_body)
+                                body=self.test_body)
 
         class _CrawlSpider(self.spider_class):
             import re
@@ -226,7 +226,7 @@ class CrawlSpiderTest(SpiderTest):
     def test_process_links_generator(self):
 
         response = HtmlResponse("http://example.org/somepage/index.html",
-            body=self.test_body)
+                                body=self.test_body)
 
         class _CrawlSpider(self.spider_class):
             name="test"

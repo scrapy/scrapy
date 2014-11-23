@@ -31,7 +31,7 @@ def get_base_url(response):
     if response not in _baseurl_cache:
         text = response.body_as_unicode()[0:4096]
         _baseurl_cache[response] = html.get_base_url(text, response.url, \
-            response.encoding)
+                                                     response.encoding)
     return _baseurl_cache[response]
 
 _noscript_re = re.compile(u'<noscript>.*?</noscript>', re.IGNORECASE | re.DOTALL)
@@ -46,7 +46,7 @@ def get_meta_refresh(response):
         text = _noscript_re.sub(u'', text)
         text = _script_re.sub(u'', text)
         _metaref_cache[response] = html.get_meta_refresh(text, response.url, \
-            response.encoding)
+                                                         response.encoding)
     return _metaref_cache[response]
 
 
@@ -90,7 +90,7 @@ def open_in_browser(response, _openfunc=webbrowser.open):
         ext = '.txt'
     else:
         raise TypeError("Unsupported response type: %s" % \
-            response.__class__.__name__)
+                        response.__class__.__name__)
     fd, fname = tempfile.mkstemp(ext)
     os.write(fd, body)
     os.close(fd)

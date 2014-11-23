@@ -16,7 +16,7 @@ class UtilsConfTestCase(unittest.TestCase):
 
     def test_arglist_to_dict(self):
         self.assertEqual(arglist_to_dict(['arg1=val1', 'arg2=val2']),
-            {'arg1': 'val1', 'arg2': 'val2'})
+                         {'arg1': 'val1', 'arg2': 'val2'})
 
 
 if __name__ == "__main__":

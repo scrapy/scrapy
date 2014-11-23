@@ -556,7 +556,7 @@ class SelectortemLoaderTest(unittest.TestCase):
 
         self.assertEqual(l.get_css(['p::text', 'div::text']), [u'paragraph', 'marta'])
         self.assertEqual(l.get_css(['a::attr(href)', 'img::attr(src)']),
-            [u'http://www.scrapy.org', u'/images/logo.png'])
+                         [u'http://www.scrapy.org', u'/images/logo.png'])
 
     def test_replace_css_multi_fields(self):
         l = TestItemLoader(response=self.response)

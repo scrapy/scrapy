@@ -19,7 +19,7 @@ def build(suffix):
             of.write(s)
 
     check_call('debchange -m -D unstable --force-distribution -v $(python setup.py --version)+$(date +%s) "Automatic build"', \
-        shell=True)
+               shell=True)
     check_call('debuild -us -uc -b', shell=True)
 
 

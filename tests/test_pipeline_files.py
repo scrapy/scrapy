@@ -164,7 +164,7 @@ class FilesPipelineTestCaseFields(unittest.TestCase):
         url = 'http://www.example.com/files/1.txt'
         item = TestItem({'name': 'item1', 'files': [url]})
         pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/',
-                'FILES_URLS_FIELD': 'files', 'FILES_RESULT_FIELD': 'stored_file'}))
+                                                         'FILES_URLS_FIELD': 'files', 'FILES_RESULT_FIELD': 'stored_file'}))
         requests = list(pipeline.get_media_requests(item, None))
         self.assertEqual(requests[0].url, url)
         results = [(True, {'url': url})]

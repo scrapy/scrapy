@@ -91,7 +91,7 @@ class ContractsManagerTest(unittest.TestCase):
         contracts = self.conman.extract_contracts(spider.returns_request)
         self.assertEqual(len(contracts), 2)
         self.assertEqual(frozenset(type(x) for x in contracts),
-            frozenset([UrlContract, ReturnsContract]))
+                         frozenset([UrlContract, ReturnsContract]))
 
         # returns request for valid method
         request = self.conman.from_method(spider.returns_request, self.results)
@@ -131,6 +131,6 @@ class ContractsManagerTest(unittest.TestCase):
 
         # scrapes_item_fail
         request = self.conman.from_method(spider.scrapes_item_fail,
-                self.results)
+                                          self.results)
         request.callback(response)
         self.should_fail()

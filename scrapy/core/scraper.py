@@ -165,7 +165,7 @@ class Scraper(object):
             return defer_succeed(None)
         it = iter_errback(result, self.handle_spider_error, request, response, spider)
         dfd = parallel(it, self.concurrent_items,
-            self._process_spidermw_output, request, response, spider)
+                       self._process_spidermw_output, request, response, spider)
         return dfd
 
     def _process_spidermw_output(self, output, request, response, spider):

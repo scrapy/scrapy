@@ -13,7 +13,7 @@ class TestDefaultHeadersMiddleware(TestCase):
         crawler = get_crawler(Spider)
         spider = crawler._create_spider('foo')
         defaults = dict([(k, [v]) for k, v in \
-            six.iteritems(crawler.settings.get('DEFAULT_REQUEST_HEADERS'))])
+                         six.iteritems(crawler.settings.get('DEFAULT_REQUEST_HEADERS'))])
         return defaults, spider, DefaultHeadersMiddleware.from_crawler(crawler)
 
     def test_process_request(self):

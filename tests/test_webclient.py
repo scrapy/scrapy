@@ -26,7 +26,7 @@ def getPage(url, contextFactory=None, *args, **kwargs):
 
     from twisted.web.client import _makeGetterFactory
     return _makeGetterFactory(url, _clientfactory,
-        contextFactory=contextFactory, *args, **kwargs).deferred
+                              contextFactory=contextFactory, *args, **kwargs).deferred
 
 
 class ParseUrlTestCase(unittest.TestCase):
@@ -39,29 +39,29 @@ class ParseUrlTestCase(unittest.TestCase):
     def testParse(self):
         lip = '127.0.0.1'
         tests = (
-    ("http://127.0.0.1?c=v&c2=v2#fragment",     ('http', lip, lip, 80, '/?c=v&c2=v2')),
-    ("http://127.0.0.1/?c=v&c2=v2#fragment",    ('http', lip, lip, 80, '/?c=v&c2=v2')),
-    ("http://127.0.0.1/foo?c=v&c2=v2#frag",     ('http', lip, lip, 80, '/foo?c=v&c2=v2')),
-    ("http://127.0.0.1:100?c=v&c2=v2#fragment", ('http', lip+':100', lip, 100, '/?c=v&c2=v2')),
-    ("http://127.0.0.1:100/?c=v&c2=v2#frag",    ('http', lip+':100', lip, 100, '/?c=v&c2=v2')),
-    ("http://127.0.0.1:100/foo?c=v&c2=v2#frag", ('http', lip+':100', lip, 100, '/foo?c=v&c2=v2')),
+            ("http://127.0.0.1?c=v&c2=v2#fragment",     ('http', lip, lip, 80, '/?c=v&c2=v2')),
+            ("http://127.0.0.1/?c=v&c2=v2#fragment",    ('http', lip, lip, 80, '/?c=v&c2=v2')),
+            ("http://127.0.0.1/foo?c=v&c2=v2#frag",     ('http', lip, lip, 80, '/foo?c=v&c2=v2')),
+            ("http://127.0.0.1:100?c=v&c2=v2#fragment", ('http', lip+':100', lip, 100, '/?c=v&c2=v2')),
+            ("http://127.0.0.1:100/?c=v&c2=v2#frag",    ('http', lip+':100', lip, 100, '/?c=v&c2=v2')),
+            ("http://127.0.0.1:100/foo?c=v&c2=v2#frag", ('http', lip+':100', lip, 100, '/foo?c=v&c2=v2')),
 
-    ("http://127.0.0.1",              ('http', lip, lip, 80, '/')),
-    ("http://127.0.0.1/",             ('http', lip, lip, 80, '/')),
-    ("http://127.0.0.1/foo",          ('http', lip, lip, 80, '/foo')),
-    ("http://127.0.0.1?param=value",  ('http', lip, lip, 80, '/?param=value')),
-    ("http://127.0.0.1/?param=value", ('http', lip, lip, 80, '/?param=value')),
-    ("http://127.0.0.1:12345/foo",    ('http', lip+':12345', lip, 12345, '/foo')),
-    ("http://spam:12345/foo",         ('http', 'spam:12345', 'spam', 12345, '/foo')),
-    ("http://spam.test.org/foo",      ('http', 'spam.test.org', 'spam.test.org', 80, '/foo')),
+            ("http://127.0.0.1",              ('http', lip, lip, 80, '/')),
+            ("http://127.0.0.1/",             ('http', lip, lip, 80, '/')),
+            ("http://127.0.0.1/foo",          ('http', lip, lip, 80, '/foo')),
+            ("http://127.0.0.1?param=value",  ('http', lip, lip, 80, '/?param=value')),
+            ("http://127.0.0.1/?param=value", ('http', lip, lip, 80, '/?param=value')),
+            ("http://127.0.0.1:12345/foo",    ('http', lip+':12345', lip, 12345, '/foo')),
+            ("http://spam:12345/foo",         ('http', 'spam:12345', 'spam', 12345, '/foo')),
+            ("http://spam.test.org/foo",      ('http', 'spam.test.org', 'spam.test.org', 80, '/foo')),
 
-    ("https://127.0.0.1/foo",         ('https', lip, lip, 443, '/foo')),
-    ("https://127.0.0.1/?param=value", ('https', lip, lip, 443, '/?param=value')),
-    ("https://127.0.0.1:12345/",      ('https', lip+':12345', lip, 12345, '/')),
+            ("https://127.0.0.1/foo",         ('https', lip, lip, 443, '/foo')),
+            ("https://127.0.0.1/?param=value", ('https', lip, lip, 443, '/?param=value')),
+            ("https://127.0.0.1:12345/",      ('https', lip+':12345', lip, 12345, '/')),
 
-    ("http://scrapytest.org/foo ",    ('http', 'scrapytest.org', 'scrapytest.org', 80, '/foo')),
-    ("http://egg:7890 ",              ('http', 'egg:7890', 'egg', 7890, '/')),
-    )
+            ("http://scrapytest.org/foo ",    ('http', 'scrapytest.org', 'scrapytest.org', 80, '/foo')),
+            ("http://egg:7890 ",              ('http', 'egg:7890', 'egg', 7890, '/')),
+            )
 
         for url, test in tests:
             self.assertEquals(client._parse(url), test, url)
@@ -98,22 +98,22 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
                 'Useful': 'value'}))
 
         self._test(factory,
-            "GET /bar HTTP/1.0\r\n"
-            "Content-Length: 9\r\n"
-            "Useful: value\r\n"
-            "Connection: close\r\n"
-            "User-Agent: fooble\r\n"
-            "Host: example.net\r\n"
-            "Cookie: blah blah\r\n"
-            "\r\n"
-            "some data")
+                   "GET /bar HTTP/1.0\r\n"
+                   "Content-Length: 9\r\n"
+                   "Useful: value\r\n"
+                   "Connection: close\r\n"
+                   "User-Agent: fooble\r\n"
+                   "Host: example.net\r\n"
+                   "Cookie: blah blah\r\n"
+                   "\r\n"
+                   "some data")
 
         # test minimal sent headers
         factory = client.ScrapyHTTPClientFactory(Request('http://foo/bar'))
         self._test(factory,
-            "GET /bar HTTP/1.0\r\n"
-            "Host: foo\r\n"
-            "\r\n")
+                   "GET /bar HTTP/1.0\r\n"
+                   "Host: foo\r\n"
+                   "\r\n")
 
         # test a simple POST with body and content-type
         factory = client.ScrapyHTTPClientFactory(Request(
@@ -123,13 +123,13 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             headers={'Content-Type': 'application/x-www-form-urlencoded'}))
 
         self._test(factory,
-            "POST /bar HTTP/1.0\r\n"
-            "Host: foo\r\n"
-            "Connection: close\r\n"
-            "Content-Type: application/x-www-form-urlencoded\r\n"
-            "Content-Length: 10\r\n"
-            "\r\n"
-            "name=value")
+                   "POST /bar HTTP/1.0\r\n"
+                   "Host: foo\r\n"
+                   "Connection: close\r\n"
+                   "Content-Type: application/x-www-form-urlencoded\r\n"
+                   "Content-Length: 10\r\n"
+                   "\r\n"
+                   "name=value")
 
         # test with single and multivalued headers
         factory = client.ScrapyHTTPClientFactory(Request(
@@ -140,12 +140,12 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
                 }))
 
         self._test(factory,
-            "GET /bar HTTP/1.0\r\n"
-            "Host: foo\r\n"
-            "X-Meta-Multivalued: value1\r\n"
-            "X-Meta-Multivalued: value2\r\n"
-            "X-Meta-Single: single\r\n"
-            "\r\n")
+                   "GET /bar HTTP/1.0\r\n"
+                   "Host: foo\r\n"
+                   "X-Meta-Multivalued: value1\r\n"
+                   "X-Meta-Multivalued: value2\r\n"
+                   "X-Meta-Single: single\r\n"
+                   "\r\n")
 
         # same test with single and multivalued headers but using Headers class
         factory = client.ScrapyHTTPClientFactory(Request(
@@ -156,12 +156,12 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
                 })))
 
         self._test(factory,
-            "GET /bar HTTP/1.0\r\n"
-            "Host: foo\r\n"
-            "X-Meta-Multivalued: value1\r\n"
-            "X-Meta-Multivalued: value2\r\n"
-            "X-Meta-Single: single\r\n"
-            "\r\n")
+                   "GET /bar HTTP/1.0\r\n"
+                   "Host: foo\r\n"
+                   "X-Meta-Multivalued: value1\r\n"
+                   "X-Meta-Multivalued: value2\r\n"
+                   "X-Meta-Single: single\r\n"
+                   "\r\n")
 
     def _test(self, factory, testvalue):
         transport = StringTransport()
@@ -185,7 +185,7 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
         protocol.dataReceived("Foo: Bar\n")
         protocol.dataReceived("\n")
         self.assertEqual(protocol.headers,
-            Headers({'Hello': ['World'], 'Foo': ['Bar']}))
+                         Headers({'Hello': ['World'], 'Foo': ['Bar']}))
 
 
 from twisted.web.test.test_webclient import ForeverTakingResource, \
@@ -307,6 +307,6 @@ class WebClientTestCase(unittest.TestCase):
 
     def _cbRedirect(self, pageData):
         self.assertEquals(pageData,
-                '\n<html>\n    <head>\n        <meta http-equiv="refresh" content="0;URL=/file">\n'
-                '    </head>\n    <body bgcolor="#FFFFFF" text="#000000">\n    '
-                '<a href="/file">click here</a>\n    </body>\n</html>\n')
+                          '\n<html>\n    <head>\n        <meta http-equiv="refresh" content="0;URL=/file">\n'
+                          '    </head>\n    <body bgcolor="#FFFFFF" text="#000000">\n    '
+                          '<a href="/file">click here</a>\n    </body>\n</html>\n')

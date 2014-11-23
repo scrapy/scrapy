@@ -156,7 +156,7 @@ class FeedExporter(object):
             import warnings
             from scrapy.exceptions import ScrapyDeprecationWarning
             warnings.warn("%s must receive a settings object as first constructor argument." % cls.__name__,
-                ScrapyDeprecationWarning, stacklevel=2)
+                          ScrapyDeprecationWarning, stacklevel=2)
             o = cls()
         else:
             o = cls(crawler.settings)
@@ -179,7 +179,7 @@ class FeedExporter(object):
             return
         slot.exporter.finish_exporting()
         logfmt = "%%s %s feed (%d items) in: %s" % (self.format, \
-            slot.itemcount, slot.uri)
+                                                    slot.itemcount, slot.uri)
         d = defer.maybeDeferred(slot.storage.store, slot.file)
         d.addCallback(lambda _: log.msg(logfmt % "Stored", spider=spider))
         d.addErrback(log.err, logfmt % "Error storing", spider=spider)
