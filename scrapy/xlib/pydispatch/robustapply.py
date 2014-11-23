@@ -47,7 +47,7 @@ def robustApply(receiver, *arguments, **named):
             )
 
     if not (codeObject.co_flags & 8):
-        # fc does not have a **kwds type parameter, therefore 
+        # fc does not have a **kwds type parameter, therefore
         # remove unacceptable arguments.
         for arg in named.keys():
             if arg not in acceptable:

@@ -1,5 +1,5 @@
 """ This module implements the DecompressionMiddleware which tries to recognise
-and extract the potentially compressed responses that may arrive. 
+and extract the potentially compressed responses that may arrive.
 """
 
 import bz2

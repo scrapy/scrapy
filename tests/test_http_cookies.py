@@ -50,7 +50,7 @@ class WrappedRequestTest(TestCase):
 class WrappedResponseTest(TestCase):
 
     def setUp(self):
-        self.response = Response("http://www.example.com/page.html", 
+        self.response = Response("http://www.example.com/page.html",
                                  headers={"Content-TYpe": "text/html"})
         self.wrapped = WrappedResponse(self.response)
 

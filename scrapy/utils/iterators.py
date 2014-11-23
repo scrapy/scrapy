@@ -47,7 +47,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
 
     headers is an iterable that when provided offers the keys
     for the returned dictionaries, if not the first row is used.
-    
+
     quotechar is the character used to enclosure fields on the given obj.
     """
 
