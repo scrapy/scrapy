@@ -52,8 +52,10 @@ class Command(ScrapyCommand):
     @property
     def max_level(self):
         levels = self.items.keys() + self.requests.keys()
-        if levels: return max(levels)
-        else: return 0
+        if levels:
+            return max(levels)
+        else:
+            return 0
 
     def add_items(self, lvl, new_items):
         old_items = self.items.get(lvl, [])

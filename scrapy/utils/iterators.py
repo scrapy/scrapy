@@ -61,8 +61,10 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
     lines = BytesIO(_body_or_str(obj, unicode=False))
 
     kwargs = {}
-    if delimiter: kwargs["delimiter"] = delimiter
-    if quotechar: kwargs["quotechar"] = quotechar
+    if delimiter:
+        kwargs["delimiter"] = delimiter
+    if quotechar:
+        kwargs["quotechar"] = quotechar
     csv_r = csv.reader(lines, **kwargs)
 
     if not headers:
