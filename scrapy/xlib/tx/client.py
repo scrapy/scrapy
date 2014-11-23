@@ -555,7 +555,7 @@ class _AgentBase(object):
         if headers is None:
             headers = Headers()
         if not headers.hasHeader('host'):
-            #headers = headers.copy()  # not supported in twisted <= 11.1, and it doesn't affects us
+            # headers = headers.copy()  # not supported in twisted <= 11.1, and it doesn't affects us
             headers.addRawHeader(
                 'host', self._computeHostValue(parsedURI.scheme, parsedURI.host,
                                                parsedURI.port))

@@ -19,7 +19,7 @@ class IAddress(Interface):
     Default implementations are in L{twisted.internet.address}.
     """
 
-### Reactor Interfaces
+# Reactor Interfaces
 
 
 class IConnector(Interface):

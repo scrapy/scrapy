@@ -7,7 +7,7 @@ from scrapy.contrib.spiders import CrawlSpider
 
 
 class MyBaseSpider(CrawlSpider):
-    pass # abstract spider
+    pass  # abstract spider
 
 
 class MySpider1(MyBaseSpider):

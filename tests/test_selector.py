@@ -505,10 +505,10 @@ class ExsltTestCase(unittest.TestCase):
 
         # re:match() is rather special: it returns a node-set of <match> nodes
         #[u'<match>http://www.bayes.co.uk/xml/index.xml?/xml/utils/rechecker.xml</match>',
-        #u'<match>http</match>',
-        #u'<match>www.bayes.co.uk</match>',
-        #u'<match></match>',
-        #u'<match>/xml/index.xml?/xml/utils/rechecker.xml</match>']
+        # u'<match>http</match>',
+        # u'<match>www.bayes.co.uk</match>',
+        # u'<match></match>',
+        # u'<match>/xml/index.xml?/xml/utils/rechecker.xml</match>']
         self.assertEqual(
             sel.xpath('re:match(//a[re:test(@href, "\.xml$")]/@href,'
                       '"(\w+):\/\/([^/:]+)(:\d*)?([^# ]*)")/text()').extract(),

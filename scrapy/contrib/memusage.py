@@ -91,7 +91,7 @@ class MemoryUsage(object):
                 self.crawler.stop()
 
     def _check_warning(self):
-        if self.warned: # warn only once
+        if self.warned:  # warn only once
             return
         if self.get_virtual_size() > self.warning:
             self.crawler.stats.set_value('memusage/warning_reached', 1)

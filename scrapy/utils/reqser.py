@@ -18,7 +18,7 @@ def request_to_dict(request, spider=None):
     if callable(eb):
         eb = _find_method(spider, eb)
     d = {
-        'url': request.url.decode('ascii'), # urls should be safe (safe_string_url)
+        'url': request.url.decode('ascii'),  # urls should be safe (safe_string_url)
         'callback': cb,
         'errback': eb,
         'method': request.method,

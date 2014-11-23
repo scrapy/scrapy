@@ -49,7 +49,7 @@ class OffsiteMiddleware(object):
         """Override this method to implement a different offsite policy"""
         allowed_domains = getattr(spider, 'allowed_domains', None)
         if not allowed_domains:
-            return re.compile('') # allow all by default
+            return re.compile('')  # allow all by default
         regex = r'^(.*\.)?(%s)$' % '|'.join(re.escape(d) for d in allowed_domains if d is not None)
         return re.compile(regex)
 

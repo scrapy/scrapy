@@ -292,7 +292,7 @@ def getAllReceivers( sender = Any, signal = Any ):
 		getReceivers( Any, Any ),
 	):
 		for receiver in set:
-			if receiver: # filter out dead instance-method weakrefs
+			if receiver:  # filter out dead instance-method weakrefs
 				try:
 					if receiver not in receivers:
 						receivers[receiver] = 1

@@ -187,7 +187,7 @@ class HttpTestCase(unittest.TestCase):
         return d
 
     def test_payload(self):
-        body = '1'*100 # PayloadResource requires body length to be 100
+        body = '1'*100  # PayloadResource requires body length to be 100
         request = Request(self.getURL('payload'), method='POST', body=body)
         d = self.download_request(request, Spider('foo'))
         d.addCallback(lambda r: r.body)

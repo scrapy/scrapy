@@ -19,7 +19,7 @@ class QPSSpider(Spider):
     # Max concurrency is limited by global CONCURRENT_REQUESTS setting
     max_concurrent_requests = 8
     # Requests per second goal
-    qps = None # same as: 1 / download_delay
+    qps = None  # same as: 1 / download_delay
     download_delay = None
     # time in seconds to delay server responses
     latency = None

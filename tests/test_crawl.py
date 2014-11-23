@@ -109,7 +109,7 @@ class CrawlTestCase(TestCase):
         crawler = get_crawler(BrokenStartRequestsSpider, settings)
         yield crawler.crawl()
         #self.assertTrue(False, crawler.spider.seedsseen)
-        #self.assertTrue(crawler.spider.seedsseen.index(None) < crawler.spider.seedsseen.index(99),
+        # self.assertTrue(crawler.spider.seedsseen.index(None) < crawler.spider.seedsseen.index(99),
         #                crawler.spider.seedsseen)
 
     @defer.inlineCallbacks

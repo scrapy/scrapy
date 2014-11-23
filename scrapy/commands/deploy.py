@@ -88,11 +88,11 @@ class Command(ScrapyCommand):
 
         tmpdir = None
 
-        if opts.build_egg: # build egg only
+        if opts.build_egg:  # build egg only
             egg, tmpdir = _build_egg()
             _log("Writing egg to %s" % opts.build_egg)
             shutil.copyfile(egg, opts.build_egg)
-        else: # buld egg and deploy
+        else:  # buld egg and deploy
             target_name = _get_target_name(args)
             target = _get_target(target_name)
             project = _get_project(target, opts)
@@ -208,7 +208,7 @@ def _add_auth_header(request, target):
     if 'username' in target:
         u, p = target.get('username'), target.get('password', '')
         request.add_header('Authorization', basic_auth_header(u, p))
-    else: # try netrc
+    else:  # try netrc
         try:
             host = urlparse(target['url']).hostname
             a = netrc.netrc().authenticators(host)

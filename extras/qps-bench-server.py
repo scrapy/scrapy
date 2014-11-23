@@ -27,7 +27,7 @@ class Root(Resource):
         delta = now - self.lasttime
 
         # reset stats on high iter-request times caused by client restarts
-        if delta > 3: # seconds
+        if delta > 3:  # seconds
             self._reset_stats()
             return ''
 
