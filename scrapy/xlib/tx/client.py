@@ -52,6 +52,7 @@ class _URL(tuple):
 
     At some point this should be replaced with a better URL implementation.
     """
+
     def __new__(self, scheme, host, port, path):
         return tuple.__new__(_URL, (scheme, host, port, path))
 
@@ -148,6 +149,7 @@ except ImportError:
         A web context factory which doesn't work because the necessary SSL
         support is missing.
         """
+
         def getContext(self, hostname, port):
             raise NotImplementedError("SSL support unavailable")
 else:
@@ -156,6 +158,7 @@ else:
         A web context factory which ignores the hostname and port and does no
         certificate verification.
         """
+
         def getContext(self, hostname, port):
             return ClientContextFactory.getContext(self)
 
@@ -173,6 +176,7 @@ class _WebToNormalContextFactory(object):
     @ivar _port: The port number which will be passed to
         C{_webContext.getContext}.
     """
+
     def __init__(self, webContext, hostname, port):
         self._webContext = webContext
         self._hostname = hostname
@@ -254,6 +258,7 @@ class FileBodyProducer(object):
         """
         self._task = self._cooperate(self._writeloop(consumer))
         d = self._task.whenDone()
+
         def maybeStopped(reason):
             # IBodyProducer.startProducing's Deferred isn't support to fire if
             # stopProducing is called.
@@ -300,6 +305,7 @@ class _HTTP11ClientFactory(protocol.Factory):
 
     @since: 11.1
     """
+
     def __init__(self, quiescentCallback):
         self._quiescentCallback = quiescentCallback
 
@@ -555,6 +561,7 @@ class _AgentBase(object):
                                                parsedURI.port))
 
         d = self._pool.getConnection(key, endpoint)
+
         def cbConnected(proto):
             return proto.request(
                 Request(method, requestPath, headers, bodyProducer,
@@ -725,6 +732,7 @@ class _FakeUrllib2Request(object):
 
     @since: 11.1
     """
+
     def __init__(self, uri):
         self.uri = uri
         self.headers = Headers()
@@ -766,6 +774,7 @@ class _FakeUrllib2Response(object):
 
     @since: 11.1
     """
+
     def __init__(self, response):
         self.response = response
 
@@ -794,6 +803,7 @@ class CookieAgent(object):
 
     @since: 11.1
     """
+
     def __init__(self, agent, cookieJar):
         self._agent = agent
         self.cookieJar = cookieJar

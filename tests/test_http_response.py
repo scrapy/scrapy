@@ -252,7 +252,7 @@ class TextResponseTest(BaseResponseTest):
         assert u'SUFFIX' in r.body_as_unicode(), repr(r.body_as_unicode())
 
         # Do not destroy html tags due to encoding bugs
-        r = self.response_class("http://example.com", encoding='utf-8', \
+        r = self.response_class("http://example.com", encoding='utf-8',
                                 body='\xf0<span>value</span>')
         assert u'<span>value</span>' in r.body_as_unicode(), repr(r.body_as_unicode())
 

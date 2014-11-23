@@ -95,6 +95,7 @@ class Scraper(object):
     def enqueue_scrape(self, response, request, spider):
         slot = self.slot
         dfd = slot.add_response_request(response, request)
+
         def finish_scraping(_):
             slot.finish_response(response, request)
             self._check_if_closing(spider, slot)

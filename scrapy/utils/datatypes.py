@@ -31,6 +31,7 @@ class MultiValueDict(dict):
     which returns a list for every key, even though most Web forms submit
     single name-value pairs.
     """
+
     def __init__(self, key_to_list_mapping=()):
         dict.__init__(self, key_to_list_mapping)
 
@@ -223,6 +224,7 @@ class MergeDict(object):
     If a key appears in more than one of the given dictionaries, only the
     first occurrence will be used.
     """
+
     def __init__(self, *dicts):
         self.dicts = dicts
 

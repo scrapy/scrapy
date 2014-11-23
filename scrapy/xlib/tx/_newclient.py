@@ -72,6 +72,7 @@ class ParseError(Exception):
 
     @ivar data: The string which could not be parsed.
     """
+
     def __init__(self, reason, data):
         Exception.__init__(self, reason, data)
         self.data = data
@@ -91,6 +92,7 @@ class _WrapperException(Exception):
     @ivar reasons: A list of exceptions.  See subclass documentation for more
         details.
     """
+
     def __init__(self, reasons):
         Exception.__init__(self, reasons)
         self.reasons = reasons
@@ -537,6 +539,7 @@ class Request:
     @ivar persistent: Set to C{True} when you use HTTP persistent connection.
     @type persistent: C{bool}
     """
+
     def __init__(self, method, uri, headers, bodyProducer, persistent=False):
         self.method = method
         self.uri = uri
@@ -576,6 +579,7 @@ class Request:
 
         def cbProduced(ignored):
             encoder.unregisterProducer()
+
         def ebProduced(err):
             encoder._allowNoMoreWrites()
             # Don't call the encoder's unregisterProducer because it will write
@@ -689,6 +693,7 @@ class Request:
             return ultimate
 
         d = combine(finishedConsuming, finishedProducing)
+
         def f(passthrough):
             # Regardless of what happens with the overall Deferred, once it
             # fires, the producer registered way up above the definition of
@@ -746,6 +751,7 @@ class LengthEnforcingConsumer:
     @ivar _finished: A L{Deferred} which will be fired with a L{Failure} if too
         many bytes are written to this consumer.
     """
+
     def __init__(self, producer, consumer, finished):
         self._length = producer.length
         self._producer = producer
@@ -816,6 +822,7 @@ def makeStatefulDispatcher(name, template):
 
     @return: The dispatcher function.
     """
+
     def dispatcher(self, *args, **kwargs):
         func = getattr(self, '_' + name + '_' + self._state, None)
         if func is None:

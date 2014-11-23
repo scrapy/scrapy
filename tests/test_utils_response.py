@@ -24,6 +24,7 @@ class ResponseUtilsTest(unittest.TestCase):
     def test_open_in_browser(self):
         url = "http:///www.example.com/some/page.html"
         body = "<html> <head> <title>test page</title> </head> <body>test body</body> </html>"
+
         def browser_open(burl):
             path = urlparse(burl).path
             if not os.path.exists(path):
@@ -34,7 +35,7 @@ class ResponseUtilsTest(unittest.TestCase):
         response = HtmlResponse(url, body=body)
         assert open_in_browser(response, _openfunc=browser_open), \
             "Browser not called"
-        self.assertRaises(TypeError, open_in_browser, Response(url, body=body), \
+        self.assertRaises(TypeError, open_in_browser, Response(url, body=body),
                           debug=True)
 
     def test_get_meta_refresh(self):

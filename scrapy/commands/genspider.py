@@ -90,7 +90,7 @@ class Command(ScrapyCommand):
             'module': module,
             'name': name,
             'domain': domain,
-            'classname': '%sSpider' % ''.join([s.capitalize() \
+            'classname': '%sSpider' % ''.join([s.capitalize()
                                                for s in module.split('_')])
         }
         spiders_module = import_module(self.settings['NEWSPIDER_MODULE'])
@@ -98,7 +98,7 @@ class Command(ScrapyCommand):
         spider_file = "%s.py" % join(spiders_dir, module)
         shutil.copyfile(template_file, spider_file)
         render_templatefile(spider_file, **tvars)
-        print("Created spider %r using template %r in module:" % (name, \
+        print("Created spider %r using template %r in module:" % (name,
                                                                   template_name))
         print("  %s.%s" % (spiders_module.__name__, module))
 

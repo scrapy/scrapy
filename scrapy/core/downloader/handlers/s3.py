@@ -11,12 +11,14 @@ except ImportError:
 
 class _v19_S3Connection(S3Connection):
     """A dummy S3Connection wrapper that doesn't do any syncronous download"""
+
     def _mexe(self, method, bucket, key, headers, *args, **kwargs):
         return headers
 
 
 class _v20_S3Connection(S3Connection):
     """A dummy S3Connection wrapper that doesn't do any syncronous download"""
+
     def _mexe(self, http_request, *args, **kwargs):
         http_request.authorize(connection=self)
         return http_request.headers
@@ -31,7 +33,7 @@ else:
 
 class S3DownloadHandler(object):
 
-    def __init__(self, settings, aws_access_key_id=None, aws_secret_access_key=None, \
+    def __init__(self, settings, aws_access_key_id=None, aws_secret_access_key=None,
                  httpdownloadhandler=HTTPDownloadHandler):
         if 'boto' not in optional_features:
             raise NotConfigured("missing boto library")

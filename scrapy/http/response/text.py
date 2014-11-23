@@ -71,8 +71,8 @@ class TextResponse(Response):
     def _body_inferred_encoding(self):
         if self._cached_benc is None:
             content_type = self.headers.get('Content-Type')
-            benc, ubody = html_to_unicode(content_type, self.body, \
-                                          auto_detect_fun=self._auto_detect_fun, \
+            benc, ubody = html_to_unicode(content_type, self.body,
+                                          auto_detect_fun=self._auto_detect_fun,
                                           default_encoding=self._DEFAULT_ENCODING)
             self._cached_benc = benc
             self._cached_ubody = ubody

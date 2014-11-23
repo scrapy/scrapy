@@ -28,25 +28,25 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("--spider", dest="spider", default=None, \
+        parser.add_option("--spider", dest="spider", default=None,
                           help="use this spider without looking for one")
-        parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE", \
+        parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
                           help="set spider argument (may be repeated)")
-        parser.add_option("--pipelines", action="store_true", \
+        parser.add_option("--pipelines", action="store_true",
                           help="process items through pipelines")
-        parser.add_option("--nolinks", dest="nolinks", action="store_true", \
+        parser.add_option("--nolinks", dest="nolinks", action="store_true",
                           help="don't show links to follow (extracted requests)")
-        parser.add_option("--noitems", dest="noitems", action="store_true", \
+        parser.add_option("--noitems", dest="noitems", action="store_true",
                           help="don't show scraped items")
-        parser.add_option("--nocolour", dest="nocolour", action="store_true", \
+        parser.add_option("--nocolour", dest="nocolour", action="store_true",
                           help="avoid using pygments to colorize the output")
-        parser.add_option("-r", "--rules", dest="rules", action="store_true", \
+        parser.add_option("-r", "--rules", dest="rules", action="store_true",
                           help="use CrawlSpider rules to discover the callback")
-        parser.add_option("-c", "--callback", dest="callback", \
+        parser.add_option("-c", "--callback", dest="callback",
                           help="use this callback for parsing, instead looking for a callback")
-        parser.add_option("-d", "--depth", dest="depth", type="int", default=1, \
+        parser.add_option("-d", "--depth", dest="depth", type="int", default=1,
                           help="maximum depth for parsing requests [default: %default]")
-        parser.add_option("-v", "--verbose", dest="verbose", action="store_true", \
+        parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
                           help="print each depth level one by one")
 
     @property

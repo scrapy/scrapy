@@ -9,6 +9,7 @@ from scrapy.utils.defer import mustbe_deferred, process_chain, \
 class MustbeDeferredTest(unittest.TestCase):
     def test_success_function(self):
         steps = []
+
         def _append(v):
             steps.append(v)
             return steps
@@ -20,6 +21,7 @@ class MustbeDeferredTest(unittest.TestCase):
 
     def test_unfired_deferred(self):
         steps = []
+
         def _append(v):
             steps.append(v)
             dfd = defer.Deferred()

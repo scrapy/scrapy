@@ -45,9 +45,9 @@ class BaseItemExporterTest(unittest.TestCase):
         self._check_output()
 
     def test_serialize_field(self):
-        self.assertEqual(self.ie.serialize_field( \
+        self.assertEqual(self.ie.serialize_field(
             self.i.fields['name'], 'name', self.i['name']), 'John\xc2\xa3')
-        self.assertEqual( \
+        self.assertEqual(
             self.ie.serialize_field(self.i.fields['age'], 'age', self.i['age']), '22')
 
     def test_fields_to_export(self):
@@ -211,6 +211,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
                         for child in children]
             else:
                 return [(elem.tag, [(elem.text, ())])]
+
         def xmlsplit(xmlcontent):
             doc = lxml.etree.fromstring(xmlcontent)
             return xmltuple(doc)
@@ -339,13 +340,13 @@ class CustomItemExporterTest(unittest.TestCase):
                 if name == 'age':
                     return str(int(value) + 1)
                 else:
-                    return super(CustomItemExporter, self).serialize_field(field, \
+                    return super(CustomItemExporter, self).serialize_field(field,
                                                                            name, value)
 
         i = TestItem(name=u'John', age='22')
         ie = CustomItemExporter()
 
-        self.assertEqual( \
+        self.assertEqual(
             ie.serialize_field(i.fields['name'], 'name', i['name']), 'John')
         self.assertEqual(
             ie.serialize_field(i.fields['age'], 'age', i['age']), '23')

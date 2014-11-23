@@ -19,6 +19,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         # So, first process_request will always succeed.
         # We defer test() because otherwise robots.txt download mock will be called after assertRaises failure.
         self.assertNotIgnored(Request('http://site.local'), middleware)
+
         def test(r):
             self.assertNotIgnored(Request('http://site.local/allowed'), middleware)
             self.assertIgnored(Request('http://site.local/admin/main'), middleware)
@@ -32,6 +33,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         meta = {'dont_obey_robotstxt': True}
         middleware = self._get_middleware()
         self.assertNotIgnored(Request('http://site.local', meta=meta), middleware)
+
         def test(r):
             self.assertNotIgnored(Request('http://site.local/allowed', meta=meta), middleware)
             self.assertNotIgnored(Request('http://site.local/admin/main', meta=meta), middleware)
@@ -62,6 +64,7 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
         Disallow: /static/
         ''')
         response = Response('http://site.local/robots.txt', body=ROBOTS)
+
         def return_response(request, spider):
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)

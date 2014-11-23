@@ -108,7 +108,7 @@ class ExecutionEngine(object):
                 slot.start_requests = None
             except Exception as exc:
                 slot.start_requests = None
-                log.err(None, 'Obtaining request from start requests', \
+                log.err(None, 'Obtaining request from start requests',
                         spider=spider)
             else:
                 self.crawl(request, spider)
@@ -190,13 +190,14 @@ class ExecutionEngine(object):
     def _download(self, request, spider):
         slot = self.slot
         slot.add_request(request)
+
         def _on_success(response):
             assert isinstance(response, (Response, Request))
             if isinstance(response, Response):
                 response.request = request # tie request to response received
                 logkws = self.logformatter.crawled(request, response, spider)
                 log.msg(spider=spider, **logkws)
-                self.signals.send_catch_log(signal=signals.response_received, \
+                self.signals.send_catch_log(signal=signals.response_received,
                                             response=response, request=request, spider=spider)
             return response
 
@@ -234,9 +235,9 @@ class ExecutionEngine(object):
         next loop and this function is guaranteed to be called (at least) once
         again for this spider.
         """
-        res = self.signals.send_catch_log(signal=signals.spider_idle, \
+        res = self.signals.send_catch_log(signal=signals.spider_idle,
                                           spider=spider, dont_log=DontCloseSpider)
-        if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider) \
+        if any(isinstance(x, Failure) and isinstance(x.value, DontCloseSpider)
                 for _, x in res):
             self.slot.nextcall.schedule(5)
             return

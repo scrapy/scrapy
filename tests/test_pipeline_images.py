@@ -169,6 +169,7 @@ class ImagesPipelineTestCaseFields(unittest.TestCase):
 
     def test_item_fields_default(self):
         from scrapy.contrib.pipeline.images import ImagesPipeline
+
         class TestItem(Item):
             name = Field()
             image_urls = Field()
@@ -184,6 +185,7 @@ class ImagesPipelineTestCaseFields(unittest.TestCase):
 
     def test_item_fields_override_settings(self):
         from scrapy.contrib.pipeline.images import ImagesPipeline
+
         class TestItem(Item):
             name = Field()
             image = Field()

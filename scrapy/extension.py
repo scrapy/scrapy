@@ -13,5 +13,5 @@ class ExtensionManager(MiddlewareManager):
 
     @classmethod
     def _get_mwlist_from_settings(cls, settings):
-        return build_component_list(settings['EXTENSIONS_BASE'], \
+        return build_component_list(settings['EXTENSIONS_BASE'],
                                     settings['EXTENSIONS'])

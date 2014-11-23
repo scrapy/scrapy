@@ -4,6 +4,7 @@ import collections
 
 class DummyDB(dict):
     """Provide dummy DBM-like interface."""
+
     def close(self):
         pass
 

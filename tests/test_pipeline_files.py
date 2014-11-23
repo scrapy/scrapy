@@ -142,6 +142,7 @@ class FilesPipelineTestCaseFields(unittest.TestCase):
 
     def test_item_fields_default(self):
         from scrapy.contrib.pipeline.files import FilesPipeline
+
         class TestItem(Item):
             name = Field()
             file_urls = Field()
@@ -157,6 +158,7 @@ class FilesPipelineTestCaseFields(unittest.TestCase):
 
     def test_item_fields_override_settings(self):
         from scrapy.contrib.pipeline.files import FilesPipeline
+
         class TestItem(Item):
             name = Field()
             files = Field()

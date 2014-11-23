@@ -70,7 +70,7 @@ def start_test_site(debug=False):
 
     port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
     if debug:
-        print("Test server running at http://localhost:%d/ - hit Ctrl-C to finish." \
+        print("Test server running at http://localhost:%d/ - hit Ctrl-C to finish."
               % port.getHost().port)
     return port
 

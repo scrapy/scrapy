@@ -92,7 +92,7 @@ class ItemLoader(object):
         try:
             return proc(self._values[field_name])
         except Exception as e:
-            raise ValueError("Error with output processor: field=%r value=%r error='%s: %s'" % \
+            raise ValueError("Error with output processor: field=%r value=%r error='%s: %s'" %
                              (field_name, self._values[field_name], type(e).__name__, str(e)))
 
     def get_collected_values(self, field_name):
@@ -101,14 +101,14 @@ class ItemLoader(object):
     def get_input_processor(self, field_name):
         proc = getattr(self, '%s_in' % field_name, None)
         if not proc:
-            proc = self._get_item_field_attr(field_name, 'input_processor', \
+            proc = self._get_item_field_attr(field_name, 'input_processor',
                                              self.default_input_processor)
         return proc
 
     def get_output_processor(self, field_name):
         proc = getattr(self, '%s_out' % field_name, None)
         if not proc:
-            proc = self._get_item_field_attr(field_name, 'output_processor', \
+            proc = self._get_item_field_attr(field_name, 'output_processor',
                                              self.default_output_processor)
         return proc
 

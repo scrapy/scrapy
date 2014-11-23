@@ -245,15 +245,15 @@ class SelectorTestCase(unittest.TestCase):
 
     def test_null_bytes(self):
         # shouldn't raise errors
-        r1 = TextResponse('http://www.example.com', \
-                          body='<root>pre\x00post</root>', \
+        r1 = TextResponse('http://www.example.com',
+                          body='<root>pre\x00post</root>',
                           encoding='utf-8')
         self.sscls(r1).xpath('//text()').extract()
 
     def test_badly_encoded_body(self):
         # \xe9 alone isn't valid utf8 sequence
-        r1 = TextResponse('http://www.example.com', \
-                          body='<html><p>an Jos\xe9 de</p><html>', \
+        r1 = TextResponse('http://www.example.com',
+                          body='<html><p>an Jos\xe9 de</p><html>',
                           encoding='utf-8')
         self.sscls(r1).xpath('//text()').extract()
 
@@ -527,7 +527,7 @@ class ExsltTestCase(unittest.TestCase):
     def test_set(self):
         """EXSLT set manipulation tests"""
         # microdata example from http://schema.org/Event
-        body="""
+        body = """
         <div itemscope itemtype="http://schema.org/Event">
           <a itemprop="url" href="nba-miami-philidelphia-game3.html">
           NBA Eastern Conference First Round Playoff Tickets:

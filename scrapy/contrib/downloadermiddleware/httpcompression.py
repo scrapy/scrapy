@@ -25,7 +25,7 @@ class HttpCompressionMiddleware(object):
             if content_encoding and not is_gzipped(response):
                 encoding = content_encoding.pop()
                 decoded_body = self._decode(response.body, encoding.lower())
-                respcls = responsetypes.from_args(headers=response.headers, \
+                respcls = responsetypes.from_args(headers=response.headers,
                                                   url=response.url)
                 kwargs = dict(cls=respcls, body=decoded_body)
                 if issubclass(respcls, TextResponse):

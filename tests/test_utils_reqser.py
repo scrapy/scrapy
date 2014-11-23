@@ -54,7 +54,7 @@ class RequestSerializationTest(unittest.TestCase):
         self.assertEqual(r1.dont_filter, r2.dont_filter)
 
     def test_callback_serialization(self):
-        r = Request("http://www.example.com", callback=self.spider.parse_item, \
+        r = Request("http://www.example.com", callback=self.spider.parse_item,
                     errback=self.spider.handle_error)
         self._assert_serializes_ok(r, spider=self.spider)
 
@@ -70,7 +70,9 @@ class RequestSerializationTest(unittest.TestCase):
 
 class TestSpider(Spider):
     name = 'test'
+
     def parse_item(self, response):
         pass
+
     def handle_error(self, failure):
         pass

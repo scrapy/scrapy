@@ -52,6 +52,7 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
     """
 
     encoding = obj.encoding if isinstance(obj, TextResponse) else encoding or 'utf-8'
+
     def _getrow(csv_r):
         return [str_to_unicode(field, encoding) for field in next(csv_r)]
 

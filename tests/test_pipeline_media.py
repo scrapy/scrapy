@@ -232,6 +232,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
             return response
 
         rsp1 = Response('http://url')
+
         def rsp1_func():
             dfd = Deferred().addCallback(_check_downloading)
             reactor.callLater(.1, dfd.callback, rsp1)
@@ -252,5 +253,5 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         item = dict(requests=req)
         new_item = yield self.pipe.process_item(item, self.spider)
         self.assertEqual(new_item['results'], [(True, 'ITSME')])
-        self.assertEqual(self.pipe._mockcalled, \
+        self.assertEqual(self.pipe._mockcalled,
                          ['get_media_requests', 'media_to_download', 'item_completed'])

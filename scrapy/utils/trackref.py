@@ -41,7 +41,7 @@ def format_live_refs(ignore=NoneType):
         if issubclass(cls, ignore):
             continue
         oldest = min(wdict.itervalues())
-        s += "%-30s %6d   oldest: %ds ago" % (cls.__name__, len(wdict), \
+        s += "%-30s %6d   oldest: %ds ago" % (cls.__name__, len(wdict),
                                               now-oldest) + os.linesep
     return s
 

@@ -62,7 +62,7 @@ class MailSender(object):
                 part = MIMEBase(*mimetype.split('/'))
                 part.set_payload(f.read())
                 Encoders.encode_base64(part)
-                part.add_header('Content-Disposition', 'attachment; filename="%s"' \
+                part.add_header('Content-Disposition', 'attachment; filename="%s"'
                                 % attach_name)
                 msg.attach(part)
         else:
@@ -99,8 +99,8 @@ class MailSender(object):
     def _sendmail(self, to_addrs, msg):
         msg = StringIO(msg)
         d = defer.Deferred()
-        factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom, \
-                                     to_addrs, msg, d, heloFallback=True, requireAuthentication=False, \
+        factory = ESMTPSenderFactory(self.smtpuser, self.smtppass, self.mailfrom,
+                                     to_addrs, msg, d, heloFallback=True, requireAuthentication=False,
                                      requireTransportSecurity=self.smtptls)
         factory.noisy = False
 

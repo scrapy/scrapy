@@ -141,6 +141,7 @@ def _request_deferred(request):
     """
     request_callback = request.callback
     request_errback = request.errback
+
     def _restore_callbacks(result):
         request.callback = request_callback
         request.errback = request_errback

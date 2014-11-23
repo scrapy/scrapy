@@ -41,7 +41,7 @@ def robustApply(receiver, *arguments, **named):
     for name in codeObject.co_varnames[startIndex:startIndex+len(arguments)]:
         if name in named:
             raise TypeError(
-                """Argument %r specified both positionally and as a keyword for calling %r"""% (
+                """Argument %r specified both positionally and as a keyword for calling %r""" % (
                     name, receiver,
                 )
             )

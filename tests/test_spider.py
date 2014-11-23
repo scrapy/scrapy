@@ -179,8 +179,8 @@ class CrawlSpiderTest(SpiderTest):
                                 body=self.test_body)
 
         class _CrawlSpider(self.spider_class):
-            name="test"
-            allowed_domains=['example.org']
+            name = "test"
+            allowed_domains = ['example.org']
             rules = (
                 Rule(LinkExtractor(), process_links="dummy_process_links"),
             )
@@ -205,12 +205,13 @@ class CrawlSpiderTest(SpiderTest):
         class _CrawlSpider(self.spider_class):
             import re
 
-            name="test"
-            allowed_domains=['example.org']
+            name = "test"
+            allowed_domains = ['example.org']
             rules = (
                 Rule(LinkExtractor(), process_links="filter_process_links"),
             )
             _test_regex = re.compile('nofollow')
+
             def filter_process_links(self, links):
                 return [link for link in links
                         if not self._test_regex.search(link.url)]
@@ -229,8 +230,8 @@ class CrawlSpiderTest(SpiderTest):
                                 body=self.test_body)
 
         class _CrawlSpider(self.spider_class):
-            name="test"
-            allowed_domains=['example.org']
+            name = "test"
+            allowed_domains = ['example.org']
             rules = (
                 Rule(LinkExtractor(), process_links="dummy_process_links"),
             )

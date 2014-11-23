@@ -36,6 +36,7 @@ __version__ = "$Revision: 1.1.1.1 $"[11:-2]
 
 class _Parameter:
 	"""Used to represent default parameter values."""
+
 	def __repr__(self):
 		return self.__class__.__name__
 
@@ -211,7 +212,7 @@ def disconnect(receiver, signal=Any, sender=Any, weak=True):
 		receivers = signals[signal]
 	except KeyError:
 		raise errors.DispatcherKeyError(
-			"""No receivers found for signal %r from sender %r""" %(
+			"""No receivers found for signal %r from sender %r""" % (
 				signal,
 				sender
 			)
@@ -221,7 +222,7 @@ def disconnect(receiver, signal=Any, sender=Any, weak=True):
 		_removeOldBackRefs(senderkey, signal, receiver, receivers)
 	except ValueError:
 		raise errors.DispatcherKeyError(
-			"""No connection to receiver %s for signal %s from sender %s""" %(
+			"""No connection to receiver %s for signal %s from sender %s""" % (
 				receiver,
 				signal,
 				sender
@@ -444,6 +445,7 @@ def _removeBackrefs( senderkey):
 		signals = None
 	else:
 		items = signals.items()
+
 		def allReceivers( ):
 			for signal,set in items:
 				for item in set:

@@ -270,6 +270,7 @@ class TCP4ServerEndpoint(_TCPServerEndpoint):
     """
     Implements TCP server endpoint with an IPv4 configuration
     """
+
     def __init__(self, reactor, port, backlog=50, interface=''):
         """
         @param reactor: An L{IReactorTCP} provider.
@@ -290,6 +291,7 @@ class TCP6ServerEndpoint(_TCPServerEndpoint):
     """
     Implements TCP server endpoint with an IPv6 configuration
     """
+
     def __init__(self, reactor, port, backlog=50, interface='::'):
         """
         @param reactor: An L{IReactorTCP} provider.
@@ -446,6 +448,7 @@ class UNIXServerEndpoint(object):
     """
     UnixSocket server endpoint.
     """
+
     def __init__(self, reactor, address, backlog=50, mode=0o666, wantPID=0):
         """
         @param reactor: An L{IReactorUNIX} provider.
@@ -478,6 +481,7 @@ class UNIXClientEndpoint(object):
     """
     UnixSocket client endpoint.
     """
+
     def __init__(self, reactor, path, timeout=30, checkPID=0):
         """
         @param reactor: An L{IReactorUNIX} provider.
@@ -788,6 +792,7 @@ def _parse(description):
         C{_parse('a:b:d=1:c')} would be C{(['a', 'b', 'c'], {'d': '1'})}.
     """
     args, kw = [], {}
+
     def add(sofar):
         if len(sofar) == 1:
             args.append(sofar[0])

@@ -178,7 +178,7 @@ class FeedExporter(object):
         if not slot.itemcount and not self.store_empty:
             return
         slot.exporter.finish_exporting()
-        logfmt = "%%s %s feed (%d items) in: %s" % (self.format, \
+        logfmt = "%%s %s feed (%d items) in: %s" % (self.format,
                                                     slot.itemcount, slot.uri)
         d = defer.maybeDeferred(slot.storage.store, slot.file)
         d.addCallback(lambda _: log.msg(logfmt % "Stored", spider=spider))
