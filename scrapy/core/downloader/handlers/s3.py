@@ -56,11 +56,12 @@ class S3DownloadHandler(object):
         path = p.path + '?' + p.query if p.query else p.path
         url = '%s://%s.s3.amazonaws.com%s' % (scheme, bucket, path)
         signed_headers = self.conn.make_request(
-                method=request.method,
-                bucket=bucket,
-                key=p.path,
-                query_args=p.query,
-                headers=request.headers,
-                data=request.body)
+            method=request.method,
+            bucket=bucket,
+            key=p.path,
+            query_args=p.query,
+            headers=request.headers,
+            data=request.body,
+        )
         httpreq = request.replace(url=url, headers=signed_headers)
         return self._download_http(httpreq, spider)

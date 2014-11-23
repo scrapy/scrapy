@@ -19,9 +19,15 @@ About HTTP errors to consider:
 """
 
 from twisted.internet import defer
-from twisted.internet.error import TimeoutError, DNSLookupError, \
-        ConnectionRefusedError, ConnectionDone, ConnectError, \
-        ConnectionLost, TCPTimedOutError
+from twisted.internet.error import (
+    TimeoutError,
+    DNSLookupError,
+    ConnectionRefusedError,
+    ConnectionDone,
+    ConnectError,
+    ConnectionLost,
+    TCPTimedOutError,
+)
 
 from scrapy import log
 from scrapy.exceptions import NotConfigured

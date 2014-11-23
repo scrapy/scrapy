@@ -46,7 +46,7 @@ class KCacheGrind(object):
         out_file = self.out_file
 
         code = entry.code
-        #print >> out_file, 'ob=%s' % (code.co_filename,)
+        # print >> out_file, 'ob=%s' % (code.co_filename,)
         if isinstance(code, str):
             print('fi=~', file=out_file)
         else:
@@ -77,7 +77,7 @@ class KCacheGrind(object):
     def _subentry(self, lineno, subentry):
         out_file = self.out_file
         code = subentry.code
-        #print >> out_file, 'cob=%s' % (code.co_filename,)
+        # print >> out_file, 'cob=%s' % (code.co_filename,)
         print('cfn=%s' % (label(code),), file=out_file)
         if isinstance(code, str):
             print('cfi=~', file=out_file)

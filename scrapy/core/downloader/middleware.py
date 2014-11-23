@@ -32,8 +32,8 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             for method in self.methods['process_request']:
                 response = method(request=request, spider=spider)
                 assert response is None or isinstance(response, (Response, Request)), \
-                        'Middleware %s.process_request must return None, Response or Request, got %s' % \
-                        (method.im_self.__class__.__name__, response.__class__.__name__)
+                    ('Middleware %s.process_request must return None, Response or Request, got %s' %
+                     (method.im_self.__class__.__name__, response.__class__.__name__))
                 if response:
                     return response
             return download_func(request=request, spider=spider)

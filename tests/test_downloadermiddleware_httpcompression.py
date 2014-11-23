@@ -1,6 +1,6 @@
 from io import BytesIO
 from unittest import TestCase
-from os.path import join, abspath, dirname
+from os.path import join
 from gzip import GzipFile
 
 from scrapy.spider import Spider
@@ -13,11 +13,11 @@ from w3lib.encoding import resolve_encoding
 SAMPLEDIR = join(tests_datadir, 'compressed')
 
 FORMAT = {
-        'gzip': ('html-gzip.bin', 'gzip'),
-        'x-gzip': ('html-gzip.bin', 'gzip'),
-        'rawdeflate': ('html-rawdeflate.bin', 'deflate'),
-        'zlibdeflate': ('html-zlibdeflate.bin', 'deflate'),
-        }
+    'gzip': ('html-gzip.bin', 'gzip'),
+    'x-gzip': ('html-gzip.bin', 'gzip'),
+    'rawdeflate': ('html-rawdeflate.bin', 'deflate'),
+    'zlibdeflate': ('html-zlibdeflate.bin', 'deflate'),
+}
 
 
 class HttpCompressionTest(TestCase):
@@ -36,12 +36,12 @@ class HttpCompressionTest(TestCase):
             body = sample.read()
 
         headers = {
-                'Server': 'Yaws/1.49 Yet Another Web Server',
-                'Date': 'Sun, 08 Mar 2009 00:41:03 GMT',
-                'Content-Length': len(body),
-                'Content-Type': 'text/html',
-                'Content-Encoding': contentencoding,
-                }
+            'Server': 'Yaws/1.49 Yet Another Web Server',
+            'Date': 'Sun, 08 Mar 2009 00:41:03 GMT',
+            'Content-Length': len(body),
+            'Content-Type': 'text/html',
+            'Content-Encoding': contentencoding,
+        }
 
         response = Response('http://scrapytest.org/', body=body, headers=headers)
         response.request = Request('http://scrapytest.org', headers={'Accept-Encoding': 'gzip,deflate'})

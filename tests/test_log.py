@@ -12,7 +12,7 @@ from scrapy.utils.test import get_crawler
 class LogTest(unittest.TestCase):
 
     def test_get_log_level(self):
-        default_log_level = getattr(log, default_settings.LOG_LEVEL)
+        getattr(log, default_settings.LOG_LEVEL)
         self.assertEqual(log._get_log_level('WARNING'), log.WARNING)
         self.assertEqual(log._get_log_level(log.WARNING), log.WARNING)
         self.assertRaises(ValueError, log._get_log_level, object())
@@ -79,7 +79,7 @@ class ScrapyFileLogObserverTest(unittest.TestCase):
 
     def test_err_noargs(self):
         try:
-            a = 1/0
+            1/0
         except:
             log.err()
         self.assertIn('Traceback', self.logged())
@@ -122,7 +122,7 @@ class Latin1ScrapyFileLogObserverTest(ScrapyFileLogObserverTest):
 
     def test_msg_encoding(self):
         log.msg(u"Price: \xa3100")
-        logged = self.f.getvalue().strip()[25:]
+        self.f.getvalue().strip()[25:]
         self.assertEqual(self.logged(), "[scrapy] INFO: Price: \xa3100")
 
 # this test fails in twisted trial observer, not in scrapy observer

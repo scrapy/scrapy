@@ -11,7 +11,7 @@ from six.moves.urllib.parse import (ParseResult, urlunparse, urldefrag,
 import urllib
 
 # scrapy.utils.url was moved to w3lib.url and import * ensures this move doesn't break old code
-from w3lib.url import *
+from w3lib.url import *  # noqa
 from scrapy.utils.python import unicode_to_str
 
 

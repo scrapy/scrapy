@@ -464,7 +464,7 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
                           Link(url='http://example.com/follow.html', text=u'Follow this link', fragment='', nofollow=False),
                           Link(url='http://example.com/nofollow.html', text=u'Dont follow this one', fragment='', nofollow=True),
                           Link(url='http://example.com/nofollow2.html', text=u'Choose to follow or not', fragment='', nofollow=False)]
-                        )
+                         )
 
         response = XmlResponse("http://example.com/index.xhtml", body=xhtml)
 
@@ -474,7 +474,7 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
                           Link(url='http://example.com/follow.html', text=u'Follow this link', fragment='', nofollow=False),
                           Link(url='http://example.com/nofollow.html', text=u'Dont follow this one', fragment='', nofollow=True),
                           Link(url='http://example.com/nofollow2.html', text=u'Choose to follow or not', fragment='', nofollow=False)]
-                        )
+                         )
 
 
 class LxmlLinkExtractorTestCase(SgmlLinkExtractorTestCase):

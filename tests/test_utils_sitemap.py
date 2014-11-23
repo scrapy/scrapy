@@ -58,10 +58,21 @@ class SitemapTest(unittest.TestCase):
   </url>
 </urlset>
 """)
-        self.assertEqual(list(s),
-                         [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
-                          {'loc': 'http://www.example.com/2', 'lastmod': ''},
-            ])
+        self.assertEqual(
+            list(s),
+            [
+                {
+                    'priority': '1',
+                    'loc': 'http://www.example.com/',
+                    'lastmod': '2009-08-16',
+                    'changefreq': 'daily'
+                },
+                {
+                    'loc': 'http://www.example.com/2',
+                    'lastmod': ''
+                },
+            ]
+        )
 
     def test_sitemap_wrong_ns(self):
         """We have seen sitemaps with wrongs ns. Presumably, Google still works
@@ -80,10 +91,21 @@ class SitemapTest(unittest.TestCase):
   </url>
 </urlset>
 """)
-        self.assertEqual(list(s),
-                         [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
-                          {'loc': 'http://www.example.com/2', 'lastmod': ''},
-            ])
+        self.assertEqual(
+            list(s),
+            [
+                {
+                    'priority': '1',
+                    'loc': 'http://www.example.com/',
+                    'lastmod': '2009-08-16',
+                    'changefreq': 'daily'
+                },
+                {
+                    'loc': 'http://www.example.com/2',
+                    'lastmod': ''
+                },
+            ]
+        )
 
     def test_sitemap_wrong_ns2(self):
         """We have seen sitemaps with wrongs ns. Presumably, Google still works
@@ -103,10 +125,21 @@ class SitemapTest(unittest.TestCase):
 </urlset>
 """)
         assert s.type == 'urlset'
-        self.assertEqual(list(s),
-                         [{'priority': '1', 'loc': 'http://www.example.com/', 'lastmod': '2009-08-16', 'changefreq': 'daily'},
-                          {'loc': 'http://www.example.com/2', 'lastmod': ''},
-            ])
+        self.assertEqual(
+            list(s),
+            [
+                {
+                    'priority': '1',
+                    'loc': 'http://www.example.com/',
+                    'lastmod': '2009-08-16',
+                    'changefreq': 'daily',
+                },
+                {
+                    'loc': 'http://www.example.com/2',
+                    'lastmod': '',
+                },
+            ]
+        )
 
     def test_sitemap_urls_from_robots(self):
         robots = """User-agent: *
@@ -125,8 +158,13 @@ Sitemap: http://example.com/sitemap-product-index.xml
 Disallow: /forum/search/
 Disallow: /forum/active/
 """
-        self.assertEqual(list(sitemap_urls_from_robots(robots)),
-                         ['http://example.com/sitemap.xml', 'http://example.com/sitemap-product-index.xml'])
+        self.assertEqual(
+            list(sitemap_urls_from_robots(robots)),
+            [
+                'http://example.com/sitemap.xml',
+                'http://example.com/sitemap-product-index.xml',
+            ]
+        )
 
     def test_sitemap_blanklines(self):
         """Assert we can deal with starting blank lines before <xml> tag"""
@@ -191,8 +229,13 @@ Disallow: /forum/active/
     </urlset>""")
 
         self.assertEqual(list(s), [
-            {'loc': 'http://www.example.com/english/',
-             'alternate': ['http://www.example.com/deutsch/', 'http://www.example.com/schweiz-deutsch/', 'http://www.example.com/english/']
+            {
+                'loc': 'http://www.example.com/english/',
+                'alternate': [
+                    'http://www.example.com/deutsch/',
+                    'http://www.example.com/schweiz-deutsch/',
+                    'http://www.example.com/english/',
+                ]
             }
         ])
 

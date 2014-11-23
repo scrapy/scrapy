@@ -42,9 +42,9 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 try:
                     result = method(response=response, spider=spider)
                     assert result is None, \
-                            'Middleware %s must returns None or ' \
-                            'raise an exception, got %s ' \
-                            % (fname(method), type(result))
+                        ('Middleware %s must returns None or '
+                         'raise an exception, got %s '
+                         % (fname(method), type(result)))
                 except:
                     return scrape_func(Failure(), request, spider)
             return scrape_func(response, request, spider)

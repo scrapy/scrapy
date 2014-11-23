@@ -26,7 +26,6 @@ Internal attributes:
         vs. the original code.)
 """
 from __future__ import generators
-import types
 import weakref
 import six
 from scrapy.xlib.pydispatch import saferef, robustapply, errors
@@ -135,7 +134,8 @@ def connect(receiver, signal=Any, sender=Any, weak=True):
     """
     if signal is None:
         raise errors.DispatcherTypeError(
-            'Signal cannot be None (receiver=%r sender=%r)' %(receiver, sender)
+            'Signal cannot be None (receiver=%r sender=%r)'
+            % (receiver, sender)
         )
     if weak:
         receiver = saferef.safeRef(receiver, onDelete=_removeReceiver)
@@ -205,7 +205,8 @@ def disconnect(receiver, signal=Any, sender=Any, weak=True):
     """
     if signal is None:
         raise errors.DispatcherTypeError(
-            'Signal cannot be None (receiver=%r sender=%r)' %(receiver, sender)
+            'Signal cannot be None (receiver=%r sender=%r)'
+            % (receiver, sender)
         )
     if weak:
         receiver = saferef.safeRef(receiver)
@@ -383,13 +384,13 @@ def _removeReceiver(receiver):
     backKey = id(receiver)
     try:
         backSet = sendersBack.pop(backKey)
-    except KeyError as err:
+    except KeyError:
         return False
     else:
         for senderkey in backSet:
             try:
                 signals = connections[senderkey].keys()
-            except KeyError as err:
+            except KeyError:
                 pass
             else:
                 for signal in signals:
@@ -400,7 +401,7 @@ def _removeReceiver(receiver):
                     else:
                         try:
                             receivers.remove(receiver)
-                        except Exception as err:
+                        except Exception:
                             pass
                     _cleanupConnections(senderkey, signal)
 

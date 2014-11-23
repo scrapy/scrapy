@@ -78,8 +78,10 @@ class MemoryUsage(object):
             log.msg(format="Memory usage exceeded %(memusage)dM. Shutting down Scrapy...",
                     level=log.ERROR, memusage=mem)
             if self.notify_mails:
-                subj = "%s terminated: memory usage exceeded %dM at %s" % \
-                        (self.crawler.settings['BOT_NAME'], mem, socket.gethostname())
+                subj = (
+                    "%s terminated: memory usage exceeded %dM at %s" %
+                    (self.crawler.settings['BOT_NAME'], mem, socket.gethostname())
+                )
                 self._send_report(self.notify_mails, subj)
                 self.crawler.stats.set_value('memusage/limit_notified', 1)
 
@@ -99,8 +101,10 @@ class MemoryUsage(object):
             log.msg(format="Memory usage reached %(memusage)dM",
                     level=log.WARNING, memusage=mem)
             if self.notify_mails:
-                subj = "%s warning: memory usage reached %dM at %s" % \
-                        (self.crawler.settings['BOT_NAME'], mem, socket.gethostname())
+                subj = (
+                    "%s warning: memory usage reached %dM at %s" %
+                    (self.crawler.settings['BOT_NAME'], mem, socket.gethostname())
+                )
                 self._send_report(self.notify_mails, subj)
                 self.crawler.stats.set_value('memusage/warning_notified', 1)
             self.warned = True

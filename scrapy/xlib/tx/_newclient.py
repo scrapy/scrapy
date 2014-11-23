@@ -225,8 +225,15 @@ class HTTPParser(LineReceiver):
     delimiter = '\n'
 
     CONNECTION_CONTROL_HEADERS = set([
-            'content-length', 'connection', 'keep-alive', 'te', 'trailers',
-            'transfer-encoding', 'upgrade', 'proxy-connection'])
+        'content-length',
+        'connection',
+        'keep-alive',
+        'te',
+        'trailers',
+        'transfer-encoding',
+        'upgrade',
+        'proxy-connection',
+    ])
 
     def connectionMade(self):
         self.headers = Headers()
@@ -426,7 +433,7 @@ class HTTPClientParser(HTTPParser):
         headers and stuff.
         """
         if (self.response.code in self.NO_BODY_CODES
-            or self.request.method == 'HEAD'):
+                or self.request.method == 'HEAD'):
             self.response.length = 0
             self._finished(self.clearLineBuffer())
         else:
@@ -476,8 +483,9 @@ class HTTPClientParser(HTTPParser):
                 # them).
                 self.transport.pauseProducing()
                 self.switchToBodyMode(transferDecoder(
-                        self.response._bodyDataReceived,
-                        self._finished))
+                    self.response._bodyDataReceived,
+                    self._finished
+                ))
 
         # This must be last.  If it were first, then application code might
         # change some state (for example, registering a protocol to receive the
@@ -1306,7 +1314,7 @@ class HTTP11ClientProtocol(Protocol):
         reason = ConnectionDone("synthetic!")
         connHeaders = self._parser.connHeaders.getRawHeaders('connection', ())
         if (('close' in connHeaders) or self._state != "QUIESCENT" or
-            not self._currentRequest.persistent):
+                not self._currentRequest.persistent):
             self._giveUp(Failure(reason))
         else:
             # We call the quiescent callback first, to ensure connection gets

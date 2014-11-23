@@ -1,17 +1,20 @@
 import os
-import twisted
 
 from twisted.trial import unittest
 from twisted.protocols.policies import WrappingFactory
 from twisted.python.filepath import FilePath
 from twisted.internet import reactor, defer, error
 from twisted.web import server, static, util, resource
-from twisted.web.test.test_webclient import ForeverTakingResource, \
-        NoLengthResource, HostHeaderResource, \
-        PayloadResource, BrokenDownloadResource
+from twisted.web.test.test_webclient import (
+    ForeverTakingResource,
+    NoLengthResource,
+    HostHeaderResource,
+    PayloadResource,
+    BrokenDownloadResource,
+)
 from twisted.protocols.ftp import FTPRealm, FTPFactory
 from twisted.cred import portal, checkers, credentials
-from twisted.protocols.ftp import FTPClient, ConnectionLost
+from twisted.protocols.ftp import ConnectionLost
 from w3lib.url import path_to_file_uri
 
 from scrapy import twisted_version

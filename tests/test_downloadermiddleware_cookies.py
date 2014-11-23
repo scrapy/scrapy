@@ -30,7 +30,7 @@ class CookiesMiddlewareTest(TestCase):
         res = Response('http://scrapytest.org/', headers=headers)
         assert self.mw.process_response(req, res, self.spider) is res
 
-        #assert res.cookies
+        # assert res.cookies
 
         req2 = Request('http://scrapytest.org/sub1/')
         assert self.mw.process_request(req2, self.spider) is None

@@ -343,8 +343,8 @@ class _RetryingHTTP11ClientProtocol(object):
                                       ResponseNeverReceived)):
             return False
         if isinstance(exception, _WrapperException):
-            for failure in exception.reasons:
-                if failure.check(defer.CancelledError):
+            for exception_reason in exception.reasons:
+                if exception_reason.check(defer.CancelledError):
                     return False
         if bodyProducer is not None:
             return False
@@ -1111,8 +1111,16 @@ def readBody(response):
 
 
 __all__ = [
-    'PartialDownloadError', 'HTTPPageGetter', 'HTTPPageDownloader',
-    'HTTPClientFactory', 'HTTPDownloader', 'getPage', 'downloadPage',
-    'ResponseDone', 'Response', 'ResponseFailed', 'Agent', 'CookieAgent',
-    'ProxyAgent', 'ContentDecoderAgent', 'GzipDecoder', 'RedirectAgent',
-    'HTTPConnectionPool', 'readBody']
+    'PartialDownloadError',
+    'ResponseDone',
+    'Response',
+    'ResponseFailed',
+    'Agent',
+    'CookieAgent',
+    'ProxyAgent',
+    'ContentDecoderAgent',
+    'GzipDecoder',
+    'RedirectAgent',
+    'HTTPConnectionPool',
+    'readBody',
+]

@@ -26,7 +26,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
 
     def test_no_warning_on_definition(self):
         with warnings.catch_warnings(record=True) as w:
-            Deprecated = create_deprecated_class('Deprecated', NewName)
+            create_deprecated_class('Deprecated', NewName)
 
         w = self._mywarnings(w)
         self.assertEqual(w, [])
@@ -60,7 +60,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
             class UserClass(Deprecated):
                 pass
 
-            _ = Deprecated()
+            Deprecated()
 
         w = self._mywarnings(w)
         self.assertEqual(len(w), 2)
@@ -114,7 +114,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
 
         with warnings.catch_warnings(record=True) as w:
             _, lineno = Deprecated(), inspect.getlineno(inspect.currentframe())
-            _ = UserClass()  # subclass instances don't warn
+            UserClass()  # subclass instances don't warn
 
         w = self._mywarnings(w)
         self.assertEqual(len(w), 1)
@@ -213,7 +213,7 @@ class WarnWhenSubclassedTest(unittest.TestCase):
     def test_deprecate_a_class_with_custom_metaclass(self):
         Meta1 = type('Meta1', (type,), {})
         New = Meta1('New', (), {})
-        Deprecated = create_deprecated_class('Deprecated', New)
+        create_deprecated_class('Deprecated', New)
 
     def test_deprecate_subclass_of_deprecated_class(self):
         with warnings.catch_warnings(record=True) as w:

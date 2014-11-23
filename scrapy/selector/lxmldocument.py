@@ -23,7 +23,7 @@ class LxmlDocument(object_ref):
     def __new__(cls, response, parser=etree.HTMLParser):
         cache = cls.cache.setdefault(response, {})
         if parser not in cache:
-            obj = object_ref.__new__(cls)
+            object_ref.__new__(cls)
             cache[parser] = _factory(response, parser)
         return cache[parser]
 
