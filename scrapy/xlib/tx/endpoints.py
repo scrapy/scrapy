@@ -15,22 +15,23 @@ parsed by the L{clientFromString} and L{serverFromString} functions.
 from __future__ import division, absolute_import
 
 import os
+import socket
 
 from zope.interface import implementer, directlyProvides
 import warnings
 
-from twisted.internet import interfaces, defer, error, fdesc
+from twisted.internet import interfaces, defer, error, fdesc, threads
 from twisted.internet.protocol import (
-    ClientFactory,
-    Protocol,
-    Factory,
-)
+        ClientFactory, Protocol, ProcessProtocol, Factory)
 from twisted.internet.interfaces import IStreamServerEndpointStringParser
 from twisted.internet.interfaces import IStreamClientEndpointStringParser
 from twisted.python.filepath import FilePath
+from twisted.python.failure import Failure
+from twisted.python import log
 from twisted.python.components import proxyForInterface
 
 from twisted.plugin import IPlugin, getPlugins
+from twisted.internet import stdio
 
 from .interfaces import IFileDescriptorReceiver
 
@@ -60,6 +61,7 @@ class _WrappingProtocol(Protocol):
             if iface.providedBy(self._wrappedProtocol):
                 directlyProvides(self, iface)
 
+
     def logPrefix(self):
         """
         Transparently pass through the wrapped protocol's log prefix.
@@ -67,6 +69,7 @@ class _WrappingProtocol(Protocol):
         if interfaces.ILoggingContext.providedBy(self._wrappedProtocol):
             return self._wrappedProtocol.logPrefix()
         return self._wrappedProtocol.__class__.__name__
+
 
     def connectionMade(self):
         """
@@ -76,11 +79,13 @@ class _WrappingProtocol(Protocol):
         self._wrappedProtocol.makeConnection(self.transport)
         self._connectedDeferred.callback(self._wrappedProtocol)
 
+
     def dataReceived(self, data):
         """
         Proxy C{dataReceived} calls to our C{self._wrappedProtocol}
         """
         return self._wrappedProtocol.dataReceived(data)
+
 
     def fileDescriptorReceived(self, descriptor):
         """
@@ -88,11 +93,13 @@ class _WrappingProtocol(Protocol):
         """
         return self._wrappedProtocol.fileDescriptorReceived(descriptor)
 
+
     def connectionLost(self, reason):
         """
         Proxy C{connectionLost} calls to our C{self._wrappedProtocol}
         """
         return self._wrappedProtocol.connectionLost(reason)
+
 
     def readConnectionLost(self):
         """
@@ -101,12 +108,14 @@ class _WrappingProtocol(Protocol):
         """
         self._wrappedProtocol.readConnectionLost()
 
+
     def writeConnectionLost(self):
         """
         Proxy L{IHalfCloseableProtocol.writeConnectionLost} to our
         C{self._wrappedProtocol}
         """
         self._wrappedProtocol.writeConnectionLost()
+
 
 
 class _WrappingFactory(ClientFactory):
@@ -133,12 +142,14 @@ class _WrappingFactory(ClientFactory):
         self._wrappedFactory = wrappedFactory
         self._onConnection = defer.Deferred(canceller=self._canceller)
 
+
     def startedConnecting(self, connector):
         """
         A connection attempt was started.  Remember the connector which started
         said attempt, for use later.
         """
         self._connector = connector
+
 
     def _canceller(self, deferred):
         """
@@ -164,17 +175,20 @@ class _WrappingFactory(ClientFactory):
                 self._connector.getDestination()))
         self._connector.stopConnecting()
 
+
     def doStart(self):
         """
         Start notifications are passed straight through to the wrapped factory.
         """
         self._wrappedFactory.doStart()
 
+
     def doStop(self):
         """
         Stop notifications are passed straight through to the wrapped factory.
         """
         self._wrappedFactory.doStop()
+
 
     def buildProtocol(self, addr):
         """
@@ -190,6 +204,7 @@ class _WrappingFactory(ClientFactory):
         else:
             return self.protocol(self._onConnection, proto)
 
+
     def clientConnectionFailed(self, connector, reason):
         """
         Errback the C{self._onConnection} L{Deferred} when the
@@ -197,6 +212,9 @@ class _WrappingFactory(ClientFactory):
         """
         if not self._onConnection.called:
             self._onConnection.errback(reason)
+
+
+
 
 
 @implementer(interfaces.ITransport)
@@ -218,6 +236,7 @@ class _ProcessEndpointTransport(proxyForInterface(
         @param data: The data to write on stdin.
         """
         self._process.writeToChild(0, data)
+
 
     def writeSequence(self, data):
         """
@@ -253,6 +272,7 @@ class _TCPServerEndpoint(object):
         self._backlog = backlog
         self._interface = interface
 
+
     def listen(self, protocolFactory):
         """
         Implement L{IStreamServerEndpoint.listen} to listen on a TCP
@@ -265,11 +285,11 @@ class _TCPServerEndpoint(object):
                              interface=self._interface)
 
 
+
 class TCP4ServerEndpoint(_TCPServerEndpoint):
     """
     Implements TCP server endpoint with an IPv4 configuration
     """
-
     def __init__(self, reactor, port, backlog=50, interface=''):
         """
         @param reactor: An L{IReactorTCP} provider.
@@ -286,11 +306,11 @@ class TCP4ServerEndpoint(_TCPServerEndpoint):
         _TCPServerEndpoint.__init__(self, reactor, port, backlog, interface)
 
 
+
 class TCP6ServerEndpoint(_TCPServerEndpoint):
     """
     Implements TCP server endpoint with an IPv6 configuration
     """
-
     def __init__(self, reactor, port, backlog=50, interface='::'):
         """
         @param reactor: An L{IReactorTCP} provider.
@@ -305,6 +325,7 @@ class TCP6ServerEndpoint(_TCPServerEndpoint):
         @type interface: str
         """
         _TCPServerEndpoint.__init__(self, reactor, port, backlog, interface)
+
 
 
 @implementer(interfaces.IStreamClientEndpoint)
@@ -337,6 +358,7 @@ class TCP4ClientEndpoint(object):
         self._timeout = timeout
         self._bindAddress = bindAddress
 
+
     def connect(self, protocolFactory):
         """
         Implement L{IStreamClientEndpoint.connect} to connect via TCP.
@@ -349,6 +371,8 @@ class TCP4ClientEndpoint(object):
             return wf._onConnection
         except:
             return defer.fail()
+
+
 
 
 @implementer(interfaces.IStreamServerEndpoint)
@@ -380,6 +404,7 @@ class SSL4ServerEndpoint(object):
         self._backlog = backlog
         self._interface = interface
 
+
     def listen(self, protocolFactory):
         """
         Implement L{IStreamServerEndpoint.listen} to listen for SSL on a
@@ -390,6 +415,7 @@ class SSL4ServerEndpoint(object):
                              contextFactory=self._sslContextFactory,
                              backlog=self._backlog,
                              interface=self._interface)
+
 
 
 @implementer(interfaces.IStreamClientEndpoint)
@@ -427,6 +453,7 @@ class SSL4ClientEndpoint(object):
         self._timeout = timeout
         self._bindAddress = bindAddress
 
+
     def connect(self, protocolFactory):
         """
         Implement L{IStreamClientEndpoint.connect} to connect with SSL over
@@ -442,12 +469,12 @@ class SSL4ClientEndpoint(object):
             return defer.fail()
 
 
+
 @implementer(interfaces.IStreamServerEndpoint)
 class UNIXServerEndpoint(object):
     """
     UnixSocket server endpoint.
     """
-
     def __init__(self, reactor, address, backlog=50, mode=0o666, wantPID=0):
         """
         @param reactor: An L{IReactorUNIX} provider.
@@ -464,6 +491,7 @@ class UNIXServerEndpoint(object):
         self._mode = mode
         self._wantPID = wantPID
 
+
     def listen(self, protocolFactory):
         """
         Implement L{IStreamServerEndpoint.listen} to listen on a UNIX socket.
@@ -475,12 +503,12 @@ class UNIXServerEndpoint(object):
                              wantPID=self._wantPID)
 
 
+
 @implementer(interfaces.IStreamClientEndpoint)
 class UNIXClientEndpoint(object):
     """
     UnixSocket client endpoint.
     """
-
     def __init__(self, reactor, path, timeout=30, checkPID=0):
         """
         @param reactor: An L{IReactorUNIX} provider.
@@ -501,6 +529,7 @@ class UNIXClientEndpoint(object):
         self._timeout = timeout
         self._checkPID = checkPID
 
+
     def connect(self, protocolFactory):
         """
         Implement L{IStreamClientEndpoint.connect} to connect via a
@@ -515,6 +544,7 @@ class UNIXClientEndpoint(object):
             return wf._onConnection
         except:
             return defer.fail()
+
 
 
 @implementer(interfaces.IStreamServerEndpoint)
@@ -544,6 +574,7 @@ class AdoptedStreamServerEndpoint(object):
         self.addressFamily = addressFamily
         self._used = False
 
+
     def listen(self, factory):
         """
         Implement L{IStreamServerEndpoint.listen} to start listening on, and
@@ -561,6 +592,7 @@ class AdoptedStreamServerEndpoint(object):
         except:
             return defer.fail()
         return defer.succeed(port)
+
 
 
 def _parseTCP(factory, port, interface="", backlog=50):
@@ -587,6 +619,7 @@ def _parseTCP(factory, port, interface="", backlog=50):
     """
     return (int(port), factory), {'interface': interface,
                                   'backlog': int(backlog)}
+
 
 
 def _parseUNIX(factory, address, mode='666', backlog=50, lockfile=True):
@@ -618,6 +651,7 @@ def _parseUNIX(factory, address, mode='666', backlog=50, lockfile=True):
         (address, factory),
         {'mode': int(mode, 8), 'backlog': int(backlog),
          'wantPID': bool(int(lockfile))})
+
 
 
 def _parseSSL(factory, port, privateKey="server.pem", certKey=None,
@@ -674,6 +708,7 @@ def _parseSSL(factory, port, privateKey="server.pem", certKey=None,
             {'interface': interface, 'backlog': int(backlog)})
 
 
+
 @implementer(IPlugin, IStreamServerEndpointStringParser)
 class _StandardIOParser(object):
     """
@@ -692,10 +727,13 @@ class _StandardIOParser(object):
         """
         return StandardIOEndpoint(reactor)
 
+
     def parseStreamServer(self, reactor, *args, **kwargs):
         # Redirects to another function (self._parseServer), tricks zope.interface
         # into believing the interface is correctly implemented.
         return self._parseServer(reactor)
+
+
 
 
 @implementer(IPlugin, IStreamServerEndpointStringParser)
@@ -727,10 +765,12 @@ class _TCP6ServerParser(object):
         backlog = int(backlog)
         return TCP6ServerEndpoint(reactor, port, backlog, interface)
 
+
     def parseStreamServer(self, reactor, *args, **kwargs):
         # Redirects to another function (self._parseServer), tricks zope.interface
         # into believing the interface is correctly implemented.
         return self._parseServer(reactor, *args, **kwargs)
+
 
 
 _serverParsers = {"tcp": _parseTCP,
@@ -739,7 +779,6 @@ _serverParsers = {"tcp": _parseTCP,
                   }
 
 _OP, _STRING = range(2)
-
 
 def _tokenize(description):
     """
@@ -777,6 +816,7 @@ def _tokenize(description):
     yield _STRING, current
 
 
+
 def _parse(description):
     """
     Convert a description string into a list of positional and keyword
@@ -791,7 +831,6 @@ def _parse(description):
         C{_parse('a:b:d=1:c')} would be C{(['a', 'b', 'c'], {'d': '1'})}.
     """
     args, kw = [], {}
-
     def add(sofar):
         if len(sofar) == 1:
             args.append(sofar[0])
@@ -823,7 +862,6 @@ _endpointClientFactories = {
 
 
 _NO_DEFAULT = object()
-
 
 def _parseServer(description, factory, default=None):
     """
@@ -871,6 +909,7 @@ def _parseServer(description, factory, default=None):
     return (endpointType.upper(),) + parser(factory, *args[1:], **kw)
 
 
+
 def _serverFromStringLegacy(reactor, description, default):
     """
     Underlying implementation of L{serverFromString} which avoids exposing the
@@ -885,6 +924,7 @@ def _serverFromStringLegacy(reactor, description, default):
     # Chop out the factory.
     args = args[:1] + args[2:]
     return _endpointServerFactories[name](reactor, *args, **kw)
+
 
 
 def serverFromString(reactor, description):
@@ -950,6 +990,7 @@ def serverFromString(reactor, description):
     return _serverFromStringLegacy(reactor, description, _NO_DEFAULT)
 
 
+
 def quoteStringArgument(argument):
     """
     Quote an argument to L{serverFromString} and L{clientFromString}.  Since
@@ -980,6 +1021,7 @@ def quoteStringArgument(argument):
     @rtype: C{str}
     """
     return argument.replace('\\', '\\\\').replace(':', '\\:')
+
 
 
 def _parseClientTCP(*args, **kwargs):
@@ -1015,6 +1057,7 @@ def _parseClientTCP(*args, **kwargs):
     return kwargs
 
 
+
 def _loadCAsFromDir(directoryPath):
     """
     Load certificate-authority certificate objects in a given directory.
@@ -1043,6 +1086,7 @@ def _loadCAsFromDir(directoryPath):
         else:
             caCerts[theCert.digest()] = theCert.original
     return caCerts.values()
+
 
 
 def _parseClientSSL(*args, **kwargs):
@@ -1098,6 +1142,7 @@ def _parseClientSSL(*args, **kwargs):
     return kwargs
 
 
+
 def _parseClientUNIX(*args, **kwargs):
     """
     Perform any argument value coercion necessary for UNIX client parameters.
@@ -1128,6 +1173,7 @@ _clientParsers = {
     'SSL': _parseClientSSL,
     'UNIX': _parseClientUNIX,
     }
+
 
 
 def clientFromString(reactor, description):
@@ -1201,6 +1247,7 @@ def clientFromString(reactor, description):
     return _endpointClientFactories[name](reactor, **kwargs)
 
 
+
 def connectProtocol(endpoint, protocol):
     """
     Connect a protocol instance to an endpoint.
@@ -1219,3 +1266,4 @@ def connectProtocol(endpoint, protocol):
         def buildProtocol(self, addr):
             return protocol
     return endpoint.connect(OneShotFactory())
+

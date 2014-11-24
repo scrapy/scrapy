@@ -13,7 +13,6 @@ try:
 except ImportError:
     raise SystemExit("This script requires cProfile from Python 2.5")
 
-
 def label(code):
     if isinstance(code, str):
         return ('~', 0, code)    # built-in functions ('~' sorts at the end)
@@ -21,7 +20,6 @@ def label(code):
         return '%s %s:%d' % (code.co_name,
                              code.co_filename,
                              code.co_firstlineno)
-
 
 class KCacheGrind(object):
     def __init__(self, profiler):
@@ -46,7 +44,7 @@ class KCacheGrind(object):
         out_file = self.out_file
 
         code = entry.code
-        # print >> out_file, 'ob=%s' % (code.co_filename,)
+        #print >> out_file, 'ob=%s' % (code.co_filename,)
         if isinstance(code, str):
             print('fi=~', file=out_file)
         else:
@@ -77,7 +75,7 @@ class KCacheGrind(object):
     def _subentry(self, lineno, subentry):
         out_file = self.out_file
         code = subentry.code
-        # print >> out_file, 'cob=%s' % (code.co_filename,)
+        #print >> out_file, 'cob=%s' % (code.co_filename,)
         print('cfn=%s' % (label(code),), file=out_file)
         if isinstance(code, str):
             print('cfi=~', file=out_file)
@@ -89,7 +87,6 @@ class KCacheGrind(object):
 
         totaltime = int(subentry.totaltime * 1000)
         print('%d %d' % (lineno, totaltime), file=out_file)
-
 
 def main(args):
     usage = "%s [-o output_file_path] scriptfile [arg] ..."
