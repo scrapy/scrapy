@@ -2,15 +2,14 @@
 Link extractor based on lxml.html
 """
 
-import re
-from six.moves.urllib.parse import urlparse, urljoin
+from six.moves.urllib.parse import urljoin
 
 import lxml.etree as etree
 
 from scrapy.selector import Selector
 from scrapy.link import Link
 from scrapy.utils.misc import arg_to_iter
-from scrapy.utils.python import unique as unique_list, str_to_unicode
+from scrapy.utils.python import unique as unique_list
 from scrapy.linkextractor import FilteringLinkExtractor
 from scrapy.utils.response import get_base_url
 
@@ -63,7 +62,7 @@ class LxmlParserLinkExtractor(object):
             links.append(link)
 
         return unique_list(links, key=lambda link: link.url) \
-                if self.unique else links
+            if self.unique else links
 
     def extract_links(self, response):
         html = Selector(response)
@@ -90,9 +89,10 @@ class LxmlLinkExtractor(FilteringLinkExtractor):
         lx = LxmlParserLinkExtractor(tag=tag_func, attr=attr_func,
                                      unique=unique, process=process_value)
 
-        super(LxmlLinkExtractor, self).__init__(lx, allow, deny,
-                                                allow_domains, deny_domains, restrict_xpaths, canonicalize,
-                                                deny_extensions)
+        super(LxmlLinkExtractor, self).__init__(
+            lx, allow, deny, allow_domains, deny_domains, restrict_xpaths,
+            canonicalize, deny_extensions
+        )
 
     def extract_links(self, response):
         html = Selector(response)
