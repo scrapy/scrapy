@@ -255,7 +255,7 @@ class FilesPipeline(MediaPipeline):
         spider.crawler.stats.inc_value('file_count', spider=spider)
         spider.crawler.stats.inc_value('file_status_count/%s' % status, spider=spider)
 
-    # Overridable Interface
+    ### Overridable Interface
     def get_media_requests(self, item, info):
         return [Request(x) for x in item.get(self.FILES_URLS_FIELD, [])]
 
@@ -272,7 +272,7 @@ class FilesPipeline(MediaPipeline):
         return item
 
     def file_path(self, request, response=None, info=None):
-        # start of deprecation warning block (can be removed in the future)
+        ## start of deprecation warning block (can be removed in the future)
         def _warn():
             from scrapy.exceptions import ScrapyDeprecationWarning
             import warnings
@@ -291,7 +291,7 @@ class FilesPipeline(MediaPipeline):
         if not hasattr(self.file_key, '_base'):
             _warn()
             return self.file_key(url)
-        # end of deprecation warning block
+        ## end of deprecation warning block
 
         media_guid = hashlib.sha1(url).hexdigest()  # change to request.url after deprecation
         media_ext = os.path.splitext(url)[1]  # change to request.url after deprecation
