@@ -1,5 +1,6 @@
 import os
 import twisted
+import six
 
 from twisted.trial import unittest
 from twisted.protocols.policies import WrappingFactory
@@ -287,23 +288,28 @@ class Http11MockServerTestCase(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_download_gzip_response(self):
-        crawler = get_crawler(SingleRequestSpider)
-        body = '1'*100 # PayloadResource requires body length to be 100
-        request = Request('http://localhost:8998/payload', method='POST', body=body, meta={'download_maxsize': 50})
-        yield crawler.crawl(seed=request)
-        failure = crawler.spider.meta['failure']
-        # download_maxsize < 100, hence the CancelledError
-        self.assertIsInstance(failure.value, defer.CancelledError)
 
-        request.headers.setdefault('Accept-Encoding', 'gzip,deflate')
-        request = request.replace(url='http://localhost:8998/xpayload')
-        yield crawler.crawl(seed=request)
+        if six.PY2 and twisted_version > (12, 3, 0):
 
-        # download_maxsize = 50 is enough for the gzipped response
-        failure = crawler.spider.meta.get('failure')
-        self.assertTrue(failure == None)
-        reason = crawler.spider.meta['close_reason']
-        self.assertTrue(reason, 'finished')
+            crawler = get_crawler(SingleRequestSpider)
+            body = '1'*100 # PayloadResource requires body length to be 100
+            request = Request('http://localhost:8998/payload', method='POST', body=body, meta={'download_maxsize': 50})
+            yield crawler.crawl(seed=request)
+            failure = crawler.spider.meta['failure']
+            # download_maxsize < 100, hence the CancelledError
+            self.assertIsInstance(failure.value, defer.CancelledError)
+
+            request.headers.setdefault('Accept-Encoding', 'gzip,deflate')
+            request = request.replace(url='http://localhost:8998/xpayload')
+            yield crawler.crawl(seed=request)
+
+            # download_maxsize = 50 is enough for the gzipped response
+            failure = crawler.spider.meta.get('failure')
+            self.assertTrue(failure == None)
+            reason = crawler.spider.meta['close_reason']
+            self.assertTrue(reason, 'finished')
+        else:
+            raise unittest.SkipTest("xpayload and payload endpoint only enabled for twisted > 12.3.0 and python 2.x")
 
 
 class UriResource(resource.Resource):
