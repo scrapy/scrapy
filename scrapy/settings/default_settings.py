@@ -66,6 +66,9 @@ DOWNLOAD_HANDLERS_BASE = {
 
 DOWNLOAD_TIMEOUT = 180      # 3mins
 
+DOWNLOAD_MAXSIZE = 1024*1024*1024   # 1024m
+DOWNLOAD_WARNSIZE = 32*1024*1024    # 32m
+
 DOWNLOADER = 'scrapy.core.downloader.Downloader'
 
 DOWNLOADER_HTTPCLIENTFACTORY = 'scrapy.core.downloader.webclient.ScrapyHTTPClientFactory'

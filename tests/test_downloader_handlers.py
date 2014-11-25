@@ -1,5 +1,6 @@
 import os
 import twisted
+import six
 
 from twisted.trial import unittest
 from twisted.protocols.policies import WrappingFactory
@@ -30,6 +31,8 @@ from scrapy import optional_features
 from scrapy.utils.test import get_crawler
 from scrapy.exceptions import NotConfigured
 
+from tests.mockserver import MockServer
+from tests.spiders import SingleRequestSpider
 
 class DummyDH(object):
 
@@ -210,6 +213,103 @@ class Http11TestCase(HttpTestCase):
     download_handler_cls = HTTP11DownloadHandler
     if 'http11' not in optional_features:
         skip = 'HTTP1.1 not supported in twisted < 11.1.0'
+
+    def test_download_without_maxsize_limit(self):
+        request = Request(self.getURL('file'))
+        d = self.download_request(request, Spider('foo'))
+        d.addCallback(lambda r: r.body)
+        d.addCallback(self.assertEquals, "0123456789")
+        return d
+
+    @defer.inlineCallbacks
+    def test_download_with_maxsize(self):
+        request = Request(self.getURL('file'))
+
+        # 10 is minimal size for this request and the limit is only counted on
+        # response body. (regardless of headers)
+        d = self.download_request(request, Spider('foo', download_maxsize=10))
+        d.addCallback(lambda r: r.body)
+        d.addCallback(self.assertEquals, "0123456789")
+        yield d
+
+        d = self.download_request(request, Spider('foo', download_maxsize=9))
+        yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
+
+    @defer.inlineCallbacks
+    def test_download_with_maxsize_per_req(self):
+        meta = {'download_maxsize': 2}
+        request = Request(self.getURL('file'), meta=meta)
+        d = self.download_request(request, Spider('foo'))
+        yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
+
+    @defer.inlineCallbacks
+    def test_download_with_small_maxsize_per_spider(self):
+        request = Request(self.getURL('file'))
+        d = self.download_request(request, Spider('foo', download_maxsize=2))
+        yield self.assertFailure(d, defer.CancelledError, error.ConnectionAborted)
+
+    def test_download_with_large_maxsize_per_spider(self):
+        request = Request(self.getURL('file'))
+        d = self.download_request(request, Spider('foo', download_maxsize=100))
+        d.addCallback(lambda r: r.body)
+        d.addCallback(self.assertEquals, "0123456789")
+        return d
+
+
+class Http11MockServerTestCase(unittest.TestCase):
+    """HTTP 1.1 test case with MockServer"""
+    if 'http11' not in optional_features:
+        skip = 'HTTP1.1 not supported in twisted < 11.1.0'
+
+    def setUp(self):
+        self.mockserver = MockServer()
+        self.mockserver.__enter__()
+
+    def tearDown(self):
+        self.mockserver.__exit__(None, None, None)
+
+    @defer.inlineCallbacks
+    def test_download_with_content_length(self):
+        crawler = get_crawler(SingleRequestSpider)
+        # http://localhost:8998/partial set Content-Length to 1024, use download_maxsize= 1000 to avoid
+        # download it
+        yield crawler.crawl(seed=Request(url='http://localhost:8998/partial', meta={'download_maxsize': 1000}))
+        failure = crawler.spider.meta['failure']
+        self.assertIsInstance(failure.value, defer.CancelledError)
+
+    @defer.inlineCallbacks
+    def test_download(self):
+        crawler = get_crawler(SingleRequestSpider)
+        yield crawler.crawl(seed=Request(url='http://localhost:8998'))
+        failure = crawler.spider.meta.get('failure')
+        self.assertTrue(failure == None)
+        reason = crawler.spider.meta['close_reason']
+        self.assertTrue(reason, 'finished')
+
+    @defer.inlineCallbacks
+    def test_download_gzip_response(self):
+
+        if six.PY2 and twisted_version > (12, 3, 0):
+
+            crawler = get_crawler(SingleRequestSpider)
+            body = '1'*100 # PayloadResource requires body length to be 100
+            request = Request('http://localhost:8998/payload', method='POST', body=body, meta={'download_maxsize': 50})
+            yield crawler.crawl(seed=request)
+            failure = crawler.spider.meta['failure']
+            # download_maxsize < 100, hence the CancelledError
+            self.assertIsInstance(failure.value, defer.CancelledError)
+
+            request.headers.setdefault('Accept-Encoding', 'gzip,deflate')
+            request = request.replace(url='http://localhost:8998/xpayload')
+            yield crawler.crawl(seed=request)
+
+            # download_maxsize = 50 is enough for the gzipped response
+            failure = crawler.spider.meta.get('failure')
+            self.assertTrue(failure == None)
+            reason = crawler.spider.meta['close_reason']
+            self.assertTrue(reason, 'finished')
+        else:
+            raise unittest.SkipTest("xpayload and payload endpoint only enabled for twisted > 12.3.0 and python 2.x")
 
 
 class UriResource(resource.Resource):
