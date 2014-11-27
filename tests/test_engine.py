@@ -79,6 +79,7 @@ class CrawlerRun(object):
         self.spider = None
         self.respplug = []
         self.reqplug = []
+        self.reqdropped = []
         self.itemresp = []
         self.signals_catched = {}
 
@@ -95,6 +96,7 @@ class CrawlerRun(object):
         self.crawler = get_crawler(TestSpider)
         self.crawler.signals.connect(self.item_scraped, signals.item_scraped)
         self.crawler.signals.connect(self.request_scheduled, signals.request_scheduled)
+        self.crawler.signals.connect(self.request_dropped, signals.request_dropped)
         self.crawler.signals.connect(self.response_downloaded, signals.response_downloaded)
         self.crawler.crawl(start_urls=start_urls)
         self.spider = self.crawler.spider
@@ -122,6 +124,9 @@ class CrawlerRun(object):
 
     def request_scheduled(self, request, spider):
         self.reqplug.append((request, spider))
+
+    def request_dropped(self, request, spider):
+        self.reqdropped.append((request, spider))
 
     def response_downloaded(self, response, spider):
         self.respplug.append((response, spider))
@@ -161,6 +166,11 @@ class EngineTest(unittest.TestCase):
         urls_requested = set([rq[0].url for rq in self.run.reqplug])
         urls_expected = set([self.run.geturl(p) for p in paths_expected])
         assert urls_expected <= urls_requested
+        scheduled_requests_count = len(self.run.reqplug)
+        dropped_requests_count = len(self.run.reqdropped)
+        responses_count = len(self.run.respplug)
+        self.assertEqual(scheduled_requests_count,
+                         dropped_requests_count + responses_count)
 
     def _assert_downloaded_responses(self):
         # response tests

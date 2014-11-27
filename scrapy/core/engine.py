@@ -173,7 +173,9 @@ class ExecutionEngine(object):
     def schedule(self, request, spider):
         self.signals.send_catch_log(signal=signals.request_scheduled,
                 request=request, spider=spider)
-        return self.slot.scheduler.enqueue_request(request)
+        if not self.slot.scheduler.enqueue_request(request):
+            self.signals.send_catch_log(signal=signals.request_dropped,
+                                        request=request, spider=spider)
 
     def download(self, request, spider):
         slot = self.slot
