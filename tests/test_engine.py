@@ -59,6 +59,12 @@ class TestSpider(Spider):
             item['price'] = m.group(1)
         return item
 
+
+class TestDupeFilterSpider(TestSpider):
+    def make_requests_from_url(self, url):
+        return Request(url)  # dont_filter=False
+
+
 def start_test_site(debug=False):
     root_dir = os.path.join(tests_datadir, "test_site")
     r = static.File(root_dir)
@@ -75,25 +81,28 @@ def start_test_site(debug=False):
 class CrawlerRun(object):
     """A class to run the crawler and keep track of events occurred"""
 
-    def __init__(self):
+    def __init__(self, with_dupefilter=False):
         self.spider = None
         self.respplug = []
         self.reqplug = []
         self.reqdropped = []
         self.itemresp = []
         self.signals_catched = {}
+        self.spider_class = TestSpider if not with_dupefilter else \
+            TestDupeFilterSpider
 
     def run(self):
         self.port = start_test_site()
         self.portno = self.port.getHost().port
 
-        start_urls = [self.geturl("/"), self.geturl("/redirect")]
+        start_urls = [self.geturl("/"), self.geturl("/redirect"),
+                      self.geturl("/redirect")]  # a duplicate
 
         for name, signal in vars(signals).items():
             if not name.startswith('_'):
                 dispatcher.connect(self.record_signal, signal)
 
-        self.crawler = get_crawler(TestSpider)
+        self.crawler = get_crawler(self.spider_class)
         self.crawler.signals.connect(self.item_scraped, signals.item_scraped)
         self.crawler.signals.connect(self.request_scheduled, signals.request_scheduled)
         self.crawler.signals.connect(self.request_dropped, signals.request_dropped)
@@ -146,10 +155,14 @@ class EngineTest(unittest.TestCase):
         self.run = CrawlerRun()
         yield self.run.run()
         self._assert_visited_urls()
-        self._assert_scheduled_requests()
+        self._assert_scheduled_requests(urls_to_visit=8)
         self._assert_downloaded_responses()
         self._assert_scraped_items()
         self._assert_signals_catched()
+        self.run = CrawlerRun(with_dupefilter=True)
+        yield self.run.run()
+        self._assert_scheduled_requests(urls_to_visit=7)
+        self._assert_dropped_requests()
 
     def _assert_visited_urls(self):
         must_be_visited = ["/", "/redirect", "/redirected",
@@ -158,8 +171,8 @@ class EngineTest(unittest.TestCase):
         urls_expected = set([self.run.geturl(p) for p in must_be_visited])
         assert urls_expected <= urls_visited, "URLs not visited: %s" % list(urls_expected - urls_visited)
 
-    def _assert_scheduled_requests(self):
-        self.assertEqual(6, len(self.run.reqplug))
+    def _assert_scheduled_requests(self, urls_to_visit=None):
+        self.assertEqual(urls_to_visit, len(self.run.reqplug))
 
         paths_expected = ['/item999.html', '/item2.html', '/item1.html']
 
@@ -172,9 +185,12 @@ class EngineTest(unittest.TestCase):
         self.assertEqual(scheduled_requests_count,
                          dropped_requests_count + responses_count)
 
+    def _assert_dropped_requests(self):
+        self.assertEqual(len(self.run.reqdropped), 1)
+
     def _assert_downloaded_responses(self):
         # response tests
-        self.assertEqual(6, len(self.run.respplug))
+        self.assertEqual(8, len(self.run.respplug))
 
         for response, _ in self.run.respplug:
             if self.run.getpath(response.url) == '/item999.html':
