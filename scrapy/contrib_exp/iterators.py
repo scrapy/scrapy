@@ -2,18 +2,18 @@ from scrapy.http import Response
 from scrapy.selector import Selector
 
 
-def xmliter_lxml(obj, nodename, namespace=None):
+def xmliter_lxml(obj, nodename, namespace=None, prefix='x'):
     from lxml import etree
     reader = _StreamReader(obj)
     tag = '{%s}%s' % (namespace, nodename) if namespace else nodename
     iterable = etree.iterparse(reader, tag=tag, encoding=reader.encoding)
-    selxpath = '//' + ('x:%s' % nodename if namespace else nodename)
+    selxpath = '//' + ('%s:%s' % (prefix, nodename) if namespace else nodename)
     for _, node in iterable:
         nodetext = etree.tostring(node)
         node.clear()
         xs = Selector(text=nodetext, type='xml')
         if namespace:
-            xs.register_namespace('x', namespace)
+            xs.register_namespace(prefix, namespace)
         yield xs.xpath(selxpath)[0]
 
 
