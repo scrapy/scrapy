@@ -47,7 +47,7 @@ class Scheduler(object):
     def enqueue_request(self, request):
         if not request.dont_filter and self.df.request_seen(request):
             self.df.log(request, self.spider)
-            return
+            return False
         dqok = self._dqpush(request)
         if dqok:
             self.stats.inc_value('scheduler/enqueued/disk', spider=self.spider)
@@ -55,6 +55,7 @@ class Scheduler(object):
             self._mqpush(request)
             self.stats.inc_value('scheduler/enqueued/memory', spider=self.spider)
         self.stats.inc_value('scheduler/enqueued', spider=self.spider)
+        return True
 
     def next_request(self):
         request = self.mqs.pop()
