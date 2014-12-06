@@ -54,13 +54,13 @@ Exporter to export scraped items to different files, one per spider::
             crawler.signals.connect(pipeline.spider_closed, signals.spider_closed)
             return pipeline
 
-       def spider_opened(self, spider):
+       def open_spider(self, spider):
            file = open('%s_products.xml' % spider.name, 'w+b')
            self.files[spider] = file
            self.exporter = XmlItemExporter(file)
            self.exporter.start_exporting()
 
-       def spider_closed(self, spider):
+       def close_spider(self, spider):
            self.exporter.finish_exporting()
            file = self.files.pop(spider)
            file.close()
