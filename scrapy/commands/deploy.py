@@ -62,6 +62,8 @@ class Command(ScrapyCommand):
             help="use the given egg, instead of building it")
         parser.add_option("--build-egg", metavar="FILE",
             help="only build the egg, don't deploy it")
+        parser.add_option("--setup-file", metavar="FILE",
+            help="setup file name. Default is 'setup.py'", default='setup.py')
 
     def run(self, args, opts):
         try:
@@ -88,7 +90,7 @@ class Command(ScrapyCommand):
         tmpdir = None
 
         if opts.build_egg: # build egg only
-            egg, tmpdir = _build_egg()
+            egg, tmpdir = _build_egg(opts.setup_file)
             _log("Writing egg to %s" % opts.build_egg)
             shutil.copyfile(egg, opts.build_egg)
         else: # buld egg and deploy
@@ -101,7 +103,7 @@ class Command(ScrapyCommand):
                 egg = opts.egg
             else:
                 _log("Packing version %s" % version)
-                egg, tmpdir = _build_egg()
+                egg, tmpdir = _build_egg(opts.setup_file)
             if not _upload_egg(target, egg, project, version):
                 self.exitcode = 1
 
@@ -217,23 +219,23 @@ def _http_post(request):
     except urllib2.URLError as e:
         _log("Deploy failed: %s" % e)
 
-def _build_egg():
+def _build_egg(setup_file):
     closest = closest_scrapy_cfg()
     os.chdir(os.path.dirname(closest))
-    if not os.path.exists('setup.py'):
+    if not os.path.exists(setup_file):
         settings = get_config().get('settings', 'default')
-        _create_default_setup_py(settings=settings)
+        _create_default_setup_py(setup_file, settings=settings)
     d = tempfile.mkdtemp(prefix="scrapydeploy-")
     o = open(os.path.join(d, "stdout"), "wb")
     e = open(os.path.join(d, "stderr"), "wb")
-    retry_on_eintr(check_call, [sys.executable, 'setup.py', 'clean', '-a', 'bdist_egg', '-d', d], stdout=o, stderr=e)
+    retry_on_eintr(check_call, [sys.executable, setup_file, 'clean', '-a', 'bdist_egg', '-d', d], stdout=o, stderr=e)
     o.close()
     e.close()
     egg = glob.glob(os.path.join(d, '*.egg'))[0]
     return egg, d
 
-def _create_default_setup_py(**kwargs):
-    with open('setup.py', 'w') as f:
+def _create_default_setup_py(setup_file, **kwargs):
+    with open(setup_file, 'w') as f:
         f.write(_SETUP_PY_TEMPLATE % kwargs)
 
 
