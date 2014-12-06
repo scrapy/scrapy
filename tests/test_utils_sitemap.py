@@ -195,6 +195,20 @@ Disallow: /forum/active/
             }
         ])
 
+    def test_urls_without_scheme(self):
+        s = Sitemap(b"""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+        <url>
+            <loc>//www.example.com/</loc>
+        </url>
+    </urlset>""")
+
+        self.assertEqual(list(s), [
+            {'loc': 'http://www.example.com/'}
+        ])
+
+
     def test_xml_entity_expansion(self):
         s = Sitemap(b"""<?xml version="1.0" encoding="utf-8"?>
           <!DOCTYPE foo [

@@ -6,6 +6,7 @@ See documentation in docs/topics/request-response.rst
 """
 import six
 from w3lib.url import safe_url_string
+import urlparse
 
 from scrapy.http.headers import Headers
 from scrapy.utils.trackref import object_ref
@@ -17,11 +18,11 @@ class Request(object_ref):
 
     def __init__(self, url, callback=None, method='GET', headers=None, body=None,
                  cookies=None, meta=None, encoding='utf-8', priority=0,
-                 dont_filter=False, errback=None):
+                 dont_filter=False, errback=None, referrer=None):
 
         self._encoding = encoding  # this one has to be set first
         self.method = str(method).upper()
-        self._set_url(url)
+        self._set_url(url, referrer)
         self._set_body(body)
         assert isinstance(priority, int), "Request priority not an integer: %r" % priority
         self.priority = priority
@@ -45,7 +46,7 @@ class Request(object_ref):
     def _get_url(self):
         return self._url
 
-    def _set_url(self, url):
+    def _set_url(self, url, referrer=None):
         if isinstance(url, str):
             self._url = escape_ajax(safe_url_string(url))
         elif isinstance(url, six.text_type):
@@ -55,8 +56,11 @@ class Request(object_ref):
             self._set_url(url.encode(self.encoding))
         else:
             raise TypeError('Request url must be str or unicode, got %s:' % type(url).__name__)
-        if ':' not in self._url:
+        
+        if referrer == None and ':' not in self._url:
             raise ValueError('Missing scheme in request url: %s' % self._url)
+        elif ':' not in self._url:
+            self._url = ':'.join((urlparse.urlsplit(referrer).scheme, url))
 
     url = property(_get_url, obsolete_setter(_set_url, 'url'))
 
