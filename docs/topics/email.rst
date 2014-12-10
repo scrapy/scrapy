@@ -63,10 +63,10 @@ uses `Twisted non-blocking IO`_, like the rest of the framework.
     :type smtpport: int
 
     :param smtptls: enforce using SMTP STARTTLS
-    :type smtpport: boolean
+    :type smtptls: boolean
 
     :param smtpssl: enforce using a secure SSL connection
-    :type smtpport: boolean
+    :type smtpssl: boolean
 
     .. classmethod:: from_settings(settings)
 
