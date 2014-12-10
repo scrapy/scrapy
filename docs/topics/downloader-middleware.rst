@@ -805,6 +805,19 @@ the request will be ignored by this middleware even if
 :setting:`ROBOTSTXT_OBEY` is enabled.
 
 
+SitemapWithoutSchemeMiddleware
+------------------------------
+
+.. module:: scrapy.contrib.downloadermiddleware.sitemap
+   :synopsis: Sitemaps Middleware
+
+.. class:: SitemapWithoutSchemeMiddleware
+
+   This middleware correct URLs in sitemaps which do not include a scheme.
+   According to sitemap specifications this is not valid, but since they
+   are allowed in HTML links some people also use them on sitemaps.
+
+
 DownloaderStats
 ---------------
 
