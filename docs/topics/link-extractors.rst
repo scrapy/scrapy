@@ -51,7 +51,7 @@ LxmlLinkExtractor
    :synopsis: lxml's HTMLParser-based link extractors
 
 
-.. class:: LxmlLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), deny_extensions=None, restrict_xpaths=(), tags=('a', 'area'), attrs=('href',), canonicalize=True, unique=True, process_value=None)
+.. class:: LxmlLinkExtractor(allow=(), deny=(), allow_domains=(), deny_domains=(), deny_extensions=None, restrict_xpaths=(), restrict_css=(), tags=('a', 'area'), attrs=('href',), canonicalize=True, unique=True, process_value=None)
 
     LxmlLinkExtractor is the recommended link extractor with handy filtering
     options. It is implemented using lxml's robust HTMLParser.
@@ -87,6 +87,11 @@ LxmlLinkExtractor
         If given, only the text selected by those XPath will be scanned for
         links. See examples below.
     :type restrict_xpaths: str or list
+
+    :param restrict_css: a CSS selector (or list of selectors) which defines
+        regions inside the response where links should be extracted from.
+        Has the same behaviour as ``restrict_xpaths``.
+    :type restrict_css: str or list
 
     :param tags: a tag or a list of tags to consider when extracting links.
         Defaults to ``('a', 'area')``.
