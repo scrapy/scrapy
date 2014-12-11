@@ -482,6 +482,21 @@ class S3TestCase(unittest.TestCase):
         self.assertEqual(httpreq.headers['Authorization'], \
                 'AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI=')
 
+    def test_request_signing7(self):
+        # ensure that spaces are quoted properly before signing
+        req = Request(
+            ("s3://johnsmith/photos/my puppy.jpg"
+             "?response-content-disposition=my puppy.jpg"),
+            method='GET',
+            headers={
+                'Date': 'Tue, 27 Mar 2007 19:42:41 +0000',
+            })
+        httpreq = self.download_request(req, self.spider)
+        self.assertEqual(
+            httpreq.headers['Authorization'],
+            'AWS 0PN5J17HBGZHT7JJ3X82:+CfvG8EZ3YccOrRVMXNaK2eKZmM=')
+
+
 class FTPTestCase(unittest.TestCase):
 
     username = "scrapy"
