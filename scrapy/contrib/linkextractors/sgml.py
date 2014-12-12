@@ -98,8 +98,8 @@ class BaseSgmlLinkExtractor(SGMLParser):
 class SgmlLinkExtractor(FilteringLinkExtractor):
 
     def __init__(self, allow=(), deny=(), allow_domains=(), deny_domains=(), restrict_xpaths=(),
-                 tags=('a', 'area'), attrs=('href',), canonicalize=True, unique=True, process_value=None,
-                 deny_extensions=None):
+                 restrict_css=(), tags=('a', 'area'), attrs=('href',), canonicalize=True, unique=True,
+                 process_value=None, deny_extensions=None):
 
         warnings.warn(
             "SgmlLinkExtractor is deprecated and will be removed in future releases. "
@@ -116,8 +116,8 @@ class SgmlLinkExtractor(FilteringLinkExtractor):
                 unique=unique, process_value=process_value)
 
         super(SgmlLinkExtractor, self).__init__(lx, allow, deny,
-            allow_domains, deny_domains, restrict_xpaths, canonicalize,
-            deny_extensions)
+            allow_domains, deny_domains, restrict_xpaths, restrict_css,
+            canonicalize, deny_extensions)
 
         # FIXME: was added to fix a RegexLinkExtractor testcase
         self.base_url = None
