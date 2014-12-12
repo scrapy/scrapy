@@ -386,7 +386,7 @@ Let's now take a look at an example CrawlSpider with rules::
 
             # Extract links matching 'item.php' only from 'category' pages and parse
             # them with the spider's method parse_item
-            Rule(LinkExtractor(allow=('item\.php', ), in_='category'), callback='parse_item'),
+            Rule(LinkExtractor(allow=('item\.php', )), in_='category', callback='parse_item'),
         )
 
         def parse_item(self, response):
