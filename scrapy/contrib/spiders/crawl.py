@@ -16,10 +16,13 @@ def identity(x):
 
 class Rule(object):
 
-    def __init__(self, link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=identity):
+    def __init__(self, link_extractor, callback=None, cb_kwargs=None, to=None, in_=None,
+                 follow=None, process_links=None, process_request=identity):
         self.link_extractor = link_extractor
         self.callback = callback
         self.cb_kwargs = cb_kwargs or {}
+        self.to = to
+        self.in_ = in_
         self.process_links = process_links
         self.process_request = process_request
         if follow is None:
@@ -49,6 +52,13 @@ class CrawlSpider(Spider):
             return
         seen = set()
         for n, rule in enumerate(self._rules):
+            if rule.in_ is not None:
+                try:
+                    response_rule_to = self._rules[response.meta['rule']].to
+                except (IndexError, KeyError, TypeError):
+                    response_rule_to = None
+                if response_rule_to != rule.in_:
+                    continue
             links = [l for l in rule.link_extractor.extract_links(response) if l not in seen]
             if links and rule.process_links:
                 links = rule.process_links(links)
