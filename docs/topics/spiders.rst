@@ -325,7 +325,7 @@ CrawlSpider
 Crawling rules
 ~~~~~~~~~~~~~~
 
-.. class:: Rule(link_extractor, callback=None, cb_kwargs=None, follow=None, process_links=None, process_request=None)
+.. class:: Rule(link_extractor, callback=None, cb_kwargs=None, to=None, in_=None, follow=None, process_links=None, process_request=None)
 
    ``link_extractor`` is a :ref:`Link Extractor <topics-link-extractors>` object which
    defines how links will be extracted from each crawled page.
@@ -343,6 +343,12 @@ Crawling rules
 
    ``cb_kwargs`` is a dict containing the keyword arguments to be passed to the
    callback function.
+
+   ``to`` is a value marking the type of the page for use by ``in_`` in other rules.
+
+   ``in_`` corresponds to a ``to`` value of another rule. If present, this rule
+   will only be applied to responses generated from rules with the same value
+   in ``to``.
 
    ``follow`` is a boolean which specifies if links should be followed from each
    response extracted with this rule. If ``callback`` is None ``follow`` defaults
@@ -373,12 +379,14 @@ Let's now take a look at an example CrawlSpider with rules::
         start_urls = ['http://www.example.com']
 
         rules = (
-            # Extract links matching 'category.php' (but not matching 'subsection.php')
-            # and follow links from them (since no callback means follow=True by default).
-            Rule(LinkExtractor(allow=('category\.php', ), deny=('subsection\.php', ))),
+            # Extract links matching 'category.php' (but not matching 'subsection.php'),
+            # follow links from them (since no callback means follow=True by default),
+            # and mark the returned pages as 'category' pages.
+            Rule(LinkExtractor(allow=('category\.php', ), deny=('subsection\.php', )), to='category'),
 
-            # Extract links matching 'item.php' and parse them with the spider's method parse_item
-            Rule(LinkExtractor(allow=('item\.php', )), callback='parse_item'),
+            # Extract links matching 'item.php' only from 'category' pages and parse
+            # them with the spider's method parse_item
+            Rule(LinkExtractor(allow=('item\.php', ), in_='category'), callback='parse_item'),
         )
 
         def parse_item(self, response):
@@ -391,9 +399,9 @@ Let's now take a look at an example CrawlSpider with rules::
 
 
 This spider would start crawling example.com's home page, collecting category
-links, and item links, parsing the latter with the ``parse_item`` method. For
-each item response, some data will be extracted from the HTML using XPath, and
-a :class:`~scrapy.item.Item` will be filled with it.
+links, then in category pages collecting item links, parsing the latter with
+the ``parse_item`` method. For each item response, some data will be extracted
+from the HTML using XPath, and a :class:`~scrapy.item.Item` will be filled with it.
 
 XMLFeedSpider
 -------------
