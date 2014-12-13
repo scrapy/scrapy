@@ -154,6 +154,7 @@ class XmlItemExporter(BaseItemExporter):
     if sys.version_info[:3] >= (2, 7, 4):
         def _xg_characters(self, serialized_value):
             if not isinstance(serialized_value, unicode):
+                serialized_value = str(serialized_value)
                 serialized_value = serialized_value.decode(self.encoding)
             return self.xg.characters(serialized_value)
     else:

@@ -14,6 +14,11 @@ class TestItem(Item):
     name = Field()
     age = Field()
 
+class CollectionTestItem(Item):
+    people = Field()
+    pages = Field()
+    stats = Field()
+
 
 class BaseItemExporterTest(unittest.TestCase):
 
@@ -135,6 +140,18 @@ class PickleItemExporterTest(BaseItemExporterTest):
         f.seek(0)
         self.assertEqual(pickle.load(f), i1)
         self.assertEqual(pickle.load(f), i2)
+
+    def test_export_items_dict_list(self):
+        item = CollectionTestItem(pages=['index', 'list'],
+                                  people=[{'name': 'John', 'age': 22}],
+                                  stats={'time_taken': 2})
+        f = BytesIO()
+        ie = PickleItemExporter(f)
+        ie.start_exporting()
+        ie.export_item(item)
+        ie.finish_exporting()
+        f.seek(0)
+        self.assertEqual(pickle.load(f), item)
 
 
 class CsvItemExporterTest(BaseItemExporterTest):
@@ -265,6 +282,31 @@ class XmlItemExporterTest(BaseItemExporterTest):
                     '<name>buz</name>'\
                 '</item></items>'
         self.assertXmlEquivalent(output.getvalue(), expected_value)
+        
+    def test_item_list_dict(self):
+        output = BytesIO()
+        item = CollectionTestItem(pages=['index', 'list'],
+                                  people=[{'name': 'John', 'age': 22}],
+                                  stats={'time_taken': 2})
+        ie = XmlItemExporter(output)
+        ie.start_exporting()
+        ie.export_item(item)
+        ie.finish_exporting()
+        expected_value =  '<?xml version="1.0" encoding="utf-8"?>\n'\
+                '<items><item>'\
+                    '<people>'\
+                        '<value>'\
+                            '<name>John</name>'\
+                            '<age>22</age>'\
+                        '</value>'\
+                    '</people>'\
+                    '<pages>'\
+                        '<value>index</value>'\
+                        '<value>list</value>'\
+                    '</pages>'\
+                    '<stats><time_taken>2</time_taken></stats>'\
+                '</item></items>'
+        self.assertXmlEquivalent(output.getvalue(), expected_value)
 
 
 class JsonLinesItemExporterTest(BaseItemExporterTest):
@@ -293,6 +335,14 @@ class JsonLinesItemExporterTest(BaseItemExporterTest):
         self.test_export_item()
         self._check_output()
         self.assertRaises(TypeError, self._get_exporter, foo_unknown_keyword_bar=True)
+
+    def test_item_list_dict(self):
+        item = TestItem(name='Jesus', age={'name': 'Maria', 'age': {'name': 'Joseph', 'age': '22'}})
+        self.ie.start_exporting()
+        self.ie.export_item(item)
+        self.ie.finish_exporting()
+        exported = json.loads(self.output.getvalue())
+        self.assertEqual(exported, self._expected_nested)
 
 
 class JsonItemExporterTest(JsonLinesItemExporterTest):
@@ -324,6 +374,15 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         exported = json.loads(self.output.getvalue())
         expected = {'name': u'Jesus', 'age': {'name': 'Maria', 'age': dict(i1)}}
         self.assertEqual(exported, [expected])
+
+    def test_item_list_dict(self):
+        item = TestItem(name='Jesus', age={'name': 'Maria', 'age': {'name': 'Joseph', 'age': '22'}})
+        self.ie.start_exporting()
+        self.ie.export_item(item)
+        self.ie.finish_exporting()
+        exported = json.loads(self.output.getvalue())
+        self.assertEqual(exported, self._expected_nested)
+
 
 class CustomItemExporterTest(unittest.TestCase):
 
