@@ -1,3 +1,5 @@
+from urlparse import unquote
+
 from scrapy import optional_features
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.httpobj import urlparse_cached
@@ -54,8 +56,8 @@ class S3DownloadHandler(object):
         signed_headers = self.conn.make_request(
                 method=request.method,
                 bucket=bucket,
-                key=p.path,
-                query_args=p.query,
+                key=unquote(p.path),
+                query_args=unquote(p.query),
                 headers=request.headers,
                 data=request.body)
         httpreq = request.replace(url=url, headers=signed_headers)
