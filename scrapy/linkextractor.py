@@ -42,7 +42,7 @@ class FilteringLinkExtractor(object):
     _csstranslator = ScrapyHTMLTranslator()
 
     def __init__(self, link_extractor, allow, deny, allow_domains, deny_domains,
-                 restrict_xpaths, restrict_css, canonicalize, deny_extensions):
+                 restrict_xpaths, canonicalize, deny_extensions, restrict_css):
 
         self.link_extractor = link_extractor
 
