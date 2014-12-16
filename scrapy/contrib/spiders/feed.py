@@ -126,6 +126,8 @@ class CSVFeedSpider(Spider):
 
         for row in csviter(response, self.delimiter, self.headers, self.quotechar):
             ret = self.parse_row(response, row)
+            if ret is None:
+                continue
             if isinstance(ret, (BaseItem, Request)):
                 ret = [ret]
             if not isinstance(ret, (list, tuple)):
