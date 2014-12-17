@@ -13,7 +13,7 @@ class CachingThreadedResolver(ThreadedResolver):
     def getHostByName(self, name, timeout = (1, 3, 11, 45)):
         if name in dnscache:
             return defer.succeed(dnscache[name])
-        d = ThreadedResolver.getHostByName(self, name, timeout)
+        d = super(CachingThreadedResolver, self).getHostByName(name, timeout)
         d.addCallback(self._cache_result, name)
         return d
 
