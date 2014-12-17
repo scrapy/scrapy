@@ -10,9 +10,9 @@ import six
 class Link(object):
     """Link objects represent an extracted link by the LinkExtractor."""
 
-    __slots__ = ['url', 'text', 'fragment', 'nofollow']
+    __slots__ = ['url', 'text', 'fragment', 'nofollow', 'element']
 
-    def __init__(self, url, text='', fragment='', nofollow=False):
+    def __init__(self, url, text='', fragment='', nofollow=False, element=None):
         if isinstance(url, six.text_type):
             import warnings
             warnings.warn("Do not instantiate Link objects with unicode urls. "
@@ -22,6 +22,7 @@ class Link(object):
         self.text = text
         self.fragment = fragment
         self.nofollow = nofollow
+        self.element = element
 
     def __eq__(self, other):
         return self.url == other.url and self.text == other.text and \

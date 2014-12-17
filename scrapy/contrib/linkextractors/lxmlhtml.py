@@ -57,7 +57,7 @@ class LxmlParserLinkExtractor(object):
                 url = url.encode(response_encoding)
             # to fix relative links after process_value
             url = urljoin(response_url, url)
-            link = Link(url, _collect_string_content(el) or u'',
+            link = Link(url, _collect_string_content(el) or u'', element=el,
                 nofollow=True if el.get('rel') == 'nofollow' else False)
             links.append(link)
 
