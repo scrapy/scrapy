@@ -101,6 +101,11 @@ class RFC2616Policy(object):
         now = time()
         freshnesslifetime = self._compute_freshness_lifetime(cachedresponse, request, now)
         currentage = self._compute_current_age(cachedresponse, request, now)
+
+        reqmaxage = self._get_max_age(ccreq)
+        if reqmaxage is not None:
+            freshnesslifetime = min(freshnesslifetime, reqmaxage)
+
         if currentage < freshnesslifetime:
             return True
 
@@ -144,15 +149,19 @@ class RFC2616Policy(object):
         if 'ETag' in cachedresponse.headers:
             request.headers['If-None-Match'] = cachedresponse.headers['ETag']
 
+    def _get_max_age(self, cc):
+        try:
+            return max(0, int(cc['max-age']))
+        except (KeyError, ValueError):
+            return None
+
     def _compute_freshness_lifetime(self, response, request, now):
         # Reference nsHttpResponseHead::ComputeFreshnessLifetime
         # http://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#410
         cc = self._parse_cachecontrol(response)
-        if 'max-age' in cc:
-            try:
-                return max(0, int(cc['max-age']))
-            except ValueError:
-                pass
+        maxage = self._get_max_age(cc)
+        if maxage is not None:
+            return maxage
 
         # Parse date header or synthesize it if none exists
         date = rfc1123_to_epoch(response.headers.get('Date')) or now
