@@ -99,6 +99,14 @@ class RFC2616Policy(object):
         return False
 
     def is_cached_response_valid(self, cachedresponse, response, request):
+        # Use the cached response if the new response is a server error,
+        # as long as the old response didn't specify must-revalidate.
+        if response.status >= 500:
+            cc = self._parse_cachecontrol(cachedresponse)
+            if 'must-revalidate' not in cc:
+                return True
+
+        # Use the cached response if the server says it hasn't changed.
         return response.status == 304
 
     def _set_conditional_validators(self, request, cachedresponse):
