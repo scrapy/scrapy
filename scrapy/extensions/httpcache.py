@@ -38,6 +38,7 @@ class RFC2616Policy(object):
     MAXAGE = 3600 * 24 * 365  # one year
 
     def __init__(self, settings):
+        self.always_store = settings.getbool('HTTPCACHE_ALWAYS_STORE')
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
         self.ignore_response_cache_controls = settings.getlist('HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS')
         self._cc_parsed = WeakKeyDictionary()
@@ -73,6 +74,9 @@ class RFC2616Policy(object):
         # Never cache 304 (Not Modified) responses
         elif response.status == 304:
             return False
+        # Cache unconditionally if configured to do so
+        elif self.always_store:
+            return True
         # Any hint on response expiration is good
         elif 'max-age' in cc or 'Expires' in response.headers:
             return True
