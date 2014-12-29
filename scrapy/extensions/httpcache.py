@@ -94,6 +94,25 @@ class RFC2616Policy(object):
         currentage = self._compute_current_age(cachedresponse, request, now)
         if currentage < freshnesslifetime:
             return True
+
+        if 'max-stale' in ccreq and 'must-revalidate' not in cc:
+            # From RFC2616: "Indicates that the client is willing to
+            # accept a response that has exceeded its expiration time.
+            # If max-stale is assigned a value, then the client is
+            # willing to accept a response that has exceeded its
+            # expiration time by no more than the specified number of
+            # seconds. If no value is assigned to max-stale, then the
+            # client is willing to accept a stale response of any age."
+            staleage = ccreq['max-stale']
+            if staleage is None:
+                return True
+
+            try:
+                if currentage < freshnesslifetime + max(0, int(staleage)):
+                    return True
+            except ValueError:
+                pass
+
         # Cached response is stale, try to set validators if any
         self._set_conditional_validators(request, cachedresponse)
         return False
