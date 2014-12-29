@@ -7,7 +7,7 @@ from time import time
 from weakref import WeakKeyDictionary
 from email.utils import mktime_tz, parsedate_tz
 from w3lib.http import headers_raw_to_dict, headers_dict_to_raw
-from scrapy.http import Headers
+from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.project import data_path
@@ -39,12 +39,17 @@ class RFC2616Policy(object):
 
     def __init__(self, settings):
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
+        self.ignore_response_cache_controls = settings.getlist('HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS')
         self._cc_parsed = WeakKeyDictionary()
 
     def _parse_cachecontrol(self, r):
         if r not in self._cc_parsed:
             cch = r.headers.get('Cache-Control', '')
-            self._cc_parsed[r] = parse_cachecontrol(cch)
+            parsed = parse_cachecontrol(cch)
+            if isinstance(r, Response):
+                for key in self.ignore_response_cache_controls:
+                    parsed.pop(key, None)
+            self._cc_parsed[r] = parsed
         return self._cc_parsed[r]
 
     def should_cache_request(self, request):
