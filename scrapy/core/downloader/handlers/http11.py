@@ -32,6 +32,7 @@ class HTTP11DownloadHandler(object):
         self._contextFactory = self._contextFactoryClass()
         self._default_maxsize = settings.getint('DOWNLOAD_MAXSIZE')
         self._default_warnsize = settings.getint('DOWNLOAD_WARNSIZE')
+        self._disconnect_timeout = 1
 
     def download_request(self, request, spider):
         """Return a deferred for the HTTP download"""
@@ -41,7 +42,24 @@ class HTTP11DownloadHandler(object):
         return agent.download_request(request)
 
     def close(self):
-        return self._pool.closeCachedConnections()
+        d = self._pool.closeCachedConnections()
+        # closeCachedConnections will hang on network or server issues, so
+        # we'll manually timeout the deferred.
+        #
+        # Twisted issue addressing this problem can be found here:
+        # https://twistedmatrix.com/trac/ticket/7738.
+        #
+        # closeCachedConnections doesn't handle external errbacks, so we'll
+        # issue a callback after `_disconnect_timeout` seconds.
+        delayed_call = reactor.callLater(self._disconnect_timeout, d.callback, [])
+
+        def cancel_delayed_call(result):
+            if delayed_call.active():
+                delayed_call.cancel()
+            return result
+
+        d.addBoth(cancel_delayed_call)
+        return d
 
 
 class TunnelError(Exception):
