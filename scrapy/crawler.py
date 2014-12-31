@@ -16,7 +16,7 @@ from scrapy import log, signals
 
 class Crawler(object):
 
-    def __init__(self, spidercls, settings):
+    def __init__(self, spidercls, settings, start_requests=True):
         self.spidercls = spidercls
         self.settings = settings
         self.signals = SignalManager(self)
@@ -28,6 +28,7 @@ class Crawler(object):
         self.crawling = False
         self.spider = None
         self.engine = None
+        self.start_requests = start_requests
 
     @property
     def spiders(self):
@@ -49,8 +50,11 @@ class Crawler(object):
         try:
             self.spider = self._create_spider(*args, **kwargs)
             self.engine = self._create_engine()
-            start_requests = iter(self.spider.start_requests())
-            yield self.engine.open_spider(self.spider, start_requests)
+            if self.start_requests:
+                start_requests = self.spider.start_requests()
+            else:
+                start_requests = []
+            yield self.engine.open_spider(self.spider, iter(start_requests))
             yield defer.maybeDeferred(self.engine.start)
         except Exception:
             self.crawling = False
