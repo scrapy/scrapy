@@ -675,3 +675,27 @@ Here is a list of all built-in processors:
     constructor keyword arguments are used as default context values. See
     :class:`Compose` processor for more info.
 
+.. class:: SelectJmes(json_path)
+
+    Queries the value using the json path provided to the constructor and returns the output.
+    Requires jmespath (https://github.com/jmespath/jmespath) to run.
+    This processor takes only one input at a time.
+
+    Example::
+
+        >>> from scrapy.contrib.loader.processor import SelectJmes, Compose, MapCompose
+        >>> proc = SelectJmes("foo") #for direct use on lists and dictionaries
+        >>> proc({'foo': 'bar'})
+        'bar'
+        >>> proc({'foo': {'bar': 'baz'}})
+        {'bar': 'baz'}
+
+    Working with Json::
+
+        >>> import json
+        >>> proc_single_json_str = Compose(json.loads, SelectJmes("foo"))
+        >>> proc_single_json_str('{"foo": "bar"}')
+        u'bar'
+        >>> proc_json_list = Compose(json.loads, MapCompose(SelectJmes('foo')))
+        >>> proc_json_list('[{"foo":"bar"}, {"baz":"tar"}]')
+        [u'bar']
