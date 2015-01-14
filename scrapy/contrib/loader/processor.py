@@ -3,10 +3,12 @@ This module provides some commonly used processors for Item Loaders.
 
 See documentation in docs/topics/loaders.rst
 """
+import re
 
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.datatypes import MergeDict
 from .common import wrap_loader_context
+
 
 class MapCompose(object):
 
@@ -70,3 +72,128 @@ class Join(object):
 
     def __call__(self, values):
         return self.separator.join(values)
+
+
+class Strip(object):
+    def __init__(self, chars=None):
+        self.chars = chars
+
+    def __call__(self, values):
+        if isinstance(values, list):
+            filtered = []
+            for value in values:
+                value = value.strip(self.chars)
+                if value != '' and value is not None:
+                    filtered.append(value)
+            return filtered
+        return values.strip(self.chars)
+
+
+class TakeNth(object):
+
+    def __init__(self, pos):
+        self.pos = pos
+
+    def __call__(self, values):
+        values = [v for v in values if v != '' and v is not None]
+        return values[self.pos]
+
+
+class OnlyEnglish(object):
+    def __call__(self, values):
+        if isinstance(values, list):
+            filtered = []
+            for value in values:
+                try:
+                    value.decode('ascii')
+                except (UnicodeDecodeError, UnicodeEncodeError):
+                    pass
+                else:
+                    filtered.append(value)
+            return filtered
+        else:
+            try:
+                values.decode('ascii')
+            except (UnicodeDecodeError, UnicodeEncodeError):
+                pass
+            else:
+                return values
+
+
+class OnlyChars(object):
+
+    def __call__(self, values):
+        if isinstance(values, list):
+            filtered = []
+            for value in values:
+                value = filter(type(value).isalpha, value)
+                if value != '' and value is not None:
+                    filtered.append(value)
+            return filtered
+        return filter(type(values).isalpha, values)
+
+
+class Filter(object):
+
+    def __init__(self, filter_func):
+        self.filter_func = filter_func
+
+    def __call__(self, values):
+        if isinstance(values, list):
+            filtered = []
+            for value in values:
+                value = filter(self.filter_func, value)
+                if value != '' and value is not None:
+                    filtered.append(value)
+            return filtered
+        return filter(self.filter_func, values)
+
+
+class Replace(object):
+
+    def __init__(self, find, replace, count=-1):
+        self.find = find
+        self.replace = replace
+        self.count = count
+
+    def __call__(self, values):
+        if isinstance(values, list):
+            filtered = []
+            for value in values:
+                value = value.replace(self.find, self.replace, self.count)
+                if value != '' and value is not None:
+                    filtered.append(value)
+            return filtered
+        return values.replace(self.find, self.replace)
+
+
+class ReSub(object):
+
+    def __init__(self, find, replace, count=0, flags=0):
+        self.find = find
+        self.replace = replace
+        self.count = count
+        self.flags = flags
+
+    def __call__(self, values):
+        if isinstance(values, list):
+            filtered = []
+            for value in values:
+                value = re.sub(self.find, self.replace, value, self.count, self.flags)
+                if value != '' and value is not None:
+                    filtered.append(value)
+            return filtered
+        return re.sub(self.find, self.replace, values, self.count, self.flags)
+
+
+class OnlyDigits(object):
+
+    def __call__(self, values):
+        if isinstance(values, list):
+            filtered = []
+            for value in values:
+                value = filter(type(value).isdigit, value)
+                if value != '' and value is not None:
+                    filtered.append(value)
+            return filtered
+        return filter(type(values).isdigit, values)
