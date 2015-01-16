@@ -100,6 +100,7 @@ Built-in services
 
    topics/logging
    topics/stats
+   topics/periodic-stats
    topics/email
    topics/telnetconsole
    topics/webservice
@@ -109,6 +110,9 @@ Built-in services
    
 :doc:`topics/stats`
     Collect statistics about your scraping crawler.
+
+:doc:`topics/periodic-stats`
+    Export selected statistics periodically.
 
 :doc:`topics/email`
     Send email notifications when certain events occur.

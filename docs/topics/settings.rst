@@ -719,6 +719,67 @@ Example::
 
     NEWSPIDER_MODULE = 'mybot.spiders_dev'
 
+.. setting:: PERIODIC_STATS_ENABLED
+
+PERIODIC_STATS_ENABLED
+----------------------
+
+Default: ``True``
+
+Whether to use or not :ref:`topics-periodic-stats`.
+
+
+.. setting:: PERIODIC_STATS_EXPORT_ALL
+
+PERIODIC_STATS_EXPORT_ALL
+-------------------------
+
+Default: ``False``
+
+Whether to export or not all available stats using :ref:`topics-periodic-stats`.
+
+.. setting:: PERIODIC_STATS_EXPORT_ALL_INTERVAL
+
+PERIODIC_STATS_EXPORT_ALL_INTERVAL
+----------------------------------
+
+Default: ``60``
+
+Time in seconds to export all available stats using :ref:`topics-periodic-stats`.
+
+.. setting:: PERIODIC_STATS_OBSERVERS
+
+PERIODIC_STATS_OBSERVERS
+------------------------
+
+Default: ``[]``
+
+A list containing the :ref:`topics-stats-valueobservers` used in :ref:`topics-periodic-stats`.
+
+Example::
+
+    from scrapy.contrib import periodicstats as stats
+
+    PERIODIC_STATS_OBSERVERS = [
+        stats.Observer(key='downloader/response_count', export_interval=30),
+        stats.Observer(key='httpcache/hit', export_interval=30),
+    ]
+
+.. setting:: PERIODIC_STATS_PIPELINES
+
+PERIODIC_STATS_PIPELINES
+------------------------
+
+Default: ``[]``
+
+A list containing the :ref:`topics-stats-statspipelines` used in :ref:`topics-periodic-stats`.
+
+Example::
+
+    PERIODIC_STATS_PIPELINES = [
+        'scrapy.contrib.periodicstats.PeriodicStatsLogger',
+    ]
+
 .. setting:: RANDOMIZE_DOWNLOAD_DELAY
 
 RANDOMIZE_DOWNLOAD_DELAY
