@@ -9,7 +9,7 @@ import string
 
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.datatypes import MergeDict
-from .common import wrap_loader_context, clean_punctuation
+from .common import wrap_loader_context, purge_chars  #todo relative it
 
 
 class MapCompose(object):
@@ -107,21 +107,29 @@ class TakeNth(object):
 
 
 class OnlyAsciiItems(object):
+    def __init__(self, except_chars=''):
+        self.except_chars = except_chars
 
     def __call__(self, values):
         if isinstance(values, list):
             filtered = []
             for value in values:
+                filtered_value = value
+                if self.except_chars:  # Filter only if have what to filter
+                    filtered_value = purge_chars(value, self.except_chars)
                 try:
-                    value.decode('ascii')
+                    filtered_value.decode('ascii')
                 except (UnicodeDecodeError, UnicodeEncodeError):
                     pass
                 else:
                     filtered.append(value)
             return filtered
         else:
+            filtered_value = values
+            if self.except_chars:
+                filtered_value = purge_chars(values, self.except_chars)
             try:
-                values.decode('ascii')
+                filtered_value.decode('ascii')
             except (UnicodeDecodeError, UnicodeEncodeError):
                 pass
             else:
@@ -129,93 +137,113 @@ class OnlyAsciiItems(object):
 
 
 class OnlyAscii(object):
+    def __init__(self, except_chars=''):
+        self.except_chars = except_chars
 
     def __call__(self, values):
         filtered = []
+        valid = string.printable + self.except_chars
         if isinstance(values, list):
             for value in values:
                 filtered_value = ''
                 for char in value:
-                    if char in string.printable:
+                    if char in valid:
                         filtered_value += char
                 filtered.append(filtered_value)
             return filtered
         else:
             filtered_value = ''
             for char in values:
-                if char in string.printable:
+                if char in valid:
                     filtered_value += char
             return filtered_value or None
 
 
 class OnlyChars(object):
+    def __init__(self, except_chars=''):
+        self.except_chars = except_chars
 
     def __call__(self, values):
         if isinstance(values, list):
             filtered = []
             for value in values:
-                value = filter(type(value).isalpha, value)
+                if self.except_chars:
+                    value = filter(lambda v: v.isalpha() or (v in self.except_chars), value)
+                else:
+                    value = filter(type(value).isalpha, value)
                 if value != '' and value is not None:
                     filtered.append(value)
             return filtered
-        return filter(type(values).isalpha, values)
+        if self.except_chars:
+            return filter(lambda v: v.isalpha() or (v in self.except_chars), values)
+        else:
+            return filter(type(values).isalpha, values)
 
 
 class OnlyCharsItems(object):
 
-    def __init__(self, punctuation=False):
-        self.punctuation = punctuation
+    def __init__(self, except_chars=''):
+        self.except_chars = except_chars
 
     def __call__(self, values):
         if isinstance(values, list):
             filtered = []
             for value in values:
                 condition = value.isalpha()
-                if not condition and self.punctuation:
-                    condition = clean_punctuation(value).isalpha()
+                if not condition and self.except_chars:
+                    condition = purge_chars(value, self.except_chars).isalpha()
                 if value != '' and value is not None and condition:
                     filtered.append(value)
             return filtered
         else:
             condition = values.isalpha()
             if not condition:
-                condition = clean_punctuation(values).isalpha()
+                condition = purge_chars(values, self.except_chars).isalpha()
             if values != '' and values is not None and condition:
                 return values
 
 
 class OnlyDigits(object):
 
+    def __init__(self, except_chars=''):
+        self.except_chars = except_chars
+
     def __call__(self, values):
         if isinstance(values, list):
             filtered = []
             for value in values:
-                value = filter(type(value).isdigit, value)
+                if self.except_chars:
+                    value = filter(lambda v: v.isdigit() or (v in self.except_chars), value)
+                else:
+                    value = filter(type(value).isdigit, value)
                 if value != '' and value is not None:
                     filtered.append(value)
             return filtered
-        return filter(type(values).isdigit, values)
+        if self.except_chars:
+            return filter(lambda v: v.isdigit() or (v in self.except_chars), values)
+        else:
+            return filter(type(values).isdigit, values)
 
 
 class OnlyDigitsItems(object):
 
-    def __init__(self, punctuation=False):
-        self.punctuation = punctuation
+    def __init__(self, except_chars=''):
+        self.except_chars = except_chars
 
     def __call__(self, values):
         if isinstance(values, list):
             filtered = []
             for value in values:
                 condition = value.isdigit()
-                if not condition and self.punctuation:
-                    condition = clean_punctuation(value).isdigit()
+                if not condition and self.except_chars:
+                    condition = purge_chars(value, self.except_chars).isdigit()
                 if value != '' and value is not None and condition:
                     filtered.append(value)
             return filtered
         else:
             condition = values.isdigit()
             if not condition:
-                condition = clean_punctuation(values).isdigit()
+                condition = purge_chars(values, self.except_chars).isdigit()
             if values != '' and values is not None and condition:
                 return values
 

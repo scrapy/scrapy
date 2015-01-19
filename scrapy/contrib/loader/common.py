@@ -1,7 +1,6 @@
 """Common functions used in Item Loaders code"""
 
 from functools import partial
-import string
 from scrapy.utils.python import get_func_args
 
 
@@ -15,9 +14,8 @@ def wrap_loader_context(function, context):
         return function
 
 
-def clean_punctuation(text):
+def purge_chars(text, chars):
     """Strips text of punctuation and whitespaces"""
-    chars = string.punctuation + string.whitespace
     for c in chars:
         if c in text:
             text = text.replace(c, '')

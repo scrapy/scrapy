@@ -5,7 +5,7 @@ import unittest
 from functools import partial
 
 from scrapy.contrib.loader import ItemLoader
-from scrapy.contrib.loader.common import clean_punctuation
+from scrapy.contrib.loader.common import purge_chars
 from scrapy.contrib.loader.processor import Join, Identity, TakeFirst, \
     Compose, MapCompose, Strip, OnlyChars, TakeNth, OnlyAsciiItems, OnlyDigits, Replace, Filter, ReSub, OnlyAscii, \
     OnlyCharsItems, OnlyDigitsItems, ParseNum
@@ -618,11 +618,13 @@ class TakeNthTestCase(unittest.TestCase):
 
 class OnlyAsciiItemsTestCase(unittest.TestCase):
     test_lists_equals = {
-        'single_non_english': (u'lietuvių', None),
-        'russian': (u'русский', None),
-        'single_english': (u'english', 'english'),
-        'list_non_englush': ([u'šuo', u'lietuvių'], []),
-        'list_englush': (['hi', "I'm", 'english'], ['hi', "I'm", 'english']),
+        'single_non_english': (u'lietuvių', None, ''),
+        'russian': (u'русский', None, ''),
+        'single_english': (u'english', 'english', ''),
+        'list_non_englush': ([u'šuo', u'lietuvių'], [], ''),
+        'list_englush': (['hi', "I'm", 'english'], ['hi', "I'm", 'english'], ''),
+        'except': (u'ša', u'ša', u'š'),
+        'except_list': ([u'ša', u'русский'], [u'ša'], u'šй'),
     }
     test_list_errors = {
         'int': (12345, AttributeError),
@@ -631,10 +633,10 @@ class OnlyAsciiItemsTestCase(unittest.TestCase):
 
     def test_equals(self):
         for l in self.test_lists_equals:
-            test_list, expected = self.test_lists_equals[l]
-            test = OnlyAsciiItems()(test_list)
+            test_list, expected, except_chars = self.test_lists_equals[l]
+            test = OnlyAsciiItems(except_chars=except_chars)(test_list)
             self.assertEqual(test, expected,
-                             msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
+                             msg=u'test "{}" got "{}" expected "{}"'.format(l, test, expected))
 
     def test_errors(self):
         for l in self.test_list_errors:
@@ -651,6 +653,7 @@ class OnlyAsciiTestCase(unittest.TestCase):
         'list_mix': (['hi', u'lietuvių'], ['hi', 'lietuvi']),
         'list_english': (['hi', "I'm", 'english'], ['hi', "I'm", 'english']),
         'printable': ([string.printable, 'english'], [string.printable, 'english']),
+        'except': (u'this is русский', u'this is й', u'й'),
     }
     test_list_errors = {
         'int': (12345, TypeError),
@@ -659,10 +662,11 @@ class OnlyAsciiTestCase(unittest.TestCase):
 
     def test_equals(self):
         for l in self.test_lists_equals:
-            test_list, expected = self.test_lists_equals[l]
-            test = OnlyAscii()(test_list)
+            test_list, expected = self.test_lists_equals[l][0], self.test_lists_equals[l][1]
+            except_chars = self.test_lists_equals[l][2] if len(self.test_lists_equals[l]) > 2 else ''
+            test = OnlyAscii(except_chars)(test_list)
             self.assertEqual(test, expected,
-                             msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
+                             msg=u'test "{}" got "{}" expected "{}"'.format(l, test, expected))
 
     def test_errors(self):
         for l in self.test_list_errors:
@@ -672,13 +676,14 @@ class OnlyAsciiTestCase(unittest.TestCase):
 
 class OnlyDigitsTestCase(unittest.TestCase):
     test_lists_equals = {
-        'single_digits': ('123456', '123456'),
-        'single_mix': ('1a2b3c', '123'),
-        'single_non_digits': ('english', ''),  # empty string when string expected
-        'digits_list': (['123', '456'], ['123', '456']),
-        'char_list': (['abc', 'def'], []),
-        'mix_list': (['1a2b', '3c4d'], ['12', '34']),
-        'non_digits_list': (['one', 'two'], []),  # empty list when list expected
+        'single_digits': ('123456', '123456', ''),
+        'single_mix': ('1a2b3c', '123', ''),
+        'single_non_digits': ('english', '', ''),  # empty string when string expected
+        'digits_list': (['123', '456'], ['123', '456'], ''),
+        'char_list': (['abc', 'def'], [], ''),
+        'mix_list': (['1a2b', '3c4d'], ['12', '34'], ''),
+        'non_digits_list': (['one', 'two'], [], ''),  # empty list when list expected
+        'punctuation': ('1+2=3', '1+2=3', string.punctuation),  # empty list when list expected
     }
     test_list_errors = {
         'int': (12345, AttributeError),
@@ -687,8 +692,8 @@ class OnlyDigitsTestCase(unittest.TestCase):
 
     def test_equals(self):
         for l in self.test_lists_equals:
-            test_list, expected = self.test_lists_equals[l]
-            test = OnlyDigits()(test_list)
+            test_list, expected, except_chars = self.test_lists_equals[l]
+            test = OnlyDigits(except_chars)(test_list)
             self.assertEqual(test, expected,
                              msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
 
@@ -700,13 +705,15 @@ class OnlyDigitsTestCase(unittest.TestCase):
 
 class OnlyCharsTestCase(unittest.TestCase):
     test_lists_equals = {
-        'single_digits': ('123456', ''),  # empty string when string expected
-        'single_mix': ('1a2b3c', 'abc'),
-        'single_non_digits': ('english', 'english'),
-        'digits_list': (['123', '456'], []),  # empty list when list expected
-        'char_list': (['abc', 'def'], ['abc', 'def']),
-        'mix_list': (['1a2b', '3c4d'], ['ab', 'cd']),
-        'non_digits_list': (['one', 'two'], ['one', 'two']),
+        'single_digits': ('123456', '', ''),  # empty string when string expected
+        'single_mix': ('1a2b3c', 'abc', ''),
+        'single_non_digits': ('english', 'english', ''),
+        'digits_list': (['123', '456'], [], ''),  # empty list when list expected
+        'char_list': (['abc', 'def'], ['abc', 'def'], ''),
+        'mix_list': (['1a2b', '3c4d'], ['ab', 'cd'], ''),
+        'non_digits_list': (['one', 'two'], ['one', 'two'], ''),
+        'punctuation': ('one+two', 'one+two', string.punctuation),
+        'punctuation_list': (['one+two', '=three'], ['one+two', '=three'], string.punctuation),
     }
     test_list_errors = {
         'int': (12345, AttributeError),
@@ -715,8 +722,8 @@ class OnlyCharsTestCase(unittest.TestCase):
 
     def test_equals(self):
         for l in self.test_lists_equals:
-            test_list, expected = self.test_lists_equals[l]
-            test = OnlyChars()(test_list)
+            test_list, expected, except_chars = self.test_lists_equals[l]
+            test = OnlyChars(except_chars=except_chars)(test_list)
             self.assertEqual(test, expected,
                              msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
 
@@ -728,15 +735,15 @@ class OnlyCharsTestCase(unittest.TestCase):
 
 class OnlyCharsItemsTestCase(unittest.TestCase):
     test_lists_equals = {
-        'single_digits': ('123456', None, False),  # empty string when string expected
-        'single_mix': ('1a2b3c', None, False),
-        'single_non_digits': ('english', 'english', False),
-        'digits_list': (['123', '456'], [], False),  # empty list when list expected
-        'char_list': (['abc', 'def'], ['abc', 'def'], False),
-        'mix_list': (['1a2b', '3c4d'], [], False),
-        'non_digits_list': (['one', 'two'], ['one', 'two'], False),
-        'with_punctuation': ('foobar. is it?', 'foobar. is it?', True),
-        'with_punctuation_list': (['foo bar.', 'char', '1.hi'], ['foo bar.', 'char'], True),
+        'single_digits': ('123456', None, ''),  # empty string when string expected
+        'single_mix': ('1a2b3c', None, ''),
+        'single_non_digits': ('english', 'english', ''),
+        'digits_list': (['123', '456'], [], ''),  # empty list when list expected
+        'char_list': (['abc', 'def'], ['abc', 'def'], ''),
+        'mix_list': (['1a2b', '3c4d'], [], ''),
+        'non_digits_list': (['one', 'two'], ['one', 'two'], ''),
+        'with_punctuation': ('foobar. is it?', 'foobar. is it?', string.punctuation + string.whitespace),
+        'with_punctuation_list': (['foo bar.', 'char', '1.hi'], ['foo bar.', 'char'], string.punctuation + string.whitespace),
     }
 
     test_list_errors = {
@@ -746,8 +753,8 @@ class OnlyCharsItemsTestCase(unittest.TestCase):
 
     def test_equals(self):
         for l in self.test_lists_equals:
-            test_list, expected, punctuation = self.test_lists_equals[l]
-            test = OnlyCharsItems(punctuation=True)(test_list)
+            test_list, expected, except_chars = self.test_lists_equals[l]
+            test = OnlyCharsItems(except_chars)(test_list)
             self.assertEqual(test, expected,
                              msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
 
@@ -759,15 +766,15 @@ class OnlyCharsItemsTestCase(unittest.TestCase):
 
 class OnlyDigitsItemsTestCase(unittest.TestCase):
     test_lists_equals = {
-        'single_digits': ('123456', '123456', False),
-        'single_mix': ('1a2b3c', None, False),
-        'single_non_digits': ('english', None, False),
-        'digits_list': (['123', '456'], ['123', '456'], False),
-        'char_list': (['abc', 'def'], [], False),  # empty list when list expected
-        'mix_list': (['1a2b', '3c4d'], [], False),
-        'non_digits_list': (['one', 'two'], [], False),
-        'with_punctuation': ('1+2=3', '1+2=3', True),
-        'with_punctuation_list': (['2+2=4', 'char', '1?'], ['2+2=4', '1?'], True),
+        'single_digits': ('123456', '123456', ''),
+        'single_mix': ('1a2b3c', None, ''),
+        'single_non_digits': ('english', None, ''),
+        'digits_list': (['123', '456'], ['123', '456'], ''),
+        'char_list': (['abc', 'def'], [], ''),  # empty list when list expected
+        'mix_list': (['1a2b', '3c4d'], [], ''),
+        'non_digits_list': (['one', 'two'], [], ''),
+        'with_punctuation': ('1+2=3', '1+2=3', string.punctuation),
+        'with_punctuation_list': (['2+2=4', 'char', '1?'], ['2+2=4', '1?'], string.punctuation),
     }
     test_list_errors = {
         'int': (12345, AttributeError),
@@ -776,8 +783,8 @@ class OnlyDigitsItemsTestCase(unittest.TestCase):
 
     def test_equals(self):
         for l in self.test_lists_equals:
-            test_list, expected, punctuation = self.test_lists_equals[l]
-            test = OnlyDigitsItems(punctuation=True)(test_list)
+            test_list, expected, except_chars = self.test_lists_equals[l]
+            test = OnlyDigitsItems(except_chars=except_chars)(test_list)
             self.assertEqual(test, expected,
                              msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
 
@@ -821,20 +828,22 @@ class ParseNumTestCase(unittest.TestCase):
             self.assertRaises(expected, ParseNum(return_type, slocale).__call__, test_list)
 
 
-class CleanPunctuationTestCase(unittest.TestCase):
+class PurgeCharsTestCase(unittest.TestCase):
 
     test_lists_equals_clean_punctuation = {
-        'single': ('foo.', 'foo'),
-        'nothing': ('foobar', 'foobar'),
-        'space': ('foobar is great? yes.', 'foobarisgreatyes'),
-        'all': (string.punctuation, ''),  # empty string when string expected
+        'single': ('foo.', 'foo', string.punctuation),
+        'nothing': ('foobar', 'foobar', string.punctuation),
+        'space': ('foobar is great? yes.', 'foobarisgreatyes', string.punctuation + string.whitespace),
+        'all': (string.punctuation, '', string.punctuation),
+        'unicode': (u'testingš', 'testing', u'š'),
     }
+
     def test_clean_punctuation(self):
         for l in self.test_lists_equals_clean_punctuation:
-            value, expected = self.test_lists_equals_clean_punctuation[l]
-            test = clean_punctuation(value)
+            value, expected, chars = self.test_lists_equals_clean_punctuation[l]
+            test = purge_chars(value, chars)
             self.assertEqual(test, expected,
-                             msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
+                             msg=u'test "{}" got "{}" expected "{}"'.format(l, test, expected))
 
 
 class StripTestCase(unittest.TestCase):
