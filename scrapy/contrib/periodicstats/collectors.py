@@ -44,6 +44,7 @@ class PeriodicStatsCollector(MemoryStatsCollector):
     def close_spider(self, spider, reason):
         super(PeriodicStatsCollector, self).close_spider(spider, reason)
         if self._enabled:
+            self._task.stop()
             self._process_interval_stats(spider=spider, is_close=True)
             for pipeline in self._pipelines:
                 pipeline.close_spider(spider, reason)
