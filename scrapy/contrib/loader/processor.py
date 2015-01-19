@@ -3,11 +3,13 @@ This module provides some commonly used processors for Item Loaders.
 
 See documentation in docs/topics/loaders.rst
 """
+import locale
 import re
+import string
 
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.datatypes import MergeDict
-from .common import wrap_loader_context
+from .common import wrap_loader_context, clean_punctuation
 
 
 class MapCompose(object):
@@ -75,6 +77,7 @@ class Join(object):
 
 
 class Strip(object):
+
     def __init__(self, chars=None):
         self.chars = chars
 
@@ -91,15 +94,20 @@ class Strip(object):
 
 class TakeNth(object):
 
-    def __init__(self, pos):
+    def __init__(self, pos, fallback_func=None):
         self.pos = pos
+        self.fallback_func = fallback_func or (lambda values: None)
 
     def __call__(self, values):
-        values = [v for v in values if v != '' and v is not None]
-        return values[self.pos]
+        filtered = [v for v in values if v != '' and v is not None]
+        if self.pos >= len(filtered):
+            return self.fallback_func(values)
+        else:
+            return filtered[self.pos]
 
 
-class OnlyEnglish(object):
+class OnlyAsciiItems(object):
+
     def __call__(self, values):
         if isinstance(values, list):
             filtered = []
@@ -120,6 +128,26 @@ class OnlyEnglish(object):
                 return values
 
 
+class OnlyAscii(object):
+
+    def __call__(self, values):
+        filtered = []
+        if isinstance(values, list):
+            for value in values:
+                filtered_value = ''
+                for char in value:
+                    if char in string.printable:
+                        filtered_value += char
+                filtered.append(filtered_value)
+            return filtered
+        else:
+            filtered_value = ''
+            for char in values:
+                if char in string.printable:
+                    filtered_value += char
+            return filtered_value or None
+
+
 class OnlyChars(object):
 
     def __call__(self, values):
@@ -131,6 +159,65 @@ class OnlyChars(object):
                     filtered.append(value)
             return filtered
         return filter(type(values).isalpha, values)
+
+
+class OnlyCharsItems(object):
+
+    def __init__(self, punctuation=False):
+        self.punctuation = punctuation
+
+    def __call__(self, values):
+        if isinstance(values, list):
+            filtered = []
+            for value in values:
+                condition = value.isalpha()
+                if not condition and self.punctuation:
+                    condition = clean_punctuation(value).isalpha()
+                if value != '' and value is not None and condition:
+                    filtered.append(value)
+            return filtered
+        else:
+            condition = values.isalpha()
+            if not condition:
+                condition = clean_punctuation(values).isalpha()
+            if values != '' and values is not None and condition:
+                return values
+
+
+class OnlyDigits(object):
+
+    def __call__(self, values):
+        if isinstance(values, list):
+            filtered = []
+            for value in values:
+                value = filter(type(value).isdigit, value)
+                if value != '' and value is not None:
+                    filtered.append(value)
+            return filtered
+        return filter(type(values).isdigit, values)
+
+
+class OnlyDigitsItems(object):
+
+    def __init__(self, punctuation=False):
+        self.punctuation = punctuation
+
+    def __call__(self, values):
+        if isinstance(values, list):
+            filtered = []
+            for value in values:
+                condition = value.isdigit()
+                if not condition and self.punctuation:
+                    condition = clean_punctuation(value).isdigit()
+                if value != '' and value is not None and condition:
+                    filtered.append(value)
+            return filtered
+        else:
+            condition = values.isdigit()
+            if not condition:
+                condition = clean_punctuation(values).isdigit()
+            if values != '' and values is not None and condition:
+                return values
 
 
 class Filter(object):
@@ -186,14 +273,27 @@ class ReSub(object):
         return re.sub(self.find, self.replace, values, self.count, self.flags)
 
 
-class OnlyDigits(object):
+class ParseNum(object):
+
+    def __init__(self, return_type, string_locale='en_US.UTF-8'):
+        if return_type == float:
+            self.parse_func = locale.atof
+        elif return_type == int:
+            self.parse_func = locale.atoi
+        else:
+            raise NotImplementedError('return_type supplied to ParseNum processor has to be '
+                                      'either int or float, is {}'.format(return_type))
+        self.string_locale = string_locale
 
     def __call__(self, values):
+        # in case we have more than one processor we need to override locale on every call.
+        locale.setlocale(locale.LC_ALL, locale=self.string_locale)
         if isinstance(values, list):
             filtered = []
             for value in values:
-                value = filter(type(value).isdigit, value)
-                if value != '' and value is not None:
-                    filtered.append(value)
+                if value is not None and value != '':
+                    filtered.append(str(self.parse_func(value)))
             return filtered
-        return filter(type(values).isdigit, values)
+        else:
+            if values is not None and values != '':
+                return str(self.parse_func(values)) or None

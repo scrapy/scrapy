@@ -5,8 +5,10 @@ import unittest
 from functools import partial
 
 from scrapy.contrib.loader import ItemLoader
+from scrapy.contrib.loader.common import clean_punctuation
 from scrapy.contrib.loader.processor import Join, Identity, TakeFirst, \
-    Compose, MapCompose, Strip, OnlyChars, TakeNth, OnlyEnglish, OnlyDigits, Replace, Filter, ReSub
+    Compose, MapCompose, Strip, OnlyChars, TakeNth, OnlyAsciiItems, OnlyDigits, Replace, Filter, ReSub, OnlyAscii, \
+    OnlyCharsItems, OnlyDigitsItems, ParseNum
 from scrapy.item import Item, Field
 from scrapy.selector import Selector
 from scrapy.http import HtmlResponse
@@ -584,24 +586,29 @@ class SelectortemLoaderTest(unittest.TestCase):
 
 class TakeNthTestCase(unittest.TestCase):
     test_lists_equals = {
-        'simple': (5, range(10), 5),
-        'list_of_lists': (1, [range(10), range(5)], range(5)),
-        'zero': (0, range(10), 0),
-        'with_none': (2, [0, 1, None, 3], 3),
-        'with_empty_str': (2, [0, 1, '', 3], 3),
-        'string': (2, 'hello', 'l'),
+        'simple': (5, range(10), 5, None),
+        'list_of_lists': (1, [range(10), range(5)], range(5), None),
+        'zero': (0, range(10), 0, None),
+        'with_none': (2, [0, 1, None, 3], 3, None),
+        'with_empty_str': (2, [0, 1, '', 3], 3, None),
+        'string': (2, 'hello', 'l', None),
+        'out_of_range': (10, 'hello', None, None),
+        'one_too_high': (5, 'hello', None, None),  # lists starts from 0 where's len starts from 1
+        'fallback_takefirst': (10, 'hello', 'h', TakeFirst()),  # You can fallback to different processor
+        'nofallback_takefirst': (4, 'hello', 'o', TakeFirst()),  # You can fallback to different processor
+        'fallback_self': (10, 'hello', 'hello', lambda value: value),
+        'minus': (-1, 'hello', 'o', None),
     }
     test_list_errors = {
-        'out_of_range': (5, [0, 1, None, 3], IndexError),
         'int': (2, 12345, TypeError),
     }
 
     def test_equals(self):
         for l in self.test_lists_equals:
-            pos, test_list, expected = self.test_lists_equals[l]
-            test = TakeNth(pos)(test_list)
+            pos, test_list, expected, fallback_func = self.test_lists_equals[l]
+            test = TakeNth(pos, fallback_func)(test_list)
             self.assertEqual(test, expected,
-                             msg='test "{}" got {} expected {}'.format(l, test, expected))
+                             msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
 
     def test_errors(self):
         for l in self.test_list_errors:
@@ -609,7 +616,7 @@ class TakeNthTestCase(unittest.TestCase):
             self.assertRaises(expected, TakeNth(pos).__call__, test_list)
 
 
-class OnlyEnglishTestCase(unittest.TestCase):
+class OnlyAsciiItemsTestCase(unittest.TestCase):
     test_lists_equals = {
         'single_non_english': (u'lietuvių', None),
         'russian': (u'русский', None),
@@ -625,14 +632,42 @@ class OnlyEnglishTestCase(unittest.TestCase):
     def test_equals(self):
         for l in self.test_lists_equals:
             test_list, expected = self.test_lists_equals[l]
-            test = OnlyEnglish()(test_list)
+            test = OnlyAsciiItems()(test_list)
             self.assertEqual(test, expected,
-                             msg='test "{}" got {} expected {}'.format(l, test, expected))
+                             msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
 
     def test_errors(self):
         for l in self.test_list_errors:
             test_list, expected = self.test_list_errors[l]
-            self.assertRaises(expected, OnlyEnglish().__call__, test_list)
+            self.assertRaises(expected, OnlyAsciiItems().__call__, test_list)
+
+
+class OnlyAsciiTestCase(unittest.TestCase):
+    test_lists_equals = {
+        'single_non_english': (u'lietuvių', 'lietuvi'),
+        'russian': (u'русский', None),
+        'single_english': (u'english', 'english'),
+        'list_non_english': ([u'šuo', u'lietuvių'], ['uo', 'lietuvi']),
+        'list_mix': (['hi', u'lietuvių'], ['hi', 'lietuvi']),
+        'list_english': (['hi', "I'm", 'english'], ['hi', "I'm", 'english']),
+        'printable': ([string.printable, 'english'], [string.printable, 'english']),
+    }
+    test_list_errors = {
+        'int': (12345, TypeError),
+        'float': (12345.0, TypeError),
+    }
+
+    def test_equals(self):
+        for l in self.test_lists_equals:
+            test_list, expected = self.test_lists_equals[l]
+            test = OnlyAscii()(test_list)
+            self.assertEqual(test, expected,
+                             msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
+
+    def test_errors(self):
+        for l in self.test_list_errors:
+            test_list, expected = self.test_list_errors[l]
+            self.assertRaises(expected, OnlyAscii().__call__, test_list)
 
 
 class OnlyDigitsTestCase(unittest.TestCase):
@@ -655,7 +690,7 @@ class OnlyDigitsTestCase(unittest.TestCase):
             test_list, expected = self.test_lists_equals[l]
             test = OnlyDigits()(test_list)
             self.assertEqual(test, expected,
-                             msg='test "{}" got {} expected {}'.format(l, test, expected))
+                             msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
 
     def test_errors(self):
         for l in self.test_list_errors:
@@ -683,12 +718,123 @@ class OnlyCharsTestCase(unittest.TestCase):
             test_list, expected = self.test_lists_equals[l]
             test = OnlyChars()(test_list)
             self.assertEqual(test, expected,
-                             msg='test "{}" got {} expected {}'.format(l, test, expected))
+                             msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
 
     def test_errors(self):
         for l in self.test_list_errors:
             test_list, expected = self.test_list_errors[l]
             self.assertRaises(expected, OnlyChars().__call__, test_list)
+
+
+class OnlyCharsItemsTestCase(unittest.TestCase):
+    test_lists_equals = {
+        'single_digits': ('123456', None, False),  # empty string when string expected
+        'single_mix': ('1a2b3c', None, False),
+        'single_non_digits': ('english', 'english', False),
+        'digits_list': (['123', '456'], [], False),  # empty list when list expected
+        'char_list': (['abc', 'def'], ['abc', 'def'], False),
+        'mix_list': (['1a2b', '3c4d'], [], False),
+        'non_digits_list': (['one', 'two'], ['one', 'two'], False),
+        'with_punctuation': ('foobar. is it?', 'foobar. is it?', True),
+        'with_punctuation_list': (['foo bar.', 'char', '1.hi'], ['foo bar.', 'char'], True),
+    }
+
+    test_list_errors = {
+        'int': (12345, AttributeError),
+        'float': (12345.0, AttributeError),
+    }
+
+    def test_equals(self):
+        for l in self.test_lists_equals:
+            test_list, expected, punctuation = self.test_lists_equals[l]
+            test = OnlyCharsItems(punctuation=True)(test_list)
+            self.assertEqual(test, expected,
+                             msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
+
+    def test_errors(self):
+        for l in self.test_list_errors:
+            test_list, expected = self.test_list_errors[l]
+            self.assertRaises(expected, OnlyCharsItems().__call__, test_list)
+
+
+class OnlyDigitsItemsTestCase(unittest.TestCase):
+    test_lists_equals = {
+        'single_digits': ('123456', '123456', False),
+        'single_mix': ('1a2b3c', None, False),
+        'single_non_digits': ('english', None, False),
+        'digits_list': (['123', '456'], ['123', '456'], False),
+        'char_list': (['abc', 'def'], [], False),  # empty list when list expected
+        'mix_list': (['1a2b', '3c4d'], [], False),
+        'non_digits_list': (['one', 'two'], [], False),
+        'with_punctuation': ('1+2=3', '1+2=3', True),
+        'with_punctuation_list': (['2+2=4', 'char', '1?'], ['2+2=4', '1?'], True),
+    }
+    test_list_errors = {
+        'int': (12345, AttributeError),
+        'float': (12345.0, AttributeError),
+    }
+
+    def test_equals(self):
+        for l in self.test_lists_equals:
+            test_list, expected, punctuation = self.test_lists_equals[l]
+            test = OnlyDigitsItems(punctuation=True)(test_list)
+            self.assertEqual(test, expected,
+                             msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
+
+    def test_errors(self):
+        for l in self.test_list_errors:
+            test_list, expected = self.test_list_errors[l]
+            self.assertRaises(expected, OnlyDigitsItems().__call__, test_list)
+
+
+class ParseNumTestCase(unittest.TestCase):
+    test_lists_equals = {
+        'simple_int': ('10,000', '10000', int, None),
+        'simple_int_list': (['10,000', '20,000'], ['10000', '20000'], int, None),
+        'simple_float': ('10,000.000', '10000.0', float, None),
+        'simple_float_list': (['10,000.7', '20,000.99'], ['10000.7', '20000.99'], float, None),
+    }
+    test_list_errors = {
+        'inti': (12345, AttributeError, int, None),
+        'intf': (12345, AttributeError, float, None),
+        'floati': (12345.0, AttributeError, int, None),
+        'floatf': (12345.0, AttributeError, float, None),
+        'float_when_int': ('10,000.000', ValueError, int, None),
+        'texti': ('hello', ValueError, int, None),
+        'textf': ('hello', ValueError, float, None),
+        'text_listi': (['hello', 'bro'], ValueError, int, None),
+        'text_listf': (['hello', 'bro'], ValueError, float, None),
+    }
+
+    def test_equals(self):
+        for l in self.test_lists_equals:
+            test_list, expected, return_type, slocale  = self.test_lists_equals[l]
+            slocale = 'en_US.UTF-8' if not slocale else slocale
+            test = ParseNum(return_type, slocale)(test_list)
+            self.assertEqual(test, expected,
+                             msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
+
+    def test_errors(self):
+        for l in self.test_list_errors:
+            test_list, expected, return_type, slocale  = self.test_list_errors[l]
+            slocale = 'en_US.UTF-8' if not slocale else slocale
+            self.assertRaises(expected, ParseNum(return_type, slocale).__call__, test_list)
+
+
+class CleanPunctuationTestCase(unittest.TestCase):
+
+    test_lists_equals_clean_punctuation = {
+        'single': ('foo.', 'foo'),
+        'nothing': ('foobar', 'foobar'),
+        'space': ('foobar is great? yes.', 'foobarisgreatyes'),
+        'all': (string.punctuation, ''),  # empty string when string expected
+    }
+    def test_clean_punctuation(self):
+        for l in self.test_lists_equals_clean_punctuation:
+            value, expected = self.test_lists_equals_clean_punctuation[l]
+            test = clean_punctuation(value)
+            self.assertEqual(test, expected,
+                             msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
 
 
 class StripTestCase(unittest.TestCase):
@@ -713,7 +859,7 @@ class StripTestCase(unittest.TestCase):
             chars, test_list, expected = self.test_lists_equals[l]
             test = Strip(chars)(test_list)
             self.assertEqual(test, expected,
-                             msg='test "{}" got {} expected {}'.format(l, test, expected))
+                             msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
 
     def test_errors(self):
         for l in self.test_list_errors:
@@ -735,7 +881,7 @@ class ReplaceTestCase(unittest.TestCase):
             find, replace, count, test_list, expected = self.test_lists_equals[l]
             test = Replace(find, replace, count)(test_list)
             self.assertEqual(test, expected,
-                             msg='test "{}" got {} expected {}'.format(l, test, expected))
+                             msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
 
     def test_errors(self):
         for l in self.test_list_errors:
@@ -759,7 +905,7 @@ class ReSubTestCase(unittest.TestCase):
             find, replace, count, flags, test_list, expected = self.test_lists_equals[l]
             test = ReSub(find, replace, count, flags)(test_list)
             self.assertEqual(test, expected,
-                             msg='test "{}" got {} expected {}'.format(l, test, expected))
+                             msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
 
     def test_errors(self):
         for l in self.test_list_errors:
@@ -784,7 +930,7 @@ class FilterTestCase(unittest.TestCase):
             func, test_list, expected = self.test_lists_equals[l]
             test = Filter(func)(test_list)
             self.assertEqual(test, expected,
-                             msg='test "{}" got {} expected {}'.format(l, test, expected))
+                             msg='test "{}" got "{}" expected "{}"'.format(l, test, expected))
 
     def test_errors(self):
         for l in self.test_list_errors:
