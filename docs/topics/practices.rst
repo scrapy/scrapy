@@ -199,8 +199,6 @@ classes instead of manually coding them.
     from scrapy.item import DictItem, Field
 
     def create_item_class(class_name, field_list):
-        field_dict = {}
-        for field_name in field_list:
-            field_dict[field_name] = Field()
+        fields = {field_name: Field() for field_name in field_list}
 
-        return type(class_name, (DictItem,), field_dict)
+        return type(class_name, (DictItem,), {'fields': fields})
