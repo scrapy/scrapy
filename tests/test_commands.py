@@ -8,9 +8,13 @@ from shutil import rmtree
 from tempfile import mkdtemp
 
 from twisted.trial import unittest
+from twisted.internet import defer
 
 from scrapy.utils.python import retry_on_eintr
 from scrapy.utils.test import get_testenv
+from scrapy.utils.testsite import SiteTest
+from scrapy.utils.testproc import ProcessTest
+
 
 class ProjectTest(unittest.TestCase):
     project_name = 'testproject'
@@ -177,7 +181,9 @@ from scrapy.spider import Spider
         self.assert_("Unable to load" in log)
 
 
-class ParseCommandTest(CommandTest):
+class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
+
+    command = 'parse'
 
     def setUp(self):
         super(ParseCommandTest, self).setUp()
@@ -217,17 +223,21 @@ class MyPipeline(object):
 ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
 """ % self.project_name)
 
+    @defer.inlineCallbacks
     def test_spider_arguments(self):
-        p = self.proc('parse', '--spider', self.spider_name, '-a', 'test_arg=1',
-                '-c', 'parse', 'http://scrapinghub.com')
-        log = p.stderr.read()
-        self.assert_("[parse_spider] DEBUG: It Works!" in log, log)
+        _, _, stderr = yield self.execute(['--spider', self.spider_name,
+                                           '-a', 'test_arg=1',
+                                           '-c', 'parse',
+                                           self.url('/html')])
+        self.assert_("[parse_spider] DEBUG: It Works!" in stderr, stderr)
 
+    @defer.inlineCallbacks
     def test_pipelines(self):
-        p = self.proc('parse', '--spider', self.spider_name, '--pipelines',
-                '-c', 'parse', 'http://scrapinghub.com')
-        log = p.stderr.read()
-        self.assert_("[scrapy] INFO: It Works!" in log, log)
+        _, _, stderr = yield self.execute(['--spider', self.spider_name,
+                                           '--pipelines',
+                                           '-c', 'parse',
+                                           self.url('/html')])
+        self.assert_("[scrapy] INFO: It Works!" in stderr, stderr)
 
 
 class BenchCommandTest(CommandTest):
