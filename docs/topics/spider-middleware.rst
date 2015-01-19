@@ -94,7 +94,7 @@ following methods:
 
         :param response: the response which generated this output from the
           spider
-        :type response: class:`~scrapy.http.Response` object
+        :type response: :class:`~scrapy.http.Response` object
 
         :param result: the result returned by the spider
         :type result: an iterable of :class:`~scrapy.http.Request` or
