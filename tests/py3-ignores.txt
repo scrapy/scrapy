@@ -35,6 +35,7 @@ tests/test_logformatter.py
 tests/test_log.py
 tests/test_mail.py
 tests/test_middleware.py
+tests/test_periodicstats.py
 tests/test_pipeline_files.py
 tests/test_pipeline_images.py
 tests/test_pipeline_media.py
@@ -68,7 +69,7 @@ tests/test_utils_serialize.py
 tests/test_utils_signal.py
 tests/test_utils_template.py
 tests/test_utils_url.py
-tests/test_webclient.py
+tests/test_webclient.pyx
 
 scrapy/xlib/tx/iweb.py
 scrapy/xlib/tx/interfaces.py
