@@ -69,7 +69,7 @@ tests/test_utils_serialize.py
 tests/test_utils_signal.py
 tests/test_utils_template.py
 tests/test_utils_url.py
-tests/test_webclient.pyx
+tests/test_webclient.py
 
 scrapy/xlib/tx/iweb.py
 scrapy/xlib/tx/interfaces.py
