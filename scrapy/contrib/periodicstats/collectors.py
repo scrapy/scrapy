@@ -38,8 +38,7 @@ class PeriodicStatsCollector(MemoryStatsCollector):
         if self._enabled:
             for pipeline in self._pipelines:
                 pipeline.open_spider(spider)
-            self._task = task.LoopingCall(self._process_interval_stats, spider)
-            self._task.start(1)
+            self._setup_looping_task(spider=spider, now=True)
 
     def close_spider(self, spider, reason):
         super(PeriodicStatsCollector, self).close_spider(spider, reason)
@@ -70,6 +69,12 @@ class PeriodicStatsCollector(MemoryStatsCollector):
         super(PeriodicStatsCollector, self).min_value(key=key, value=value, spider=spider)
         if self._enabled:
             self.set_value(key=key, value=self.get_value(key), spider=spider)
+
+    def _setup_looping_task(self, _result=None, **kwargs):
+        spider = kwargs.pop('spider')
+        self._task = task.LoopingCall(self._process_interval_stats, spider)
+        d = self._task.start(1, **kwargs)
+        d.addErrback(self._setup_looping_task, spider=spider, now=False)
 
     def _load_observers(self, crawler):
         """
