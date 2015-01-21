@@ -136,6 +136,11 @@ class FilesystemStorageTest(DefaultStorageTest):
 
     storage_class = 'scrapy.contrib.httpcache.FilesystemCacheStorage'
 
+class FilesystemStorageGzipTest(FilesystemStorageTest):
+
+    def _get_settings(self, **new_settings):
+        new_settings.setdefault('HTTPCACHE_GZIP', True)
+        return super(FilesystemStorageTest, self)._get_settings(**new_settings)
 
 class LeveldbStorageTest(DefaultStorageTest):
 

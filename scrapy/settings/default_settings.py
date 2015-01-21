@@ -154,6 +154,7 @@ HTTPCACHE_IGNORE_HTTP_CODES = []
 HTTPCACHE_IGNORE_SCHEMES = ['file']
 HTTPCACHE_DBM_MODULE = 'anydbm'
 HTTPCACHE_POLICY = 'scrapy.contrib.httpcache.DummyPolicy'
+HTTPCACHE_GZIP = False
 
 ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'
 
