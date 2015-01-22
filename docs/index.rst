@@ -63,7 +63,11 @@ Basic concepts
    topics/shell
    topics/item-pipeline
    topics/feed-exports
+   topics/request-response
    topics/link-extractors
+   topics/settings
+   topics/exceptions
+
 
 :doc:`topics/commands`
     Learn about the command-line tool used to manage your Scrapy project.
@@ -89,8 +93,18 @@ Basic concepts
 :doc:`topics/feed-exports`
     Output your scraped data using different formats and storages.
 
+:doc:`topics/request-response`
+    Understand the classes used to represent HTTP requests and responses.
+
 :doc:`topics/link-extractors`
     Convenient classes to extract links to follow from pages.
+
+:doc:`topics/settings`
+    Learn how to configure Scrapy and see all :ref:`available settings <topics-settings-ref>`.
+
+:doc:`topics/exceptions`
+    See all available exceptions and their meaning.
+
 
 Built-in services
 =================
@@ -106,7 +120,7 @@ Built-in services
 
 :doc:`topics/logging`
     Understand the simple logging facility provided by Scrapy.
-   
+
 :doc:`topics/stats`
     Collect statistics about your scraping crawler.
 
@@ -200,6 +214,9 @@ Extending Scrapy
    topics/spider-middleware
    topics/extensions
    topics/api
+   topics/signals
+   topics/exporters
+
 
 :doc:`topics/architecture`
     Understand the Scrapy architecture.
@@ -216,32 +233,8 @@ Extending Scrapy
 :doc:`topics/api`
     Use it on extensions and middlewares to extend Scrapy functionality
 
-Reference
-=========
-
-.. toctree::
-   :hidden:
-
-   topics/request-response
-   topics/settings
-   topics/signals
-   topics/exceptions
-   topics/exporters
-
-:doc:`topics/commands`
-    Learn about the command-line tool and see all :ref:`available commands <topics-commands-ref>`.
-
-:doc:`topics/request-response`
-    Understand the classes used to represent HTTP requests and responses.
-
-:doc:`topics/settings`
-    Learn how to configure Scrapy and see all :ref:`available settings <topics-settings-ref>`.
-
 :doc:`topics/signals`
     See all available signals and how to work with them.
-
-:doc:`topics/exceptions`
-    See all available exceptions and their meaning.
 
 :doc:`topics/exporters`
     Quickly export your scraped items to a file (XML, CSV, etc).
