@@ -35,13 +35,15 @@ def load_object(path):
     path ie: 'scrapy.contrib.downloadermiddelware.redirect.RedirectMiddleware'
     """
 
-    try:
-        dot = path.rindex('.')
-    except ValueError:
-        raise ValueError("Error loading object '%s': not a full path" % path)
-
-    module, name = path[:dot], path[dot+1:]
-    mod = import_module(module)
+    if isinstance(path,str) :
+        if '.' in path :
+            dot = path.rindex('.')
+            module, name = path[:dot], path[dot+1:]
+            mod = import_module(module)
+        else:
+            raise Exception()
+    else:
+        return path
 
     try:
         obj = getattr(mod, name)
