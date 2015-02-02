@@ -4,6 +4,11 @@
 Contributing to Scrapy
 ======================
 
+.. important::
+
+    Double check you are reading the most recent version of this document at
+    http://doc.scrapy.org/en/master/contributing.html
+
 There are many ways to contribute to Scrapy. Here are some of them:
 
 * Blog about Scrapy. Tell the world how you're using Scrapy. This will help
