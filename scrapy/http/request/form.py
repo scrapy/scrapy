@@ -1,5 +1,5 @@
 """
-This module implements the FormRequest class which is a more covenient class
+This module implements the FormRequest class which is a more convenient class
 (than Request) to generate Requests based on form data.
 
 See documentation in docs/topics/request-response.rst
