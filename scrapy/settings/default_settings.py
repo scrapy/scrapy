@@ -12,7 +12,7 @@ Scrapy developers, if you add a setting here remember to:
   (docs/topics/settings.rst)
 
 """
-
+import scrapy
 import os
 import sys
 from importlib import import_module
@@ -230,9 +230,12 @@ STATS_CLASS = 'scrapy.statscol.MemoryStatsCollector'
 STATS_DUMP = True
 
 STATSMAILER_RCPTS = []
-
-TEMPLATES_DIR = abspath(join(dirname(__file__), '..', 'templates'))
-
+TEMPLATES_DIR_BASE = [
+        abspath(join(dirname(__file__), '..', 'templates')),
+        join(scrapy.__path__[0], "templates")
+]
+TEMPLATES_PROJECT_BASE = 'project'
+TEMPLATES_SPIDERS_BASE = 'spiders'
 URLLENGTH_LIMIT = 2083
 
 USER_AGENT = 'Scrapy/%s (+http://scrapy.org)' % import_module('scrapy').__version__

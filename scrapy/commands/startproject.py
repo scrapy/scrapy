@@ -8,11 +8,10 @@ from shutil import copytree, ignore_patterns
 
 import scrapy
 from scrapy.command import ScrapyCommand
-from scrapy.utils.template import render_templatefile, string_camelcase
+from scrapy.utils.template import render_templatefile, string_camelcase, \
+    get_template_dir
 from scrapy.exceptions import UsageError
 
-
-TEMPLATES_PATH = join(scrapy.__path__[0], 'templates', 'project')
 
 TEMPLATES_TO_RENDER = (
     ('scrapy.cfg',),
@@ -62,9 +61,9 @@ class Command(ScrapyCommand):
             self.exitcode = 1
             return
 
-        moduletpl = join(TEMPLATES_PATH, 'module')
+        moduletpl = join(self.templates_dir, 'module')
         copytree(moduletpl, join(project_name, project_name), ignore=IGNORE)
-        shutil.copy(join(TEMPLATES_PATH, 'scrapy.cfg'), project_name)
+        shutil.copy(join(self.templates_dir, 'scrapy.cfg'), project_name)
         for paths in TEMPLATES_TO_RENDER:
             path = join(*paths)
             tplfile = join(project_name,
@@ -76,3 +75,7 @@ class Command(ScrapyCommand):
         print("You can start your first spider with:")
         print("    cd %s" % project_name)
         print("    scrapy genspider example example.com")
+
+    @property
+    def templates_dir(self):
+        return get_template_dir(self.settings, "project")

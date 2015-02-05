@@ -8,8 +8,10 @@ from os.path import join, dirname, abspath, exists, splitext
 
 import scrapy
 from scrapy.command import ScrapyCommand
-from scrapy.utils.template import render_templatefile, string_camelcase
+from scrapy.utils.template import render_templatefile, string_camelcase,\
+    get_template_dir
 from scrapy.exceptions import UsageError
+
 
 def sanitize_module_name(module_name):
     """Sanitize the given module name, by replacing dashes and points
@@ -115,6 +117,4 @@ class Command(ScrapyCommand):
 
     @property
     def templates_dir(self):
-        _templates_base_dir = self.settings['TEMPLATES_DIR'] or \
-            join(scrapy.__path__[0], 'templates')
-        return join(_templates_base_dir, 'spiders')
+        return get_template_dir(self.settings, "spiders")

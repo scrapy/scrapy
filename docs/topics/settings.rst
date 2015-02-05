@@ -930,10 +930,30 @@ dynamically assigned port is used. For more info see
 TEMPLATES_DIR
 -------------
 
-Default: ``templates`` dir inside scrapy module
+Default: ``None``
 
 The directory where to look for templates when creating new projects with
 :command:`startproject` command.
+
+.. setting:: TEMPLATES_PROJECT
+
+TEMPLATES_PROJECT
+-----------------
+
+Default: ``None``
+
+The directory to be used as a template when creating new projects with
+:command:`startproject` command. Can be specified using either absolute path or relative path.
+
+.. setting:: TEMPLATES_SPIDERS
+
+TEMPLATES_SPIDERS
+-----------------
+
+Default: ``None``
+
+The directory where :command:`genspider` will look for templates when creating new spiders.
+Can be specified using either absolute path or relative path.
 
 .. setting:: URLLENGTH_LIMIT
 

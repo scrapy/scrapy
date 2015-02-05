@@ -4,6 +4,7 @@ import os
 import re
 import string
 
+
 def render_templatefile(path, **kwargs):
     with open(path, 'rb') as file:
         raw = file.read()
@@ -27,3 +28,19 @@ def string_camelcase(string):
 
     """
     return CAMELCASE_INVALID_CHARS.sub('', string.title())
+
+
+def get_template_dir(settings, name="project"):
+    if name == "project":
+        folder_name = settings.get('TEMPLATES_PROJECT',
+                                   settings['TEMPLATES_PROJECT_BASE'])
+    else:
+        folder_name = settings.get('TEMPLATES_SPIDERS',
+                                   settings['TEMPLATES_SPIDERS_BASE'])
+    if os.path.isabs(folder_name):
+        return folder_name
+    else:
+        for base_dir in settings.getlist('TEMPLATES_DIR', settings['TEMPLATES_DIR_BASE']):
+            path = os.path.join(base_dir, folder_name)
+            if os.path.exists(path):
+                return path
