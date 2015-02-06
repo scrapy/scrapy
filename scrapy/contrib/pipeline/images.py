@@ -90,22 +90,20 @@ class ImagesPipeline(FilesPipeline):
             yield thumb_path, thumb_image, thumb_buf
 
     def convert_image(self, image, size=None):
-        if image.format == 'PNG':
+        if image.format == 'PNG' and image.mode != 'RGBA':
             # try to add background to all .png images
             # regardless of their mode
-            if image.mode != 'RGBA':
-                try:
-                    # we can only add background if mode is RGBA
-                    # so convert to this mode
-                    image = image.convert('RGBA')
-                    add_background = True
-                except ValueError:
-                    add_background = False
-            if add_background:
-                # if image is not RGBA adding background will fail
-                background = Image.new('RGBA', image.size, (255, 255, 255))
-                background.paste(image, image)
-                image = background.convert('RGB')
+            try:
+                # we can only add background if mode is RGBA
+                # so convert to this mode
+                image = image.convert('RGBA')
+            except ValueError:
+                pass
+
+        if image.mode == 'RGBA':
+            background = Image.new('RGBA', image.size, (255, 255, 255))
+            background.paste(image, image)
+            image = background
 
         if image.mode != 'RGB':
             # mode has to be 'RGB' because 'JPEG' below
