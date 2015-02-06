@@ -159,7 +159,7 @@ following methods:
         :type spider: :class:`~scrapy.spider.Spider` object
 
 
-.. _Exception: http://docs.python.org/library/exceptions.html#exceptions.Exception
+.. _Exception: https://docs.python.org/2/library/exceptions.html#exceptions.Exception
 
 
 .. _topics-spider-middleware-ref:

@@ -451,7 +451,7 @@ In order to use this storage backend:
 * install `LevelDB python bindings`_ like ``pip install leveldb``
 
 .. _LevelDB: http://code.google.com/p/leveldb/
-.. _leveldb python bindings: http://pypi.python.org/pypi/leveldb
+.. _leveldb python bindings: https://pypi.python.org/pypi/leveldb
 
 
 HTTPCache middleware settings
@@ -635,8 +635,8 @@ HttpProxyMiddleware
    You can also set the meta key ``proxy`` per-request, to a value like
    ``http://some_proxy_server:port``.
 
-.. _urllib: http://docs.python.org/library/urllib.html
-.. _urllib2: http://docs.python.org/library/urllib2.html
+.. _urllib: https://docs.python.org/2/library/urllib.html
+.. _urllib2: https://docs.python.org/2/library/urllib2.html
 
 RedirectMiddleware
 ------------------
@@ -890,5 +890,5 @@ enable it for :ref:`broad crawls <topics-broad-crawls>`.
 
 
 .. _DBM: http://en.wikipedia.org/wiki/Dbm
-.. _anydbm: http://docs.python.org/library/anydbm.html
+.. _anydbm: https://docs.python.org/2/library/anydbm.html
 .. _chunked transfer encoding: http://en.wikipedia.org/wiki/Chunked_transfer_encoding

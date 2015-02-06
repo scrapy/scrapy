@@ -21,5 +21,5 @@ middlewares, extensions, or scripts. Feel free (and encouraged!) to share any
 code there.
 
 .. _dirbot: https://github.com/scrapy/dirbot
-.. _Downloads: https://github.com/scrapy/dirbot/archives/master
+.. _Downloads: https://github.com/scrapy/dirbot/downloads
 .. _scrapy tag on Snipplr: http://snipplr.com/all/tags/scrapy/
