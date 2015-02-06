@@ -173,6 +173,23 @@ class Downloader(object):
         for slot in self.slots.itervalues():
             slot.close()
 
+    @property
+    def status(self):
+        stats = {}
+        transferring = 0
+        for (key, slot) in self.slots.iteritems():
+            stats[key] = {
+                'active': len(slot.active),
+                'queue': len(slot.queue),
+                'transferring': len(slot.transferring),
+                'concurrency': slot.concurrency,
+                'delay': slot.delay,
+                'randomize_delay': slot.randomize_delay,
+                'free_transfer_slots': slot.free_transfer_slots()
+            }
+            transferring += len(slot.transferring)
+        return [stats, {"total_transferring": transferring}]
+
     def _slot_gc(self, age=60):
         mintime = time() - age
         for key, slot in self.slots.items():
