@@ -157,7 +157,7 @@ Request objects
         ``copy()`` or ``replace()`` methods, and can also be accessed, in your
         spider, from the ``response.meta`` attribute.
 
-    .. _shallow copied: http://docs.python.org/library/copy.html
+    .. _shallow copied: https://docs.python.org/2/library/copy.html
 
     .. method:: Request.copy()
 

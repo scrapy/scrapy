@@ -30,7 +30,7 @@ so you need to install this library in order to use the images pipeline.
 is known to cause troubles in some setups, so we recommend to use `Pillow`_
 instead of `PIL <Python Imaging Library>`_.
 
-.. _Pillow: https://github.com/python-imaging/Pillow
+.. _Pillow: https://github.com/python-pillow/Pillow
 .. _Python Imaging Library: http://www.pythonware.com/products/pil/
 
 Using the Images Pipeline
@@ -104,7 +104,7 @@ Images Storage
 File system is currently the only officially supported storage, but there is
 also (undocumented) support for `Amazon S3`_.
 
-.. _Amazon S3: https://s3.amazonaws.com/
+.. _Amazon S3: http://aws.amazon.com/s3/
 
 File system storage
 -------------------

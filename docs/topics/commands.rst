@@ -484,7 +484,7 @@ You can also add your custom project commands by using the
 :setting:`COMMANDS_MODULE` setting. See the Scrapy commands in
 `scrapy/commands`_ for examples on how to implement your commands.
 
-.. _scrapy/commands: https://github.com/scrapy/scrapy/blob/master/scrapy/commands
+.. _scrapy/commands: https://github.com/scrapy/scrapy/tree/master/scrapy/commands
 .. setting:: COMMANDS_MODULE
 
 COMMANDS_MODULE

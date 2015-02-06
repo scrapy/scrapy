@@ -74,9 +74,9 @@ extension to create a new cookie, delete existing cookies, see a list of cookies
 for the current site, manage cookies permissions and a lot more. 
 
 .. _Firebug: http://getfirebug.com
-.. _Inspect Element: http://www.youtube.com/watch?v=-pT_pDe54aA
-.. _XPather: https://addons.mozilla.org/firefox/addon/1192 
-.. _XPath Checker: https://addons.mozilla.org/firefox/addon/1095
-.. _Tamper Data: http://addons.mozilla.org/firefox/addon/966
-.. _Firecookie: https://addons.mozilla.org/firefox/addon/6683
+.. _Inspect Element: https://www.youtube.com/watch?v=-pT_pDe54aA
+.. _XPather: https://addons.mozilla.org/en-US/firefox/addon/xpather/ 
+.. _XPath Checker: https://addons.mozilla.org/en-US/firefox/addon/xpath-checker/
+.. _Tamper Data: https://addons.mozilla.org/en-US/firefox/addon/tamper-data/
+.. _Firecookie: https://addons.mozilla.org/en-US/firefox/addon/firecookie/
 

@@ -706,7 +706,7 @@ Combine SitemapSpider with other sources of urls::
             pass # ... scrape other here ...
 
 .. _Sitemaps: http://www.sitemaps.org
-.. _Sitemap index files: http://www.sitemaps.org/protocol.php#index
+.. _Sitemap index files: http://www.sitemaps.org/protocol.html#index
 .. _robots.txt: http://www.robotstxt.org/
 .. _TLD: http://en.wikipedia.org/wiki/Top-level_domain
-.. _Scrapyd documentation: http://scrapyd.readthedocs.org/
+.. _Scrapyd documentation: http://scrapyd.readthedocs.org/en/latest/

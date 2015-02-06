@@ -37,7 +37,7 @@ Platform specific installation notes
 Windows
 -------
 
-* Install Python 2.7 from http://python.org/download/
+* Install Python 2.7 from https://www.python.org/downloads/
 
   You need to adjust ``PATH`` environment variable to include paths to
   the Python executable and additional scripts. The following paths need to be
@@ -87,8 +87,8 @@ You can follow the generic instructions or install Scrapy from `AUR Scrapy packa
     yaourt -S scrapy
 
 
-.. _Python: http://www.python.org
-.. _pip: http://www.pip-installer.org/en/latest/installing.html
+.. _Python: https://www.python.org/
+.. _pip: https://pip.pypa.io/en/latest/installing.html
 .. _easy_install: http://pypi.python.org/pypi/setuptools
 .. _Control Panel: http://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/sysdm_advancd_environmnt_addchange_variable.mspx
 .. _lxml: http://lxml.de/
