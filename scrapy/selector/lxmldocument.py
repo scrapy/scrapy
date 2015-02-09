@@ -16,7 +16,7 @@ def _factory(response, parser_cls):
     if parser_cls == 'html5parser':
         result = html5parser.fromstring(body)
     else:
-        parser = parser_cls(recover=False, encoding='utf8')
+        parser = parser_cls(recover=True, encoding='utf8')
         result = etree.fromstring(body, parser=parser, base_url=url)
 
     return result
