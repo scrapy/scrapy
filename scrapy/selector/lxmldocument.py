@@ -5,15 +5,21 @@ garbage collection to lxml element tree documents.
 
 import weakref
 from lxml import etree
+from lxml.html import html5parser
+from lxml.etree import XMLSyntaxError
 from scrapy.utils.trackref import object_ref
-
 
 def _factory(response, parser_cls):
     url = response.url
     body = response.body_as_unicode().strip().encode('utf8') or '<html/>'
-    parser = parser_cls(recover=True, encoding='utf8')
-    return etree.fromstring(body, parser=parser, base_url=url)
 
+    if parser_cls == 'html5parser':
+        result = html5parser.fromstring(body)
+    else:
+        parser = parser_cls(recover=False, encoding='utf8')
+        result = etree.fromstring(body, parser=parser, base_url=url)
+
+    return result
 
 class LxmlDocument(object_ref):
 

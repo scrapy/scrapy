@@ -360,6 +360,25 @@ class SelectorTestCase(unittest.TestCase):
 
         self.assertEqual(sel.extract(), '<foo>&xxe;</foo>')
 
+    def test_invalid_chars_lt(self):
+        elem = '< 100'
+        invalid_xml = '<html><head></head><body>'\
+                      '<div id="distance">{0}</div>'\
+                      '<body></html>'.format(elem)
+        response = HtmlResponse('http://example.com', body=invalid_xml)
+        sel = self.sscls(response=response, type='html5')
+        text = sel.xpath('//*[@id="distance"]//text()').extract()
+        self.assertEqual(text, [elem])
+
+    def test_invalid_chars_gt(self):
+        elem = '10,00 > 9,00'
+        invalid_xml = '<html><head></head><body>'\
+                      '<div id="distance">{0}</div>'\
+                      '<body></html>'.format(elem)
+        response = HtmlResponse('http://example.com', body=invalid_xml)
+        sel = self.sscls(response=response, type='html5')
+        text = sel.xpath('//*[@id="distance"]//text()').extract()
+        self.assertEqual(text, [elem])
 
 class DeprecatedXpathSelectorTest(unittest.TestCase):
 

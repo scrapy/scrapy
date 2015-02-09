@@ -25,6 +25,9 @@ _ctgroup = {
     'html': {'_parser': etree.HTMLParser,
              '_csstranslator': ScrapyHTMLTranslator(),
              '_tostring_method': 'html'},
+    'html5': {'_parser': 'html5parser',
+              '_csstranslator': ScrapyHTMLTranslator(),
+              '_tostring_method': 'html'},
     'xml': {'_parser': SafeXMLParser,
             '_csstranslator': ScrapyGenericTranslator(),
             '_tostring_method': 'xml'},
@@ -34,7 +37,7 @@ _ctgroup = {
 def _st(response, st):
     if st is None:
         return 'xml' if isinstance(response, XmlResponse) else 'html'
-    elif st in ('xml', 'html'):
+    elif st in ('xml', 'html', 'html5'):
         return st
     else:
         raise ValueError('Invalid type: %s' % st)
