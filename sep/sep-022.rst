@@ -1,0 +1,95 @@
+=======  ==================
+SEP      22
+Title    Procssors Overhaul
+Author   Mikhail Korobov
+Created  2015-02-10
+Status   Draft
+=======  ==================
+
+===========================
+SEP-022: Procssors Overhaul
+===========================
+
+There is scrapy.contrib.loader and scrapy.contrib.loader.processor modules
+which allow to create declarative pipelines for data processing and use these
+pipelines to populate Scrapy Items.
+
+Processors Overview
+===================
+
+Let's start with Compose and TakeFirst.
+
+**Compose** - returns a combined function which calls all its functions in order.
+**TakeFirst** - convert from a sequence to a single item by taking first non-empty value.
+
+Analogues of ``func = Compose(TakeFirst(), unicode.strip)``:
+
+* no libraries:
+
+  >>> func = lambda it: it[0].strip()  # almost the same, but not composable
+  >>> func = lambda it: unicode.strip(TakeFirst()(it))
+
+* http://toolz.readthedocs.org/en/latest/api.html#toolz.functoolz.compose
+  (applies functions in a different order):
+
+  >>> from toolz import compose, first
+  >>> func = compose(unicode.strip, TakeFirst())
+  >>> func = compose(unicode.strip, first)
+
+* http://funcy.readthedocs.org/en/stable/funcs.html#compose
+  (applies functions in a different order);
+
+  >>> from funcy import compose, first
+  >>> func = compose(unicode.strip, TakeFirst())
+  >>> func = compose(unicode.strip, first)
+
+* https://github.com/kachayev/fn.py provides F object which allows to
+  compose functions; syntax is a bit unusual:
+
+  >>> from fn import F
+  >>> from fn.iters import first
+  >>> func = F() >> TakeFirst() >> unicode.strip
+  >>> func = F() >> first >> unicode.strip        # the same
+  >>> func = F() << unicode.strip << TakeFirst()  # the same
+
+
+Notes:
+
+1. Compose has support for ``loader_context``. I personally have never
+   used loader_context and don't quite get what is it for.
+2. Compose is configurable: it can take ``stop_on_none`` and
+   ``default_loader_context`` arguments. ``stop_on_none`` sounds like a bad
+   idea; IMHO it should be a separate function / processor.
+3. All other libraries use functions instead of classes; these functions
+   are intended to be configured either using functools.partial or using
+   currying features of a library. So ``first`` and ``compose`` instead of
+   ``TakeFirst()`` and ``Compose``. I like ``first`` and ``compose`` more.
+   Configuration for ``Compose`` is inconsistent with other processors,
+   and ``TakeFirst`` requires an useless ``()``. Uppercased names also means
+   we have a new concept - "processor"; in other libraries there are only
+   functions. Functions are native Python concepts, so I like using the
+   directly more.
+4. Application order is often different. I like Scrapy order more, it
+   looks more declarative to me - "take first element, strip it".
+
+
+TODO
+
+MapCompose - makes its arguments to work on sequences.
+
+Join - convert from a sequence to a single item by joining all values.
+
+
+Other Common Processors
+-----------------------
+
+In scrapylib (see https://github.com/scrapinghub/scrapylib/tree/master/scrapylib/processors)
+processors are functions which take a single value and produce a single value.
+They are intended to be composed using MapCompose.
+
+Scrapy PRs
+----------
+
+https://github.com/scrapy/scrapy/pull/1012
+
+https://github.com/scrapy/scrapy/pull/1016
