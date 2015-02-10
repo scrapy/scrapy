@@ -93,3 +93,27 @@ Scrapy PRs
 https://github.com/scrapy/scrapy/pull/1012
 
 https://github.com/scrapy/scrapy/pull/1016
+
+Library notes
+-------------
+
+fn.py is nice, but it looks very unusual.
+
+toolz has a cytoolz counterpart which is implemented in Cython. I was using
+cytoolz just to speedup my Python code - with cytoolz code becomes both shorter
+and faster.
+
+[cy]toolz.curried is nice; it allows to write e.g.
+
+>>> from cytoolz.curried import compose, map, unique
+>>> compose(unique, map(unicode.strip))
+
+making MapCompose unnecessary - function can be made working on a sequence
+by creating a curried map. Specializing map with a result of compose
+``map(compose(...))`` is also possible; it becomes the same as Scrapy
+MapCompose.
+
+funcy provides helper functions useful for data extraction; they cover
+built-in Join and many of those proposed in
+https://github.com/scrapy/scrapy/pull/1012 like regex-based extraction.
+See e.g. http://funcy.readthedocs.org/en/stable/strings.html.
