@@ -58,7 +58,7 @@ def str_to_unicode(text, encoding=None, errors='strict'):
 
     if encoding is None:
         encoding = 'utf-8'
-    if isinstance(text, six.binary_type):
+    if isinstance(text, bytes):
         return text.decode(encoding, errors)
     elif isinstance(text, six.text_type):
         return text
@@ -76,7 +76,7 @@ def unicode_to_str(text, encoding=None, errors='strict'):
         encoding = 'utf-8'
     if isinstance(text, six.text_type):
         return text.encode(encoding, errors)
-    elif isinstance(text, six.binary_type):
+    elif isinstance(text, bytes):
         return text
     else:
         raise TypeError('unicode_to_str must receive a unicode or str object, got %s' % type(text).__name__)
@@ -128,7 +128,7 @@ def isbinarytext(text):
     """Return True if the given text is considered binary, or false
     otherwise, by looking for binary bytes at their chars
     """
-    assert isinstance(text, six.binary_type), "text must be bytes, got '%s'" % type(text).__name__
+    assert isinstance(text, bytes), "text must be bytes, got '%s'" % type(text).__name__
     return any(six.int2byte(c) in _BINARYCHARS for c in six.iterbytes(text))
 
 def get_func_args(func, stripself=False):
