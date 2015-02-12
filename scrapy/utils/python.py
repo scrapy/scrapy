@@ -67,8 +67,8 @@ def str_to_unicode(text, encoding=None, errors='strict'):
         raise TypeError('str_to_unicode must receive a str or unicode object, got %s' % type(text).__name__)
 
 def unicode_to_str(text, encoding=None, errors='strict'):
-    """Return the str representation of text in the given encoding. Unlike
-    .encode(encoding) this function can be applied directly to a str
+    """Return the bytes representation of text in the given encoding. Unlike
+    .encode(encoding) this function can be applied directly to a bytes
     object without the risk of double-decoding problems (which can happen if
     you don't use the default 'ascii' encoding)
     """
