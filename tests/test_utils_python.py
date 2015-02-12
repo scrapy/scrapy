@@ -1,9 +1,11 @@
 import functools
 import operator
 import unittest
-import six
 import random
 from itertools import count
+
+import six
+
 
 from scrapy.utils.python import str_to_unicode, unicode_to_str, \
     memoizemethod_noargs, isbinarytext, equal_attributes, \

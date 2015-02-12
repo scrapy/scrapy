@@ -10,8 +10,9 @@ import re
 import inspect
 import weakref
 import errno
-import six
 from functools import partial, wraps
+
+import six
 
 
 def flatten(x):
@@ -79,7 +80,7 @@ def unicode_to_str(text, encoding=None, errors='strict'):
     elif isinstance(text, bytes):
         return text
     else:
-        raise TypeError('unicode_to_str must receive a unicode or str object, got %s' % type(text).__name__)
+        raise TypeError('unicode_to_str must receive a unicode, str or bytes object, got %s' % type(text).__name__)
 
 def re_rsearch(pattern, text, chunk_size=1024):
     """
@@ -122,14 +123,14 @@ def memoizemethod_noargs(method):
         return cache[self]
     return new_method
 
-_BINARYCHARS = set(map(six.int2byte, range(32))) - set([b"\0", b"\t", b"\n", b"\r"])
+_BINARYCHARS = set(range(32)) - set([c for c in six.iterbytes(b"\0\t\n\r")])
 
 def isbinarytext(text):
     """Return True if the given text is considered binary, or false
     otherwise, by looking for binary bytes at their chars
     """
     assert isinstance(text, bytes), "text must be bytes, got '%s'" % type(text).__name__
-    return any(six.int2byte(c) in _BINARYCHARS for c in six.iterbytes(text))
+    return any(c in _BINARYCHARS for c in six.iterbytes(text))
 
 def get_func_args(func, stripself=False):
     """Return the argument name list of a callable"""
