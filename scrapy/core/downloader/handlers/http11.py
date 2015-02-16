@@ -19,7 +19,7 @@ from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import _parse
 from scrapy.utils.misc import load_object
-from scrapy import log
+from scrapy import log, twisted_version
 
 
 class HTTP11DownloadHandler(object):
@@ -142,10 +142,19 @@ class TunnelingAgent(Agent):
         self._proxyConf = proxyConf
         self._contextFactory = contextFactory
 
-    def _getEndpoint(self, scheme, host, port):
-        return TunnelingTCP4ClientEndpoint(self._reactor, host, port,
-            self._proxyConf, self._contextFactory, self._connectTimeout,
-            self._bindAddress)
+    if twisted_version >= (15, 0, 0):
+        def _getEndpoint(self, uri):
+            return TunnelingTCP4ClientEndpoint(
+                self._reactor, uri.host, uri.port, self._proxyConf,
+                self._contextFactory, self._endpointFactory._connectTimeout,
+                self._endpointFactory._bindAddress)
+    else:
+        def _getEndpoint(self, scheme, host, port):
+            return TunnelingTCP4ClientEndpoint(
+                self._reactor, host, port, self._proxyConf,
+                self._contextFactory, self._connectTimeout,
+                self._bindAddress)
+
 
 
 class ScrapyAgent(object):
