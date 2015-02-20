@@ -14,7 +14,6 @@ from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 
-
 class Spider(object_ref):
     """Base class for scrapy spiders. All spiders must inherit from this
     class.
