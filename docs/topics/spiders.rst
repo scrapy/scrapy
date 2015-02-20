@@ -247,6 +247,10 @@ Spider
        Called when the spider closes. This method provides a shortcut to
        signals.connect() for the :signal:`spider_closed` signal.
 
+   .. method:: idled()
+
+        Called when the spider idles. This method provides a shortcut to
+        signals.connect() for the :signal:`spider_idle` signal.
 
 Spider example
 ~~~~~~~~~~~~~~
