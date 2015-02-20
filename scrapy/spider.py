@@ -56,7 +56,7 @@ class Spider(object_ref):
         self.crawler = crawler
         self.settings = crawler.settings
         crawler.signals.connect(self.close, signals.spider_closed)
-        crawler.signals.connect(self.idle, signals.spider_idle)
+        crawler.signals.connect(self.__idle, signals.spider_idle)
 
     def start_requests(self):
         for url in self.start_urls:
@@ -83,7 +83,7 @@ class Spider(object_ref):
             return closed(reason)
 
     @staticmethod
-    def idle(spider):
+    def __idle(spider):
         idled = getattr(spider, 'idled', None)
         if callable(idled):
             return idled()
