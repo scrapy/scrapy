@@ -79,6 +79,23 @@ class SpiderTest(unittest.TestCase):
                                        spider=spider, reason=None)
         self.assertTrue(spider.closed_called)
 
+    def test_idled_signal_call(self):
+        class TestSpider(self.spider_class):
+            idled_called = False
+
+            def idled(self):
+                self.idled_called = True
+
+        crawler = get_crawler()
+        spider = TestSpider.from_crawler(crawler, 'example.com')
+        crawler.signals.send_catch_log(signal=signals.spider_opened,
+                                       spider=spider)
+        crawler.signals.send_catch_log(signal=signals.spider_idle,
+                                       spider=spider)
+        crawler.signals.send_catch_log(signal=signals.spider_closed,
+                                       spider=spider, reason=None)
+        self.assertTrue(spider.idled_called)
+
     def test_update_settings(self):
         spider_settings = {'TEST1': 'spider', 'TEST2': 'spider'}
         project_settings = {'TEST1': 'project', 'TEST3': 'project'}
