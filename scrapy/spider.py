@@ -11,7 +11,7 @@ from scrapy.http import Request
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 from scrapy.utils.deprecate import create_deprecated_class
-from scrapy.exceptions import ScrapyDeprecationWarning, DontCloseSpider
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 
 
