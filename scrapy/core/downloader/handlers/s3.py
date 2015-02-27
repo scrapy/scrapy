@@ -31,21 +31,33 @@ else:
 
 class S3DownloadHandler(object):
 
-    def __init__(self, settings, aws_access_key_id=None, aws_secret_access_key=None, \
+    _conn = None
+
+    def __init__(self, settings, aws_access_key_id=None, aws_secret_access_key=None,
             httpdownloadhandler=HTTPDownloadHandler):
         if 'boto' not in optional_features:
             raise NotConfigured("missing boto library")
 
-        if not aws_access_key_id:
-            aws_access_key_id = settings['AWS_ACCESS_KEY_ID']
-        if not aws_secret_access_key:
-            aws_secret_access_key = settings['AWS_SECRET_ACCESS_KEY']
+        self.aws_access_key_id = aws_access_key_id or settings['AWS_ACCESS_KEY_ID']
+        self.aws_secret_access_key = aws_secret_access_key or settings['AWS_SECRET_ACCESS_KEY']
 
-        try:
-            self.conn = _S3Connection(aws_access_key_id, aws_secret_access_key)
-        except Exception as ex:
-            raise NotConfigured(str(ex))
         self._download_http = httpdownloadhandler(settings).download_request
+
+    @property
+    def conn(self):
+        if self._conn is None:
+            try:
+                self._conn = _S3Connection(
+                    self.aws_access_key_id,
+                    self.aws_secret_access_key
+                )
+            except Exception as e:
+                self._conn = e
+                raise
+        elif isinstance(self._conn, Exception):
+            raise self._conn
+
+        return self._conn
 
     def download_request(self, request, spider):
         p = urlparse_cached(request)
