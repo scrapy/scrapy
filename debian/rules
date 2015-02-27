@@ -3,3 +3,8 @@
 
 %:
 	dh $@
+
+override_dh_auto_build:
+	# skipping build instructions
+override_dh_auto_test:
+	# skipping test suite
