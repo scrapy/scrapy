@@ -7,6 +7,7 @@ See documentation in docs/topics/feed-exports.rst
 import sys, os, posixpath
 from tempfile import TemporaryFile
 from datetime import datetime
+import pytz
 from six.moves.urllib.parse import urlparse
 from ftplib import FTP
 
@@ -228,7 +229,7 @@ class FeedExporter(object):
         params = {}
         for k in dir(spider):
             params[k] = getattr(spider, k)
-        ts = datetime.utcnow().replace(microsecond=0).isoformat().replace(':', '-')
+        ts = datetime.utcnow().replace(tzinfo=pytz.utc, microsecond=0).isoformat().replace(':', '-')
         params['time'] = ts
         self._uripar(params, spider)
         return params
