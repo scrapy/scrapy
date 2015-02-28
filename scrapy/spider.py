@@ -3,9 +3,9 @@ Base class for Scrapy spiders
 
 See documentation in docs/topics/spiders.rst
 """
+import logging
 import warnings
 
-from scrapy import log
 from scrapy import signals
 from scrapy.http import Request
 from scrapy.utils.trackref import object_ref
@@ -31,11 +31,19 @@ class Spider(object_ref):
         if not hasattr(self, 'start_urls'):
             self.start_urls = []
 
-    def log(self, message, level=log.DEBUG, **kw):
-        """Log the given messages at the given log level. Always use this
-        method to send log messages from your spider
+    @property
+    def logger(self):
+        logger = logging.getLogger(self.name)
+        return logging.LoggerAdapter(logger, {'spider': self})
+
+    def log(self, message, level=logging.DEBUG, **kw):
+        """Log the given message at the given log level
+
+        This helper wraps a log call to the logger within the spider, but you
+        can use it directly (e.g. Spider.logger.info('msg')) or use any other
+        Python logger too.
         """
-        log.msg(message, spider=self, level=level, **kw)
+        self.logger.log(level, message, **kw)
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):

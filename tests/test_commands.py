@@ -142,7 +142,7 @@ class MySpider(scrapy.Spider):
     name = 'myspider'
 
     def start_requests(self):
-        self.log("It Works!")
+        self.logger.debug("It Works!")
         return []
 """)
         p = self.proc('runspider', fname)
@@ -197,7 +197,7 @@ class MySpider(scrapy.Spider):
 
     def parse(self, response):
         if getattr(self, 'test_arg', None):
-            self.log('It Works!')
+            self.logger.debug('It Works!')
         return [scrapy.Item(), dict(foo='bar')]
 """.format(self.spider_name))
 

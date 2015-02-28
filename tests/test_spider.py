@@ -2,6 +2,8 @@ import gzip
 import inspect
 import warnings
 from io import BytesIO
+
+from testfixtures import LogCapture
 from twisted.trial import unittest
 
 from scrapy import signals
@@ -101,6 +103,23 @@ class SpiderTest(unittest.TestCase):
         self.assertEqual(settings.get('TEST1'), 'spider')
         self.assertEqual(settings.get('TEST2'), 'spider')
         self.assertEqual(settings.get('TEST3'), 'project')
+
+    def test_logger(self):
+        spider = self.spider_class('example.com')
+        with LogCapture() as l:
+            spider.logger.info('test log msg')
+        l.check(('example.com', 'INFO', 'test log msg'))
+
+        record = l.records[0]
+        self.assertIn('spider', record.__dict__)
+        self.assertIs(record.spider, spider)
+
+    def test_log(self):
+        spider = self.spider_class('example.com')
+        with mock.patch('scrapy.spider.Spider.logger') as mock_logger:
+            spider.log('test log msg', 'INFO')
+        mock_logger.log.assert_called_once_with('INFO', 'test log msg')
+
 
 class InitSpiderTest(SpiderTest):
 
