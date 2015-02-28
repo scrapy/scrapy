@@ -72,6 +72,9 @@ def configure_logging(settings=None):
     if settings:
         logging.root.setLevel(logging.NOTSET)
 
+        if settings.getbool('LOG_STDOUT'):
+            sys.stdout = StreamLogger(logging.getLogger('stdout'))
+
         # Set up the default log handler
         filename = settings.get('LOG_FILE')
         if filename:
@@ -100,6 +103,22 @@ def log_scrapy_info(settings):
 
     d = dict(overridden_settings(settings))
     logger.info("Overridden settings: %(settings)r", {'settings': d})
+
+
+class StreamLogger(object):
+    """Fake file-like stream object that redirects writes to a logger instance
+
+    Taken from:
+        http://www.electricmonk.nl/log/2011/08/14/redirect-stdout-and-stderr-to-a-logger-in-python/
+    """
+    def __init__(self, logger, log_level=logging.INFO):
+        self.logger = logger
+        self.log_level = log_level
+        self.linebuf = ''
+
+    def write(self, buf):
+        for line in buf.rstrip().splitlines():
+            self.logger.log(self.log_level, line.rstrip())
 
 
 class LogCounterHandler(logging.Handler):

@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import os
+import sys
 import logging
 import unittest
 
 from testfixtures import LogCapture
 from twisted.python.failure import Failure
 
-from scrapy.utils.log import FailureFormatter, LogCounterHandler
+from scrapy.utils.log import FailureFormatter, LogCounterHandler, StreamLogger
 from scrapy.utils.test import get_crawler
 
 
@@ -75,3 +77,20 @@ class LogCounterHandlerTest(unittest.TestCase):
     def test_filtered_out_level(self):
         self.logger.debug('test log msg')
         self.assertIsNone(self.crawler.stats.get_value('log_count/INFO'))
+
+
+class StreamLoggerTest(unittest.TestCase):
+
+    def setUp(self):
+        self.stdout = sys.stdout
+        logger = logging.getLogger('test')
+        logger.setLevel(logging.WARNING)
+        sys.stdout = StreamLogger(logger, logging.ERROR)
+
+    def tearDown(self):
+        sys.stdout = self.stdout
+
+    def test_redirect(self):
+        with LogCapture() as l:
+            print('test log msg')
+        l.check(('test', 'ERROR', 'test log msg'))
