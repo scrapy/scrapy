@@ -53,6 +53,14 @@ DEFAULT_LOGGING = {
 
 
 def configure_logging(settings=None):
+    """Initialize and configure default loggers
+
+    This function does:
+      - Route warnings and twisted logging through Python standard logging
+      - Set FailureFormatter filter on Scrapy logger
+      - Assign DEBUG and ERROR level to Scrapy and Twisted loggers respectively
+      - Create a handler for the root logger according to given settings
+    """
     if not sys.warnoptions:
         # Route warnings through python logging
         logging.captureWarnings(True)
@@ -61,6 +69,26 @@ def configure_logging(settings=None):
     observer.start()
 
     dictConfig(DEFAULT_LOGGING)
+    if settings:
+        logging.root.setLevel(logging.NOTSET)
+
+        # Set up the default log handler
+        filename = settings.get('LOG_FILE')
+        if filename:
+            encoding = settings.get('LOG_ENCODING')
+            handler = logging.FileHandler(filename, encoding=encoding)
+        elif settings.getbool('LOG_ENABLED'):
+            handler = logging.StreamHandler()
+        else:
+            handler = logging.NullHandler()
+
+        formatter = logging.Formatter(
+            fmt='%(asctime)s [%(name)s] %(levelname)s: %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S%z'
+        )
+        handler.setFormatter(formatter)
+        handler.setLevel(settings.get('LOG_LEVEL'))
+        logging.root.addHandler(handler)
 
 
 def log_scrapy_info(settings):
