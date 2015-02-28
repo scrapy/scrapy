@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import os
 import sys
 import logging
 from logging.config import dictConfig
 
+from twisted.python.failure import Failure
 from twisted.python import log as twisted_log
 
 import scrapy
@@ -12,12 +14,36 @@ from scrapy.settings import overridden_settings
 logger = logging.getLogger('scrapy')
 
 
+class FailureFormatter(logging.Filter):
+    """Extract exc_info from Failure instances provided as contextual data
+
+    This filter mimics Twisted log.err formatting for its first `_stuff`
+    argument, which means that reprs of non Failure objects are appended to the
+    log messages.
+    """
+
+    def filter(self, record):
+        failure = record.__dict__.get('failure')
+        if failure:
+            if isinstance(failure, Failure):
+                record.exc_info = (failure.type, failure.value, failure.tb)
+            else:
+                record.msg += os.linesep + repr(failure)
+        return True
+
+
 DEFAULT_LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'filters': {
+        'failure_formatter': {
+            '()': 'scrapy.utils.log.FailureFormatter',
+        },
+    },
     'loggers': {
         'scrapy': {
             'level': 'DEBUG',
+            'filters': ['failure_formatter'],
         },
         'twisted': {
             'level': 'ERROR',
