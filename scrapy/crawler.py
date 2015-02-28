@@ -15,6 +15,7 @@ from scrapy.signalmanager import SignalManager
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.misc import load_object
+from scrapy.utils.log import configure_logging, log_scrapy_info
 from scrapy import signals
 
 logger = logging.getLogger('scrapy')
@@ -142,8 +143,8 @@ class CrawlerProcess(CrawlerRunner):
         super(CrawlerProcess, self).__init__(settings)
         install_shutdown_handlers(self._signal_shutdown)
         self.stopping = False
-        self.log_observer = log.start_from_settings(self.settings)
-        log.scrapy_info(settings)
+        configure_logging(settings)
+        log_scrapy_info(settings)
 
     def _signal_shutdown(self, signum, _):
         install_shutdown_handlers(self._signal_kill)
@@ -157,7 +158,6 @@ class CrawlerProcess(CrawlerRunner):
         signame = signal_names[signum]
         logger.info('Received %(signame)s twice, forcing unclean shutdown',
                     {'signame': signame})
-        self._stop_logging()
         reactor.callFromThread(self._stop_reactor)
 
     def start(self, stop_after_crawl=True):
@@ -175,10 +175,6 @@ class CrawlerProcess(CrawlerRunner):
         tp.adjustPoolsize(maxthreads=self.settings.getint('REACTOR_THREADPOOL_MAXSIZE'))
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
         reactor.run(installSignalHandlers=False)  # blocking call
-
-    def _stop_logging(self):
-        if self.log_observer:
-            self.log_observer.stop()
 
     def _stop_reactor(self, _=None):
         try:
