@@ -15,7 +15,6 @@ from scrapy import signals
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
 from scrapy.core.spidermw import SpiderMiddlewareManager
-from scrapy import log
 
 logger = logging.getLogger('scrapy')
 
@@ -221,7 +220,7 @@ class Scraper(object):
             ex = output.value
             if isinstance(ex, DropItem):
                 logkws = self.logformatter.dropped(item, ex, response, spider)
-                log.msg(spider=spider, **logkws)
+                logger._log(extra={'spider': spider}, **logkws)
                 return self.signals.send_catch_log_deferred(
                     signal=signals.item_dropped, item=item, response=response,
                     spider=spider, exception=output.value)
@@ -230,7 +229,7 @@ class Scraper(object):
                              extra={'spider': spider, 'failure': output})
         else:
             logkws = self.logformatter.scraped(output, response, spider)
-            log.msg(spider=spider, **logkws)
+            logger._log(extra={'spider': spider}, **logkws)
             return self.signals.send_catch_log_deferred(
                 signal=signals.item_scraped, item=output, response=response,
                 spider=spider)

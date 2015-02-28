@@ -10,7 +10,7 @@ from time import time
 from twisted.internet import defer
 from twisted.python.failure import Failure
 
-from scrapy import log, signals
+from scrapy import signals
 from scrapy.core.scraper import Scraper
 from scrapy.exceptions import DontCloseSpider
 from scrapy.http import Response, Request
@@ -204,7 +204,7 @@ class ExecutionEngine(object):
             if isinstance(response, Response):
                 response.request = request # tie request to response received
                 logkws = self.logformatter.crawled(request, response, spider)
-                log.msg(spider=spider, **logkws)
+                logger._log(extra={'spider': spider}, **logkws)
                 self.signals.send_catch_log(signal=signals.response_received, \
                     response=response, request=request, spider=spider)
             return response
