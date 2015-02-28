@@ -39,7 +39,6 @@ class TestCloseSpider(TestCase):
         close_on = 5
         crawler = get_crawler(ErrorSpider, {'CLOSESPIDER_ERRORCOUNT': close_on})
         yield crawler.crawl(total=1000000)
-        self.flushLoggedErrors(crawler.spider.exception_cls)
         reason = crawler.spider.meta['close_reason']
         self.assertEqual(reason, 'closespider_errorcount')
         key = 'spider_exceptions/{name}'\

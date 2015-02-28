@@ -74,7 +74,6 @@ class DeferUtilsTest(unittest.TestCase):
     def test_process_parallel_failure(self):
         d = process_parallel([cb1, cb_fail, cb3], 'res', 'v1', 'v2')
         self.failUnlessFailure(d, TypeError)
-        self.flushLoggedErrors()
         return d
 
 

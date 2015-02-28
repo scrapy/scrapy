@@ -1,9 +1,9 @@
 from __future__ import print_function
+from testfixtures import LogCapture
 from twisted.trial import unittest
 from twisted.python.failure import Failure
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, inlineCallbacks
-from twisted.python import log as txlog
 
 from scrapy.http import Request, Response
 from scrapy.spider import Spider
@@ -11,7 +11,6 @@ from scrapy.utils.request import request_fingerprint
 from scrapy.contrib.pipeline.media import MediaPipeline
 from scrapy.utils.signal import disconnect_all
 from scrapy import signals
-from scrapy import log
 
 
 def _mocked_download_func(request, info):
@@ -60,26 +59,21 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         fail = Failure(Exception())
         results = [(True, 1), (False, fail)]
 
-        events = []
-        txlog.addObserver(events.append)
-        new_item = self.pipe.item_completed(results, item, self.info)
-        txlog.removeObserver(events.append)
-        self.flushLoggedErrors()
+        with LogCapture() as l:
+            new_item = self.pipe.item_completed(results, item, self.info)
 
         assert new_item is item
-        assert len(events) == 1
-        assert events[0]['logLevel'] == log.ERROR
-        assert events[0]['failure'] is fail
+        assert len(l.records) == 1
+        record = l.records[0]
+        assert record.levelname == 'ERROR'
+        assert record.failure is fail
 
         # disable failure logging and check again
         self.pipe.LOG_FAILED_RESULTS = False
-        events = []
-        txlog.addObserver(events.append)
-        new_item = self.pipe.item_completed(results, item, self.info)
-        txlog.removeObserver(events.append)
-        self.flushLoggedErrors()
+        with LogCapture() as l:
+            new_item = self.pipe.item_completed(results, item, self.info)
         assert new_item is item
-        assert len(events) == 0
+        assert len(l.records) == 0
 
     @inlineCallbacks
     def test_default_process_item(self):
