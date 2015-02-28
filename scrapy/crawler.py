@@ -15,7 +15,7 @@ from scrapy.signalmanager import SignalManager
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.misc import load_object
-from scrapy.utils.log import configure_logging, log_scrapy_info
+from scrapy.utils.log import LogCounterHandler, configure_logging, log_scrapy_info
 from scrapy import signals
 
 logger = logging.getLogger('scrapy')
@@ -32,6 +32,12 @@ class Crawler(object):
 
         self.signals = SignalManager(self)
         self.stats = load_object(self.settings['STATS_CLASS'])(self)
+
+        handler = LogCounterHandler(self, level=settings.get('LOG_LEVEL'))
+        logging.root.addHandler(handler)
+        self.signals.connect(lambda: logging.root.removeHandler(handler),
+                             signals.engine_stopped)
+
         lf_cls = load_object(self.settings['LOG_FORMATTER'])
         self.logformatter = lf_cls.from_crawler(self)
         self.extensions = ExtensionManager.from_crawler(self)
@@ -103,7 +109,6 @@ class CrawlerRunner(object):
         crawler = crawler_or_spidercls
         if not isinstance(crawler_or_spidercls, Crawler):
             crawler = self._create_crawler(crawler_or_spidercls)
-            self._setup_crawler_logging(crawler)
 
         self.crawlers.add(crawler)
         d = crawler.crawl(*args, **kwargs)
@@ -120,11 +125,6 @@ class CrawlerRunner(object):
         if isinstance(spidercls, six.string_types):
             spidercls = self.spider_loader.load(spidercls)
         return Crawler(spidercls, self.settings)
-
-    def _setup_crawler_logging(self, crawler):
-        log_observer = log.start_from_crawler(crawler)
-        if log_observer:
-            crawler.signals.connect(log_observer.stop, signals.engine_stopped)
 
     def stop(self):
         return defer.DeferredList([c.stop() for c in list(self.crawlers)])

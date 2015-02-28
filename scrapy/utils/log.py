@@ -72,3 +72,15 @@ def log_scrapy_info(settings):
 
     d = dict(overridden_settings(settings))
     logger.info("Overridden settings: %(settings)r", {'settings': d})
+
+
+class LogCounterHandler(logging.Handler):
+    """Record log levels count into a crawler stats"""
+
+    def __init__(self, crawler, *args, **kwargs):
+        super(LogCounterHandler, self).__init__(*args, **kwargs)
+        self.crawler = crawler
+
+    def emit(self, record):
+        sname = 'log_count/{}'.format(record.levelname)
+        self.crawler.stats.inc_value(sname)

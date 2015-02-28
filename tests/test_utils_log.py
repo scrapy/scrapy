@@ -6,7 +6,8 @@ import unittest
 from testfixtures import LogCapture
 from twisted.python.failure import Failure
 
-from scrapy.utils.log import FailureFormatter
+from scrapy.utils.log import FailureFormatter, LogCounterHandler
+from scrapy.utils.test import get_crawler
 
 
 class FailureFormatterTest(unittest.TestCase):
@@ -44,3 +45,33 @@ class FailureFormatterTest(unittest.TestCase):
         self.assertEqual(len(l.records), 1)
         self.assertMultiLineEqual(l.records[0].getMessage(),
                                   'test log msg' + os.linesep + '3')
+
+
+class LogCounterHandlerTest(unittest.TestCase):
+
+    def setUp(self):
+        self.logger = logging.getLogger('test')
+        self.logger.setLevel(logging.NOTSET)
+        self.logger.propagate = False
+        self.crawler = get_crawler(settings_dict={'LOG_LEVEL': 'WARNING'})
+        self.handler = LogCounterHandler(self.crawler)
+        self.logger.addHandler(self.handler)
+
+    def tearDown(self):
+        self.logger.propagate = True
+        self.logger.removeHandler(self.handler)
+
+    def test_init(self):
+        self.assertIsNone(self.crawler.stats.get_value('log_count/DEBUG'))
+        self.assertIsNone(self.crawler.stats.get_value('log_count/INFO'))
+        self.assertIsNone(self.crawler.stats.get_value('log_count/WARNING'))
+        self.assertIsNone(self.crawler.stats.get_value('log_count/ERROR'))
+        self.assertIsNone(self.crawler.stats.get_value('log_count/CRITICAL'))
+
+    def test_accepted_level(self):
+        self.logger.error('test log msg')
+        self.assertEqual(self.crawler.stats.get_value('log_count/ERROR'), 1)
+
+    def test_filtered_out_level(self):
+        self.logger.debug('test log msg')
+        self.assertIsNone(self.crawler.stats.get_value('log_count/INFO'))
