@@ -1,6 +1,7 @@
 """This module implements the Scraper component which parses responses and
 extracts information from them"""
 
+import logging
 from collections import deque
 
 from twisted.python.failure import Failure
@@ -15,6 +16,8 @@ from scrapy.http import Request, Response
 from scrapy.item import BaseItem
 from scrapy.core.spidermw import SpiderMiddlewareManager
 from scrapy import log
+
+logger = logging.getLogger('scrapy')
 
 
 class Slot(object):
@@ -102,7 +105,9 @@ class Scraper(object):
             return _
         dfd.addBoth(finish_scraping)
         dfd.addErrback(
-            log.err, 'Scraper bug processing %s' % request, spider=spider)
+            lambda f: logger.error('Scraper bug processing %(request)s',
+                                   {'request': request},
+                                   extra={'spider': spider, 'failure': f}))
         self._scrape_next(spider, slot)
         return dfd
 
@@ -145,10 +150,10 @@ class Scraper(object):
             self.crawler.engine.close_spider(spider, exc.reason or 'cancelled')
             return
         referer = request.headers.get('Referer')
-        log.err(
-            _failure,
-            "Spider error processing %s (referer: %s)" % (request, referer),
-            spider=spider
+        logger.error(
+            "Spider error processing %(request)s (referer: %(referer)s)",
+            {'request': request, 'referer': referer},
+            extra={'spider': spider, 'failure': _failure}
         )
         self.signals.send_catch_log(
             signal=signals.spider_error,
@@ -183,9 +188,10 @@ class Scraper(object):
             pass
         else:
             typename = type(output).__name__
-            log.msg(format='Spider must return Request, BaseItem, dict or None, '
-                           'got %(typename)r in %(request)s',
-                    level=log.ERROR, spider=spider, request=request, typename=typename)
+            logger.error('Spider must return Request, BaseItem, dict or None, '
+                         'got %(typename)r in %(request)s',
+                         {'request': request, 'typename': typename},
+                         extra={'spider': spider})
 
     def _log_download_errors(self, spider_failure, download_failure, request, spider):
         """Log and silence errors that come from the engine (typically download
@@ -194,14 +200,15 @@ class Scraper(object):
         if (isinstance(download_failure, Failure) and
                 not download_failure.check(IgnoreRequest)):
             if download_failure.frames:
-                log.err(download_failure, 'Error downloading %s' % request,
-                        spider=spider)
+                logger.error('Error downloading %(request)s',
+                             {'request': request},
+                             extra={'spider': spider, 'failure': download_failure})
             else:
                 errmsg = download_failure.getErrorMessage()
                 if errmsg:
-                    log.msg(format='Error downloading %(request)s: %(errmsg)s',
-                            level=log.ERROR, spider=spider, request=request,
-                            errmsg=errmsg)
+                    logger.error('Error downloading %(request)s: %(errmsg)s',
+                                 {'request': request, 'errmsg': errmsg},
+                                 extra={'spider': spider})
 
         if spider_failure is not download_failure:
             return spider_failure
@@ -219,7 +226,8 @@ class Scraper(object):
                     signal=signals.item_dropped, item=item, response=response,
                     spider=spider, exception=output.value)
             else:
-                log.err(output, 'Error processing %s' % item, spider=spider)
+                logger.error('Error processing %(item)s', {'item': item},
+                             extra={'spider': spider, 'failure': output})
         else:
             logkws = self.logformatter.scraped(output, response, spider)
             log.msg(spider=spider, **logkws)

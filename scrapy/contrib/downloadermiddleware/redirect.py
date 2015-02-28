@@ -1,9 +1,11 @@
+import logging
 from six.moves.urllib.parse import urljoin
 
-from scrapy import log
 from scrapy.http import HtmlResponse
 from scrapy.utils.response import get_meta_refresh
 from scrapy.exceptions import IgnoreRequest, NotConfigured
+
+logger = logging.getLogger('scrapy')
 
 
 class BaseRedirectMiddleware(object):
@@ -32,13 +34,13 @@ class BaseRedirectMiddleware(object):
                 [request.url]
             redirected.dont_filter = request.dont_filter
             redirected.priority = request.priority + self.priority_adjust
-            log.msg(format="Redirecting (%(reason)s) to %(redirected)s from %(request)s",
-                    level=log.DEBUG, spider=spider, request=request,
-                    redirected=redirected, reason=reason)
+            logger.debug("Redirecting (%(reason)s) to %(redirected)s from %(request)s",
+                         {'reason': reason, 'redirected': redirected, 'request': request},
+                         extra={'spider': spider})
             return redirected
         else:
-            log.msg(format="Discarding %(request)s: max redirections reached",
-                    level=log.DEBUG, spider=spider, request=request)
+            logger.debug("Discarding %(request)s: max redirections reached",
+                         {'request': request}, extra={'spider': spider})
             raise IgnoreRequest("max redirections reached")
 
     def _redirect_request_using_get(self, request, redirect_url):

@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import re
+import logging
+
 import six
 from w3lib import html
-from scrapy import log
+
 from scrapy.exceptions import NotConfigured
 from scrapy.http import HtmlResponse
 from scrapy.utils.response import _noscript_re, _script_re
+
+
+logger = logging.getLogger('scrapy')
 
 
 class AjaxCrawlMiddleware(object):
@@ -46,9 +51,9 @@ class AjaxCrawlMiddleware(object):
 
         # scrapy already handles #! links properly
         ajax_crawl_request = request.replace(url=request.url+'#!')
-        log.msg(format="Downloading AJAX crawlable %(ajax_crawl_request)s instead of %(request)s",
-                level=log.DEBUG, spider=spider,
-                ajax_crawl_request=ajax_crawl_request, request=request)
+        logger.debug("Downloading AJAX crawlable %(ajax_crawl_request)s instead of %(request)s",
+                     {'ajax_crawl_request': ajax_crawl_request, 'request': request},
+                     extra={'spider': spider})
 
         ajax_crawl_request.meta['ajax_crawlable'] = True
         return ajax_crawl_request

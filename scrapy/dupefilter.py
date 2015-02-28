@@ -1,7 +1,7 @@
 from __future__ import print_function
 import os
+import logging
 
-from scrapy import log
 from scrapy.utils.job import job_dir
 from scrapy.utils.request import request_fingerprint
 
@@ -33,6 +33,7 @@ class RFPDupeFilter(BaseDupeFilter):
         self.fingerprints = set()
         self.logdupes = True
         self.debug = debug
+        self.logger = logging.getLogger('scrapy')
         if path:
             self.file = open(os.path.join(path, 'requests.seen'), 'a+')
             self.fingerprints.update(x.rstrip() for x in self.file)
@@ -59,13 +60,13 @@ class RFPDupeFilter(BaseDupeFilter):
 
     def log(self, request, spider):
         if self.debug:
-            fmt = "Filtered duplicate request: %(request)s"
-            log.msg(format=fmt, request=request, level=log.DEBUG, spider=spider)
+            msg = "Filtered duplicate request: %(request)s"
+            self.logger.debug(msg, {'request': request}, extra={'spider': spider})
         elif self.logdupes:
-            fmt = ("Filtered duplicate request: %(request)s"
+            msg = ("Filtered duplicate request: %(request)s"
                    " - no more duplicates will be shown"
                    " (see DUPEFILTER_DEBUG to show all duplicates)")
-            log.msg(format=fmt, request=request, level=log.DEBUG, spider=spider)
+            self.logger.debug(msg, {'request': request}, extra={'spider': spider})
             self.logdupes = False
 
         spider.crawler.stats.inc_value('dupefilter/filtered', spider=spider)

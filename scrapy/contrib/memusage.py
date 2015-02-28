@@ -5,15 +5,19 @@ See documentation in docs/topics/extensions.rst
 """
 import sys
 import socket
+import logging
 from pprint import pformat
 from importlib import import_module
 
 from twisted.internet import task
 
-from scrapy import signals, log
+from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.mail import MailSender
 from scrapy.utils.engine import get_engine_status
+
+logger = logging.getLogger('scrapy')
+
 
 class MemoryUsage(object):
 
@@ -74,8 +78,8 @@ class MemoryUsage(object):
         if self.get_virtual_size() > self.limit:
             self.crawler.stats.set_value('memusage/limit_reached', 1)
             mem = self.limit/1024/1024
-            log.msg(format="Memory usage exceeded %(memusage)dM. Shutting down Scrapy...",
-                    level=log.ERROR, memusage=mem)
+            logger.error("Memory usage exceeded %(memusage)dM. Shutting down Scrapy...",
+                         {'memusage': mem}, extra={'crawler': self.crawler})
             if self.notify_mails:
                 subj = "%s terminated: memory usage exceeded %dM at %s" % \
                         (self.crawler.settings['BOT_NAME'], mem, socket.gethostname())
@@ -95,8 +99,8 @@ class MemoryUsage(object):
         if self.get_virtual_size() > self.warning:
             self.crawler.stats.set_value('memusage/warning_reached', 1)
             mem = self.warning/1024/1024
-            log.msg(format="Memory usage reached %(memusage)dM",
-                    level=log.WARNING, memusage=mem)
+            logger.warning("Memory usage reached %(memusage)dM",
+                           {'memusage': mem}, extra={'crawler': self.crawler})
             if self.notify_mails:
                 subj = "%s warning: memory usage reached %dM at %s" % \
                         (self.crawler.settings['BOT_NAME'], mem, socket.gethostname())

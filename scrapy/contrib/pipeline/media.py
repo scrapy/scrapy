@@ -1,12 +1,15 @@
 from __future__ import print_function
+
+import logging
 from collections import defaultdict
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
 
 from scrapy.utils.defer import mustbe_deferred, defer_result
-from scrapy import log
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.misc import arg_to_iter
+
+logger = logging.getLogger('scrapy')
 
 
 class MediaPipeline(object):
@@ -66,7 +69,9 @@ class MediaPipeline(object):
         dfd = mustbe_deferred(self.media_to_download, request, info)
         dfd.addCallback(self._check_media_to_download, request, info)
         dfd.addBoth(self._cache_result_and_execute_waiters, fp, info)
-        dfd.addErrback(log.err, spider=info.spider)
+        dfd.addErrback(lambda f: logger.error(
+            f.value, extra={'spider': info.spider, 'failure': f})
+        )
         return dfd.addBoth(lambda _: wad)  # it must return wad at last
 
     def _check_media_to_download(self, result, request, info):
@@ -117,8 +122,11 @@ class MediaPipeline(object):
     def item_completed(self, results, item, info):
         """Called per item when all media requests has been processed"""
         if self.LOG_FAILED_RESULTS:
-            msg = '%s found errors processing %s' % (self.__class__.__name__, item)
             for ok, value in results:
                 if not ok:
-                    log.err(value, msg, spider=info.spider)
+                    logger.error(
+                        '%(class)s found errors processing %(item)s',
+                        {'class': self.__class__.__name__, 'item': item},
+                        extra={'spider': info.spider, 'failure': value}
+                    )
         return item

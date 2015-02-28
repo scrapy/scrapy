@@ -1,6 +1,9 @@
 import logging
+
 from scrapy.exceptions import NotConfigured
 from scrapy import signals
+
+logger = logging.getLogger('scrapy')
 
 
 class AutoThrottle(object):
@@ -47,9 +50,17 @@ class AutoThrottle(object):
             diff = slot.delay - olddelay
             size = len(response.body)
             conc = len(slot.transferring)
-            msg = "slot: %s | conc:%2d | delay:%5d ms (%+d) | latency:%5d ms | size:%6d bytes" % \
-                  (key, conc, slot.delay * 1000, diff * 1000, latency * 1000, size)
-            spider.log(msg, level=logging.INFO)
+            logger.info(
+                "slot: %(slot)s | conc:%(concurrency)2d | "
+                "delay:%(delay)5d ms (%(delaydiff)+d) | "
+                "latency:%(latency)5d ms | size:%(size)6d bytes",
+                {
+                    'slot': key, 'concurrency': conc,
+                    'delay': slot.delay * 1000, 'delaydiff': diff * 1000,
+                    'latency': latency * 1000, 'size': size
+                },
+                extra={'spider': spider}
+            )
 
     def _get_slot(self, request, spider):
         key = request.meta.get('download_slot')

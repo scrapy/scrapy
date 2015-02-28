@@ -137,7 +137,6 @@ class RunSpiderCommandTest(CommandTest):
         with open(fname, 'w') as f:
             f.write("""
 import scrapy
-from scrapy import log
 
 class MySpider(scrapy.Spider):
     name = 'myspider'
@@ -148,10 +147,10 @@ class MySpider(scrapy.Spider):
 """)
         p = self.proc('runspider', fname)
         log = p.stderr.read()
-        self.assertIn("[myspider] DEBUG: It Works!", log)
-        self.assertIn("[myspider] INFO: Spider opened", log)
-        self.assertIn("[myspider] INFO: Closing spider (finished)", log)
-        self.assertIn("[myspider] INFO: Spider closed (finished)", log)
+        self.assertIn("DEBUG: It Works!", log)
+        self.assertIn("INFO: Spider opened", log)
+        self.assertIn("INFO: Closing spider (finished)", log)
+        self.assertIn("INFO: Spider closed (finished)", log)
 
     def test_runspider_no_spider_found(self):
         tmpdir = self.mktemp()
@@ -159,7 +158,6 @@ class MySpider(scrapy.Spider):
         fname = abspath(join(tmpdir, 'myspider.py'))
         with open(fname, 'w') as f:
             f.write("""
-from scrapy import log
 from scrapy.spider import Spider
 """)
         p = self.proc('runspider', fname)
@@ -192,7 +190,6 @@ class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
         fname = abspath(join(self.proj_mod_path, 'spiders', 'myspider.py'))
         with open(fname, 'w') as f:
             f.write("""
-from scrapy import log
 import scrapy
 
 class MySpider(scrapy.Spider):
@@ -207,13 +204,13 @@ class MySpider(scrapy.Spider):
         fname = abspath(join(self.proj_mod_path, 'pipelines.py'))
         with open(fname, 'w') as f:
             f.write("""
-from scrapy import log
+import logging
 
 class MyPipeline(object):
     component_name = 'my_pipeline'
 
     def process_item(self, item, spider):
-        log.msg('It Works!')
+        logging.info('It Works!')
         return item
 """)
 
@@ -229,7 +226,7 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
                                            '-a', 'test_arg=1',
                                            '-c', 'parse',
                                            self.url('/html')])
-        self.assertIn("[parse_spider] DEBUG: It Works!", stderr)
+        self.assertIn("DEBUG: It Works!", stderr)
 
     @defer.inlineCallbacks
     def test_pipelines(self):
@@ -237,7 +234,7 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
                                            '--pipelines',
                                            '-c', 'parse',
                                            self.url('/html')])
-        self.assertIn("[scrapy] INFO: It Works!", stderr)
+        self.assertIn("INFO: It Works!", stderr)
 
     @defer.inlineCallbacks
     def test_parse_items(self):

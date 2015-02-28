@@ -5,6 +5,7 @@ See documentation in docs/topics/telnetconsole.rst
 """
 
 import pprint
+import logging
 
 from twisted.internet import protocol
 try:
@@ -15,7 +16,7 @@ except ImportError:
     TWISTED_CONCH_AVAILABLE = False
 
 from scrapy.exceptions import NotConfigured
-from scrapy import log, signals
+from scrapy import signals
 from scrapy.utils.trackref import print_live_refs
 from scrapy.utils.engine import print_engine_status
 from scrapy.utils.reactor import listen_tcp
@@ -25,6 +26,8 @@ try:
     hpy = guppy.hpy()
 except ImportError:
     hpy = None
+
+logger = logging.getLogger('scrapy')
 
 # signal to update telnet variables
 # args: telnet_vars
@@ -52,8 +55,9 @@ class TelnetConsole(protocol.ServerFactory):
     def start_listening(self):
         self.port = listen_tcp(self.portrange, self.host, self)
         h = self.port.getHost()
-        log.msg(format="Telnet console listening on %(host)s:%(port)d",
-                level=log.DEBUG, host=h.host, port=h.port)
+        logger.debug("Telnet console listening on %(host)s:%(port)d",
+                     {'host': h.host, 'port': h.port},
+                     extra={'crawler': self.crawler})
 
     def stop_listening(self):
         self.port.stopListening()

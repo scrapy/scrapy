@@ -1,5 +1,8 @@
 from __future__ import print_function
+import logging
+
 from w3lib.url import is_url
+
 from scrapy.command import ScrapyCommand
 from scrapy.http import Request
 from scrapy.item import BaseItem
@@ -7,7 +10,9 @@ from scrapy.utils import display
 from scrapy.utils.conf import arglist_to_dict
 from scrapy.utils.spider import iterate_spider_output, spidercls_for_request
 from scrapy.exceptions import UsageError
-from scrapy import log
+
+logger = logging.getLogger('scrapy')
+
 
 class Command(ScrapyCommand):
 
@@ -119,9 +124,9 @@ class Command(ScrapyCommand):
                 if rule.link_extractor.matches(response.url) and rule.callback:
                     return rule.callback
         else:
-            log.msg(format='No CrawlSpider rules found in spider %(spider)r, '
-                           'please specify a callback to use for parsing',
-                    level=log.ERROR, spider=spider.name)
+            logger.error('No CrawlSpider rules found in spider %(spider)r, '
+                         'please specify a callback to use for parsing',
+                         {'spider': spider.name})
 
     def set_spidercls(self, url, opts):
         spider_loader = self.crawler_process.spider_loader
@@ -129,13 +134,13 @@ class Command(ScrapyCommand):
             try:
                 self.spidercls = spider_loader.load(opts.spider)
             except KeyError:
-                log.msg(format='Unable to find spider: %(spider)s',
-                        level=log.ERROR, spider=opts.spider)
+                logger.error('Unable to find spider: %(spider)s',
+                             {'spider': opts.spider})
         else:
             self.spidercls = spidercls_for_request(spider_loader, Request(url))
             if not self.spidercls:
-                log.msg(format='Unable to find spider for: %(url)s',
-                        level=log.ERROR, url=url)
+                logger.error('Unable to find spider for: %(url)s',
+                             {'url': url})
 
         request = Request(url, opts.callback)
         _start_requests = lambda s: [self.prepare_request(s, request, opts)]
@@ -148,8 +153,8 @@ class Command(ScrapyCommand):
         self.crawler_process.start()
 
         if not self.first_response:
-            log.msg(format='No response downloaded for: %(url)s',
-                    level=log.ERROR, url=url)
+            logger.error('No response downloaded for: %(url)s',
+                         {'url': url})
 
     def prepare_request(self, spider, request, opts):
         def callback(response):
@@ -170,8 +175,8 @@ class Command(ScrapyCommand):
                 if callable(cb_method):
                     cb = cb_method
                 else:
-                    log.msg(format='Cannot find callback %(callback)r in spider: %(spider)s',
-                            callback=callback, spider=spider.name, level=log.ERROR)
+                    logger.error('Cannot find callback %(callback)r in spider: %(spider)s',
+                                 {'callback': callback, 'spider': spider.name})
                     return
 
             # parse items and requests

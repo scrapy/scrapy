@@ -1,5 +1,6 @@
 import six
 import signal
+import logging
 import warnings
 
 from twisted.internet import reactor, defer
@@ -14,7 +15,9 @@ from scrapy.signalmanager import SignalManager
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.misc import load_object
-from scrapy import log, signals
+from scrapy import signals
+
+logger = logging.getLogger('scrapy')
 
 
 class Crawler(object):
@@ -145,15 +148,15 @@ class CrawlerProcess(CrawlerRunner):
     def _signal_shutdown(self, signum, _):
         install_shutdown_handlers(self._signal_kill)
         signame = signal_names[signum]
-        log.msg(format="Received %(signame)s, shutting down gracefully. Send again to force ",
-                level=log.INFO, signame=signame)
+        logger.info("Received %(signame)s, shutting down gracefully. Send again to force ",
+                    {'signame': signame})
         reactor.callFromThread(self.stop)
 
     def _signal_kill(self, signum, _):
         install_shutdown_handlers(signal.SIG_IGN)
         signame = signal_names[signum]
-        log.msg(format='Received %(signame)s twice, forcing unclean shutdown',
-                level=log.INFO, signame=signame)
+        logger.info('Received %(signame)s twice, forcing unclean shutdown',
+                    {'signame': signame})
         self._stop_logging()
         reactor.callFromThread(self._stop_reactor)
 

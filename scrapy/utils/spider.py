@@ -1,10 +1,12 @@
+import logging
 import inspect
 
 import six
 
-from scrapy import log
 from scrapy.spider import Spider
 from scrapy.utils.misc import  arg_to_iter
+
+logger = logging.getLogger('scrapy')
 
 
 def iterate_spider_output(result):
@@ -43,12 +45,12 @@ def spidercls_for_request(spider_loader, request, default_spidercls=None,
         return spider_loader.load(snames[0])
 
     if len(snames) > 1 and log_multiple:
-        log.msg(format='More than one spider can handle: %(request)s - %(snames)s',
-                level=log.ERROR, request=request, snames=', '.join(snames))
+        logger.error('More than one spider can handle: %(request)s - %(snames)s',
+                     {'request': request, 'snames': ', '.join(snames)})
 
     if len(snames) == 0 and log_none:
-        log.msg(format='Unable to find spider that handles: %(request)s',
-                level=log.ERROR, request=request)
+        logger.error('Unable to find spider that handles: %(request)s',
+                     {'request': request})
 
     return default_spidercls
 
