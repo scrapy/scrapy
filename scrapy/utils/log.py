@@ -86,8 +86,8 @@ def configure_logging(settings=None):
             handler = logging.NullHandler()
 
         formatter = logging.Formatter(
-            fmt='%(asctime)s [%(name)s] %(levelname)s: %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S%z'
+            fmt=settings.get('LOG_FORMAT'),
+            datefmt=settings.get('LOG_DATEFORMAT')
         )
         handler.setFormatter(formatter)
         handler.setLevel(settings.get('LOG_LEVEL'))
