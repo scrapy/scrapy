@@ -1,12 +1,9 @@
 import six
 import unittest
 import warnings
-try:
-    from unittest import mock
-except ImportError:
-    import mock
 
 from scrapy.settings import Settings, SettingsAttribute, CrawlerSettings
+from tests import mock
 from . import default_settings
 
 

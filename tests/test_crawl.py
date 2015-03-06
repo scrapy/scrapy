@@ -1,9 +1,9 @@
 import json
 import socket
-import mock
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 from scrapy.utils.test import get_crawler, get_testlog
+from tests import mock
 from tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
     BrokenStartRequestsSpider, SingleRequestSpider, DuplicateStartRequestsSpider
 from tests.mockserver import MockServer

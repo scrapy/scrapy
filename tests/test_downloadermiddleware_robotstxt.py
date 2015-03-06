@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 import re
-import mock
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.trial import unittest
@@ -8,6 +7,7 @@ from scrapy.contrib.downloadermiddleware.robotstxt import RobotsTxtMiddleware
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
+from tests import mock
 
 
 class RobotsTxtMiddlewareTest(unittest.TestCase):
