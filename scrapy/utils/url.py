@@ -63,7 +63,7 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
 
 
 def _unquotepath(path):
-    for reserved in ('2f', '2F', '3f', '3F'):
+    for reserved in ('2f', '2F', '3f', '3F', '25'):
         path = path.replace('%' + reserved, '%25' + reserved.upper())
     return urllib.unquote(path)
 
