@@ -28,9 +28,9 @@ class DjangoItem(Item):
     django_model = None
 
     def __init__(self, *args, **kwargs):
-        super(DjangoItem, self).__init__(*args, **kwargs)
         self._instance = None
         self._errors = None
+        super(DjangoItem, self).__init__(*args, **kwargs)
 
     def __setitem__(self, key, value):
         super(DjangoItem, self).__setitem__(key, value)
