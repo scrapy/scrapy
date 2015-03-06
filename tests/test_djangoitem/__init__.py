@@ -101,3 +101,17 @@ class DjangoItemTest(unittest.TestCase):
         i = BasePersonItem()
         person = i.save(commit=False)
         self.assertEqual(person.name, 'Robot')
+
+    def test_setitem(self):
+        i = BasePersonItem()
+        i['age'] = 22
+        self.assertEqual(i.instance.age, 22)
+        i['name'] = 'John'
+        self.assertEqual(i.instance.name, 'John')
+
+    def test_delitem(self):
+        i = BasePersonItem()
+        i['age'] = 22
+        self.assertEqual(i.instance.age, 22)
+        del i['age']
+        self.assertEqual(i.instance.age, None)
