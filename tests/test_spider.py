@@ -3,10 +3,6 @@ import inspect
 import warnings
 from io import BytesIO
 from twisted.trial import unittest
-try:
-    from unittest import mock
-except ImportError:
-    import mock
 
 from scrapy import signals
 from scrapy.spider import Spider, BaseSpider
@@ -19,6 +15,8 @@ from scrapy.contrib.linkextractors import LinkExtractor
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.test import get_crawler
+
+from tests import mock
 
 
 class SpiderTest(unittest.TestCase):

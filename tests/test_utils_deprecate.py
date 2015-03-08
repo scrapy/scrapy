@@ -3,8 +3,9 @@ from __future__ import absolute_import
 import inspect
 import unittest
 import warnings
-import mock
 from scrapy.utils.deprecate import create_deprecated_class
+
+from tests import mock
 
 
 class MyWarning(UserWarning):

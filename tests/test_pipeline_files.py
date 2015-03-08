@@ -1,4 +1,3 @@
-import mock
 import os
 import time
 import hashlib
@@ -13,6 +12,8 @@ from scrapy.contrib.pipeline.files import FilesPipeline, FSFilesStore
 from scrapy.item import Item, Field
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
+
+from tests import mock
 
 
 def _mocked_download_func(request, info):

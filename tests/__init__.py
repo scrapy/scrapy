@@ -6,6 +6,11 @@ see http://doc.scrapy.org/en/latest/contributing.html#running-tests
 
 import os
 
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
+
 tests_datadir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data')
 
 def get_testdata(*paths):
