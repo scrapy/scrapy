@@ -33,6 +33,9 @@ class SettingsAttributeTest(unittest.TestCase):
 
 class SettingsTest(unittest.TestCase):
 
+    if six.PY3:
+        assertItemsEqual = unittest.TestCase.assertCountEqual
+
     def setUp(self):
         self.settings = Settings()
 
