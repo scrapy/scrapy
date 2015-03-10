@@ -112,6 +112,12 @@ scrapy.Spider
       :class:`~scrapy.settings.Settings` instance, see the
       :ref:`topics-settings` topic for a detailed introduction on this subject.
 
+   .. attribute:: logger
+
+      Python logger created with the Spider's :attr:`name`. You can use it to
+      send log messages through it as described on
+      :ref:`topics-logging-from-spiders`.
+
    .. method:: from_crawler(crawler, \*args, \**kwargs)
 
        This is the class method used by Scrapy to create your spiders.
@@ -194,9 +200,9 @@ scrapy.Spider
 
    .. method:: log(message, [level, component])
 
-       Log a message using the :func:`scrapy.log.msg` function, automatically
-       populating the spider argument with the :attr:`name` of this
-       spider. For more information see :ref:`topics-logging`.
+       Wrapper that sends a log message through the Spider's :attr:`logger`,
+       kept for backwards compatibility. For more information see
+       :ref:`topics-logging-from-spiders`.
 
    .. method:: closed(reason)
 
