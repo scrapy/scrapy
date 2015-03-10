@@ -30,9 +30,12 @@ project as example.
 
     from twisted.internet import reactor
     from scrapy.crawler import CrawlerRunner
+    from scrapy.utils.log import configure_logging
     from scrapy.utils.project import get_project_settings
 
-    runner = CrawlerRunner(get_project_settings())
+    settings = get_project_settings()
+    configure_logging(settings)
+    runner = CrawlerRunner(settings)
 
     # 'followall' is the name of one of the spiders of the project.
     d = runner.crawl('followall', domain='scrapinghub.com')
@@ -54,11 +57,13 @@ the spider class as first argument in the :meth:`CrawlerRunner.crawl
     from twisted.internet import reactor
     import scrapy
     from scrapy.crawler import CrawlerRunner
+    from scrapy.utils.log import configure_logging
 
     class MySpider(scrapy.Spider):
         # Your spider definition
         ...
 
+    configure_logging(settings)
     runner = CrawlerRunner({
         'USER_AGENT': 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)'
     })
@@ -85,9 +90,12 @@ Here is an example that runs multiple spiders simultaneously, using the
 
     from twisted.internet import reactor, defer
     from scrapy.crawler import CrawlerRunner
+    from scrapy.utils.log import configure_logging
     from scrapy.utils.project import get_project_settings
 
-    runner = CrawlerRunner(get_project_settings())
+    settings = get_project_settings()
+    configure_logging(settings)
+    runner = CrawlerRunner(settings)
     dfs = set()
     for domain in ['scrapinghub.com', 'insophia.com']:
         d = runner.crawl('followall', domain=domain)
@@ -102,9 +110,12 @@ Same example but running the spiders sequentially by chaining the deferreds:
 
     from twisted.internet import reactor, defer
     from scrapy.crawler import CrawlerRunner
+    from scrapy.utils.log import configure_logging
     from scrapy.utils.project import get_project_settings
 
-    runner = CrawlerRunner(get_project_settings())
+    settings = get_project_settings()
+    configure_logging(settings)
+    runner = CrawlerRunner(settings)
 
     @defer.inlineCallbacks
     def crawl():
