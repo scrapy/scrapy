@@ -3,6 +3,7 @@
 from functools import partial
 from scrapy.utils.python import get_func_args
 
+
 def wrap_loader_context(function, context):
     """Wrap functions that receive loader_context to contain the context
     "pre-loaded" and expose a interface that receives only one argument
@@ -11,3 +12,11 @@ def wrap_loader_context(function, context):
         return partial(function, loader_context=context)
     else:
         return function
+
+
+def purge_chars(text, chars):
+    """Strips text of punctuation and whitespaces"""
+    for c in chars:
+        if c in text:
+            text = text.replace(c, '')
+    return text
