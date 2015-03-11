@@ -433,6 +433,8 @@ The maximum response size (in bytes) that downloader will download.
 
 If you want to disable it set to 0.
 
+.. reqmeta:: download_maxsize
+
 .. note::
 
     This size can be set per spider using :attr:`download_maxsize`

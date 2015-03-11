@@ -224,12 +224,15 @@ Those are:
 * :reqmeta:`dont_redirect`
 * :reqmeta:`dont_retry`
 * :reqmeta:`handle_httpstatus_list`
+* :reqmeta:`handle_httpstatus_all`
 * ``dont_merge_cookies`` (see ``cookies`` parameter of :class:`Request` constructor)
 * :reqmeta:`cookiejar`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`bindaddress`
 * :reqmeta:`dont_obey_robotstxt`
 * :reqmeta:`download_timeout`
+* :reqmeta:`download_maxsize`
+* :reqmeta:`proxy`
 
 .. reqmeta:: bindaddress
 

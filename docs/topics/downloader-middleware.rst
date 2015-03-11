@@ -603,6 +603,8 @@ HttpProxyMiddleware
 
 .. versionadded:: 0.8
 
+.. reqmeta:: proxy
+
 .. class:: HttpProxyMiddleware
 
    This middleware sets the HTTP proxy to use for requests, by setting the
