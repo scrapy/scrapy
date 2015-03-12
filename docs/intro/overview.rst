@@ -258,7 +258,7 @@ interest!
 .. _the community: http://scrapy.org/community/
 .. _screen scraping: http://en.wikipedia.org/wiki/Screen_scraping
 .. _web scraping: http://en.wikipedia.org/wiki/Web_scraping
-.. _Amazon Associates Web Services: http://aws.amazon.com/associates/
+.. _Amazon Associates Web Services: https://affiliate-program.amazon.com/gp/advertising/api/detail/main.html
 .. _Mininova: http://www.mininova.org
 .. _XPath: http://www.w3.org/TR/xpath
 .. _XPath reference: http://www.w3.org/TR/xpath

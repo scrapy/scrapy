@@ -18,8 +18,8 @@ Having trouble? We'd like to help!
 * Ask a question in the `#scrapy IRC channel`_.
 * Report bugs with Scrapy in our `issue tracker`_.
 
-.. _archives of the scrapy-users mailing list: http://groups.google.com/group/scrapy-users/
-.. _post a question: http://groups.google.com/group/scrapy-users/
+.. _archives of the scrapy-users mailing list: https://groups.google.com/forum/#!forum/scrapy-users
+.. _post a question: https://groups.google.com/forum/#!forum/scrapy-users
 .. _#scrapy IRC channel: irc://irc.freenode.net/scrapy
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
 
