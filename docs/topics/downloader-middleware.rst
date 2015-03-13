@@ -608,7 +608,7 @@ HttpProxyMiddleware
 .. class:: HttpProxyMiddleware
 
    This middleware sets the HTTP proxy to use for requests, by setting the
-   ``proxy`` meta value to :class:`~scrapy.http.Request` objects.
+   ``proxy`` meta value for :class:`~scrapy.http.Request` objects.
 
    Like the Python standard library modules `urllib`_ and `urllib2`_, it obeys
    the following environment variables:
@@ -616,6 +616,9 @@ HttpProxyMiddleware
    * ``http_proxy``
    * ``https_proxy``
    * ``no_proxy``
+
+   You can also set the meta key ``proxy`` per-request, to a value like
+   ``http://some_proxy_server:port``.
 
 .. _urllib: http://docs.python.org/library/urllib.html
 .. _urllib2: http://docs.python.org/library/urllib2.html
