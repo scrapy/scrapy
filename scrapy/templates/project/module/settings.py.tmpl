@@ -18,9 +18,12 @@ NEWSPIDER_MODULE = '$project_name.spiders'
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = '$project_name (+http://www.yourdomain.com)'
 
+# Configure maximum concurrent requests performed by Scrapy (default: 16)
+# CONCURRENT_REQUESTS=32
 
-# Configure a delay for requests for the same website
+# Configure a delay for requests for the same website (default: 0)
 # See http://scrapy.readthedocs.org/en/latest/topics/settings.html#download-delay
+# See also autothrottle settings and docs
 #DOWNLOAD_DELAY=3
 # The download delay setting will honor only one of:
 #CONCURRENT_REQUESTS_PER_DOMAIN=16
@@ -50,8 +53,21 @@ NEWSPIDER_MODULE = '$project_name.spiders'
 #     '$project_name.middlewares.MyCustomDownloaderMiddleware': 543,
 # }
 
+# Enable or disable extensions
+# See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
+# EXTENSIONS = {
+#     'scrapy.telnet.TelnetConsole': None,
+# }
+
+# Configure item pipelines
+# See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
+# ITEM_PIPELINES = {
+#     '$project_name.pipelines.SomePipeline': 300,
+# }
+
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
+# NOTE: AutoThrottle will honour the standard settings for concurrency and delay
 #AUTOTHROTTLE_ENABLED=True
 # The initial download delay (default: 5)
 #AUTOTHROTTLE_START_DELAY=3
