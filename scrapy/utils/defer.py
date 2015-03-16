@@ -12,7 +12,7 @@ def defer_fail(_failure):
     next reactor loop
     """
     d = defer.Deferred()
-    reactor.callLater(0, d.errback, _failure)
+    reactor.callLater(0.1, d.errback, _failure)
     return d
 
 def defer_succeed(result):
@@ -20,7 +20,7 @@ def defer_succeed(result):
     next reactor loop
     """
     d = defer.Deferred()
-    reactor.callLater(0, d.callback, result)
+    reactor.callLater(0.1, d.callback, result)
     return d
 
 def defer_result(result):
