@@ -58,7 +58,7 @@ See http://scrapy.org/community/
 Contributing
 ============
 
-See http://doc.scrapy.org/en/latest/contributing.html
+See http://doc.scrapy.org/en/master/contributing.html
 
 Companies using Scrapy
 ======================
