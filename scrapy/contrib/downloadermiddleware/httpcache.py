@@ -28,6 +28,9 @@ class HttpCacheMiddleware(object):
         self.storage.close_spider(spider)
 
     def process_request(self, request, spider):
+        if request.meta.get('dont_cache', False):
+            return
+
         # Skip uncacheable requests
         if not self.policy.should_cache_request(request):
             request.meta['_dont_cache'] = True  # flag as uncacheable
@@ -53,6 +56,9 @@ class HttpCacheMiddleware(object):
         request.meta['cached_response'] = cachedresponse
 
     def process_response(self, request, response, spider):
+        if request.meta.get('dont_cache', False):
+            return response
+
         # Skip cached responses and uncacheable requests
         if 'cached' in response.flags or '_dont_cache' in request.meta:
             request.meta.pop('_dont_cache', None)

@@ -89,6 +89,18 @@ class _BaseTest(unittest.TestCase):
         assert any(h in request2.headers for h in ('If-None-Match', 'If-Modified-Since'))
         self.assertEqual(request1.body, request2.body)
 
+    def test_dont_cache(self):
+        with self._middleware() as mw:
+            self.request.meta['dont_cache'] = True
+            mw.process_response(self.request, self.response, self.spider)
+            self.assertEqual(mw.storage.retrieve_response(self.spider, self.request), None)
+
+        with self._middleware() as mw:
+            self.request.meta['dont_cache'] = False
+            mw.process_response(self.request, self.response, self.spider)
+            if mw.policy.should_cache_response(self.response, self.request):
+                self.assertIsInstance(mw.storage.retrieve_response(self.spider, self.request), self.response.__class__)
+
 
 class DefaultStorageTest(_BaseTest):
 
