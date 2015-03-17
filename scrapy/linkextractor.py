@@ -5,6 +5,7 @@ scrapy.contrib.linkextractor).
 import re
 from six.moves.urllib.parse import urlparse
 
+from scrapy.selector.csstranslator import ScrapyHTMLTranslator
 from scrapy.utils.url import url_is_from_any_domain
 from scrapy.utils.url import canonicalize_url, url_is_from_any_domain, url_has_any_extension
 from scrapy.utils.misc import arg_to_iter
@@ -38,8 +39,10 @@ _is_valid_url = lambda url: url.split('://', 1)[0] in set(['http', 'https', 'fil
 
 class FilteringLinkExtractor(object):
 
+    _csstranslator = ScrapyHTMLTranslator()
+
     def __init__(self, link_extractor, allow, deny, allow_domains, deny_domains,
-                 restrict_xpaths, canonicalize, deny_extensions):
+                 restrict_xpaths, canonicalize, deny_extensions, restrict_css):
 
         self.link_extractor = link_extractor
 
@@ -50,6 +53,9 @@ class FilteringLinkExtractor(object):
         self.deny_domains = set(arg_to_iter(deny_domains))
 
         self.restrict_xpaths = tuple(arg_to_iter(restrict_xpaths))
+        self.restrict_xpaths += tuple(map(self._csstranslator.css_to_xpath,
+                                          arg_to_iter(restrict_css)))
+
         self.canonicalize = canonicalize
         if deny_extensions is None:
             deny_extensions = IGNORED_EXTENSIONS

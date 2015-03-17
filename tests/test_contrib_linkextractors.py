@@ -284,6 +284,21 @@ class SgmlLinkExtractorTestCase(unittest.TestCase):
                          [Link(url='http://example.org/foo', text=u'>\u4eac<\u4e1c',
                                fragment='', nofollow=False)])
 
+    def test_restrict_css(self):
+        lx = self.extractor_cls(restrict_css=('#subwrapper a',))
+        self.assertEqual(lx.extract_links(self.response), [
+            Link(url='http://example.com/sample2.html', text=u'sample 2')
+        ])
+
+    def test_restrict_css_and_restrict_xpaths_together(self):
+        lx = self.extractor_cls(restrict_xpaths=('//div[@id="subwrapper"]', ),
+                                restrict_css=('#subwrapper + a', ))
+        self.assertEqual([link for link in lx.extract_links(self.response)], [
+            Link(url='http://example.com/sample1.html', text=u''),
+            Link(url='http://example.com/sample2.html', text=u'sample 2'),
+            Link(url='http://example.com/sample3.html', text=u'sample 3 text'),
+        ])
+
     def test_area_tag_with_unicode_present(self):
         body = """<html><body>\xbe\xa9<map><area href="http://example.org/foo" /></map></body></html>"""
         response = HtmlResponse("http://example.org", body=body, encoding='utf-8')
