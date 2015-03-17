@@ -3,13 +3,13 @@ import inspect
 import six
 
 from scrapy import log
-from scrapy.item import BaseItem
 from scrapy.spider import Spider
 from scrapy.utils.misc import  arg_to_iter
 
 
 def iterate_spider_output(result):
-    return [result] if isinstance(result, BaseItem) else arg_to_iter(result)
+    return arg_to_iter(result)
+
 
 def iter_spider_classes(module):
     """Return an iterator over all spider classes defined in the given module
