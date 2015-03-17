@@ -1,5 +1,6 @@
 from __future__ import print_function
 import os
+import gzip
 from six.moves import cPickle as pickle
 from importlib import import_module
 from time import time
@@ -220,6 +221,8 @@ class FilesystemCacheStorage(object):
     def __init__(self, settings):
         self.cachedir = data_path(settings['HTTPCACHE_DIR'])
         self.expiration_secs = settings.getint('HTTPCACHE_EXPIRATION_SECS')
+        self.use_gzip = settings.getbool('HTTPCACHE_GZIP')
+        self._open = gzip.open if self.use_gzip else open
 
     def open_spider(self, spider):
         pass
@@ -233,9 +236,9 @@ class FilesystemCacheStorage(object):
         if metadata is None:
             return  # not cached
         rpath = self._get_request_path(spider, request)
-        with open(os.path.join(rpath, 'response_body'), 'rb') as f:
+        with self._open(os.path.join(rpath, 'response_body'), 'rb') as f:
             body = f.read()
-        with open(os.path.join(rpath, 'response_headers'), 'rb') as f:
+        with self._open(os.path.join(rpath, 'response_headers'), 'rb') as f:
             rawheaders = f.read()
         url = metadata.get('response_url')
         status = metadata['status']
@@ -256,17 +259,17 @@ class FilesystemCacheStorage(object):
             'response_url': response.url,
             'timestamp': time(),
         }
-        with open(os.path.join(rpath, 'meta'), 'wb') as f:
+        with self._open(os.path.join(rpath, 'meta'), 'wb') as f:
             f.write(repr(metadata))
-        with open(os.path.join(rpath, 'pickled_meta'), 'wb') as f:
+        with self._open(os.path.join(rpath, 'pickled_meta'), 'wb') as f:
             pickle.dump(metadata, f, protocol=2)
-        with open(os.path.join(rpath, 'response_headers'), 'wb') as f:
+        with self._open(os.path.join(rpath, 'response_headers'), 'wb') as f:
             f.write(headers_dict_to_raw(response.headers))
-        with open(os.path.join(rpath, 'response_body'), 'wb') as f:
+        with self._open(os.path.join(rpath, 'response_body'), 'wb') as f:
             f.write(response.body)
-        with open(os.path.join(rpath, 'request_headers'), 'wb') as f:
+        with self._open(os.path.join(rpath, 'request_headers'), 'wb') as f:
             f.write(headers_dict_to_raw(request.headers))
-        with open(os.path.join(rpath, 'request_body'), 'wb') as f:
+        with self._open(os.path.join(rpath, 'request_body'), 'wb') as f:
             f.write(request.body)
 
     def _get_request_path(self, spider, request):
@@ -281,7 +284,7 @@ class FilesystemCacheStorage(object):
         mtime = os.stat(rpath).st_mtime
         if 0 < self.expiration_secs < time() - mtime:
             return  # expired
-        with open(metapath, 'rb') as f:
+        with self._open(metapath, 'rb') as f:
             return pickle.load(f)
 
 

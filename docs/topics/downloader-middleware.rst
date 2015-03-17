@@ -563,6 +563,18 @@ Default: ``'scrapy.contrib.httpcache.DummyPolicy'``
 
 The class which implements the cache policy.
 
+.. setting:: HTTPCACHE_GZIP
+
+HTTPCACHE_GZIP
+^^^^^^^^^^^^^^
+
+.. versionadded:: 0.25
+
+Default: ``False``
+
+If enabled, will compress all cached data with gzip.
+This setting is specific to the Filesystem backend.
+
 
 HttpCompressionMiddleware
 -------------------------
