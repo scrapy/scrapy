@@ -5,8 +5,6 @@ for scraping from an XML feed.
 See documentation in docs/topics/spiders.rst
 """
 from scrapy.spider import Spider
-from scrapy.item import BaseItem
-from scrapy.http import Request
 from scrapy.utils.iterators import xmliter, csviter
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.selector import Selector
@@ -92,6 +90,7 @@ class XMLFeedSpider(Spider):
         for (prefix, uri) in self.namespaces:
             selector.register_namespace(prefix, uri)
 
+
 class CSVFeedSpider(Spider):
     """Spider for parsing CSV feeds.
     It receives a CSV file in a response; iterates through each of its rows,
@@ -125,11 +124,7 @@ class CSVFeedSpider(Spider):
         """
 
         for row in csviter(response, self.delimiter, self.headers, self.quotechar):
-            ret = self.parse_row(response, row)
-            if isinstance(ret, (BaseItem, Request)):
-                ret = [ret]
-            if not isinstance(ret, (list, tuple)):
-                raise TypeError('You cannot return an "%s" object from a spider' % type(ret).__name__)
+            ret = iterate_spider_output(self.parse_row(response, row))
             for result_item in self.process_results(response, ret):
                 yield result_item
 
