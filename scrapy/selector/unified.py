@@ -176,7 +176,7 @@ class SelectorList(list):
         return flatten([x.re(regex) for x in self])
 
     def re_first(self, regex):
-        for el in iflatten((x.re(regex) for x in self)):
+        for el in iflatten(x.re(regex) for x in self):
             return el
 
     def extract(self):
