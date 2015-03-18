@@ -26,7 +26,7 @@ help:
 
 build: 
 	mkdir -p build/$(BUILDER) build/doctrees
-	sphinx-build $(ALLSPHINXOPTS)
+	-sphinx-build $(ALLSPHINXOPTS)
 	@echo
 
 
@@ -57,6 +57,11 @@ linkcheck: BUILDER = linkcheck
 linkcheck: build
 	@echo "Link check complete; look for any errors in the above output " \
 	      "or in build/$(BUILDER)/output.txt"
+
+linkfix: linkcheck
+	$(PYTHON) utils/linkfix.py
+	@echo "Fixing redirecting links in docs has finished; check all " \
+	      "replacements before committing them"
 
 doctest: BUILDER = doctest
 doctest: build
