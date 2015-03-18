@@ -117,7 +117,7 @@ class MediaPipeline(object):
     def item_completed(self, results, item, info):
         """Called per item when all media requests has been processed"""
         if self.LOG_FAILED_RESULTS:
-            msg = '%s found errors proessing %s' % (self.__class__.__name__, item)
+            msg = '%s found errors processing %s' % (self.__class__.__name__, item)
             for ok, value in results:
                 if not ok:
                     log.err(value, msg, spider=info.spider)
