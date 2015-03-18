@@ -35,8 +35,8 @@ class ReturnsContract(Contract):
     objects = {
         'request': Request,
         'requests': Request,
-        'item': BaseItem,
-        'items': BaseItem,
+        'item': (BaseItem, dict),
+        'items': (BaseItem, dict),
     }
 
     def __init__(self, *args, **kwargs):
@@ -83,7 +83,7 @@ class ScrapesContract(Contract):
 
     def post_process(self, output):
         for x in output:
-            if isinstance(x, BaseItem):
+            if isinstance(x, (BaseItem, dict)):
                 for arg in self.args:
                     if not arg in x:
                         raise ContractFail("'%s' field is missing" % arg)

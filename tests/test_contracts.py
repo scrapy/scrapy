@@ -39,12 +39,26 @@ class TestSpider(Spider):
         """
         return TestItem(url=response.url)
 
+    def returns_dict_item(self, response):
+        """ method which returns item
+        @url http://scrapy.org
+        @returns items 1 1
+        """
+        return {"url": response.url}
+
     def returns_fail(self, response):
         """ method which returns item
         @url http://scrapy.org
         @returns items 0 0
         """
         return TestItem(url=response.url)
+
+    def returns_dict_fail(self, response):
+        """ method which returns item
+        @url http://scrapy.org
+        @returns items 0 0
+        """
+        return {'url': response.url}
 
     def scrapes_item_ok(self, response):
         """ returns item with name and url
@@ -54,6 +68,14 @@ class TestSpider(Spider):
         """
         return TestItem(name='test', url=response.url)
 
+    def scrapes_dict_item_ok(self, response):
+        """ returns item with name and url
+        @url http://scrapy.org
+        @returns items 1 1
+        @scrapes name url
+        """
+        return {'name': 'test', 'url': response.url}
+
     def scrapes_item_fail(self, response):
         """ returns item with no name
         @url http://scrapy.org
@@ -61,6 +83,14 @@ class TestSpider(Spider):
         @scrapes name url
         """
         return TestItem(url=response.url)
+
+    def scrapes_dict_item_fail(self, response):
+        """ returns item with no name
+        @url http://scrapy.org
+        @returns items 1 1
+        @scrapes name url
+        """
+        return {'url': response.url}
 
     def parse_no_url(self, response):
         """ method with no url
@@ -110,6 +140,11 @@ class ContractsManagerTest(unittest.TestCase):
         request.callback(response)
         self.should_succeed()
 
+        # returns_dict_item
+        request = self.conman.from_method(spider.returns_dict_item, self.results)
+        request.callback(response)
+        self.should_succeed()
+
         # returns_request
         request = self.conman.from_method(spider.returns_request, self.results)
         request.callback(response)
@@ -117,6 +152,11 @@ class ContractsManagerTest(unittest.TestCase):
 
         # returns_fail
         request = self.conman.from_method(spider.returns_fail, self.results)
+        request.callback(response)
+        self.should_fail()
+
+        # returns_dict_fail
+        request = self.conman.from_method(spider.returns_dict_fail, self.results)
         request.callback(response)
         self.should_fail()
 
@@ -129,8 +169,19 @@ class ContractsManagerTest(unittest.TestCase):
         request.callback(response)
         self.should_succeed()
 
+        # scrapes_dict_item_ok
+        request = self.conman.from_method(spider.scrapes_dict_item_ok, self.results)
+        request.callback(response)
+        self.should_succeed()
+
         # scrapes_item_fail
         request = self.conman.from_method(spider.scrapes_item_fail,
+                self.results)
+        request.callback(response)
+        self.should_fail()
+
+        # scrapes_dict_item_fail
+        request = self.conman.from_method(spider.scrapes_dict_item_fail,
                 self.results)
         request.callback(response)
         self.should_fail()

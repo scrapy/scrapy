@@ -267,7 +267,7 @@ class FilesPipeline(MediaPipeline):
         return checksum
 
     def item_completed(self, results, item, info):
-        if self.FILES_RESULT_FIELD in item.fields:
+        if isinstance(item, dict) or self.FILES_RESULT_FIELD in item.fields:
             item[self.FILES_RESULT_FIELD] = [x for ok, x in results if ok]
         return item
 

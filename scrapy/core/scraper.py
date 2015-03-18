@@ -174,7 +174,7 @@ class Scraper(object):
         """
         if isinstance(output, Request):
             self.crawler.engine.crawl(request=output, spider=spider)
-        elif isinstance(output, BaseItem):
+        elif isinstance(output, (BaseItem, dict)):
             self.slot.itemproc_size += 1
             dfd = self.itemproc.process_item(output, spider)
             dfd.addBoth(self._itemproc_finished, output, response, spider)
@@ -183,7 +183,7 @@ class Scraper(object):
             pass
         else:
             typename = type(output).__name__
-            log.msg(format='Spider must return Request, BaseItem or None, '
+            log.msg(format='Spider must return Request, BaseItem, dict or None, '
                            'got %(typename)r in %(request)s',
                     level=log.ERROR, spider=spider, request=request, typename=typename)
 
