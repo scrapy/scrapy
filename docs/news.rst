@@ -10,14 +10,14 @@ Release notes
 - DOC a couple more references are fixed (:commit:`b4c454b`)
 - DOC fix a reference (:commit:`e3c1260`)
 - t.i.b.ThreadedResolver is now a new-style class (:commit:`9e13f42`)
-- S3DownloadHandler: fix auth for requests with quoted paths/query params (:commit:`cdb9
+- S3DownloadHandler: fix auth for requests with quoted paths/query params (:commit:`cdb9a0b`)
 - fixed the variable types in mailsender documentation (:commit:`bb3a848`)
 - Reset items_scraped instead of item_count (:commit:`edb07a4`)
-- Tentative attention message about what document to read for contributions (:commit:`7e
+- Tentative attention message about what document to read for contributions (:commit:`7ee6f7a`)
 - mitmproxy 0.10.1 needs netlib 0.10.1 too (:commit:`874fcdd`)
 - pin mitmproxy 0.10.1 as >0.11 does not work with tests (:commit:`c6b21f0`)
 - Test the parse command locally instead of against an external url (:commit:`c3a6628`)
-- Patches Twisted issue while closing the connection pool on HTTPDownloadHandler (:commi
+- Patches Twisted issue while closing the connection pool on HTTPDownloadHandler (:commit:`d0bf957`)
 - Updates documentation on dynamic item classes. (:commit:`eeb589a`)
 - Merge pull request #943 from Lazar-T/patch-3 (:commit:`5fdab02`)
 - typo (:commit:`b0ae199`)
@@ -27,7 +27,7 @@ Release notes
 - comma instead of fullstop (:commit:`627b9ba`)
 - Merge pull request #885 from jsma/patch-1 (:commit:`de909ad`)
 - Update request-response.rst (:commit:`3f3263d`)
-- SgmlLinkExtractor - fix for parsing <area> tag with Unicode present (:commit:`49b40f0`
+- SgmlLinkExtractor - fix for parsing <area> tag with Unicode present (:commit:`49b40f0`)
 
 0.24.4 (2014-08-09)
 -------------------
