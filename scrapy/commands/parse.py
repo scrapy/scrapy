@@ -107,7 +107,7 @@ class Command(ScrapyCommand):
         items, requests = [], []
 
         for x in iterate_spider_output(cb(response)):
-            if isinstance(x, BaseItem):
+            if isinstance(x, (BaseItem, dict)):
                 items.append(x)
             elif isinstance(x, Request):
                 requests.append(x)

@@ -197,11 +197,16 @@ BaseItemExporter
       Some exporters (like :class:`CsvItemExporter`) respect the order of the
       fields defined in this attribute.
 
+      Some exporters may require fields_to_export list in order to export the
+      data properly when spiders return dicts (not :class:`~Item` instances).
+
    .. attribute:: export_empty_fields
 
       Whether to include empty/unpopulated item fields in the exported data.
       Defaults to ``False``. Some exporters (like :class:`CsvItemExporter`)
       ignore this attribute and always export all empty fields.
+
+      This option is ignored for dict items.
 
    .. attribute:: encoding
 
