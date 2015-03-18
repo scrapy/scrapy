@@ -1,5 +1,5 @@
 """
-Scrapy - a screen scraping framework written in Python
+Scrapy - a web crawling and screen scraping framework written for Python
 """
 
 __all__ = ['__version__', 'version_info', 'optional_features', 'twisted_version',

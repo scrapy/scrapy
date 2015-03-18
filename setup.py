@@ -10,7 +10,7 @@ setup(
     name='Scrapy',
     version=version,
     url='http://scrapy.org',
-    description='A high-level Python Screen Scraping framework',
+    description='A high-level Web Crawling and Screen Scraping framework',
     long_description=open('README.rst').read(),
     author='Scrapy developers',
     maintainer='Pablo Hoffman',
