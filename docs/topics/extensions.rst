@@ -368,5 +368,5 @@ For more info see `Debugging in Python`.
 
 This extension only works on POSIX-compliant platforms (ie. not Windows).
 
-.. _Python debugger: http://docs.python.org/library/pdb.html
+.. _Python debugger: https://docs.python.org/2/library/pdb.html
 .. _Debugging in Python: http://www.ferg.org/papers/debugging_in_python.html

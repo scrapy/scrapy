@@ -173,10 +173,10 @@ And their unit-tests are in::
     tests/test_contrib_loader.py
 
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
-.. _scrapy-users: http://groups.google.com/group/scrapy-users
+.. _scrapy-users: https://groups.google.com/forum/#!forum/scrapy-users
 .. _Twisted unit-testing framework: http://twistedmatrix.com/documents/current/core/development/policy/test-standard.html
 .. _AUTHORS: https://github.com/scrapy/scrapy/blob/master/AUTHORS
 .. _tests/: https://github.com/scrapy/scrapy/tree/master/tests
 .. _open issues: https://github.com/scrapy/scrapy/issues
-.. _pull request: http://help.github.com/send-pull-requests/
+.. _pull request: https://help.github.com/send-pull-requests/
 .. _tox: https://pypi.python.org/pypi/tox

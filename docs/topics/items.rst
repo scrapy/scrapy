@@ -15,7 +15,7 @@ purpose.
 They provide a `dictionary-like`_ API with a convenient syntax for declaring
 their available fields.
 
-.. _dictionary-like: http://docs.python.org/library/stdtypes.html#dict
+.. _dictionary-like: https://docs.python.org/2/library/stdtypes.html#dict
 
 .. _topics-items-declaring:
 
@@ -37,8 +37,8 @@ objects. Here is an example::
    declared similar to `Django Models`_, except that Scrapy Items are much
    simpler as there is no concept of different field types.
 
-.. _Django: http://www.djangoproject.com/
-.. _Django Models: http://docs.djangoproject.com/en/dev/topics/db/models/
+.. _Django: https://www.djangoproject.com/
+.. _Django Models: https://docs.djangoproject.com/en/dev/topics/db/models/
 
 .. _topics-items-fields:
 
@@ -214,7 +214,7 @@ Item objects
         :class:`Field` objects used in the :ref:`Item declaration
         <topics-items-declaring>`.
 
-.. _dict API: http://docs.python.org/library/stdtypes.html#dict
+.. _dict API: https://docs.python.org/2/library/stdtypes.html#dict
 
 Field objects
 =============
@@ -227,6 +227,6 @@ Field objects
     to support the :ref:`item declaration syntax <topics-items-declaring>`
     based on class attributes.
 
-.. _dict: http://docs.python.org/library/stdtypes.html#dict
+.. _dict: https://docs.python.org/2/library/stdtypes.html#dict
 
 

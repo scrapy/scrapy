@@ -678,7 +678,7 @@ Here is a list of all built-in processors:
 .. class:: SelectJmes(json_path)
 
     Queries the value using the json path provided to the constructor and returns the output.
-    Requires jmespath (https://github.com/jmespath/jmespath) to run.
+    Requires jmespath (https://github.com/jmespath/jmespath.py) to run.
     This processor takes only one input at a time.
 
     Example::

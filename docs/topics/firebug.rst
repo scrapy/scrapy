@@ -32,7 +32,7 @@ you to inspect the HTML code of the different page elements just by hovering
 your mouse over them. Otherwise you would have to search for the tags manually
 through the HTML body which can be a very tedious task.
 
-.. _Inspect Element: http://www.youtube.com/watch?v=-pT_pDe54aA
+.. _Inspect Element: https://www.youtube.com/watch?v=-pT_pDe54aA
 
 In the following screenshot you can see the `Inspect Element`_ tool in action.
 
@@ -164,4 +164,4 @@ elements.
 or tags which Therefer   in page HTML
 sources may on Firebug inspects the live DOM
 
-.. _has been shut down by Google: http://searchenginewatch.com/article/2096661/Google-Directory-Has-Been-Shut-Down
+.. _has been shut down by Google: http://searchenginewatch.com/sew/news/2096661/google-directory-shut

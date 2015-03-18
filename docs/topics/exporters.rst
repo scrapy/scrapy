@@ -297,7 +297,7 @@ CsvItemExporter
       Color TV,1200
       DVD player,200
 
-.. _csv.writer: http://docs.python.org/library/csv.html#csv.writer
+.. _csv.writer: https://docs.python.org/2/library/csv.html#csv.writer
 
 PickleItemExporter
 ------------------
@@ -318,7 +318,7 @@ PickleItemExporter
 
    Pickle isn't a human readable format, so no output examples are provided.
 
-.. _pickle module documentation: http://docs.python.org/library/pickle.html
+.. _pickle module documentation: https://docs.python.org/2/library/pickle.html
 
 PprintItemExporter
 ------------------
@@ -367,7 +367,7 @@ JsonItemExporter
       stream-friendly format, consider using :class:`JsonLinesItemExporter`
       instead, or splitting the output in multiple chunks.
 
-.. _JSONEncoder: http://docs.python.org/library/json.html#json.JSONEncoder
+.. _JSONEncoder: https://docs.python.org/2/library/json.html#json.JSONEncoder
 
 JsonLinesItemExporter
 ---------------------
@@ -390,4 +390,4 @@ JsonLinesItemExporter
    Unlike the one produced by :class:`JsonItemExporter`, the format produced by
    this exporter is well suited for serializing large amounts of data.
 
-.. _JSONEncoder: http://docs.python.org/library/json.html#json.JSONEncoder
+.. _JSONEncoder: https://docs.python.org/2/library/json.html#json.JSONEncoder

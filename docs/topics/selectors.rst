@@ -38,7 +38,7 @@ For a complete reference of the selectors API see
 
 .. _BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/
 .. _lxml: http://lxml.de/
-.. _ElementTree: http://docs.python.org/library/xml.etree.elementtree.html
+.. _ElementTree: https://docs.python.org/2/library/xml.etree.elementtree.html
 .. _cssselect: https://pypi.python.org/pypi/cssselect/
 .. _XPath: http://www.w3.org/TR/xpath
 .. _CSS: http://www.w3.org/TR/selectors
@@ -403,9 +403,9 @@ Here we first iterate over ``itemscope`` elements, and for each one,
 we look for all ``itemprops`` elements and exclude those that are themselves
 inside another ``itemscope``.
 
-.. _EXSLT: http://www.exslt.org/
-.. _regular expressions: http://www.exslt.org/regexp/index.html
-.. _set manipulation: http://www.exslt.org/set/index.html
+.. _EXSLT: http://exslt.org/
+.. _regular expressions: http://exslt.org/regexp/index.html
+.. _set manipulation: http://exslt.org/set/index.html
 
 
 Some XPath tips

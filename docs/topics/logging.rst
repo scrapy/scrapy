@@ -8,7 +8,7 @@ Scrapy provides a logging facility which can be used through the
 :mod:`scrapy.log` module. The current underlying implementation uses `Twisted
 logging`_ but this may change in the future.
 
-.. _Twisted logging: http://twistedmatrix.com/projects/core/documentation/howto/logging.html
+.. _Twisted logging: http://twistedmatrix.com/documents/current/core/howto/logging.html
 
 The logging service must be explicitly started through the
 :func:`scrapy.log.start` function to catch the top level Scrapy's log messages.

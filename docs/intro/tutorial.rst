@@ -26,8 +26,8 @@ Python quickly, we recommend `Learn Python The Hard Way`_.  If you're new to pro
 and want to start with Python, take a look at `this list of Python resources
 for non-programmers`_.
 
-.. _Python: http://www.python.org
-.. _this list of Python resources for non-programmers: http://wiki.python.org/moin/BeginnersGuide/NonProgrammers
+.. _Python: https://www.python.org/
+.. _this list of Python resources for non-programmers: https://wiki.python.org/moin/BeginnersGuide/NonProgrammers
 .. _Learn Python The Hard Way: http://learnpythonthehardway.org/book/
 
 Creating a project
