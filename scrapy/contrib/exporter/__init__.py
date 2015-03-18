@@ -9,6 +9,7 @@ import marshal
 import six
 from six.moves import cPickle as pickle
 from xml.sax.saxutils import XMLGenerator
+
 from scrapy.utils.serialize import ScrapyJSONEncoder
 from scrapy.item import BaseItem
 
@@ -50,13 +51,13 @@ class BaseItemExporter(object):
         return value.encode(self.encoding) if isinstance(value, unicode) else value
 
     def _get_serialized_fields(self, item, default_value=None, include_empty=None):
-        """Return the fields to export as an iterable of tuples (name,
-        serialized_value)
+        """Return the fields to export as an iterable of tuples
+        (name, serialized_value)
         """
         if include_empty is None:
             include_empty = self.export_empty_fields
         if self.fields_to_export is None:
-            if include_empty:
+            if include_empty and not isinstance(item, dict):
                 field_iter = six.iterkeys(item.fields)
             else:
                 field_iter = six.iterkeys(item)
@@ -64,12 +65,11 @@ class BaseItemExporter(object):
             if include_empty:
                 field_iter = self.fields_to_export
             else:
-                nonempty_fields = set(item.keys())
-                field_iter = (x for x in self.fields_to_export if x in
-                              nonempty_fields)
+                field_iter = (x for x in self.fields_to_export if x in item)
+
         for field_name in field_iter:
             if field_name in item:
-                field = item.fields[field_name]
+                field = {} if isinstance(item, dict) else item.fields[field_name]
                 value = self.serialize_field(field, field_name, item[field_name])
             else:
                 value = default_value
@@ -191,7 +191,12 @@ class CsvItemExporter(BaseItemExporter):
     def _write_headers_and_set_fields_to_export(self, item):
         if self.include_headers_line:
             if not self.fields_to_export:
-                self.fields_to_export = item.fields.keys()
+                if isinstance(item, dict):
+                    # for dicts try using fields of the first item
+                    self.fields_to_export = list(item.keys())
+                else:
+                    # use fields declared in Item
+                    self.fields_to_export = list(item.fields.keys())
             self.csv_writer.writerow(self.fields_to_export)
 
 

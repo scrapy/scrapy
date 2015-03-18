@@ -127,6 +127,7 @@ class MiscCommandsTest(CommandTest):
     def test_list(self):
         self.assertEqual(0, self.call('list'))
 
+
 class RunSpiderCommandTest(CommandTest):
 
     def test_runspider(self):
@@ -135,10 +136,10 @@ class RunSpiderCommandTest(CommandTest):
         fname = abspath(join(tmpdir, 'myspider.py'))
         with open(fname, 'w') as f:
             f.write("""
+import scrapy
 from scrapy import log
-from scrapy.spider import Spider
 
-class MySpider(Spider):
+class MySpider(scrapy.Spider):
     name = 'myspider'
 
     def start_requests(self):
@@ -192,16 +193,15 @@ class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
         with open(fname, 'w') as f:
             f.write("""
 from scrapy import log
-from scrapy.spider import Spider
-from scrapy.item import Item
+import scrapy
 
-class MySpider(Spider):
+class MySpider(scrapy.Spider):
     name = '{0}'
 
     def parse(self, response):
         if getattr(self, 'test_arg', None):
             self.log('It Works!')
-        return [Item()]
+        return [scrapy.Item(), dict(foo='bar')]
 """.format(self.spider_name))
 
         fname = abspath(join(self.proj_mod_path, 'pipelines.py'))
@@ -238,6 +238,14 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
                                            '-c', 'parse',
                                            self.url('/html')])
         self.assert_("[scrapy] INFO: It Works!" in stderr, stderr)
+
+    @defer.inlineCallbacks
+    def test_parse_items(self):
+        status, out, stderr = yield self.execute(
+            ['--spider', self.spider_name, '-c', 'parse', self.url('/html')]
+        )
+        self.assertIn("""[{}, {'foo': 'bar'}]""", out)
+
 
 
 class BenchCommandTest(CommandTest):
