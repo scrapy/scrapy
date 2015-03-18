@@ -3,11 +3,10 @@ from functools import partial
 
 from scrapy.contrib.loader import ItemLoader
 from scrapy.contrib.loader.processor import Join, Identity, TakeFirst, \
-    Compose, MapCompose
+    Compose, MapCompose, SelectJmes
 from scrapy.item import Item, Field
 from scrapy.selector import Selector
 from scrapy.http import HtmlResponse
-
 
 # test items
 class NameItem(Item):
@@ -577,6 +576,31 @@ class SelectortemLoaderTest(unittest.TestCase):
         self.assertEqual(l.get_output_value('url'), [u'http://www.scrapy.org'])
         l.replace_css('url', 'a::attr(href)', re='http://www\.(.+)')
         self.assertEqual(l.get_output_value('url'), [u'scrapy.org'])
+
+
+class SelectJmesTestCase(unittest.TestCase):
+        test_list_equals = {
+            'simple': ('foo.bar', {"foo": {"bar": "baz"}}, "baz"),
+            'invalid': ('foo.bar.baz', {"foo": {"bar": "baz"}}, None),
+            'top_level': ('foo', {"foo": {"bar": "baz"}}, {"bar": "baz"}),
+            'double_vs_single_quote_string': ('foo.bar', {"foo": {"bar": "baz"}}, "baz"),
+            'dict': (
+                'foo.bar[*].name',
+                {"foo": {"bar": [{"name": "one"}, {"name": "two"}]}},
+                ['one', 'two']
+            ),
+            'list': ('[1]', [1, 2], 2)
+        }
+
+        def test_output(self):
+            for l in self.test_list_equals:
+                expr, test_list, expected = self.test_list_equals[l]
+                test = SelectJmes(expr)(test_list)
+                self.assertEqual(
+                    test,
+                    expected,
+                    msg='test "{}" got {} expected {}'.format(l, test, expected)
+                )
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.datatypes import MergeDict
 from .common import wrap_loader_context
 
+
 class MapCompose(object):
 
     def __init__(self, *functions, **default_loader_context):
@@ -61,6 +62,26 @@ class Identity(object):
 
     def __call__(self, values):
         return values
+
+
+class SelectJmes(object):
+    """
+        Query the input string for the jmespath (given at instantiation),
+        and return the answer
+        Requires : jmespath(https://github.com/jmespath/jmespath)
+        Note: SelectJmes accepts only one input element at a time.
+    """
+    def __init__(self, json_path):
+        self.json_path = json_path
+        import jmespath
+        self.compiled_path = jmespath.compile(self.json_path)
+
+    def __call__(self, value):
+        """Query value for the jmespath query and return answer
+        :param str value: a string with JSON data to extract from
+        :return: Element extracted according to jmespath query
+        """
+        return self.compiled_path.search(value)
 
 
 class Join(object):
