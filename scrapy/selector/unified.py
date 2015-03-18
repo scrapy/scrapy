@@ -146,10 +146,12 @@ class Selector(object_ref):
     def __nonzero__(self):
         return bool(self.extract())
 
-    def __str__(self):
+    def __repr__(self):
         data = repr(self.extract()[:40])
         return "<%s xpath=%r data=%s>" % (type(self).__name__, self._expr, data)
-    __repr__ = __str__
+
+    def __str__(self):
+        return self.extract()
 
     # Deprecated api
     @deprecated(use_instead='.xpath()')
