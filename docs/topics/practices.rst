@@ -190,11 +190,10 @@ Dynamic Creation of Item Classes
 ================================
 
 For applications in which the structure of item class is to be determined by
-user input, or other changing conditions, you can dynamically create item
-classes instead of manually coding them.
+user input or other changing conditions you can return regular Python 
+dicts from spiders.
 
-::
-
+Another option is to dynamically create Item classes::
 
     from scrapy.item import DictItem, Field
 
