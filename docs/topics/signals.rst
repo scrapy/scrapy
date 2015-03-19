@@ -71,7 +71,7 @@ item_scraped
     This signal supports returning deferreds from their handlers.
 
     :param item: the item scraped
-    :type item: :class:`~scrapy.item.Item` object
+    :type item: dict or :class:`~scrapy.item.Item` object
 
     :param spider: the spider which scraped the item
     :type spider: :class:`~scrapy.spider.Spider` object
@@ -91,7 +91,7 @@ item_dropped
     This signal supports returning deferreds from their handlers.
 
     :param item: the item dropped from the :ref:`topics-item-pipeline`
-    :type item: :class:`~scrapy.item.Item` object
+    :type item: dict or :class:`~scrapy.item.Item` object
 
     :param spider: the spider which scraped the item
     :type spider: :class:`~scrapy.spider.Spider` object

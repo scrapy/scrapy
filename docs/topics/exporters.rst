@@ -7,7 +7,7 @@ Item Exporters
 .. module:: scrapy.contrib.exporter
    :synopsis: Item Exporters
 
-Once you have scraped your Items, you often want to persist or export those
+Once you have scraped your items, you often want to persist or export those
 items, to use the data in some other application. That is, after all, the whole
 purpose of the scraping process.
 
@@ -90,9 +90,9 @@ described next.
 1. Declaring a serializer in the field
 --------------------------------------
 
-You can declare a serializer in the :ref:`field metadata
-<topics-items-fields>`. The serializer must be a callable which receives a
-value and returns its serialized form.
+If you use :class:`~.Item` you can declare a serializer in the 
+:ref:`field metadata <topics-items-fields>`. The serializer must be 
+a callable which receives a value and returns its serialized form.
 
 Example::
 
@@ -167,8 +167,9 @@ BaseItemExporter
       value unchanged except for ``unicode`` values which are encoded to
       ``str`` using the encoding declared in the :attr:`encoding` attribute.
 
-      :param field: the field being serialized
-      :type field: :class:`~scrapy.item.Field` object
+      :param field: the field being serialized. If a raw dict is being 
+          exported (not :class:`~.Item`) *field* value is an empty dict.
+      :type field: :class:`~scrapy.item.Field` object or an empty dict 
 
       :param name: the name of the field being serialized
       :type name: str

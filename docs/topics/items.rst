@@ -8,12 +8,21 @@ Items
    :synopsis: Item and Field classes
 
 The main goal in scraping is to extract structured data from unstructured
-sources, typically, web pages. Scrapy provides the :class:`Item` class for this
-purpose.
+sources, typically, web pages. Scrapy spiders can return the extracted data
+as Python dicts. While convenient and familiar, Python dicts lack structure:
+it is easy to make a typo in a field name or return inconsistent data,
+especially in a larger project with many spiders.
 
+To define common output data format Scrapy provides the :class:`Item` class.
 :class:`Item` objects are simple containers used to collect the scraped data.
 They provide a `dictionary-like`_ API with a convenient syntax for declaring
-their available fields.
+their available fields. 
+
+Various Scrapy components use extra information provided by Items: 
+exporters look at declared fields to figure out columns to export,
+serialization can be customized using Item fields metadata, :mod:`trackref`
+tracks Item instances to help finding memory leaks 
+(see :ref:`topics-leaks-trackrefs`_), etc.
 
 .. _dictionary-like: http://docs.python.org/library/stdtypes.html#dict
 
@@ -63,8 +72,6 @@ documentation to see which metadata keys are used by each component.
 It's important to note that the :class:`Field` objects used to declare the item
 do not stay assigned as class attributes. Instead, they can be accessed through
 the :attr:`Item.fields` attribute.
-
-And that's all you need to know about declaring items.
 
 Working with Items
 ==================
