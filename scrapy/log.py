@@ -12,6 +12,7 @@ from twisted.python import log
 import scrapy
 from scrapy.utils.python import unicode_to_str
 from scrapy.settings import overridden_settings
+from scrapy.settings.default_settings import LOG_FILE, LOG_LEVEL, LOG_STDOUT, LOG_ENCODING
 
 # Logging levels
 DEBUG = logging.DEBUG
@@ -111,7 +112,9 @@ def _get_log_level(level_name_or_id):
     else:
         raise ValueError("Unknown log level: %r" % level_name_or_id)
 
-def start(logfile=None, loglevel='INFO', logstdout=True, logencoding='utf-8', crawler=None):
+def start(logfile=LOG_FILE, loglevel=LOG_LEVEL,
+          logstdout=LOG_STDOUT, logencoding=LOG_ENCODING,
+          crawler=None):
     loglevel = _get_log_level(loglevel)
     file = open(logfile, 'a') if logfile else sys.stderr
     sflo = ScrapyFileLogObserver(file, loglevel, logencoding, crawler)
