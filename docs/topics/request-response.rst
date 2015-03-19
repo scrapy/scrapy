@@ -493,6 +493,18 @@ Response objects
        given new values by whichever keyword arguments are specified. The
        attribute :attr:`Response.meta` is copied by default.
 
+    .. method:: Response.urljoin(url)
+
+        Constructs an absolute url by combining the Response's :attr:`url` with
+        a possible relative url.
+
+        This is a wrapper over `urlparse.urljoin`_, it's merely an alias for
+        making this call::
+
+            urlparse.urljoin(response.url, url)
+
+.. _urlparse.urljoin: https://docs.python.org/2/library/urlparse.html#urlparse.urljoin
+
 .. _topics-request-response-ref-response-subclasses:
 
 Response subclasses
