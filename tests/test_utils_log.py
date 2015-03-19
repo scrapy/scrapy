@@ -8,7 +8,8 @@ import unittest
 from testfixtures import LogCapture
 from twisted.python.failure import Failure
 
-from scrapy.utils.log import FailureFormatter, LogCounterHandler, StreamLogger
+from scrapy.utils.log import (FailureFormatter, TopLevelFormatter,
+                              LogCounterHandler, StreamLogger)
 from scrapy.utils.test import get_crawler
 
 
@@ -47,6 +48,41 @@ class FailureFormatterTest(unittest.TestCase):
         self.assertEqual(len(l.records), 1)
         self.assertMultiLineEqual(l.records[0].getMessage(),
                                   'test log msg' + os.linesep + '3')
+
+
+class TopLevelFormatterTest(unittest.TestCase):
+
+    def setUp(self):
+        self.handler = LogCapture()
+        self.handler.addFilter(TopLevelFormatter(['test']))
+
+    def test_top_level_logger(self):
+        logger = logging.getLogger('test')
+        with self.handler as l:
+            logger.warning('test log msg')
+
+        l.check(('test', 'WARNING', 'test log msg'))
+
+    def test_children_logger(self):
+        logger = logging.getLogger('test.test1')
+        with self.handler as l:
+            logger.warning('test log msg')
+
+        l.check(('test', 'WARNING', 'test log msg'))
+
+    def test_overlapping_name_logger(self):
+        logger = logging.getLogger('test2')
+        with self.handler as l:
+            logger.warning('test log msg')
+
+        l.check(('test2', 'WARNING', 'test log msg'))
+
+    def test_different_name_logger(self):
+        logger = logging.getLogger('different')
+        with self.handler as l:
+            logger.warning('test log msg')
+
+        l.check(('different', 'WARNING', 'test log msg'))
 
 
 class LogCounterHandlerTest(unittest.TestCase):
