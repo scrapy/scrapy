@@ -215,6 +215,21 @@ scrapy.utils.log module
     call this function, keeping `settings` as ``None``. Bear in mind there
     won't be any log output set by default in that case.
 
+    To get you started on manually configuring logging's output, you can use
+    `logging.basicConfig()`_ to set a basic root handler. This is an example on
+    how to redirect ``INFO`` or higher messages to a file::
+
+        import logging
+        from scrapy.utils.log import configure_logging
+
+        configure_logging()  # Note we aren't providing settings in this case
+        logging.basicConfig(filename='log.txt', format='%(levelname)s: %(message)s', level=logging.INFO)
+
+    Refer to :ref:`run-from-script` for more details about using Scrapy this
+    way.
+
     :param settings: settings used to create and configure a handler for the
         root logger.
     :type settings: :class:`~scrapy.settings.Settings` object or ``None``
+
+.. _logging.basicConfig(): https://docs.python.org/2/library/logging.html#logging.basicConfig
