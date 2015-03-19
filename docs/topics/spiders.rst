@@ -42,6 +42,9 @@ Even though this cycle applies (more or less) to any kind of spider, there are
 different kinds of default spiders bundled into Scrapy for different purposes.
 We will talk about those types here.
 
+.. module:: scrapy.spider
+   :synopsis: Spiders base class, spider manager and spider middleware
+
 .. _topics-spiders-ref:
 
 scrapy.Spider
@@ -308,10 +311,6 @@ with a ``TestItem`` declared in a ``myproject.items`` module::
         id = scrapy.Field()
         name = scrapy.Field()
         description = scrapy.Field()
-
-
-.. module:: scrapy.spider
-   :synopsis: Spiders base class, spider manager and spider middleware
 
 
 .. module:: scrapy.contrib.spiders
