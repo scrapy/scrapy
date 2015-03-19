@@ -376,7 +376,7 @@ what is implemented:
 
 what is missing:
 
-* `Pragma: no-cache` support https://www.mnot.net/cache_docs/#PRAGMA
+* `Pragma: no-cache` support http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
 * `Vary` header support http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.6
 * Invalidation after updates or deletes http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.10
 * ... probably others ..
