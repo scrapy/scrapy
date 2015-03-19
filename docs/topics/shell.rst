@@ -187,8 +187,8 @@ Here's an example of how you would call it from your spider::
 
 When you run the spider, you will get something similar to this::
 
-    2014-01-23 17:48:31-0400 [myspider] DEBUG: Crawled (200) <GET http://example.com> (referer: None)
-    2014-01-23 17:48:31-0400 [myspider] DEBUG: Crawled (200) <GET http://example.org> (referer: None)
+    2014-01-23 17:48:31-0400 [scrapy] DEBUG: Crawled (200) <GET http://example.com> (referer: None)
+    2014-01-23 17:48:31-0400 [scrapy] DEBUG: Crawled (200) <GET http://example.org> (referer: None)
     [s] Available Scrapy objects:
     [s]   crawler    <scrapy.crawler.Crawler object at 0x1e16b50>
     ...
@@ -211,7 +211,7 @@ Finally you hit Ctrl-D (or Ctrl-Z in Windows) to exit the shell and resume the
 crawling::
 
     >>> ^D
-    2014-01-23 17:50:03-0400 [myspider] DEBUG: Crawled (200) <GET http://example.net> (referer: None)
+    2014-01-23 17:50:03-0400 [scrapy] DEBUG: Crawled (200) <GET http://example.net> (referer: None)
     ...
 
 Note that you can't use the ``fetch`` shortcut here since the Scrapy engine is
