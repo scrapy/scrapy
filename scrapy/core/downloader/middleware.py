@@ -3,6 +3,7 @@ Downloader Middleware manager
 
 See documentation in docs/topics/downloader-middleware.rst
 """
+from twisted.internet.defer import Deferred
 
 from scrapy.http import Request, Response
 from scrapy.middleware import MiddlewareManager
@@ -42,27 +43,41 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             if isinstance(response, Request):
                 return response
 
+            result = None
             for method in self.methods['process_response']:
-                response = method(request=request, response=response, spider=spider)
-                assert isinstance(response, (Response, Request)), \
-                    'Middleware %s.process_response must return Response or Request, got %s' % \
+                try:
+                    result = method(request=request, response=response, spider=spider)
+                except Exception as ex:
+                    response = result or response
+                    response.request = request # this should be done earlier in the downloader/handlers
+                    ex.response = response
+                    raise ex
+
+                assert response is None or isinstance(response, (Response, Request)), \
+                    'Middleware %s.process_response must return None, Response or Request, got %s' % \
                     (method.im_self.__class__.__name__, type(response))
-                if isinstance(response, Request):
-                    return response
+                if isinstance(result, Request):
+                    return result
+                elif isinstance(result, Response):
+                    return process_response(result)
             return response
 
         def process_exception(_failure):
+            response = None
             exception = _failure.value
+            if hasattr(exception, 'response'):
+                response = exception.response
+
             for method in self.methods['process_exception']:
-                response = method(request=request, exception=exception, spider=spider)
-                assert response is None or isinstance(response, (Response, Request)), \
+                result = method(request=response or request, exception=exception, spider=spider)
+                assert result is None or isinstance(result, (Response, Request)), \
                     'Middleware %s.process_exception must return None, Response or Request, got %s' % \
                     (method.im_self.__class__.__name__, type(response))
-                if response:
-                    return response
+                if result:
+                    return result
             return _failure
 
         deferred = mustbe_deferred(process_request, request)
-        deferred.addErrback(process_exception)
         deferred.addCallback(process_response)
+        deferred.addErrback(process_exception)
         return deferred

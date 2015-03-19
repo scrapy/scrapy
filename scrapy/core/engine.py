@@ -193,7 +193,7 @@ class ExecutionEngine(object):
         slot = self.slot
         slot.add_request(request)
         def _on_success(response):
-            assert isinstance(response, (Response, Request))
+            assert isinstance(response, (Response, Request)), '{}'.format(type(response))
             if isinstance(response, Response):
                 response.request = request # tie request to response received
                 logkws = self.logformatter.crawled(request, response, spider)

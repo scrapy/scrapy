@@ -28,19 +28,18 @@ class AjaxCrawlMiddleware(object):
         return cls(crawler.settings)
 
     def process_response(self, request, response, spider):
-
         if not isinstance(response, HtmlResponse) or response.status != 200:
-            return response
+            return
 
         if request.method != 'GET':
             # other HTTP methods are either not safe or don't have a body
-            return response
+            return
 
         if 'ajax_crawlable' in request.meta:  # prevent loops
-            return response
+            return
 
         if not self._has_ajax_crawlable_variant(response):
-            return response
+            return
 
         # scrapy already handles #! links properly
         ajax_crawl_request = request.replace(url=request.url+'#!')

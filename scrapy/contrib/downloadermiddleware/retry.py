@@ -24,6 +24,7 @@ from twisted.internet.error import TimeoutError, DNSLookupError, \
         ConnectionLost, TCPTimedOutError
 
 from scrapy import log
+from scrapy.http import Request
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.response import response_status_message
 from scrapy.xlib.tx import ResponseFailed
@@ -51,16 +52,17 @@ class RetryMiddleware(object):
 
     def process_response(self, request, response, spider):
         if request.meta.get('dont_retry', False):
-            return response
+            return
+
         if response.status in self.retry_http_codes:
             reason = response_status_message(response.status)
-            return self._retry(request, reason, spider) or response
-        return response
+            return self._retry(request, reason, spider)
 
     def process_exception(self, request, exception, spider):
-        if isinstance(exception, self.EXCEPTIONS_TO_RETRY) \
+        if isinstance(request, Request) and \
+                isinstance(exception, self.EXCEPTIONS_TO_RETRY) \
                 and not request.meta.get('dont_retry', False):
-             return self._retry(request, exception, spider)
+            return self._retry(request, exception, spider)
 
     def _retry(self, request, reason, spider):
         retries = request.meta.get('retry_times', 0) + 1

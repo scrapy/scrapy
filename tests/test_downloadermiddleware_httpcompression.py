@@ -87,9 +87,8 @@ class HttpCompressionTest(TestCase):
         request = Request('http://scrapytest.org')
 
         assert not response.headers.get('Content-Encoding')
-        newresponse = self.mw.process_response(request, response, self.spider)
-        assert newresponse is response
-        assert newresponse.body.startswith('<!DOCTYPE')
+        result = self.mw.process_response(request, response, self.spider)
+        assert result is None
 
     def test_multipleencodings(self):
         response = self._getresponse('gzip')
@@ -141,6 +140,6 @@ class HttpCompressionTest(TestCase):
         request = response.request
 
         newresponse = self.mw.process_response(request, response, self.spider)
-        self.assertIs(newresponse, response)
+        self.assertIs(newresponse, None)
         self.assertEqual(response.headers['Content-Encoding'], 'gzip')
         self.assertEqual(response.headers['Content-Type'], 'application/gzip')

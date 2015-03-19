@@ -10,4 +10,4 @@ class ChunkedTransferMiddleware(object):
         if response.headers.get('Transfer-Encoding') == 'chunked':
             body = decode_chunked_transfer(response.body)
             return response.replace(body=body)
-        return response
+        return

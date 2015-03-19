@@ -256,7 +256,7 @@ class RFC2616PolicyTest(DefaultStorageTest):
 
     policy_class = 'scrapy.contrib.httpcache.RFC2616Policy'
 
-    def _process_requestresponse(self, mw, request, response):
+    def _process_requestresponse(self, mw, request, response, first_time=False, shouldcache=False):
         try:
             result = mw.process_request(request, self.spider)
             if result:
@@ -264,8 +264,11 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 return result
             else:
                 result = mw.process_response(request, response, self.spider)
-                assert isinstance(result, Response)
-                return result
+                if first_time or not shouldcache:
+                    assert result is None
+                else:
+                    assert isinstance(result, Response)
+                    return result
         except Exception:
             print('Request', request)
             print('Response', response)
@@ -280,21 +283,19 @@ class RFC2616PolicyTest(DefaultStorageTest):
         req2 = req0.replace(headers={'Cache-Control': 'no-cache'})
         with self._middleware() as mw:
             # response for a request with no-store must not be cached
-            res1 = self._process_requestresponse(mw, req1, res0)
-            self.assertEqualResponse(res1, res0)
+            self._process_requestresponse(mw, req1, res0)
             assert mw.storage.retrieve_response(self.spider, req1) is None
             # Re-do request without no-store and expect it to be cached
-            res2 = self._process_requestresponse(mw, req0, res0)
-            assert 'cached' not in res2.flags
+            self._process_requestresponse(mw, req0, res0)
+            assert 'cached' not in res0.flags
             res3 = mw.process_request(req0, self.spider)
             assert 'cached' in res3.flags
-            self.assertEqualResponse(res2, res3)
+            self.assertEqualResponse(res0, res3)
             # request with no-cache directive must not return cached response
             # but it allows new response to be stored
             res0b = res0.replace(body='foo')
-            res4 = self._process_requestresponse(mw, req2, res0b)
-            self.assertEqualResponse(res4, res0b)
-            assert 'cached' not in res4.flags
+            self._process_requestresponse(mw, req2, res0b)
+            assert 'cached' not in res0b.flags
             res5 = self._process_requestresponse(mw, req0, None)
             self.assertEqualResponse(res5, res0b)
             assert 'cached' in res5.flags
@@ -330,18 +331,18 @@ class RFC2616PolicyTest(DefaultStorageTest):
             for idx, (shouldcache, status, headers) in enumerate(responses):
                 req0 = Request('http://example-%d.com' % idx)
                 res0 = Response(req0.url, status=status, headers=headers)
-                res1 = self._process_requestresponse(mw, req0, res0)
+                self._process_requestresponse(mw, req0, res0, first_time=True) # Will be always None
                 res304 = res0.replace(status=304)
-                res2 = self._process_requestresponse(mw, req0, res304 if shouldcache else res0)
-                self.assertEqualResponse(res1, res0)
-                self.assertEqualResponse(res2, res0)
+                res2 = self._process_requestresponse(mw, req0, res304 if shouldcache else res0, shouldcache=shouldcache)
+                if shouldcache:
+                    self.assertEqualResponse(res2, res0)
                 resc = mw.storage.retrieve_response(self.spider, req0)
                 if shouldcache:
-                    self.assertEqualResponse(resc, res1)
+                    self.assertEqualResponse(resc, res0)
                     assert 'cached' in res2.flags and res2.status != 304
                 else:
                     self.assertFalse(resc)
-                    assert 'cached' not in res2.flags
+                    assert 'cached' not in res0.flags
 
     def test_cached_and_fresh(self):
         sampledata = [
@@ -374,12 +375,11 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 req0 = Request('http://example-%d.com' % idx)
                 res0 = Response(req0.url, status=status, headers=headers)
                 # cache fresh response
-                res1 = self._process_requestresponse(mw, req0, res0)
-                self.assertEqualResponse(res1, res0)
-                assert 'cached' not in res1.flags
+                self._process_requestresponse(mw, req0, res0)
+                assert 'cached' not in res0.flags
                 # return fresh cached response without network interaction
                 res2 = self._process_requestresponse(mw, req0, None)
-                self.assertEqualResponse(res1, res2)
+                self.assertEqualResponse(res0, res2)
                 assert 'cached' in res2.flags
 
     def test_cached_and_stale(self):
@@ -401,21 +401,19 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 req0 = Request('http://example-%d.com' % idx)
                 res0a = Response(req0.url, status=status, headers=headers)
                 # cache expired response
-                res1 = self._process_requestresponse(mw, req0, res0a)
-                self.assertEqualResponse(res1, res0a)
-                assert 'cached' not in res1.flags
+                self._process_requestresponse(mw, req0, res0a)
+                assert 'cached' not in res0a.flags
                 # Same request but as cached response is stale a new response must
                 # be returned
                 res0b = res0a.replace(body='bar')
-                res2 = self._process_requestresponse(mw, req0, res0b)
-                self.assertEqualResponse(res2, res0b)
-                assert 'cached' not in res2.flags
+                self._process_requestresponse(mw, req0, res0b)
+                assert 'cached' not in res0b.flags
                 # Previous response expired too, subsequent request to same
                 # resource must revalidate and succeed on 304 if validators
                 # are present
                 if 'ETag' in headers or 'Last-Modified' in headers:
                     res0c = res0b.replace(status=304)
-                    res3 = self._process_requestresponse(mw, req0, res0c)
+                    res3 = self._process_requestresponse(mw, req0, res0c, shouldcache=True)
                     self.assertEqualResponse(res3, res0b)
                     assert 'cached' in res3.flags
 
