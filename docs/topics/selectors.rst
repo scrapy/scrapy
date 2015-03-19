@@ -236,6 +236,12 @@ Here's an example used to extract images names from the :ref:`HTML code
      u'My image 4',
      u'My image 5']
 
+There's an additional helper reciprocating ``.extract_first()`` for ``.re()``,
+named ``.re_first()``. Use it to extract just the first matching string::
+
+    >>> response.xpath('//a[contains(@href, "image")]/text()').re_first(r'Name:\s*(.*)')
+    u'My image 1'
+
 .. _topics-selectors-relative-xpaths:
 
 Working with relative XPaths
