@@ -56,9 +56,9 @@ Basic concepts
    :hidden:
 
    topics/commands
-   topics/items
    topics/spiders
    topics/selectors
+   topics/items
    topics/loaders
    topics/shell
    topics/item-pipeline
@@ -72,9 +72,6 @@ Basic concepts
 :doc:`topics/commands`
     Learn about the command-line tool used to manage your Scrapy project.
 
-:doc:`topics/items`
-    Define the data you want to scrape.
-
 :doc:`topics/spiders`
     Write the rules to crawl your websites.
 
@@ -83,6 +80,9 @@ Basic concepts
 
 :doc:`topics/shell`
     Test your extraction code in an interactive environment.
+
+:doc:`topics/items`
+    Define the data you want to scrape.
 
 :doc:`topics/loaders`
     Populate your items with the extracted data.

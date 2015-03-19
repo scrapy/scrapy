@@ -24,8 +24,9 @@ For spiders, the scraping cycle goes through something like this:
    Requests.
 
 2. In the callback function, you parse the response (web page) and return either
-   :class:`~scrapy.item.Item` objects, :class:`~scrapy.http.Request` objects,
-   or an iterable of both. Those Requests will also contain a callback (maybe
+   dicts with extracted data, :class:`~scrapy.item.Item` objects, 
+   :class:`~scrapy.http.Request` objects, or an iterable of these objects. 
+   Those Requests will also contain a callback (maybe
    the same) and will then be downloaded by Scrapy and then their
    response handled by the specified callback.
 
@@ -41,70 +42,19 @@ Even though this cycle applies (more or less) to any kind of spider, there are
 different kinds of default spiders bundled into Scrapy for different purposes.
 We will talk about those types here.
 
-.. _spiderargs:
-
-Spider arguments
-================
-
-Spiders can receive arguments that modify their behaviour. Some common uses for
-spider arguments are to define the start URLs or to restrict the crawl to
-certain sections of the site, but they can be used to configure any
-functionality of the spider.
-
-Spider arguments are passed through the :command:`crawl` command using the
-``-a`` option. For example::
-
-    scrapy crawl myspider -a category=electronics
-
-Spiders receive arguments in their constructors::
-
-    import scrapy
-
-    class MySpider(scrapy.Spider):
-        name = 'myspider'
-
-        def __init__(self, category=None, *args, **kwargs):
-            super(MySpider, self).__init__(*args, **kwargs)
-            self.start_urls = ['http://www.example.com/categories/%s' % category]
-            # ...
-
-Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
-See `Scrapyd documentation`_.
-
 .. _topics-spiders-ref:
 
-Built-in spiders reference
-==========================
-
-Scrapy comes with some useful generic spiders that you can use, to subclass
-your spiders from. Their aim is to provide convenient functionality for a few
-common scraping cases, like following all links on a site based on certain
-rules, crawling from `Sitemaps`_, or parsing a XML/CSV feed.
-
-For the examples used in the following spiders, we'll assume you have a project
-with a ``TestItem`` declared in a ``myproject.items`` module::
-
-    import scrapy
-
-    class TestItem(scrapy.Item):
-        id = scrapy.Field()
-        name = scrapy.Field()
-        description = scrapy.Field()
-
-
-.. module:: scrapy.spider
-   :synopsis: Spiders base class, spider manager and spider middleware
-
-Spider
-------
+scrapy.Spider
+=============
 
 .. class:: Spider()
 
    This is the simplest spider, and the one from which every other spider
    must inherit from (either the ones that come bundled with Scrapy, or the ones
    that you write yourself). It doesn't provide any special functionality. It just
-   requests the given ``start_urls``/``start_requests``, and calls the spider's
-   method ``parse`` for each of the resulting responses.
+   provides a default :meth:`start_requests` implementation which sends requests from
+   the :attr:`start_urls` spider attribute and calls the spider's method ``parse`` 
+   for each of the resulting responses.
 
    .. attribute:: name
 
@@ -198,15 +148,18 @@ Spider
        the method to override. For example, if you need to start by logging in using
        a POST request, you could do::
 
-           def start_requests(self):
-               return [scrapy.FormRequest("http://www.example.com/login",
-                                          formdata={'user': 'john', 'pass': 'secret'},
-                                          callback=self.logged_in)]
+           class MySpider(scrapy.Spider):
+               name = 'myspider'
+                
+               def start_requests(self):
+                   return [scrapy.FormRequest("http://www.example.com/login",
+                                              formdata={'user': 'john', 'pass': 'secret'},
+                                              callback=self.logged_in)]
 
-           def logged_in(self, response):
-               # here you would extract links to follow and return Requests for
-               # each of them, with another callback
-               pass
+               def logged_in(self, response):
+                   # here you would extract links to follow and return Requests for
+                   # each of them, with another callback
+                   pass
 
    .. method:: make_requests_from_url(url)
 
@@ -231,7 +184,7 @@ Spider
 
        This method, as well as any other Request callback, must return an
        iterable of :class:`~scrapy.http.Request` and/or
-       :class:`~scrapy.item.Item` objects.
+       dicts or :class:`~scrapy.item.Item` objects.
 
        :param response: the response to parse
        :type response: :class:~scrapy.http.Response`
@@ -246,10 +199,6 @@ Spider
 
        Called when the spider closes. This method provides a shortcut to
        signals.connect() for the :signal:`spider_closed` signal.
-
-
-Spider example
-~~~~~~~~~~~~~~
 
 Let's see an example::
 
@@ -268,10 +217,9 @@ Let's see an example::
         def parse(self, response):
             self.log('A response from %s just arrived!' % response.url)
 
-Another example returning multiple Requests and Items from a single callback::
+Return multiple Requests and items from a single callback::
 
     import scrapy
-    from myproject.items import MyItem
 
     class MySpider(scrapy.Spider):
         name = 'example.com'
@@ -284,10 +232,87 @@ Another example returning multiple Requests and Items from a single callback::
 
         def parse(self, response):
             for h3 in response.xpath('//h3').extract():
+                yield {"title": h3}
+
+            for url in response.xpath('//a/@href').extract():
+                yield scrapy.Request(url, callback=self.parse)
+                
+Instead of :attr:`~.start_urls` you can use :meth:`~.start_requests` directly; 
+to give data more structure you can use :ref:`topics-items`::
+
+    import scrapy
+    from myproject.items import MyItem
+
+    class MySpider(scrapy.Spider):
+        name = 'example.com'
+        allowed_domains = ['example.com']
+        
+        def start_requests(self):
+            yield scrapy.Request('http://www.example.com/1.html', self.parse)
+            yield scrapy.Request('http://www.example.com/2.html', self.parse)
+            yield scrapy.Request('http://www.example.com/3.html', self.parse)
+
+        def parse(self, response):
+            for h3 in response.xpath('//h3').extract():
                 yield MyItem(title=h3)
 
             for url in response.xpath('//a/@href').extract():
                 yield scrapy.Request(url, callback=self.parse)
+    
+.. _spiderargs:
+
+Spider arguments
+================
+
+Spiders can receive arguments that modify their behaviour. Some common uses for
+spider arguments are to define the start URLs or to restrict the crawl to
+certain sections of the site, but they can be used to configure any
+functionality of the spider.
+
+Spider arguments are passed through the :command:`crawl` command using the
+``-a`` option. For example::
+
+    scrapy crawl myspider -a category=electronics
+
+Spiders receive arguments in their constructors::
+
+    import scrapy
+
+    class MySpider(scrapy.Spider):
+        name = 'myspider'
+
+        def __init__(self, category=None, *args, **kwargs):
+            super(MySpider, self).__init__(*args, **kwargs)
+            self.start_urls = ['http://www.example.com/categories/%s' % category]
+            # ...
+
+Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
+See `Scrapyd documentation`_.
+
+.. _builtin-spiders:
+                
+Generic Spiders
+===============
+
+Scrapy comes with some useful generic spiders that you can use, to subclass
+your spiders from. Their aim is to provide convenient functionality for a few
+common scraping cases, like following all links on a site based on certain
+rules, crawling from `Sitemaps`_, or parsing a XML/CSV feed.
+
+For the examples used in the following spiders, we'll assume you have a project
+with a ``TestItem`` declared in a ``myproject.items`` module::
+
+    import scrapy
+
+    class TestItem(scrapy.Item):
+        id = scrapy.Field()
+        name = scrapy.Field()
+        description = scrapy.Field()
+
+
+.. module:: scrapy.spider
+   :synopsis: Spiders base class, spider manager and spider middleware
+
 
 .. module:: scrapy.contrib.spiders
    :synopsis: Collection of generic spiders
