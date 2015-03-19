@@ -27,13 +27,20 @@ def flatten(x):
     >>> flatten([[[1,2,3], (42,None)], [4,5], [6], 7, (8,9,10)])
     [1, 2, 3, 42, None, 4, 5, 6, 7, 8, 9, 10]"""
 
-    result = []
+    return list(iflatten(x))
+
+
+def iflatten(x):
+    """iflatten(sequence) -> iterator
+
+    Similar to ``.flatten()``, but returns iterator instead"""
+
     for el in x:
         if hasattr(el, "__iter__"):
-            result.extend(flatten(el))
+            for el_ in flatten(el):
+                yield el_
         else:
-            result.append(el)
-    return result
+            yield el
 
 
 def unique(list_, key=lambda x: x):

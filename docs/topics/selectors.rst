@@ -139,6 +139,16 @@ method, as follows::
     >>> response.xpath('//title/text()').extract()
     [u'Example website']
 
+If you want to extract only first matched element, you can call the selector ``.extract_first()``
+
+    >>> sel.xpath('//div[@id="images"]/a/text()').extract_first()
+    u'Name: My image 1 '
+
+It returns ``None`` if no element was found:
+
+    >>> sel.xpath('//div/[id="not-exists"]/text()').extract_first() is None
+    True
+
 Notice that CSS selectors can select text or attribute nodes using CSS3
 pseudo-elements::
 
@@ -225,6 +235,12 @@ Here's an example used to extract images names from the :ref:`HTML code
      u'My image 3',
      u'My image 4',
      u'My image 5']
+
+There's an additional helper reciprocating ``.extract_first()`` for ``.re()``,
+named ``.re_first()``. Use it to extract just the first matching string::
+
+    >>> response.xpath('//a[contains(@href, "image")]/text()').re_first(r'Name:\s*(.*)')
+    u'My image 1'
 
 .. _topics-selectors-relative-xpaths:
 
