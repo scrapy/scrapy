@@ -33,7 +33,7 @@ class RFPDupeFilter(BaseDupeFilter):
         self.fingerprints = set()
         self.logdupes = True
         self.debug = debug
-        self.logger = logging.getLogger('scrapy')
+        self.logger = logging.getLogger(__name__)
         if path:
             self.file = open(os.path.join(path, 'requests.seen'), 'a+')
             self.fingerprints.update(x.rstrip() for x in self.file)

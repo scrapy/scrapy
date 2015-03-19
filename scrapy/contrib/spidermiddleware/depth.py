@@ -8,7 +8,7 @@ import logging
 
 from scrapy.http import Request
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class DepthMiddleware(object):

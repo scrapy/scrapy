@@ -9,7 +9,7 @@ from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.misc import arg_to_iter
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class MediaPipeline(object):

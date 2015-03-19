@@ -13,7 +13,7 @@ from scrapy.http import TextResponse, Response
 from scrapy.selector import Selector
 from scrapy.utils.python import re_rsearch, str_to_unicode
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 def xmliter(obj, nodename):

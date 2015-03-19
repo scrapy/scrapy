@@ -11,7 +11,7 @@ from scrapy.http import HtmlResponse
 from scrapy.utils.response import _noscript_re, _script_re
 
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class AjaxCrawlMiddleware(object):

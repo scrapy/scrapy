@@ -12,7 +12,7 @@ from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class RobotsTxtMiddleware(object):

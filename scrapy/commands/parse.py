@@ -11,7 +11,7 @@ from scrapy.utils.conf import arglist_to_dict
 from scrapy.utils.spider import iterate_spider_output, spidercls_for_request
 from scrapy.exceptions import UsageError
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class Command(ScrapyCommand):

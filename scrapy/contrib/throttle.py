@@ -3,7 +3,7 @@ import logging
 from scrapy.exceptions import NotConfigured
 from scrapy import signals
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class AutoThrottle(object):

@@ -26,7 +26,7 @@ from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.misc import md5sum
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class FileException(Exception):

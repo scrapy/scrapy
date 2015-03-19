@@ -17,7 +17,7 @@ from scrapy.http import Response, Request
 from scrapy.utils.misc import load_object
 from scrapy.utils.reactor import CallLaterOnce
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class Slot(object):

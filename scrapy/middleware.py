@@ -5,7 +5,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.utils.defer import process_parallel, process_chain, process_chain_both
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class MiddlewareManager(object):

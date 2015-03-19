@@ -9,7 +9,7 @@ from twisted.python.failure import Failure
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 warnings.warn("Module `scrapy.log` has been deprecated, Scrapy now relies on "
               "the builtin Python library for logging. Read the updated "

@@ -28,7 +28,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.utils.response import response_status_message
 from scrapy.xlib.tx import ResponseFailed
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class RetryMiddleware(object):

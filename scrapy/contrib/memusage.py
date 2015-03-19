@@ -16,7 +16,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.mail import MailSender
 from scrapy.utils.engine import get_engine_status
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class MemoryUsage(object):

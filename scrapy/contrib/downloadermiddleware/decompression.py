@@ -18,7 +18,7 @@ except ImportError:
 
 from scrapy.responsetypes import responsetypes
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class DecompressionMiddleware(object):

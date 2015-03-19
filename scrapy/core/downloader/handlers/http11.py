@@ -21,7 +21,7 @@ from scrapy.core.downloader.webclient import _parse
 from scrapy.utils.misc import load_object
 from scrapy import twisted_version
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class HTTP11DownloadHandler(object):

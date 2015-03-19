@@ -5,7 +5,7 @@ from scrapy.http import HtmlResponse
 from scrapy.utils.response import get_meta_refresh
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class BaseRedirectMiddleware(object):

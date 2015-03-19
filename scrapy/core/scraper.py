@@ -16,7 +16,7 @@ from scrapy.http import Request, Response
 from scrapy.item import BaseItem
 from scrapy.core.spidermw import SpiderMiddlewareManager
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class Slot(object):

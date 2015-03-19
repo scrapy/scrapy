@@ -22,7 +22,7 @@ else:
 from twisted.internet import defer, reactor, ssl
 from twisted.mail.smtp import ESMTPSenderFactory
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class MailSender(object):

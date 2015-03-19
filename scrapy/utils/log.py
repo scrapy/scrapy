@@ -11,7 +11,7 @@ from twisted.python import log as twisted_log
 import scrapy
 from scrapy.settings import overridden_settings
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class FailureFormatter(logging.Filter):

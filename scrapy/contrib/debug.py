@@ -14,7 +14,7 @@ from pdb import Pdb
 from scrapy.utils.engine import format_engine_status
 from scrapy.utils.trackref import format_live_refs
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class StackTraceDump(object):

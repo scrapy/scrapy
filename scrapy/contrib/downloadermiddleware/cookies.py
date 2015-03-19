@@ -7,7 +7,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class CookiesMiddleware(object):

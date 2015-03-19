@@ -27,7 +27,7 @@ try:
 except ImportError:
     hpy = None
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 # signal to update telnet variables
 # args: telnet_vars

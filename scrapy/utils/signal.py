@@ -9,7 +9,7 @@ from scrapy.xlib.pydispatch.dispatcher import Any, Anonymous, liveReceivers, \
     getAllReceivers, disconnect
 from scrapy.xlib.pydispatch.robustapply import robustApply
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):

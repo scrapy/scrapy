@@ -23,7 +23,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import get_func_args
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class IFeedStorage(Interface):

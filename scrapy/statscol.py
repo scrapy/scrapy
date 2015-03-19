@@ -4,7 +4,7 @@ Scrapy extension for collecting scraping stats
 import pprint
 import logging
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class StatsCollector(object):

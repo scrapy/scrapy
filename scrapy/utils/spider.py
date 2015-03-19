@@ -6,7 +6,7 @@ import six
 from scrapy.spider import Spider
 from scrapy.utils.misc import  arg_to_iter
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 def iterate_spider_output(result):

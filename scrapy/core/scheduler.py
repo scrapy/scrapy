@@ -8,7 +8,7 @@ from scrapy.utils.reqser import request_to_dict, request_from_dict
 from scrapy.utils.misc import load_object
 from scrapy.utils.job import job_dir
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class Scheduler(object):

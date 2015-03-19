@@ -7,7 +7,7 @@ import logging
 
 from scrapy.exceptions import IgnoreRequest
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class HttpError(IgnoreRequest):

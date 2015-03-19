@@ -9,7 +9,7 @@ import logging
 from scrapy.http import Request
 from scrapy.exceptions import NotConfigured
 
-logger = logging.getLogger('scrapy')
+logger = logging.getLogger(__name__)
 
 
 class UrlLengthMiddleware(object):
