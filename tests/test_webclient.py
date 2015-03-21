@@ -132,6 +132,18 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
             "\r\n"
             "name=value")
 
+        # test a POST method with no body provided
+        factory = client.ScrapyHTTPClientFactory(Request(
+            method='POST',
+            url='http://foo/bar'
+        ))
+
+        self._test(factory,
+                   "POST /bar HTTP/1.0\r\n"
+                   "Host: foo\r\n"
+                   "Content-Length: 0\r\n"
+                   "\r\n")
+
         # test with single and multivalued headers
         factory = client.ScrapyHTTPClientFactory(Request(
             url='http://foo/bar',
