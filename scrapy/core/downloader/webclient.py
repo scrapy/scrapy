@@ -112,12 +112,15 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
 
         # set Host header based on url
         self.headers.setdefault('Host', self.netloc)
-
+        
         # set Content-Length based len of body
         if self.body is not None:
             self.headers['Content-Length'] = len(self.body)
             # just in case a broken http/1.1 decides to keep connection alive
             self.headers.setdefault("Connection", "close")
+        # Content-Length must be specified in POST method even with no body
+        elif self.method == 'POST':
+            self.headers['Content-Length'] = 0
 
     def _build_response(self, body, request):
         request.meta['download_latency'] = self.headers_time-self.start_time
