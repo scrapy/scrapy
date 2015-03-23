@@ -9,12 +9,44 @@ from scrapy.utils.datatypes import LocalCache
 dnscache = LocalCache(10000)
 
 class CachingThreadedResolver(ThreadedResolver):
+    def __init__(self, reactor):
+        super(CachingThreadedResolver, self).__init__(reactor)
+        self._tp_counter = 0
 
     def getHostByName(self, name, timeout = (1, 3, 11, 45)):
         if name in dnscache:
             return defer.succeed(dnscache[name])
+        if self._tp_counter == 20:
+            threadpool = self.reactor.getThreadPool()
+            threadpool.adjustPoolsize(5, 20)
+            self._tp_counter = 0
         d = super(CachingThreadedResolver, self).getHostByName(name, timeout)
         d.addCallback(self._cache_result, name)
+        self._tp_counter += 1
+        return d
+
+    def _cache_result(self, result, name):
+        dnscache[name] = result
+        return result
+
+
+class ScrapyResolver(ThreadedResolver):
+    def __init__(self, reactor, settings):
+        super(ScrapyResolver, self).__init__(reactor)
+        self._tp_counter = 0
+        self.caching_enabled = self.settings.getbool('DNSCACHE_ENABLED')
+
+    def getHostByName(self, name, timeout = (1, 3, 11, 45)):
+        if self.caching_enabled and name in dnscache:
+            return defer.succeed(dnscache[name])
+        if self._tp_counter == 20:
+            threadpool = self.reactor.getThreadPool()
+            threadpool.adjustPoolsize(5, 20)
+            self._tp_counter = 0
+        d = super(ScrapyResolver, self).getHostByName(name, timeout)
+        if self.caching_enabled:
+            d.addCallback(self._cache_result, name)
+        self._tp_counter += 1
         return d
 
     def _cache_result(self, result, name):
