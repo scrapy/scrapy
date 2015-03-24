@@ -11,7 +11,7 @@ _scrapy_completion() {
         ;;
         *)
             if [ $COMP_CWORD -eq 1 ]; then
-                commands="check crawl deploy edit fetch genspider list parse runspider server settings shell startproject version view"
+                commands="check crawl edit fetch genspider list parse runspider settings shell startproject version view"
                 COMPREPLY=(${COMPREPLY[@]:-} $(compgen -W "$commands" -- "$cmd"))
             fi
         ;;
