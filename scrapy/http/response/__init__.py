@@ -55,7 +55,7 @@ class Response(object_ref):
         elif body is None:
             self._body = ''
         else:
-            raise TypeError("Response body must either str or unicode. Got: '%s'" \
+            raise TypeError("Response body must either be str or unicode. Got: '%s'" \
                 % type(body).__name__)
 
     body = property(_get_body, obsolete_setter(_set_body, 'body'))
