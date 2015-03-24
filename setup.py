@@ -42,6 +42,7 @@ setup(
         'queuelib',
         'lxml',
         'pyOpenSSL',
+        'service_identity',
         'cssselect>=0.9',
         'six>=1.5.2',
     ],
