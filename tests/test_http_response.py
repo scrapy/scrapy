@@ -113,6 +113,12 @@ class BaseResponseTest(unittest.TestCase):
         self.assertRaises(AttributeError, setattr, r, 'url', 'http://example2.com')
         self.assertRaises(AttributeError, setattr, r, 'body', 'xxx')
 
+    def test_urljoin(self):
+        """Test urljoin shortcut (only for existence, since behavior equals urljoin)"""
+        joined = self.response_class('http://www.example.com').urljoin('/test')
+        absolute = 'http://www.example.com/test'
+        self.assertEqual(joined, absolute)
+
 
 class ResponseText(BaseResponseTest):
 
@@ -294,6 +300,23 @@ class TextResponseTest(BaseResponseTest):
             response.css("title::text").extract(),
             response.selector.css("title::text").extract(),
         )
+
+    def test_urljoin_with_base_url(self):
+        """Test urljoin shortcut which also evaluates base-url through get_base_url()."""
+        body = '<html><body><base href="https://example.net"></body></html>'
+        joined = self.response_class('http://www.example.com', body=body).urljoin('/test')
+        absolute = 'https://example.net/test'
+        self.assertEqual(joined, absolute)
+
+        body = '<html><body><base href="/elsewhere"></body></html>'
+        joined = self.response_class('http://www.example.com', body=body).urljoin('test')
+        absolute = 'http://www.example.com/test'
+        self.assertEqual(joined, absolute)
+
+        body = '<html><body><base href="/elsewhere/"></body></html>'
+        joined = self.response_class('http://www.example.com', body=body).urljoin('test')
+        absolute = 'http://www.example.com/elsewhere/test'
+        self.assertEqual(joined, absolute)
 
 
 class HtmlResponseTest(TextResponseTest):

@@ -5,9 +5,12 @@ discovering (through HTTP headers) to base Response class.
 See documentation in docs/topics/request-response.rst
 """
 
+from six.moves.urllib.parse import urljoin
+
 from w3lib.encoding import html_to_unicode, resolve_encoding, \
     html_body_declared_encoding, http_content_type_encoding
 from scrapy.http.response import Response
+from scrapy.utils.response import get_base_url
 from scrapy.utils.python import memoizemethod_noargs
 
 
@@ -62,6 +65,11 @@ class TextResponse(Response):
             charset = 'charset=%s' % benc
             self._cached_ubody = html_to_unicode(charset, self.body)[1]
         return self._cached_ubody
+
+    def urljoin(self, url):
+        """Join this Response's url with a possible relative url to form an
+        absolute interpretation of the latter."""
+        return urljoin(get_base_url(self), url)
 
     @memoizemethod_noargs
     def _headers_encoding(self):

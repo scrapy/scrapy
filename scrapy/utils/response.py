@@ -13,7 +13,6 @@ from twisted.web import http
 from twisted.web.http import RESPONSES
 from w3lib import html
 
-from scrapy.http import HtmlResponse, TextResponse
 from scrapy.utils.decorator import deprecated
 
 
@@ -73,6 +72,7 @@ def open_in_browser(response, _openfunc=webbrowser.open):
     """Open the given response in a local web browser, populating the <base>
     tag for external links to work
     """
+    from scrapy.http import HtmlResponse, TextResponse
     # XXX: this implementation is a bit dirty and could be improved
     body = response.body
     if isinstance(response, HtmlResponse):
