@@ -16,6 +16,8 @@ project (in case you have many).
 
 For a list of available built-in settings see: :ref:`topics-settings-ref`.
 
+.. _topics-settings-module-envvar:
+
 Designating the settings
 ========================
 

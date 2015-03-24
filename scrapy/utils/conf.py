@@ -63,7 +63,10 @@ def get_config(use_closest=True):
 
 
 def get_sources(use_closest=True):
+    xdg_config_home = os.environ.get('XDG_CONFIG_HOME') or \
+        os.path.expanduser('~/.config')
     sources = ['/etc/scrapy.cfg', r'c:\scrapy\scrapy.cfg',
+               xdg_config_home + '/scrapy.cfg',
                os.path.expanduser('~/.scrapy.cfg')]
     if use_closest:
         sources.append(closest_scrapy_cfg())
