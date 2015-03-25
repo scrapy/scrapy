@@ -90,7 +90,7 @@ But this will::
 
     def some_callback(self, response):
         somearg = 'test'
-        return scrapy.Request('http://www.example.com', meta={'somearg': somearg})
+        return scrapy.Request('http://www.example.com', , callback=self.other_callback, meta={'somearg': somearg})
 
     def other_callback(self, response):
         somearg = response.meta['somearg']
