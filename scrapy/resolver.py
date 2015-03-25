@@ -15,7 +15,7 @@ class ScrapyResolver(ThreadedResolver):
             dnscache.limit = settings.getint('DNSCACHE_SIZE')
 
         threadpool = self.reactor.getThreadPool()
-        threadpool.max = settings.getint('DNS_MAX_THREADS')
+        threadpool.adjustPoolsize(maxthreads=settings.getint('DNS_MAX_THREADS'))
         self.timeout = tuple(settings.getlist('DNS_TIMEOUT'))
 
     def getHostByName(self, name, timeout=None):
