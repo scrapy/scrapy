@@ -17,6 +17,9 @@ spider, without having to run the spider to test every change.
 Once you get familiarized with the Scrapy shell, you'll see that it's an
 invaluable tool for developing and debugging your spiders.
 
+Configuring the shell
+=====================
+
 If you have `IPython`_ installed, the Scrapy shell will use it (instead of the
 standard Python console). The `IPython`_ console is much more powerful and
 provides smart auto-completion and colorized output, among other things.
@@ -25,8 +28,20 @@ We highly recommend you install `IPython`_, specially if you're working on
 Unix systems (where `IPython`_ excels). See the `IPython installation guide`_
 for more info.
 
+Scrapy also has support for `bpython`_, and will try to use it where `IPython`_
+is unavailable.
+
+Through scrapy's settings you can configure it to use any one of
+``ipython``, ``bpython`` or the standard ``python`` shell, regardless of which
+are installed. This is done by setting the ``SCRAPY_PYTHON_SHELL`` environment
+variable; or by defining it in your :ref:`scrapy.cfg <topics-config-settings>`::
+
+    [settings]
+    shell = bpython
+
 .. _IPython: http://ipython.org/
 .. _IPython installation guide: http://ipython.org/install.html
+.. _bpython: http://www.bpython-interpreter.org/
 
 Launch the shell
 ================
