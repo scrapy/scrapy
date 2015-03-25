@@ -112,7 +112,7 @@ class ScrapyHTTPClientFactory(HTTPClientFactory):
 
         # set Host header based on url
         self.headers.setdefault('Host', self.netloc)
-        
+
         # set Content-Length based len of body
         if self.body is not None:
             self.headers['Content-Length'] = len(self.body)
