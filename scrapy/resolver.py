@@ -12,7 +12,7 @@ class ScrapyResolver(ThreadedResolver):
         super(ScrapyResolver, self).__init__(reactor)
         self.caching_enabled = settings.getbool('DNSCACHE_ENABLED')
         if self.caching_enabled:
-            dnscache.limit = settings.getint('DNS_CACHE_SIZE')
+            dnscache.limit = settings.getint('DNSCACHE_SIZE')
 
         threadpool = self.reactor.getThreadPool()
         threadpool.max = settings.getint('DNS_MAX_THREADS')

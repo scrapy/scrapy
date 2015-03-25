@@ -290,7 +290,7 @@ Whether to enable DNS in-memory cache.
 
 .. setting:: DNS_CACHE_SIZE
 
-DNS_CACHE_SIZE
+DNSCACHE_SIZE
 ----------------
 
 Default: ``10000``
