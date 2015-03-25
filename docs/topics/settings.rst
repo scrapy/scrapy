@@ -288,6 +288,33 @@ Default: ``True``
 
 Whether to enable DNS in-memory cache.
 
+.. setting:: DNS_CACHE_SIZE
+
+DNS_CACHE_SIZE
+----------------
+
+Default: ``10000``
+
+DNS in-memory cache size.
+
+.. setting:: DNS_MAX_THREADS
+
+DNS_MAX_THREADS
+----------------
+
+Default: ``10``
+
+Maximum number of threads in DNS resolver pool.
+
+.. setting:: DNS_TIMEOUT
+
+DNS_TIMEOUT
+----------------
+
+Default: ``[1, 3, 11, 45]``
+
+Timeout for processing of DNS queries. For threaded resolver the sum of numbers in the list is used.
+
 .. setting:: DOWNLOADER
 
 DOWNLOADER
