@@ -17,11 +17,8 @@ crawler.
 Walk-through of an example spider
 =================================
 
-In order to show you what Scrapy brings to the table, we'll walk you
-through an example of a Scrapy Spider using the simplest way to run a spider.
-
-Once you're ready to dive in more, you can :ref:`follow the tutorial
-and build a full-blown Scrapy project <intro-tutorial>`.
+In order to show you what Scrapy brings to the table, we'll walk you through an
+example of a Scrapy Spider using the simplest way to run a spider.
 
 So, here's the code for a spider that follows the links to the top
 voted questions on StackOverflow and scrapes some data from each page::
@@ -144,10 +141,18 @@ scraping easy and efficient, such as:
 * Robust encoding support and auto-detection, for dealing with foreign,
   non-standard and broken encoding declarations.
 
-* Strong :ref:`extensibility support <extending-scrapy>` and lots of built-in
-  extensions and middlewares to handle things like cookies, crawl throttling,
-  HTTP caching, HTTP compression, user-agent spoofing, robots.txt,
-  stats collection and many more.
+* :ref:`Strong extensibility support <extending-scrapy>`, allowing you to plug
+  in your own functionality using :ref:`signals <topics-signals>` and a
+  well-defined API (middlewares, :ref:`extensions <topics-extensions>`, and
+  :ref:`pipelines <topics-item-pipeline>`).
+
+* Wide range of built-in extensions and middlewares for handling:
+    * cookies and session handling
+    * HTTP features like compression, authentication, caching
+    * user-agent spoofing
+    * robots.txt
+    * crawl depth restriction
+    * and more
 
 * A :ref:`Telnet console <topics-telnetconsole>` for hooking into a Python
   console running inside your Scrapy process, to introspect and debug your
@@ -161,11 +166,11 @@ scraping easy and efficient, such as:
 What's next?
 ============
 
-The next obvious steps for you are to `download Scrapy`_, read :ref:`the
-tutorial <intro-tutorial>` and join `the community`_. Thanks for your
+The next steps for you are to :ref:`install Scrapy <intro-install>`,
+:ref:`follow through the tutorial <intro-tutorial>` to learn how to organize
+your code in Scrapy projects and `join the community`_. Thanks for your
 interest!
 
-.. _download Scrapy: http://scrapy.org/download/
 .. _the community: http://scrapy.org/community/
 .. _screen scraping: http://en.wikipedia.org/wiki/Screen_scraping
 .. _web scraping: http://en.wikipedia.org/wiki/Web_scraping
