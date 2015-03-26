@@ -171,7 +171,7 @@ The next steps for you are to :ref:`install Scrapy <intro-install>`,
 your code in Scrapy projects and `join the community`_. Thanks for your
 interest!
 
-.. _the community: http://scrapy.org/community/
+.. _join the community: http://scrapy.org/community/
 .. _screen scraping: http://en.wikipedia.org/wiki/Screen_scraping
 .. _web scraping: http://en.wikipedia.org/wiki/Web_scraping
 .. _Amazon Associates Web Services: http://aws.amazon.com/associates/
