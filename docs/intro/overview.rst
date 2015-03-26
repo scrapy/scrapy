@@ -97,24 +97,24 @@ requested in the command line.
     storage backend (FTP or `Amazon S3`_, for example).  You can also write an
     :ref:`item pipeline <topics-item-pipeline>` to store the items in a database.
 
-The data in the file will look like this (note: formatted for easier reading)::
+The data in the file will look like this (note: reformatted for easier reading)::
 
 
     [{
-            "body": "... LONG HTML HERE ...",
-            "link": "http://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-an-unsorted-array",
-            "tags": ["java", "c++", "performance", "optimization"],
-            "title": "Why is processing a sorted array faster than an unsorted array?",
-            "votes": "9924"
-        },
-        {
-            "body": "... LONG HTML HERE ...",
-            "link": "http://stackoverflow.com/questions/1260748/how-do-i-remove-a-git-submodule",
-            "tags": ["git", "git-submodules"],
-            "title": "How do I remove a Git submodule?",
-            "votes": "1764"
-        },
-        ...]
+        "body": "... LONG HTML HERE ...",
+        "link": "http://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-an-unsorted-array",
+        "tags": ["java", "c++", "performance", "optimization"],
+        "title": "Why is processing a sorted array faster than an unsorted array?",
+        "votes": "9924"
+    },
+    {
+        "body": "... LONG HTML HERE ...",
+        "link": "http://stackoverflow.com/questions/1260748/how-do-i-remove-a-git-submodule",
+        "tags": ["git", "git-submodules"],
+        "title": "How do I remove a Git submodule?",
+        "votes": "1764"
+    },
+    ...]
 
 
 .. _topics-whatelse:
