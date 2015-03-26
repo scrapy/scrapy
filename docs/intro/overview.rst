@@ -74,10 +74,16 @@ attribute (in this case, only the URL for StackOverflow top questions page),
 and then called the default callback method ``parse`` passing the response
 object as an argument.
 
-In the ``parse`` callback, we scrape the links to the questions and
-yield a few more requests to be processed, registering for them
-the method ``parse_question`` as the callback to be called when the
-requests are complete.
+Here you notice one of the main advantages about Scrapy: requests are
+scheduled and processed asynchronously. This means that Scrapy doesn't
+need to wait for a request to be finished and processed, it can send
+another request or do other things in the meantime, which results in much
+faster crawlings.
+
+So, in the ``parse`` callback, we scrape the links to the questions and
+yield a few more requests to be done, registering for them the method
+``parse_question`` as the callback to be called for each of them as
+they finish.
 
 Finally, the ``parse_question`` callback scrapes the question data
 for each page yielding a dict, which Scrapy then collects and
