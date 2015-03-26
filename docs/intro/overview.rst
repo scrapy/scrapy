@@ -53,7 +53,25 @@ and run the spider using the :command:`runspider` command::
 
 When this finishes you will have in the ``top-stackoverflow-questions.json`` file
 a list of the most upvoted questions in StackOverflow in JSON format, containing the
-title, link, number of upvotes, a list of the tags and the question content in HTML.
+title, link, number of upvotes, a list of the tags and the question content in HTML,
+looking like this (reformatted for easier reading)::
+
+    [{
+        "body": "... LONG HTML HERE ...",
+        "link": "http://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-an-unsorted-array",
+        "tags": ["java", "c++", "performance", "optimization"],
+        "title": "Why is processing a sorted array faster than an unsorted array?",
+        "votes": "9924"
+    },
+    {
+        "body": "... LONG HTML HERE ...",
+        "link": "http://stackoverflow.com/questions/1260748/how-do-i-remove-a-git-submodule",
+        "tags": ["git", "git-submodules"],
+        "title": "How do I remove a Git submodule?",
+        "votes": "1764"
+    },
+    ...]
+
 
 
 What just happened?
@@ -96,25 +114,6 @@ requested in the command line.
     JSON file, you can easily change the export format (XML or CSV, for example) or the
     storage backend (FTP or `Amazon S3`_, for example).  You can also write an
     :ref:`item pipeline <topics-item-pipeline>` to store the items in a database.
-
-The data in the file will look like this (note: reformatted for easier reading)::
-
-
-    [{
-        "body": "... LONG HTML HERE ...",
-        "link": "http://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-an-unsorted-array",
-        "tags": ["java", "c++", "performance", "optimization"],
-        "title": "Why is processing a sorted array faster than an unsorted array?",
-        "votes": "9924"
-    },
-    {
-        "body": "... LONG HTML HERE ...",
-        "link": "http://stackoverflow.com/questions/1260748/how-do-i-remove-a-git-submodule",
-        "tags": ["git", "git-submodules"],
-        "title": "How do I remove a Git submodule?",
-        "votes": "1764"
-    },
-    ...]
 
 
 .. _topics-whatelse:
