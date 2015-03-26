@@ -315,19 +315,19 @@ is inside a ``<ul>`` element, in fact the *second* ``<ul>`` element.
 So we can select each ``<li>`` element belonging to the sites list with this
 code::
 
-    sel.xpath('//ul/li')
+    response.xpath('//ul/li')
 
 And from them, the sites descriptions::
 
-    sel.xpath('//ul/li/text()').extract()
+    response.xpath('//ul/li/text()').extract()
 
 The sites titles::
 
-    sel.xpath('//ul/li/a/text()').extract()
+    response.xpath('//ul/li/a/text()').extract()
 
 And the sites links::
 
-    sel.xpath('//ul/li/a/@href').extract()
+    response.xpath('//ul/li/a/@href').extract()
 
 As we've said before, each ``.xpath()`` call returns a list of selectors, so we can
 concatenate further ``.xpath()`` calls to dig deeper into a node. We are going to use
