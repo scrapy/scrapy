@@ -1,3 +1,5 @@
+.. _topics-autothrottle:
+
 ======================
 AutoThrottle extension
 ======================

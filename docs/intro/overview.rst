@@ -39,15 +39,11 @@ voted questions on StackOverflow and scrapes some data from each page::
                 yield scrapy.Request(full_url, callback=self.parse_question)
 
         def parse_question(self, response):
-            title = response.css('h1 a::text').extract_first()
-            votes = response.css('.question .vote-count-post::text').extract_first()
-            tags = response.css('.question .post-tag::text').extract()
-            body = response.css('.question .post-text').extract_first()
             yield {
-                'title': title,
-                'votes': votes,
-                'body': body,
-                'tags': tags,
+                'title': response.css('h1 a::text').extract()[0],
+                'votes': response.css('.question .vote-count-post::text').extract()[0],
+                'body': response.css('.question .post-text').extract()[0],
+                'tags': response.css('.question .post-tag::text').extract(),
                 'link': response.url,
             }
 
@@ -66,28 +62,36 @@ title, link, number of upvotes, a list of the tags and the question content in H
 What just happened?
 -------------------
 
-When you ran the command ``scrapy runspider somefile.py``, Scrapy looked
-for a Spider definition inside it and ran it through its crawler engine.
+When you ran the command ``scrapy runspider somefile.py``, Scrapy looked for a
+Spider definition inside it and ran it through its crawler engine.
 
 The crawl started by making requests to the URLs defined in the ``start_urls``
 attribute (in this case, only the URL for StackOverflow top questions page),
-and then called the default callback method ``parse`` passing the response
-object as an argument.
+and called the default callback method ``parse`` passing the response object as
+an argument. In the ``parse`` callback, we extract the links to the
+question pages using a CSS Selector with a custom extension that allows to get
+the value for an attribute. Then, we yield a few more requests to be sent,
+registering the method ``parse_question`` as the callback to be called for each
+of them as they finish.
 
 Here you notice one of the main advantages about Scrapy: requests are
-scheduled and processed asynchronously. This means that Scrapy doesn't
-need to wait for a request to be finished and processed, it can send
-another request or do other things in the meantime, which results in much
-faster crawlings.
+:ref:`scheduled and processed asynchronously <topics-architecture>`.  This
+means that Scrapy doesn't need to wait for a request to be finished and
+processed, it can send another request or do other things in the meantime. This
+also means that other requests can keep going even if some request fails or an
+error happens while handling it.
 
-So, in the ``parse`` callback, we scrape the links to the questions and
-yield a few more requests to be done, registering for them the method
-``parse_question`` as the callback to be called for each of them as
-they finish.
+While this enables you to do very fast crawlings sending multiple concurrent
+requests at the same time in a fault-tolerant way, Scrapy also gives you
+control over the politeness of the crawl through :ref:`a few settings
+<topics-settings-ref>`. You can do things like setting a download delay between
+each request, limit amount of concurrent requests per domain or per IP, and
+even :ref:`use an auto-throttling extension <topics-autothrottle>` that tries
+to figure out these automatically.
 
-Finally, the ``parse_question`` callback scrapes the question data
-for each page yielding a dict, which Scrapy then collects and
-writes to a JSON file as requested in the command line.
+Finally, the ``parse_question`` callback scrapes the question data for each
+page yielding a dict, which Scrapy then collects and writes to a JSON file as
+requested in the command line.
 
 .. note::
 
@@ -95,6 +99,25 @@ writes to a JSON file as requested in the command line.
     JSON file, you can easily change the export format (XML or CSV, for example) or the
     storage backend (FTP or `Amazon S3`_, for example).  You can also write an
     :ref:`item pipeline <topics-item-pipeline>` to store the items in a database.
+
+The data in the file will look like this (note: formatted for easier reading)::
+
+
+    [{
+            "body": "... LONG HTML HERE ...",
+            "link": "http://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-an-unsorted-array",
+            "tags": ["java", "c++", "performance", "optimization"],
+            "title": "Why is processing a sorted array faster than an unsorted array?",
+            "votes": "9924"
+        },
+        {
+            "body": "... LONG HTML HERE ...",
+            "link": "http://stackoverflow.com/questions/1260748/how-do-i-remove-a-git-submodule",
+            "tags": ["git", "git-submodules"],
+            "title": "How do I remove a Git submodule?",
+            "votes": "1764"
+        },
+        ...]
 
 
 .. _topics-whatelse:
@@ -105,6 +128,10 @@ What else?
 You've seen how to extract and store items from a website using Scrapy, but
 this is just the surface. Scrapy provides a lot of powerful features for making
 scraping easy and efficient, such as:
+
+* Built-in support for :ref:`selecting and extracting <topics-selectors>` data
+  from HTML/XML sources using CSS selectors extended and XPath expressions,
+  with helper methods to extract using regular expressions.
 
 * An :ref:`interactive shell console <topics-shell>` (IPython aware) for trying
   out the CSS and XPath expressions to scrape data, very useful when writing or
@@ -126,12 +153,10 @@ scraping easy and efficient, such as:
   console running inside your Scrapy process, to introspect and debug your
   crawler
 
-* A caching DNS resolver
-
-* Support for crawling based on URLs discovered through `Sitemaps`_
-
-* A media pipeline for :ref:`automatically downloading images <topics-images>`
-  (or any other media) associated with the scraped items
+* Plus other goodies like reusable spiders to crawl sites from `Sitemaps`_ and
+  XML/CSV feeds, a media pipeline for :ref:`automatically downloading images <topics-images>`
+  (or any other media) associated with the scraped items, a caching DNS resolver,
+  and much more!
 
 What's next?
 ============
