@@ -84,9 +84,13 @@ class Spider(object_ref):
 
     @staticmethod
     def __idle(spider):
+        if spider != self: return
         idled = getattr(spider, 'idled', None)
         if callable(idled):
-            return idled()
+            # handle requests returned by idled
+            for request in idled() :
+                self.crawler.engine.crawl(request, spider=self)
+            raise DontCloseSpider
 
     def __str__(self):
         return "<%s %r at 0x%0x>" % (type(self).__name__, self.name, id(self))
