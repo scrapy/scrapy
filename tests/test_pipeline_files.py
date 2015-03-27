@@ -142,35 +142,40 @@ class DeprecatedFilesPipelineTestCase(unittest.TestCase):
 class FilesPipelineTestCaseFields(unittest.TestCase):
 
     def test_item_fields_default(self):
-        from scrapy.contrib.pipeline.files import FilesPipeline
         class TestItem(Item):
             name = Field()
             file_urls = Field()
             files = Field()
-        url = 'http://www.example.com/files/1.txt'
-        item = TestItem({'name': 'item1', 'file_urls': [url]})
-        pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/'}))
-        requests = list(pipeline.get_media_requests(item, None))
-        self.assertEqual(requests[0].url, url)
-        results = [(True, {'url': url})]
-        pipeline.item_completed(results, item, None)
-        self.assertEqual(item['files'], [results[0][1]])
+
+        for cls in TestItem, dict:
+            url = 'http://www.example.com/files/1.txt'
+            item = cls({'name': 'item1', 'file_urls': [url]})
+            pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/'}))
+            requests = list(pipeline.get_media_requests(item, None))
+            self.assertEqual(requests[0].url, url)
+            results = [(True, {'url': url})]
+            pipeline.item_completed(results, item, None)
+            self.assertEqual(item['files'], [results[0][1]])
 
     def test_item_fields_override_settings(self):
-        from scrapy.contrib.pipeline.files import FilesPipeline
         class TestItem(Item):
             name = Field()
             files = Field()
             stored_file = Field()
-        url = 'http://www.example.com/files/1.txt'
-        item = TestItem({'name': 'item1', 'files': [url]})
-        pipeline = FilesPipeline.from_settings(Settings({'FILES_STORE': 's3://example/files/',
-                'FILES_URLS_FIELD': 'files', 'FILES_RESULT_FIELD': 'stored_file'}))
-        requests = list(pipeline.get_media_requests(item, None))
-        self.assertEqual(requests[0].url, url)
-        results = [(True, {'url': url})]
-        pipeline.item_completed(results, item, None)
-        self.assertEqual(item['stored_file'], [results[0][1]])
+
+        for cls in TestItem, dict:
+            url = 'http://www.example.com/files/1.txt'
+            item = cls({'name': 'item1', 'files': [url]})
+            pipeline = FilesPipeline.from_settings(Settings({
+                'FILES_STORE': 's3://example/files/',
+                'FILES_URLS_FIELD': 'files',
+                'FILES_RESULT_FIELD': 'stored_file'
+            }))
+            requests = list(pipeline.get_media_requests(item, None))
+            self.assertEqual(requests[0].url, url)
+            results = [(True, {'url': url})]
+            pipeline.item_completed(results, item, None)
+            self.assertEqual(item['stored_file'], [results[0][1]])
 
 
 class ItemWithFiles(Item):

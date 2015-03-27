@@ -109,7 +109,7 @@ class ImagesPipeline(FilesPipeline):
         return [Request(x) for x in item.get(self.IMAGES_URLS_FIELD, [])]
 
     def item_completed(self, results, item, info):
-        if self.IMAGES_RESULT_FIELD in item.fields:
+        if isinstance(item, dict) or self.IMAGES_RESULT_FIELD in item.fields:
             item[self.IMAGES_RESULT_FIELD] = [x for ok, x in results if ok]
         return item
 

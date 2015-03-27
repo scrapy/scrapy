@@ -8,8 +8,8 @@ After an item has been scraped by a spider, it is sent to the Item Pipeline
 which process it through several components that are executed sequentially.
 
 Each item pipeline component (sometimes referred as just "Item Pipeline") is a
-Python class that implements a simple method. They receive an Item and perform
-an action over it, also deciding if the Item should continue through the
+Python class that implements a simple method. They receive an item and perform
+an action over it, also deciding if the item should continue through the
 pipeline or be dropped and no longer processed.
 
 Typical use for item pipelines are:
@@ -28,12 +28,12 @@ Each item pipeline component is a Python class that must implement the following
 .. method:: process_item(self, item, spider)
 
    This method is called for every item pipeline component and must either return
-   a :class:`~scrapy.item.Item` (or any descendant class) object or raise a
-   :exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
+   a dict with data, :class:`~scrapy.item.Item` (or any descendant class) object 
+   or raise a :exc:`~scrapy.exceptions.DropItem` exception. Dropped items are no longer
    processed by further pipeline components.
 
    :param item: the item scraped
-   :type item: :class:`~scrapy.item.Item` object
+   :type item: :class:`~scrapy.item.Item` object or a dict
 
    :param spider: the spider which scraped the item
    :type spider: :class:`~scrapy.spider.Spider` object
@@ -135,6 +135,8 @@ method and how to clean up the resources properly.
     import pymongo
 
     class MongoPipeline(object):
+    
+        collection_name = 'scrapy_items'
 
         def __init__(self, mongo_uri, mongo_db):
             self.mongo_uri = mongo_uri
@@ -155,8 +157,7 @@ method and how to clean up the resources properly.
             self.client.close()
 
         def process_item(self, item, spider):
-            collection_name = item.__class__.__name__
-            self.db[collection_name].insert(dict(item))
+            self.db[self.collection_name].insert(dict(item))
             return item
 
 .. _MongoDB: http://www.mongodb.org/

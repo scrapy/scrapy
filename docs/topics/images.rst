@@ -63,9 +63,14 @@ this:
 Usage example
 =============
 
-In order to use the image pipeline you just need to :ref:`enable it
-<topics-images-enabling>` and define an item with the ``image_urls`` and
-``images`` fields::
+In order to use the image pipeline first  
+:ref:`enable it <topics-images-enabling>`.
+
+Then, if a spider returns a dict with 'image_urls' key, 
+the pipeline will put the results under 'images' key.
+
+If you prefer to use :class:`~.Item` then define a custom 
+item with the ``image_urls`` and ``images`` fields::
 
     import scrapy
 
@@ -74,7 +79,7 @@ In order to use the image pipeline you just need to :ref:`enable it
         # ... other item fields ...
         image_urls = scrapy.Field()
         images = scrapy.Field()
-
+        
 If you need something more complex and want to override the custom images
 pipeline behaviour, see :ref:`topics-images-override`.
 

@@ -90,15 +90,16 @@ following methods:
         it has processed the response.
 
         :meth:`process_spider_output` must return an iterable of
-        :class:`~scrapy.http.Request` or :class:`~scrapy.item.Item` objects.
+        :class:`~scrapy.http.Request`, dict or :class:`~scrapy.item.Item` 
+        objects.
 
         :param response: the response which generated this output from the
           spider
         :type response: :class:`~scrapy.http.Response` object
 
         :param result: the result returned by the spider
-        :type result: an iterable of :class:`~scrapy.http.Request` or
-          :class:`~scrapy.item.Item` objects
+        :type result: an iterable of :class:`~scrapy.http.Request`, dict
+          or :class:`~scrapy.item.Item` objects
 
         :param spider: the spider whose result is being processed
         :type spider: :class:`~scrapy.spider.Spider` object
@@ -110,7 +111,7 @@ following methods:
         method (from other spider middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
-        iterable of :class:`~scrapy.http.Response` or
+        iterable of :class:`~scrapy.http.Response`, dict or
         :class:`~scrapy.item.Item` objects.
 
         If it returns ``None``, Scrapy will continue processing this exception,

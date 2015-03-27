@@ -85,6 +85,7 @@ class ItemSpider(FollowAllSpider):
         for request in super(ItemSpider, self).parse(response):
             yield request
             yield Item()
+            yield {}
 
 
 class DefaultError(Exception):
