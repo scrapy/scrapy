@@ -249,6 +249,20 @@ Settings API
            :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer
        :type priority: string or int
 
+    .. method:: updatedict(name, values, priority='project')
+
+       Update a dictionary with given values.
+       
+       This is a convenience function that calls the ``update()`` method of the
+       given dictionary setting, unless the setting's current priority is
+       higher than the provided ``priority``.
+
+       :param name: the setting name
+       :type name: string
+
+       :param values: key/value pairs to be updated/inserted
+       :type values: dict or iterable of key/value pairs
+
     .. method:: get(name, default=None)
 
        Get a setting value without affecting its original type.
