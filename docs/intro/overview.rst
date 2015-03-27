@@ -82,7 +82,7 @@ Spider definition inside it and ran it through its crawler engine.
 
 The crawl started by making requests to the URLs defined in the ``start_urls``
 attribute (in this case, only the URL for StackOverflow top questions page),
-and called the default callback method ``parse`` passing the response object as
+and called the default callback method ``parse``, passing the response object as
 an argument. In the ``parse`` callback, we extract the links to the
 question pages using a CSS Selector with a custom extension that allows to get
 the value for an attribute. Then, we yield a few more requests to be sent,
@@ -96,12 +96,12 @@ processed, it can send another request or do other things in the meantime. This
 also means that other requests can keep going even if some request fails or an
 error happens while handling it.
 
-While this enables you to do very fast crawlings sending multiple concurrent
-requests at the same time in a fault-tolerant way, Scrapy also gives you
+While this enables you to do very fast crawlings (sending multiple concurrent
+requests at the same time, in a fault-tolerant way) Scrapy also gives you
 control over the politeness of the crawl through :ref:`a few settings
 <topics-settings-ref>`. You can do things like setting a download delay between
-each request, limit amount of concurrent requests per domain or per IP, and
-even :ref:`use an auto-throttling extension <topics-autothrottle>` that tries
+each request, limiting amount of concurrent requests per domain or per IP, and
+even :ref:`using an auto-throttling extension <topics-autothrottle>` that tries
 to figure out these automatically.
 
 Finally, the ``parse_question`` callback scrapes the question data for each
@@ -126,7 +126,7 @@ this is just the surface. Scrapy provides a lot of powerful features for making
 scraping easy and efficient, such as:
 
 * Built-in support for :ref:`selecting and extracting <topics-selectors>` data
-  from HTML/XML sources using CSS selectors extended and XPath expressions,
+  from HTML/XML sources using extended CSS selectors and XPath expressions,
   with helper methods to extract using regular expressions.
 
 * An :ref:`interactive shell console <topics-shell>` (IPython aware) for trying
