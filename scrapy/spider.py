@@ -82,8 +82,7 @@ class Spider(object_ref):
         if callable(closed):
             return closed(reason)
 
-    @staticmethod
-    def __idle(spider):
+    def __idle(self, spider):
         if spider != self: return
         idled = getattr(spider, 'idled', None)
         if callable(idled):
