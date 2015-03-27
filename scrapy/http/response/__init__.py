@@ -7,6 +7,8 @@ See documentation in docs/topics/request-response.rst
 
 import copy
 
+from six.moves.urllib.parse import urljoin
+
 from scrapy.http.headers import Headers
 from scrapy.utils.trackref import object_ref
 from scrapy.http.common import obsolete_setter
@@ -53,7 +55,7 @@ class Response(object_ref):
         elif body is None:
             self._body = ''
         else:
-            raise TypeError("Response body must either str or unicode. Got: '%s'" \
+            raise TypeError("Response body must either be str or unicode. Got: '%s'" \
                 % type(body).__name__)
 
     body = property(_get_body, obsolete_setter(_set_body, 'body'))
@@ -75,3 +77,8 @@ class Response(object_ref):
             kwargs.setdefault(x, getattr(self, x))
         cls = kwargs.pop('cls', self.__class__)
         return cls(*args, **kwargs)
+
+    def urljoin(self, url):
+        """Join this Response's url with a possible relative url to form an
+        absolute interpretation of the latter."""
+        return urljoin(self.url, url)
