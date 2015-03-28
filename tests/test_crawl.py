@@ -77,14 +77,14 @@ class CrawlTestCase(TestCase):
     def test_retry_503(self):
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("http://localhost:8998/status?n=503")
+            yield crawler.crawl("http://127.9.9.9:8998/status?n=503")
         self._assert_retried(l)
 
     @defer.inlineCallbacks
     def test_retry_conn_failed(self):
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("http://localhost:65432/status?n=503")
+            yield crawler.crawl("http://127.9.9.9:65432/status?n=503")
         self._assert_retried(l)
 
     @defer.inlineCallbacks
@@ -161,7 +161,7 @@ with multiples lines
 '''})
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("http://localhost:8998/raw?{0}".format(query))
+            yield crawler.crawl("http://127.9.9.9:8998/raw?{0}".format(query))
         self.assertEqual(str(l).count("Got response 200"), 1)
 
     @defer.inlineCallbacks
@@ -169,7 +169,7 @@ with multiples lines
         # connection lost after receiving data
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("http://localhost:8998/drop?abort=0")
+            yield crawler.crawl("http://127.9.9.9:8998/drop?abort=0")
         self._assert_retried(l)
 
     @defer.inlineCallbacks
@@ -177,7 +177,7 @@ with multiples lines
         # connection lost before receiving data
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as l:
-            yield crawler.crawl("http://localhost:8998/drop?abort=1")
+            yield crawler.crawl("http://127.9.9.9:8998/drop?abort=1")
         self._assert_retried(l)
 
     def _assert_retried(self, log):
@@ -187,7 +187,7 @@ with multiples lines
     @defer.inlineCallbacks
     def test_referer_header(self):
         """Referer header is set by RefererMiddleware unless it is already set"""
-        req0 = Request('http://localhost:8998/echo?headers=1&body=0', dont_filter=1)
+        req0 = Request('http://127.9.9.9:8998/echo?headers=1&body=0', dont_filter=1)
         req1 = req0.replace()
         req2 = req0.replace(headers={'Referer': None})
         req3 = req0.replace(headers={'Referer': 'http://example.com'})
@@ -221,7 +221,7 @@ with multiples lines
             est.append(get_engine_status(crawler.engine))
 
         crawler = get_crawler(SingleRequestSpider)
-        yield crawler.crawl(seed='http://localhost:8998/', callback_func=cb)
+        yield crawler.crawl(seed='http://127.9.9.9:8998/', callback_func=cb)
         self.assertEqual(len(est), 1, est)
         s = dict(est[0])
         self.assertEqual(s['engine.spider.name'], crawler.spider.name)

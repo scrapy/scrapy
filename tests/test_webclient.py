@@ -207,7 +207,7 @@ from twisted.web.test.test_webclient import ForeverTakingResource, \
 
 class WebClientTestCase(unittest.TestCase):
     def _listen(self, site):
-        return reactor.listenTCP(0, site, interface="127.0.0.1")
+        return reactor.listenTCP(0, site, interface="127.9.9.9")
 
     def setUp(self):
         name = self.mktemp()
@@ -230,7 +230,7 @@ class WebClientTestCase(unittest.TestCase):
         return self.port.stopListening()
 
     def getURL(self, path):
-        return "http://127.0.0.1:%d/%s" % (self.portno, path)
+        return "http://127.9.9.9:%d/%s" % (self.portno, path)
 
     def testPayload(self):
         s = "0123456789" * 10
@@ -240,7 +240,7 @@ class WebClientTestCase(unittest.TestCase):
         # if we pass Host header explicitly, it should be used, otherwise
         # it should extract from url
         return defer.gatherResults([
-            getPage(self.getURL("host")).addCallback(self.assertEquals, "127.0.0.1:%d" % self.portno),
+            getPage(self.getURL("host")).addCallback(self.assertEquals, "127.9.9.9:%d" % self.portno),
             getPage(self.getURL("host"), headers={"Host": "www.example.com"}).addCallback(self.assertEquals, "www.example.com")])
 
 
@@ -274,7 +274,7 @@ class WebClientTestCase(unittest.TestCase):
         called back with the contents of the page.
         """
         d = getPage(self.getURL("host"), timeout=100)
-        d.addCallback(self.assertEquals, "127.0.0.1:%d" % self.portno)
+        d.addCallback(self.assertEquals, "127.9.9.9:%d" % self.portno)
         return d
 
 

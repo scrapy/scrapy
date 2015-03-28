@@ -9,8 +9,8 @@ class SiteTest(object):
 
     def setUp(self):
         super(SiteTest, self).setUp()
-        self.site = reactor.listenTCP(0, test_site(), interface="127.0.0.1")
-        self.baseurl = "http://localhost:%d/" % self.site.getHost().port
+        self.site = reactor.listenTCP(0, test_site(), interface="127.9.9.9")
+        self.baseurl = "http://127.9.9.9:%d/" % self.site.getHost().port
 
     def tearDown(self):
         super(SiteTest, self).tearDown()
@@ -28,7 +28,7 @@ def test_site():
     r.putChild("redirect", util.Redirect("/redirected"))
     r.putChild("redirected", static.Data("Redirected here", "text/plain"))
     return server.Site(r)
-    
+
 
 if __name__ == '__main__':
     port = reactor.listenTCP(0, test_site(), interface="127.0.0.1")

@@ -122,7 +122,7 @@ class HttpTestCase(unittest.TestCase):
         r.putChild("broken", BrokenDownloadResource())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
-        self.port = reactor.listenTCP(0, self.wrapper, interface='127.0.0.1')
+        self.port = reactor.listenTCP(0, self.wrapper, interface='127.9.9.9')
         self.portno = self.port.getHost().port
         self.download_handler = self.download_handler_cls(Settings())
         self.download_request = self.download_handler.download_request
@@ -134,7 +134,7 @@ class HttpTestCase(unittest.TestCase):
             yield self.download_handler.close()
 
     def getURL(self, path):
-        return "http://127.0.0.1:%d/%s" % (self.portno, path)
+        return "http://127.9.9.9:%d/%s" % (self.portno, path)
 
     def test_download(self):
         request = Request(self.getURL('file'))
@@ -179,7 +179,7 @@ class HttpTestCase(unittest.TestCase):
 
     def test_host_header_not_in_request_headers(self):
         def _test(response):
-            self.assertEquals(response.body, '127.0.0.1:%d' % self.portno)
+            self.assertEquals(response.body, '127.9.9.9:%d' % self.portno)
             self.assertEquals(request.headers, {})
 
         request = Request(self.getURL('host'))
@@ -280,16 +280,16 @@ class Http11MockServerTestCase(unittest.TestCase):
     @defer.inlineCallbacks
     def test_download_with_content_length(self):
         crawler = get_crawler(SingleRequestSpider)
-        # http://localhost:8998/partial set Content-Length to 1024, use download_maxsize= 1000 to avoid
+        # http://127.9.9.9:8998/partial set Content-Length to 1024, use download_maxsize= 1000 to avoid
         # download it
-        yield crawler.crawl(seed=Request(url='http://localhost:8998/partial', meta={'download_maxsize': 1000}))
+        yield crawler.crawl(seed=Request(url='http://127.9.9.9:8998/partial', meta={'download_maxsize': 1000}))
         failure = crawler.spider.meta['failure']
         self.assertIsInstance(failure.value, defer.CancelledError)
 
     @defer.inlineCallbacks
     def test_download(self):
         crawler = get_crawler(SingleRequestSpider)
-        yield crawler.crawl(seed=Request(url='http://localhost:8998'))
+        yield crawler.crawl(seed=Request(url='http://127.9.9.9:8998'))
         failure = crawler.spider.meta.get('failure')
         self.assertTrue(failure == None)
         reason = crawler.spider.meta['close_reason']
@@ -302,14 +302,14 @@ class Http11MockServerTestCase(unittest.TestCase):
 
             crawler = get_crawler(SingleRequestSpider)
             body = '1'*100 # PayloadResource requires body length to be 100
-            request = Request('http://localhost:8998/payload', method='POST', body=body, meta={'download_maxsize': 50})
+            request = Request('http://127.9.9.9:8998/payload', method='POST', body=body, meta={'download_maxsize': 50})
             yield crawler.crawl(seed=request)
             failure = crawler.spider.meta['failure']
             # download_maxsize < 100, hence the CancelledError
             self.assertIsInstance(failure.value, defer.CancelledError)
 
             request.headers.setdefault('Accept-Encoding', 'gzip,deflate')
-            request = request.replace(url='http://localhost:8998/xpayload')
+            request = request.replace(url='http://127.9.9.9:8998/xpayload')
             yield crawler.crawl(seed=request)
 
             # download_maxsize = 50 is enough for the gzipped response
@@ -337,7 +337,7 @@ class HttpProxyTestCase(unittest.TestCase):
     def setUp(self):
         site = server.Site(UriResource(), timeout=None)
         wrapper = WrappingFactory(site)
-        self.port = reactor.listenTCP(0, wrapper, interface='127.0.0.1')
+        self.port = reactor.listenTCP(0, wrapper, interface='127.9.9.9')
         self.portno = self.port.getHost().port
         self.download_handler = self.download_handler_cls(Settings())
         self.download_request = self.download_handler.download_request
@@ -349,7 +349,7 @@ class HttpProxyTestCase(unittest.TestCase):
             yield self.download_handler.close()
 
     def getURL(self, path):
-        return "http://127.0.0.1:%d/%s" % (self.portno, path)
+        return "http://127.9.9.9:%d/%s" % (self.portno, path)
 
     def test_download_with_proxy(self):
         def _test(response):
@@ -537,7 +537,7 @@ class FTPTestCase(unittest.TestCase):
         users_checker.addUser(self.username, self.password)
         p.registerChecker(users_checker, credentials.IUsernamePassword)
         self.factory = FTPFactory(portal=p)
-        self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
+        self.port = reactor.listenTCP(0, self.factory, interface="127.9.9.9")
         self.portNum = self.port.getHost().port
         self.download_handler = FTPDownloadHandler(Settings())
         self.addCleanup(self.port.stopListening)
@@ -554,7 +554,7 @@ class FTPTestCase(unittest.TestCase):
         return deferred
 
     def test_ftp_download_success(self):
-        request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
+        request = Request(url="ftp://127.9.9.9:%s/file.txt" % self.portNum,
                 meta={"ftp_user": self.username, "ftp_password": self.password})
         d = self.download_handler.download_request(request, None)
 
@@ -566,7 +566,7 @@ class FTPTestCase(unittest.TestCase):
 
     def test_ftp_download_path_with_spaces(self):
         request = Request(
-            url="ftp://127.0.0.1:%s/file with spaces.txt" % self.portNum,
+            url="ftp://127.9.9.9:%s/file with spaces.txt" % self.portNum,
             meta={"ftp_user": self.username, "ftp_password": self.password}
         )
         d = self.download_handler.download_request(request, None)
@@ -578,7 +578,7 @@ class FTPTestCase(unittest.TestCase):
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_notexist(self):
-        request = Request(url="ftp://127.0.0.1:%s/notexist.txt" % self.portNum,
+        request = Request(url="ftp://127.9.9.9:%s/notexist.txt" % self.portNum,
                 meta={"ftp_user": self.username, "ftp_password": self.password})
         d = self.download_handler.download_request(request, None)
 
@@ -588,7 +588,7 @@ class FTPTestCase(unittest.TestCase):
 
     def test_ftp_local_filename(self):
         local_fname = "/tmp/file.txt"
-        request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
+        request = Request(url="ftp://127.9.9.9:%s/file.txt" % self.portNum,
                 meta={"ftp_user": self.username, "ftp_password": self.password, "ftp_local_filename": local_fname})
         d = self.download_handler.download_request(request, None)
 
@@ -602,7 +602,7 @@ class FTPTestCase(unittest.TestCase):
         return self._add_test_callbacks(d, _test)
 
     def test_invalid_credentials(self):
-        request = Request(url="ftp://127.0.0.1:%s/file.txt" % self.portNum,
+        request = Request(url="ftp://127.9.9.9:%s/file.txt" % self.portNum,
                 meta={"ftp_user": self.username, "ftp_password": 'invalid'})
         d = self.download_handler.download_request(request, None)
 
