@@ -48,19 +48,19 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("-p", "--project",
+        parser.add_argument("-p", "--project",
             help="the project name in the target")
-        parser.add_option("-v", "--version",
+        parser.add_argument("-v", "--version",
             help="the version to deploy. Defaults to current timestamp")
-        parser.add_option("-l", "--list-targets", action="store_true", \
+        parser.add_argument("-l", "--list-targets", action="store_true", \
             help="list available targets")
-        parser.add_option("-d", "--debug", action="store_true",
+        parser.add_argument("-d", "--debug", action="store_true",
             help="debug mode (do not remove build dir)")
-        parser.add_option("-L", "--list-projects", metavar="TARGET", \
+        parser.add_argument("-L", "--list-projects", metavar="TARGET", \
             help="list available projects on TARGET")
-        parser.add_option("--egg", metavar="FILE",
+        parser.add_argument("--egg", metavar="FILE",
             help="use the given egg, instead of building it")
-        parser.add_option("--build-egg", metavar="FILE",
+        parser.add_argument("--build-egg", metavar="FILE",
             help="only build the egg, don't deploy it")
 
     def run(self, args, opts):

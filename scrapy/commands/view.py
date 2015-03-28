@@ -13,7 +13,7 @@ class Command(fetch.Command):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("--spider", dest="spider",
+        parser.add_argument("--spider", dest="spider",
             help="use this spider")
 
     def _print_response(self, response, opts):

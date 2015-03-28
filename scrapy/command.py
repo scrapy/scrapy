@@ -2,7 +2,6 @@
 Base class for Scrapy commands
 """
 import os
-from optparse import OptionGroup
 from twisted.python import failure
 
 from scrapy.utils.conf import arglist_to_dict
@@ -56,24 +55,22 @@ class ScrapyCommand(object):
         """
         Populate option parse with options available for this command
         """
-        group = OptionGroup(parser, "Global Options")
-        group.add_option("--logfile", metavar="FILE",
+        group = parser.add_argument_group("Global Options")
+        group.add_argument("--logfile", metavar="FILE",
             help="log file. if omitted stderr will be used")
-        group.add_option("-L", "--loglevel", metavar="LEVEL", default=None,
+        group.add_argument("-L", "--loglevel", metavar="LEVEL", default=None,
             help="log level (default: %s)" % self.settings['LOG_LEVEL'])
-        group.add_option("--nolog", action="store_true",
+        group.add_argument("--nolog", action="store_true",
             help="disable logging completely")
-        group.add_option("--profile", metavar="FILE", default=None,
+        group.add_argument("--profile", metavar="FILE", default=None,
             help="write python cProfile stats to FILE")
-        group.add_option("--lsprof", metavar="FILE", default=None,
+        group.add_argument("--lsprof", metavar="FILE", default=None,
             help="write lsprof profiling stats to FILE")
-        group.add_option("--pidfile", metavar="FILE",
+        group.add_argument("--pidfile", metavar="FILE",
             help="write process ID to FILE")
-        group.add_option("-s", "--set", action="append", default=[], metavar="NAME=VALUE",
+        group.add_argument("-s", "--set", action="append", default=[], metavar="NAME=VALUE",
             help="set/override setting (may be repeated)")
-        group.add_option("--pdb", action="store_true", help="enable pdb on failure")
-
-        parser.add_option_group(group)
+        group.add_argument("--pdb", action="store_true", help="enable pdb on failure")
 
     def process_options(self, args, opts):
         try:

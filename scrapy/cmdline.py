@@ -1,6 +1,6 @@
 from __future__ import print_function
 import sys
-import optparse
+import argparse
 import cProfile
 import inspect
 import pkg_resources
@@ -94,6 +94,10 @@ def _run_print_help(parser, func, *a, **kw):
             parser.print_help()
         sys.exit(2)
 
+class ScrapyArgumentParser(argparse.ArgumentParser):
+    # maintain some backward compatibility for custom commands
+    add_option = argparse.ArgumentParser.add_argument
+
 def execute(argv=None, settings=None):
     if argv is None:
         argv = sys.argv
@@ -121,7 +125,7 @@ def execute(argv=None, settings=None):
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)
     cmdname = _pop_command_name(argv)
-    parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(), \
+    parser = ScrapyArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter, \
         conflict_handler='resolve')
     if not cmdname:
         _print_commands(settings, inproject)
@@ -136,7 +140,7 @@ def execute(argv=None, settings=None):
     settings.setdict(cmd.default_settings, priority='command')
     cmd.settings = settings
     cmd.add_options(parser)
-    opts, args = parser.parse_args(args=argv[1:])
+    opts, args = parser.parse_known_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
 
     cmd.crawler_process = CrawlerProcess(settings)

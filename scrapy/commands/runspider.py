@@ -39,11 +39,11 @@ class Command(ScrapyCommand):
 
     def add_options(self, parser):
         ScrapyCommand.add_options(self, parser)
-        parser.add_option("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
+        parser.add_argument("-a", dest="spargs", action="append", default=[], metavar="NAME=VALUE",
                           help="set spider argument (may be repeated)")
-        parser.add_option("-o", "--output", metavar="FILE",
+        parser.add_argument("-o", "--output", metavar="FILE",
                           help="dump scraped items into FILE (use - for stdout)")
-        parser.add_option("-t", "--output-format", metavar="FORMAT",
+        parser.add_argument("-t", "--output-format", metavar="FORMAT",
                           help="format to use for dumping items with -o")
 
     def process_options(self, args, opts):
