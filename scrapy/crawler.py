@@ -5,7 +5,7 @@ import warnings
 from twisted.internet import reactor, defer
 
 from scrapy.core.engine import ExecutionEngine
-from scrapy.resolver import CachingThreadedResolver
+from scrapy.resolver import ScrapyResolver
 from scrapy.extension import ExtensionManager
 from scrapy.signalmanager import SignalManager
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -149,8 +149,7 @@ class CrawlerProcess(CrawlerRunner):
                 return
             d.addBoth(lambda _: self._stop_reactor())
 
-        if self.settings.getbool('DNSCACHE_ENABLED'):
-            reactor.installResolver(CachingThreadedResolver(reactor))
+        reactor.installResolver(ScrapyResolver(reactor, self.settings))
 
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
         reactor.run(installSignalHandlers=False)  # blocking call
