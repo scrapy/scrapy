@@ -81,11 +81,11 @@ When you ran the command ``scrapy runspider somefile.py``, Scrapy looked for a
 Spider definition inside it and ran it through its crawler engine.
 
 The crawl started by making requests to the URLs defined in the ``start_urls``
-attribute (in this case, only the URL for StackOverflow top questions page),
+attribute (in this case, only the URL for StackOverflow top questions page)
 and called the default callback method ``parse``, passing the response object as
-an argument. In the ``parse`` callback, we extract the links to the
+an argument. In the ``parse`` callback we extract the links to the
 question pages using a CSS Selector with a custom extension that allows to get
-the value for an attribute. Then, we yield a few more requests to be sent,
+the value for an attribute. Then we yield a few more requests to be sent,
 registering the method ``parse_question`` as the callback to be called for each
 of them as they finish.
 
@@ -96,7 +96,7 @@ processed, it can send another request or do other things in the meantime. This
 also means that other requests can keep going even if some request fails or an
 error happens while handling it.
 
-While this enables you to do very fast crawlings (sending multiple concurrent
+While this enables you to do very fast crawls (sending multiple concurrent
 requests at the same time, in a fault-tolerant way) Scrapy also gives you
 control over the politeness of the crawl through :ref:`a few settings
 <topics-settings-ref>`. You can do things like setting a download delay between
