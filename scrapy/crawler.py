@@ -149,9 +149,7 @@ class CrawlerProcess(CrawlerRunner):
                 return
             d.addBoth(lambda _: self._stop_reactor())
 
-        if self.settings.getbool('DNSCACHE_ENABLED'):
-            reactor.installResolver(CachingThreadedResolver(reactor))
-
+        reactor.installResolver(CachingThreadedResolver(reactor, self.settings))
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
         reactor.run(installSignalHandlers=False)  # blocking call
 
