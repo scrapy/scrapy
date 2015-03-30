@@ -7,8 +7,8 @@ to the w3lib.url module. Always import those from there instead.
 """
 import posixpath
 from six.moves.urllib.parse import (ParseResult, urlunparse, urldefrag,
-                                    urlparse, parse_qsl)
-import urllib
+                                    urlparse, parse_qsl, urlencode,
+                                    unquote)
 
 # scrapy.utils.url was moved to w3lib.url and import * ensures this move doesn't break old code
 from w3lib.url import *
@@ -56,7 +56,7 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
     scheme, netloc, path, params, query, fragment = parse_url(url)
     keyvals = parse_qsl(query, keep_blank_values)
     keyvals.sort()
-    query = urllib.urlencode(keyvals)
+    query = urlencode(keyvals)
     path = safe_url_string(_unquotepath(path)) or '/'
     fragment = '' if not keep_fragments else fragment
     return urlunparse((scheme, netloc.lower(), path, params, query, fragment))
@@ -65,7 +65,7 @@ def canonicalize_url(url, keep_blank_values=True, keep_fragments=False,
 def _unquotepath(path):
     for reserved in ('2f', '2F', '3f', '3F'):
         path = path.replace('%' + reserved, '%25' + reserved.upper())
-    return urllib.unquote(path)
+    return unquote(path)
 
 
 def parse_url(url, encoding=None):
