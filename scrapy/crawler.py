@@ -316,7 +316,8 @@ class CrawlerProcess(CrawlerRunner):
         return CachingThreadedResolver(
             reactor=reactor,
             cache_size=cache_size,
-            timeout=self.settings.getfloat('DNS_TIMEOUT')
+            timeout=self.settings.getfloat('DNS_TIMEOUT'),
+            protocol_preference=self.settings.getint('DNS_PROTOCOL_PREFERENCE'),
         )
 
     def _graceful_stop_reactor(self):

@@ -388,6 +388,22 @@ Default: ``60``
 
 Timeout for processing of DNS queries in seconds. Float is supported.
 
+.. setting:: DNS_PROTOCOL_PREFERENCE
+
+DNS_PROTOCOL_PREFERENCE
+-----------------------
+
+Default: ``46``
+
+Preferred IP protocol version for the DNS resolver.
+
+Valid values are:
+
+* ``4`` resolve to IPv4 IPs only
+* ``6`` resolve to IPv6 IPs only
+* ``46`` prefer IPv4 results over IPv6
+* ``64`` prefer IPv6 results over IPv4
+
 .. setting:: DOWNLOADER
 
 DOWNLOADER
