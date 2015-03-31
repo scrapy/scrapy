@@ -149,7 +149,8 @@ class CrawlerProcess(CrawlerRunner):
                 return
             d.addBoth(lambda _: self._stop_reactor())
 
-        reactor.installResolver(CachingThreadedResolver(reactor, self.settings))
+        reactor.installResolver(CachingThreadedResolver(reactor, self.settings.getint('DNSCACHE_SIZE'),
+                                                        self.settings.getint('DNS_TIMEOUT')))
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
         reactor.run(installSignalHandlers=False)  # blocking call
 
