@@ -279,23 +279,14 @@ Default: ``False``
 Whether to collect verbose depth stats. If this is enabled, the number of
 requests for each depth is collected in the stats.
 
-.. setting:: DNSCACHE_ENABLED
-
-DNSCACHE_ENABLED
-----------------
-
-Default: ``True``
-
-Whether to enable DNS in-memory cache.
-
-.. setting:: DNS_CACHE_SIZE
+.. setting:: DNSCACHE_SIZE
 
 DNSCACHE_SIZE
 ----------------
 
 Default: ``10000``
 
-DNS in-memory cache size.
+DNS in-memory cache size. Disabled if set to ``0``.
 
 .. setting:: DNS_TIMEOUT
 
