@@ -57,6 +57,27 @@ To increase the global concurrency use::
 
     CONCURRENT_REQUESTS = 100
 
+Increase Twisted IO thread pool maximum size
+============================================
+
+Currently Scrapy does DNS resolution in a blocking way with usage of thread
+pool. With higher concurrency levels the crawling could be slow or even fail
+hitting DNS resolver timeouts. Possible solution to increase the number of
+threads handling DNS queries. The DNS queue will be processed faster speeding
+up establishing of connection and crawling overall.
+
+To increase maximum thread pool size use::
+
+    REACTOR_THREADPOOL_MAXSIZE = 20
+
+Setup your own DNS
+==================
+
+If you have multiple crawling processes and single central DNS, it can act
+like DoS attack on the DNS server resulting to slow down of entire network or
+even blocking your machines. To avoid this setup your own DNS server with
+local cache and upstream to some large DNS like OpenDNS or Verizon.
+
 Reduce log level
 ================
 

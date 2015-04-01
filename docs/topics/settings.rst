@@ -744,6 +744,18 @@ If :setting:`DOWNLOAD_DELAY` is zero (default) this option has no effect.
 
 .. _wget: http://www.gnu.org/software/wget/manual/wget.html
 
+.. setting:: REACTOR_THREADPOOL_MAXSIZE
+
+REACTOR_THREADPOOL_MAXSIZE
+--------------------------
+
+Default: ``10``
+
+The maximum limit for Twisted Reactor thread pool size. This is common
+multi-purpose thread pool used by various Scrapy components. Threaded
+DNS Resolver, BlockingFeedStorage, S3FilesStore just to name a few. Increase
+this value if you're experiencing problems with insufficient blocking IO.
+
 .. setting:: REDIRECT_MAX_TIMES
 
 REDIRECT_MAX_TIMES
