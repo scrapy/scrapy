@@ -12,7 +12,6 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.misc import load_object
 from scrapy import log, signals
-from pdb import set_trace
 
 
 class Crawler(object):
