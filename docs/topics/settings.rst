@@ -745,7 +745,7 @@ If :setting:`DOWNLOAD_DELAY` is zero (default) this option has no effect.
 .. setting:: REACTOR_THREADPOOL_MAXSIZE
 
 REACTOR_THREADPOOL_MAXSIZE
-------------------
+--------------------------
 
 Default: ``10``
 
