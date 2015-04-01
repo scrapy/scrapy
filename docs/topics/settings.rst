@@ -288,7 +288,7 @@ Default: ``True``
 
 Whether to enable DNS in-memory cache.
 
-.. setting:: DNS_CACHE_SIZE
+.. setting:: DNSCACHE_SIZE
 
 DNSCACHE_SIZE
 ----------------
