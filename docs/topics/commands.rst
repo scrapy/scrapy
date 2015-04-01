@@ -21,7 +21,7 @@ in standard locations:
 
 1. ``/etc/scrapy.cfg`` or ``c:\scrapy\scrapy.cfg`` (system-wide),
 2. ``~/.config/scrapy.cfg`` (``$XDG_CONFIG_HOME``) and ``~/.scrapy.cfg`` (``$HOME``)
-  for global (user-wide) settings, and
+   for global (user-wide) settings, and
 3. ``scrapy.cfg`` inside a scrapy project's root (see next section).
 
 Settings from these files are merged in the listed order of preference:
