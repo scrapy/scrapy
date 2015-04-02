@@ -306,7 +306,7 @@ DNS_TIMEOUT
 
 Default: ``60``
 
-Timeout for processing of DNS queries in seconds.
+Timeout for processing of DNS queries in seconds. Float is supported.
 
 .. setting:: DOWNLOADER
 
