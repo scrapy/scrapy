@@ -6,30 +6,35 @@ See documentation in docs/topics/request-response.rst
 """
 
 import urllib
-from six.moves.urllib.parse import urljoin
+
 import lxml.html
 import six
+from six.moves.urllib.parse import urljoin
+from w3lib.url import url_query_cleaner
+
 from scrapy.http.request import Request
 from scrapy.utils.python import unicode_to_str
+from scrapy.utils.misc import arg_to_iter
 
 
 class FormRequest(Request):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, url, *args, **kwargs):
         formdata = kwargs.pop('formdata', None)
         if formdata and kwargs.get('method') is None:
             kwargs['method'] = 'POST'
 
-        super(FormRequest, self).__init__(*args, **kwargs)
+        super(FormRequest, self).__init__(url, *args, **kwargs)
 
         if formdata:
-            items = formdata.items() if isinstance(formdata, dict) else formdata
+            items = _process_formdata(formdata)
             querystr = _urlencode(items, self.encoding)
-            if self.method == 'POST':
-                self.headers.setdefault('Content-Type', 'application/x-www-form-urlencoded')
-                self._set_body(querystr)
-            else:
-                self._set_url(self.url + ('&' if '?' in self.url else '?') + querystr)
+            if querystr:
+                if self.method == 'POST':
+                    self.headers.setdefault('Content-Type', 'application/x-www-form-urlencoded')
+                    self._set_body(querystr)
+                else:
+                    self._set_url(url_query_cleaner(self.url, ('_escaped_fragment_', )) + ('&' if '?' in self.url else '?') + querystr)
 
     @classmethod
     def from_response(cls, response, formname=None, formnumber=0, formdata=None,
@@ -42,6 +47,13 @@ class FormRequest(Request):
         return cls(url=url, method=method, formdata=formdata, **kwargs)
 
 
+def _process_formdata(formdata):
+    items = formdata.items() if isinstance(formdata, dict) else formdata
+    items = [(k, u'' if v is None else v) for k, v in
+            ((k, v) for k, v in items if k)]
+    return items
+
+
 def _get_form_url(form, url):
     if url is None:
         return form.action or form.base_url
@@ -50,8 +62,7 @@ def _get_form_url(form, url):
 
 def _urlencode(seq, enc):
     values = [(unicode_to_str(k, enc), unicode_to_str(v, enc))
-              for k, vs in seq
-              for v in (vs if hasattr(vs, '__iter__') else [vs])]
+            for k, vs in seq for v in arg_to_iter(vs)]
     return urllib.urlencode(values, doseq=1)
 
 
@@ -103,9 +114,8 @@ def _get_inputs(form, formdata, dont_click, clickdata, response):
                         '|descendant::select'
                         '|descendant::input[@type!="submit" and @type!="image" and @type!="reset"'
                         'and ((@type!="checkbox" and @type!="radio") or @checked)]')
-    values = [(k, u'' if v is None else v)
-              for k, v in (_value(e) for e in inputs)
-              if k and k not in formdata]
+    values = [(k, v) for k, v in (_value(e) for e in inputs)
+            if k and k not in formdata]
 
     if not dont_click:
         clickable = _get_clickable(clickdata, form)
