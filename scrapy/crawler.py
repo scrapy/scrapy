@@ -18,12 +18,16 @@ class Crawler(object):
 
     def __init__(self, spidercls, settings):
         self.spidercls = spidercls
-        self.settings = settings
+        self.settings = settings.copy()
+
         self.signals = SignalManager(self)
         self.stats = load_object(self.settings['STATS_CLASS'])(self)
         lf_cls = load_object(self.settings['LOG_FORMATTER'])
         self.logformatter = lf_cls.from_crawler(self)
         self.extensions = ExtensionManager.from_crawler(self)
+
+        self.spidercls.update_settings(self.settings)
+        self.settings.freeze()
 
         self.crawling = False
         self.spider = None
@@ -95,11 +99,7 @@ class CrawlerRunner(object):
     def _create_crawler(self, spidercls):
         if isinstance(spidercls, six.string_types):
             spidercls = self.spiders.load(spidercls)
-
-        crawler_settings = self.settings.copy()
-        spidercls.update_settings(crawler_settings)
-        crawler_settings.freeze()
-        return Crawler(spidercls, crawler_settings)
+        return Crawler(spidercls, self.settings)
 
     def _setup_crawler_logging(self, crawler):
         log_observer = log.start_from_crawler(crawler)
