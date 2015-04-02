@@ -49,7 +49,13 @@ class RobotsTxtMiddleware(object):
             )
             dfd = self.crawler.engine.download(robotsreq, spider)
             dfd.addCallback(self._parse_robots)
+            dfd.addErrback(self._logerror, robotsreq, spider)
         return self._parsers[netloc]
+
+    def _logerror(self, failure, request, spider):
+        if failure.type is not IgnoreRequest:
+            log.msg(format="Error downloading %%(request)s: %s" % failure.value,
+                    level=log.ERROR, request=request, spider=spider)
 
     def _parse_robots(self, response):
         rp = robotparser.RobotFileParser(response.url)
