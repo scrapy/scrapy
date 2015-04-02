@@ -290,6 +290,24 @@ Default: ``True``
 
 Whether to enable DNS in-memory cache.
 
+.. setting:: DNSCACHE_SIZE
+
+DNSCACHE_SIZE
+----------------
+
+Default: ``10000``
+
+DNS in-memory cache size.
+
+.. setting:: DNS_TIMEOUT
+
+DNS_TIMEOUT
+----------------
+
+Default: ``60``
+
+Timeout for processing of DNS queries in seconds. Float is supported.
+
 .. setting:: DOWNLOADER
 
 DOWNLOADER
