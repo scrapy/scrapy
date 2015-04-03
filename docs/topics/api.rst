@@ -28,11 +28,13 @@ contains a dictionary of all available extensions and their order similar to
 how you :ref:`configure the downloader middlewares
 <topics-downloader-middleware-setting>`.
 
-.. class:: Crawler(spidercls, settings)
+.. class:: Crawler(spidercls, settings, start_requests=True)
 
     The Crawler object must be instantiated with a
     :class:`scrapy.spider.Spider` subclass and a
-    :class:`scrapy.settings.Settings` object.
+    :class:`scrapy.settings.Settings` object. Also there's optional argument
+    `start_requests` which enables/disables
+    :meth:`scrapy.spider.Spider.start_requests` for given spider.
 
     .. attribute:: settings
 
@@ -55,6 +57,13 @@ how you :ref:`configure the downloader middlewares
         For an introduction on signals see :ref:`topics-signals`.
 
         For the API see :class:`~scrapy.signalmanager.SignalManager` class.
+
+    .. attribute:: start_requests
+
+        Boolean, indicates if Crawler must use
+        :meth:`scrapy.spider.Spider.start_requests` when :meth:`crawl`
+        is called.
+
 
     .. attribute:: stats
 
@@ -486,7 +495,7 @@ class (which they all inherit from).
 
         Set the given value for the given key only if current value for the
         same key is lower than value. If there is no current value for the
-        given key, the value is always set. 
+        given key, the value is always set.
 
     .. method:: min_value(key, value)
 
