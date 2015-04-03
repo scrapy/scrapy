@@ -1,6 +1,7 @@
 from __future__ import print_function
-import sys, time, random, urllib, os, json
+import sys, time, random, os, json
 import six
+from six.moves.urllib.parse import urlencode
 from subprocess import Popen, PIPE
 from twisted.web.server import Site, NOT_DONE_YET
 from twisted.web.resource import Resource
@@ -73,7 +74,7 @@ class Follow(LeafResource):
         args = request.args.copy()
         for nl in nlist:
             args["n"] = [str(nl)]
-            argstr = urllib.urlencode(args, doseq=True)
+            argstr = urlencode(args, doseq=True)
             s += "<a href='/follow?%s'>follow %d</a><br>" % (argstr, nl)
         s += """</body>"""
         request.write(s)

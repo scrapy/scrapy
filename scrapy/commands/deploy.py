@@ -5,10 +5,11 @@ import glob
 import tempfile
 import shutil
 import time
-import urllib2
 import netrc
 import json
+from six.moves.urllib import request
 from six.moves.urllib.parse import urlparse, urljoin
+from six.moves.urllib.error import HTTPError, URLError
 from subprocess import Popen, PIPE, check_call
 
 from w3lib.form import encode_multipart
@@ -69,7 +70,7 @@ class Command(ScrapyCommand):
         except ImportError:
             raise UsageError("setuptools not installed")
 
-        urllib2.install_opener(urllib2.build_opener(HTTPRedirectHandler))
+        request.install_opener(request.build_opener(HTTPRedirectHandler))
 
         if opts.list_targets:
             for name, target in _get_targets().items():
@@ -78,9 +79,9 @@ class Command(ScrapyCommand):
 
         if opts.list_projects:
             target = _get_target(opts.list_projects)
-            req = urllib2.Request(_url(target, 'listprojects.json'))
+            req = request.Request(_url(target, 'listprojects.json'))
             _add_auth_header(req, target)
-            f = urllib2.urlopen(req)
+            f = request.urlopen(req)
             projects = json.loads(f.read())['projects']
             print(os.linesep.join(projects))
             return
@@ -188,7 +189,7 @@ def _upload_egg(target, eggpath, project, version):
         'Content-Type': 'multipart/form-data; boundary=%s' % boundary,
         'Content-Length': str(len(body)),
     }
-    req = urllib2.Request(url, body, headers)
+    req = request.Request(url, body, headers)
     _add_auth_header(req, target)
     _log('Deploying to project "%s" in %s' % (project, url))
     return _http_post(req)
@@ -207,14 +208,14 @@ def _add_auth_header(request, target):
 
 def _http_post(request):
     try:
-        f = urllib2.urlopen(request)
+        f = request.urlopen(request)
         _log("Server response (%s):" % f.code)
         print(f.read())
         return True
-    except urllib2.HTTPError as e:
+    except HTTPError as e:
         _log("Deploy failed (%s):" % e.code)
         print(e.read())
-    except urllib2.URLError as e:
+    except URLError as e:
         _log("Deploy failed: %s" % e)
 
 def _build_egg():
@@ -237,12 +238,12 @@ def _create_default_setup_py(**kwargs):
         f.write(_SETUP_PY_TEMPLATE % kwargs)
 
 
-class HTTPRedirectHandler(urllib2.HTTPRedirectHandler):
+class HTTPRedirectHandler(request.HTTPRedirectHandler):
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         newurl = newurl.replace(' ', '%20')
         if code in (301, 307):
-            return urllib2.Request(newurl,
+            return request.Request(newurl,
                                    data=req.get_data(),
                                    headers=req.headers,
                                    origin_req_host=req.get_origin_req_host(),
@@ -250,9 +251,9 @@ class HTTPRedirectHandler(urllib2.HTTPRedirectHandler):
         elif code in (302, 303):
             newheaders = dict((k, v) for k, v in req.headers.items()
                               if k.lower() not in ("content-length", "content-type"))
-            return urllib2.Request(newurl,
+            return request.Request(newurl,
                                    headers=newheaders,
                                    origin_req_host=req.get_origin_req_host(),
                                    unverifiable=True)
         else:
-            raise urllib2.HTTPError(req.get_full_url(), code, msg, headers, fp)
+            raise HTTPError(req.get_full_url(), code, msg, headers, fp)
