@@ -1,2 +1,2 @@
 extras/scrapy_bash_completion etc/bash_completion.d/
-extras/_scrapy_zsh_completion /usr/local/share/zsh/site-functions/
+extras/scrapy_zsh_completion /usr/share/zsh/vendor-completions/_scrapy
