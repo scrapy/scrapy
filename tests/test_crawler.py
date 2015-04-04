@@ -25,16 +25,6 @@ class CrawlerTestCase(unittest.TestCase):
             self.crawler.spiders
             self.assertEqual(len(w), 1, "Warn deprecated access only once")
 
-
-class CrawlerRunnerTest(unittest.TestCase):
-
-    def setUp(self):
-        self.crawler_runner = CrawlerRunner(Settings())
-
-    def tearDown(self):
-        return self.crawler_runner.stop()
-
-    @defer.inlineCallbacks
     def test_populate_spidercls_settings(self):
         spider_settings = {'TEST1': 'spider', 'TEST2': 'spider'}
         project_settings = {'TEST1': 'project', 'TEST3': 'project'}
@@ -42,12 +32,13 @@ class CrawlerRunnerTest(unittest.TestCase):
         class CustomSettingsSpider(DefaultSpider):
             custom_settings = spider_settings
 
-        self.crawler_runner.settings.setdict(project_settings,
-                                             priority='project')
+        settings = Settings()
+        settings.setdict(project_settings, priority='project')
+        crawler = Crawler(CustomSettingsSpider, settings)
 
-        d = self.crawler_runner.crawl(CustomSettingsSpider)
-        crawler = list(self.crawler_runner.crawlers)[0]
-        yield d
         self.assertEqual(crawler.settings.get('TEST1'), 'spider')
         self.assertEqual(crawler.settings.get('TEST2'), 'spider')
         self.assertEqual(crawler.settings.get('TEST3'), 'project')
+
+        self.assertFalse(settings.frozen)
+        self.assertTrue(crawler.settings.frozen)
