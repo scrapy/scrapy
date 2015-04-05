@@ -16,7 +16,7 @@ _scrapy() {
         ;;
         *)
             if [[ CURRENT -eq 2 ]]; then
-                _arguments '*: :(check crawl edit fetch genspider list parse runspider server settings shell startproject version view)'
+                _arguments '*: :(check crawl edit fetch genspider list parse runspider settings shell startproject version view)'
             fi
         ;;
     esac
