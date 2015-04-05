@@ -13,13 +13,125 @@ from twisted.web.iweb import IBodyProducer, UNKNOWN_LENGTH
 from twisted.internet.error import TimeoutError
 from twisted.web.http import PotentialDataLoss
 from scrapy.xlib.tx import Agent, ProxyAgent, ResponseDone, \
-    HTTPConnectionPool, TCP4ClientEndpoint
+    HTTPConnectionPool as TxHTTPConnectionPool, TCP4ClientEndpoint
 
 from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import _parse
 from scrapy.utils.misc import load_object
 from scrapy import log, twisted_version
+
+
+# patching HTTP11ClientProtocol
+from scrapy.xlib.tx import (
+    _HTTP11ClientFactory as TxHTTP11ClientFactory,
+    HTTP11ClientProtocol as TxHTTP11ClientProtocol,
+    HTTPClientParser as TxHTTPClientParser,
+    TransportProxyProducer, Response, ParseError, RequestNotSent
+)
+import six
+if six.PY2:
+    from httplib import responses
+else:
+    from http.client import responses
+
+
+class HTTPClientParser(TxHTTPClientParser):
+
+    def statusReceived(self, status):
+        """
+        Parse the status line into its components and create a response object
+        to keep track of this response's state.
+        """
+        parts = status.split(' ', 2)
+        if len(parts) < 2: # TODO: would we even get here without a status code?
+            raise ParseError("invalid response, missing status code", status)
+
+        if len(parts) != 3:
+            # httplib.responses is missing some codes, such as 510,
+            # so add some string anyway
+            parts += [responses.get(parts[1], 'UNKNOWN')]
+
+        try:
+            statusCode = int(parts[1])
+        except ValueError:
+            raise ParseError("non-integer status code", status)
+
+        self.response = Response(
+            self.parseVersion(parts[0]),
+            statusCode,
+            parts[2],
+            self.headers,
+            self.transport)
+
+
+from twisted.python.failure import Failure
+from twisted.internet.defer import Deferred, fail, maybeDeferred
+from twisted.internet.defer import CancelledError
+class HTTP11ClientProtocol(TxHTTP11ClientProtocol):
+
+    def parser(self, request, finisher):
+        return HTTPClientParser(request, finisher)
+
+    def request(self, request):
+        if self._state != 'QUIESCENT':
+            return fail(RequestNotSent())
+
+        self._state = 'TRANSMITTING'
+        _requestDeferred = maybeDeferred(request.writeTo, self.transport)
+
+        def cancelRequest(ign):
+            # Explicitly cancel the request's deferred if it's still trying to
+            # write when this request is cancelled.
+            if self._state in (
+                    'TRANSMITTING', 'TRANSMITTING_AFTER_RECEIVING_RESPONSE'):
+                _requestDeferred.cancel()
+            else:
+                self.transport.abortConnection()
+                self._disconnectParser(Failure(CancelledError()))
+        self._finishedRequest = Deferred(cancelRequest)
+
+        # Keep track of the Request object in case we need to call stopWriting
+        # on it.
+        self._currentRequest = request
+
+        self._transportProxy = TransportProxyProducer(self.transport)
+        # XXX: only line we're overwriting in this subclassed method:
+        self._parser = self.parser(request, self._finishResponse)
+        self._parser.makeConnection(self._transportProxy)
+        self._responseDeferred = self._parser._responseDeferred
+
+        def cbRequestWrotten(ignored):
+            if self._state == 'TRANSMITTING':
+                self._state = 'WAITING'
+                self._responseDeferred.chainDeferred(self._finishedRequest)
+
+        def ebRequestWriting(err):
+            if self._state == 'TRANSMITTING':
+                self._state = 'GENERATION_FAILED'
+                self.transport.abortConnection()
+                self._finishedRequest.errback(
+                    Failure(RequestGenerationFailed([err])))
+            else:
+                log.err(err, 'Error writing request, but not in valid state '
+                             'to finalize request: %s' % self._state)
+
+        _requestDeferred.addCallbacks(cbRequestWrotten, ebRequestWriting)
+
+        return self._finishedRequest
+
+
+class _HTTP11ClientFactory(TxHTTP11ClientFactory):
+
+    def buildProtocol(self, addr):
+        #return TxHTTP11ClientFactory.buildProtocol(self, addr)
+        return HTTP11ClientProtocol(self._quiescentCallback)
+
+
+class HTTPConnectionPool(TxHTTPConnectionPool):
+
+    _factory = _HTTP11ClientFactory
+# /end patch
 
 
 class HTTP11DownloadHandler(object):
