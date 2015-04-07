@@ -124,6 +124,38 @@ class LxmlXmliterTestCase(XmliterTestCase):
         node = next(namespace_iter)
         self.assertEqual(node.xpath('text()').extract(), ['http://www.mydummycompany.com/images/item2.jpg'])
 
+    def test_xmliter_namespaces_prefix(self):
+        body = """\
+        <?xml version="1.0" encoding="UTF-8"?>
+        <root>
+            <h:table xmlns:h="http://www.w3.org/TR/html4/">
+              <h:tr>
+                <h:td>Apples</h:td>
+                <h:td>Bananas</h:td>
+              </h:tr>
+            </h:table>
+
+            <f:table xmlns:f="http://www.w3schools.com/furniture">
+              <f:name>African Coffee Table</f:name>
+              <f:width>80</f:width>
+              <f:length>120</f:length>
+            </f:table>
+
+        </root>
+        """
+        response = XmlResponse(url='http://mydummycompany.com', body=body)
+        my_iter = self.xmliter(response, 'table', 'http://www.w3.org/TR/html4/', 'h')
+
+        node = next(my_iter)
+        self.assertEqual(len(node.xpath('h:tr/h:td').extract()), 2)
+        self.assertEqual(node.xpath('h:tr/h:td[1]/text()').extract(), ['Apples'])
+        self.assertEqual(node.xpath('h:tr/h:td[2]/text()').extract(), ['Bananas'])
+
+        my_iter = self.xmliter(response, 'table', 'http://www.w3schools.com/furniture', 'f')
+
+        node = next(my_iter)
+        self.assertEqual(node.xpath('f:name/text()').extract(), ['African Coffee Table'])
+
 
 class UtilsCsvTestCase(unittest.TestCase):
     sample_feeds_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sample_data', 'feeds')
