@@ -150,7 +150,7 @@ Solving specific problems
    topics/leaks
    topics/images
    topics/ubuntu
-   topics/deployment
+   topics/deploy
    topics/autothrottle
    topics/benchmarking
    topics/jobs
@@ -186,8 +186,8 @@ Solving specific problems
 :doc:`topics/ubuntu`
     Install latest Scrapy packages easily on Ubuntu
 
-:doc:`topics/deployment`
-    Deploying your Scrapy project in production.
+:doc:`topics/deploy`
+    Deploying your Scrapy spiders and run them in a remote server.
 
 :doc:`topics/autothrottle`
     Adjust crawl rate dynamically based on load.

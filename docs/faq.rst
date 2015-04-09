@@ -154,7 +154,7 @@ For more info see:
 What is the recommended way to deploy a Scrapy crawler in production?
 ---------------------------------------------------------------------
 
-See :ref:`topics-scrapyd`.
+See :ref:`topics-deploy`.
 
 Can I use JSON for large exports?
 ---------------------------------
