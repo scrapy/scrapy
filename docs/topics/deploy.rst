@@ -13,7 +13,7 @@ spiders come in.
 
 The most popular choices, for deploying Scrapy spiders, are:
 
-* :ref:`Scrapy Cloud <deploy-scrapy-cloud>` (open source, easier to setup)
+* :ref:`Scrapy Cloud <deploy-scrapy-cloud>` (cloud-based, easier to setup)
 * :ref:`Scrapyd <deploy-scrapyd>` (open source, harder to setup)
 
 .. _deploy-scrapy-cloud:
