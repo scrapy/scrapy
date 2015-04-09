@@ -150,7 +150,7 @@ Solving specific problems
    topics/leaks
    topics/images
    topics/ubuntu
-   topics/scrapyd
+   topics/deployment
    topics/autothrottle
    topics/benchmarking
    topics/jobs
@@ -186,7 +186,7 @@ Solving specific problems
 :doc:`topics/ubuntu`
     Install latest Scrapy packages easily on Ubuntu
 
-:doc:`topics/scrapyd`
+:doc:`topics/deployment`
     Deploying your Scrapy project in production.
 
 :doc:`topics/autothrottle`
