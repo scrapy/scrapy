@@ -3,6 +3,7 @@ XPath selectors based on lxml
 """
 
 from lxml import etree
+import six
 
 from scrapy.utils.misc import extract_regex
 from scrapy.utils.trackref import object_ref
@@ -95,7 +96,8 @@ class Selector(object_ref):
             result = xpathev(query, namespaces=self.namespaces,
                              smart_strings=self._lxml_smart_strings)
         except etree.XPathError:
-            raise ValueError("Invalid XPath: %s" % query)
+            msg = u"Invalid XPath: %s" % query
+            raise ValueError(msg if six.PY3 else msg.encode("unicode_escape"))
 
         if type(result) is not list:
             result = [result]
