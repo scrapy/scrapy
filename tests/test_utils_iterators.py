@@ -1,8 +1,7 @@
 import os
 from twisted.trial import unittest
 
-from scrapy.utils.iterators import csviter, xmliter, _body_or_str
-from scrapy.contrib_exp.iterators import xmliter_lxml
+from scrapy.utils.iterators import csviter, xmliter, _body_or_str, xmliter_lxml
 from scrapy.http import XmlResponse, TextResponse, Response
 from tests import get_testdata
 
