@@ -101,7 +101,7 @@ how you :ref:`configure the downloader middlewares
 
 .. class:: CrawlerRunner(settings)
 
-    This is a convenient helper class that creates, configures and runs
+    This is a convenient helper class that keeps track of, manages and runs
     crawlers inside an already setup Twisted `reactor`_.
 
     The CrawlerRunner object must be instantiated with a
@@ -116,18 +116,23 @@ how you :ref:`configure the downloader middlewares
        Set of :class:`crawlers <scrapy.crawler.Crawler>` created by the
        :meth:`crawl` method.
 
-    .. method:: crawl(spidercls, \*args, \**kwargs)
+    .. method:: crawl(crawler_or_spidercls, \*args, \**kwargs)
 
-       This method sets up the crawling of the given `spidercls` with the
-       provided arguments.
+       This method runs a crawler with the provided arguments.
 
-       It takes care of loading the spider class while configuring and starting
-       a crawler for it.
+       It will keep track of the given crawler so it can be stopped later,
+       while calling its :meth:`Crawler.crawl` method.
+
+       If `crawler_or_spidercls` isn't a :class:`~scrapy.crawler.Crawler`
+       instance, it will try to create one using this parameter as the spider
+       class given to it.
 
        Returns a deferred that is fired when the crawl is finished.
 
-       :param spidercls: spider class or spider's name inside the project
-       :type spidercls: :class:`~scrapy.spider.Spider` subclass or str
+       :param crawler_or_spidercls: already created crawler, or a spider class
+       or spider's name inside the project to create it
+       :type crawler_or_spidercls: :class:`~scrapy.crawler.Crawler` instance,
+        :class:`~scrapy.spider.Spider` subclass or string
 
        :param args: arguments to initializate the spider
        :type args: list
