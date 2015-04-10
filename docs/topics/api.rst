@@ -116,11 +116,6 @@ how you :ref:`configure the downloader middlewares
        Set of :class:`crawlers <scrapy.crawler.Crawler>` created by the
        :meth:`crawl` method.
 
-    .. attribute:: crawl_deferreds
-
-       Set of the `deferreds`_ return by the :meth:`crawl` method. This
-       collection it's useful for keeping track of current crawling state.
-
     .. method:: crawl(spidercls, \*args, \**kwargs)
 
        This method sets up the crawling of the given `spidercls` with the
