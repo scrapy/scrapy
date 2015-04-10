@@ -194,21 +194,21 @@ def _upload_egg(target, eggpath, project, version):
     _log('Deploying to project "%s" in %s' % (project, url))
     return _http_post(req)
 
-def _add_auth_header(request, target):
+def _add_auth_header(req, target):
     if 'username' in target:
         u, p = target.get('username'), target.get('password', '')
-        request.add_header('Authorization', basic_auth_header(u, p))
+        req.add_header('Authorization', basic_auth_header(u, p))
     else: # try netrc
         try:
             host = urlparse(target['url']).hostname
             a = netrc.netrc().authenticators(host)
-            request.add_header('Authorization', basic_auth_header(a[0], a[2]))
+            req.add_header('Authorization', basic_auth_header(a[0], a[2]))
         except (netrc.NetrcParseError, IOError, TypeError):
             pass
 
-def _http_post(request):
+def _http_post(req):
     try:
-        f = request.urlopen(request)
+        f = request.urlopen(req)
         _log("Server response (%s):" % f.code)
         print(f.read())
         return True
