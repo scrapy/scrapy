@@ -82,9 +82,12 @@ class CrawlerRunner(object):
         self.crawlers = set()
         self._active = set()
 
-    def crawl(self, spidercls, *args, **kwargs):
-        crawler = self._create_crawler(spidercls)
-        self._setup_crawler_logging(crawler)
+    def crawl(self, crawler_or_spidercls, *args, **kwargs):
+        crawler = crawler_or_spidercls
+        if not isinstance(crawler_or_spidercls, Crawler):
+            crawler = self._create_crawler(crawler_or_spidercls)
+            self._setup_crawler_logging(crawler)
+
         self.crawlers.add(crawler)
         d = crawler.crawl(*args, **kwargs)
         self._active.add(d)
