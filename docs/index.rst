@@ -181,7 +181,7 @@ Solving specific problems
     Learn how to find and get rid of memory leaks in your crawler.
 
 :doc:`topics/images`
-    Download static images associated with your scraped items.
+    Download files and/or images associated with your scraped items.
 
 :doc:`topics/ubuntu`
     Install latest Scrapy packages easily on Ubuntu

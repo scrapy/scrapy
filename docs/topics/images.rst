@@ -1,76 +1,94 @@
 .. _topics-images:
 
-=======================
-Downloading Item Images
-=======================
+===========================================
+Downloading and processing files and images
+===========================================
 
 .. currentmodule:: scrapy.contrib.pipeline.images
 
-Scrapy provides an :doc:`item pipeline </topics/item-pipeline>` for downloading
-images attached to a particular item, for example, when you scrape products and
-also want to download their images locally.
+Scrapy provides reusable :doc:`item pipelines </topics/item-pipeline>` for
+downloading fies attached to a particular item (for example, when you scrape
+products and also want to download their images locally). These pipelines share
+a bit of functionality and structure (we refer to them as media pipelines), but
+typically you'll either use the Files Pipeline or the Images Pipeline.
 
-This pipeline, called the Images Pipeline and implemented in the
-:class:`ImagesPipeline` class, provides a convenient way for
-downloading and storing images locally with some additional features:
+Both pipelines implement these features:
+
+* Avoid re-downloading media that was downloaded recently
+* Specifying where to store the files (filesystem directory, Amazon S3 bucket)
+
+The Images Pipeline has a few extra functions for processing images:
 
 * Convert all downloaded images to a common format (JPG) and mode (RGB)
-* Avoid re-downloading images which were downloaded recently
 * Thumbnail generation
 * Check images width/height to make sure they meet a minimum constraint
 
-This pipeline also keeps an internal queue of those images which are currently
-being scheduled for download, and connects those items that arrive containing
-the same image, to that queue. This avoids downloading the same image more than
+The pipelines also keep an internal queue of those images which are currently
+being scheduled for download, and connect those items that arrive containing
+the same image to that queue. This avoids downloading the same media more than
 once when it's shared by several items.
 
-`Pillow`_ is used for thumbnailing and normalizing images to JPEG/RGB format,
-so you need to install this library in order to use the images pipeline.
-`Python Imaging Library`_ (PIL) should also work in most cases, but it
-is known to cause troubles in some setups, so we recommend to use `Pillow`_
-instead of `PIL <Python Imaging Library>`_.
+The Images Pipeline uses `Pillow`_ for thumbnailing and normalizing images to
+JPEG/RGB format, so you need to install this library in order to use it.
+`Python Imaging Library`_ (PIL) should also work in most cases, but it is known
+to cause troubles in some setups, so we recommend to use `Pillow`_ instead of
+`PIL <Python Imaging Library>`_.
 
 .. _Pillow: https://github.com/python-pillow/Pillow
 .. _Python Imaging Library: http://www.pythonware.com/products/pil/
 
-Using the Images Pipeline
+Using the Files Pipeline
 =========================
 
-The typical workflow, when using the :class:`ImagesPipeline` goes like
+The typical workflow, when using the :class:`FilesPipeline` goes like
 this:
 
-1. In a Spider, you scrape an item and put the URLs of its images into a
-   ``image_urls`` field.
+1. In a Spider, you scrape an item and put the URLs of the desired into a
+   ``file_urls`` field.
 
 2. The item is returned from the spider and goes to the item pipeline.
 
-3. When the item reaches the :class:`ImagesPipeline`, the URLs in the
-   ``image_urls`` field are scheduled for download using the standard
+3. When the item reaches the :class:`FilesPipeline`, the URLs in the
+   ``file_urls`` field are scheduled for download using the standard
    Scrapy scheduler and downloader (which means the scheduler and downloader
    middlewares are reused), but with a higher priority, processing them before other
    pages are scraped. The item remains "locked" at that particular pipeline stage
-   until the images have finish downloading (or fail for some reason).
+   until the files have finish downloading (or fail for some reason).
 
-4. When the images are downloaded another field (``images``) will be populated
+4. When the files are downloaded, another field (``files``) will be populated
    with the results. This field will contain a list of dicts with information
-   about the images downloaded, such as the downloaded path, the original
-   scraped url (taken from the ``image_urls`` field) , and the image checksum.
-   The images in the list of the ``images`` field will retain the same order of
-   the original ``image_urls`` field. If some image failed downloading, an
-   error will be logged and the image won't be present in the ``images`` field.
+   about the downloaded files, such as the downloaded path, the original
+   scraped url (taken from the ``file_urls`` field) , and the file checksum.
+   The files in the list of the ``files`` field will retain the same order of
+   the original ``file_urls`` field. If some file failed downloading, an
+   error will be logged and the file won't be present in the ``files`` field.
+
+
+Using the Images Pipeline
+=========================
+
+Using the :class:`ImagesPipeline` is a lot like using the :class:`FilesPipeline`,
+except the default field names used are different: you use ``image_urls`` for
+the image URLs of an item and it will populate an ``images`` field for the information
+about the downloaded images.
+
+The advantage of using the :class:`ImagesPipeline` for image files is that you
+can configure some extra functions like generating thumbnails and filtering
+the images based on their size.
 
 
 Usage example
 =============
 
-In order to use the image pipeline first  
-:ref:`enable it <topics-images-enabling>`.
+In order to use a media pipeline first, :ref:`enable it
+<topics-media-pipeline-enabling>`.
 
-Then, if a spider returns a dict with 'image_urls' key, 
-the pipeline will put the results under 'images' key.
+Then, if a spider returns a dict with the URLs key ('file_urls' or
+'image_urls', for the Files or Images Pipeline respectively), the pipeline will
+put the results under respective key ('files' or images').
 
-If you prefer to use :class:`~.Item` then define a custom 
-item with the ``image_urls`` and ``images`` fields::
+If you prefer to use :class:`~.Item`, then define a custom item with the
+necessary fields, like in this example for Images Pipeline::
 
     import scrapy
 
@@ -80,42 +98,57 @@ item with the ``image_urls`` and ``images`` fields::
         image_urls = scrapy.Field()
         images = scrapy.Field()
         
-If you need something more complex and want to override the custom images
-pipeline behaviour, see :ref:`topics-images-override`.
+If you need something more complex and want to override the custom pipeline
+behaviour, see :ref:`topics-media-pipeline-override`.
 
-.. _topics-images-enabling:
+.. _topics-media-pipeline-enabling:
 
-Enabling your Images Pipeline
+Enabling your Media Pipeline
 =============================
 
 .. setting:: IMAGES_STORE
+.. setting:: FILES_STORE
 
-To enable your images pipeline you must first add it to your project
-:setting:`ITEM_PIPELINES` setting::
+To enable your media pipeline you must first add it to your project
+:setting:`ITEM_PIPELINES` setting.
+
+For Images Pipeline, use::
 
     ITEM_PIPELINES = {'scrapy.contrib.pipeline.images.ImagesPipeline': 1}
 
-And set the :setting:`IMAGES_STORE` setting to a valid directory that will be
-used for storing the downloaded images. Otherwise the pipeline will remain
-disabled, even if you include it in the :setting:`ITEM_PIPELINES` setting.
+For Files Pipeline, use::
 
-For example::
+    ITEM_PIPELINES = {'scrapy.contrib.pipeline.files.FilesPipeline': 1}
+
+
+.. note::
+    You can also use both the Files and Images Pipeline at the same time.
+
+
+Then, configure the target storage setting to a valid value that will be used
+for storing the downloaded images. Otherwise the pipeline will remain disabled,
+even if you include it in the :setting:`ITEM_PIPELINES` setting.
+
+For the Files Pipeline, set the :setting:`FILES_STORE` setting::
+
+   FILES_STORE = '/path/to/valid/dir'
+
+For the Images Pipeline, set the :setting:`IMAGES_STORE` setting::
 
    IMAGES_STORE = '/path/to/valid/dir'
 
-Images Storage
-==============
+Supported Storage
+=================
 
 File system is currently the only officially supported storage, but there is
-also (undocumented) support for `Amazon S3`_.
+also (undocumented) support for storing files in `Amazon S3`_.
 
 .. _Amazon S3: http://aws.amazon.com/s3/
 
 File system storage
 -------------------
 
-The images are stored in files (one per image), using a `SHA1 hash`_ of their
-URLs for the file names.
+The files are stored using a `SHA1 hash`_ of their URLs for the file names.
 
 For example, the following image URL::
 
@@ -132,29 +165,36 @@ Will be downloaded and stored in the following file::
 Where:
 
 * ``<IMAGES_STORE>`` is the directory defined in :setting:`IMAGES_STORE` setting
+for the Images Pipeline.
 
 * ``full`` is a sub-directory to separate full images from thumbnails (if
   used). For more info see :ref:`topics-images-thumbnails`.
 
+
 Additional features
 ===================
 
-Image expiration
+File expiration
 ----------------
 
 .. setting:: IMAGES_EXPIRES
+.. setting:: FILES_EXPIRES
 
-The Image Pipeline avoids downloading images that were downloaded recently. To
-adjust this retention delay use the :setting:`IMAGES_EXPIRES` setting, which
+The Image Pipeline avoids downloading files that were downloaded recently. To
+adjust this retention delay use the :setting:`FILES_EXPIRES` setting (or
+:setting:`IMAGES_EXPIRES`, in case of Images Pipeline), which
 specifies the delay in number of days::
 
-    # 90 days of delay for image expiration
-    IMAGES_EXPIRES = 90
+    # 90 days of delay for files expiration
+    FILES_EXPIRES = 90
+
+    # 30 days of delay for images expiration
+    IMAGES_EXPIRES = 30
 
 .. _topics-images-thumbnails:
 
-Thumbnail generation
---------------------
+Thumbnail generation for images
+-------------------------------
 
 The Images Pipeline can automatically create thumbnails of the downloaded
 images.
@@ -200,8 +240,9 @@ Filtering out small images
 
 .. setting:: IMAGES_MIN_WIDTH
 
-You can drop images which are too small, by specifying the minimum allowed size
-in the :setting:`IMAGES_MIN_HEIGHT` and :setting:`IMAGES_MIN_WIDTH` settings.
+When using the Images Pipeline, you can drop images which are too small, by
+specifying the minimum allowed size in the :setting:`IMAGES_MIN_HEIGHT` and
+:setting:`IMAGES_MIN_WIDTH` settings.
 
 For example::
 
@@ -212,45 +253,45 @@ Note: these size constraints don't affect thumbnail generation at all.
 
 By default, there are no size constraints, so all images are processed.
 
-.. _topics-images-override:
+.. _topics-media-pipeline-override:
 
-Implementing your custom Images Pipeline
-========================================
+Extending the Media Pipelines
+=============================
 
-.. module:: scrapy.contrib.pipeline.images
-   :synopsis: Images Pipeline
+.. module:: scrapy.contrib.pipeline.files
+   :synopsis: Files Pipeline
 
-Here are the methods that you should override in your custom Images Pipeline:
+See here the methods that you can override in your custom Files Pipeline:
 
-.. class:: ImagesPipeline
+.. class:: FilesPipeline
 
-   .. method:: get_media_requests(item, info)
+   .. method:: FilesPipeline.get_media_requests(item, info)
 
       As seen on the workflow, the pipeline will get the URLs of the images to
-      download from the item. In order to do this, you must override the
+      download from the item. In order to do this, you can override the
       :meth:`~get_media_requests` method and return a Request for each
-      image URL::
+      file URL::
 
          def get_media_requests(self, item, info):
-             for image_url in item['image_urls']:
-                 yield scrapy.Request(image_url)
+             for file_url in item['file_urls']:
+                 yield scrapy.Request(file_url)
 
       Those requests will be processed by the pipeline and, when they have finished
       downloading, the results will be sent to the
       :meth:`~item_completed` method, as a list of 2-element tuples.
-      Each tuple will contain ``(success, image_info_or_failure)`` where:
+      Each tuple will contain ``(success, file_info_or_error)`` where:
 
       * ``success`` is a boolean which is ``True`` if the image was downloaded
         successfully or ``False`` if it failed for some reason
 
-      * ``image_info_or_error`` is a dict containing the following keys (if success
+      * ``file_info_or_error`` is a dict containing the following keys (if success
         is ``True``) or a `Twisted Failure`_ if there was a problem.
 
-        * ``url`` - the url where the image was downloaded from. This is the url of
+        * ``url`` - the url where the file was downloaded from. This is the url of
           the request returned from the :meth:`~get_media_requests`
           method.
 
-        * ``path`` - the path (relative to :setting:`IMAGES_STORE`) where the image
+        * ``path`` - the path (relative to :setting:`FILES_STORE`) where the file
           was stored
 
         * ``checksum`` - a `MD5 hash`_ of the image contents
@@ -263,21 +304,17 @@ Here are the methods that you should override in your custom Images Pipeline:
 
           [(True,
             {'checksum': '2b00042f7481c7b056c4b410d28f33cf',
-             'path': 'full/7d97e98f8af710c7e7fe703abc8f639e0ee507c4.jpg',
-             'url': 'http://www.example.com/images/product1.jpg'}),
-           (True,
-            {'checksum': 'b9628c4ab9b595f72f280b90c4fd093d',
-             'path': 'full/1ca5879492b8fd606df1964ea3c1e2f4520f076f.jpg',
-             'url': 'http://www.example.com/images/product2.jpg'}),
+             'path': 'full/0a79c461a4062ac383dc4fade7bc09f1384a3910.jpg',
+             'url': 'http://www.example.com/files/product1.pdf'}),
            (False,
             Failure(...))]
 
       By default the :meth:`get_media_requests` method returns ``None`` which
-      means there are no images to download for the item.
+      means there are no files to download for the item.
 
-   .. method:: item_completed(results, items, info)
+   .. method:: FilesPipeline.item_completed(results, items, info)
 
-      The :meth:`ImagesPipeline.item_completed` method called when all image
+      The :meth:`FilesPipeline.item_completed` method called when all file
       requests for a single item have completed (either finished downloading, or
       failed for some reason).
 
@@ -286,17 +323,46 @@ Here are the methods that you should override in your custom Images Pipeline:
       return (or drop) the item, as you would in any pipeline.
 
       Here is an example of the :meth:`~item_completed` method where we
-      store the downloaded image paths (passed in results) in the ``image_paths``
-      item field, and we drop the item if it doesn't contain any images::
+      store the downloaded file paths (passed in results) in the ``file_paths``
+      item field, and we drop the item if it doesn't contain any files::
 
           from scrapy.exceptions import DropItem
 
           def item_completed(self, results, item, info):
-              image_paths = [x['path'] for ok, x in results if ok]
-              if not image_paths:
-                  raise DropItem("Item contains no images")
-              item['image_paths'] = image_paths
+              file_paths = [x['path'] for ok, x in results if ok]
+              if not file_paths:
+                  raise DropItem("Item contains no files")
+              item['file_paths'] = file_paths
               return item
+
+      By default, the :meth:`item_completed` method returns the item.
+
+
+.. module:: scrapy.contrib.pipeline.images
+   :synopsis: Images Pipeline
+
+See here the methods that you can override in your custom Images Pipeline:
+
+.. class:: ImagesPipeline
+
+    The :class:`ImagesPipeline` is an extension of the :class:`FilesPipeline`,
+    customizing the field names and adding custom behavior for images.
+
+   .. method:: ImagesPipeline.get_media_requests(item, info)
+
+      Works the same way as :meth:`FilesPipeline.get_media_requests` method,
+      but using a different field name for image urls.
+
+      Must return a Request for each image URL.
+
+   .. method:: ImagesPipeline.item_completed(results, items, info)
+
+      The :meth:`ImagesPipeline.item_completed` method is called when all image
+      requests for a single item have completed (either finished downloading, or
+      failed for some reason).
+
+      Works the same way as :meth:`FilesPipeline.item_completed` method,
+      but using a different field names for storing image downloading results.
 
       By default, the :meth:`item_completed` method returns the item.
 
