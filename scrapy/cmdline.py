@@ -6,7 +6,7 @@ import inspect
 import pkg_resources
 
 import scrapy
-from scrapy.crawler import CrawlerProcess
+from scrapy.utils.command import CrawlerProcess
 from scrapy.xlib import lsprofcalltree
 from scrapy.command import ScrapyCommand
 from scrapy.exceptions import UsageError
