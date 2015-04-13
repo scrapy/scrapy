@@ -85,9 +85,6 @@ Those objects are:
  * ``response`` - a :class:`~scrapy.http.Response` object containing the last
    fetched page
 
- * ``sel`` - a :class:`~scrapy.selector.Selector` object constructed
-   with the last response fetched
-
  * ``settings`` - the current :ref:`Scrapy settings <topics-settings>`
 
 Example of shell session
@@ -117,7 +114,6 @@ all start with the ``[s]`` prefix)::
     [s]   item       {}
     [s]   request    <GET http://scrapy.org>
     [s]   response   <200 http://scrapy.org>
-    [s]   sel        <Selector xpath=None data=u'<html>\n  <head>\n    <meta charset="utf-8'>
     [s]   settings   <scrapy.settings.Settings object at 0x2bfd650>
     [s]   spider     <Spider 'default' at 0x20c6f50>
     [s] Useful shortcuts:
@@ -129,8 +125,8 @@ all start with the ``[s]`` prefix)::
 
 After that, we can start playing with the objects::
 
-    >>> sel.xpath("//h2/text()").extract()[0]
-    u'Welcome to Scrapy'
+    >>> response.xpath("//h1/text()").extract()[0]
+    u'Meet Scrapy'
 
     >>> fetch("http://slashdot.org")
     [s] Available Scrapy objects:
@@ -138,7 +134,6 @@ After that, we can start playing with the objects::
     [s]   item       {}
     [s]   request    <GET http://slashdot.org>
     [s]   response   <200 http://slashdot.org>
-    [s]   sel        <Selector xpath=None data=u'<html lang="en">\n<head>\n\n\n\n\n<script id="'>
     [s]   settings   <scrapy.settings.Settings object at 0x2bfd650>
     [s]   spider     <Spider 'default' at 0x20c6f50>
     [s] Useful shortcuts:
@@ -146,7 +141,7 @@ After that, we can start playing with the objects::
     [s]   fetch(req_or_url) Fetch request (or URL) and update local objects
     [s]   view(response)    View response in a browser
 
-    >>> sel.xpath('//title/text()').extract()
+    >>> response.xpath('//title/text()').extract()
     [u'Slashdot: News for nerds, stuff that matters']
 
     >>> request = request.replace(method="POST")
@@ -203,7 +198,7 @@ When you run the spider, you will get something similar to this::
 
 Then, you can check if the extraction code is working::
 
-    >>> sel.xpath('//h1[@class="fn"]')
+    >>> response.xpath('//h1[@class="fn"]')
     []
 
 Nope, it doesn't. So you can open the response in your web browser and see if
