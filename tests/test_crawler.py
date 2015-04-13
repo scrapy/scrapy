@@ -2,6 +2,7 @@ import warnings
 import unittest
 
 from twisted.internet import defer
+from zope.interface.verify import DoesNotImplement
 
 from scrapy.crawler import Crawler, CrawlerRunner
 from scrapy.settings import Settings
@@ -42,3 +43,19 @@ class CrawlerTestCase(unittest.TestCase):
 
         self.assertFalse(settings.frozen)
         self.assertTrue(crawler.settings.frozen)
+
+
+def SpiderManagerWithWrongInterface(object):
+
+    def unneeded_method(self):
+        pass
+
+
+class CrawlerRunnerTestCase(unittest.TestCase):
+
+    def test_spider_manager_verify_interface(self):
+        settings = Settings({
+            'SPIDER_MANAGER_CLASS': 'tests.test_crawler.SpiderManagerWithWrongInterface'
+        })
+        with self.assertRaises(DoesNotImplement):
+            CrawlerRunner(settings)

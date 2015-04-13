@@ -3,9 +3,11 @@ import signal
 import warnings
 
 from twisted.internet import reactor, defer
+from zope.interface.verify import verifyClass
 
 from scrapy.core.engine import ExecutionEngine
 from scrapy.resolver import CachingThreadedResolver
+from scrapy.interfaces import ISpiderManager
 from scrapy.extension import ExtensionManager
 from scrapy.signalmanager import SignalManager
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -78,6 +80,7 @@ class CrawlerRunner(object):
     def __init__(self, settings):
         self.settings = settings
         smcls = load_object(settings['SPIDER_MANAGER_CLASS'])
+        verifyClass(ISpiderManager, smcls)
         self.spiders = smcls.from_settings(settings.frozencopy())
         self.crawlers = set()
         self._active = set()
