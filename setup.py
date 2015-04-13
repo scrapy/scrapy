@@ -44,5 +44,9 @@ setup(
         'pyOpenSSL',
         'cssselect>=0.9',
         'six>=1.5.2',
+        'selectors',
+    ],
+    dependency_links=[
+        'git+https://github.com/umrashrf/selectors.git#egg=selectors'
     ],
 )
