@@ -92,7 +92,6 @@ scrapy/contrib/linkextractors/htmlparser.py
 scrapy/contrib/downloadermiddleware/retry.py
 scrapy/contrib/downloadermiddleware/httpproxy.py
 scrapy/contrib/downloadermiddleware/cookies.py
-scrapy/contrib/downloadermiddleware/ajaxcrawl.py
 scrapy/contrib/statsmailer.py
 scrapy/contrib/memusage.py
 scrapy/commands/deploy.py
