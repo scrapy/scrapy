@@ -4,6 +4,7 @@ import csv
 from io import BytesIO
 import tempfile
 import shutil
+import six
 from six.moves.urllib.parse import urlparse
 
 from zope.interface.verify import verifyObject
@@ -117,6 +118,8 @@ class StdoutFeedStorageTest(unittest.TestCase):
 
 
 class FeedExportTest(unittest.TestCase):
+
+    skip = not six.PY2
 
     class MyItem(scrapy.Item):
         foo = scrapy.Field()
