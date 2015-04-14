@@ -30,7 +30,7 @@ For serializing the scraped data, the feed exports use the :ref:`Item exporters
 
 But you can also extend the supported format through the
 :setting:`FEED_EXPORTERS` setting.
- 
+
 .. _topics-feed-format-json:
 
 JSON
@@ -38,7 +38,8 @@ JSON
 
  * :setting:`FEED_FORMAT`: ``json``
  * Exporter used: :class:`~scrapy.contrib.exporter.JsonItemExporter`
- * See :ref:`this warning <json-with-large-data>` if you're using JSON with large feeds
+ * See :ref:`this warning <json-with-large-data>` if you're using JSON with
+   large feeds.
 
 .. _topics-feed-format-jsonlines:
 
@@ -55,6 +56,10 @@ CSV
 
  * :setting:`FEED_FORMAT`: ``csv``
  * Exporter used: :class:`~scrapy.contrib.exporter.CsvItemExporter`
+ * To specify columns to export and their order use
+   :setting:`FEED_EXPORT_FIELDS`. Other feed exporters can also use this
+   option, but it is important for CSV because unlike many other export
+   formats CSV uses a fixed header.
 
 .. _topics-feed-format-xml:
 
@@ -202,6 +207,7 @@ These are the settings used for configuring the feed exports:
  * :setting:`FEED_STORAGES`
  * :setting:`FEED_EXPORTERS`
  * :setting:`FEED_STORE_EMPTY`
+ * :setting:`FEED_EXPORT_FIELDS`
 
 .. currentmodule:: scrapy.contrib.feedexport
 
@@ -224,6 +230,20 @@ FEED_FORMAT
 
 The serialization format to be used for the feed. See
 :ref:`topics-feed-format` for possible values.
+
+.. setting:: FEED_EXPORT_FIELDS
+
+FEED_EXPORT_FIELDS
+------------------
+
+A list of fields to export, optional.
+Example: ``FEED_EXPORT_FIELDS = ["foo", "bar", "baz"]``.
+
+Use FEED_EXPORT_FIELDS option to define fields to export and their order.
+
+When omitted, Scrapy uses fields defined in :class:`~.Item` subclasses a spider
+is yielding. If raw dicts are used as items Scrapy tries to infer field names
+from the exported data - currently it uses field names from the first item.
 
 .. setting:: FEED_STORE_EMPTY
 
@@ -249,7 +269,7 @@ The keys are URI schemes and the values are paths to storage classes.
 FEED_STORAGES_BASE
 ------------------
 
-Default:: 
+Default::
 
     {
         '': 'scrapy.contrib.feedexport.FileFeedStorage',
@@ -277,7 +297,7 @@ classes.
 FEED_EXPORTERS_BASE
 -------------------
 
-Default:: 
+Default::
 
     FEED_EXPORTERS_BASE = {
         'json': 'scrapy.contrib.exporter.JsonItemExporter',
