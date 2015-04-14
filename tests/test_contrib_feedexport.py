@@ -191,6 +191,42 @@ class FeedExportTest(unittest.TestCase):
         yield self.assertExportedCsv(items, header, rows, ordered=False)
 
     @defer.inlineCallbacks
+    def test_export_csv_multiple_item_classes(self):
+
+        class MyItem2(scrapy.Item):
+            foo = scrapy.Field()
+            hello = scrapy.Field()
+
+        items = [
+            self.MyItem({'foo': 'bar1', 'egg': 'spam1'}),
+            MyItem2({'hello': 'world2', 'foo': 'bar2'}),
+            self.MyItem({'foo': 'bar3', 'egg': 'spam3', 'baz': 'quux3'}),
+            {'hello': 'world4', 'egg': 'spam4'},
+        ]
+
+        # by default, Scrapy uses fields of the first Item
+        header = self.MyItem.fields.keys()
+        rows = [
+            {'egg': 'spam1', 'foo': 'bar1', 'baz': ''},
+            {'egg': '',      'foo': 'bar2', 'baz': ''},
+            {'egg': 'spam3', 'foo': 'bar3', 'baz': 'quux3'},
+            {'egg': 'spam4', 'foo': '',     'baz': ''},
+        ]
+        yield self.assertExportedCsv(items, header, rows, ordered=False)
+
+        # but it is possible to override fields using FEED_EXPORT_FIELDS
+        header = ["foo", "baz", "hello"]
+        settings = {'FEED_EXPORT_FIELDS': header}
+        rows = [
+            {'foo': 'bar1', 'baz': '',      'hello': ''},
+            {'foo': 'bar2', 'baz': '',      'hello': 'world2'},
+            {'foo': 'bar3', 'baz': 'quux3', 'hello': ''},
+            {'foo': '',     'baz': '',      'hello': 'world4'},
+        ]
+        yield self.assertExportedCsv(items, header, rows,
+                                     settings=settings, ordered=True)
+
+    @defer.inlineCallbacks
     def test_export_csv_dicts(self):
         # When dicts are used, only keys from the first row are used as
         # a header.
