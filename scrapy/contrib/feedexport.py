@@ -151,15 +151,7 @@ class FeedExporter(object):
 
     @classmethod
     def from_crawler(cls, crawler):
-        if len(get_func_args(cls)) < 1:
-            # FIXME: remove for scrapy 0.17
-            import warnings
-            from scrapy.exceptions import ScrapyDeprecationWarning
-            warnings.warn("%s must receive a settings object as first constructor argument." % cls.__name__,
-                ScrapyDeprecationWarning, stacklevel=2)
-            o = cls()
-        else:
-            o = cls(crawler.settings)
+        o = cls(crawler.settings)
         crawler.signals.connect(o.open_spider, signals.spider_opened)
         crawler.signals.connect(o.close_spider, signals.spider_closed)
         crawler.signals.connect(o.item_scraped, signals.item_scraped)
