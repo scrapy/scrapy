@@ -52,16 +52,16 @@ the spider class as first argument in the :meth:`CrawlerRunner.crawl
 ::
 
     from twisted.internet import reactor
-    from scrapy.spider import Spider
+    import scrapy
     from scrapy.crawler import CrawlerRunner
-    from scrapy.settings import Settings
 
-    class MySpider(Spider):
+    class MySpider(scrapy.Spider):
         # Your spider definition
         ...
 
-    settings = Settings({'USER_AGENT': 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)'})
-    runner = CrawlerRunner(settings)
+    runner = CrawlerRunner({
+        'USER_AGENT': 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)'
+    })
 
     d = runner.crawl(MySpider)
     d.addBoth(lambda _: reactor.stop())
