@@ -97,5 +97,4 @@ scrapy/contrib/statsmailer.py
 scrapy/contrib/memusage.py
 scrapy/commands/deploy.py
 scrapy/commands/bench.py
-scrapy/telnet.py
 scrapy/mail.py

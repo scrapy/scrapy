@@ -6,9 +6,13 @@ See documentation in docs/topics/telnetconsole.rst
 
 import pprint
 
-from twisted.conch import manhole, telnet
-from twisted.conch.insults import insults
 from twisted.internet import protocol
+try:
+    from twisted.conch import manhole, telnet
+    from twisted.conch.insults import insults
+    TWISTED_CONCH_AVAILABLE = True
+except ImportError:
+    TWISTED_CONCH_AVAILABLE = False
 
 from scrapy.exceptions import NotConfigured
 from scrapy import log, signals
@@ -31,6 +35,8 @@ class TelnetConsole(protocol.ServerFactory):
 
     def __init__(self, crawler):
         if not crawler.settings.getbool('TELNETCONSOLE_ENABLED'):
+            raise NotConfigured
+        if not TWISTED_CONCH_AVAILABLE:
             raise NotConfigured
         self.crawler = crawler
         self.noisy = False
