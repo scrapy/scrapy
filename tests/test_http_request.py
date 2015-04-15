@@ -547,7 +547,7 @@ class FormRequestTest(RequestTest):
         fs = _qs(r1)
         self.assertEqual(fs, {'four': ['4'], 'three': ['3']})
 
-    def test_from_response_formid_notexists_fallback_formname(self):
+    def test_from_response_formname_notexists_fallback_formid(self):
         response = _buildresponse(
             """<form action="post.php" method="POST">
             <input type="hidden" name="one" value="1">
@@ -557,7 +557,7 @@ class FormRequestTest(RequestTest):
             <input type="hidden" name="three" value="3">
             <input type="hidden" name="four" value="4">
             </form>""")
-        r1 = self.request_class.from_response(response, formid="form3", formname="form2")
+        r1 = self.request_class.from_response(response, formname="form3", formid="form2")
         self.assertEqual(r1.method, 'POST')
         fs = _qs(r1)
         self.assertEqual(fs, {'four': ['4'], 'three': ['3']})
