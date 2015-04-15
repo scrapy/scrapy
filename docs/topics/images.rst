@@ -15,7 +15,7 @@ typically you'll either use the Files Pipeline or the Images Pipeline.
 Both pipelines implement these features:
 
 * Avoid re-downloading media that was downloaded recently
-* Specifying where to store the files (filesystem directory, Amazon S3 bucket)
+* Specifying where to store the media (filesystem directory, Amazon S3 bucket)
 
 The Images Pipeline has a few extra functions for processing images:
 
@@ -23,19 +23,10 @@ The Images Pipeline has a few extra functions for processing images:
 * Thumbnail generation
 * Check images width/height to make sure they meet a minimum constraint
 
-The pipelines also keep an internal queue of those images which are currently
-being scheduled for download, and connect those items that arrive containing
-the same image to that queue. This avoids downloading the same media more than
+The pipelines also keep an internal queue of those media URLs which are currently
+being scheduled for download, and connect those responses that arrive containing
+the same media to that queue. This avoids downloading the same media more than
 once when it's shared by several items.
-
-The Images Pipeline uses `Pillow`_ for thumbnailing and normalizing images to
-JPEG/RGB format, so you need to install this library in order to use it.
-`Python Imaging Library`_ (PIL) should also work in most cases, but it is known
-to cause troubles in some setups, so we recommend to use `Pillow`_ instead of
-`PIL <Python Imaging Library>`_.
-
-.. _Pillow: https://github.com/python-pillow/Pillow
-.. _Python Imaging Library: http://www.pythonware.com/products/pil/
 
 Using the Files Pipeline
 =========================
@@ -75,6 +66,15 @@ about the downloaded images.
 The advantage of using the :class:`ImagesPipeline` for image files is that you
 can configure some extra functions like generating thumbnails and filtering
 the images based on their size.
+
+The Images Pipeline uses `Pillow`_ for thumbnailing and normalizing images to
+JPEG/RGB format, so you need to install this library in order to use it.
+`Python Imaging Library`_ (PIL) should also work in most cases, but it is known
+to cause troubles in some setups, so we recommend to use `Pillow`_ instead of
+`PIL <Python Imaging Library>`_.
+
+.. _Pillow: https://github.com/python-pillow/Pillow
+.. _Python Imaging Library: http://www.pythonware.com/products/pil/
 
 
 Usage example
