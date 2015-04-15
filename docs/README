@@ -8,16 +8,12 @@ This file provides a quick guide on how to compile the Scrapy documentation.
 Setup the environment
 ---------------------
 
-To compile the documentation you need the following Python libraries:
+To compile the documentation you need Sphinx Python library. To install it
+and all its dependencies run
 
- * Sphinx
- * docutils
- * jinja
+::
 
-If you have setuptools available the following command will install all of them
-(since Sphinx requires both docutils and jinja)::
-
-    easy_install Sphinx
+    pip install 'Sphinx >= 1.3'
 
 
 Compile the documentation
