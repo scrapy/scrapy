@@ -11,56 +11,43 @@ when you need to execute long-running spiders or move spiders to run in
 production continously. This is where the solutions for deploying Scrapy
 spiders come in.
 
-The most popular choices, for deploying Scrapy spiders, are:
+Popular choices for deploying Scrapy spiders are:
 
-* :ref:`Scrapy Cloud <deploy-scrapy-cloud>` (cloud-based, easier to setup)
-* :ref:`Scrapyd <deploy-scrapyd>` (open source, harder to setup)
-
-.. _deploy-scrapy-cloud:
-
-Deploying to Scrapy Cloud
-=========================
-
-`Scrapy Cloud`_ is a hosted, cloud-based service by `Scrapinghub`_, the company
-behind Scrapy.
-
-Advantages:
-
-- easy to setup (no need to setup or manage servers)
-- well-designed UI to manage spiders and review scraped items, logs and stats
-- cheap pricing (cheaper than renting a server, for small workloads)
-
-Disadvantages:
-
-- it's not open source
-
-To deploy spiders to Scrapy Cloud you can use the `shub`_ command line tool.
-Please refer to the `Scrapy Cloud documentation`_ for more information.
-
-The configuration is read from the ``scrapy.cfg`` file just like
-``scrapyd-deploy``.
+* :ref:`Scrapyd <deploy-scrapyd>` (open source)
+* :ref:`Scrapy Cloud <deploy-scrapy-cloud>` (cloud-based)
 
 .. _deploy-scrapyd:
 
 Deploying to a Scrapyd Server
 =============================
 
-`Scrapyd`_ is an open source application to run Scrapy spiders. It is
-maintained by some of the Scrapy developers.
-
-Advantages:
-
-- it's open source, so it can be installed and run anywhere
-
-Disadvantages:
-
-- simple UI (no analytics, graphs or rich log/items browsing)
-- requires setting up servers, installing and configuring scrapyd on them. An
-  APT repo with Ubuntu packages is provided by the Scrapyd team
+`Scrapyd`_ is an open source application to run Scrapy spiders. It provides
+a server with HTTP API, capable of running and monitoring Scrapy spiders.
 
 To deploy spiders to Scrapyd, you can use the scrapyd-deploy tool provided by
 the `scrapyd-client`_ package. Please refer to the `scrapyd-deploy
 documentation`_ for more information.
+
+Scrapyd is maintained by some of the Scrapy developers.
+
+.. _deploy-scrapy-cloud:
+
+Deploying to Scrapy Cloud
+=========================
+
+`Scrapy Cloud`_ is a hosted, cloud-based service by `Scrapinghub`_,
+the company behind Scrapy.
+
+Scrapy Cloud removes the need to setup and monitor servers
+and provides a nice UI to manage spiders and review scraped items,
+logs and stats.
+
+To deploy spiders to Scrapy Cloud you can use the `shub`_ command line tool.
+Please refer to the `Scrapy Cloud documentation`_ for more information.
+
+Scrapy Cloud is compatible with Scrapyd and one can switch between
+them as needed - the configuration is read from the ``scrapy.cfg`` file
+just like ``scrapyd-deploy``.
 
 .. _Scrapyd: https://github.com/scrapy/scrapyd
 .. _Deploying your project: https://scrapyd.readthedocs.org/en/latest/deploy.html
