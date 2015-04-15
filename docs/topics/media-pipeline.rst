@@ -1,4 +1,4 @@
-.. _topics-images:
+.. _topics-media-pipeline:
 
 ===========================================
 Downloading and processing files and images

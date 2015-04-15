@@ -148,7 +148,7 @@ Solving specific problems
    topics/firefox
    topics/firebug
    topics/leaks
-   topics/images
+   topics/media-pipeline
    topics/ubuntu
    topics/scrapyd
    topics/autothrottle
@@ -180,7 +180,7 @@ Solving specific problems
 :doc:`topics/leaks`
     Learn how to find and get rid of memory leaks in your crawler.
 
-:doc:`topics/images`
+:doc:`topics/media-pipeline`
     Download files and/or images associated with your scraped items.
 
 :doc:`topics/ubuntu`

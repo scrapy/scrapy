@@ -1,5 +1,7 @@
 """
 Files Pipeline
+
+See documentation in topics/media-pipeline.rst
 """
 
 import hashlib

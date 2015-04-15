@@ -1,7 +1,7 @@
 """
 Images Pipeline
 
-See documentation in topics/images.rst
+See documentation in topics/media-pipeline.rst
 """
 
 import hashlib
