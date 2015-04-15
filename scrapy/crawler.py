@@ -9,6 +9,7 @@ from scrapy.core.engine import ExecutionEngine
 from scrapy.resolver import CachingThreadedResolver
 from scrapy.interfaces import ISpiderManager
 from scrapy.extension import ExtensionManager
+from scrapy.settings import Settings
 from scrapy.signalmanager import SignalManager
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
@@ -19,6 +20,9 @@ from scrapy import log, signals
 class Crawler(object):
 
     def __init__(self, spidercls, settings):
+        if isinstance(settings, dict):
+            settings = Settings(settings)
+
         self.spidercls = spidercls
         self.settings = settings.copy()
 
@@ -78,6 +82,8 @@ class Crawler(object):
 class CrawlerRunner(object):
 
     def __init__(self, settings):
+        if isinstance(settings, dict):
+            settings = Settings(settings)
         self.settings = settings
         smcls = load_object(settings['SPIDER_MANAGER_CLASS'])
         verifyClass(ISpiderManager, smcls)

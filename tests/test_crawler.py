@@ -1,11 +1,10 @@
 import warnings
 import unittest
 
-from twisted.internet import defer
 from zope.interface.verify import DoesNotImplement
 
 from scrapy.crawler import Crawler, CrawlerRunner
-from scrapy.settings import Settings
+from scrapy.settings import Settings, default_settings
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
 
@@ -44,6 +43,16 @@ class CrawlerTestCase(unittest.TestCase):
         self.assertFalse(settings.frozen)
         self.assertTrue(crawler.settings.frozen)
 
+    def test_crawler_accepts_dict(self):
+        crawler = Crawler(DefaultSpider, {'foo': 'bar'})
+        self.assertEqual(crawler.settings['foo'], 'bar')
+        self.assertEqual(
+            crawler.settings['RETRY_ENABLED'],
+            default_settings.RETRY_ENABLED
+        )
+        self.assertIsInstance(crawler.settings, Settings)
+
+
 
 def SpiderManagerWithWrongInterface(object):
 
@@ -59,3 +68,13 @@ class CrawlerRunnerTestCase(unittest.TestCase):
         })
         with self.assertRaises(DoesNotImplement):
             CrawlerRunner(settings)
+
+    def test_crawler_runner_accepts_dict(self):
+        runner = CrawlerRunner({'foo': 'bar'})
+        self.assertEqual(runner.settings['foo'], 'bar')
+        self.assertEqual(
+            runner.settings['RETRY_ENABLED'],
+            default_settings.RETRY_ENABLED
+        )
+        self.assertIsInstance(runner.settings, Settings)
+
