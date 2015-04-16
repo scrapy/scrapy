@@ -61,7 +61,7 @@ In other words, data is being collected by extracting it from two XPath
 locations, using the :meth:`~ItemLoader.add_xpath` method. This is the
 data that will be assigned to the ``name`` field later.
 
-Afterwords, similar calls are used for ``price`` and ``stock`` fields
+Afterwards, similar calls are used for ``price`` and ``stock`` fields
 (the later using a CSS selector with the :meth:`~ItemLoader.add_css` method),
 and finally the ``last_update`` field is populated directly with a literal value
 (``today``) using a different method: :meth:`~ItemLoader.add_value`.
