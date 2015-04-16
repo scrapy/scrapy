@@ -7,7 +7,7 @@ from zope.interface.verify import verifyClass
 
 from scrapy.core.engine import ExecutionEngine
 from scrapy.resolver import CachingThreadedResolver
-from scrapy.interfaces import ISpiderManager
+from scrapy.interfaces import ISpiderLoader
 from scrapy.extension import ExtensionManager
 from scrapy.settings import Settings
 from scrapy.signalmanager import SignalManager
@@ -44,11 +44,10 @@ class Crawler(object):
         if not hasattr(self, '_spiders'):
             warnings.warn("Crawler.spiders is deprecated, use "
                           "CrawlerRunner.spiders or instantiate "
-                          "scrapy.spidermanager.SpiderManager with your "
+                          "scrapy.spiderloader.SpiderLoader with your "
                           "settings.",
                           category=ScrapyDeprecationWarning, stacklevel=2)
-            spman_cls = load_object(self.settings['SPIDER_MANAGER_CLASS'])
-            self._spiders = spman_cls.from_settings(self.settings)
+            self._spiders = _get_spider_loader(self.settings.frozencopy())
         return self._spiders
 
     @defer.inlineCallbacks
@@ -85,9 +84,7 @@ class CrawlerRunner(object):
         if isinstance(settings, dict):
             settings = Settings(settings)
         self.settings = settings
-        smcls = load_object(settings['SPIDER_MANAGER_CLASS'])
-        verifyClass(ISpiderManager, smcls)
-        self.spiders = smcls.from_settings(settings.frozencopy())
+        self.spiders = _get_spider_loader(settings)
         self.crawlers = set()
         self._active = set()
 
@@ -178,3 +175,18 @@ class CrawlerProcess(CrawlerRunner):
             reactor.stop()
         except RuntimeError:  # raised if already stopped or in shutdown stage
             pass
+
+
+def _get_spider_loader(settings):
+    """ Get SpiderLoader instance from settings """
+    if settings.get('SPIDER_MANAGER_CLASS'):
+        warnings.warn(
+            'SPIDER_MANAGER_CLASS option is deprecated. '
+            'Please use SPIDER_LOADER_CLASS.',
+            category=ScrapyDeprecationWarning, stacklevel=2
+        )
+    cls_path = settings.get('SPIDER_LOADER_CLASS',
+                            settings.get('SPIDER_MANAGER_CLASS'))
+    loader_cls = load_object(cls_path)
+    verifyClass(ISpiderLoader, loader_cls)
+    return loader_cls.from_settings(settings.frozencopy())

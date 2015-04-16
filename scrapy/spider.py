@@ -97,7 +97,9 @@ class ObsoleteClass(object):
     def __getattr__(self, name):
         raise AttributeError(self.message)
 
-spiders = ObsoleteClass("""
-"from scrapy.spider import spiders" no longer works - use "from scrapy.spidermanager import SpiderManager" and instantiate it with your project settings"
-""")
+spiders = ObsoleteClass(
+    '"from scrapy.spider import spiders" no longer works - use '
+    '"from scrapy.spiderloader import SpiderLoader" and instantiate '
+    'it with your project settings"'
+)
 

@@ -215,7 +215,7 @@ SCHEDULER = 'scrapy.core.scheduler.Scheduler'
 SCHEDULER_DISK_QUEUE = 'scrapy.squeue.PickleLifoDiskQueue'
 SCHEDULER_MEMORY_QUEUE = 'scrapy.squeue.LifoMemoryQueue'
 
-SPIDER_MANAGER_CLASS = 'scrapy.spidermanager.SpiderManager'
+SPIDER_LOADER_CLASS = 'scrapy.spiderloader.SpiderLoader'
 
 SPIDER_MIDDLEWARES = {}
 

@@ -19,7 +19,7 @@ class CrawlerTestCase(unittest.TestCase):
             spiders = self.crawler.spiders
             self.assertEqual(len(w), 1)
             self.assertIn("Crawler.spiders", str(w[0].message))
-            sm_cls = load_object(self.crawler.settings['SPIDER_MANAGER_CLASS'])
+            sm_cls = load_object(self.crawler.settings['SPIDER_LOADER_CLASS'])
             self.assertIsInstance(spiders, sm_cls)
 
             self.crawler.spiders
@@ -54,7 +54,7 @@ class CrawlerTestCase(unittest.TestCase):
 
 
 
-def SpiderManagerWithWrongInterface(object):
+class SpiderLoaderWithWrongInterface(object):
 
     def unneeded_method(self):
         pass
@@ -64,7 +64,7 @@ class CrawlerRunnerTestCase(unittest.TestCase):
 
     def test_spider_manager_verify_interface(self):
         settings = Settings({
-            'SPIDER_MANAGER_CLASS': 'tests.test_crawler.SpiderManagerWithWrongInterface'
+            'SPIDER_LOADER_CLASS': 'tests.test_crawler.SpiderLoaderWithWrongInterface'
         })
         with self.assertRaises(DoesNotImplement):
             CrawlerRunner(settings)
