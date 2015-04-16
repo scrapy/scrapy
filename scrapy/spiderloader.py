@@ -41,7 +41,7 @@ class SpiderLoader(object):
 
     def find_by_request(self, request):
         """
-        Return the list of spiders names that can handle the given request.
+        Return the list of spider names that can handle the given request.
         """
         return [name for name, cls in self._spiders.items()
                 if cls.handles_request(request)]

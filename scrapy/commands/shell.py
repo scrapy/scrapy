@@ -42,13 +42,13 @@ class Command(ScrapyCommand):
 
     def run(self, args, opts):
         url = args[0] if args else None
-        spiders = self.crawler_process.spiders
+        spider_loader = self.crawler_process.spider_loader
 
         spidercls = DefaultSpider
         if opts.spider:
-            spidercls = spiders.load(opts.spider)
+            spidercls = spider_loader.load(opts.spider)
         elif url:
-            spidercls = spidercls_for_request(spiders, Request(url),
+            spidercls = spidercls_for_request(spider_loader, Request(url),
                                               spidercls, log_multiple=True)
 
         # The crawler is created this way since the Shell manually handles the

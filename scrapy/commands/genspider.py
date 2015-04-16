@@ -65,7 +65,7 @@ class Command(ScrapyCommand):
             return
 
         try:
-            spidercls = self.crawler_process.spiders.load(name)
+            spidercls = self.crawler_process.spider_loader.load(name)
         except KeyError:
             pass
         else:

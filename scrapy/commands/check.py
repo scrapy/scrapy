@@ -69,10 +69,10 @@ class Command(ScrapyCommand):
         # contract requests
         contract_reqs = defaultdict(list)
 
-        spiders = self.crawler_process.spiders
+        spider_loader = self.crawler_process.spider_loader
 
-        for spidername in args or spiders.list():
-            spidercls = spiders.load(spidername)
+        for spidername in args or spider_loader.list():
+            spidercls = spider_loader.load(spidername)
             spidercls.start_requests = lambda s: conman.from_spider(s, result)
 
             tested_methods = conman.tested_methods_from_spidercls(spidercls)

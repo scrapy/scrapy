@@ -43,7 +43,7 @@ class Crawler(object):
     def spiders(self):
         if not hasattr(self, '_spiders'):
             warnings.warn("Crawler.spiders is deprecated, use "
-                          "CrawlerRunner.spiders or instantiate "
+                          "CrawlerRunner.spider_loader or instantiate "
                           "scrapy.spiderloader.SpiderLoader with your "
                           "settings.",
                           category=ScrapyDeprecationWarning, stacklevel=2)
@@ -84,9 +84,16 @@ class CrawlerRunner(object):
         if isinstance(settings, dict):
             settings = Settings(settings)
         self.settings = settings
-        self.spiders = _get_spider_loader(settings)
+        self.spider_loader = _get_spider_loader(settings)
         self.crawlers = set()
         self._active = set()
+
+    @property
+    def spiders(self):
+        warnings.warn("CrawlerRunner.spiders attribute is renamed to "
+                      "CrawlerRunner.spider_loader.",
+                      category=ScrapyDeprecationWarning, stacklevel=2)
+        return self.spider_loader
 
     def crawl(self, crawler_or_spidercls, *args, **kwargs):
         crawler = crawler_or_spidercls
@@ -107,7 +114,7 @@ class CrawlerRunner(object):
 
     def _create_crawler(self, spidercls):
         if isinstance(spidercls, six.string_types):
-            spidercls = self.spiders.load(spidercls)
+            spidercls = self.spider_loader.load(spidercls)
         return Crawler(spidercls, self.settings)
 
     def _setup_crawler_logging(self, crawler):

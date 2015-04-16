@@ -26,7 +26,7 @@ def iter_spider_classes(module):
            getattr(obj, 'name', None):
             yield obj
 
-def spidercls_for_request(spiderloader, request, default_spidercls=None,
+def spidercls_for_request(spider_loader, request, default_spidercls=None,
                           log_none=False, log_multiple=False):
     """Return a spider class that handles the given Request.
 
@@ -38,9 +38,9 @@ def spidercls_for_request(spiderloader, request, default_spidercls=None,
     default_spidercls passed. It can optionally log if multiple or no spiders
     are found.
     """
-    snames = spiderloader.find_by_request(request)
+    snames = spider_loader.find_by_request(request)
     if len(snames) == 1:
-        return spiderloader.load(snames[0])
+        return spider_loader.load(snames[0])
 
     if len(snames) > 1 and log_multiple:
         log.msg(format='More than one spider can handle: %(request)s - %(snames)s',
