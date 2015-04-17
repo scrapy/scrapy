@@ -101,7 +101,7 @@ Let's see a concrete example of an hypothetical case of memory leaks.
 Suppose we have some spider with a line similar to this one::
 
     return Request("http://www.somenastyspider.com/product.php?pid=%d" % product_id,
-        callback=self.parse, meta={referer: response}")
+        callback=self.parse, meta={referer: response})
 
 That line is passing a response reference inside a request which effectively
 ties the response lifetime to the requests' one, and that would definitely
