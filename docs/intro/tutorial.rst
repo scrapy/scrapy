@@ -33,8 +33,8 @@ for non-programmers`_.
 Creating a project
 ==================
 
-Before you start scraping, you will have set up a new Scrapy project. Enter a
-directory where you'd like to store your code and then run::
+Before you start scraping, you will have to set up a new Scrapy project. Enter a
+directory where you'd like to store your code and run::
 
     scrapy startproject tutorial
 
@@ -69,12 +69,12 @@ like simple python dicts but provide additional protection against populating
 undeclared fields, to prevent typos.
 
 They are declared by creating a :class:`scrapy.Item <scrapy.item.Item>` class and defining
-its attributes as :class:`scrapy.Field <scrapy.item.Field>` objects, like you will in an ORM
+its attributes as :class:`scrapy.Field <scrapy.item.Field>` objects, much like in an ORM
 (don't worry if you're not familiar with ORMs, you will see that this is an
 easy task).
 
-We begin by modeling the item that we will use to hold the sites data obtained
-from dmoz.org, as we want to capture the name, url and description of the
+We begin by modeling the item that we will use to hold the site's data obtained
+from dmoz.org. As we want to capture the name, url and description of the
 sites, we define fields for each of these three attributes. To do that, we edit
 ``items.py``, found in the ``tutorial`` directory. Our Item class looks like this::
 
@@ -86,7 +86,7 @@ sites, we define fields for each of these three attributes. To do that, we edit
         desc = scrapy.Field()
 
 This may seem complicated at first, but defining the item allows you to use other handy
-components of Scrapy that need to know how your item looks.
+components of Scrapy that need to know what does your item look like.
 
 Our first Spider
 ================
@@ -95,7 +95,7 @@ Spiders are user-written classes used to scrape information from a domain (or gr
 of domains).
 
 They define an initial list of URLs to download, how to follow links, and how
-to parse the contents of those pages to extract :ref:`items <topics-items>`.
+to parse the contents of pages to extract :ref:`items <topics-items>`.
 
 To create a Spider, you must subclass :class:`scrapy.Spider <scrapy.spider.Spider>` and
 define the three main mandatory attributes:
@@ -103,12 +103,12 @@ define the three main mandatory attributes:
 * :attr:`~scrapy.spider.Spider.name`: identifies the Spider. It must be
   unique, that is, you can't set the same name for different Spiders.
 
-* :attr:`~scrapy.spider.Spider.start_urls`: is a list of URLs where the
-  Spider will begin to crawl from.  So, the first pages downloaded will be those
+* :attr:`~scrapy.spider.Spider.start_urls`: a list of URLs where the
+  Spider will begin to crawl from.  The first pages downloaded will be those
   listed here. The subsequent URLs will be generated successively from data
   contained in the start URLs.
 
-* :meth:`~scrapy.spider.Spider.parse` is a method of the spider, which will
+* :meth:`~scrapy.spider.Spider.parse` a method of the spider, which will
   be called with the downloaded :class:`~scrapy.http.Response` object of each
   start URL. The response is passed to the method as the first and only
   argument.
@@ -160,13 +160,13 @@ will get an output similar to this::
     2014-01-23 18:13:09-0400 [dmoz] DEBUG: Crawled (200) <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> (referer: None)
     2014-01-23 18:13:09-0400 [dmoz] INFO: Closing spider (finished)
 
-Pay attention to the lines containing ``[dmoz]``, which corresponds to our
+Pay attention to the lines containing ``[dmoz]``, which correspond to our
 spider. You can see a log line for each URL defined in ``start_urls``. Because
 these URLs are the starting ones, they have no referrers, which is shown at the
 end of the log line, where it says ``(referer: None)``.
 
-But more interesting, as our ``parse`` method instructs, two files have been
-created: *Books* and *Resources*, with the content of both URLs.
+But more interestingly, as our ``parse`` method instructs, two files have been
+created: *Books* and *Resources*, with the content of respective URLs.
 
 What just happened under the hood?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -196,7 +196,7 @@ mechanisms see the :ref:`Selectors documentation <topics-selectors>`.
 Here are some examples of XPath expressions and their meanings:
 
 * ``/html/head/title``: selects the ``<title>`` element, inside the ``<head>``
-  element of a HTML document
+  element of an HTML document
 
 * ``/html/head/title/text()``: selects the text inside the aforementioned
   ``<title>`` element.
@@ -212,7 +212,7 @@ recommend `this XPath tutorial <http://www.w3schools.com/XPath/default.asp>`_.
 
 For working with XPaths, Scrapy provides :class:`~scrapy.selector.Selector`
 class and convenient shortcuts to avoid instantiating selectors yourself
-everytime you need to select something from a response.
+every time you need to select something from a response.
 
 You can see selectors as objects that represent nodes in the document
 structure. So, the first instantiated selectors are associated with the root
@@ -222,11 +222,11 @@ Selectors have four basic methods (click on the method to see the complete API
 documentation):
 
 * :meth:`~scrapy.selector.Selector.xpath`: returns a list of selectors, each of
-  them representing the nodes selected by the xpath expression given as
+  which represents the nodes selected by the xpath expression given as
   argument.
 
 * :meth:`~scrapy.selector.Selector.css`: returns a list of selectors, each of
-  them representing the nodes selected by the CSS expression given as argument.
+  which represents the nodes selected by the CSS expression given as argument.
 
 * :meth:`~scrapy.selector.Selector.extract`: returns a unicode string with the
   selected data.
@@ -248,7 +248,7 @@ To start a shell, you must go to the project's top level directory and run::
 
 .. note::
 
-   Remember to always enclose urls with quotes when running Scrapy shell from
+   Remember to always enclose urls with quotes in running Scrapy shell from
    command-line, otherwise urls containing arguments (ie. ``&`` character)
    will not work.
 
@@ -275,10 +275,12 @@ After the shell loads, you will have the response fetched in a local
 ``response`` variable, so if you type ``response.body`` you will see the body
 of the response, or you can type ``response.headers`` to see its headers.
 
-More important, if you type ``response.selector`` you will access a selector
-object you can use to query the response, and convenient shortcuts like
-``response.xpath()`` and ``response.css()`` mapping to
-``response.selector.xpath()`` and ``response.selector.css()``
+More importantly ``response`` has a ``selector`` attribute which is an instance of
+:class:`~scrapy.selector.Selector` class, instantiated with this particular ``response``.
+You can run queries on ``response`` by calling ``response.selector.xpath()`` or
+``response.selector.css()``. There are also some convenience shortcuts like ``response.xpath()``
+or ``response.xml()`` which map directly to ``response.selector.xpath()`` and
+``response.selector.css()``.
 
 
 So let's try it::
@@ -305,27 +307,27 @@ Now, let's try to extract some real information from those pages.
 
 You could type ``response.body`` in the console, and inspect the source code to
 figure out the XPaths you need to use. However, inspecting the raw HTML code
-there could become a very tedious task. To make this an easier task, you can
-use some Firefox extensions like Firebug. For more information see
-:ref:`topics-firebug` and :ref:`topics-firefox`.
+there could become a very tedious task. To make it easier, you can
+use Firefox Developer Tools or some Firefox extensions like Firebug. For more
+information see :ref:`topics-firebug` and :ref:`topics-firefox`.
 
-After inspecting the page source, you'll find that the web sites information
+After inspecting the page source, you'll find that the web site's information
 is inside a ``<ul>`` element, in fact the *second* ``<ul>`` element.
 
-So we can select each ``<li>`` element belonging to the sites list with this
+So we can select each ``<li>`` element belonging to the site's list with this
 code::
 
     response.xpath('//ul/li')
 
-And from them, the sites descriptions::
+And from them, the site's descriptions::
 
     response.xpath('//ul/li/text()').extract()
 
-The sites titles::
+The site's titles::
 
     response.xpath('//ul/li/a/text()').extract()
 
-And the sites links::
+And the site's links::
 
     response.xpath('//ul/li/a/@href').extract()
 
@@ -365,8 +367,8 @@ Let's add this code to our spider::
                 desc = sel.xpath('text()').extract()
                 print title, link, desc
 
-Now try crawling the dmoz.org domain again and you'll see sites being printed
-in your output, run::
+Now try crawling dmoz.org again and you'll see sites being printed
+in your output. Run::
 
     scrapy crawl dmoz
 
@@ -409,7 +411,7 @@ scraped so far, the final code for our Spider would be like this::
 .. note:: You can find a fully-functional variant of this spider in the dirbot_
    project available at https://github.com/scrapy/dirbot
 
-Now doing a crawl on the dmoz.org domain yields ``DmozItem`` objects::
+Now crawling dmoz.org yields ``DmozItem`` objects::
 
    [dmoz] DEBUG: Scraped from <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
         {'desc': [u' - By David Mertz; Addison Wesley. Book in progress, full text, ASCII format. Asks for feedback. [author website, Gnosis Software, Inc.\n],
@@ -423,12 +425,12 @@ Now doing a crawl on the dmoz.org domain yields ``DmozItem`` objects::
 Storing the scraped data
 ========================
 
-The simplest way to store the scraped data is by using the :ref:`Feed exports
+The simplest way to store the scraped data is by using :ref:`Feed exports
 <topics-feed-exports>`, with the following command::
 
     scrapy crawl dmoz -o items.json
 
-That will generate a ``items.json`` file containing all scraped items,
+That will generate an ``items.json`` file containing all scraped items,
 serialized in `JSON`_.
 
 In small projects (like the one in this tutorial), that should be enough.
@@ -441,7 +443,7 @@ pipelines if you just want to store the scraped items.
 Next steps
 ==========
 
-This tutorial covers only the basics of Scrapy, but there's a lot of other
+This tutorial covered only the basics of Scrapy, but there's a lot of other
 features not mentioned here. Check the :ref:`topics-whatelse` section in
 :ref:`intro-overview` chapter for a quick overview of the most important ones.
 
