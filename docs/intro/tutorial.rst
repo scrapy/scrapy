@@ -239,7 +239,7 @@ Trying Selectors in the Shell
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To illustrate the use of Selectors we're going to use the built-in :ref:`Scrapy
-shell <topics-shell>`, which also requires IPython (an extended Python console)
+shell <topics-shell>`, which also requires `IPython <http://ipython.org/>`_ (an extended Python console)
 installed on your system.
 
 To start a shell, you must go to the project's top level directory and run::
