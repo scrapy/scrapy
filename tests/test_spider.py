@@ -245,6 +245,45 @@ class CrawlSpiderTest(SpiderTest):
                            'http://example.org/about.html',
                            'http://example.org/nofollow.html'])
 
+    def test_rule_to(self):
+
+        response = HtmlResponse("http://example.org/somepage/index.html",
+            body=self.test_body)
+
+        class _CrawlSpider(self.spider_class):
+            name="test"
+            allowed_domains=['example.org']
+            rules = (
+                Rule(LinkExtractor(), to="linked_from_main_page"),
+            )
+
+        spider = _CrawlSpider()
+        output = list(spider._requests_to_follow(response))
+        self.assertEquals(set([spider._rules[r.meta['rule']].to for r in output]),
+                          set(['linked_from_main_page']))
+
+    def test_rule_in_(self):
+
+        response = HtmlResponse("http://example.org/somepage/index.html",
+            body=self.test_body)
+        response.request = Request("http://example.org/anotherpage/index.html",
+                                   meta={'rule': 1})
+
+        class _CrawlSpider(self.spider_class):
+            name="test"
+            allowed_domains=['example.org']
+            rules = (
+                Rule(LinkExtractor(allow=(r'12\.html$',)), in_="about_page"),
+                Rule(LinkExtractor(allow=(r'about\.html$',)), in_="main_page", to="about_page"),
+                Rule(LinkExtractor(allow=(r'nofollow\.html$',)))
+            )
+
+        spider = _CrawlSpider()
+        output = list(spider._requests_to_follow(response))
+        self.assertEquals([r.url for r in output],
+                          ['http://example.org/somepage/item/12.html',
+                           'http://example.org/nofollow.html'])
+
     def test_follow_links_attribute_population(self):
         crawler = get_crawler()
         spider = self.spider_class.from_crawler(crawler, 'example.com')
