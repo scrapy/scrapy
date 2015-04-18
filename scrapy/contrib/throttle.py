@@ -36,6 +36,9 @@ class AutoThrottle(object):
         return max(self.mindelay, self.crawler.settings.getfloat('AUTOTHROTTLE_START_DELAY', 5.0))
 
     def _response_downloaded(self, response, request, spider):
+        # spider.download_delay may change on the run, autothrottle should
+        # refresh constantly to honor this possible change
+        self.mindelay = self._min_delay(spider)
         key, slot = self._get_slot(request, spider)
         latency = request.meta.get('download_latency')
         if latency is None or slot is None:
