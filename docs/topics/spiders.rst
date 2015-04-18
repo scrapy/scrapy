@@ -190,7 +190,7 @@ scrapy.Spider
        dicts or :class:`~scrapy.item.Item` objects.
 
        :param response: the response to parse
-       :type response: :class:~scrapy.http.Response`
+       :type response: :class:`~scrapy.http.Response`
 
    .. method:: log(message, [level, component])
 
@@ -297,10 +297,10 @@ See `Scrapyd documentation`_.
 Generic Spiders
 ===============
 
-Scrapy comes with some useful generic spiders that you can use, to subclass
+Scrapy comes with some useful generic spiders that you can use to subclass
 your spiders from. Their aim is to provide convenient functionality for a few
 common scraping cases, like following all links on a site based on certain
-rules, crawling from `Sitemaps`_, or parsing a XML/CSV feed.
+rules, crawling from `Sitemaps`_, or parsing an XML/CSV feed.
 
 For the examples used in the following spiders, we'll assume you have a project
 with a ``TestItem`` declared in a ``myproject.items`` module::
@@ -342,7 +342,7 @@ CrawlSpider
    .. method:: parse_start_url(response)
 
       This method is called for the start_urls responses. It allows to parse
-      the initial responses and must return either a
+      the initial responses and must return either an
       :class:`~scrapy.item.Item` object, a :class:`~scrapy.http.Request`
       object, or an iterable containing any of them.
 
@@ -417,7 +417,7 @@ Let's now take a look at an example CrawlSpider with rules::
 This spider would start crawling example.com's home page, collecting category
 links, and item links, parsing the latter with the ``parse_item`` method. For
 each item response, some data will be extracted from the HTML using XPath, and
-a :class:`~scrapy.item.Item` will be filled with it.
+an :class:`~scrapy.item.Item` will be filled with it.
 
 XMLFeedSpider
 -------------

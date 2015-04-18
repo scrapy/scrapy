@@ -80,8 +80,8 @@ some usage help and the available commands::
       fetch         Fetch a URL using the Scrapy downloader
     [...]
 
-The first line will print the currently active project, if you're inside a
-Scrapy project. In this, it was run from outside a project. If run from inside
+The first line will print the currently active project if you're inside a
+Scrapy project. In this example it was run from outside a project. If run from inside
 a project it would have printed something like this::
 
     Scrapy X.Y - project: myproject
@@ -135,7 +135,7 @@ Available tool commands
 =======================
 
 This section contains a list of the available built-in commands with a
-description and some usage examples. Remember you can always get more info
+description and some usage examples. Remember, you can always get more info
 about each command by running::
 
     scrapy <command> -h
@@ -196,7 +196,7 @@ genspider
 
 Create a new spider in the current project.
 
-This is just a convenient shortcut command for creating spiders based on
+This is just a convenience shortcut command for creating spiders based on
 pre-defined templates, but certainly not the only way to create spiders. You
 can just create the spider source code files yourself, instead of using this
 command.
@@ -298,7 +298,7 @@ edit
 Edit the given spider using the editor defined in the :setting:`EDITOR`
 setting.
 
-This command is provided only as a convenient shortcut for the most common
+This command is provided only as a convenience shortcut for the most common
 case, the developer is of course free to choose any tool or IDE to write and
 debug his spiders.
 
@@ -318,7 +318,7 @@ Downloads the given URL using the Scrapy downloader and writes the contents to
 standard output.
 
 The interesting thing about this command is that it fetches the page how the
-spider would download it. For example, if the spider has an ``USER_AGENT``
+spider would download it. For example, if the spider has a ``USER_AGENT``
 attribute which overrides the User Agent, it will use that one.
 
 So this command can be used to "see" how your spider would fetch a certain page.

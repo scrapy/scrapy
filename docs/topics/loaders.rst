@@ -9,7 +9,7 @@ Item Loaders
 
 Item Loaders provide a convenient mechanism for populating scraped :ref:`Items
 <topics-items>`. Even though Items can be populated using their own
-dictionary-like API, the Item Loaders provide a much more convenient API for
+dictionary-like API, Item Loaders provide a much more convenient API for
 populating them from a scraping process, by automating some common tasks like
 parsing the raw extracted data before assigning it.
 
@@ -25,7 +25,7 @@ Using Item Loaders to populate items
 ====================================
 
 To use an Item Loader, you must first instantiate it. You can either
-instantiate it with an dict-like object (e.g. Item or dict) or without one, in
+instantiate it with a dict-like object (e.g. Item or dict) or without one, in
 which case an Item is automatically instantiated in the Item Loader constructor
 using the Item class specified in the :attr:`ItemLoader.default_item_class`
 attribute.
@@ -67,7 +67,7 @@ and finally the ``last_update`` field is populated directly with a literal value
 (``today``) using a different method: :meth:`~ItemLoader.add_value`.
 
 Finally, when all data is collected, the :meth:`ItemLoader.load_item` method is
-called which actually populates and returns the item populated with the data
+called which actually returns the item populated with the data
 previously extracted and collected with the :meth:`~ItemLoader.add_xpath`,
 :meth:`~ItemLoader.add_css`, and :meth:`~ItemLoader.add_value` calls.
 
@@ -565,8 +565,8 @@ Here is a list of all built-in processors:
 .. class:: Identity
 
     The simplest processor, which doesn't do anything. It returns the original
-    values unchanged. It doesn't receive any constructor arguments nor accepts
-    Loader contexts.
+    values unchanged. It doesn't receive any constructor arguments, nor does it
+	accept Loader contexts.
 
     Example::
 
@@ -579,7 +579,7 @@ Here is a list of all built-in processors:
 
     Returns the first non-null/non-empty value from the values received,
     so it's typically used as an output processor to single-valued fields.
-    It doesn't receive any constructor arguments, nor accept Loader contexts.
+    It doesn't receive any constructor arguments, nor does it accept Loader contexts.
 
     Example::
 
