@@ -5,14 +5,14 @@ Item Pipeline
 =============
 
 After an item has been scraped by a spider, it is sent to the Item Pipeline
-which process it through several components that are executed sequentially.
+which processes it through several components that are executed sequentially.
 
 Each item pipeline component (sometimes referred as just "Item Pipeline") is a
 Python class that implements a simple method. They receive an item and perform
 an action over it, also deciding if the item should continue through the
 pipeline or be dropped and no longer processed.
 
-Typical use for item pipelines are:
+Typical uses of item pipelines are:
 
 * cleansing HTML data
 * validating scraped data (checking that the items contain certain fields)
@@ -167,7 +167,7 @@ Duplicates filter
 -----------------
 
 A filter that looks for duplicate items, and drops those items that were
-already processed. Let say that our items have an unique id, but our spider
+already processed. Let's say that our items have a unique id, but our spider
 returns multiples items with the same id::
 
 
@@ -198,6 +198,6 @@ To activate an Item Pipeline component you must add its class to the
    }
 
 The integer values you assign to classes in this setting determine the
-order they run in- items go through pipelines from order number low to
-high. It's customary to define these numbers in the 0-1000 range.
+order in which they run: items go through from lower valued to higher
+valued classes. It's customary to define these numbers in the 0-1000 range.
 

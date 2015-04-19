@@ -8,7 +8,7 @@ Feed exports
 
 One of the most frequently required features when implementing scrapers is
 being able to store the scraped data properly and, quite often, that means
-generating a "export file" with the scraped data (commonly called "export
+generating an "export file" with the scraped data (commonly called "export
 feed") to be consumed by other systems.
 
 Scrapy provides this functionality out of the box with the Feed Exports, which
@@ -21,7 +21,7 @@ Serialization formats
 =====================
 
 For serializing the scraped data, the feed exports use the :ref:`Item exporters
-<topics-exporters>` and these formats are supported out of the box:
+<topics-exporters>`. These formats are supported out of the box:
 
  * :ref:`topics-feed-format-json`
  * :ref:`topics-feed-format-jsonlines`
