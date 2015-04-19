@@ -108,7 +108,7 @@ define the three main mandatory attributes:
   listed here. The subsequent URLs will be generated successively from data
   contained in the start URLs.
 
-* :meth:`~scrapy.spider.Spider.parse` a method of the spider, which will
+* :meth:`~scrapy.spider.Spider.parse`: a method of the spider, which will
   be called with the downloaded :class:`~scrapy.http.Response` object of each
   start URL. The response is passed to the method as the first and only
   argument.
@@ -248,7 +248,7 @@ To start a shell, you must go to the project's top level directory and run::
 
 .. note::
 
-   Remember to always enclose urls with quotes in running Scrapy shell from
+   Remember to always enclose urls in quotes when running Scrapy shell from
    command-line, otherwise urls containing arguments (ie. ``&`` character)
    will not work.
 

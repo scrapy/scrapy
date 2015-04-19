@@ -10,3 +10,6 @@ venv
 build
 dist
 .idea
+
+# Windows
+Thumbs.db
