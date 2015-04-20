@@ -3,6 +3,16 @@
 Release notes
 =============
 
+0.24.6 (2015-04-20)
+-------------------
+
+- encode invalid xpath with unicode_escape under PY2 (:commit:`07cb3e5`)
+- fix IPython shell scope issue and load IPython user config (:commit:`2c8e573`)
+- Fix small typo in the docs (:commit:`d694019`)
+- Fix small typo (:commit:`f92fa83`)
+- Converted sel.xpath() calls to response.xpath() in Extracting the data (:commit:`c2c6d15`)
+
+
 0.24.5 (2015-02-25)
 -------------------
 
