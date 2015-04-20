@@ -85,6 +85,27 @@ class BasicItemLoaderTest(unittest.TestCase):
         il.replace_value('sku', [valid_fragment], re=sku_re)
         self.assertEqual(il.load_item()['sku'], u'1234')
 
+    def test_self_referencing_loader(self):
+        class MyLoader(ItemLoader):
+            url_out = TakeFirst()
+
+            def img_url_out(self, values):
+                return (self.get_output_value('url') or '') + values[0]
+
+        il = MyLoader(item={})
+        il.add_value('url', 'http://example.com/')
+        il.add_value('img_url', '1234.png')
+        self.assertEqual(il.load_item(), {
+            'url': 'http://example.com/',
+            'img_url': 'http://example.com/1234.png',
+        })
+
+        il = MyLoader(item={})
+        il.add_value('img_url', '1234.png')
+        self.assertEqual(il.load_item(), {
+            'img_url': '1234.png',
+        })
+
     def test_add_value(self):
         il = TestItemLoader()
         il.add_value('name', u'marta')
