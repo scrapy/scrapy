@@ -13,6 +13,9 @@ just call "commands" or "Scrapy commands".
 The Scrapy tool provides several commands, for multiple purposes, and each one
 accepts a different set of arguments and options.
 
+(The ``scrapy deploy`` command has been removed in 1.0 in favor of the
+standalone ``scrapyd-deploy``. See `Deploying your project`_.)
+
 Configuration settings
 ======================
 
@@ -168,7 +171,6 @@ Project-only commands:
 * :command:`edit`
 * :command:`parse`
 * :command:`genspider`
-* :command:`deploy`
 * :command:`bench`
 
 .. command:: startproject
@@ -473,18 +475,6 @@ version
 
 Prints the Scrapy version. If used with ``-v`` it also prints Python, Twisted
 and Platform info, which is useful for bug reports.
-
-.. command:: deploy
-
-deploy
-------
-
-.. versionadded:: 0.11
-
-* Syntax: ``scrapy deploy [ <target:project> | -l <target> | -L ]``
-* Requires project: *yes*
-
-Deploy the project into a Scrapyd server. See `Deploying your project`_.
 
 .. command:: bench
 
