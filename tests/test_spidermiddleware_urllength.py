@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from scrapy.contrib.spidermiddleware.urllength import UrlLengthMiddleware
+from scrapy.spidermiddlewares.urllength import UrlLengthMiddleware
 from scrapy.http import Response, Request
 from scrapy.spider import Spider
 

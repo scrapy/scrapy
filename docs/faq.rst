@@ -149,7 +149,7 @@ middleware (enabled by default) whose purpose is to filter out requests to
 domains outside the ones covered by the spider.
 
 For more info see:
-:class:`~scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware`.
+:class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware`.
 
 What is the recommended way to deploy a Scrapy crawler in production?
 ---------------------------------------------------------------------

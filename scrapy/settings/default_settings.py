@@ -224,11 +224,11 @@ SPIDER_MIDDLEWARES = {}
 
 SPIDER_MIDDLEWARES_BASE = {
     # Engine side
-    'scrapy.contrib.spidermiddleware.httperror.HttpErrorMiddleware': 50,
-    'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware': 500,
-    'scrapy.contrib.spidermiddleware.referer.RefererMiddleware': 700,
-    'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware': 800,
-    'scrapy.contrib.spidermiddleware.depth.DepthMiddleware': 900,
+    'scrapy.spidermiddlewares.httperror.HttpErrorMiddleware': 50,
+    'scrapy.spidermiddlewares.offsite.OffsiteMiddleware': 500,
+    'scrapy.spidermiddlewares.referer.RefererMiddleware': 700,
+    'scrapy.spidermiddlewares.urllength.UrlLengthMiddleware': 800,
+    'scrapy.spidermiddlewares.depth.DepthMiddleware': 900,
     # Spider side
 }
 

@@ -906,11 +906,11 @@ SPIDER_MIDDLEWARES_BASE
 Default::
 
     {
-        'scrapy.contrib.spidermiddleware.httperror.HttpErrorMiddleware': 50,
-        'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware': 500,
-        'scrapy.contrib.spidermiddleware.referer.RefererMiddleware': 700,
-        'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware': 800,
-        'scrapy.contrib.spidermiddleware.depth.DepthMiddleware': 900,
+        'scrapy.spidermiddlewares.httperror.HttpErrorMiddleware': 50,
+        'scrapy.spidermiddlewares.offsite.OffsiteMiddleware': 500,
+        'scrapy.spidermiddlewares.referer.RefererMiddleware': 700,
+        'scrapy.spidermiddlewares.urllength.UrlLengthMiddleware': 800,
+        'scrapy.spidermiddlewares.depth.DepthMiddleware': 900,
     }
 
 A dict containing the spider middlewares enabled by default in Scrapy. You
@@ -1001,7 +1001,7 @@ URLLENGTH_LIMIT
 
 Default: ``2083``
 
-Scope: ``contrib.spidermiddleware.urllength``
+Scope: ``spidermiddlewares.urllength``
 
 The maximum URL length to allow for crawled URLs. For more information about
 the default value for this setting see: http://www.boutell.com/newfaq/misc/urllength.html
