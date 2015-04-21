@@ -21,7 +21,7 @@ except ImportError:
 
 from twisted.internet import defer, threads
 
-from scrapy.contrib.pipeline.media import MediaPipeline
+from scrapy.pipelines.media import MediaPipeline
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.misc import md5sum

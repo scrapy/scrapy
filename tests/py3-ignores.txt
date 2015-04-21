@@ -85,6 +85,8 @@ scrapy/core/downloader/handlers/ftp.py
 scrapy/core/downloader/webclient.py
 scrapy/contrib/pipeline/images.py
 scrapy/contrib/pipeline/files.py
+scrapy/pipelines/images.py
+scrapy/pipelines/files.py
 scrapy/contrib/linkextractors/sgml.py
 scrapy/contrib/linkextractors/regex.py
 scrapy/contrib/linkextractors/htmlparser.py

@@ -4,7 +4,7 @@
 Downloading and processing files and images
 ===========================================
 
-.. currentmodule:: scrapy.contrib.pipeline.images
+.. currentmodule:: scrapy.pipelines.images
 
 Scrapy provides reusable :doc:`item pipelines </topics/item-pipeline>` for
 downloading fies attached to a particular item (for example, when you scrape
@@ -114,11 +114,11 @@ To enable your media pipeline you must first add it to your project
 
 For Images Pipeline, use::
 
-    ITEM_PIPELINES = {'scrapy.contrib.pipeline.images.ImagesPipeline': 1}
+    ITEM_PIPELINES = {'scrapy.pipelines.images.ImagesPipeline': 1}
 
 For Files Pipeline, use::
 
-    ITEM_PIPELINES = {'scrapy.contrib.pipeline.files.FilesPipeline': 1}
+    ITEM_PIPELINES = {'scrapy.pipelines.files.FilesPipeline': 1}
 
 
 .. note::
@@ -258,7 +258,7 @@ By default, there are no size constraints, so all images are processed.
 Extending the Media Pipelines
 =============================
 
-.. module:: scrapy.contrib.pipeline.files
+.. module:: scrapy.pipelines.files
    :synopsis: Files Pipeline
 
 See here the methods that you can override in your custom Files Pipeline:
@@ -338,7 +338,7 @@ See here the methods that you can override in your custom Files Pipeline:
       By default, the :meth:`item_completed` method returns the item.
 
 
-.. module:: scrapy.contrib.pipeline.images
+.. module:: scrapy.pipelines.images
    :synopsis: Images Pipeline
 
 See here the methods that you can override in your custom Images Pipeline:
@@ -374,7 +374,7 @@ Here is a full example of the Images Pipeline whose methods are examplified
 above::
 
     import scrapy
-    from scrapy.contrib.pipeline.images import ImagesPipeline
+    from scrapy.pipelines.images import ImagesPipeline
     from scrapy.exceptions import DropItem
 
     class MyImagesPipeline(ImagesPipeline):

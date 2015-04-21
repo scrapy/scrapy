@@ -8,7 +8,7 @@ from shutil import rmtree
 from twisted.trial import unittest
 from twisted.internet import defer
 
-from scrapy.contrib.pipeline.files import FilesPipeline, FSFilesStore
+from scrapy.pipelines.files import FilesPipeline, FSFilesStore
 from scrapy.item import Item, Field
 from scrapy.http import Request, Response
 from scrapy.settings import Settings

@@ -159,7 +159,7 @@ HTTPCACHE_DBM_MODULE = 'anydbm'
 HTTPCACHE_POLICY = 'scrapy.contrib.httpcache.DummyPolicy'
 HTTPCACHE_GZIP = False
 
-ITEM_PROCESSOR = 'scrapy.contrib.pipeline.ItemPipelineManager'
+ITEM_PROCESSOR = 'scrapy.pipelines.ItemPipelineManager'
 
 ITEM_PIPELINES = {}
 ITEM_PIPELINES_BASE = {}
