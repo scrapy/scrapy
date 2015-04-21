@@ -95,11 +95,11 @@ class GenspiderCommandTest(CommandTest):
         spname = 'test_spider'
         p = self.proc('genspider', spname, 'test.com', *args)
         out = retry_on_eintr(p.stdout.read)
-        self.assert_("Created spider %r using template %r in module" % (spname, tplname) in out)
-        self.assert_(exists(join(self.proj_mod_path, 'spiders', 'test_spider.py')))
+        self.assertIn("Created spider %r using template %r in module" % (spname, tplname), out)
+        self.assertTrue(exists(join(self.proj_mod_path, 'spiders', 'test_spider.py')))
         p = self.proc('genspider', spname, 'test.com', *args)
         out = retry_on_eintr(p.stdout.read)
-        self.assert_("Spider %r already exists in module" % spname in out)
+        self.assertIn("Spider %r already exists in module" % spname, out)
 
     def test_template_basic(self):
         self.test_template('basic')
@@ -148,10 +148,10 @@ class MySpider(scrapy.Spider):
 """)
         p = self.proc('runspider', fname)
         log = p.stderr.read()
-        self.assert_("[myspider] DEBUG: It Works!" in log, log)
-        self.assert_("[myspider] INFO: Spider opened" in log, log)
-        self.assert_("[myspider] INFO: Closing spider (finished)" in log, log)
-        self.assert_("[myspider] INFO: Spider closed (finished)" in log, log)
+        self.assertIn("[myspider] DEBUG: It Works!", log)
+        self.assertIn("[myspider] INFO: Spider opened", log)
+        self.assertIn("[myspider] INFO: Closing spider (finished)", log)
+        self.assertIn("[myspider] INFO: Spider closed (finished)", log)
 
     def test_runspider_no_spider_found(self):
         tmpdir = self.mktemp()
@@ -164,12 +164,12 @@ from scrapy.spider import Spider
 """)
         p = self.proc('runspider', fname)
         log = p.stderr.read()
-        self.assert_("No spider found in file" in log)
+        self.assertIn("No spider found in file", log)
 
     def test_runspider_file_not_found(self):
         p = self.proc('runspider', 'some_non_existent_file')
         log = p.stderr.read()
-        self.assert_("File not found: some_non_existent_file" in log)
+        self.assertIn("File not found: some_non_existent_file", log)
 
     def test_runspider_unable_to_load(self):
         tmpdir = self.mktemp()
@@ -179,7 +179,7 @@ from scrapy.spider import Spider
             f.write("")
         p = self.proc('runspider', fname)
         log = p.stderr.read()
-        self.assert_("Unable to load" in log)
+        self.assertIn("Unable to load", log)
 
 
 class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
@@ -229,7 +229,7 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
                                            '-a', 'test_arg=1',
                                            '-c', 'parse',
                                            self.url('/html')])
-        self.assert_("[parse_spider] DEBUG: It Works!" in stderr, stderr)
+        self.assertIn("[parse_spider] DEBUG: It Works!", stderr)
 
     @defer.inlineCallbacks
     def test_pipelines(self):
@@ -237,7 +237,7 @@ ITEM_PIPELINES = {'%s.pipelines.MyPipeline': 1}
                                            '--pipelines',
                                            '-c', 'parse',
                                            self.url('/html')])
-        self.assert_("[scrapy] INFO: It Works!" in stderr, stderr)
+        self.assertIn("[scrapy] INFO: It Works!", stderr)
 
     @defer.inlineCallbacks
     def test_parse_items(self):
@@ -254,4 +254,4 @@ class BenchCommandTest(CommandTest):
         p = self.proc('bench', '-s', 'LOGSTATS_INTERVAL=0.001',
                 '-s', 'CLOSESPIDER_TIMEOUT=0.01')
         log = p.stderr.read()
-        self.assert_('INFO: Crawled' in log, log)
+        self.assertIn('INFO: Crawled', log)

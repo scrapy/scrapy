@@ -146,6 +146,7 @@ class FeedExporter(object):
         if not self._exporter_supported(self.format):
             raise NotConfigured
         self.store_empty = settings.getbool('FEED_STORE_EMPTY')
+        self.export_fields = settings.getlist('FEED_EXPORT_FIELDS')
         uripar = settings['FEED_URI_PARAMS']
         self._uripar = load_object(uripar) if uripar else lambda x, y: None
 
@@ -161,7 +162,7 @@ class FeedExporter(object):
         uri = self.urifmt % self._get_uri_params(spider)
         storage = self._get_storage(uri)
         file = storage.open(spider)
-        exporter = self._get_exporter(file)
+        exporter = self._get_exporter(file, fields_to_export=self.export_fields)
         exporter.start_exporting()
         self.slot = SpiderSlot(file, exporter, storage, uri)
 
@@ -210,8 +211,8 @@ class FeedExporter(object):
         else:
             log.msg("Unknown feed storage scheme: %s" % scheme, log.ERROR)
 
-    def _get_exporter(self, *a, **kw):
-        return self.exporters[self.format](*a, **kw)
+    def _get_exporter(self, *args, **kwargs):
+        return self.exporters[self.format](*args, **kwargs)
 
     def _get_storage(self, uri):
         return self.storages[urlparse(uri).scheme](uri)
