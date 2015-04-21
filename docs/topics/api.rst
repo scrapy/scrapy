@@ -344,22 +344,22 @@ Settings API
 
        Alias for a :meth:`~freeze` call in the object returned by :meth:`copy`
 
-.. _topics-api-spidermanager:
+.. _topics-api-spiderloader:
 
-SpiderManager API
-=================
+SpiderLoader API
+================
 
-.. module:: scrapy.spidermanager
-   :synopsis: The spider manager
+.. module:: scrapy.loader
+   :synopsis: The spider loader
 
-.. class:: SpiderManager
+.. class:: SpiderLoader
 
     This class is in charge of retrieving and handling the spider classes
     defined across the project.
 
-    Custom spider managers can be employed by specifying their path in the
-    :setting:`SPIDER_MANAGER_CLASS` project setting. They must fully implement
-    the :class:`scrapy.interfaces.ISpiderManager` interface to guarantee an
+    Custom spider loaders can be employed by specifying their path in the
+    :setting:`SPIDER_LOADER_CLASS` project setting. They must fully implement
+    the :class:`scrapy.interfaces.ISpiderLoader` interface to guarantee an
     errorless execution.
 
     .. method:: from_settings(settings)
@@ -486,7 +486,7 @@ class (which they all inherit from).
 
         Set the given value for the given key only if current value for the
         same key is lower than value. If there is no current value for the
-        given key, the value is always set. 
+        given key, the value is always set.
 
     .. method:: min_value(key, value)
 

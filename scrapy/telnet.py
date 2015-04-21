@@ -72,7 +72,6 @@ class TelnetConsole(protocol.ServerFactory):
             'crawler': self.crawler,
             'extensions': self.crawler.extensions,
             'stats': self.crawler.stats,
-            'spiders': self.crawler.spiders,
             'settings': self.crawler.settings,
             'est': lambda: print_engine_status(self.crawler.engine),
             'p': pprint.pprint,
