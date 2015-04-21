@@ -387,7 +387,7 @@ in your output. Run::
 Using our item
 --------------
 
-:class:`~scrapy.item.Item` objects are custom python dicts; you can access the
+:class:`~scrapy.item.Item` objects are custom Python dicts; you can access the
 values of their fields (attributes of the class we defined earlier) using the
 standard dict syntax like::
 
@@ -396,9 +396,8 @@ standard dict syntax like::
     >>> item['title']
     'Example title'
 
-Spiders are expected to return their scraped data inside
-:class:`~scrapy.item.Item` objects. So, in order to return the data we've
-scraped so far, the final code for our Spider would be like this::
+So, in order to return the data we've scraped so far, the final code for our
+Spider would be like this::
 
     import scrapy
 
@@ -491,9 +490,11 @@ for it::
 
     def parse_articles_follow_next_page(self, response):
         for article in response.xpath("//article"):
-            yield {
-                ... extract article data here
-            }
+            item = ArticleItem()
+
+            ... extract article data here
+
+            yield item
 
         next_page = response.css("ul.navigation > li.next-page > a::attr('href')")
         if next_page:
