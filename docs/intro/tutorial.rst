@@ -41,32 +41,30 @@ directory where you'd like to store your code and run::
 This will create a ``tutorial`` directory with the following contents::
 
     tutorial/
-        scrapy.cfg
-        tutorial/
+        scrapy.cfg            # deploy configuration file
+
+        tutorial/             # project's Python module, you'll import your code from here
             __init__.py
-            items.py
-            pipelines.py
-            settings.py
-            spiders/
+
+            items.py          # project items file
+
+            pipelines.py      # project pipelines file
+
+            settings.py       # project settings file
+
+            spiders/          # a directory where you'll later put your spiders
                 __init__.py
                 ...
 
-These are basically:
-
-* ``scrapy.cfg``: the project configuration file
-* ``tutorial/``: the project's python module, you'll later import your code from
-  here.
-* ``tutorial/items.py``: the project's items file.
-* ``tutorial/pipelines.py``: the project's pipelines file.
-* ``tutorial/settings.py``: the project's settings file.
-* ``tutorial/spiders/``: a directory where you'll later put your spiders.
 
 Defining our Item
 =================
 
 `Items` are containers that will be loaded with the scraped data; they work
-like simple python dicts but provide additional protection against populating
-undeclared fields, to prevent typos.
+like simple Python dicts. While you can use plain Python dicts with Scrapy,
+`Items` provide additional protection against populating undeclared fields,
+preventing typos. They can also be used with :ref:`Item Loaders
+<topics-loaders>`, a mechanism with helpers to conveniently populate `Items`.
 
 They are declared by creating a :class:`scrapy.Item <scrapy.item.Item>` class and defining
 its attributes as :class:`scrapy.Field <scrapy.item.Field>` objects, much like in an ORM
@@ -91,14 +89,14 @@ components of Scrapy that need to know what does your item look like.
 Our first Spider
 ================
 
-Spiders are user-written classes used to scrape information from a domain (or group
-of domains).
+Spiders are classes that you define and Scrapy uses to scrape information from a
+domain (or group of domains).
 
 They define an initial list of URLs to download, how to follow links, and how
 to parse the contents of pages to extract :ref:`items <topics-items>`.
 
 To create a Spider, you must subclass :class:`scrapy.Spider <scrapy.spider.Spider>` and
-define the three main mandatory attributes:
+define some attributes:
 
 * :attr:`~scrapy.spider.Spider.name`: identifies the Spider. It must be
   unique, that is, you can't set the same name for different Spiders.
@@ -134,7 +132,7 @@ This is the code for our first Spider; save it in a file named
         ]
 
         def parse(self, response):
-            filename = response.url.split("/")[-2]
+            filename = response.url.split("/")[-2] + '.html'
             with open(filename, 'wb') as f:
                 f.write(response.body)
 
@@ -145,8 +143,9 @@ To put our spider to work, go to the project's top level directory and run::
 
    scrapy crawl dmoz
 
-The ``crawl dmoz`` command runs the spider for the ``dmoz.org`` domain. You
-will get an output similar to this::
+This command runs the spider with name ``dmoz`` that we've just added, that
+will send some requests for the ``dmoz.org`` domain. You will get an output
+similar to this::
 
     2014-01-23 18:13:07-0400 [scrapy] INFO: Scrapy started (bot: tutorial)
     2014-01-23 18:13:07-0400 [scrapy] INFO: Optional features available: ...
@@ -160,13 +159,16 @@ will get an output similar to this::
     2014-01-23 18:13:09-0400 [dmoz] DEBUG: Crawled (200) <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> (referer: None)
     2014-01-23 18:13:09-0400 [dmoz] INFO: Closing spider (finished)
 
-Pay attention to the lines containing ``[dmoz]``, which correspond to our
-spider. You can see a log line for each URL defined in ``start_urls``. Because
-these URLs are the starting ones, they have no referrers, which is shown at the
-end of the log line, where it says ``(referer: None)``.
 
-But more interestingly, as our ``parse`` method instructs, two files have been
-created: *Books* and *Resources*, with the content of respective URLs.
+.. note::
+    The lines containing ``[dmoz]`` correspond to the log messages for
+    our spider. You can see a log line for each URL defined in ``start_urls``.
+    Because these URLs are the starting ones, they have no referrers, which is
+    shown at the end of the log line, where it says ``(referer: None)``.
+
+Now, check the files in the current directory. You should notice two new files
+have been created: *Books.html* and *Resources.html*, with the content for the respective
+URLs, as our ``parse`` method instructs.
 
 What just happened under the hood?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -207,12 +209,22 @@ Here are some examples of XPath expressions and their meanings:
   attribute ``class="mine"``
 
 These are just a couple of simple examples of what you can do with XPath, but
-XPath expressions are indeed much more powerful. To learn more about XPath we
-recommend `this XPath tutorial <http://www.w3schools.com/XPath/default.asp>`_.
+XPath expressions are indeed much more powerful. To learn more about XPath, we
+recommend `this tutorial to learn XPath through examples
+<http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this tutorial to learn "how
+to think in XPath" <http://plasmasturm.org/log/xpath101/>`_.
 
-For working with XPaths, Scrapy provides :class:`~scrapy.selector.Selector`
-class and convenient shortcuts to avoid instantiating selectors yourself
-every time you need to select something from a response.
+.. note:: **CSS vs XPath:** you can go a long way extracting data from web pages
+  using only CSS selectors. However, XPath offers more power because besides
+  navigating the structure, it can also look at the content: you're
+  able to select things like: *the link that contains the text 'Next Page'*.
+  Because of this, we encourage you to learn about XPath even if you
+  already know how to construct CSS selectors.
+
+For working with CSS and XPath expressions, Scrapy provides
+:class:`~scrapy.selector.Selector` class and convenient shortcuts to avoid
+instantiating selectors yourself every time you need to select something from a
+response.
 
 You can see selectors as objects that represent nodes in the document
 structure. So, the first instantiated selectors are associated with the root
@@ -375,7 +387,7 @@ in your output. Run::
 Using our item
 --------------
 
-:class:`~scrapy.item.Item` objects are custom python dicts; you can access the
+:class:`~scrapy.item.Item` objects are custom Python dicts; you can access the
 values of their fields (attributes of the class we defined earlier) using the
 standard dict syntax like::
 
@@ -384,9 +396,8 @@ standard dict syntax like::
     >>> item['title']
     'Example title'
 
-Spiders are expected to return their scraped data inside
-:class:`~scrapy.item.Item` objects. So, in order to return the data we've
-scraped so far, the final code for our Spider would be like this::
+So, in order to return the data we've scraped so far, the final code for our
+Spider would be like this::
 
     import scrapy
 
@@ -421,6 +432,89 @@ Now crawling dmoz.org yields ``DmozItem`` objects::
         {'desc': [u' - By Sean McGrath; Prentice Hall PTR, 2000, ISBN 0130211192, has CD-ROM. Methods to build XML applications fast, Python tutorial, DOM and SAX, new Pyxie open source XML processing library. [Prentice Hall PTR]\n'],
          'link': [u'http://www.informit.com/store/product.aspx?isbn=0130211192'],
          'title': [u'XML Processing with Python']}
+
+
+Following links
+===============
+
+Let's say, instead of just scraping the stuff in *Books* and *Resources* pages,
+you want everything that is under the `Python directory
+<http://www.dmoz.org/Computers/Programming/Languages/Python/>`_.
+
+Now that you know how to extract data from a page, why not extract the links
+for the pages you are interested, follow them and then extract the data you
+want for all of them?
+
+Here is a modification to our spider that does just that::
+
+    import scrapy
+
+    from tutorial.items import DmozItem
+
+    class DmozSpider(scrapy.Spider):
+        name = "dmoz"
+        allowed_domains = ["dmoz.org"]
+        start_urls = [
+            "http://www.dmoz.org/Computers/Programming/Languages/Python/",
+        ]
+
+        def parse(self, response):
+            for href in response.css("ul.directory.dir-col > li > a::attr('href')"):
+                url = response.urljoin(href.extract())
+                yield scrapy.Request(url, callback=self.parse_dir_contents)
+
+        def parse_dir_contents(self, response):
+            for sel in response.xpath('//ul/li'):
+                item = DmozItem()
+                item['title'] = sel.xpath('a/text()').extract()
+                item['link'] = sel.xpath('a/@href').extract()
+                item['desc'] = sel.xpath('text()').extract()
+                yield item
+
+Now the `parse()` method only extract the interesting links from the page,
+builds a full absolute URL using the `response.urljoin` method (since the links can
+be relative) and yields new requests to be sent later, registering as callback
+the method `parse_dir_contents()` that will ultimately scrape the data we want.
+
+What you see here is the Scrapy's mechanism of following links: when you yield
+a Request in a callback method, Scrapy will schedule that request to be sent
+and register a callback method to be executed when that request finishes.
+
+Using this, you can build complex crawlers that follow links according to rules
+you define, and extract different kinds of data depending on the page it's
+visiting.
+
+A common pattern is a callback method that extract some items, looks for a link
+to follow to the next page and then yields a `Request` with the same callback
+for it::
+
+    def parse_articles_follow_next_page(self, response):
+        for article in response.xpath("//article"):
+            item = ArticleItem()
+
+            ... extract article data here
+
+            yield item
+
+        next_page = response.css("ul.navigation > li.next-page > a::attr('href')")
+        if next_page:
+            url = response.urljoin(next_page[0].extract())
+            yield Request(url, self.parse_articles_follow_next_page)
+
+This creates a sort of loop, following all the links to the next page until it
+doesn't find one -- handy for crawling blogs, forums and other sites with
+pagination.
+
+Another common pattern is to build an item with data from more than one page,
+using a `trick to pass additional data to the callbacks
+<topics-request-response-ref-request-callback-arguments>`_.
+
+
+.. note::
+    As an example spider that leverages this mechanism, check out the
+    :class:`~scrapy.contrib.spiders.CrawlSpider` class for a generic spider
+    that implements a small rules engine that you can use to write your
+    crawlers on top of it.
 
 Storing the scraped data
 ========================
