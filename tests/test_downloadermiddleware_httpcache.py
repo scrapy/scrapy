@@ -12,7 +12,7 @@ from scrapy.spider import Spider
 from scrapy.settings import Settings
 from scrapy.exceptions import IgnoreRequest
 from scrapy.utils.test import get_crawler
-from scrapy.contrib.downloadermiddleware.httpcache import HttpCacheMiddleware
+from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
 
 
 class _BaseTest(unittest.TestCase):

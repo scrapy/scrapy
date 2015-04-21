@@ -239,7 +239,7 @@ Default::
     }
 
 The default headers used for Scrapy HTTP Requests. They're populated in the
-:class:`~scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware`.
+:class:`~scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware`.
 
 .. setting:: DEPTH_LIMIT
 
@@ -335,20 +335,20 @@ DOWNLOADER_MIDDLEWARES_BASE
 Default::
 
     {
-        'scrapy.contrib.downloadermiddleware.robotstxt.RobotsTxtMiddleware': 100,
-        'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware': 300,
-        'scrapy.contrib.downloadermiddleware.downloadtimeout.DownloadTimeoutMiddleware': 350,
-        'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': 400,
-        'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware': 500,
-        'scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware': 550,
-        'scrapy.contrib.downloadermiddleware.redirect.MetaRefreshMiddleware': 580,
-        'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 590,
-        'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware': 600,
-        'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware': 700,
-        'scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware': 750,
-        'scrapy.contrib.downloadermiddleware.chunked.ChunkedTransferMiddleware': 830,
-        'scrapy.contrib.downloadermiddleware.stats.DownloaderStats': 850,
-        'scrapy.contrib.downloadermiddleware.httpcache.HttpCacheMiddleware': 900,
+        'scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware': 100,
+        'scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware': 300,
+        'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware': 350,
+        'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': 400,
+        'scrapy.downloadermiddlewares.retry.RetryMiddleware': 500,
+        'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware': 550,
+        'scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware': 580,
+        'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 590,
+        'scrapy.downloadermiddlewares.redirect.RedirectMiddleware': 600,
+        'scrapy.downloadermiddlewares.cookies.CookiesMiddleware': 700,
+        'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 750,
+        'scrapy.downloadermiddlewares.chunked.ChunkedTransferMiddleware': 830,
+        'scrapy.downloadermiddlewares.stats.DownloaderStats': 850,
+        'scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware': 900,
     }
 
 A dict containing the downloader middlewares enabled by default in Scrapy. You
@@ -837,7 +837,7 @@ ROBOTSTXT_OBEY
 
 Default: ``False``
 
-Scope: ``scrapy.contrib.downloadermiddleware.robotstxt``
+Scope: ``scrapy.downloadermiddlewares.robotstxt``
 
 If enabled, Scrapy will respect robots.txt policies. For more information see
 :ref:`topics-dlmw-robots`

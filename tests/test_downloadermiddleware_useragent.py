@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from scrapy.spider import Spider
 from scrapy.http import Request
-from scrapy.contrib.downloadermiddleware.useragent import UserAgentMiddleware
+from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
 from scrapy.utils.test import get_crawler
 
 

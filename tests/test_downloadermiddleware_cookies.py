@@ -3,7 +3,7 @@ import re
 
 from scrapy.http import Response, Request
 from scrapy.spider import Spider
-from scrapy.contrib.downloadermiddleware.cookies import CookiesMiddleware
+from scrapy.downloadermiddlewares.cookies import CookiesMiddleware
 
 
 class CookiesMiddlewareTest(TestCase):

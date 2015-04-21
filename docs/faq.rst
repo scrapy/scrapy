@@ -64,7 +64,7 @@ Does Scrapy work with HTTP proxies?
 
 Yes. Support for HTTP proxies is provided (since Scrapy 0.8) through the HTTP
 Proxy downloader middleware. See
-:class:`~scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware`.
+:class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware`.
 
 How can I scrape an item with attributes in different pages?
 ------------------------------------------------------------
@@ -113,7 +113,7 @@ See previous question.
 Can I use Basic HTTP Authentication in my spiders?
 --------------------------------------------------
 
-Yes, see :class:`~scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware`.
+Yes, see :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`.
 
 Why does Scrapy download pages in English instead of my native language?
 ------------------------------------------------------------------------

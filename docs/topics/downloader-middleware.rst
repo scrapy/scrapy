@@ -42,7 +42,7 @@ as its value.  For example, if you want to disable the user-agent middleware::
 
     DOWNLOADER_MIDDLEWARES = {
         'myproject.middlewares.CustomDownloaderMiddleware': 543,
-        'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': None,
+        'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
     }
 
 Finally, keep in mind that some middlewares may need to be enabled through a
@@ -54,7 +54,7 @@ Writing your own downloader middleware
 Each middleware component is a Python class that defines one or
 more of the following methods:
 
-.. module:: scrapy.contrib.downloadermiddleware
+.. module:: scrapy.downloadermiddlewares
 
 .. class:: DownloaderMiddleware
 
@@ -169,7 +169,7 @@ For a list of the components enabled by default (and their orders) see the
 CookiesMiddleware
 -----------------
 
-.. module:: scrapy.contrib.downloadermiddleware.cookies
+.. module:: scrapy.downloadermiddlewares.cookies
    :synopsis: Cookies Downloader Middleware
 
 .. class:: CookiesMiddleware
@@ -246,7 +246,7 @@ Here's an example of a log with :setting:`COOKIES_DEBUG` enabled::
 DefaultHeadersMiddleware
 ------------------------
 
-.. module:: scrapy.contrib.downloadermiddleware.defaultheaders
+.. module:: scrapy.downloadermiddlewares.defaultheaders
    :synopsis: Default Headers Downloader Middleware
 
 .. class:: DefaultHeadersMiddleware
@@ -257,7 +257,7 @@ DefaultHeadersMiddleware
 DownloadTimeoutMiddleware
 -------------------------
 
-.. module:: scrapy.contrib.downloadermiddleware.downloadtimeout
+.. module:: scrapy.downloadermiddlewares.downloadtimeout
    :synopsis: Download timeout middleware
 
 .. class:: DownloadTimeoutMiddleware
@@ -275,7 +275,7 @@ DownloadTimeoutMiddleware
 HttpAuthMiddleware
 ------------------
 
-.. module:: scrapy.contrib.downloadermiddleware.httpauth
+.. module:: scrapy.downloadermiddlewares.httpauth
    :synopsis: HTTP Auth downloader middleware
 
 .. class:: HttpAuthMiddleware
@@ -304,7 +304,7 @@ HttpAuthMiddleware
 HttpCacheMiddleware
 -------------------
 
-.. module:: scrapy.contrib.downloadermiddleware.httpcache
+.. module:: scrapy.downloadermiddlewares.httpcache
    :synopsis: HTTP Cache downloader middleware
 
 .. class:: HttpCacheMiddleware
@@ -579,7 +579,7 @@ This setting is specific to the Filesystem backend.
 HttpCompressionMiddleware
 -------------------------
 
-.. module:: scrapy.contrib.downloadermiddleware.httpcompression
+.. module:: scrapy.downloadermiddlewares.httpcompression
    :synopsis: Http Compression Middleware
 
 .. class:: HttpCompressionMiddleware
@@ -603,7 +603,7 @@ Whether the Compression middleware will be enabled.
 ChunkedTransferMiddleware
 -------------------------
 
-.. module:: scrapy.contrib.downloadermiddleware.chunked
+.. module:: scrapy.downloadermiddlewares.chunked
    :synopsis: Chunked Transfer Middleware
 
 .. class:: ChunkedTransferMiddleware
@@ -613,7 +613,7 @@ ChunkedTransferMiddleware
 HttpProxyMiddleware
 -------------------
 
-.. module:: scrapy.contrib.downloadermiddleware.httpproxy
+.. module:: scrapy.downloadermiddlewares.httpproxy
    :synopsis: Http Proxy Middleware
 
 .. versionadded:: 0.8
@@ -641,7 +641,7 @@ HttpProxyMiddleware
 RedirectMiddleware
 ------------------
 
-.. module:: scrapy.contrib.downloadermiddleware.redirect
+.. module:: scrapy.downloadermiddlewares.redirect
    :synopsis: Redirection Middleware
 
 .. class:: RedirectMiddleware
@@ -731,7 +731,7 @@ The maximum meta-refresh delay (in seconds) to follow the redirection.
 RetryMiddleware
 ---------------
 
-.. module:: scrapy.contrib.downloadermiddleware.retry
+.. module:: scrapy.downloadermiddlewares.retry
    :synopsis: Retry Middleware
 
 .. class:: RetryMiddleware
@@ -800,7 +800,7 @@ connections lost, etc) are always retried.
 RobotsTxtMiddleware
 -------------------
 
-.. module:: scrapy.contrib.downloadermiddleware.robotstxt
+.. module:: scrapy.downloadermiddlewares.robotstxt
    :synopsis: robots.txt middleware
 
 .. class:: RobotsTxtMiddleware
@@ -828,7 +828,7 @@ the request will be ignored by this middleware even if
 DownloaderStats
 ---------------
 
-.. module:: scrapy.contrib.downloadermiddleware.stats
+.. module:: scrapy.downloadermiddlewares.stats
    :synopsis: Downloader Stats Middleware
 
 .. class:: DownloaderStats
@@ -842,7 +842,7 @@ DownloaderStats
 UserAgentMiddleware
 -------------------
 
-.. module:: scrapy.contrib.downloadermiddleware.useragent
+.. module:: scrapy.downloadermiddlewares.useragent
    :synopsis: User Agent Middleware
 
 .. class:: UserAgentMiddleware
@@ -857,7 +857,7 @@ UserAgentMiddleware
 AjaxCrawlMiddleware
 -------------------
 
-.. module:: scrapy.contrib.downloadermiddleware.ajaxcrawl
+.. module:: scrapy.downloadermiddlewares.ajaxcrawl
 
 .. class:: AjaxCrawlMiddleware
 
