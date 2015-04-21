@@ -28,9 +28,19 @@ class DjangoItem(Item):
     django_model = None
 
     def __init__(self, *args, **kwargs):
-        super(DjangoItem, self).__init__(*args, **kwargs)
         self._instance = None
         self._errors = None
+        super(DjangoItem, self).__init__(*args, **kwargs)
+
+    def __setitem__(self, key, value):
+        super(DjangoItem, self).__setitem__(key, value)
+        if self._instance is not None:
+            setattr(self._instance, key, value)
+
+    def __delitem__(self, key):
+        if self._instance is not None:
+            self._instance = None
+        return super(DjangoItem, self).__delitem__(key)
 
     def save(self, commit=True):
         if commit:
