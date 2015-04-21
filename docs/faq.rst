@@ -160,7 +160,7 @@ Can I use JSON for large exports?
 ---------------------------------
 
 It'll depend on how large your output is. See :ref:`this warning
-<json-with-large-data>` in :class:`~scrapy.contrib.exporter.JsonItemExporter`
+<json-with-large-data>` in :class:`~scrapy.exporters.JsonItemExporter`
 documentation.
 
 Can I return (Twisted) deferreds from signal handlers?

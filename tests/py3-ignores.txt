@@ -4,7 +4,7 @@ tests/test_command_fetch.py
 tests/test_command_shell.py
 tests/test_commands.py
 tests/test_command_version.py
-tests/test_contrib_exporter.py
+tests/test_exporters.py
 tests/test_contrib_linkextractors.py
 tests/test_contrib_loader.py
 tests/test_crawl.py

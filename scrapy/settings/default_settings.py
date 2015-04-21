@@ -139,13 +139,13 @@ FEED_STORAGES_BASE = {
 }
 FEED_EXPORTERS = {}
 FEED_EXPORTERS_BASE = {
-    'json': 'scrapy.contrib.exporter.JsonItemExporter',
-    'jsonlines': 'scrapy.contrib.exporter.JsonLinesItemExporter',
-    'jl': 'scrapy.contrib.exporter.JsonLinesItemExporter',
-    'csv': 'scrapy.contrib.exporter.CsvItemExporter',
-    'xml': 'scrapy.contrib.exporter.XmlItemExporter',
-    'marshal': 'scrapy.contrib.exporter.MarshalItemExporter',
-    'pickle': 'scrapy.contrib.exporter.PickleItemExporter',
+    'json': 'scrapy.exporters.JsonItemExporter',
+    'jsonlines': 'scrapy.exporters.JsonLinesItemExporter',
+    'jl': 'scrapy.exporters.JsonLinesItemExporter',
+    'csv': 'scrapy.exporters.CsvItemExporter',
+    'xml': 'scrapy.exporters.XmlItemExporter',
+    'marshal': 'scrapy.exporters.MarshalItemExporter',
+    'pickle': 'scrapy.exporters.PickleItemExporter',
 }
 
 HTTPCACHE_ENABLED = False
