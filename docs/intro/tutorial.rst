@@ -221,9 +221,10 @@ to think in XPath" <http://plasmasturm.org/log/xpath101/>`_.
   Because of this, we encourage you to learn about XPath even if you
   already know how to construct CSS selectors.
 
-For working with XPaths, Scrapy provides :class:`~scrapy.selector.Selector`
-class and convenient shortcuts to avoid instantiating selectors yourself
-every time you need to select something from a response.
+For working with CSS and XPath expressions, Scrapy provides
+:class:`~scrapy.selector.Selector` class and convenient shortcuts to avoid
+instantiating selectors yourself every time you need to select something from a
+response.
 
 You can see selectors as objects that represent nodes in the document
 structure. So, the first instantiated selectors are associated with the root
@@ -448,7 +449,6 @@ want for all of them?
 Here is a modification to our spider that does just that::
 
     import scrapy
-    import urlparse
 
     from tutorial.items import DmozItem
 
@@ -461,7 +461,7 @@ Here is a modification to our spider that does just that::
 
         def parse(self, response):
             for href in response.css("ul.directory.dir-col > li > a::attr('href')"):
-                url = urlparse.urljoin(response.url, href.extract())
+                url = response.urljoin(href.extract())
                 yield scrapy.Request(url, callback=self.parse_dir_contents)
 
         def parse_dir_contents(self, response):
@@ -472,26 +472,48 @@ Here is a modification to our spider that does just that::
                 item['desc'] = sel.xpath('text()').extract()
                 yield item
 
-Now the `parse()` method only extract the interesting links from the page, builds a
-full absolute URL (since the links can be relative) and yields new requests to
-be sent later, registering as callback the method `parse_dir_contents()` that
-will ultimately scrape the data we want.
+Now the `parse()` method only extract the interesting links from the page,
+builds a full absolute URL using the `response.urljoin` method (since the links can
+be relative) and yields new requests to be sent later, registering as callback
+the method `parse_dir_contents()` that will ultimately scrape the data we want.
 
-What you see here is the Scrapy's mechanism of following links: if you yield a
-Request instead of an Item in a callback method, Scrapy will schedule that
-request to be sent and register a callback method to be executed when that
-request finishes.
+What you see here is the Scrapy's mechanism of following links: when you yield
+a Request in a callback method, Scrapy will schedule that request to be sent
+and register a callback method to be executed when that request finishes.
 
 Using this, you can build complex crawlers that follow links according to rules
 you define, and extract different kinds of data depending on the page it's
 visiting.
 
+A common pattern is a callback method that extract some items, looks for a link
+to follow to the next page and then yields a `Request` with the same callback
+for it::
+
+    def parse_articles_follow_next_page(self, response):
+        for article in response.xpath("//article"):
+            yield {
+                ... extract article data here
+            }
+
+        next_page = response.css("ul.navigation -> li.next-page > a::attr('href')")
+        if next_page:
+            url = response.urljoin(next_page[0].extract())
+            yield Request(url, self.parse_articles_follow_next_page)
+
+This creates a sort of loop, following all the links to the next page until it
+doesn't find one -- handy for crawling blogs, forums and other sites with
+pagination.
+
+Another common pattern is to build an item with data from more than one page,
+using a `trick to pass additional data to the callbacks
+<topics-request-response-ref-request-callback-arguments>`_.
+
+
 .. note::
-    As an example spider that uses this mechanism, you can check out the
+    As an example spider that leverages this mechanism, check out the
     :class:`~scrapy.contrib.spiders.CrawlSpider` class for a generic spider
     that implements a small rules engine that you can use to write your
     crawlers on top of it.
-
 
 Storing the scraped data
 ========================
