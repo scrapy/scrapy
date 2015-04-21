@@ -288,7 +288,7 @@ HttpAuthMiddleware
 
     Example::
 
-        from scrapy.contrib.spiders import CrawlSpider
+        from scrapy.spiders import CrawlSpider
 
         class SomeIntranetSiteSpider(CrawlSpider):
 

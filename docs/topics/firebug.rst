@@ -74,15 +74,15 @@ So, based on that regular expression we can create the first crawling rule::
         follow=True,
     ),
 
-The :class:`~scrapy.contrib.spiders.Rule` object instructs
-:class:`~scrapy.contrib.spiders.CrawlSpider` based spiders how to follow the
+The :class:`~scrapy.spiders.Rule` object instructs
+:class:`~scrapy.spiders.CrawlSpider` based spiders how to follow the
 category links. ``parse_category`` will be a method of the spider which will
 process and extract data from those pages.
 
 This is how the spider would look so far::
 
    from scrapy.linkextractors import LinkExtractor
-   from scrapy.contrib.spiders import CrawlSpider, Rule
+   from scrapy.spiders import CrawlSpider, Rule
 
    class GoogleDirectorySpider(CrawlSpider):
        name = 'directory.google.com'

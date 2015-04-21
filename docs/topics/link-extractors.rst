@@ -18,10 +18,10 @@ of :class:`scrapy.link.Link` objects. Link extractors are meant to be
 instantiated once and their ``extract_links`` method called several times
 with different responses to extract links to follow.
 
-Link extractors are used in the :class:`~scrapy.contrib.spiders.CrawlSpider`
+Link extractors are used in the :class:`~scrapy.spiders.CrawlSpider`
 class (available in Scrapy), through a set of rules, but you can also use it in
 your spiders, even if you don't subclass from
-:class:`~scrapy.contrib.spiders.CrawlSpider`, as its purpose is very simple: to
+:class:`~scrapy.spiders.CrawlSpider`, as its purpose is very simple: to
 extract links.
 
 

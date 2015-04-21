@@ -319,7 +319,7 @@ with a ``TestItem`` declared in a ``myproject.items`` module::
         description = scrapy.Field()
 
 
-.. module:: scrapy.contrib.spiders
+.. module:: scrapy.spiders
    :synopsis: Collection of generic spiders
 
 CrawlSpider
@@ -394,7 +394,7 @@ CrawlSpider example
 Let's now take a look at an example CrawlSpider with rules::
 
     import scrapy
-    from scrapy.contrib.spiders import CrawlSpider, Rule
+    from scrapy.spiders import CrawlSpider, Rule
     from scrapy.linkextractors import LinkExtractor
 
     class MySpider(CrawlSpider):
@@ -515,7 +515,7 @@ XMLFeedSpider example
 
 These spiders are pretty easy to use, let's have a look at one example::
 
-    from scrapy.contrib.spiders import XMLFeedSpider
+    from scrapy.spiders import XMLFeedSpider
     from myproject.items import TestItem
 
     class MySpider(XMLFeedSpider):
@@ -575,7 +575,7 @@ CSVFeedSpider example
 Let's see an example similar to the previous one, but using a
 :class:`CSVFeedSpider`::
 
-    from scrapy.contrib.spiders import CSVFeedSpider
+    from scrapy.spiders import CSVFeedSpider
     from myproject.items import TestItem
 
     class MySpider(CSVFeedSpider):
@@ -669,7 +669,7 @@ SitemapSpider examples
 Simplest example: process all urls discovered through sitemaps using the
 ``parse`` callback::
 
-    from scrapy.contrib.spiders import SitemapSpider
+    from scrapy.spiders import SitemapSpider
 
     class MySpider(SitemapSpider):
         sitemap_urls = ['http://www.example.com/sitemap.xml']
@@ -680,7 +680,7 @@ Simplest example: process all urls discovered through sitemaps using the
 Process some urls with certain callback and other urls with a different
 callback::
 
-    from scrapy.contrib.spiders import SitemapSpider
+    from scrapy.spiders import SitemapSpider
 
     class MySpider(SitemapSpider):
         sitemap_urls = ['http://www.example.com/sitemap.xml']
@@ -698,7 +698,7 @@ callback::
 Follow sitemaps defined in the `robots.txt`_ file and only follow sitemaps
 whose url contains ``/sitemap_shop``::
 
-    from scrapy.contrib.spiders import SitemapSpider
+    from scrapy.spiders import SitemapSpider
 
     class MySpider(SitemapSpider):
         sitemap_urls = ['http://www.example.com/robots.txt']
@@ -712,7 +712,7 @@ whose url contains ``/sitemap_shop``::
 
 Combine SitemapSpider with other sources of urls::
 
-    from scrapy.contrib.spiders import SitemapSpider
+    from scrapy.spiders import SitemapSpider
 
     class MySpider(SitemapSpider):
         sitemap_urls = ['http://www.example.com/robots.txt']

@@ -511,7 +511,7 @@ using a `trick to pass additional data to the callbacks
 
 .. note::
     As an example spider that leverages this mechanism, check out the
-    :class:`~scrapy.contrib.spiders.CrawlSpider` class for a generic spider
+    :class:`~scrapy.spiders.CrawlSpider` class for a generic spider
     that implements a small rules engine that you can use to write your
     crawlers on top of it.
 

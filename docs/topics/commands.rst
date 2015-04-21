@@ -399,7 +399,7 @@ Supported options:
 
 * ``--pipelines``: process items through pipelines
 
-* ``--rules`` or ``-r``: use :class:`~scrapy.contrib.spiders.CrawlSpider`
+* ``--rules`` or ``-r``: use :class:`~scrapy.spiders.CrawlSpider`
   rules to discover the callback (i.e. spider method) to use for parsing the
   response
 
