@@ -495,7 +495,7 @@ for it::
                 ... extract article data here
             }
 
-        next_page = response.css("ul.navigation -> li.next-page > a::attr('href')")
+        next_page = response.css("ul.navigation > li.next-page > a::attr('href')")
         if next_page:
             url = response.urljoin(next_page[0].extract())
             yield Request(url, self.parse_articles_follow_next_page)
