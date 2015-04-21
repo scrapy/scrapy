@@ -192,8 +192,8 @@ def _get_spider_loader(settings):
             'Please use SPIDER_LOADER_CLASS.',
             category=ScrapyDeprecationWarning, stacklevel=2
         )
-    cls_path = settings.get('SPIDER_LOADER_CLASS',
-                            settings.get('SPIDER_MANAGER_CLASS'))
+    cls_path = settings.get('SPIDER_MANAGER_CLASS',
+                            settings.get('SPIDER_LOADER_CLASS'))
     loader_cls = load_object(cls_path)
     verifyClass(ISpiderLoader, loader_cls)
     return loader_cls.from_settings(settings.frozencopy())

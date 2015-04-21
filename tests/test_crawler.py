@@ -5,6 +5,7 @@ from zope.interface.verify import DoesNotImplement
 
 from scrapy.crawler import Crawler, CrawlerRunner
 from scrapy.settings import Settings, default_settings
+from scrapy.spiderloader import SpiderLoader
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
 
@@ -60,6 +61,10 @@ class SpiderLoaderWithWrongInterface(object):
         pass
 
 
+class CustomSpiderLoader(SpiderLoader):
+    pass
+
+
 class CrawlerRunnerTestCase(unittest.TestCase):
 
     def test_spider_manager_verify_interface(self):
@@ -87,3 +92,13 @@ class CrawlerRunnerTestCase(unittest.TestCase):
             self.assertIn("CrawlerRunner.spider_loader", str(w[0].message))
             sl_cls = load_object(runner.settings['SPIDER_LOADER_CLASS'])
             self.assertIsInstance(spiders, sl_cls)
+
+    def test_spidermanager_deprecation(self):
+        with warnings.catch_warnings(record=True) as w:
+            runner = CrawlerRunner({
+                'SPIDER_MANAGER_CLASS': 'tests.test_crawler.CustomSpiderLoader'
+            })
+            self.assertIsInstance(runner.spider_loader, CustomSpiderLoader)
+            self.assertEqual(len(w), 1)
+            self.assertIn('Please use SPIDER_LOADER_CLASS', str(w[0].message))
+
