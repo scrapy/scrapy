@@ -349,7 +349,7 @@ when an Internet connection is not available. The goal is to be able to
 
 In order to use this policy, set:
 
-* :setting:`HTTPCACHE_POLICY` to ``scrapy.contrib.httpcache.DummyPolicy``
+* :setting:`HTTPCACHE_POLICY` to ``scrapy.extensions.httpcache.DummyPolicy``
 
 
 .. _httpcache-policy-rfc2616:
@@ -383,7 +383,7 @@ what is missing:
 
 In order to use this policy, set:
 
-* :setting:`HTTPCACHE_POLICY` to ``scrapy.contrib.httpcache.RFC2616Policy``
+* :setting:`HTTPCACHE_POLICY` to ``scrapy.extensions.httpcache.RFC2616Policy``
 
 
 .. _httpcache-storage-fs:
@@ -395,7 +395,7 @@ File system storage backend is available for the HTTP cache middleware.
 
 In order to use this storage backend, set:
 
-* :setting:`HTTPCACHE_STORAGE` to ``scrapy.contrib.httpcache.FilesystemCacheStorage``
+* :setting:`HTTPCACHE_STORAGE` to ``scrapy.extensions.httpcache.FilesystemCacheStorage``
 
 Each request/response pair is stored in a different directory containing
 the following files:
@@ -430,7 +430,7 @@ By default, it uses the anydbm_ module, but you can change it with the
 
 In order to use this storage backend, set:
 
-* :setting:`HTTPCACHE_STORAGE` to ``scrapy.contrib.httpcache.DbmCacheStorage``
+* :setting:`HTTPCACHE_STORAGE` to ``scrapy.extensions.httpcache.DbmCacheStorage``
 
 .. _httpcache-storage-leveldb:
 
@@ -447,7 +447,7 @@ the scrapy shell in parallel for the same spider.
 
 In order to use this storage backend:
 
-* set :setting:`HTTPCACHE_STORAGE` to ``scrapy.contrib.httpcache.LeveldbCacheStorage``
+* set :setting:`HTTPCACHE_STORAGE` to ``scrapy.extensions.httpcache.LeveldbCacheStorage``
 * install `LevelDB python bindings`_ like ``pip install leveldb``
 
 .. _LevelDB: http://code.google.com/p/leveldb/
@@ -536,7 +536,7 @@ Don't cache responses with these URI schemes.
 HTTPCACHE_STORAGE
 ^^^^^^^^^^^^^^^^^
 
-Default: ``'scrapy.contrib.httpcache.FilesystemCacheStorage'``
+Default: ``'scrapy.extensions.httpcache.FilesystemCacheStorage'``
 
 The class which implements the cache storage backend.
 
@@ -559,7 +559,7 @@ HTTPCACHE_POLICY
 
 .. versionadded:: 0.18
 
-Default: ``'scrapy.contrib.httpcache.DummyPolicy'``
+Default: ``'scrapy.extensions.httpcache.DummyPolicy'``
 
 The class which implements the cache policy.
 

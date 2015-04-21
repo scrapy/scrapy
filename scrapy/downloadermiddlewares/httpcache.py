@@ -90,16 +90,3 @@ class HttpCacheMiddleware(object):
             self.storage.store_response(spider, request, response)
         else:
             self.stats.inc_value('httpcache/uncacheable', spider=spider)
-
-
-from scrapy.contrib.httpcache import FilesystemCacheStorage as _FilesystemCacheStorage
-class FilesystemCacheStorage(_FilesystemCacheStorage):
-
-    def __init__(self, *args, **kwargs):
-        import warnings
-        from scrapy.exceptions import ScrapyDeprecationWarning
-        warnings.warn('Importing FilesystemCacheStorage from '
-                      'scrapy.contrib.downloadermiddlware.httpcache is '
-                      'deprecated, use scrapy.contrib.httpcache instead.',
-                      category=ScrapyDeprecationWarning, stacklevel=1)
-        super(FilesystemCacheStorage, self).__init__(*args, **kwargs)

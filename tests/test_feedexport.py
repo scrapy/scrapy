@@ -16,7 +16,7 @@ from tests.mockserver import MockServer
 from w3lib.url import path_to_file_uri
 
 import scrapy
-from scrapy.contrib.feedexport import (
+from scrapy.extensions.feedexport import (
     IFeedStorage, FileFeedStorage, FTPFeedStorage,
     S3FeedStorage, StdoutFeedStorage
 )

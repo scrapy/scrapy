@@ -35,7 +35,7 @@ your Scrapy settings. In :setting:`EXTENSIONS`, each extension is represented
 by a string: the full Python path to the extension's class name. For example::
 
     EXTENSIONS = {
-        'scrapy.contrib.corestats.CoreStats': 500,
+        'scrapy.extensions.corestats.CoreStats': 500,
         'scrapy.telnet.TelnetConsole': 500,
     }
 
@@ -69,7 +69,7 @@ included in the :setting:`EXTENSIONS_BASE` setting) you must set its order to
 ``None``. For example::
 
     EXTENSIONS = {
-        'scrapy.contrib.corestats.CoreStats': None,
+        'scrapy.extensions.corestats.CoreStats': None,
     }
 
 Writing your own extension
@@ -158,7 +158,7 @@ General purpose extensions
 Log Stats extension
 ~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.contrib.logstats
+.. module:: scrapy.extensions.logstats
    :synopsis: Basic stats logging
 
 .. class:: LogStats
@@ -168,7 +168,7 @@ Log basic stats like crawled pages and scraped items.
 Core Stats extension
 ~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.contrib.corestats
+.. module:: scrapy.extensions.corestats
    :synopsis: Core stats collection
 
 .. class:: CoreStats
@@ -198,10 +198,10 @@ setting, and the server will listen in the port specified in
 Memory usage extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.contrib.memusage
+.. module:: scrapy.extensions.memusage
    :synopsis: Memory usage extension
 
-.. class:: scrapy.contrib.memusage.MemoryUsage
+.. class:: scrapy.extensions.memusage.MemoryUsage
 
 .. note:: This extension does not work in Windows.
 
@@ -226,10 +226,10 @@ can be configured with the following settings:
 Memory debugger extension
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.contrib.memdebug
+.. module:: scrapy.extensions.memdebug
    :synopsis: Memory debugger extension
 
-.. class:: scrapy.contrib.memdebug.MemoryDebugger
+.. class:: scrapy.extensions.memdebug.MemoryDebugger
 
 An extension for debugging memory usage. It collects information about:
 
@@ -242,10 +242,10 @@ info will be stored in the stats.
 Close spider extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.contrib.closespider
+.. module:: scrapy.extensions.closespider
    :synopsis: Close spider extension
 
-.. class:: scrapy.contrib.closespider.CloseSpider
+.. class:: scrapy.extensions.closespider.CloseSpider
 
 Closes a spider automatically when some conditions are met, using a specific
 closing reason for each condition.
@@ -313,17 +313,17 @@ set), spiders won't be closed by number of errors.
 StatsMailer extension
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. module:: scrapy.contrib.statsmailer
+.. module:: scrapy.extensions.statsmailer
    :synopsis: StatsMailer extension
 
-.. class:: scrapy.contrib.statsmailer.StatsMailer
+.. class:: scrapy.extensions.statsmailer.StatsMailer
 
 This simple extension can be used to send a notification e-mail every time a
 domain has finished scraping, including the Scrapy stats collected. The email
 will be sent to all recipients specified in the :setting:`STATSMAILER_RCPTS`
 setting.
 
-.. module:: scrapy.contrib.debug
+.. module:: scrapy.extensions.debug
    :synopsis: Extensions for debugging Scrapy
 
 Debugging extensions
@@ -332,7 +332,7 @@ Debugging extensions
 Stack trace dump extension
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. class:: scrapy.contrib.debug.StackTraceDump
+.. class:: scrapy.extensions.debug.StackTraceDump
 
 Dumps information about the running process when a `SIGQUIT`_ or `SIGUSR2`_
 signal is received. The information dumped is the following:
@@ -361,7 +361,7 @@ There are at least two ways to send Scrapy the `SIGQUIT`_ signal:
 Debugger extension
 ~~~~~~~~~~~~~~~~~~
 
-.. class:: scrapy.contrib.debug.Debugger
+.. class:: scrapy.extensions.debug.Debugger
 
 Invokes a `Python debugger`_ inside a running Scrapy process when a `SIGUSR2`_
 signal is received. After the debugger is exited, the Scrapy process continues

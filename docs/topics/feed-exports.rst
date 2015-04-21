@@ -209,7 +209,7 @@ These are the settings used for configuring the feed exports:
  * :setting:`FEED_STORE_EMPTY`
  * :setting:`FEED_EXPORT_FIELDS`
 
-.. currentmodule:: scrapy.contrib.feedexport
+.. currentmodule:: scrapy.extensions.feedexport
 
 .. setting:: FEED_URI
 
@@ -272,11 +272,11 @@ FEED_STORAGES_BASE
 Default::
 
     {
-        '': 'scrapy.contrib.feedexport.FileFeedStorage',
-        'file': 'scrapy.contrib.feedexport.FileFeedStorage',
-        'stdout': 'scrapy.contrib.feedexport.StdoutFeedStorage',
-        's3': 'scrapy.contrib.feedexport.S3FeedStorage',
-        'ftp': 'scrapy.contrib.feedexport.FTPFeedStorage',
+        '': 'scrapy.extensions.feedexport.FileFeedStorage',
+        'file': 'scrapy.extensions.feedexport.FileFeedStorage',
+        'stdout': 'scrapy.extensions.feedexport.StdoutFeedStorage',
+        's3': 'scrapy.extensions.feedexport.S3FeedStorage',
+        'ftp': 'scrapy.extensions.feedexport.FTPFeedStorage',
     }
 
 A dict containing the built-in feed storage backends supported by Scrapy.

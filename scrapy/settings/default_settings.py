@@ -113,15 +113,15 @@ except KeyError:
 EXTENSIONS = {}
 
 EXTENSIONS_BASE = {
-    'scrapy.contrib.corestats.CoreStats': 0,
+    'scrapy.extensions.corestats.CoreStats': 0,
     'scrapy.telnet.TelnetConsole': 0,
-    'scrapy.contrib.memusage.MemoryUsage': 0,
-    'scrapy.contrib.memdebug.MemoryDebugger': 0,
-    'scrapy.contrib.closespider.CloseSpider': 0,
-    'scrapy.contrib.feedexport.FeedExporter': 0,
-    'scrapy.contrib.logstats.LogStats': 0,
-    'scrapy.contrib.spiderstate.SpiderState': 0,
-    'scrapy.contrib.throttle.AutoThrottle': 0,
+    'scrapy.extensions.memusage.MemoryUsage': 0,
+    'scrapy.extensions.memdebug.MemoryDebugger': 0,
+    'scrapy.extensions.closespider.CloseSpider': 0,
+    'scrapy.extensions.feedexport.FeedExporter': 0,
+    'scrapy.extensions.logstats.LogStats': 0,
+    'scrapy.extensions.spiderstate.SpiderState': 0,
+    'scrapy.extensions.throttle.AutoThrottle': 0,
 }
 
 FEED_URI = None
@@ -131,11 +131,11 @@ FEED_STORE_EMPTY = False
 FEED_EXPORT_FIELDS = None
 FEED_STORAGES = {}
 FEED_STORAGES_BASE = {
-    '': 'scrapy.contrib.feedexport.FileFeedStorage',
-    'file': 'scrapy.contrib.feedexport.FileFeedStorage',
-    'stdout': 'scrapy.contrib.feedexport.StdoutFeedStorage',
-    's3': 'scrapy.contrib.feedexport.S3FeedStorage',
-    'ftp': 'scrapy.contrib.feedexport.FTPFeedStorage',
+    '': 'scrapy.extensions.feedexport.FileFeedStorage',
+    'file': 'scrapy.extensions.feedexport.FileFeedStorage',
+    'stdout': 'scrapy.extensions.feedexport.StdoutFeedStorage',
+    's3': 'scrapy.extensions.feedexport.S3FeedStorage',
+    'ftp': 'scrapy.extensions.feedexport.FTPFeedStorage',
 }
 FEED_EXPORTERS = {}
 FEED_EXPORTERS_BASE = {
@@ -151,12 +151,12 @@ FEED_EXPORTERS_BASE = {
 HTTPCACHE_ENABLED = False
 HTTPCACHE_DIR = 'httpcache'
 HTTPCACHE_IGNORE_MISSING = False
-HTTPCACHE_STORAGE = 'scrapy.contrib.httpcache.FilesystemCacheStorage'
+HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 HTTPCACHE_EXPIRATION_SECS = 0
 HTTPCACHE_IGNORE_HTTP_CODES = []
 HTTPCACHE_IGNORE_SCHEMES = ['file']
 HTTPCACHE_DBM_MODULE = 'anydbm'
-HTTPCACHE_POLICY = 'scrapy.contrib.httpcache.DummyPolicy'
+HTTPCACHE_POLICY = 'scrapy.extensions.httpcache.DummyPolicy'
 HTTPCACHE_GZIP = False
 
 ITEM_PROCESSOR = 'scrapy.pipelines.ItemPipelineManager'

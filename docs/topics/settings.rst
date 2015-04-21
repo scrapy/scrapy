@@ -536,15 +536,15 @@ EXTENSIONS_BASE
 Default::
 
     {
-        'scrapy.contrib.corestats.CoreStats': 0,
+        'scrapy.extensions.corestats.CoreStats': 0,
         'scrapy.telnet.TelnetConsole': 0,
-        'scrapy.contrib.memusage.MemoryUsage': 0,
-        'scrapy.contrib.memdebug.MemoryDebugger': 0,
-        'scrapy.contrib.closespider.CloseSpider': 0,
-        'scrapy.contrib.feedexport.FeedExporter': 0,
-        'scrapy.contrib.logstats.LogStats': 0,
-        'scrapy.contrib.spiderstate.SpiderState': 0,
-        'scrapy.contrib.throttle.AutoThrottle': 0,
+        'scrapy.extensions.memusage.MemoryUsage': 0,
+        'scrapy.extensions.memdebug.MemoryDebugger': 0,
+        'scrapy.extensions.closespider.CloseSpider': 0,
+        'scrapy.extensions.feedexport.FeedExporter': 0,
+        'scrapy.extensions.logstats.LogStats': 0,
+        'scrapy.extensions.spiderstate.SpiderState': 0,
+        'scrapy.extensions.throttle.AutoThrottle': 0,
     }
 
 The list of available extensions. Keep in mind that some of them need to
@@ -689,7 +689,7 @@ MEMUSAGE_ENABLED
 
 Default: ``False``
 
-Scope: ``scrapy.contrib.memusage``
+Scope: ``scrapy.extensions.memusage``
 
 Whether to enable the memory usage extension that will shutdown the Scrapy
 process when it exceeds a memory limit, and also notify by email when that
@@ -704,7 +704,7 @@ MEMUSAGE_LIMIT_MB
 
 Default: ``0``
 
-Scope: ``scrapy.contrib.memusage``
+Scope: ``scrapy.extensions.memusage``
 
 The maximum amount of memory to allow (in megabytes) before shutting down
 Scrapy  (if MEMUSAGE_ENABLED is True). If zero, no check will be performed.
@@ -718,7 +718,7 @@ MEMUSAGE_NOTIFY_MAIL
 
 Default: ``False``
 
-Scope: ``scrapy.contrib.memusage``
+Scope: ``scrapy.extensions.memusage``
 
 A list of emails to notify if the memory limit has been reached.
 
@@ -735,7 +735,7 @@ MEMUSAGE_REPORT
 
 Default: ``False``
 
-Scope: ``scrapy.contrib.memusage``
+Scope: ``scrapy.extensions.memusage``
 
 Whether to send a memory usage report after each spider has been closed.
 
@@ -748,7 +748,7 @@ MEMUSAGE_WARNING_MB
 
 Default: ``0``
 
-Scope: ``scrapy.contrib.memusage``
+Scope: ``scrapy.extensions.memusage``
 
 The maximum amount of memory to allow (in megabytes) before sending a warning
 email notifying about it. If zero, no warning will be produced.
@@ -961,7 +961,7 @@ STATSMAILER_RCPTS
 Default: ``[]`` (empty list)
 
 Send Scrapy stats after spiders finish scraping. See
-:class:`~scrapy.contrib.statsmailer.StatsMailer` for more info.
+:class:`~scrapy.extensions.statsmailer.StatsMailer` for more info.
 
 .. setting:: TELNETCONSOLE_ENABLED
 
