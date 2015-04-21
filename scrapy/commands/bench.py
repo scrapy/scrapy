@@ -6,7 +6,7 @@ from six.moves.urllib.parse import urlencode
 
 import scrapy
 from scrapy.command import ScrapyCommand
-from scrapy.contrib.linkextractors import LinkExtractor
+from scrapy.linkextractors import LinkExtractor
 
 
 class Command(ScrapyCommand):

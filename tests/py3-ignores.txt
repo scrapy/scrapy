@@ -5,7 +5,7 @@ tests/test_command_shell.py
 tests/test_commands.py
 tests/test_command_version.py
 tests/test_exporters.py
-tests/test_contrib_linkextractors.py
+tests/test_linkextractors.py
 tests/test_contrib_loader.py
 tests/test_crawl.py
 tests/test_crawler.py
@@ -88,6 +88,9 @@ scrapy/contrib/pipeline/files.py
 scrapy/contrib/linkextractors/sgml.py
 scrapy/contrib/linkextractors/regex.py
 scrapy/contrib/linkextractors/htmlparser.py
+scrapy/linkextractors/sgml.py
+scrapy/linkextractors/regex.py
+scrapy/linkextractors/htmlparser.py
 scrapy/contrib/downloadermiddleware/retry.py
 scrapy/contrib/downloadermiddleware/httpproxy.py
 scrapy/contrib/downloadermiddleware/cookies.py

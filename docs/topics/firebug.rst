@@ -81,7 +81,7 @@ process and extract data from those pages.
 
 This is how the spider would look so far::
 
-   from scrapy.contrib.linkextractors import LinkExtractor
+   from scrapy.linkextractors import LinkExtractor
    from scrapy.contrib.spiders import CrawlSpider, Rule
 
    class GoogleDirectorySpider(CrawlSpider):

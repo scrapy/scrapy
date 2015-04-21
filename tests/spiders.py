@@ -8,7 +8,7 @@ from six.moves.urllib.parse import urlencode
 from scrapy.spider import Spider
 from scrapy.http import Request
 from scrapy.item import Item
-from scrapy.contrib.linkextractors import LinkExtractor
+from scrapy.linkextractors import LinkExtractor
 
 
 class MetaSpider(Spider):

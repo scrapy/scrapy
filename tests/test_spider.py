@@ -13,7 +13,7 @@ from scrapy.http import Request, Response, TextResponse, XmlResponse, HtmlRespon
 from scrapy.contrib.spiders.init import InitSpider
 from scrapy.contrib.spiders import CrawlSpider, Rule, XMLFeedSpider, \
     CSVFeedSpider, SitemapSpider
-from scrapy.contrib.linkextractors import LinkExtractor
+from scrapy.linkextractors import LinkExtractor
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.test import get_crawler

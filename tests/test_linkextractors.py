@@ -1,11 +1,11 @@
 import re
 import unittest
-from scrapy.contrib.linkextractors.regex import RegexLinkExtractor
+from scrapy.linkextractors.regex import RegexLinkExtractor
 from scrapy.http import HtmlResponse, XmlResponse
 from scrapy.link import Link
-from scrapy.contrib.linkextractors.htmlparser import HtmlParserLinkExtractor
-from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor, BaseSgmlLinkExtractor
-from scrapy.contrib.linkextractors.lxmlhtml import LxmlLinkExtractor
+from scrapy.linkextractors.htmlparser import HtmlParserLinkExtractor
+from scrapy.linkextractors.sgml import SgmlLinkExtractor, BaseSgmlLinkExtractor
+from scrapy.linkextractors.lxmlhtml import LxmlLinkExtractor
 from tests import get_testdata
 
 

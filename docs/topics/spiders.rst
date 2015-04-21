@@ -395,7 +395,7 @@ Let's now take a look at an example CrawlSpider with rules::
 
     import scrapy
     from scrapy.contrib.spiders import CrawlSpider, Rule
-    from scrapy.contrib.linkextractors import LinkExtractor
+    from scrapy.linkextractors import LinkExtractor
 
     class MySpider(CrawlSpider):
         name = 'example.com'

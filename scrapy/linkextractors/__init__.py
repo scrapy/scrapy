@@ -1,5 +1,5 @@
 """
-scrapy.contrib.linkextractors
+scrapy.linkextractors
 
 This package contains a collection of Link Extractors.
 

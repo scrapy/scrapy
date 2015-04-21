@@ -8,7 +8,7 @@ Link extractors are objects whose only purpose is to extract links from web
 pages (:class:`scrapy.http.Response` objects) which will be eventually
 followed.
 
-There is ``scrapy.contrib.linkextractors import LinkExtractor`` available
+There is ``scrapy.linkextractors import LinkExtractor`` available
 in Scrapy, but you can create your own custom Link Extractors to suit your
 needs by implementing a simple interface.
 
@@ -30,16 +30,16 @@ extract links.
 Built-in link extractors reference
 ==================================
 
-.. module:: scrapy.contrib.linkextractors
+.. module:: scrapy.linkextractors
    :synopsis: Link extractors classes
 
 Link extractors classes bundled with Scrapy are provided in the
-:mod:`scrapy.contrib.linkextractors` module.
+:mod:`scrapy.linkextractors` module.
 
 The default link extractor is ``LinkExtractor``, which is the same as
 :class:`~.LxmlLinkExtractor`::
 
-    from scrapy.contrib.linkextractors import LinkExtractor
+    from scrapy.linkextractors import LinkExtractor
 
 There used to be other link extractor classes in previous Scrapy versions,
 but they are deprecated now.
@@ -47,7 +47,7 @@ but they are deprecated now.
 LxmlLinkExtractor
 -----------------
 
-.. module:: scrapy.contrib.linkextractors.lxmlhtml
+.. module:: scrapy.linkextractors.lxmlhtml
    :synopsis: lxml's HTMLParser-based link extractors
 
 
