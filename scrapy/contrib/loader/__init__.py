@@ -80,7 +80,7 @@ class ItemLoader(object):
 
     def load_item(self):
         item = self.item
-        for field_name in self._values:
+        for field_name in tuple(self._values):
             value = self.get_output_value(field_name)
             if value is not None:
                 item[field_name] = value
