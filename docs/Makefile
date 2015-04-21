@@ -8,6 +8,7 @@ PYTHON       = python
 SPHINXOPTS   =
 PAPER        =
 SOURCES      =
+SHELL        = /bin/bash
 
 ALLSPHINXOPTS = -b $(BUILDER) -d build/doctrees -D latex_paper_size=$(PAPER) \
                 $(SPHINXOPTS) . build/$(BUILDER) $(SOURCES)
@@ -79,3 +80,5 @@ htmlview: html
 clean:
 	-rm -rf build/*
 
+watch: htmlview
+	watchmedo shell-command -p '*.rst' -c 'make html' -R -D
