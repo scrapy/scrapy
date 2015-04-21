@@ -38,13 +38,6 @@ except ImportError:
     pass
 else:
     optional_features.add('boto')
-try:
-    import django
-    del django
-except ImportError:
-    pass
-else:
-    optional_features.add('django')
 
 from twisted import version as _txv
 twisted_version = (_txv.major, _txv.minor, _txv.micro)
