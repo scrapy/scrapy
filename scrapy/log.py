@@ -27,13 +27,17 @@ CRITICAL = logging.CRITICAL
 SILENT = CRITICAL + 1
 
 
-def msg(message, _level=logging.INFO, **kw):
+def msg(message=None, _level=logging.INFO, **kw):
     warnings.warn('log.msg has been deprecated, create a python logger and '
                   'log through it instead',
                   ScrapyDeprecationWarning, stacklevel=2)
 
     level = kw.pop('level', _level)
-    logger.log(level, message, kw)
+    message = kw.pop('format', message)
+    # NOTE: logger.log doesn't handle well passing empty dictionaries with format
+    # arguments because of some weird use-case:
+    # https://hg.python.org/cpython/file/648dcafa7e5f/Lib/logging/__init__.py#l269
+    logger.log(level, message, *[kw] if kw else [])
 
 
 def err(_stuff=None, _why=None, **kw):
@@ -44,4 +48,4 @@ def err(_stuff=None, _why=None, **kw):
     level = kw.pop('level', logging.ERROR)
     failure = kw.pop('failure', _stuff) or Failure()
     message = kw.pop('why', _why) or failure.value
-    logger.log(level, message, kw, extra={'failure': failure})
+    logger.log(level, message, *[kw] if kw else [], extra={'failure': failure})
