@@ -134,6 +134,76 @@ class ItemTest(unittest.TestCase):
         self.assertEqual(list(i.keys()), ['keys'])
         self.assertEqual(list(i.values()), [3])
 
+    def test_metaclass_multiple_inheritance_simple(self):
+        class A(Item):
+            save = Field(default='A')
+
+        class B(A): pass
+
+        class C(Item):
+            save = Field(default='C')
+
+        class D(B, C): pass
+
+        self.assertEqual(D(save='X')['save'], 'X')
+        self.assertEqual(D.fields, {'save': {'default': 'A'}})
+
+        # D class inverted
+        class E(C, B): pass
+
+        self.assertEqual(E(save='X')['save'], 'X')
+        self.assertEqual(E.fields, {'save': {'default': 'C'}})
+
+    def test_metaclass_multiple_inheritance_diamond(self):
+        class A(Item):
+            save = Field(default='A')
+            load = Field(default='A')
+
+        class B(A): pass
+
+        class C(A):
+            save = Field(default='C')
+
+        class D(B, C):
+            load = Field(default='D')
+
+        self.assertEqual(D(save='X')['save'], 'X')
+        self.assertEqual(D(load='X')['load'], 'X')
+        self.assertEqual(D.fields, {'save': {'default': 'C'},
+            'load': {'default': 'D'}})
+
+        # D class inverted
+        class E(C, B):
+            load = Field(default='E')
+
+        self.assertEqual(E(save='X')['save'], 'X')
+        self.assertEqual(E(load='X')['load'], 'X')
+        self.assertEqual(E.fields, {'save': {'default': 'C'},
+            'load': {'default': 'E'}})
+
+    def test_metaclass_multiple_inheritance_without_metaclass(self):
+        class A(Item):
+            save = Field(default='A')
+
+        class B(A): pass
+
+        class C(object):
+            not_allowed = Field(default='not_allowed')
+            save = Field(default='C')
+
+        class D(B, C): pass
+
+        self.assertRaises(KeyError, D, not_allowed='value')
+        self.assertEqual(D(save='X')['save'], 'X')
+        self.assertEqual(D.fields, {'save': {'default': 'A'}})
+
+        # D class inverted
+        class E(C, B): pass
+
+        self.assertRaises(KeyError, E, not_allowed='value')
+        self.assertEqual(E(save='X')['save'], 'X')
+        self.assertEqual(E.fields, {'save': {'default': 'A'}})
+
     def test_to_dict(self):
         class TestItem(Item):
             name = Field()
