@@ -3,6 +3,7 @@
 import os
 import sys
 import logging
+import warnings
 from logging.config import dictConfig
 
 from twisted.python.failure import Failure
@@ -10,6 +11,7 @@ from twisted.python import log as twisted_log
 
 import scrapy
 from scrapy.settings import overridden_settings
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 logger = logging.getLogger(__name__)
 
@@ -153,3 +155,27 @@ class LogCounterHandler(logging.Handler):
     def emit(self, record):
         sname = 'log_count/{}'.format(record.levelname)
         self.crawler.stats.inc_value(sname)
+
+
+def logformatter_adapter(logkws):
+    """
+    Helper that takes the dictionary output from the methods in LogFormatter
+    and adapts it into a tuple of positional arguments for logger.log calls,
+    handling backward compatibility as well.
+    """
+    if not {'level', 'msg', 'args'} <= set(logkws):
+        warnings.warn('Missing keys in LogFormatter method',
+                      ScrapyDeprecationWarning)
+
+    if 'format' in logkws:
+        warnings.warn('`format` key in LogFormatter methods has been '
+                      'deprecated, use `msg` instead',
+                      ScrapyDeprecationWarning)
+
+    level = logkws.get('level', logging.INFO)
+    message = logkws.get('format', logkws.get('msg'))
+    # NOTE: This also handles 'args' being an empty dict, that case doesn't
+    # play well in logger.log calls
+    args = logkws if not logkws.get('args') else logkws['args']
+
+    return (level, message, args)

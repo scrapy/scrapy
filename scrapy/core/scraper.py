@@ -10,6 +10,7 @@ from twisted.internet import defer
 from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errback
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.misc import load_object
+from scrapy.utils.log import logformatter_adapter
 from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy import signals
 from scrapy.http import Request, Response
@@ -220,7 +221,7 @@ class Scraper(object):
             ex = output.value
             if isinstance(ex, DropItem):
                 logkws = self.logformatter.dropped(item, ex, response, spider)
-                logger._log(extra={'spider': spider}, **logkws)
+                logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
                 return self.signals.send_catch_log_deferred(
                     signal=signals.item_dropped, item=item, response=response,
                     spider=spider, exception=output.value)
@@ -229,7 +230,7 @@ class Scraper(object):
                              extra={'spider': spider, 'failure': output})
         else:
             logkws = self.logformatter.scraped(output, response, spider)
-            logger._log(extra={'spider': spider}, **logkws)
+            logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
             return self.signals.send_catch_log_deferred(
                 signal=signals.item_scraped, item=output, response=response,
                 spider=spider)

@@ -16,6 +16,7 @@ from scrapy.exceptions import DontCloseSpider
 from scrapy.http import Response, Request
 from scrapy.utils.misc import load_object
 from scrapy.utils.reactor import CallLaterOnce
+from scrapy.utils.log import logformatter_adapter
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +205,7 @@ class ExecutionEngine(object):
             if isinstance(response, Response):
                 response.request = request # tie request to response received
                 logkws = self.logformatter.crawled(request, response, spider)
-                logger._log(extra={'spider': spider}, **logkws)
+                logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
                 self.signals.send_catch_log(signal=signals.response_received, \
                     response=response, request=request, spider=spider)
             return response
