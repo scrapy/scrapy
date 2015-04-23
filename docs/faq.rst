@@ -94,8 +94,8 @@ in most cases. If you do want to crawl in true `BFO order`_, you can do it by
 setting the following settings::
 
     DEPTH_PRIORITY = 1
-    SCHEDULER_DISK_QUEUE = 'scrapy.squeue.PickleFifoDiskQueue'
-    SCHEDULER_MEMORY_QUEUE = 'scrapy.squeue.FifoMemoryQueue'
+    SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleFifoDiskQueue'
+    SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.FifoMemoryQueue'
 
 My Scrapy crawler has memory leaks. What can I do?
 --------------------------------------------------

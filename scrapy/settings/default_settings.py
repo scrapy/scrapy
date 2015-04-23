@@ -215,8 +215,8 @@ RETRY_PRIORITY_ADJUST = -1
 ROBOTSTXT_OBEY = False
 
 SCHEDULER = 'scrapy.core.scheduler.Scheduler'
-SCHEDULER_DISK_QUEUE = 'scrapy.squeue.PickleLifoDiskQueue'
-SCHEDULER_MEMORY_QUEUE = 'scrapy.squeue.LifoMemoryQueue'
+SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleLifoDiskQueue'
+SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.LifoMemoryQueue'
 
 SPIDER_LOADER_CLASS = 'scrapy.spiderloader.SpiderLoader'
 
