@@ -234,7 +234,7 @@ SPIDER_MIDDLEWARES_BASE = {
 
 SPIDER_MODULES = []
 
-STATS_CLASS = 'scrapy.statscol.MemoryStatsCollector'
+STATS_CLASS = 'scrapy.statscollectors.MemoryStatsCollector'
 STATS_DUMP = True
 
 STATSMAILER_RCPTS = []

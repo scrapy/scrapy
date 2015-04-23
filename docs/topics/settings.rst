@@ -936,7 +936,7 @@ Example::
 STATS_CLASS
 -----------
 
-Default: ``'scrapy.statscol.MemoryStatsCollector'``
+Default: ``'scrapy.statscollectors.MemoryStatsCollector'``
 
 The class to use for collecting stats, who must implement the
 :ref:`topics-api-stats`.
