@@ -3,7 +3,7 @@ import signal
 import warnings
 
 from twisted.internet import reactor, defer
-from zope.interface.verify import verifyClass
+from zope.interface.verify import verifyClass, DoesNotImplement
 
 from scrapy.core.engine import ExecutionEngine
 from scrapy.resolver import CachingThreadedResolver
@@ -195,5 +195,13 @@ def _get_spider_loader(settings):
     cls_path = settings.get('SPIDER_MANAGER_CLASS',
                             settings.get('SPIDER_LOADER_CLASS'))
     loader_cls = load_object(cls_path)
-    verifyClass(ISpiderLoader, loader_cls)
+    try:
+        verifyClass(ISpiderLoader, loader_cls)
+    except DoesNotImplement:
+        warnings.warn(
+            'SPIDER_LOADER_CLASS (previously named SPIDER_MANAGER_CLASS) does '
+            'not fully implement scrapy.interfaces.ISpiderLoader interface. '
+            'Please add all missing methods to avoid unexpected runtime errors.',
+            category=ScrapyDeprecationWarning, stacklevel=2
+        )
     return loader_cls.from_settings(settings.frozencopy())

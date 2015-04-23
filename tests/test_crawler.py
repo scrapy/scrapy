@@ -1,8 +1,6 @@
 import warnings
 import unittest
 
-from zope.interface.verify import DoesNotImplement
-
 from scrapy.crawler import Crawler, CrawlerRunner
 from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
@@ -71,8 +69,12 @@ class CrawlerRunnerTestCase(unittest.TestCase):
         settings = Settings({
             'SPIDER_LOADER_CLASS': 'tests.test_crawler.SpiderLoaderWithWrongInterface'
         })
-        with self.assertRaises(DoesNotImplement):
+        with warnings.catch_warnings(record=True) as w, \
+                self.assertRaises(AttributeError):
             CrawlerRunner(settings)
+            self.assertEqual(len(w), 1)
+            self.assertIn("SPIDER_LOADER_CLASS", str(w[0].message))
+            self.assertIn("scrapy.interfaces.ISpiderLoader", str(w[0].message))
 
     def test_crawler_runner_accepts_dict(self):
         runner = CrawlerRunner({'foo': 'bar'})
