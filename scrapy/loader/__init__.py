@@ -8,7 +8,7 @@ import six
 
 from scrapy.item import Item
 from scrapy.selector import Selector
-from scrapy.utils.decorator import deprecated
+from scrapy.utils.decorators import deprecated
 from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.misc import arg_to_iter, extract_regex
 from scrapy.utils.python import flatten
