@@ -100,7 +100,7 @@ DOWNLOADER_MIDDLEWARES_BASE = {
 
 DOWNLOADER_STATS = True
 
-DUPEFILTER_CLASS = 'scrapy.dupefilter.RFPDupeFilter'
+DUPEFILTER_CLASS = 'scrapy.dupefilters.RFPDupeFilter'
 
 try:
     EDITOR = os.environ['EDITOR']

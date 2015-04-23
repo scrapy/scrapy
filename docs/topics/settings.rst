@@ -487,7 +487,7 @@ If you want to disable it set to 0.
 DUPEFILTER_CLASS
 ----------------
 
-Default: ``'scrapy.dupefilter.RFPDupeFilter'``
+Default: ``'scrapy.dupefilters.RFPDupeFilter'``
 
 The class used to detect and filter duplicate requests.
 

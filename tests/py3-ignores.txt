@@ -25,7 +25,7 @@ tests/test_downloadermiddleware_retry.py
 tests/test_downloadermiddleware_robotstxt.py
 tests/test_downloadermiddleware_stats.py
 tests/test_downloadermiddleware_useragent.py
-tests/test_dupefilter.py
+tests/test_dupefilters.py
 tests/test_engine.py
 tests/test_http_cookies.py
 tests/test_http_request.py
