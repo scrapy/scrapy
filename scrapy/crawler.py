@@ -101,12 +101,18 @@ class CrawlerRunner(object):
     process. See :ref:`run-from-script` for an example.
     """
 
+    crawlers = property(
+        lambda self: self._crawlers,
+        doc="Set of :class:`crawlers <scrapy.crawler.Crawler>` started by "
+            ":meth:`crawl` and managed by this class."
+    )
+
     def __init__(self, settings):
         if isinstance(settings, dict):
             settings = Settings(settings)
         self.settings = settings
         self.spider_loader = _get_spider_loader(settings)
-        self.crawlers = set()
+        self._crawlers = set()
         self._active = set()
 
     @property
