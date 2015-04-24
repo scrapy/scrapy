@@ -185,7 +185,24 @@ class CrawlerRunner(object):
 
 
 class CrawlerProcess(CrawlerRunner):
-    """A class to run multiple scrapy crawlers in a process simultaneously"""
+    """
+    A class to run multiple scrapy crawlers in a process simultaneously.
+
+    This class extends :class:`~scrapy.crawler.CrawlerRunner` by adding support
+    for starting a Twisted `reactor`_ and handling shutdown signals, like the
+    keyboard interrupt command Ctrl-C. It also configures top-level logging.
+
+    This utility should be a better fit than
+    :class:`~scrapy.crawler.CrawlerRunner` if you aren't running another
+    Twisted `reactor`_ within your application.
+
+    The CrawlerProcess object must be instantiated with a
+    :class:`~scrapy.settings.Settings` object.
+
+    This class shouldn't be needed (since Scrapy is responsible of using it
+    accordingly) unless writing scripts that manually handle the crawling
+    process. See :ref:`run-from-script` for an example.
+    """
 
     def __init__(self, settings):
         super(CrawlerProcess, self).__init__(settings)
@@ -209,6 +226,17 @@ class CrawlerProcess(CrawlerRunner):
         reactor.callFromThread(self._stop_reactor)
 
     def start(self, stop_after_crawl=True):
+        """
+        This method starts a Twisted `reactor`_, adjusts its pool size to
+        :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS cache based
+        on :setting:`DNSCACHE_ENABLED` and :setting:`DNSCACHE_SIZE`.
+
+        If `stop_after_crawl` is True, the reactor will be stopped after all
+        crawlers have finished, using :meth:`join`.
+
+        :param boolean stop_after_crawl: stop or not the reactor when all
+            crawlers have finished
+        """
         if stop_after_crawl:
             d = self.join()
             # Don't start the reactor if the deferreds are already fired

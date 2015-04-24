@@ -102,6 +102,10 @@ how you :ref:`configure the downloader middlewares
 .. autoclass:: CrawlerRunner
    :members:
 
+.. autoclass:: CrawlerProcess
+   :show-inheritance:
+   :members:
+   :inherited-members:
 
 .. _topics-api-settings:
 
