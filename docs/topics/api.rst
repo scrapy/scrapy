@@ -99,52 +99,9 @@ how you :ref:`configure the downloader middlewares
 
         Returns a deferred that is fired when the crawl is finished.
 
-.. class:: CrawlerRunner(settings)
+.. autoclass:: CrawlerRunner
+   :members:
 
-    This is a convenient helper class that keeps track of, manages and runs
-    crawlers inside an already setup Twisted `reactor`_.
-
-    The CrawlerRunner object must be instantiated with a
-    :class:`~scrapy.settings.Settings` object.
-
-    This class shouldn't be needed (since Scrapy is responsible of using it
-    accordingly) unless writing scripts that manually handle the crawling
-    process. See :ref:`run-from-script` for an example.
-
-    .. attribute:: crawlers
-
-       Set of :class:`crawlers <scrapy.crawler.Crawler>` created by the
-       :meth:`crawl` method.
-
-    .. method:: crawl(crawler_or_spidercls, \*args, \**kwargs)
-
-       This method runs a crawler with the provided arguments.
-
-       It will keep track of the given crawler so it can be stopped later,
-       while calling its :meth:`Crawler.crawl` method.
-
-       If `crawler_or_spidercls` isn't a :class:`~scrapy.crawler.Crawler`
-       instance, it will try to create one using this parameter as the spider
-       class given to it.
-
-       Returns a deferred that is fired when the crawl is finished.
-
-       :param crawler_or_spidercls: already created crawler, or a spider class
-       or spider's name inside the project to create it
-       :type crawler_or_spidercls: :class:`~scrapy.crawler.Crawler` instance,
-        :class:`~scrapy.spider.Spider` subclass or string
-
-       :param args: arguments to initializate the spider
-       :type args: list
-
-       :param kwargs: keyword arguments to initializate the spider
-       :type kwargs: dict
-
-    .. method:: stop()
-
-       Stops simultaneously all the crawling jobs taking place.
-
-       Returns a deferred that is fired when they all have ended.
 
 .. _topics-api-settings:
 

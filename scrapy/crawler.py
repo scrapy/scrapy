@@ -89,6 +89,17 @@ class Crawler(object):
 
 
 class CrawlerRunner(object):
+    """
+    This is a convenient helper class that keeps track of, manages and runs
+    crawlers inside an already setup Twisted `reactor`_.
+
+    The CrawlerRunner object must be instantiated with a
+    :class:`~scrapy.settings.Settings` object.
+
+    This class shouldn't be needed (since Scrapy is responsible of using it
+    accordingly) unless writing scripts that manually handle the crawling
+    process. See :ref:`run-from-script` for an example.
+    """
 
     def __init__(self, settings):
         if isinstance(settings, dict):
@@ -106,6 +117,27 @@ class CrawlerRunner(object):
         return self.spider_loader
 
     def crawl(self, crawler_or_spidercls, *args, **kwargs):
+        """
+        Run a crawler with the provided arguments.
+
+        It will call the given Crawler's :meth:`~Crawler.crawl` method, while
+        keeping track of it so it can be stopped later.
+
+        If `crawler_or_spidercls` isn't a :class:`~scrapy.crawler.Crawler`
+        instance, this method will try to create one using this parameter as
+        the spider class given to it.
+
+        Returns a deferred that is fired when the crawling is finished.
+
+        :param crawler_or_spidercls: already created crawler, or a spider class
+            or spider's name inside the project to create it
+        :type crawler_or_spidercls: :class:`~scrapy.crawler.Crawler` instance,
+            :class:`~scrapy.spider.Spider` subclass or string
+
+        :param list args: arguments to initialize the spider
+
+        :param dict kwargs: keyword arguments to initialize the spider
+        """
         crawler = crawler_or_spidercls
         if not isinstance(crawler_or_spidercls, Crawler):
             crawler = self._create_crawler(crawler_or_spidercls)
@@ -127,11 +159,21 @@ class CrawlerRunner(object):
         return Crawler(spidercls, self.settings)
 
     def stop(self):
+        """
+        Stops simultaneously all the crawling jobs taking place.
+
+        Returns a deferred that is fired when they all have ended.
+        """
         return defer.DeferredList([c.stop() for c in list(self.crawlers)])
 
     @defer.inlineCallbacks
     def join(self):
-        """Wait for all managed crawlers to complete"""
+        """
+        join()
+
+        Returns a deferred that is fired when all managed :attr:`crawlers` have
+        completed their executions.
+        """
         while self._active:
             yield defer.DeferredList(self._active)
 
