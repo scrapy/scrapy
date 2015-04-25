@@ -8,7 +8,7 @@ When you're scraping web pages, the most common task you need to perform is
 to extract data from the HTML source. There are several libraries available to
 achieve this:
 
- * `BeautifulSoup`_ is a very popular screen scraping library among Python
+ * `BeautifulSoup`_ is a very popular web scraping library among Python
    programmers which constructs a Python object based on the structure of the
    HTML code and also deals with bad markup reasonably well, but it has one
    drawback: it's slow.

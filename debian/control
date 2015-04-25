@@ -13,8 +13,8 @@ Depends: ${python:Depends}, python-lxml, python-twisted, python-openssl,
 Recommends: python-setuptools
 Conflicts: python-scrapy, scrapy, scrapy-0.11
 Provides: python-scrapy, scrapy
-Description: Python web crawling and screen scraping framework
- Scrapy is a fast high-level web crawling and screen scraping framework, 
+Description: Python web crawling and web scraping framework
+ Scrapy is a fast high-level web crawling and web scraping framework,
  used to crawl websites and extract structured data from their pages. 
  It can be used for a wide range of purposes, from data mining to 
  monitoring and automated testing.
