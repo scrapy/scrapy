@@ -11,7 +11,8 @@ from scrapy.http import Request
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 from scrapy.utils.deprecate import create_deprecated_class
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import ScrapyDeprecationWarning, DontCloseSpider,\
+                                CloseSpider
 
 
 class Spider(object_ref):
@@ -84,11 +85,15 @@ class Spider(object_ref):
 
     def __idle(self, spider):
         if spider != self: return
+
         idled = getattr(spider, 'idled', None)
         if callable(idled):
             # handle requests returned by idled
-            for request in idled() :
-                self.crawler.engine.crawl(request, spider=self)
+            try:
+                for request in idled() :
+                    self.crawler.engine.crawl(request, spider=self)
+            except CloseSpider, e:
+                self.close(self, e.reason)
             raise DontCloseSpider
 
     def __str__(self):

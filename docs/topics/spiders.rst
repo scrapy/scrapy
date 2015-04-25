@@ -250,7 +250,16 @@ Spider
    .. method:: idled()
 
         Called when the spider idles. This method provides a shortcut to
-        signals.connect() for the :signal:`spider_idle` signal.
+        signals.connect() for the :signal:`spider_idle` signal. Raise 'CloseSpider'
+        exception if the spider is needed to be closed. For example:
+            def idled():
+                for request in requests_after_idled:
+                    yield request
+                # close spider after all request are handled
+                raise CloseSpider
+
+
+
 
 Spider example
 ~~~~~~~~~~~~~~
