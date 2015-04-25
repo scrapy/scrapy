@@ -98,7 +98,16 @@ class SpiderTest(unittest.TestCase):
             idled_called = False
 
             def idled(self):
+                self.scheduled_in_idled = False
                 self.idled_called = True
+                return ['example.com', 'example.com']
+
+            def connect_schedule(self):
+                crawler.signals.connect(self.scheduled_in_idled, signals.request_scheduled)
+
+            def scheduled_in_idled(self, spider, request):
+                if spider is self:
+                    self.scheduled_in_idled = True
 
         crawler = get_crawler()
         spider = TestSpider.from_crawler(crawler, 'example.com')
@@ -109,6 +118,7 @@ class SpiderTest(unittest.TestCase):
         crawler.signals.send_catch_log(signal=signals.spider_closed,
                                        spider=spider, reason=None)
         self.assertTrue(spider.idled_called)
+        self.assertTrue(spider.scheduled_in_idled)
 
     def test_update_settings(self):
         spider_settings = {'TEST1': 'spider', 'TEST2': 'spider'}

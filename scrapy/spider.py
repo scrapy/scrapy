@@ -85,7 +85,6 @@ class Spider(object_ref):
 
     def __idle(self, spider):
         if spider != self: return
-
         idled = getattr(spider, 'idled', None)
         if callable(idled):
             # handle requests returned by idled
