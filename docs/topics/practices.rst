@@ -113,25 +113,50 @@ By default, Scrapy runs a single spider per process when you run ``scrapy
 crawl``. However, Scrapy supports running multiple spiders per process using
 the :ref:`internal API <topics-api>`.
 
-Here is an example that runs multiple spiders simultaneously, using the
-`testspiders`_ project:
+Here is an example that runs multiple spiders simultaneously:
 
 ::
 
-    from twisted.internet import reactor, defer
+    import scrapy
+    from scrapy.crawler import CrawlerProcess
+
+    class MySpider1(scrapy.Spider):
+        # Your first spider definition
+        ...
+
+    class MySpider2(scrapy.Spider):
+        # Your second spider definition
+        ...
+
+    process = CrawlerProcess({})
+    process.crawl(MySpider1)
+    process.crawl(MySpider2)
+    process.start() # the script will block here until all crawling jobs are finished
+
+Same example using :class:`~scrapy.crawler.CrawlerRunner`:
+
+::
+
+    import scrapy
+    from twisted.internet import reactor
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
-    from scrapy.utils.project import get_project_settings
 
-    settings = get_project_settings()
-    configure_logging(settings)
-    runner = CrawlerRunner(settings)
-    dfs = set()
-    for domain in ['scrapinghub.com', 'insophia.com']:
-        d = runner.crawl('followall', domain=domain)
-        dfs.add(d)
+    class MySpider1(scrapy.Spider):
+        # Your first spider definition
+        ...
 
-    defer.DeferredList(dfs).addBoth(lambda _: reactor.stop())
+    class MySpider2(scrapy.Spider):
+        # Your second spider definition
+        ...
+
+    configure_logging({})
+    runner = CrawlerRunner({})
+    runner.crawl(MySpider1)
+    runner.crawl(MySpider2)
+    d = runner.join()
+    d.addBoth(lambda _: reactor.stop())
+
     reactor.run() # the script will block here until all crawling jobs are finished
 
 Same example but running the spiders sequentially by chaining the deferreds:
@@ -141,16 +166,22 @@ Same example but running the spiders sequentially by chaining the deferreds:
     from twisted.internet import reactor, defer
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
-    from scrapy.utils.project import get_project_settings
 
-    settings = get_project_settings()
-    configure_logging(settings)
-    runner = CrawlerRunner(settings)
+    class MySpider1(scrapy.Spider):
+        # Your first spider definition
+        ...
+
+    class MySpider2(scrapy.Spider):
+        # Your second spider definition
+        ...
+
+    configure_logging({})
+    runner = CrawlerRunner({})
 
     @defer.inlineCallbacks
     def crawl():
-        for domain in ['scrapinghub.com', 'insophia.com']:
-            yield runner.crawl('followall', domain=domain)
+        yield runner.crawl(MySpider1)
+        yield runner.crawl(MySpider2)
         reactor.stop()
 
     crawl()
