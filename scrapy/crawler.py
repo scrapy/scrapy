@@ -9,7 +9,7 @@ from zope.interface.verify import verifyClass, DoesNotImplement
 from scrapy.core.engine import ExecutionEngine
 from scrapy.resolver import CachingThreadedResolver
 from scrapy.interfaces import ISpiderLoader
-from scrapy.extension import ExtensionManager
+from scrapy.extensions import ExtensionManager
 from scrapy.settings import Settings
 from scrapy.signalmanager import SignalManager
 from scrapy.exceptions import ScrapyDeprecationWarning
