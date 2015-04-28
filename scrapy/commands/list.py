@@ -1,5 +1,5 @@
 from __future__ import print_function
-from scrapy.command import ScrapyCommand
+from scrapy.commands import ScrapyCommand
 
 class Command(ScrapyCommand):
 
