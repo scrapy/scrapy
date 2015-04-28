@@ -5,7 +5,7 @@ See documentation in docs/topics/spider-middleware.rst
 """
 
 from twisted.python.failure import Failure
-from scrapy.middleware import MiddlewareManager
+from scrapy.middlewaremanager import MiddlewareManager
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.conf import build_component_list
 

@@ -5,7 +5,7 @@ See documentation in docs/topics/downloader-middleware.rst
 """
 
 from scrapy.http import Request, Response
-from scrapy.middleware import MiddlewareManager
+from scrapy.middlewaremanager import MiddlewareManager
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.conf import build_component_list
 

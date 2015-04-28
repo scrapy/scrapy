@@ -4,7 +4,7 @@ Item pipeline
 See documentation in docs/item-pipeline.rst
 """
 
-from scrapy.middleware import MiddlewareManager
+from scrapy.middlewaremanager import MiddlewareManager
 from scrapy.utils.conf import build_component_list
 
 class ItemPipelineManager(MiddlewareManager):
