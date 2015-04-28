@@ -3,7 +3,7 @@ from twisted.python.failure import Failure
 
 from scrapy.http import Request, Response
 from scrapy.spider import Spider
-from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
+from scrapy.downloadermiddlewares import DownloaderMiddlewareManager
 from scrapy.utils.test import get_crawler
 
 
