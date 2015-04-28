@@ -3,7 +3,7 @@ import logging
 
 from w3lib.url import is_url
 
-from scrapy.command import ScrapyCommand
+from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
 from scrapy.item import BaseItem
 from scrapy.utils import display

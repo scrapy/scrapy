@@ -5,7 +5,7 @@ import platform
 import twisted
 
 import scrapy
-from scrapy.command import ScrapyCommand
+from scrapy.commands import ScrapyCommand
 
 
 class Command(ScrapyCommand):
