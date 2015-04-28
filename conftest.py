@@ -20,6 +20,7 @@ collect_ignore = [
     "scrapy/linkextractor.py",
     "scrapy/middleware.py",
     "scrapy/extension.py",
+    "scrapy/core/downloader/middleware.py",
 ] + _py_files("scrapy/contrib") + _py_files("scrapy/contrib_exp")
 
 
