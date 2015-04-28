@@ -8,7 +8,7 @@ from sgmllib import SGMLParser
 from w3lib.url import safe_url_string
 from scrapy.selector import Selector
 from scrapy.link import Link
-from scrapy.linkextractor import FilteringLinkExtractor
+from scrapy.linkextractors import FilteringLinkExtractor
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import unique as unique_list, str_to_unicode
 from scrapy.utils.response import get_base_url
