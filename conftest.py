@@ -16,6 +16,7 @@ collect_ignore = [
     "scrapy/squeue.py",
     "scrapy/log.py",
     "scrapy/dupefilter.py",
+    "scrapy/command.py",
 ] + _py_files("scrapy/contrib") + _py_files("scrapy/contrib_exp")
 
 
