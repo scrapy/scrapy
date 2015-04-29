@@ -37,7 +37,10 @@ class IFeedStorage(Interface):
         object that will be used for the exporters"""
 
     def store(file):
-        """Store the given file stream"""
+        """Store the given file stream."""
+
+    def cleanup(file):
+        """Do cleanup tasks when no items were stored, e.g. removing the file."""
 
 
 @implementer(IFeedStorage)
@@ -48,6 +51,9 @@ class BlockingFeedStorage(object):
 
     def store(self, file):
         return threads.deferToThread(self._store_in_thread, file)
+
+    def cleanup(self, file):
+        file.close()
 
     def _store_in_thread(self, file):
         raise NotImplementedError
@@ -65,6 +71,9 @@ class StdoutFeedStorage(object):
     def store(self, file):
         pass
 
+    def cleanup(self, file):
+        pass
+
 
 @implementer(IFeedStorage)
 class FileFeedStorage(object):
@@ -80,6 +89,10 @@ class FileFeedStorage(object):
 
     def store(self, file):
         file.close()
+
+    def cleanup(self, file):
+        file.close()
+        os.remove(file.name)
 
 
 class S3FeedStorage(BlockingFeedStorage):
@@ -174,7 +187,8 @@ class FeedExporter(object):
     def close_spider(self, spider):
         slot = self.slot
         if not slot.itemcount and not self.store_empty:
-            return
+            d = defer.maybeDeferred(slot.storage.cleanup, slot.file)
+            return d
         slot.exporter.finish_exporting()
         logfmt = "%%s %(format)s feed (%(itemcount)d items) in: %(uri)s"
         log_args = {'format': self.format,
