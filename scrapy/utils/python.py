@@ -10,8 +10,9 @@ import re
 import inspect
 import weakref
 import errno
-import six
 from functools import partial, wraps
+
+import six
 
 
 def flatten(x):
@@ -65,28 +66,28 @@ def str_to_unicode(text, encoding=None, errors='strict'):
 
     if encoding is None:
         encoding = 'utf-8'
-    if isinstance(text, str):
+    if isinstance(text, bytes):
         return text.decode(encoding, errors)
-    elif isinstance(text, unicode):
+    elif isinstance(text, six.text_type):
         return text
     else:
         raise TypeError('str_to_unicode must receive a str or unicode object, got %s' % type(text).__name__)
 
 def unicode_to_str(text, encoding=None, errors='strict'):
-    """Return the str representation of text in the given encoding. Unlike
-    .encode(encoding) this function can be applied directly to a str
+    """Return the bytes representation of text in the given encoding. Unlike
+    .encode(encoding) this function can be applied directly to a bytes
     object without the risk of double-decoding problems (which can happen if
     you don't use the default 'ascii' encoding)
     """
 
     if encoding is None:
         encoding = 'utf-8'
-    if isinstance(text, unicode):
+    if isinstance(text, six.text_type):
         return text.encode(encoding, errors)
-    elif isinstance(text, str):
+    elif isinstance(text, bytes):
         return text
     else:
-        raise TypeError('unicode_to_str must receive a unicode or str object, got %s' % type(text).__name__)
+        raise TypeError('unicode_to_str must receive a unicode, str or bytes object, got %s' % type(text).__name__)
 
 def re_rsearch(pattern, text, chunk_size=1024):
     """
@@ -129,14 +130,14 @@ def memoizemethod_noargs(method):
         return cache[self]
     return new_method
 
-_BINARYCHARS = set(map(chr, range(32))) - set(["\0", "\t", "\n", "\r"])
+_BINARYCHARS = set(range(32)) - set([c for c in six.iterbytes(b"\0\t\n\r")])
 
 def isbinarytext(text):
     """Return True if the given text is considered binary, or false
     otherwise, by looking for binary bytes at their chars
     """
-    assert isinstance(text, str), "text must be str, got '%s'" % type(text).__name__
-    return any(c in _BINARYCHARS for c in text)
+    assert isinstance(text, bytes), "text must be bytes, got '%s'" % type(text).__name__
+    return any(c in _BINARYCHARS for c in six.iterbytes(text))
 
 def get_func_args(func, stripself=False):
     """Return the argument name list of a callable"""
@@ -243,9 +244,9 @@ def stringify_dict(dct_or_tuples, encoding='utf-8', keys_only=True):
     """
     d = {}
     for k, v in six.iteritems(dict(dct_or_tuples)):
-        k = k.encode(encoding) if isinstance(k, unicode) else k
+        k = k.encode(encoding) if isinstance(k, six.text_type) else k
         if not keys_only:
-            v = v.encode(encoding) if isinstance(v, unicode) else v
+            v = v.encode(encoding) if isinstance(v, six.text_type) else v
         d[k] = v
     return d
 
