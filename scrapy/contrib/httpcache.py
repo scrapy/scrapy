@@ -7,7 +7,7 @@ from time import time
 from weakref import WeakKeyDictionary
 from email.utils import mktime_tz, parsedate_tz
 from w3lib.http import headers_raw_to_dict, headers_dict_to_raw
-from scrapy.http import Headers
+from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.project import data_path
@@ -38,13 +38,19 @@ class RFC2616Policy(object):
     MAXAGE = 3600 * 24 * 365  # one year
 
     def __init__(self, settings):
+        self.always_store = settings.getbool('HTTPCACHE_ALWAYS_STORE')
         self.ignore_schemes = settings.getlist('HTTPCACHE_IGNORE_SCHEMES')
+        self.ignore_response_cache_controls = settings.getlist('HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS')
         self._cc_parsed = WeakKeyDictionary()
 
     def _parse_cachecontrol(self, r):
         if r not in self._cc_parsed:
             cch = r.headers.get('Cache-Control', '')
-            self._cc_parsed[r] = parse_cachecontrol(cch)
+            parsed = parse_cachecontrol(cch)
+            if isinstance(r, Response):
+                for key in self.ignore_response_cache_controls:
+                    parsed.pop(key, None)
+            self._cc_parsed[r] = parsed
         return self._cc_parsed[r]
 
     def should_cache_request(self, request):
@@ -68,6 +74,9 @@ class RFC2616Policy(object):
         # Never cache 304 (Not Modified) responses
         elif response.status == 304:
             return False
+        # Cache unconditionally if configured to do so
+        elif self.always_store:
+            return True
         # Any hint on response expiration is good
         elif 'max-age' in cc or 'Expires' in response.headers:
             return True
@@ -92,13 +101,45 @@ class RFC2616Policy(object):
         now = time()
         freshnesslifetime = self._compute_freshness_lifetime(cachedresponse, request, now)
         currentage = self._compute_current_age(cachedresponse, request, now)
+
+        reqmaxage = self._get_max_age(ccreq)
+        if reqmaxage is not None:
+            freshnesslifetime = min(freshnesslifetime, reqmaxage)
+
         if currentage < freshnesslifetime:
             return True
+
+        if 'max-stale' in ccreq and 'must-revalidate' not in cc:
+            # From RFC2616: "Indicates that the client is willing to
+            # accept a response that has exceeded its expiration time.
+            # If max-stale is assigned a value, then the client is
+            # willing to accept a response that has exceeded its
+            # expiration time by no more than the specified number of
+            # seconds. If no value is assigned to max-stale, then the
+            # client is willing to accept a stale response of any age."
+            staleage = ccreq['max-stale']
+            if staleage is None:
+                return True
+
+            try:
+                if currentage < freshnesslifetime + max(0, int(staleage)):
+                    return True
+            except ValueError:
+                pass
+
         # Cached response is stale, try to set validators if any
         self._set_conditional_validators(request, cachedresponse)
         return False
 
     def is_cached_response_valid(self, cachedresponse, response, request):
+        # Use the cached response if the new response is a server error,
+        # as long as the old response didn't specify must-revalidate.
+        if response.status >= 500:
+            cc = self._parse_cachecontrol(cachedresponse)
+            if 'must-revalidate' not in cc:
+                return True
+
+        # Use the cached response if the server says it hasn't changed.
         return response.status == 304
 
     def _set_conditional_validators(self, request, cachedresponse):
@@ -108,15 +149,19 @@ class RFC2616Policy(object):
         if 'ETag' in cachedresponse.headers:
             request.headers['If-None-Match'] = cachedresponse.headers['ETag']
 
+    def _get_max_age(self, cc):
+        try:
+            return max(0, int(cc['max-age']))
+        except (KeyError, ValueError):
+            return None
+
     def _compute_freshness_lifetime(self, response, request, now):
         # Reference nsHttpResponseHead::ComputeFreshnessLifetime
         # http://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#410
         cc = self._parse_cachecontrol(response)
-        if 'max-age' in cc:
-            try:
-                return max(0, int(cc['max-age']))
-            except ValueError:
-                pass
+        maxage = self._get_max_age(cc)
+        if maxage is not None:
+            return maxage
 
         # Parse date header or synthesize it if none exists
         date = rfc1123_to_epoch(response.headers.get('Date')) or now

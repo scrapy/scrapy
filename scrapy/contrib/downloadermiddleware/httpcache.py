@@ -1,10 +1,20 @@
 from email.utils import formatdate
+from twisted.internet import defer
+from twisted.internet.error import TimeoutError, DNSLookupError, \
+        ConnectionRefusedError, ConnectionDone, ConnectError, \
+        ConnectionLost, TCPTimedOutError
 from scrapy import signals
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.utils.misc import load_object
+from scrapy.xlib.tx import ResponseFailed
 
 
 class HttpCacheMiddleware(object):
+
+    DOWNLOAD_EXCEPTIONS = (defer.TimeoutError, TimeoutError, DNSLookupError,
+                           ConnectionRefusedError, ConnectionDone, ConnectError,
+                           ConnectionLost, TCPTimedOutError, ResponseFailed,
+                           IOError)
 
     def __init__(self, settings, stats):
         if not settings.getbool('HTTPCACHE_ENABLED'):
@@ -83,6 +93,12 @@ class HttpCacheMiddleware(object):
         self.stats.inc_value('httpcache/invalidate', spider=spider)
         self._cache_response(spider, response, request, cachedresponse)
         return response
+
+    def process_exception(self, request, exception, spider):
+        cachedresponse = request.meta.pop('cached_response', None)
+        if cachedresponse is not None and isinstance(exception, self.DOWNLOAD_EXCEPTIONS):
+            self.stats.inc_value('httpcache/errorrecovery', spider=spider)
+            return cachedresponse
 
     def _cache_response(self, spider, response, request, cachedresponse):
         if self.policy.should_cache_response(response, request):
