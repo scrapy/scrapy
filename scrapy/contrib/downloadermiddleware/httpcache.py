@@ -57,12 +57,12 @@ class HttpCacheMiddleware(object):
 
     def process_response(self, request, response, spider):
         if request.meta.get('dont_cache', False):
-            return response
+            return
 
         # Skip cached responses and uncacheable requests
         if 'cached' in response.flags or '_dont_cache' in request.meta:
             request.meta.pop('_dont_cache', None)
-            return response
+            return
 
         # RFC2616 requires origin server to set Date header,
         # http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.18
@@ -74,7 +74,7 @@ class HttpCacheMiddleware(object):
         if cachedresponse is None:
             self.stats.inc_value('httpcache/firsthand', spider=spider)
             self._cache_response(spider, response, request, cachedresponse)
-            return response
+            return
 
         if self.policy.is_cached_response_valid(cachedresponse, response, request):
             self.stats.inc_value('httpcache/revalidate', spider=spider)
@@ -82,7 +82,6 @@ class HttpCacheMiddleware(object):
 
         self.stats.inc_value('httpcache/invalidate', spider=spider)
         self._cache_response(spider, response, request, cachedresponse)
-        return response
 
     def _cache_response(self, spider, response, request, cachedresponse):
         if self.policy.should_cache_response(response, request):

@@ -24,7 +24,6 @@ class DownloaderStats(object):
         self.stats.inc_value('downloader/response_status_count/%s' % response.status, spider=spider)
         reslen = len(response_httprepr(response))
         self.stats.inc_value('downloader/response_bytes', reslen, spider=spider)
-        return response
 
     def process_exception(self, request, exception, spider):
         ex_class = "%s.%s" % (exception.__class__.__module__, exception.__class__.__name__)

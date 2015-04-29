@@ -38,7 +38,7 @@ class CookiesMiddleware(object):
 
     def process_response(self, request, response, spider):
         if request.meta.get('dont_merge_cookies', False):
-            return response
+            return
 
         # extract cookies from Set-Cookie and drop invalid/expired cookies
         cookiejarkey = request.meta.get("cookiejar")
@@ -46,7 +46,7 @@ class CookiesMiddleware(object):
         jar.extract_cookies(response, request)
         self._debug_set_cookie(response, spider)
 
-        return response
+        return
 
     def _debug_cookie(self, request, spider):
         if self.debug:

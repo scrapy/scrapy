@@ -28,7 +28,7 @@ class CookiesMiddlewareTest(TestCase):
         assert 'Cookie' not in req.headers
 
         res = Response('http://scrapytest.org/', headers=headers)
-        assert self.mw.process_response(req, res, self.spider) is res
+        assert self.mw.process_response(req, res, self.spider) is None
 
         #assert res.cookies
 
@@ -41,7 +41,7 @@ class CookiesMiddlewareTest(TestCase):
         headers = {'Set-Cookie': 'C1=value1; path=/'}
         req = Request('http://scrapytest.org/')
         res = Response('http://scrapytest.org/', headers=headers)
-        assert self.mw.process_response(req, res, self.spider) is res
+        assert self.mw.process_response(req, res, self.spider) is None
 
         # test Cookie header is not seted to request
         req = Request('http://scrapytest.org/dontmerge', meta={'dont_merge_cookies': 1})
@@ -50,7 +50,7 @@ class CookiesMiddlewareTest(TestCase):
 
         # check that returned cookies are not merged back to jar
         res = Response('http://scrapytest.org/dontmerge', headers={'Set-Cookie': 'dont=mergeme; path=/'})
-        assert self.mw.process_response(req, res, self.spider) is res
+        assert self.mw.process_response(req, res, self.spider) is None
 
         # check that cookies are merged back
         req = Request('http://scrapytest.org/mergeme')
@@ -95,7 +95,7 @@ class CookiesMiddlewareTest(TestCase):
 
         headers = {'Set-Cookie': 'C1=value1; path=/'}
         res = Response('http://scrapytest.org/', headers=headers)
-        assert self.mw.process_response(req, res, self.spider) is res
+        assert self.mw.process_response(req, res, self.spider) is None
 
         req2 = Request('http://scrapytest.org/sub1/')
         assert self.mw.process_request(req2, self.spider) is None
@@ -109,7 +109,7 @@ class CookiesMiddlewareTest(TestCase):
 
         headers = {'Set-Cookie': 'C1=value1; path=/'}
         res = Response('http://scrapytest.org/', headers=headers, request=req)
-        assert self.mw.process_response(req, res, self.spider) is res
+        assert self.mw.process_response(req, res, self.spider) is None
 
         req2 = Request('http://scrapytest.org/', meta=res.meta)
         assert self.mw.process_request(req2, self.spider) is None
@@ -121,7 +121,7 @@ class CookiesMiddlewareTest(TestCase):
 
         headers = {'Set-Cookie': 'C2=value2; path=/'}
         res2 = Response('http://scrapytest.org/', headers=headers, request=req3)
-        assert self.mw.process_response(req3, res2, self.spider) is res2
+        assert self.mw.process_response(req3, res2, self.spider) is None
 
         req4 = Request('http://scrapytest.org/', meta=res2.meta)
         assert self.mw.process_request(req4, self.spider) is None
@@ -133,7 +133,7 @@ class CookiesMiddlewareTest(TestCase):
 
         headers = {'Set-Cookie': 'C1=value1; path=/'}
         res5_1 = Response('http://scrapytest.org:1104/', headers=headers, request=req5_1)
-        assert self.mw.process_response(req5_1, res5_1, self.spider) is res5_1
+        assert self.mw.process_response(req5_1, res5_1, self.spider) is None
 
         req5_2 = Request('http://scrapytest.org:1104/some-redirected-path')
         assert self.mw.process_request(req5_2, self.spider) is None

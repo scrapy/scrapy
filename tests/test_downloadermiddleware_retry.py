@@ -30,7 +30,7 @@ class RetryTest(unittest.TestCase):
         rsp = Response('http://www.scrapytest.org/404', body='', status=404)
 
         # dont retry 404s
-        assert self.mw.process_response(req, rsp, self.spider) is rsp
+        assert self.mw.process_response(req, rsp, self.spider) is None
 
     def test_dont_retry(self):
         req = Request('http://www.scrapytest.org/503', meta={'dont_retry': True})
@@ -38,7 +38,7 @@ class RetryTest(unittest.TestCase):
 
         # first retry
         r = self.mw.process_response(req, rsp, self.spider)
-        assert r is rsp
+        assert r is None
 
         # Test retry when dont_retry set to False
         req = Request('http://www.scrapytest.org/503', meta={'dont_retry': False})
@@ -46,7 +46,7 @@ class RetryTest(unittest.TestCase):
 
         # first retry
         r = self.mw.process_response(req, rsp, self.spider)
-        assert r is rsp
+        assert r is None
 
     def test_dont_retry_exc(self):
         req = Request('http://www.scrapytest.org/503', meta={'dont_retry': True})
@@ -69,7 +69,7 @@ class RetryTest(unittest.TestCase):
         self.assertEqual(req.meta['retry_times'], 2)
 
         # discard it
-        assert self.mw.process_response(req, rsp, self.spider) is rsp
+        assert self.mw.process_response(req, rsp, self.spider) is None
 
     def test_twistederrors(self):
         exceptions = [defer.TimeoutError, TCPTimedOutError, TimeoutError,

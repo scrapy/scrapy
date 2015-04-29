@@ -34,7 +34,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
 
             # response without Location header but with status code is 3XX should be ignored
             del rsp.headers['Location']
-            assert self.mw.process_response(req, rsp, self.spider) is rsp
+            assert self.mw.process_response(req, rsp, self.spider) is None
 
         _test('GET')
         _test('POST')
@@ -47,17 +47,14 @@ class RedirectMiddlewareTest(unittest.TestCase):
         rsp = Response(url, headers={'Location': url2}, status=301)
 
         r = self.mw.process_response(req, rsp, self.spider)
-        assert isinstance(r, Response)
-        assert r is rsp
+        assert r is None
 
         # Test that it redirects when dont_redirect is False
         req = Request(url, meta={'dont_redirect': False})
         rsp = Response(url2, status=200)
 
         r = self.mw.process_response(req, rsp, self.spider)
-        assert isinstance(r, Response)
-        assert r is rsp
-
+        assert r is None
 
     def test_redirect_302(self):
         url = 'http://www.example.com/302'
@@ -79,7 +76,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
 
         # response without Location header but with status code is 3XX should be ignored
         del rsp.headers['Location']
-        assert self.mw.process_response(req, rsp, self.spider) is rsp
+        assert self.mw.process_response(req, rsp, self.spider) is None
 
     def test_redirect_302_head(self):
         url = 'http://www.example.com/302'
@@ -94,7 +91,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
 
         # response without Location header but with status code is 3XX should be ignored
         del rsp.headers['Location']
-        assert self.mw.process_response(req, rsp, self.spider) is rsp
+        assert self.mw.process_response(req, rsp, self.spider) is None
 
 
     def test_max_redirect_times(self):
@@ -158,7 +155,7 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
         req = Request(url='http://example.org')
         rsp = HtmlResponse(url='http://example.org', body=self._body(interval=1000))
         rsp2 = self.mw.process_response(req, rsp, self.spider)
-        assert rsp is rsp2
+        assert rsp2 is None
 
     def test_meta_refresh_trough_posted_request(self):
         req = Request(url='http://example.org', method='POST', body='test',
