@@ -6,13 +6,15 @@ See documentation in docs/topics/extensions.rst
 
 import sys
 import signal
+import logging
 import traceback
 import threading
 from pdb import Pdb
 
 from scrapy.utils.engine import format_engine_status
 from scrapy.utils.trackref import format_live_refs
-from scrapy import log
+
+logger = logging.getLogger(__name__)
 
 
 class StackTraceDump(object):
@@ -31,12 +33,14 @@ class StackTraceDump(object):
         return cls(crawler)
 
     def dump_stacktrace(self, signum, frame):
-        stackdumps = self._thread_stacks()
-        enginestatus = format_engine_status(self.crawler.engine)
-        liverefs = format_live_refs()
-        msg = "Dumping stack trace and engine status" \
-            "\n{0}\n{1}\n{2}".format(enginestatus, liverefs, stackdumps)
-        log.msg(msg)
+        log_args = {
+            'stackdumps': self._thread_stacks(),
+            'enginestatus': format_engine_status(self.crawler.engine),
+            'liverefs': format_live_refs(),
+        }
+        logger.info("Dumping stack trace and engine status\n"
+                    "%(enginestatus)s\n%(liverefs)s\n%(stackdumps)s",
+                    log_args, extra={'crawler': self.crawler})
 
     def _thread_stacks(self):
         id2name = dict((th.ident, th.name) for th in threading.enumerate())

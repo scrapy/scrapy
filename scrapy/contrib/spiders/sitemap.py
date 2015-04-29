@@ -1,10 +1,13 @@
 import re
+import logging
 
 from scrapy.spider import Spider
 from scrapy.http import Request, XmlResponse
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 from scrapy.utils.gz import gunzip, is_gzipped
-from scrapy import log
+
+logger = logging.getLogger(__name__)
+
 
 class SitemapSpider(Spider):
 
@@ -32,8 +35,8 @@ class SitemapSpider(Spider):
         else:
             body = self._get_sitemap_body(response)
             if body is None:
-                log.msg(format="Ignoring invalid sitemap: %(response)s",
-                        level=log.WARNING, spider=self, response=response)
+                logger.warning("Ignoring invalid sitemap: %(response)s",
+                               {'response': response}, extra={'spider': self})
                 return
 
             s = Sitemap(body)

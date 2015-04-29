@@ -9,6 +9,7 @@ import os
 import os.path
 import rfc822
 import time
+import logging
 from six.moves.urllib.parse import urlparse
 from collections import defaultdict
 import six
@@ -20,11 +21,12 @@ except ImportError:
 
 from twisted.internet import defer, threads
 
-from scrapy import log
 from scrapy.contrib.pipeline.media import MediaPipeline
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.misc import md5sum
+
+logger = logging.getLogger(__name__)
 
 
 class FileException(Exception):
@@ -192,9 +194,13 @@ class FilesPipeline(MediaPipeline):
                 return  # returning None force download
 
             referer = request.headers.get('Referer')
-            log.msg(format='File (uptodate): Downloaded %(medianame)s from %(request)s referred in <%(referer)s>',
-                    level=log.DEBUG, spider=info.spider,
-                    medianame=self.MEDIA_NAME, request=request, referer=referer)
+            logger.debug(
+                'File (uptodate): Downloaded %(medianame)s from %(request)s '
+                'referred in <%(referer)s>',
+                {'medianame': self.MEDIA_NAME, 'request': request,
+                 'referer': referer},
+                extra={'spider': info.spider}
+            )
             self.inc_stats(info.spider, 'uptodate')
 
             checksum = result.get('checksum', None)
@@ -203,17 +209,23 @@ class FilesPipeline(MediaPipeline):
         path = self.file_path(request, info=info)
         dfd = defer.maybeDeferred(self.store.stat_file, path, info)
         dfd.addCallbacks(_onsuccess, lambda _: None)
-        dfd.addErrback(log.err, self.__class__.__name__ + '.store.stat_file')
+        dfd.addErrback(
+            lambda f:
+            logger.error(self.__class__.__name__ + '.store.stat_file',
+                         extra={'spider': info.spider, 'failure': f})
+        )
         return dfd
 
     def media_failed(self, failure, request, info):
         if not isinstance(failure.value, IgnoreRequest):
             referer = request.headers.get('Referer')
-            log.msg(format='File (unknown-error): Error downloading '
-                           '%(medianame)s from %(request)s referred in '
-                           '<%(referer)s>: %(exception)s',
-                    level=log.WARNING, spider=info.spider, exception=failure.value,
-                    medianame=self.MEDIA_NAME, request=request, referer=referer)
+            logger.warning(
+                'File (unknown-error): Error downloading %(medianame)s from '
+                '%(request)s referred in <%(referer)s>: %(exception)s',
+                {'medianame': self.MEDIA_NAME, 'request': request,
+                 'referer': referer, 'exception': failure.value},
+                extra={'spider': info.spider}
+            )
 
         raise FileException
 
@@ -221,34 +233,51 @@ class FilesPipeline(MediaPipeline):
         referer = request.headers.get('Referer')
 
         if response.status != 200:
-            log.msg(format='File (code: %(status)s): Error downloading file from %(request)s referred in <%(referer)s>',
-                    level=log.WARNING, spider=info.spider,
-                    status=response.status, request=request, referer=referer)
+            logger.warning(
+                'File (code: %(status)s): Error downloading file from '
+                '%(request)s referred in <%(referer)s>',
+                {'status': response.status,
+                 'request': request, 'referer': referer},
+                extra={'spider': info.spider}
+            )
             raise FileException('download-error')
 
         if not response.body:
-            log.msg(format='File (empty-content): Empty file from %(request)s referred in <%(referer)s>: no-content',
-                    level=log.WARNING, spider=info.spider,
-                    request=request, referer=referer)
+            logger.warning(
+                'File (empty-content): Empty file from %(request)s referred '
+                'in <%(referer)s>: no-content',
+                {'request': request, 'referer': referer},
+                extra={'spider': info.spider}
+            )
             raise FileException('empty-content')
 
         status = 'cached' if 'cached' in response.flags else 'downloaded'
-        log.msg(format='File (%(status)s): Downloaded file from %(request)s referred in <%(referer)s>',
-                level=log.DEBUG, spider=info.spider,
-                status=status, request=request, referer=referer)
+        logger.debug(
+            'File (%(status)s): Downloaded file from %(request)s referred in '
+            '<%(referer)s>',
+            {'status': status, 'request': request, 'referer': referer},
+            extra={'spider': info.spider}
+        )
         self.inc_stats(info.spider, status)
 
         try:
             path = self.file_path(request, response=response, info=info)
             checksum = self.file_downloaded(response, request, info)
         except FileException as exc:
-            whyfmt = 'File (error): Error processing file from %(request)s referred in <%(referer)s>: %(errormsg)s'
-            log.msg(format=whyfmt, level=log.WARNING, spider=info.spider,
-                    request=request, referer=referer, errormsg=str(exc))
+            logger.warning(
+                'File (error): Error processing file from %(request)s '
+                'referred in <%(referer)s>: %(errormsg)s',
+                {'request': request, 'referer': referer, 'errormsg': str(exc)},
+                extra={'spider': info.spider}, exc_info=True
+            )
             raise
         except Exception as exc:
-            whyfmt = 'File (unknown-error): Error processing file from %(request)s referred in <%(referer)s>'
-            log.err(None, whyfmt % {'request': request, 'referer': referer}, spider=info.spider)
+            logger.exception(
+                'File (unknown-error): Error processing file from %(request)s '
+                'referred in <%(referer)s>',
+                {'request': request, 'referer': referer},
+                extra={'spider': info.spider}
+            )
             raise FileException(str(exc))
 
         return {'url': request.url, 'path': path, 'checksum': checksum}

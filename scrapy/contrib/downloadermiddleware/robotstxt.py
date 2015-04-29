@@ -4,12 +4,15 @@ enable this middleware and enable the ROBOTSTXT_OBEY setting.
 
 """
 
+import logging
+
 from six.moves.urllib import robotparser
 
-from scrapy import signals, log
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
+
+logger = logging.getLogger(__name__)
 
 
 class RobotsTxtMiddleware(object):
@@ -32,8 +35,8 @@ class RobotsTxtMiddleware(object):
             return
         rp = self.robot_parser(request, spider)
         if rp and not rp.can_fetch(self._useragent, request.url):
-            log.msg(format="Forbidden by robots.txt: %(request)s",
-                    level=log.DEBUG, request=request)
+            logger.debug("Forbidden by robots.txt: %(request)s",
+                         {'request': request}, extra={'spider': spider})
             raise IgnoreRequest
 
     def robot_parser(self, request, spider):
@@ -54,8 +57,9 @@ class RobotsTxtMiddleware(object):
 
     def _logerror(self, failure, request, spider):
         if failure.type is not IgnoreRequest:
-            log.msg(format="Error downloading %%(request)s: %s" % failure.value,
-                    level=log.ERROR, request=request, spider=spider)
+            logger.error("Error downloading %(request)s: %(f_exception)s",
+                         {'request': request, 'f_exception': failure.value},
+                         extra={'spider': spider, 'failure': failure})
 
     def _parse_robots(self, response):
         rp = robotparser.RobotFileParser(response.url)

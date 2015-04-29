@@ -4,7 +4,10 @@ Feed Exports extension
 See documentation in docs/topics/feed-exports.rst
 """
 
-import sys, os, posixpath
+import os
+import sys
+import logging
+import posixpath
 from tempfile import TemporaryFile
 from datetime import datetime
 from six.moves.urllib.parse import urlparse
@@ -14,11 +17,13 @@ from zope.interface import Interface, implementer
 from twisted.internet import defer, threads
 from w3lib.url import file_uri_to_path
 
-from scrapy import log, signals
+from scrapy import signals
 from scrapy.utils.ftp import ftp_makedirs_cwd
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import get_func_args
+
+logger = logging.getLogger(__name__)
 
 
 class IFeedStorage(Interface):
@@ -171,11 +176,15 @@ class FeedExporter(object):
         if not slot.itemcount and not self.store_empty:
             return
         slot.exporter.finish_exporting()
-        logfmt = "%%s %s feed (%d items) in: %s" % (self.format, \
-            slot.itemcount, slot.uri)
+        logfmt = "%%s %(format)s feed (%(itemcount)d items) in: %(uri)s"
+        log_args = {'format': self.format,
+                    'itemcount': slot.itemcount,
+                    'uri': slot.uri}
         d = defer.maybeDeferred(slot.storage.store, slot.file)
-        d.addCallback(lambda _: log.msg(logfmt % "Stored", spider=spider))
-        d.addErrback(log.err, logfmt % "Error storing", spider=spider)
+        d.addCallback(lambda _: logger.info(logfmt % "Stored", log_args,
+                                            extra={'spider': spider}))
+        d.addErrback(lambda f: logger.error(logfmt % "Error storing", log_args,
+                                            extra={'spider': spider, 'failure': f}))
         return d
 
     def item_scraped(self, item, spider):
@@ -198,7 +207,7 @@ class FeedExporter(object):
     def _exporter_supported(self, format):
         if format in self.exporters:
             return True
-        log.msg("Unknown feed format: %s" % format, log.ERROR)
+        logger.error("Unknown feed format: %(format)s", {'format': format})
 
     def _storage_supported(self, uri):
         scheme = urlparse(uri).scheme
@@ -207,9 +216,11 @@ class FeedExporter(object):
                 self._get_storage(uri)
                 return True
             except NotConfigured:
-                log.msg("Disabled feed storage scheme: %s" % scheme, log.ERROR)
+                logger.error("Disabled feed storage scheme: %(scheme)s",
+                             {'scheme': scheme})
         else:
-            log.msg("Unknown feed storage scheme: %s" % scheme, log.ERROR)
+            logger.error("Unknown feed storage scheme: %(scheme)s",
+                         {'scheme': scheme})
 
     def _get_exporter(self, *args, **kwargs):
         return self.exporters[self.format](*args, **kwargs)

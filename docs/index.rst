@@ -119,7 +119,7 @@ Built-in services
    topics/webservice
 
 :doc:`topics/logging`
-    Understand the simple logging facility provided by Scrapy.
+    Learn how to use Python's builtin logging on Scrapy.
 
 :doc:`topics/stats`
     Collect statistics about your scraping crawler.

@@ -1,9 +1,10 @@
 from unittest import TestCase
 
+from testfixtures import LogCapture
 from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.internet import defer
 
-from scrapy.utils.test import get_crawler, get_testlog
+from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
 from scrapy.http import Response, Request
 from scrapy.spider import Spider
@@ -174,14 +175,13 @@ class TestHttpErrorMiddlewareIntegrational(TrialTestCase):
     @defer.inlineCallbacks
     def test_logging(self):
         crawler = get_crawler(_HttpErrorSpider)
-        yield crawler.crawl(bypass_status_codes={402})
-        # print(get_testlog())
+        with LogCapture() as log:
+            yield crawler.crawl(bypass_status_codes={402})
         self.assertEqual(crawler.spider.parsed, {'200', '402'})
         self.assertEqual(crawler.spider.skipped, {'402'})
         self.assertEqual(crawler.spider.failed, {'404', '500'})
 
-        log = get_testlog()
-        self.assertIn('Ignoring response <404', log)
-        self.assertIn('Ignoring response <500', log)
-        self.assertNotIn('Ignoring response <200', log)
-        self.assertNotIn('Ignoring response <402', log)
+        self.assertIn('Ignoring response <404', str(log))
+        self.assertIn('Ignoring response <500', str(log))
+        self.assertNotIn('Ignoring response <200', str(log))
+        self.assertNotIn('Ignoring response <402', str(log))

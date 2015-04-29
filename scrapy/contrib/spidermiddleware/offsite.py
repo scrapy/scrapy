@@ -5,11 +5,13 @@ See documentation in docs/topics/spider-middleware.rst
 """
 
 import re
+import logging
 
 from scrapy import signals
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy import log
+
+logger = logging.getLogger(__name__)
 
 class OffsiteMiddleware(object):
 
@@ -31,8 +33,8 @@ class OffsiteMiddleware(object):
                     domain = urlparse_cached(x).hostname
                     if domain and domain not in self.domains_seen:
                         self.domains_seen.add(domain)
-                        log.msg(format="Filtered offsite request to %(domain)r: %(request)s",
-                                level=log.DEBUG, spider=spider, domain=domain, request=x)
+                        logger.debug("Filtered offsite request to %(domain)r: %(request)s",
+                                     {'domain': domain, 'request': x}, extra={'spider': spider})
                         self.stats.inc_value('offsite/domains', spider=spider)
                     self.stats.inc_value('offsite/filtered', spider=spider)
             else:

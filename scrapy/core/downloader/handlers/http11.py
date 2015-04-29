@@ -1,7 +1,7 @@
 """Download handlers for http and https schemes"""
 
 import re
-
+import logging
 from io import BytesIO
 from time import time
 from six.moves.urllib.parse import urldefrag
@@ -19,7 +19,9 @@ from scrapy.http import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.core.downloader.webclient import _parse
 from scrapy.utils.misc import load_object
-from scrapy import log, twisted_version
+from scrapy import twisted_version
+
+logger = logging.getLogger(__name__)
 
 
 class HTTP11DownloadHandler(object):
@@ -237,14 +239,16 @@ class ScrapyAgent(object):
         expected_size = txresponse.length if txresponse.length != UNKNOWN_LENGTH else -1
 
         if maxsize and expected_size > maxsize:
-            log.msg("Expected response size (%s) larger than download max size (%s)." % (expected_size, maxsize),
-                    logLevel=log.ERROR)
+            logger.error("Expected response size (%(size)s) larger than "
+                         "download max size (%(maxsize)s).",
+                         {'size': expected_size, 'maxsize': maxsize})
             txresponse._transport._producer.loseConnection()
             raise defer.CancelledError()
 
         if warnsize and expected_size > warnsize:
-            log.msg("Expected response size (%s) larger than downlod warn size (%s)." % (expected_size, warnsize),
-                    logLevel=log.WARNING)
+            logger.warning("Expected response size (%(size)s) larger than "
+                           "download warn size (%(warnsize)s).",
+                           {'size': expected_size, 'warnsize': warnsize})
 
         def _cancel(_):
             txresponse._transport._producer.loseConnection()
@@ -295,13 +299,17 @@ class _ResponseReader(protocol.Protocol):
         self._bytes_received += len(bodyBytes)
 
         if self._maxsize and self._bytes_received > self._maxsize:
-            log.msg("Received (%s) bytes larger than download max size (%s)." % (self._bytes_received, self._maxsize),
-                    logLevel=log.ERROR)
+            logger.error("Received (%(bytes)s) bytes larger than download "
+                         "max size (%(maxsize)s).",
+                         {'bytes': self._bytes_received,
+                          'maxsize': self._maxsize})
             self._finished.cancel()
 
         if self._warnsize and self._bytes_received > self._warnsize:
-            log.msg("Received (%s) bytes larger than download warn size (%s)." % (self._bytes_received, self._warnsize),
-                    logLevel=log.WARNING)
+            logger.warning("Received (%(bytes)s) bytes larger than download "
+                           "warn size (%(warnsize)s).",
+                           {'bytes': self._bytes_received,
+                            'warnsize': self._warnsize})
 
     def connectionLost(self, reason):
         if self._finished.called:

@@ -3,6 +3,8 @@ Mail sending helpers
 
 See documentation in docs/topics/email.rst
 """
+import logging
+
 from six.moves import cStringIO as StringIO
 import six
 
@@ -20,7 +22,8 @@ else:
 from twisted.internet import defer, reactor, ssl
 from twisted.mail.smtp import ESMTPSenderFactory
 
-from scrapy import log
+logger = logging.getLogger(__name__)
+
 
 class MailSender(object):
 
@@ -71,8 +74,10 @@ class MailSender(object):
             _callback(to=to, subject=subject, body=body, cc=cc, attach=attachs, msg=msg)
 
         if self.debug:
-            log.msg(format='Debug mail sent OK: To=%(mailto)s Cc=%(mailcc)s Subject="%(mailsubject)s" Attachs=%(mailattachs)d',
-                    level=log.DEBUG, mailto=to, mailcc=cc, mailsubject=subject, mailattachs=len(attachs))
+            logger.debug('Debug mail sent OK: To=%(mailto)s Cc=%(mailcc)s '
+                         'Subject="%(mailsubject)s" Attachs=%(mailattachs)d',
+                         {'mailto': to, 'mailcc': cc, 'mailsubject': subject,
+                          'mailattachs': len(attachs)})
             return
 
         dfd = self._sendmail(rcpts, msg.as_string())
@@ -83,17 +88,18 @@ class MailSender(object):
         return dfd
 
     def _sent_ok(self, result, to, cc, subject, nattachs):
-        log.msg(format='Mail sent OK: To=%(mailto)s Cc=%(mailcc)s '
-                       'Subject="%(mailsubject)s" Attachs=%(mailattachs)d',
-                mailto=to, mailcc=cc, mailsubject=subject, mailattachs=nattachs)
+        logger.info('Mail sent OK: To=%(mailto)s Cc=%(mailcc)s '
+                    'Subject="%(mailsubject)s" Attachs=%(mailattachs)d',
+                    {'mailto': to, 'mailcc': cc, 'mailsubject': subject,
+                     'mailattachs': nattachs})
 
     def _sent_failed(self, failure, to, cc, subject, nattachs):
         errstr = str(failure.value)
-        log.msg(format='Unable to send mail: To=%(mailto)s Cc=%(mailcc)s '
-                       'Subject="%(mailsubject)s" Attachs=%(mailattachs)d'
-                       '- %(mailerr)s',
-                level=log.ERROR, mailto=to, mailcc=cc, mailsubject=subject,
-                mailattachs=nattachs, mailerr=errstr)
+        logger.error('Unable to send mail: To=%(mailto)s Cc=%(mailcc)s '
+                     'Subject="%(mailsubject)s" Attachs=%(mailattachs)d'
+                     '- %(mailerr)s',
+                     {'mailto': to, 'mailcc': cc, 'mailsubject': subject,
+                      'mailattachs': nattachs, 'mailerr': errstr})
 
     def _sendmail(self, to_addrs, msg):
         msg = StringIO(msg)

@@ -74,7 +74,7 @@ class SimpleSpider(MetaSpider):
         self.start_urls = [url]
 
     def parse(self, response):
-        self.log("Got response %d" % response.status)
+        self.logger.info("Got response %d" % response.status)
 
 
 class ItemSpider(FollowAllSpider):

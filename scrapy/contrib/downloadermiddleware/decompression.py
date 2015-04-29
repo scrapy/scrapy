@@ -1,11 +1,12 @@
 """ This module implements the DecompressionMiddleware which tries to recognise
-and extract the potentially compressed responses that may arrive. 
+and extract the potentially compressed responses that may arrive.
 """
 
 import bz2
 import gzip
 import zipfile
 import tarfile
+import logging
 from tempfile import mktemp
 
 import six
@@ -15,8 +16,9 @@ try:
 except ImportError:
     from io import BytesIO
 
-from scrapy import log
 from scrapy.responsetypes import responsetypes
+
+logger = logging.getLogger(__name__)
 
 
 class DecompressionMiddleware(object):
@@ -80,7 +82,7 @@ class DecompressionMiddleware(object):
         for fmt, func in six.iteritems(self._formats):
             new_response = func(response)
             if new_response:
-                log.msg(format='Decompressed response with format: %(responsefmt)s',
-                        level=log.DEBUG, spider=spider, responsefmt=fmt)
+                logger.debug('Decompressed response with format: %(responsefmt)s',
+                             {'responsefmt': fmt}, extra={'spider': spider})
                 return new_response
         return response

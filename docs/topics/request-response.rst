@@ -189,7 +189,7 @@ Example::
 
     def parse_page2(self, response):
         # this would log http://www.example.com/some_page.html
-        self.log("Visited %s" % response.url)
+        self.logger.info("Visited %s", response.url)
 
 In some cases you may be interested in passing arguments to those callback
 functions so you can receive the arguments later, in the second callback. You
@@ -382,7 +382,7 @@ method for this job. Here's an example spider which uses it::
         def after_login(self, response):
             # check login succeed before going on
             if "authentication failed" in response.body:
-                self.log("Login failed", level=log.ERROR)
+                self.logger.error("Login failed")
                 return
 
             # continue scraping with authenticated session...

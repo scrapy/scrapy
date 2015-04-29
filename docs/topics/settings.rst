@@ -612,6 +612,31 @@ Default: ``None``
 
 File name to use for logging output. If None, standard error will be used.
 
+.. setting:: LOG_FORMAT
+
+LOG_FORMAT
+----------
+
+Default: ``'%(asctime)s [%(name)s] %(levelname)s: %(message)s'``
+
+String for formatting log messsages. Refer to the `Python logging documentation`_ for the whole list of available
+placeholders.
+
+.. _Python logging documentation: https://docs.python.org/2/library/logging.html#logrecord-attributes
+
+.. setting:: LOG_DATEFORMAT
+
+LOG_DATEFORMAT
+--------------
+
+Default: ``'%Y-%m-%d %H:%M:%S%z'``
+
+String for formatting date/time, expansion of the ``%(asctime)s`` placeholder
+in :setting:`LOG_FORMAT`. Refer to the `Python datetime documentation`_ for the whole list of available
+directives.
+
+.. _Python datetime documentation: https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
+
 .. setting:: LOG_LEVEL
 
 LOG_LEVEL

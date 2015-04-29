@@ -17,16 +17,18 @@ About HTTP errors to consider:
   protocol. It's included by default because it's a common code used to
   indicate server overload, which would be something we want to retry
 """
+import logging
 
 from twisted.internet import defer
 from twisted.internet.error import TimeoutError, DNSLookupError, \
         ConnectionRefusedError, ConnectionDone, ConnectError, \
         ConnectionLost, TCPTimedOutError
 
-from scrapy import log
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.response import response_status_message
 from scrapy.xlib.tx import ResponseFailed
+
+logger = logging.getLogger(__name__)
 
 
 class RetryMiddleware(object):
@@ -66,13 +68,15 @@ class RetryMiddleware(object):
         retries = request.meta.get('retry_times', 0) + 1
 
         if retries <= self.max_retry_times:
-            log.msg(format="Retrying %(request)s (failed %(retries)d times): %(reason)s",
-                    level=log.DEBUG, spider=spider, request=request, retries=retries, reason=reason)
+            logger.debug("Retrying %(request)s (failed %(retries)d times): %(reason)s",
+                         {'request': request, 'retries': retries, 'reason': reason},
+                         extra={'spider': spider})
             retryreq = request.copy()
             retryreq.meta['retry_times'] = retries
             retryreq.dont_filter = True
             retryreq.priority = request.priority + self.priority_adjust
             return retryreq
         else:
-            log.msg(format="Gave up retrying %(request)s (failed %(retries)d times): %(reason)s",
-                    level=log.DEBUG, spider=spider, request=request, retries=retries, reason=reason)
+            logger.debug("Gave up retrying %(request)s (failed %(retries)d times): %(reason)s",
+                         {'request': request, 'retries': retries, 'reason': reason},
+                         extra={'spider': spider})

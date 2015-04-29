@@ -1,5 +1,6 @@
 import six
 import signal
+import logging
 import warnings
 
 from twisted.internet import reactor, defer
@@ -14,7 +15,10 @@ from scrapy.signalmanager import SignalManager
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.misc import load_object
-from scrapy import log, signals
+from scrapy.utils.log import LogCounterHandler, configure_logging, log_scrapy_info
+from scrapy import signals
+
+logger = logging.getLogger(__name__)
 
 
 class Crawler(object):
@@ -28,6 +32,12 @@ class Crawler(object):
 
         self.signals = SignalManager(self)
         self.stats = load_object(self.settings['STATS_CLASS'])(self)
+
+        handler = LogCounterHandler(self, level=settings.get('LOG_LEVEL'))
+        logging.root.addHandler(handler)
+        self.signals.connect(lambda: logging.root.removeHandler(handler),
+                             signals.engine_stopped)
+
         lf_cls = load_object(self.settings['LOG_FORMATTER'])
         self.logformatter = lf_cls.from_crawler(self)
         self.extensions = ExtensionManager.from_crawler(self)
@@ -99,7 +109,6 @@ class CrawlerRunner(object):
         crawler = crawler_or_spidercls
         if not isinstance(crawler_or_spidercls, Crawler):
             crawler = self._create_crawler(crawler_or_spidercls)
-            self._setup_crawler_logging(crawler)
 
         self.crawlers.add(crawler)
         d = crawler.crawl(*args, **kwargs)
@@ -116,11 +125,6 @@ class CrawlerRunner(object):
         if isinstance(spidercls, six.string_types):
             spidercls = self.spider_loader.load(spidercls)
         return Crawler(spidercls, self.settings)
-
-    def _setup_crawler_logging(self, crawler):
-        log_observer = log.start_from_crawler(crawler)
-        if log_observer:
-            crawler.signals.connect(log_observer.stop, signals.engine_stopped)
 
     def stop(self):
         return defer.DeferredList([c.stop() for c in list(self.crawlers)])
@@ -139,22 +143,21 @@ class CrawlerProcess(CrawlerRunner):
         super(CrawlerProcess, self).__init__(settings)
         install_shutdown_handlers(self._signal_shutdown)
         self.stopping = False
-        self.log_observer = log.start_from_settings(self.settings)
-        log.scrapy_info(settings)
+        configure_logging(settings)
+        log_scrapy_info(settings)
 
     def _signal_shutdown(self, signum, _):
         install_shutdown_handlers(self._signal_kill)
         signame = signal_names[signum]
-        log.msg(format="Received %(signame)s, shutting down gracefully. Send again to force ",
-                level=log.INFO, signame=signame)
+        logger.info("Received %(signame)s, shutting down gracefully. Send again to force ",
+                    {'signame': signame})
         reactor.callFromThread(self.stop)
 
     def _signal_kill(self, signum, _):
         install_shutdown_handlers(signal.SIG_IGN)
         signame = signal_names[signum]
-        log.msg(format='Received %(signame)s twice, forcing unclean shutdown',
-                level=log.INFO, signame=signame)
-        self._stop_logging()
+        logger.info('Received %(signame)s twice, forcing unclean shutdown',
+                    {'signame': signame})
         reactor.callFromThread(self._stop_reactor)
 
     def start(self, stop_after_crawl=True):
@@ -172,10 +175,6 @@ class CrawlerProcess(CrawlerRunner):
         tp.adjustPoolsize(maxthreads=self.settings.getint('REACTOR_THREADPOOL_MAXSIZE'))
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
         reactor.run(installSignalHandlers=False)  # blocking call
-
-    def _stop_logging(self):
-        if self.log_observer:
-            self.log_observer.stop()
 
     def _stop_reactor(self, _=None):
         try:

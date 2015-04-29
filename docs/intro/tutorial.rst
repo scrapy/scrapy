@@ -154,15 +154,14 @@ similar to this::
     2014-01-23 18:13:07-0400 [scrapy] INFO: Enabled downloader middlewares: ...
     2014-01-23 18:13:07-0400 [scrapy] INFO: Enabled spider middlewares: ...
     2014-01-23 18:13:07-0400 [scrapy] INFO: Enabled item pipelines: ...
-    2014-01-23 18:13:07-0400 [dmoz] INFO: Spider opened
-    2014-01-23 18:13:08-0400 [dmoz] DEBUG: Crawled (200) <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/> (referer: None)
-    2014-01-23 18:13:09-0400 [dmoz] DEBUG: Crawled (200) <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> (referer: None)
-    2014-01-23 18:13:09-0400 [dmoz] INFO: Closing spider (finished)
+    2014-01-23 18:13:07-0400 [scrapy] INFO: Spider opened
+    2014-01-23 18:13:08-0400 [scrapy] DEBUG: Crawled (200) <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/> (referer: None)
+    2014-01-23 18:13:09-0400 [scrapy] DEBUG: Crawled (200) <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> (referer: None)
+    2014-01-23 18:13:09-0400 [scrapy] INFO: Closing spider (finished)
 
 
 .. note::
-    The lines containing ``[dmoz]`` correspond to the log messages for
-    our spider. You can see a log line for each URL defined in ``start_urls``.
+    At the end you can see a log line for each URL defined in ``start_urls``.
     Because these URLs are the starting ones, they have no referrers, which is
     shown at the end of the log line, where it says ``(referer: None)``.
 
@@ -268,7 +267,7 @@ This is what the shell looks like::
 
     [ ... Scrapy log here ... ]
 
-    2014-01-23 17:11:42-0400 [default] DEBUG: Crawled (200) <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> (referer: None)
+    2014-01-23 17:11:42-0400 [scrapy] DEBUG: Crawled (200) <GET http://www.dmoz.org/Computers/Programming/Languages/Python/Books/> (referer: None)
     [s] Available Scrapy objects:
     [s]   crawler    <scrapy.crawler.Crawler object at 0x3636b50>
     [s]   item       {}
@@ -424,11 +423,11 @@ Spider would be like this::
 
 Now crawling dmoz.org yields ``DmozItem`` objects::
 
-   [dmoz] DEBUG: Scraped from <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
+   [scrapy] DEBUG: Scraped from <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
         {'desc': [u' - By David Mertz; Addison Wesley. Book in progress, full text, ASCII format. Asks for feedback. [author website, Gnosis Software, Inc.\n],
          'link': [u'http://gnosis.cx/TPiP/'],
          'title': [u'Text Processing in Python']}
-   [dmoz] DEBUG: Scraped from <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
+   [scrapy] DEBUG: Scraped from <200 http://www.dmoz.org/Computers/Programming/Languages/Python/Books/>
         {'desc': [u' - By Sean McGrath; Prentice Hall PTR, 2000, ISBN 0130211192, has CD-ROM. Methods to build XML applications fast, Python tutorial, DOM and SAX, new Pyxie open source XML processing library. [Prentice Hall PTR]\n'],
          'link': [u'http://www.informit.com/store/product.aspx?isbn=0130211192'],
          'title': [u'XML Processing with Python']}

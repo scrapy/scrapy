@@ -24,14 +24,14 @@ class LoggingContribTest(unittest.TestCase):
         req = Request("http://www.example.com")
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
-        logline = logkws['format'] % logkws
+        logline = logkws['msg'] % logkws['args']
         self.assertEqual(logline,
             "Crawled (200) <GET http://www.example.com> (referer: None)")
 
         req = Request("http://www.example.com", headers={'referer': 'http://example.com'})
         res = Response("http://www.example.com", flags=['cached'])
         logkws = self.formatter.crawled(req, res, self.spider)
-        logline = logkws['format'] % logkws
+        logline = logkws['msg'] % logkws['args']
         self.assertEqual(logline,
             "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']")
 
@@ -40,7 +40,7 @@ class LoggingContribTest(unittest.TestCase):
         exception = Exception(u"\u2018")
         response = Response("http://www.example.com")
         logkws = self.formatter.dropped(item, exception, response, self.spider)
-        logline = logkws['format'] % logkws
+        logline = logkws['msg'] % logkws['args']
         lines = logline.splitlines()
         assert all(isinstance(x, unicode) for x in lines)
         self.assertEqual(lines, [u"Dropped: \u2018", '{}'])
@@ -50,7 +50,7 @@ class LoggingContribTest(unittest.TestCase):
         item['name'] = u'\xa3'
         response = Response("http://www.example.com")
         logkws = self.formatter.scraped(item, response, self.spider)
-        logline = logkws['format'] % logkws
+        logline = logkws['msg'] % logkws['args']
         lines = logline.splitlines()
         assert all(isinstance(x, unicode) for x in lines)
         self.assertEqual(lines, [u"Scraped from <200 http://www.example.com>", u'name: \xa3'])
