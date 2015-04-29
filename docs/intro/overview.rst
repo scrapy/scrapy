@@ -8,10 +8,9 @@ Scrapy is an application framework for crawling web sites and extracting
 structured data which can be used for a wide range of useful applications, like
 data mining, information processing or historical archival.
 
-Even though Scrapy was originally designed for `screen scraping`_ (more
-precisely, `web scraping`_), it can also be used to extract data using APIs
-(such as `Amazon Associates Web Services`_) or as a general purpose web
-crawler.
+Even though Scrapy was originally designed for `web scraping`_, it can also be
+used to extract data using APIs (such as `Amazon Associates Web Services`_) or
+as a general purpose web crawler.
 
 
 Walk-through of an example spider
@@ -171,7 +170,6 @@ your code in Scrapy projects and `join the community`_. Thanks for your
 interest!
 
 .. _join the community: http://scrapy.org/community/
-.. _screen scraping: http://en.wikipedia.org/wiki/Screen_scraping
 .. _web scraping: http://en.wikipedia.org/wiki/Web_scraping
 .. _Amazon Associates Web Services: http://aws.amazon.com/associates/
 .. _Amazon S3: http://aws.amazon.com/s3/
