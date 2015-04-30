@@ -12,13 +12,13 @@ from scrapy.spider import Spider
 from scrapy.settings import Settings
 from scrapy.exceptions import IgnoreRequest
 from scrapy.utils.test import get_crawler
-from scrapy.contrib.downloadermiddleware.httpcache import HttpCacheMiddleware
+from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
 
 
 class _BaseTest(unittest.TestCase):
 
-    storage_class = 'scrapy.contrib.httpcache.DbmCacheStorage'
-    policy_class = 'scrapy.contrib.httpcache.RFC2616Policy'
+    storage_class = 'scrapy.extensions.httpcache.DbmCacheStorage'
+    policy_class = 'scrapy.extensions.httpcache.RFC2616Policy'
 
     def setUp(self):
         self.yesterday = email.utils.formatdate(time.time() - 86400)
@@ -127,7 +127,7 @@ class DefaultStorageTest(_BaseTest):
 
 class DbmStorageTest(DefaultStorageTest):
 
-    storage_class = 'scrapy.contrib.httpcache.DbmCacheStorage'
+    storage_class = 'scrapy.extensions.httpcache.DbmCacheStorage'
 
 
 class DbmStorageWithCustomDbmModuleTest(DbmStorageTest):
@@ -146,7 +146,7 @@ class DbmStorageWithCustomDbmModuleTest(DbmStorageTest):
 
 class FilesystemStorageTest(DefaultStorageTest):
 
-    storage_class = 'scrapy.contrib.httpcache.FilesystemCacheStorage'
+    storage_class = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
 class FilesystemStorageGzipTest(FilesystemStorageTest):
 
@@ -157,12 +157,12 @@ class FilesystemStorageGzipTest(FilesystemStorageTest):
 class LeveldbStorageTest(DefaultStorageTest):
 
     pytest.importorskip('leveldb')
-    storage_class = 'scrapy.contrib.httpcache.LeveldbCacheStorage'
+    storage_class = 'scrapy.extensions.httpcache.LeveldbCacheStorage'
 
 
 class DummyPolicyTest(_BaseTest):
 
-    policy_class = 'scrapy.contrib.httpcache.DummyPolicy'
+    policy_class = 'scrapy.extensions.httpcache.DummyPolicy'
 
     def test_middleware(self):
         with self._middleware() as mw:
@@ -254,7 +254,7 @@ class DummyPolicyTest(_BaseTest):
 
 class RFC2616PolicyTest(DefaultStorageTest):
 
-    policy_class = 'scrapy.contrib.httpcache.RFC2616Policy'
+    policy_class = 'scrapy.extensions.httpcache.RFC2616Policy'
 
     def _process_requestresponse(self, mw, request, response):
         try:

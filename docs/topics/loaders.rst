@@ -4,7 +4,7 @@
 Item Loaders
 ============
 
-.. module:: scrapy.contrib.loader
+.. module:: scrapy.loader
    :synopsis: Item Loader class
 
 Item Loaders provide a convenient mechanism for populating scraped :ref:`Items
@@ -39,7 +39,7 @@ Here is a typical Item Loader usage in a :ref:`Spider <topics-spiders>`, using
 the :ref:`Product item <topics-items-declaring>` declared in the :ref:`Items
 chapter <topics-items>`::
 
-    from scrapy.contrib.loader import ItemLoader
+    from scrapy.loader import ItemLoader
     from myproject.items import Product
 
     def parse(self, response):
@@ -150,8 +150,8 @@ Declaring Item Loaders
 Item Loaders are declared like Items, by using a class definition syntax. Here
 is an example::
 
-    from scrapy.contrib.loader import ItemLoader
-    from scrapy.contrib.loader.processor import TakeFirst, MapCompose, Join
+    from scrapy.loader import ItemLoader
+    from scrapy.loader.processors import TakeFirst, MapCompose, Join
 
     class ProductLoader(ItemLoader):
 
@@ -182,7 +182,7 @@ output processors to use: in the :ref:`Item Field <topics-items-fields>`
 metadata. Here is an example::
 
     import scrapy
-    from scrapy.contrib.loader.processor import Join, MapCompose, TakeFirst
+    from scrapy.loader.processors import Join, MapCompose, TakeFirst
     from w3lib.html import remove_tags
 
     def filter_price(value):
@@ -201,7 +201,7 @@ metadata. Here is an example::
 
 ::
 
-    >>> from scrapy.contrib.loader import ItemLoader
+    >>> from scrapy.loader import ItemLoader
     >>> il = ItemLoader(item=Product())
     >>> il.add_value('name', [u'Welcome to my', u'<strong>website</strong>'])
     >>> il.add_value('price', [u'&euro;', u'<span>1000</span>'])
@@ -309,7 +309,7 @@ ItemLoader objects
 
         Examples::
 
-            >>> from scrapy.contrib.loader.processor import TakeFirst
+            >>> from scrapy.loader.processors import TakeFirst
             >>> loader.get_value(u'name: foo', TakeFirst(), unicode.upper, re='name: (.+)')
             'FOO`
 
@@ -513,7 +513,7 @@ those dashes in the final product names.
 Here's how you can remove those dashes by reusing and extending the default
 Product Item Loader (``ProductLoader``)::
 
-    from scrapy.contrib.loader.processor import MapCompose
+    from scrapy.loader.processors import MapCompose
     from myproject.ItemLoaders import ProductLoader
 
     def strip_dashes(x):
@@ -526,7 +526,7 @@ Another case where extending Item Loaders can be very helpful is when you have
 multiple source formats, for example XML and HTML. In the XML version you may
 want to remove ``CDATA`` occurrences. Here's an example of how to do it::
 
-    from scrapy.contrib.loader.processor import MapCompose
+    from scrapy.loader.processors import MapCompose
     from myproject.ItemLoaders import ProductLoader
     from myproject.utils.xml import remove_cdata
 
@@ -551,7 +551,7 @@ needs.
 Available built-in processors
 =============================
 
-.. module:: scrapy.contrib.loader.processor
+.. module:: scrapy.loader.processors
    :synopsis: A collection of processors to use with Item Loaders
 
 Even though you can use any callable function as input and output processors,
@@ -570,7 +570,7 @@ Here is a list of all built-in processors:
 
     Example::
 
-        >>> from scrapy.contrib.loader.processor import Identity
+        >>> from scrapy.loader.processors import Identity
         >>> proc = Identity()
         >>> proc(['one', 'two', 'three'])
         ['one', 'two', 'three']
@@ -583,7 +583,7 @@ Here is a list of all built-in processors:
 
     Example::
 
-        >>> from scrapy.contrib.loader.processor import TakeFirst
+        >>> from scrapy.loader.processors import TakeFirst
         >>> proc = TakeFirst()
         >>> proc(['', 'one', 'two', 'three'])
         'one'
@@ -598,7 +598,7 @@ Here is a list of all built-in processors:
 
     Examples::
 
-        >>> from scrapy.contrib.loader.processor import Join
+        >>> from scrapy.loader.processors import Join
         >>> proc = Join()
         >>> proc(['one', 'two', 'three'])
         u'one two three'
@@ -619,7 +619,7 @@ Here is a list of all built-in processors:
 
     Example::
 
-        >>> from scrapy.contrib.loader.processor import Compose
+        >>> from scrapy.loader.processors import Compose
         >>> proc = Compose(lambda v: v[0], str.upper)
         >>> proc(['hello', 'world'])
         'HELLO'
@@ -666,7 +666,7 @@ Here is a list of all built-in processors:
         >>> def filter_world(x):
         ...     return None if x == 'world' else x
         ...
-        >>> from scrapy.contrib.loader.processor import MapCompose
+        >>> from scrapy.loader.processors import MapCompose
         >>> proc = MapCompose(filter_world, unicode.upper)
         >>> proc([u'hello', u'world', u'this', u'is', u'scrapy'])
         [u'HELLO, u'THIS', u'IS', u'SCRAPY']
@@ -683,7 +683,7 @@ Here is a list of all built-in processors:
 
     Example::
 
-        >>> from scrapy.contrib.loader.processor import SelectJmes, Compose, MapCompose
+        >>> from scrapy.loader.processors import SelectJmes, Compose, MapCompose
         >>> proc = SelectJmes("foo") #for direct use on lists and dictionaries
         >>> proc({'foo': 'bar'})
         'bar'

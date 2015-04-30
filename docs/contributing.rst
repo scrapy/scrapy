@@ -150,9 +150,9 @@ To run all tests go to the root directory of Scrapy source code and run:
 
     ``tox``
 
-To run a specific test (say ``tests/test_contrib_loader.py``) use:
+To run a specific test (say ``tests/test_loader.py``) use:
 
-    ``tox -- tests/test_contrib_loader.py``
+    ``tox -- tests/test_loader.py``
 
 
 Writing tests
@@ -166,11 +166,11 @@ Scrapy uses unit-tests, which are located in the `tests/`_ directory.
 Their module name typically resembles the full path of the module they're
 testing. For example, the item loaders code is in::
 
-    scrapy.contrib.loader
+    scrapy.loader
 
 And their unit-tests are in::
 
-    tests/test_contrib_loader.py
+    tests/test_loader.py
 
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
 .. _scrapy-users: https://groups.google.com/forum/#!forum/scrapy-users

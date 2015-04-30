@@ -9,7 +9,7 @@ from twisted.trial import unittest
 from scrapy.item import Item, Field
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
-from scrapy.contrib.pipeline.images import ImagesPipeline
+from scrapy.pipelines.images import ImagesPipeline
 
 skip = False
 try:

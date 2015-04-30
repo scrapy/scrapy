@@ -1,13 +1,7 @@
-"""Common functions used in Item Loaders code"""
+import warnings
+from scrapy.exceptions import ScrapyDeprecationWarning
+warnings.warn("Module `scrapy.contrib.loader.common` is deprecated, "
+              "use `scrapy.loader.common` instead",
+              ScrapyDeprecationWarning, stacklevel=2)
 
-from functools import partial
-from scrapy.utils.python import get_func_args
-
-def wrap_loader_context(function, context):
-    """Wrap functions that receive loader_context to contain the context
-    "pre-loaded" and expose a interface that receives only one argument
-    """
-    if 'loader_context' in get_func_args(function):
-        return partial(function, loader_context=context)
-    else:
-        return function
+from scrapy.loader.common import *

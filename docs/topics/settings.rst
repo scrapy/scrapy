@@ -239,7 +239,7 @@ Default::
     }
 
 The default headers used for Scrapy HTTP Requests. They're populated in the
-:class:`~scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware`.
+:class:`~scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware`.
 
 .. setting:: DEPTH_LIMIT
 
@@ -335,20 +335,20 @@ DOWNLOADER_MIDDLEWARES_BASE
 Default::
 
     {
-        'scrapy.contrib.downloadermiddleware.robotstxt.RobotsTxtMiddleware': 100,
-        'scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware': 300,
-        'scrapy.contrib.downloadermiddleware.downloadtimeout.DownloadTimeoutMiddleware': 350,
-        'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': 400,
-        'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware': 500,
-        'scrapy.contrib.downloadermiddleware.defaultheaders.DefaultHeadersMiddleware': 550,
-        'scrapy.contrib.downloadermiddleware.redirect.MetaRefreshMiddleware': 580,
-        'scrapy.contrib.downloadermiddleware.httpcompression.HttpCompressionMiddleware': 590,
-        'scrapy.contrib.downloadermiddleware.redirect.RedirectMiddleware': 600,
-        'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware': 700,
-        'scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware': 750,
-        'scrapy.contrib.downloadermiddleware.chunked.ChunkedTransferMiddleware': 830,
-        'scrapy.contrib.downloadermiddleware.stats.DownloaderStats': 850,
-        'scrapy.contrib.downloadermiddleware.httpcache.HttpCacheMiddleware': 900,
+        'scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware': 100,
+        'scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware': 300,
+        'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware': 350,
+        'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': 400,
+        'scrapy.downloadermiddlewares.retry.RetryMiddleware': 500,
+        'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware': 550,
+        'scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware': 580,
+        'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 590,
+        'scrapy.downloadermiddlewares.redirect.RedirectMiddleware': 600,
+        'scrapy.downloadermiddlewares.cookies.CookiesMiddleware': 700,
+        'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 750,
+        'scrapy.downloadermiddlewares.chunked.ChunkedTransferMiddleware': 830,
+        'scrapy.downloadermiddlewares.stats.DownloaderStats': 850,
+        'scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware': 900,
     }
 
 A dict containing the downloader middlewares enabled by default in Scrapy. You
@@ -487,7 +487,7 @@ If you want to disable it set to 0.
 DUPEFILTER_CLASS
 ----------------
 
-Default: ``'scrapy.dupefilter.RFPDupeFilter'``
+Default: ``'scrapy.dupefilters.RFPDupeFilter'``
 
 The class used to detect and filter duplicate requests.
 
@@ -536,15 +536,15 @@ EXTENSIONS_BASE
 Default::
 
     {
-        'scrapy.contrib.corestats.CoreStats': 0,
+        'scrapy.extensions.corestats.CoreStats': 0,
         'scrapy.telnet.TelnetConsole': 0,
-        'scrapy.contrib.memusage.MemoryUsage': 0,
-        'scrapy.contrib.memdebug.MemoryDebugger': 0,
-        'scrapy.contrib.closespider.CloseSpider': 0,
-        'scrapy.contrib.feedexport.FeedExporter': 0,
-        'scrapy.contrib.logstats.LogStats': 0,
-        'scrapy.contrib.spiderstate.SpiderState': 0,
-        'scrapy.contrib.throttle.AutoThrottle': 0,
+        'scrapy.extensions.memusage.MemoryUsage': 0,
+        'scrapy.extensions.memdebug.MemoryDebugger': 0,
+        'scrapy.extensions.closespider.CloseSpider': 0,
+        'scrapy.extensions.feedexport.FeedExporter': 0,
+        'scrapy.extensions.logstats.LogStats': 0,
+        'scrapy.extensions.spiderstate.SpiderState': 0,
+        'scrapy.extensions.throttle.AutoThrottle': 0,
     }
 
 The list of available extensions. Keep in mind that some of them need to
@@ -689,7 +689,7 @@ MEMUSAGE_ENABLED
 
 Default: ``False``
 
-Scope: ``scrapy.contrib.memusage``
+Scope: ``scrapy.extensions.memusage``
 
 Whether to enable the memory usage extension that will shutdown the Scrapy
 process when it exceeds a memory limit, and also notify by email when that
@@ -704,7 +704,7 @@ MEMUSAGE_LIMIT_MB
 
 Default: ``0``
 
-Scope: ``scrapy.contrib.memusage``
+Scope: ``scrapy.extensions.memusage``
 
 The maximum amount of memory to allow (in megabytes) before shutting down
 Scrapy  (if MEMUSAGE_ENABLED is True). If zero, no check will be performed.
@@ -718,7 +718,7 @@ MEMUSAGE_NOTIFY_MAIL
 
 Default: ``False``
 
-Scope: ``scrapy.contrib.memusage``
+Scope: ``scrapy.extensions.memusage``
 
 A list of emails to notify if the memory limit has been reached.
 
@@ -735,7 +735,7 @@ MEMUSAGE_REPORT
 
 Default: ``False``
 
-Scope: ``scrapy.contrib.memusage``
+Scope: ``scrapy.extensions.memusage``
 
 Whether to send a memory usage report after each spider has been closed.
 
@@ -748,7 +748,7 @@ MEMUSAGE_WARNING_MB
 
 Default: ``0``
 
-Scope: ``scrapy.contrib.memusage``
+Scope: ``scrapy.extensions.memusage``
 
 The maximum amount of memory to allow (in megabytes) before sending a warning
 email notifying about it. If zero, no warning will be produced.
@@ -837,7 +837,7 @@ ROBOTSTXT_OBEY
 
 Default: ``False``
 
-Scope: ``scrapy.contrib.downloadermiddleware.robotstxt``
+Scope: ``scrapy.downloadermiddlewares.robotstxt``
 
 If enabled, Scrapy will respect robots.txt policies. For more information see
 :ref:`topics-dlmw-robots`
@@ -906,11 +906,11 @@ SPIDER_MIDDLEWARES_BASE
 Default::
 
     {
-        'scrapy.contrib.spidermiddleware.httperror.HttpErrorMiddleware': 50,
-        'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware': 500,
-        'scrapy.contrib.spidermiddleware.referer.RefererMiddleware': 700,
-        'scrapy.contrib.spidermiddleware.urllength.UrlLengthMiddleware': 800,
-        'scrapy.contrib.spidermiddleware.depth.DepthMiddleware': 900,
+        'scrapy.spidermiddlewares.httperror.HttpErrorMiddleware': 50,
+        'scrapy.spidermiddlewares.offsite.OffsiteMiddleware': 500,
+        'scrapy.spidermiddlewares.referer.RefererMiddleware': 700,
+        'scrapy.spidermiddlewares.urllength.UrlLengthMiddleware': 800,
+        'scrapy.spidermiddlewares.depth.DepthMiddleware': 900,
     }
 
 A dict containing the spider middlewares enabled by default in Scrapy. You
@@ -936,7 +936,7 @@ Example::
 STATS_CLASS
 -----------
 
-Default: ``'scrapy.statscol.MemoryStatsCollector'``
+Default: ``'scrapy.statscollectors.MemoryStatsCollector'``
 
 The class to use for collecting stats, who must implement the
 :ref:`topics-api-stats`.
@@ -961,7 +961,7 @@ STATSMAILER_RCPTS
 Default: ``[]`` (empty list)
 
 Send Scrapy stats after spiders finish scraping. See
-:class:`~scrapy.contrib.statsmailer.StatsMailer` for more info.
+:class:`~scrapy.extensions.statsmailer.StatsMailer` for more info.
 
 .. setting:: TELNETCONSOLE_ENABLED
 
@@ -1001,7 +1001,7 @@ URLLENGTH_LIMIT
 
 Default: ``2083``
 
-Scope: ``contrib.spidermiddleware.urllength``
+Scope: ``spidermiddlewares.urllength``
 
 The maximum URL length to allow for crawled URLs. For more information about
 the default value for this setting see: http://www.boutell.com/newfaq/misc/urllength.html

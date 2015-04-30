@@ -1,7 +1,7 @@
 import hashlib
 import unittest
 
-from scrapy.dupefilter import RFPDupeFilter
+from scrapy.dupefilters import RFPDupeFilter
 from scrapy.http import Request
 
 

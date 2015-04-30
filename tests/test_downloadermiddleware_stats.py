@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from scrapy.contrib.downloadermiddleware.stats import DownloaderStats
+from scrapy.downloadermiddlewares.stats import DownloaderStats
 from scrapy.http import Request, Response
 from scrapy.spider import Spider
 from scrapy.utils.test import get_crawler
@@ -22,7 +22,7 @@ class TestDownloaderStats(TestCase):
         self.mw.process_request(self.req, self.spider)
         self.assertEqual(self.crawler.stats.get_value('downloader/request_count', \
             spider=self.spider), 1)
-        
+
     def test_process_response(self):
         self.mw.process_response(self.req, self.res, self.spider)
         self.assertEqual(self.crawler.stats.get_value('downloader/response_count', \

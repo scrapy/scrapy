@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from scrapy.http import Response, Request
 from scrapy.spider import Spider
-from scrapy.contrib.spidermiddleware.referer import RefererMiddleware
+from scrapy.spidermiddlewares.referer import RefererMiddleware
 
 
 class TestRefererMiddleware(TestCase):

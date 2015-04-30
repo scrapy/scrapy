@@ -9,7 +9,7 @@ import lxml.etree
 
 from scrapy.item import Item, Field
 from scrapy.utils.python import str_to_unicode
-from scrapy.contrib.exporter import (
+from scrapy.exporters import (
     BaseItemExporter, PprintItemExporter, PickleItemExporter, CsvItemExporter,
     XmlItemExporter, JsonLinesItemExporter, JsonItemExporter, PythonItemExporter
 )

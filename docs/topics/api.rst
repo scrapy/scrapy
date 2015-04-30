@@ -65,7 +65,7 @@ how you :ref:`configure the downloader middlewares
 
         For an introduction on stats collection see :ref:`topics-stats`.
 
-        For the API see :class:`~scrapy.statscol.StatsCollector` class.
+        For the API see :class:`~scrapy.statscollectors.StatsCollector` class.
 
     .. attribute:: extensions
 
@@ -452,11 +452,11 @@ Stats Collector API
 ===================
 
 There are several Stats Collectors available under the
-:mod:`scrapy.statscol` module and they all implement the Stats
-Collector API defined by the :class:`~scrapy.statscol.StatsCollector`
+:mod:`scrapy.statscollectors` module and they all implement the Stats
+Collector API defined by the :class:`~scrapy.statscollectors.StatsCollector`
 class (which they all inherit from).
 
-.. module:: scrapy.statscol
+.. module:: scrapy.statscollectors
    :synopsis: Stats Collectors
 
 .. class:: StatsCollector

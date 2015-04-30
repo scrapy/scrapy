@@ -8,7 +8,7 @@ from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
 from scrapy.http import Response, Request
 from scrapy.spider import Spider
-from scrapy.contrib.spidermiddleware.httperror import HttpErrorMiddleware, HttpError
+from scrapy.spidermiddlewares.httperror import HttpErrorMiddleware, HttpError
 from scrapy.settings import Settings
 
 

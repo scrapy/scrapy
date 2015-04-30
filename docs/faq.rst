@@ -64,7 +64,7 @@ Does Scrapy work with HTTP proxies?
 
 Yes. Support for HTTP proxies is provided (since Scrapy 0.8) through the HTTP
 Proxy downloader middleware. See
-:class:`~scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware`.
+:class:`~scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware`.
 
 How can I scrape an item with attributes in different pages?
 ------------------------------------------------------------
@@ -94,8 +94,8 @@ in most cases. If you do want to crawl in true `BFO order`_, you can do it by
 setting the following settings::
 
     DEPTH_PRIORITY = 1
-    SCHEDULER_DISK_QUEUE = 'scrapy.squeue.PickleFifoDiskQueue'
-    SCHEDULER_MEMORY_QUEUE = 'scrapy.squeue.FifoMemoryQueue'
+    SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleFifoDiskQueue'
+    SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.FifoMemoryQueue'
 
 My Scrapy crawler has memory leaks. What can I do?
 --------------------------------------------------
@@ -113,7 +113,7 @@ See previous question.
 Can I use Basic HTTP Authentication in my spiders?
 --------------------------------------------------
 
-Yes, see :class:`~scrapy.contrib.downloadermiddleware.httpauth.HttpAuthMiddleware`.
+Yes, see :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`.
 
 Why does Scrapy download pages in English instead of my native language?
 ------------------------------------------------------------------------
@@ -149,7 +149,7 @@ middleware (enabled by default) whose purpose is to filter out requests to
 domains outside the ones covered by the spider.
 
 For more info see:
-:class:`~scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware`.
+:class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware`.
 
 What is the recommended way to deploy a Scrapy crawler in production?
 ---------------------------------------------------------------------
@@ -160,7 +160,7 @@ Can I use JSON for large exports?
 ---------------------------------
 
 It'll depend on how large your output is. See :ref:`this warning
-<json-with-large-data>` in :class:`~scrapy.contrib.exporter.JsonItemExporter`
+<json-with-large-data>` in :class:`~scrapy.exporters.JsonItemExporter`
 documentation.
 
 Can I return (Twisted) deferreds from signal handlers?

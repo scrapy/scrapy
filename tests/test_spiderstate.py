@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 from twisted.trial import unittest
 
-from scrapy.contrib.spiderstate import SpiderState
+from scrapy.extensions.spiderstate import SpiderState
 from scrapy.spider import Spider
 
 

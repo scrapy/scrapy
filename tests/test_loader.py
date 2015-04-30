@@ -1,8 +1,8 @@
 import unittest
 from functools import partial
 
-from scrapy.contrib.loader import ItemLoader
-from scrapy.contrib.loader.processor import Join, Identity, TakeFirst, \
+from scrapy.loader import ItemLoader
+from scrapy.loader.processors import Join, Identity, TakeFirst, \
     Compose, MapCompose, SelectJmes
 from scrapy.item import Item, Field
 from scrapy.selector import Selector

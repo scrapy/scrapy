@@ -1,13 +1,7 @@
-from scrapy.utils.http import decode_chunked_transfer
+import warnings
+from scrapy.exceptions import ScrapyDeprecationWarning
+warnings.warn("Module `scrapy.contrib.downloadermiddleware.chunked` is deprecated, "
+              "use `scrapy.downloadermiddlewares.chunked` instead",
+              ScrapyDeprecationWarning, stacklevel=2)
 
-
-class ChunkedTransferMiddleware(object):
-    """This middleware adds support for chunked transfer encoding, as
-    documented in: http://en.wikipedia.org/wiki/Chunked_transfer_encoding
-    """
-
-    def process_response(self, request, response, spider):
-        if response.headers.get('Transfer-Encoding') == 'chunked':
-            body = decode_chunked_transfer(response.body)
-            return response.replace(body=body)
-        return response
+from scrapy.downloadermiddlewares.chunked import *

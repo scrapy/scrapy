@@ -13,7 +13,7 @@ from twisted.web import http
 from twisted.web.http import RESPONSES
 from w3lib import html
 
-from scrapy.utils.decorator import deprecated
+from scrapy.utils.decorators import deprecated
 
 
 @deprecated
