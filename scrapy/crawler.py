@@ -89,13 +89,30 @@ class Crawler(object):
 
 
 class CrawlerRunner(object):
+    """
+    This is a convenient helper class that keeps track of, manages and runs
+    crawlers inside an already setup Twisted `reactor`_.
+
+    The CrawlerRunner object must be instantiated with a
+    :class:`~scrapy.settings.Settings` object.
+
+    This class shouldn't be needed (since Scrapy is responsible of using it
+    accordingly) unless writing scripts that manually handle the crawling
+    process. See :ref:`run-from-script` for an example.
+    """
+
+    crawlers = property(
+        lambda self: self._crawlers,
+        doc="Set of :class:`crawlers <scrapy.crawler.Crawler>` started by "
+            ":meth:`crawl` and managed by this class."
+    )
 
     def __init__(self, settings):
         if isinstance(settings, dict):
             settings = Settings(settings)
         self.settings = settings
         self.spider_loader = _get_spider_loader(settings)
-        self.crawlers = set()
+        self._crawlers = set()
         self._active = set()
 
     @property
@@ -106,6 +123,27 @@ class CrawlerRunner(object):
         return self.spider_loader
 
     def crawl(self, crawler_or_spidercls, *args, **kwargs):
+        """
+        Run a crawler with the provided arguments.
+
+        It will call the given Crawler's :meth:`~Crawler.crawl` method, while
+        keeping track of it so it can be stopped later.
+
+        If `crawler_or_spidercls` isn't a :class:`~scrapy.crawler.Crawler`
+        instance, this method will try to create one using this parameter as
+        the spider class given to it.
+
+        Returns a deferred that is fired when the crawling is finished.
+
+        :param crawler_or_spidercls: already created crawler, or a spider class
+            or spider's name inside the project to create it
+        :type crawler_or_spidercls: :class:`~scrapy.crawler.Crawler` instance,
+            :class:`~scrapy.spider.Spider` subclass or string
+
+        :param list args: arguments to initialize the spider
+
+        :param dict kwargs: keyword arguments to initialize the spider
+        """
         crawler = crawler_or_spidercls
         if not isinstance(crawler_or_spidercls, Crawler):
             crawler = self._create_crawler(crawler_or_spidercls)
@@ -127,17 +165,44 @@ class CrawlerRunner(object):
         return Crawler(spidercls, self.settings)
 
     def stop(self):
+        """
+        Stops simultaneously all the crawling jobs taking place.
+
+        Returns a deferred that is fired when they all have ended.
+        """
         return defer.DeferredList([c.stop() for c in list(self.crawlers)])
 
     @defer.inlineCallbacks
     def join(self):
-        """Wait for all managed crawlers to complete"""
+        """
+        join()
+
+        Returns a deferred that is fired when all managed :attr:`crawlers` have
+        completed their executions.
+        """
         while self._active:
             yield defer.DeferredList(self._active)
 
 
 class CrawlerProcess(CrawlerRunner):
-    """A class to run multiple scrapy crawlers in a process simultaneously"""
+    """
+    A class to run multiple scrapy crawlers in a process simultaneously.
+
+    This class extends :class:`~scrapy.crawler.CrawlerRunner` by adding support
+    for starting a Twisted `reactor`_ and handling shutdown signals, like the
+    keyboard interrupt command Ctrl-C. It also configures top-level logging.
+
+    This utility should be a better fit than
+    :class:`~scrapy.crawler.CrawlerRunner` if you aren't running another
+    Twisted `reactor`_ within your application.
+
+    The CrawlerProcess object must be instantiated with a
+    :class:`~scrapy.settings.Settings` object.
+
+    This class shouldn't be needed (since Scrapy is responsible of using it
+    accordingly) unless writing scripts that manually handle the crawling
+    process. See :ref:`run-from-script` for an example.
+    """
 
     def __init__(self, settings):
         super(CrawlerProcess, self).__init__(settings)
@@ -161,6 +226,17 @@ class CrawlerProcess(CrawlerRunner):
         reactor.callFromThread(self._stop_reactor)
 
     def start(self, stop_after_crawl=True):
+        """
+        This method starts a Twisted `reactor`_, adjusts its pool size to
+        :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS cache based
+        on :setting:`DNSCACHE_ENABLED` and :setting:`DNSCACHE_SIZE`.
+
+        If `stop_after_crawl` is True, the reactor will be stopped after all
+        crawlers have finished, using :meth:`join`.
+
+        :param boolean stop_after_crawl: stop or not the reactor when all
+            crawlers have finished
+        """
         if stop_after_crawl:
             d = self.join()
             # Don't start the reactor if the deferreds are already fired

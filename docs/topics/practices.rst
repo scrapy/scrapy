@@ -18,39 +18,69 @@ the typical way of running Scrapy via ``scrapy crawl``.
 Remember that Scrapy is built on top of the Twisted
 asynchronous networking library, so you need to run it inside the Twisted reactor.
 
-Note that you will also have to shutdown the Twisted reactor yourself after the
-spider is finished. This can be achieved by adding callbacks to the deferred
-returned by the :meth:`CrawlerRunner.crawl
-<scrapy.crawler.CrawlerRunner.crawl>` method.
+First utility you can use to run your spiders is
+:class:`scrapy.crawler.CrawlerProcess`. This class will start a Twisted reactor
+for you, configuring the logging and setting shutdown handlers. This class is
+the one used by all Scrapy commands.
+
+Here's an example showing how to run a single spider with it.
+
+::
+
+    import scrapy
+    from scrapy.crawler import CrawlerProcess
+
+    class MySpider(scrapy.Spider):
+        # Your spider definition
+        ...
+
+    process = CrawlerProcess({
+        'USER_AGENT': 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)'
+    })
+
+    process.crawl(MySpider)
+    process.start() # the script will block here until the crawling is finished
+
+Make sure to check :class:`~scrapy.crawler.CrawlerProcess` documentation to get
+acquainted with its usage details.
+
+If you are inside a Scrapy project there are some additional helpers you can
+use to import those components within the project. You can automatically import
+your spiders passing their name to :class:`~scrapy.crawler.CrawlerProcess`, and
+use ``get_project_settings`` to get a :class:`~scrapy.settings.Settings`
+instance with your project settings.
 
 What follows is a working example of how to do that, using the `testspiders`_
 project as example.
 
 ::
 
-    from twisted.internet import reactor
-    from scrapy.crawler import CrawlerRunner
-    from scrapy.utils.log import configure_logging
+    from scrapy.crawler import CrawlerProcess
     from scrapy.utils.project import get_project_settings
 
-    settings = get_project_settings()
-    configure_logging(settings)
-    runner = CrawlerRunner(settings)
+    process = CrawlerProcess(get_project_settings())
 
     # 'followall' is the name of one of the spiders of the project.
-    d = runner.crawl('followall', domain='scrapinghub.com')
-    d.addBoth(lambda _: reactor.stop())
-    reactor.run() # the script will block here until the crawling is finished
+    process.crawl('testspider', domain='scrapinghub.com')
+    process.start() # the script will block here until the crawling is finished
 
-Running spiders outside projects it's not much different. You have to create a
-generic :class:`~scrapy.settings.Settings` object and populate it as needed
-(See :ref:`topics-settings-ref` for the available settings), instead of using
-the configuration returned by `get_project_settings`.
+There's another Scrapy utility that provides more control over the crawling
+process: :class:`scrapy.crawler.CrawlerRunner`. This class is a thin wrapper
+that encapsulates some simple helpers to run multiple crawlers, but it won't
+start or interfere with existing reactors in any way.
 
-Spiders can still be referenced by their name if :setting:`SPIDER_MODULES` is
-set with the modules where Scrapy should look for spiders.  Otherwise, passing
-the spider class as first argument in the :meth:`CrawlerRunner.crawl
-<scrapy.crawler.CrawlerRunner.crawl>` method is enough.
+Using this class the reactor should be explicitly run after scheduling your
+spiders. It's recommended you use :class:`~scrapy.crawler.CrawlerRunner`
+instead of :class:`~scrapy.crawler.CrawlerProcess` if your application is
+already using Twisted and you want to run Scrapy in the same reactor.
+
+Note that you will also have to shutdown the Twisted reactor yourself after the
+spider is finished. This can be achieved by adding callbacks to the deferred
+returned by the :meth:`CrawlerRunner.crawl
+<scrapy.crawler.CrawlerRunner.crawl>` method.
+
+Here's an example of its usage, along with a callback to manually stop the
+reactor after `MySpider` has finished running.
 
 ::
 
@@ -63,7 +93,7 @@ the spider class as first argument in the :meth:`CrawlerRunner.crawl
         # Your spider definition
         ...
 
-    configure_logging(settings)
+    configure_logging({'LOG_FORMAT': '%(levelname)s: %(message)s'})
     runner = CrawlerRunner({
         'USER_AGENT': 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)'
     })
@@ -83,25 +113,50 @@ By default, Scrapy runs a single spider per process when you run ``scrapy
 crawl``. However, Scrapy supports running multiple spiders per process using
 the :ref:`internal API <topics-api>`.
 
-Here is an example that runs multiple spiders simultaneously, using the
-`testspiders`_ project:
+Here is an example that runs multiple spiders simultaneously:
 
 ::
 
-    from twisted.internet import reactor, defer
+    import scrapy
+    from scrapy.crawler import CrawlerProcess
+
+    class MySpider1(scrapy.Spider):
+        # Your first spider definition
+        ...
+
+    class MySpider2(scrapy.Spider):
+        # Your second spider definition
+        ...
+
+    process = CrawlerProcess({})
+    process.crawl(MySpider1)
+    process.crawl(MySpider2)
+    process.start() # the script will block here until all crawling jobs are finished
+
+Same example using :class:`~scrapy.crawler.CrawlerRunner`:
+
+::
+
+    import scrapy
+    from twisted.internet import reactor
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
-    from scrapy.utils.project import get_project_settings
 
-    settings = get_project_settings()
-    configure_logging(settings)
-    runner = CrawlerRunner(settings)
-    dfs = set()
-    for domain in ['scrapinghub.com', 'insophia.com']:
-        d = runner.crawl('followall', domain=domain)
-        dfs.add(d)
+    class MySpider1(scrapy.Spider):
+        # Your first spider definition
+        ...
 
-    defer.DeferredList(dfs).addBoth(lambda _: reactor.stop())
+    class MySpider2(scrapy.Spider):
+        # Your second spider definition
+        ...
+
+    configure_logging({})
+    runner = CrawlerRunner({})
+    runner.crawl(MySpider1)
+    runner.crawl(MySpider2)
+    d = runner.join()
+    d.addBoth(lambda _: reactor.stop())
+
     reactor.run() # the script will block here until all crawling jobs are finished
 
 Same example but running the spiders sequentially by chaining the deferreds:
@@ -111,16 +166,22 @@ Same example but running the spiders sequentially by chaining the deferreds:
     from twisted.internet import reactor, defer
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
-    from scrapy.utils.project import get_project_settings
 
-    settings = get_project_settings()
-    configure_logging(settings)
-    runner = CrawlerRunner(settings)
+    class MySpider1(scrapy.Spider):
+        # Your first spider definition
+        ...
+
+    class MySpider2(scrapy.Spider):
+        # Your second spider definition
+        ...
+
+    configure_logging({})
+    runner = CrawlerRunner({})
 
     @defer.inlineCallbacks
     def crawl():
-        for domain in ['scrapinghub.com', 'insophia.com']:
-            yield runner.crawl('followall', domain=domain)
+        yield runner.crawl(MySpider1)
+        yield runner.crawl(MySpider2)
         reactor.stop()
 
     crawl()
