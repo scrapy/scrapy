@@ -10,7 +10,7 @@ from twisted.python.failure import Failure
 from twisted.python import log as twisted_log
 
 import scrapy
-from scrapy.settings import overridden_settings
+from scrapy.settings import overridden_settings, Settings
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 logger = logging.getLogger(__name__)
@@ -92,6 +92,10 @@ def configure_logging(settings=None):
     observer.start()
 
     dictConfig(DEFAULT_LOGGING)
+
+    if isinstance(settings, dict):
+        settings = Settings(settings)
+
     if settings:
         logging.root.setLevel(logging.NOTSET)
 
