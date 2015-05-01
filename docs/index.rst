@@ -245,7 +245,6 @@ All the rest
    news
    contributing
    versioning
-   experimental/index
 
 :doc:`news`
     See what has changed in recent Scrapy versions.
@@ -255,6 +254,3 @@ All the rest
 
 :doc:`versioning`
     Understand Scrapy versioning and API stability.
-
-:doc:`experimental/index`
-    Learn about bleeding-edge features.
