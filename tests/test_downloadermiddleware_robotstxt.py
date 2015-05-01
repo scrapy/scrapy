@@ -1,7 +1,8 @@
 from __future__ import absolute_import
 import re
-from twisted.internet import reactor
+from twisted.internet import reactor, error
 from twisted.internet.defer import Deferred
+from twisted.python import failure
 from twisted.trial import unittest
 from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware
 from scrapy.exceptions import IgnoreRequest, NotConfigured
@@ -38,6 +39,26 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
             self.assertNotIgnored(Request('http://site.local/static/', meta=meta), middleware)
         deferred = Deferred()
         deferred.addCallback(test)
+        reactor.callFromThread(deferred.callback, None)
+        return deferred
+
+    def test_robotstxt_error(self):
+        crawler = mock.MagicMock()
+        crawler.settings = Settings()
+        crawler.settings.set('ROBOTSTXT_OBEY', True)
+        crawler.engine.download = mock.MagicMock()
+        err = error.DNSLookupError('Robotstxt address not found')
+        def return_failure(request, spider):
+            deferred = Deferred()
+            reactor.callFromThread(deferred.errback, failure.Failure(err))
+            return deferred
+        crawler.engine.download.side_effect = return_failure
+
+        middleware = RobotsTxtMiddleware(crawler)
+        middleware._logerror = mock.MagicMock()
+        middleware.process_request(Request('http://site.local'), None)
+        deferred = Deferred()
+        deferred.addErrback(lambda _: self.assertIsNone(middleware._logerror.assert_any_call()))
         reactor.callFromThread(deferred.callback, None)
         return deferred
 
