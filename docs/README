@@ -48,3 +48,10 @@ To cleanup all generated documentation files and start from scratch run::
 Keep in mind that this command won't touch any documentation source files.
 
 
+Recreating documentation on the fly
+-----------------------------------
+
+There is a way to recreate the doc automatically when you make changes, you
+need to install watchdog (``pip install watchdog``) and then use::
+
+    make watch
