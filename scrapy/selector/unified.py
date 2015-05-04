@@ -184,7 +184,9 @@ class SelectorList(list):
 
     def extract_first(self, default=None):
         for x in self:
-            return x.extract() or default
+            return x.extract()
+        else:
+            return default
 
     @deprecated(use_instead='.extract()')
     def extract_unquoted(self):
