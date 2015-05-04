@@ -21,7 +21,7 @@ class HtmlParserLinkExtractor(HTMLParser):
         warnings.warn(
             "HtmlParserLinkExtractor is deprecated and will be removed in "
             "future releases. Please use scrapy.linkextractors.LinkExtractor",
-            ScrapyDeprecationWarning
+            ScrapyDeprecationWarning, stacklevel=2,
         )
 
         self.scan_tag = tag if callable(tag) else lambda t: t == tag
