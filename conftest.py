@@ -1,7 +1,23 @@
+import glob
 import six
 import pytest
 
-collect_ignore = ["scrapy/stats.py", "scrapy/project.py"]
+
+def _py_files(folder):
+    return glob.glob(folder + "/*.py") + glob.glob(folder + "/*/*.py")
+
+
+collect_ignore = [
+    "scrapy/conf.py",
+    "scrapy/stats.py",
+    "scrapy/project.py",
+    "scrapy/utils/decorator.py",
+    "scrapy/statscol.py",
+    "scrapy/squeue.py",
+    "scrapy/log.py",
+    "scrapy/dupefilter.py",
+] + _py_files("scrapy/contrib") + _py_files("scrapy/contrib_exp")
+
 
 if six.PY3:
     for line in open('tests/py3-ignores.txt'):
