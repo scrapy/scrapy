@@ -2,6 +2,7 @@
 HTMLParser-based link extractor
 """
 
+import warnings
 from HTMLParser import HTMLParser
 from six.moves.urllib.parse import urljoin
 
@@ -9,11 +10,19 @@ from w3lib.url import safe_url_string
 
 from scrapy.link import Link
 from scrapy.utils.python import unique as unique_list
+from scrapy.exceptions import ScrapyDeprecationWarning
+
 
 class HtmlParserLinkExtractor(HTMLParser):
 
     def __init__(self, tag="a", attr="href", process=None, unique=False):
         HTMLParser.__init__(self)
+
+        warnings.warn(
+            "HtmlParserLinkExtractor is deprecated and will be removed in "
+            "future releases. Please use scrapy.linkextractors.LinkExtractor",
+            ScrapyDeprecationWarning
+        )
 
         self.scan_tag = tag if callable(tag) else lambda t: t == tag
         self.scan_attr = attr if callable(attr) else lambda a: a == attr
