@@ -367,7 +367,7 @@ method for this job. Here's an example spider which uses it::
         def after_login(self, response):
             # check login succeed before going on
             if "authentication failed" in response.body:
-                self.log("Login failed", level=log.ERROR)
+                self.log("Login failed", level=scrapy.log.ERROR)
                 return
 
             # continue scraping with authenticated session...
