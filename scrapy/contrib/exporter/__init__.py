@@ -5,3 +5,4 @@ warnings.warn("Module `scrapy.contrib.exporter` is deprecated, "
               ScrapyDeprecationWarning, stacklevel=2)
 
 from scrapy.exporters import *
+from scrapy.exporters import PythonItemExporter
