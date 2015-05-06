@@ -21,7 +21,7 @@ class BaseSgmlLinkExtractor(SGMLParser):
         warnings.warn(
             "BaseSgmlLinkExtractor is deprecated and will be removed in future releases. "
             "Please use scrapy.linkextractors.LinkExtractor",
-            ScrapyDeprecationWarning
+            ScrapyDeprecationWarning, stacklevel=2,
         )
         SGMLParser.__init__(self)
         self.scan_tag = tag if callable(tag) else lambda t: t == tag
@@ -104,7 +104,7 @@ class SgmlLinkExtractor(FilteringLinkExtractor):
         warnings.warn(
             "SgmlLinkExtractor is deprecated and will be removed in future releases. "
             "Please use scrapy.linkextractors.LinkExtractor",
-            ScrapyDeprecationWarning
+            ScrapyDeprecationWarning, stacklevel=2,
         )
 
         tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
