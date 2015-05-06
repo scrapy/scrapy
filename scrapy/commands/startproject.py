@@ -7,7 +7,7 @@ from os.path import join, exists, abspath
 from shutil import copytree, ignore_patterns
 
 import scrapy
-from scrapy.command import ScrapyCommand
+from scrapy.commands import ScrapyCommand
 from scrapy.utils.template import render_templatefile, string_camelcase
 from scrapy.exceptions import UsageError
 

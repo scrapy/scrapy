@@ -10,7 +10,7 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.resolver import dnscache
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy import signals
-from .middleware import DownloaderMiddlewareManager
+from scrapy.downloadermiddlewares import DownloaderMiddlewareManager
 from .handlers import DownloadHandlers
 
 

@@ -15,7 +15,7 @@ from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy import signals
 from scrapy.http import Request, Response
 from scrapy.item import BaseItem
-from scrapy.core.spidermw import SpiderMiddlewareManager
+from scrapy.spidermiddlewares import SpiderMiddlewareManager
 
 logger = logging.getLogger(__name__)
 

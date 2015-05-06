@@ -5,7 +5,7 @@ import subprocess
 from six.moves.urllib.parse import urlencode
 
 import scrapy
-from scrapy.command import ScrapyCommand
+from scrapy.commands import ScrapyCommand
 from scrapy.linkextractors import LinkExtractor
 
 
