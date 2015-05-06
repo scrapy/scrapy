@@ -77,7 +77,7 @@ scrapy.Spider
        An optional list of strings containing domains that this spider is
        allowed to crawl. Requests for URLs not belonging to the domain names
        specified in this list won't be followed if
-       :class:`~scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware` is enabled.
+       :class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware` is enabled.
 
    .. attribute:: start_urls
 
@@ -111,6 +111,12 @@ scrapy.Spider
       Configuration on which this spider is been ran. This is a
       :class:`~scrapy.settings.Settings` instance, see the
       :ref:`topics-settings` topic for a detailed introduction on this subject.
+
+   .. attribute:: logger
+
+      Python logger created with the Spider's :attr:`name`. You can use it to
+      send log messages through it as described on
+      :ref:`topics-logging-from-spiders`.
 
    .. method:: from_crawler(crawler, \*args, \**kwargs)
 
@@ -194,9 +200,9 @@ scrapy.Spider
 
    .. method:: log(message, [level, component])
 
-       Log a message using the :func:`scrapy.log.msg` function, automatically
-       populating the spider argument with the :attr:`name` of this
-       spider. For more information see :ref:`topics-logging`.
+       Wrapper that sends a log message through the Spider's :attr:`logger`,
+       kept for backwards compatibility. For more information see
+       :ref:`topics-logging-from-spiders`.
 
    .. method:: closed(reason)
 
@@ -218,7 +224,7 @@ Let's see an example::
         ]
 
         def parse(self, response):
-            self.log('A response from %s just arrived!' % response.url)
+            self.logger.info('A response from %s just arrived!', response.url)
 
 Return multiple Requests and items from a single callback::
 
@@ -313,7 +319,7 @@ with a ``TestItem`` declared in a ``myproject.items`` module::
         description = scrapy.Field()
 
 
-.. module:: scrapy.contrib.spiders
+.. module:: scrapy.spiders
    :synopsis: Collection of generic spiders
 
 CrawlSpider
@@ -388,8 +394,8 @@ CrawlSpider example
 Let's now take a look at an example CrawlSpider with rules::
 
     import scrapy
-    from scrapy.contrib.spiders import CrawlSpider, Rule
-    from scrapy.contrib.linkextractors import LinkExtractor
+    from scrapy.spiders import CrawlSpider, Rule
+    from scrapy.linkextractors import LinkExtractor
 
     class MySpider(CrawlSpider):
         name = 'example.com'
@@ -406,7 +412,7 @@ Let's now take a look at an example CrawlSpider with rules::
         )
 
         def parse_item(self, response):
-            self.log('Hi, this is an item page! %s' % response.url)
+            self.logger.info('Hi, this is an item page! %s', response.url)
             item = scrapy.Item()
             item['id'] = response.xpath('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
             item['name'] = response.xpath('//td[@id="item_name"]/text()').extract()
@@ -509,8 +515,7 @@ XMLFeedSpider example
 
 These spiders are pretty easy to use, let's have a look at one example::
 
-    from scrapy import log
-    from scrapy.contrib.spiders import XMLFeedSpider
+    from scrapy.spiders import XMLFeedSpider
     from myproject.items import TestItem
 
     class MySpider(XMLFeedSpider):
@@ -521,7 +526,7 @@ These spiders are pretty easy to use, let's have a look at one example::
         itertag = 'item'
 
         def parse_node(self, response, node):
-            log.msg('Hi, this is a <%s> node!: %s' % (self.itertag, ''.join(node.extract())))
+            self.logger.info('Hi, this is a <%s> node!: %s', self.itertag, ''.join(node.extract()))
 
             item = TestItem()
             item['id'] = node.xpath('@id').extract()
@@ -570,8 +575,7 @@ CSVFeedSpider example
 Let's see an example similar to the previous one, but using a
 :class:`CSVFeedSpider`::
 
-    from scrapy import log
-    from scrapy.contrib.spiders import CSVFeedSpider
+    from scrapy.spiders import CSVFeedSpider
     from myproject.items import TestItem
 
     class MySpider(CSVFeedSpider):
@@ -583,7 +587,7 @@ Let's see an example similar to the previous one, but using a
         headers = ['id', 'name', 'description']
 
         def parse_row(self, response, row):
-            log.msg('Hi, this is a row!: %r' % row)
+            self.logger.info('Hi, this is a row!: %r', row)
 
             item = TestItem()
             item['id'] = row['id']
@@ -665,7 +669,7 @@ SitemapSpider examples
 Simplest example: process all urls discovered through sitemaps using the
 ``parse`` callback::
 
-    from scrapy.contrib.spiders import SitemapSpider
+    from scrapy.spiders import SitemapSpider
 
     class MySpider(SitemapSpider):
         sitemap_urls = ['http://www.example.com/sitemap.xml']
@@ -676,7 +680,7 @@ Simplest example: process all urls discovered through sitemaps using the
 Process some urls with certain callback and other urls with a different
 callback::
 
-    from scrapy.contrib.spiders import SitemapSpider
+    from scrapy.spiders import SitemapSpider
 
     class MySpider(SitemapSpider):
         sitemap_urls = ['http://www.example.com/sitemap.xml']
@@ -694,7 +698,7 @@ callback::
 Follow sitemaps defined in the `robots.txt`_ file and only follow sitemaps
 whose url contains ``/sitemap_shop``::
 
-    from scrapy.contrib.spiders import SitemapSpider
+    from scrapy.spiders import SitemapSpider
 
     class MySpider(SitemapSpider):
         sitemap_urls = ['http://www.example.com/robots.txt']
@@ -708,7 +712,7 @@ whose url contains ``/sitemap_shop``::
 
 Combine SitemapSpider with other sources of urls::
 
-    from scrapy.contrib.spiders import SitemapSpider
+    from scrapy.spiders import SitemapSpider
 
     class MySpider(SitemapSpider):
         sitemap_urls = ['http://www.example.com/robots.txt']

@@ -119,7 +119,7 @@ Built-in services
    topics/webservice
 
 :doc:`topics/logging`
-    Understand the simple logging facility provided by Scrapy.
+    Learn how to use Python's builtin logging on Scrapy.
 
 :doc:`topics/stats`
     Collect statistics about your scraping crawler.
@@ -148,13 +148,12 @@ Solving specific problems
    topics/firefox
    topics/firebug
    topics/leaks
-   topics/images
+   topics/media-pipeline
    topics/ubuntu
    topics/deploy
    topics/autothrottle
    topics/benchmarking
    topics/jobs
-   topics/djangoitem
 
 :doc:`faq`
     Get answers to most frequently asked questions.
@@ -180,8 +179,8 @@ Solving specific problems
 :doc:`topics/leaks`
     Learn how to find and get rid of memory leaks in your crawler.
 
-:doc:`topics/images`
-    Download static images associated with your scraped items.
+:doc:`topics/media-pipeline`
+    Download files and/or images associated with your scraped items.
 
 :doc:`topics/ubuntu`
     Install latest Scrapy packages easily on Ubuntu
@@ -197,9 +196,6 @@ Solving specific problems
 
 :doc:`topics/jobs`
     Learn how to pause and resume crawls for large spiders.
-
-:doc:`topics/djangoitem`
-    Write scraped items using Django models.
 
 .. _extending-scrapy:
 
@@ -249,7 +245,6 @@ All the rest
    news
    contributing
    versioning
-   experimental/index
 
 :doc:`news`
     See what has changed in recent Scrapy versions.
@@ -259,6 +254,3 @@ All the rest
 
 :doc:`versioning`
     Understand Scrapy versioning and API stability.
-
-:doc:`experimental/index`
-    Learn about bleeding-edge features.

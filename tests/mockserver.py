@@ -191,6 +191,7 @@ class MockServer():
         self.proc = Popen([sys.executable, '-u', '-m', 'tests.mockserver'],
                           stdout=PIPE, env=get_testenv())
         self.proc.stdout.readline()
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.proc.kill()

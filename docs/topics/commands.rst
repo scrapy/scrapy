@@ -399,7 +399,7 @@ Supported options:
 
 * ``--pipelines``: process items through pipelines
 
-* ``--rules`` or ``-r``: use :class:`~scrapy.contrib.spiders.CrawlSpider`
+* ``--rules`` or ``-r``: use :class:`~scrapy.spiders.CrawlSpider`
   rules to discover the callback (i.e. spider method) to use for parsing the
   response
 
@@ -511,3 +511,24 @@ Example::
     COMMANDS_MODULE = 'mybot.commands'
 
 .. _Deploying your project: http://scrapyd.readthedocs.org/en/latest/deploy.html
+
+Register commands via setup.py entry points
+-------------------------------------------
+
+.. note:: This is an experimental feature, use with caution.
+
+You can also add Scrapy commands from an external library by adding a
+``scrapy.commands`` section in the entry points of the library ``setup.py``
+file.
+
+The following example adds ``my_command`` command::
+
+  from setuptools import setup, find_packages
+
+  setup(name='scrapy-mymodule',
+    entry_points={
+      'scrapy.commands': [
+        'my_command=my_scrapy_module.commands:MyCommand',
+      ],
+    },
+   )

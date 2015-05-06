@@ -1,8 +1,7 @@
-"""
-scrapy.contrib.linkextractors
+import warnings
+from scrapy.exceptions import ScrapyDeprecationWarning
+warnings.warn("Module `scrapy.contrib.linkextractors` is deprecated, "
+              "use `scrapy.linkextractors` instead",
+              ScrapyDeprecationWarning, stacklevel=2)
 
-This package contains a collection of Link Extractors.
-
-For more info see docs/topics/link-extractors.rst
-"""
-from .lxmlhtml import LxmlLinkExtractor as LinkExtractor
+from scrapy.linkextractors import *

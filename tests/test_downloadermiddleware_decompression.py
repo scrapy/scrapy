@@ -1,6 +1,6 @@
 from unittest import TestCase, main
 from scrapy.http import Response, XmlResponse
-from scrapy.contrib.downloadermiddleware.decompression import DecompressionMiddleware
+from scrapy.downloadermiddlewares.decompression import DecompressionMiddleware
 from scrapy.spider import Spider
 from tests import get_testdata
 from scrapy.utils.test import assert_samelines
@@ -16,7 +16,7 @@ def _test_data(formats):
 
 
 class DecompressionMiddlewareTest(TestCase):
-    
+
     test_formats = ['tar', 'xml.bz2', 'xml.gz', 'zip']
     uncompressed_body, test_responses = _test_data(test_formats)
 

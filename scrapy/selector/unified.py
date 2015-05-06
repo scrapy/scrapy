@@ -8,7 +8,7 @@ import six
 from scrapy.utils.misc import extract_regex
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.python import unicode_to_str, flatten, iflatten
-from scrapy.utils.decorator import deprecated
+from scrapy.utils.decorators import deprecated
 from scrapy.http import HtmlResponse, XmlResponse
 from .lxmldocument import LxmlDocument
 from .csstranslator import ScrapyHTMLTranslator, ScrapyGenericTranslator

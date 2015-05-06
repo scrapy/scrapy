@@ -65,7 +65,7 @@ how you :ref:`configure the downloader middlewares
 
         For an introduction on stats collection see :ref:`topics-stats`.
 
-        For the API see :class:`~scrapy.statscol.StatsCollector` class.
+        For the API see :class:`~scrapy.statscollectors.StatsCollector` class.
 
     .. attribute:: extensions
 
@@ -81,8 +81,8 @@ how you :ref:`configure the downloader middlewares
         The execution engine, which coordinates the core crawling logic
         between the scheduler, downloader and spiders.
 
-        Some extension may want to access the Scrapy engine, to modify inspect
-        or modify the downloader and scheduler behaviour, although this is an
+        Some extension may want to access the Scrapy engine, to inspect  or 
+        modify the downloader and scheduler behaviour, although this is an
         advanced use and this API is not yet stable.
 
     .. attribute:: spider
@@ -99,52 +99,13 @@ how you :ref:`configure the downloader middlewares
 
         Returns a deferred that is fired when the crawl is finished.
 
-.. class:: CrawlerRunner(settings)
+.. autoclass:: CrawlerRunner
+   :members:
 
-    This is a convenient helper class that keeps track of, manages and runs
-    crawlers inside an already setup Twisted `reactor`_.
-
-    The CrawlerRunner object must be instantiated with a
-    :class:`~scrapy.settings.Settings` object.
-
-    This class shouldn't be needed (since Scrapy is responsible of using it
-    accordingly) unless writing scripts that manually handle the crawling
-    process. See :ref:`run-from-script` for an example.
-
-    .. attribute:: crawlers
-
-       Set of :class:`crawlers <scrapy.crawler.Crawler>` created by the
-       :meth:`crawl` method.
-
-    .. method:: crawl(crawler_or_spidercls, \*args, \**kwargs)
-
-       This method runs a crawler with the provided arguments.
-
-       It will keep track of the given crawler so it can be stopped later,
-       while calling its :meth:`Crawler.crawl` method.
-
-       If `crawler_or_spidercls` isn't a :class:`~scrapy.crawler.Crawler`
-       instance, it will try to create one using this parameter as the spider
-       class given to it.
-
-       Returns a deferred that is fired when the crawl is finished.
-
-       :param crawler_or_spidercls: already created crawler, or a spider class
-       or spider's name inside the project to create it
-       :type crawler_or_spidercls: :class:`~scrapy.crawler.Crawler` instance,
-        :class:`~scrapy.spider.Spider` subclass or string
-
-       :param args: arguments to initializate the spider
-       :type args: list
-
-       :param kwargs: keyword arguments to initializate the spider
-       :type kwargs: dict
-
-    .. method:: stop()
-
-       Stops simultaneously all the crawling jobs taking place.
-
-       Returns a deferred that is fired when they all have ended.
+.. autoclass:: CrawlerProcess
+   :show-inheritance:
+   :members:
+   :inherited-members:
 
 .. _topics-api-settings:
 
@@ -344,22 +305,22 @@ Settings API
 
        Alias for a :meth:`~freeze` call in the object returned by :meth:`copy`
 
-.. _topics-api-spidermanager:
+.. _topics-api-spiderloader:
 
-SpiderManager API
-=================
+SpiderLoader API
+================
 
-.. module:: scrapy.spidermanager
-   :synopsis: The spider manager
+.. module:: scrapy.loader
+   :synopsis: The spider loader
 
-.. class:: SpiderManager
+.. class:: SpiderLoader
 
     This class is in charge of retrieving and handling the spider classes
     defined across the project.
 
-    Custom spider managers can be employed by specifying their path in the
-    :setting:`SPIDER_MANAGER_CLASS` project setting. They must fully implement
-    the :class:`scrapy.interfaces.ISpiderManager` interface to guarantee an
+    Custom spider loaders can be employed by specifying their path in the
+    :setting:`SPIDER_LOADER_CLASS` project setting. They must fully implement
+    the :class:`scrapy.interfaces.ISpiderLoader` interface to guarantee an
     errorless execution.
 
     .. method:: from_settings(settings)
@@ -452,11 +413,11 @@ Stats Collector API
 ===================
 
 There are several Stats Collectors available under the
-:mod:`scrapy.statscol` module and they all implement the Stats
-Collector API defined by the :class:`~scrapy.statscol.StatsCollector`
+:mod:`scrapy.statscollectors` module and they all implement the Stats
+Collector API defined by the :class:`~scrapy.statscollectors.StatsCollector`
 class (which they all inherit from).
 
-.. module:: scrapy.statscol
+.. module:: scrapy.statscollectors
    :synopsis: Stats Collectors
 
 .. class:: StatsCollector
@@ -486,7 +447,7 @@ class (which they all inherit from).
 
         Set the given value for the given key only if current value for the
         same key is lower than value. If there is no current value for the
-        given key, the value is always set. 
+        given key, the value is always set.
 
     .. method:: min_value(key, value)
 

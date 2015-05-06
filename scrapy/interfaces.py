@@ -1,12 +1,12 @@
 from zope.interface import Interface
 
-class ISpiderManager(Interface):
+class ISpiderLoader(Interface):
 
     def from_settings(settings):
-        """Returns an instance of the class for the given settings"""
+        """Return an instance of the class for the given settings"""
 
     def load(spider_name):
-        """Returns the Spider class for the given spider name. If the spider
+        """Return the Spider class for the given spider name. If the spider
         name is not found, it must raise a KeyError."""
 
     def list():
@@ -14,4 +14,9 @@ class ISpiderManager(Interface):
         project"""
 
     def find_by_request(request):
-        """Returns the list of spiders names that can handle the given request"""
+        """Return the list of spiders names that can handle the given request"""
+
+
+# ISpiderManager is deprecated, don't use it!
+# An alias is kept for backwards compatibility.
+ISpiderManager = ISpiderLoader

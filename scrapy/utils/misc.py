@@ -32,7 +32,7 @@ def load_object(path):
     """Load an object given its absolute object path, and return it.
 
     object can be a class, function, variable o instance.
-    path ie: 'scrapy.contrib.downloadermiddelware.redirect.RedirectMiddleware'
+    path ie: 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware'
     """
 
     try:

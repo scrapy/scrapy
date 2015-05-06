@@ -30,15 +30,16 @@ For serializing the scraped data, the feed exports use the :ref:`Item exporters
 
 But you can also extend the supported format through the
 :setting:`FEED_EXPORTERS` setting.
- 
+
 .. _topics-feed-format-json:
 
 JSON
 ----
 
  * :setting:`FEED_FORMAT`: ``json``
- * Exporter used: :class:`~scrapy.contrib.exporter.JsonItemExporter`
- * See :ref:`this warning <json-with-large-data>` if you're using JSON with large feeds
+ * Exporter used: :class:`~scrapy.exporters.JsonItemExporter`
+ * See :ref:`this warning <json-with-large-data>` if you're using JSON with
+   large feeds.
 
 .. _topics-feed-format-jsonlines:
 
@@ -46,7 +47,7 @@ JSON lines
 ----------
 
  * :setting:`FEED_FORMAT`: ``jsonlines``
- * Exporter used: :class:`~scrapy.contrib.exporter.JsonLinesItemExporter`
+ * Exporter used: :class:`~scrapy.exporters.JsonLinesItemExporter`
 
 .. _topics-feed-format-csv:
 
@@ -54,7 +55,11 @@ CSV
 ---
 
  * :setting:`FEED_FORMAT`: ``csv``
- * Exporter used: :class:`~scrapy.contrib.exporter.CsvItemExporter`
+ * Exporter used: :class:`~scrapy.exporters.CsvItemExporter`
+ * To specify columns to export and their order use
+   :setting:`FEED_EXPORT_FIELDS`. Other feed exporters can also use this
+   option, but it is important for CSV because unlike many other export
+   formats CSV uses a fixed header.
 
 .. _topics-feed-format-xml:
 
@@ -62,7 +67,7 @@ XML
 ---
 
  * :setting:`FEED_FORMAT`: ``xml``
- * Exporter used: :class:`~scrapy.contrib.exporter.XmlItemExporter`
+ * Exporter used: :class:`~scrapy.exporters.XmlItemExporter`
 
 .. _topics-feed-format-pickle:
 
@@ -70,7 +75,7 @@ Pickle
 ------
 
  * :setting:`FEED_FORMAT`: ``pickle``
- * Exporter used: :class:`~scrapy.contrib.exporter.PickleItemExporter`
+ * Exporter used: :class:`~scrapy.exporters.PickleItemExporter`
 
 .. _topics-feed-format-marshal:
 
@@ -78,7 +83,7 @@ Marshal
 -------
 
  * :setting:`FEED_FORMAT`: ``marshal``
- * Exporter used: :class:`~scrapy.contrib.exporter.MarshalItemExporter`
+ * Exporter used: :class:`~scrapy.exporters.MarshalItemExporter`
 
 
 .. _topics-feed-storage:
@@ -202,8 +207,9 @@ These are the settings used for configuring the feed exports:
  * :setting:`FEED_STORAGES`
  * :setting:`FEED_EXPORTERS`
  * :setting:`FEED_STORE_EMPTY`
+ * :setting:`FEED_EXPORT_FIELDS`
 
-.. currentmodule:: scrapy.contrib.feedexport
+.. currentmodule:: scrapy.extensions.feedexport
 
 .. setting:: FEED_URI
 
@@ -224,6 +230,20 @@ FEED_FORMAT
 
 The serialization format to be used for the feed. See
 :ref:`topics-feed-format` for possible values.
+
+.. setting:: FEED_EXPORT_FIELDS
+
+FEED_EXPORT_FIELDS
+------------------
+
+A list of fields to export, optional.
+Example: ``FEED_EXPORT_FIELDS = ["foo", "bar", "baz"]``.
+
+Use FEED_EXPORT_FIELDS option to define fields to export and their order.
+
+When omitted, Scrapy uses fields defined in :class:`~.Item` subclasses a spider
+is yielding. If raw dicts are used as items Scrapy tries to infer field names
+from the exported data - currently it uses field names from the first item.
 
 .. setting:: FEED_STORE_EMPTY
 
@@ -249,14 +269,14 @@ The keys are URI schemes and the values are paths to storage classes.
 FEED_STORAGES_BASE
 ------------------
 
-Default:: 
+Default::
 
     {
-        '': 'scrapy.contrib.feedexport.FileFeedStorage',
-        'file': 'scrapy.contrib.feedexport.FileFeedStorage',
-        'stdout': 'scrapy.contrib.feedexport.StdoutFeedStorage',
-        's3': 'scrapy.contrib.feedexport.S3FeedStorage',
-        'ftp': 'scrapy.contrib.feedexport.FTPFeedStorage',
+        '': 'scrapy.extensions.feedexport.FileFeedStorage',
+        'file': 'scrapy.extensions.feedexport.FileFeedStorage',
+        'stdout': 'scrapy.extensions.feedexport.StdoutFeedStorage',
+        's3': 'scrapy.extensions.feedexport.S3FeedStorage',
+        'ftp': 'scrapy.extensions.feedexport.FTPFeedStorage',
     }
 
 A dict containing the built-in feed storage backends supported by Scrapy.
@@ -277,14 +297,14 @@ classes.
 FEED_EXPORTERS_BASE
 -------------------
 
-Default:: 
+Default::
 
     FEED_EXPORTERS_BASE = {
-        'json': 'scrapy.contrib.exporter.JsonItemExporter',
-        'jsonlines': 'scrapy.contrib.exporter.JsonLinesItemExporter',
-        'csv': 'scrapy.contrib.exporter.CsvItemExporter',
-        'xml': 'scrapy.contrib.exporter.XmlItemExporter',
-        'marshal': 'scrapy.contrib.exporter.MarshalItemExporter',
+        'json': 'scrapy.exporters.JsonItemExporter',
+        'jsonlines': 'scrapy.exporters.JsonLinesItemExporter',
+        'csv': 'scrapy.exporters.CsvItemExporter',
+        'xml': 'scrapy.exporters.XmlItemExporter',
+        'marshal': 'scrapy.exporters.MarshalItemExporter',
     }
 
 A dict containing the built-in feed exporters supported by Scrapy.

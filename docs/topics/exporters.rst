@@ -4,7 +4,7 @@
 Item Exporters
 ==============
 
-.. module:: scrapy.contrib.exporter
+.. module:: scrapy.exporters
    :synopsis: Item Exporters
 
 Once you have scraped your items, you often want to persist or export those
@@ -40,7 +40,7 @@ Here you can see an :doc:`Item Pipeline <item-pipeline>` which uses an Item
 Exporter to export scraped items to different files, one per spider::
 
    from scrapy import signals
-   from scrapy.contrib.exporter import XmlItemExporter
+   from scrapy.exporters import XmlItemExporter
 
    class XmlExportPipeline(object):
 
@@ -117,7 +117,7 @@ after your custom code.
 
 Example::
 
-      from scrapy.contrib.exporter import XmlItemExporter
+      from scrapy.exporter import XmlItemExporter
 
       class ProductXmlExporter(XmlItemExporter):
 

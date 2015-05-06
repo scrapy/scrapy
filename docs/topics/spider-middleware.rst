@@ -43,7 +43,7 @@ value.  For example, if you want to disable the off-site middleware::
 
     SPIDER_MIDDLEWARES = {
         'myproject.middlewares.CustomSpiderMiddleware': 543,
-        'scrapy.contrib.spidermiddleware.offsite.OffsiteMiddleware': None,
+        'scrapy.spidermiddlewares.offsite.OffsiteMiddleware': None,
     }
 
 Finally, keep in mind that some middlewares may need to be enabled through a
@@ -55,7 +55,7 @@ Writing your own spider middleware
 Each middleware component is a Python class that defines one or more of the
 following methods:
 
-.. module:: scrapy.contrib.spidermiddleware
+.. module:: scrapy.spidermiddlewares
 
 .. class:: SpiderMiddleware
 
@@ -178,7 +178,7 @@ For a list of the components enabled by default (and their orders) see the
 DepthMiddleware
 ---------------
 
-.. module:: scrapy.contrib.spidermiddleware.depth
+.. module:: scrapy.spidermiddlewares.depth
    :synopsis: Depth Spider Middleware
 
 .. class:: DepthMiddleware
@@ -199,7 +199,7 @@ DepthMiddleware
 HttpErrorMiddleware
 -------------------
 
-.. module:: scrapy.contrib.spidermiddleware.httperror
+.. module:: scrapy.spidermiddlewares.httperror
    :synopsis: HTTP Error Spider Middleware
 
 .. class:: HttpErrorMiddleware
@@ -264,7 +264,7 @@ Pass all responses, regardless of its status code.
 OffsiteMiddleware
 -----------------
 
-.. module:: scrapy.contrib.spidermiddleware.offsite
+.. module:: scrapy.spidermiddlewares.offsite
    :synopsis: Offsite Spider Middleware
 
 .. class:: OffsiteMiddleware
@@ -298,7 +298,7 @@ OffsiteMiddleware
 RefererMiddleware
 -----------------
 
-.. module:: scrapy.contrib.spidermiddleware.referer
+.. module:: scrapy.spidermiddlewares.referer
    :synopsis: Referer Spider Middleware
 
 .. class:: RefererMiddleware
@@ -323,7 +323,7 @@ Whether to enable referer middleware.
 UrlLengthMiddleware
 -------------------
 
-.. module:: scrapy.contrib.spidermiddleware.urllength
+.. module:: scrapy.spidermiddlewares.urllength
    :synopsis: URL Length Spider Middleware
 
 .. class:: UrlLengthMiddleware

@@ -1,14 +1,19 @@
-import re, csv, six
+import re
+import csv
+import logging
 
 try:
     from cStringIO import StringIO as BytesIO
 except ImportError:
     from io import BytesIO
 
+import six
+
 from scrapy.http import TextResponse, Response
 from scrapy.selector import Selector
-from scrapy import log
 from scrapy.utils.python import re_rsearch, str_to_unicode
+
+logger = logging.getLogger(__name__)
 
 
 def xmliter(obj, nodename):
@@ -108,8 +113,10 @@ def csviter(obj, delimiter=None, headers=None, encoding=None, quotechar=None):
     while True:
         row = _getrow(csv_r)
         if len(row) != len(headers):
-            log.msg(format="ignoring row %(csvlnum)d (length: %(csvrow)d, should be: %(csvheader)d)",
-                    level=log.WARNING, csvlnum=csv_r.line_num, csvrow=len(row), csvheader=len(headers))
+            logger.warning("ignoring row %(csvlnum)d (length: %(csvrow)d, "
+                           "should be: %(csvheader)d)",
+                           {'csvlnum': csv_r.line_num, 'csvrow': len(row),
+                            'csvheader': len(headers)})
             continue
         else:
             yield dict(zip(headers, row))

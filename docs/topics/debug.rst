@@ -132,16 +132,13 @@ Logging is another useful option for getting information about your spider run.
 Although not as convenient, it comes with the advantage that the logs will be
 available in all future runs should they be necessary again::
 
-    from scrapy import log
-
     def parse_details(self, response):
         item = response.meta.get('item', None)
         if item:
             # populate more `item` fields
             return item
         else:
-            self.log('No item received for %s' % response.url,
-                level=log.WARNING)
+            self.logger.warning('No item received for %s', response.url)
 
 For more information, check the :ref:`topics-logging` section.
 

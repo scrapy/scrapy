@@ -1,8 +1,12 @@
 import json
 import socket
+import logging
+
+from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
-from scrapy.utils.test import get_crawler, get_testlog
+
+from scrapy.utils.test import get_crawler
 from tests import mock
 from tests.spiders import FollowAllSpider, DelaySpider, SimpleSpider, \
     BrokenStartRequestsSpider, SingleRequestSpider, DuplicateStartRequestsSpider
@@ -72,36 +76,47 @@ class CrawlTestCase(TestCase):
     @defer.inlineCallbacks
     def test_retry_503(self):
         crawler = get_crawler(SimpleSpider)
-        yield crawler.crawl("http://localhost:8998/status?n=503")
-        self._assert_retried()
+        with LogCapture() as l:
+            yield crawler.crawl("http://localhost:8998/status?n=503")
+        self._assert_retried(l)
 
     @defer.inlineCallbacks
     def test_retry_conn_failed(self):
         crawler = get_crawler(SimpleSpider)
-        yield crawler.crawl("http://localhost:65432/status?n=503")
-        self._assert_retried()
+        with LogCapture() as l:
+            yield crawler.crawl("http://localhost:65432/status?n=503")
+        self._assert_retried(l)
 
     @defer.inlineCallbacks
     def test_retry_dns_error(self):
         with mock.patch('socket.gethostbyname',
                         side_effect=socket.gaierror(-5, 'No address associated with hostname')):
             crawler = get_crawler(SimpleSpider)
-            yield crawler.crawl("http://example.com/")
-            self._assert_retried()
+            with LogCapture() as l:
+                yield crawler.crawl("http://example.com/")
+            self._assert_retried(l)
 
     @defer.inlineCallbacks
     def test_start_requests_bug_before_yield(self):
-        crawler = get_crawler(BrokenStartRequestsSpider)
-        yield crawler.crawl(fail_before_yield=1)
-        errors = self.flushLoggedErrors(ZeroDivisionError)
-        self.assertEqual(len(errors), 1)
+        with LogCapture('scrapy', level=logging.ERROR) as l:
+            crawler = get_crawler(BrokenStartRequestsSpider)
+            yield crawler.crawl(fail_before_yield=1)
+
+        self.assertEqual(len(l.records), 1)
+        record = l.records[0]
+        self.assertIsNotNone(record.exc_info)
+        self.assertIs(record.exc_info[0], ZeroDivisionError)
 
     @defer.inlineCallbacks
     def test_start_requests_bug_yielding(self):
-        crawler = get_crawler(BrokenStartRequestsSpider)
-        yield crawler.crawl(fail_yielding=1)
-        errors = self.flushLoggedErrors(ZeroDivisionError)
-        self.assertEqual(len(errors), 1)
+        with LogCapture('scrapy', level=logging.ERROR) as l:
+            crawler = get_crawler(BrokenStartRequestsSpider)
+            yield crawler.crawl(fail_yielding=1)
+
+        self.assertEqual(len(l.records), 1)
+        record = l.records[0]
+        self.assertIsNotNone(record.exc_info)
+        self.assertIs(record.exc_info[0], ZeroDivisionError)
 
     @defer.inlineCallbacks
     def test_start_requests_lazyness(self):
@@ -145,28 +160,29 @@ foo body
 with multiples lines
 '''})
         crawler = get_crawler(SimpleSpider)
-        yield crawler.crawl("http://localhost:8998/raw?{0}".format(query))
-        log = get_testlog()
-        self.assertEqual(log.count("Got response 200"), 1)
+        with LogCapture() as l:
+            yield crawler.crawl("http://localhost:8998/raw?{0}".format(query))
+        self.assertEqual(str(l).count("Got response 200"), 1)
 
     @defer.inlineCallbacks
     def test_retry_conn_lost(self):
         # connection lost after receiving data
         crawler = get_crawler(SimpleSpider)
-        yield crawler.crawl("http://localhost:8998/drop?abort=0")
-        self._assert_retried()
+        with LogCapture() as l:
+            yield crawler.crawl("http://localhost:8998/drop?abort=0")
+        self._assert_retried(l)
 
     @defer.inlineCallbacks
     def test_retry_conn_aborted(self):
         # connection lost before receiving data
         crawler = get_crawler(SimpleSpider)
-        yield crawler.crawl("http://localhost:8998/drop?abort=1")
-        self._assert_retried()
+        with LogCapture() as l:
+            yield crawler.crawl("http://localhost:8998/drop?abort=1")
+        self._assert_retried(l)
 
-    def _assert_retried(self):
-        log = get_testlog()
-        self.assertEqual(log.count("Retrying"), 2)
-        self.assertEqual(log.count("Gave up retrying"), 1)
+    def _assert_retried(self, log):
+        self.assertEqual(str(log).count("Retrying"), 2)
+        self.assertEqual(str(log).count("Gave up retrying"), 1)
 
     @defer.inlineCallbacks
     def test_referer_header(self):

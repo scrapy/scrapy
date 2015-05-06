@@ -1,6 +1,6 @@
 """
 Common code and definitions used by Link extractors (located in
-scrapy.contrib.linkextractor).
+scrapy.linkextractors).
 """
 import re
 from six.moves.urllib.parse import urlparse

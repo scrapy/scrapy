@@ -4,3 +4,4 @@ mitmproxy==0.10.1
 netlib==0.10.1
 pytest-twisted
 jmespath
+testfixtures
