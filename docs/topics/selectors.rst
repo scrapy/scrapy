@@ -479,7 +479,7 @@ But using the ``.`` to mean the node, works::
 .. _`XPath string function`: http://www.w3.org/TR/xpath/#section-String-Functions
 
 Beware of the difference between //node[1] and (//node)[1]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``//node[1]`` selects all the nodes occurring first under their respective parents.
 

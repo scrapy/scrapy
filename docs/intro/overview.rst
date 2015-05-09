@@ -157,9 +157,9 @@ scraping easy and efficient, such as:
   crawler
 
 * Plus other goodies like reusable spiders to crawl sites from `Sitemaps`_ and
-  XML/CSV feeds, a media pipeline for :ref:`automatically downloading images <topics-images>`
-  (or any other media) associated with the scraped items, a caching DNS resolver,
-  and much more!
+  XML/CSV feeds, a media pipeline for :ref:`automatically downloading images
+  <topics-media-pipeline>` (or any other media) associated with the scraped
+  items, a caching DNS resolver, and much more!
 
 What's next?
 ============

@@ -566,7 +566,7 @@ Here is a list of all built-in processors:
 
     The simplest processor, which doesn't do anything. It returns the original
     values unchanged. It doesn't receive any constructor arguments, nor does it
-	accept Loader contexts.
+    accept Loader contexts.
 
     Example::
 
