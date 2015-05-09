@@ -165,7 +165,7 @@ Will be downloaded and stored in the following file::
 Where:
 
 * ``<IMAGES_STORE>`` is the directory defined in :setting:`IMAGES_STORE` setting
-for the Images Pipeline.
+  for the Images Pipeline.
 
 * ``full`` is a sub-directory to separate full images from thumbnails (if
   used). For more info see :ref:`topics-images-thumbnails`.
