@@ -92,7 +92,7 @@ subclasses):
 * :class:`scrapy.http.Response`
 * :class:`scrapy.item.Item`
 * :class:`scrapy.selector.Selector`
-* :class:`scrapy.spider.Spider`
+* :class:`scrapy.spiders.Spider`
 
 A real example
 --------------
@@ -155,7 +155,7 @@ For this reason, that function has a ``ignore`` argument which can be used to
 ignore a particular class (and all its subclases). For
 example, this won't show any live references to spiders::
 
-    >>> from scrapy.spider import Spider
+    >>> from scrapy.spiders import Spider
     >>> prefs(ignore=Spider)
 
 .. module:: scrapy.utils.trackref

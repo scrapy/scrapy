@@ -1,6 +1,6 @@
 import unittest
 
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.utils.url import url_is_from_any_domain, url_is_from_spider, canonicalize_url
 
 __doctests__ = ['scrapy.utils.url']

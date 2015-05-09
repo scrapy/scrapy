@@ -74,7 +74,7 @@ Those objects are:
  * ``crawler`` - the current :class:`~scrapy.crawler.Crawler` object.
 
  * ``spider`` - the Spider which is known to handle the URL, or a
-   :class:`~scrapy.spider.Spider` object if there is no spider found for
+   :class:`~scrapy.spiders.Spider` object if there is no spider found for
    the current URL
 
  * ``request`` - a :class:`~scrapy.http.Request` object of the last fetched

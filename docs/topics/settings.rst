@@ -67,7 +67,7 @@ Example::
 
 Spiders (See the :ref:`topics-spiders` chapter for reference) can define their
 own settings that will take precedence and override the project ones. They can
-do so by setting their :attr:`scrapy.spider.Spider.custom_settings` attribute.
+do so by setting their :attr:`scrapy.spiders.Spider.custom_settings` attribute.
 
 3. Project settings module
 --------------------------

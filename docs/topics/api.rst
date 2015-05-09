@@ -31,7 +31,7 @@ how you :ref:`configure the downloader middlewares
 .. class:: Crawler(spidercls, settings)
 
     The Crawler object must be instantiated with a
-    :class:`scrapy.spider.Spider` subclass and a
+    :class:`scrapy.spiders.Spider` subclass and a
     :class:`scrapy.settings.Settings` object.
 
     .. attribute:: settings

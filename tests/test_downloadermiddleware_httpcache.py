@@ -8,7 +8,7 @@ from contextlib import contextmanager
 import pytest
 
 from scrapy.http import Response, HtmlResponse, Request
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.settings import Settings
 from scrapy.exceptions import IgnoreRequest
 from scrapy.utils.test import get_crawler

@@ -2,7 +2,7 @@ from unittest import TestCase
 import re
 
 from scrapy.http import Response, Request
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.downloadermiddlewares.cookies import CookiesMiddleware
 
 

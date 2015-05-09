@@ -6,7 +6,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred, inlineCallbacks
 
 from scrapy.http import Request, Response
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.utils.request import request_fingerprint
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.utils.signal import disconnect_all

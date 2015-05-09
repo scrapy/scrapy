@@ -3,7 +3,7 @@ from datetime import datetime
 from twisted.trial import unittest
 
 from scrapy.extensions.spiderstate import SpiderState
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 
 
 class SpiderStateTest(unittest.TestCase):

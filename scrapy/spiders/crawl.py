@@ -9,7 +9,7 @@ import copy
 
 from scrapy.http import Request, HtmlResponse
 from scrapy.utils.spider import iterate_spider_output
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 
 def identity(x):
     return x

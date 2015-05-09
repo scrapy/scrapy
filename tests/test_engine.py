@@ -22,7 +22,7 @@ from scrapy import signals
 from scrapy.utils.test import get_crawler
 from scrapy.xlib.pydispatch import dispatcher
 from tests import tests_datadir
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.item import Item, Field
 from scrapy.linkextractors import LinkExtractor
 from scrapy.http import Request
