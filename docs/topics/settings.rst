@@ -133,8 +133,6 @@ to any particular component. In that case the module of that component will be
 shown, typically an extension, middleware or pipeline. It also means that the
 component must be enabled in order for the setting to have any effect.
 
-.. settingslist::
-
 .. setting:: AWS_ACCESS_KEY_ID
 
 AWS_ACCESS_KEY_ID
@@ -1016,6 +1014,16 @@ USER_AGENT
 Default: ``"Scrapy/VERSION (+http://scrapy.org)"``
 
 The default User-Agent to use when crawling, unless overridden.
+
+
+Settings documented elsewhere:
+------------------------------
+
+The following settings are documented elsewhere, please check each specific
+case to see how to enable and use them.
+
+.. settingslist::
+
 
 .. _Amazon web services: http://aws.amazon.com/
 .. _breadth-first order: http://en.wikipedia.org/wiki/Breadth-first_search
