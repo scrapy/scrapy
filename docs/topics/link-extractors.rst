@@ -85,7 +85,7 @@ LxmlLinkExtractor
     :param restrict_xpaths: is an XPath (or list of XPath's) which defines
         regions inside the response where links should be extracted from.
         If given, only the text selected by those XPath will be scanned for
-        links. See examples below.
+        links.
     :type restrict_xpaths: str or list
 
     :param restrict_css: a CSS selector (or list of selectors) which defines
