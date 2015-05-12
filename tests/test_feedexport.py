@@ -185,6 +185,7 @@ class FeedExportTest(unittest.TestCase):
         settings.update({'FEED_FORMAT': 'jl'})
         data = yield self.exported_data(items, settings)
         parsed = [json.loads(line) for line in data.splitlines()]
+        rows = [{k: v for k, v in row.items() if v} for row in rows]
         self.assertEqual(rows, parsed)
 
     @defer.inlineCallbacks
@@ -220,15 +221,18 @@ class FeedExportTest(unittest.TestCase):
             {'hello': 'world4', 'egg': 'spam4'},
         ]
 
-        # by default, Scrapy uses fields of the first Item
+        # by default, Scrapy uses fields of the first Item for CSV and
+        # all fields for JSON Lines
         header = self.MyItem.fields.keys()
-        rows = [
+        rows_csv = [
             {'egg': 'spam1', 'foo': 'bar1', 'baz': ''},
             {'egg': '',      'foo': 'bar2', 'baz': ''},
             {'egg': 'spam3', 'foo': 'bar3', 'baz': 'quux3'},
             {'egg': 'spam4', 'foo': '',     'baz': ''},
         ]
-        yield self.assertExported(items, header, rows, ordered=False)
+        rows_jl = [dict(row) for row in items]
+        yield self.assertExportedCsv(items, header, rows_csv, ordered=False)
+        yield self.assertExportedJsonLines(items, rows_jl)
 
         # but it is possible to override fields using FEED_EXPORT_FIELDS
         header = ["foo", "baz", "hello"]
@@ -245,16 +249,18 @@ class FeedExportTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_export_dicts(self):
         # When dicts are used, only keys from the first row are used as
-        # a header.
+        # a header for CSV, and all fields are used for JSON Lines.
         items = [
             {'foo': 'bar', 'egg': 'spam'},
             {'foo': 'bar', 'egg': 'spam', 'baz': 'quux'},
         ]
-        rows = [
+        rows_csv = [
             {'egg': 'spam', 'foo': 'bar'},
             {'egg': 'spam', 'foo': 'bar'}
         ]
-        yield self.assertExported(items, ['egg', 'foo'], rows, ordered=False)
+        rows_jl = items
+        yield self.assertExportedCsv(items, ['egg', 'foo'], rows_csv, ordered=False)
+        yield self.assertExportedJsonLines(items, rows_jl)
 
     @defer.inlineCallbacks
     def test_export_feed_export_fields(self):
