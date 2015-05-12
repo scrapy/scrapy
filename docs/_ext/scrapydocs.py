@@ -2,6 +2,7 @@ from docutils.parsers.rst.roles import set_classes
 from docutils import nodes
 from sphinx.util.compat import Directive
 from sphinx.util.nodes import make_refnode
+from operator import itemgetter
 
 
 class settingslist_node(nodes.General, nodes.Element):
@@ -57,18 +58,24 @@ def make_setting_element(setting_data, app, fromdocname):
                            todocname=setting_data['docname'],
                            targetid=setting_data['refid'],
                            child=nodes.Text(setting_data['setting_name']))
-
     p = nodes.paragraph()
-    p.append(refnode)
-    return p
+    p += refnode
+
+    item = nodes.list_item()
+    item += p
+    return item
 
 
 def replace_settingslist_nodes(app, doctree, fromdocname):
     env = app.builder.env
 
     for node in doctree.traverse(settingslist_node):
-        node.replace_self([make_setting_element(d, app, fromdocname)
-                           for d in env.scrapy_all_settings if fromdocname != d['docname']])
+        settings_list = nodes.bullet_list()
+        settings_list.extend([make_setting_element(d, app, fromdocname)
+                              for d in sorted(env.scrapy_all_settings,
+                                              key=itemgetter('setting_name'))
+                              if fromdocname != d['docname']])
+        node.replace_self(settings_list)
 
 
 def setup(app):
