@@ -246,6 +246,10 @@ class FeedExportTest(unittest.TestCase):
         yield self.assertExported(items, header, rows,
                                   settings=settings, ordered=True)
 
+        # edge case: FEED_EXPORT_FIELDS==[] means nothing is exported
+        settings = {'FEED_EXPORT_FIELDS': []}
+        yield self.assertExportedJsonLines(items, [{},{},{},{}], settings)
+
     @defer.inlineCallbacks
     def test_export_dicts(self):
         # When dicts are used, only keys from the first row are used as
