@@ -21,7 +21,6 @@ from scrapy import signals
 from scrapy.utils.ftp import ftp_makedirs_cwd
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
-from scrapy.utils.python import get_func_args
 from scrapy.utils.log import failure_to_exc_info
 
 logger = logging.getLogger(__name__)
@@ -152,7 +151,7 @@ class FeedExporter(object):
         if not self._exporter_supported(self.format):
             raise NotConfigured
         self.store_empty = settings.getbool('FEED_STORE_EMPTY')
-        self.export_fields = settings.getlist('FEED_EXPORT_FIELDS')
+        self.export_fields = settings.getlist('FEED_EXPORT_FIELDS') or None
         uripar = settings['FEED_URI_PARAMS']
         self._uripar = load_object(uripar) if uripar else lambda x, y: None
 
