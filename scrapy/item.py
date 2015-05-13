@@ -6,6 +6,7 @@ See documentation in docs/topics/item.rst
 
 from pprint import pformat
 from collections import MutableMapping
+
 from abc import ABCMeta
 import six
 
@@ -27,7 +28,7 @@ class ItemMeta(ABCMeta):
         new_bases = tuple(base._class for base in bases if hasattr(base, '_class'))
         _class = super(ItemMeta, mcs).__new__(mcs, 'x_' + class_name, new_bases, attrs)
 
-        fields = {}
+        fields = getattr(_class, 'fields', {})
         new_attrs = {}
         for n in dir(_class):
             v = getattr(_class, n)
