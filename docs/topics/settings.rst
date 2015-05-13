@@ -1015,6 +1015,16 @@ Default: ``"Scrapy/VERSION (+http://scrapy.org)"``
 
 The default User-Agent to use when crawling, unless overridden.
 
+
+Settings documented elsewhere:
+------------------------------
+
+The following settings are documented elsewhere, please check each specific
+case to see how to enable and use them.
+
+.. settingslist::
+
+
 .. _Amazon web services: http://aws.amazon.com/
 .. _breadth-first order: http://en.wikipedia.org/wiki/Breadth-first_search
 .. _depth-first order: http://en.wikipedia.org/wiki/Depth-first_search
