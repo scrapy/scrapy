@@ -1,7 +1,7 @@
 from unittest import TestCase, main
 from scrapy.http import Response, XmlResponse
 from scrapy.downloadermiddlewares.decompression import DecompressionMiddleware
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from tests import get_testdata
 from scrapy.utils.test import assert_samelines
 

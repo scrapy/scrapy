@@ -27,7 +27,7 @@ def get_crawler(spidercls=None, settings_dict=None):
     """
     from scrapy.crawler import CrawlerRunner
     from scrapy.settings import Settings
-    from scrapy.spider import Spider
+    from scrapy.spiders import Spider
 
     runner = CrawlerRunner(Settings(settings_dict))
     return runner._create_crawler(spidercls or Spider)

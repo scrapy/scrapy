@@ -24,7 +24,7 @@ from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.settings import Settings
 from scrapy import optional_features

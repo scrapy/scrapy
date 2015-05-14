@@ -3,7 +3,7 @@ from unittest import TestCase
 from six.moves.urllib.parse import urlparse
 
 from scrapy.http import Response, Request
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.spidermiddlewares.offsite import OffsiteMiddleware
 from scrapy.utils.test import get_crawler
 

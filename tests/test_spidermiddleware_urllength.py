@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from scrapy.spidermiddlewares.urllength import UrlLengthMiddleware
 from scrapy.http import Response, Request
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 
 
 class TestUrlLengthMiddleware(TestCase):

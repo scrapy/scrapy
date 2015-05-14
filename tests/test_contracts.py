@@ -2,7 +2,7 @@ from unittest import TextTestResult
 
 from twisted.trial import unittest
 
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.http import Request
 from scrapy.item import Item, Field
 from scrapy.contracts import ContractsManager

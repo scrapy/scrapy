@@ -7,7 +7,7 @@ from importlib import import_module
 from os.path import join, dirname, abspath, exists, splitext
 
 import scrapy
-from scrapy.command import ScrapyCommand
+from scrapy.commands import ScrapyCommand
 from scrapy.utils.template import render_templatefile, string_camelcase
 from scrapy.exceptions import UsageError
 

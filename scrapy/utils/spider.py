@@ -3,7 +3,7 @@ import inspect
 
 import six
 
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.utils.misc import  arg_to_iter
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ def iter_spider_classes(module):
     """
     # this needs to be imported here until get rid of the spider manager
     # singleton in scrapy.spider.spiders
-    from scrapy.spider import Spider
+    from scrapy.spiders import Spider
 
     for obj in six.itervalues(vars(module)):
         if inspect.isclass(obj) and \

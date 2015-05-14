@@ -6,7 +6,7 @@ from zope.interface.verify import verifyObject
 from twisted.trial import unittest
 
 
-# ugly hack to avoid cyclic imports of scrapy.spider when running this test
+# ugly hack to avoid cyclic imports of scrapy.spiders when running this test
 # alone
 from scrapy.interfaces import ISpiderLoader
 from scrapy.spiderloader import SpiderLoader

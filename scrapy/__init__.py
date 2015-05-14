@@ -45,7 +45,7 @@ if twisted_version >= (11, 1, 0):
     optional_features.add('http11')
 
 # Declare top-level shortcuts
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.http import Request, FormRequest
 from scrapy.selector import Selector
 from scrapy.item import Item, Field

@@ -3,7 +3,7 @@ import os
 from importlib import import_module
 
 from scrapy.utils.spider import iter_spider_classes
-from scrapy.command import ScrapyCommand
+from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.conf import arglist_to_dict
 

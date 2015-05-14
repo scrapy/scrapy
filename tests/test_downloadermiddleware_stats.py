@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from scrapy.downloadermiddlewares.stats import DownloaderStats
 from scrapy.http import Request, Response
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 
 

@@ -4,7 +4,7 @@ import sys
 from collections import defaultdict
 from unittest import TextTestRunner, TextTestResult as _TextTestResult
 
-from scrapy.command import ScrapyCommand
+from scrapy.commands import ScrapyCommand
 from scrapy.contracts import ContractsManager
 from scrapy.utils.misc import load_object
 from scrapy.utils.conf import build_component_list

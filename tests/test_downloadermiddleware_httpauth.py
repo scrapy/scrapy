@@ -2,7 +2,7 @@ import unittest
 
 from scrapy.http import Request
 from scrapy.downloadermiddlewares.httpauth import HttpAuthMiddleware
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 
 class TestSpider(Spider):
     http_user = 'foo'

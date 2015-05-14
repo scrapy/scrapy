@@ -81,7 +81,7 @@ following methods:
         :type response: :class:`~scrapy.http.Response` object
 
         :param spider: the spider for which this response is intended
-        :type spider: :class:`~scrapy.spider.Spider` object
+        :type spider: :class:`~scrapy.spiders.Spider` object
 
 
     .. method:: process_spider_output(response, result, spider)
@@ -102,7 +102,7 @@ following methods:
           or :class:`~scrapy.item.Item` objects
 
         :param spider: the spider whose result is being processed
-        :type spider: :class:`~scrapy.spider.Spider` object
+        :type spider: :class:`~scrapy.spiders.Spider` object
 
 
     .. method:: process_spider_exception(response, exception, spider)
@@ -130,7 +130,7 @@ following methods:
         :type exception: `Exception`_ object
 
         :param spider: the spider which raised the exception
-        :type spider: :class:`~scrapy.spider.Spider` object
+        :type spider: :class:`~scrapy.spiders.Spider` object
 
     .. method:: process_start_requests(start_requests, spider)
 
@@ -157,7 +157,7 @@ following methods:
         :type start_requests: an iterable of :class:`~scrapy.http.Request`
 
         :param spider: the spider to whom the start requests belong
-        :type spider: :class:`~scrapy.spider.Spider` object
+        :type spider: :class:`~scrapy.spiders.Spider` object
 
 
 .. _Exception: https://docs.python.org/2/library/exceptions.html#exceptions.Exception
@@ -272,7 +272,7 @@ OffsiteMiddleware
    Filters out Requests for URLs outside the domains covered by the spider.
 
    This middleware filters out every request whose host names aren't in the
-   spider's :attr:`~scrapy.spider.Spider.allowed_domains` attribute.
+   spider's :attr:`~scrapy.spiders.Spider.allowed_domains` attribute.
 
    When your spider returns a request for a domain not belonging to those
    covered by the spider, this middleware will log a debug message similar to
@@ -287,7 +287,7 @@ OffsiteMiddleware
    will be printed (but only for the first request filtered).
 
    If the spider doesn't define an
-   :attr:`~scrapy.spider.Spider.allowed_domains` attribute, or the
+   :attr:`~scrapy.spiders.Spider.allowed_domains` attribute, or the
    attribute is empty, the offsite middleware will allow all requests.
 
    If the request has the :attr:`~scrapy.http.Request.dont_filter` attribute

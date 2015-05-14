@@ -1,7 +1,7 @@
 import re
 import logging
 
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.http import Request, XmlResponse
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 from scrapy.utils.gz import gunzip, is_gzipped

@@ -37,7 +37,7 @@ Request objects
        request (once its downloaded) as its first parameter. For more information
        see :ref:`topics-request-response-ref-request-callback-arguments` below.
        If a Request doesn't specify a callback, the spider's
-       :meth:`~scrapy.spider.Spider.parse` method will be used.
+       :meth:`~scrapy.spiders.Spider.parse` method will be used.
        Note that if exceptions are raised during processing, errback is called instead.
 
     :type callback: callable

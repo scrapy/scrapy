@@ -17,10 +17,10 @@ For spiders, the scraping cycle goes through something like this:
    those requests.
 
    The first requests to perform are obtained by calling the
-   :meth:`~scrapy.spider.Spider.start_requests` method which (by default)
+   :meth:`~scrapy.spiders.Spider.start_requests` method which (by default)
    generates :class:`~scrapy.http.Request` for the URLs specified in the
-   :attr:`~scrapy.spider.Spider.start_urls` and the
-   :attr:`~scrapy.spider.Spider.parse` method as callback function for the
+   :attr:`~scrapy.spiders.Spider.start_urls` and the
+   :attr:`~scrapy.spiders.Spider.parse` method as callback function for the
    Requests.
 
 2. In the callback function, you parse the response (web page) and return either
@@ -42,7 +42,7 @@ Even though this cycle applies (more or less) to any kind of spider, there are
 different kinds of default spiders bundled into Scrapy for different purposes.
 We will talk about those types here.
 
-.. module:: scrapy.spider
+.. module:: scrapy.spiders
    :synopsis: Spiders base class, spider manager and spider middleware
 
 .. _topics-spiders-ref:
@@ -319,8 +319,7 @@ with a ``TestItem`` declared in a ``myproject.items`` module::
         description = scrapy.Field()
 
 
-.. module:: scrapy.spiders
-   :synopsis: Collection of generic spiders
+.. currentmodule:: scrapy.spiders
 
 CrawlSpider
 -----------

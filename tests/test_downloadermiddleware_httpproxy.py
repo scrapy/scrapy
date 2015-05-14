@@ -5,7 +5,7 @@ from twisted.trial.unittest import TestCase, SkipTest
 from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response, Request
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 
 spider = Spider('foo')
 

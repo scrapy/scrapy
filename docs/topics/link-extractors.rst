@@ -78,8 +78,8 @@ LxmlLinkExtractor
     :param deny_extensions: a single value or list of strings containing
         extensions that should be ignored when extracting links.
         If not given, it will default to the
-        ``IGNORED_EXTENSIONS`` list defined in the `scrapy.linkextractor`_
-        module.
+        ``IGNORED_EXTENSIONS`` list defined in the
+        `scrapy.linkextractors`_ module.
     :type deny_extensions: list
 
     :param restrict_xpaths: is an XPath (or list of XPath's) which defines
@@ -132,4 +132,4 @@ LxmlLinkExtractor
 
     :type process_value: callable
 
-.. _scrapy.linkextractor: https://github.com/scrapy/scrapy/blob/master/scrapy/linkextractor.py
+.. _scrapy.linkextractors: https://github.com/scrapy/scrapy/blob/master/scrapy/linkextractors/__init__.py

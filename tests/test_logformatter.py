@@ -1,6 +1,6 @@
 import unittest
 
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.http import Request, Response
 from scrapy.item import Item, Field
 from scrapy.logformatter import LogFormatter

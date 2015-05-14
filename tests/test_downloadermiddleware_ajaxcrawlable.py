@@ -1,7 +1,7 @@
 import unittest
 
 from scrapy.downloadermiddlewares.ajaxcrawl import AjaxCrawlMiddleware
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy.http import Request, HtmlResponse, Response
 from scrapy.utils.test import get_crawler
 

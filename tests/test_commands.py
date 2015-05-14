@@ -158,7 +158,7 @@ class MySpider(scrapy.Spider):
         fname = abspath(join(tmpdir, 'myspider.py'))
         with open(fname, 'w') as f:
             f.write("""
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 """)
         p = self.proc('runspider', fname)
         log = p.stderr.read()

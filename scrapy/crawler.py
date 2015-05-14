@@ -138,7 +138,7 @@ class CrawlerRunner(object):
         :param crawler_or_spidercls: already created crawler, or a spider class
             or spider's name inside the project to create it
         :type crawler_or_spidercls: :class:`~scrapy.crawler.Crawler` instance,
-            :class:`~scrapy.spider.Spider` subclass or string
+            :class:`~scrapy.spiders.Spider` subclass or string
 
         :param list args: arguments to initialize the spider
 
