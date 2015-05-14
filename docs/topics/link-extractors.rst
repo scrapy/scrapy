@@ -79,7 +79,7 @@ LxmlLinkExtractor
         extensions that should be ignored when extracting links.
         If not given, it will default to the
         ``IGNORED_EXTENSIONS`` list defined in the
-        `scrapy.linkextractors`_ module.
+        `scrapy.linkextractors`_ package.
     :type deny_extensions: list
 
     :param restrict_xpaths: is an XPath (or list of XPath's) which defines
