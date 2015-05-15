@@ -8,6 +8,7 @@ from twisted.python.failure import Failure
 from scrapy.utils.defer import mustbe_deferred, defer_result
 from scrapy.utils.request import request_fingerprint
 from scrapy.utils.misc import arg_to_iter
+from scrapy.utils.log import failure_to_exc_info
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,7 @@ class MediaPipeline(object):
         dfd.addCallback(self._check_media_to_download, request, info)
         dfd.addBoth(self._cache_result_and_execute_waiters, fp, info)
         dfd.addErrback(lambda f: logger.error(
-            f.value, extra={'spider': info.spider, 'failure': f})
+            f.value, exc_info=failure_to_exc_info(f), extra={'spider': info.spider})
         )
         return dfd.addBoth(lambda _: wad)  # it must return wad at last
 
@@ -127,6 +128,7 @@ class MediaPipeline(object):
                     logger.error(
                         '%(class)s found errors processing %(item)s',
                         {'class': self.__class__.__name__, 'item': item},
-                        extra={'spider': info.spider, 'failure': value}
+                        exc_info=failure_to_exc_info(value),
+                        extra={'spider': info.spider}
                     )
         return item

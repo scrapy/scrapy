@@ -9,6 +9,7 @@ from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.request import request_fingerprint
 from scrapy.pipelines.media import MediaPipeline
+from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
 from scrapy import signals
 
@@ -66,7 +67,7 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         assert len(l.records) == 1
         record = l.records[0]
         assert record.levelname == 'ERROR'
-        assert record.failure is fail
+        self.assertTupleEqual(record.exc_info, failure_to_exc_info(fail))
 
         # disable failure logging and check again
         self.pipe.LOG_FAILED_RESULTS = False

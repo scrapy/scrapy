@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os
 import sys
 import logging
 import warnings
@@ -16,22 +15,10 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 logger = logging.getLogger(__name__)
 
 
-class FailureFormatter(logging.Filter):
-    """Extract exc_info from Failure instances provided as contextual data
-
-    This filter mimics Twisted log.err formatting for its first `_stuff`
-    argument, which means that reprs of non Failure objects are appended to the
-    log messages.
-    """
-
-    def filter(self, record):
-        failure = record.__dict__.get('failure')
-        if failure:
-            if isinstance(failure, Failure):
-                record.exc_info = (failure.type, failure.value, failure.tb)
-            else:
-                record.msg += os.linesep + repr(failure)
-        return True
+def failure_to_exc_info(failure):
+    """Extract exc_info from Failure instances"""
+    if isinstance(failure, Failure):
+        return (failure.type, failure.value, failure.tb)
 
 
 class TopLevelFormatter(logging.Filter):
@@ -58,15 +45,9 @@ class TopLevelFormatter(logging.Filter):
 DEFAULT_LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'filters': {
-        'failure_formatter': {
-            '()': 'scrapy.utils.log.FailureFormatter',
-        },
-    },
     'loggers': {
         'scrapy': {
             'level': 'DEBUG',
-            'filters': ['failure_formatter'],
         },
         'twisted': {
             'level': 'ERROR',

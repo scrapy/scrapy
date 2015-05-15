@@ -8,6 +8,7 @@ from twisted.python.failure import Failure
 from scrapy.xlib.pydispatch.dispatcher import Any, Anonymous, liveReceivers, \
     getAllReceivers, disconnect
 from scrapy.xlib.pydispatch.robustapply import robustApply
+from scrapy.utils.log import failure_to_exc_info
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,8 @@ def send_catch_log_deferred(signal=Any, sender=Anonymous, *arguments, **named):
         if dont_log is None or not isinstance(failure.value, dont_log):
             logger.error("Error caught on signal handler: %(receiver)s",
                          {'receiver': recv},
-                         extra={'spider': spider, 'failure': failure})
+                         exc_info=failure_to_exc_info(failure),
+                         extra={'spider': spider})
         return failure
 
     dont_log = named.pop('dont_log', None)

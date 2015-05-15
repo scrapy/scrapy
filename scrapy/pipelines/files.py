@@ -25,6 +25,7 @@ from scrapy.pipelines.media import MediaPipeline
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.misc import md5sum
+from scrapy.utils.log import failure_to_exc_info
 
 logger = logging.getLogger(__name__)
 
@@ -212,7 +213,8 @@ class FilesPipeline(MediaPipeline):
         dfd.addErrback(
             lambda f:
             logger.error(self.__class__.__name__ + '.store.stat_file',
-                         extra={'spider': info.spider, 'failure': f})
+                         exc_info=failure_to_exc_info(f),
+                         extra={'spider': info.spider})
         )
         return dfd
 

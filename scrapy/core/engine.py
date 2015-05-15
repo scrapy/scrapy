@@ -16,7 +16,7 @@ from scrapy.exceptions import DontCloseSpider
 from scrapy.http import Response, Request
 from scrapy.utils.misc import load_object
 from scrapy.utils.reactor import CallLaterOnce
-from scrapy.utils.log import logformatter_adapter
+from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
 
 logger = logging.getLogger(__name__)
 
@@ -135,13 +135,16 @@ class ExecutionEngine(object):
         d = self._download(request, spider)
         d.addBoth(self._handle_downloader_output, request, spider)
         d.addErrback(lambda f: logger.info('Error while handling downloader output',
-                                           extra={'spider': spider, 'failure': f}))
+                                           exc_info=failure_to_exc_info(f),
+                                           extra={'spider': spider}))
         d.addBoth(lambda _: slot.remove_request(request))
         d.addErrback(lambda f: logger.info('Error while removing request from slot',
-                                           extra={'spider': spider, 'failure': f}))
+                                           exc_info=failure_to_exc_info(f),
+                                           extra={'spider': spider}))
         d.addBoth(lambda _: slot.nextcall.schedule())
         d.addErrback(lambda f: logger.info('Error while scheduling new request',
-                                           extra={'spider': spider, 'failure': f}))
+                                           exc_info=failure_to_exc_info(f),
+                                           extra={'spider': spider}))
         return d
 
     def _handle_downloader_output(self, response, request, spider):
@@ -153,7 +156,8 @@ class ExecutionEngine(object):
         # response is a Response or Failure
         d = self.scraper.enqueue_scrape(response, request, spider)
         d.addErrback(lambda f: logger.error('Error while enqueuing downloader output',
-                                            extra={'spider': spider, 'failure': f}))
+                                            exc_info=failure_to_exc_info(f),
+                                            extra={'spider': spider}))
         return d
 
     def spider_is_idle(self, spider):
@@ -268,7 +272,11 @@ class ExecutionEngine(object):
 
         def log_failure(msg):
             def errback(failure):
-                logger.error(msg, extra={'spider': spider, 'failure': failure})
+                logger.error(
+                    msg,
+                    exc_info=failure_to_exc_info(failure),
+                    extra={'spider': spider}
+                )
             return errback
 
         dfd.addBoth(lambda _: self.downloader.close())

@@ -11,6 +11,7 @@ from six.moves.urllib import robotparser
 from scrapy.exceptions import NotConfigured, IgnoreRequest
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.log import failure_to_exc_info
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,8 @@ class RobotsTxtMiddleware(object):
         if failure.type is not IgnoreRequest:
             logger.error("Error downloading %(request)s: %(f_exception)s",
                          {'request': request, 'f_exception': failure.value},
-                         extra={'spider': spider, 'failure': failure})
+                         exc_info=failure_to_exc_info(failure),
+                         extra={'spider': spider})
 
     def _parse_robots(self, response):
         rp = robotparser.RobotFileParser(response.url)
