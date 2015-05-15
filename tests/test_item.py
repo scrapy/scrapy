@@ -120,6 +120,14 @@ class ItemTest(unittest.TestCase):
         self.assertSortedEqual(list(i.keys()), ['keys', 'values', 'name'])
         self.assertSortedEqual(list(i.values()), [u'Keys', u'Values', u'John'])
 
+    def test_metaclass_with_fields_attribute(self):
+        class TestItem(Item):
+            fields = {'new': Field(default='X')}
+
+        item = TestItem(new=u'New')
+        self.assertSortedEqual(list(item.keys()), ['new'])
+        self.assertSortedEqual(list(item.values()), [u'New'])
+
     def test_metaclass_inheritance(self):
         class BaseItem(Item):
             name = Field()
@@ -136,41 +144,51 @@ class ItemTest(unittest.TestCase):
 
     def test_metaclass_multiple_inheritance_simple(self):
         class A(Item):
+            fields = {'load': Field(default='A')}
             save = Field(default='A')
 
         class B(A): pass
 
         class C(Item):
+            fields = {'load': Field(default='C')}
             save = Field(default='C')
 
         class D(B, C): pass
 
-        self.assertEqual(D(save='X')['save'], 'X')
-        self.assertEqual(D.fields, {'save': {'default': 'A'}})
+        item = D(save='X', load='Y')
+        self.assertEqual(item['save'], 'X')
+        self.assertEqual(item['load'], 'Y')
+        self.assertEqual(D.fields, {'load': {'default': 'A'},
+            'save': {'default': 'A'}})
 
         # D class inverted
         class E(C, B): pass
 
         self.assertEqual(E(save='X')['save'], 'X')
-        self.assertEqual(E.fields, {'save': {'default': 'C'}})
+        self.assertEqual(E(load='X')['load'], 'X')
+        self.assertEqual(E.fields, {'load': {'default': 'C'},
+            'save': {'default': 'C'}})
 
     def test_metaclass_multiple_inheritance_diamond(self):
         class A(Item):
+            fields = {'update': Field(default='A')}
             save = Field(default='A')
             load = Field(default='A')
 
         class B(A): pass
 
         class C(A):
+            fields = {'update': Field(default='C')}
             save = Field(default='C')
 
         class D(B, C):
+            fields = {'update': Field(default='D')}
             load = Field(default='D')
 
         self.assertEqual(D(save='X')['save'], 'X')
         self.assertEqual(D(load='X')['load'], 'X')
         self.assertEqual(D.fields, {'save': {'default': 'C'},
-            'load': {'default': 'D'}})
+            'load': {'default': 'D'}, 'update': {'default': 'D'}})
 
         # D class inverted
         class E(C, B):
@@ -179,15 +197,17 @@ class ItemTest(unittest.TestCase):
         self.assertEqual(E(save='X')['save'], 'X')
         self.assertEqual(E(load='X')['load'], 'X')
         self.assertEqual(E.fields, {'save': {'default': 'C'},
-            'load': {'default': 'E'}})
+            'load': {'default': 'E'}, 'update': {'default': 'C'}})
 
     def test_metaclass_multiple_inheritance_without_metaclass(self):
         class A(Item):
+            fields = {'load': Field(default='A')}
             save = Field(default='A')
 
         class B(A): pass
 
         class C(object):
+            fields = {'load': Field(default='C')}
             not_allowed = Field(default='not_allowed')
             save = Field(default='C')
 
@@ -195,14 +215,16 @@ class ItemTest(unittest.TestCase):
 
         self.assertRaises(KeyError, D, not_allowed='value')
         self.assertEqual(D(save='X')['save'], 'X')
-        self.assertEqual(D.fields, {'save': {'default': 'A'}})
+        self.assertEqual(D.fields, {'save': {'default': 'A'},
+            'load': {'default': 'A'}})
 
         # D class inverted
         class E(C, B): pass
 
         self.assertRaises(KeyError, E, not_allowed='value')
         self.assertEqual(E(save='X')['save'], 'X')
-        self.assertEqual(E.fields, {'save': {'default': 'A'}})
+        self.assertEqual(E.fields, {'save': {'default': 'A'},
+            'load': {'default': 'A'}})
 
     def test_to_dict(self):
         class TestItem(Item):
