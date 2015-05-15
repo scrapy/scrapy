@@ -30,8 +30,9 @@ def send_catch_log(signal=Any, sender=Anonymous, *arguments, **named):
             result = Failure()
         except Exception:
             result = Failure()
-            logger.exception("Error caught on signal handler: %(receiver)s",
-                             {'receiver': receiver}, extra={'spider': spider})
+            logger.error("Error caught on signal handler: %(receiver)s",
+                         {'receiver': receiver},
+                         exc_info=True, extra={'spider': spider})
         else:
             result = response
         responses.append((receiver, result))

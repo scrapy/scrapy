@@ -112,8 +112,8 @@ class ExecutionEngine(object):
                 slot.start_requests = None
             except Exception:
                 slot.start_requests = None
-                logger.exception('Error while obtaining start requests',
-                                 extra={'spider': spider})
+                logger.error('Error while obtaining start requests',
+                             exc_info=True, extra={'spider': spider})
             else:
                 self.crawl(request, spider)
 

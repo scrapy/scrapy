@@ -28,7 +28,7 @@ class FailureFormatterTest(unittest.TestCase):
             try:
                 0/0
             except ZeroDivisionError:
-                self.logger.exception('test log msg')
+                self.logger.error('test log msg', exc_info=True)
                 failure = Failure()
 
             self.logger.error('test log msg', extra={'failure': failure})
