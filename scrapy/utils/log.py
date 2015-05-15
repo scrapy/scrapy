@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 def failure_to_exc_info(failure):
     """Extract exc_info from Failure instances"""
     if isinstance(failure, Failure):
-        return (failure.type, failure.value, failure.tb)
+        return (failure.type, failure.value, failure.getTracebackObject())
 
 
 class TopLevelFormatter(logging.Filter):
