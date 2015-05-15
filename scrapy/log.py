@@ -8,6 +8,7 @@ import warnings
 from twisted.python.failure import Failure
 
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.log import failure_to_exc_info
 
 logger = logging.getLogger(__name__)
 
@@ -48,4 +49,4 @@ def err(_stuff=None, _why=None, **kw):
     level = kw.pop('level', logging.ERROR)
     failure = kw.pop('failure', _stuff) or Failure()
     message = kw.pop('why', _why) or failure.value
-    logger.log(level, message, *[kw] if kw else [], extra={'failure': failure})
+    logger.log(level, message, *[kw] if kw else [], exc_info=failure_to_exc_info(failure))

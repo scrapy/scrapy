@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-import os
 import sys
 import logging
 import unittest
@@ -8,46 +7,24 @@ import unittest
 from testfixtures import LogCapture
 from twisted.python.failure import Failure
 
-from scrapy.utils.log import (FailureFormatter, TopLevelFormatter,
+from scrapy.utils.log import (failure_to_exc_info, TopLevelFormatter,
                               LogCounterHandler, StreamLogger)
 from scrapy.utils.test import get_crawler
 
 
-class FailureFormatterTest(unittest.TestCase):
+class FailureToExcInfoTest(unittest.TestCase):
 
-    def setUp(self):
-        self.logger = logging.getLogger('test')
-        self.filter = FailureFormatter()
-        self.logger.addFilter(self.filter)
+    def test_failure(self):
+        try:
+            0/0
+        except ZeroDivisionError:
+            exc_info = sys.exc_info()
+            failure = Failure()
 
-    def tearDown(self):
-        self.logger.removeFilter(self.filter)
+        self.assertTupleEqual(exc_info, failure_to_exc_info(failure))
 
-    def test_failure_format(self):
-        with LogCapture() as l:
-            try:
-                0/0
-            except ZeroDivisionError:
-                self.logger.error('test log msg', exc_info=True)
-                failure = Failure()
-
-            self.logger.error('test log msg', extra={'failure': failure})
-
-        self.assertEqual(len(l.records), 2)
-        exc_record, failure_record = l.records
-        self.assertTupleEqual(failure_record.exc_info, exc_record.exc_info)
-
-        formatter = logging.Formatter()
-        self.assertMultiLineEqual(formatter.format(failure_record),
-                                  formatter.format(exc_record))
-
-    def test_non_failure_format(self):
-        with LogCapture() as l:
-            self.logger.error('test log msg', extra={'failure': 3})
-
-        self.assertEqual(len(l.records), 1)
-        self.assertMultiLineEqual(l.records[0].getMessage(),
-                                  'test log msg' + os.linesep + '3')
+    def test_non_failure(self):
+        self.assertIsNone(failure_to_exc_info('test'))
 
 
 class TopLevelFormatterTest(unittest.TestCase):

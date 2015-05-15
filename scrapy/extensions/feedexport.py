@@ -22,6 +22,7 @@ from scrapy.utils.ftp import ftp_makedirs_cwd
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import get_func_args
+from scrapy.utils.log import failure_to_exc_info
 
 logger = logging.getLogger(__name__)
 
@@ -184,7 +185,8 @@ class FeedExporter(object):
         d.addCallback(lambda _: logger.info(logfmt % "Stored", log_args,
                                             extra={'spider': spider}))
         d.addErrback(lambda f: logger.error(logfmt % "Error storing", log_args,
-                                            extra={'spider': spider, 'failure': f}))
+                                            exc_info=failure_to_exc_info(f),
+                                            extra={'spider': spider}))
         return d
 
     def item_scraped(self, item, spider):

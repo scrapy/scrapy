@@ -10,7 +10,7 @@ from twisted.internet import defer
 from scrapy.utils.defer import defer_result, defer_succeed, parallel, iter_errback
 from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.misc import load_object
-from scrapy.utils.log import logformatter_adapter
+from scrapy.utils.log import logformatter_adapter, failure_to_exc_info
 from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy import signals
 from scrapy.http import Request, Response
@@ -107,7 +107,8 @@ class Scraper(object):
         dfd.addErrback(
             lambda f: logger.error('Scraper bug processing %(request)s',
                                    {'request': request},
-                                   extra={'spider': spider, 'failure': f}))
+                                   exc_info=failure_to_exc_info(f),
+                                   extra={'spider': spider}))
         self._scrape_next(spider, slot)
         return dfd
 
@@ -153,7 +154,8 @@ class Scraper(object):
         logger.error(
             "Spider error processing %(request)s (referer: %(referer)s)",
             {'request': request, 'referer': referer},
-            extra={'spider': spider, 'failure': _failure}
+            exc_info=failure_to_exc_info(_failure),
+            extra={'spider': spider}
         )
         self.signals.send_catch_log(
             signal=signals.spider_error,
@@ -202,7 +204,8 @@ class Scraper(object):
             if download_failure.frames:
                 logger.error('Error downloading %(request)s',
                              {'request': request},
-                             extra={'spider': spider, 'failure': download_failure})
+                             exc_info=failure_to_exc_info(download_failure),
+                             extra={'spider': spider})
             else:
                 errmsg = download_failure.getErrorMessage()
                 if errmsg:
@@ -227,7 +230,8 @@ class Scraper(object):
                     spider=spider, exception=output.value)
             else:
                 logger.error('Error processing %(item)s', {'item': item},
-                             extra={'spider': spider, 'failure': output})
+                             exc_info=failure_to_exc_info(output),
+                             extra={'spider': spider})
         else:
             logkws = self.logformatter.scraped(output, response, spider)
             logger.log(*logformatter_adapter(logkws), extra={'spider': spider})
