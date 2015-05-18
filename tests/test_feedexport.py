@@ -234,7 +234,12 @@ class FeedExportTest(unittest.TestCase):
         yield self.assertExportedCsv(items, header, rows_csv, ordered=False)
         yield self.assertExportedJsonLines(items, rows_jl)
 
-        # but it is possible to override fields using FEED_EXPORT_FIELDS
+        # edge case: FEED_EXPORT_FIELDS==[] means the same as default None
+        settings = {'FEED_EXPORT_FIELDS': []}
+        yield self.assertExportedCsv(items, header, rows_csv, ordered=False)
+        yield self.assertExportedJsonLines(items, rows_jl, settings)
+
+        # it is possible to override fields using FEED_EXPORT_FIELDS
         header = ["foo", "baz", "hello"]
         settings = {'FEED_EXPORT_FIELDS': header}
         rows = [
@@ -245,10 +250,6 @@ class FeedExportTest(unittest.TestCase):
         ]
         yield self.assertExported(items, header, rows,
                                   settings=settings, ordered=True)
-
-        # edge case: FEED_EXPORT_FIELDS==[] means nothing is exported
-        settings = {'FEED_EXPORT_FIELDS': []}
-        yield self.assertExportedJsonLines(items, [{},{},{},{}], settings)
 
     @defer.inlineCallbacks
     def test_export_dicts(self):

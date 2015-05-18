@@ -151,12 +151,7 @@ class FeedExporter(object):
         if not self._exporter_supported(self.format):
             raise NotConfigured
         self.store_empty = settings.getbool('FEED_STORE_EMPTY')
-
-        if settings.get('FEED_EXPORT_FIELDS') is None:
-            self.export_fields = None  # don't promote None to []
-        else:
-            self.export_fields = settings.getlist('FEED_EXPORT_FIELDS')
-
+        self.export_fields = settings.getlist('FEED_EXPORT_FIELDS') or None
         uripar = settings['FEED_URI_PARAMS']
         self._uripar = load_object(uripar) if uripar else lambda x, y: None
 
