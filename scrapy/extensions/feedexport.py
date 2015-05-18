@@ -177,7 +177,7 @@ class FeedExporter(object):
         if not slot.itemcount and not self.store_empty:
             return
         slot.exporter.finish_exporting()
-        logfmt = "%%s %(format)s feed (%(itemcount)d items) in: %(uri)s"
+        logfmt = "%s %%(format)s feed (%%(itemcount)d items) in: %%(uri)s"
         log_args = {'format': self.format,
                     'itemcount': slot.itemcount,
                     'uri': slot.uri}
