@@ -236,14 +236,20 @@ The serialization format to be used for the feed. See
 FEED_EXPORT_FIELDS
 ------------------
 
+Default: ``None``
+
 A list of fields to export, optional.
 Example: ``FEED_EXPORT_FIELDS = ["foo", "bar", "baz"]``.
 
 Use FEED_EXPORT_FIELDS option to define fields to export and their order.
 
-When omitted, Scrapy uses fields defined in :class:`~.Item` subclasses a spider
-is yielding. If raw dicts are used as items Scrapy tries to infer field names
-from the exported data - currently it uses field names from the first item.
+When FEED_EXPORT_FIELDS is empty or None (default), Scrapy uses fields
+defined in dicts or :class:`~.Item` subclasses a spider is yielding.
+
+If an exporter requires a fixed set of fields (this is the case for
+:ref:`CSV <topics-feed-format-csv>` export format) and FEED_EXPORT_FIELDS
+is empty or None, then Scrapy tries to infer field names from the
+exported data - currently it uses field names from the first item.
 
 .. setting:: FEED_STORE_EMPTY
 
