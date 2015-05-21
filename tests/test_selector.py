@@ -73,6 +73,14 @@ class SelectorTestCase(unittest.TestCase):
 
         self.assertEqual(sel.xpath('/ul/li[@id="doesnt-exist"]/text()').extract_first(), None)
 
+    def test_extract_first_default(self):
+        """Test if extract_first() returns default value when no results found"""
+        body = '<ul><li id="1">1</li><li id="2">2</li></ul>'
+        response = TextResponse(url="http://example.com", body=body)
+        sel = self.sscls(response)
+
+        self.assertEqual(sel.xpath('//div/text()').extract_first(default='missing'), 'missing')
+
     def test_re_first(self):
         """Test if re_first() returns first matched element"""
         body = '<ul><li id="1">1</li><li id="2">2</li></ul>'
