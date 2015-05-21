@@ -1,7 +1,6 @@
 """
 This module is kept to provide a helpful warning about its removal.
 """
-
 import logging
 import warnings
 
@@ -18,7 +17,7 @@ warnings.warn("Module `scrapy.log` has been deprecated, Scrapy now relies on "
               ScrapyDeprecationWarning, stacklevel=2)
 
 
-# Imports kept for backwards-compatibility
+# Imports and level_names variable kept for backwards-compatibility
 
 DEBUG = logging.DEBUG
 INFO = logging.INFO
@@ -26,6 +25,15 @@ WARNING = logging.WARNING
 ERROR = logging.ERROR
 CRITICAL = logging.CRITICAL
 SILENT = CRITICAL + 1
+
+level_names = {
+    logging.DEBUG: "DEBUG",
+    logging.INFO: "INFO",
+    logging.WARNING: "WARNING",
+    logging.ERROR: "ERROR",
+    logging.CRITICAL: "CRITICAL",
+    SILENT: "SILENT",
+}
 
 
 def msg(message=None, _level=logging.INFO, **kw):
