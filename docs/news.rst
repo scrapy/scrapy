@@ -256,6 +256,7 @@ New Features and Enhancements
 - Add project name validation (:issue:`817`)
 - GSoC API cleanup (:issue:`816`, :issue:`1128`, :issue:`1147`,
   :issue:`1148`, :issue:`1156`, :issue:`1185`, :issue:`1187`)
+- Be more responsive with IO operations (:issue:`1074` and :issue:`1075`)
 
 Deprecations and Removals
 
