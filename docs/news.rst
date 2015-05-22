@@ -3,6 +3,364 @@
 Release notes
 =============
 
+1.0
+---
+
+You will find a lot of new features and bugfixes in this major release.  Make
+sure to check our updated :ref:`overview <intro-overview>` to get a glance of
+some of the changes, along with our brushed :ref:`tutorial <intro-tutorial>`.
+
+Support for returning dictionaries in spiders
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Declaring and returning Scrapy Items is no longer necessary to collect the
+scraped data from your spider, you can now return explicit dictionaries
+instead.
+
+*Classic version*
+
+::
+
+    class MyItem(scrapy.Item):
+        url = scrapy.Field()
+
+    class MySpider(scrapy.Spider):
+        def parse(self, response):
+            return MyItem(url=response.url)
+
+*New version*
+
+::
+
+    class MySpider(scrapy.Spider):
+        def parse(self, response):
+            return {'url': response.url}
+
+Per-spider settings (GSoC 2014)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Last Google Summer of Code project accomplished an important redesign of the
+mechanism used for populating settings, introducing explicit priorities to
+override any given setting. As an extension of that goal, we included a new
+level of priority for settings that act exclusively for a single spider,
+allowing them to redefine project settings.
+
+Start using it by defining a :attr:`~scrapy.spiders.Spider.custom_settings`
+class variable in your spider::
+
+    class MySpider(scrapy.Spider):
+        custom_settings = {
+            "DOWNLOAD_DELAY": 5.0,
+            "RETRY_ENABLED": False,
+        }
+
+Read more about settings population: :ref:`topics-settings`
+
+Python Logging
+~~~~~~~~~~~~~~
+
+Scrapy 1.0 has moved away from Twisted logging to support Python built in’s
+as default logging system. We’re maintaining backward compatibility for most
+of the old custom interface to call logging functions, but you’ll get
+warnings to switch to the Python logging API entirely.
+
+*Old version*
+
+::
+
+    from scrapy import log
+    log.msg('MESSAGE', log.INFO)
+
+*New version*
+
+::
+
+    import logging
+    logging.info('MESSAGE')
+
+Logging with spiders remains the same, but on top of the
+:meth:`~scrapy.spiders.Spider.log` method you’ll have access to a custom
+:attr:`~scrapy.spiders.Spider.logger` created for the spider to issue log
+events:
+
+::
+
+    class MySpider(scrapy.Spider):
+        def parse(self, response):
+            self.logger.info('Response received')
+
+Read more in the logging documentation: :ref:`topics-logging`
+
+Crawler API refactoring (GSoC 2014)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Another milestone for last Google Summer of Code was a refactoring of the
+internal API, seeking a simpler and easier usage. Check new core interface
+in: :ref:`topics-api`
+
+A common situation where you will face these changes is while running Scrapy
+from scripts. Here’s a quick example of how to run a Spider manually with the
+new API:
+
+::
+
+    from scrapy.crawler import CrawlerProcess
+
+    process = CrawlerProcess({
+        'USER_AGENT': 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)'
+    })
+    process.crawl(MySpider)
+    process.start()
+
+Bear in mind this feature is still under development and its API may change
+until it reaches a stable status.
+
+See more examples for scripts running Scrapy: :ref:`topics-practices`
+
+Module Relocations
+~~~~~~~~~~~~~~~~~~
+
+There’s been a large rearrangement of modules trying to improve the general
+structure of Scrapy. Main changes were separating various subpackages into
+new projects and dissolving both `scrapy.contrib` and `scrapy.contrib_exp`
+into top level packages. Backward compatibility was kept among internal
+relocations, while importing deprecated modules expect warnings indicating
+their new place.
+
+Full list of relocations
+************************
+
+Outsourced packages
+
+.. note::
+    These extensions went through some minor changes, e.g. some setting names
+    were changed. Please check the documentation in each new repository to
+    get familiar with the new usage.
+
++-------------------------------------+-------------------------------------+
+| Old location                        | New location                        |
++=====================================+=====================================+
+| scrapy.commands.deploy              | `scrapyd-client <https://github.com |
+|                                     | /scrapy/scrapyd-client>`_           |
+|                                     | (See other alternatives here:       |
+|                                     | :ref:`topics-deploy`)               |
++-------------------------------------+-------------------------------------+
+| scrapy.contrib.djangoitem           | `scrapy-djangoitem <https://github. |
+|                                     | com/scrapy/scrapy-djangoitem>`_     |
++-------------------------------------+-------------------------------------+
+| scrapy.webservice                   | `scrapy-jsonrpc <https://github.com |
+|                                     | /scrapy/scrapy-jsonrpc>`_           |
++-------------------------------------+-------------------------------------+
+
+`scrapy.contrib_exp` and `scrapy.contrib` dissolutions
+
++-------------------------------------+-------------------------------------+
+| Old location                        | New location                        |
++=====================================+=====================================+
+| scrapy.contrib\_exp.downloadermidd\ | scrapy.downloadermiddlewares.decom\ |
+| leware.decompression                | pression                            |
++-------------------------------------+-------------------------------------+
+| scrapy.contrib\_exp.iterators       | scrapy.utils.iterators              |
++-------------------------------------+-------------------------------------+
+| scrapy.contrib.downloadermiddleware | scrapy.downloadermiddlewares        |
++-------------------------------------+-------------------------------------+
+| scrapy.contrib.exporter             | scrapy.exporters                    |
++-------------------------------------+-------------------------------------+
+| scrapy.contrib.linkextractors       | scrapy.linkextractors               |
++-------------------------------------+-------------------------------------+
+| scrapy.contrib.loader               | scrapy.loader                       |
++-------------------------------------+-------------------------------------+
+| scrapy.contrib.loader.processor     | scrapy.loader.processors            |
++-------------------------------------+-------------------------------------+
+| scrapy.contrib.pipeline             | scrapy.pipelines                    |
++-------------------------------------+-------------------------------------+
+| scrapy.contrib.spidermiddleware     | scrapy.spidermiddlewares            |
++-------------------------------------+-------------------------------------+
+| scrapy.contrib.spiders              | scrapy.spiders                      |
++-------------------------------------+-------------------------------------+
+| * scrapy.contrib.closespider        | scrapy.extensions.\*                |
+| * scrapy.contrib.corestats          |                                     |
+| * scrapy.contrib.debug              |                                     |
+| * scrapy.contrib.feedexport         |                                     |
+| * scrapy.contrib.httpcache          |                                     |
+| * scrapy.contrib.logstats           |                                     |
+| * scrapy.contrib.memdebug           |                                     |
+| * scrapy.contrib.memusage           |                                     |
+| * scrapy.contrib.spiderstate        |                                     |
+| * scrapy.contrib.statsmailer        |                                     |
+| * scrapy.contrib.throttle           |                                     |
++-------------------------------------+-------------------------------------+
+
+Plural renames and Modules unification
+
++-------------------------------------+-------------------------------------+
+| Old location                        | New location                        |
++=====================================+=====================================+
+| scrapy.command                      | scrapy.commands                     |
++-------------------------------------+-------------------------------------+
+| scrapy.dupefilter                   | scrapy.dupefilters                  |
++-------------------------------------+-------------------------------------+
+| scrapy.linkextractor                | scrapy.linkextractors               |
++-------------------------------------+-------------------------------------+
+| scrapy.spider                       | scrapy.spiders                      |
++-------------------------------------+-------------------------------------+
+| scrapy.squeue                       | scrapy.squeues                      |
++-------------------------------------+-------------------------------------+
+| scrapy.statscol                     | scrapy.statscollectors              |
++-------------------------------------+-------------------------------------+
+| scrapy.utils.decorator              | scrapy.utils.decorators             |
++-------------------------------------+-------------------------------------+
+
+Class renames
+
++-------------------------------------+-------------------------------------+
+| Old location                        | New location                        |
++=====================================+=====================================+
+| scrapy.spidermanager.SpiderManager  | scrapy.spiderloader.SpiderLoader    |
++-------------------------------------+-------------------------------------+
+
+Settings renames
+
++-------------------------------------+-------------------------------------+
+| Old location                        | New location                        |
++=====================================+=====================================+
+| SPIDER\_MANAGER\_CLASS              | SPIDER\_LOADER\_CLASS               |
++-------------------------------------+-------------------------------------+
+
+Changelog
+~~~~~~~~~
+
+New Features and Enhancements
+
+- Python logging (:issue:`1060`, :issue:`1235`, :issue:`1236`, :issue:`1240`)
+- FEED_EXPORT_FIELDS option (:issue:`1159`, :issue:`1224`)
+- Dns cache size and timeout options (:issue:`1132`)
+- support namespace prefix in xmliter_lxml (:issue:`963`)
+- Reactor threadpool max size setting (:issue:`1123`)
+- Allow spiders to return dicts. (:issue:`1081`)
+- Add Response.urljoin() helper (:issue:`1086`)
+- look in ~/.config/scrapy.cfg for user config (:issue:`1098`)
+- handle TLS SNI (:issue:`1101`)
+- Selectorlist extract first (:issue:`624`, :issue:`1145`)
+- Added JmesSelect (:issue:`1016`)
+- add gzip compression to filesystem http cache backend (:issue:`1020`)
+- CSS support in link extractors (:issue:`983`)
+- httpcache dont_cache meta #19 #689 (:issue:`821`)
+- add signal to be sent when request is dropped by the scheduler
+  (:issue:`961`)
+- avoid download large response (:issue:`946`)
+- Allow to specify the quotechar in CSVFeedSpider (:issue:`882`)
+- Add referer to "Spider error processing" log message (:issue:`795`)
+- process robots.txt once (:issue:`896`)
+- GSoC Per-spider settings (:issue:`854`)
+- Add project name validation (:issue:`817`)
+- GSoC API cleanup (:issue:`816`, :issue:`1128`, :issue:`1147`,
+  :issue:`1148`, :issue:`1156`, :issue:`1185`, :issue:`1187`)
+
+Deprecations and Removals
+
+- Deprecate htmlparser link extractor (:issue:`1205`)
+- remove deprecated code from FeedExporter (:issue:`1155`)
+- a leftover for.15 compatibility (:issue:`925`)
+- drop support for CONCURRENT_REQUESTS_PER_SPIDER (:issue:`895`)
+- Drop old engine code (:issue:`911`)
+- Deprecate SgmlLinkExtractor (:issue:`777`)
+
+Relocations
+
+- Move exporters/__init__.py to exporters.py (:issue:`1242`)
+- Move base classes to their packages (:issue:`1218`, :issue:`1233`)
+- Module relocation (:issue:`1181`, :issue:`1210`)
+- rename SpiderManager to SpiderLoader (:issue:`1166`)
+- Remove djangoitem (:issue:`1177`)
+- remove scrapy deploy command (:issue:`1102`)
+- dissolve contrib_exp (:issue:`1134`)
+- Deleted bin folder from root, fixes #913 (:issue:`914`)
+- Remove jsonrpc based webservice (:issue:`859`)
+- Move Test cases under project root dir (:issue:`827`, :issue:`841`)
+
+Documentation
+
+- CrawlerProcess documentation (:issue:`1190`)
+- Favoring web scraping over screen scraping in the descriptions
+  (:issue:`1188`)
+- Some improvements for Scrapy tutorial (:issue:`1180`)
+- Documenting Files Pipeline together with Images Pipeline (:issue:`1150`)
+- deployment docs tweaks (:issue:`1164`)
+- Added deployment section covering scrapyd-deploy and shub (:issue:`1124`)
+- Adding more settings to project template (:issue:`1073`)
+- some improvements to overview page (:issue:`1106`)
+- Updated link in docs/topics/architecture.rst (:issue:`647`)
+- DOC reorder topics (:issue:`1022`)
+- updating list of Request.meta special keys (:issue:`1071`)
+- DOC document download_timeout (:issue:`898`)
+- DOC simplify extension docs (:issue:`893`)
+- Leaks docs (:issue:`894`)
+- DOC document from_crawler method for item pipelines (:issue:`904`)
+- Corrections & Sphinx related fixes (:issue:`1220`, :issue:`1219`,
+  :issue:`1196`, :issue:`1172`, :issue:`1171`, :issue:`1169`, :issue:`1160`,
+  :issue:`1154`, :issue:`1127`, :issue:`1112`, :issue:`1105`, :issue:`1041`,
+  :issue:`1082`, :issue:`1033`, :issue:`944`, :issue:`866`, :issue:`864`,
+  :issue:`796`)
+
+Bugfixes
+
+- Item multi inheritance fix (:issue:`353`, :issue:`1228`)
+- ItemLoader.load_item: iterate over copy of fields (:issue:`722`)
+- Fix Unhandled error in Deferred (RobotsTxtMiddleware) (:issue:`1131`,
+  :issue:`1197`)
+- Force to read DOWNLOAD_TIMEOUT as int (:issue:`954`)
+- scrapy.utils.misc.load_object should print full traceback (:issue:`902`)
+- Fix bug for ".local" host name (:issue:`878`)
+- Fix for Enabled extensions, middlewares, pipelines info not printed
+  anymore (:issue:`879`)
+- fix dont_merge_cookies bad behaviour when set to false on meta
+  (:issue:`846`)
+
+Python 3 In Progress Support
+
+- disable scrapy.telnet if twisted.conch is not available (:issue:`1161`)
+- fix Python 3 syntax errors in ajaxcrawl.py (:issue:`1162`)
+- more python3 compatibility changes for urllib (:issue:`1121`)
+- assertItemsEqual was renamed to assertCountEqual in Python 3.
+  (:issue:`1070`)
+- Import unittest.mock if available. (:issue:`1066`)
+- updated deprecated cgi.parse_qsl to use six's parse_qsl (:issue:`909`)
+- Prevent Python 3 port regressions (:issue:`830`)
+- PY3: use MutableMapping for python 3 (:issue:`810`)
+- PY3: use six.BytesIO and six.moves.cStringIO (:issue:`803`)
+- PY3: fix xmlrpclib and email imports (:issue:`801`)
+- PY3: use six for robotparser and urlparse (:issue:`800`)
+- PY3: use six.iterkeys, six.iteritems, and tempfile (:issue:`799`)
+- PY3: fix has_key and use six.moves.configparser (:issue:`798`)
+- PY3: use six.moves.cPickle (:issue:`797`)
+- PY3 make it possible to run some tests in Python3 (:issue:`776`)
+
+Tests
+
+- remove unnecessary lines from py3-ignores (:issue:`1243`)
+- Fix remaining warnings from pytest while collecting tests (:issue:`1206`)
+- Add docs build to travis (:issue:`1234`)
+- TST don't collect tests from deprecated modules. (:issue:`1165`)
+- install service_identity package in tests to prevent warnings
+  (:issue:`1168`)
+- Fix deprecated settings API in tests (:issue:`1152`)
+- Add test for webclient with POST method and no body given (:issue:`1089`)
+- py3-ignores.txt supports comments (:issue:`1044`)
+- modernize some of the asserts (:issue:`835`)
+- selector.__repr__ test (:issue:`779`)
+
+Code refactoring
+
+- CSVFeedSpider cleanup: use iterate_spider_output (:issue:`1079`)
+- remove unnecessary check from scrapy.utils.spider.iter_spider_output
+  (:issue:`1078`)
+- Pydispatch pep8 (:issue:`992`)
+- Removed unused 'load=False' parameter from walk_modules() (:issue:`871`)
+- For consistency, use `job_dir` helper in `SpiderState` extension.
+  (:issue:`805`)
+- rename "sflo" local variables to less cryptic "log_observer" (:issue:`775`)
+
 0.24.6 (2015-04-20)
 -------------------
 
