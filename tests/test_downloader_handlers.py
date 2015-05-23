@@ -511,7 +511,9 @@ class FTPTestCase(unittest.TestCase):
         os.mkdir(self.directory)
         userdir = os.path.join(self.directory, self.username)
         os.mkdir(userdir)
-        FilePath(userdir).child('file.txt').setContent("I have the power!")
+        fp = FilePath(userdir)
+        fp.child('file.txt').setContent("I have the power!")
+        fp.child('file with spaces.txt').setContent("Moooooooooo power!")
 
         # setup server
         realm = FTPRealm(anonymousRoot=self.directory, userHome=self.directory)
@@ -545,6 +547,19 @@ class FTPTestCase(unittest.TestCase):
             self.assertEqual(r.status, 200)
             self.assertEqual(r.body, 'I have the power!')
             self.assertEqual(r.headers, {'Local Filename': [''], 'Size': ['17']})
+        return self._add_test_callbacks(d, _test)
+
+    def test_ftp_download_path_with_spaces(self):
+        request = Request(
+            url="ftp://127.0.0.1:%s/file with spaces.txt" % self.portNum,
+            meta={"ftp_user": self.username, "ftp_password": self.password}
+        )
+        d = self.download_handler.download_request(request, None)
+
+        def _test(r):
+            self.assertEqual(r.status, 200)
+            self.assertEqual(r.body, 'Moooooooooo power!')
+            self.assertEqual(r.headers, {'Local Filename': [''], 'Size': ['18']})
         return self._add_test_callbacks(d, _test)
 
     def test_ftp_download_notexist(self):
