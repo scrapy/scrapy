@@ -1,3 +1,27 @@
+"""
+Example: How the code would look like using the DmozSpider example in the docs
+"""
+import scrapy
+
+
+class DmozSpider(scrapy.Spider):
+    name = "dmoz"
+    allowed_domains = ["dmoz.org"]
+    start_urls = [
+        "http://www.dmoz.org/Computers/Programming/Languages/Python/Books/",
+        "http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/"
+    ]
+
+    # parse using attributes dictionary
+    def parse(self, response):
+        for x in response.find('li', {'class': 'list-item'}):
+            title = response.inside(x).value_of('a', {'class': 'title'}, QueryComparison.contains).as_text()
+            link = response.inside(x).attr_of('a', {'class': 'url'}, 'href').as_text()
+            price = response.inside(x).value_of('span', {'class': 'price'}).as_float()
+            print title, link, price
+
+# """ End of example """ #
+
 import re
 from enum import Enum
 from lxml import html
@@ -30,35 +54,35 @@ class QueryTranslator:
             xpath += '[{0}]'.format(' and '.join(conditions))
         return xpath
 
-    def get_elements(self, tag, attrs, comparison=QueryComparison.contains):
+    def find(self, tag, attrs, comparison=QueryComparison.contains):
         ns = 'http://exslt.org/regular-expressions'
         expr = QueryTranslator.generate_xpath(tag, attrs, comparison)
         elements = self.root.xpath(expr, namespaces={'re': ns})
         return elements
 
-    def in_element(self, element):
+    def inside(self, element):
         self.root = html.fromstring(html.tostring(element))
         return self
 
-    def get_value(self):
+    def value(self):
         element = QueryElement(self.root.text_content())
         return element
 
-    def get_attr(self, name):
+    def attr(self, name):
         element = QueryElement(self.root.attrib[name])
         return element
 
-    def get_value_of(self, tag, attrs):
-        elements = self.get_elements(tag, attrs)
+    def value_of(self, tag, attrs):
+        elements = self.find(tag, attrs)
         if len(elements) > 0:
-            return self.in_element(elements[0]).get_value()
+            return self.inside(elements[0]).value()
         else:
             return QueryElement.empty()
 
-    def get_attr_of(self, tag, attrs, name):
-        elements = self.get_elements(tag, attrs)
+    def attr_of(self, tag, attrs, name):
+        elements = self.find(tag, attrs)
         if len(elements) > 0:
-            return self.in_element(elements[0]).get_attr(name)
+            return self.inside(elements[0]).attr(name)
         else:
             return QueryElement.empty()
 

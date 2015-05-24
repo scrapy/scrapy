@@ -110,11 +110,11 @@ class Selector(object_ref):
                   for x in result]
         return SelectorList(result)
 
-    def by_attrs(self, attrs, comparison=QueryComparison.equals):
-        return self.query.get_elements(attrs, comparison)
+    def find(self, attrs, comparison=QueryComparison.equals):
+        return self.query.find(attrs, comparison)
 
-    def in_element(self, element):
-        return self.query.in_element(element)
+    def inside(self, element):
+        return self.query.inside(element)
 
     def css(self, query):
         return self.xpath(self._css2xpath(query))
