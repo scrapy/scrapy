@@ -215,6 +215,14 @@ This setting also affects :setting:`DOWNLOAD_DELAY`:
 if :setting:`CONCURRENT_REQUESTS_PER_IP` is non-zero, download delay is
 enforced per IP, not per domain.
 
+.. setting:: CRAWLER
+
+CRAWLER
+-------
+
+Default: ``'scrapy.crawler.Crawler'``
+
+The crawler to use for crawling.
 
 .. setting:: DEFAULT_ITEM_CLASS
 
