@@ -207,7 +207,6 @@ class CrawlerProcess(CrawlerRunner):
     def __init__(self, settings):
         super(CrawlerProcess, self).__init__(settings)
         install_shutdown_handlers(self._signal_shutdown)
-        self.stopping = False
         configure_logging(settings)
         log_scrapy_info(settings)
 
