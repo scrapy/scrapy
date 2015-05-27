@@ -52,7 +52,6 @@ class CrawlerTestCase(unittest.TestCase):
         self.assertIsInstance(crawler.settings, Settings)
 
 
-
 class SpiderLoaderWithWrongInterface(object):
 
     def unneeded_method(self):
@@ -60,6 +59,10 @@ class SpiderLoaderWithWrongInterface(object):
 
 
 class CustomSpiderLoader(SpiderLoader):
+    pass
+
+
+class CustomCrawler(Crawler):
     pass
 
 
@@ -104,3 +107,16 @@ class CrawlerRunnerTestCase(unittest.TestCase):
             self.assertEqual(len(w), 1)
             self.assertIn('Please use SPIDER_LOADER_CLASS', str(w[0].message))
 
+    def _test_crawler_class(self, runner, expected_crawler_class):
+        self.assertEqual(len(runner.crawlers), 0)
+        runner.crawl(DefaultSpider)
+        self.assertEqual(len(runner.crawlers), 1)
+        self.assertIsInstance(list(runner.crawlers)[0], expected_crawler_class)
+
+    def test_default_crawler(self):
+        runner = CrawlerRunner({})
+        self._test_crawler_class(runner, Crawler)
+
+    def test_custom_crawler(self):
+        runner = CrawlerRunner({'CRAWLER': 'tests.test_crawler.CustomCrawler'})
+        self._test_crawler_class(runner, CustomCrawler)
