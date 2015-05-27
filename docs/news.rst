@@ -232,7 +232,8 @@ Changelog
 
 New Features and Enhancements
 
-- Python logging (:issue:`1060`, :issue:`1235`, :issue:`1236`, :issue:`1240`)
+- Python logging (:issue:`1060`, :issue:`1235`, :issue:`1236`, :issue:`1240`,
+  :issue:`1259`)
 - FEED_EXPORT_FIELDS option (:issue:`1159`, :issue:`1224`)
 - Dns cache size and timeout options (:issue:`1132`)
 - support namespace prefix in xmliter_lxml (:issue:`963`)
@@ -255,7 +256,7 @@ New Features and Enhancements
 - GSoC Per-spider settings (:issue:`854`)
 - Add project name validation (:issue:`817`)
 - GSoC API cleanup (:issue:`816`, :issue:`1128`, :issue:`1147`,
-  :issue:`1148`, :issue:`1156`, :issue:`1185`, :issue:`1187`)
+  :issue:`1148`, :issue:`1156`, :issue:`1185`, :issue:`1187`, :issue:`1258`)
 - Be more responsive with IO operations (:issue:`1074` and :issue:`1075`)
 
 Deprecations and Removals
