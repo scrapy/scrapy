@@ -28,7 +28,7 @@ once when it's shared by several items.
 so you need to install this library in order to use the images pipeline.
 `Python Imaging Library`_ (PIL) should also work in most cases, but it
 is known to cause troubles in some setups, so we recommend to use `Pillow`_
-instead of `PIL <Python Imaging Library>`_.
+instead of PIL.
 
 .. _Pillow: https://github.com/python-imaging/Pillow
 .. _Python Imaging Library: http://www.pythonware.com/products/pil/
