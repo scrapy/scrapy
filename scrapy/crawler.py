@@ -35,8 +35,10 @@ class Crawler(object):
 
         handler = LogCounterHandler(self, level=settings.get('LOG_LEVEL'))
         logging.root.addHandler(handler)
-        self.signals.connect(lambda: logging.root.removeHandler(handler),
-                             signals.engine_stopped)
+        # lambda is assigned to Crawler attribute because this way it is not
+        # garbage collected after leaving __init__ scope
+        self.__remove_handler = lambda: logging.root.removeHandler(handler)
+        self.signals.connect(self.__remove_handler, signals.engine_stopped)
 
         lf_cls = load_object(self.settings['LOG_FORMATTER'])
         self.logformatter = lf_cls.from_crawler(self)
