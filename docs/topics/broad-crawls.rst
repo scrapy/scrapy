@@ -174,3 +174,32 @@ It is turned OFF by default because it has some performance overhead,
 and enabling it for focused crawls doesn't make much sense.
 
 .. _ajax crawlable: https://developers.google.com/webmasters/ajax-crawling/docs/getting-started
+
+Reducing memory consumption for broad crawls
+============================================
+
+For broad crawls, the amount of memory used for storing `Requests`_, references, and further information may soon become pretty large.
+The following steps help to reduce the amount of memory used for broad crawls.
+
+1) **Change the queue type:** The default queue for crawls is "Last-In-First-Out ( `LIFO`_ )" using the concept of "Depth-First Search ( `DFS`_ )". In case the page scraping is faster than the processing of the spiders, early `Requests`_ might not be processed and therefore block memory until the final depth is reached. Setting the queue from LIFO to "First-In-First-Out ( `FIFO`_ )" and setting dispatching from `DFS`_ to "Breadth-First Search ( `BFS`_ )", as shown in the `FAQ`_ will solve this problem::
+
+    DEPTH_PRIORITY = 1
+    SCHEDULER_DISK_QUEUE = 'scrapy.squeue.PickleFifoDiskQueue'
+    SCHEDULER_MEMORY_QUEUE = 'scrapy.squeue.FifoMemoryQueue'
+
+2) **Reduce the number of concurrent requests:** As stated before, the global concurrency level can be set using::
+ 
+    CONCURRENT_REQUESTS = 100
+
+However, if scraping is faster than processing, the queue will eventually exceed the memory size.
+Unfortunately, there is yet no autobalancing feature available, so you need to find concurrency values that fit your processing speed.
+
+3) **Use the profiling and trackref capabilities of scrapy:** scrapy provides an own and interactive profiling and reference tracking tool. See `debugging memory leaks`_ for more information.
+
+.. _debugging memory leaks: http://doc.scrapy.org/en/latest/topics/leaks.html
+.. _Requests: http://doc.scrapy.org/en/latest/topics/request-response.html#request-objects
+.. _LIFO: http://en.wikipedia.org/wiki/Stack_(abstract_data_type)
+.. _FIFO: http://en.wikipedia.org/wiki/FIFO_(computing_and_electronics)
+.. _BFS: http://en.wikipedia.org/wiki/Breadth-first_search
+.. _DFS: http://en.wikipedia.org/wiki/Depth-first_search
+.. _FAQ: http://doc.scrapy.org/en/latest/faq.html#does-scrapy-crawl-in-breadth-first-or-depth-first-order
