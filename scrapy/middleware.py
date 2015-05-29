@@ -27,9 +27,17 @@ class MiddlewareManager(object):
     def from_settings(cls, settings, crawler=None):
         mwlist = cls._get_mwlist_from_settings(settings)
         middlewares = []
+        all_mwclss = {}
         for clspath in mwlist:
             try:
                 mwcls = load_object(clspath)
+                if mwcls in all_mwclss:
+                    logger.warning("Removed %(clspath)s, is identical to %(oldclspath)s",
+                                   {'clspath': clspath, 'oldclspath': all_mwclss[mwcls]},
+                                   extra={'crawler': crawler})
+                    continue
+                else:
+                    all_mwclss[mwcls] = clspath
                 if crawler and hasattr(mwcls, 'from_crawler'):
                     mw = mwcls.from_crawler(crawler)
                 elif hasattr(mwcls, 'from_settings'):
