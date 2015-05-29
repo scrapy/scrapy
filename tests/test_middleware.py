@@ -1,4 +1,3 @@
-import warnings
 from twisted.trial import unittest
 
 from scrapy.settings import Settings
@@ -94,8 +93,7 @@ class MiddlewareManagerTest(unittest.TestCase):
         mwman_cls = TestMiddlewareManager
         mwman_cls._get_mwlist_from_settings = _get_mwlist_with_clones
         settings = Settings()
-        with warnings.catch_warnings(record=True) as w:
-            mwman = mwman_cls.from_settings(settings)
-            self.assertEqual(len(mwman.middlewares), 1)
-            self.assertIsInstance(mwman.middlewares[0], M1)
+        mwman = mwman_cls.from_settings(settings)
+        self.assertEqual(len(mwman.middlewares), 1)
+        self.assertIsInstance(mwman.middlewares[0], M1)
 
