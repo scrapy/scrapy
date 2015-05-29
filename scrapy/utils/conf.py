@@ -5,16 +5,30 @@ from operator import itemgetter
 import six
 from six.moves.configparser import SafeConfigParser
 
+from scrapy.utils.deprecate import update_classpath
 
-def build_component_list(base, custom):
+
+def build_component_list(base, custom, convert=update_classpath):
     """Compose a component list based on a custom and base dict of components
     (typically middlewares or extensions), unless custom is already a list, in
     which case it's returned.
     """
+
+    def _check_components(complist):
+        if len({convert(c) for c in complist}) != len(complist):
+            raise ValueError('Some paths in {!r} convert to the same object, '
+                             'please update your settings'.format(complist))
+
     if isinstance(custom, (list, tuple)):
-        return custom
-    compdict = base.copy()
-    compdict.update(custom)
+        _check_components(custom)
+        return type(custom)(convert(c) for c in custom)
+
+    def _map_keys(compdict):
+        _check_components(compdict)
+        return {convert(k): v for k, v in six.iteritems(compdict)}
+
+    compdict = _map_keys(base)
+    compdict.update(_map_keys(custom))
     items = (x for x in six.iteritems(compdict) if x[1] is not None)
     return [x[0] for x in sorted(items, key=itemgetter(1))]
 
