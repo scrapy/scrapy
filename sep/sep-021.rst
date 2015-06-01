@@ -17,19 +17,31 @@ Scrapy currently supports many hooks and mechanisms for extending its
 functionality, but no single entry point for enabling and configuring them.
 Instead, the hooks are spread over:
 
-* Spider middlewares (SPIDER_MIDDLEWARES)
-* Downloader middlewares (DOWNLOADER_MIDDLEWARES)
-* Downloader handlers (DOWNLOADER_HANDLERS)
-* Item pipelines (ITEM_PIPELINES)
-* Feed exporters and storages (FEED_EXPORTERS, FEED_STORAGES)
-* Overrideable components (DUPEFILTER_CLASS, STATS_CLASS, SCHEDULER, SPIDER_MANAGER_CLASS, ITEM_PROCESSOR, etc)
-* Generic extensions (EXTENSIONS)
-* CLI commands (COMMANDS_MODULE)
+* Spider middlewares (``SPIDER_MIDDLEWARES``)
+* Downloader middlewares (``DOWNLOADER_MIDDLEWARES``)
+* Downloader handlers (``DOWNLOADER_HANDLERS``)
+* Item pipelines (``ITEM_PIPELINES``)
+* Feed exporters and storages (``FEED_EXPORTERS``, ``FEED_STORAGES``)
+* Overrideable components (``DUPEFILTER_CLASS``, ``STATS_CLASS``,
+  ``SCHEDULER``, ``SPIDER_MANAGER_CLASS``, ``ITEM_PROCESSOR``, etc.)
+* Generic extensions (``EXTENSIONS``)
+* CLI commands (``COMMANDS_MODULE``)
 
-One problem of this approach is that enabling an extension often requires
-modifying many settings, often in a coordinated way, which is complex and error
-prone. Add-ons are meant to fix this by providing a simple mechanism for
-enabling extensions.
+This approach has several shortfalls:
+
+* Enabling an extension often requires modifying many settings, often in a
+  coordinated way, which is complex and error prone.
+* Extension developers have little control over ensuring their library
+  dependencies and configuration requirements are met, especially since most
+  extensions never 'see' a fully-configured crawler before it starts running.
+* The user is burdened with supervising potential interplay of extensions,
+  especially non-included ones, ranging from setting name clashes to mutually
+  excluding dependencies/configuration requirements.
+
+*Add-ons* search to remedy these shortcomings by enhancing Scrapy's extension
+management, making it easy-to-use and transparent for users while giving more
+configuration control to developers.
+
 
 Design goals and non-goals
 ==========================
@@ -37,8 +49,8 @@ Design goals and non-goals
 Goals:
 
 * simple to manage: adding or removing extensions should be just a matter of
-  adding or removing lines in a ``scrapy.cfg`` file
-* backward compatibility with enabling extension the "old way" (ie. modifying
+  adding or removing lines in a configuration file
+* backward compatibility with enabling extension the "old way" (i.e. modifying
   settings directly)
 
 Non-goals:
@@ -46,62 +58,290 @@ Non-goals:
 * a way to publish, distribute or discover extensions (use pypi for that)
 
 
-Managing add-ons
-================
+User experience: managing add-ons
+=================================
 
-Add-ons are defined in the ``scrapy.cfg`` file, inside the ``[addons]``
-section.
+Add-ons are enabled and configured either via Scrapy's settings, or (for add-ons
+not bound to any project) in ``scrapy.cfg``.
 
-To enable the "httpcache" addon, either shipped with Scrapy or in the Python
-search path, create an entry for it in your ``scrapy.cfg``, like this::
+In the settings, add-ons can be enabled by adding either their name (for
+built-in add-ons), their Python path, or their file path, to a
+``INSTALLED_ADDONS`` setting. If necessary, each add-on can be configured by
+providing a dictionary-valued setting with the uppercase add-on name. For
+example, to enable and configure the built-in ``httpcache`` add-on and enable
+(without configuring) two custom add-ons, one via Python path and one via file
+path, add these entries to your settings module::
 
-    [addons]
-    httpcache = 
+    INSTALLED_ADDONS = (
+        'httpcache',
+        'mymodule.filters.myfilter',
+        'mymodule/filters/otherfilter.py',
+    )
 
-You may also specify the full path to an add-on (which may be either a .py file
-or a folder containing __init__.py)::
+    HTTPCACHE = {
+        'ignore_http_codes': [404, 503],
+    }
 
-    [addons]
-    mongodb_pipeline = /path/to/mongodb_pipeline.py
+In ``scrapy.cfg``, add-ons are enabled and configured with one section per
+add-on. The section names correspond to the entries of ``INSTALLED_ADDONS``.
+The configuration from above could look like this::
+
+    [addon:httpcache]
+    ignore_http_codes = 404,503
+
+    [addon:mymodule.filters.myfilter]
+
+    [addon:mymodule/filters/otherfilter.py]
 
 
-Writing add-ons
-===============
+Developer experience: writing add-ons
+=====================================
 
-Add-ons are Python modules that implement the following callbacks.
+Add-ons are (any) Python *objects* that implement Scrapy's *add-on interface*.
+The interface is enforced through ``zope.interface``. This leaves the choice of
+Python object up the developer. Examples:
 
-addon_configure
----------------
+* for a small pipeline, the add-on interface could be implemented in the same
+  class that also implements the ``open/close_spider`` and ``process_item``
+  callbacks
+* for larger add-ons, or for clearer structure, the interface could be provided
+  by a stand-alone module
 
-Receives the Settings object and modifies it to enable the required components.
-If it raises an exception, Scrapy will print it and exit.
+The absolute minimum interface consists of just two attributes:
 
-Examples::
+* ``NAME``: string with add-on name
+* ``VERSION``: PEP-440 style version string
 
-    def addon_configure(settings):
-        settings.overrides['DOWNLADER_MIDDLEWARES'].update({
-            'scrapy.contrib.downloadermiddleware.httpcache.HttpCacheMiddleware': 900,
-        })
+To be any useful, an add-on should implement at least one of the following
+callback methods:
+
+* ``update_addons()``: adds and configures other add-ons
+* ``update_settings()``: sets configuration (such as default values for this
+  add-on and required settings for other extensions) and enables needed
+  components.
+* ``check_configuration()``: receives the fully-initialized ``Crawler``
+  instance before it starts running, performs additional dependency and
+  configuration requirement checks
+
+Additionally, an add-on may (and should, where appropriate) provide one or more
+variables that can be used for automated detection of possible dependency
+clashes:
+
+* ``REQUIRES``: list of built-in or custom components required by this add-on,
+  as PEP-440 strings
+* ``MODIFIES``: list of components whose functionality is affected or replaced
+  by this add-on (a custom HTTP cache should list ``httpcache`` here)
+* ``PROVIDES``: list of components provided by this add-on (e.g. ``mongodb``
+  for an extension that provides generic read/write access to a MongoDB
+  database, releasing other components from having to provide their own
+  database access methods)
+
+update_addons()
+-----------------
+
+Called:
+~~~~~~~
+
+Shortly after initialisation of the ``Crawler`` object.
+
+Arguments:
+~~~~~~~~~~
+
+* ``config``: configuration of this add-on
+* ``addons``: the add-on manager, providing methods to add and configure add-ons
+
+Purpose:
+~~~~~~~~
+
+* Configure and enable related add-ons, useful for 'umbrella add-ons' which
+  chain-load other add-ons based on the configuration
+
+Examples:
+~~~~~~~~~
 
 ::
 
-    def addon_configure(settings):
+    def update_addons(config, addons):
+        if 'httpcache' not in addons.enabled:
+            addons.add('httpcache', {'expiration_secs': 60})
+
+or::
+
+    def update_addons(config, addons):
+        if 'otheraddon' in addons.enabled:
+            addons.configs['otheraddon']['some_config_name'] = True
+
+update_settings()
+-----------------
+
+Called:
+~~~~~~~
+
+Directly after the ``update_addons()`` callback of all add-ons has been called.
+
+Arguments:
+~~~~~~~~~~
+
+* ``config``: configuration of this add-on
+* ``settings``: the crawler's ``Settings`` instance containing all project
+  settings
+
+Purpose:
+~~~~~~~~
+
+* Modify ``settings`` to enable required components
+* Expose some add-on specific configuration (``config``) into the global
+  settings namespace (``settings``) if necessary
+* Raise exception if components can not be properly configured (e.g. on missing
+  dependencies); Scrapy will print this exception *and exit* (making users
+  explicitly acknowledge that the add-on does not work by forcing them to
+  disable it).
+
+Side note:
+~~~~~~~~~~
+
+The ``MiddlewareManager.from_settings()`` method will receive a slight
+modification to allow directly placing Python objects instead of class paths
+in the middleware dict settings. This way, add-ons can place already
+instantiated components into the settings. This allows keeping configuration
+as local to components as possible and avoids cluttering up the global
+settings namespace. Furthermore, it allows reusing components (e.g. using
+two instances of the same mongodb pipeline to write to different locations).
+
+Examples:
+~~~~~~~~~
+
+::
+
+    def update_settings(config, settings):
+        # Don't care where this module is located
+        settings.set['DOWNLADER_MIDDLEWARES']({
+            __name__ + '.downloadermw.coolmw': 900,
+        })
+
+        # Instantiate components to not expose settings into
+        # the global namespace
+        from .pipelines import MySQLPipeline
+        mysqlpl = MySQLPipeline(password = config['password'])
+        settings.set['ITEM_PIPELINES']({
+            mysqlpl: 200,
+        })
+
+or::
+
+    def update_settings(config, settings):
+        # Assuming this class also has a process_item() method
+        settings.set['ITEM_PIPELINES']({
+            self: 200,
+        })
+
+or::
+
+    def update_settings(config, settings):
         try:
             import boto
         except ImportError:
             raise RuntimeError("boto library is required")
 
+check_configuration()
+---------------------
 
-crawler_ready
--------------
+Called:
+~~~~~~~
 
-``crawler_ready`` receives a Crawler object after it has been initialized and
-is meant to be used to perform post-initialization checks like making sure the
-extension and its dependencies were configured properly. If it raises an
-exception, Scrapy will print and exit.
+Shortly before the crawler starts crawling.
 
-Examples::
+Arguments:
+~~~~~~~~~~
 
-    def crawler_ready(crawler):
-        if 'some.other.addon' not in crawler.extensions.enabled:
-            raise RuntimeError("Some other addon is required to use this addon")
+* ``config``: configuration of this add-on
+* ``crawler``: fully-initialized ``Crawler`` object, ready to start crawling
+
+Purpose:
+~~~~~~~~
+
+* Perform post-initialization checks like making sure the extension and its
+  dependencies were configured properly.
+* Raise exception if a critical check failed; Scrapy will print this exception
+  *and exit* (see ``update_settings()`` purpose for rationale on this).
+
+Examples:
+~~~~~~~~~
+
+::
+
+    def check_configuration(config, crawler):
+        if 'some.other.addon' not in crawler.addons.enabled:
+            raise RuntimeError("Some other add-on required to use this add-on")
+
+
+Implementation
+==============
+
+A new core component, the *add-on manager*, is introduced to Scrapy. It
+facilitates loading add-ons, gathering and providing information on them,
+calling their callbacks at appropriate times, and performing basic checks for
+dependency and configuration clashes.
+
+Layout
+------
+
+A new ``AddonManager`` class is introduced, providing methods to
+
+* add and remove add-ons,
+* search for add-ons by name
+* read enabled add-ons and their configurations from the settings module and
+  from ``settings.py``,
+* enable and disable add-ons
+* check for possible dependency incompatibilites by inspecting the collected
+  ``REQUIRES``, ``MODIFIES`` and ``PROVIDES`` add-on variables
+* call the add-on callbacks
+
+Integration into start-up process
+---------------------------------
+
+The settings used to crawl are not complete until the spider-specific settings
+have been loaded in ``Crawler.__init__()``. Add-on management follows this
+approach and only starts loading add-ons when the crawler is initialised.
+
+Instantiation and the calls ``update_addons()`` and ``update_settings()`` happen
+in ``Crawler.__init__()``. The final checks (i.e. the callback to
+``check_configuration()``) is coded into the ``Crawler.crawl()`` method after
+creating the engine.
+
+Finding add-ons
+---------------
+
+Add-on localisation is governed by the add-on paths given in
+``INSTALLED_ADDONS`` (or by the section names if using ``scrapy.cfg``). If
+nothing is found at the given path, it is tried again with ``addons.``
+prepended (i.e. pointing to the project's ``addons`` folder or module), then
+with ``scrapy.addons.`` prepended (i.e. pointing to Scrapy's ``addons``
+submodule). If the object found has an ``_addon`` attribute, that attribute
+will be treated as the found add-on. This allows, for example, to change the
+add-on based on the Python version.
+
+Updating existing extensions
+----------------------------
+
+An ``Addon`` class is introduced that add-on developers may or may not subclass
+depending on how much of the 'default functionality' they want. Naturally, it
+does not provide ``NAME`` and ``VERSION``. Its default ``update_settings()``
+exposes the add-on configuration into the global settings namespace with an
+appropriate name, e.g. this section from ``scrapy.cfg``::
+
+    [httpcache]
+    dir = /some/dir
+
+would expose ``HTTPCACHE_DIR``.
+
+Add-on modules will be written for all built-in extensions and placed in
+``scrapy.addons``. For many default Scrapy components, it will be sufficient to
+create a subclass of ``Addon`` with minor or no method modifications. The
+component code remains where it is (i.e. in ``scrapy.pipelines``, etc.).
+
+Later, the global settings namespace could be cleaned up in a backwards
+-incompatible fashion by deprecating support for the global setting names, e.g.
+``HTTPCACHE_DIR``, and instead instantiate the components with the add-on
+configuration in ``update_settings()``.
+
