@@ -343,6 +343,25 @@ class RFC2616PolicyTest(DefaultStorageTest):
                     self.assertFalse(resc)
                     assert 'cached' not in res2.flags
 
+        # cache unconditionally unless response contains no-store or is a 304
+        with self._middleware(HTTPCACHE_ALWAYS_STORE=True) as mw:
+            for idx, (_, status, headers) in enumerate(responses):
+                shouldcache = 'no-store' not in headers.get('Cache-Control', '') and status != 304
+                req0 = Request('http://example2-%d.com' % idx)
+                res0 = Response(req0.url, status=status, headers=headers)
+                res1 = self._process_requestresponse(mw, req0, res0)
+                res304 = res0.replace(status=304)
+                res2 = self._process_requestresponse(mw, req0, res304 if shouldcache else res0)
+                self.assertEqualResponse(res1, res0)
+                self.assertEqualResponse(res2, res0)
+                resc = mw.storage.retrieve_response(self.spider, req0)
+                if shouldcache:
+                    self.assertEqualResponse(resc, res1)
+                    assert 'cached' in res2.flags and res2.status != 304
+                else:
+                    self.assertFalse(resc)
+                    assert 'cached' not in res2.flags
+
     def test_cached_and_fresh(self):
         sampledata = [
             (200, {'Date': self.yesterday, 'Expires': self.tomorrow}),
@@ -381,6 +400,13 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 res2 = self._process_requestresponse(mw, req0, None)
                 self.assertEqualResponse(res1, res2)
                 assert 'cached' in res2.flags
+                # validate cached response if request max-age set as 0
+                req1 = req0.replace(headers={'Cache-Control': 'max-age=0'})
+                res304 = res0.replace(status=304)
+                assert mw.process_request(req1, self.spider) is None
+                res3 = self._process_requestresponse(mw, req1, res304)
+                self.assertEqualResponse(res1, res3)
+                assert 'cached' in res3.flags
 
     def test_cached_and_stale(self):
         sampledata = [
@@ -395,6 +421,9 @@ class RFC2616PolicyTest(DefaultStorageTest):
             (200, {'Cache-Control': 'no-cache'}),
             (200, {'Cache-Control': 'no-cache', 'ETag': 'foo'}),
             (200, {'Cache-Control': 'no-cache', 'Last-Modified': self.yesterday}),
+            (200, {'Cache-Control': 'no-cache,must-revalidate', 'Last-Modified': self.yesterday}),
+            (200, {'Cache-Control': 'must-revalidate', 'Expires': self.yesterday, 'Last-Modified': self.yesterday}),
+            (200, {'Cache-Control': 'max-age=86400,must-revalidate', 'Age': '86405'}),
         ]
         with self._middleware() as mw:
             for idx, (status, headers) in enumerate(sampledata):
@@ -410,6 +439,7 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 res2 = self._process_requestresponse(mw, req0, res0b)
                 self.assertEqualResponse(res2, res0b)
                 assert 'cached' not in res2.flags
+                cc = headers.get('Cache-Control', '')
                 # Previous response expired too, subsequent request to same
                 # resource must revalidate and succeed on 304 if validators
                 # are present
@@ -418,7 +448,62 @@ class RFC2616PolicyTest(DefaultStorageTest):
                     res3 = self._process_requestresponse(mw, req0, res0c)
                     self.assertEqualResponse(res3, res0b)
                     assert 'cached' in res3.flags
+                    # get cached response on server errors unless must-revalidate
+                    # in cached response
+                    res0d = res0b.replace(status=500)
+                    res4 = self._process_requestresponse(mw, req0, res0d)
+                    if 'must-revalidate' in cc:
+                        assert 'cached' not in res4.flags
+                        self.assertEqualResponse(res4, res0d)
+                    else:
+                        assert 'cached' in res4.flags
+                        self.assertEqualResponse(res4, res0b)
+                # Requests with max-stale can fetch expired cached responses
+                # unless cached response has must-revalidate
+                req1 = req0.replace(headers={'Cache-Control': 'max-stale'})
+                res5 = self._process_requestresponse(mw, req1, res0b)
+                self.assertEqualResponse(res5, res0b)
+                if 'no-cache' in cc or 'must-revalidate' in cc:
+                    assert 'cached' not in res5.flags
+                else:
+                    assert 'cached' in res5.flags
 
+    def test_process_exception(self):
+        with self._middleware() as mw:
+            res0 = Response(self.request.url, headers={'Expires': self.yesterday})
+            req0 = Request(self.request.url)
+            self._process_requestresponse(mw, req0, res0)
+            for e in mw.DOWNLOAD_EXCEPTIONS:
+                # Simulate encountering an error on download attempts
+                assert mw.process_request(req0, self.spider) is None
+                res1 = mw.process_exception(req0, e('foo'), self.spider)
+                # Use cached response as recovery
+                assert 'cached' in res1.flags
+                self.assertEqualResponse(res0, res1)
+            # Do not use cached response for unhandled exceptions
+            mw.process_request(req0, self.spider)
+            assert mw.process_exception(req0, Exception('foo'), self.spider) is None
+
+    def test_ignore_response_cache_controls(self):
+        sampledata = [
+            (200, {'Date': self.yesterday, 'Expires': self.tomorrow}),
+            (200, {'Date': self.yesterday, 'Cache-Control': 'no-store,max-age=86405'}),
+            (200, {'Age': '299', 'Cache-Control': 'max-age=300,no-cache'}),
+            (300, {'Cache-Control': 'no-cache'}),
+            (200, {'Expires': self.tomorrow, 'Cache-Control': 'no-store'}),
+        ]
+        with self._middleware(HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS=['no-cache', 'no-store']) as mw:
+            for idx, (status, headers) in enumerate(sampledata):
+                req0 = Request('http://example-%d.com' % idx)
+                res0 = Response(req0.url, status=status, headers=headers)
+                # cache fresh response
+                res1 = self._process_requestresponse(mw, req0, res0)
+                self.assertEqualResponse(res1, res0)
+                assert 'cached' not in res1.flags
+                # return fresh cached response without network interaction
+                res2 = self._process_requestresponse(mw, req0, None)
+                self.assertEqualResponse(res1, res2)
+                assert 'cached' in res2.flags
 
 if __name__ == '__main__':
     unittest.main()

@@ -97,6 +97,7 @@ scrapy/contrib/downloadermiddleware/retry.py
 scrapy/contrib/downloadermiddleware/httpproxy.py
 scrapy/contrib/downloadermiddleware/cookies.py
 scrapy/downloadermiddlewares/retry.py
+scrapy/downloadermiddlewares/httpcache.py
 scrapy/downloadermiddlewares/httpproxy.py
 scrapy/downloadermiddlewares/cookies.py
 scrapy/contrib/statsmailer.py
