@@ -1,7 +1,7 @@
 import warnings
 import unittest
 
-from scrapy.crawler import Crawler, CrawlerRunner
+from scrapy.crawler import Crawler, CrawlerRunner, CrawlerProcess
 from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
 from scrapy.utils.spider import DefaultSpider
@@ -104,3 +104,13 @@ class CrawlerRunnerTestCase(unittest.TestCase):
             self.assertEqual(len(w), 1)
             self.assertIn('Please use SPIDER_LOADER_CLASS', str(w[0].message))
 
+
+class CrawlerProcessTest(unittest.TestCase):
+    def test_crawler_process_accepts_dict(self):
+        runner = CrawlerProcess({'foo': 'bar'})
+        self.assertEqual(runner.settings['foo'], 'bar')
+        self.assertEqual(
+            runner.settings['RETRY_ENABLED'],
+            default_settings.RETRY_ENABLED
+        )
+        self.assertIsInstance(runner.settings, Settings)
