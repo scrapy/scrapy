@@ -190,7 +190,7 @@ Or by setting a global download delay in your project with the
 Can I call ``pdb.set_trace()`` from my spiders to debug them?
 -------------------------------------------------------------
 
-Yes, but you can also use the Scrapy shell which allows you too quickly analyze
+Yes, but you can also use the Scrapy shell which allows you to quickly analyze
 (and even modify) the response being processed by your spider, which is, quite
 often, more useful than plain old ``pdb.set_trace()``.
 
