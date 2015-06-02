@@ -1,11 +1,13 @@
 import warnings
 import unittest
 
+import scrapy
 from scrapy.crawler import Crawler, CrawlerRunner, CrawlerProcess
 from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.misc import load_object
+from scrapy.extensions.throttle import AutoThrottle
 
 
 class CrawlerTestCase(unittest.TestCase):
@@ -51,6 +53,18 @@ class CrawlerTestCase(unittest.TestCase):
         )
         self.assertIsInstance(crawler.settings, Settings)
 
+
+class SpiderSettingsTestCase(unittest.TestCase):
+    def test_spider_custom_settings(self):
+        class MySpider(scrapy.Spider):
+            name = 'spider'
+            custom_settings = {
+                'AUTOTHROTTLE_ENABLED': True
+            }
+
+        crawler = Crawler(MySpider, {})
+        enabled_exts = [e.__class__ for e in crawler.extensions.middlewares]
+        self.assertIn(AutoThrottle, enabled_exts)
 
 
 class SpiderLoaderWithWrongInterface(object):
