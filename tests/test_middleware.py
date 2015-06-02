@@ -43,6 +43,9 @@ class MOff(object):
         raise NotConfigured
 
 
+M1Clone = M1
+
+
 class TestMiddlewareManager(MiddlewareManager):
 
     @classmethod
@@ -82,3 +85,15 @@ class MiddlewareManagerTest(unittest.TestCase):
         mwman = TestMiddlewareManager.from_settings(settings)
         classes = [x.__class__ for x in mwman.middlewares]
         self.assertEqual(classes, [M1, M3])
+
+    def test_noclones(self):
+        @classmethod
+        def _get_mwlist_with_clones(cls, settings):
+            return ['tests.test_middleware.%s' % x for x in ['M1', 'M1Clone']]
+        mwman_cls = TestMiddlewareManager
+        mwman_cls._get_mwlist_from_settings = _get_mwlist_with_clones
+        settings = Settings()
+        mwman = mwman_cls.from_settings(settings)
+        self.assertEqual(len(mwman.middlewares), 1)
+        self.assertIsInstance(mwman.middlewares[0], M1)
+
