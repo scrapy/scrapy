@@ -629,7 +629,7 @@ placeholders.
 LOG_DATEFORMAT
 --------------
 
-Default: ``'%Y-%m-%d %H:%M:%S%z'``
+Default: ``'%Y-%m-%d %H:%M:%S'``
 
 String for formatting date/time, expansion of the ``%(asctime)s`` placeholder
 in :setting:`LOG_FORMAT`. Refer to the `Python datetime documentation`_ for the whole list of available
