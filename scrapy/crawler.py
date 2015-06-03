@@ -29,6 +29,7 @@ class Crawler(object):
 
         self.spidercls = spidercls
         self.settings = settings.copy()
+        self.spidercls.update_settings(self.settings)
 
         self.signals = SignalManager(self)
         self.stats = load_object(self.settings['STATS_CLASS'])(self)
@@ -44,9 +45,7 @@ class Crawler(object):
         self.logformatter = lf_cls.from_crawler(self)
         self.extensions = ExtensionManager.from_crawler(self)
 
-        self.spidercls.update_settings(self.settings)
         self.settings.freeze()
-
         self.crawling = False
         self.spider = None
         self.engine = None
