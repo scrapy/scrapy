@@ -216,7 +216,7 @@ class CrawlerProcess(CrawlerRunner):
         signame = signal_names[signum]
         logger.info("Received %(signame)s, shutting down gracefully. Send again to force ",
                     {'signame': signame})
-        reactor.callFromThread(self.stop)
+        reactor.callFromThread(self._graceful_stop_reactor)
 
     def _signal_kill(self, signum, _):
         install_shutdown_handlers(signal.SIG_IGN)
@@ -260,6 +260,11 @@ class CrawlerProcess(CrawlerRunner):
             cache_size=cache_size,
             timeout=self.settings.getfloat('DNS_TIMEOUT')
         )
+
+    def _graceful_stop_reactor(self):
+        d = self.stop()
+        d.addBoth(self._stop_reactor)
+        return d
 
     def _stop_reactor(self, _=None):
         try:
