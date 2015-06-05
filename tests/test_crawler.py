@@ -10,7 +10,14 @@ from scrapy.utils.misc import load_object
 from scrapy.extensions.throttle import AutoThrottle
 
 
-class CrawlerTestCase(unittest.TestCase):
+class BaseCrawlerTest(unittest.TestCase):
+
+    def assertOptionIsDefault(self, settings, key):
+        self.assertIsInstance(settings, Settings)
+        self.assertEqual(settings[key], getattr(default_settings, key))
+
+
+class CrawlerTestCase(BaseCrawlerTest):
 
     def setUp(self):
         self.crawler = Crawler(DefaultSpider, Settings())
@@ -47,11 +54,11 @@ class CrawlerTestCase(unittest.TestCase):
     def test_crawler_accepts_dict(self):
         crawler = Crawler(DefaultSpider, {'foo': 'bar'})
         self.assertEqual(crawler.settings['foo'], 'bar')
-        self.assertEqual(
-            crawler.settings['RETRY_ENABLED'],
-            default_settings.RETRY_ENABLED
-        )
-        self.assertIsInstance(crawler.settings, Settings)
+        self.assertOptionIsDefault(crawler.settings, 'RETRY_ENABLED')
+
+    def test_crawler_accepts_None(self):
+        crawler = Crawler(DefaultSpider)
+        self.assertOptionIsDefault(crawler.settings, 'RETRY_ENABLED')
 
 
 class SpiderSettingsTestCase(unittest.TestCase):
@@ -77,7 +84,7 @@ class CustomSpiderLoader(SpiderLoader):
     pass
 
 
-class CrawlerRunnerTestCase(unittest.TestCase):
+class CrawlerRunnerTestCase(BaseCrawlerTest):
 
     def test_spider_manager_verify_interface(self):
         settings = Settings({
@@ -93,11 +100,11 @@ class CrawlerRunnerTestCase(unittest.TestCase):
     def test_crawler_runner_accepts_dict(self):
         runner = CrawlerRunner({'foo': 'bar'})
         self.assertEqual(runner.settings['foo'], 'bar')
-        self.assertEqual(
-            runner.settings['RETRY_ENABLED'],
-            default_settings.RETRY_ENABLED
-        )
-        self.assertIsInstance(runner.settings, Settings)
+        self.assertOptionIsDefault(runner.settings, 'RETRY_ENABLED')
+
+    def test_crawler_runner_accepts_None(self):
+        runner = CrawlerRunner()
+        self.assertOptionIsDefault(runner.settings, 'RETRY_ENABLED')
 
     def test_deprecated_attribute_spiders(self):
         with warnings.catch_warnings(record=True) as w:
@@ -119,12 +126,12 @@ class CrawlerRunnerTestCase(unittest.TestCase):
             self.assertIn('Please use SPIDER_LOADER_CLASS', str(w[0].message))
 
 
-class CrawlerProcessTest(unittest.TestCase):
+class CrawlerProcessTest(BaseCrawlerTest):
     def test_crawler_process_accepts_dict(self):
         runner = CrawlerProcess({'foo': 'bar'})
         self.assertEqual(runner.settings['foo'], 'bar')
-        self.assertEqual(
-            runner.settings['RETRY_ENABLED'],
-            default_settings.RETRY_ENABLED
-        )
-        self.assertIsInstance(runner.settings, Settings)
+        self.assertOptionIsDefault(runner.settings, 'RETRY_ENABLED')
+
+    def test_crawler_process_accepts_None(self):
+        runner = CrawlerProcess()
+        self.assertOptionIsDefault(runner.settings, 'RETRY_ENABLED')
