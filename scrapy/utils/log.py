@@ -56,14 +56,17 @@ DEFAULT_LOGGING = {
 }
 
 
-def configure_logging(settings=None):
+def configure_logging(settings=None, install_root_handler=True):
     """Initialize and configure default loggers
 
     This function does:
       - Route warnings and twisted logging through Python standard logging
-      - Set FailureFormatter filter on Scrapy logger
       - Assign DEBUG and ERROR level to Scrapy and Twisted loggers respectively
-      - Create a handler for the root logger according to given settings
+      - Route stdout to log if LOG_STDOUT setting is True
+
+    When ``install_root_handler`` is True (default), this function also
+      - Sets FailureFormatter filter on Scrapy logger
+      - Creates a handler for the root logger according to given settings
     """
     if not sys.warnoptions:
         # Route warnings through python logging
@@ -74,33 +77,37 @@ def configure_logging(settings=None):
 
     dictConfig(DEFAULT_LOGGING)
 
-    if isinstance(settings, dict):
+    if isinstance(settings, dict) or settings is None:
         settings = Settings(settings)
 
-    if settings:
+    if settings.getbool('LOG_STDOUT'):
+        sys.stdout = StreamLogger(logging.getLogger('stdout'))
+
+    if install_root_handler:
         logging.root.setLevel(logging.NOTSET)
-
-        if settings.getbool('LOG_STDOUT'):
-            sys.stdout = StreamLogger(logging.getLogger('stdout'))
-
-        # Set up the default log handler
-        filename = settings.get('LOG_FILE')
-        if filename:
-            encoding = settings.get('LOG_ENCODING')
-            handler = logging.FileHandler(filename, encoding=encoding)
-        elif settings.getbool('LOG_ENABLED'):
-            handler = logging.StreamHandler()
-        else:
-            handler = logging.NullHandler()
-
-        formatter = logging.Formatter(
-            fmt=settings.get('LOG_FORMAT'),
-            datefmt=settings.get('LOG_DATEFORMAT')
-        )
-        handler.setFormatter(formatter)
-        handler.setLevel(settings.get('LOG_LEVEL'))
-        handler.addFilter(TopLevelFormatter(['scrapy']))
+        handler = _get_handler(settings)
         logging.root.addHandler(handler)
+
+
+def _get_handler(settings):
+    """ Return a log handler object according to settings """
+    filename = settings.get('LOG_FILE')
+    if filename:
+        encoding = settings.get('LOG_ENCODING')
+        handler = logging.FileHandler(filename, encoding=encoding)
+    elif settings.getbool('LOG_ENABLED'):
+        handler = logging.StreamHandler()
+    else:
+        handler = logging.NullHandler()
+
+    formatter = logging.Formatter(
+        fmt=settings.get('LOG_FORMAT'),
+        datefmt=settings.get('LOG_DATEFORMAT')
+    )
+    handler.setFormatter(formatter)
+    handler.setLevel(settings.get('LOG_LEVEL'))
+    handler.addFilter(TopLevelFormatter(['scrapy']))
+    return handler
 
 
 def log_scrapy_info(settings):
