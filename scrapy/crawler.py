@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 class Crawler(object):
 
-    def __init__(self, spidercls, settings):
-        if isinstance(settings, dict):
+    def __init__(self, spidercls, settings=None):
+        if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
         self.spidercls = spidercls
@@ -108,8 +108,8 @@ class CrawlerRunner(object):
             ":meth:`crawl` and managed by this class."
     )
 
-    def __init__(self, settings):
-        if isinstance(settings, dict):
+    def __init__(self, settings=None):
+        if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
         self.settings = settings
         self.spider_loader = _get_spider_loader(settings)
@@ -205,7 +205,7 @@ class CrawlerProcess(CrawlerRunner):
     process. See :ref:`run-from-script` for an example.
     """
 
-    def __init__(self, settings):
+    def __init__(self, settings=None):
         super(CrawlerProcess, self).__init__(settings)
         install_shutdown_handlers(self._signal_shutdown)
         configure_logging(self.settings)

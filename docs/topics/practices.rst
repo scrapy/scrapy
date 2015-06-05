@@ -94,9 +94,7 @@ reactor after `MySpider` has finished running.
         ...
 
     configure_logging({'LOG_FORMAT': '%(levelname)s: %(message)s'})
-    runner = CrawlerRunner({
-        'USER_AGENT': 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)'
-    })
+    runner = CrawlerRunner()
 
     d = runner.crawl(MySpider)
     d.addBoth(lambda _: reactor.stop())
@@ -128,7 +126,7 @@ Here is an example that runs multiple spiders simultaneously:
         # Your second spider definition
         ...
 
-    process = CrawlerProcess({})
+    process = CrawlerProcess()
     process.crawl(MySpider1)
     process.crawl(MySpider2)
     process.start() # the script will block here until all crawling jobs are finished
@@ -151,7 +149,7 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
         ...
 
     configure_logging({})
-    runner = CrawlerRunner({})
+    runner = CrawlerRunner()
     runner.crawl(MySpider1)
     runner.crawl(MySpider2)
     d = runner.join()
@@ -176,7 +174,7 @@ Same example but running the spiders sequentially by chaining the deferreds:
         ...
 
     configure_logging({})
-    runner = CrawlerRunner({})
+    runner = CrawlerRunner()
 
     @defer.inlineCallbacks
     def crawl():
