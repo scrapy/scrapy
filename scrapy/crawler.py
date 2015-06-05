@@ -242,15 +242,24 @@ class CrawlerProcess(CrawlerRunner):
             # Don't start the reactor if the deferreds are already fired
             if d.called:
                 return
-            d.addBoth(lambda _: self._stop_reactor())
+            d.addBoth(self._stop_reactor)
 
-        cache_size = self.settings.getint('DNSCACHE_SIZE') if self.settings.getbool('DNSCACHE_ENABLED') else 0
-        reactor.installResolver(CachingThreadedResolver(reactor, cache_size,
-                                                            self.settings.getfloat('DNS_TIMEOUT')))
+        reactor.installResolver(self._get_dns_resolver())
         tp = reactor.getThreadPool()
         tp.adjustPoolsize(maxthreads=self.settings.getint('REACTOR_THREADPOOL_MAXSIZE'))
         reactor.addSystemEventTrigger('before', 'shutdown', self.stop)
         reactor.run(installSignalHandlers=False)  # blocking call
+
+    def _get_dns_resolver(self):
+        if self.settings.getbool('DNSCACHE_ENABLED'):
+            cache_size = self.settings.getint('DNSCACHE_SIZE')
+        else:
+            cache_size = 0
+        return CachingThreadedResolver(
+            reactor=reactor,
+            cache_size=cache_size,
+            timeout=self.settings.getfloat('DNS_TIMEOUT')
+        )
 
     def _stop_reactor(self, _=None):
         try:
