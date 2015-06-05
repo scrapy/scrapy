@@ -711,6 +711,20 @@ Scrapy  (if MEMUSAGE_ENABLED is True). If zero, no check will be performed.
 
 See :ref:`topics-extensions-ref-memusage`.
 
+.. setting:: MEMUSAGE_CHECK_INTERVAL_SECONDS
+
+MEMUSAGE_CHECK_INTERVAL_SECONDS
+-------------------------------
+
+Default: ``60.0``
+
+Scope: ``scrapy.extensions.memusage``
+
+The frequence which the current memory usage will be checked against the 
+limits set by :setting:`MEMUSAGE_LIMIT_MB` and :setting:`MEMUSAGE_WARNING_MB`.
+
+See :ref:`topics-extensions-ref-memusage`.
+
 .. setting:: MEMUSAGE_NOTIFY_MAIL
 
 MEMUSAGE_NOTIFY_MAIL
