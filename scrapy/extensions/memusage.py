@@ -36,7 +36,7 @@ class MemoryUsage(object):
         self.limit = crawler.settings.getint('MEMUSAGE_LIMIT_MB')*1024*1024
         self.warning = crawler.settings.getint('MEMUSAGE_WARNING_MB')*1024*1024
         self.report = crawler.settings.getbool('MEMUSAGE_REPORT')
-        self.check_interval = crawler.settings.getfloat('MEMUSAGE_CHECK_INTERVAL_SECONDS', 60.0)
+        self.check_interval = crawler.settings.getfloat('MEMUSAGE_CHECK_INTERVAL_SECONDS')
         self.mail = MailSender.from_settings(crawler.settings)
         crawler.signals.connect(self.engine_started, signal=signals.engine_started)
         crawler.signals.connect(self.engine_stopped, signal=signals.engine_stopped)
