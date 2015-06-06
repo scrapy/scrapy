@@ -720,8 +720,12 @@ Default: ``60.0``
 
 Scope: ``scrapy.extensions.memusage``
 
-The frequence which the current memory usage will be checked against the 
-limits set by :setting:`MEMUSAGE_LIMIT_MB` and :setting:`MEMUSAGE_WARNING_MB`.
+The :ref:`Memory usage extension <topics-extensions-ref-memusage>`
+checks the current memory usage, versus the limits set by 
+:setting:`MEMUSAGE_LIMIT_MB` and :setting:`MEMUSAGE_WARNING_MB`, 
+at fixed time intervals.
+
+This sets the length of these intervals, in seconds.
 
 See :ref:`topics-extensions-ref-memusage`.
 
