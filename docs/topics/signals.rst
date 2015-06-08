@@ -174,6 +174,8 @@ spider_error
 
     Sent when a spider callback generates an error (ie. raises an exception).
 
+    This signal does not support returning deferreds from their handlers.
+
     :param failure: the exception raised as a Twisted `Failure`_ object
     :type failure: `Failure`_ object
 
