@@ -137,6 +137,14 @@ class SettingsTest(unittest.TestCase):
             self.assertEqual(attr.value, ctrl_attr.value)
             self.assertEqual(attr.priority, ctrl_attr.priority)
 
+    def test_updatedict(self):
+        self.settings.attributes = {}
+        self.settings.set('TEST_DICT', { 'old': 123 }, 0)
+        self.settings.updatedict('TEST_DICT', { 'old': 456, 'new': 789 })
+        self.assertIn('new', self.settings.get('TEST_DICT'))
+        self.assertEqual(self.settings.getdict('TEST_DICT')['old'], 456)
+        self.assertEqual(self.settings.getdict('TEST_DICT')['new'], 789)
+
     def test_get(self):
         test_configuration = {
             'TEST_ENABLED1': '1',

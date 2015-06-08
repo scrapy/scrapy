@@ -110,6 +110,12 @@ class Settings(object):
             if key.isupper():
                 self.set(key, getattr(module, key), priority)
 
+    def updatedict(self, name, values, priority='project'):
+        self._assert_mutability()
+        d = self.getdict(name)
+        d.update(values)
+        self.set(name, d, priority)
+
     def _assert_mutability(self):
         if self.frozen:
             raise TypeError("Trying to modify an immutable Settings object")
