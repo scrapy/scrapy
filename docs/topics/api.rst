@@ -358,54 +358,10 @@ SpiderLoader API
 Signals API
 ===========
 
-.. module:: scrapy.signalmanager
-   :synopsis: The signal manager
-
-.. class:: SignalManager
-
-    .. method:: connect(receiver, signal)
-
-        Connect a receiver function to a signal.
-
-        The signal can be any object, although Scrapy comes with some
-        predefined signals that are documented in the :ref:`topics-signals`
-        section.
-
-        :param receiver: the function to be connected
-        :type receiver: callable
-
-        :param signal: the signal to connect to
-        :type signal: object
-
-    .. method:: send_catch_log(signal, \*\*kwargs)
-
-        Send a signal, catch exceptions and log them.
-
-        The keyword arguments are passed to the signal handlers (connected
-        through the :meth:`connect` method).
-
-    .. method:: send_catch_log_deferred(signal, \*\*kwargs)
-
-        Like :meth:`send_catch_log` but supports returning `deferreds`_ from
-        signal handlers.
-
-        Returns a `deferred`_ that gets fired once all signal handlers
-        deferreds were fired. Send a signal, catch exceptions and log them.
-
-        The keyword arguments are passed to the signal handlers (connected
-        through the :meth:`connect` method).
-
-    .. method:: disconnect(receiver, signal)
-
-        Disconnect a receiver function from a signal. This has the opposite
-        effect of the :meth:`connect` method, and the arguments are the same.
-
-    .. method:: disconnect_all(signal)
-
-        Disconnect all receivers from the given signal.
-
-        :param signal: the signal to disconnect from
-        :type signal: object
+.. automodule:: scrapy.signalmanager
+    :synopsis: The signal manager
+    :members:
+    :undoc-members:
 
 .. _topics-api-stats:
 
