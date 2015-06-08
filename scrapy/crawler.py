@@ -148,7 +148,9 @@ class CrawlerRunner(object):
         crawler = crawler_or_spidercls
         if not isinstance(crawler_or_spidercls, Crawler):
             crawler = self._create_crawler(crawler_or_spidercls)
+        return self._crawl(crawler, *args, **kwargs)
 
+    def _crawl(self, crawler, *args, **kwargs):
         self.crawlers.add(crawler)
         d = crawler.crawl(*args, **kwargs)
         self._active.add(d)
