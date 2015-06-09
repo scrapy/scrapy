@@ -427,6 +427,4 @@ class (which they all inherit from).
         Close the given spider. After this is called, no more specific stats
         can be accessed or collected.
 
-.. _deferreds: http://twistedmatrix.com/documents/current/core/howto/defer.html
-.. _deferred: http://twistedmatrix.com/documents/current/core/howto/defer.html
 .. _reactor: http://twistedmatrix.com/documents/current/core/howto/reactor-basics.html

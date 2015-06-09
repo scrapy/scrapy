@@ -46,10 +46,10 @@ class SignalManager(object):
 
     def send_catch_log_deferred(self, signal, **kwargs):
         """
-        Like :meth:`send_catch_log` but supports returning `deferred`_ from
+        Like :meth:`send_catch_log` but supports returning `deferreds`_ from
         signal handlers.
 
-        Returns a `deferred`_ that gets fired once all signal handlers
+        Returns a Deferred that gets fired once all signal handlers
         deferreds were fired. Send a signal, catch exceptions and log them.
 
         The keyword arguments are passed to the signal handlers (connected
