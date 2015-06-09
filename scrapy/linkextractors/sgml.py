@@ -111,7 +111,8 @@ class SgmlLinkExtractor(FilteringLinkExtractor):
         tag_func = lambda x: x in tags
         attr_func = lambda x: x in attrs
 
-        with warnings.catch_warnings(record=True):
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', ScrapyDeprecationWarning)
             lx = BaseSgmlLinkExtractor(tag=tag_func, attr=attr_func,
                 unique=unique, process_value=process_value)
 

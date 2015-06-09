@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import inspect
 import unittest
 import warnings
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.deprecate import create_deprecated_class, update_classpath
 
 from tests import mock
@@ -109,7 +110,8 @@ class WarnWhenSubclassedTest(unittest.TestCase):
                                              warn_category=MyWarning)
 
         # ignore subclassing warnings
-        with warnings.catch_warnings(record=True):
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', ScrapyDeprecationWarning)
             class UserClass(Deprecated):
                 pass
 
@@ -138,7 +140,8 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         self.assertIn("tests.test_utils_deprecate.Deprecated", msg)
 
     def test_issubclass(self):
-        with warnings.catch_warnings(record=True):
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', ScrapyDeprecationWarning)
             DeprecatedName = create_deprecated_class('DeprecatedName', NewName)
 
             class UpdatedUserClass1(NewName):
@@ -173,7 +176,8 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         self.assertRaises(TypeError, issubclass, object(), DeprecatedName)
 
     def test_isinstance(self):
-        with warnings.catch_warnings(record=True):
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', ScrapyDeprecationWarning)
             DeprecatedName = create_deprecated_class('DeprecatedName', NewName)
 
             class UpdatedUserClass2(NewName):
@@ -206,7 +210,8 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         assert not isinstance(OldStyleClass(), DeprecatedName)
 
     def test_clsdict(self):
-        with warnings.catch_warnings(record=True):
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', ScrapyDeprecationWarning)
             Deprecated = create_deprecated_class('Deprecated', NewName, {'foo': 'bar'})
 
         self.assertEqual(Deprecated.foo, 'bar')
@@ -264,7 +269,8 @@ class UpdateClassPathTest(unittest.TestCase):
         self.assertIn("scrapy.extensions.debug.Debug", str(w[0].message))
 
     def test_sorted_replacement(self):
-        with warnings.catch_warnings(record=True):
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', ScrapyDeprecationWarning)
             output = update_classpath('scrapy.contrib.pipeline.Pipeline')
         self.assertEqual(output, 'scrapy.pipelines.Pipeline')
 

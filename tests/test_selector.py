@@ -490,21 +490,24 @@ class DeprecatedXpathSelectorTest(unittest.TestCase):
             self.assertTrue(isinstance(usel, XPathSelector))
 
     def test_xpathselector(self):
-        with warnings.catch_warnings(record=True):
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', ScrapyDeprecationWarning)
             hs = XPathSelector(text=self.text)
             self.assertEqual(hs.select("//div").extract(),
                              [u'<div><img src="a.jpg"><p>Hello</p></div>'])
             self.assertRaises(RuntimeError, hs.css, 'div')
 
     def test_htmlxpathselector(self):
-        with warnings.catch_warnings(record=True):
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', ScrapyDeprecationWarning)
             hs = HtmlXPathSelector(text=self.text)
             self.assertEqual(hs.select("//div").extract(),
                              [u'<div><img src="a.jpg"><p>Hello</p></div>'])
             self.assertRaises(RuntimeError, hs.css, 'div')
 
     def test_xmlxpathselector(self):
-        with warnings.catch_warnings(record=True):
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', ScrapyDeprecationWarning)
             xs = XmlXPathSelector(text=self.text)
             self.assertEqual(xs.select("//div").extract(),
                              [u'<div><img src="a.jpg"><p>Hello</p></img></div>'])
