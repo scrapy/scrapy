@@ -196,30 +196,30 @@ scrapy.utils.log module
 
 .. autofunction:: configure_logging
 
-``configure_logging`` is automatically called when using Scrapy commands,
-but needs to be called explicitly when running custom scripts. In that
-case, its usage is not required but it's recommended.
+    ``configure_logging`` is automatically called when using Scrapy commands,
+    but needs to be called explicitly when running custom scripts. In that
+    case, its usage is not required but it's recommended.
 
-If you plan on configuring the handlers yourself is still recommended you
-call this function, passing `install_root_handler=False`. Bear in mind
-there won't be any log output set by default in that case.
+    If you plan on configuring the handlers yourself is still recommended you
+    call this function, passing `install_root_handler=False`. Bear in mind
+    there won't be any log output set by default in that case.
 
-To get you started on manually configuring logging's output, you can use
-`logging.basicConfig()`_ to set a basic root handler. This is an example on
-how to redirect ``INFO`` or higher messages to a file::
+    To get you started on manually configuring logging's output, you can use
+    `logging.basicConfig()`_ to set a basic root handler. This is an example
+    on how to redirect ``INFO`` or higher messages to a file::
 
-    import logging
-    from scrapy.utils.log import configure_logging
+        import logging
+        from scrapy.utils.log import configure_logging
 
-    configure_logging(install_root_handler=False)
-    logging.basicConfig(
-        filename='log.txt',
-        format='%(levelname)s: %(message)s',
-        level=logging.INFO
-    )
+        configure_logging(install_root_handler=False)
+        logging.basicConfig(
+            filename='log.txt',
+            format='%(levelname)s: %(message)s',
+            level=logging.INFO
+        )
 
-Refer to :ref:`run-from-script` for more details about using Scrapy this
-way.
+    Refer to :ref:`run-from-script` for more details about using Scrapy this
+    way.
 
 .. _logging.basicConfig(): https://docs.python.org/2/library/logging.html#logging.basicConfig
 
