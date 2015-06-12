@@ -194,42 +194,33 @@ scrapy.utils.log module
 .. module:: scrapy.utils.log
    :synopsis: Logging utils
 
-.. function:: configure_logging(settings=None)
+.. autofunction:: configure_logging
 
-    This function initializes logging defaults for Scrapy.
-
-    It's automatically called when using Scrapy commands, but needs to be
-    called explicitely when running custom scripts. In that case, its usage is
-    not required but it's recommended.
-
-    This function does:
-      - Route warnings and Twisted logging through Python standard logging
-      - Set a filter on Scrapy logger for formatting Twisted failures
-      - Assign DEBUG and ERROR levels to Scrapy and Twisted loggers
-        respectively
-
-    If `settings` is not ``None``, it will also create a root handler based on
-    the settings listed in :ref:`topics-logging-settings`.
+    ``configure_logging`` is automatically called when using Scrapy commands,
+    but needs to be called explicitly when running custom scripts. In that
+    case, its usage is not required but it's recommended.
 
     If you plan on configuring the handlers yourself is still recommended you
-    call this function, keeping `settings` as ``None``. Bear in mind there
-    won't be any log output set by default in that case.
+    call this function, passing `install_root_handler=False`. Bear in mind
+    there won't be any log output set by default in that case.
 
     To get you started on manually configuring logging's output, you can use
-    `logging.basicConfig()`_ to set a basic root handler. This is an example on
-    how to redirect ``INFO`` or higher messages to a file::
+    `logging.basicConfig()`_ to set a basic root handler. This is an example
+    on how to redirect ``INFO`` or higher messages to a file::
 
         import logging
         from scrapy.utils.log import configure_logging
 
-        configure_logging()  # Note we aren't providing settings in this case
-        logging.basicConfig(filename='log.txt', format='%(levelname)s: %(message)s', level=logging.INFO)
+        configure_logging(install_root_handler=False)
+        logging.basicConfig(
+            filename='log.txt',
+            format='%(levelname)s: %(message)s',
+            level=logging.INFO
+        )
 
     Refer to :ref:`run-from-script` for more details about using Scrapy this
     way.
 
-    :param settings: settings used to create and configure a handler for the
-        root logger.
-    :type settings: :class:`~scrapy.settings.Settings` object or ``None``
-
 .. _logging.basicConfig(): https://docs.python.org/2/library/logging.html#logging.basicConfig
+
+
