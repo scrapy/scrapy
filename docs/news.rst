@@ -233,7 +233,7 @@ Changelog
 New Features and Enhancements
 
 - Python logging (:issue:`1060`, :issue:`1235`, :issue:`1236`, :issue:`1240`,
-  :issue:`1259`, :issue:`1278`)
+  :issue:`1259`, :issue:`1278`, :issue:`1286`)
 - FEED_EXPORT_FIELDS option (:issue:`1159`, :issue:`1224`)
 - Dns cache size and timeout options (:issue:`1132`)
 - support namespace prefix in xmliter_lxml (:issue:`963`)
@@ -257,8 +257,9 @@ New Features and Enhancements
 - Add project name validation (:issue:`817`)
 - GSoC API cleanup (:issue:`816`, :issue:`1128`, :issue:`1147`,
   :issue:`1148`, :issue:`1156`, :issue:`1185`, :issue:`1187`, :issue:`1258`,
-  :issue:`1268`, :issue:`1276`)
+  :issue:`1268`, :issue:`1276`, :issue:`1285`, :issue:`1284`)
 - Be more responsive with IO operations (:issue:`1074` and :issue:`1075`)
+- Do leveldb compaction for httpcache on closing (:issue:`1297`)
 
 Deprecations and Removals
 
@@ -302,11 +303,12 @@ Documentation
 - DOC simplify extension docs (:issue:`893`)
 - Leaks docs (:issue:`894`)
 - DOC document from_crawler method for item pipelines (:issue:`904`)
+- Spider_error doesn't support deferreds (:issue:`1292`)
 - Corrections & Sphinx related fixes (:issue:`1220`, :issue:`1219`,
   :issue:`1196`, :issue:`1172`, :issue:`1171`, :issue:`1169`, :issue:`1160`,
   :issue:`1154`, :issue:`1127`, :issue:`1112`, :issue:`1105`, :issue:`1041`,
   :issue:`1082`, :issue:`1033`, :issue:`944`, :issue:`866`, :issue:`864`,
-  :issue:`796`, :issue:`1260`, :issue:`1271`)
+  :issue:`796`, :issue:`1260`, :issue:`1271`, :issue:`1293`, :issue:`1298`)
 
 Bugfixes
 
