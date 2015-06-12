@@ -668,12 +668,12 @@ SelectorList objects
 
    .. method:: extract()
 
-       Call the ``.extract()`` method for each element is this list and return
+       Call the ``.extract()`` method for each element in this list and return
        their results flattened, as a list of unicode strings.
 
    .. method:: re()
 
-       Call the ``.re()`` method for each element is this list and return
+       Call the ``.re()`` method for each element in this list and return
        their results flattened, as a list of unicode strings.
 
    .. method:: __nonzero__()
