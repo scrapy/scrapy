@@ -302,6 +302,9 @@ class LeveldbCacheStorage(object):
         self.db = self._leveldb.LevelDB(dbpath)
 
     def close_spider(self, spider):
+        # Do compactation each time to save space and also recreate files to
+        # avoid them being removed in storages with timestamp-based autoremoval.
+        self.db.CompactRange()
         del self.db
 
     def retrieve_response(self, spider, request):
