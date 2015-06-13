@@ -35,24 +35,28 @@ class Shell(object):
         self.spider = None
         self.inthread = not threadable.isInIOThread()
         self.code = code
+        self._banner = ''
         self.vars = {}
 
     def start(self, url=None, request=None, response=None, spider=None):
         # disable accidental Ctrl-C key press from shutting down the engine
         signal.signal(signal.SIGINT, signal.SIG_IGN)
+
         if url:
-            self.fetch(url, spider)
+            banner = self.fetch(url, spider, print_banner=False)
         elif request:
-            self.fetch(request, spider)
+            banner = self.fetch(request, spider, print_banner=False)
         elif response:
             request = response.request
-            self.populate_vars(response, request, spider)
+            banner = self.populate_vars(
+                    response, request, spider, print_banner=False)
         else:
-            self.populate_vars()
+            banner = self.populate_vars(print_banner=False)
+
         if self.code:
             print(eval(self.code, globals(), self.vars))
         else:
-            start_python_console(self.vars)
+            start_python_console(self.vars, banner=banner)
 
     def _schedule(self, request, spider):
         spider = self._open_spider(request, spider)
@@ -73,7 +77,7 @@ class Shell(object):
         self.spider = spider
         return spider
 
-    def fetch(self, request_or_url, spider=None):
+    def fetch(self, request_or_url, spider=None, print_banner=True):
         if isinstance(request_or_url, Request):
             request = request_or_url
             url = request.url
@@ -87,9 +91,10 @@ class Shell(object):
                 reactor, self._schedule, request, spider)
         except IgnoreRequest:
             pass
-        self.populate_vars(response, request, spider)
+        return self.populate_vars(response, request, spider, print_banner)
 
-    def populate_vars(self, response=None, request=None, spider=None):
+    def populate_vars(self, response=None, request=None, spider=None,
+            print_banner=True):
         self.vars['crawler'] = self.crawler
         self.vars['item'] = self.item_class()
         self.vars['settings'] = self.crawler.settings
@@ -103,21 +108,31 @@ class Shell(object):
         self.vars['shelp'] = self.print_help
         self.update_vars(self.vars)
         if not self.code:
-            self.print_help()
+            if print_banner:
+                self.print_help()
+            else:
+                return self._format_help()
 
     def print_help(self):
-        self.p("Available Scrapy objects:")
+        print(self._format_help())
+
+    def _format_help(self):
+        lines = []
+
+        def p(line=''):
+            lines.append("[s] %s" % line)
+
+        p("Available Scrapy objects:")
         for k, v in sorted(self.vars.items()):
             if self._is_relevant(v):
-                self.p("  %-10s %s" % (k, v))
-        self.p("Useful shortcuts:")
-        self.p("  shelp()           Shell help (print this help)")
+                p("  %-10s %s" % (k, v))
+        p("Useful shortcuts:")
+        p("  shelp()           Shell help (print this help)")
         if self.inthread:
-            self.p("  fetch(req_or_url) Fetch request (or URL) and update local objects")
-        self.p("  view(response)    View response in a browser")
+            p("  fetch(req_or_url) Fetch request (or URL) and update local objects")
+        p("  view(response)    View response in a browser")
 
-    def p(self, line=''):
-        print("[s] %s" % line)
+        return "\n".join(lines)
 
     def _is_relevant(self, value):
         return isinstance(value, self.relevant_classes)
