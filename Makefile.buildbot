@@ -8,8 +8,10 @@ test:
 	-s3cmd sync -P htmlcov/ s3://static.scrapy.org/coverage-scrapy-$(BRANCH)/
 
 build:
-	test $(BRANCH) != master || git describe --tags | sed -r 's/([0-9]+.[0-9]*.[0-9]*)(rc|dev)(.*)/\1~\2\3/' >scrapy/VERSION
-	debchange -m -D unstable --force-distribution -v `python setup.py --version`+`date +%s` "Automatic build"
+	git describe --tags --match '[0-9]*' |sed 's/-/.post/;s/-g/+g/' >scrapy/VERSION
+	debchange -m -D unstable --force-distribution -v \
+	  $$(python setup.py --version |sed -r 's/([0-9]+.[0-9]+.[0-9]+)(a|b|rc|dev)([0-9]*)/\1~\2\3/')-$$(date +%s) \
+	  "Automatic build"
 	debuild -us -uc -b
 
 clean:

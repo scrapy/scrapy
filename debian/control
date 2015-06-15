@@ -11,8 +11,8 @@ Architecture: all
 Depends: ${python:Depends}, python-lxml, python-twisted, python-openssl,
  python-w3lib (>= 1.8.0), python-queuelib, python-cssselect (>= 0.9), python-six (>=1.5.2)
 Recommends: python-setuptools
-Conflicts: python-scrapy, scrapy, scrapy-0.11
-Provides: python-scrapy, scrapy
+Conflicts: python-scrapy, scrapy-0.25
+Provides: python-scrapy, scrapy-0.25
 Description: Python web crawling and web scraping framework
  Scrapy is a fast high-level web crawling and web scraping framework,
  used to crawl websites and extract structured data from their pages. 
