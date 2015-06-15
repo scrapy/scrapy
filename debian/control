@@ -1,4 +1,4 @@
-Source: scrapy-SUFFIX
+Source: scrapy
 Section: python
 Priority: optional
 Maintainer: Scrapinghub Team <info@scrapinghub.com>
@@ -6,7 +6,7 @@ Build-Depends: debhelper (>= 7.0.50), python (>=2.7), python-twisted, python-w3l
 Standards-Version: 3.8.4
 Homepage: http://scrapy.org/
 
-Package: scrapy-SUFFIX
+Package: scrapy
 Architecture: all
 Depends: ${python:Depends}, python-lxml, python-twisted, python-openssl,
  python-w3lib (>= 1.8.0), python-queuelib, python-cssselect (>= 0.9), python-six (>=1.5.2)

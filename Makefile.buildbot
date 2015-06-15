@@ -8,8 +8,9 @@ test:
 	-s3cmd sync -P htmlcov/ s3://static.scrapy.org/coverage-scrapy-$(BRANCH)/
 
 build:
-	test $(BRANCH) != master || git describe >scrapy/VERSION
-	python extras/makedeb.py build
+	test $(BRANCH) != master || git describe --tags | sed -r 's/([0-9]+.[0-9]*.[0-9]*)(rc|dev)(.*)/\1~\2\3/' >scrapy/VERSION
+	debchange -m -D unstable --force-distribution -v `python setup.py --version`+`date +%s` "Automatic build"
+	debuild -us -uc -b
 
 clean:
 	git checkout debian scrapy/VERSION
