@@ -58,7 +58,6 @@ class RedirectMiddlewareTest(unittest.TestCase):
         assert isinstance(r, Response)
         assert r is rsp
 
-
     def test_redirect_302(self):
         url = 'http://www.example.com/302'
         url2 = 'http://www.example.com/redirected2'
@@ -96,7 +95,6 @@ class RedirectMiddlewareTest(unittest.TestCase):
         del rsp.headers['Location']
         assert self.mw.process_response(req, rsp, self.spider) is rsp
 
-
     def test_max_redirect_times(self):
         self.mw.max_redirect_times = 1
         req = Request('http://scrapytest.org/302')
@@ -106,6 +104,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
         assert isinstance(req, Request)
         assert 'redirect_times' in req.meta
         self.assertEqual(req.meta['redirect_times'], 1)
+        rsp = rsp.replace(headers={'Location': '/redirected2'})
         self.assertRaises(IgnoreRequest, self.mw.process_response, req, rsp, self.spider)
 
     def test_ttl(self):
@@ -115,6 +114,7 @@ class RedirectMiddlewareTest(unittest.TestCase):
 
         req = self.mw.process_response(req, rsp, self.spider)
         assert isinstance(req, Request)
+        rsp = rsp.replace(headers={'Location': '/redirected2'})
         self.assertRaises(IgnoreRequest, self.mw.process_response, req, rsp, self.spider)
 
     def test_redirect_urls(self):
@@ -128,6 +128,15 @@ class RedirectMiddlewareTest(unittest.TestCase):
         self.assertEqual(req2.meta['redirect_urls'], ['http://scrapytest.org/first'])
         self.assertEqual(req3.url, 'http://scrapytest.org/redirected2')
         self.assertEqual(req3.meta['redirect_urls'], ['http://scrapytest.org/first', 'http://scrapytest.org/redirected'])
+
+    def test_cyclic(self):
+        req = Request('http://scrapytest.org/first')
+        rsp = Response('http://scrapytest.org/first',
+                       headers={'Location': '/first'}, status=302)
+        self.assertNotIn('redirect_times', req.meta)
+        rsp_or_req = self.mw.process_response(req, rsp, self.spider)
+        self.assertIsInstance(rsp_or_req, Response)
+        self.assertEquals(rsp_or_req, rsp)
 
 class MetaRefreshMiddlewareTest(unittest.TestCase):
 
